@@ -1,0 +1,23 @@
+# Normalize line endings for cross-platform consistency
+* text=auto
+
+# Source files — always LF
+*.py    text eol=lf
+*.md    text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+*.json  text eol=lf
+*.txt   text eol=lf
+
+# Config files — always LF
+*.config text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# Binary — never diff or mangle
+*.docx  binary
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary

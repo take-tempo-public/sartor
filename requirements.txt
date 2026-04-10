@@ -1,0 +1,7 @@
+flask
+anthropic
+python-docx
+pdfplumber
+markdown
+beautifulsoup4
+requests

@@ -1,0 +1,46 @@
+# ---- Secrets ----
+.api_key
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.crt
+
+# ---- User PII: configs (keep only example.config as template) ----
+configs/*.config
+!configs/example.config
+
+# ---- User data: resumes and generated output ----
+resumes/*
+!resumes/.gitkeep
+output/*
+!output/.gitkeep
+
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+
+# ---- OS ----
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ---- IDE ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
