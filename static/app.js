@@ -101,6 +101,9 @@ async function saveConfig() {
     linkedin_url: document.getElementById('cfgLinkedin').value,
     website_url: document.getElementById('cfgWebsite').value,
     portfolio_urls: currentConfig.portfolio_urls || [],
+    ...(currentConfig.included_resumes !== undefined
+      ? { included_resumes: currentConfig.included_resumes }
+      : {}),
     skills: document.getElementById('cfgSkills').value.split(',').map(s => s.trim()).filter(Boolean),
     certifications: document.getElementById('cfgCerts').value.split(',').map(s => s.trim()).filter(Boolean),
     education_summary: document.getElementById('cfgEducation').value,
@@ -146,12 +149,23 @@ async function uploadFile(file) {
 
   setStatus('UPLOADING');
   const res = await fetch('/api/upload', { method: 'POST', body: fd });
+  const uploadData = await res.json();
   if (!res.ok) {
-    const err = await res.json();
     setStatus('ERROR');
-    return alert(err.error || 'Upload failed');
+    return alert(uploadData.error || 'Upload failed');
   }
   setStatus('UPLOADED');
+  // If a whitelist exists, auto-include the new file so it defaults to SOURCE
+  if (currentConfig.included_resumes && !currentConfig.included_resumes.includes(uploadData.filename)) {
+    currentConfig = Object.assign({}, currentConfig, {
+      included_resumes: [...currentConfig.included_resumes, uploadData.filename],
+    });
+    await fetch(`/api/users/${currentUser}/config`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(currentConfig),
+    });
+  }
   await loadResumes();
 }
 
@@ -164,24 +178,50 @@ async function loadResumes() {
   list.innerHTML = '';
   sel.innerHTML = '<option value="">-- Select Resume --</option>';
 
+  // Whitelist: null = all included (key absent from config = first use default)
+  const includedSet = currentConfig.included_resumes
+    ? new Set(currentConfig.included_resumes)
+    : null;
+
   files.forEach(f => {
+    const isIncluded = includedSet === null || includedSet.has(f);
+
     const chip = document.createElement('span');
     chip.className = 'file-chip';
+    chip.dataset.filename = f;
 
+    // Left zone: click filename = set as primary resume
     const nameSpan = document.createElement('span');
     nameSpan.textContent = f;
+    nameSpan.style.cursor = 'pointer';
     chip.appendChild(nameSpan);
 
+    // Divider between zones
+    const divider = document.createElement('span');
+    divider.className = 'chip-divider';
+    chip.appendChild(divider);
+
+    // Right zone: badge toggles include/exclude
     const badge = document.createElement('span');
-    badge.className = 'resume-source-badge';
-    badge.textContent = 'SOURCE';
+    badge.className = 'resume-source-badge' + (isIncluded ? '' : ' excluded');
+    badge.textContent = isIncluded ? '✓ SOURCE' : '✗ EXCL';
+    badge.title = isIncluded ? 'Click to exclude from source pool' : 'Click to include in source pool';
     chip.appendChild(badge);
 
-    chip.onclick = () => {
+    nameSpan.addEventListener('click', () => {
       document.querySelectorAll('.file-chip').forEach(c => c.classList.remove('selected'));
       chip.classList.add('selected');
       sel.value = f;
-    };
+    });
+
+    badge.addEventListener('click', e => {
+      e.stopPropagation();
+      const nowExcluded = badge.classList.toggle('excluded');
+      badge.textContent = nowExcluded ? '✗ EXCL' : '✓ SOURCE';
+      badge.title = nowExcluded ? 'Click to include in source pool' : 'Click to exclude from source pool';
+      _saveIncludedResumes();
+    });
+
     list.appendChild(chip);
 
     const opt = document.createElement('option');
@@ -194,11 +234,26 @@ async function loadResumes() {
   if (currentConfig.latest_resume && files.includes(currentConfig.latest_resume)) {
     sel.value = currentConfig.latest_resume;
     list.querySelectorAll('.file-chip').forEach(c => {
-      if (c.querySelector('span').textContent === currentConfig.latest_resume) {
-        c.classList.add('selected');
-      }
+      if (c.dataset.filename === currentConfig.latest_resume) c.classList.add('selected');
     });
   }
+}
+
+async function _saveIncludedResumes() {
+  const included = [];
+  document.querySelectorAll('.file-chip').forEach(chip => {
+    const badge = chip.querySelector('.resume-source-badge');
+    if (badge && !badge.classList.contains('excluded')) {
+      included.push(chip.dataset.filename);
+    }
+  });
+  const config = Object.assign({}, currentConfig, { included_resumes: included });
+  const res = await fetch(`/api/users/${currentUser}/config`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config),
+  });
+  if (res.ok) currentConfig = config;
 }
 
 // ---- Analysis (P8 Gate #1) ----
@@ -219,6 +274,7 @@ async function runAnalysis() {
         username: currentUser,
         resume_filename: resume,
         job_description: jd,
+        included_resumes: currentConfig.included_resumes ?? null,
       }),
     });
     const data = await res.json();
