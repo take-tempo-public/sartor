@@ -44,6 +44,28 @@ MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 4096
 
 
+def _supplemental_block(context_set: dict) -> str:
+    """Build the <supplemental_resumes> XML block for prompts, or empty string if none."""
+    supplements = context_set.get("supplemental_resumes", [])
+    if not supplements:
+        return ""
+    parts = [
+        f"<supplemental_resumes count=\"{len(supplements)}\">",
+        "The candidate has the following additional resume(s) as supplemental source material.",
+        "All job titles, bullet points, and experience from these files may be used.",
+        "When roles overlap across resumes, synthesize the richest version — do not duplicate.",
+        "",
+    ]
+    for i, r in enumerate(supplements, 1):
+        fname = r.get("filename", f"resume_{i}")
+        parts.append(f"<resume_{i} filename=\"{fname}\">")
+        parts.append(r.get("text", ""))
+        parts.append(f"</resume_{i}>")
+        parts.append("")
+    parts.append("</supplemental_resumes>")
+    return "\n".join(parts)
+
+
 def _call_llm(client: anthropic.Anthropic, user_prompt: str) -> str:
     """Make a single LLM call. P7 Observability: log inputs/outputs."""
     logger.info("LLM call starting — prompt length: %d chars", len(user_prompt))
@@ -75,10 +97,10 @@ def analyze(client: anthropic.Anthropic, context_set: dict) -> dict:
 {context_set['job_description']}
 </job_description>
 
-<candidate_resume>
+<candidate_resume filename="{context_set['resume'].get('filename', 'primary')}">
 {context_set['resume']['text']}
 </candidate_resume>
-
+{_supplemental_block(context_set)}
 <candidate_profile>
 Name: {context_set['candidate']['name']}
 Skills: {', '.join(context_set['candidate'].get('skills', []))}
@@ -156,10 +178,10 @@ def generate(client: anthropic.Anthropic, context_set: dict, analysis: dict) -> 
 {context_set['job_description']}
 </job_description>
 
-<original_resume>
+<original_resume filename="{context_set['resume'].get('filename', 'primary')}">
 {context_set['resume']['text']}
 </original_resume>
-
+{_supplemental_block(context_set)}
 <candidate_profile>
 Name: {context_set['candidate']['name']}
 Email: {context_set['candidate'].get('email', '')}
@@ -178,7 +200,7 @@ Professional vocabulary: {', '.join(analysis.get('professional_vocabulary', []))
 
 <resume_rules>
 GROUNDING CHECK — apply this before writing every bullet:
-  Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — exist in the original resume?"
+  Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — exist in the primary resume OR any supplemental resume above?"
   If YES: reframe, strengthen, and keyword-align it freely.
   If NO: do not write it. Reframe what IS there, or omit the bullet.
 

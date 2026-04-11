@@ -44,3 +44,6 @@ ehthumbs.db
 *.swp
 *.swo
 *~
+
+# ---- Claude Code session files (machine-specific, not project state) ----
+.claude/settings.local.json
