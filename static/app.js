@@ -600,8 +600,17 @@ function _renderMarkdown(text) {
 }
 
 // ---- Helpers ----
-function show(id) { document.getElementById(id).classList.remove('hidden'); }
-function hide(id) { document.getElementById(id).classList.add('hidden'); }
+function show(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('hidden', 'collapsed');
+  const block = document.querySelector(`[data-panel="${id}"]`);
+  if (block) block.classList.remove('hidden', 'collapsed');
+}
+function hide(id) {
+  document.getElementById(id).classList.add('hidden');
+  const block = document.querySelector(`[data-panel="${id}"]`);
+  if (block) block.classList.add('hidden');
+}
 function hideAllPanels() {
   ['panelConfig', 'panelResume', 'panelJD', 'panelAnalysis', 'panelOutput'].forEach(hide);
 }
@@ -627,3 +636,20 @@ function esc(str) {
   d.textContent = str;
   return d.innerHTML;
 }
+
+// ---- Panel collapse / expand ----
+function togglePanel(panelId) {
+  const panel = document.getElementById(panelId);
+  if (!panel || panel.classList.contains('hidden')) return;
+  const isCollapsed = panel.classList.toggle('collapsed');
+  const block = document.querySelector(`[data-panel="${panelId}"]`);
+  if (block) block.classList.toggle('collapsed', isCollapsed);
+}
+
+document.querySelectorAll('.lcars-block[data-panel]').forEach(block => {
+  block.addEventListener('click', () => togglePanel(block.dataset.panel));
+});
+document.querySelectorAll('.panel-header').forEach(header => {
+  const panel = header.closest('.lcars-panel');
+  if (panel) header.addEventListener('click', () => togglePanel(panel.id));
+});
