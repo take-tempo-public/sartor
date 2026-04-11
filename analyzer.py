@@ -166,7 +166,7 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
         return {"raw_response": raw, "parse_error": True}
 
 
-def generate(client: anthropic.Anthropic, context_set: dict, analysis: dict) -> dict:
+def generate(client: anthropic.Anthropic, context_set: dict, analysis: dict, refinement_notes: str = "") -> dict:
     """Call 2: Generation.
 
     Produces tailored resume content and cover letter.
@@ -257,7 +257,16 @@ FORMAT:
   - Banned phrases: "passionate about," "team player," "detail-oriented," "hard worker," "results-driven," "leverage," "synergy"
   - The letter must stand alone. Assume the reader has not seen the resume.
 </cover_letter_rules>
+{f'''
+<refinement_instructions>
+The user has reviewed the generated documents and provided the following adjustment instructions.
+Apply ALL of the following to both the resume and cover letter.
+Earlier instructions remain in effect unless explicitly superseded by a later one.
+Do NOT make any other changes beyond what is requested here.
 
+{refinement_notes}
+</refinement_instructions>
+''' if refinement_notes.strip() else ''}
 <output_format>
 Respond with valid JSON only. No markdown code fences. Use this exact structure:
 {{

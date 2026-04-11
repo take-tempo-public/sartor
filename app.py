@@ -306,6 +306,7 @@ def run_generation():
     username = data.get("username", "")
     context_path = data.get("context_path", "")
     output_format = data.get("output_format", "")  # ".docx" or ".md"; falls back to context
+    refinement_notes = data.get("refinement_notes", "")
 
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
@@ -325,7 +326,7 @@ def run_generation():
     logger.info("Starting generation for %s", username)
 
     client = _get_client()
-    result = generate(client, context_set, analysis)
+    result = generate(client, context_set, analysis, refinement_notes=refinement_notes)
 
     if result.get("parse_error"):
         return jsonify({"error": "Generation failed", "raw": result.get("raw_response", "")}), 500
