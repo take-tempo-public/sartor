@@ -291,6 +291,20 @@ textarea {
   padding: 1px 4px;
   opacity: 0.75;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, opacity 0.15s;
+}
+.resume-source-badge.excluded {
+  color: #99908a;
+  border-color: #99908a;
+  opacity: 0.5;
+}
+.file-chip .chip-divider {
+  width: 1px;
+  align-self: stretch;
+  background: #2a2a3e;
+  flex-shrink: 0;
+  margin: 0 2px;
 }
 
 /* ---- Tabs ---- */

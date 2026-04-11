@@ -223,20 +223,37 @@ def run_analysis():
 
     logger.info("Starting analysis for %s with resume %s", safe_user, safe_resume)
 
+    # Resolve source pool selection — None means "all included" (first-use default)
+    included_resumes_raw = data.get("included_resumes")  # list[str] | None
+
     # P1 Hardening: deterministic steps first
     parsed = parse_resume(str(resume_path))
     config = _load_config(safe_user)
     profile_text = fetch_profile_content(config)
 
-    # Parse all other resumes for this user as supplemental sources
+    # Parse supplemental resumes, honoring the user's source pool selection.
+    # Security: filenames from the whitelist are used only for membership testing,
+    # never for path construction — actual paths come from iterdir().
     supplemental_parsed = []
     for f in sorted((RESUMES_DIR / safe_user).iterdir()):
-        if f.name != safe_resume and f.suffix.lower() in ALLOWED_EXTENSIONS:
-            try:
-                supplemental_parsed.append(parse_resume(str(f)))
-                logger.info("Loaded supplemental resume: %s", f.name)
-            except Exception as exc:
-                logger.warning("Skipped supplemental resume %s: %s", f.name, exc)
+        if f.name == safe_resume or f.suffix.lower() not in ALLOWED_EXTENSIONS:
+            continue
+
+        # Apply whitelist filter when client sent one (None = all included)
+        if included_resumes_raw is not None:
+            if secure_filename(f.name) not in included_resumes_raw:
+                logger.debug("Skipping excluded supplemental resume: %s", f.name)
+                continue
+
+        if not _within(f, RESUMES_DIR / safe_user):
+            logger.warning("Supplemental resume failed containment check: %s", f)
+            continue
+
+        try:
+            supplemental_parsed.append(parse_resume(str(f)))
+            logger.info("Loaded supplemental resume: %s", f.name)
+        except Exception as exc:
+            logger.warning("Skipped supplemental resume %s: %s", f.name, exc)
 
     logger.info(
         "Resume sources for %s: 1 primary + %d supplemental",
