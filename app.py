@@ -275,6 +275,7 @@ def run_analysis():
         jd_text, parsed, config, profile_text,
         jd_keywords, resume_keywords, overlap, ats_warnings,
         supplemental_resumes=supplemental_parsed,
+        original_resume_path=str(resume_path),
     )
 
     # Fuzzy work: LLM analysis
@@ -294,6 +295,7 @@ def run_analysis():
             "ats_warnings": ats_warnings,
         },
         "context_path": context_path,
+        "template_path": str(resume_path),  # original .docx path for style templating
     })
 
 
@@ -303,6 +305,7 @@ def run_generation():
     data = request.json
     username = data.get("username", "")
     context_path = data.get("context_path", "")
+    output_format = data.get("output_format", "")  # ".docx" or ".md"; falls back to context
 
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
@@ -333,9 +336,15 @@ def run_generation():
         safe_user = secure_filename(cp.parent.name)
 
     # P1 Hardening: deterministic document creation
+    # Use user-selected output format; fall back to original resume format
     original_format = context_set["resume"]["format"]
+    if output_format not in (".docx", ".md"):
+        output_format = ".docx" if original_format != ".md" else ".md"
+    # Provide the original .docx as a style template when available
+    template_path = context_set["resume"].get("path", "") if output_format == ".docx" else None
     resume_path = generate_resume(
-        result["resume_content"], original_format, safe_user, str(OUTPUT_DIR)
+        result["resume_content"], output_format, safe_user, str(OUTPUT_DIR),
+        template_path=template_path,
     )
     cover_letter_path = generate_cover_letter(
         result["cover_letter_content"], safe_user, str(OUTPUT_DIR)
@@ -346,7 +355,7 @@ def run_generation():
     return jsonify({
         "resume_path": resume_path,
         "cover_letter_path": cover_letter_path,
-        "resume_format": original_format,
+        "resume_format": output_format,
         "changes_made": result.get("changes_made", []),
         "proofread_notes": result.get("proofread_notes", []),
         "resume_preview": result["resume_content"],
@@ -374,7 +383,8 @@ def download_edited():
     username = data.get("username", "")
     content = data.get("content", "")
     doc_type = data.get("type", "resume")  # "resume" or "cover_letter"
-    original_format = data.get("original_format", ".docx")
+    output_format = data.get("original_format", ".docx")  # field name kept for JS compat
+    template_path = data.get("template_path", "")
 
     if not username or not content:
         return jsonify({"error": "username and content required"}), 400
@@ -383,11 +393,20 @@ def download_edited():
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
 
-    if original_format not in ALLOWED_EXTENSIONS:
-        original_format = ".docx"
+    if output_format not in (".docx", ".md"):
+        output_format = ".docx"
+
+    # Validate template path if provided
+    if template_path:
+        tp = Path(template_path)
+        if not _within(tp, RESUMES_DIR) or not tp.exists():
+            template_path = None
 
     if doc_type == "resume":
-        path = generate_resume(content, original_format, safe_user, str(OUTPUT_DIR))
+        path = generate_resume(
+            content, output_format, safe_user, str(OUTPUT_DIR),
+            template_path=template_path or None,
+        )
     else:
         path = generate_cover_letter(content, safe_user, str(OUTPUT_DIR))
 

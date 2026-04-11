@@ -239,6 +239,18 @@ textarea {
   transform: none;
   filter: none;
 }
+.format-btn {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  color: var(--text-dim);
+  padding: 5px 16px;
+  font-size: 12px;
+}
+.format-btn.active {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: rgba(102, 204, 204, 0.08);
+}
 
 /* ---- Upload Zone ---- */
 .upload-zone {
