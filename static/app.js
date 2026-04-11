@@ -702,8 +702,15 @@ function setStatus(text) {
   const pill = document.getElementById('statusPill');
   pill.textContent = text;
 
-  // Clear previous sidebar flash
-  if (_activeBlock) { _activeBlock.classList.remove('step-active'); _activeBlock = null; }
+  // Clear previous sidebar flash; re-hide block if its panel never opened (e.g. error)
+  if (_activeBlock) {
+    _activeBlock.classList.remove('step-active');
+    const prevPanel = document.getElementById(_activeBlock.dataset.panel);
+    if (prevPanel && prevPanel.classList.contains('hidden')) {
+      _activeBlock.classList.add('hidden');
+    }
+    _activeBlock = null;
+  }
 
   const activeKey = Object.keys(_ACTIVE_PANEL).find(s => text.includes(s));
   const isActive  = !!activeKey;
@@ -714,10 +721,15 @@ function setStatus(text) {
   pill.style.background = isError ? 'var(--red)' : '';
   pill.style.color      = isError ? 'var(--black)' : '';
 
-  // Flash the sidebar block for the step that is currently running
+  // Flash top-bar elbow in sync with pill
+  const elbow = document.querySelector('.lcars-elbow-tl');
+  if (elbow) elbow.classList.toggle('step-active', isActive);
+
+  // Flash the sidebar block — show it even if its panel content hasn't arrived yet
   if (isActive) {
     const block = document.querySelector(`[data-panel="${_ACTIVE_PANEL[activeKey]}"]`);
-    if (block && !block.classList.contains('hidden')) {
+    if (block) {
+      block.classList.remove('hidden');
       block.classList.add('step-active');
       _activeBlock = block;
     }
