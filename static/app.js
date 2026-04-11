@@ -10,12 +10,16 @@ let lastResumeFormat = '.docx';
 let lastTemplatePath = '';   // path to original .docx for style template
 let outputFormat = '.docx';  // user-selected output format
 let primaryResume = '';      // currently selected primary resume filename
+let refinementHistory = [];  // accumulated refinement instructions, in order
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
   loadUsers();
   setupDropZone();
   document.getElementById('userSelect').addEventListener('change', onUserSelect);
+  document.getElementById('refinementInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitRefinement(); }
+  });
 });
 
 // ---- Users ----
@@ -443,6 +447,9 @@ async function runGeneration() {
         username: currentUser,
         context_path: lastContextPath,
         output_format: outputFormat,
+        refinement_notes: refinementHistory.length
+          ? refinementHistory.map((n, i) => `${i + 1}. ${n}`).join('\n')
+          : '',
       }),
     });
     const data = await res.json();
@@ -463,6 +470,70 @@ async function runGeneration() {
   } finally {
     document.getElementById('btnGenerate').disabled = false;
   }
+}
+
+// ---- Refinement ----
+async function submitRefinement() {
+  const input = document.getElementById('refinementInput');
+  const note = input.value.trim();
+  if (!note || !lastContextPath) return;
+
+  refinementHistory.push(note);
+  _renderRefinementHistory();
+  input.value = '';
+
+  setStatus('REFINING');
+  document.getElementById('btnRefinement').disabled = true;
+  document.getElementById('btnGenerate').disabled = true;
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        username: currentUser,
+        context_path: lastContextPath,
+        output_format: lastResumeFormat,
+        refinement_notes: refinementHistory.map((n, i) => `${i + 1}. ${n}`).join('\n'),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      refinementHistory.pop();
+      _renderRefinementHistory();
+      setStatus('ERROR');
+      return alert(data.error || 'Refinement failed');
+    }
+    lastResumePath = data.resume_path;
+    lastCoverLetterPath = data.cover_letter_path;
+    lastResumeFormat = data.resume_format || lastResumeFormat;
+    renderOutput(data);
+    setStatus('REFINED');
+  } catch (e) {
+    refinementHistory.pop();
+    _renderRefinementHistory();
+    setStatus('ERROR');
+    alert('Refinement failed: ' + e.message);
+  } finally {
+    document.getElementById('btnRefinement').disabled = false;
+    document.getElementById('btnGenerate').disabled = false;
+  }
+}
+
+function _renderRefinementHistory() {
+  const container = document.getElementById('refinementHistory');
+  if (!refinementHistory.length) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+  container.classList.remove('hidden');
+  container.innerHTML = refinementHistory.map((note, i) =>
+    `<div class="refinement-entry">
+      <span class="refinement-index">${i + 1}</span>
+      <span class="refinement-text">${esc(note)}</span>
+    </div>`
+  ).join('');
 }
 
 function renderOutput(data) {
@@ -493,6 +564,8 @@ function renderOutput(data) {
   }
   document.getElementById('changesContent').innerHTML = changesHtml;
   showTab('resume');
+  document.getElementById('refinementArea').classList.remove('hidden');
+  document.getElementById('refinementInput').value = '';
 }
 
 function showTab(name, clickedBtn) {

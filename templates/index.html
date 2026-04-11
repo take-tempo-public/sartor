@@ -167,6 +167,26 @@
           <button class="lcars-btn lcars-bg-teal" id="btnDownloadResume" onclick="downloadResume()">DOWNLOAD RESUME</button>
           <button class="lcars-btn lcars-bg-blue" id="btnDownloadCover" onclick="downloadCoverLetter()">DOWNLOAD COVER LETTER</button>
         </div>
+        <!-- REFINEMENT: hidden until first generation -->
+        <div id="refinementArea" class="hidden">
+          <div class="refinement-divider">
+            <span class="refinement-divider-label">DOCUMENT REFINEMENT</span>
+          </div>
+          <div id="refinementHistory" class="refinement-history hidden"></div>
+          <div class="refinement-input-row">
+            <textarea
+              id="refinementInput"
+              class="refinement-textarea"
+              rows="2"
+              maxlength="600"
+              placeholder="Describe an adjustment (e.g. &quot;make the tone more formal&quot;, &quot;emphasize cloud experience&quot;)..."
+            ></textarea>
+            <button class="lcars-btn lcars-bg-orange" id="btnRefinement" onclick="submitRefinement()">REFINE</button>
+          </div>
+          <div class="edit-hint" style="color:var(--orange);opacity:0.5;margin-bottom:0">
+            Scope: document content only — tone, emphasis, keyword placement, structure.
+          </div>
+        </div>
       </div>
     </section>
 
