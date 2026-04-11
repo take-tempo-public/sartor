@@ -17,8 +17,14 @@ from docx.oxml.ns import qn
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-# Matches any common bullet prefix: -, *, •, –, —, ·
-BULLET_RE = re.compile(r"^[-*\u2022\u2013\u2014\u00b7]\s+")
+# Matches any common bullet prefix used by LLMs:
+# -, *, •, –, —, ·, ◆, ●, ▪, ›, ‣
+BULLET_RE = re.compile(
+    r"^[-*\u2022\u2013\u2014\u00b7\u25c6\u25cf\u25aa\u2023\u2043\u203a]\s+"
+)
+
+# Inline markdown: ***bold+italic***, **bold**, *italic*
+_INLINE_RE = re.compile(r"(\*\*\*[^*\n]+?\*\*\*|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)")
 
 
 def generate_resume(
@@ -53,6 +59,32 @@ def generate_cover_letter(content: str, username: str, base_dir: str = "output")
     return str(path)
 
 
+def _add_inline_runs(paragraph, text: str, base_bold: bool = False) -> None:
+    """Parse inline **bold** and *italic* markers and add styled runs.
+
+    Handles: ***bold+italic***, **bold**, *italic*, and plain text segments.
+    Leaves the paragraph's style intact — only run-level formatting is set.
+    """
+    segments = _INLINE_RE.split(text)
+    for seg in segments:
+        if not seg:
+            continue
+        if seg.startswith("***") and seg.endswith("***"):
+            run = paragraph.add_run(seg[3:-3])
+            run.bold = True
+            run.italic = True
+        elif seg.startswith("**") and seg.endswith("**"):
+            run = paragraph.add_run(seg[2:-2])
+            run.bold = True
+        elif seg.startswith("*") and seg.endswith("*"):
+            run = paragraph.add_run(seg[1:-1])
+            run.italic = True
+        else:
+            run = paragraph.add_run(seg)
+            if base_bold:
+                run.bold = True
+
+
 def _extract_list_numPr(doc: docx.Document):
     """Return a deep copy of the numPr element from the first List Paragraph, or None."""
     for p in doc.paragraphs:
@@ -84,11 +116,9 @@ def _apply_numPr(paragraph, numPr_template) -> None:
     if pPr is None:
         pPr = OxmlElement("w:pPr")
         paragraph._element.insert(0, pPr)
-    # Remove any existing numPr before inserting
     existing = pPr.find(qn("w:numPr"))
     if existing is not None:
         pPr.remove(existing)
-    # Insert at position 0 so it precedes other pPr children
     pPr.insert(0, deepcopy(numPr_template))
 
 
@@ -104,21 +134,20 @@ def _write_docx(
     Markdown heading levels:
       # Name / title line  →  large bold Normal (centered for resume)
       ## Section heading   →  Heading 1 style (from template) or bold 13pt
-      ### Job/company line →  bold Normal
-      - / • / – bullet     →  List Paragraph + numbering (from template) or List Bullet
+      ### Job/company line →  bold Normal paragraph
+      - / • / – / ◆ bullet →  List Paragraph + numbering (from template) or List Bullet
+      **text** / *text*    →  inline bold / italic runs within any paragraph
     """
     tp = Path(template_path) if template_path else None
     use_template = bool(tp and tp.exists() and tp.suffix.lower() == ".docx")
 
     if use_template:
         doc = docx.Document(str(tp))
-        # Capture the list numPr before clearing content
         orig_numPr = _extract_list_numPr(doc)
         _clear_body(doc)
     else:
         orig_numPr = None
         doc = docx.Document()
-        # Sensible defaults for non-docx originals
         normal = doc.styles["Normal"]
         normal.font.name = "Calibri"
         normal.font.size = Pt(11)
@@ -137,14 +166,9 @@ def _write_docx(
 
         # ── # Name / header line ──────────────────────────────────────────
         if stripped.startswith("# "):
-            text = stripped[2:]
             p = doc.add_paragraph()
-            run = p.add_run(text)
-            run.bold = True
-            if use_template:
-                # Inherit template font; bump to a readable title size
-                run.font.size = Pt(16)
-            else:
+            _add_inline_runs(p, stripped[2:], base_bold=True)
+            for run in p.runs:
                 run.font.size = Pt(16)
             if not is_cover_letter:
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -153,35 +177,42 @@ def _write_docx(
         elif stripped.startswith("## "):
             text = stripped[3:]
             if use_template:
-                # Use the original document's Heading 1 style exactly
-                p = doc.add_paragraph(text, style="Heading 1")
+                p = doc.add_paragraph(style="Heading 1")
+                _add_inline_runs(p, text)
             else:
                 p = doc.add_paragraph()
-                run = p.add_run(text)
-                run.bold = True
-                run.font.size = Pt(13)
+                _add_inline_runs(p, text, base_bold=True)
+                for run in p.runs:
+                    run.font.size = Pt(13)
                 p.paragraph_format.space_after = Pt(2)
 
         # ── ### Job title / company line ──────────────────────────────────
         elif stripped.startswith("### "):
-            text = stripped[4:]
             p = doc.add_paragraph()
-            run = p.add_run(text)
-            run.bold = True
+            _add_inline_runs(p, stripped[4:], base_bold=True)
             if not use_template:
-                run.font.size = Pt(11)
+                for run in p.runs:
+                    run.font.size = Pt(11)
 
         # ── Bullet point (any common marker) ─────────────────────────────
         elif BULLET_RE.match(stripped):
             text = BULLET_RE.sub("", stripped)
             if use_template and orig_numPr is not None:
-                p = doc.add_paragraph(text, style="List Paragraph")
+                p = doc.add_paragraph(style="List Paragraph")
                 _apply_numPr(p, orig_numPr)
+                # Clear auto-added run, then add inline-parsed runs
+                for run in list(p.runs):
+                    run._element.getparent().remove(run._element)
+                _add_inline_runs(p, text)
             else:
-                doc.add_paragraph(text, style="List Bullet")
+                p = doc.add_paragraph(style="List Bullet")
+                for run in list(p.runs):
+                    run._element.getparent().remove(run._element)
+                _add_inline_runs(p, text)
 
         # ── Plain body text ───────────────────────────────────────────────
         else:
-            doc.add_paragraph(stripped)
+            p = doc.add_paragraph()
+            _add_inline_runs(p, stripped)
 
     doc.save(str(path))

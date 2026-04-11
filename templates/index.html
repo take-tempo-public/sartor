@@ -109,6 +109,7 @@
             <input type="file" id="fileInput" accept=".docx,.pdf,.md" class="hidden">
           </div>
           <div id="resumeList" class="file-list"></div>
+          <div class="edit-hint">Left: click name to set primary (amber). Right: click badge to include/exclude from source pool.</div>
         </div>
       </section>
 
@@ -117,13 +118,9 @@
         <div class="panel-header lcars-bg-teal">JOB DESCRIPTION</div>
         <div class="panel-body">
           <textarea id="jdText" rows="12" placeholder="Paste the full job description text here..."></textarea>
-          <div class="form-row">
-            <select id="resumeSelect">
-              <option value="">-- Select Primary Resume --</option>
-            </select>
-            <button class="lcars-btn lcars-bg-teal" onclick="runAnalysis()" id="btnAnalyze">ANALYZE</button>
-          </div>
-          <div class="edit-hint">Left: click name to set primary (amber). Right: click badge to include/exclude from source pool.</div>
+          <!-- resumeSelect hidden — value tracked via primaryResume JS variable -->
+          <select id="resumeSelect" class="hidden"></select>
+          <button class="lcars-btn lcars-bg-teal" onclick="runAnalysis()" id="btnAnalyze">ANALYZE</button>
         </div>
       </section>
 
@@ -151,12 +148,22 @@
             <button class="tab-btn" onclick="showTab('changes', this)">CHANGES</button>
           </div>
           <div id="tabResume" class="tab-content active">
-            <div class="edit-hint">&#9998; Click to edit before downloading</div>
+            <div class="view-controls">
+              <button class="view-btn active" onclick="setViewMode('raw','resume',this)">RAW</button>
+              <button class="view-btn" onclick="setViewMode('rendered','resume',this)">RENDERED</button>
+              <span class="edit-hint" style="margin:0">&#9998; Edit in RAW before downloading</span>
+            </div>
             <div id="resumePreview" class="preview-editable" contenteditable="true" spellcheck="true"></div>
+            <div id="resumeRendered" class="preview-rendered hidden"></div>
           </div>
           <div id="tabCoverLetter" class="tab-content">
-            <div class="edit-hint">&#9998; Click to edit before downloading</div>
+            <div class="view-controls">
+              <button class="view-btn active" onclick="setViewMode('raw','coverLetter',this)">RAW</button>
+              <button class="view-btn" onclick="setViewMode('rendered','coverLetter',this)">RENDERED</button>
+              <span class="edit-hint" style="margin:0">&#9998; Edit in RAW before downloading</span>
+            </div>
             <div id="coverLetterPreview" class="preview-editable" contenteditable="true" spellcheck="true"></div>
+            <div id="coverLetterRendered" class="preview-rendered hidden"></div>
           </div>
           <div id="tabChanges" class="tab-content">
             <div id="changesContent"></div>
