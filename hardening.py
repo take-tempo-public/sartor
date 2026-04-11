@@ -177,6 +177,7 @@ def build_context_set(
             "certifications": config.get("certifications", []),
             "education_summary": config.get("education_summary", ""),
             "notes": config.get("notes", ""),
+            "profile_text": profile_text,
         },
         "resume": {
             "format": parsed_resume.get("format", ""),
