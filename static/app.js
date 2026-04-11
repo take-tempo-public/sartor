@@ -167,7 +167,16 @@ async function loadResumes() {
   files.forEach(f => {
     const chip = document.createElement('span');
     chip.className = 'file-chip';
-    chip.textContent = f;
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = f;
+    chip.appendChild(nameSpan);
+
+    const badge = document.createElement('span');
+    badge.className = 'resume-source-badge';
+    badge.textContent = 'SOURCE';
+    chip.appendChild(badge);
+
     chip.onclick = () => {
       document.querySelectorAll('.file-chip').forEach(c => c.classList.remove('selected'));
       chip.classList.add('selected');
@@ -181,9 +190,14 @@ async function loadResumes() {
     sel.appendChild(opt);
   });
 
-  // Auto-select latest resume from config
+  // Auto-select latest resume from config and highlight the chip
   if (currentConfig.latest_resume && files.includes(currentConfig.latest_resume)) {
     sel.value = currentConfig.latest_resume;
+    list.querySelectorAll('.file-chip').forEach(c => {
+      if (c.querySelector('span').textContent === currentConfig.latest_resume) {
+        c.classList.add('selected');
+      }
+    });
   }
 }
 

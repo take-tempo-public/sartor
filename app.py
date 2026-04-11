@@ -228,15 +228,36 @@ def run_analysis():
     config = _load_config(safe_user)
     profile_text = fetch_profile_content(config)
 
+    # Parse all other resumes for this user as supplemental sources
+    supplemental_parsed = []
+    for f in sorted((RESUMES_DIR / safe_user).iterdir()):
+        if f.name != safe_resume and f.suffix.lower() in ALLOWED_EXTENSIONS:
+            try:
+                supplemental_parsed.append(parse_resume(str(f)))
+                logger.info("Loaded supplemental resume: %s", f.name)
+            except Exception as exc:
+                logger.warning("Skipped supplemental resume %s: %s", f.name, exc)
+
+    logger.info(
+        "Resume sources for %s: 1 primary + %d supplemental",
+        safe_user, len(supplemental_parsed),
+    )
+
+    # Combine ALL resume text for keyword extraction (P1: deterministic, covers full history)
+    all_resume_text = parsed["text"]
+    for r in supplemental_parsed:
+        all_resume_text += "\n" + r["text"]
+
     jd_keywords = extract_keywords(jd_text)
-    resume_keywords = extract_keywords(parsed["text"])
+    resume_keywords = extract_keywords(all_resume_text)
     overlap = compute_keyword_overlap(resume_keywords, jd_keywords)
-    ats_warnings = check_ats_format(parsed)
+    ats_warnings = check_ats_format(parsed)  # ATS check applies to primary only
 
     # P2 Context Hygiene: build compact context
     context_set = build_context_set(
         jd_text, parsed, config, profile_text,
         jd_keywords, resume_keywords, overlap, ats_warnings,
+        supplemental_resumes=supplemental_parsed,
     )
 
     # Fuzzy work: LLM analysis

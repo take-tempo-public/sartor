@@ -266,18 +266,31 @@ textarea {
 .file-chip {
   background: #1a1a2e;
   border: 1px solid #2a2a3e;
-  padding: 4px 14px;
+  padding: 4px 10px 4px 14px;
   border-radius: var(--radius);
   font-size: 13px;
   color: var(--light);
   cursor: pointer;
   transition: border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 .file-chip:hover { border-color: var(--amber); }
 .file-chip.selected {
   border-color: var(--amber);
   background: rgba(255, 153, 0, 0.1);
   color: var(--amber);
+}
+.resume-source-badge {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--teal);
+  border: 1px solid var(--teal);
+  border-radius: 3px;
+  padding: 1px 4px;
+  opacity: 0.75;
+  flex-shrink: 0;
 }
 
 /* ---- Tabs ---- */

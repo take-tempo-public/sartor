@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "resume-optimizer",
-      "runtimeExecutable": "python",
+      "runtimeExecutable": "C:\\Users\\iam\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
       "runtimeArgs": ["app.py"],
       "port": 5000
     }

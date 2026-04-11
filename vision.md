@@ -12,6 +12,8 @@
 6.  save the resume in a resumes folder with a subdirectory for each user
 7.  prompt for text for a JD (job description) with space to paste the job description text
 8.  have a config file for each user called \*.config that includes general information that might be useful to the llm when doing the work outlined in this document (for instance, linkedin profile url, website, reference for the most recent uploaded general resume of this user, skills, etc.)
+9. comply with best practices for open source projects, privacy, and security and maintain a reference file for this to reduce repetition of this phase and form a guidance document for privacy and security to be used in all iterations. Review the plan in the role of an open source security and data compliance engineer and make changes as you gain more knowledge
+
 
 ### Step 1
 
