@@ -132,6 +132,11 @@
         <div class="panel-header lcars-bg-orange">ANALYSIS RESULTS</div>
         <div class="panel-body">
           <div id="analysisContent"></div>
+          <div class="form-row" style="align-items:center;gap:12px;margin-bottom:8px;">
+            <span class="edit-hint" style="margin:0">Output format:</span>
+            <button class="lcars-btn format-btn active" id="fmtDocx" onclick="setOutputFormat('.docx', this)">DOCX</button>
+            <button class="lcars-btn format-btn" id="fmtMd" onclick="setOutputFormat('.md', this)">MARKDOWN</button>
+          </div>
           <button class="lcars-btn lcars-bg-amber" onclick="runGeneration()" id="btnGenerate">GENERATE DOCUMENTS</button>
         </div>
       </section>

@@ -157,6 +157,7 @@ def build_context_set(
     keyword_overlap: dict,
     ats_warnings: list[str],
     supplemental_resumes: list[dict] | None = None,
+    original_resume_path: str = "",
 ) -> dict:
     """Assemble the optimized context payload for LLM calls.
 
@@ -182,6 +183,7 @@ def build_context_set(
             "sections": parsed_resume.get("sections", []),
             "text": parsed_resume.get("text", ""),
             "filename": parsed_resume.get("filename", ""),
+            "path": original_resume_path,
         },
         "supplemental_resumes": [
             {

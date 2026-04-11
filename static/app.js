@@ -7,6 +7,8 @@ let lastContextPath = '';
 let lastResumePath = '';
 let lastCoverLetterPath = '';
 let lastResumeFormat = '.docx';
+let lastTemplatePath = '';   // path to original .docx for style template
+let outputFormat = '.docx';  // user-selected output format
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
@@ -256,6 +258,12 @@ async function _saveIncludedResumes() {
   if (res.ok) currentConfig = config;
 }
 
+function setOutputFormat(fmt, btn) {
+  outputFormat = fmt;
+  document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
 // ---- Analysis (P8 Gate #1) ----
 async function runAnalysis() {
   const resume = document.getElementById('resumeSelect').value;
@@ -283,6 +291,7 @@ async function runAnalysis() {
       return alert(data.error || 'Analysis failed');
     }
     lastContextPath = data.context_path;
+    lastTemplatePath = data.template_path || '';
     renderAnalysis(data);
     show('panelAnalysis');
     setStatus('ANALYSIS COMPLETE');
@@ -419,6 +428,7 @@ async function runGeneration() {
       body: JSON.stringify({
         username: currentUser,
         context_path: lastContextPath,
+        output_format: outputFormat,
       }),
     });
     const data = await res.json();
@@ -482,6 +492,7 @@ async function downloadResume() {
     content,
     type: 'resume',
     original_format: lastResumeFormat,
+    template_path: lastTemplatePath,
   });
 }
 
