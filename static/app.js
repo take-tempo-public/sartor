@@ -98,6 +98,7 @@ async function loadConfig() {
   document.getElementById('cfgCerts').value = (currentConfig.certifications || []).join(', ');
   document.getElementById('cfgEducation').value = currentConfig.education_summary || '';
   document.getElementById('cfgNotes').value = currentConfig.notes || '';
+  document.getElementById('cfgPortfolioUrls').value = (currentConfig.portfolio_urls || []).join('\n');
 }
 
 async function saveConfig() {
@@ -107,7 +108,7 @@ async function saveConfig() {
     phone: document.getElementById('cfgPhone').value,
     linkedin_url: document.getElementById('cfgLinkedin').value,
     website_url: document.getElementById('cfgWebsite').value,
-    portfolio_urls: currentConfig.portfolio_urls || [],
+    portfolio_urls: document.getElementById('cfgPortfolioUrls').value.split('\n').map(s => s.trim()).filter(Boolean),
     ...(currentConfig.included_resumes !== undefined
       ? { included_resumes: currentConfig.included_resumes }
       : {}),

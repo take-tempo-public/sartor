@@ -38,7 +38,8 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Always use varied, strong action verbs specific to the industry BECAUSE verb repetition signals lack of depth
 - Always match the candidate's actual experience level BECAUSE misrepresentation triggers red flags in interviews
 - Never reformat the resume structure unless asked BECAUSE candidates have formatting preferences and drastic changes confuse them
-- Always prioritize keywords from the job description BECAUSE ATS systems rank by keyword match before human eyes see the resume"""
+- Always prioritize keywords from the job description BECAUSE ATS systems rank by keyword match before human eyes see the resume
+- Always treat the Notes field as explicit candidate directives — personal constraints or standing instructions (e.g. "remote only", "do not mention gap in 2020", "always emphasize architecture over management") BECAUSE ignoring them produces documents the candidate cannot use"""
 
 MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 4096
@@ -188,7 +189,15 @@ Email: {context_set['candidate'].get('email', '')}
 Phone: {context_set['candidate'].get('phone', '')}
 LinkedIn: {context_set['candidate'].get('linkedin_url', '')}
 Website: {context_set['candidate'].get('website_url', '')}
+Skills: {', '.join(context_set['candidate'].get('skills', []))}
+Certifications: {', '.join(context_set['candidate'].get('certifications', []))}
+Education: {context_set['candidate'].get('education_summary', '')}
+Notes: {context_set['candidate'].get('notes', '')}
 </candidate_profile>
+{f'''<candidate_online_profile>
+{context_set['candidate'].get('profile_text', '')}
+</candidate_online_profile>
+''' if context_set['candidate'].get('profile_text', '').strip() else ''}
 
 <analysis>
 Essential skills: {', '.join(analysis.get('essential_skills', []))}
