@@ -688,19 +688,39 @@ function hideAllPanels() {
   ['panelConfig', 'panelResume', 'panelJD', 'panelAnalysis', 'panelOutput'].forEach(hide);
 }
 
+// Active states: pill and sidebar block flash together; idle states are solid.
+// Maps each active state keyword to the panel whose block should flash.
+const _ACTIVE_PANEL = {
+  UPLOADING:  'panelResume',
+  ANALYZING:  'panelAnalysis',
+  GENERATING: 'panelOutput',
+  REFINING:   'panelOutput',
+};
+let _activeBlock = null;  // sidebar block currently flashing; cleared on next call
+
 function setStatus(text) {
   const pill = document.getElementById('statusPill');
   pill.textContent = text;
-  if (text.includes('ANALYZING') || text.includes('GENERATING') || text.includes('UPLOADING')) {
-    pill.className = 'lcars-pill lcars-amber loading';
-  } else if (text.includes('ERROR')) {
-    pill.className = 'lcars-pill';
-    pill.style.background = 'var(--red)';
-    pill.style.color = 'var(--black)';
-  } else {
-    pill.className = 'lcars-pill lcars-amber';
-    pill.style.background = '';
-    pill.style.color = '';
+
+  // Clear previous sidebar flash
+  if (_activeBlock) { _activeBlock.classList.remove('step-active'); _activeBlock = null; }
+
+  const activeKey = Object.keys(_ACTIVE_PANEL).find(s => text.includes(s));
+  const isActive  = !!activeKey;
+  const isError   = text.includes('ERROR');
+
+  // Pill: amber + flashing when active, amber solid when idle, red solid on error
+  pill.className        = 'lcars-pill' + (isError ? '' : ' lcars-amber') + (isActive ? ' pill-active' : '');
+  pill.style.background = isError ? 'var(--red)' : '';
+  pill.style.color      = isError ? 'var(--black)' : '';
+
+  // Flash the sidebar block for the step that is currently running
+  if (isActive) {
+    const block = document.querySelector(`[data-panel="${_ACTIVE_PANEL[activeKey]}"]`);
+    if (block && !block.classList.contains('hidden')) {
+      block.classList.add('step-active');
+      _activeBlock = block;
+    }
   }
 }
 
