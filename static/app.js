@@ -9,6 +9,7 @@ let lastCoverLetterPath = '';
 let lastResumeFormat = '.docx';
 let lastTemplatePath = '';   // path to original .docx for style template
 let outputFormat = '.docx';  // user-selected output format
+let primaryResume = '';      // currently selected primary resume filename
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
@@ -214,6 +215,7 @@ async function loadResumes() {
       document.querySelectorAll('.file-chip').forEach(c => c.classList.remove('selected'));
       chip.classList.add('selected');
       sel.value = f;
+      _savePrimaryResume(f);
     });
 
     badge.addEventListener('click', e => {
@@ -235,6 +237,7 @@ async function loadResumes() {
   // Auto-select latest resume from config and highlight the chip
   if (currentConfig.latest_resume && files.includes(currentConfig.latest_resume)) {
     sel.value = currentConfig.latest_resume;
+    primaryResume = currentConfig.latest_resume;
     list.querySelectorAll('.file-chip').forEach(c => {
       if (c.dataset.filename === currentConfig.latest_resume) c.classList.add('selected');
     });
@@ -258,6 +261,17 @@ async function _saveIncludedResumes() {
   if (res.ok) currentConfig = config;
 }
 
+async function _savePrimaryResume(filename) {
+  primaryResume = filename;
+  const config = Object.assign({}, currentConfig, { latest_resume: filename });
+  const res = await fetch(`/api/users/${currentUser}/config`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config),
+  });
+  if (res.ok) currentConfig = config;
+}
+
 function setOutputFormat(fmt, btn) {
   outputFormat = fmt;
   document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
@@ -266,9 +280,9 @@ function setOutputFormat(fmt, btn) {
 
 // ---- Analysis (P8 Gate #1) ----
 async function runAnalysis() {
-  const resume = document.getElementById('resumeSelect').value;
+  const resume = primaryResume || document.getElementById('resumeSelect').value;
   const jd = document.getElementById('jdText').value.trim();
-  if (!resume) return alert('Select a resume');
+  if (!resume) return alert('Select a primary resume from the Resume Upload panel');
   if (!jd) return alert('Paste a job description');
 
   setStatus('ANALYZING');
@@ -454,6 +468,17 @@ async function runGeneration() {
 function renderOutput(data) {
   document.getElementById('resumePreview').innerText = data.resume_preview || '';
   document.getElementById('coverLetterPreview').innerText = data.cover_letter_preview || '';
+  // Reset view mode to RAW on each generation
+  ['resume', 'coverLetter'].forEach(which => {
+    const previewId = which === 'resume' ? 'resumePreview' : 'coverLetterPreview';
+    const renderedId = which === 'resume' ? 'resumeRendered' : 'coverLetterRendered';
+    document.getElementById(previewId).classList.remove('hidden');
+    document.getElementById(renderedId).classList.add('hidden');
+    const tabId = which === 'resume' ? 'tabResume' : 'tabCoverLetter';
+    document.getElementById(tabId).querySelectorAll('.view-btn').forEach((b, i) => {
+      b.classList.toggle('active', i === 0);
+    });
+  });
 
   let changesHtml = '';
   if (data.changes_made && data.changes_made.length) {
@@ -526,6 +551,52 @@ async function _downloadEdited(url, payload) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+// ---- Preview view mode (RAW / RENDERED) ----
+function setViewMode(mode, which, btn) {
+  const previewId = which === 'resume' ? 'resumePreview' : 'coverLetterPreview';
+  const renderedId = which === 'resume' ? 'resumeRendered' : 'coverLetterRendered';
+  const preview = document.getElementById(previewId);
+  const rendered = document.getElementById(renderedId);
+  const controls = btn.closest('.view-controls');
+  controls.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (mode === 'rendered') {
+    rendered.innerHTML = _renderMarkdown(preview.innerText);
+    preview.classList.add('hidden');
+    rendered.classList.remove('hidden');
+  } else {
+    preview.classList.remove('hidden');
+    rendered.classList.add('hidden');
+  }
+}
+
+function _renderMarkdown(text) {
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const inline = s => esc(s)
+    .replace(/\*\*\*([^*\n]+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+  const lines = text.split('\n');
+  let html = '';
+  let inList = false;
+  for (const raw of lines) {
+    const s = raw.trim();
+    const isBullet = /^[-*\u2022\u2013\u2014\u00b7\u25c6\u25cf\u25aa]\s/.test(s);
+    if (!isBullet && inList) { html += '</ul>'; inList = false; }
+    if (!s)               { html += '<br>'; }
+    else if (s.startsWith('# '))  { html += `<h1>${inline(s.slice(2))}</h1>`; }
+    else if (s.startsWith('## ')) { html += `<h2>${inline(s.slice(3))}</h2>`; }
+    else if (s.startsWith('### ')){ html += `<h3>${inline(s.slice(4))}</h3>`; }
+    else if (isBullet)  {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += `<li>${inline(s.replace(/^[-*\u2022\u2013\u2014\u00b7\u25c6\u25cf\u25aa]\s+/,''))}</li>`;
+    }
+    else { html += `<p>${inline(s)}</p>`; }
+  }
+  if (inList) html += '</ul>';
+  return html;
 }
 
 // ---- Helpers ----
