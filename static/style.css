@@ -529,18 +529,13 @@ textarea {
   background: rgba(102, 204, 204, 0.08);
 }
 
-/* ---- Loading ---- */
-.loading {
-  display: inline-block;
-  color: var(--amber);
-  font-weight: 700;
-  letter-spacing: 2px;
-  animation: pulse 1.2s ease-in-out infinite;
-}
+/* ---- Active state — pill and sidebar block flash in sync ---- */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  50%      { opacity: 0.25; }
 }
+.pill-active             { animation: pulse 1.2s ease-in-out infinite; }
+.lcars-block.step-active { animation: pulse 1.2s ease-in-out infinite; }
 
 /* ---- Utility ---- */
 .hidden { display: none !important; }
