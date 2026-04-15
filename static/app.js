@@ -479,15 +479,40 @@ async function submitRefinement() {
   const note = input.value.trim();
   if (!note || !lastContextPath) return;
 
-  refinementHistory.push(note);
+  const entry = { note, status: 'pending' };
+  refinementHistory.push(entry);
   _renderRefinementHistory();
   input.value = '';
-
-  setStatus('REFINING');
   document.getElementById('btnRefinement').disabled = true;
   document.getElementById('btnGenerate').disabled = true;
 
   try {
+    // Step 1: scope validation via Haiku
+    const checkRes = await fetch('/api/validate-refinement', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ note }),
+    });
+    const check = await checkRes.json();
+
+    if (!check.valid) {
+      entry.status = 'rejected';
+      entry.reason = check.reason || 'Outside allowed scope.';
+      _renderRefinementHistory();
+      setStatus('REFINEMENT REJECTED');
+      return;
+    }
+
+    // Step 2: generate with accepted notes only
+    entry.status = 'applied';
+    _renderRefinementHistory();
+    setStatus('REFINING');
+
+    const acceptedNotes = refinementHistory
+      .filter(e => e.status === 'applied')
+      .map((e, i) => `${i + 1}. ${e.note}`)
+      .join('\n');
+
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -495,15 +520,16 @@ async function submitRefinement() {
         username: currentUser,
         context_path: lastContextPath,
         output_format: lastResumeFormat,
-        refinement_notes: refinementHistory.map((n, i) => `${i + 1}. ${n}`).join('\n'),
+        refinement_notes: acceptedNotes,
       }),
     });
     const data = await res.json();
     if (!res.ok) {
-      refinementHistory.pop();
+      entry.status = 'rejected';
+      entry.reason = data.error || 'Generation failed.';
       _renderRefinementHistory();
       setStatus('ERROR');
-      return alert(data.error || 'Refinement failed');
+      return;
     }
     lastResumePath = data.resume_path;
     lastCoverLetterPath = data.cover_letter_path;
@@ -511,10 +537,10 @@ async function submitRefinement() {
     renderOutput(data);
     setStatus('REFINED');
   } catch (e) {
-    refinementHistory.pop();
+    entry.status = 'rejected';
+    entry.reason = 'Request failed: ' + e.message;
     _renderRefinementHistory();
     setStatus('ERROR');
-    alert('Refinement failed: ' + e.message);
   } finally {
     document.getElementById('btnRefinement').disabled = false;
     document.getElementById('btnGenerate').disabled = false;
@@ -529,12 +555,20 @@ function _renderRefinementHistory() {
     return;
   }
   container.classList.remove('hidden');
-  container.innerHTML = refinementHistory.map((note, i) =>
-    `<div class="refinement-entry">
+  container.innerHTML = refinementHistory.map((entry, i) => {
+    const isRejected = entry.status === 'rejected';
+    const badge = isRejected
+      ? `<span class="refinement-badge-rejected">NOT EXECUTED</span>`
+      : '';
+    const reason = isRejected && entry.reason
+      ? `<div class="refinement-rejection-reason">${esc(entry.reason)}</div>`
+      : '';
+    return `<div class="refinement-entry${isRejected ? ' rejected' : ''}">
       <span class="refinement-index">${i + 1}</span>
-      <span class="refinement-text">${esc(note)}</span>
-    </div>`
-  ).join('');
+      <span class="refinement-text">${esc(entry.note)}${badge}</span>
+      ${reason}
+    </div>`;
+  }).join('');
 }
 
 function renderOutput(data) {

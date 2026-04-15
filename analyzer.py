@@ -43,6 +43,7 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 
 MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 4096
+MAX_SUPPLEMENTAL_CHARS = 6_000  # per-file cap — keeps total context manageable
 
 
 def _supplemental_block(context_set: dict) -> str:
@@ -59,8 +60,11 @@ def _supplemental_block(context_set: dict) -> str:
     ]
     for i, r in enumerate(supplements, 1):
         fname = r.get("filename", f"resume_{i}")
+        text = r.get("text", "")
+        if len(text) > MAX_SUPPLEMENTAL_CHARS:
+            text = text[:MAX_SUPPLEMENTAL_CHARS] + "\n[truncated]"
         parts.append(f"<resume_{i} filename=\"{fname}\">")
-        parts.append(r.get("text", ""))
+        parts.append(text)
         parts.append(f"</resume_{i}>")
         parts.append("")
     parts.append("</supplemental_resumes>")
@@ -68,19 +72,24 @@ def _supplemental_block(context_set: dict) -> str:
 
 
 def _call_llm(client: anthropic.Anthropic, user_prompt: str) -> str:
-    """Make a single LLM call. P7 Observability: log inputs/outputs."""
+    """Make a single LLM call using streaming.
+
+    Streaming avoids intermediate gateway timeouts on long-running generations:
+    tokens flow back as they're produced, keeping the TCP connection warm.
+    """
     logger.info("LLM call starting — prompt length: %d chars", len(user_prompt))
-    response = client.messages.create(
+    with client.messages.stream(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}],
-    )
-    text = response.content[0].text
+    ) as stream:
+        text = "".join(stream.text_stream)
+        final = stream.get_final_message()
     logger.info(
         "LLM call complete — input_tokens: %d, output_tokens: %d",
-        response.usage.input_tokens,
-        response.usage.output_tokens,
+        final.usage.input_tokens,
+        final.usage.output_tokens,
     )
     return text
 
@@ -279,7 +288,7 @@ Do NOT make any other changes beyond what is requested here.
 <output_format>
 Respond with valid JSON only. No markdown code fences. Use this exact structure:
 {{
-  "resume_content": "The complete tailored resume as plain text with markdown formatting for structure",
+  "resume_content": "The complete tailored resume. CRITICAL: use \\n (JSON newline escape) between every section, job entry, and bullet. Never collapse the resume into one long line. Example: '# Name\\nEmail | Phone\\n\\n## Summary\\nText.\\n\\n## Experience\\n\\n### Title — Company\\n- Bullet one\\n- Bullet two'",
   "cover_letter_content": "The complete cover letter as plain text",
   "changes_made": ["change1", "change2"],
   "proofread_notes": ["Any grammar, spelling, or formatting issues found and fixed"]
@@ -300,3 +309,52 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
     except json.JSONDecodeError:
         logger.error("Failed to parse LLM generation response as JSON")
         return {"raw_response": raw, "parse_error": True}
+
+
+SCOPE_CHECK_MODEL = "claude-haiku-4-5-20251001"
+
+
+def check_refinement_scope(client: anthropic.Anthropic, note: str) -> dict:
+    """Classify whether a refinement note is within allowed document-editing scope.
+
+    Uses Haiku — binary classification doesn't need Sonnet reasoning depth.
+    Fails open (valid=True) if the response can't be parsed, so a model outage
+    never blocks the user from refining.
+
+    Allowed: tone, emphasis, keyword/phrasing, ordering existing content,
+             formatting, structural adjustments within source material.
+    Out of scope: inventing experience, changing factual data, adding credentials
+                  not in source, repurposing for a different role.
+    """
+    prompt = f"""A user submitted the following instruction for refining their resume and cover letter:
+
+<note>{note}</note>
+
+Allowed scope: adjustments to tone, emphasis, keyword placement, phrasing, language style, \
+ordering/prioritizing existing content, and formatting preferences.
+
+Out of scope: inventing new experience or accomplishments, changing factual data \
+(dates, titles, companies, metrics), adding skills or certifications not present in the \
+source material, or repurposing the documents for a fundamentally different role.
+
+Respond with valid JSON only — no markdown, no explanation outside the JSON:
+{{"valid": true}} if the note is within scope, or
+{{"valid": false, "reason": "one sentence explaining what specifically is not allowed"}} if not."""
+
+    try:
+        msg = client.messages.create(
+            model=SCOPE_CHECK_MODEL,
+            max_tokens=128,
+            system="You are a strict scope classifier. Respond with JSON only.",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = msg.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1]
+        if raw.endswith("```"):
+            raw = raw.rsplit("```", 1)[0]
+        return json.loads(raw.strip())
+    except Exception as e:
+        # Fail open — scope check failure must never block refinement
+        logger.warning("scope check failed, failing open: %s", e)
+        return {"valid": True}

@@ -23,7 +23,7 @@
 4.  create an efficient set of context optimized for you to operate efficiently with enough context to provide best answers, but not so much that it impacts efficiency. this should be available for resourcing at any time if we get drift
 5.  Generate an ideal resume for the job description based upon this context
 6.  compare the submitted resume to the ideal resume and the job description
-    1.  evaluate job titles, descriptions, and bullet points
+    -  evaluate job titles, descriptions, and bullet points
 7.  evaluate all information, skills, experience, projects, etc. from the linkedin profile
 8.  make suggestions as to how to position and improve the submitted resume to be competitive with the ideal resume for this job without embellishment or hallucination. keep the bullet points and skills concise, descriptive and fitting for the role in the JD 
 9.  if there are keywords missing in the resume, suggest places to incorporate those
@@ -50,3 +50,5 @@
 1.  draft a cover letter appropriate to the details provided in the job description
 2.  the cover letter should follow job field and professional domain best practices for cover letters, addresses, closes, length, number of paragraphs, etc.
 3.  the cover letter should reflect current best practices for cover letters and match the experience, skills, and interests of the applicant to the role and company to which they are applying
+
+##

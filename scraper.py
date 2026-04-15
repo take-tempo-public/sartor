@@ -16,6 +16,7 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml",
 }
 TIMEOUT = 15
+MAX_PROFILE_CHARS = 3_000  # per-URL cap — keeps total profile context manageable
 
 
 def fetch_url_content(url: str) -> str:
@@ -37,7 +38,13 @@ def fetch_url_content(url: str) -> str:
 
     # Collapse excessive whitespace
     lines = [line.strip() for line in text.splitlines() if line.strip()]
-    return "\n".join(lines)
+    text = "\n".join(lines)
+
+    # P2 Context Hygiene: cap per-URL content to prevent prompt bloat
+    if len(text) > MAX_PROFILE_CHARS:
+        text = text[:MAX_PROFILE_CHARS] + "\n[truncated]"
+
+    return text
 
 
 def fetch_profile_content(config: dict) -> str:
