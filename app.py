@@ -23,7 +23,7 @@ from hardening import (
     save_context_set,
 )
 from scraper import fetch_profile_content
-from analyzer import analyze, generate
+from analyzer import analyze, generate, check_refinement_scope
 from generator import generate_resume, generate_cover_letter
 
 # P7 Observability: structured logging
@@ -280,7 +280,11 @@ def run_analysis():
 
     # Fuzzy work: LLM analysis
     client = _get_client()
-    analysis = analyze(client, context_set)
+    try:
+        analysis = analyze(client, context_set)
+    except anthropic.APIConnectionError as exc:
+        logger.error("Anthropic API connection error during analysis: %s", exc)
+        return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
 
     # P4 Disposable Blueprint: save context + analysis
     context_set["llm_analysis"] = analysis
@@ -326,7 +330,11 @@ def run_generation():
     logger.info("Starting generation for %s", username)
 
     client = _get_client()
-    result = generate(client, context_set, analysis, refinement_notes=refinement_notes)
+    try:
+        result = generate(client, context_set, analysis, refinement_notes=refinement_notes)
+    except anthropic.APIConnectionError as exc:
+        logger.error("Anthropic API connection error during generation: %s", exc)
+        return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
 
     if result.get("parse_error"):
         return jsonify({"error": "Generation failed", "raw": result.get("raw_response", "")}), 500
@@ -362,6 +370,18 @@ def run_generation():
         "resume_preview": result["resume_content"],
         "cover_letter_preview": result["cover_letter_content"],
     })
+
+
+@app.route("/api/validate-refinement", methods=["POST"])
+def validate_refinement():
+    """Scope-check a single refinement note before running generation."""
+    data = request.json
+    note = (data.get("note") or "").strip()
+    if not note:
+        return jsonify({"valid": False, "reason": "Empty refinement note."}), 400
+    client = _get_client()
+    result = check_refinement_scope(client, note)
+    return jsonify(result)
 
 
 @app.route("/api/download/<path:filepath>")
