@@ -1,0 +1,10 @@
+{
+  "name": "resume-optimizer",
+  "description": "Workflow plugin for the Resume Optimizer Flask app: eval harness commands, observability, and deterministic hooks for security and quality gates.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Cooksey"
+  },
+  "homepage": "https://github.com/Cooksey/resume",
+  "license": "MIT"
+}
