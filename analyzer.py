@@ -348,7 +348,7 @@ Respond with valid JSON only — no markdown, no explanation outside the JSON:
             system="You are a strict scope classifier. Respond with JSON only.",
             messages=[{"role": "user", "content": prompt}],
         )
-        raw = msg.content[0].text.strip()
+        raw = getattr(msg.content[0], "text", "").strip()
         if raw.startswith("```"):
             raw = raw.split("\n", 1)[1]
         if raw.endswith("```"):

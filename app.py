@@ -10,21 +10,21 @@ import os
 from pathlib import Path
 
 import anthropic
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, jsonify, render_template, request, send_file
 from werkzeug.utils import secure_filename
 
-from parser import parse_resume
+from analyzer import analyze, check_refinement_scope, generate
+from generator import generate_cover_letter, generate_resume
 from hardening import (
-    extract_keywords,
-    compute_keyword_overlap,
-    check_ats_format,
-    validate_config,
     build_context_set,
+    check_ats_format,
+    compute_keyword_overlap,
+    extract_keywords,
     save_context_set,
+    validate_config,
 )
+from parser import parse_resume
 from scraper import fetch_profile_content
-from analyzer import analyze, generate, check_refinement_scope
-from generator import generate_resume, generate_cover_letter
 
 # P7 Observability: structured logging
 logging.basicConfig(
@@ -436,4 +436,5 @@ def download_edited():
 
 if __name__ == "__main__":
     print("\n  Resume Optimizer — http://localhost:5000\n")
-    app.run(debug=True, port=5000)
+    debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"
+    app.run(debug=debug_mode, port=5000)

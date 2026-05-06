@@ -12,10 +12,10 @@ from datetime import datetime
 from pathlib import Path
 
 import docx
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Pt, Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt
 
 # Matches any common bullet prefix used by LLMs:
 # -, *, •, –, —, ·, ◆, ●, ▪, ›, ‣
@@ -32,7 +32,7 @@ def generate_resume(
     output_format: str,
     username: str,
     base_dir: str = "output",
-    template_path: str = None,
+    template_path: str | None = None,
 ) -> str:
     """Generate the tailored resume in the requested format."""
     out_dir = Path(base_dir) / username
@@ -85,10 +85,10 @@ def _add_inline_runs(paragraph, text: str, base_bold: bool = False) -> None:
                 run.bold = True
 
 
-def _extract_list_numPr(doc: docx.Document):
+def _extract_list_numPr(doc: "docx.document.Document"):
     """Return a deep copy of the numPr element from the first List Paragraph, or None."""
     for p in doc.paragraphs:
-        if p.style.name == "List Paragraph":
+        if p.style and p.style.name == "List Paragraph":
             pPr = p._element.find(qn("w:pPr"))
             if pPr is not None:
                 numPr = pPr.find(qn("w:numPr"))
@@ -97,7 +97,7 @@ def _extract_list_numPr(doc: docx.Document):
     return None
 
 
-def _clear_body(doc: docx.Document) -> None:
+def _clear_body(doc: "docx.document.Document") -> None:
     """Remove all paragraph and table elements from the document body.
 
     Preserves the final w:sectPr (section/margin properties) which Word
@@ -125,7 +125,7 @@ def _apply_numPr(paragraph, numPr_template) -> None:
 def _write_docx(
     content: str,
     path: Path,
-    template_path: str = None,
+    template_path: str | None = None,
     is_cover_letter: bool = False,
 ) -> None:
     """Write LLM content to .docx, using the original file as a style template
