@@ -52,4 +52,5 @@ ehthumbs.db
 
 # ---- Claude Code session files (machine-specific, not project state) ----
 .claude/settings.local.json
-CLAUDE.md
+.claude/launch.json
+CLAUDE.local.md
