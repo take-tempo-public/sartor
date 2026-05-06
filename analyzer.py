@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Bump when SYSTEM_PROMPT or any per-call prompt template changes. Labels every
 # JSONL telemetry record so quality regressions can be attributed to a revision.
-PROMPT_VERSION = "2026-05-06.3"
+PROMPT_VERSION = "2026-05-06.4"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -322,13 +322,20 @@ resume above uses ALL CAPS, bold-only, or any other plain-text heading conventio
 
 REQUIRED markers:
 - `# ` exactly once, on the first non-empty line, for the candidate's full name.
+- The 1–2 lines directly after the name (a title/subtitle and a contact line)
+  are unmarked plain text. The renderer center-aligns them when the template
+  has a centered header zone.
 - `## ` for top-level section headings (Summary, Experience, Education, Skills,
   Certifications, Projects, etc.). One `##` per section.
 - `### ` for company / role / job-title lines within the Experience section.
+  When a date range applies, put it on the SAME line as the title separated
+  by a single tab character `\t`. The renderer aligns the date to the right
+  margin via the template's tab stop. Format:
+  `### Company, Title\tStart – End`
 - `-` (hyphen) at the start of every bullet point.
 - `**text**` for inline bold; `*text*` for inline italic. Use sparingly.
 
-Example of the required `resume_content` shape:
+Example of the required `resume_content` shape (note `\t` before the date):
 ```
 # Jane Doe
 Senior Site Reliability Engineer
@@ -339,13 +346,12 @@ Two-sentence positioning paragraph.
 
 ## Experience
 
-### Acme Cloud — Senior SRE
-*March 2023 – present*
+### Acme Cloud, Senior SRE\tMarch 2023 – present
+Player-coach across the platform team and on-call leadership.
 - Bullet one with a verb up front.
 - Bullet two integrating a JD keyword naturally.
 
-### Stratford Analytics — Production Engineer
-*August 2021 – March 2023*
+### Stratford Analytics, Production Engineer\tAugust 2021 – March 2023
 - Bullet one.
 ```
 
