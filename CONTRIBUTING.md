@@ -72,18 +72,15 @@ CI runs `ruff` + `mypy` + `pytest` on every PR. Add the `eval` label to also run
 
 ## Working with the Claude Code plugin
 
-The `.claude-plugin/` directory contains the project's commands, agents, and hooks. To use them:
+The `.claude-plugin/` directory holds the project's commands, agents, and hook scripts. As of Claude Code v2.1.131 the `/plugin install` command targets registered marketplaces only — not local directories — so plugin components are wired via `.claude/settings.json` (committed) rather than through the plugin loader. Cloning the repo activates them automatically; no install step is required.
 
-```bash
-# From inside Claude Code
-/plugin install .
-```
+The settings.json wiring covers:
 
-This wires up:
+- **Hooks** — plan-mode workflow scripts; Step 5 adds secret-blocking, `ruff` on commit, route-security lint, context-set schema validation, and merge-to-main confirmation
+- **Skills** — `/eval`, `/replay`, `/prompt-tune`, `/bench`, `/inspect-context` (added in Step 9)
+- **Subagents** — `eval-judge`, `prompt-archaeologist`, `git-flow` (added in Step 8)
 
-- **Skills** — `/eval`, `/replay`, `/prompt-tune`, `/bench`, `/inspect-context`
-- **Subagents** — `eval-judge`, `prompt-archaeologist`, `git-flow`
-- **Deterministic hooks** — secret-blocking, `ruff` on commit, route-security lint, context-set schema validation, merge-to-main confirmation
+If you launch Claude Code from a terminal and want to load the manifest directly, `claude --plugin-dir ./.claude-plugin` works; the VSCode extension does not accept that flag. When `/plugin install` gains local-path support upstream, the project will republish a `hooks.json` so the manifest becomes self-wiring.
 
 Hooks should remain deterministic shell. LLM-backed review is reserved for explicit `/code-review:code-review` and `/security-review` invocations.
 
