@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(python -m ruff check *)",
+      "Bash(python -m mypy *)",
+      "Bash(python -m pytest)",
+      "Bash(python -m pytest *)",
+      "Bash(pip show *)",
+      "Bash(pip list)",
+      "Bash(pip list *)",
+      "Bash(where *)"
+    ]
+  }
+}
