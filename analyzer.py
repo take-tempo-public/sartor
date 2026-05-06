@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Bump when SYSTEM_PROMPT or any per-call prompt template changes. Labels every
 # JSONL telemetry record so quality regressions can be attributed to a revision.
-PROMPT_VERSION = "2026-05-06.1"
+PROMPT_VERSION = "2026-05-06.2"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -66,6 +66,54 @@ MAX_TOKENS = 4096
 MAX_SUPPLEMENTAL_CHARS = 6_000  # per-file cap — keeps total context manageable
 
 
+def _stable_user_prefix(context_set: dict) -> str:
+    """Build the stable, cacheable portion of the user message.
+
+    This block is identical across analyze() and generate() calls for the
+    same context_set, enabling Anthropic prompt caching to hit on the second
+    call. Sonnet's cache requires 1024+ tokens to engage; bundling the
+    resume + JD + supplementals + candidate profile reliably exceeds that.
+
+    The block must be byte-identical across analyze and generate to hit the
+    cache. Tag names, field order, and the inclusion-condition for the
+    online profile are all load-bearing. Do not change one without the other.
+    """
+    candidate = context_set["candidate"]
+    online_profile = candidate.get("profile_text", "").strip()
+
+    parts = [
+        "<job_description>",
+        context_set["job_description"],
+        "</job_description>",
+        "",
+        f'<resume filename="{context_set["resume"].get("filename", "primary")}">',
+        context_set["resume"]["text"],
+        "</resume>",
+        _supplemental_block(context_set),
+        "<candidate_profile>",
+        f"Name: {candidate.get('name', '')}",
+        f"Email: {candidate.get('email', '')}",
+        f"Phone: {candidate.get('phone', '')}",
+        f"LinkedIn: {candidate.get('linkedin_url', '')}",
+        f"Website: {candidate.get('website_url', '')}",
+        f"Skills: {', '.join(candidate.get('skills', []))}",
+        f"Certifications: {', '.join(candidate.get('certifications', []))}",
+        f"Education: {candidate.get('education_summary', '')}",
+        f"Notes: {candidate.get('notes', '')}",
+        "</candidate_profile>",
+    ]
+
+    if online_profile:
+        parts.extend([
+            "",
+            "<candidate_online_profile>",
+            online_profile,
+            "</candidate_online_profile>",
+        ])
+
+    return "\n".join(parts)
+
+
 def _supplemental_block(context_set: dict) -> str:
     """Build the <supplemental_resumes> XML block for prompts, or empty string if none."""
     supplements = context_set.get("supplemental_resumes", [])
@@ -95,6 +143,7 @@ def _call_llm(
     client: anthropic.Anthropic,
     user_prompt: str,
     *,
+    cached_user_prefix: str = "",
     call_kind: str = "analyze",
     username: str = "",
 ) -> str:
@@ -103,16 +152,28 @@ def _call_llm(
     Streaming avoids intermediate gateway timeouts on long-running generations:
     tokens flow back as they're produced, keeping the TCP connection warm.
 
-    Caching: SYSTEM_PROMPT is sent as a cacheable text block. Subsequent calls
-    within the cache TTL (~5 min) reuse the cached system block — visible in
-    `cache_read_input_tokens` on the response and in the JSONL telemetry.
+    Caching: SYSTEM_PROMPT is sent as a cacheable system block; when
+    cached_user_prefix is non-empty it is sent as a cacheable user block
+    preceding user_prompt. Anthropic's cache requires 1024+ tokens to engage
+    on Sonnet — the SYSTEM_PROMPT alone is below that threshold, so the
+    user-prefix block is what actually drives cache hits across analyze→
+    generate within a session.
 
     Telemetry: every call appends one record to logs/llm_calls.jsonl with
     timing, token counts (including cache fields), prompt version, and status.
     """
+    user_content: list[dict] = []
+    if cached_user_prefix:
+        user_content.append({
+            "type": "text",
+            "text": cached_user_prefix,
+            "cache_control": {"type": "ephemeral"},
+        })
+    user_content.append({"type": "text", "text": user_prompt})
+
     logger.info(
-        "LLM call starting — call=%s prompt length: %d chars",
-        call_kind, len(user_prompt),
+        "LLM call starting — call=%s cached_prefix=%d chars, prompt=%d chars",
+        call_kind, len(cached_user_prefix), len(user_prompt),
     )
     t0 = time.perf_counter()
     status = "ok"
@@ -128,7 +189,7 @@ def _call_llm(
                     "cache_control": {"type": "ephemeral"},
                 }
             ],
-            messages=[{"role": "user", "content": user_prompt}],
+            messages=[{"role": "user", "content": user_content}],  # type: ignore[typeddict-item]
         ) as stream:
             text = "".join(stream.text_stream)
             final = stream.get_final_message()
@@ -171,24 +232,9 @@ def analyze(client: anthropic.Anthropic, context_set: dict, username: str = "") 
     Returns structured analysis result. The username is threaded through to
     JSONL telemetry only — no behavior depends on it.
     """
-    # P2 Context Hygiene: structured prompt, front-load constraints, back-load format
-    prompt = f"""<task>Analyze this job description against the candidate's resume and profile. Produce a comprehensive strategic analysis.</task>
-
-<job_description>
-{context_set['job_description']}
-</job_description>
-
-<candidate_resume filename="{context_set['resume'].get('filename', 'primary')}">
-{context_set['resume']['text']}
-</candidate_resume>
-{_supplemental_block(context_set)}
-<candidate_profile>
-Name: {context_set['candidate']['name']}
-Skills: {', '.join(context_set['candidate'].get('skills', []))}
-Certifications: {', '.join(context_set['candidate'].get('certifications', []))}
-Education: {context_set['candidate'].get('education_summary', '')}
-Notes: {context_set['candidate'].get('notes', '')}
-</candidate_profile>
+    # P2 Context Hygiene: stable inputs (resume + JD + profile) live in the
+    # cached prefix; only task-specific variable content is in the per-call prompt.
+    prompt = f"""<task>Analyze the job description against the candidate's resume and profile. Produce a comprehensive strategic analysis.</task>
 
 <deterministic_analysis>
 Keyword match score: {context_set['deterministic_analysis']['keyword_overlap']['match_score']}
@@ -230,7 +276,12 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 }}
 </instructions>"""
 
-    raw = _call_llm(client, prompt, call_kind="analyze", username=username)
+    raw = _call_llm(
+        client, prompt,
+        cached_user_prefix=_stable_user_prefix(context_set),
+        call_kind="analyze",
+        username=username,
+    )
 
     # Parse JSON response — strip markdown fences if model adds them despite instructions
     cleaned = raw.strip()
@@ -260,31 +311,7 @@ def generate(
     Includes proofreading pass. The username is threaded through to JSONL
     telemetry only — no behavior depends on it.
     """
-    prompt = f"""<task>Generate a tailored resume and cover letter for this candidate based on the analysis.</task>
-
-<job_description>
-{context_set['job_description']}
-</job_description>
-
-<original_resume filename="{context_set['resume'].get('filename', 'primary')}">
-{context_set['resume']['text']}
-</original_resume>
-{_supplemental_block(context_set)}
-<candidate_profile>
-Name: {context_set['candidate']['name']}
-Email: {context_set['candidate'].get('email', '')}
-Phone: {context_set['candidate'].get('phone', '')}
-LinkedIn: {context_set['candidate'].get('linkedin_url', '')}
-Website: {context_set['candidate'].get('website_url', '')}
-Skills: {', '.join(context_set['candidate'].get('skills', []))}
-Certifications: {', '.join(context_set['candidate'].get('certifications', []))}
-Education: {context_set['candidate'].get('education_summary', '')}
-Notes: {context_set['candidate'].get('notes', '')}
-</candidate_profile>
-{f'''<candidate_online_profile>
-{context_set['candidate'].get('profile_text', '')}
-</candidate_online_profile>
-''' if context_set['candidate'].get('profile_text', '').strip() else ''}
+    prompt = f"""<task>Generate a tailored resume and cover letter for the candidate based on the analysis.</task>
 
 <analysis>
 Essential skills: {', '.join(analysis.get('essential_skills', []))}
@@ -373,7 +400,12 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 }}
 </output_format>"""
 
-    raw = _call_llm(client, prompt, call_kind="generate", username=username)
+    raw = _call_llm(
+        client, prompt,
+        cached_user_prefix=_stable_user_prefix(context_set),
+        call_kind="generate",
+        username=username,
+    )
 
     cleaned = raw.strip()
     if cleaned.startswith("```"):
