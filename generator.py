@@ -313,7 +313,10 @@ def _write_docx(
         stripped = line.strip()
 
         if not stripped:
-            doc.add_paragraph("")
+            # Skip blank markdown lines — the template's per-paragraph
+            # space_before/space_after provide the visual rhythm. Emitting an
+            # empty paragraph here would double the gap between every heading
+            # and its body content.
             continue
 
         # ── # Name ────────────────────────────────────────────────────────
