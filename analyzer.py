@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Bump when SYSTEM_PROMPT or any per-call prompt template changes. Labels every
 # JSONL telemetry record so quality regressions can be attributed to a revision.
-PROMPT_VERSION = "2026-05-06.2"
+PROMPT_VERSION = "2026-05-06.3"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -312,6 +312,48 @@ def generate(
     telemetry only — no behavior depends on it.
     """
     prompt = f"""<task>Generate a tailored resume and cover letter for the candidate based on the analysis.</task>
+
+<output_rules>
+The `resume_content` field MUST use markdown heading markers. Without them the
+document generator produces undifferentiated plain paragraphs and loses the
+template's heading visual styles entirely. This applies even when the original
+resume above uses ALL CAPS, bold-only, or any other plain-text heading convention
+— convert those to the markers below in the output.
+
+REQUIRED markers:
+- `# ` exactly once, on the first non-empty line, for the candidate's full name.
+- `## ` for top-level section headings (Summary, Experience, Education, Skills,
+  Certifications, Projects, etc.). One `##` per section.
+- `### ` for company / role / job-title lines within the Experience section.
+- `-` (hyphen) at the start of every bullet point.
+- `**text**` for inline bold; `*text*` for inline italic. Use sparingly.
+
+Example of the required `resume_content` shape:
+```
+# Jane Doe
+Senior Site Reliability Engineer
+jane@example.com | (555) 010-2200 | linkedin.com/in/janedoe
+
+## Summary
+Two-sentence positioning paragraph.
+
+## Experience
+
+### Acme Cloud — Senior SRE
+*March 2023 – present*
+- Bullet one with a verb up front.
+- Bullet two integrating a JD keyword naturally.
+
+### Stratford Analytics — Production Engineer
+*August 2021 – March 2023*
+- Bullet one.
+```
+
+DO NOT skip the `# `, `## `, `### ` markers. DO NOT use ALL CAPS as a substitute
+for `## `. The downstream Python writer dispatches on these markers to apply the
+template's heading styles, list numbering, and bold runs — without them the
+output is plain paragraphs.
+</output_rules>
 
 <analysis>
 Essential skills: {', '.join(analysis.get('essential_skills', []))}
