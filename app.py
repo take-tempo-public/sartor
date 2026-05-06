@@ -281,7 +281,7 @@ def run_analysis():
     # Fuzzy work: LLM analysis
     client = _get_client()
     try:
-        analysis = analyze(client, context_set)
+        analysis = analyze(client, context_set, username=safe_user)
     except anthropic.APIConnectionError as exc:
         logger.error("Anthropic API connection error during analysis: %s", exc)
         return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
@@ -331,7 +331,11 @@ def run_generation():
 
     client = _get_client()
     try:
-        result = generate(client, context_set, analysis, refinement_notes=refinement_notes)
+        result = generate(
+            client, context_set, analysis,
+            refinement_notes=refinement_notes,
+            username=username,
+        )
     except anthropic.APIConnectionError as exc:
         logger.error("Anthropic API connection error during generation: %s", exc)
         return jsonify({"error": "Connection to AI service failed. Please try again."}), 503

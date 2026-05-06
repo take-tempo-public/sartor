@@ -17,6 +17,9 @@ resumes/*
 output/*
 !output/.gitkeep
 
+# ---- LLM telemetry (per-call JSONL emitted by analyzer.py) ----
+logs/
+
 # ---- Python ----
 __pycache__/
 *.pyc

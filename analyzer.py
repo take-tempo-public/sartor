@@ -10,10 +10,30 @@ Single agent + deterministic tools = Level 1 architecture (P9).
 
 import json
 import logging
+import time
+from datetime import datetime, timezone
+from pathlib import Path
 
 import anthropic
 
 logger = logging.getLogger(__name__)
+
+# Bump when SYSTEM_PROMPT or any per-call prompt template changes. Labels every
+# JSONL telemetry record so quality regressions can be attributed to a revision.
+PROMPT_VERSION = "2026-05-06.1"
+
+LOG_DIR = Path(__file__).parent / "logs"
+LOG_PATH = LOG_DIR / "llm_calls.jsonl"
+
+
+def _emit_call_log(record: dict) -> None:
+    """Append one JSON line to logs/llm_calls.jsonl. Best-effort — never raise."""
+    try:
+        LOG_DIR.mkdir(exist_ok=True)
+        with LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")
+    except Exception as exc:
+        logger.warning("LLM telemetry write failed: %s", exc)
 
 # P6: Specialist persona — <50 tokens, real job title, domain vocabulary
 SYSTEM_PROMPT = """You are a seasoned hiring manager with a decade of HR and recruiting experience. \
@@ -71,34 +91,85 @@ def _supplemental_block(context_set: dict) -> str:
     return "\n".join(parts)
 
 
-def _call_llm(client: anthropic.Anthropic, user_prompt: str) -> str:
-    """Make a single LLM call using streaming.
+def _call_llm(
+    client: anthropic.Anthropic,
+    user_prompt: str,
+    *,
+    call_kind: str = "analyze",
+    username: str = "",
+) -> str:
+    """Make a single LLM call using streaming, with prompt caching and JSONL telemetry.
 
     Streaming avoids intermediate gateway timeouts on long-running generations:
     tokens flow back as they're produced, keeping the TCP connection warm.
+
+    Caching: SYSTEM_PROMPT is sent as a cacheable text block. Subsequent calls
+    within the cache TTL (~5 min) reuse the cached system block — visible in
+    `cache_read_input_tokens` on the response and in the JSONL telemetry.
+
+    Telemetry: every call appends one record to logs/llm_calls.jsonl with
+    timing, token counts (including cache fields), prompt version, and status.
     """
-    logger.info("LLM call starting — prompt length: %d chars", len(user_prompt))
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_prompt}],
-    ) as stream:
-        text = "".join(stream.text_stream)
-        final = stream.get_final_message()
     logger.info(
-        "LLM call complete — input_tokens: %d, output_tokens: %d",
+        "LLM call starting — call=%s prompt length: %d chars",
+        call_kind, len(user_prompt),
+    )
+    t0 = time.perf_counter()
+    status = "ok"
+    final = None
+    try:
+        with client.messages.stream(
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            system=[
+                {
+                    "type": "text",
+                    "text": SYSTEM_PROMPT,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
+            messages=[{"role": "user", "content": user_prompt}],
+        ) as stream:
+            text = "".join(stream.text_stream)
+            final = stream.get_final_message()
+    except Exception:
+        status = "error"
+        raise
+    finally:
+        elapsed_ms = int((time.perf_counter() - t0) * 1000)
+        usage = getattr(final, "usage", None) if final is not None else None
+        _emit_call_log({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "username": username,
+            "call": call_kind,
+            "model": MODEL,
+            "prompt_version": PROMPT_VERSION,
+            "input_tokens": getattr(usage, "input_tokens", 0),
+            "output_tokens": getattr(usage, "output_tokens", 0),
+            "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0),
+            "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0),
+            "latency_ms": elapsed_ms,
+            "status": status,
+        })
+
+    logger.info(
+        "LLM call complete — call=%s in=%d out=%d cache_create=%d cache_read=%d %dms",
+        call_kind,
         final.usage.input_tokens,
         final.usage.output_tokens,
+        getattr(final.usage, "cache_creation_input_tokens", 0),
+        getattr(final.usage, "cache_read_input_tokens", 0),
+        elapsed_ms,
     )
     return text
 
 
-def analyze(client: anthropic.Anthropic, context_set: dict) -> dict:
+def analyze(client: anthropic.Anthropic, context_set: dict, username: str = "") -> dict:
     """Call 1: Analysis & Strategy.
 
     Analyzes JD, generates ideal resume, compares, produces suggestions.
-    Returns structured analysis result.
+    Returns structured analysis result. The username is threaded through to
+    JSONL telemetry only — no behavior depends on it.
     """
     # P2 Context Hygiene: structured prompt, front-load constraints, back-load format
     prompt = f"""<task>Analyze this job description against the candidate's resume and profile. Produce a comprehensive strategic analysis.</task>
@@ -159,7 +230,7 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 }}
 </instructions>"""
 
-    raw = _call_llm(client, prompt)
+    raw = _call_llm(client, prompt, call_kind="analyze", username=username)
 
     # Parse JSON response — strip markdown fences if model adds them despite instructions
     cleaned = raw.strip()
@@ -176,11 +247,18 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
         return {"raw_response": raw, "parse_error": True}
 
 
-def generate(client: anthropic.Anthropic, context_set: dict, analysis: dict, refinement_notes: str = "") -> dict:
+def generate(
+    client: anthropic.Anthropic,
+    context_set: dict,
+    analysis: dict,
+    refinement_notes: str = "",
+    username: str = "",
+) -> dict:
     """Call 2: Generation.
 
     Produces tailored resume content and cover letter.
-    Includes proofreading pass.
+    Includes proofreading pass. The username is threaded through to JSONL
+    telemetry only — no behavior depends on it.
     """
     prompt = f"""<task>Generate a tailored resume and cover letter for this candidate based on the analysis.</task>
 
@@ -295,7 +373,7 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 }}
 </output_format>"""
 
-    raw = _call_llm(client, prompt)
+    raw = _call_llm(client, prompt, call_kind="generate", username=username)
 
     cleaned = raw.strip()
     if cleaned.startswith("```"):
