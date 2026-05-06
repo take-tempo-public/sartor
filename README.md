@@ -338,3 +338,7 @@ Deterministic gates that fire automatically on tool use. See [.claude-plugin/hoo
 - `validate-context` — JSON-syntax + schema check on `output/**/context_*.json` writes
 - `route-security-lint` — requires `_safe_username` + `_within` on new Flask routes
 - `check-plan-approved` / `mark-plan-approved` / `cleanup-plan-on-merge` — plan-mode workflow
+
+### Dashboard
+
+While the app is running, navigate to [http://localhost:5000/_dashboard](http://localhost:5000/_dashboard) for a read-only view of LLM telemetry: per-call token counts, latency, cache hit ratio, and the eval-harness verdicts. Localhost-only.
