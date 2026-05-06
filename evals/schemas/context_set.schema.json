@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Cooksey/resume/evals/schemas/context_set.schema.json",
+  "title": "Resume Optimizer Context Set",
+  "description": "The structured payload built by hardening.build_context_set() and consumed by analyzer.analyze() and analyzer.generate(). Saved per-run as output/{user}/context_{timestamp}.json.",
+  "type": "object",
+  "required": [
+    "timestamp",
+    "candidate",
+    "resume",
+    "supplemental_resumes",
+    "job_description",
+    "deterministic_analysis"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "description": "ISO 8601 timestamp captured when build_context_set() was called"
+    },
+    "candidate": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": true,
+      "properties": {
+        "name": {"type": "string"},
+        "email": {"type": "string"},
+        "phone": {"type": "string"},
+        "linkedin_url": {"type": "string"},
+        "website_url": {"type": "string"},
+        "skills": {"type": "array", "items": {"type": "string"}},
+        "certifications": {"type": "array", "items": {"type": "string"}},
+        "education_summary": {"type": "string"},
+        "notes": {"type": "string"},
+        "profile_text": {"type": "string"}
+      }
+    },
+    "resume": {
+      "type": "object",
+      "required": ["text", "filename"],
+      "additionalProperties": true,
+      "properties": {
+        "format": {"type": "string", "description": ".docx, .pdf, or .md"},
+        "sections": {"type": "array"},
+        "text": {"type": "string"},
+        "filename": {"type": "string"},
+        "path": {"type": "string"}
+      }
+    },
+    "supplemental_resumes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "filename": {"type": "string"},
+          "text": {"type": "string"},
+          "sections": {"type": "array"}
+        }
+      }
+    },
+    "job_description": {"type": "string"},
+    "deterministic_analysis": {
+      "type": "object",
+      "required": ["jd_keywords", "resume_keywords", "keyword_overlap", "ats_warnings"],
+      "additionalProperties": true,
+      "properties": {
+        "jd_keywords": {"type": "object"},
+        "resume_keywords": {"type": "object"},
+        "keyword_overlap": {
+          "type": "object",
+          "properties": {
+            "matched": {"type": "array", "items": {"type": "string"}},
+            "missing_from_resume": {"type": "array", "items": {"type": "string"}},
+            "only_in_resume": {"type": "array", "items": {"type": "string"}},
+            "match_score": {"type": "number"}
+          }
+        },
+        "ats_warnings": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "llm_analysis": {
+      "type": "object",
+      "description": "Result of analyzer.analyze() — added after the first LLM call before save."
+    }
+  }
+}
