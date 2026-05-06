@@ -303,3 +303,38 @@ You can edit this file directly or use the Config panel in the UI.
 ## Architecture Notes
 
 Built on the [Hardening Principle](https://jdforsythe.github.io/10-principles/principles/hardening/): deterministic Python code handles all mechanical work (file parsing, keyword counting, ATS checks, document generation). The LLM is called exactly twice per run — once for analysis, once for generation — with a structured context payload that targets 15-40% of the context window (Context Hygiene Principle). The analysis is saved to disk as a versioned JSON artifact (Disposable Blueprint Principle), enabling re-generation without re-analysis.
+
+---
+
+## Claude Code Plugin
+
+The project ships a Claude Code plugin under [.claude-plugin/](.claude-plugin/) — slash commands, subagents, and hooks that automate the dev workflow. Activation via `.claude/settings.json` (no install step required).
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| [`/eval`](.claude-plugin/commands/eval.md) | Run the eval harness against synthetic or real fixtures |
+| [`/replay`](.claude-plugin/commands/replay.md) | Re-run `generate()` on a saved `context_*.json` |
+| [`/prompt-tune`](.claude-plugin/commands/prompt-tune.md) | A/B test a `SYSTEM_PROMPT` edit against the eval suite |
+| [`/bench`](.claude-plugin/commands/bench.md) | Aggregate `logs/llm_calls.jsonl` for cache hit rate, latency, cost |
+| [`/inspect-context`](.claude-plugin/commands/inspect-context.md) | Pretty-print + schema-validate a saved `context_set` |
+
+### Subagents
+
+| Agent | When to invoke |
+|---|---|
+| [`eval-judge`](.claude-plugin/agents/eval-judge.md) | Grade one (artifact × rubric) → JSON verdict |
+| [`prompt-archaeologist`](.claude-plugin/agents/prompt-archaeologist.md) | Trace an eval failure to a prompt rule and propose a unified-diff fix |
+| [`git-flow`](.claude-plugin/agents/git-flow.md) | Execute git workflow under the project's conventions |
+
+### Hooks
+
+Deterministic gates that fire automatically on tool use. See [.claude-plugin/hooks/](.claude-plugin/hooks/):
+
+- `block-secrets` — blocks API keys + writes to `.api_key`/`.env*`/`*.pem`/`*.key`
+- `ruff-changed` — runs `ruff check` on staged Python before `git commit`
+- `block-merge-to-main` — blocks merge/push to main without explicit `CLAUDE_CONFIRM_MERGE=1`
+- `validate-context` — JSON-syntax + schema check on `output/**/context_*.json` writes
+- `route-security-lint` — requires `_safe_username` + `_within` on new Flask routes
+- `check-plan-approved` / `mark-plan-approved` / `cleanup-plan-on-merge` — plan-mode workflow
