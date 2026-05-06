@@ -41,7 +41,7 @@ We aim to respond within 5 business days and to issue a fix within 30 days of co
 
 | Risk | Severity | Rationale |
 |---|---|---|
-| `debug=True` in Flask | Low | Local-only tool; debug mode provides useful error output for the single user |
+| Flask debug mode on by default | Low | Local-only tool; debug mode provides useful error output for the single user. Set `FLASK_DEBUG=0` in the environment to disable for any non-local deployment. |
 | No authentication | Low | Localhost only; OS-level access controls are the boundary |
 | Prompt injection via JD text | Low | Mitigated by system prompt constraints; no sensitive data returned to attacker |
 | LinkedIn scraping blocked | Info | Not a security risk; sites may block the scraper, which fails gracefully |

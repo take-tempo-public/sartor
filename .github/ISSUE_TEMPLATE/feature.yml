@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest an improvement or new capability
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, please skim [`vision.md`](../vision.md) and the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/) to confirm the request is in scope. The project intentionally keeps the LLM surface small and pushes mechanical work into deterministic Python.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What user need or workflow gap motivates this request? What's broken or awkward today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: How would you address it? Reference specific files (`app.py`, `analyzer.py`, etc.) when possible.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Which layer does this touch?
+      options:
+        - Deterministic (hardening.py, parser.py, scraper.py, generator.py)
+        - LLM pipeline (analyzer.py — analyze/generate prompts)
+        - Frontend (templates/, static/)
+        - Flask routes (app.py)
+        - Plugin / Claude Code workflow (.claude-plugin/)
+        - Eval harness (evals/)
+        - Documentation
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you think about and why is this approach better?

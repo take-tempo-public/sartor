@@ -40,7 +40,7 @@ Two explicit review gates before any output is generated or downloaded — you s
 
 4. **Install dependencies:**
    ```cmd
-   pip install -r requirements.txt
+   pip install -e .
    ```
 
 5. **Set your API key** (choose one method):
@@ -80,7 +80,7 @@ Two explicit review gates before any output is generated or downloaded — you s
 
 4. **Install dependencies:**
    ```bash
-   pip3 install -r requirements.txt
+   pip3 install -e .
    ```
    > If you have multiple Python versions, use `pip3` or `python3 -m pip`.
 
@@ -131,7 +131,7 @@ Two explicit review gates before any output is generated or downloaded — you s
 
 3. **Install dependencies:**
    ```bash
-   pip3 install -r requirements.txt
+   pip3 install -e .
    ```
    > On some systems: `python3 -m pip install -r requirements.txt`
 
@@ -232,7 +232,7 @@ resume/
 ├── hardening.py        # Deterministic tools (keyword extraction, ATS checks)
 ├── generator.py        # Document generation (docx, markdown)
 ├── scraper.py          # URL content fetcher (LinkedIn, portfolio)
-├── requirements.txt    # Python dependencies
+├── pyproject.toml      # Python dependencies + tooling config
 ├── .api_key            # Your API key (create this; not included)
 ├── configs/            # User configuration files
 │   └── {username}.config
@@ -278,7 +278,7 @@ You can edit this file directly or use the Config panel in the UI.
 
 ## Troubleshooting
 
-**`ModuleNotFoundError`** — Run `pip install -r requirements.txt` (or `pip3 install -r requirements.txt` on Mac/Linux).
+**`ModuleNotFoundError`** — Run `pip install -e .` (or `pip3 install -e .` on Mac/Linux). For development tooling, install with extras: `pip install -e ".[dev]"`.
 
 **`anthropic.AuthenticationError`** — Check your API key is set correctly. Try: `echo $ANTHROPIC_API_KEY` (Mac/Linux) or `echo %ANTHROPIC_API_KEY%` (Windows).
 
