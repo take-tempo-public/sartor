@@ -14,6 +14,7 @@ from flask import Flask, jsonify, render_template, request, send_file
 from werkzeug.utils import secure_filename
 
 from analyzer import analyze, check_refinement_scope, generate
+from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
 from hardening import (
     build_context_set,
@@ -34,6 +35,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.register_blueprint(dashboard_bp, url_prefix="/_dashboard")
 
 BASE_DIR = Path(__file__).parent
 CONFIGS_DIR = BASE_DIR / "configs"

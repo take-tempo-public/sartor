@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Resume Optimizer — Dashboard</title>
+  <style>
+    body { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; margin: 1.5rem 2rem; background: #0a0a0c; color: #e8e8ea; }
+    h1, h2 { color: #ffb86b; font-weight: 500; letter-spacing: 0.02em; }
+    h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+    h2 { font-size: 1.05rem; margin-top: 2rem; border-bottom: 1px solid #2a2a30; padding-bottom: 0.3rem; }
+    .meta { color: #6f7280; font-size: 0.85rem; }
+    form.filters { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1rem 0; align-items: end; }
+    form.filters label { display: flex; flex-direction: column; font-size: 0.8rem; color: #9aa; }
+    form.filters input, form.filters select {
+      background: #14141a; color: #e8e8ea; border: 1px solid #2a2a30;
+      padding: 0.3rem 0.5rem; font-family: inherit; font-size: 0.9rem;
+    }
+    form.filters button {
+      background: #ffb86b; color: #0a0a0c; border: 0; padding: 0.4rem 1rem;
+      font-family: inherit; font-weight: 500; cursor: pointer;
+    }
+    form.filters a.clear { color: #6f7280; text-decoration: none; padding: 0.4rem 0.5rem; font-size: 0.85rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th, td { padding: 0.35rem 0.6rem; text-align: left; vertical-align: top; }
+    th { color: #ffb86b; border-bottom: 1px solid #2a2a30; font-weight: 500; }
+    tr:nth-child(even) { background: #0e0e12; }
+    tr:hover { background: #14141a; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .ok { color: #82c8a4; }
+    .err { color: #d77a7a; }
+    .pass { color: #82c8a4; }
+    .fail { color: #d77a7a; font-weight: 600; }
+    .summary-card { display: inline-block; margin-right: 1.2rem; padding: 0.6rem 0.9rem; background: #14141a; border: 1px solid #2a2a30; }
+    .summary-card .k { color: #9aa; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .summary-card .v { font-size: 1.1rem; color: #ffb86b; }
+    .empty { color: #6f7280; font-style: italic; padding: 1rem 0; }
+    code.short { color: #94d4ff; }
+  </style>
+</head>
+<body>
+
+<h1>Resume Optimizer Dashboard</h1>
+<p class="meta">Read-only observability for the LLM pipeline. JSONL telemetry from <code class="short">logs/llm_calls.jsonl</code> and <code class="short">evals/results/*.jsonl</code>.</p>
+
+<form class="filters" method="get" action="">
+  <label>Since
+    <input type="date" name="since" value="{{ filters.since }}">
+  </label>
+  <label>User
+    <select name="user">
+      <option value=""></option>
+      {% for u in users %}<option value="{{ u }}" {% if u == filters.user %}selected{% endif %}>{{ u }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Model
+    <select name="model">
+      <option value=""></option>
+      {% for m in models %}<option value="{{ m }}" {% if m == filters.model %}selected{% endif %}>{{ m }}</option>{% endfor %}
+    </select>
+  </label>
+  <button type="submit">Apply</button>
+  <a class="clear" href="{{ url_for('dashboard.index') }}">clear</a>
+</form>
+
+<h2>LLM Calls — Summary</h2>
+{% if summary.count == 0 %}
+  <p class="empty">No calls match these filters{% if not log_path_present %} (no <code class="short">logs/llm_calls.jsonl</code> exists yet — run an analyze + generate to populate){% endif %}.</p>
+{% else %}
+<div>
+  <div class="summary-card"><div class="k">calls</div><div class="v">{{ summary.count }}</div></div>
+  <div class="summary-card"><div class="k">errors</div><div class="v {% if summary.error_count %}err{% else %}ok{% endif %}">{{ summary.error_count }}</div></div>
+  <div class="summary-card"><div class="k">mean latency</div><div class="v">{{ summary.mean_latency_ms }}ms</div></div>
+  <div class="summary-card"><div class="k">cache hit ratio</div><div class="v">{{ "%.1f"|format(summary.cache_hit_ratio * 100) }}%</div></div>
+  <div class="summary-card"><div class="k">in tokens</div><div class="v">{{ summary.total_input_tokens }}</div></div>
+  <div class="summary-card"><div class="k">out tokens</div><div class="v">{{ summary.total_output_tokens }}</div></div>
+  <div class="summary-card"><div class="k">cache create</div><div class="v">{{ summary.cache_creation_input_tokens }}</div></div>
+  <div class="summary-card"><div class="k">cache read</div><div class="v">{{ summary.cache_read_input_tokens }}</div></div>
+</div>
+{% endif %}
+
+<h2>LLM Calls — Recent (last 200)</h2>
+{% if calls %}
+<table>
+  <thead>
+    <tr>
+      <th>Timestamp</th>
+      <th>User</th>
+      <th>Call</th>
+      <th>Model</th>
+      <th>Prompt v</th>
+      <th class="num">in</th>
+      <th class="num">out</th>
+      <th class="num">cache create</th>
+      <th class="num">cache read</th>
+      <th class="num">latency</th>
+      <th>status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in calls %}
+    <tr>
+      <td>{{ r.timestamp }}</td>
+      <td>{{ r.username }}</td>
+      <td>{{ r.call }}</td>
+      <td>{{ r.model }}</td>
+      <td>{{ r.prompt_version }}</td>
+      <td class="num">{{ r.input_tokens }}</td>
+      <td class="num">{{ r.output_tokens }}</td>
+      <td class="num">{{ r.cache_creation_input_tokens }}</td>
+      <td class="num">{{ r.cache_read_input_tokens }}</td>
+      <td class="num">{{ r.latency_ms }}ms</td>
+      <td class="{% if r.status == 'ok' %}ok{% else %}err{% endif %}">{{ r.status }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="empty">No call records.</p>
+{% endif %}
+
+<h2>Eval Results — Recent (last 200)</h2>
+{% if eval_results %}
+<table>
+  <thead>
+    <tr>
+      <th>Timestamp</th>
+      <th>Fixture</th>
+      <th>Rubric</th>
+      <th class="num">Score</th>
+      <th>Status</th>
+      <th>Failed rules</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in eval_results %}
+    <tr>
+      <td>{{ r.timestamp }}</td>
+      <td>{{ r.fixture }}</td>
+      <td>{{ r.rubric }}</td>
+      <td class="num {% if r.score is not none and r.score >= 4 %}pass{% else %}fail{% endif %}">{{ r.score if r.score is not none else "—" }}</td>
+      <td class="{% if r.status == 'ok' %}ok{% else %}err{% endif %}">{{ r.status }}</td>
+      <td>{{ r.failed_rules|join(", ") if r.failed_rules else "" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="empty">No eval results yet{% if not eval_dir_present %} (no <code class="short">evals/results/</code> directory){% endif %}. Run <code class="short">python evals/runner.py --suite synthetic --subset smoke</code>.</p>
+{% endif %}
+
+</body>
+</html>
