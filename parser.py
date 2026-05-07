@@ -36,8 +36,8 @@ def parse_resume(filepath: str) -> dict:
 def _parse_docx(path: Path) -> tuple[str, list]:
     """Extract text and sections from a Word document."""
     doc = docx.Document(str(path))
-    sections = []
-    current_section = {"heading": "Header", "content": []}
+    sections: list[dict] = []
+    current_section: dict = {"heading": "Header", "content": []}
     full_text = []
 
     for para in doc.paragraphs:

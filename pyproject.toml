@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "resume-optimizer"
+version = "0.1.0"
+description = "Local web app that tailors resumes and cover letters to job descriptions using the Claude API"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "Cooksey" }]
+keywords = ["resume", "ats", "claude", "anthropic", "llm", "career"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Topic :: Office/Business",
+    "Topic :: Text Processing :: Markup",
+    "Framework :: Flask",
+]
+dependencies = [
+    "flask>=3.0,<4.0",
+    "anthropic>=0.40,<1.0",
+    "python-docx>=1.1,<2.0",
+    "pdfplumber>=0.11,<1.0",
+    "markdown>=3.6,<4.0",
+    "beautifulsoup4>=4.12,<5.0",
+    "requests>=2.31,<3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9.0",
+    "ruff>=0.6,<1.0",
+    "mypy>=1.10,<2.0",
+    "pyyaml>=6.0,<7.0",
+    "types-requests>=2.31",
+]
+
+[project.urls]
+Homepage = "https://github.com/Cooksey/resume"
+Repository = "https://github.com/Cooksey/resume"
+Issues = "https://github.com/Cooksey/resume/issues"
+
+[tool.setuptools]
+py-modules = ["app", "analyzer", "hardening", "generator", "parser", "scraper"]
+
+[tool.setuptools.packages.find]
+include = ["dashboard*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["configs", "resumes", "output", "logs", "evals/results", "evals/fixtures/real"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "S",    # flake8-bandit (security)
+]
+ignore = [
+    "E501",  # line too long — many lines in prompts intentionally long
+    "S101",  # use of assert (pytest needs this)
+    "B008",  # function call in default arg (Flask convention)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106", "S108"]
+"evals/*" = ["S101"]
+
+[tool.mypy]
+python_version = "3.10"
+strict_optional = true
+ignore_missing_imports = true
+follow_imports = "silent"
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_reexport = true
+
+[[tool.mypy.overrides]]
+module = ["docx", "docx.*", "pdfplumber", "pdfplumber.*", "markdown", "markdown.*", "bs4", "bs4.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

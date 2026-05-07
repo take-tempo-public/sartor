@@ -10,10 +10,30 @@ Single agent + deterministic tools = Level 1 architecture (P9).
 
 import json
 import logging
+import time
+from datetime import datetime, timezone
+from pathlib import Path
 
 import anthropic
 
 logger = logging.getLogger(__name__)
+
+# Bump when SYSTEM_PROMPT or any per-call prompt template changes. Labels every
+# JSONL telemetry record so quality regressions can be attributed to a revision.
+PROMPT_VERSION = "2026-05-06.4"
+
+LOG_DIR = Path(__file__).parent / "logs"
+LOG_PATH = LOG_DIR / "llm_calls.jsonl"
+
+
+def _emit_call_log(record: dict) -> None:
+    """Append one JSON line to logs/llm_calls.jsonl. Best-effort — never raise."""
+    try:
+        LOG_DIR.mkdir(exist_ok=True)
+        with LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")
+    except Exception as exc:
+        logger.warning("LLM telemetry write failed: %s", exc)
 
 # P6: Specialist persona — <50 tokens, real job title, domain vocabulary
 SYSTEM_PROMPT = """You are a seasoned hiring manager with a decade of HR and recruiting experience. \
@@ -46,6 +66,54 @@ MAX_TOKENS = 4096
 MAX_SUPPLEMENTAL_CHARS = 6_000  # per-file cap — keeps total context manageable
 
 
+def _stable_user_prefix(context_set: dict) -> str:
+    """Build the stable, cacheable portion of the user message.
+
+    This block is identical across analyze() and generate() calls for the
+    same context_set, enabling Anthropic prompt caching to hit on the second
+    call. Sonnet's cache requires 1024+ tokens to engage; bundling the
+    resume + JD + supplementals + candidate profile reliably exceeds that.
+
+    The block must be byte-identical across analyze and generate to hit the
+    cache. Tag names, field order, and the inclusion-condition for the
+    online profile are all load-bearing. Do not change one without the other.
+    """
+    candidate = context_set["candidate"]
+    online_profile = candidate.get("profile_text", "").strip()
+
+    parts = [
+        "<job_description>",
+        context_set["job_description"],
+        "</job_description>",
+        "",
+        f'<resume filename="{context_set["resume"].get("filename", "primary")}">',
+        context_set["resume"]["text"],
+        "</resume>",
+        _supplemental_block(context_set),
+        "<candidate_profile>",
+        f"Name: {candidate.get('name', '')}",
+        f"Email: {candidate.get('email', '')}",
+        f"Phone: {candidate.get('phone', '')}",
+        f"LinkedIn: {candidate.get('linkedin_url', '')}",
+        f"Website: {candidate.get('website_url', '')}",
+        f"Skills: {', '.join(candidate.get('skills', []))}",
+        f"Certifications: {', '.join(candidate.get('certifications', []))}",
+        f"Education: {candidate.get('education_summary', '')}",
+        f"Notes: {candidate.get('notes', '')}",
+        "</candidate_profile>",
+    ]
+
+    if online_profile:
+        parts.extend([
+            "",
+            "<candidate_online_profile>",
+            online_profile,
+            "</candidate_online_profile>",
+        ])
+
+    return "\n".join(parts)
+
+
 def _supplemental_block(context_set: dict) -> str:
     """Build the <supplemental_resumes> XML block for prompts, or empty string if none."""
     supplements = context_set.get("supplemental_resumes", [])
@@ -71,53 +139,102 @@ def _supplemental_block(context_set: dict) -> str:
     return "\n".join(parts)
 
 
-def _call_llm(client: anthropic.Anthropic, user_prompt: str) -> str:
-    """Make a single LLM call using streaming.
+def _call_llm(
+    client: anthropic.Anthropic,
+    user_prompt: str,
+    *,
+    cached_user_prefix: str = "",
+    call_kind: str = "analyze",
+    username: str = "",
+) -> str:
+    """Make a single LLM call using streaming, with prompt caching and JSONL telemetry.
 
     Streaming avoids intermediate gateway timeouts on long-running generations:
     tokens flow back as they're produced, keeping the TCP connection warm.
+
+    Caching: SYSTEM_PROMPT is sent as a cacheable system block; when
+    cached_user_prefix is non-empty it is sent as a cacheable user block
+    preceding user_prompt. Anthropic's cache requires 1024+ tokens to engage
+    on Sonnet — the SYSTEM_PROMPT alone is below that threshold, so the
+    user-prefix block is what actually drives cache hits across analyze→
+    generate within a session.
+
+    Telemetry: every call appends one record to logs/llm_calls.jsonl with
+    timing, token counts (including cache fields), prompt version, and status.
     """
-    logger.info("LLM call starting — prompt length: %d chars", len(user_prompt))
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_prompt}],
-    ) as stream:
-        text = "".join(stream.text_stream)
-        final = stream.get_final_message()
+    user_content: list[dict] = []
+    if cached_user_prefix:
+        user_content.append({
+            "type": "text",
+            "text": cached_user_prefix,
+            "cache_control": {"type": "ephemeral"},
+        })
+    user_content.append({"type": "text", "text": user_prompt})
+
     logger.info(
-        "LLM call complete — input_tokens: %d, output_tokens: %d",
+        "LLM call starting — call=%s cached_prefix=%d chars, prompt=%d chars",
+        call_kind, len(cached_user_prefix), len(user_prompt),
+    )
+    t0 = time.perf_counter()
+    status = "ok"
+    final = None
+    try:
+        with client.messages.stream(
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            system=[
+                {
+                    "type": "text",
+                    "text": SYSTEM_PROMPT,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
+            messages=[{"role": "user", "content": user_content}],  # type: ignore[typeddict-item]
+        ) as stream:
+            text = "".join(stream.text_stream)
+            final = stream.get_final_message()
+    except Exception:
+        status = "error"
+        raise
+    finally:
+        elapsed_ms = int((time.perf_counter() - t0) * 1000)
+        usage = getattr(final, "usage", None) if final is not None else None
+        _emit_call_log({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "username": username,
+            "call": call_kind,
+            "model": MODEL,
+            "prompt_version": PROMPT_VERSION,
+            "input_tokens": getattr(usage, "input_tokens", 0),
+            "output_tokens": getattr(usage, "output_tokens", 0),
+            "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0),
+            "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0),
+            "latency_ms": elapsed_ms,
+            "status": status,
+        })
+
+    logger.info(
+        "LLM call complete — call=%s in=%d out=%d cache_create=%d cache_read=%d %dms",
+        call_kind,
         final.usage.input_tokens,
         final.usage.output_tokens,
+        getattr(final.usage, "cache_creation_input_tokens", 0),
+        getattr(final.usage, "cache_read_input_tokens", 0),
+        elapsed_ms,
     )
     return text
 
 
-def analyze(client: anthropic.Anthropic, context_set: dict) -> dict:
+def analyze(client: anthropic.Anthropic, context_set: dict, username: str = "") -> dict:
     """Call 1: Analysis & Strategy.
 
     Analyzes JD, generates ideal resume, compares, produces suggestions.
-    Returns structured analysis result.
+    Returns structured analysis result. The username is threaded through to
+    JSONL telemetry only — no behavior depends on it.
     """
-    # P2 Context Hygiene: structured prompt, front-load constraints, back-load format
-    prompt = f"""<task>Analyze this job description against the candidate's resume and profile. Produce a comprehensive strategic analysis.</task>
-
-<job_description>
-{context_set['job_description']}
-</job_description>
-
-<candidate_resume filename="{context_set['resume'].get('filename', 'primary')}">
-{context_set['resume']['text']}
-</candidate_resume>
-{_supplemental_block(context_set)}
-<candidate_profile>
-Name: {context_set['candidate']['name']}
-Skills: {', '.join(context_set['candidate'].get('skills', []))}
-Certifications: {', '.join(context_set['candidate'].get('certifications', []))}
-Education: {context_set['candidate'].get('education_summary', '')}
-Notes: {context_set['candidate'].get('notes', '')}
-</candidate_profile>
+    # P2 Context Hygiene: stable inputs (resume + JD + profile) live in the
+    # cached prefix; only task-specific variable content is in the per-call prompt.
+    prompt = f"""<task>Analyze the job description against the candidate's resume and profile. Produce a comprehensive strategic analysis.</task>
 
 <deterministic_analysis>
 Keyword match score: {context_set['deterministic_analysis']['keyword_overlap']['match_score']}
@@ -159,7 +276,12 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 }}
 </instructions>"""
 
-    raw = _call_llm(client, prompt)
+    raw = _call_llm(
+        client, prompt,
+        cached_user_prefix=_stable_user_prefix(context_set),
+        call_kind="analyze",
+        username=username,
+    )
 
     # Parse JSON response — strip markdown fences if model adds them despite instructions
     cleaned = raw.strip()
@@ -176,37 +298,68 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
         return {"raw_response": raw, "parse_error": True}
 
 
-def generate(client: anthropic.Anthropic, context_set: dict, analysis: dict, refinement_notes: str = "") -> dict:
+def generate(
+    client: anthropic.Anthropic,
+    context_set: dict,
+    analysis: dict,
+    refinement_notes: str = "",
+    username: str = "",
+) -> dict:
     """Call 2: Generation.
 
     Produces tailored resume content and cover letter.
-    Includes proofreading pass.
+    Includes proofreading pass. The username is threaded through to JSONL
+    telemetry only — no behavior depends on it.
     """
-    prompt = f"""<task>Generate a tailored resume and cover letter for this candidate based on the analysis.</task>
+    prompt = f"""<task>Generate a tailored resume and cover letter for the candidate based on the analysis.</task>
 
-<job_description>
-{context_set['job_description']}
-</job_description>
+<output_rules>
+The `resume_content` field MUST use markdown heading markers. Without them the
+document generator produces undifferentiated plain paragraphs and loses the
+template's heading visual styles entirely. This applies even when the original
+resume above uses ALL CAPS, bold-only, or any other plain-text heading convention
+— convert those to the markers below in the output.
 
-<original_resume filename="{context_set['resume'].get('filename', 'primary')}">
-{context_set['resume']['text']}
-</original_resume>
-{_supplemental_block(context_set)}
-<candidate_profile>
-Name: {context_set['candidate']['name']}
-Email: {context_set['candidate'].get('email', '')}
-Phone: {context_set['candidate'].get('phone', '')}
-LinkedIn: {context_set['candidate'].get('linkedin_url', '')}
-Website: {context_set['candidate'].get('website_url', '')}
-Skills: {', '.join(context_set['candidate'].get('skills', []))}
-Certifications: {', '.join(context_set['candidate'].get('certifications', []))}
-Education: {context_set['candidate'].get('education_summary', '')}
-Notes: {context_set['candidate'].get('notes', '')}
-</candidate_profile>
-{f'''<candidate_online_profile>
-{context_set['candidate'].get('profile_text', '')}
-</candidate_online_profile>
-''' if context_set['candidate'].get('profile_text', '').strip() else ''}
+REQUIRED markers:
+- `# ` exactly once, on the first non-empty line, for the candidate's full name.
+- The 1–2 lines directly after the name (a title/subtitle and a contact line)
+  are unmarked plain text. The renderer center-aligns them when the template
+  has a centered header zone.
+- `## ` for top-level section headings (Summary, Experience, Education, Skills,
+  Certifications, Projects, etc.). One `##` per section.
+- `### ` for company / role / job-title lines within the Experience section.
+  When a date range applies, put it on the SAME line as the title separated
+  by a single tab character `\t`. The renderer aligns the date to the right
+  margin via the template's tab stop. Format:
+  `### Company, Title\tStart – End`
+- `-` (hyphen) at the start of every bullet point.
+- `**text**` for inline bold; `*text*` for inline italic. Use sparingly.
+
+Example of the required `resume_content` shape (note `\t` before the date):
+```
+# Jane Doe
+Senior Site Reliability Engineer
+jane@example.com | (555) 010-2200 | linkedin.com/in/janedoe
+
+## Summary
+Two-sentence positioning paragraph.
+
+## Experience
+
+### Acme Cloud, Senior SRE\tMarch 2023 – present
+Player-coach across the platform team and on-call leadership.
+- Bullet one with a verb up front.
+- Bullet two integrating a JD keyword naturally.
+
+### Stratford Analytics, Production Engineer\tAugust 2021 – March 2023
+- Bullet one.
+```
+
+DO NOT skip the `# `, `## `, `### ` markers. DO NOT use ALL CAPS as a substitute
+for `## `. The downstream Python writer dispatches on these markers to apply the
+template's heading styles, list numbering, and bold runs — without them the
+output is plain paragraphs.
+</output_rules>
 
 <analysis>
 Essential skills: {', '.join(analysis.get('essential_skills', []))}
@@ -295,7 +448,12 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 }}
 </output_format>"""
 
-    raw = _call_llm(client, prompt)
+    raw = _call_llm(
+        client, prompt,
+        cached_user_prefix=_stable_user_prefix(context_set),
+        call_kind="generate",
+        username=username,
+    )
 
     cleaned = raw.strip()
     if cleaned.startswith("```"):
@@ -348,7 +506,7 @@ Respond with valid JSON only — no markdown, no explanation outside the JSON:
             system="You are a strict scope classifier. Respond with JSON only.",
             messages=[{"role": "user", "content": prompt}],
         )
-        raw = msg.content[0].text.strip()
+        raw = getattr(msg.content[0], "text", "").strip()
         if raw.startswith("```"):
             raw = raw.split("\n", 1)[1]
         if raw.endswith("```"):

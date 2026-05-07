@@ -40,7 +40,7 @@ Two explicit review gates before any output is generated or downloaded — you s
 
 4. **Install dependencies:**
    ```cmd
-   pip install -r requirements.txt
+   pip install -e .
    ```
 
 5. **Set your API key** (choose one method):
@@ -80,7 +80,7 @@ Two explicit review gates before any output is generated or downloaded — you s
 
 4. **Install dependencies:**
    ```bash
-   pip3 install -r requirements.txt
+   pip3 install -e .
    ```
    > If you have multiple Python versions, use `pip3` or `python3 -m pip`.
 
@@ -131,7 +131,7 @@ Two explicit review gates before any output is generated or downloaded — you s
 
 3. **Install dependencies:**
    ```bash
-   pip3 install -r requirements.txt
+   pip3 install -e .
    ```
    > On some systems: `python3 -m pip install -r requirements.txt`
 
@@ -232,7 +232,7 @@ resume/
 ├── hardening.py        # Deterministic tools (keyword extraction, ATS checks)
 ├── generator.py        # Document generation (docx, markdown)
 ├── scraper.py          # URL content fetcher (LinkedIn, portfolio)
-├── requirements.txt    # Python dependencies
+├── pyproject.toml      # Python dependencies + tooling config
 ├── .api_key            # Your API key (create this; not included)
 ├── configs/            # User configuration files
 │   └── {username}.config
@@ -278,7 +278,7 @@ You can edit this file directly or use the Config panel in the UI.
 
 ## Troubleshooting
 
-**`ModuleNotFoundError`** — Run `pip install -r requirements.txt` (or `pip3 install -r requirements.txt` on Mac/Linux).
+**`ModuleNotFoundError`** — Run `pip install -e .` (or `pip3 install -e .` on Mac/Linux). For development tooling, install with extras: `pip install -e ".[dev]"`.
 
 **`anthropic.AuthenticationError`** — Check your API key is set correctly. Try: `echo $ANTHROPIC_API_KEY` (Mac/Linux) or `echo %ANTHROPIC_API_KEY%` (Windows).
 
@@ -303,3 +303,42 @@ You can edit this file directly or use the Config panel in the UI.
 ## Architecture Notes
 
 Built on the [Hardening Principle](https://jdforsythe.github.io/10-principles/principles/hardening/): deterministic Python code handles all mechanical work (file parsing, keyword counting, ATS checks, document generation). The LLM is called exactly twice per run — once for analysis, once for generation — with a structured context payload that targets 15-40% of the context window (Context Hygiene Principle). The analysis is saved to disk as a versioned JSON artifact (Disposable Blueprint Principle), enabling re-generation without re-analysis.
+
+---
+
+## Claude Code Plugin
+
+The project ships a Claude Code plugin under [.claude-plugin/](.claude-plugin/) — slash commands, subagents, and hooks that automate the dev workflow. Activation via `.claude/settings.json` (no install step required).
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| [`/eval`](.claude-plugin/commands/eval.md) | Run the eval harness against synthetic or real fixtures |
+| [`/replay`](.claude-plugin/commands/replay.md) | Re-run `generate()` on a saved `context_*.json` |
+| [`/prompt-tune`](.claude-plugin/commands/prompt-tune.md) | A/B test a `SYSTEM_PROMPT` edit against the eval suite |
+| [`/bench`](.claude-plugin/commands/bench.md) | Aggregate `logs/llm_calls.jsonl` for cache hit rate, latency, cost |
+| [`/inspect-context`](.claude-plugin/commands/inspect-context.md) | Pretty-print + schema-validate a saved `context_set` |
+
+### Subagents
+
+| Agent | When to invoke |
+|---|---|
+| [`eval-judge`](.claude-plugin/agents/eval-judge.md) | Grade one (artifact × rubric) → JSON verdict |
+| [`prompt-archaeologist`](.claude-plugin/agents/prompt-archaeologist.md) | Trace an eval failure to a prompt rule and propose a unified-diff fix |
+| [`git-flow`](.claude-plugin/agents/git-flow.md) | Execute git workflow under the project's conventions |
+
+### Hooks
+
+Deterministic gates that fire automatically on tool use. See [.claude-plugin/hooks/](.claude-plugin/hooks/):
+
+- `block-secrets` — blocks API keys + writes to `.api_key`/`.env*`/`*.pem`/`*.key`
+- `ruff-changed` — runs `ruff check` on staged Python before `git commit`
+- `block-merge-to-main` — blocks merge/push to main without explicit `CLAUDE_CONFIRM_MERGE=1`
+- `validate-context` — JSON-syntax + schema check on `output/**/context_*.json` writes
+- `route-security-lint` — requires `_safe_username` + `_within` on new Flask routes
+- `check-plan-approved` / `mark-plan-approved` / `cleanup-plan-on-merge` — plan-mode workflow
+
+### Dashboard
+
+While the app is running, navigate to [http://localhost:5000/_dashboard](http://localhost:5000/_dashboard) for a read-only view of LLM telemetry: per-call token counts, latency, cache hit ratio, and the eval-harness verdicts. Localhost-only.

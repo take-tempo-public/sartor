@@ -1,0 +1,64 @@
+name: Bug report
+description: Report something that does not work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill out the fields below so we can reproduce the issue.
+
+        For security issues, see [SECURITY.md](../SECURITY.md) — do not file public issues for vulnerabilities.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: A clear, concise description of the actual behavior.
+      placeholder: When I uploaded a PDF resume and clicked Analyze, the page hung for 60 seconds and then showed an empty result panel.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: A clear description of what you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Numbered list of the minimum steps required to reproduce the issue.
+      placeholder: |
+        1. Run `python app.py`
+        2. Upload `my-resume.pdf`
+        3. Paste a job description
+        4. Click Analyze
+        5. Observe ...
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      placeholder: "3.13.13"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11 / macOS 14 / Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Any errors from the terminal where `python app.py` is running. Redact your API key if it appears.
+      render: text

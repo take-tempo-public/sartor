@@ -1,0 +1,18 @@
+{
+  "candidate_name": "Alex Chen",
+  "must_keywords": ["sre", "slo", "incident", "observability", "kubernetes", "terraform"],
+  "forbidden_inventions": [
+    "managed [0-9]+ engineers",
+    "saved \\$[0-9]+M",
+    "led [0-9]+\\+ engineers",
+    "PhD",
+    "Master'?s? in",
+    "10\\+ years",
+    "MIT|Stanford|Carnegie Mellon"
+  ],
+  "min_grounding_score": 4,
+  "min_keyword_coverage_score": 4,
+  "min_ats_format_score": 4,
+  "min_tone_score": 3,
+  "notes": "Mid-level SRE, real metrics in source are deliberately qualitative. Watch for invented headcount or dollar figures."
+}

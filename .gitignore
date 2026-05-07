@@ -17,6 +17,9 @@ resumes/*
 output/*
 !output/.gitkeep
 
+# ---- LLM telemetry (per-call JSONL emitted by analyzer.py) ----
+logs/
+
 # ---- Python ----
 __pycache__/
 *.pyc
@@ -29,6 +32,11 @@ build/
 venv/
 env/
 pip-wheel-metadata/
+
+# ---- Tooling caches ----
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 
 # ---- OS ----
 .DS_Store
@@ -46,5 +54,6 @@ ehthumbs.db
 *~
 
 # ---- Claude Code session files (machine-specific, not project state) ----
-.claude/settings.local.json
-CLAUDE.md
+.claude/*
+!.claude/settings.json
+CLAUDE.local.md

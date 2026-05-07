@@ -1,0 +1,29 @@
+Junior Data Scientist
+Borealis Labs — Hybrid (Toronto, ON)
+
+About Borealis
+Borealis Labs is a climate-analytics startup. We sell forecasting tools to municipal governments and utilities so they can plan infrastructure investments around shifting climate baselines. We are a 24-person company, post-seed, building out the data science team from two to four.
+
+The role
+You'll join the data science team and own one of our core forecasting modules. This is a ground-floor seat — you'll work directly with the team lead, contribute to model design, and help shape how we evaluate forecast quality.
+
+What you'll do
+- Build and improve regression and time-series models for municipal climate-impact forecasts.
+- Wrangle messy public datasets (weather stations, satellite-derived data, census records) into modeling-ready form.
+- Communicate model behavior and limitations to non-technical clients via clear writing and a few visualizations.
+- Pair with senior data scientists on code review; learn the team's evaluation discipline.
+
+What we're looking for
+- 1–2 years of professional data work (DS, analytics, research, comparable academic).
+- Working competence in Python and SQL.
+- Hands-on with at least one of: scikit-learn, statsmodels, pandas, NumPy.
+- Strong written communication — you can explain a model's assumptions in plain English.
+- Curiosity about climate / public-sector use cases.
+
+Nice to have
+- Experience with time-series forecasting (ARIMA, Prophet, gradient-boosted trees).
+- Geospatial data familiarity (GeoPandas, PostGIS).
+- Open-source contributions or public notebooks.
+
+Compensation
+CAD $90–$110K base, hybrid Toronto (2 days/week in office). Junior-friendly culture: explicit mentorship hours, pair programming, code-review training.
