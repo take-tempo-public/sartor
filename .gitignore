@@ -20,6 +20,12 @@ output/*
 # ---- LLM telemetry (per-call JSONL emitted by analyzer.py) ----
 logs/
 
+# ---- Eval results and real fixtures (per-clone, may contain real PII) ----
+evals/results/*
+!evals/results/.gitkeep
+evals/fixtures/real/*
+!evals/fixtures/real/.gitkeep
+
 # ---- Python ----
 __pycache__/
 *.pyc

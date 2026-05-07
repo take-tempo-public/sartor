@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Bump when SYSTEM_PROMPT or any per-call prompt template changes. Labels every
 # JSONL telemetry record so quality regressions can be attributed to a revision.
-PROMPT_VERSION = "2026-05-06.4"
+PROMPT_VERSION = "2026-05-06.5"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -61,8 +61,26 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Always prioritize keywords from the job description BECAUSE ATS systems rank by keyword match before human eyes see the resume
 - Always treat the Notes field as explicit candidate directives — personal constraints or standing instructions (e.g. "remote only", "do not mention gap in 2020", "always emphasize architecture over management") BECAUSE ignoring them produces documents the candidate cannot use"""
 
-MODEL = "claude-sonnet-4-20250514"
-MAX_TOKENS = 4096
+# Model selection rationale:
+#   - Sonnet 4.6 for analyze() and generate(): the work needs reasoning depth
+#     for JD analysis and instruction-following on the long generate prompt
+#     (~3K tokens of resume_rules + cover_letter_rules + output_format).
+#     Same per-token price as older Sonnet versions; the newer revision has
+#     better structured-output adherence and grounding behavior.
+#   - Haiku 4.5 for scope check (line ~470) and eval grading (evals/runner.py):
+#     binary classification and structured-output rubric application are the
+#     Haiku sweet spot. Volume + structure beats reasoning depth there.
+#   - Opus is intentionally not used: ~5x the cost of Sonnet without a
+#     proportional win on this workload. Reserve for future debugging
+#     sessions if grounding regressions resist prompt-tightening.
+MODEL = "claude-sonnet-4-6"
+# Per-call output cap. analyze() returns a comprehensive JSON with 10+ keyed
+# sections; Sonnet 4.6 is more verbose than older Sonnet 4 was and routinely
+# uses 4–6K tokens on detail-rich real inputs. 8192 leaves headroom without
+# inviting runaway output. _call_llm logs a warning on stop_reason="max_tokens"
+# so truncation surfaces as a clear telemetry signal, not a silent JSON parse
+# failure downstream.
+MAX_TOKENS = 8192
 MAX_SUPPLEMENTAL_CHARS = 6_000  # per-file cap — keeps total context manageable
 
 
@@ -199,6 +217,7 @@ def _call_llm(
     finally:
         elapsed_ms = int((time.perf_counter() - t0) * 1000)
         usage = getattr(final, "usage", None) if final is not None else None
+        stop_reason = getattr(final, "stop_reason", None) if final is not None else None
         _emit_call_log({
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "username": username,
@@ -210,16 +229,26 @@ def _call_llm(
             "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0),
             "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0),
             "latency_ms": elapsed_ms,
+            "stop_reason": stop_reason,
             "status": status,
         })
 
+    if stop_reason == "max_tokens":
+        logger.warning(
+            "LLM call hit MAX_TOKENS — call=%s output truncated at %d tokens. "
+            "Downstream JSON parse will likely fail. Consider raising MAX_TOKENS "
+            "or tightening the prompt's output_format spec.",
+            call_kind, final.usage.output_tokens,
+        )
+
     logger.info(
-        "LLM call complete — call=%s in=%d out=%d cache_create=%d cache_read=%d %dms",
+        "LLM call complete — call=%s in=%d out=%d cache_create=%d cache_read=%d stop=%s %dms",
         call_kind,
         final.usage.input_tokens,
         final.usage.output_tokens,
         getattr(final.usage, "cache_creation_input_tokens", 0),
         getattr(final.usage, "cache_read_input_tokens", 0),
+        stop_reason,
         elapsed_ms,
     )
     return text
