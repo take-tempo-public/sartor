@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Bump when SYSTEM_PROMPT or any per-call prompt template changes. Labels every
 # JSONL telemetry record so quality regressions can be attributed to a revision.
-PROMPT_VERSION = "2026-05-06.4"
+PROMPT_VERSION = "2026-05-06.5"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -61,7 +61,19 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Always prioritize keywords from the job description BECAUSE ATS systems rank by keyword match before human eyes see the resume
 - Always treat the Notes field as explicit candidate directives — personal constraints or standing instructions (e.g. "remote only", "do not mention gap in 2020", "always emphasize architecture over management") BECAUSE ignoring them produces documents the candidate cannot use"""
 
-MODEL = "claude-sonnet-4-20250514"
+# Model selection rationale:
+#   - Sonnet 4.6 for analyze() and generate(): the work needs reasoning depth
+#     for JD analysis and instruction-following on the long generate prompt
+#     (~3K tokens of resume_rules + cover_letter_rules + output_format).
+#     Same per-token price as older Sonnet versions; the newer revision has
+#     better structured-output adherence and grounding behavior.
+#   - Haiku 4.5 for scope check (line ~470) and eval grading (evals/runner.py):
+#     binary classification and structured-output rubric application are the
+#     Haiku sweet spot. Volume + structure beats reasoning depth there.
+#   - Opus is intentionally not used: ~5x the cost of Sonnet without a
+#     proportional win on this workload. Reserve for future debugging
+#     sessions if grounding regressions resist prompt-tightening.
+MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 4096
 MAX_SUPPLEMENTAL_CHARS = 6_000  # per-file cap — keeps total context manageable
 
