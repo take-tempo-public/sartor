@@ -74,7 +74,13 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 #     proportional win on this workload. Reserve for future debugging
 #     sessions if grounding regressions resist prompt-tightening.
 MODEL = "claude-sonnet-4-6"
-MAX_TOKENS = 4096
+# Per-call output cap. analyze() returns a comprehensive JSON with 10+ keyed
+# sections; Sonnet 4.6 is more verbose than older Sonnet 4 was and routinely
+# uses 4–6K tokens on detail-rich real inputs. 8192 leaves headroom without
+# inviting runaway output. _call_llm logs a warning on stop_reason="max_tokens"
+# so truncation surfaces as a clear telemetry signal, not a silent JSON parse
+# failure downstream.
+MAX_TOKENS = 8192
 MAX_SUPPLEMENTAL_CHARS = 6_000  # per-file cap — keeps total context manageable
 
 
@@ -211,6 +217,7 @@ def _call_llm(
     finally:
         elapsed_ms = int((time.perf_counter() - t0) * 1000)
         usage = getattr(final, "usage", None) if final is not None else None
+        stop_reason = getattr(final, "stop_reason", None) if final is not None else None
         _emit_call_log({
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "username": username,
@@ -222,16 +229,26 @@ def _call_llm(
             "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0),
             "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0),
             "latency_ms": elapsed_ms,
+            "stop_reason": stop_reason,
             "status": status,
         })
 
+    if stop_reason == "max_tokens":
+        logger.warning(
+            "LLM call hit MAX_TOKENS — call=%s output truncated at %d tokens. "
+            "Downstream JSON parse will likely fail. Consider raising MAX_TOKENS "
+            "or tightening the prompt's output_format spec.",
+            call_kind, final.usage.output_tokens,
+        )
+
     logger.info(
-        "LLM call complete — call=%s in=%d out=%d cache_create=%d cache_read=%d %dms",
+        "LLM call complete — call=%s in=%d out=%d cache_create=%d cache_read=%d stop=%s %dms",
         call_kind,
         final.usage.input_tokens,
         final.usage.output_tokens,
         getattr(final.usage, "cache_creation_input_tokens", 0),
         getattr(final.usage, "cache_read_input_tokens", 0),
+        stop_reason,
         elapsed_ms,
     )
     return text
