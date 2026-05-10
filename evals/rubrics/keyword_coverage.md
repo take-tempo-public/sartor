@@ -10,20 +10,23 @@ You are grading whether the generated resume successfully integrates the job des
 - `generated_resume` — the actual generated output
 - `expected.must_keywords` — keywords that MUST appear in the generated resume (per-fixture)
 
-## Scoring (0–5)
+## Scoring (0.0–5.0, one-decimal precision)
 
-- **5** — Every `must_keyword` and ≥80% of `missing_from_resume` keywords appear in `generated_resume`. Integration reads naturally; no keyword-stuffing or forced phrasing.
-- **4** — Every `must_keyword` present, 60–80% of missing keywords integrated. Reads naturally.
-- **3** — Every `must_keyword` present, <60% of missing keywords integrated, OR all keywords present but integration is awkward (keyword soup).
-- **2** — One or more `must_keyword` missing.
-- **1** — Multiple `must_keyword`s missing.
-- **0** — The generated resume bears no relationship to the JD vocabulary.
+Anchor bands:
+- **5.0** — Every `must_keyword` and ≥80% of `missing_from_resume` keywords appear in `generated_resume`. Integration reads naturally; no keyword-stuffing or forced phrasing.
+- **4.0** — Every `must_keyword` present, 60–80% of missing keywords integrated. Reads naturally.
+- **3.0** — Every `must_keyword` present, <60% of missing keywords integrated, OR all keywords present but integration is awkward (keyword soup).
+- **2.0** — One or more `must_keyword` missing.
+- **1.0** — Multiple `must_keyword`s missing.
+- **0.0** — The generated resume bears no relationship to the JD vocabulary.
+
+You may emit fractional scores between bands. 4.3 = stronger than band-4 but short of 5; 3.7 = strong band-3 nearly at 4. Always emit one decimal place. The pass threshold is 4.0.
 
 ## Output
 
 ```json
 {
-  "score": 0,
+  "score": 4.3,
   "reasons": ["short bullets noting missing must_keywords and integration quality"],
   "failed_rules": ["missing_must_keyword:$keyword", "low_coverage", "keyword_stuffing", "forced_phrasing"]
 }

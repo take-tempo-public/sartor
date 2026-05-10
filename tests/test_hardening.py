@@ -5,7 +5,11 @@ These functions must remain LLM-free and produce stable output for given input.
 
 from hardening import (
     check_ats_format,
+    compute_call_cost,
+    compute_grounding_overlap,
     compute_keyword_overlap,
+    compute_specificity_density,
+    compute_verb_diversity,
     extract_keywords,
     validate_config,
 )
@@ -108,3 +112,185 @@ class TestValidateConfig:
     def test_malformed_portfolio_url_is_error(self):
         errors = validate_config({"name": "Jane", "portfolio_urls": ["not-a-url"]})
         assert any("portfolio" in e.lower() for e in errors)
+
+
+class TestVerbDiversity:
+    def test_empty_resume(self):
+        out = compute_verb_diversity("")
+        assert out["total_bullets"] == 0
+        assert out["diversity_ratio"] == 0.0
+        assert out["top_repeated"] == []
+
+    def test_no_bullets_in_text(self):
+        out = compute_verb_diversity("This is a paragraph without bullets.")
+        assert out["total_bullets"] == 0
+
+    def test_perfect_diversity(self):
+        text = (
+            "- Architected a distributed cache.\n"
+            "- Designed the rollout plan.\n"
+            "- Mentored two engineers.\n"
+        )
+        out = compute_verb_diversity(text)
+        assert out["unique_verbs"] == 3
+        assert out["total_bullets"] == 3
+        assert out["diversity_ratio"] == 1.0
+        assert out["top_repeated"] == []
+
+    def test_low_diversity_flags_repeated_verb(self):
+        text = (
+            "- Built dashboards.\n"
+            "- Built reports.\n"
+            "- Built ETL.\n"
+            "- Maintained the warehouse.\n"
+        )
+        out = compute_verb_diversity(text)
+        assert out["unique_verbs"] == 2
+        assert out["total_bullets"] == 4
+        assert out["diversity_ratio"] == 0.5
+        assert out["top_repeated"][0] == ("built", 3)
+
+    def test_handles_asterisk_bullets(self):
+        text = "* Led one effort.\n* Owned another.\n"
+        out = compute_verb_diversity(text)
+        assert out["total_bullets"] == 2
+        assert out["unique_verbs"] == 2
+
+
+class TestSpecificityDensity:
+    def test_empty_input(self):
+        out = compute_specificity_density("")
+        assert out["total_bullets"] == 0
+        assert out["density"] == 0.0
+
+    def test_all_bullets_quantified(self):
+        text = (
+            "- Increased revenue 30% over two quarters.\n"
+            "- Shipped 12 launches in 2024.\n"
+            "- Saved $2.4M annually.\n"
+        )
+        out = compute_specificity_density(text)
+        assert out["total_bullets"] == 3
+        assert out["bullets_with_metric"] == 3
+        assert out["density"] == 1.0
+
+    def test_no_bullets_quantified(self):
+        text = (
+            "- Led cross-functional teams.\n"
+            "- Mentored junior engineers.\n"
+            "- Owned the architecture review process.\n"
+        )
+        out = compute_specificity_density(text)
+        assert out["bullets_with_metric"] == 0
+        assert out["density"] == 0.0
+
+    def test_mixed(self):
+        text = (
+            "- Drove a 30% reduction in latency.\n"
+            "- Mentored junior engineers.\n"
+            "- Hired 5 ICs.\n"
+            "- Drafted standards.\n"
+        )
+        out = compute_specificity_density(text)
+        assert out["total_bullets"] == 4
+        assert out["bullets_with_metric"] == 2
+        assert out["density"] == 0.5
+
+
+class TestGroundingOverlap:
+    def test_empty_inputs(self):
+        out = compute_grounding_overlap("", [])
+        assert out["overlap_ratio"] == 0.0
+        assert out["total_ngrams"] == 0
+        assert out["missing_samples"] == []
+
+    def test_full_overlap(self):
+        source = "I built customer dashboards for the analytics team last year."
+        out = compute_grounding_overlap(source, [source], n=3)
+        assert out["overlap_ratio"] == 1.0
+        assert out["missing_samples"] == []
+
+    def test_data_scientist_junior_failure_mode(self):
+        """The exact failure observed in evals/results: source said 'built
+        dashboards', generated added 'time-series forecasting'. The 3-gram
+        'time series forecasting' must surface in missing_samples."""
+        source = "Built customer-facing dashboards for the analytics team."
+        generated = "Built time-series forecasting models for executive stakeholders."
+        out = compute_grounding_overlap(generated, [source], n=3)
+        # 'time series forecasting' (or its punctuation-stripped equivalent)
+        # should appear in missing_samples.
+        joined = " | ".join(out["missing_samples"])
+        assert "time series forecasting" in joined
+        assert out["overlap_ratio"] < 0.5
+
+    def test_stopword_only_ngrams_excluded(self):
+        # Only stopwords in generated → no missing_samples entry would be
+        # meaningful; ratio is 0 but missing_samples should NOT carry pure
+        # stopword n-grams.
+        out = compute_grounding_overlap("the and or", ["completely different text"], n=3)
+        assert all(
+            not all(w in {"the", "and", "or", "but", "in", "on"} for w in s.split())
+            for s in out["missing_samples"]
+        )
+
+    def test_short_input_returns_zero_total(self):
+        # Fewer than n tokens → no n-grams produced
+        out = compute_grounding_overlap("hi", ["whatever"], n=3)
+        assert out["total_ngrams"] == 0
+        assert out["missing_samples"] == []
+
+    def test_missing_samples_capped_at_ten(self):
+        source = "alpha bravo charlie"
+        # Many novel 3-grams in generated
+        generated = " ".join(f"word{i}" for i in range(40))
+        out = compute_grounding_overlap(generated, [source], n=3)
+        assert len(out["missing_samples"]) <= 10
+
+
+class TestCallCost:
+    def test_known_sonnet_record(self):
+        record = {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 1_000_000,
+            "output_tokens": 0,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+        }
+        # 1M input @ $3/M = $3.00
+        assert compute_call_cost(record) == 3.0
+
+    def test_haiku_with_cache(self):
+        record = {
+            "model": "claude-haiku-4-5-20251001",
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1_000_000,
+        }
+        # 1M cache_read @ $0.08/M = $0.08
+        assert compute_call_cost(record) == 0.08
+
+    def test_unknown_model_returns_zero(self, caplog):
+        record = {
+            "model": "claude-opus-9000",
+            "input_tokens": 100,
+            "output_tokens": 100,
+        }
+        cost = compute_call_cost(record)
+        assert cost == 0.0
+
+    def test_missing_model_no_warning_just_zero(self):
+        record = {"input_tokens": 100, "output_tokens": 100}
+        assert compute_call_cost(record) == 0.0
+
+    def test_realistic_analyze_call(self):
+        # Real values from a recent eval run
+        record = {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 2050,
+            "output_tokens": 4829,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+        }
+        # 2050*3 + 4829*15 = 6150 + 72435 = 78585 / 1M = $0.078585
+        assert compute_call_cost(record) == 0.078585

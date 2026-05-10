@@ -1,0 +1,201 @@
+"""Unit tests for dashboard.routes — aggregation helpers and route smoke.
+
+These cover the four new aggregations that drive the eval charts and
+heatmap, plus a smoke test that confirms the index route renders cleanly
+when no eval results exist (graceful degradation).
+"""
+
+from __future__ import annotations
+
+from dashboard.routes import (
+    _failure_mode_frequency,
+    _per_rubric_pass_rate,
+    _rubric_fixture_heatmap,
+    _score_over_time,
+    _summarize_calls,
+)
+
+
+class TestPerRubricPassRate:
+    def test_empty(self):
+        assert _per_rubric_pass_rate([]) == []
+
+    def test_mixed_int_float_scores(self):
+        # Phase-0 normalization should already have coerced ints to floats,
+        # but the helper must work for both shapes regardless.
+        records = [
+            {"rubric": "grounding", "score": 4},
+            {"rubric": "grounding", "score": 4.5},
+            {"rubric": "grounding", "score": 3.9},
+            {"rubric": "tone", "score": 5.0},
+        ]
+        out = _per_rubric_pass_rate(records)
+        rubric_map = {r["rubric"]: r for r in out}
+        assert rubric_map["grounding"]["pass_count"] == 2
+        assert rubric_map["grounding"]["fail_count"] == 1
+        assert rubric_map["grounding"]["pass_rate"] == round(2 / 3, 3)
+        assert rubric_map["tone"]["pass_count"] == 1
+
+    def test_pipeline_error_rows_count_as_fail(self):
+        records = [
+            {"rubric": "grounding", "score": None, "status": "judge_error"},
+            {"rubric": "grounding", "score": 5.0},
+        ]
+        out = _per_rubric_pass_rate(records)
+        assert out[0]["pass_count"] == 1
+        assert out[0]["fail_count"] == 1
+
+    def test_skips_records_without_rubric(self):
+        records = [{"rubric": None, "score": None}, {"rubric": "tone", "score": 4.0}]
+        out = _per_rubric_pass_rate(records)
+        assert len(out) == 1
+        assert out[0]["rubric"] == "tone"
+
+
+class TestScoreOverTime:
+    def test_groups_by_prompt_version(self):
+        records = [
+            {"rubric": "grounding", "score": 3.0, "prompt_version": "v1", "timestamp": "2026-05-01T00:00:00Z"},
+            {"rubric": "grounding", "score": 4.5, "prompt_version": "v2", "timestamp": "2026-05-09T00:00:00Z"},
+            {"rubric": "tone", "score": 5.0, "prompt_version": "v2", "timestamp": "2026-05-09T00:00:00Z"},
+        ]
+        out = _score_over_time(records)
+        labels = sorted({d["label"] for d in out["datasets"]})
+        assert labels == ["grounding", "tone"]
+        # Each dataset's point carries the prompt_version label
+        for ds in out["datasets"]:
+            for pt in ds["data"]:
+                assert "v" in pt
+
+    def test_filters_records_without_prompt_version(self):
+        records = [
+            {"rubric": "grounding", "score": 3.0, "prompt_version": "", "timestamp": "2026-05-01T00:00:00Z"},
+            {"rubric": "grounding", "score": 4.0, "prompt_version": "v2", "timestamp": "2026-05-09T00:00:00Z"},
+        ]
+        out = _score_over_time(records)
+        # 1 of 2 records filtered
+        assert out["filtered_records"] == 1
+
+    def test_handles_empty_input(self):
+        out = _score_over_time([])
+        assert out["datasets"] == []
+        assert out["labels"] == []
+
+
+class TestRubricFixtureHeatmap:
+    def test_takes_most_recent_per_pair(self):
+        records = [
+            {"rubric": "grounding", "fixture": "A", "score": 3.0, "timestamp": "2026-05-01T00:00:00Z"},
+            {"rubric": "grounding", "fixture": "A", "score": 4.5, "timestamp": "2026-05-09T00:00:00Z"},
+        ]
+        out = _rubric_fixture_heatmap(records)
+        cell = out["rows"][0]["cells"][0]
+        assert cell["score"] == 4.5
+
+    def test_missing_pairs_are_empty_cells(self):
+        # Two rubrics, but only one has data for fixture B
+        records = [
+            {"rubric": "grounding", "fixture": "A", "score": 4.0, "timestamp": "2026-05-09T00:00:00Z"},
+            {"rubric": "tone", "fixture": "B", "score": 5.0, "timestamp": "2026-05-09T00:00:00Z"},
+        ]
+        out = _rubric_fixture_heatmap(records)
+        # 2 rubrics × 2 fixtures = 4 cells; 2 should be empty (score=None)
+        all_cells = [c for row in out["rows"] for c in row["cells"]]
+        assert len([c for c in all_cells if c["score"] is None]) == 2
+
+    def test_color_scales_with_score(self):
+        records = [
+            {"rubric": "grounding", "fixture": "A", "score": 0.0, "timestamp": "2026-05-09T00:00:00Z"},
+            {"rubric": "grounding", "fixture": "B", "score": 5.0, "timestamp": "2026-05-09T00:00:00Z"},
+        ]
+        out = _rubric_fixture_heatmap(records)
+        cells = out["rows"][0]["cells"]
+        # Score 0 → hue 0 (red); score 5 → hue 120 (green)
+        assert "hsl(0 " in cells[0]["color"]
+        assert "hsl(120 " in cells[1]["color"]
+
+
+class TestFailureModeFrequency:
+    def test_per_record_dedup(self):
+        # One record with duplicates of "a" should still count as 1
+        records = [{"failed_rules": ["a", "a", "b"]}, {"failed_rules": ["a"]}]
+        out = _failure_mode_frequency(records)
+        slug_map = {f["slug"]: f["count"] for f in out}
+        assert slug_map["a"] == 2  # 2 records mention "a"
+        assert slug_map["b"] == 1
+
+    def test_empty_records(self):
+        assert _failure_mode_frequency([]) == []
+
+    def test_skips_empty_or_non_string_slugs(self):
+        records = [{"failed_rules": ["", None, 42, "valid_slug"]}]
+        out = _failure_mode_frequency(records)
+        assert len(out) == 1
+        assert out[0]["slug"] == "valid_slug"
+
+    def test_sorts_by_count_desc(self):
+        records = [
+            {"failed_rules": ["a"]},
+            {"failed_rules": ["b"]},
+            {"failed_rules": ["b"]},
+            {"failed_rules": ["b"]},
+            {"failed_rules": ["a", "c"]},
+        ]
+        out = _failure_mode_frequency(records)
+        assert out[0]["slug"] == "b"
+        assert out[0]["count"] == 3
+
+    def test_caps_at_twenty(self):
+        records = [{"failed_rules": [f"slug_{i}"]} for i in range(40)]
+        out = _failure_mode_frequency(records)
+        assert len(out) == 20
+
+
+class TestSummarizeCalls:
+    def test_includes_cost_fields(self):
+        records = [
+            {
+                "model": "claude-sonnet-4-6",
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "cache_creation_input_tokens": 0,
+                "cache_read_input_tokens": 0,
+                "latency_ms": 1000,
+                "status": "ok",
+            },
+        ]
+        out = _summarize_calls(records)
+        assert "total_cost_usd" in out
+        assert "mean_cost_per_call" in out
+        assert out["total_cost_usd"] > 0
+
+    def test_empty_returns_zero_cost(self):
+        out = _summarize_calls([])
+        assert out["total_cost_usd"] == 0.0
+        assert out["mean_cost_per_call"] == 0.0
+
+
+class TestIndexRoute:
+    """Smoke test the route renders cleanly when there's nothing to display."""
+
+    def test_index_renders_with_no_data(self, tmp_path, monkeypatch):
+        from flask import Flask
+
+        from dashboard import routes as dashboard_routes
+
+        # Point both data sources at empty paths
+        monkeypatch.setattr(dashboard_routes, "LLM_LOG", tmp_path / "no.jsonl")
+        monkeypatch.setattr(dashboard_routes, "EVAL_RESULTS_DIR", tmp_path / "results")
+
+        app = Flask(__name__)
+        app.register_blueprint(dashboard_routes.dashboard_bp, url_prefix="/dashboard")
+
+        with app.test_client() as client:
+            resp = client.get("/dashboard/", headers={"Host": "127.0.0.1"})
+            assert resp.status_code == 200
+            body = resp.get_data(as_text=True)
+            # Empty-state messages should be visible
+            assert "No call records" in body or "No calls match" in body
+            assert "No eval results yet" in body
+            # Chart.js script tag should still be in the head
+            assert "chart.umd" in body

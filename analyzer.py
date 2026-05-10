@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Bump when SYSTEM_PROMPT or any per-call prompt template changes. Labels every
 # JSONL telemetry record so quality regressions can be attributed to a revision.
-PROMPT_VERSION = "2026-05-06.5"
+PROMPT_VERSION = "2026-05-09.1"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -59,7 +59,10 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Always match the candidate's actual experience level BECAUSE misrepresentation triggers red flags in interviews
 - Never reformat the resume structure unless asked BECAUSE candidates have formatting preferences and drastic changes confuse them
 - Always prioritize keywords from the job description BECAUSE ATS systems rank by keyword match before human eyes see the resume
-- Always treat the Notes field as explicit candidate directives — personal constraints or standing instructions (e.g. "remote only", "do not mention gap in 2020", "always emphasize architecture over management") BECAUSE ignoring them produces documents the candidate cannot use"""
+- Always treat the Notes field as explicit candidate directives — personal constraints or standing instructions (e.g. "remote only", "do not mention gap in 2020", "always emphasize architecture over management") BECAUSE ignoring them produces documents the candidate cannot use
+- Never restate a candidate's responsibility using a more advanced technique than the source describes BECAUSE writing "time-series forecasting" when the source only says "built dashboards" invents a skill the candidate cannot demonstrate in interviews
+- Never upgrade a tool category into a specific vendor or framework BECAUSE "used a CI tool" must not become "authored Jenkins pipelines" if the source does not name Jenkins; vendor-specific claims are verifiable and disqualifying when wrong
+- Never escalate scope adjectives (team → organization-wide, project → enterprise initiative, regional → global) BECAUSE scope inflation is verifiable in interviews and triggers credibility loss across the rest of the resume"""
 
 # Model selection rationale:
 #   - Sonnet 4.6 for analyze() and generate(): the work needs reasoning depth
@@ -403,6 +406,22 @@ GROUNDING CHECK — apply this before writing every bullet:
   Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — exist in the primary resume OR any supplemental resume above?"
   If YES: reframe, strengthen, and keyword-align it freely.
   If NO: do not write it. Reframe what IS there, or omit the bullet.
+
+  Worked examples — what to do and what NOT to do:
+    Source bullet: "Built customer-facing dashboards for the analytics team."
+    OK to write:   "Designed customer-facing analytics dashboards for the data team."
+    NOT OK:        "Built time-series forecasting dashboards for executive stakeholders."
+                   ← invents "time-series forecasting" (advanced technique not in source) and "executive stakeholders" (audience not in source).
+
+    Source bullet: "Used a CI tool to automate test runs."
+    OK to write:   "Automated test execution via continuous integration."
+    NOT OK:        "Authored Jenkins pipelines for nightly regression suites."
+                   ← invents "Jenkins" (vendor not in source) and "nightly regression" (cadence not in source).
+
+    Source bullet: "Improved the team's reporting workflow."
+    OK to write:   "Streamlined the team's reporting workflow."
+    NOT OK:        "Led an organization-wide reporting transformation."
+                   ← scope inflation: "team" became "organization-wide", "improved workflow" became "transformation".
 
 1. Include a targeted summary sentence answering: what title you seek, what makes you special, what you bring to the team. If it cannot fit in one sentence, use a sentence with a very short bullet list.
 2. Do NOT invent experience. Every bullet must trace directly to the original resume. Reframe language; never invent facts.

@@ -18,20 +18,23 @@ You are grading whether the generated cover letter matches the project's prescri
 7. **Active voice + confidence**: "I led", "I built", "I delivered" — not "I have had the opportunity to". Spot-check 2-3 sentences.
 8. **Sentence length**: Average 12–16 words; no single sentence over 25 words. Sample 3-4 sentences if uncertain.
 
-## Scoring (0–5)
+## Scoring (0.0–5.0, one-decimal precision)
 
-- **5** — All eight checks pass.
-- **4** — Seven of eight pass, one minor miss (e.g., 245 words instead of 250).
-- **3** — Six of eight pass, OR one banned phrase appears.
-- **2** — Five of eight pass, OR throat-clearing opener detected.
-- **1** — Four or fewer pass.
-- **0** — Letter is unrelated to the JD or unintelligible.
+Anchor bands:
+- **5.0** — All eight checks pass.
+- **4.0** — Seven of eight pass, one minor miss (e.g., 245 words instead of 250).
+- **3.0** — Six of eight pass, OR one banned phrase appears.
+- **2.0** — Five of eight pass, OR throat-clearing opener detected.
+- **1.0** — Four or fewer pass.
+- **0.0** — Letter is unrelated to the JD or unintelligible.
+
+You may emit fractional scores between bands. 4.3 = seven-of-eight with a near-miss; 3.7 = six-of-eight clean (no banned phrase) trending stronger. Always emit one decimal place. The pass threshold is 4.0.
 
 ## Output
 
 ```json
 {
-  "score": 0,
+  "score": 4.3,
   "reasons": ["one bullet per check that failed, with the specific phrase"],
   "failed_rules": ["throat_clearing_opener", "banned_phrase:leverage", "hedging:I_believe", "length_under", "generic_hook"]
 }

@@ -10,15 +10,19 @@ The payload contains:
 - `generated_resume` — the LLM-produced resume output
 - `generated_cover_letter` — the LLM-produced cover letter
 - `expected.forbidden_inventions` — regex patterns that MUST NOT appear in the generated output (per-fixture)
+- `deterministic_analysis.post_generation.grounding_overlap` — n-gram overlap between generated and source. Treat `missing_samples` (3-grams in generated absent from source) as strong evidence of fabrication when items contain noun phrases or technology names. Ignore stopword/glue n-grams. The overlap_ratio is informative but not definitive — paraphrase legitimately reduces ratio.
 
-## Scoring (0–5)
+## Scoring (0.0–5.0, one-decimal precision)
 
-- **5** — Every claim, number, title, company, and timeframe in the generated artifacts traces directly to source. Reframing and verb upgrades are fine; new facts are not.
-- **4** — One minor reframing on the boundary (e.g., "improved performance" where source said "made faster") that a reasonable reader could accept.
-- **3** — One clear new claim that source doesn't support, but the rest is grounded.
-- **2** — Multiple invented details, mostly minor (small metric, small scope inflation).
-- **1** — A major fabrication: invented role, invented company, invented credential, invented quantitative metric.
-- **0** — Pervasive fabrication; the output describes a different candidate than the source.
+Anchor bands:
+- **5.0** — Every claim, number, title, company, and timeframe in the generated artifacts traces directly to source. Reframing and verb upgrades are fine; new facts are not.
+- **4.0** — One minor reframing on the boundary (e.g., "improved performance" where source said "made faster") that a reasonable reader could accept.
+- **3.0** — One clear new claim that source doesn't support, but the rest is grounded.
+- **2.0** — Multiple invented details, mostly minor (small metric, small scope inflation).
+- **1.0** — A major fabrication: invented role, invented company, invented credential, invented quantitative metric.
+- **0.0** — Pervasive fabrication; the output describes a different candidate than the source.
+
+You may emit fractional scores between bands. A 4.3 means stronger than band-4 but short of band-5; a 4.7 means borderline-passing-as-5; a 2.5 means halfway between bands 2 and 3. Always emit one decimal place. The pass threshold for this product is 4.0.
 
 ## Output
 
@@ -26,9 +30,9 @@ Respond with valid JSON only — no markdown fences, no commentary outside the J
 
 ```json
 {
-  "score": 0,
+  "score": 4.3,
   "reasons": ["one short bullet per finding, citing the specific phrase"],
-  "failed_rules": ["invented_metric", "invented_role", "forbidden_pattern_match", ...]
+  "failed_rules": ["invented_metric", "invented_role", "forbidden_pattern_match"]
 }
 ```
 
