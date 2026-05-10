@@ -46,7 +46,9 @@ The project follows the [10 Principles framework](https://jdforsythe.github.io/1
 ```
 app.py              Flask routes + security helpers (_safe_username, _within)
 analyzer.py         LLM calls: analyze(), generate(), _supplemental_block(), SYSTEM_PROMPT
-hardening.py        Deterministic tools: keyword extraction, ATS checks, build_context_set()
+hardening.py        Deterministic tools: keyword extraction, ATS checks, build_context_set();
+                    plus four post-generation metrics (verb_diversity, specificity_density,
+                    grounding_overlap, call_cost) used by the eval harness and dashboard
 generator.py        Document output: _write_docx() uses original .docx as style template
 parser.py           Resume parsing (docx/pdf/md → structured dict)
 scraper.py          LinkedIn/portfolio URL scraping (best-effort, fails gracefully)
@@ -54,8 +56,13 @@ static/app.js       All frontend logic — vanilla JS, fetch API, no framework
 static/style.css    LCARS aesthetic: dark bg, amber/teal/orange/blue palette
 templates/index.html Single-page app shell
 
+dashboard/          Read-only Flask blueprint at /_dashboard. Score trend, rubric × fixture
+                    heatmap, failure-mode clustering, cost cards. Chart.js via CDN; no new
+                    Python deps. See dashboard/README.md.
 tests/              Unit tests (pytest)
-evals/              LLM eval harness with synthetic + real fixtures
+evals/              LLM eval harness with synthetic + real fixtures.
+                    Float 0.0-5.0 scoring (schema_version 2) since 2026-05-09.
+                    See evals/README.md and evals/TUNING_LOG.md for the iteration record.
 .claude-plugin/     Project's Claude Code plugin (commands, agents, hooks)
 .github/            CI workflows + issue/PR templates
 configs/            User .config files — gitignored
@@ -85,7 +92,12 @@ A `route-security-lint` hook enforces this once Step 5 lands — see `.claude-pl
 - System prompt lives at `analyzer.py:SYSTEM_PROMPT` — edit there, not inline
 - When `SYSTEM_PROMPT` changes, bump `PROMPT_VERSION` in the same commit so observability/eval can attribute behavior
 - Supplemental resumes injected via `_supplemental_block()` in both prompts
-- Grounding check in generation prompt enforces no invented facts
+- Grounding check in generation prompt enforces no invented facts; the worked-examples block (OK / NOT OK pairs) is the load-bearing teaching signal — when adding new failure modes to the SYSTEM_PROMPT, also add a worked example here
+
+**Eval observability:**
+- Eval results carry `prompt_version` so the dashboard's score-over-time chart can attribute regressions to specific prompt revisions
+- Deterministic post-generation metrics (`verb_diversity`, `specificity_density`, `grounding_overlap`, `cost_usd`) ride along on every result. `grounding_overlap.missing_samples` is the actionable fabrication signal — items containing technology names or domain nouns are the candidates to inspect
+- Document tuning iterations in `evals/TUNING_LOG.md` (what changed, why, scores before/after, lessons). This is the institutional-memory artifact for future tuners
 
 **Frontend config persistence:**
 - `_savePrimaryResume(filename)` — persists `latest_resume` to config on chip click
@@ -104,8 +116,11 @@ pytest
 ```
 CI runs the same on PR. Eval harness (Anthropic API costs apply) runs locally and on label-gated CI:
 ```bash
-python evals/runner.py --suite synthetic --subset smoke
+python evals/runner.py --suite synthetic --subset smoke   # ~$0.10, grounding only
+python evals/runner.py --suite synthetic                  # ~$1.50, all 4 rubrics × 3 fixtures
 ```
+
+Dashboard for trends + heatmap + failure-mode clustering: visit `http://localhost:5000/_dashboard` while `python app.py` is running locally. Only reachable via `localhost`/`127.0.0.1` (host-header guard).
 
 ---
 

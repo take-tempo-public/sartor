@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Bump when SYSTEM_PROMPT or any per-call prompt template changes. Labels every
 # JSONL telemetry record so quality regressions can be attributed to a revision.
-PROMPT_VERSION = "2026-05-06.5"
+PROMPT_VERSION = "2026-05-09.2"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -53,13 +53,16 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Never invent experience BECAUSE truthfulness is the north star and fabrication destroys candidacy if discovered
 - Never add specific numbers, percentages, dollar amounts, timeframes, team sizes, or quantities that do not appear verbatim or by clear implication in the original resume BECAUSE invented specifics are the most common and most damaging form of resume hallucination — they can be verified in any interview and immediately disqualify a candidate
 - When the original bullet has no metric: use strong qualitative scope language instead of fabricating one BECAUSE "Led enterprise-wide security initiative across 6 business units" is honest and compelling; "Led initiative saving $2.4M" without a source is a lie
-- Always surface existing metrics from the original resume rather than generating new ones BECAUSE the candidate's real numbers, however modest, are more credible than invented ones
+- Always surface existing metrics from the original resume rather than generating new ones BECAUSE the candidate's real numbers, however modest, are more credible than invented ones. "Metrics" includes ANY concrete quantity present in the source: counts ("three reports"), durations ("one year", "two quarters", "monthly cadence"), team or scope sizes ("two-person team", "12 customer interviews"), stars/contributions ("~30 GitHub stars", "two merged PRs"), and frequencies ("week over week", "24/7 on-call"). Preserve them verbatim when they exist; rounding "~30" to "30+" is fine, but never inflate ("~30" → "100+") and never invent numbers absent from source
 - Never use generic phrases like "results-driven professional" or "team player" BECAUSE they waste space and signal low effort to experienced reviewers
 - Always use varied, strong action verbs specific to the industry BECAUSE verb repetition signals lack of depth
 - Always match the candidate's actual experience level BECAUSE misrepresentation triggers red flags in interviews
 - Never reformat the resume structure unless asked BECAUSE candidates have formatting preferences and drastic changes confuse them
 - Always prioritize keywords from the job description BECAUSE ATS systems rank by keyword match before human eyes see the resume
-- Always treat the Notes field as explicit candidate directives — personal constraints or standing instructions (e.g. "remote only", "do not mention gap in 2020", "always emphasize architecture over management") BECAUSE ignoring them produces documents the candidate cannot use"""
+- Always treat the Notes field as explicit candidate directives — personal constraints or standing instructions (e.g. "remote only", "do not mention gap in 2020", "always emphasize architecture over management") BECAUSE ignoring them produces documents the candidate cannot use
+- Never restate a candidate's responsibility using a more advanced technique than the source describes BECAUSE writing "time-series forecasting" when the source only says "built dashboards" invents a skill the candidate cannot demonstrate in interviews
+- Never upgrade a tool category into a specific vendor or framework BECAUSE "used a CI tool" must not become "authored Jenkins pipelines" if the source does not name Jenkins; vendor-specific claims are verifiable and disqualifying when wrong
+- Never escalate scope adjectives (team → organization-wide, project → enterprise initiative, regional → global) BECAUSE scope inflation is verifiable in interviews and triggers credibility loss across the rest of the resume"""
 
 # Model selection rationale:
 #   - Sonnet 4.6 for analyze() and generate(): the work needs reasoning depth
@@ -164,6 +167,7 @@ def _call_llm(
     cached_user_prefix: str = "",
     call_kind: str = "analyze",
     username: str = "",
+    run_id: str = "",
 ) -> str:
     """Make a single LLM call using streaming, with prompt caching and JSONL telemetry.
 
@@ -221,6 +225,7 @@ def _call_llm(
         _emit_call_log({
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "username": username,
+            "run_id": run_id,
             "call": call_kind,
             "model": MODEL,
             "prompt_version": PROMPT_VERSION,
@@ -254,12 +259,19 @@ def _call_llm(
     return text
 
 
-def analyze(client: anthropic.Anthropic, context_set: dict, username: str = "") -> dict:
+def analyze(
+    client: anthropic.Anthropic,
+    context_set: dict,
+    username: str = "",
+    run_id: str = "",
+) -> dict:
     """Call 1: Analysis & Strategy.
 
     Analyzes JD, generates ideal resume, compares, produces suggestions.
     Returns structured analysis result. The username is threaded through to
-    JSONL telemetry only — no behavior depends on it.
+    JSONL telemetry only — no behavior depends on it. The run_id (when
+    provided) lets dashboard tooling correlate this call's telemetry with
+    its sibling generate() call and any eval result that consumed the output.
     """
     # P2 Context Hygiene: stable inputs (resume + JD + profile) live in the
     # cached prefix; only task-specific variable content is in the per-call prompt.
@@ -310,6 +322,7 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
         cached_user_prefix=_stable_user_prefix(context_set),
         call_kind="analyze",
         username=username,
+        run_id=run_id,
     )
 
     # Parse JSON response — strip markdown fences if model adds them despite instructions
@@ -333,12 +346,15 @@ def generate(
     analysis: dict,
     refinement_notes: str = "",
     username: str = "",
+    run_id: str = "",
 ) -> dict:
     """Call 2: Generation.
 
     Produces tailored resume content and cover letter.
     Includes proofreading pass. The username is threaded through to JSONL
-    telemetry only — no behavior depends on it.
+    telemetry only — no behavior depends on it. The run_id (when provided)
+    lets dashboard tooling correlate this call's telemetry with its sibling
+    analyze() call and any eval result that consumed the output.
     """
     prompt = f"""<task>Generate a tailored resume and cover letter for the candidate based on the analysis.</task>
 
@@ -403,6 +419,22 @@ GROUNDING CHECK — apply this before writing every bullet:
   Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — exist in the primary resume OR any supplemental resume above?"
   If YES: reframe, strengthen, and keyword-align it freely.
   If NO: do not write it. Reframe what IS there, or omit the bullet.
+
+  Worked examples — what to do and what NOT to do:
+    Source bullet: "Built customer-facing dashboards for the analytics team."
+    OK to write:   "Designed customer-facing analytics dashboards for the data team."
+    NOT OK:        "Built time-series forecasting dashboards for executive stakeholders."
+                   ← invents "time-series forecasting" (advanced technique not in source) and "executive stakeholders" (audience not in source).
+
+    Source bullet: "Used a CI tool to automate test runs."
+    OK to write:   "Automated test execution via continuous integration."
+    NOT OK:        "Authored Jenkins pipelines for nightly regression suites."
+                   ← invents "Jenkins" (vendor not in source) and "nightly regression" (cadence not in source).
+
+    Source bullet: "Improved the team's reporting workflow."
+    OK to write:   "Streamlined the team's reporting workflow."
+    NOT OK:        "Led an organization-wide reporting transformation."
+                   ← scope inflation: "team" became "organization-wide", "improved workflow" became "transformation".
 
 1. Include a targeted summary sentence answering: what title you seek, what makes you special, what you bring to the team. If it cannot fit in one sentence, use a sentence with a very short bullet list.
 2. Do NOT invent experience. Every bullet must trace directly to the original resume. Reframe language; never invent facts.
@@ -482,6 +514,7 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
         cached_user_prefix=_stable_user_prefix(context_set),
         call_kind="generate",
         username=username,
+        run_id=run_id,
     )
 
     cleaned = raw.strip()

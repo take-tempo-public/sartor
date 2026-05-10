@@ -81,10 +81,10 @@ Declarative criteria for grading. Schema:
     "10\\+ years",
     "PhD"
   ],
-  "min_grounding_score": 4,
-  "min_keyword_coverage_score": 4,
-  "min_ats_format_score": 4,
-  "min_tone_score": 3,
+  "min_grounding_score": 4.0,
+  "min_keyword_coverage_score": 4.0,
+  "min_ats_format_score": 4.0,
+  "min_tone_score": 3.0,
   "notes": "Mid-level SRE, real metrics in source are deliberately qualitative. Watch for invented headcount or dollar figures."
 }
 ```
@@ -94,7 +94,7 @@ Declarative criteria for grading. Schema:
 | `candidate_name` | Display only; passed into the candidate profile during `_build_context()` |
 | `must_keywords` | Strings that MUST appear in the generated `resume_content`. Each absent keyword degrades the `keyword_coverage` score |
 | `forbidden_inventions` | Regex patterns that MUST NOT appear in the generated artifacts. Each match degrades the `grounding` score |
-| `min_*_score` | Per-rubric pass thresholds (0–5 scale). A score below the threshold = fixture fails that rubric |
+| `min_*_score` | Per-rubric pass thresholds (0.0–5.0 scale, one-decimal precision). A score below the threshold = fixture fails that rubric |
 | `notes` | Free-form description of why this fixture exists and what failure mode it stresses. Read this first when triaging a failure |
 
 ### The three committed synthetic fixtures
@@ -137,18 +137,22 @@ Every rubric has six sections:
 
 ### Scoring convention
 
-All four rubrics use the same 0–5 scale:
+All four rubrics use the same **0.0–5.0 scale with one-decimal precision** (since 2026-05-09 / `schema_version: 2`). The anchor bands are unchanged from the prior integer scale; rubrics now invite the judge to emit fractional scores between bands when the work sits on a boundary.
 
 | Score | Meaning |
 |---|---|
-| 5 | Clean. No issues found. |
-| 4 | Minor issue on the boundary; reasonable reader could accept it. |
-| 3 | One clear issue, rest is fine. |
-| 2 | Multiple issues, mostly minor. |
-| 1 | Major problem (one egregious finding or several serious ones). |
-| 0 | Output is unusable for the dimension being scored. |
+| 5.0 | Clean. No issues found. |
+| 4.7 | Borderline-passing-as-5; one trivial nit. |
+| 4.0 | Minor issue on the boundary; reasonable reader could accept it. |
+| 3.5 | One clear issue plus a wobble; not quite to the "multiple issues" band. |
+| 3.0 | One clear issue, rest is fine. |
+| 2.0 | Multiple issues, mostly minor. |
+| 1.0 | Major problem (one egregious finding or several serious ones). |
+| 0.0 | Output is unusable for the dimension being scored. |
 
-Default pass threshold is 4 (set per-fixture in `expected.json`).
+Default pass threshold is `4.0` (set per-fixture in `expected.json`). The runner coerces ints to floats at the judge boundary so old (`schema_version=1`) integer results still load correctly through the dashboard's normalize helper.
+
+**Why fractional?** Integer 0–5 collapses real differences. The same fixture may genuinely score "stronger than 4 but not yet 5" on consecutive runs; the integer scale forces both into the same bucket and hides progress during prompt tuning. The float scale gives ~10× the granularity and is essential for tuning iterations to be observable.
 
 ### `failed_rules` slugs
 
@@ -208,6 +212,21 @@ Key implementation details:
 | `2` | At least one rubric scored below threshold |
 
 CI uses exit `2` to fail the build, distinguishing rubric failures from setup errors.
+
+### Regression alerting
+
+At the start of each run the runner reads every prior result file and builds a `{(fixture, rubric): most_recent_record}` baseline. After each grading it compares the new score to baseline and logs a `WARNING` when the drop exceeds `REGRESSION_DELTA` (default 0.5, override via env var). End-of-run summary lists improvements and regressions:
+
+```
+WARNING: REGRESSION: data-scientist-junior × tone dropped 4.8 → 4.2 (Δ=-0.6) vs prior run (prompt_version=2026-05-09.1, 2026-05-09T23:49:27)
+...
+--- Regression check vs previous runs (delta=0.5) ---
+  ✗ data-scientist-junior × tone: 4.8 → 4.2 (Δ=-0.6)
+  ✓ pm-senior × tone: 4.2 → 4.7 (Δ=+0.5)
+WARNING: Found 1 regression(s) ≥0.5 points.
+```
+
+Regressions are informational — they don't change the runner's exit code (rubric pass/fail is still the gating signal). The default delta of 0.5 is calibrated for Haiku judge variance: tighter and you'll see noise; looser and you'll miss real drops. Override with `REGRESSION_DELTA=0.3` for stricter tracking during prompt iteration.
 
 ---
 
@@ -298,33 +317,82 @@ To include a new rubric in the smoke subset, edit `_select_rubrics()` in `evals/
 
 ## Interpreting results
 
-Each line in `evals/results/{timestamp}.jsonl`:
+Each line in `evals/results/{timestamp}.jsonl` (schema_version 2):
 
 ```json
 {
-  "timestamp": "2026-05-06T22:55:14.000+00:00",
+  "schema_version": 2,
+  "score_max": 5.0,
+  "timestamp": "2026-05-09T23:46:57.472+00:00",
   "source": "eval",
   "fixture": "data-scientist-junior",
   "rubric": "grounding",
-  "score": 2,
+  "score": 4.8,
   "reasons": [
-    "Generated resume claims 'regression analysis' as core expertise; original mentions one capstone with gradient-boosted trees",
-    "Generated resume states candidate 'Build time-series forecasting models' at Cardinal Insurance; original says 'built dashboards'",
+    "All company names, dates, titles, and core credentials trace directly to original resume",
+    "Reframing of experience bullets is legitimate paraphrase",
     "..."
   ],
-  "failed_rules": ["scope_inflation", "invented_metric", "verb_overreach"],
-  "status": "ok"
+  "failed_rules": [],
+  "status": "ok",
+  "prompt_version": "2026-05-09.1",
+  "deterministic_metrics": {
+    "verb_diversity":      {"unique_verbs": 12, "total_bullets": 12, "diversity_ratio": 1.0,  "top_repeated": []},
+    "specificity_density": {"total_bullets": 12, "bullets_with_metric": 1, "density": 0.083, "metric_count": 1},
+    "grounding_overlap":   {"overlap_ratio": 0.21, "matched_ngrams": 138, "total_ngrams": 664, "missing_samples": ["..."], "n": 3}
+  },
+  "cost_usd": 0.1179,
+  "pipeline_latency_ms": 130212
 }
 ```
 
 | Field | Meaning |
 |---|---|
-| `score` | 0–5 per the rubric's scale. Compared against `expected.json:min_{rubric}_score` |
+| `schema_version` | `1` = legacy integer-score records; `2` = float-score records with deterministic_metrics. Dashboard normalizes both. |
+| `score_max` | Always `5.0` for current rubrics; here for forward-compat if a future rubric adopts a different scale. |
+| `score` | 0.0–5.0 per the rubric's scale. Compared against `expected.json:min_{rubric}_score` |
 | `reasons` | Specific quoted evidence the judge cited. Each reason should reference a phrase from the generated artifact |
 | `failed_rules` | Machine-friendly slugs from the rubric's vocabulary. Useful for grepping across many runs |
 | `status` | `ok` (graded successfully), `judge_error` (judge response unparseable), `pipeline_error` (analyze/generate threw) |
+| `prompt_version` | The `analyzer.PROMPT_VERSION` at run time. Lets the dashboard's score-over-time chart attribute regressions to a specific prompt revision. |
+| `run_id` | 12-hex UUID shared by the analyze + generate calls that produced this output. Match against `logs/llm_calls.jsonl` to find the specific LLM calls behind any graded result. |
+| `deterministic_metrics.verb_diversity` | Unique leading verbs / total bullets in generated resume. See `hardening.compute_verb_diversity`. |
+| `deterministic_metrics.specificity_density` | Fraction of bullets containing at least one quantifier. See `hardening.compute_specificity_density`. |
+| `deterministic_metrics.grounding_overlap` | 3-gram overlap between generated and source. **`missing_samples`** is the actionable signal for fabrication detection, not the ratio. See `hardening.compute_grounding_overlap`. |
+| `cost_usd` | Sum of all `analyze` + `generate` calls for this fixture, derived from `logs/llm_calls.jsonl` via `hardening.compute_call_cost`. |
+| `pipeline_latency_ms` | End-to-end pipeline time excluding judge calls. |
 
-The dashboard at `/_dashboard` reads `evals/results/*.jsonl` and shows the most recent 200 records in a filterable table.
+The dashboard at `/_dashboard` reads `evals/results/*.jsonl`, normalizes legacy records, and renders four aggregations described in [How to read the dashboard](#how-to-read-the-dashboard) below.
+
+### Deterministic post-generation metrics — ideal ranges
+
+These ride along on every eval result and surface in the dashboard's recent-eval table. They're cheap to compute, LLM-free, and orthogonal to the LLM-judged scores — use them as a sanity check on the rubric verdicts.
+
+| Metric | Healthy range | Action when out of range |
+|---|---|---|
+| `verb_diversity.diversity_ratio` | ≥ 0.6 | < 0.5: inspect `top_repeated`. SYSTEM_PROMPT already discourages verb repetition; if it persists, strengthen with a worked example like the grounding one. |
+| `specificity_density.density` | 0.30–0.80 | < 0.30: LLM under-quantified — likely paraphrasing real numbers from source into qualitative language. > 0.80: number-stuffing risk — cross-check grounding score. |
+| `grounding_overlap.overlap_ratio` | 0.20–0.50 | The ratio alone is NOT a pass/fail signal. Always read `missing_samples` for items containing technology names, domain nouns, or company-specific phrases — those are the fabrication candidates. Pure-stopword n-grams are filtered out automatically. |
+| `cost_usd` (per fixture) | $0.10–$0.15 (Sonnet 4.6 + 1× Haiku judge call) | A spike usually means a longer-than-usual generation — check `pipeline_latency_ms` and the corresponding `logs/llm_calls.jsonl` entry's `output_tokens`. |
+
+### How to read the dashboard
+
+`http://localhost:5000/_dashboard` (only when `python app.py` is running locally).
+
+Five views, top to bottom:
+
+1. **LLM Calls — Summary** cards: count, errors, mean latency, cache-hit ratio, total tokens, **total cost USD**, **mean cost per call**. Cost is computed via `hardening.compute_call_cost` using the same `MODEL_PRICING` table the eval runner uses.
+2. **LLM Calls — Recent**: per-call telemetry table. Filterable by date, user (use `eval:{fixture}` to isolate eval traffic), and model.
+3. **Eval Quality — Aggregations**:
+   - **Per-rubric pass rate** (bar chart): green ≥80%, amber 50-80%, red <50%. Quick health check.
+   - **Score over time by rubric** (line chart): each point's tooltip labels its `prompt_version`. Use this to attribute score swings to specific prompt revisions.
+   - **Rubric × fixture heatmap**: shows the most-recent score per (rubric, fixture) pair. Color is `hsl(120 * score/5, 60%, 30%)` — red for fail, green for pass. Hover for `prompt_version` and timestamp.
+   - **Top failure modes** table: top-20 `failed_rules` slugs by record count (per-record dedup). The first two or three slugs tell you what the next prompt iteration should target.
+4. **Eval Results — Recent**: per-rubric verdict rows including `prompt_version`, score, status, failed_rules. Most recent 200.
+
+When a tuning iteration is in progress: read the heatmap to find the red cell, the failure-mode table to identify the slug class, and the failing record's `deterministic_metrics.grounding_overlap.missing_samples` for the specific phrases to rule out in the next prompt edit. Then bump `PROMPT_VERSION`, re-run, and watch the score-over-time chart confirm the move.
+
+See [`TUNING_LOG.md`](TUNING_LOG.md) for the running record of prompt iterations and what each one taught us.
 
 ### What to do with a failed rubric
 

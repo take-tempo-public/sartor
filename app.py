@@ -7,6 +7,7 @@ P7 Observability: structured logging throughout.
 import json
 import logging
 import os
+import uuid
 from pathlib import Path
 
 import anthropic
@@ -280,16 +281,22 @@ def run_analysis():
         original_resume_path=str(resume_path),
     )
 
-    # Fuzzy work: LLM analysis
+    # Fuzzy work: LLM analysis. Generate a run_id that pairs this analyze
+    # call with the upcoming generate call (issued in /api/generate after
+    # the user reviews the analysis). Both calls share this ID in
+    # logs/llm_calls.jsonl so the dashboard can correlate them.
     client = _get_client()
+    run_id = uuid.uuid4().hex[:12]
     try:
-        analysis = analyze(client, context_set, username=safe_user)
+        analysis = analyze(client, context_set, username=safe_user, run_id=run_id)
     except anthropic.APIConnectionError as exc:
         logger.error("Anthropic API connection error during analysis: %s", exc)
         return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
 
-    # P4 Disposable Blueprint: save context + analysis
+    # P4 Disposable Blueprint: save context + analysis (and run_id so the
+    # generate route can re-use it for telemetry correlation)
     context_set["llm_analysis"] = analysis
+    context_set["run_id"] = run_id
     context_path = save_context_set(context_set, safe_user, str(OUTPUT_DIR))
 
     logger.info("Analysis complete for %s, saved to %s", safe_user, context_path)
@@ -332,11 +339,16 @@ def run_generation():
     logger.info("Starting generation for %s", username)
 
     client = _get_client()
+    # Re-use the run_id minted in /api/analyze when present so both calls
+    # share an ID in telemetry. New ID for legacy contexts that pre-date
+    # this field (or for one-off /api/generate calls without a prior analyze).
+    run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
     try:
         result = generate(
             client, context_set, analysis,
             refinement_notes=refinement_notes,
             username=username,
+            run_id=run_id,
         )
     except anthropic.APIConnectionError as exc:
         logger.error("Anthropic API connection error during generation: %s", exc)

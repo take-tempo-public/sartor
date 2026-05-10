@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Resume Optimizer — Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     body { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; margin: 1.5rem 2rem; background: #0a0a0c; color: #e8e8ea; }
     h1, h2 { color: #ffb86b; font-weight: 500; letter-spacing: 0.02em; }
     h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
     h2 { font-size: 1.05rem; margin-top: 2rem; border-bottom: 1px solid #2a2a30; padding-bottom: 0.3rem; }
+    h3 { color: #9aa; font-weight: 500; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1.5rem; }
     .meta { color: #6f7280; font-size: 0.85rem; }
     form.filters { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1rem 0; align-items: end; }
     form.filters label { display: flex; flex-direction: column; font-size: 0.8rem; color: #9aa; }
@@ -35,6 +37,15 @@
     .summary-card .v { font-size: 1.1rem; color: #ffb86b; }
     .empty { color: #6f7280; font-style: italic; padding: 1rem 0; }
     code.short { color: #94d4ff; }
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; }
+    .chart-box { background: #14141a; border: 1px solid #2a2a30; padding: 1rem; min-height: 300px; }
+    .chart-box canvas { max-height: 280px; }
+    table.heatmap { width: auto; }
+    table.heatmap th, table.heatmap td { padding: 0.5rem 0.7rem; text-align: center; border: 1px solid #0a0a0c; }
+    table.heatmap th { background: #14141a; color: #ffb86b; font-weight: 500; }
+    table.heatmap td.cell { color: #fff; font-variant-numeric: tabular-nums; min-width: 4.5rem; }
+    table.heatmap td.cell.empty { color: #6f7280; background: #1a1a20 !important; font-style: italic; }
+    .legend { color: #6f7280; font-size: 0.78rem; margin-top: 0.5rem; }
   </style>
 </head>
 <body>
@@ -70,11 +81,17 @@
   <div class="summary-card"><div class="k">calls</div><div class="v">{{ summary.count }}</div></div>
   <div class="summary-card"><div class="k">errors</div><div class="v {% if summary.error_count %}err{% else %}ok{% endif %}">{{ summary.error_count }}</div></div>
   <div class="summary-card"><div class="k">mean latency</div><div class="v">{{ summary.mean_latency_ms }}ms</div></div>
+  <div class="summary-card"><div class="k">p50 latency</div><div class="v">{{ summary.p50_latency_ms }}ms</div></div>
+  <div class="summary-card"><div class="k">p95 latency</div><div class="v">{{ summary.p95_latency_ms }}ms</div></div>
   <div class="summary-card"><div class="k">cache hit ratio</div><div class="v">{{ "%.1f"|format(summary.cache_hit_ratio * 100) }}%</div></div>
   <div class="summary-card"><div class="k">in tokens</div><div class="v">{{ summary.total_input_tokens }}</div></div>
   <div class="summary-card"><div class="k">out tokens</div><div class="v">{{ summary.total_output_tokens }}</div></div>
   <div class="summary-card"><div class="k">cache create</div><div class="v">{{ summary.cache_creation_input_tokens }}</div></div>
   <div class="summary-card"><div class="k">cache read</div><div class="v">{{ summary.cache_read_input_tokens }}</div></div>
+  <div class="summary-card"><div class="k">total cost</div><div class="v">${{ "%.4f"|format(summary.total_cost_usd) }}</div></div>
+  <div class="summary-card"><div class="k">mean / call</div><div class="v">${{ "%.6f"|format(summary.mean_cost_per_call) }}</div></div>
+  <div class="summary-card"><div class="k">p50 / call</div><div class="v">${{ "%.6f"|format(summary.p50_cost_usd) }}</div></div>
+  <div class="summary-card"><div class="k">p95 / call</div><div class="v">${{ "%.6f"|format(summary.p95_cost_usd) }}</div></div>
 </div>
 {% endif %}
 
@@ -88,6 +105,7 @@
       <th>Call</th>
       <th>Model</th>
       <th>Prompt v</th>
+      <th>Run</th>
       <th class="num">in</th>
       <th class="num">out</th>
       <th class="num">cache create</th>
@@ -104,6 +122,7 @@
       <td>{{ r.call }}</td>
       <td>{{ r.model }}</td>
       <td>{{ r.prompt_version }}</td>
+      <td><code class="short">{{ r.run_id or "—" }}</code></td>
       <td class="num">{{ r.input_tokens }}</td>
       <td class="num">{{ r.output_tokens }}</td>
       <td class="num">{{ r.cache_creation_input_tokens }}</td>
@@ -118,6 +137,76 @@
   <p class="empty">No call records.</p>
 {% endif %}
 
+<h2>Eval Quality — Aggregations</h2>
+{% if not eval_results %}
+  <p class="empty">No eval results yet{% if not eval_dir_present %} (no <code class="short">evals/results/</code> directory){% endif %}. Run <code class="short">python evals/runner.py --suite synthetic --subset smoke</code>.</p>
+{% else %}
+
+<div class="charts-row">
+  <div class="chart-box">
+    <h3>Per-rubric pass rate (score &ge; 4.0)</h3>
+    <canvas id="chart-rubric-passrate"></canvas>
+    <noscript>
+      <table>
+        <tr><th>Rubric</th><th class="num">Pass</th><th class="num">Total</th><th class="num">Rate</th></tr>
+        {% for r in rubric_pass_rate %}
+        <tr><td>{{ r.rubric }}</td><td class="num">{{ r.pass_count }}</td><td class="num">{{ r.total }}</td><td class="num">{{ "%.0f"|format(r.pass_rate * 100) }}%</td></tr>
+        {% endfor %}
+      </table>
+    </noscript>
+  </div>
+  <div class="chart-box">
+    <h3>Score over time by rubric</h3>
+    <canvas id="chart-score-over-time"></canvas>
+    <p class="legend">Each point labels its prompt_version on hover. {% if score_trend.filtered_records %}{{ score_trend.filtered_records }} record(s) hidden — pre-migration, no prompt_version.{% endif %}</p>
+  </div>
+</div>
+
+<h3>Rubric &times; fixture heatmap (most recent run per pair)</h3>
+{% if heatmap.fixtures %}
+<table class="heatmap">
+  <thead>
+    <tr>
+      <th>rubric \ fixture</th>
+      {% for f in heatmap.fixtures %}<th>{{ f }}</th>{% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in heatmap.rows %}
+    <tr>
+      <th>{{ row.rubric }}</th>
+      {% for cell in row.cells %}
+      {% if cell.score is none %}
+        <td class="cell empty">—</td>
+      {% else %}
+        <td class="cell" style="background: {{ cell.color }};" title="prompt_version={{ cell.prompt_version }} @ {{ cell.timestamp }}">{{ "%.1f"|format(cell.score) }}</td>
+      {% endif %}
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="legend">Color: red (0.0) → green (5.0). Hover a cell for prompt_version + timestamp.</p>
+{% else %}
+<p class="empty">No fixture × rubric pairs to render yet.</p>
+{% endif %}
+
+<h3>Top failure modes (per-record dedup)</h3>
+{% if failure_modes %}
+<table>
+  <thead><tr><th>failed_rules slug</th><th class="num">records</th></tr></thead>
+  <tbody>
+    {% for f in failure_modes %}
+    <tr><td><code class="short">{{ f.slug }}</code></td><td class="num">{{ f.count }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">No failure_rules recorded yet — every grading either passed or had no rule slugs attached.</p>
+{% endif %}
+
+{% endif %}
+
 <h2>Eval Results — Recent (last 200)</h2>
 {% if eval_results %}
 <table>
@@ -127,6 +216,8 @@
       <th>Fixture</th>
       <th>Rubric</th>
       <th class="num">Score</th>
+      <th>Prompt v</th>
+      <th>Run</th>
       <th>Status</th>
       <th>Failed rules</th>
     </tr>
@@ -137,16 +228,69 @@
       <td>{{ r.timestamp }}</td>
       <td>{{ r.fixture }}</td>
       <td>{{ r.rubric }}</td>
-      <td class="num {% if r.score is not none and r.score >= 4 %}pass{% else %}fail{% endif %}">{{ r.score if r.score is not none else "—" }}</td>
+      <td class="num {% if r.score is not none and r.score >= 4.0 %}pass{% else %}fail{% endif %}">{{ "%.1f"|format(r.score) if r.score is not none else "—" }}</td>
+      <td>{{ r.prompt_version }}</td>
+      <td><code class="short">{{ r.run_id or "—" }}</code></td>
       <td class="{% if r.status == 'ok' %}ok{% else %}err{% endif %}">{{ r.status }}</td>
       <td>{{ r.failed_rules|join(", ") if r.failed_rules else "" }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
-{% else %}
-  <p class="empty">No eval results yet{% if not eval_dir_present %} (no <code class="short">evals/results/</code> directory){% endif %}. Run <code class="short">python evals/runner.py --suite synthetic --subset smoke</code>.</p>
 {% endif %}
+
+<script>
+(function () {
+  if (typeof Chart === 'undefined') return;
+
+  const passData = {{ rubric_pass_rate | tojson }};
+  if (passData && passData.length) {
+    new Chart(document.getElementById('chart-rubric-passrate'), {
+      type: 'bar',
+      data: {
+        labels: passData.map(d => d.rubric),
+        datasets: [{
+          label: 'pass rate',
+          data: passData.map(d => Math.round(d.pass_rate * 1000) / 10),
+          backgroundColor: passData.map(d => d.pass_rate >= 0.8 ? '#82c8a4' : d.pass_rate >= 0.5 ? '#ffb86b' : '#d77a7a')
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { min: 0, max: 100, ticks: { color: '#9aa', callback: v => v + '%' } },
+          x: { ticks: { color: '#9aa' } }
+        }
+      }
+    });
+  }
+
+  const trend = {{ score_trend | tojson }};
+  if (trend && trend.datasets && trend.datasets.length) {
+    new Chart(document.getElementById('chart-score-over-time'), {
+      type: 'line',
+      data: { datasets: trend.datasets },
+      options: {
+        responsive: true,
+        parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+        plugins: {
+          legend: { labels: { color: '#9aa' } },
+          tooltip: {
+            callbacks: {
+              afterLabel: ctx => 'prompt_version: ' + (ctx.raw.v || 'unknown')
+            }
+          }
+        },
+        scales: {
+          y: { min: 0, max: 5, ticks: { color: '#9aa' } },
+          x: { type: 'category', ticks: { color: '#9aa', maxRotation: 0, autoSkip: true } }
+        }
+      }
+    });
+  }
+})();
+</script>
 
 </body>
 </html>
