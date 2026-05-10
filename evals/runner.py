@@ -22,6 +22,7 @@ import logging
 import os
 import sys
 import time
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -61,6 +62,14 @@ SCORE_MAX = 5.0
 # Bumped when the eval-result JSONL shape changes. Old records (no field) are
 # treated as schema_version=1 with int scores; the dashboard normalizes both.
 SCHEMA_VERSION = 2
+
+# Regression-alert sensitivity: any (fixture, rubric) score that drops by
+# more than this many points vs the previous run is logged as a regression.
+# Default 0.5 leaves room for normal judge variance (Haiku is non-deterministic
+# and can move scores by up to ~0.5 on identical inputs across runs) while
+# still surfacing genuine prompt-induced drops. Override with REGRESSION_DELTA
+# env var if your tuning loop needs tighter or looser bands.
+REGRESSION_DELTA = float(os.environ.get("REGRESSION_DELTA", "0.5"))
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +181,80 @@ def _eval_cost_since(t0_iso: str, fixture_name: str) -> float:
     return round(total, 6)
 
 
+def _load_baseline_scores(out_path: Path) -> dict[tuple[str, str], dict]:
+    """Read every prior eval result file and return the most-recent record
+    per (fixture, rubric) pair, EXCLUDING the current run's file.
+
+    The map's value is the full record so callers can compare against
+    `score`, `prompt_version`, or `run_id` as needed for regression detection.
+    """
+    if not RESULTS_DIR.exists():
+        return {}
+
+    baseline: dict[tuple[str, str], dict] = {}
+    for path in sorted(RESULTS_DIR.glob("*.jsonl")):
+        if path == out_path:
+            continue
+        try:
+            with path.open(encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        rec = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    fixture = rec.get("fixture")
+                    rubric = rec.get("rubric")
+                    score = rec.get("score")
+                    if not fixture or not rubric or score is None:
+                        continue
+                    key = (fixture, rubric)
+                    prev = baseline.get(key)
+                    if prev is None or rec.get("timestamp", "") > prev.get("timestamp", ""):
+                        baseline[key] = rec
+        except OSError:
+            continue
+    return baseline
+
+
+def _detect_regression(
+    fixture: str,
+    rubric: str,
+    new_score: float,
+    baseline: dict[tuple[str, str], dict],
+) -> dict | None:
+    """Compare a fresh score against the most-recent prior score for the same
+    (fixture, rubric) pair. Returns a regression record if the drop exceeds
+    REGRESSION_DELTA, otherwise None.
+
+    A negative `delta` means the score dropped (regression). Positive means
+    improvement (also returned, but only delta < -REGRESSION_DELTA is logged
+    as WARN).
+    """
+    key = (fixture, rubric)
+    prev = baseline.get(key)
+    if prev is None:
+        return None
+    prev_score = prev.get("score")
+    if not isinstance(prev_score, (int, float)):
+        return None
+    prev_score_f = float(prev_score)
+    delta = new_score - prev_score_f
+    return {
+        "fixture": fixture,
+        "rubric": rubric,
+        "new_score": new_score,
+        "prev_score": prev_score_f,
+        "delta": round(delta, 2),
+        "prev_prompt_version": prev.get("prompt_version", ""),
+        "prev_timestamp": prev.get("timestamp", ""),
+        "is_regression": delta < -REGRESSION_DELTA,
+        "is_improvement": delta > REGRESSION_DELTA,
+    }
+
+
 def _grade(client: anthropic.Anthropic, rubric_path: Path, payload: dict) -> dict:
     """Send one (rubric × payload) to Haiku and parse the JSON verdict."""
     rubric = rubric_path.read_text(encoding="utf-8")
@@ -274,6 +357,15 @@ def main(argv: list[str] | None = None) -> int:
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%SZ")
+    out_path_for_baseline = out_dir / f"{timestamp}.jsonl"
+    baseline = _load_baseline_scores(out_path_for_baseline)
+    regressions: list[dict] = []
+    improvements: list[dict] = []
+    if baseline:
+        logger.info(
+            "Regression-alert baseline: %d (fixture, rubric) pairs from prior runs (delta=%.1f)",
+            len(baseline), REGRESSION_DELTA,
+        )
     out_path = out_dir / f"{timestamp}.jsonl"
 
     n_pass = n_fail = 0
@@ -286,15 +378,28 @@ def main(argv: list[str] | None = None) -> int:
                 logger.error("Fixture load failed: %s — %s", fdir.name, exc)
                 continue
 
-            logger.info("Fixture %s: building context + running pipeline", fixture["name"])
+            # One run_id per fixture pipeline so the analyze + generate calls
+            # share an ID. Lands in logs/llm_calls.jsonl AND on every per-rubric
+            # eval result, letting the dashboard correlate which LLM calls
+            # produced which graded output.
+            run_id = uuid.uuid4().hex[:12]
+            logger.info(
+                "Fixture %s: building context + running pipeline (run_id=%s)",
+                fixture["name"], run_id,
+            )
             t0 = time.perf_counter()
             t0_iso = datetime.now(timezone.utc).isoformat()
             try:
                 context = _build_context(fixture)
-                analysis = analyze(client, context, username=f"eval:{fixture['name']}")
+                analysis = analyze(
+                    client, context,
+                    username=f"eval:{fixture['name']}",
+                    run_id=run_id,
+                )
                 result = generate(
                     client, context, analysis,
                     username=f"eval:{fixture['name']}",
+                    run_id=run_id,
                 )
             except Exception as exc:
                 logger.error("Pipeline failed for %s: %s", fixture["name"], exc)
@@ -308,6 +413,8 @@ def main(argv: list[str] | None = None) -> int:
                     "score": None,
                     "status": "pipeline_error",
                     "error": str(exc),
+                    "run_id": run_id,
+                    "prompt_version": PROMPT_VERSION,
                 }) + "\n")
                 n_fail += 1
                 continue
@@ -375,6 +482,7 @@ def main(argv: list[str] | None = None) -> int:
                     "failed_rules": grade.get("failed_rules", []),
                     "status": grade.get("status", "ok"),
                     "prompt_version": PROMPT_VERSION,
+                    "run_id": run_id,
                     "deterministic_metrics": det_metrics,
                     "cost_usd": cost_usd,
                     "pipeline_latency_ms": elapsed_ms,
@@ -393,10 +501,49 @@ def main(argv: list[str] | None = None) -> int:
                     fixture["name"], rubric_path.stem, score, verdict,
                 )
 
+                if isinstance(score, (int, float)):
+                    delta = _detect_regression(
+                        fixture["name"], rubric_path.stem, float(score), baseline,
+                    )
+                    if delta is not None:
+                        if delta["is_regression"]:
+                            regressions.append(delta)
+                            logger.warning(
+                                "REGRESSION: %s × %s dropped %.1f → %.1f (Δ=%+.1f) "
+                                "vs prior run (prompt_version=%s, %s)",
+                                delta["fixture"], delta["rubric"],
+                                delta["prev_score"], delta["new_score"], delta["delta"],
+                                delta["prev_prompt_version"] or "unknown",
+                                delta["prev_timestamp"][:19] if delta["prev_timestamp"] else "—",
+                            )
+                        elif delta["is_improvement"]:
+                            improvements.append(delta)
+
     logger.info(
         "Eval complete: %d pass, %d fail. Results: %s",
         n_pass, n_fail, out_path,
     )
+
+    # Regression summary — concise, only printed when there's something to say.
+    if regressions or improvements:
+        logger.info("--- Regression check vs previous runs (delta=%.1f) ---", REGRESSION_DELTA)
+        for d in regressions:
+            logger.info(
+                "  ✗ %s × %s: %.1f → %.1f (Δ=%+.1f)",
+                d["fixture"], d["rubric"], d["prev_score"], d["new_score"], d["delta"],
+            )
+        for d in improvements:
+            logger.info(
+                "  ✓ %s × %s: %.1f → %.1f (Δ=%+.1f)",
+                d["fixture"], d["rubric"], d["prev_score"], d["new_score"], d["delta"],
+            )
+        if regressions:
+            logger.warning(
+                "Found %d regression(s) ≥%.1f points. Inspect dashboard heatmap "
+                "and check `failed_rules` for the affected (fixture, rubric) pairs.",
+                len(regressions), REGRESSION_DELTA,
+            )
+
     return 0 if n_fail == 0 else 2
 
 

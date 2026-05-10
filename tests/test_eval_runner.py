@@ -56,12 +56,20 @@ class TestNormalizeEvalRecord:
             "schema_version": 2,
             "score_max": 5.0,
             "prompt_version": "2026-05-09.1",
+            "run_id": "abc123def456",
             "failed_rules": ["invented_metric"],
             "reasons": ["test"],
         })
         assert out["schema_version"] == 2
         assert out["prompt_version"] == "2026-05-09.1"
+        assert out["run_id"] == "abc123def456"
         assert out["failed_rules"] == ["invented_metric"]
+
+    def test_default_run_id_is_empty_string(self):
+        # Legacy records without run_id should normalize to "" so the dashboard
+        # template's `or "—"` fallback works without raising.
+        out = _normalize_eval_record({"score": 5, "rubric": "grounding"})
+        assert out["run_id"] == ""
 
     def test_does_not_mutate_input(self):
         original = {"score": 4, "rubric": "grounding"}
@@ -164,6 +172,83 @@ class TestSchemaConstants:
     def test_score_max_present(self):
         from evals.runner import SCORE_MAX
         assert SCORE_MAX == 5.0
+
+
+class TestRegressionDetection:
+    """The runner compares each new (fixture, rubric) score to the most-recent
+    prior score and warns when the drop exceeds REGRESSION_DELTA."""
+
+    def test_no_baseline_returns_none(self):
+        from evals.runner import _detect_regression
+        out = _detect_regression("a", "grounding", 4.5, baseline={})
+        assert out is None
+
+    def test_score_drop_flagged_as_regression(self, monkeypatch):
+        # Force a tight delta so any drop > 0.1 trips
+        monkeypatch.setattr("evals.runner.REGRESSION_DELTA", 0.1)
+        from evals.runner import _detect_regression
+        baseline = {("a", "grounding"): {"score": 4.8, "prompt_version": "v1"}}
+        out = _detect_regression("a", "grounding", 3.5, baseline)
+        assert out is not None
+        assert out["is_regression"] is True
+        assert out["is_improvement"] is False
+        assert out["delta"] == -1.3
+        assert out["prev_prompt_version"] == "v1"
+
+    def test_score_improvement_flagged(self, monkeypatch):
+        monkeypatch.setattr("evals.runner.REGRESSION_DELTA", 0.1)
+        from evals.runner import _detect_regression
+        baseline = {("a", "tone"): {"score": 3.8}}
+        out = _detect_regression("a", "tone", 4.7, baseline)
+        assert out is not None
+        assert out["is_improvement"] is True
+        assert out["is_regression"] is False
+        assert out["delta"] == 0.9
+
+    def test_within_delta_is_neither(self, monkeypatch):
+        monkeypatch.setattr("evals.runner.REGRESSION_DELTA", 0.5)
+        from evals.runner import _detect_regression
+        baseline = {("a", "tone"): {"score": 4.5}}
+        out = _detect_regression("a", "tone", 4.2, baseline)
+        assert out is not None
+        assert out["is_regression"] is False
+        assert out["is_improvement"] is False
+        # delta = -0.3, within ±0.5
+
+    def test_int_baseline_score_handled(self, monkeypatch):
+        # Legacy int score in baseline should still compare
+        monkeypatch.setattr("evals.runner.REGRESSION_DELTA", 0.5)
+        from evals.runner import _detect_regression
+        baseline = {("a", "grounding"): {"score": 5}}
+        out = _detect_regression("a", "grounding", 3.0, baseline)
+        assert out is not None
+        assert out["is_regression"] is True
+        assert out["prev_score"] == 5.0
+
+    def test_load_baseline_excludes_current_file(self, tmp_path, monkeypatch):
+        # Two prior result files + a "current" one. Current file's records
+        # should be excluded so the new run can be compared against history only.
+        from evals.runner import _load_baseline_scores
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+        monkeypatch.setattr("evals.runner.RESULTS_DIR", results_dir)
+
+        (results_dir / "20260501_000000Z.jsonl").write_text(
+            '{"fixture": "a", "rubric": "grounding", "score": 4.5, "timestamp": "2026-05-01T00:00:00Z"}\n',
+            encoding="utf-8",
+        )
+        (results_dir / "20260507_000000Z.jsonl").write_text(
+            '{"fixture": "a", "rubric": "grounding", "score": 4.8, "timestamp": "2026-05-07T00:00:00Z"}\n',
+            encoding="utf-8",
+        )
+        current = results_dir / "20260509_000000Z.jsonl"
+        current.write_text(
+            '{"fixture": "a", "rubric": "grounding", "score": 1.0, "timestamp": "2026-05-09T00:00:00Z"}\n',
+            encoding="utf-8",
+        )
+        baseline = _load_baseline_scores(current)
+        # Should pick the more-recent prior run (4.8), not the current one (1.0)
+        assert baseline[("a", "grounding")]["score"] == 4.8
 
 
 class TestLegacyResultCompatibility:

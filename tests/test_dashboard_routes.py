@@ -10,6 +10,7 @@ from __future__ import annotations
 from dashboard.routes import (
     _failure_mode_frequency,
     _per_rubric_pass_rate,
+    _percentile,
     _rubric_fixture_heatmap,
     _score_over_time,
     _summarize_calls,
@@ -151,6 +152,29 @@ class TestFailureModeFrequency:
         assert len(out) == 20
 
 
+class TestPercentile:
+    def test_empty_list_returns_zero(self):
+        assert _percentile([], 50) == 0.0
+        assert _percentile([], 95) == 0.0
+
+    def test_single_value(self):
+        assert _percentile([42.0], 50) == 42.0
+        assert _percentile([42.0], 95) == 42.0
+
+    def test_p50_is_median_for_odd_count(self):
+        # Sorted [1,2,3,4,5] → p50 == 3
+        assert _percentile([1.0, 2.0, 3.0, 4.0, 5.0], 50) == 3.0
+
+    def test_p95_near_top(self):
+        # Sorted 0..100 → p95 should land near 95
+        vals = [float(i) for i in range(101)]
+        assert _percentile(vals, 95) == 95.0
+
+    def test_interpolation(self):
+        # Sorted [10, 20] → p50 should interpolate to 15
+        assert _percentile([10.0, 20.0], 50) == 15.0
+
+
 class TestSummarizeCalls:
     def test_includes_cost_fields(self):
         records = [
@@ -173,6 +197,25 @@ class TestSummarizeCalls:
         out = _summarize_calls([])
         assert out["total_cost_usd"] == 0.0
         assert out["mean_cost_per_call"] == 0.0
+        assert out["p50_latency_ms"] == 0
+        assert out["p95_latency_ms"] == 0
+        assert out["p50_cost_usd"] == 0.0
+        assert out["p95_cost_usd"] == 0.0
+
+    def test_percentiles_reflect_distribution(self):
+        # Six calls with widely varying latencies; mean is dragged by the
+        # outlier but p50 stays near the bulk.
+        records = [
+            {"model": "claude-sonnet-4-6", "input_tokens": 100, "output_tokens": 100,
+             "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0,
+             "latency_ms": ms, "status": "ok"}
+            for ms in [1000, 1100, 1200, 1300, 1400, 90000]
+        ]
+        out = _summarize_calls(records)
+        # Mean is dragged way up by the outlier; p50 stays near the bulk
+        assert out["mean_latency_ms"] > 15000  # dragged by 90000
+        assert 1000 <= out["p50_latency_ms"] <= 1500
+        assert out["p95_latency_ms"] >= out["p50_latency_ms"]
 
 
 class TestIndexRoute:

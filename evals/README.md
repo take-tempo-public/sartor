@@ -213,6 +213,21 @@ Key implementation details:
 
 CI uses exit `2` to fail the build, distinguishing rubric failures from setup errors.
 
+### Regression alerting
+
+At the start of each run the runner reads every prior result file and builds a `{(fixture, rubric): most_recent_record}` baseline. After each grading it compares the new score to baseline and logs a `WARNING` when the drop exceeds `REGRESSION_DELTA` (default 0.5, override via env var). End-of-run summary lists improvements and regressions:
+
+```
+WARNING: REGRESSION: data-scientist-junior × tone dropped 4.8 → 4.2 (Δ=-0.6) vs prior run (prompt_version=2026-05-09.1, 2026-05-09T23:49:27)
+...
+--- Regression check vs previous runs (delta=0.5) ---
+  ✗ data-scientist-junior × tone: 4.8 → 4.2 (Δ=-0.6)
+  ✓ pm-senior × tone: 4.2 → 4.7 (Δ=+0.5)
+WARNING: Found 1 regression(s) ≥0.5 points.
+```
+
+Regressions are informational — they don't change the runner's exit code (rubric pass/fail is still the gating signal). The default delta of 0.5 is calibrated for Haiku judge variance: tighter and you'll see noise; looser and you'll miss real drops. Override with `REGRESSION_DELTA=0.3` for stricter tracking during prompt iteration.
+
 ---
 
 ## Adding a synthetic fixture
@@ -340,6 +355,7 @@ Each line in `evals/results/{timestamp}.jsonl` (schema_version 2):
 | `failed_rules` | Machine-friendly slugs from the rubric's vocabulary. Useful for grepping across many runs |
 | `status` | `ok` (graded successfully), `judge_error` (judge response unparseable), `pipeline_error` (analyze/generate threw) |
 | `prompt_version` | The `analyzer.PROMPT_VERSION` at run time. Lets the dashboard's score-over-time chart attribute regressions to a specific prompt revision. |
+| `run_id` | 12-hex UUID shared by the analyze + generate calls that produced this output. Match against `logs/llm_calls.jsonl` to find the specific LLM calls behind any graded result. |
 | `deterministic_metrics.verb_diversity` | Unique leading verbs / total bullets in generated resume. See `hardening.compute_verb_diversity`. |
 | `deterministic_metrics.specificity_density` | Fraction of bullets containing at least one quantifier. See `hardening.compute_specificity_density`. |
 | `deterministic_metrics.grounding_overlap` | 3-gram overlap between generated and source. **`missing_samples`** is the actionable signal for fabrication detection, not the ratio. See `hardening.compute_grounding_overlap`. |

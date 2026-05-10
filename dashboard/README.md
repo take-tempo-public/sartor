@@ -29,17 +29,23 @@ Aggregate cards over the filtered call list:
 | calls | `logs/llm_calls.jsonl` (count) | After filters applied |
 | errors | `status == "error"` records | Red when > 0 |
 | mean latency | `latency_ms` mean | Wall-clock; includes streaming time |
+| **p50 latency** | `_percentile(latencies, 50)` | Median; resistant to outliers |
+| **p95 latency** | `_percentile(latencies, 95)` | Tail behavior — what slow calls feel like |
 | cache hit ratio | `cache_read / (cache_read + cache_create)` | 100% means every input token was cached |
 | in / out tokens | sums | |
 | cache create / read | sums | Cache-create is billed at 1.25× normal input; cache-read at 0.10× |
 | **total cost** | `compute_call_cost` over filtered records | Uses `hardening.MODEL_PRICING` |
 | **mean / call** | total / N | Useful for trend detection |
+| **p50 / call** | median per-call cost | |
+| **p95 / call** | tail per-call cost | A spike here usually traces to one verbose generate() call |
 
 ### 2. LLM Calls — Recent
 
-Per-call rows, most recent 200. Columns: timestamp, user, call type, model, `prompt_version`, token counts, latency, status. Filterable by since-date, user, model.
+Per-call rows, most recent 200. Columns: timestamp, user, call type, model, `prompt_version`, **`run_id`**, token counts, latency, status. Filterable by since-date, user, model.
 
 To isolate eval traffic, set the **user** filter to `eval:{fixture_name}` (e.g., `eval:data-scientist-junior`).
+
+The `run_id` column lets you find both calls (analyze + generate) of a single pipeline. For eval rows, the same `run_id` appears on every per-rubric eval result row from that pipeline — so you can answer "which specific LLM calls produced this graded output?" by matching IDs.
 
 ### 3. Eval Quality — Aggregations (the tuning views)
 

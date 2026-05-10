@@ -81,6 +81,8 @@
   <div class="summary-card"><div class="k">calls</div><div class="v">{{ summary.count }}</div></div>
   <div class="summary-card"><div class="k">errors</div><div class="v {% if summary.error_count %}err{% else %}ok{% endif %}">{{ summary.error_count }}</div></div>
   <div class="summary-card"><div class="k">mean latency</div><div class="v">{{ summary.mean_latency_ms }}ms</div></div>
+  <div class="summary-card"><div class="k">p50 latency</div><div class="v">{{ summary.p50_latency_ms }}ms</div></div>
+  <div class="summary-card"><div class="k">p95 latency</div><div class="v">{{ summary.p95_latency_ms }}ms</div></div>
   <div class="summary-card"><div class="k">cache hit ratio</div><div class="v">{{ "%.1f"|format(summary.cache_hit_ratio * 100) }}%</div></div>
   <div class="summary-card"><div class="k">in tokens</div><div class="v">{{ summary.total_input_tokens }}</div></div>
   <div class="summary-card"><div class="k">out tokens</div><div class="v">{{ summary.total_output_tokens }}</div></div>
@@ -88,6 +90,8 @@
   <div class="summary-card"><div class="k">cache read</div><div class="v">{{ summary.cache_read_input_tokens }}</div></div>
   <div class="summary-card"><div class="k">total cost</div><div class="v">${{ "%.4f"|format(summary.total_cost_usd) }}</div></div>
   <div class="summary-card"><div class="k">mean / call</div><div class="v">${{ "%.6f"|format(summary.mean_cost_per_call) }}</div></div>
+  <div class="summary-card"><div class="k">p50 / call</div><div class="v">${{ "%.6f"|format(summary.p50_cost_usd) }}</div></div>
+  <div class="summary-card"><div class="k">p95 / call</div><div class="v">${{ "%.6f"|format(summary.p95_cost_usd) }}</div></div>
 </div>
 {% endif %}
 
@@ -101,6 +105,7 @@
       <th>Call</th>
       <th>Model</th>
       <th>Prompt v</th>
+      <th>Run</th>
       <th class="num">in</th>
       <th class="num">out</th>
       <th class="num">cache create</th>
@@ -117,6 +122,7 @@
       <td>{{ r.call }}</td>
       <td>{{ r.model }}</td>
       <td>{{ r.prompt_version }}</td>
+      <td><code class="short">{{ r.run_id or "—" }}</code></td>
       <td class="num">{{ r.input_tokens }}</td>
       <td class="num">{{ r.output_tokens }}</td>
       <td class="num">{{ r.cache_creation_input_tokens }}</td>
@@ -211,6 +217,7 @@
       <th>Rubric</th>
       <th class="num">Score</th>
       <th>Prompt v</th>
+      <th>Run</th>
       <th>Status</th>
       <th>Failed rules</th>
     </tr>
@@ -223,6 +230,7 @@
       <td>{{ r.rubric }}</td>
       <td class="num {% if r.score is not none and r.score >= 4.0 %}pass{% else %}fail{% endif %}">{{ "%.1f"|format(r.score) if r.score is not none else "—" }}</td>
       <td>{{ r.prompt_version }}</td>
+      <td><code class="short">{{ r.run_id or "—" }}</code></td>
       <td class="{% if r.status == 'ok' %}ok{% else %}err{% endif %}">{{ r.status }}</td>
       <td>{{ r.failed_rules|join(", ") if r.failed_rules else "" }}</td>
     </tr>

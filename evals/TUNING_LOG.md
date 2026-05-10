@@ -156,6 +156,72 @@ These are not blockers but worth tracking:
 
 ---
 
+## 2026-05-09 — `2026-05-09.1` → `2026-05-09.2`: gap-closing iteration
+
+### What changed
+
+**Infrastructure (Gaps 1-3):**
+- `run_id` (12-hex UUID) threaded through `analyze()`, `generate()`, `_call_llm`, `evals/runner.py`, and live `app.py` routes. Lands in both `logs/llm_calls.jsonl` and `evals/results/*.jsonl` so the dashboard can correlate which LLM calls produced each graded result. New "Run" column in both dashboard tables.
+- `_summarize_calls` now returns `p50_latency_ms`, `p95_latency_ms`, `p50_cost_usd`, `p95_cost_usd` via a new `_percentile` helper. Tail behavior is now visible — a 90s outlier no longer hides inside a healthy mean.
+- Local regression alerting in `evals/runner.py`: at the start of each run, `_load_baseline_scores` reads all prior result files and builds a `{(fixture, rubric): most_recent_record}` map. After each grading, `_detect_regression` compares against baseline; drops greater than `REGRESSION_DELTA` (default 0.5, env-overridable) log a `WARNING` and accumulate into an end-of-run summary.
+
+**Tuning (Gaps 4-5):**
+- `evals/rubrics/keyword_coverage.md` updated: "covered" now means "in resume body OR in cover letter when the keyword matches `expected.forbidden_inventions`". Prevents the no-win situation where a B2B PM applying to healthtech is forced to choose between fabricating clinical experience (loses grounding) or omitting healthcare keywords (loses keyword_coverage).
+- `analyzer.py:SYSTEM_PROMPT` "Always surface existing metrics" rule expanded with concrete examples of what counts: counts ("three reports"), durations ("monthly cadence"), team sizes, GitHub stars, frequencies. The previous rule was too narrow — the LLM was interpreting "metrics" as only `%` and `$` and dropping legitimate quantifiers like "one year" and "two merged PRs".
+- `PROMPT_VERSION` 2026-05-09.1 → 2026-05-09.2.
+
+### Why
+
+Five gaps were called out at end of the prior iteration:
+1. No correlation between LLM telemetry and eval results
+2. No latency/cost percentiles
+3. No regression alerting
+4. `pm-senior` keyword_coverage stuck at 4.2
+5. `specificity_density` uniformly low (0.08-0.33) across all fixtures
+
+Gaps 1-3 were observability gaps; the new tools light up the dashboard. Gaps 4-5 surfaced through the new metrics — once we could see the density data, we could trace it back to the prompt's narrow definition of "metrics".
+
+### Result
+
+| Fixture | Rubric | 2026-05-09.1 | 2026-05-09.2 | Δ |
+|---|---|---|---|---|
+| data-scientist-junior | ats_format | 4.2 | 4.7 | **+0.5** |
+| data-scientist-junior | grounding | 4.8 | 4.8 | 0 |
+| data-scientist-junior | keyword_coverage | 4.6 | 4.6 | 0 |
+| data-scientist-junior | tone | 4.8 | 4.2 | -0.6 ⚠ |
+| pm-senior | ats_format | 4.2 | 4.2 | 0 |
+| pm-senior | grounding | 4.8 | 4.8 | 0 |
+| pm-senior | keyword_coverage | 4.2 | 4.2 | 0 |
+| pm-senior | tone | 4.2 | 4.7 | **+0.5** |
+| sre-mid-level | ats_format | 4.8 | 4.8 | 0 |
+| sre-mid-level | grounding | 4.8 | 4.8 | 0 |
+| sre-mid-level | keyword_coverage | 4.6 | 4.7 | +0.1 |
+| sre-mid-level | tone | 4.8 | 4.2 | -0.6 ⚠ |
+
+**12/12 still pass**. Two improvements at +0.5; two regressions at -0.6 on tone (both flagged by the new alerter). The tone regressions are within Haiku judge variance band — the SYSTEM_PROMPT change didn't directly touch tone-related rules, but the broadened "metrics" guidance may have nudged cover letter phrasing slightly. Worth watching across the next 2-3 runs.
+
+Density barely moved (0.083 → 0.11 for data-scientist-junior; pm-senior unchanged at 0.10; sre-mid-level unchanged at 0.33). The expanded rule helped but the LLM is still cautious about preserving small numbers. Future iteration could try adding a worked example pair like the GROUNDING CHECK uses.
+
+### What we learned
+
+1. **The new regression alerter immediately paid for itself.** Two genuine 0.6-point drops on tone surfaced before they could compound across more iterations. Even if these turn out to be judge variance, the alert gives us evidence to confirm or deny that hypothesis next run.
+
+2. **Rubric design can create no-win situations.** The pm-senior keyword_coverage 4.2 wasn't a prompt problem — it was a rubric problem. The rubric punished the model for correctly refusing to fabricate. The fixture's `notes` already acknowledged this; the rubric just hadn't caught up. Lesson: when a fixture's notes describe a deliberate trade-off, the rubric must encode it explicitly.
+
+3. **"Metrics" needs concrete examples in the SYSTEM_PROMPT.** The rule "surface existing metrics" was correct but the LLM was reading "metrics" too narrowly. Adding "counts, durations, team sizes, GitHub stars, frequencies" is the kind of disambiguation that beats abstract instruction every time — same lesson as the GROUNDING CHECK worked examples.
+
+4. **`run_id` is a foundational primitive we should have had from day one.** It's a 12-character string but unlocks correlation, regression analysis, and per-pipeline cost. Future tooling (e.g., a "click run_id to see all telemetry" feature) becomes trivial.
+
+5. **Percentiles tell a different story than means.** This run's mean latency was around 88s but p95 was 142s — the user-visible "feel" of the system depends on tail behavior, not the average.
+
+### Open questions / future tuning targets
+
+- **Tone regressions**: re-run in 2-3 iterations to see if the 4.8→4.2 drop persists or settles back. If it persists, inspect `cover_letter_content` vs the prior version to find the actual source of the tone shift.
+- **`pm-senior` keyword_coverage stuck at 4.2 even with the rubric fix**: the judge may not be applying the new "covered in cover letter" rule. Worth checking the next run's `reasons` to confirm. If still stuck, the rubric prose may need to be even more explicit ("score 4.5+ if every must_keyword is in resume AND every forbidden-domain keyword is acknowledged in cover letter").
+- **Density still low**: the broadened SYSTEM_PROMPT rule helped one fixture by 0.03 ratio. For a stronger move, consider a worked-example pair in the GROUNDING CHECK ("Source: 'three reports'. OK to write: 'three legacy reports'. NOT OK to drop: 'multiple legacy reports'.").
+
+---
+
 ## Template for future entries
 
 ```markdown

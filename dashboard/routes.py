@@ -69,6 +69,7 @@ def _normalize_eval_record(r: dict) -> dict:
     r.setdefault("schema_version", 1)
     r.setdefault("score_max", 5.0)
     r.setdefault("prompt_version", "")
+    r.setdefault("run_id", "")
     r.setdefault("failed_rules", [])
     r.setdefault("reasons", [])
     return r
@@ -111,16 +112,45 @@ def _filter_calls(records: list[dict], since: str, user: str, model: str) -> lis
     return out
 
 
+def _percentile(sorted_values: list[float], pct: float) -> float:
+    """Linear-interpolation percentile over a pre-sorted list.
+
+    Returns 0.0 for an empty list. pct is in [0, 100]. Used for p50/p95
+    summaries; doesn't pretend to be statistically rigorous, just useful.
+    """
+    if not sorted_values:
+        return 0.0
+    if len(sorted_values) == 1:
+        return float(sorted_values[0])
+    k = (len(sorted_values) - 1) * (pct / 100.0)
+    lo = int(k)
+    hi = min(lo + 1, len(sorted_values) - 1)
+    frac = k - lo
+    return float(sorted_values[lo] + (sorted_values[hi] - sorted_values[lo]) * frac)
+
+
 def _summarize_calls(records: list[dict]) -> dict:
-    """Compute aggregate stats over a filtered call list."""
+    """Compute aggregate stats over a filtered call list.
+
+    Includes p50/p95 latency and cost so the dashboard can surface tail
+    behavior — a single 90s analyze() call hides inside a healthy mean.
+    """
     n = len(records)
     if n == 0:
-        return {"count": 0, "total_cost_usd": 0.0, "mean_cost_per_call": 0.0}
+        return {
+            "count": 0,
+            "total_cost_usd": 0.0,
+            "mean_cost_per_call": 0.0,
+            "p50_latency_ms": 0,
+            "p95_latency_ms": 0,
+            "p50_cost_usd": 0.0,
+            "p95_cost_usd": 0.0,
+        }
     total_in = sum(r.get("input_tokens", 0) for r in records)
     total_out = sum(r.get("output_tokens", 0) for r in records)
     cache_create = sum(r.get("cache_creation_input_tokens", 0) for r in records)
     cache_read = sum(r.get("cache_read_input_tokens", 0) for r in records)
-    latencies = [r.get("latency_ms", 0) for r in records if r.get("latency_ms")]
+    latencies = sorted(r.get("latency_ms", 0) for r in records if r.get("latency_ms"))
     mean_lat = sum(latencies) / len(latencies) if latencies else 0
     cache_total = cache_create + cache_read
     cache_hit = (cache_read / cache_total) if cache_total else 0.0
@@ -128,7 +158,8 @@ def _summarize_calls(records: list[dict]) -> dict:
     # Per-call cost rollup using the same pricing table the eval runner uses.
     # Imported lazily to avoid cycles when hardening pulls in dashboard helpers.
     from hardening import compute_call_cost
-    total_cost = sum(compute_call_cost(r) for r in records)
+    per_call_costs = sorted(compute_call_cost(r) for r in records)
+    total_cost = sum(per_call_costs)
     return {
         "count": n,
         "total_input_tokens": total_in,
@@ -137,9 +168,13 @@ def _summarize_calls(records: list[dict]) -> dict:
         "cache_read_input_tokens": cache_read,
         "cache_hit_ratio": round(cache_hit, 3),
         "mean_latency_ms": int(mean_lat),
+        "p50_latency_ms": int(_percentile(latencies, 50)),
+        "p95_latency_ms": int(_percentile(latencies, 95)),
         "error_count": error_count,
         "total_cost_usd": round(total_cost, 4),
         "mean_cost_per_call": round(total_cost / n, 6) if n else 0.0,
+        "p50_cost_usd": round(_percentile(per_call_costs, 50), 6),
+        "p95_cost_usd": round(_percentile(per_call_costs, 95), 6),
     }
 
 
