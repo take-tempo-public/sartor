@@ -11,6 +11,7 @@ let lastTemplatePath = '';   // path to original .docx for style template
 let outputFormat = '.docx';  // user-selected output format
 let primaryResume = '';      // currently selected primary resume filename
 let refinementHistory = [];  // accumulated refinement instructions, in order
+let lastClarifyQuestions = []; // questions returned by the most recent /api/clarify call
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
@@ -292,6 +293,7 @@ async function runAnalysis() {
 
   setStatus('ANALYZING');
   document.getElementById('btnAnalyze').disabled = true;
+  _resetClarifyUI();
 
   try {
     const res = await fetch('/api/analyze', {
@@ -431,6 +433,192 @@ function renderAnalysis(data) {
   }
 
   el.innerHTML = html;
+}
+
+// ---- Clarification (optional interview step between analyze and generate) ----
+
+function _resetClarifyUI() {
+  lastClarifyQuestions = [];
+  const start = document.getElementById('clarifyStartRow');
+  const questions = document.getElementById('clarifyQuestions');
+  const actions = document.getElementById('clarifyActions');
+  if (start) start.classList.remove('hidden');
+  if (questions) {
+    questions.textContent = '';
+    questions.classList.add('hidden');
+  }
+  if (actions) actions.classList.add('hidden');
+  const btn = document.getElementById('btnClarify');
+  if (btn) btn.disabled = false;
+}
+
+async function runClarify() {
+  if (!lastContextPath) return alert('Run analysis first');
+  setStatus('GENERATING QUESTIONS');
+  const btn = document.getElementById('btnClarify');
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/clarify', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        context_path: lastContextPath,
+        username: currentUser,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setStatus('ERROR');
+      if (btn) btn.disabled = false;
+      return alert(data.error || 'Clarification failed');
+    }
+    lastClarifyQuestions = data.questions || [];
+    _renderClarifyQuestions(lastClarifyQuestions, data.reasoning || '');
+    setStatus('QUESTIONS READY');
+  } catch (e) {
+    setStatus('ERROR');
+    if (btn) btn.disabled = false;
+    alert('Clarification failed: ' + e.message);
+  }
+}
+
+// Render clarification questions using safe DOM creation (no innerHTML).
+// All LLM-supplied strings (text, target_gap, kind, id) are inserted via
+// textContent or attribute setters, which auto-escape and prevent XSS even
+// if the model returns content with embedded HTML.
+function _renderClarifyQuestions(questions, reasoning) {
+  const start = document.getElementById('clarifyStartRow');
+  const container = document.getElementById('clarifyQuestions');
+  const actions = document.getElementById('clarifyActions');
+  if (!container) return;
+
+  container.textContent = '';  // clear
+
+  if (!questions.length) {
+    const warn = document.createElement('div');
+    warn.className = 'warning';
+    warn.textContent = 'No clarifying questions were produced. You can generate directly.';
+    container.appendChild(warn);
+    container.classList.remove('hidden');
+    if (actions) actions.classList.remove('hidden');
+    return;
+  }
+
+  if (reasoning) {
+    const r = document.createElement('div');
+    r.className = 'clarify-reasoning';
+    r.textContent = reasoning;
+    container.appendChild(r);
+  }
+
+  questions.forEach((q, idx) => {
+    const kind = q.kind || 'experience_probe';
+    const isScope = kind === 'scope_probe';
+    const wrap = document.createElement('div');
+    wrap.className = 'clarify-question';
+    wrap.setAttribute('data-qid', q.id || ('q' + (idx + 1)));
+
+    const head = document.createElement('div');
+    head.className = 'clarify-question-head';
+    const qtext = document.createElement('div');
+    qtext.className = 'clarify-question-text';
+    qtext.textContent = q.text || '';
+    const badge = document.createElement('span');
+    badge.className = isScope ? 'clarify-kind-badge scope' : 'clarify-kind-badge';
+    badge.textContent = isScope ? 'SCOPE' : 'EXPERIENCE';
+    head.appendChild(qtext);
+    head.appendChild(badge);
+    wrap.appendChild(head);
+
+    if (q.target_gap) {
+      const gap = document.createElement('div');
+      gap.className = 'clarify-target-gap';
+      gap.textContent = 'Gap: ' + q.target_gap;
+      wrap.appendChild(gap);
+    }
+
+    const ta = document.createElement('textarea');
+    ta.className = 'clarify-answer';
+    ta.rows = 2;
+    ta.placeholder = 'Your answer (optional — leave blank to skip this question)';
+    wrap.appendChild(ta);
+
+    container.appendChild(wrap);
+  });
+
+  container.classList.remove('hidden');
+  if (actions) actions.classList.remove('hidden');
+  if (start) start.classList.add('hidden');
+}
+
+function _collectClarifyAnswers() {
+  const answers = {};
+  document.querySelectorAll('#clarifyQuestions .clarify-question').forEach(el => {
+    const qid = el.getAttribute('data-qid');
+    const ta = el.querySelector('.clarify-answer');
+    if (!qid || !ta) return;
+    const val = (ta.value || '').trim();
+    if (val) answers[qid] = val;
+  });
+  return answers;
+}
+
+async function submitClarificationsAndGenerate() {
+  if (!lastContextPath) return alert('Run analysis first');
+
+  const answers = _collectClarifyAnswers();
+  setStatus('SAVING ANSWERS');
+  const btnSubmit = document.getElementById('btnSubmitClarifications');
+  if (btnSubmit) btnSubmit.disabled = true;
+
+  try {
+    const res = await fetch('/api/answer-clarifications', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        context_path: lastContextPath,
+        username: currentUser,
+        answers,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setStatus('ERROR');
+      if (btnSubmit) btnSubmit.disabled = false;
+      return alert(data.error || 'Saving answers failed');
+    }
+  } catch (e) {
+    setStatus('ERROR');
+    if (btnSubmit) btnSubmit.disabled = false;
+    return alert('Saving answers failed: ' + e.message);
+  }
+
+  // Proceed to generate with the now-saved clarifications on disk.
+  await runGeneration();
+  if (btnSubmit) btnSubmit.disabled = false;
+}
+
+async function skipClarifications() {
+  // No answers submitted — clear any previously saved clarifications so the
+  // generate call doesn't pick up stale answers from a prior run.
+  if (lastContextPath) {
+    try {
+      await fetch('/api/answer-clarifications', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          context_path: lastContextPath,
+          username: currentUser,
+          answers: {},
+        }),
+      });
+    } catch (e) {
+      // Non-fatal: generate works without this. Log and continue.
+      console.warn('Failed to clear clarifications on skip:', e);
+    }
+  }
+  await runGeneration();
 }
 
 // ---- Generation (P8 Gate #2) ----

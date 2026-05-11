@@ -657,3 +657,83 @@ textarea {
   padding-left: 28px;
   font-style: italic;
 }
+
+/* ---- Clarifying Interview Area ---- */
+.clarify-area { margin: 18px 0; }
+.clarify-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 8px;
+}
+.clarify-divider::before,
+.clarify-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #1a1a2e;
+}
+.clarify-divider-label {
+  color: var(--violet);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.clarify-question {
+  background: #0a0a10;
+  border: 1px solid #1a1a2e;
+  border-left: 3px solid var(--violet);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.clarify-question-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.clarify-question-text {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  flex: 1;
+}
+.clarify-kind-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  border: 1px solid var(--violet);
+  color: var(--violet);
+  border-radius: 3px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.clarify-kind-badge.scope { border-color: var(--amber); color: var(--amber); }
+.clarify-target-gap {
+  color: var(--text-dim);
+  font-size: 11px;
+  font-style: italic;
+  margin-bottom: 6px;
+  opacity: 0.75;
+}
+.clarify-answer {
+  width: 100%;
+  resize: vertical;
+  min-height: 56px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.clarify-answer:focus { border-color: var(--violet); }
+.clarify-reasoning {
+  color: var(--text-dim);
+  font-size: 11px;
+  font-style: italic;
+  margin: 4px 0 10px;
+  opacity: 0.65;
+}

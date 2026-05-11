@@ -127,6 +127,25 @@
       <div class="panel-header lcars-bg-orange">ANALYSIS RESULTS</div>
       <div class="panel-body">
         <div id="analysisContent"></div>
+
+        <!-- OPTIONAL CLARIFYING INTERVIEW -->
+        <div id="clarifyArea" class="clarify-area">
+          <div class="clarify-divider">
+            <span class="clarify-divider-label">OPTIONAL: CLARIFYING INTERVIEW</span>
+          </div>
+          <div class="edit-hint">
+            Surface real experience missing from your resume and disambiguate scope flagged by the analysis. Optional — you can skip and generate directly.
+          </div>
+          <div class="form-row" id="clarifyStartRow">
+            <button class="lcars-btn lcars-bg-violet" id="btnClarify" onclick="runClarify()">GET CLARIFYING QUESTIONS</button>
+          </div>
+          <div id="clarifyQuestions" class="hidden"></div>
+          <div id="clarifyActions" class="hidden form-row">
+            <button class="lcars-btn lcars-bg-teal" id="btnSubmitClarifications" onclick="submitClarificationsAndGenerate()">SUBMIT ANSWERS &amp; GENERATE</button>
+            <button class="lcars-btn lcars-bg-amber" onclick="skipClarifications()">SKIP</button>
+          </div>
+        </div>
+
         <div class="form-row" style="align-items:center;gap:12px;margin-bottom:8px;">
           <span class="edit-hint" style="margin:0">Output format:</span>
           <button class="lcars-btn format-btn active" id="fmtDocx" onclick="setOutputFormat('.docx', this)">DOCX</button>
