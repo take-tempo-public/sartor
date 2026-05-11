@@ -825,3 +825,72 @@ textarea {
   outline: 2px solid var(--amber);
   outline-offset: 2px;
 }
+
+/* ---- Accessibility utilities (Phase 4) ---- */
+
+/* Visually hidden but discoverable to assistive tech. Used for skip-link
+   landing target and the live region. The clip+absolute pattern is the
+   conventional bulletproof recipe. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link — invisible until focused, then floats over the top bar so
+   keyboard users can bypass the LCARS chrome and jump straight into the
+   first interactive panel without tabbing through every block. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 2000;
+  background: var(--amber);
+  color: var(--black);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.skip-link:focus {
+  left: 8px;
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Visible focus indicators across all interactive elements. The project
+   uses outline:none + border-color shifts on inputs which work for mouse
+   focus but are too subtle for keyboard nav. focus-visible gives keyboard
+   users a clear ring without bringing back outlines on mouse clicks. */
+.lcars-btn:focus-visible,
+.tab-btn:focus-visible,
+.view-btn:focus-visible,
+.format-btn:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.preview-editable:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 1px;
+}
+/* Resume chip filenames are the primary-resume selector — make them keyboard-
+   reachable when a tab order pass moves them under tab focus (Phase 4 leaves
+   the click-only model in place, but the focus rule is ready). */
+.file-chip:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}

@@ -341,6 +341,7 @@ async function runAnalysis() {
     renderAnalysis(data);
     show('panelAnalysis');
     setStatus('ANALYSIS COMPLETE');
+    _announce('Analysis complete. Review the analysis or skip to generation.');
     document.getElementById('panelAnalysis').scrollIntoView({ behavior: 'smooth' });
   } catch (e) {
     setStatus('ERROR');
@@ -501,6 +502,7 @@ async function runClarify() {
     lastClarifyQuestions = data.questions || [];
     _renderClarifyQuestions(lastClarifyQuestions, data.reasoning || '');
     setStatus('QUESTIONS READY');
+    _announce(`${lastClarifyQuestions.length} clarifying question${lastClarifyQuestions.length === 1 ? '' : 's'} ready for review.`);
   } catch (e) {
     setStatus('ERROR');
     if (btn) btn.disabled = false;
@@ -684,6 +686,7 @@ async function runGeneration() {
     renderOutput(data);
     show('panelOutput');
     setStatus('GENERATION COMPLETE');
+    _announce(`Iteration ${currentIteration} ready. Resume and cover letter generated.`);
     document.getElementById('panelOutput').scrollIntoView({ behavior: 'smooth' });
   } catch (e) {
     setStatus('ERROR');
@@ -813,6 +816,7 @@ async function _saveEdits(edits) {
       alert(err.error || 'Saving edits failed');
       return false;
     }
+    _announce('Edits saved as baseline for the next iteration.');
     return true;
   } catch (e) {
     alert('Saving edits failed: ' + e.message);
@@ -917,6 +921,7 @@ async function submitRefinement() {
     _onGenerationComplete(data);
     renderOutput(data);
     setStatus('REFINED');
+    _announce(`Iteration ${currentIteration} refined.`);
   } catch (e) {
     entry.status = 'rejected';
     entry.reason = 'Request failed: ' + e.message;
@@ -973,6 +978,7 @@ async function runIterateClarify() {
     lastIterateClarifyQuestions = data.questions || [];
     _renderIterateClarifyQuestions(lastIterateClarifyQuestions, data.reasoning || '');
     setStatus('QUESTIONS READY');
+    _announce(`${lastIterateClarifyQuestions.length} iteration question${lastIterateClarifyQuestions.length === 1 ? '' : 's'} ready for review.`);
   } catch (e) {
     setStatus('ERROR');
     if (btn) btn.disabled = false;
@@ -1167,16 +1173,24 @@ function renderOutput(data) {
 
 function showTab(name, clickedBtn) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  // Reset all tab-btns' visual + ARIA state in one pass; the matching button
+  // is set selected below. Without aria-selected updates, screen readers
+  // announce the wrong active tab.
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('active');
+    if (b.getAttribute('role') === 'tab') b.setAttribute('aria-selected', 'false');
+  });
   const tabId = name === 'coverLetter' ? 'tabCoverLetter' : name === 'changes' ? 'tabChanges' : 'tabResume';
   document.getElementById(tabId).classList.add('active');
-  // Activate button: use the passed reference, or find by tab name
-  if (clickedBtn) {
-    clickedBtn.classList.add('active');
-  } else {
+  let activeBtn = clickedBtn;
+  if (!activeBtn) {
     const btnIndex = name === 'coverLetter' ? 1 : name === 'changes' ? 2 : 0;
     const btns = document.querySelectorAll('.tab-btn');
-    if (btns[btnIndex]) btns[btnIndex].classList.add('active');
+    activeBtn = btns[btnIndex];
+  }
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+    if (activeBtn.getAttribute('role') === 'tab') activeBtn.setAttribute('aria-selected', 'true');
   }
 }
 
@@ -1295,6 +1309,21 @@ const _ACTIVE_PANEL = {
 };
 let _activeBlock = null;  // sidebar block currently flashing; cleared on next call
 
+// Push a one-shot announcement into the hidden aria-live region. Use only
+// for meaningful transitions a screen-reader user wouldn't otherwise notice
+// (generation done, questions ready, edits saved, errors). DON'T announce
+// every status microstep — aria-live="polite" can drone if over-fed.
+//
+// We toggle the textContent off-then-on so identical consecutive messages
+// re-announce (some screen readers suppress duplicate text).
+function _announce(text) {
+  const el = document.getElementById('srAnnounce');
+  if (!el || !text) return;
+  el.textContent = '';
+  // Next-tick repopulate so the assistive tech sees a change.
+  setTimeout(() => { el.textContent = text; }, 16);
+}
+
 function setStatus(text) {
   const pill = document.getElementById('statusPill');
   pill.textContent = text;
@@ -1308,6 +1337,11 @@ function setStatus(text) {
     }
     _activeBlock = null;
   }
+  // Clear any prior aria-busy state from the previously-active panel so
+  // assistive tech stops announcing the panel as busy once work completes.
+  document.querySelectorAll('.lcars-panel[aria-busy="true"]').forEach(p => {
+    p.removeAttribute('aria-busy');
+  });
 
   const activeKey = Object.keys(_ACTIVE_PANEL).find(s => text.includes(s));
   const isActive  = !!activeKey;
@@ -1322,7 +1356,8 @@ function setStatus(text) {
   const elbow = document.querySelector('.lcars-elbow-tl');
   if (elbow) elbow.classList.toggle('step-active', isActive);
 
-  // Flash the sidebar block — show it even if its panel content hasn't arrived yet
+  // Flash the sidebar block AND mark the active panel aria-busy so screen
+  // readers can announce that work is in progress on that section.
   if (isActive) {
     const block = document.querySelector(`[data-panel="${_ACTIVE_PANEL[activeKey]}"]`);
     if (block) {
@@ -1330,6 +1365,8 @@ function setStatus(text) {
       block.classList.add('step-active');
       _activeBlock = block;
     }
+    const activePanel = document.getElementById(_ACTIVE_PANEL[activeKey]);
+    if (activePanel) activePanel.setAttribute('aria-busy', 'true');
   }
 }
 
