@@ -49,9 +49,12 @@ GENERATE_REQUIRED_KEYS = frozenset({
     "changes_made", "proofread_notes",
 })
 
-# Bump when SYSTEM_PROMPT or any per-call prompt template changes. Labels every
-# JSONL telemetry record so quality regressions can be attributed to a revision.
-PROMPT_VERSION = "2026-05-09.3"
+CLARIFY_REQUIRED_KEYS = frozenset({"questions", "reasoning"})
+
+# Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
+# template changes. Labels every JSONL telemetry record so quality regressions
+# can be attributed to a revision.
+PROMPT_VERSION = "2026-05-11.1"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -94,6 +97,35 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Never restate a candidate's responsibility using a more advanced technique than the source describes BECAUSE writing "time-series forecasting" when the source only says "built dashboards" invents a skill the candidate cannot demonstrate in interviews
 - Never upgrade a tool category into a specific vendor or framework BECAUSE "used a CI tool" must not become "authored Jenkins pipelines" if the source does not name Jenkins; vendor-specific claims are verifiable and disqualifying when wrong
 - Never escalate scope adjectives (team → organization-wide, project → enterprise initiative, regional → global) BECAUSE scope inflation is verifiable in interviews and triggers credibility loss across the rest of the resume"""
+
+# Dedicated short persona for the clarify() step. Smaller than SYSTEM_PROMPT
+# because the task is narrowly scoped (question generation, not resume
+# authoring) — narrower context yields tighter grounding and cheaper tokens
+# (P9). Composition rule (≥50% experience probes) is enumerated below and
+# graded by the clarification_quality eval rubric.
+CLARIFY_SYSTEM_PROMPT = """You are an experienced interview coach helping a candidate prepare a tailored resume.
+
+The candidate has just been analyzed against a job description. Your role is to surface 3-5 short, specific clarifying questions that, when answered, would let a resume writer produce a stronger, more truthful, more keyword-aligned document.
+
+Two kinds of questions, in roughly this mix:
+
+1. EXPERIENCE PROBES (at least half of your questions, kind="experience_probe"):
+   For each job-description-required skill or technology that does NOT appear in the resume — or appears only weakly — ask whether the candidate has hands-on experience with it (or an adjacent/related technology that should be elevated). The goal is to source REAL experience the candidate has but didn't write down. Examples:
+   - "The JD requires Kubernetes; your resume mentions Docker. Have you used Kubernetes or another container orchestration platform in production, even briefly?"
+   - "The role emphasizes Terraform. Have you authored or maintained Terraform modules in any past engagement, even a side project?"
+   - "The JD asks for cross-functional leadership. Can you point to a specific time you set technical direction across a team you didn't manage directly?"
+
+2. SCOPE PROBES (the remainder, kind="scope_probe"):
+   For ambiguities the analyzer flagged in the comparison — role scope, shipped-vs-prototype, decision authority, team size, audience — ask the candidate to disambiguate so the resume can use precise language. Examples:
+   - "The project X engagement reads as senior IC work. Were you setting technical direction, or executing on a defined roadmap?"
+   - "Did the K8s migration ship to production, or remain a proof of concept?"
+
+RULES:
+- Each question ≤ 25 words. One question per line, no compound questions (no "and"/"or" joining two distinct asks).
+- Do not ask leading questions ("Don't you agree that...?"). Do not ask generic prompts ("Tell me about yourself").
+- Each question must cite a SPECIFIC gap: name the JD-required skill that's missing, the analyzer-flagged ambiguity, or the under-emphasized item from the keyword strategy.
+- Bias toward EXPERIENCE PROBES — the goal is uncovering real experience the candidate didn't write down, not just clarifying what's already there.
+- Output JSON only, no markdown fences, no preamble."""
 
 # Model selection rationale:
 #   - Sonnet 4.6 for analyze() and generate(): the work needs reasoning depth
@@ -199,18 +231,23 @@ def _call_llm(
     call_kind: str = "analyze",
     username: str = "",
     run_id: str = "",
+    system_prompt: str = "",
 ) -> str:
     """Make a single LLM call using streaming, with prompt caching and JSONL telemetry.
 
     Streaming avoids intermediate gateway timeouts on long-running generations:
     tokens flow back as they're produced, keeping the TCP connection warm.
 
-    Caching: SYSTEM_PROMPT is sent as a cacheable system block; when
-    cached_user_prefix is non-empty it is sent as a cacheable user block
-    preceding user_prompt. Anthropic's cache requires 1024+ tokens to engage
-    on Sonnet — the SYSTEM_PROMPT alone is below that threshold, so the
-    user-prefix block is what actually drives cache hits across analyze→
-    generate within a session.
+    Caching: the system block is sent with cache_control; when cached_user_prefix
+    is non-empty it is sent as a cacheable user block preceding user_prompt.
+    Anthropic's cache requires 1024+ tokens to engage on Sonnet — the system
+    prompt alone is typically below that threshold, so the user-prefix block is
+    what actually drives cache hits across analyze→generate within a session.
+
+    The optional system_prompt argument lets narrowly-scoped calls (e.g.
+    clarify()) use a smaller dedicated persona without overloading SYSTEM_PROMPT.
+    Calls with a non-default system_prompt will not hit the system-block cache
+    established by analyze/generate, which is acceptable for cheap small calls.
 
     Telemetry: every call appends one record to logs/llm_calls.jsonl with
     timing, token counts (including cache fields), prompt version, and status.
@@ -223,6 +260,8 @@ def _call_llm(
             "cache_control": {"type": "ephemeral"},
         })
     user_content.append({"type": "text", "text": user_prompt})
+
+    effective_system = system_prompt or SYSTEM_PROMPT
 
     logger.info(
         "LLM call starting — call=%s cached_prefix=%d chars, prompt=%d chars",
@@ -238,7 +277,7 @@ def _call_llm(
             system=[
                 {
                     "type": "text",
-                    "text": SYSTEM_PROMPT,
+                    "text": effective_system,
                     "cache_control": {"type": "ephemeral"},
                 }
             ],
@@ -316,6 +355,7 @@ def _parse_or_retry(
     username: str,
     run_id: str,
     max_attempts: int = 2,
+    system_prompt: str = "",
 ) -> dict:
     """Parse an LLM JSON response, retrying once with the validation error
     appended on parse failure or missing required keys.
@@ -333,6 +373,7 @@ def _parse_or_retry(
         client, base_prompt,
         cached_user_prefix=cached_user_prefix,
         call_kind=call_kind, username=username, run_id=run_id,
+        system_prompt=system_prompt,
     )
     for attempt in range(max_attempts):
         try:
@@ -362,6 +403,7 @@ def _parse_or_retry(
                 client, retry_prompt,
                 cached_user_prefix=cached_user_prefix,
                 call_kind=f"{call_kind}_retry", username=username, run_id=run_id,
+                system_prompt=system_prompt,
             )
     raise LLMResponseError(raw, "exhausted retries")
 
@@ -434,6 +476,91 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
     )
 
 
+def clarify(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    analysis: dict,
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """Optional interview step between analyze() and generate().
+
+    Generates 3-5 targeted questions based on the analyzer's output:
+      - EXPERIENCE PROBES for JD-required skills missing from the resume
+        (goal: source real experience the candidate didn't write down)
+      - SCOPE PROBES for ambiguities flagged in comparison_analysis
+        (goal: disambiguate role scope, shipped-vs-prototype, etc.)
+
+    Returns:
+      {
+        "questions": [
+          {"id": "q1", "text": "...", "target_gap": "...", "kind": "experience_probe"},
+          ...
+        ],
+        "reasoning": "1-2 sentence summary of how questions were composed"
+      }
+
+    Uses CLARIFY_SYSTEM_PROMPT (smaller, focused) rather than the full
+    hiring-manager SYSTEM_PROMPT. The user prefix here is intentionally
+    compact — just the analysis output and deterministic keyword gaps —
+    because the full resume/JD has already been digested by the analyzer.
+    """
+    # Compact inputs — the analyzer has already digested the resume + JD.
+    # We pass only the structured outputs the clarifier needs to identify gaps.
+    overlap = context_set.get("deterministic_analysis", {}).get("keyword_overlap", {})
+    missing_jd_keywords = overlap.get("missing_from_resume", [])[:20]
+    candidate_skills = context_set.get("candidate", {}).get("skills", [])
+
+    prompt = f"""<task>Generate 3-5 targeted clarifying questions for the candidate.</task>
+
+<analyzer_output>
+Essential skills (from JD): {json.dumps(analysis.get('essential_skills', []))}
+Preferred skills (from JD): {json.dumps(analysis.get('preferred_skills', []))}
+Comparison strengths: {json.dumps(analysis.get('comparison', {}).get('strengths', []))}
+Comparison gaps: {json.dumps(analysis.get('comparison', {}).get('gaps', []))}
+Title alignment: {analysis.get('comparison', {}).get('title_alignment', '')}
+Keyword placements suggested: {json.dumps(analysis.get('keyword_placement', []))}
+Overall strategy: {analysis.get('overall_strategy', '')}
+</analyzer_output>
+
+<deterministic_gaps>
+JD keywords missing from resume: {json.dumps(missing_jd_keywords)}
+Candidate's self-listed skills: {json.dumps(candidate_skills)}
+</deterministic_gaps>
+
+<instructions>
+Compose 3-5 questions. At least half must be EXPERIENCE PROBES (kind="experience_probe") targeting a specific JD skill missing or weak in the resume. The remainder are SCOPE PROBES (kind="scope_probe") targeting a specific ambiguity in the comparison gaps or title alignment.
+
+Each question's target_gap field must cite the specific source: name the missing JD skill, quote the analyzer's gap text, or name the keyword_placement item it targets. Do not invent gaps that aren't in the analyzer output.
+
+Respond with valid JSON only. No markdown fences. Use this exact structure:
+{{
+  "questions": [
+    {{
+      "id": "q1",
+      "text": "The question text, <=25 words, no compound or leading questions.",
+      "target_gap": "Specific gap source — e.g. 'Essential skill Kubernetes is missing from resume' or 'Analyzer flagged ambiguity in title_alignment: ...'",
+      "kind": "experience_probe"
+    }}
+  ],
+  "reasoning": "1-2 sentence summary of how the question mix was composed."
+}}
+</instructions>"""
+
+    # No cached_user_prefix: this call uses a dedicated small system prompt
+    # and a compact per-call user message. Cache miss is cheap (~1K tokens
+    # of input) and keeps the call focused.
+    return _parse_or_retry(
+        client, prompt,
+        cached_user_prefix="",
+        required_keys=CLARIFY_REQUIRED_KEYS,
+        call_kind="clarify",
+        username=username,
+        run_id=run_id,
+        system_prompt=CLARIFY_SYSTEM_PROMPT,
+    )
+
+
 def generate(
     client: anthropic.Anthropic,
     context_set: ContextSet,
@@ -449,7 +576,47 @@ def generate(
     telemetry only — no behavior depends on it. The run_id (when provided)
     lets dashboard tooling correlate this call's telemetry with its sibling
     analyze() call and any eval result that consumed the output.
+
+    When the context_set contains clarifications (set by /api/answer-clarifications
+    after the optional interview step), they are injected into the prompt as
+    first-person ground truth and the GROUNDING CHECK is widened to accept
+    them as legitimate source material.
     """
+    # Build the optional candidate clarifications block. The clarify step is
+    # opt-in — most contexts won't have these fields. When present, the answers
+    # are first-person ground truth and may be cited as source material even
+    # though they are not in the resume text. Skipped questions are simply absent
+    # from the answers dict and omitted from the prompt.
+    clarifications_block = ""
+    answers = context_set.get("clarifications") or {}
+    questions = context_set.get("clarification_questions") or []
+    if answers and questions:
+        cb_lines = [
+            "<candidate_clarifications>",
+            "The candidate answered the following clarifying questions after "
+            "seeing the analysis. These answers are FIRST-PERSON GROUND TRUTH "
+            "from the candidate. You MAY cite the experience and details they "
+            "reveal even when those details are not present in the resume above "
+            "— they are legitimate source material. You MUST NOT invent any "
+            "specifics BEYOND what the candidate explicitly states.",
+            "",
+        ]
+        for q in questions:
+            qid = q.get("id", "")
+            ans = answers.get(qid, "").strip()
+            if not ans:
+                continue  # user skipped this question
+            kind = q.get("kind", "")
+            cb_lines.append(f'<q id="{qid}" kind="{kind}">')
+            cb_lines.append(f"Question: {q.get('text', '')}")
+            cb_lines.append(f"Candidate answer: {ans}")
+            cb_lines.append("</q>")
+            cb_lines.append("")
+        # Only include the block if at least one answer was actually present
+        if any(answers.get(q.get("id", ""), "").strip() for q in questions):
+            cb_lines.append("</candidate_clarifications>")
+            clarifications_block = "\n".join(cb_lines) + "\n\n"
+
     prompt = f"""<task>Generate a tailored resume and cover letter for the candidate based on the analysis.</task>
 
 <output_rules>
@@ -508,10 +675,10 @@ Strategy: {analysis.get('overall_strategy', '')}
 Professional vocabulary: {', '.join(analysis.get('professional_vocabulary', []))}
 </analysis>
 
-<resume_rules>
+{clarifications_block}<resume_rules>
 GROUNDING CHECK — apply this before writing every bullet:
-  Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — exist in the primary resume OR any supplemental resume above?"
-  If YES: reframe, strengthen, and keyword-align it freely.
+  Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — exist in the primary resume, any supplemental resume above, OR a candidate clarification answer above?"
+  If YES: reframe, strengthen, and keyword-align it freely. Clarification answers are first-person ground truth and may be cited even when the resume does not mention them.
   If NO: do not write it. Reframe what IS there, or omit the bullet.
 
   Worked examples — what to do and what NOT to do:

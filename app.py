@@ -14,7 +14,7 @@ import anthropic
 from flask import Flask, jsonify, render_template, request, send_file
 from werkzeug.utils import secure_filename
 
-from analyzer import LLMResponseError, analyze, check_refinement_scope, generate
+from analyzer import LLMResponseError, analyze, check_refinement_scope, clarify, generate
 from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
 from hardening import (
@@ -317,6 +317,137 @@ def run_analysis():
         "context_path": context_path,
         "template_path": str(resume_path),  # original .docx path for style templating
     })
+
+
+@app.route("/api/clarify", methods=["POST"])
+def run_clarify():
+    """Optional P8 Human Gate between analyze and generate.
+
+    Generates 3-5 targeted questions based on the analyzer's output to surface
+    real candidate experience that wasn't captured in the resume, plus disambiguate
+    scope where the analyzer flagged it. The questions are persisted on the
+    saved context so the user can refresh and resume; answers (when submitted
+    via /api/answer-clarifications) become first-person ground truth at generate.
+
+    Skipping this step is supported — /api/generate works on contexts that
+    never went through clarify, preserving the pre-clarify behavior.
+    """
+    data = request.json
+    context_path = data.get("context_path", "")
+    username = data.get("username", "")
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR):
+        return jsonify({"error": "Invalid context path"}), 403
+    if not cp.exists():
+        return jsonify({"error": "Context file not found"}), 404
+
+    # When a username is supplied, validate it; otherwise derive from the
+    # context path's parent directory (OUTPUT_DIR/<username>/context_*.json).
+    safe_user = _safe_username(username) if username else None
+    if not safe_user:
+        safe_user = secure_filename(cp.parent.name)
+    if not safe_user:
+        return jsonify({"error": "Could not resolve username"}), 400
+
+    context_set: ContextSet = json.loads(cp.read_text(encoding="utf-8"))
+    analysis = context_set.get("llm_analysis", {})
+    if not analysis:
+        return jsonify({"error": "No analysis found in context"}), 400
+
+    # Re-use the run_id minted in /api/analyze so all three calls share a key
+    # in logs/llm_calls.jsonl. New ID for legacy contexts that pre-date run_id.
+    run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
+
+    client = _get_client()
+    logger.info("Starting clarification for %s run_id=%s", safe_user, run_id)
+    try:
+        result = clarify(client, context_set, analysis, username=safe_user, run_id=run_id)
+    except anthropic.APIConnectionError as exc:
+        logger.error("Anthropic API connection error during clarify: %s", exc)
+        return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
+    except LLMResponseError as exc:
+        logger.error("LLM clarify response failed validation after retry: %s", exc.validation_error)
+        return jsonify({
+            "error": "AI clarification response was malformed after retry. Please try again.",
+            "detail": exc.validation_error,
+        }), 502
+
+    questions = result.get("questions", [])
+    # Persist the questions back to the same context file so the user can
+    # refresh the page and resume — and so generate() can pair each answer
+    # with its question text.
+    context_set["clarification_questions"] = questions
+    context_set["run_id"] = run_id
+    cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+
+    logger.info("Clarify produced %d questions for %s", len(questions), safe_user)
+    return jsonify({
+        "questions": questions,
+        "reasoning": result.get("reasoning", ""),
+        "context_path": str(cp),
+    })
+
+
+@app.route("/api/answer-clarifications", methods=["POST"])
+def submit_clarifications():
+    """Persist the candidate's free-form answers to the clarifying questions.
+
+    Answers are merged into context_set["clarifications"] (question_id -> text).
+    Unanswered ids are simply absent — generate() omits the matching question
+    from the prompt. This route is idempotent: re-submitting overwrites the
+    existing answers map.
+    """
+    data = request.json
+    context_path = data.get("context_path", "")
+    username = data.get("username", "")
+    answers = data.get("answers", {}) or {}
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+    if not isinstance(answers, dict):
+        return jsonify({"error": "answers must be a JSON object"}), 400
+
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR):
+        return jsonify({"error": "Invalid context path"}), 403
+    if not cp.exists():
+        return jsonify({"error": "Context file not found"}), 404
+
+    # When a username is supplied, validate it; otherwise derive from the
+    # context path. The path containment check (_within above) is the primary
+    # authority; this is belt-and-suspenders.
+    safe_user = _safe_username(username) if username else None
+    if not safe_user:
+        safe_user = secure_filename(cp.parent.name)
+    if not safe_user:
+        return jsonify({"error": "Could not resolve username"}), 400
+
+    context_set: ContextSet = json.loads(cp.read_text(encoding="utf-8"))
+    valid_ids = {q.get("id", "") for q in context_set.get("clarification_questions", [])}
+
+    # Filter: only accept answers for ids that match known questions and have
+    # non-empty trimmed text. Defense against arbitrary keys ending up in the
+    # context file.
+    cleaned: dict[str, str] = {}
+    for qid, text in answers.items():
+        if not isinstance(qid, str) or qid not in valid_ids:
+            continue
+        if not isinstance(text, str):
+            continue
+        trimmed = text.strip()
+        if trimmed:
+            cleaned[qid] = trimmed
+
+    context_set["clarifications"] = cleaned
+    cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+
+    logger.info(
+        "Stored %d clarification answers (out of %d questions) for %s",
+        len(cleaned), len(valid_ids), safe_user,
+    )
+    return jsonify({"ok": True, "answered": len(cleaned), "total": len(valid_ids)})
 
 
 @app.route("/api/generate", methods=["POST"])
