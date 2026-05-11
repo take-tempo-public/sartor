@@ -10,17 +10,48 @@ Single agent + deterministic tools = Level 1 architecture (P9).
 
 import json
 import logging
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 import anthropic
 
+from hardening import ContextSet
+
 logger = logging.getLogger(__name__)
+
+
+class LLMResponseError(Exception):
+    """Raised when an LLM response fails JSON parsing or required-key validation
+    after the retry budget is exhausted. Carries the raw response and the
+    validation error so callers can surface both to logs and to the user.
+    """
+
+    def __init__(self, raw: str, validation_error: str):
+        self.raw = raw
+        self.validation_error = validation_error
+        super().__init__(f"LLM response failed validation: {validation_error}")
+
+
+# Required keys per call. _parse_or_retry uses these to detect shape drift
+# (e.g. the model returns valid JSON but omits a section) and trigger a retry.
+# Keep in sync with the JSON spec in analyze()/generate() prompts.
+ANALYZE_REQUIRED_KEYS = frozenset({
+    "essential_skills", "preferred_skills", "industry_keywords",
+    "hidden_qualities", "professional_vocabulary", "ideal_resume_profile",
+    "comparison", "suggestions", "keyword_placement",
+    "ats_improvements", "overall_strategy",
+})
+
+GENERATE_REQUIRED_KEYS = frozenset({
+    "resume_content", "cover_letter_content",
+    "changes_made", "proofread_notes",
+})
 
 # Bump when SYSTEM_PROMPT or any per-call prompt template changes. Labels every
 # JSONL telemetry record so quality regressions can be attributed to a revision.
-PROMPT_VERSION = "2026-05-09.2"
+PROMPT_VERSION = "2026-05-09.3"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -87,7 +118,7 @@ MAX_TOKENS = 8192
 MAX_SUPPLEMENTAL_CHARS = 6_000  # per-file cap — keeps total context manageable
 
 
-def _stable_user_prefix(context_set: dict) -> str:
+def _stable_user_prefix(context_set: ContextSet) -> str:
     """Build the stable, cacheable portion of the user message.
 
     This block is identical across analyze() and generate() calls for the
@@ -135,7 +166,7 @@ def _stable_user_prefix(context_set: dict) -> str:
     return "\n".join(parts)
 
 
-def _supplemental_block(context_set: dict) -> str:
+def _supplemental_block(context_set: ContextSet) -> str:
     """Build the <supplemental_resumes> XML block for prompts, or empty string if none."""
     supplements = context_set.get("supplemental_resumes", [])
     if not supplements:
@@ -259,9 +290,85 @@ def _call_llm(
     return text
 
 
+_FENCE_RE = re.compile(r"^```(?:[a-zA-Z]+)?\s*\n?(.*?)\n?\s*```$", re.DOTALL)
+
+
+def _strip_fences(raw: str) -> str:
+    """Strip leading/trailing markdown code fences from an LLM response.
+
+    The system prompt instructs JSON-only output, but Sonnet still occasionally
+    wraps the body in ```json ... ```. Tolerate that without retrying.
+    """
+    cleaned = raw.strip()
+    m = _FENCE_RE.match(cleaned)
+    if m:
+        return m.group(1).strip()
+    return cleaned
+
+
+def _parse_or_retry(
+    client: anthropic.Anthropic,
+    base_prompt: str,
+    *,
+    cached_user_prefix: str,
+    required_keys: frozenset[str],
+    call_kind: str,
+    username: str,
+    run_id: str,
+    max_attempts: int = 2,
+) -> dict:
+    """Parse an LLM JSON response, retrying once with the validation error
+    appended on parse failure or missing required keys.
+
+    The cached_user_prefix is byte-identical across attempts so the retry
+    hits Anthropic's prompt cache (only the per-call base_prompt + retry
+    reason differs). Each attempt emits its own JSONL telemetry record;
+    retries use call_kind="<kind>_retry" so dashboard breakdowns can
+    distinguish them from first-pass calls.
+
+    Raises LLMResponseError after max_attempts failures so the caller never
+    silently degrades on bad output.
+    """
+    raw = _call_llm(
+        client, base_prompt,
+        cached_user_prefix=cached_user_prefix,
+        call_kind=call_kind, username=username, run_id=run_id,
+    )
+    for attempt in range(max_attempts):
+        try:
+            data = json.loads(_strip_fences(raw))
+            missing = required_keys - data.keys()
+            if missing:
+                raise ValueError(f"missing required keys: {sorted(missing)}")
+            return data
+        except (json.JSONDecodeError, ValueError) as e:
+            if attempt + 1 >= max_attempts:
+                logger.error(
+                    "LLM response validation failed after %d attempts — call=%s err=%s",
+                    max_attempts, call_kind, e,
+                )
+                raise LLMResponseError(raw, str(e)) from e
+            logger.warning(
+                "LLM response validation failed on attempt %d — call=%s err=%s, retrying",
+                attempt + 1, call_kind, e,
+            )
+            retry_prompt = (
+                f"{base_prompt}\n\n<retry_reason>Your previous response failed "
+                f"validation: {e}. Respond again with valid JSON matching the "
+                f"exact structure requested above. Output JSON only, no markdown "
+                f"fences, no commentary.</retry_reason>"
+            )
+            raw = _call_llm(
+                client, retry_prompt,
+                cached_user_prefix=cached_user_prefix,
+                call_kind=f"{call_kind}_retry", username=username, run_id=run_id,
+            )
+    raise LLMResponseError(raw, "exhausted retries")
+
+
 def analyze(
     client: anthropic.Anthropic,
-    context_set: dict,
+    context_set: ContextSet,
     username: str = "",
     run_id: str = "",
 ) -> dict:
@@ -317,32 +424,19 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 }}
 </instructions>"""
 
-    raw = _call_llm(
+    return _parse_or_retry(
         client, prompt,
         cached_user_prefix=_stable_user_prefix(context_set),
+        required_keys=ANALYZE_REQUIRED_KEYS,
         call_kind="analyze",
         username=username,
         run_id=run_id,
     )
 
-    # Parse JSON response — strip markdown fences if model adds them despite instructions
-    cleaned = raw.strip()
-    if cleaned.startswith("```"):
-        cleaned = cleaned.split("\n", 1)[1]
-        if cleaned.endswith("```"):
-            cleaned = cleaned.rsplit("```", 1)[0]
-        cleaned = cleaned.strip()
-
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
-        logger.error("Failed to parse LLM analysis response as JSON")
-        return {"raw_response": raw, "parse_error": True}
-
 
 def generate(
     client: anthropic.Anthropic,
-    context_set: dict,
+    context_set: ContextSet,
     analysis: dict,
     refinement_notes: str = "",
     username: str = "",
@@ -509,26 +603,14 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 }}
 </output_format>"""
 
-    raw = _call_llm(
+    return _parse_or_retry(
         client, prompt,
         cached_user_prefix=_stable_user_prefix(context_set),
+        required_keys=GENERATE_REQUIRED_KEYS,
         call_kind="generate",
         username=username,
         run_id=run_id,
     )
-
-    cleaned = raw.strip()
-    if cleaned.startswith("```"):
-        cleaned = cleaned.split("\n", 1)[1]
-        if cleaned.endswith("```"):
-            cleaned = cleaned.rsplit("```", 1)[0]
-        cleaned = cleaned.strip()
-
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
-        logger.error("Failed to parse LLM generation response as JSON")
-        return {"raw_response": raw, "parse_error": True}
 
 
 SCOPE_CHECK_MODEL = "claude-haiku-4-5-20251001"

@@ -13,9 +13,59 @@ import re
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+from typing import TypedDict
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
+
+
+class CandidateInfo(TypedDict):
+    name: str
+    email: str
+    phone: str
+    linkedin_url: str
+    website_url: str
+    skills: list[str]
+    certifications: list[str]
+    education_summary: str
+    notes: str
+    profile_text: str
+
+
+class ResumeInfo(TypedDict):
+    format: str
+    sections: list[dict]
+    text: str
+    filename: str
+    path: str
+
+
+class SupplementalResume(TypedDict):
+    filename: str
+    text: str
+    sections: list[dict]
+
+
+class DeterministicAnalysisBlock(TypedDict):
+    jd_keywords: dict
+    resume_keywords: dict
+    keyword_overlap: dict
+    ats_warnings: list[str]
+
+
+class _ContextSetRequired(TypedDict):
+    timestamp: str
+    candidate: CandidateInfo
+    resume: ResumeInfo
+    supplemental_resumes: list[SupplementalResume]
+    job_description: str
+    deterministic_analysis: DeterministicAnalysisBlock
+
+
+class ContextSet(_ContextSetRequired, total=False):
+    # Added by app.py after analyze(); not present at build_context_set time
+    llm_analysis: dict
+    run_id: str
 
 # Common English stop words to exclude from keyword extraction
 STOP_WORDS = frozenset(
@@ -392,7 +442,7 @@ def build_context_set(
     ats_warnings: list[str],
     supplemental_resumes: list[dict] | None = None,
     original_resume_path: str = "",
-) -> dict:
+) -> ContextSet:
     """Assemble the optimized context payload for LLM calls.
 
     P2 Context Hygiene: compact, structured, only what the LLM needs.
@@ -438,7 +488,7 @@ def build_context_set(
     }
 
 
-def save_context_set(context_set: dict, username: str, base_dir: str = "output") -> str:
+def save_context_set(context_set: ContextSet, username: str, base_dir: str = "output") -> str:
     """Save context set to disk as timestamped JSON. P4 Disposable Blueprint."""
     out_dir = Path(base_dir) / username
     out_dir.mkdir(parents=True, exist_ok=True)
