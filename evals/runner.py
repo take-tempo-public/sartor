@@ -34,7 +34,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from analyzer import PROMPT_VERSION, analyze, clarify, generate  # noqa: E402
+from analyzer import (  # noqa: E402
+    PROMPT_VERSION,
+    analyze,
+    clarify,
+    clarify_iteration,
+    generate,
+)
 from hardening import (  # noqa: E402
     ContextSet,
     build_context_set,
@@ -314,11 +320,252 @@ def _select_fixtures(suite: str, single: str | None) -> list[Path]:
 
 
 def _select_rubrics(subset: str) -> list[Path]:
-    """Smoke = grounding only; full = every rubric."""
+    """Smoke = grounding only; full = every rubric.
+
+    iteration_quality is special: it only runs against fixtures that have
+    `iteration_scenarios` defined in their expected.json. The runner skips
+    iteration_quality grading silently for fixtures without a scenario rather
+    than emitting score=None rows that would muddy the dashboard's heatmap.
+    """
     all_rubrics = sorted(RUBRICS_DIR.glob("*.md"))
     if subset == "smoke":
         return [r for r in all_rubrics if r.stem == "grounding"]
     return all_rubrics
+
+
+def _apply_simulated_edit(generated_resume: str, scenario: dict) -> tuple[str, bool]:
+    """Apply a fixture-supplied edit to the freshly generated resume.
+
+    Returns (edited_resume_text, edit_landed). edit_landed=False means the
+    target substring wasn't found — the test scenario isn't aligned with
+    what the LLM produced this run, and the iteration phase should skip
+    (the recent_edits_summary would be empty, breaking the rubric premise).
+    """
+    target = scenario.get("edit_target_substring", "")
+    replacement = scenario.get("edit_replacement", "")
+    if not target or not replacement:
+        return generated_resume, False
+    if target not in generated_resume:
+        return generated_resume, False
+    return generated_resume.replace(target, replacement, 1), True
+
+
+def _iteration_payload(
+    fixture: dict,
+    context: ContextSet,
+    analysis: dict,
+    iteration_questions: list[dict],
+    iteration_reasoning: str,
+    current_resume_text: str,
+    current_cover_letter_text: str,
+    recent_edits_summary: str,
+    deterministic_signals: dict,
+    prior_clarifications: list[dict],
+) -> dict:
+    """Build the judge payload for the iteration_quality rubric."""
+    return {
+        "fixture": fixture["name"],
+        "expected": fixture["expected"],
+        "original_resume": context["resume"]["text"],
+        "current_draft_resume": current_resume_text,
+        "current_draft_cover_letter": current_cover_letter_text,
+        "recent_edits_summary": recent_edits_summary,
+        "deterministic_signals": deterministic_signals,
+        "prior_clarifications": prior_clarifications,
+        "analysis": analysis,
+        "iteration_questions": iteration_questions,
+        "iteration_reasoning": iteration_reasoning,
+    }
+
+
+def _run_iteration_phase(
+    *,
+    client: anthropic.Anthropic,
+    fixture: dict,
+    context: ContextSet,
+    analysis: dict,
+    generate_result: dict,
+    clarify_questions: list[dict],
+    clarify_answers: dict,
+    rubric_path: Path,
+    run_id: str,
+    det_metrics: dict,
+    elapsed_ms: int,
+    t0_iso: str,
+) -> dict | None:
+    """Run one simulated iteration cycle for fixtures with iteration_scenarios.
+
+    Steps (per the plan):
+      a) apply scripted edit to the freshly generated resume
+      b) build a context snapshot mimicking what /api/iterate-clarify sees
+      c) call clarify_iteration() with the four signal sources
+      d) grade the questions against iteration_quality rubric
+
+    Steps (d') and (e) — re-generate from the iteration context and re-grade
+    against grounding/keyword_coverage — are deferred to keep the eval cost
+    increase modest until iteration_quality scores are validated. See the
+    2026-05-11.2 TUNING_LOG entry for the cost/value rationale.
+
+    Returns a JSONL record dict to write, or None if the fixture has no
+    iteration_scenarios (caller silently skips).
+    """
+    # Local imports to avoid import-time cost when the iteration phase is
+    # never exercised (most fixtures don't have scenarios).
+    from analyzer import LLMResponseError  # noqa: PLC0415
+    from hardening import compute_iteration_signals, summarize_recent_edits  # noqa: PLC0415
+
+    scenarios = fixture["expected"].get("iteration_scenarios") or []
+    if not scenarios:
+        return None  # signal: skip this rubric for this fixture
+
+    scenario = scenarios[0]  # only the first scenario per fixture for now
+    generated_resume = generate_result.get("resume_content", "")
+    generated_cover = generate_result.get("cover_letter_content", "")
+
+    edited_resume, edit_landed = _apply_simulated_edit(generated_resume, scenario)
+    if not edit_landed:
+        # The scripted edit_target_substring wasn't in the LLM output this
+        # run. Without an edit, recent_edits_summary is empty and the rubric
+        # premise breaks. Emit a pipeline_error row so the dashboard surfaces
+        # the misalignment rather than silently degrading the iteration eval.
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "score_max": SCORE_MAX,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "eval",
+            "fixture": fixture["name"],
+            "rubric": rubric_path.stem,
+            "score": None,
+            "reasons": [
+                f"Iteration scenario edit_target_substring "
+                f"{scenario.get('edit_target_substring')!r} not found in this run's "
+                "generated resume — fixture scenario needs realignment with current "
+                "prompts."
+            ],
+            "failed_rules": ["scenario_misaligned"],
+            "status": "scenario_misaligned",
+            "prompt_version": PROMPT_VERSION,
+            "run_id": run_id,
+            "deterministic_metrics": det_metrics,
+            "cost_usd": _eval_cost_since(t0_iso, fixture["name"]),
+            "pipeline_latency_ms": elapsed_ms,
+        }
+
+    # Build the iteration-1 context: what /api/generate would have written
+    # had the user clicked GENERATE, then USE EDITS AS BASELINE on the result.
+    iter_context: ContextSet = json.loads(json.dumps(context))
+    iter_context["iteration"] = 1
+    iter_context["last_generated_resume"] = generated_resume
+    iter_context["last_generated_cover_letter"] = generated_cover
+    iter_context["edited_resume_text"] = edited_resume
+    # Carry forward analyze-time clarifications so the iteration clarifier
+    # treats them as established truths it must build on, not re-ask.
+    # cast() avoids a structural-vs-nominal mismatch when the analyzer's
+    # questions arrive as plain dicts but the TypedDict expects ClarificationQuestion.
+    from typing import cast as _cast  # noqa: PLC0415
+
+    from hardening import ClarificationQuestion  # noqa: PLC0415
+    if clarify_questions:
+        iter_context["clarification_questions"] = _cast(
+            list[ClarificationQuestion], clarify_questions
+        )
+    if clarify_answers:
+        iter_context["clarifications"] = clarify_answers
+
+    # Compute signals via the same helpers /api/iterate-clarify uses, so the
+    # eval grades against the EXACT inputs the live route produces.
+    edits_summary = summarize_recent_edits(iter_context)
+    signals = compute_iteration_signals(iter_context, edited_resume)
+
+    prior_clarifications: list[dict] = []
+    for q in clarify_questions or []:
+        ans = (clarify_answers.get(q.get("id", ""), "") or "").strip()
+        if ans:
+            prior_clarifications.append({
+                "question": q.get("text", ""),
+                "answer": ans,
+                "kind": q.get("kind", ""),
+            })
+
+    iter_status = "ok"
+    iter_questions: list[dict] = []
+    iter_reasoning = ""
+    iter_error: str | None = None
+    try:
+        iter_result = clarify_iteration(
+            client=client,
+            context_set=iter_context,
+            analysis=analysis,
+            current_resume_text=edited_resume,
+            current_cover_letter_text=generated_cover,
+            recent_edits_summary=edits_summary,
+            deterministic_signals=signals,
+            prior_clarifications=prior_clarifications,
+            username=f"eval:{fixture['name']}",
+            run_id=run_id,
+        )
+        iter_questions = iter_result.get("questions", [])
+        iter_reasoning = iter_result.get("reasoning", "")
+    except LLMResponseError as exc:
+        iter_status = "pipeline_error"
+        iter_error = exc.validation_error
+    except Exception as exc:  # noqa: BLE001
+        iter_status = "pipeline_error"
+        iter_error = str(exc)
+
+    if iter_status != "ok":
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "score_max": SCORE_MAX,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "eval",
+            "fixture": fixture["name"],
+            "rubric": rubric_path.stem,
+            "score": None,
+            "reasons": [f"clarify_iteration failed: {iter_error}"],
+            "failed_rules": [],
+            "status": iter_status,
+            "prompt_version": PROMPT_VERSION,
+            "run_id": run_id,
+            "deterministic_metrics": det_metrics,
+            "cost_usd": _eval_cost_since(t0_iso, fixture["name"]),
+            "pipeline_latency_ms": elapsed_ms,
+        }
+
+    payload = _iteration_payload(
+        fixture=fixture, context=context, analysis=analysis,
+        iteration_questions=iter_questions, iteration_reasoning=iter_reasoning,
+        current_resume_text=edited_resume,
+        current_cover_letter_text=generated_cover,
+        recent_edits_summary=edits_summary,
+        deterministic_signals=signals,
+        prior_clarifications=prior_clarifications,
+    )
+    try:
+        grade = _grade(client, rubric_path, payload)
+        grade.setdefault("status", "ok")
+    except Exception as exc:  # noqa: BLE001
+        grade = {"score": None, "reasons": [str(exc)], "status": "judge_error"}
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "score_max": SCORE_MAX,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "source": "eval",
+        "fixture": fixture["name"],
+        "rubric": rubric_path.stem,
+        "score": grade.get("score"),
+        "reasons": grade.get("reasons", []),
+        "failed_rules": grade.get("failed_rules", []),
+        "status": grade.get("status", "ok"),
+        "prompt_version": PROMPT_VERSION,
+        "run_id": run_id,
+        "deterministic_metrics": det_metrics,
+        "cost_usd": _eval_cost_since(t0_iso, fixture["name"]),
+        "pipeline_latency_ms": elapsed_ms,
+        "iteration_scenario": scenario.get("name"),
+        "iteration_questions_count": len(iter_questions),
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -507,6 +754,53 @@ def main(argv: list[str] | None = None) -> int:
                         "  %s × clarification_quality → skipped (clarify failed)",
                         fixture["name"],
                     )
+                    continue
+
+                # iteration_quality is special: only graded on fixtures with an
+                # `iteration_scenarios` block. The runner runs one simulated
+                # iteration cycle (apply scripted edit → clarify_iteration →
+                # grade questions). Re-generation + re-grading on the iterated
+                # output is deferred — see TUNING_LOG entry for 2026-05-11.2.
+                if rubric_path.stem == "iteration_quality":
+                    iter_record = _run_iteration_phase(
+                        client=client,
+                        fixture=fixture,
+                        context=context,
+                        analysis=analysis,
+                        generate_result=result,
+                        clarify_questions=clarify_questions,
+                        clarify_answers={},  # answers come from the scenario, not user input
+                        rubric_path=rubric_path,
+                        run_id=run_id,
+                        det_metrics=det_metrics,
+                        elapsed_ms=elapsed_ms,
+                        t0_iso=t0_iso,
+                    )
+                    if iter_record is None:
+                        # Fixture has no iteration_scenarios — silently skip,
+                        # mirroring how the dashboard's heatmap handles N/A cells.
+                        continue
+                    out.write(json.dumps(iter_record) + "\n")
+                    iter_score = iter_record.get("score")
+                    if isinstance(iter_score, (int, float)) and iter_score >= PASS_THRESHOLD:
+                        n_pass += 1
+                        verdict = "pass"
+                    else:
+                        n_fail += 1
+                        verdict = "fail"
+                    logger.info(
+                        "  %s × iteration_quality → score=%s (%s)",
+                        fixture["name"], iter_score, verdict,
+                    )
+                    if isinstance(iter_score, (int, float)):
+                        delta = _detect_regression(
+                            fixture["name"], rubric_path.stem, float(iter_score), baseline,
+                        )
+                        if delta is not None:
+                            if delta["is_regression"]:
+                                regressions.append(delta)
+                            elif delta["is_improvement"]:
+                                improvements.append(delta)
                     continue
 
                 payload = {

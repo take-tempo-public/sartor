@@ -7,6 +7,7 @@ fuzzy LLM output (verb diversity, specificity density, n-gram source
 overlap, per-call cost).
 """
 
+import difflib
 import json
 import logging
 import re
@@ -537,6 +538,90 @@ def save_context_set(context_set: ContextSet, username: str, base_dir: str = "ou
     path = out_dir / f"context_{ts}.json"
     path.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
     return str(path)
+
+
+def summarize_recent_edits(context_set: ContextSet) -> str:
+    """Compact text summary of what the candidate edited since last generation.
+
+    Used by both /api/iterate-clarify (live route) and the eval runner
+    (simulated iteration). Output is a short unified diff per document,
+    capped to keep prompt tokens predictable. Returns "" when no edits exist.
+    """
+    parts: list[str] = []
+    for label, before_key, after_key in (
+        ("resume", "last_generated_resume", "edited_resume_text"),
+        ("cover_letter", "last_generated_cover_letter", "edited_cover_letter_text"),
+    ):
+        # Values come from JSON-loaded TypedDict fields whose value type mypy
+        # widens to object — coerce to str via fallback before .strip().
+        before_raw = context_set.get(before_key) or ""
+        after_raw = context_set.get(after_key) or ""
+        before = str(before_raw).strip()
+        after = str(after_raw).strip()
+        if not after or before == after:
+            continue
+        diff = list(difflib.unified_diff(
+            before.splitlines(), after.splitlines(),
+            fromfile=f"prior_{label}", tofile=f"edited_{label}",
+            lineterm="", n=2,
+        ))
+        if not diff:
+            continue
+        # Cap at first ~60 diff lines — covers most bullet-level edits without
+        # blowing prompt tokens for users who rewrote whole sections.
+        snippet = "\n".join(diff[:60])
+        if len(diff) > 60:
+            snippet += f"\n... [{len(diff) - 60} more diff lines truncated]"
+        parts.append(f"## {label} edits\n{snippet}")
+    return "\n\n".join(parts)
+
+
+def compute_iteration_signals(
+    context_set: ContextSet,
+    current_resume_text: str,
+) -> dict:
+    """Compute the four deterministic signal sources for the iteration clarifier.
+
+    Each signal is independently informative — the LLM uses them to target
+    questions at concrete weaknesses rather than guessing. Names match the
+    metric functions above so the dashboard can correlate iteration-time
+    signals with the post-generation metrics that ride along on every
+    eval result.
+    """
+    overlap = (context_set.get("deterministic_analysis", {}) or {}).get("keyword_overlap", {}) or {}
+    jd_kw_set = set(overlap.get("matched", [])) | set(overlap.get("missing_from_resume", []))
+
+    # Recompute keyword coverage against the CURRENT draft. The analyzer's
+    # original overlap was vs the original primary; the diff (original missing
+    # minus current missing) tells the LLM whether a recent revision actually
+    # closed any keyword gaps.
+    current_kw = extract_keywords(current_resume_text or "")
+    current_kw_set = set(current_kw.get("keywords", {}).keys())
+    still_missing = sorted(set(overlap.get("missing_from_resume", [])) - current_kw_set)
+
+    # Sources for grounding overlap mirror what generate() considers ground
+    # truth: original primary, supplementals, clarification answers.
+    source_texts: list[str] = []
+    primary_text = (context_set.get("resume", {}) or {}).get("text", "")
+    if primary_text:
+        source_texts.append(primary_text)
+    for s in context_set.get("supplemental_resumes", []) or []:
+        if s.get("text"):
+            source_texts.append(s["text"])
+    for ans in (context_set.get("clarifications") or {}).values():
+        if ans:
+            source_texts.append(ans)
+
+    return {
+        "verb_diversity": compute_verb_diversity(current_resume_text),
+        "specificity_density": compute_specificity_density(current_resume_text),
+        "grounding_overlap": compute_grounding_overlap(current_resume_text, source_texts),
+        "keyword_coverage": {
+            "jd_total": len(jd_kw_set),
+            "still_missing_from_current_draft": still_missing[:20],
+            "still_missing_count": len(still_missing),
+        },
+    }
 
 
 def save_iteration_context(

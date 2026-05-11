@@ -31,13 +31,12 @@ from hardening import (
     ContextSet,
     build_context_set,
     check_ats_format,
-    compute_grounding_overlap,
+    compute_iteration_signals,
     compute_keyword_overlap,
-    compute_specificity_density,
-    compute_verb_diversity,
     extract_keywords,
     save_context_set,
     save_iteration_context,
+    summarize_recent_edits,
     validate_config,
 )
 from parser import parse_resume
@@ -464,92 +463,6 @@ def submit_clarifications():
     return jsonify({"ok": True, "answered": len(cleaned), "total": len(valid_ids)})
 
 
-def _summarize_recent_edits(context_set: ContextSet) -> str:
-    """Produce a compact text summary of what the candidate edited since the
-    last generation, used as one of the four signal sources for the iteration
-    interview.
-
-    Strategy: short unified diff preface for each of resume + cover letter,
-    capped to keep prompt tokens predictable. If no edits exist, returns "".
-    The LLM only needs to see what changed, not a full character-level diff.
-    """
-    import difflib
-
-    parts: list[str] = []
-    for label, before_key, after_key in (
-        ("resume", "last_generated_resume", "edited_resume_text"),
-        ("cover_letter", "last_generated_cover_letter", "edited_cover_letter_text"),
-    ):
-        # Use cast-to-str through fallback — values come from JSON-loaded
-        # TypedDict fields whose value type mypy widens to object.
-        before_raw = context_set.get(before_key) or ""
-        after_raw = context_set.get(after_key) or ""
-        before = str(before_raw).strip()
-        after = str(after_raw).strip()
-        if not after or before == after:
-            continue
-        diff = list(difflib.unified_diff(
-            before.splitlines(), after.splitlines(),
-            fromfile=f"prior_{label}", tofile=f"edited_{label}",
-            lineterm="", n=2,
-        ))
-        if not diff:
-            continue
-        # Cap to first ~60 diff lines — enough to convey the change without
-        # blowing up the prompt for users who rewrote large sections.
-        snippet = "\n".join(diff[:60])
-        if len(diff) > 60:
-            snippet += f"\n... [{len(diff) - 60} more diff lines truncated]"
-        parts.append(f"## {label} edits\n{snippet}")
-    return "\n\n".join(parts)
-
-
-def _compute_iteration_signals(
-    context_set: ContextSet,
-    current_resume_text: str,
-) -> dict:
-    """Compute the four deterministic signal sources for the iteration clarifier.
-
-    Each signal is independently informative — the LLM uses them to target
-    questions at concrete weaknesses rather than guessing. Names match the
-    metric functions in hardening.py so the dashboard can correlate.
-    """
-    overlap = (context_set.get("deterministic_analysis", {}) or {}).get("keyword_overlap", {}) or {}
-    jd_kw_set = set(overlap.get("matched", [])) | set(overlap.get("missing_from_resume", []))
-
-    # Recompute keyword coverage against the CURRENT draft (the analyzer's
-    # original overlap was vs the original primary). The diff between original
-    # missing and current missing tells the LLM whether a recent revision
-    # actually closed any keyword gaps.
-    current_kw = extract_keywords(current_resume_text or "")
-    current_kw_set = set(current_kw.get("keywords", {}).keys())
-    still_missing = sorted(set(overlap.get("missing_from_resume", [])) - current_kw_set)
-
-    # Sources for grounding overlap mirror what generate() considers ground
-    # truth: original primary, supplementals, clarification answers.
-    source_texts: list[str] = []
-    primary_text = (context_set.get("resume", {}) or {}).get("text", "")
-    if primary_text:
-        source_texts.append(primary_text)
-    for s in context_set.get("supplemental_resumes", []) or []:
-        if s.get("text"):
-            source_texts.append(s["text"])
-    for ans in (context_set.get("clarifications") or {}).values():
-        if ans:
-            source_texts.append(ans)
-
-    return {
-        "verb_diversity": compute_verb_diversity(current_resume_text),
-        "specificity_density": compute_specificity_density(current_resume_text),
-        "grounding_overlap": compute_grounding_overlap(current_resume_text, source_texts),
-        "keyword_coverage": {
-            "jd_total": len(jd_kw_set),
-            "still_missing_from_current_draft": still_missing[:20],
-            "still_missing_count": len(still_missing),
-        },
-    }
-
-
 @app.route("/api/iterate-clarify", methods=["POST"])
 def run_iterate_clarify():
     """Iteration interview: probe the CURRENT draft's specific weaknesses.
@@ -602,8 +515,8 @@ def run_iterate_clarify():
     # exactly what the LLM would author from on the next call.
     current_resume_text, _ = _current_draft_text(context_set)
     current_cover_text, _ = _current_cover_letter_draft(context_set)
-    edits_summary = _summarize_recent_edits(context_set)
-    signals = _compute_iteration_signals(context_set, current_resume_text)
+    edits_summary = summarize_recent_edits(context_set)
+    signals = compute_iteration_signals(context_set, current_resume_text)
 
     # Pair prior clarifications (question + answer) so the LLM can build on
     # established truths rather than re-ask. Skipped questions are omitted.

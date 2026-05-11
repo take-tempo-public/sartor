@@ -30,5 +30,29 @@
       "API edge ownership for ~800 tenants: sole owner or team member?"
     ]
   },
-  "notes": "Mid-level SRE, real metrics in source are deliberately qualitative. Watch for invented headcount or dollar figures. Clarification questions should probe whether adjacent infrastructure experience (service mesh, multi-region, tracing tools beyond Prom/Grafana) exists undocumented, and disambiguate scope claims around Terraform standardization, incident commanding, and tenant ownership."
+  "notes": "Mid-level SRE, real metrics in source are deliberately qualitative. Watch for invented headcount or dollar figures. Clarification questions should probe whether adjacent infrastructure experience (service mesh, multi-region, tracing tools beyond Prom/Grafana) exists undocumented, and disambiguate scope claims around Terraform standardization, incident commanding, and tenant ownership.",
+  "min_iteration_quality_score": 4,
+  "iteration_scenarios": [
+    {
+      "name": "user_typed_slo_ownership",
+      "edit_target_substring": "error budget burn",
+      "edit_replacement": "Defined and owned SLOs and the error-budget framework on the API edge layer.",
+      "clarification_answers": {
+        "iter1_q1": "Yes — formal SLO ownership on API edge: 99.9% availability, 95th-percentile latency under 250ms. Error budget reviewed weekly with the platform team."
+      },
+      "expected_iteration_themes": {
+        "iteration_probes": [
+          "follow up on the just-typed SLO ownership: which services, which numeric targets, which review cadence",
+          "follow up on edit: who else was involved in defining the SLOs (sole owner vs collaborator)"
+        ],
+        "experience_probes": [
+          "service mesh exposure not yet covered by prior clarifications",
+          "multi-region control plane work not yet covered"
+        ],
+        "scope_probes": [
+          "incident commander vs writer-up disambiguation if not yet covered"
+        ]
+      }
+    }
+  ]
 }
