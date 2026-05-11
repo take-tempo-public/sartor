@@ -54,7 +54,7 @@ CLARIFY_REQUIRED_KEYS = frozenset({"questions", "reasoning"})
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-11.1"
+PROMPT_VERSION = "2026-05-11.2"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -97,6 +97,36 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Never restate a candidate's responsibility using a more advanced technique than the source describes BECAUSE writing "time-series forecasting" when the source only says "built dashboards" invents a skill the candidate cannot demonstrate in interviews
 - Never upgrade a tool category into a specific vendor or framework BECAUSE "used a CI tool" must not become "authored Jenkins pipelines" if the source does not name Jenkins; vendor-specific claims are verifiable and disqualifying when wrong
 - Never escalate scope adjectives (team → organization-wide, project → enterprise initiative, regional → global) BECAUSE scope inflation is verifiable in interviews and triggers credibility loss across the rest of the resume"""
+
+# Persona for clarify_iteration() — the post-generation interview that
+# probes the CURRENT iteration's specific weaknesses. Distinct from
+# CLARIFY_SYSTEM_PROMPT because the task here is different in two ways:
+# 1. There's already a generated draft to react to, not a vague gap analysis
+# 2. Prior clarifications exist and must be treated as established truth
+#    (re-asking confirmed items wastes the candidate's time and breaks trust)
+CLARIFY_ITERATION_SYSTEM_PROMPT = """You are an experienced interview coach helping a candidate refine a tailored resume across multiple iterations.
+
+The candidate has already seen one iteration of the generated resume and cover letter. They may have edited the preview directly or provided refinement notes. Your role is to surface 3-5 short, specific clarifying questions that target REAL weaknesses in the CURRENT draft — not the original resume, not generic gaps.
+
+INPUTS YOU WILL RECEIVE:
+1. Current draft resume text (possibly with the candidate's first-person edits)
+2. Current draft cover letter text (possibly edited)
+3. A summary of what the candidate just edited or asked for
+4. Deterministic metric weaknesses (low specificity, weak verb variety, grounding gaps, missing must-have keywords)
+5. Prior clarifications already confirmed by the candidate
+
+QUESTION KINDS:
+- "experience_probe" — for an essential JD skill or technology that is STILL missing or weak in the current draft. Goal: source real experience the candidate didn't write down.
+- "scope_probe" — for an ambiguity in the current draft (often introduced by an edit, or surviving from prior iterations).
+- "iteration_probe" — for a follow-up that builds on a recent edit or prior clarification. Example: candidate just typed "shipped V2 to enterprise" — ask for the customer segment, the timeframe, or the team scope so it can be quantified honestly.
+
+RULES:
+- Each question ≤ 25 words. One question per line, no compound questions.
+- Each question must reference a SPECIFIC current-draft weakness — name the bullet, the metric, the missing keyword, or the recent edit it follows up on.
+- BUILD ON prior clarifications, do not re-ask them. If the candidate already said "yes, used Terraform on a side project", don't ask "Have you used Terraform?" again — ask the next-level question (scale, cadence, ownership).
+- Bias toward EXPERIENCE PROBES and ITERATION PROBES (≥50% combined) — these are the most likely to surface new ground truth. SCOPE PROBES second.
+- Do not invent weaknesses. If all four signal sources look healthy, return fewer questions (minimum 3).
+- Output JSON only, no markdown fences, no preamble."""
 
 # Dedicated short persona for the clarify() step. Smaller than SYSTEM_PROMPT
 # because the task is narrowly scoped (question generation, not resume
@@ -150,30 +180,64 @@ MAX_TOKENS = 8192
 MAX_SUPPLEMENTAL_CHARS = 6_000  # per-file cap — keeps total context manageable
 
 
+def _current_draft_text(context_set: ContextSet) -> tuple[str, str]:
+    """Return (resume_text, source_label) for the <resume> prompt block.
+
+    Selection precedence at iteration > 0:
+      1. edited_resume_text  — user typed edits since last generation
+      2. last_generated_resume — most recent LLM output, no user edits
+      3. resume.text — original primary (only if iteration > 0 yet no draft
+         exists; this should be a rare degenerate case)
+
+    At iteration 0 (no generate yet), always returns the original primary.
+    The source_label is for telemetry/debugging only — not embedded in the prompt.
+    """
+    iteration = int(context_set.get("iteration", 0) or 0)
+    if iteration <= 0:
+        return context_set["resume"].get("text", ""), "primary"
+
+    edited = (context_set.get("edited_resume_text") or "").strip()
+    if edited:
+        return edited, "edited"
+    last_gen = (context_set.get("last_generated_resume") or "").strip()
+    if last_gen:
+        return last_gen, "last_generated"
+    return context_set["resume"].get("text", ""), "primary_fallback"
+
+
 def _stable_user_prefix(context_set: ContextSet) -> str:
     """Build the stable, cacheable portion of the user message.
 
-    This block is identical across analyze() and generate() calls for the
-    same context_set, enabling Anthropic prompt caching to hit on the second
-    call. Sonnet's cache requires 1024+ tokens to engage; bundling the
-    resume + JD + supplementals + candidate profile reliably exceeds that.
+    This block is identical across analyze() and generate() calls within the
+    same iteration of the same context_set, enabling Anthropic prompt caching
+    to hit on the second call. Sonnet's cache requires 1024+ tokens to engage;
+    bundling the resume + JD + supplementals + candidate profile reliably
+    exceeds that.
 
-    The block must be byte-identical across analyze and generate to hit the
-    cache. Tag names, field order, and the inclusion-condition for the
-    online profile are all load-bearing. Do not change one without the other.
+    Across iterations, the prefix legitimately changes (the <resume> block
+    swaps to the current draft and supplementals demote to <historical_resumes>).
+    Cross-iteration cache misses are expected behavior — the source material
+    actually changed. Within one iteration (e.g. analyze→generate, or a retry),
+    the prefix remains byte-identical and the cache hits.
+
+    Tag names, field order, and the inclusion-condition for the online profile
+    are all load-bearing. Do not change one without the other.
     """
     candidate = context_set["candidate"]
     online_profile = candidate.get("profile_text", "").strip()
+    iteration = int(context_set.get("iteration", 0) or 0)
+    resume_text, _ = _current_draft_text(context_set)
+    resume_filename = context_set["resume"].get("filename", "primary")
 
     parts = [
         "<job_description>",
         context_set["job_description"],
         "</job_description>",
         "",
-        f'<resume filename="{context_set["resume"].get("filename", "primary")}">',
-        context_set["resume"]["text"],
+        f'<resume filename="{resume_filename}" iteration="{iteration}">',
+        resume_text,
         "</resume>",
-        _supplemental_block(context_set),
+        _supplemental_block(context_set, iteration=iteration),
         "<candidate_profile>",
         f"Name: {candidate.get('name', '')}",
         f"Email: {candidate.get('email', '')}",
@@ -198,28 +262,85 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
     return "\n".join(parts)
 
 
-def _supplemental_block(context_set: ContextSet) -> str:
-    """Build the <supplemental_resumes> XML block for prompts, or empty string if none."""
-    supplements = context_set.get("supplemental_resumes", [])
-    if not supplements:
+def _supplemental_block(context_set: ContextSet, iteration: int = 0) -> str:
+    """Build the supplemental-resumes XML block for prompts.
+
+    At iteration 0 (no generate yet) the block is `<supplemental_resumes>` —
+    additional source material with equal standing to the primary.
+
+    At iteration >= 1 the wrapper switches to `<historical_resumes>` and also
+    folds in the original primary resume. Both are demoted to "earlier
+    versions / historical reference only" so the LLM treats the current draft
+    in <resume> as authoritative and only mines these for forgotten facts the
+    candidate had on a prior version.
+
+    Returns empty string only if iteration == 0 and there are no supplementals.
+    """
+    supplements = list(context_set.get("supplemental_resumes", []) or [])
+
+    if iteration <= 0:
+        if not supplements:
+            return ""
+        parts = [
+            f"<supplemental_resumes count=\"{len(supplements)}\">",
+            "The candidate has the following additional resume(s) as supplemental source material.",
+            "All job titles, bullet points, and experience from these files may be used.",
+            "When roles overlap across resumes, synthesize the richest version — do not duplicate.",
+            "",
+        ]
+        for i, r in enumerate(supplements, 1):
+            fname = r.get("filename", f"resume_{i}")
+            text = r.get("text", "")
+            if len(text) > MAX_SUPPLEMENTAL_CHARS:
+                text = text[:MAX_SUPPLEMENTAL_CHARS] + "\n[truncated]"
+            parts.append(f"<resume_{i} filename=\"{fname}\">")
+            parts.append(text)
+            parts.append(f"</resume_{i}>")
+            parts.append("")
+        parts.append("</supplemental_resumes>")
+        return "\n".join(parts)
+
+    # iteration >= 1 — fold the original primary in alongside supplementals
+    # under the demoted wrapper. The current draft in <resume> is now the
+    # authoritative version; everything below is historical reference only.
+    historicals: list[dict[str, str]] = []
+    primary_text = (context_set["resume"].get("text") or "").strip()
+    primary_filename = context_set["resume"].get("filename", "primary")
+    if primary_text:
+        historicals.append({"filename": primary_filename, "text": primary_text})
+    # Project SupplementalResume entries down to the (filename, text) shape we
+    # render — keeps mypy happy and signals that `sections` is intentionally
+    # unused in the historical-block prompt.
+    for s in supplements:
+        historicals.append({
+            "filename": s.get("filename", ""),
+            "text": s.get("text", ""),
+        })
+
+    if not historicals:
         return ""
+
     parts = [
-        f"<supplemental_resumes count=\"{len(supplements)}\">",
-        "The candidate has the following additional resume(s) as supplemental source material.",
-        "All job titles, bullet points, and experience from these files may be used.",
-        "When roles overlap across resumes, synthesize the richest version — do not duplicate.",
+        f"<historical_resumes count=\"{len(historicals)}\">",
+        "These are EARLIER VERSIONS of the candidate's resumes provided as historical",
+        "reference only. They are NOT the current draft. Use them only to surface",
+        "specific facts (metrics, titles, dates, technologies) that the candidate had",
+        "on a prior resume but may have forgotten to include in the current draft above.",
+        "NEVER let a historical resume override or contradict the current draft.",
         "",
     ]
-    for i, r in enumerate(supplements, 1):
-        fname = r.get("filename", f"resume_{i}")
-        text = r.get("text", "")
+    # Rename loop variable from `r` (used in the iteration<=0 branch as
+    # SupplementalResume) so mypy doesn't carry that narrowing into this scope.
+    for i, h in enumerate(historicals, 1):
+        fname = h.get("filename", f"historical_{i}")
+        text = h.get("text", "")
         if len(text) > MAX_SUPPLEMENTAL_CHARS:
             text = text[:MAX_SUPPLEMENTAL_CHARS] + "\n[truncated]"
-        parts.append(f"<resume_{i} filename=\"{fname}\">")
+        parts.append(f"<historical_{i} filename=\"{fname}\">")
         parts.append(text)
-        parts.append(f"</resume_{i}>")
+        parts.append(f"</historical_{i}>")
         parts.append("")
-    parts.append("</supplemental_resumes>")
+    parts.append("</historical_resumes>")
     return "\n".join(parts)
 
 
@@ -561,6 +682,159 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
     )
 
 
+def clarify_iteration(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    analysis: dict,
+    current_resume_text: str,
+    current_cover_letter_text: str,
+    recent_edits_summary: str,
+    deterministic_signals: dict,
+    prior_clarifications: list[dict],
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """Iteration-aware variant of clarify().
+
+    Generates 3-5 questions targeting weaknesses in the CURRENT iteration's
+    draft (not the original resume). The four signal sources documented in the
+    plan ride along:
+
+      1. current resume vs JD gap (via analysis.comparison.gaps + current draft)
+      2. recent_edits_summary — what the candidate just typed/asked for
+      3. deterministic_signals — verb diversity, specificity, grounding,
+         must-have keyword coverage on the current draft
+      4. prior_clarifications — already-confirmed truths the LLM must build
+         on rather than re-ask
+
+    Uses CLARIFY_ITERATION_SYSTEM_PROMPT (separate from CLARIFY_SYSTEM_PROMPT)
+    because the task is materially different — there's a draft to react to and
+    confirmed truths to respect.
+
+    Returns the same shape as clarify(): {questions: [...], reasoning: ...}.
+    """
+    # Compact prior-clarifications block — pair each question with its answer
+    # so the LLM sees what's already established. Only confirmed (non-empty)
+    # answers count; skipped questions are not "established truth".
+    if prior_clarifications:
+        confirmed_lines = []
+        for c in prior_clarifications:
+            q_text = (c.get("question") or "").strip()
+            a_text = (c.get("answer") or "").strip()
+            if not q_text or not a_text:
+                continue
+            confirmed_lines.append(f"- Q: {q_text}\n  A: {a_text}")
+        confirmed_block = "\n".join(confirmed_lines) or "(none)"
+    else:
+        confirmed_block = "(none)"
+
+    # Pull the current draft's gap sources from the analyzer output. The
+    # analyzer's comparison.gaps was computed against the ORIGINAL resume, but
+    # those gaps still inform what the JD wants — items missing from the
+    # current draft remain valid probes.
+    comparison = analysis.get("comparison", {}) or {}
+    overlap = (context_set.get("deterministic_analysis", {}) or {}).get("keyword_overlap", {}) or {}
+
+    # Cover letter is included as compact context, not the focus — interview
+    # questions almost always target the resume because that's where source
+    # material drives generation. Truncate aggressively to keep the prompt tight.
+    cl_excerpt = (current_cover_letter_text or "").strip()
+    if len(cl_excerpt) > 1500:
+        cl_excerpt = cl_excerpt[:1500] + "\n[truncated]"
+
+    prompt = f"""<task>Generate 3-5 targeted clarifying questions for the candidate, focused on the CURRENT iteration's draft.</task>
+
+<current_draft_resume>
+{current_resume_text}
+</current_draft_resume>
+
+<current_draft_cover_letter>
+{cl_excerpt or "(no cover letter draft yet)"}
+</current_draft_cover_letter>
+
+<recent_edits>
+{recent_edits_summary or "(no recent edits — the candidate has not modified the preview since the last generation)"}
+</recent_edits>
+
+<deterministic_signals>
+{json.dumps(deterministic_signals, indent=2)}
+</deterministic_signals>
+
+<analyzer_gaps_still_relevant>
+Comparison gaps (from original analysis): {json.dumps(comparison.get("gaps", []))}
+Title alignment: {comparison.get("title_alignment", "")}
+JD essential skills: {json.dumps(analysis.get("essential_skills", []))}
+JD keywords still missing from current draft: {json.dumps(overlap.get("missing_from_resume", [])[:20])}
+</analyzer_gaps_still_relevant>
+
+<already_confirmed_clarifications>
+The candidate has already confirmed the following in prior interview rounds.
+DO NOT re-ask these. Build on them with follow-up questions if relevant.
+{confirmed_block}
+</already_confirmed_clarifications>
+
+<instructions>
+Compose 3-5 questions. At least half (combined) must be EXPERIENCE PROBES (kind="experience_probe") or ITERATION PROBES (kind="iteration_probe"). The rest may be SCOPE PROBES (kind="scope_probe").
+
+Each question's target_gap field MUST cite the specific current-draft source:
+  - For experience_probe: name the JD essential skill or keyword still missing from the current draft.
+  - For iteration_probe: name the recent edit, prior clarification, or deterministic-signal weakness it follows up on.
+  - For scope_probe: quote the ambiguous bullet, role, or assertion in the current draft.
+
+Do not invent gaps that none of the four signal sources support. If signals look healthy across the board, return only 3 questions rather than padding to 5.
+
+Respond with valid JSON only. No markdown fences. Use this exact structure:
+{{
+  "questions": [
+    {{
+      "id": "q1",
+      "text": "The question text, <=25 words, no compound or leading questions.",
+      "target_gap": "Specific source — e.g. 'Essential skill Terraform missing from current draft' or 'Recent edit added \\'shipped V2\\' — needs scope/timeframe' or 'Deterministic signal: verb_diversity 0.32, top_repeated led/managed'",
+      "kind": "iteration_probe"
+    }}
+  ],
+  "reasoning": "1-2 sentence summary of how the question mix was composed and which signals it draws from."
+}}
+</instructions>"""
+
+    # Same caching rationale as clarify(): dedicated short system prompt,
+    # compact per-call user message — no cached prefix benefit. The current
+    # draft varies per iteration anyway, so a cached prefix wouldn't hit.
+    return _parse_or_retry(
+        client, prompt,
+        cached_user_prefix="",
+        required_keys=CLARIFY_REQUIRED_KEYS,
+        call_kind="iterate_clarify",
+        username=username,
+        run_id=run_id,
+        system_prompt=CLARIFY_ITERATION_SYSTEM_PROMPT,
+    )
+
+
+def _current_cover_letter_draft(context_set: ContextSet) -> tuple[str, str]:
+    """Return (cover_letter_text, source_label) for the optional draft block.
+
+    Mirrors _current_draft_text but for the cover letter, where there is no
+    "original" — the cover letter only exists once the LLM produces one. So at
+    iteration 0 the result is empty and the prompt omits the draft block.
+
+    Selection precedence (iteration >= 1):
+      1. edited_cover_letter_text — user typed edits since last generation
+      2. last_generated_cover_letter — most recent LLM output
+      3. empty — no draft to evolve (rare degenerate case)
+    """
+    iteration = int(context_set.get("iteration", 0) or 0)
+    if iteration <= 0:
+        return "", "none"
+    edited = (context_set.get("edited_cover_letter_text") or "").strip()
+    if edited:
+        return edited, "edited"
+    last_gen = (context_set.get("last_generated_cover_letter") or "").strip()
+    if last_gen:
+        return last_gen, "last_generated"
+    return "", "none"
+
+
 def generate(
     client: anthropic.Anthropic,
     context_set: ContextSet,
@@ -581,6 +855,15 @@ def generate(
     after the optional interview step), they are injected into the prompt as
     first-person ground truth and the GROUNDING CHECK is widened to accept
     them as legitimate source material.
+
+    Iteration-aware behavior (iteration >= 1):
+      - The <resume> block in the cached prefix already shows the current
+        draft (edited > last_generated) via _current_draft_text. Originals
+        live under <historical_resumes>.
+      - A <current_cover_letter_draft> block is inserted so the LLM evolves
+        the prior cover letter rather than starting fresh.
+      - Grounding wording widens to acknowledge first-person typed edits as
+        legitimate source material (mirrors the clarification carve-out).
     """
     # Build the optional candidate clarifications block. The clarify step is
     # opt-in — most contexts won't have these fields. When present, the answers
@@ -616,6 +899,25 @@ def generate(
         if any(answers.get(q.get("id", ""), "").strip() for q in questions):
             cb_lines.append("</candidate_clarifications>")
             clarifications_block = "\n".join(cb_lines) + "\n\n"
+
+    # Cover letter draft block — present only when iterating from a prior
+    # generation. The <resume> block already carries the current resume draft
+    # via _current_draft_text in the cached prefix; this is the parallel for
+    # the cover letter, which has no "original" file on disk.
+    cover_draft, _ = _current_cover_letter_draft(context_set)
+    cover_letter_draft_block = ""
+    if cover_draft:
+        cover_letter_draft_block = (
+            "<current_cover_letter_draft>\n"
+            "This is the prior iteration's cover letter (possibly with the "
+            "candidate's first-person edits typed in). EVOLVE this draft rather "
+            "than starting from scratch — preserve its voice and structure unless "
+            "an explicit refinement instruction or cover_letter_rules constraint "
+            "requires a change. Treat candidate-typed text in this draft as "
+            "first-person ground truth subject to the GROUNDING CHECK below.\n"
+            f"{cover_draft}\n"
+            "</current_cover_letter_draft>\n\n"
+        )
 
     prompt = f"""<task>Generate a tailored resume and cover letter for the candidate based on the analysis.</task>
 
@@ -675,10 +977,10 @@ Strategy: {analysis.get('overall_strategy', '')}
 Professional vocabulary: {', '.join(analysis.get('professional_vocabulary', []))}
 </analysis>
 
-{clarifications_block}<resume_rules>
+{clarifications_block}{cover_letter_draft_block}<resume_rules>
 GROUNDING CHECK — apply this before writing every bullet:
-  Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — exist in the primary resume, any supplemental resume above, OR a candidate clarification answer above?"
-  If YES: reframe, strengthen, and keyword-align it freely. Clarification answers are first-person ground truth and may be cited even when the resume does not mention them.
+  Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — trace to the resume above (the current draft, which may include first-person edits the candidate typed in), any historical or supplemental resume above, OR a candidate clarification answer above?"
+  If YES: reframe, strengthen, and keyword-align it freely. Both clarification answers AND first-person typed edits in the current draft are ground truth and may be cited even when the original primary resume did not mention them.
   If NO: do not write it. Reframe what IS there, or omit the bullet.
 
   Worked examples — what to do and what NOT to do:
@@ -696,6 +998,11 @@ GROUNDING CHECK — apply this before writing every bullet:
     OK to write:   "Streamlined the team's reporting workflow."
     NOT OK:        "Led an organization-wide reporting transformation."
                    ← scope inflation: "team" became "organization-wide", "improved workflow" became "transformation".
+
+    Candidate typed into the preview (first-person edit in current draft): "Shipped V2 to enterprise."
+    OK to write:   "Shipped V2 to enterprise customers."
+    NOT OK:        "Led V2 launch to 50 enterprise customers."
+                   ← invents headcount the candidate did not type. First-person edits ARE ground truth, but never extend them with specifics the candidate did not state.
 
 1. Include a targeted summary sentence answering: what title you seek, what makes you special, what you bring to the team. If it cannot fit in one sentence, use a sentence with a very short bullet list.
 2. Do NOT invent experience. Every bullet must trace directly to the original resume. Reframe language; never invent facts.

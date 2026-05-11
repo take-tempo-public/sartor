@@ -737,3 +737,160 @@ textarea {
   margin: 4px 0 10px;
   opacity: 0.65;
 }
+.clarify-kind-badge.iteration {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+/* ---- Iteration loop UI ---- */
+
+/* Iteration counter pill in the top bar — sits between title and status. */
+.iteration-pill {
+  background: var(--violet);
+  color: var(--black);
+  margin-right: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Iteration interview area visually mirrors the analyze-time clarify area
+   but lives inside the Output panel under the refinement controls. */
+.iterate-clarify-area {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px dashed #1a1a2e;
+}
+
+/* ---- Edit-detection modal ----
+   Shown when REFINE or GET INTERVIEW QUESTIONS is clicked while the live
+   preview contains user edits not yet baselined. The role/aria attrs in
+   the markup are the load-bearing accessibility surface; this CSS handles
+   layout, color, and reduced-motion behavior only. */
+.lcars-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.lcars-modal.hidden { display: none; }
+.lcars-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+}
+.lcars-modal-content {
+  position: relative;
+  z-index: 1;
+  background: #0a0a10;
+  border: 2px solid var(--amber);
+  border-radius: 12px;
+  padding: 22px 26px;
+  max-width: 540px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  animation: lcars-modal-in 120ms ease-out;
+}
+@keyframes lcars-modal-in {
+  from { transform: translateY(-6px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lcars-modal-content { animation: none; }
+}
+.lcars-modal-title {
+  margin: 0 0 12px;
+  color: var(--amber);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.lcars-modal-body {
+  margin: 0 0 18px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+/* Visible focus ring on modal buttons — Phase 4 will roll this out across
+   the rest of the UI, but the modal is unusable without it so it ships now. */
+.lcars-modal .lcars-btn:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+/* ---- Accessibility utilities (Phase 4) ---- */
+
+/* Visually hidden but discoverable to assistive tech. Used for skip-link
+   landing target and the live region. The clip+absolute pattern is the
+   conventional bulletproof recipe. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link — invisible until focused, then floats over the top bar so
+   keyboard users can bypass the LCARS chrome and jump straight into the
+   first interactive panel without tabbing through every block. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 2000;
+  background: var(--amber);
+  color: var(--black);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.skip-link:focus {
+  left: 8px;
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Visible focus indicators across all interactive elements. The project
+   uses outline:none + border-color shifts on inputs which work for mouse
+   focus but are too subtle for keyboard nav. focus-visible gives keyboard
+   users a clear ring without bringing back outlines on mouse clicks. */
+.lcars-btn:focus-visible,
+.tab-btn:focus-visible,
+.view-btn:focus-visible,
+.format-btn:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.preview-editable:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 1px;
+}
+/* Resume chip filenames are the primary-resume selector — make them keyboard-
+   reachable when a tab order pass moves them under tab focus (Phase 4 leaves
+   the click-only model in place, but the focus rule is ready). */
+.file-chip:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}

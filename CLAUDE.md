@@ -18,16 +18,17 @@ The project follows the [10 Principles framework](https://jdforsythe.github.io/1
 
 ## Architecture at a Glance
 
-**Two- or three-call LLM pipeline** (all in [analyzer.py](analyzer.py)):
+**Two-, three-, or N-call LLM pipeline** (all in [analyzer.py](analyzer.py)):
 - Call 1: `analyze()` — JD breakdown, ideal resume, comparison, keyword strategy
 - Call 1.5 (optional): `clarify()` — 3-5 targeted questions surfacing real-but-undocumented experience and disambiguating analyzer-flagged scope. Uses `CLARIFY_SYSTEM_PROMPT` (a short dedicated persona, not the hiring-manager `SYSTEM_PROMPT`). User may skip; questions persist to the same context file for resumability.
-- Call 2: `generate()` — tailored resume + cover letter + proofread pass. When clarifications are present, they ride along as `<candidate_clarifications>` and are treated as first-person ground truth (citable even when absent from the resume; no-invention rule still applies beyond the union of resume + clarifications).
+- Call 2: `generate()` — tailored resume + cover letter + proofread pass. When clarifications are present, they ride along as `<candidate_clarifications>` and are treated as first-person ground truth (citable even when absent from the resume; no-invention rule still applies beyond the union of resume + clarifications). At iteration ≥ 1, the original primary + supplementals demote to `<historical_resumes>` and the current draft (edited > last_generated) becomes the authoritative `<resume>`.
+- Call N (optional, repeatable): `clarify_iteration()` after each generation, plus another `generate()` per iteration. Probes the CURRENT draft's specific weaknesses using four signal sources: current resume vs JD gaps, recent edit diff, deterministic metrics (verb diversity / specificity / grounding / keyword coverage on the current draft), and prior clarifications (treated as established truth). Uses `CLARIFY_ITERATION_SYSTEM_PROMPT`.
 
 **Core design rules:**
 - **P1 Hardening** — deterministic Python for mechanical work; LLM only for fuzzy reasoning
-- **P8 Human Gates** — two required review checkpoints (analysis review + post-generation refinement) plus one optional clarification interview between them. Skipping clarification does not degrade generate below pre-clarify behavior.
-- **P5 Institutional Memory** — ALWAYS/NEVER BECAUSE rules in `analyzer.py:SYSTEM_PROMPT`; clarification persona in `analyzer.py:CLARIFY_SYSTEM_PROMPT`
-- **P2 Context Hygiene** — `context_set` is the structured JSON contract between all stages. Optional fields `clarification_questions` and `clarifications` (both `total=False`) carry the interview state; older saved contexts continue to round-trip.
+- **P8 Human Gates** — two required review checkpoints (analysis review + post-generation refinement) plus one optional clarification interview between them, plus an optional iteration interview after each generation. Skipping any clarification step does not degrade generate below the prior behavior.
+- **P5 Institutional Memory** — ALWAYS/NEVER BECAUSE rules in `analyzer.py:SYSTEM_PROMPT`; analyze-time clarification persona in `analyzer.py:CLARIFY_SYSTEM_PROMPT`; iteration-time persona in `analyzer.py:CLARIFY_ITERATION_SYSTEM_PROMPT`
+- **P2 Context Hygiene** — `context_set` is the structured JSON contract between all stages. Iteration state (`iteration`, `parent_context_path`, `edited_resume_text`, `edited_cover_letter_text`, `last_generated_resume`, `last_generated_cover_letter`, `iteration_notes`) is all `total=False` so pre-iteration files round-trip. Each `/api/generate` writes a NEW timestamped child file (`context_{ts}_iter{N}.json`) rather than mutating the parent — the parent_context_path chain is the iteration audit trail.
 
 **Multi-resume source pool:**
 - Primary resume → `context_set["resume"]` (determines output format + style template)
@@ -36,12 +37,17 @@ The project follows the [10 Principles framework](https://jdforsythe.github.io/1
 
 **`context_set` lifecycle:**
 ```
-/api/analyze              → build_context_set() → analyze() → save to output/{user}/context_*.json
-/api/clarify (optional)   → load → clarify() → write back to same file (+ clarification_questions)
+/api/analyze               → build_context_set() → analyze() → save to output/{user}/context_*.json (iter 0)
+/api/clarify (optional)    → load → clarify() → write back to same file (+ clarification_questions)
 /api/answer-clarifications → load → merge answers → write back to same file (+ clarifications)
-/api/generate             → load → generate() (consumes clarifications if present) → write docx/md
+/api/generate              → load → generate() → save_iteration_context()
+                             → output/{user}/context_{ts}_iter1.json (parent_context_path → iter 0)
+/api/save-edits (optional) → load latest → store edited_resume_text / edited_cover_letter_text
+/api/iterate-clarify (opt) → load latest → clarify_iteration() → append to clarification_questions
+/api/generate (again)      → load latest (with edits and/or new clarifications)
+                             → save_iteration_context() → context_{ts}_iter2.json (parent → iter 1)
 ```
-The same `run_id` (minted in `/api/analyze`) propagates through all four routes so JSONL telemetry correlates analyze + clarify + generate as one user session.
+The same `run_id` (minted in `/api/analyze`) propagates through every iteration so JSONL telemetry correlates the entire user session as one chain. Each `/api/generate` returns the new `context_path` — the frontend MUST adopt it for any subsequent call so the iteration chain stays intact.
 
 ---
 
@@ -49,19 +55,27 @@ The same `run_id` (minted in `/api/analyze`) propagates through all four routes 
 
 ```
 app.py              Flask routes + security helpers (_safe_username, _within).
-                    /api/analyze, /api/clarify, /api/answer-clarifications, /api/generate.
-analyzer.py         LLM calls: analyze(), clarify(), generate(), _supplemental_block(),
+                    /api/analyze, /api/clarify, /api/answer-clarifications,
+                    /api/iterate-clarify, /api/save-edits, /api/generate.
+analyzer.py         LLM calls: analyze(), clarify(), clarify_iteration(), generate(),
+                    _supplemental_block(iteration), _current_draft_text, _current_cover_letter_draft,
                     SYSTEM_PROMPT (hiring-manager persona), CLARIFY_SYSTEM_PROMPT
-                    (short interview persona)
-hardening.py        Deterministic tools: keyword extraction, ATS checks, build_context_set();
+                    (analyze-time interview), CLARIFY_ITERATION_SYSTEM_PROMPT (post-generation interview)
+hardening.py        Deterministic tools: keyword extraction, ATS checks, build_context_set(),
+                    save_iteration_context(); summarize_recent_edits + compute_iteration_signals
+                    used by both /api/iterate-clarify and the eval iteration phase;
                     plus four post-generation metrics (verb_diversity, specificity_density,
                     grounding_overlap, call_cost) used by the eval harness and dashboard
 generator.py        Document output: _write_docx() uses original .docx as style template
 parser.py           Resume parsing (docx/pdf/md → structured dict)
 scraper.py          LinkedIn/portfolio URL scraping (best-effort, fails gracefully)
-static/app.js       All frontend logic — vanilla JS, fetch API, no framework
-static/style.css    LCARS aesthetic: dark bg, amber/teal/orange/blue palette
-templates/index.html Single-page app shell
+static/app.js       All frontend logic — vanilla JS, fetch API, no framework. Iteration loop:
+                    _detectEdits, _showEditModal, _gateEditsBeforeAction, runIterateClarify,
+                    _onGenerationComplete (adopts new context_path per iteration).
+static/style.css    LCARS aesthetic: dark bg, amber/teal/orange/blue palette.
+                    Modal overlay, iteration pill, sr-only / skip-link / focus-visible.
+templates/index.html Single-page app shell. Iteration pill, GET INTERVIEW QUESTIONS button,
+                     edit-detection modal (role=dialog, aria-modal), skip link, sr live region.
 
 dashboard/          Read-only Flask blueprint at /_dashboard. Score trend, rubric × fixture
                     heatmap, failure-mode clustering, cost cards. Chart.js via CDN; no new
@@ -96,12 +110,12 @@ A `route-security-lint` hook enforces this once Step 5 lands — see `.claude-pl
 - `BULLET_RE` in `generator.py` normalizes all bullet variants
 
 **LLM prompts:**
-- The hiring-manager persona lives at `analyzer.py:SYSTEM_PROMPT`; the short interview persona at `analyzer.py:CLARIFY_SYSTEM_PROMPT`. Edit there, not inline.
-- When either prompt changes (or any per-call prompt template), bump `PROMPT_VERSION` in the same commit so observability/eval can attribute behavior
-- Supplemental resumes injected via `_supplemental_block()` in both prompts
+- The hiring-manager persona lives at `analyzer.py:SYSTEM_PROMPT`; analyze-time interview persona at `analyzer.py:CLARIFY_SYSTEM_PROMPT`; iteration-time interview persona at `analyzer.py:CLARIFY_ITERATION_SYSTEM_PROMPT`. Edit there, not inline.
+- When any prompt changes (or any per-call prompt template), bump `PROMPT_VERSION` in the same commit so observability/eval can attribute behavior
+- Supplemental resumes injected via `_supplemental_block(iteration)` — wrapper switches to `<historical_resumes>` (with the original primary folded in) when iteration ≥ 1
 - Grounding check in generation prompt enforces no invented facts; the worked-examples block (OK / NOT OK pairs) is the load-bearing teaching signal — when adding new failure modes to the SYSTEM_PROMPT, also add a worked example here
-- When clarifications are present, the grounding check widens to accept clarification answers as legitimate source material (first-person ground truth). The no-invention rule still applies beyond the union of (resume + clarifications) — keep this carve-out surgical, not blanket
-- `_call_llm` and `_parse_or_retry` accept an optional `system_prompt` arg; calls that override it (like `clarify`) pay one extra cache-miss on the system block but the heavy user-prefix cache is unaffected (clarify uses no cached prefix)
+- When clarifications OR first-person preview edits are present, the grounding check widens to accept them as legitimate source material. The no-invention rule still applies beyond the union of (resume + clarifications + typed edits) — keep this carve-out surgical, not blanket. The typed-edits OK/NOT-OK example ("Shipped V2 to enterprise" → don't add headcount the candidate didn't type) is part of the worked-examples block.
+- `_call_llm` and `_parse_or_retry` accept an optional `system_prompt` arg; calls that override it (like `clarify` / `clarify_iteration`) pay one extra cache-miss on the system block but the heavy user-prefix cache is unaffected (both clarify variants use no cached prefix)
 
 **Eval observability:**
 - Eval results carry `prompt_version` so the dashboard's score-over-time chart can attribute regressions to specific prompt revisions

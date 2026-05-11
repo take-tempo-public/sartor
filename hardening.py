@@ -7,6 +7,7 @@ fuzzy LLM output (verb diversity, specificity density, n-gram source
 overlap, per-call cost).
 """
 
+import difflib
 import json
 import logging
 import re
@@ -66,7 +67,13 @@ class ClarificationQuestion(TypedDict, total=False):
     id: str
     text: str
     target_gap: str
-    kind: str  # "experience_probe" | "scope_probe"
+    kind: str  # "experience_probe" | "scope_probe" | "iteration_probe"
+
+
+class IterationNote(TypedDict, total=False):
+    timestamp: str
+    action: str  # "generate" | "save_edits" | "iterate_clarify" | "answer_iteration"
+    summary: str
 
 
 class ContextSet(_ContextSetRequired, total=False):
@@ -81,6 +88,26 @@ class ContextSet(_ContextSetRequired, total=False):
     # Treated as first-person ground truth by generate() and may be cited in
     # output even when absent from the resume.
     clarifications: dict[str, str]
+    # --- Iteration loop (Phase 1) ----------------------------------------------
+    # 0 = analyze-only; 1+ = state AFTER the Nth generation. The condition
+    # context_set.get("iteration", 0) >= 1 controls whether the next generate
+    # treats the original primary + supplementals as historical references and
+    # treats the current draft (edited or last_generated) as the <resume> block.
+    iteration: int
+    # Path to the context file this one was derived from. Forms the audit chain.
+    parent_context_path: str
+    # When set by /api/save-edits, replaces the <resume>/<cover_letter> block
+    # for the NEXT generate() call. Consumed (cleared) on the new iteration
+    # context that generate() writes.
+    edited_resume_text: str
+    edited_cover_letter_text: str
+    # Per-iteration metadata appended by routes. Useful for the dashboard to
+    # reconstruct the user's path through the loop. Append-only; never rewritten.
+    iteration_notes: list[IterationNote]
+    # Frozen-at-generation snapshot of what the LLM produced. The frontend
+    # diffs the live preview against this to detect user edits.
+    last_generated_resume: str
+    last_generated_cover_letter: str
 
 # Common English stop words to exclude from keyword extraction
 STOP_WORDS = frozenset(
@@ -510,4 +537,147 @@ def save_context_set(context_set: ContextSet, username: str, base_dir: str = "ou
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = out_dir / f"context_{ts}.json"
     path.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+    return str(path)
+
+
+def summarize_recent_edits(context_set: ContextSet) -> str:
+    """Compact text summary of what the candidate edited since last generation.
+
+    Used by both /api/iterate-clarify (live route) and the eval runner
+    (simulated iteration). Output is a short unified diff per document,
+    capped to keep prompt tokens predictable. Returns "" when no edits exist.
+    """
+    parts: list[str] = []
+    for label, before_key, after_key in (
+        ("resume", "last_generated_resume", "edited_resume_text"),
+        ("cover_letter", "last_generated_cover_letter", "edited_cover_letter_text"),
+    ):
+        # Values come from JSON-loaded TypedDict fields whose value type mypy
+        # widens to object — coerce to str via fallback before .strip().
+        before_raw = context_set.get(before_key) or ""
+        after_raw = context_set.get(after_key) or ""
+        before = str(before_raw).strip()
+        after = str(after_raw).strip()
+        if not after or before == after:
+            continue
+        diff = list(difflib.unified_diff(
+            before.splitlines(), after.splitlines(),
+            fromfile=f"prior_{label}", tofile=f"edited_{label}",
+            lineterm="", n=2,
+        ))
+        if not diff:
+            continue
+        # Cap at first ~60 diff lines — covers most bullet-level edits without
+        # blowing prompt tokens for users who rewrote whole sections.
+        snippet = "\n".join(diff[:60])
+        if len(diff) > 60:
+            snippet += f"\n... [{len(diff) - 60} more diff lines truncated]"
+        parts.append(f"## {label} edits\n{snippet}")
+    return "\n\n".join(parts)
+
+
+def compute_iteration_signals(
+    context_set: ContextSet,
+    current_resume_text: str,
+) -> dict:
+    """Compute the four deterministic signal sources for the iteration clarifier.
+
+    Each signal is independently informative — the LLM uses them to target
+    questions at concrete weaknesses rather than guessing. Names match the
+    metric functions above so the dashboard can correlate iteration-time
+    signals with the post-generation metrics that ride along on every
+    eval result.
+    """
+    overlap = (context_set.get("deterministic_analysis", {}) or {}).get("keyword_overlap", {}) or {}
+    jd_kw_set = set(overlap.get("matched", [])) | set(overlap.get("missing_from_resume", []))
+
+    # Recompute keyword coverage against the CURRENT draft. The analyzer's
+    # original overlap was vs the original primary; the diff (original missing
+    # minus current missing) tells the LLM whether a recent revision actually
+    # closed any keyword gaps.
+    current_kw = extract_keywords(current_resume_text or "")
+    current_kw_set = set(current_kw.get("keywords", {}).keys())
+    still_missing = sorted(set(overlap.get("missing_from_resume", [])) - current_kw_set)
+
+    # Sources for grounding overlap mirror what generate() considers ground
+    # truth: original primary, supplementals, clarification answers.
+    source_texts: list[str] = []
+    primary_text = (context_set.get("resume", {}) or {}).get("text", "")
+    if primary_text:
+        source_texts.append(primary_text)
+    for s in context_set.get("supplemental_resumes", []) or []:
+        if s.get("text"):
+            source_texts.append(s["text"])
+    for ans in (context_set.get("clarifications") or {}).values():
+        if ans:
+            source_texts.append(ans)
+
+    return {
+        "verb_diversity": compute_verb_diversity(current_resume_text),
+        "specificity_density": compute_specificity_density(current_resume_text),
+        "grounding_overlap": compute_grounding_overlap(current_resume_text, source_texts),
+        "keyword_coverage": {
+            "jd_total": len(jd_kw_set),
+            "still_missing_from_current_draft": still_missing[:20],
+            "still_missing_count": len(still_missing),
+        },
+    }
+
+
+def save_iteration_context(
+    parent_context: ContextSet,
+    parent_path: str,
+    last_generated_resume: str,
+    last_generated_cover_letter: str,
+    username: str,
+    base_dir: str = "output",
+    action: str = "generate",
+    summary: str = "",
+) -> str:
+    """Persist a new iteration context derived from a parent context.
+
+    Used by /api/generate to record each iteration as its own immutable file
+    rather than mutating the prior one. The chain of `parent_context_path`
+    pointers is the audit trail; the dashboard can walk it to render iteration
+    progression.
+
+    Behavior:
+      - Deep-copies parent_context (avoid aliasing surprises if the caller
+        keeps reading from it after this call returns).
+      - Increments `iteration` by 1 (parent default 0 → child 1).
+      - Sets `parent_context_path` to parent_path.
+      - Sets `last_generated_resume` / `last_generated_cover_letter` to the
+        freshly generated text (used by the frontend to diff against the live
+        preview for edit detection on the NEXT iteration).
+      - Clears `edited_resume_text` / `edited_cover_letter_text` — those were
+        consumed by generate() to build the prompt; carrying them forward
+        would cause double-application on the next iteration.
+      - Appends an IterationNote so dashboards can reconstruct the path.
+      - Writes to `context_{ts}_iter{N}.json` to keep the iteration count
+        visible at the filename level. Pre-iteration files (`context_{ts}.json`,
+        no iter suffix) remain on disk untouched.
+    """
+    child: ContextSet = json.loads(json.dumps(parent_context))  # deep copy via JSON round-trip
+    child["iteration"] = int(parent_context.get("iteration", 0)) + 1
+    child["parent_context_path"] = parent_path
+    child["last_generated_resume"] = last_generated_resume
+    child["last_generated_cover_letter"] = last_generated_cover_letter
+    # Consume edits — they fed the prompt that produced this generation; they
+    # must not re-apply on the next iteration's generate() call.
+    child.pop("edited_resume_text", None)
+    child.pop("edited_cover_letter_text", None)
+
+    notes: list[IterationNote] = list(child.get("iteration_notes") or [])
+    notes.append({
+        "timestamp": datetime.now().isoformat(),
+        "action": action,
+        "summary": summary or f"iteration {child['iteration']}",
+    })
+    child["iteration_notes"] = notes
+
+    out_dir = Path(base_dir) / username
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = out_dir / f"context_{ts}_iter{child['iteration']}.json"
+    path.write_text(json.dumps(child, indent=2), encoding="utf-8")
     return str(path)

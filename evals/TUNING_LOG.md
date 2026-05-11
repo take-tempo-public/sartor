@@ -16,6 +16,98 @@ prevent re-running them.
 
 ---
 
+## 2026-05-11 — `2026-05-11.1` → `2026-05-11.2`: iterative refinement loop
+
+### What changed
+
+- `analyzer.py:CLARIFY_ITERATION_SYSTEM_PROMPT` — new dedicated persona for
+  the post-generation interview. Two distinguishing instructions vs
+  `CLARIFY_SYSTEM_PROMPT`: (1) treat prior clarifications as established truth,
+  follow up rather than re-ask; (2) target the CURRENT draft's specific
+  weaknesses surfaced by the four signal sources, not generic JD gaps.
+- `analyzer.py:clarify_iteration()` — new function with 4-signal-source
+  prompt template (current draft, recent edits, deterministic signals,
+  prior clarifications). Reuses `_parse_or_retry` with
+  `call_kind="iterate_clarify"` for telemetry parity.
+- `analyzer.py:generate()` — grounding worked-examples block extended with a
+  fourth OK/NOT-OK pair specifically for typed edits ("Shipped V2 to
+  enterprise" / "Led V2 launch to 50 enterprise customers"). The grounding
+  question itself widens to acknowledge typed edits as ground truth alongside
+  clarification answers.
+- `analyzer.py:_supplemental_block(iteration)` — wrapper switches to
+  `<historical_resumes>` at iteration ≥ 1 with explicit demotion language.
+- `evals/rubrics/iteration_quality.md` — new fifth rubric.
+- `evals/runner.py` — optional iteration phase grades the new questions
+  against `iteration_quality` for fixtures with `iteration_scenarios`.
+- `PROMPT_VERSION` bump in the same commit.
+
+### Why
+
+The clarification interview that landed in `2026-05-11.1` proved valuable but
+also surfaced a pattern: candidates would type meaningful edits into the
+preview, then click REFINE — and the regenerate-from-context path silently
+discarded those edits. Two distinct fixes were required:
+
+1. **Edit-aware baselines.** The preview-edit gate (Phase 3) plus
+   `edited_resume_text` carve-out in the grounding check let typed edits
+   feed the next generation as first-person ground truth. The grounding
+   worked-example pair specifically targets the new failure mode this opens
+   up: the LLM treating an edit as license to inflate ("shipped V2" →
+   "shipped V2 to 50 enterprise customers").
+2. **Iteration-aware probing.** The analyze-time `clarify()` is rooted in
+   the original resume vs JD gap. Once iteration 1 has produced a draft
+   (possibly with edits), the relevant gaps shift: missing keywords may be
+   filled, new ambiguities may be introduced by edits, and prior
+   clarifications are now established truths the LLM should build on.
+   `clarify_iteration` exists to probe that new state — and the
+   `iteration_quality` rubric grades whether it actually does.
+
+### What was the result
+
+Initial run pending — this entry is written ahead of the first iteration_quality
+grading run. Expected baseline: iteration_quality ≥ 4.0 on the
+`sre-mid-level/user_typed_slo_ownership` scenario. Will be updated with
+concrete numbers after the first eval pass with the new rubric and prompt
+version.
+
+Open question for that first run: does the iteration clarifier respect the
+"don't re-ask" rule when prior clarifications are present? If we see
+`redundant_question` in `failed_rules`, the system prompt's instruction may
+need tightening (or the prompt may need an explicit worked example like the
+grounding block has).
+
+### Cost / scope notes
+
+- `clarify_iteration` adds one Sonnet call per iteration interview clicked.
+  Same cost shape as analyze-time `clarify` (~$0.03 per call, mostly cached
+  user prefix doesn't apply here — the call uses no cached prefix because
+  the current draft varies per iteration).
+- The eval iteration phase adds one Sonnet call (clarify_iteration) plus one
+  Haiku call (iteration_quality grading) per fixture with scenarios. With
+  one fixture (sre-mid-level) currently scoped, total eval cost increment
+  is ~$0.05 per `--suite synthetic` run.
+- **Deferred to a follow-up entry**: re-generating from the iteration
+  context and re-grading against grounding/keyword_coverage. The plan
+  documents this as the full Phase 5 eval surface; shipping the
+  question-grading half first lets us validate `clarify_iteration` quality
+  before paying for the second generate call per fixture per run. If
+  iteration_quality scores look good across the next 2-3 runs, add the
+  re-generate step and grade the iterated output against grounding +
+  keyword_coverage. Expected additional cost: ~$0.50 per scenario per run.
+
+### What we learned
+
+To be filled in after the first eval pass. Hypothesis going in:
+
+- The "build on, don't re-ask" rule is the highest-risk failure mode. If
+  iteration questions duplicate prior clarifications, the candidate's trust
+  in the loop erodes fast — they'll skip future interviews.
+- The "first-person edits are ground truth but not extensible" rule is the
+  second highest-risk failure mode. If the LLM extends typed edits with
+  invented specifics, it amplifies user errors with confidence.
+
+---
+
 ## 2026-05-09 — `2026-05-06.5` → `2026-05-09.1`: anti-invention worked-examples
 
 ### What changed

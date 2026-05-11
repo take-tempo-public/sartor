@@ -8,22 +8,35 @@ import json
 import logging
 import os
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 import anthropic
 from flask import Flask, jsonify, render_template, request, send_file
 from werkzeug.utils import secure_filename
 
-from analyzer import LLMResponseError, analyze, check_refinement_scope, clarify, generate
+from analyzer import (
+    LLMResponseError,
+    _current_cover_letter_draft,
+    _current_draft_text,
+    analyze,
+    check_refinement_scope,
+    clarify,
+    clarify_iteration,
+    generate,
+)
 from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
 from hardening import (
     ContextSet,
     build_context_set,
     check_ats_format,
+    compute_iteration_signals,
     compute_keyword_overlap,
     extract_keywords,
     save_context_set,
+    save_iteration_context,
+    summarize_recent_edits,
     validate_config,
 )
 from parser import parse_resume
@@ -450,9 +463,241 @@ def submit_clarifications():
     return jsonify({"ok": True, "answered": len(cleaned), "total": len(valid_ids)})
 
 
+@app.route("/api/iterate-clarify", methods=["POST"])
+def run_iterate_clarify():
+    """Iteration interview: probe the CURRENT draft's specific weaknesses.
+
+    User-driven (the frontend calls this when the user clicks INTERVIEW
+    QUESTIONS in the Output panel). Produces 3-5 questions tied to concrete
+    signals: deterministic metrics on the current draft, the diff between the
+    last generation and the user's typed edits, JD keywords still missing,
+    and prior-clarification follow-ups.
+
+    The questions persist on the SAME context file (additive — appended to
+    clarification_questions). Answers are submitted via the existing
+    /api/answer-clarifications route, which already accepts any qid present
+    in clarification_questions.
+    """
+    data = request.json
+    context_path = data.get("context_path", "")
+    username = data.get("username", "")
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR):
+        return jsonify({"error": "Invalid context path"}), 403
+    if not cp.exists():
+        return jsonify({"error": "Context file not found"}), 404
+
+    safe_user = _safe_username(username) if username else None
+    if not safe_user:
+        safe_user = secure_filename(cp.parent.name)
+    if not safe_user:
+        return jsonify({"error": "Could not resolve username"}), 400
+
+    context_set: ContextSet = json.loads(cp.read_text(encoding="utf-8"))
+    analysis = context_set.get("llm_analysis", {})
+    if not analysis:
+        return jsonify({"error": "No analysis found in context"}), 400
+
+    iteration = int(context_set.get("iteration", 0) or 0)
+    if iteration < 1:
+        # The iteration interview is meaningful only after at least one
+        # generation has produced a draft. Before that, the regular /api/clarify
+        # route is the right one — it works off the analyzer output, not a draft.
+        return jsonify({
+            "error": "Iteration interview requires at least one generated draft. Run /api/generate first.",
+        }), 400
+
+    # Resolve current drafts (edited > last_generated > primary fallback).
+    # Reuses the same precedence generate() applies, so the questions target
+    # exactly what the LLM would author from on the next call.
+    current_resume_text, _ = _current_draft_text(context_set)
+    current_cover_text, _ = _current_cover_letter_draft(context_set)
+    edits_summary = summarize_recent_edits(context_set)
+    signals = compute_iteration_signals(context_set, current_resume_text)
+
+    # Pair prior clarifications (question + answer) so the LLM can build on
+    # established truths rather than re-ask. Skipped questions are omitted.
+    prior_qs = context_set.get("clarification_questions") or []
+    prior_answers = context_set.get("clarifications") or {}
+    prior_clarifications: list[dict] = []
+    for q in prior_qs:
+        qid = q.get("id", "")
+        ans = prior_answers.get(qid, "").strip() if isinstance(prior_answers.get(qid, ""), str) else ""
+        if ans:
+            prior_clarifications.append({
+                "question": q.get("text", ""),
+                "answer": ans,
+                "kind": q.get("kind", ""),
+            })
+
+    run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
+    client = _get_client()
+    logger.info(
+        "Starting iteration clarify for %s iteration=%d run_id=%s",
+        safe_user, iteration, run_id,
+    )
+    try:
+        result = clarify_iteration(
+            client, context_set, analysis,
+            current_resume_text=current_resume_text,
+            current_cover_letter_text=current_cover_text,
+            recent_edits_summary=edits_summary,
+            deterministic_signals=signals,
+            prior_clarifications=prior_clarifications,
+            username=safe_user, run_id=run_id,
+        )
+    except anthropic.APIConnectionError as exc:
+        logger.error("Anthropic API connection error during iterate-clarify: %s", exc)
+        return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
+    except LLMResponseError as exc:
+        logger.error("LLM iterate-clarify response failed validation after retry: %s", exc.validation_error)
+        return jsonify({
+            "error": "AI iteration-interview response was malformed after retry. Please try again.",
+            "detail": exc.validation_error,
+        }), 502
+
+    new_questions = result.get("questions", []) or []
+
+    # Re-key new question ids to avoid collisions with existing q1/q2/...
+    # The /api/answer-clarifications route filters by id-membership, so unique
+    # ids per question are mandatory. Prefix with iteration number for clarity
+    # in saved JSON and dashboard rendering.
+    existing_ids = {q.get("id", "") for q in prior_qs}
+    renamed: list[dict] = []
+    for i, q in enumerate(new_questions, 1):
+        new_id = f"iter{iteration}_q{i}"
+        # Defensive: ensure no collision even if a prior iteration used the same prefix
+        suffix = 1
+        while new_id in existing_ids:
+            suffix += 1
+            new_id = f"iter{iteration}_q{i}_{suffix}"
+        existing_ids.add(new_id)
+        q["id"] = new_id
+        renamed.append(q)
+
+    # Append (do not replace) so the audit chain of all interview rounds stays
+    # intact. /api/answer-clarifications already merges into context["clarifications"]
+    # by id, so prior answers persist alongside new ones.
+    combined = list(prior_qs) + renamed
+    context_set["clarification_questions"] = combined
+    context_set["run_id"] = run_id
+
+    notes = list(context_set.get("iteration_notes") or [])
+    notes.append({
+        "timestamp": datetime.now().isoformat(),
+        "action": "iterate_clarify",
+        "summary": f"surfaced {len(renamed)} iteration questions at iteration {iteration}",
+    })
+    context_set["iteration_notes"] = notes
+
+    cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+
+    logger.info(
+        "iterate-clarify produced %d questions for %s (iteration=%d)",
+        len(renamed), safe_user, iteration,
+    )
+    return jsonify({
+        "questions": renamed,
+        "reasoning": result.get("reasoning", ""),
+        "context_path": str(cp),
+        "iteration": iteration,
+        "signals": signals,
+    })
+
+
+@app.route("/api/save-edits", methods=["POST"])
+def save_edits():
+    """Persist user-edited preview text onto the current context.
+
+    Called by the frontend when the user picks "USE EDITS AS BASELINE" in the
+    edit-detection modal before refining or running an iteration interview.
+    Stores the edited text on the SAME context file (does not advance the
+    iteration counter) — the next /api/generate call will consume the edits
+    and write a new iteration context.
+
+    The edits are accepted at face value: this is the user's first-person
+    typed input, not an LLM output. The grounding check in generate() treats
+    edits as ground truth, mirroring the clarification carve-out.
+    """
+    data = request.json
+    context_path = data.get("context_path", "")
+    username = data.get("username", "")
+    edited_resume = data.get("edited_resume", "")
+    edited_cover_letter = data.get("edited_cover_letter", "")
+
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+    if not isinstance(edited_resume, str) or not isinstance(edited_cover_letter, str):
+        return jsonify({"error": "edited_resume and edited_cover_letter must be strings"}), 400
+    if not edited_resume.strip() and not edited_cover_letter.strip():
+        return jsonify({"error": "At least one of edited_resume or edited_cover_letter required"}), 400
+
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR):
+        return jsonify({"error": "Invalid context path"}), 403
+    if not cp.exists():
+        return jsonify({"error": "Context file not found"}), 404
+
+    safe_user = _safe_username(username) if username else None
+    if not safe_user:
+        safe_user = secure_filename(cp.parent.name)
+    if not safe_user:
+        return jsonify({"error": "Could not resolve username"}), 400
+
+    context_set: ContextSet = json.loads(cp.read_text(encoding="utf-8"))
+
+    saved_resume = False
+    saved_cover = False
+    if edited_resume.strip():
+        context_set["edited_resume_text"] = edited_resume
+        saved_resume = True
+    if edited_cover_letter.strip():
+        context_set["edited_cover_letter_text"] = edited_cover_letter
+        saved_cover = True
+
+    # Append a note to the iteration_notes audit trail. Doesn't change iteration.
+    notes = list(context_set.get("iteration_notes") or [])
+    targets = []
+    if saved_resume:
+        targets.append("resume")
+    if saved_cover:
+        targets.append("cover_letter")
+    notes.append({
+        "timestamp": datetime.now().isoformat(),
+        "action": "save_edits",
+        "summary": f"edits saved as baseline for: {', '.join(targets)}",
+    })
+    context_set["iteration_notes"] = notes
+
+    cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+
+    logger.info(
+        "Saved edits for %s: resume=%s cover_letter=%s",
+        safe_user, saved_resume, saved_cover,
+    )
+    return jsonify({
+        "ok": True,
+        "saved_resume": saved_resume,
+        "saved_cover_letter": saved_cover,
+        "context_path": str(cp),
+    })
+
+
 @app.route("/api/generate", methods=["POST"])
 def run_generation():
-    """P8 Human Gate #2: generates documents after user reviewed analysis."""
+    """P8 Human Gate #2: generates documents after user reviewed analysis.
+
+    Iteration model: each call writes a NEW context file (via
+    save_iteration_context) rather than mutating the prior one. The new file
+    carries `parent_context_path` back to the input context, an incremented
+    `iteration` counter, and `last_generated_*` snapshots for the frontend's
+    edit-detection diff. The returned `context_path` is the NEW file's path —
+    the frontend must use it for any subsequent calls (refine, iterate-clarify,
+    save-edits) so the iteration chain is preserved.
+    """
     data = request.json
     username = data.get("username", "")
     context_path = data.get("context_path", "")
@@ -474,7 +719,8 @@ def run_generation():
     if not analysis:
         return jsonify({"error": "No valid analysis found in context"}), 400
 
-    logger.info("Starting generation for %s", username)
+    logger.info("Starting generation for %s (iteration=%s)", username,
+                context_set.get("iteration", 0))
 
     client = _get_client()
     # Re-use the run_id minted in /api/analyze when present so both calls
@@ -520,6 +766,31 @@ def run_generation():
 
     logger.info("Generation complete: %s, %s", resume_path, cover_letter_path)
 
+    # Snapshot this iteration as a new immutable context file. The chain of
+    # parent_context_path pointers forms the iteration audit trail.
+    summary_parts = []
+    if refinement_notes.strip():
+        summary_parts.append("refinement")
+    if context_set.get("edited_resume_text") or context_set.get("edited_cover_letter_text"):
+        summary_parts.append("from edited baseline")
+    summary = " + ".join(summary_parts) if summary_parts else "fresh generation"
+
+    new_context_path = save_iteration_context(
+        parent_context=context_set,
+        parent_path=str(cp),
+        last_generated_resume=result["resume_content"],
+        last_generated_cover_letter=result["cover_letter_content"],
+        username=safe_user,
+        base_dir=str(OUTPUT_DIR),
+        action="generate",
+        summary=summary,
+    )
+    new_iteration = int(context_set.get("iteration", 0) or 0) + 1
+    logger.info(
+        "Iteration %d snapshotted: %s (parent=%s)",
+        new_iteration, new_context_path, str(cp),
+    )
+
     return jsonify({
         "resume_path": resume_path,
         "cover_letter_path": cover_letter_path,
@@ -528,6 +799,9 @@ def run_generation():
         "proofread_notes": result.get("proofread_notes", []),
         "resume_preview": result["resume_content"],
         "cover_letter_preview": result["cover_letter_content"],
+        "context_path": new_context_path,
+        "iteration": new_iteration,
+        "parent_context_path": str(cp),
     })
 
 

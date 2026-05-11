@@ -7,14 +7,25 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+  <!-- Skip link — visible only on focus. Lets keyboard users bypass the
+       LCARS top bar and jump straight into the first interactive panel. -->
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  <!-- Hidden live region used by _announce() in app.js for screen-reader
+       announcements of meaningful state transitions (generation complete,
+       questions ready, edits saved, errors). aria-live="polite" so the
+       announcement waits for the SR to finish current speech. -->
+  <div id="srAnnounce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
   <!-- LCARS Top Bar -->
   <div class="lcars-bar lcars-bar-top">
     <div class="lcars-elbow lcars-elbow-tl"></div>
     <div class="lcars-title">RESUME OPTIMIZER</div>
-    <div class="lcars-pill lcars-amber" id="statusPill">STANDBY</div>
+    <div class="lcars-pill iteration-pill hidden" id="iterationPill" aria-label="Current iteration" title="Current iteration of the resume loop">ITER 0</div>
+    <div class="lcars-pill lcars-amber" id="statusPill" aria-live="polite" aria-atomic="true">STANDBY</div>
   </div>
 
-  <div class="lcars-main">
+  <div class="lcars-main" id="main">
 
     <!-- USER -->
     <div class="lcars-block lcars-blue" data-panel="panelUser">USER</div>
@@ -22,23 +33,24 @@
       <div class="panel-header lcars-bg-blue">USER SELECTION</div>
       <div class="panel-body">
         <div class="form-row">
-          <select id="userSelect">
+          <label for="userSelect" class="sr-only">Select user</label>
+          <select id="userSelect" aria-label="Select user">
             <option value="">-- Select User --</option>
           </select>
           <button class="lcars-btn lcars-bg-amber" onclick="showNewUserForm()">NEW USER</button>
         </div>
         <div id="newUserForm" class="hidden">
           <div class="form-row">
-            <input type="text" id="newUsername" placeholder="Username">
-            <input type="text" id="newName" placeholder="Full Name">
+            <input type="text" id="newUsername" placeholder="Username" aria-label="New user username">
+            <input type="text" id="newName" placeholder="Full Name" aria-label="New user full name">
           </div>
           <div class="form-row">
-            <input type="email" id="newEmail" placeholder="Email">
-            <input type="tel" id="newPhone" placeholder="Phone">
+            <input type="email" id="newEmail" placeholder="Email" aria-label="New user email">
+            <input type="tel" id="newPhone" placeholder="Phone" aria-label="New user phone">
           </div>
           <div class="form-row">
-            <input type="url" id="newLinkedin" placeholder="LinkedIn URL">
-            <input type="url" id="newWebsite" placeholder="Website URL">
+            <input type="url" id="newLinkedin" placeholder="LinkedIn URL" aria-label="New user LinkedIn URL">
+            <input type="url" id="newWebsite" placeholder="Website URL" aria-label="New user website URL">
           </div>
           <button class="lcars-btn lcars-bg-teal" onclick="createUser()">CREATE</button>
         </div>
@@ -51,43 +63,43 @@
       <div class="panel-header lcars-bg-violet">USER CONFIGURATION</div>
       <div class="panel-body">
         <div class="form-row">
-          <label>Name</label>
+          <label for="cfgName">Name</label>
           <input type="text" id="cfgName">
         </div>
         <div class="form-row">
-          <label>Email</label>
+          <label for="cfgEmail">Email</label>
           <input type="email" id="cfgEmail">
         </div>
         <div class="form-row">
-          <label>Phone</label>
+          <label for="cfgPhone">Phone</label>
           <input type="tel" id="cfgPhone">
         </div>
         <div class="form-row">
-          <label>LinkedIn</label>
+          <label for="cfgLinkedin">LinkedIn</label>
           <input type="url" id="cfgLinkedin">
         </div>
         <div class="form-row">
-          <label>Website</label>
+          <label for="cfgWebsite">Website</label>
           <input type="url" id="cfgWebsite">
         </div>
         <div class="form-row">
-          <label>Skills</label>
+          <label for="cfgSkills">Skills</label>
           <input type="text" id="cfgSkills" placeholder="Comma-separated skills">
         </div>
         <div class="form-row">
-          <label>Certifications</label>
+          <label for="cfgCerts">Certifications</label>
           <input type="text" id="cfgCerts" placeholder="Comma-separated certifications">
         </div>
         <div class="form-row">
-          <label>Education</label>
+          <label for="cfgEducation">Education</label>
           <input type="text" id="cfgEducation" placeholder="Education summary">
         </div>
         <div class="form-row">
-          <label>Notes</label>
+          <label for="cfgNotes">Notes</label>
           <textarea id="cfgNotes" rows="2" placeholder="Directives for the LLM, e.g. DIRECTIVE: Remote-only positions."></textarea>
         </div>
         <div class="form-row">
-          <label>Portfolio URLs</label>
+          <label for="cfgPortfolioUrls">Portfolio URLs</label>
           <textarea id="cfgPortfolioUrls" rows="3" placeholder="One URL per line&#10;https://github.com/you&#10;https://yoursite.com"></textarea>
         </div>
         <button class="lcars-btn lcars-bg-violet" onclick="saveConfig()">SAVE CONFIG</button>
@@ -114,9 +126,10 @@
     <section class="lcars-panel hidden" id="panelJD">
       <div class="panel-header lcars-bg-teal">JOB DESCRIPTION</div>
       <div class="panel-body">
-        <textarea id="jdText" rows="12" placeholder="Paste the full job description text here..."></textarea>
+        <label for="jdText" class="sr-only">Job description</label>
+        <textarea id="jdText" rows="12" placeholder="Paste the full job description text here..." aria-label="Job description"></textarea>
         <!-- resumeSelect hidden — value tracked via primaryResume JS variable -->
-        <select id="resumeSelect" class="hidden"></select>
+        <select id="resumeSelect" class="hidden" aria-hidden="true" tabindex="-1"></select>
         <button class="lcars-btn lcars-bg-teal" onclick="runAnalysis()" id="btnAnalyze">ANALYZE</button>
       </div>
     </section>
@@ -160,28 +173,32 @@
     <section class="lcars-panel hidden" id="panelOutput">
       <div class="panel-header lcars-bg-amber">GENERATED OUTPUT</div>
       <div class="panel-body">
-        <div class="output-tabs">
-          <button class="tab-btn active" onclick="showTab('resume', this)">RESUME</button>
-          <button class="tab-btn" onclick="showTab('coverLetter', this)">COVER LETTER</button>
-          <button class="tab-btn" onclick="showTab('changes', this)">CHANGES</button>
+        <div class="output-tabs" role="tablist" aria-label="Output sections">
+          <button class="tab-btn active" id="tabBtnResume" onclick="showTab('resume', this)" role="tab" aria-controls="tabResume" aria-selected="true">RESUME</button>
+          <button class="tab-btn" id="tabBtnCoverLetter" onclick="showTab('coverLetter', this)" role="tab" aria-controls="tabCoverLetter" aria-selected="false">COVER LETTER</button>
+          <button class="tab-btn" id="tabBtnChanges" onclick="showTab('changes', this)" role="tab" aria-controls="tabChanges" aria-selected="false">CHANGES</button>
         </div>
-        <div id="tabResume" class="tab-content active">
+        <div id="tabResume" class="tab-content active" role="tabpanel" aria-labelledby="tabBtnResume">
           <div class="view-controls">
-            <button class="view-btn active" onclick="setViewMode('raw','resume',this)">RAW</button>
-            <button class="view-btn" onclick="setViewMode('rendered','resume',this)">RENDERED</button>
-            <span class="edit-hint" style="margin:0">&#9998; Edit in RAW before downloading</span>
+            <button class="view-btn active" onclick="setViewMode('raw','resume',this)" aria-label="Show resume as editable raw markdown">RAW</button>
+            <button class="view-btn" onclick="setViewMode('rendered','resume',this)" aria-label="Show resume rendered as formatted preview">RENDERED</button>
+            <span id="resumeEditHint" class="edit-hint" style="margin:0">&#9998; Edit in RAW before downloading</span>
           </div>
-          <div id="resumePreview" class="preview-editable" contenteditable="true" spellcheck="true"></div>
-          <div id="resumeRendered" class="preview-rendered hidden"></div>
+          <div id="resumePreview" class="preview-editable" contenteditable="true" spellcheck="true"
+               role="textbox" aria-multiline="true" aria-label="Generated resume preview, editable"
+               aria-describedby="resumeEditHint"></div>
+          <div id="resumeRendered" class="preview-rendered hidden" aria-label="Rendered resume preview"></div>
         </div>
-        <div id="tabCoverLetter" class="tab-content">
+        <div id="tabCoverLetter" class="tab-content" role="tabpanel" aria-labelledby="tabBtnCoverLetter">
           <div class="view-controls">
-            <button class="view-btn active" onclick="setViewMode('raw','coverLetter',this)">RAW</button>
-            <button class="view-btn" onclick="setViewMode('rendered','coverLetter',this)">RENDERED</button>
-            <span class="edit-hint" style="margin:0">&#9998; Edit in RAW before downloading</span>
+            <button class="view-btn active" onclick="setViewMode('raw','coverLetter',this)" aria-label="Show cover letter as editable raw markdown">RAW</button>
+            <button class="view-btn" onclick="setViewMode('rendered','coverLetter',this)" aria-label="Show cover letter rendered as formatted preview">RENDERED</button>
+            <span id="coverEditHint" class="edit-hint" style="margin:0">&#9998; Edit in RAW before downloading</span>
           </div>
-          <div id="coverLetterPreview" class="preview-editable" contenteditable="true" spellcheck="true"></div>
-          <div id="coverLetterRendered" class="preview-rendered hidden"></div>
+          <div id="coverLetterPreview" class="preview-editable" contenteditable="true" spellcheck="true"
+               role="textbox" aria-multiline="true" aria-label="Generated cover letter preview, editable"
+               aria-describedby="coverEditHint"></div>
+          <div id="coverLetterRendered" class="preview-rendered hidden" aria-label="Rendered cover letter preview"></div>
         </div>
         <div id="tabChanges" class="tab-content">
           <div id="changesContent"></div>
@@ -197,22 +214,61 @@
           </div>
           <div id="refinementHistory" class="refinement-history hidden"></div>
           <div class="refinement-input-row">
+            <label for="refinementInput" class="sr-only">Refinement instruction</label>
             <textarea
               id="refinementInput"
               class="refinement-textarea"
               rows="2"
               maxlength="600"
               placeholder="Describe an adjustment (e.g. &quot;make the tone more formal&quot;, &quot;emphasize cloud experience&quot;)..."
+              aria-label="Refinement instruction"
             ></textarea>
             <button class="lcars-btn lcars-bg-orange" id="btnRefinement" onclick="submitRefinement()">REFINE</button>
+            <button class="lcars-btn lcars-bg-violet" id="btnIterateClarify" onclick="runIterateClarify()" title="Probe the current draft's specific weaknesses with new clarifying questions">GET INTERVIEW QUESTIONS</button>
           </div>
           <div class="edit-hint" style="color:var(--orange);opacity:0.5;margin-bottom:0">
             Scope: document content only — tone, emphasis, keyword placement, structure.
+          </div>
+
+          <!-- Iteration interview output — appended below refine controls when user clicks INTERVIEW QUESTIONS -->
+          <div id="iterateClarifyArea" class="clarify-area iterate-clarify-area hidden">
+            <div class="clarify-divider">
+              <span class="clarify-divider-label">ITERATION INTERVIEW</span>
+            </div>
+            <div class="edit-hint">
+              Targets weaknesses in the current draft using deterministic signals and your recent edits. Build on prior clarifications rather than re-answer them.
+            </div>
+            <div id="iterateClarifyQuestions"></div>
+            <div id="iterateClarifyActions" class="hidden form-row">
+              <button class="lcars-btn lcars-bg-teal" id="btnSubmitIterateClarifications" onclick="submitIterateClarificationsAndGenerate()">SUBMIT ANSWERS &amp; REGENERATE</button>
+              <button class="lcars-btn lcars-bg-amber" onclick="skipIterateClarifications()">SKIP &amp; CLOSE</button>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
+  </div>
+
+  <!-- Edit-detection modal — opens when REFINE or GET INTERVIEW QUESTIONS is
+       clicked while the preview contains user edits not yet baselined. The
+       three-button cluster lets the user use, discard, or back out. -->
+  <div id="editModal" class="lcars-modal hidden" role="dialog" aria-modal="true"
+       aria-labelledby="editModalTitle" aria-describedby="editModalBody">
+    <div class="lcars-modal-backdrop" data-modal-dismiss="cancel"></div>
+    <div class="lcars-modal-content" role="document">
+      <h2 id="editModalTitle" class="lcars-modal-title">YOU EDITED THE PREVIEW</h2>
+      <p id="editModalBody" class="lcars-modal-body">
+        Use your edits as the new baseline for this iteration, or discard them and
+        continue from the original generated text? First-person edits are treated as
+        ground truth — they are citable but never extended without your input.
+      </p>
+      <div class="modal-actions">
+        <button class="lcars-btn lcars-bg-teal" id="btnUseEdits" data-modal-dismiss="use">USE EDITS AS BASELINE</button>
+        <button class="lcars-btn lcars-bg-amber" id="btnDiscardEdits" data-modal-dismiss="discard">DISCARD EDITS</button>
+        <button class="lcars-btn lcars-bg-blue" id="btnCancelRefine" data-modal-dismiss="cancel">CANCEL</button>
+      </div>
+    </div>
   </div>
 
   <!-- LCARS Bottom Bar -->
