@@ -11,6 +11,7 @@
   <div class="lcars-bar lcars-bar-top">
     <div class="lcars-elbow lcars-elbow-tl"></div>
     <div class="lcars-title">RESUME OPTIMIZER</div>
+    <div class="lcars-pill iteration-pill hidden" id="iterationPill" title="Current iteration of the resume loop">ITER 0</div>
     <div class="lcars-pill lcars-amber" id="statusPill">STANDBY</div>
   </div>
 
@@ -205,14 +206,51 @@
               placeholder="Describe an adjustment (e.g. &quot;make the tone more formal&quot;, &quot;emphasize cloud experience&quot;)..."
             ></textarea>
             <button class="lcars-btn lcars-bg-orange" id="btnRefinement" onclick="submitRefinement()">REFINE</button>
+            <button class="lcars-btn lcars-bg-violet" id="btnIterateClarify" onclick="runIterateClarify()" title="Probe the current draft's specific weaknesses with new clarifying questions">GET INTERVIEW QUESTIONS</button>
           </div>
           <div class="edit-hint" style="color:var(--orange);opacity:0.5;margin-bottom:0">
             Scope: document content only — tone, emphasis, keyword placement, structure.
+          </div>
+
+          <!-- Iteration interview output — appended below refine controls when user clicks INTERVIEW QUESTIONS -->
+          <div id="iterateClarifyArea" class="clarify-area iterate-clarify-area hidden">
+            <div class="clarify-divider">
+              <span class="clarify-divider-label">ITERATION INTERVIEW</span>
+            </div>
+            <div class="edit-hint">
+              Targets weaknesses in the current draft using deterministic signals and your recent edits. Build on prior clarifications rather than re-answer them.
+            </div>
+            <div id="iterateClarifyQuestions"></div>
+            <div id="iterateClarifyActions" class="hidden form-row">
+              <button class="lcars-btn lcars-bg-teal" id="btnSubmitIterateClarifications" onclick="submitIterateClarificationsAndGenerate()">SUBMIT ANSWERS &amp; REGENERATE</button>
+              <button class="lcars-btn lcars-bg-amber" onclick="skipIterateClarifications()">SKIP &amp; CLOSE</button>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
+  </div>
+
+  <!-- Edit-detection modal — opens when REFINE or GET INTERVIEW QUESTIONS is
+       clicked while the preview contains user edits not yet baselined. The
+       three-button cluster lets the user use, discard, or back out. -->
+  <div id="editModal" class="lcars-modal hidden" role="dialog" aria-modal="true"
+       aria-labelledby="editModalTitle" aria-describedby="editModalBody">
+    <div class="lcars-modal-backdrop" data-modal-dismiss="cancel"></div>
+    <div class="lcars-modal-content" role="document">
+      <h2 id="editModalTitle" class="lcars-modal-title">YOU EDITED THE PREVIEW</h2>
+      <p id="editModalBody" class="lcars-modal-body">
+        Use your edits as the new baseline for this iteration, or discard them and
+        continue from the original generated text? First-person edits are treated as
+        ground truth — they are citable but never extended without your input.
+      </p>
+      <div class="modal-actions">
+        <button class="lcars-btn lcars-bg-teal" id="btnUseEdits" data-modal-dismiss="use">USE EDITS AS BASELINE</button>
+        <button class="lcars-btn lcars-bg-amber" id="btnDiscardEdits" data-modal-dismiss="discard">DISCARD EDITS</button>
+        <button class="lcars-btn lcars-bg-blue" id="btnCancelRefine" data-modal-dismiss="cancel">CANCEL</button>
+      </div>
+    </div>
   </div>
 
   <!-- LCARS Bottom Bar -->

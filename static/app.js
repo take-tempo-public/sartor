@@ -12,6 +12,11 @@ let outputFormat = '.docx';  // user-selected output format
 let primaryResume = '';      // currently selected primary resume filename
 let refinementHistory = [];  // accumulated refinement instructions, in order
 let lastClarifyQuestions = []; // questions returned by the most recent /api/clarify call
+// --- Iteration loop state -------------------------------------------------
+let currentIteration = 0;          // matches context_set.iteration on the server
+let lastGeneratedResume = '';      // frozen copy of the LLM's last resume_content
+let lastGeneratedCoverLetter = ''; // frozen copy of the LLM's last cover_letter_content
+let lastIterateClarifyQuestions = []; // most recent /api/iterate-clarify questions
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
@@ -72,6 +77,7 @@ async function onUserSelect() {
   if (!username) {
     currentUser = '';
     hideAllPanels();
+    _resetIterationState();
     return;
   }
   currentUser = username;
@@ -82,7 +88,22 @@ async function onUserSelect() {
   show('panelJD');
   hide('panelAnalysis');
   hide('panelOutput');
+  _resetIterationState();
   setStatus('READY');
+}
+
+// Reset all iteration-loop state. Called when switching users or starting a
+// fresh analysis — prevents stale lastGenerated* from gating edit-detection
+// against the wrong baseline.
+function _resetIterationState() {
+  currentIteration = 0;
+  lastGeneratedResume = '';
+  lastGeneratedCoverLetter = '';
+  refinementHistory = [];
+  _updateIterationPill();
+  // Refinement history UI hides itself when array is empty
+  const rh = document.getElementById('refinementHistory');
+  if (rh) { rh.classList.add('hidden'); rh.textContent = ''; }
 }
 
 // ---- Config ----
@@ -294,6 +315,10 @@ async function runAnalysis() {
   setStatus('ANALYZING');
   document.getElementById('btnAnalyze').disabled = true;
   _resetClarifyUI();
+  // Fresh analysis starts a new iteration chain — drop stale baselines so
+  // edit-detection doesn't compare the next generation's preview against a
+  // prior run's lastGenerated* snapshot.
+  _resetIterationState();
 
   try {
     const res = await fetch('/api/analyze', {
@@ -629,6 +654,14 @@ async function runGeneration() {
   document.getElementById('btnGenerate').disabled = true;
 
   try {
+    // refinementHistory holds {note, status} objects — only applied notes
+    // count; serializing without filtering would send rejected ones, and
+    // template-stringing the object would yield "[object Object]".
+    const acceptedNotes = refinementHistory
+      .filter(e => e.status === 'applied')
+      .map((e, i) => `${i + 1}. ${e.note}`)
+      .join('\n');
+
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -636,9 +669,7 @@ async function runGeneration() {
         username: currentUser,
         context_path: lastContextPath,
         output_format: outputFormat,
-        refinement_notes: refinementHistory.length
-          ? refinementHistory.map((n, i) => `${i + 1}. ${n}`).join('\n')
-          : '',
+        refinement_notes: acceptedNotes,
       }),
     });
     const data = await res.json();
@@ -649,6 +680,7 @@ async function runGeneration() {
     lastResumePath = data.resume_path;
     lastCoverLetterPath = data.cover_letter_path;
     lastResumeFormat = data.resume_format || '.docx';
+    _onGenerationComplete(data);
     renderOutput(data);
     show('panelOutput');
     setStatus('GENERATION COMPLETE');
@@ -661,11 +693,171 @@ async function runGeneration() {
   }
 }
 
+// Update iteration state from a /api/generate response. The backend writes a
+// NEW context file each iteration and returns its path — the frontend MUST
+// adopt that path so the next refine/iterate-clarify/save-edits call targets
+// the latest snapshot, not the parent.
+function _onGenerationComplete(data) {
+  if (data.context_path) lastContextPath = data.context_path;
+  if (typeof data.iteration === 'number') {
+    currentIteration = data.iteration;
+    _updateIterationPill();
+  }
+  // Freeze the LLM's output so _detectEdits can diff the live preview against it.
+  lastGeneratedResume = data.resume_preview || '';
+  lastGeneratedCoverLetter = data.cover_letter_preview || '';
+  // A fresh generation supersedes any in-progress iteration interview.
+  _resetIterateClarifyUI();
+}
+
+function _updateIterationPill() {
+  const pill = document.getElementById('iterationPill');
+  if (!pill) return;
+  if (currentIteration < 1) {
+    pill.classList.add('hidden');
+    return;
+  }
+  pill.textContent = `ITER ${currentIteration}`;
+  pill.classList.remove('hidden');
+}
+
+// ---- Edit detection ------------------------------------------------------
+
+// Compare the live preview against the frozen lastGenerated* snapshots.
+// Returns {resumeEdited, coverEdited, anyEdited, currentResume, currentCover}.
+// The current* fields are the live preview text the caller will send to
+// /api/save-edits if the user picks USE EDITS AS BASELINE.
+function _detectEdits() {
+  const live = (id) => (document.getElementById(id)?.innerText || '').trim();
+  const resume = live('resumePreview');
+  const cover = live('coverLetterPreview');
+  const resumeEdited = !!lastGeneratedResume && resume !== lastGeneratedResume.trim();
+  const coverEdited = !!lastGeneratedCoverLetter && cover !== lastGeneratedCoverLetter.trim();
+  return {
+    resumeEdited, coverEdited,
+    anyEdited: resumeEdited || coverEdited,
+    currentResume: resume,
+    currentCover: cover,
+  };
+}
+
+// Show the edit-detection modal and resolve with the user's choice:
+//   "use"     — adopt the edits as the new baseline (POST /api/save-edits)
+//   "discard" — restore preview from lastGenerated* and continue
+//   "cancel"  — abort the in-progress action
+// Implements a basic focus trap: Esc cancels, Tab/Shift+Tab cycle through
+// the three modal buttons, and the recommended action (USE EDITS) is focused
+// on open. Focus returns to the trigger button on close (Phase 4 will verify).
+function _showEditModal(triggerEl) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('editModal');
+    if (!modal) { resolve('cancel'); return; }
+    const buttons = Array.from(modal.querySelectorAll('[data-modal-dismiss]'));
+    const focusable = modal.querySelectorAll('button[data-modal-dismiss]');
+
+    const cleanup = (action) => {
+      modal.classList.add('hidden');
+      modal.removeEventListener('keydown', onKey);
+      buttons.forEach(b => b.removeEventListener('click', onClick));
+      const backdrop = modal.querySelector('.lcars-modal-backdrop');
+      if (backdrop) backdrop.removeEventListener('click', onClick);
+      // Restore focus to the element that opened the modal so keyboard users
+      // don't lose their place. Falls back to body when the trigger is gone.
+      if (triggerEl && typeof triggerEl.focus === 'function') triggerEl.focus();
+      resolve(action || 'cancel');
+    };
+
+    const onClick = (e) => {
+      const action = e.currentTarget?.getAttribute?.('data-modal-dismiss') || 'cancel';
+      cleanup(action);
+    };
+
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); cleanup('cancel'); return; }
+      if (e.key !== 'Tab' || focusable.length === 0) return;
+      // Wrap focus within the modal — basic focus trap.
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+
+    buttons.forEach(b => b.addEventListener('click', onClick));
+    const backdrop = modal.querySelector('.lcars-modal-backdrop');
+    if (backdrop) backdrop.addEventListener('click', onClick);
+    modal.addEventListener('keydown', onKey);
+    modal.classList.remove('hidden');
+    // Default focus on the recommended action.
+    const useBtn = modal.querySelector('#btnUseEdits');
+    if (useBtn) useBtn.focus();
+  });
+}
+
+// Persist the live preview text as the next iteration's baseline.
+// Returns true on success, false on failure (caller should abort the chain).
+async function _saveEdits(edits) {
+  if (!lastContextPath) return false;
+  try {
+    const res = await fetch('/api/save-edits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        context_path: lastContextPath,
+        username: currentUser,
+        edited_resume: edits.resumeEdited ? edits.currentResume : '',
+        edited_cover_letter: edits.coverEdited ? edits.currentCover : '',
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Saving edits failed');
+      return false;
+    }
+    return true;
+  } catch (e) {
+    alert('Saving edits failed: ' + e.message);
+    return false;
+  }
+}
+
+// Restore the preview from the frozen last-generated snapshots. Used on the
+// DISCARD EDITS path so the user's typed changes are visually rolled back
+// before the action they triggered (refine / iterate-clarify) proceeds.
+function _discardEdits() {
+  const r = document.getElementById('resumePreview');
+  const c = document.getElementById('coverLetterPreview');
+  if (r && lastGeneratedResume) r.innerText = lastGeneratedResume;
+  if (c && lastGeneratedCoverLetter) c.innerText = lastGeneratedCoverLetter;
+}
+
+// Common gate: if the preview has unsaved edits, prompt the user via the
+// modal. Returns true if the action should proceed, false if the user
+// canceled. Side effects (save or discard) happen here so callers stay clean.
+async function _gateEditsBeforeAction(triggerEl) {
+  const edits = _detectEdits();
+  if (!edits.anyEdited) return true;
+
+  const choice = await _showEditModal(triggerEl);
+  if (choice === 'cancel') return false;
+  if (choice === 'discard') { _discardEdits(); return true; }
+  if (choice === 'use') {
+    const ok = await _saveEdits(edits);
+    return ok;
+  }
+  return false;
+}
+
 // ---- Refinement ----
 async function submitRefinement() {
   const input = document.getElementById('refinementInput');
   const note = input.value.trim();
   if (!note || !lastContextPath) return;
+
+  // Edit gate: handle in-progress preview edits before the refinement call
+  // so the user's typed changes feed the next generation rather than being
+  // silently discarded by the regenerate-from-context path.
+  const proceed = await _gateEditsBeforeAction(document.getElementById('btnRefinement'));
+  if (!proceed) return;
 
   const entry = { note, status: 'pending' };
   refinementHistory.push(entry);
@@ -722,6 +914,7 @@ async function submitRefinement() {
     lastResumePath = data.resume_path;
     lastCoverLetterPath = data.cover_letter_path;
     lastResumeFormat = data.resume_format || lastResumeFormat;
+    _onGenerationComplete(data);
     renderOutput(data);
     setStatus('REFINED');
   } catch (e) {
@@ -733,6 +926,187 @@ async function submitRefinement() {
     document.getElementById('btnRefinement').disabled = false;
     document.getElementById('btnGenerate').disabled = false;
   }
+}
+
+// ---- Iteration interview (post-generation clarifying questions) ----------
+
+function _resetIterateClarifyUI() {
+  lastIterateClarifyQuestions = [];
+  const area = document.getElementById('iterateClarifyArea');
+  const questions = document.getElementById('iterateClarifyQuestions');
+  const actions = document.getElementById('iterateClarifyActions');
+  if (area) area.classList.add('hidden');
+  if (questions) questions.textContent = '';
+  if (actions) actions.classList.add('hidden');
+  const btn = document.getElementById('btnIterateClarify');
+  if (btn) btn.disabled = false;
+}
+
+async function runIterateClarify() {
+  if (!lastContextPath) return;
+  if (currentIteration < 1) {
+    return alert('Generate the resume at least once before requesting iteration questions.');
+  }
+
+  const proceed = await _gateEditsBeforeAction(document.getElementById('btnIterateClarify'));
+  if (!proceed) return;
+
+  setStatus('GENERATING QUESTIONS');
+  const btn = document.getElementById('btnIterateClarify');
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/iterate-clarify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        context_path: lastContextPath,
+        username: currentUser,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setStatus('ERROR');
+      if (btn) btn.disabled = false;
+      return alert(data.error || 'Iteration interview failed');
+    }
+    lastIterateClarifyQuestions = data.questions || [];
+    _renderIterateClarifyQuestions(lastIterateClarifyQuestions, data.reasoning || '');
+    setStatus('QUESTIONS READY');
+  } catch (e) {
+    setStatus('ERROR');
+    if (btn) btn.disabled = false;
+    alert('Iteration interview failed: ' + e.message);
+  }
+}
+
+// Render iteration-interview questions. Visually distinct from the analyze-
+// time clarify panel (different container, different divider label) but uses
+// the same per-question markup so screen-reader and keyboard behavior carry
+// over. The iteration_probe kind gets its own badge color.
+function _renderIterateClarifyQuestions(questions, reasoning) {
+  const area = document.getElementById('iterateClarifyArea');
+  const container = document.getElementById('iterateClarifyQuestions');
+  const actions = document.getElementById('iterateClarifyActions');
+  if (!container || !area) return;
+
+  container.textContent = '';
+
+  if (!questions.length) {
+    const warn = document.createElement('div');
+    warn.className = 'warning';
+    warn.textContent = 'No follow-up questions surfaced — the current draft looks healthy on the measured signals.';
+    container.appendChild(warn);
+    area.classList.remove('hidden');
+    if (actions) actions.classList.remove('hidden');
+    return;
+  }
+
+  if (reasoning) {
+    const r = document.createElement('div');
+    r.className = 'clarify-reasoning';
+    r.textContent = reasoning;
+    container.appendChild(r);
+  }
+
+  questions.forEach((q, idx) => {
+    const kind = q.kind || 'iteration_probe';
+    const wrap = document.createElement('div');
+    wrap.className = 'clarify-question';
+    wrap.setAttribute('data-qid', q.id || ('q' + (idx + 1)));
+
+    const head = document.createElement('div');
+    head.className = 'clarify-question-head';
+    const qtext = document.createElement('div');
+    qtext.className = 'clarify-question-text';
+    qtext.textContent = q.text || '';
+    const badge = document.createElement('span');
+    badge.className = 'clarify-kind-badge';
+    if (kind === 'scope_probe') badge.classList.add('scope');
+    else if (kind === 'iteration_probe') badge.classList.add('iteration');
+    badge.textContent = kind === 'scope_probe' ? 'SCOPE'
+                       : kind === 'iteration_probe' ? 'ITERATION'
+                       : 'EXPERIENCE';
+    head.appendChild(qtext);
+    head.appendChild(badge);
+    wrap.appendChild(head);
+
+    if (q.target_gap) {
+      const gap = document.createElement('div');
+      gap.className = 'clarify-target-gap';
+      gap.textContent = 'Gap: ' + q.target_gap;
+      wrap.appendChild(gap);
+    }
+
+    const ta = document.createElement('textarea');
+    ta.className = 'clarify-answer';
+    ta.rows = 2;
+    ta.placeholder = 'Your answer (optional — leave blank to skip this question)';
+    wrap.appendChild(ta);
+
+    container.appendChild(wrap);
+  });
+
+  area.classList.remove('hidden');
+  if (actions) actions.classList.remove('hidden');
+}
+
+function _collectIterateClarifyAnswers() {
+  const answers = {};
+  document.querySelectorAll('#iterateClarifyQuestions .clarify-question').forEach(el => {
+    const qid = el.getAttribute('data-qid');
+    const ta = el.querySelector('.clarify-answer');
+    if (!qid || !ta) return;
+    const val = (ta.value || '').trim();
+    if (val) answers[qid] = val;
+  });
+  return answers;
+}
+
+async function submitIterateClarificationsAndGenerate() {
+  if (!lastContextPath) return;
+
+  const answers = _collectIterateClarifyAnswers();
+  const btn = document.getElementById('btnSubmitIterateClarifications');
+  if (btn) btn.disabled = true;
+  setStatus('SAVING ANSWERS');
+
+  try {
+    // The /api/answer-clarifications route merges these into context.clarifications
+    // by id — prior answers (including from the analyze-time clarify) stay intact.
+    const res = await fetch('/api/answer-clarifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        context_path: lastContextPath,
+        username: currentUser,
+        answers,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setStatus('ERROR');
+      if (btn) btn.disabled = false;
+      return alert(data.error || 'Saving answers failed');
+    }
+  } catch (e) {
+    setStatus('ERROR');
+    if (btn) btn.disabled = false;
+    return alert('Saving answers failed: ' + e.message);
+  }
+
+  // Run a fresh generation against the now-augmented context. The new
+  // iteration's <resume> block sees the typed edits AND the new clarifications.
+  _resetIterateClarifyUI();
+  await runGeneration();
+  if (btn) btn.disabled = false;
+}
+
+function skipIterateClarifications() {
+  // Close the panel; do NOT clear prior context.clarifications — those are
+  // accumulated truths, only the new questions get dropped.
+  _resetIterateClarifyUI();
+  setStatus('READY');
 }
 
 function _renderRefinementHistory() {
