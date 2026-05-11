@@ -18,15 +18,16 @@ The project follows the [10 Principles framework](https://jdforsythe.github.io/1
 
 ## Architecture at a Glance
 
-**Two-call LLM pipeline** (all in [analyzer.py](analyzer.py)):
+**Two- or three-call LLM pipeline** (all in [analyzer.py](analyzer.py)):
 - Call 1: `analyze()` — JD breakdown, ideal resume, comparison, keyword strategy
-- Call 2: `generate()` — tailored resume + cover letter + proofread pass
+- Call 1.5 (optional): `clarify()` — 3-5 targeted questions surfacing real-but-undocumented experience and disambiguating analyzer-flagged scope. Uses `CLARIFY_SYSTEM_PROMPT` (a short dedicated persona, not the hiring-manager `SYSTEM_PROMPT`). User may skip; questions persist to the same context file for resumability.
+- Call 2: `generate()` — tailored resume + cover letter + proofread pass. When clarifications are present, they ride along as `<candidate_clarifications>` and are treated as first-person ground truth (citable even when absent from the resume; no-invention rule still applies beyond the union of resume + clarifications).
 
 **Core design rules:**
 - **P1 Hardening** — deterministic Python for mechanical work; LLM only for fuzzy reasoning
-- **P8 Human Gates** — two explicit user review checkpoints before any output is produced
-- **P5 Institutional Memory** — ALWAYS/NEVER BECAUSE rules in `analyzer.py:SYSTEM_PROMPT`
-- **P2 Context Hygiene** — `context_set` is the structured JSON contract between all stages
+- **P8 Human Gates** — two required review checkpoints (analysis review + post-generation refinement) plus one optional clarification interview between them. Skipping clarification does not degrade generate below pre-clarify behavior.
+- **P5 Institutional Memory** — ALWAYS/NEVER BECAUSE rules in `analyzer.py:SYSTEM_PROMPT`; clarification persona in `analyzer.py:CLARIFY_SYSTEM_PROMPT`
+- **P2 Context Hygiene** — `context_set` is the structured JSON contract between all stages. Optional fields `clarification_questions` and `clarifications` (both `total=False`) carry the interview state; older saved contexts continue to round-trip.
 
 **Multi-resume source pool:**
 - Primary resume → `context_set["resume"]` (determines output format + style template)
@@ -35,17 +36,23 @@ The project follows the [10 Principles framework](https://jdforsythe.github.io/1
 
 **`context_set` lifecycle:**
 ```
-/api/analyze  → build_context_set() → analyze() → save to output/{user}/context_*.json
-/api/generate → load context JSON  → generate() → write docx/md files
+/api/analyze              → build_context_set() → analyze() → save to output/{user}/context_*.json
+/api/clarify (optional)   → load → clarify() → write back to same file (+ clarification_questions)
+/api/answer-clarifications → load → merge answers → write back to same file (+ clarifications)
+/api/generate             → load → generate() (consumes clarifications if present) → write docx/md
 ```
+The same `run_id` (minted in `/api/analyze`) propagates through all four routes so JSONL telemetry correlates analyze + clarify + generate as one user session.
 
 ---
 
 ## File Map
 
 ```
-app.py              Flask routes + security helpers (_safe_username, _within)
-analyzer.py         LLM calls: analyze(), generate(), _supplemental_block(), SYSTEM_PROMPT
+app.py              Flask routes + security helpers (_safe_username, _within).
+                    /api/analyze, /api/clarify, /api/answer-clarifications, /api/generate.
+analyzer.py         LLM calls: analyze(), clarify(), generate(), _supplemental_block(),
+                    SYSTEM_PROMPT (hiring-manager persona), CLARIFY_SYSTEM_PROMPT
+                    (short interview persona)
 hardening.py        Deterministic tools: keyword extraction, ATS checks, build_context_set();
                     plus four post-generation metrics (verb_diversity, specificity_density,
                     grounding_overlap, call_cost) used by the eval harness and dashboard
@@ -89,10 +96,12 @@ A `route-security-lint` hook enforces this once Step 5 lands — see `.claude-pl
 - `BULLET_RE` in `generator.py` normalizes all bullet variants
 
 **LLM prompts:**
-- System prompt lives at `analyzer.py:SYSTEM_PROMPT` — edit there, not inline
-- When `SYSTEM_PROMPT` changes, bump `PROMPT_VERSION` in the same commit so observability/eval can attribute behavior
+- The hiring-manager persona lives at `analyzer.py:SYSTEM_PROMPT`; the short interview persona at `analyzer.py:CLARIFY_SYSTEM_PROMPT`. Edit there, not inline.
+- When either prompt changes (or any per-call prompt template), bump `PROMPT_VERSION` in the same commit so observability/eval can attribute behavior
 - Supplemental resumes injected via `_supplemental_block()` in both prompts
 - Grounding check in generation prompt enforces no invented facts; the worked-examples block (OK / NOT OK pairs) is the load-bearing teaching signal — when adding new failure modes to the SYSTEM_PROMPT, also add a worked example here
+- When clarifications are present, the grounding check widens to accept clarification answers as legitimate source material (first-person ground truth). The no-invention rule still applies beyond the union of (resume + clarifications) — keep this carve-out surgical, not blanket
+- `_call_llm` and `_parse_or_retry` accept an optional `system_prompt` arg; calls that override it (like `clarify`) pay one extra cache-miss on the system block but the heavy user-prefix cache is unaffected (clarify uses no cached prefix)
 
 **Eval observability:**
 - Eval results carry `prompt_version` so the dashboard's score-over-time chart can attribute regressions to specific prompt revisions

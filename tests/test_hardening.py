@@ -3,6 +3,8 @@
 These functions must remain LLM-free and produce stable output for given input.
 """
 
+import json
+
 from hardening import (
     check_ats_format,
     compute_call_cost,
@@ -11,6 +13,7 @@ from hardening import (
     compute_specificity_density,
     compute_verb_diversity,
     extract_keywords,
+    save_context_set,
     validate_config,
 )
 
@@ -294,3 +297,52 @@ class TestCallCost:
         }
         # 2050*3 + 4829*15 = 6150 + 72435 = 78585 / 1M = $0.078585
         assert compute_call_cost(record) == 0.078585
+
+
+class TestContextSetClarificationFields:
+    """Round-trip and back-compat tests for the new clarify-step fields."""
+
+    def _base_context(self) -> dict:
+        return {
+            "timestamp": "2026-05-11T12:00:00",
+            "candidate": {
+                "name": "Alice", "email": "", "phone": "", "linkedin_url": "",
+                "website_url": "", "skills": [], "certifications": [],
+                "education_summary": "", "notes": "", "profile_text": "",
+            },
+            "resume": {
+                "format": ".docx", "sections": [], "text": "x",
+                "filename": "alice.docx", "path": "",
+            },
+            "supplemental_resumes": [],
+            "job_description": "jd",
+            "deterministic_analysis": {
+                "jd_keywords": {}, "resume_keywords": {},
+                "keyword_overlap": {}, "ats_warnings": [],
+            },
+        }
+
+    def test_pre_clarify_context_round_trips(self, tmp_path):
+        """A context saved before the clarify-step fields existed must load
+        without errors and produce equivalent JSON."""
+        ctx = self._base_context()
+        path = save_context_set(ctx, "alice", str(tmp_path))
+        loaded = json.loads(open(path, encoding="utf-8").read())
+        # No clarification fields should sneak in
+        assert "clarifications" not in loaded
+        assert "clarification_questions" not in loaded
+        assert loaded["candidate"]["name"] == "Alice"
+
+    def test_post_clarify_context_round_trips(self, tmp_path):
+        """A context with clarification_questions and clarifications fields
+        must round-trip through save and reload as plain JSON."""
+        ctx = self._base_context()
+        ctx["clarification_questions"] = [
+            {"id": "q1", "text": "Used K8s?", "kind": "experience_probe",
+             "target_gap": "k8s missing"},
+        ]
+        ctx["clarifications"] = {"q1": "Briefly in 2024."}
+        path = save_context_set(ctx, "alice", str(tmp_path))
+        loaded = json.loads(open(path, encoding="utf-8").read())
+        assert loaded["clarification_questions"][0]["kind"] == "experience_probe"
+        assert loaded["clarifications"]["q1"] == "Briefly in 2024."

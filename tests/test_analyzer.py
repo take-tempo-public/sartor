@@ -39,10 +39,12 @@ def _scripted_call_llm(responses):
     """Build a fake _call_llm that pops one response per call.
 
     Records call_kinds it was invoked with so tests can assert on retry naming.
+    Accepts **kwargs so it tolerates future _call_llm signature additions without
+    test breakage (e.g. system_prompt was added for the clarify step).
     """
     calls: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, **kwargs):
         calls.append(call_kind)
         return responses.pop(0)
 
@@ -182,3 +184,223 @@ def test_parse_or_retry_uses_retry_call_kind(monkeypatch):
     )
 
     assert fake.calls == ["generate", "generate_retry"]
+
+
+# ---------- _parse_or_retry threads system_prompt to _call_llm --------------
+
+def test_parse_or_retry_threads_system_prompt(monkeypatch):
+    """The optional system_prompt arg must reach _call_llm so calls like
+    clarify() use a dedicated persona rather than the main SYSTEM_PROMPT."""
+    received_system_prompts: list[str] = []
+
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+        received_system_prompts.append(system_prompt)
+        return _valid_analysis_json()
+
+    monkeypatch.setattr(analyzer, "_call_llm", fake)
+
+    _parse_or_retry(
+        client=None, base_prompt="p",
+        cached_user_prefix="",
+        required_keys=ANALYZE_REQUIRED_KEYS,
+        call_kind="clarify", username="u", run_id="r",
+        system_prompt="DEDICATED",
+    )
+
+    assert received_system_prompts == ["DEDICATED"]
+
+
+# ---------- clarify() ------------------------------------------------------
+
+def _minimal_clarify_response() -> str:
+    """Valid CLARIFY_REQUIRED_KEYS shape for clarify() to return."""
+    return json.dumps({
+        "questions": [
+            {
+                "id": "q1",
+                "text": "Have you used Kubernetes in production?",
+                "target_gap": "Essential skill Kubernetes missing from resume",
+                "kind": "experience_probe",
+            },
+            {
+                "id": "q2",
+                "text": "Did the K8s migration ship to production or remain a POC?",
+                "target_gap": "Analyzer flagged ambiguity in shipped status",
+                "kind": "scope_probe",
+            },
+        ],
+        "reasoning": "Mix of experience and scope probes targeting analyzer gaps.",
+    })
+
+
+def test_clarify_returns_structured_questions(monkeypatch):
+    """clarify() runs the dedicated CLARIFY_SYSTEM_PROMPT path and parses
+    a questions/reasoning JSON response."""
+    received_system_prompts: list[str] = []
+
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+        received_system_prompts.append(system_prompt)
+        # clarify uses no cached prefix — the analyzer has already digested the resume/JD
+        assert cached_user_prefix == ""
+        assert call_kind == "clarify"
+        return _minimal_clarify_response()
+
+    monkeypatch.setattr(analyzer, "_call_llm", fake)
+
+    context_set = {
+        "deterministic_analysis": {
+            "keyword_overlap": {"missing_from_resume": ["kubernetes", "terraform"]},
+        },
+        "candidate": {"skills": ["docker", "linux"]},
+    }
+    analysis = {
+        "essential_skills": ["kubernetes", "terraform"],
+        "preferred_skills": [],
+        "comparison": {"strengths": [], "gaps": ["No K8s mentioned"], "title_alignment": ""},
+        "keyword_placement": [],
+        "overall_strategy": "",
+    }
+
+    result = analyzer.clarify(client=None, context_set=context_set, analysis=analysis,
+                              username="u", run_id="r")
+
+    assert "questions" in result and "reasoning" in result
+    assert len(result["questions"]) == 2
+    assert result["questions"][0]["kind"] == "experience_probe"
+    assert received_system_prompts == [analyzer.CLARIFY_SYSTEM_PROMPT]
+
+
+def test_clarify_retries_on_missing_keys(monkeypatch):
+    """clarify() must fail validation and retry when reasoning is missing."""
+    responses = [
+        json.dumps({"questions": []}),  # missing 'reasoning'
+        _minimal_clarify_response(),
+    ]
+    calls: list[str] = []
+
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+        calls.append(call_kind)
+        return responses.pop(0)
+
+    monkeypatch.setattr(analyzer, "_call_llm", fake)
+
+    context_set = {"deterministic_analysis": {"keyword_overlap": {}}, "candidate": {}}
+    analysis = {"essential_skills": [], "comparison": {}, "keyword_placement": []}
+
+    result = analyzer.clarify(client=None, context_set=context_set, analysis=analysis)
+    assert "questions" in result
+    assert calls == ["clarify", "clarify_retry"]
+
+
+# ---------- generate() injects clarifications into prompt -------------------
+
+def test_generate_includes_clarification_block_when_present(monkeypatch):
+    """When context_set has clarifications, the generate prompt must contain
+    the <candidate_clarifications> block with paired question and answer."""
+    captured_prompts: list[str] = []
+
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+        captured_prompts.append(prompt)
+        return json.dumps({
+            "resume_content": "# Name\n## Experience\n",
+            "cover_letter_content": "Cover letter body",
+            "changes_made": [],
+            "proofread_notes": [],
+        })
+
+    monkeypatch.setattr(analyzer, "_call_llm", fake)
+
+    context_set = {
+        "candidate": {"name": "x", "skills": []},
+        "resume": {"text": "resume text", "filename": "x.docx"},
+        "supplemental_resumes": [],
+        "job_description": "jd",
+        "deterministic_analysis": {"keyword_overlap": {}},
+        "clarification_questions": [
+            {"id": "q1", "text": "Used Kubernetes?", "kind": "experience_probe", "target_gap": "k8s"},
+            {"id": "q2", "text": "Shipped?", "kind": "scope_probe", "target_gap": "scope"},
+        ],
+        "clarifications": {
+            "q1": "Yes, briefly on the SRE rotation in 2024.",
+            # q2 deliberately skipped — should be absent from prompt
+        },
+    }
+    analysis = {
+        "essential_skills": [], "keyword_placement": [], "suggestions": [],
+        "overall_strategy": "", "professional_vocabulary": [],
+    }
+
+    analyzer.generate(client=None, context_set=context_set, analysis=analysis)
+
+    assert len(captured_prompts) == 1
+    prompt = captured_prompts[0]
+    assert "<candidate_clarifications>" in prompt
+    assert 'id="q1"' in prompt
+    assert "briefly on the SRE rotation" in prompt
+    # Skipped question must not appear
+    assert 'id="q2"' not in prompt
+
+
+def test_generate_omits_clarification_block_when_absent(monkeypatch):
+    """When context_set has no clarifications, the generate prompt must NOT
+    contain the <candidate_clarifications> block. Back-compat for pre-clarify
+    contexts."""
+    captured_prompts: list[str] = []
+
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+        captured_prompts.append(prompt)
+        return json.dumps({
+            "resume_content": "# Name\n",
+            "cover_letter_content": "letter",
+            "changes_made": [],
+            "proofread_notes": [],
+        })
+
+    monkeypatch.setattr(analyzer, "_call_llm", fake)
+
+    context_set = {
+        "candidate": {"name": "x", "skills": []},
+        "resume": {"text": "resume text", "filename": "x.docx"},
+        "supplemental_resumes": [],
+        "job_description": "jd",
+        "deterministic_analysis": {"keyword_overlap": {}},
+    }
+    analysis = {
+        "essential_skills": [], "keyword_placement": [], "suggestions": [],
+        "overall_strategy": "", "professional_vocabulary": [],
+    }
+
+    analyzer.generate(client=None, context_set=context_set, analysis=analysis)
+    assert "<candidate_clarifications>" not in captured_prompts[0]
+
+
+def test_generate_omits_clarification_block_when_all_skipped(monkeypatch):
+    """If clarification_questions exist but all answers are empty/missing,
+    the block must still be omitted — no empty wrapper in the prompt."""
+    captured_prompts: list[str] = []
+
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+        captured_prompts.append(prompt)
+        return json.dumps({
+            "resume_content": "# x", "cover_letter_content": "x",
+            "changes_made": [], "proofread_notes": [],
+        })
+
+    monkeypatch.setattr(analyzer, "_call_llm", fake)
+
+    context_set = {
+        "candidate": {"name": "x", "skills": []},
+        "resume": {"text": "r", "filename": "x.docx"},
+        "supplemental_resumes": [],
+        "job_description": "jd",
+        "deterministic_analysis": {"keyword_overlap": {}},
+        "clarification_questions": [
+            {"id": "q1", "text": "Q?", "kind": "experience_probe", "target_gap": "g"},
+        ],
+        "clarifications": {},  # user clicked Skip
+    }
+    analysis = {"essential_skills": [], "keyword_placement": [], "suggestions": [],
+                "overall_strategy": "", "professional_vocabulary": []}
+
+    analyzer.generate(client=None, context_set=context_set, analysis=analysis)
+    assert "<candidate_clarifications>" not in captured_prompts[0]

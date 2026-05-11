@@ -62,10 +62,25 @@ class _ContextSetRequired(TypedDict):
     deterministic_analysis: DeterministicAnalysisBlock
 
 
+class ClarificationQuestion(TypedDict, total=False):
+    id: str
+    text: str
+    target_gap: str
+    kind: str  # "experience_probe" | "scope_probe"
+
+
 class ContextSet(_ContextSetRequired, total=False):
     # Added by app.py after analyze(); not present at build_context_set time
     llm_analysis: dict
     run_id: str
+    # The full set of questions surfaced by /api/clarify. Persisted (not cleared
+    # by /api/answer-clarifications) so generate() can pair each answer with
+    # its question text in the prompt.
+    clarification_questions: list[ClarificationQuestion]
+    # Question-id -> user's free-form answer. Skipped questions are absent.
+    # Treated as first-person ground truth by generate() and may be cited in
+    # output even when absent from the resume.
+    clarifications: dict[str, str]
 
 # Common English stop words to exclude from keyword extraction
 STOP_WORDS = frozenset(
