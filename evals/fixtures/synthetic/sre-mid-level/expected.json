@@ -14,5 +14,21 @@
   "min_keyword_coverage_score": 4,
   "min_ats_format_score": 4,
   "min_tone_score": 3,
-  "notes": "Mid-level SRE, real metrics in source are deliberately qualitative. Watch for invented headcount or dollar figures."
+  "min_clarification_quality_score": 4,
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "service mesh exposure (Istio, Linkerd) — any production or side-project",
+      "distributed tracing tools beyond Prometheus/Grafana (OpenTelemetry, Jaeger, Honeycomb)",
+      "multi-region control plane work (vs. single-region API edge)",
+      "explicit SLO/SLI ownership and error-budget framework (beyond ad-hoc 'error budget burn')",
+      "driving postmortem CULTURE across a team, not just writing individual postmortems"
+    ],
+    "scope_probes": [
+      "Terraform modules adoption: independent initiative or assigned standardization?",
+      "Sev-1 postmortem leadership: incident commander role or IC writing it up?",
+      "intern mentorship: formal mentor designation or ad-hoc shadowing?",
+      "API edge ownership for ~800 tenants: sole owner or team member?"
+    ]
+  },
+  "notes": "Mid-level SRE, real metrics in source are deliberately qualitative. Watch for invented headcount or dollar figures. Clarification questions should probe whether adjacent infrastructure experience (service mesh, multi-region, tracing tools beyond Prom/Grafana) exists undocumented, and disambiguate scope claims around Terraform standardization, incident commanding, and tenant ownership."
 }

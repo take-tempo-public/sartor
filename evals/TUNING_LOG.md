@@ -222,6 +222,54 @@ Density barely moved (0.083 → 0.11 for data-scientist-junior; pm-senior unchan
 
 ---
 
+## 2026-05-11 — `2026-05-09.3` → `2026-05-11.1`: optional Q&A interview step
+
+### What changed
+
+- `analyzer.py` — added `CLARIFY_SYSTEM_PROMPT` (a short dedicated persona, ~22 lines) plus `clarify()` between `analyze()` and `generate()`. Reuses `_parse_or_retry` for telemetry parity; emits `call: "clarify"` in `logs/llm_calls.jsonl`. `_call_llm` and `_parse_or_retry` gained an optional `system_prompt` arg so clarify can override the main hiring-manager persona without code duplication.
+- `analyzer.py:generate()` — when `context_set["clarifications"]` is non-empty, a `<candidate_clarifications>` block is injected between `<analysis>` and `<resume_rules>` with paired question/answer entries. The GROUNDING CHECK was widened to accept clarification answers as legitimate source material ("first-person ground truth") so the model may surface tech or experience the candidate confirmed even when it doesn't appear in the resume — while the no-invention rule still forbids anything beyond the union of (resume + clarifications).
+- `hardening.py` — `ContextSet` TypedDict gained two optional fields: `clarification_questions: list[ClarificationQuestion]` and `clarifications: dict[str, str]`. Both are `total=False` so pre-clarify saved contexts continue to round-trip.
+- `app.py` — new routes `POST /api/clarify` (generates questions, persists to the same context file) and `POST /api/answer-clarifications` (stores per-question answers, filters unknown ids and empty text). Both use the standard `_safe_username` + `_within(OUTPUT_DIR)` guards. `run_id` propagates analyze → clarify → generate.
+- `templates/index.html` + `static/app.js` + `static/style.css` — collapsible "Clarifying Interview" section inside the Analysis panel with `GET CLARIFYING QUESTIONS` / `SUBMIT ANSWERS & GENERATE` / `SKIP` controls. UI rendering uses safe DOM construction (textContent, appendChild) instead of innerHTML for LLM-supplied strings.
+- `evals/rubrics/clarification_quality.md` — new rubric. Grades on: question count (3–5), composition (≥50% experience probes), gap citation specificity (must trace to analyzer output), word limit (≤25 each), no compound or leading questions, theme coverage against `expected_clarification_themes`.
+- `evals/runner.py` — runs `clarify()` between analyze and generate; injects the resulting `clarification_questions` into every per-rubric payload (the new rubric uses them, others ignore them). Failures in clarify degrade gracefully — the existing four rubrics still grade.
+- `evals/fixtures/synthetic/*/expected.json` — each of the three synthetic fixtures gained `expected_clarification_themes` with `experience_probes` and `scope_probes` lists tailored to that fixture's real gaps, plus `min_clarification_quality_score: 4`.
+- `tests/` — new `test_app_clarify.py`; expanded `test_analyzer.py` (clarify() happy-path, retry, system_prompt threading, generate-injection-on/off paths); `test_hardening.py` round-trip for ContextSet with and without the new fields.
+- `PROMPT_VERSION` bumped to `2026-05-11.1` in the same commit per CLAUDE.md.
+
+### Why
+
+Two coupled failure modes that show up in the existing eval results:
+
+1. **Fabrication on JD-required skills missing from the resume.** When a JD asks for a technology the candidate's resume doesn't mention but they actually do have experience with, the generator either invents detail (grounding penalty) or stays silent (keyword-coverage penalty). There was no channel to surface the real experience.
+2. **Scope ambiguity at the role boundary.** The analyzer's `comparison_analysis` flagged ambiguities ("setting direction vs. executing", "shipped vs. prototype", "sole owner vs. team member") but the generator had to guess. Resume bullets came out vague or, occasionally, over-confident.
+
+The clarify step opens both channels: experience probes surface real-but-undocumented experience (with the candidate's own words as ground truth — citable in the resume); scope probes disambiguate so the generated wording is precise.
+
+### Result
+
+First-run scores will be captured here after the next full `python evals/runner.py --suite synthetic` run. The eval includes the new `clarification_quality` rubric for the first time; the baseline-comparison machinery in `_load_baseline_scores` will pick up subsequent runs automatically. Pre-edit baselines for the four existing rubrics are unchanged (the clarify step is opt-in and was not exercised during prior runs).
+
+Expected impact qualitatively:
+- `clarification_quality`: target ≥4.0 on all three fixtures; the per-fixture `expected_clarification_themes` give the judge concrete hit-targets.
+- `grounding`: should be unchanged on synthetic fixtures (no answers are injected during the eval run). The real test of grounding under clarifications is a future fixture variant — see "Open questions" below.
+- `keyword_coverage`: unchanged on synthetic. In production, when a candidate clarifies "yes, I've used Terraform briefly", keyword coverage should improve because the generator can now surface Terraform.
+
+### What we learned
+
+1. **A dedicated short system prompt beats overloading the main one** when the task is narrow. CLARIFY_SYSTEM_PROMPT is ~22 lines; SYSTEM_PROMPT is ~30 ALWAYS/NEVER rules. Mixing them dilutes both. The cost is a cache miss on the system block, but the user-prefix cache (which carries the heavy content) is unaffected since clarify uses no cached prefix.
+2. **Persisting questions to the same context file makes the UI resumable**. The user can refresh the page mid-interview and the questions reload from disk. The alternative — keeping questions only in browser state — would have lost answers on any reload.
+3. **The grounding rule needs a precise carve-out, not a blanket exception.** "Clarification answers are first-person ground truth and may be cited even when the resume does not mention them" is the surgical phrasing; the model still must not invent anything beyond the union of (resume + clarifications). Vaguer language ("clarifications override the resume") risks unbounded invention.
+
+### Open questions / future tuning targets
+
+- **First eval results pending**: run `python evals/runner.py --suite synthetic` and append the score table here. If `clarification_quality` is <4.0 on any fixture, inspect `failed_rules` and tighten CLARIFY_SYSTEM_PROMPT — most likely failure mode is questions that don't cite a specific gap source.
+- **Contradiction fixture variant**: per the plan, the strongest grounding test is a fixture variant whose injected clarification *contradicts* an inferred resume fact (e.g. resume implies "shipped to production"; clarification says "remained a prototype"). The grounding rubric must fail if the generated resume still claims production. Not yet implemented — needs a `clarifications` field in the fixture itself plus a runner mode that injects them into generate.
+- **Addition fixture variant**: similarly, a fixture with an injected positive clarification (e.g. "Yes, I used Terraform on SRE rotation") to verify the generator surfaces it AND the grounding rubric catches any *further* invention beyond the clarified fact.
+- **Cost gating**: clarify adds one Sonnet call per fixture per eval run (~$0.01–0.02). For very large eval suites consider a `--no-clarify` flag; not needed today with 3 synthetic fixtures.
+
+---
+
 ## Template for future entries
 
 ```markdown

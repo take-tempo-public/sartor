@@ -34,7 +34,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from analyzer import PROMPT_VERSION, analyze, generate  # noqa: E402
+from analyzer import PROMPT_VERSION, analyze, clarify, generate  # noqa: E402
 from hardening import (  # noqa: E402
     ContextSet,
     build_context_set,
@@ -390,6 +390,13 @@ def main(argv: list[str] | None = None) -> int:
             )
             t0 = time.perf_counter()
             t0_iso = datetime.now(timezone.utc).isoformat()
+            # clarify_questions is captured separately because the clarify
+            # step is opt-in in production and we want the eval to keep
+            # producing scores for the existing rubrics even if clarify
+            # fails for some reason.
+            clarify_questions: list[dict] = []
+            clarify_reasoning = ""
+            clarify_error: str | None = None
             try:
                 context = _build_context(fixture)
                 analysis = analyze(
@@ -397,6 +404,22 @@ def main(argv: list[str] | None = None) -> int:
                     username=f"eval:{fixture['name']}",
                     run_id=run_id,
                 )
+                try:
+                    clarify_result = clarify(
+                        client, context, analysis,
+                        username=f"eval:{fixture['name']}",
+                        run_id=run_id,
+                    )
+                    clarify_questions = clarify_result.get("questions", [])
+                    clarify_reasoning = clarify_result.get("reasoning", "")
+                except Exception as exc:  # noqa: BLE001
+                    # Non-fatal: degrade to score=None for the clarification
+                    # rubric while still running generate + the other rubrics.
+                    clarify_error = str(exc)
+                    logger.warning(
+                        "Clarify step failed for %s, continuing without it: %s",
+                        fixture["name"], exc,
+                    )
                 result = generate(
                     client, context, analysis,
                     username=f"eval:{fixture['name']}",
@@ -422,6 +445,14 @@ def main(argv: list[str] | None = None) -> int:
 
             elapsed_ms = int((time.perf_counter() - t0) * 1000)
             logger.info("  pipeline %s done in %dms", fixture["name"], elapsed_ms)
+            if clarify_error is None:
+                exp_probes = sum(
+                    1 for q in clarify_questions if q.get("kind") == "experience_probe"
+                )
+                logger.info(
+                    "  clarify produced %d questions (%d experience probes, %d scope probes)",
+                    len(clarify_questions), exp_probes, len(clarify_questions) - exp_probes,
+                )
 
             # Compute the four post-generation deterministic metrics. These
             # ride along on every per-rubric record AND get passed to the
@@ -450,6 +481,34 @@ def main(argv: list[str] | None = None) -> int:
             payload_det["post_generation"] = det_metrics
 
             for rubric_path in rubrics:
+                # Skip judge entirely when clarify failed AND this is the
+                # clarification_quality rubric — emit a pipeline_error row so
+                # the dashboard surfaces it, but don't waste a judge call.
+                if rubric_path.stem == "clarification_quality" and clarify_error is not None:
+                    out.write(json.dumps({
+                        "schema_version": SCHEMA_VERSION,
+                        "score_max": SCORE_MAX,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "source": "eval",
+                        "fixture": fixture["name"],
+                        "rubric": rubric_path.stem,
+                        "score": None,
+                        "reasons": [f"clarify step failed: {clarify_error}"],
+                        "failed_rules": [],
+                        "status": "pipeline_error",
+                        "prompt_version": PROMPT_VERSION,
+                        "run_id": run_id,
+                        "deterministic_metrics": det_metrics,
+                        "cost_usd": cost_usd,
+                        "pipeline_latency_ms": elapsed_ms,
+                    }) + "\n")
+                    n_fail += 1
+                    logger.info(
+                        "  %s × clarification_quality → skipped (clarify failed)",
+                        fixture["name"],
+                    )
+                    continue
+
                 payload = {
                     "fixture": fixture["name"],
                     "expected": fixture["expected"],
@@ -460,6 +519,8 @@ def main(argv: list[str] | None = None) -> int:
                     "analysis": analysis,
                     "generated_resume": result.get("resume_content", ""),
                     "generated_cover_letter": result.get("cover_letter_content", ""),
+                    "clarification_questions": clarify_questions,
+                    "clarification_reasoning": clarify_reasoning,
                 }
                 try:
                     grade = _grade(client, rubric_path, payload)
