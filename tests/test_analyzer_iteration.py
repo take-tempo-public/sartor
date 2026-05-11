@@ -292,3 +292,170 @@ def test_generate_grounding_block_widened_for_typed_edits(monkeypatch):
     assert "Shipped V2 to enterprise" in prompt
     # And the grounding question itself acknowledges typed edits as ground truth
     assert "typed in" in prompt or "typed edits" in prompt
+
+
+# ---------- clarify_iteration() (Phase 2) ----------------------------------
+
+def _minimal_iter_clarify_response() -> str:
+    return json.dumps({
+        "questions": [
+            {
+                "id": "q1",
+                "text": "Recent edit added 'shipped V2' — which customer segment?",
+                "target_gap": "Recent edit added 'shipped V2 to enterprise'",
+                "kind": "iteration_probe",
+            },
+            {
+                "id": "q2",
+                "text": "Terraform still missing — any side-project ownership?",
+                "target_gap": "Essential skill Terraform missing from current draft",
+                "kind": "experience_probe",
+            },
+            {
+                "id": "q3",
+                "text": "Current draft says 'led platform' — direct reports or matrix?",
+                "target_gap": "Scope ambiguity in current draft platform bullet",
+                "kind": "scope_probe",
+            },
+        ],
+        "reasoning": "Mix of iteration follow-up, missing-skill probe, and scope.",
+    })
+
+
+def test_clarify_iteration_uses_dedicated_system_prompt(monkeypatch):
+    """The iteration interview must use CLARIFY_ITERATION_SYSTEM_PROMPT
+    (not the main SYSTEM_PROMPT, not CLARIFY_SYSTEM_PROMPT) so the LLM
+    is briefed on iteration-specific rules — build on priors, target current
+    draft, etc."""
+    received_systems: list[str] = []
+
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+        received_systems.append(system_prompt)
+        assert cached_user_prefix == ""  # no cached prefix for compact call
+        assert call_kind == "iterate_clarify"
+        return _minimal_iter_clarify_response()
+
+    monkeypatch.setattr(analyzer, "_call_llm", fake)
+
+    result = analyzer.clarify_iteration(
+        client=None,
+        context_set={"deterministic_analysis": {"keyword_overlap": {}}},
+        analysis={"comparison": {"gaps": []}, "essential_skills": []},
+        current_resume_text="# Resume\n- bullet one",
+        current_cover_letter_text="Letter body",
+        recent_edits_summary="user added 'shipped V2'",
+        deterministic_signals={"verb_diversity": {"diversity_ratio": 0.32}},
+        prior_clarifications=[],
+    )
+
+    assert "questions" in result and len(result["questions"]) == 3
+    assert received_systems == [analyzer.CLARIFY_ITERATION_SYSTEM_PROMPT]
+
+
+def test_clarify_iteration_includes_signal_sources_in_prompt(monkeypatch):
+    """All four signal sources from the plan must reach the LLM prompt:
+    current draft, recent edits, deterministic signals, and prior clarifications
+    (with their answers, so the LLM knows what's established truth)."""
+    captured_prompts: list[str] = []
+
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+        captured_prompts.append(prompt)
+        return _minimal_iter_clarify_response()
+
+    monkeypatch.setattr(analyzer, "_call_llm", fake)
+
+    analyzer.clarify_iteration(
+        client=None,
+        context_set={
+            "deterministic_analysis": {"keyword_overlap": {"missing_from_resume": ["terraform"]}},
+        },
+        analysis={
+            "comparison": {"gaps": ["No K8s mentioned"], "title_alignment": "underleveled"},
+            "essential_skills": ["kubernetes", "terraform"],
+        },
+        current_resume_text="# Current Draft\n- shipped V2 to enterprise",
+        current_cover_letter_text="Current cover letter body",
+        recent_edits_summary="user added 'shipped V2 to enterprise' to the platform bullet",
+        deterministic_signals={
+            "verb_diversity": {"diversity_ratio": 0.32, "top_repeated": [["led", 4]]},
+            "specificity_density": {"density": 0.25},
+            "grounding_overlap": {"overlap_ratio": 0.18, "missing_samples": ["kubernetes deployment"]},
+            "keyword_coverage": {"still_missing_from_current_draft": ["terraform"]},
+        },
+        prior_clarifications=[
+            {"question": "Have you used K8s?", "answer": "Yes, in prod 2023.", "kind": "experience_probe"},
+        ],
+    )
+
+    prompt = captured_prompts[0]
+    # Signal 1: current draft text included
+    assert "shipped V2 to enterprise" in prompt
+    # Signal 2: recent edits summary included
+    assert "platform bullet" in prompt
+    # Signal 3: deterministic signals as JSON
+    assert "verb_diversity" in prompt
+    assert "0.32" in prompt
+    # Signal 4: prior clarifications (with answers, so LLM doesn't re-ask)
+    assert "Have you used K8s?" in prompt
+    assert "Yes, in prod 2023" in prompt
+    # And the analyzer gaps still inform the prompt
+    assert "No K8s mentioned" in prompt
+    assert "terraform" in prompt
+
+
+def test_clarify_iteration_excludes_skipped_prior_clarifications(monkeypatch):
+    """Prior clarifications with empty answers must NOT appear in the prompt.
+    A skipped question is not established truth — it's an open gap. Showing
+    skipped-with-blank-answer pairs would confuse the LLM."""
+    captured_prompts: list[str] = []
+
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+        captured_prompts.append(prompt)
+        return _minimal_iter_clarify_response()
+
+    monkeypatch.setattr(analyzer, "_call_llm", fake)
+
+    analyzer.clarify_iteration(
+        client=None,
+        context_set={"deterministic_analysis": {"keyword_overlap": {}}},
+        analysis={"comparison": {}, "essential_skills": []},
+        current_resume_text="r",
+        current_cover_letter_text="",
+        recent_edits_summary="",
+        deterministic_signals={},
+        prior_clarifications=[
+            {"question": "Empty answer Q", "answer": "", "kind": "experience_probe"},
+            {"question": "Real answer Q", "answer": "real", "kind": "scope_probe"},
+        ],
+    )
+
+    prompt = captured_prompts[0]
+    assert "Empty answer Q" not in prompt
+    assert "Real answer Q" in prompt
+
+
+def test_clarify_iteration_retries_on_missing_keys(monkeypatch):
+    """The retry budget should apply to the iteration call too — if the LLM
+    omits 'reasoning' (CLARIFY_REQUIRED_KEYS), we retry once."""
+    responses = [
+        json.dumps({"questions": []}),  # missing 'reasoning'
+        _minimal_iter_clarify_response(),
+    ]
+    calls: list[str] = []
+
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+        calls.append(call_kind)
+        return responses.pop(0)
+
+    monkeypatch.setattr(analyzer, "_call_llm", fake)
+
+    result = analyzer.clarify_iteration(
+        client=None,
+        context_set={"deterministic_analysis": {"keyword_overlap": {}}},
+        analysis={"comparison": {}, "essential_skills": []},
+        current_resume_text="r", current_cover_letter_text="",
+        recent_edits_summary="", deterministic_signals={},
+        prior_clarifications=[],
+    )
+    assert "questions" in result
+    assert calls == ["iterate_clarify", "iterate_clarify_retry"]

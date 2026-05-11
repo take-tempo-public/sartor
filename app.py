@@ -15,14 +15,26 @@ import anthropic
 from flask import Flask, jsonify, render_template, request, send_file
 from werkzeug.utils import secure_filename
 
-from analyzer import LLMResponseError, analyze, check_refinement_scope, clarify, generate
+from analyzer import (
+    LLMResponseError,
+    _current_cover_letter_draft,
+    _current_draft_text,
+    analyze,
+    check_refinement_scope,
+    clarify,
+    clarify_iteration,
+    generate,
+)
 from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
 from hardening import (
     ContextSet,
     build_context_set,
     check_ats_format,
+    compute_grounding_overlap,
     compute_keyword_overlap,
+    compute_specificity_density,
+    compute_verb_diversity,
     extract_keywords,
     save_context_set,
     save_iteration_context,
@@ -450,6 +462,237 @@ def submit_clarifications():
         len(cleaned), len(valid_ids), safe_user,
     )
     return jsonify({"ok": True, "answered": len(cleaned), "total": len(valid_ids)})
+
+
+def _summarize_recent_edits(context_set: ContextSet) -> str:
+    """Produce a compact text summary of what the candidate edited since the
+    last generation, used as one of the four signal sources for the iteration
+    interview.
+
+    Strategy: short unified diff preface for each of resume + cover letter,
+    capped to keep prompt tokens predictable. If no edits exist, returns "".
+    The LLM only needs to see what changed, not a full character-level diff.
+    """
+    import difflib
+
+    parts: list[str] = []
+    for label, before_key, after_key in (
+        ("resume", "last_generated_resume", "edited_resume_text"),
+        ("cover_letter", "last_generated_cover_letter", "edited_cover_letter_text"),
+    ):
+        # Use cast-to-str through fallback — values come from JSON-loaded
+        # TypedDict fields whose value type mypy widens to object.
+        before_raw = context_set.get(before_key) or ""
+        after_raw = context_set.get(after_key) or ""
+        before = str(before_raw).strip()
+        after = str(after_raw).strip()
+        if not after or before == after:
+            continue
+        diff = list(difflib.unified_diff(
+            before.splitlines(), after.splitlines(),
+            fromfile=f"prior_{label}", tofile=f"edited_{label}",
+            lineterm="", n=2,
+        ))
+        if not diff:
+            continue
+        # Cap to first ~60 diff lines — enough to convey the change without
+        # blowing up the prompt for users who rewrote large sections.
+        snippet = "\n".join(diff[:60])
+        if len(diff) > 60:
+            snippet += f"\n... [{len(diff) - 60} more diff lines truncated]"
+        parts.append(f"## {label} edits\n{snippet}")
+    return "\n\n".join(parts)
+
+
+def _compute_iteration_signals(
+    context_set: ContextSet,
+    current_resume_text: str,
+) -> dict:
+    """Compute the four deterministic signal sources for the iteration clarifier.
+
+    Each signal is independently informative — the LLM uses them to target
+    questions at concrete weaknesses rather than guessing. Names match the
+    metric functions in hardening.py so the dashboard can correlate.
+    """
+    overlap = (context_set.get("deterministic_analysis", {}) or {}).get("keyword_overlap", {}) or {}
+    jd_kw_set = set(overlap.get("matched", [])) | set(overlap.get("missing_from_resume", []))
+
+    # Recompute keyword coverage against the CURRENT draft (the analyzer's
+    # original overlap was vs the original primary). The diff between original
+    # missing and current missing tells the LLM whether a recent revision
+    # actually closed any keyword gaps.
+    current_kw = extract_keywords(current_resume_text or "")
+    current_kw_set = set(current_kw.get("keywords", {}).keys())
+    still_missing = sorted(set(overlap.get("missing_from_resume", [])) - current_kw_set)
+
+    # Sources for grounding overlap mirror what generate() considers ground
+    # truth: original primary, supplementals, clarification answers.
+    source_texts: list[str] = []
+    primary_text = (context_set.get("resume", {}) or {}).get("text", "")
+    if primary_text:
+        source_texts.append(primary_text)
+    for s in context_set.get("supplemental_resumes", []) or []:
+        if s.get("text"):
+            source_texts.append(s["text"])
+    for ans in (context_set.get("clarifications") or {}).values():
+        if ans:
+            source_texts.append(ans)
+
+    return {
+        "verb_diversity": compute_verb_diversity(current_resume_text),
+        "specificity_density": compute_specificity_density(current_resume_text),
+        "grounding_overlap": compute_grounding_overlap(current_resume_text, source_texts),
+        "keyword_coverage": {
+            "jd_total": len(jd_kw_set),
+            "still_missing_from_current_draft": still_missing[:20],
+            "still_missing_count": len(still_missing),
+        },
+    }
+
+
+@app.route("/api/iterate-clarify", methods=["POST"])
+def run_iterate_clarify():
+    """Iteration interview: probe the CURRENT draft's specific weaknesses.
+
+    User-driven (the frontend calls this when the user clicks INTERVIEW
+    QUESTIONS in the Output panel). Produces 3-5 questions tied to concrete
+    signals: deterministic metrics on the current draft, the diff between the
+    last generation and the user's typed edits, JD keywords still missing,
+    and prior-clarification follow-ups.
+
+    The questions persist on the SAME context file (additive — appended to
+    clarification_questions). Answers are submitted via the existing
+    /api/answer-clarifications route, which already accepts any qid present
+    in clarification_questions.
+    """
+    data = request.json
+    context_path = data.get("context_path", "")
+    username = data.get("username", "")
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR):
+        return jsonify({"error": "Invalid context path"}), 403
+    if not cp.exists():
+        return jsonify({"error": "Context file not found"}), 404
+
+    safe_user = _safe_username(username) if username else None
+    if not safe_user:
+        safe_user = secure_filename(cp.parent.name)
+    if not safe_user:
+        return jsonify({"error": "Could not resolve username"}), 400
+
+    context_set: ContextSet = json.loads(cp.read_text(encoding="utf-8"))
+    analysis = context_set.get("llm_analysis", {})
+    if not analysis:
+        return jsonify({"error": "No analysis found in context"}), 400
+
+    iteration = int(context_set.get("iteration", 0) or 0)
+    if iteration < 1:
+        # The iteration interview is meaningful only after at least one
+        # generation has produced a draft. Before that, the regular /api/clarify
+        # route is the right one — it works off the analyzer output, not a draft.
+        return jsonify({
+            "error": "Iteration interview requires at least one generated draft. Run /api/generate first.",
+        }), 400
+
+    # Resolve current drafts (edited > last_generated > primary fallback).
+    # Reuses the same precedence generate() applies, so the questions target
+    # exactly what the LLM would author from on the next call.
+    current_resume_text, _ = _current_draft_text(context_set)
+    current_cover_text, _ = _current_cover_letter_draft(context_set)
+    edits_summary = _summarize_recent_edits(context_set)
+    signals = _compute_iteration_signals(context_set, current_resume_text)
+
+    # Pair prior clarifications (question + answer) so the LLM can build on
+    # established truths rather than re-ask. Skipped questions are omitted.
+    prior_qs = context_set.get("clarification_questions") or []
+    prior_answers = context_set.get("clarifications") or {}
+    prior_clarifications: list[dict] = []
+    for q in prior_qs:
+        qid = q.get("id", "")
+        ans = prior_answers.get(qid, "").strip() if isinstance(prior_answers.get(qid, ""), str) else ""
+        if ans:
+            prior_clarifications.append({
+                "question": q.get("text", ""),
+                "answer": ans,
+                "kind": q.get("kind", ""),
+            })
+
+    run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
+    client = _get_client()
+    logger.info(
+        "Starting iteration clarify for %s iteration=%d run_id=%s",
+        safe_user, iteration, run_id,
+    )
+    try:
+        result = clarify_iteration(
+            client, context_set, analysis,
+            current_resume_text=current_resume_text,
+            current_cover_letter_text=current_cover_text,
+            recent_edits_summary=edits_summary,
+            deterministic_signals=signals,
+            prior_clarifications=prior_clarifications,
+            username=safe_user, run_id=run_id,
+        )
+    except anthropic.APIConnectionError as exc:
+        logger.error("Anthropic API connection error during iterate-clarify: %s", exc)
+        return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
+    except LLMResponseError as exc:
+        logger.error("LLM iterate-clarify response failed validation after retry: %s", exc.validation_error)
+        return jsonify({
+            "error": "AI iteration-interview response was malformed after retry. Please try again.",
+            "detail": exc.validation_error,
+        }), 502
+
+    new_questions = result.get("questions", []) or []
+
+    # Re-key new question ids to avoid collisions with existing q1/q2/...
+    # The /api/answer-clarifications route filters by id-membership, so unique
+    # ids per question are mandatory. Prefix with iteration number for clarity
+    # in saved JSON and dashboard rendering.
+    existing_ids = {q.get("id", "") for q in prior_qs}
+    renamed: list[dict] = []
+    for i, q in enumerate(new_questions, 1):
+        new_id = f"iter{iteration}_q{i}"
+        # Defensive: ensure no collision even if a prior iteration used the same prefix
+        suffix = 1
+        while new_id in existing_ids:
+            suffix += 1
+            new_id = f"iter{iteration}_q{i}_{suffix}"
+        existing_ids.add(new_id)
+        q["id"] = new_id
+        renamed.append(q)
+
+    # Append (do not replace) so the audit chain of all interview rounds stays
+    # intact. /api/answer-clarifications already merges into context["clarifications"]
+    # by id, so prior answers persist alongside new ones.
+    combined = list(prior_qs) + renamed
+    context_set["clarification_questions"] = combined
+    context_set["run_id"] = run_id
+
+    notes = list(context_set.get("iteration_notes") or [])
+    notes.append({
+        "timestamp": datetime.now().isoformat(),
+        "action": "iterate_clarify",
+        "summary": f"surfaced {len(renamed)} iteration questions at iteration {iteration}",
+    })
+    context_set["iteration_notes"] = notes
+
+    cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+
+    logger.info(
+        "iterate-clarify produced %d questions for %s (iteration=%d)",
+        len(renamed), safe_user, iteration,
+    )
+    return jsonify({
+        "questions": renamed,
+        "reasoning": result.get("reasoning", ""),
+        "context_path": str(cp),
+        "iteration": iteration,
+        "signals": signals,
+    })
 
 
 @app.route("/api/save-edits", methods=["POST"])

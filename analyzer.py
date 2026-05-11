@@ -98,6 +98,36 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Never upgrade a tool category into a specific vendor or framework BECAUSE "used a CI tool" must not become "authored Jenkins pipelines" if the source does not name Jenkins; vendor-specific claims are verifiable and disqualifying when wrong
 - Never escalate scope adjectives (team → organization-wide, project → enterprise initiative, regional → global) BECAUSE scope inflation is verifiable in interviews and triggers credibility loss across the rest of the resume"""
 
+# Persona for clarify_iteration() — the post-generation interview that
+# probes the CURRENT iteration's specific weaknesses. Distinct from
+# CLARIFY_SYSTEM_PROMPT because the task here is different in two ways:
+# 1. There's already a generated draft to react to, not a vague gap analysis
+# 2. Prior clarifications exist and must be treated as established truth
+#    (re-asking confirmed items wastes the candidate's time and breaks trust)
+CLARIFY_ITERATION_SYSTEM_PROMPT = """You are an experienced interview coach helping a candidate refine a tailored resume across multiple iterations.
+
+The candidate has already seen one iteration of the generated resume and cover letter. They may have edited the preview directly or provided refinement notes. Your role is to surface 3-5 short, specific clarifying questions that target REAL weaknesses in the CURRENT draft — not the original resume, not generic gaps.
+
+INPUTS YOU WILL RECEIVE:
+1. Current draft resume text (possibly with the candidate's first-person edits)
+2. Current draft cover letter text (possibly edited)
+3. A summary of what the candidate just edited or asked for
+4. Deterministic metric weaknesses (low specificity, weak verb variety, grounding gaps, missing must-have keywords)
+5. Prior clarifications already confirmed by the candidate
+
+QUESTION KINDS:
+- "experience_probe" — for an essential JD skill or technology that is STILL missing or weak in the current draft. Goal: source real experience the candidate didn't write down.
+- "scope_probe" — for an ambiguity in the current draft (often introduced by an edit, or surviving from prior iterations).
+- "iteration_probe" — for a follow-up that builds on a recent edit or prior clarification. Example: candidate just typed "shipped V2 to enterprise" — ask for the customer segment, the timeframe, or the team scope so it can be quantified honestly.
+
+RULES:
+- Each question ≤ 25 words. One question per line, no compound questions.
+- Each question must reference a SPECIFIC current-draft weakness — name the bullet, the metric, the missing keyword, or the recent edit it follows up on.
+- BUILD ON prior clarifications, do not re-ask them. If the candidate already said "yes, used Terraform on a side project", don't ask "Have you used Terraform?" again — ask the next-level question (scale, cadence, ownership).
+- Bias toward EXPERIENCE PROBES and ITERATION PROBES (≥50% combined) — these are the most likely to surface new ground truth. SCOPE PROBES second.
+- Do not invent weaknesses. If all four signal sources look healthy, return fewer questions (minimum 3).
+- Output JSON only, no markdown fences, no preamble."""
+
 # Dedicated short persona for the clarify() step. Smaller than SYSTEM_PROMPT
 # because the task is narrowly scoped (question generation, not resume
 # authoring) — narrower context yields tighter grounding and cheaper tokens
@@ -649,6 +679,135 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
         username=username,
         run_id=run_id,
         system_prompt=CLARIFY_SYSTEM_PROMPT,
+    )
+
+
+def clarify_iteration(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    analysis: dict,
+    current_resume_text: str,
+    current_cover_letter_text: str,
+    recent_edits_summary: str,
+    deterministic_signals: dict,
+    prior_clarifications: list[dict],
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """Iteration-aware variant of clarify().
+
+    Generates 3-5 questions targeting weaknesses in the CURRENT iteration's
+    draft (not the original resume). The four signal sources documented in the
+    plan ride along:
+
+      1. current resume vs JD gap (via analysis.comparison.gaps + current draft)
+      2. recent_edits_summary — what the candidate just typed/asked for
+      3. deterministic_signals — verb diversity, specificity, grounding,
+         must-have keyword coverage on the current draft
+      4. prior_clarifications — already-confirmed truths the LLM must build
+         on rather than re-ask
+
+    Uses CLARIFY_ITERATION_SYSTEM_PROMPT (separate from CLARIFY_SYSTEM_PROMPT)
+    because the task is materially different — there's a draft to react to and
+    confirmed truths to respect.
+
+    Returns the same shape as clarify(): {questions: [...], reasoning: ...}.
+    """
+    # Compact prior-clarifications block — pair each question with its answer
+    # so the LLM sees what's already established. Only confirmed (non-empty)
+    # answers count; skipped questions are not "established truth".
+    if prior_clarifications:
+        confirmed_lines = []
+        for c in prior_clarifications:
+            q_text = (c.get("question") or "").strip()
+            a_text = (c.get("answer") or "").strip()
+            if not q_text or not a_text:
+                continue
+            confirmed_lines.append(f"- Q: {q_text}\n  A: {a_text}")
+        confirmed_block = "\n".join(confirmed_lines) or "(none)"
+    else:
+        confirmed_block = "(none)"
+
+    # Pull the current draft's gap sources from the analyzer output. The
+    # analyzer's comparison.gaps was computed against the ORIGINAL resume, but
+    # those gaps still inform what the JD wants — items missing from the
+    # current draft remain valid probes.
+    comparison = analysis.get("comparison", {}) or {}
+    overlap = (context_set.get("deterministic_analysis", {}) or {}).get("keyword_overlap", {}) or {}
+
+    # Cover letter is included as compact context, not the focus — interview
+    # questions almost always target the resume because that's where source
+    # material drives generation. Truncate aggressively to keep the prompt tight.
+    cl_excerpt = (current_cover_letter_text or "").strip()
+    if len(cl_excerpt) > 1500:
+        cl_excerpt = cl_excerpt[:1500] + "\n[truncated]"
+
+    prompt = f"""<task>Generate 3-5 targeted clarifying questions for the candidate, focused on the CURRENT iteration's draft.</task>
+
+<current_draft_resume>
+{current_resume_text}
+</current_draft_resume>
+
+<current_draft_cover_letter>
+{cl_excerpt or "(no cover letter draft yet)"}
+</current_draft_cover_letter>
+
+<recent_edits>
+{recent_edits_summary or "(no recent edits — the candidate has not modified the preview since the last generation)"}
+</recent_edits>
+
+<deterministic_signals>
+{json.dumps(deterministic_signals, indent=2)}
+</deterministic_signals>
+
+<analyzer_gaps_still_relevant>
+Comparison gaps (from original analysis): {json.dumps(comparison.get("gaps", []))}
+Title alignment: {comparison.get("title_alignment", "")}
+JD essential skills: {json.dumps(analysis.get("essential_skills", []))}
+JD keywords still missing from current draft: {json.dumps(overlap.get("missing_from_resume", [])[:20])}
+</analyzer_gaps_still_relevant>
+
+<already_confirmed_clarifications>
+The candidate has already confirmed the following in prior interview rounds.
+DO NOT re-ask these. Build on them with follow-up questions if relevant.
+{confirmed_block}
+</already_confirmed_clarifications>
+
+<instructions>
+Compose 3-5 questions. At least half (combined) must be EXPERIENCE PROBES (kind="experience_probe") or ITERATION PROBES (kind="iteration_probe"). The rest may be SCOPE PROBES (kind="scope_probe").
+
+Each question's target_gap field MUST cite the specific current-draft source:
+  - For experience_probe: name the JD essential skill or keyword still missing from the current draft.
+  - For iteration_probe: name the recent edit, prior clarification, or deterministic-signal weakness it follows up on.
+  - For scope_probe: quote the ambiguous bullet, role, or assertion in the current draft.
+
+Do not invent gaps that none of the four signal sources support. If signals look healthy across the board, return only 3 questions rather than padding to 5.
+
+Respond with valid JSON only. No markdown fences. Use this exact structure:
+{{
+  "questions": [
+    {{
+      "id": "q1",
+      "text": "The question text, <=25 words, no compound or leading questions.",
+      "target_gap": "Specific source — e.g. 'Essential skill Terraform missing from current draft' or 'Recent edit added \\'shipped V2\\' — needs scope/timeframe' or 'Deterministic signal: verb_diversity 0.32, top_repeated led/managed'",
+      "kind": "iteration_probe"
+    }}
+  ],
+  "reasoning": "1-2 sentence summary of how the question mix was composed and which signals it draws from."
+}}
+</instructions>"""
+
+    # Same caching rationale as clarify(): dedicated short system prompt,
+    # compact per-call user message — no cached prefix benefit. The current
+    # draft varies per iteration anyway, so a cached prefix wouldn't hit.
+    return _parse_or_retry(
+        client, prompt,
+        cached_user_prefix="",
+        required_keys=CLARIFY_REQUIRED_KEYS,
+        call_kind="iterate_clarify",
+        username=username,
+        run_id=run_id,
+        system_prompt=CLARIFY_ITERATION_SYSTEM_PROMPT,
     )
 
 
