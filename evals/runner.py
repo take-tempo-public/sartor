@@ -36,6 +36,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from analyzer import PROMPT_VERSION, analyze, generate  # noqa: E402
 from hardening import (  # noqa: E402
+    ContextSet,
     build_context_set,
     check_ats_format,
     compute_call_cost,
@@ -109,7 +110,7 @@ def _load_fixture(fixture_dir: Path) -> dict:
     }
 
 
-def _build_context(fixture: dict) -> dict:
+def _build_context(fixture: dict) -> ContextSet:
     """Run the same hardening pipeline app.py uses, then return a context_set."""
     parsed = parse_resume(str(fixture["resume_path"]))
     config = {

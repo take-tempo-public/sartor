@@ -14,10 +14,11 @@ import anthropic
 from flask import Flask, jsonify, render_template, request, send_file
 from werkzeug.utils import secure_filename
 
-from analyzer import analyze, check_refinement_scope, generate
+from analyzer import LLMResponseError, analyze, check_refinement_scope, generate
 from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
 from hardening import (
+    ContextSet,
     build_context_set,
     check_ats_format,
     compute_keyword_overlap,
@@ -292,6 +293,12 @@ def run_analysis():
     except anthropic.APIConnectionError as exc:
         logger.error("Anthropic API connection error during analysis: %s", exc)
         return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
+    except LLMResponseError as exc:
+        logger.error("LLM analysis response failed validation after retry: %s", exc.validation_error)
+        return jsonify({
+            "error": "AI analysis response was malformed after retry. Please try again.",
+            "detail": exc.validation_error,
+        }), 502
 
     # P4 Disposable Blueprint: save context + analysis (and run_id so the
     # generate route can re-use it for telemetry correlation)
@@ -330,10 +337,10 @@ def run_generation():
         return jsonify({"error": "Context file not found"}), 404
 
     # Reload the saved context set (P4 Disposable Blueprint)
-    context_set = json.loads(cp.read_text(encoding="utf-8"))
+    context_set: ContextSet = json.loads(cp.read_text(encoding="utf-8"))
     analysis = context_set.get("llm_analysis", {})
 
-    if not analysis or analysis.get("parse_error"):
+    if not analysis:
         return jsonify({"error": "No valid analysis found in context"}), 400
 
     logger.info("Starting generation for %s", username)
@@ -353,9 +360,12 @@ def run_generation():
     except anthropic.APIConnectionError as exc:
         logger.error("Anthropic API connection error during generation: %s", exc)
         return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
-
-    if result.get("parse_error"):
-        return jsonify({"error": "Generation failed", "raw": result.get("raw_response", "")}), 500
+    except LLMResponseError as exc:
+        logger.error("LLM generation response failed validation after retry: %s", exc.validation_error)
+        return jsonify({
+            "error": "AI generation response was malformed after retry. Please try again.",
+            "detail": exc.validation_error,
+        }), 502
 
     safe_user = _safe_username(username) if username else None
     if not safe_user:
