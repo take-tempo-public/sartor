@@ -193,7 +193,7 @@ def test_parse_or_retry_threads_system_prompt(monkeypatch):
     clarify() use a dedicated persona rather than the main SYSTEM_PROMPT."""
     received_system_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
         received_system_prompts.append(system_prompt)
         return _valid_analysis_json()
 
@@ -238,7 +238,7 @@ def test_clarify_returns_structured_questions(monkeypatch):
     a questions/reasoning JSON response."""
     received_system_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
         received_system_prompts.append(system_prompt)
         # clarify uses no cached prefix — the analyzer has already digested the resume/JD
         assert cached_user_prefix == ""
@@ -278,7 +278,7 @@ def test_clarify_retries_on_missing_keys(monkeypatch):
     ]
     calls: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
         calls.append(call_kind)
         return responses.pop(0)
 
@@ -299,7 +299,7 @@ def test_generate_includes_clarification_block_when_present(monkeypatch):
     the <candidate_clarifications> block with paired question and answer."""
     captured_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
         captured_prompts.append(prompt)
         return json.dumps({
             "resume_content": "# Name\n## Experience\n",
@@ -347,7 +347,7 @@ def test_generate_omits_clarification_block_when_absent(monkeypatch):
     contexts."""
     captured_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
         captured_prompts.append(prompt)
         return json.dumps({
             "resume_content": "# Name\n",
@@ -379,7 +379,7 @@ def test_generate_omits_clarification_block_when_all_skipped(monkeypatch):
     the block must still be omitted — no empty wrapper in the prompt."""
     captured_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
         captured_prompts.append(prompt)
         return json.dumps({
             "resume_content": "# x", "cover_letter_content": "x",

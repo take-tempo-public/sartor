@@ -179,13 +179,24 @@ RULES:
 #     (~3K tokens of resume_rules + cover_letter_rules + output_format).
 #     Same per-token price as older Sonnet versions; the newer revision has
 #     better structured-output adherence and grounding behavior.
-#   - Haiku 4.5 for scope check (line ~470) and eval grading (evals/runner.py):
-#     binary classification and structured-output rubric application are the
-#     Haiku sweet spot. Volume + structure beats reasoning depth there.
+#   - clarify() and clarify_iteration() also use Sonnet today even though
+#     they're structurally Haiku-friendly (short structured outputs). They're
+#     under active quality tuning against the clarification_quality and
+#     iteration_quality rubrics — switching the model mid-tuning would muddy
+#     regression attribution. Revisit once those rubrics clear 4.0 stably.
+#   - Haiku 4.5 for scope check (_check_refinement_scope), eval grading
+#     (evals/runner.py), and onboarding extraction (extract_experiences):
+#     binary classification, structured rubric application, and one-shot
+#     structured extraction are the Haiku sweet spot. Volume + structure
+#     beats reasoning depth there.
 #   - Opus is intentionally not used: ~5x the cost of Sonnet without a
 #     proportional win on this workload. Reserve for future debugging
 #     sessions if grounding regressions resist prompt-tightening.
-MODEL = "claude-sonnet-4-6"
+SONNET_MODEL = "claude-sonnet-4-6"
+HAIKU_MODEL = "claude-haiku-4-5-20251001"
+# Backward-compat alias — historical code uses MODEL as the default Sonnet handle.
+# New code should reference SONNET_MODEL / HAIKU_MODEL explicitly.
+MODEL = SONNET_MODEL
 # Per-call output cap. analyze() returns a comprehensive JSON with 10+ keyed
 # sections; Sonnet 4.6 is more verbose than older Sonnet 4 was and routinely
 # uses 4–6K tokens on detail-rich real inputs. 8192 leaves headroom without
@@ -369,6 +380,7 @@ def _call_llm(
     username: str = "",
     run_id: str = "",
     system_prompt: str = "",
+    model: str | None = None,
 ) -> str:
     """Make a single LLM call using streaming, with prompt caching and JSONL telemetry.
 
@@ -386,9 +398,16 @@ def _call_llm(
     Calls with a non-default system_prompt will not hit the system-block cache
     established by analyze/generate, which is acceptable for cheap small calls.
 
+    The optional model argument lets cheap structured-output calls (e.g.
+    extract_experiences) opt into Haiku for cost without bypassing this
+    helper's caching + telemetry machinery. Defaults to SONNET_MODEL so
+    existing callers are unchanged. See the model-selection rationale comment
+    block for what belongs on which model.
+
     Telemetry: every call appends one record to logs/llm_calls.jsonl with
     timing, token counts (including cache fields), prompt version, and status.
     """
+    effective_model = model or SONNET_MODEL
     user_content: list[dict] = []
     if cached_user_prefix:
         user_content.append({
@@ -409,7 +428,7 @@ def _call_llm(
     final = None
     try:
         with client.messages.stream(
-            model=MODEL,
+            model=effective_model,
             max_tokens=MAX_TOKENS,
             system=[
                 {
@@ -434,7 +453,7 @@ def _call_llm(
             "username": username,
             "run_id": run_id,
             "call": call_kind,
-            "model": MODEL,
+            "model": effective_model,
             "prompt_version": PROMPT_VERSION,
             "input_tokens": getattr(usage, "input_tokens", 0),
             "output_tokens": getattr(usage, "output_tokens", 0),
@@ -493,6 +512,7 @@ def _parse_or_retry(
     run_id: str,
     max_attempts: int = 2,
     system_prompt: str = "",
+    model: str | None = None,
 ) -> dict:
     """Parse an LLM JSON response, retrying once with the validation error
     appended on parse failure or missing required keys.
@@ -510,7 +530,7 @@ def _parse_or_retry(
         client, base_prompt,
         cached_user_prefix=cached_user_prefix,
         call_kind=call_kind, username=username, run_id=run_id,
-        system_prompt=system_prompt,
+        system_prompt=system_prompt, model=model,
     )
     for attempt in range(max_attempts):
         try:
@@ -540,7 +560,7 @@ def _parse_or_retry(
                 client, retry_prompt,
                 cached_user_prefix=cached_user_prefix,
                 call_kind=f"{call_kind}_retry", username=username, run_id=run_id,
-                system_prompt=system_prompt,
+                system_prompt=system_prompt, model=model,
             )
     raise LLMResponseError(raw, "exhausted retries")
 

@@ -204,7 +204,7 @@ def _capture_prompt(monkeypatch):
     captured_prompts: list[str] = []
     captured_prefixes: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
         captured_prompts.append(prompt)
         captured_prefixes.append(cached_user_prefix)
         return json.dumps({
@@ -329,7 +329,7 @@ def test_clarify_iteration_uses_dedicated_system_prompt(monkeypatch):
     draft, etc."""
     received_systems: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
         received_systems.append(system_prompt)
         assert cached_user_prefix == ""  # no cached prefix for compact call
         assert call_kind == "iterate_clarify"
@@ -358,7 +358,7 @@ def test_clarify_iteration_includes_signal_sources_in_prompt(monkeypatch):
     (with their answers, so the LLM knows what's established truth)."""
     captured_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
         captured_prompts.append(prompt)
         return _minimal_iter_clarify_response()
 
@@ -409,7 +409,7 @@ def test_clarify_iteration_excludes_skipped_prior_clarifications(monkeypatch):
     skipped-with-blank-answer pairs would confuse the LLM."""
     captured_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
         captured_prompts.append(prompt)
         return _minimal_iter_clarify_response()
 
@@ -443,7 +443,7 @@ def test_clarify_iteration_retries_on_missing_keys(monkeypatch):
     ]
     calls: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt=""):
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
         calls.append(call_kind)
         return responses.pop(0)
 

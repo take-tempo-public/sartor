@@ -1,19 +1,19 @@
 """One-shot importer: file-based PII → SQLite corpus.
 
-Phase A scope:
+Scope:
 - `configs/{user}.config` → candidate + skill + certification + education rows
 - `output/{user}/context_*.json` → clarification rows (deduped)
-- Resume parsing (experience + bullet extraction) is deferred to a separate
-  `extract_experiences.py` module so this importer stays LLM-free and
-  cheaply testable.
+- `resumes/{user}/{primary}` → experience + bullet rows (when --with-llm)
 
 Idempotent: re-running picks up only new content. Candidate is matched by
 `username`. Skills/certifications match by `(candidate_id, name)`.
 Clarifications dedupe on (normalized_question, normalized_answer).
+Experiences match on `(company, start_date)`.
 
 CLI:
     python -m onboarding.import_legacy --user robert
     python -m onboarding.import_legacy --user robert --dry-run
+    python -m onboarding.import_legacy --user robert --with-llm     # Haiku call, ~$0.02
     python -m onboarding.import_legacy --user robert --db /tmp/test.sqlite
 """
 
@@ -22,8 +22,10 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import re
 import sys
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -31,10 +33,13 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from db.models import (
+    Bullet,
     Candidate,
     Certification,
     Clarification,
     Education,
+    Experience,
+    ExperienceTitle,
     Skill,
 )
 from db.session import get_session, init_db
@@ -45,6 +50,7 @@ logger = logging.getLogger(__name__)
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIGS_DIR = _REPO_ROOT / "configs"
 OUTPUT_DIR = _REPO_ROOT / "output"
+RESUMES_DIR = _REPO_ROOT / "resumes"
 
 
 # ---------------------------------------------------------------------------
@@ -72,6 +78,10 @@ class ImportReport:
     clarifications_created: int = 0
     clarifications_skipped: int = 0
     context_files_scanned: int = 0
+    experiences_created: int = 0
+    experiences_skipped: int = 0
+    bullets_created: int = 0
+    resume_files_processed: int = 0
     errors: list[str] = field(default_factory=list)
 
     def merge(self, other: ImportReport) -> None:
@@ -84,6 +94,10 @@ class ImportReport:
         self.clarifications_created += other.clarifications_created
         self.clarifications_skipped += other.clarifications_skipped
         self.context_files_scanned += other.context_files_scanned
+        self.experiences_created += other.experiences_created
+        self.experiences_skipped += other.experiences_skipped
+        self.bullets_created += other.bullets_created
+        self.resume_files_processed += other.resume_files_processed
         self.errors.extend(other.errors)
 
 
@@ -301,6 +315,185 @@ def import_clarifications_from_output(
 
 
 # ---------------------------------------------------------------------------
+# Resumes → experiences + bullets (LLM-assisted)
+# ---------------------------------------------------------------------------
+
+
+_RESUME_EXTS = (".docx", ".pdf", ".md")
+
+
+def _iter_resume_files(username: str) -> list[Path]:
+    user_dir = RESUMES_DIR / username
+    if not user_dir.exists():
+        return []
+    return sorted(
+        p for p in user_dir.iterdir()
+        if p.is_file() and p.suffix.lower() in _RESUME_EXTS
+    )
+
+
+def import_experiences_from_resumes(
+    username: str,
+    candidate_id: int,
+    session: Session,
+    *,
+    dry_run: bool = False,
+    api_key: str | None = None,
+) -> ImportReport:
+    """Parse each resume file in `resumes/{user}/` and extract experiences via Haiku.
+
+    One LLM call per resume file (~$0.01-0.03 each). All extracted experiences
+    are inserted as `is_pending_review=1` so the user reviews them in the
+    Career Corpus tab (Phase D) before they become canonical corpus content.
+
+    Idempotent at the experience level: re-runs skip experiences whose
+    `(company, start_date)` already exists. Bullets are NOT deduped (different
+    resume files often have different phrasings of the same achievement; the
+    user prunes duplicates in review).
+
+    Requires `api_key` (or `.api_key` file at repo root, or `ANTHROPIC_API_KEY`
+    env var). Returns an ImportReport with experience/bullet counters.
+    """
+    report = ImportReport()
+
+    # Lazy imports — these pull in anthropic SDK; defer until --with-llm is engaged.
+    import anthropic
+
+    from onboarding.extract_experiences import extract_experiences
+    from parser import parse_resume
+
+    resolved_key = _resolve_api_key(api_key)
+    if not resolved_key:
+        report.errors.append(
+            "No Anthropic API key found. Set ANTHROPIC_API_KEY, pass --api-key, "
+            "or place key in .api_key at repo root."
+        )
+        return report
+    client = anthropic.Anthropic(api_key=resolved_key)
+
+    for resume_path in _iter_resume_files(username):
+        report.resume_files_processed += 1
+        try:
+            parsed = parse_resume(str(resume_path))
+        except Exception as exc:
+            report.errors.append(f"parse {resume_path.name}: {exc}")
+            continue
+
+        resume_text = parsed.get("text", "")
+        if not resume_text.strip():
+            report.errors.append(f"parse {resume_path.name}: empty text after parsing")
+            continue
+
+        try:
+            extracted = extract_experiences(
+                client, resume_text, username=username,
+            )
+        except Exception as exc:
+            report.errors.append(f"extract {resume_path.name}: {exc}")
+            continue
+
+        for exp in extracted:
+            _maybe_insert_experience(
+                exp, candidate_id, source_filename=resume_path.name,
+                session=session, dry_run=dry_run, report=report,
+            )
+
+    if not dry_run:
+        session.flush()
+    return report
+
+
+def _resolve_api_key(explicit: str | None) -> str | None:
+    """Search explicit arg → env var → `.api_key` file at repo root."""
+    if explicit:
+        return explicit.strip()
+    env = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if env:
+        return env
+    key_file = _REPO_ROOT / ".api_key"
+    if key_file.exists():
+        return key_file.read_text(encoding="utf-8").strip() or None
+    return None
+
+
+def _maybe_insert_experience(
+    exp: Mapping[str, Any],
+    candidate_id: int,
+    *,
+    source_filename: str,
+    session: Session,
+    dry_run: bool,
+    report: ImportReport,
+) -> None:
+    """Insert an extracted experience + its bullets, or skip if already present.
+
+    Dedup key: (candidate_id, company, start_date). A match is treated as
+    "already imported" — we don't try to merge new bullets into an existing
+    experience here; that's the user's call in the Career Corpus review UI.
+    """
+    company = exp.get("company", "")
+    start_date = exp.get("start_date", "")
+    title_text = exp.get("candidate_inferred_title", "")
+    if not company or not start_date:
+        # _normalize_experience returned a sentinel empty record — skip.
+        return
+
+    if not dry_run:
+        existing = session.query(Experience).filter_by(
+            candidate_id=candidate_id, company=company, start_date=start_date,
+        ).first()
+        if existing is not None:
+            report.experiences_skipped += 1
+            return
+
+    if dry_run:
+        report.experiences_created += 1
+        for b in exp.get("bullets", []):
+            if b.get("text"):
+                report.bullets_created += 1
+        return
+
+    experience_row = Experience(
+        candidate_id=candidate_id,
+        company=company,
+        location=exp.get("location") or None,
+        start_date=start_date,
+        end_date=exp.get("end_date"),
+        summary=None,
+    )
+    session.add(experience_row)
+    session.flush()  # need experience_row.id for FKs
+
+    if title_text:
+        session.add(ExperienceTitle(
+            experience_id=experience_row.id,
+            title=title_text,
+            is_official=1,
+            truthful_enough_to_use=1,
+            is_pending_review=1,
+            source="user_added",
+            notes=f"Imported from {source_filename}; review before promoting to canonical.",
+        ))
+
+    for b in exp.get("bullets", []):
+        btext = b.get("text", "")
+        if not btext:
+            continue
+        session.add(Bullet(
+            experience_id=experience_row.id,
+            text=btext,
+            display_order=report.bullets_created,
+            is_active=1,
+            is_pending_review=1,
+            source=f"primary:{source_filename}",
+            has_outcome=1 if b.get("has_outcome") else 0,
+        ))
+        report.bullets_created += 1
+
+    report.experiences_created += 1
+
+
+# ---------------------------------------------------------------------------
 # Top-level entry points
 # ---------------------------------------------------------------------------
 
@@ -309,12 +502,19 @@ def run_import(
     username: str,
     *,
     dry_run: bool = False,
+    with_llm: bool = False,
+    api_key: str | None = None,
     db_path: Path | str | None = None,
 ) -> ImportReport:
-    """Run the full Phase A import for one candidate.
+    """Run the full importer for one candidate.
 
-    Materializes the DB schema if needed, then runs the config and
-    clarification importers in sequence. On dry_run, no rows are committed.
+    Always imports candidate + skills + certifications + education from config
+    and clarifications from output context files. When with_llm=True, ALSO
+    parses resumes from `resumes/{user}/` via Haiku and inserts experiences
+    + bullets as is_pending_review=1.
+
+    On dry_run, no rows are committed and no LLM calls are made (counts in
+    the report are computed but not persisted).
     """
     init_db(db_path)
     session = get_session() if db_path is None else _make_isolated_session(db_path)
@@ -326,6 +526,18 @@ def run_import(
             username, candidate_report.candidate_id, session, dry_run=dry_run
         )
         candidate_report.merge(clarif_report)
+
+        if with_llm and not dry_run:
+            exp_report = import_experiences_from_resumes(
+                username, candidate_report.candidate_id, session,
+                dry_run=dry_run, api_key=api_key,
+            )
+            candidate_report.merge(exp_report)
+        elif with_llm and dry_run:
+            # In dry-run, just count resume files so the user sees what WOULD run.
+            files = _iter_resume_files(username)
+            candidate_report.resume_files_processed = len(files)
+
         if dry_run:
             session.rollback()
         else:
@@ -362,6 +574,13 @@ def _format_report(report: ImportReport, *, dry_run: bool) -> str:
         f"skipped={report.clarifications_skipped:3d} "
         f"(scanned {report.context_files_scanned} context files)",
     ]
+    if report.resume_files_processed or report.experiences_created or report.experiences_skipped:
+        lines.append(
+            f"{prefix}Experiences:    created={report.experiences_created:3d}, "
+            f"skipped={report.experiences_skipped:3d} "
+            f"(processed {report.resume_files_processed} resume files)"
+        )
+        lines.append(f"{prefix}Bullets:        created={report.bullets_created:3d}")
     if report.errors:
         lines.append(f"{prefix}Errors ({len(report.errors)}):")
         for err in report.errors[:10]:
@@ -377,12 +596,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--user", required=True, help="Username (matches configs/{user}.config)")
     parser.add_argument("--dry-run", action="store_true", help="Print what would be inserted, no DB writes")
+    parser.add_argument("--with-llm", action="store_true",
+                        help="Also parse resumes via Haiku and import experiences + bullets (~$0.02/run)")
+    parser.add_argument("--api-key", default=None,
+                        help="Anthropic API key override (else uses ANTHROPIC_API_KEY env or .api_key file)")
     parser.add_argument("--db", default=None, help="Override DB path (defaults to db/resume.sqlite)")
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     try:
-        report = run_import(args.user, dry_run=args.dry_run, db_path=args.db)
+        report = run_import(
+            args.user,
+            dry_run=args.dry_run,
+            with_llm=args.with_llm,
+            api_key=args.api_key,
+            db_path=args.db,
+        )
     except FileNotFoundError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
