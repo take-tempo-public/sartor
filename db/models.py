@@ -1,0 +1,671 @@
+"""ORM models for the career corpus + candidate memory.
+
+See `C:\\Users\\iam\\.claude\\plans\\rosy-chasing-pinwheel.md` for the design.
+Stable enums use CHECK constraints; free-text fields (tag values, bullet
+phrasing, source provenance suffixes) carry no DB-level validation and rely
+on the application layer.
+
+Timestamps are TEXT ISO-8601 UTC strings (matches the legacy file-based
+context schema; lets sqlite-cli inspection stay greppable).
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+
+def utc_now() -> str:
+    """ISO-8601 UTC timestamp with Z suffix — same shape used in JSONL telemetry."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+# ---------------------------------------------------------------------------
+# Core entities: candidate, experience, experience_title, bullet, tag
+# ---------------------------------------------------------------------------
+
+
+class Candidate(Base):
+    __tablename__ = "candidate"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    name: Mapped[str | None] = mapped_column(String)
+    email: Mapped[str | None] = mapped_column(String)
+    phone: Mapped[str | None] = mapped_column(String)
+    linkedin_url: Mapped[str | None] = mapped_column(String)
+    website_url: Mapped[str | None] = mapped_column(String)
+    notes: Mapped[str | None] = mapped_column(Text)
+    profile_text: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+
+    experiences: Mapped[list[Experience]] = relationship(
+        back_populates="candidate", cascade="all, delete-orphan"
+    )
+    skills: Mapped[list[Skill]] = relationship(
+        back_populates="candidate", cascade="all, delete-orphan"
+    )
+    tags: Mapped[list[Tag]] = relationship(
+        back_populates="candidate", cascade="all, delete-orphan"
+    )
+    applications: Mapped[list[Application]] = relationship(
+        back_populates="candidate", cascade="all, delete-orphan"
+    )
+    clarifications: Mapped[list[Clarification]] = relationship(
+        back_populates="candidate", cascade="all, delete-orphan"
+    )
+
+
+class Experience(Base):
+    __tablename__ = "experience"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    company: Mapped[str] = mapped_column(String, nullable=False)
+    location: Mapped[str | None] = mapped_column(String)
+    start_date: Mapped[str] = mapped_column(String, nullable=False)  # YYYY-MM
+    end_date: Mapped[str | None] = mapped_column(String)  # NULL = current
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    summary: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+
+    candidate: Mapped[Candidate] = relationship(back_populates="experiences")
+    titles: Mapped[list[ExperienceTitle]] = relationship(
+        back_populates="experience", cascade="all, delete-orphan"
+    )
+    bullets: Mapped[list[Bullet]] = relationship(
+        back_populates="experience", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (Index("ix_experience_candidate_order", "candidate_id", "display_order"),)
+
+
+class ExperienceTitle(Base):
+    __tablename__ = "experience_title"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    experience_id: Mapped[int] = mapped_column(
+        ForeignKey("experience.id", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    is_official: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    truthful_enough_to_use: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_pending_review: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    source: Mapped[str] = mapped_column(String, nullable=False)  # 'official' | 'user_added' | 'llm_proposed:<run_id>'
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+
+    experience: Mapped[Experience] = relationship(back_populates="titles")
+    tag_links: Mapped[list[ExperienceTitleTag]] = relationship(
+        back_populates="title", cascade="all, delete-orphan"
+    )
+
+    # At most one is_official per experience (partial unique index for SQLite).
+    __table_args__ = (
+        Index(
+            "ix_experience_title_official",
+            "experience_id",
+            unique=True,
+            sqlite_where=text("is_official = 1"),
+        ),
+    )
+
+
+class Bullet(Base):
+    __tablename__ = "bullet"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    experience_id: Mapped[int] = mapped_column(
+        ForeignKey("experience.id", ondelete="CASCADE"), nullable=False
+    )
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    is_pending_review: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    source: Mapped[str] = mapped_column(String, nullable=False)  # see plan §bullet
+    pattern_kind: Mapped[str | None] = mapped_column(String)  # 'xyz' | 'star' | 'car' | 'manual' | NULL
+    has_outcome: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+
+    experience: Mapped[Experience] = relationship(back_populates="bullets")
+    tag_links: Mapped[list[BulletTag]] = relationship(
+        back_populates="bullet", cascade="all, delete-orphan"
+    )
+    metrics: Mapped[list[BulletMetric]] = relationship(
+        back_populates="bullet", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "pattern_kind IS NULL OR pattern_kind IN ('xyz', 'star', 'car', 'manual')",
+            name="ck_bullet_pattern_kind",
+        ),
+        Index(
+            "ix_bullet_experience_active_pending_order",
+            "experience_id", "is_active", "is_pending_review", "display_order",
+        ),
+    )
+
+
+class Tag(Base):
+    """Canonical registry shared across bullets, titles, templates, and clarifications."""
+
+    __tablename__ = "tag"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    kind: Mapped[str] = mapped_column(String, nullable=False)  # role|domain|skill|tech
+    value: Mapped[str] = mapped_column(String, nullable=False)  # normalized: lowercase, hyphen-separated
+    display_value: Mapped[str] = mapped_column(String, nullable=False)  # user's original casing
+    usage_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    merged_into_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tag.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+
+    candidate: Mapped[Candidate] = relationship(back_populates="tags")
+    merged_into: Mapped[Tag | None] = relationship(remote_side="Tag.id")
+
+    __table_args__ = (
+        UniqueConstraint("candidate_id", "kind", "value", name="uq_tag_candidate_kind_value"),
+        CheckConstraint("kind IN ('role', 'domain', 'skill', 'tech')", name="ck_tag_kind"),
+    )
+
+
+class BulletTag(Base):
+    __tablename__ = "bullet_tag"
+
+    bullet_id: Mapped[int] = mapped_column(
+        ForeignKey("bullet.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_id: Mapped[int] = mapped_column(
+        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    )
+    confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
+
+    bullet: Mapped[Bullet] = relationship(back_populates="tag_links")
+    tag: Mapped[Tag] = relationship()
+
+    __table_args__ = (Index("ix_bullet_tag_tag", "tag_id"),)
+
+
+class ExperienceTitleTag(Base):
+    __tablename__ = "experience_title_tag"
+
+    experience_title_id: Mapped[int] = mapped_column(
+        ForeignKey("experience_title.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_id: Mapped[int] = mapped_column(
+        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    )
+    confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
+
+    title: Mapped[ExperienceTitle] = relationship(back_populates="tag_links")
+    tag: Mapped[Tag] = relationship()
+
+    __table_args__ = (Index("ix_experience_title_tag_tag", "tag_id"),)
+
+
+class BulletMetric(Base):
+    __tablename__ = "bullet_metric"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    bullet_id: Mapped[int] = mapped_column(
+        ForeignKey("bullet.id", ondelete="CASCADE"), nullable=False
+    )
+    metric_kind: Mapped[str] = mapped_column(String, nullable=False)  # count|currency|percent|duration|scope
+    value: Mapped[str] = mapped_column(String, nullable=False)  # verbatim from source
+    unit: Mapped[str | None] = mapped_column(String)
+
+    bullet: Mapped[Bullet] = relationship(back_populates="metrics")
+
+    __table_args__ = (
+        CheckConstraint(
+            "metric_kind IN ('count', 'currency', 'percent', 'duration', 'scope')",
+            name="ck_bullet_metric_kind",
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Career assets: skill, education, certification, project, publication
+# ---------------------------------------------------------------------------
+
+
+class Skill(Base):
+    __tablename__ = "skill"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str | None] = mapped_column(String)  # language|framework|platform|methodology|domain
+    proficiency: Mapped[str | None] = mapped_column(String)  # expert|proficient|familiar
+    years: Mapped[float | None] = mapped_column(nullable=True)
+
+    candidate: Mapped[Candidate] = relationship(back_populates="skills")
+
+    __table_args__ = (UniqueConstraint("candidate_id", "name", name="uq_skill_candidate_name"),)
+
+
+class Education(Base):
+    __tablename__ = "education"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    institution: Mapped[str] = mapped_column(String, nullable=False)
+    degree: Mapped[str | None] = mapped_column(String)
+    field: Mapped[str | None] = mapped_column(String)
+    start_date: Mapped[str | None] = mapped_column(String)
+    end_date: Mapped[str | None] = mapped_column(String)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    notes: Mapped[str | None] = mapped_column(Text)
+
+
+class Certification(Base):
+    __tablename__ = "certification"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    issuer: Mapped[str | None] = mapped_column(String)
+    issued: Mapped[str | None] = mapped_column(String)
+    expires: Mapped[str | None] = mapped_column(String)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class Project(Base):
+    __tablename__ = "project"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    url: Mapped[str | None] = mapped_column(String)
+    start_date: Mapped[str | None] = mapped_column(String)
+    end_date: Mapped[str | None] = mapped_column(String)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class Publication(Base):
+    __tablename__ = "publication"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    venue: Mapped[str | None] = mapped_column(String)
+    url: Mapped[str | None] = mapped_column(String)
+    published_date: Mapped[str | None] = mapped_column(String)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+# ---------------------------------------------------------------------------
+# Persona templates (bundled + user-uploaded)
+# ---------------------------------------------------------------------------
+
+
+class PersonaTemplate(Base):
+    __tablename__ = "persona_template"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # NULL candidate_id = bundled with the app; non-NULL = user-uploaded.
+    candidate_id: Mapped[int | None] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=True
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    primary_role_tag_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tag.id", ondelete="SET NULL"), nullable=True
+    )
+    path: Mapped[str] = mapped_column(String, nullable=False)
+    thumbnail_path: Mapped[str | None] = mapped_column(String)
+    source: Mapped[str] = mapped_column(String, nullable=False)  # 'bundled' | 'user_upload'
+    description: Mapped[str | None] = mapped_column(Text)
+    is_default: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+
+    tag_links: Mapped[list[PersonaTemplateTag]] = relationship(
+        back_populates="template", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        CheckConstraint("source IN ('bundled', 'user_upload')", name="ck_persona_template_source"),
+        Index(
+            "ix_persona_template_default",
+            "candidate_id", "primary_role_tag_id",
+            unique=True,
+            sqlite_where=text("is_default = 1"),
+        ),
+    )
+
+
+class PersonaTemplateTag(Base):
+    __tablename__ = "persona_template_tag"
+
+    persona_template_id: Mapped[int] = mapped_column(
+        ForeignKey("persona_template.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_id: Mapped[int] = mapped_column(
+        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    )
+
+    template: Mapped[PersonaTemplate] = relationship(back_populates="tag_links")
+    tag: Mapped[Tag] = relationship()
+
+    __table_args__ = (Index("ix_persona_template_tag_tag", "tag_id"),)
+
+
+# ---------------------------------------------------------------------------
+# Applications (Job Items) and their iteration runs
+# ---------------------------------------------------------------------------
+
+
+class Application(Base):
+    __tablename__ = "application"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    company: Mapped[str | None] = mapped_column(String)
+    jd_text: Mapped[str] = mapped_column(Text, nullable=False)
+    jd_url: Mapped[str | None] = mapped_column(String)
+    jd_fingerprint: Mapped[str] = mapped_column(String, nullable=False)  # sha256[:16] of jd_text
+    target_role_tag_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tag.id", ondelete="SET NULL"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String, nullable=False, default="draft")
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+
+    candidate: Mapped[Candidate] = relationship(back_populates="applications")
+    runs: Mapped[list[ApplicationRun]] = relationship(
+        back_populates="application", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('draft', 'submitted', 'interview', 'closed', 'withdrawn')",
+            name="ck_application_status",
+        ),
+        Index("ix_application_candidate_status_updated", "candidate_id", "status", "updated_at"),
+    )
+
+
+class ApplicationRun(Base):
+    __tablename__ = "application_run"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    application_id: Mapped[int] = mapped_column(
+        ForeignKey("application.id", ondelete="CASCADE"), nullable=False
+    )
+    iteration: Mapped[int] = mapped_column(Integer, nullable=False)
+    parent_run_id: Mapped[int | None] = mapped_column(
+        ForeignKey("application_run.id", ondelete="SET NULL"), nullable=True
+    )
+    run_id: Mapped[str] = mapped_column(String, unique=True, nullable=False)  # 12-hex correlation primitive
+    prompt_version: Mapped[str] = mapped_column(String, nullable=False)
+    persona_template_id: Mapped[int | None] = mapped_column(
+        ForeignKey("persona_template.id", ondelete="SET NULL"), nullable=True
+    )
+    # Frozen-at-iteration-0 set of bullet/title IDs used for cache stability.
+    # See plan §application_run for the rationale.
+    corpus_snapshot_json: Mapped[str] = mapped_column(Text, nullable=False)
+    analysis_json: Mapped[str | None] = mapped_column(Text)
+    clarification_questions_json: Mapped[str | None] = mapped_column(Text)
+    clarifications_json: Mapped[str | None] = mapped_column(Text)
+    generated_resume_md: Mapped[str | None] = mapped_column(Text)
+    generated_cover_letter_md: Mapped[str | None] = mapped_column(Text)
+    edited_resume_text: Mapped[str | None] = mapped_column(Text)
+    edited_cover_letter_text: Mapped[str | None] = mapped_column(Text)
+    deterministic_signals_json: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+
+    application: Mapped[Application] = relationship(back_populates="runs")
+    parent_run: Mapped[ApplicationRun | None] = relationship(remote_side="ApplicationRun.id")
+    bullets: Mapped[list[ApplicationBullet]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+    title_overrides: Mapped[list[ApplicationRunTitle]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+    proposal_reviews: Mapped[list[ProposalReview]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+    log_entries: Mapped[list[IterationLog]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (Index("ix_application_run_app_iter", "application_id", "iteration"),)
+
+
+class ApplicationRunTitle(Base):
+    """Per-application title override: chooses which experience_title to use for this run."""
+
+    __tablename__ = "application_run_title"
+
+    application_run_id: Mapped[int] = mapped_column(
+        ForeignKey("application_run.id", ondelete="CASCADE"), primary_key=True
+    )
+    experience_id: Mapped[int] = mapped_column(
+        ForeignKey("experience.id", ondelete="CASCADE"), primary_key=True
+    )
+    experience_title_id: Mapped[int] = mapped_column(
+        ForeignKey("experience_title.id", ondelete="CASCADE"), nullable=False
+    )
+
+    run: Mapped[ApplicationRun] = relationship(back_populates="title_overrides")
+
+
+class ApplicationBullet(Base):
+    """Audit + composition record: which bullets ended up in which run's output."""
+
+    __tablename__ = "application_bullet"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    application_run_id: Mapped[int] = mapped_column(
+        ForeignKey("application_run.id", ondelete="CASCADE"), nullable=False
+    )
+    # No CASCADE on bullet — deleting a referenced bullet must fail.
+    # Retire instead via Bullet.is_active = 0.
+    bullet_id: Mapped[int] = mapped_column(ForeignKey("bullet.id"), nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    run: Mapped[ApplicationRun] = relationship(back_populates="bullets")
+    bullet: Mapped[Bullet] = relationship()
+
+    __table_args__ = (
+        UniqueConstraint("application_run_id", "bullet_id", name="uq_application_bullet"),
+        Index("ix_application_bullet_bullet", "bullet_id"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Proposal review (LLM-proposed bullet/title editing audit + feedback)
+# ---------------------------------------------------------------------------
+
+
+class ProposalReview(Base):
+    __tablename__ = "proposal_review"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    application_run_id: Mapped[int] = mapped_column(
+        ForeignKey("application_run.id", ondelete="CASCADE"), nullable=False
+    )
+    bullet_id: Mapped[int | None] = mapped_column(
+        ForeignKey("bullet.id", ondelete="SET NULL"), nullable=True
+    )
+    experience_title_id: Mapped[int | None] = mapped_column(
+        ForeignKey("experience_title.id", ondelete="SET NULL"), nullable=True
+    )
+    original_text: Mapped[str] = mapped_column(Text, nullable=False)
+    user_edited_text: Mapped[str | None] = mapped_column(Text)  # NULL = user accepted as-is
+    llm_critique_json: Mapped[str | None] = mapped_column(Text)
+    decision: Mapped[str] = mapped_column(String, nullable=False, default="pending")
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+    decided_at: Mapped[str | None] = mapped_column(String)
+
+    run: Mapped[ApplicationRun] = relationship(back_populates="proposal_reviews")
+
+    __table_args__ = (
+        # Exactly one of bullet_id / experience_title_id must be set.
+        CheckConstraint(
+            "(bullet_id IS NOT NULL AND experience_title_id IS NULL) "
+            "OR (bullet_id IS NULL AND experience_title_id IS NOT NULL)",
+            name="ck_proposal_review_subject_xor",
+        ),
+        CheckConstraint(
+            "decision IN ('pending', 'accept_original', 'accept_edit', 'reject')",
+            name="ck_proposal_review_decision",
+        ),
+        Index("ix_proposal_review_run", "application_run_id"),
+        Index("ix_proposal_review_bullet", "bullet_id"),
+        Index("ix_proposal_review_title", "experience_title_id"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Candidate memory: clarification, iteration log, engagement
+# ---------------------------------------------------------------------------
+
+
+class Clarification(Base):
+    """Cross-application candidate memory: every Q&A pair the candidate has ever answered."""
+
+    __tablename__ = "clarification"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    origin_application_id: Mapped[int | None] = mapped_column(
+        ForeignKey("application.id", ondelete="SET NULL"), nullable=True
+    )
+    origin_run_id: Mapped[int | None] = mapped_column(
+        ForeignKey("application_run.id", ondelete="SET NULL"), nullable=True
+    )
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    kind: Mapped[str] = mapped_column(String, nullable=False)
+    target_gap: Mapped[str | None] = mapped_column(Text)
+    is_promoted_to_bullet: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+
+    candidate: Mapped[Candidate] = relationship(back_populates="clarifications")
+    tag_links: Mapped[list[ClarificationTag]] = relationship(
+        back_populates="clarification", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('experience_probe', 'scope_probe', 'iteration_probe', 'outcome_probe', 'manual')",
+            name="ck_clarification_kind",
+        ),
+        Index("ix_clarification_candidate_created", "candidate_id", "created_at"),
+    )
+
+
+class ClarificationTag(Base):
+    __tablename__ = "clarification_tag"
+
+    clarification_id: Mapped[int] = mapped_column(
+        ForeignKey("clarification.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_id: Mapped[int] = mapped_column(
+        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    )
+    confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
+
+    clarification: Mapped[Clarification] = relationship(back_populates="tag_links")
+    tag: Mapped[Tag] = relationship()
+
+    __table_args__ = (Index("ix_clarification_tag_tag", "tag_id"),)
+
+
+class IterationLog(Base):
+    __tablename__ = "iteration_log"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    application_run_id: Mapped[int] = mapped_column(
+        ForeignKey("application_run.id", ondelete="CASCADE"), nullable=False
+    )
+    action: Mapped[str] = mapped_column(String, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+
+    run: Mapped[ApplicationRun] = relationship(back_populates="log_entries")
+
+
+class Engagement(Base):
+    __tablename__ = "engagement"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    application_id: Mapped[int | None] = mapped_column(
+        ForeignKey("application.id", ondelete="SET NULL"), nullable=True
+    )
+    event: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+
+    __table_args__ = (
+        CheckConstraint(
+            "event IN ('opened', 'edited_jd', 'abandoned', 'submitted_externally')",
+            name="ck_engagement_event",
+        ),
+    )
+
+
+__all__ = [
+    "Base",
+    "utc_now",
+    # Core
+    "Candidate", "Experience", "ExperienceTitle", "Bullet",
+    "Tag", "BulletTag", "ExperienceTitleTag", "BulletMetric",
+    # Career assets
+    "Skill", "Education", "Certification", "Project", "Publication",
+    # Templates
+    "PersonaTemplate", "PersonaTemplateTag",
+    # Applications
+    "Application", "ApplicationRun", "ApplicationRunTitle", "ApplicationBullet",
+    # Memory + audit
+    "ProposalReview", "Clarification", "ClarificationTag",
+    "IterationLog", "Engagement",
+]

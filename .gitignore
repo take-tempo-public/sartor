@@ -20,6 +20,12 @@ output/*
 # ---- LLM telemetry (per-call JSONL emitted by analyzer.py) ----
 logs/
 
+# ---- SQLite database (career corpus + candidate memory; per-clone, contains PII) ----
+db/*.sqlite
+db/*.sqlite-journal
+db/*.sqlite-wal
+db/*.sqlite-shm
+
 # ---- Eval results and real fixtures (per-clone, may contain real PII) ----
 evals/results/*
 !evals/results/.gitkeep
