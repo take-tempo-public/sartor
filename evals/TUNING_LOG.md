@@ -16,6 +16,86 @@ prevent re-running them.
 
 ---
 
+## 2026-05-11 — `2026-05-11.2` → `2026-05-11.3`: iteration-probe worked examples
+
+### What changed
+
+Two follow-up fixes after the first iteration_quality eval pass surfaced a 3.2 score (below the 4.0 threshold) and a clear failure-mode diagnosis:
+
+- **Fixture refinement** (fix 1): `evals/fixtures/synthetic/sre-mid-level/expected.json` — the `edit_target_substring` was extended from `"error budget burn"` to `"error budget burn by tightening retry semantics in the ingress layer"` and the `edit_replacement` was rewritten as a noun-phrase that fits the surrounding `"Reduced control-plane X; rewrote..."` clause structure. This eliminates the malformed-bullet artifact that the original mid-substring substitution produced.
+- **Prompt tightening** (fix 2): `analyzer.py:CLARIFY_ITERATION_SYSTEM_PROMPT` — added a WORKED EXAMPLES block with two OK/NOT-OK pairs for iteration probes. Pattern: when a recent edit introduces a substantive claim (named numbers, ownership words, framework names), probe DEPTH (who/which/how-many/cadence). Avoid asking why (motivation isn't source material) or whether (yes/no dichotomies yield no detail).
+- `PROMPT_VERSION` bump 2026-05-11.2 → 2026-05-11.3 in the same commit per CLAUDE.md.
+
+### Why
+
+Run 2 of the iteration_quality eval (the one with PROMPT_VERSION 2026-05-11.2 + the original fixture) scored 3.2, with grader reasoning showing the iteration_probe correctly noticed the malformed bullet in the iter-0 generated resume but answered the wrong question — "is this grammatical?" instead of "what is the substantive claim?". Two distinct failure modes were entangled: a fixture artifact (malformed substitution) AND a prompt gap (no guidance on what makes a substantive iteration probe vs a copy-editing one).
+
+### Result
+
+Four runs total on `sre-mid-level`:
+
+| Run | Time (UTC)              | Prompt | Fixture          | iteration_quality | Failed rules                                                         |
+|-----|-------------------------|--------|------------------|-------------------|----------------------------------------------------------------------|
+| 1   | 2026-05-11T22:56:08Z    | .2     | original         | 2.1               | (not analyzed)                                                       |
+| 2   | 2026-05-11T23:53:39Z    | .2     | original         | 3.2               | missing_expected_theme — substring substitution broke bullet grammar |
+| 3   | 2026-05-12T00:22:05Z    | .2     | refined (fix 1)  | 3.2               | leading + fabricated + compound + missing_theme                      |
+| 4   | 2026-05-12T00:32:58Z    | .3     | refined (fix 1)  | 3.2               | compound + missing_theme                                             |
+
+**Fix 1 (fixture)** moved the failure mode from "iteration_probe asks about syntax" to "iteration_probe asks about cause/effect (was that deliberate or accidental?)". Substantively cleaner question but still not on-target. Grader cited "leading_question" and "missing_expected_theme" with the SLO ownership themes specifically uncovered.
+
+**Fix 2 (prompt)** moved the iteration_probe to substance-of-claim (q1 explicitly probed SLO ownership scope, hitting the expected theme). Grader called this out as a direct hit. **The numeric score didn't move (still 3.2)** because other questions in the 5-question batch tripped different rules: q4 was compound ("before/after MTTR figure or percentage improvement" combines two asks), q3 was speculative (probed scheduling pipeline work for an API-edge SRE — borderline fabricated), and the scope_probe theme (incident commander vs writer-up) wasn't covered by any question.
+
+So fix 2 succeeded on its targeted dimension but didn't reach the 4.0 threshold because the rubric compounds across multiple per-question dimensions and the LLM keeps producing 1-2 borderline questions per 5-question batch.
+
+### What we learned
+
+1. **The Haiku judge applies multi-dimensional strictness.** Hitting 4.0 requires near-perfect composition across 7+ rubric criteria simultaneously. A single substantive improvement (iteration_probe quality) doesn't lift the aggregate when other dimensions stay borderline.
+2. **Prompt fixes land on their targeted dimension.** Run 3 → run 4 lost `leading_question` and `fabricated_gap` on the iteration_probe specifically, gained nothing new on that question. The targeted improvement is real even when the score doesn't move.
+3. **Single-fixture eval has unhelpful variance.** Four runs at 2.1 / 3.2 / 3.2 / 3.2 — the first run is an outlier that may have been judge noise, may have been a Sonnet generation that produced a worse question set. Without 2-3 fixtures producing iteration_quality samples, attribution to "this prompt change helped" vs "this run's generation was lucky" is hard.
+4. **Substring-mid-bullet substitution is a fragile fixture mechanic.** Fixtures that simulate user edits should use whole-line targets OR noun-phrase substitutions that fit the surrounding clause structure. The refined fixture works because the new replacement reads as a clean grammatical clause within the existing bullet.
+
+### Per-question prompt tightening — plan for next iteration
+
+The 4.0 threshold isn't reachable by chasing single failure modes one at a time when the rubric strictness compounds. Next iteration should bundle four prompt revisions plus three structural follow-ups, then re-baseline.
+
+**Prompt revisions (CLARIFY_ITERATION_SYSTEM_PROMPT, possibly CLARIFY_SYSTEM_PROMPT too):**
+
+1. **Compound-question worked-example pair.** The "no compound questions" rule is in the prompt but the LLM keeps producing borderline-compound ones (q5 run 3, q4 run 4). Add an OK/NOT-OK pair:
+   - NOT OK: "What was the before/after MTTR figure or percentage improvement?" (combines absolute and relative asks)
+   - OK: "What was the MTTR before and after?" (single comparative ask) OR "What percentage MTTR reduction did you measure?" (single ratio ask)
+   - Pattern: split "X or Y" forms into a single ask; prefer the more specific framing.
+
+2. **Speculative-probe guard rule.** The iteration clarifier reaches for adjacent JD keywords without checking whether they fit the candidate's title/role (q3 run 4 asked an API-edge SRE about scheduling-pipeline work). Add a rule:
+   - "Do NOT probe for skills the candidate's job title/role doesn't naturally encompass. If the JD lists 'scheduling pipeline' but the candidate's role is 'API edge SRE', the probability of relevant experience is low — these probes feel out-of-touch and risk grader-fabricated_gap flags."
+   - Worked example aligned to the actual run-4 failure.
+
+3. **Leading-tone worked-example pair** for iteration_probe specifically:
+   - NOT OK: "Was the SLO definition deliberate or reactive?" (yes/no dichotomy, leading)
+   - OK: "What process drove the SLO targets — service-level analysis, customer commitment, error-budget tracking?" (lists concrete options without bias)
+   - Already partially covered by the WORKED EXAMPLES block from fix 2 but worth promoting a leading-tone-specific example to the same prominence as the substance-of-claim example.
+
+4. **Scope-probe coverage rule.** The current prompt biases toward experience+iteration probes (≥50% combined), which de-prioritizes scope_probe. When the fixture's `expected_iteration_themes.scope_probes` is non-empty, the eval grades against scope coverage anyway. Either:
+   - (a) Change the prompt to require at least one scope_probe when current-draft ambiguities exist (most drafts have some), OR
+   - (b) Relax the rubric's `missing_expected_theme` to not require scope_probe coverage if the prompt didn't mandate one.
+   - (a) is the cleaner fix because scope_probes ARE useful and the current bias is just an artifact of optimizing for ground-truth sourcing.
+
+**Structural follow-ups (not prompt changes but unblock the prompt iteration):**
+
+5. **Add `iteration_scenarios` to pm-senior and data-scientist-junior fixtures.** Three samples per run lets us reason about iteration_quality with a 3-sample mean rather than treating each run as a singular signal. Without this, we can't confidently attribute prompt changes to score movements vs Sonnet/Haiku non-determinism.
+
+6. **Re-generate from the iteration context and grade against grounding/keyword_coverage.** Currently the eval iteration phase grades only the iteration_quality of the new questions; it doesn't verify that the iteration generation respects the `<historical_resumes>` demotion language and the typed-edits-as-ground-truth carve-out. This was deferred for cost reasons; once iteration_quality is stable above 4.0, add this for ~$0.50/scenario/run.
+
+7. **Clarification-as-grounding worked example** in the GENERATE prompt's grounding block. Currently the prompt has a worked example for typed edits ("Shipped V2 to enterprise" → don't add headcount the candidate didn't type) but NO parallel example for clarification answers. A candidate who answers "Yes, used K8s briefly on a side project" in clarify could in principle have the LLM extend that to "Led K8s migration to production" — the rule forbids it but no worked example models it. Mirror the typed-edits pair for clarifications.
+
+**Recommended sequencing:** items 5 and 7 first (cheap fixture work, no prompt risk), then run a 3-sample baseline at PROMPT_VERSION 2026-05-11.3 to know the current iteration_quality mean across fixtures. Then bundle items 1-4 into a single 2026-05-11.4 prompt revision and re-baseline. Avoid one-at-a-time prompt tweaks — judge variance dominates the signal until we have a 3-fixture mean.
+
+### Cost / scope notes
+
+- Four iteration_quality runs in this session: ~$0.60 total in API costs. Each run is one full pipeline (analyze + clarify + generate + clarify_iteration Sonnet calls) plus 6 Haiku grading calls.
+- Three-fixture iteration baseline: ~$1.50 per run × 3 runs for variance ≈ $4.50 to establish the next baseline. Reasonable.
+
+---
+
 ## 2026-05-11 — `2026-05-11.1` → `2026-05-11.2`: iterative refinement loop
 
 ### What changed

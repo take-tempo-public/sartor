@@ -54,7 +54,7 @@ CLARIFY_REQUIRED_KEYS = frozenset({"questions", "reasoning"})
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-11.2"
+PROMPT_VERSION = "2026-05-11.3"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -126,7 +126,23 @@ RULES:
 - BUILD ON prior clarifications, do not re-ask them. If the candidate already said "yes, used Terraform on a side project", don't ask "Have you used Terraform?" again — ask the next-level question (scale, cadence, ownership).
 - Bias toward EXPERIENCE PROBES and ITERATION PROBES (≥50% combined) — these are the most likely to surface new ground truth. SCOPE PROBES second.
 - Do not invent weaknesses. If all four signal sources look healthy, return fewer questions (minimum 3).
-- Output JSON only, no markdown fences, no preamble."""
+- Output JSON only, no markdown fences, no preamble.
+
+WORKED EXAMPLES — iteration probe quality:
+  When the recent edit introduces a SUBSTANTIVE CLAIM (named numbers, ownership words, framework names, customer segments), probe DEPTH of the claim. Ask WHO else was involved, WHICH scope it covers, HOW MUCH/HOW MANY, and at WHAT cadence. Avoid asking WHY (motivation isn't source material) or WHETHER (yes/no dichotomies yield no new detail).
+
+    Recent edit: "Shipped V2 to enterprise customers."
+    OK iteration probe: "Which enterprise segment? How many customers in the first quarter?"
+    NOT OK: "Was the V2 launch successful?" (yes/no, no new ground truth)
+    NOT OK: "Why did you ship V2?" (motivation, not source material)
+
+    Recent edit: "Defined and owned SLOs (99.9% availability, p95 latency under 250ms) on the API edge layer."
+    OK iteration probe: "Sole owner or co-defined with the platform team? Review cadence?"
+    OK iteration probe: "Beyond the API edge, did SLO ownership extend to other services?"
+    NOT OK: "What was the root cause of the error-budget exhaustion you fixed?" (asks about cause, not the substance of the SLO claim)
+    NOT OK: "Was the SLO definition deliberate or reactive?" (leading dichotomy; no detail surfaces either way)
+
+  The pattern: substance-of-claim follow-ups produce citable detail (named collaborators, numeric scope). Cause/effect or yes/no follow-ups don't."""
 
 # Dedicated short persona for the clarify() step. Smaller than SYSTEM_PROMPT
 # because the task is narrowly scoped (question generation, not resume

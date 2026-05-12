@@ -35,8 +35,8 @@
   "iteration_scenarios": [
     {
       "name": "user_typed_slo_ownership",
-      "edit_target_substring": "error budget burn",
-      "edit_replacement": "Defined and owned SLOs and the error-budget framework on the API edge layer.",
+      "edit_target_substring": "error budget burn by tightening retry semantics in the ingress layer",
+      "edit_replacement": "error-budget exhaustion by defining and owning SLOs (99.9% availability, p95 latency under 250ms) on the API edge layer",
       "clarification_answers": {
         "iter1_q1": "Yes — formal SLO ownership on API edge: 99.9% availability, 95th-percentile latency under 250ms. Error budget reviewed weekly with the platform team."
       },
