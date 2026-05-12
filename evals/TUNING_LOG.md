@@ -56,9 +56,11 @@ So fix 2 succeeded on its targeted dimension but didn't reach the 4.0 threshold 
 
 ### Per-question prompt tightening — plan for next iteration
 
-The 4.0 threshold isn't reachable by chasing single failure modes one at a time when the rubric strictness compounds. Next iteration should bundle four prompt revisions plus three structural follow-ups, then re-baseline.
+**Target version:** `2026-05-11.4` (bundle prompt revisions 1–4 below into ONE commit; do not land them piecemeal — see "Considered and rejected" for why).
 
-**Prompt revisions (CLARIFY_ITERATION_SYSTEM_PROMPT, possibly CLARIFY_SYSTEM_PROMPT too):**
+The 4.0 threshold isn't reachable by chasing single failure modes one at a time when the rubric strictness compounds. Next iteration should bundle four prompt revisions plus four structural follow-ups, then re-baseline.
+
+**Prompt revisions (`analyzer.py:CLARIFY_ITERATION_SYSTEM_PROMPT`, lines ~107–146; consider also `CLARIFY_SYSTEM_PROMPT` at ~136 for shared rules like #1 and #3):**
 
 1. **Compound-question worked-example pair.** The "no compound questions" rule is in the prompt but the LLM keeps producing borderline-compound ones (q5 run 3, q4 run 4). Add an OK/NOT-OK pair:
    - NOT OK: "What was the before/after MTTR figure or percentage improvement?" (combines absolute and relative asks)
@@ -79,20 +81,64 @@ The 4.0 threshold isn't reachable by chasing single failure modes one at a time 
    - (b) Relax the rubric's `missing_expected_theme` to not require scope_probe coverage if the prompt didn't mandate one.
    - (a) is the cleaner fix because scope_probes ARE useful and the current bias is just an artifact of optimizing for ground-truth sourcing.
 
-**Structural follow-ups (not prompt changes but unblock the prompt iteration):**
+**Structural follow-ups (not prompt changes; do these BEFORE the prompt revisions to unblock variance attribution):**
 
-5. **Add `iteration_scenarios` to pm-senior and data-scientist-junior fixtures.** Three samples per run lets us reason about iteration_quality with a 3-sample mean rather than treating each run as a singular signal. Without this, we can't confidently attribute prompt changes to score movements vs Sonnet/Haiku non-determinism.
+5. **Add `iteration_scenarios` to pm-senior and data-scientist-junior fixtures.** Three samples per run lets us reason about iteration_quality with a 3-sample mean rather than treating each run as a singular signal. Without this, we can't confidently attribute prompt changes to score movements vs Sonnet/Haiku non-determinism. Reference schema: `evals/fixtures/synthetic/sre-mid-level/expected.json` lines 35–57. Each fixture needs an `edit_target_substring` (must survive Sonnet's rewriting — pick a distinctive phrase known to appear in the source resume), an `edit_replacement` (noun-phrase that grammatically fits the surrounding clause; do NOT use a standalone sentence per fix 1's lesson), `clarification_answers` keyed by the iteration question id the runner will produce, and `expected_iteration_themes` with `iteration_probes` / `experience_probes` / `scope_probes` lists.
 
-6. **Re-generate from the iteration context and grade against grounding/keyword_coverage.** Currently the eval iteration phase grades only the iteration_quality of the new questions; it doesn't verify that the iteration generation respects the `<historical_resumes>` demotion language and the typed-edits-as-ground-truth carve-out. This was deferred for cost reasons; once iteration_quality is stable above 4.0, add this for ~$0.50/scenario/run.
+6. **Re-generate from the iteration context and grade against grounding/keyword_coverage.** Currently the eval iteration phase (`evals/runner.py:_run_iteration_phase`, lines ~340–460) grades only the iteration_quality of the new questions; it does NOT verify that the iteration generation respects the `<historical_resumes>` demotion language and the typed-edits-as-ground-truth carve-out. This was deferred for cost reasons. Implementation sketch: after grading iteration_questions, call `generate(client, iter_context, analysis, ...)` again to produce iter-2 output, compute `_post_generation_metrics` on it, then run the grounding and keyword_coverage rubrics against the iter-2 result and emit those records with `iteration_scenario` set. Adds ~$0.50/scenario/run.
 
-7. **Clarification-as-grounding worked example** in the GENERATE prompt's grounding block. Currently the prompt has a worked example for typed edits ("Shipped V2 to enterprise" → don't add headcount the candidate didn't type) but NO parallel example for clarification answers. A candidate who answers "Yes, used K8s briefly on a side project" in clarify could in principle have the LLM extend that to "Led K8s migration to production" — the rule forbids it but no worked example models it. Mirror the typed-edits pair for clarifications.
+7. **[USER-FLAGGED, 2026-05-11 session]** **Clarification-as-grounding worked example** in the GENERATE prompt's grounding block (`analyzer.py:generate()` worked-examples block, currently around lines ~770–810 covering source-bullet variants and the typed-edits pair). The user raised this concern: a candidate's clarification answer is treated as first-person ground truth and citable in the resume, but there is NO worked example specifically modeling extension-vs-citation for clarifications. A candidate who answers "Yes, used K8s briefly on a side project" could in principle have the LLM extend that to "Led K8s migration to production" — the no-invention rule forbids it but no example trains the pattern. Mirror the typed-edits pair:
+   - Source: candidate clarification answer = "Yes, used K8s briefly on a side project."
+   - OK to write: "Familiar with Kubernetes from side-project work."
+   - NOT OK: "Led K8s migration to production." (extends scope and seniority beyond what the candidate stated)
 
-**Recommended sequencing:** items 5 and 7 first (cheap fixture work, no prompt risk), then run a 3-sample baseline at PROMPT_VERSION 2026-05-11.3 to know the current iteration_quality mean across fixtures. Then bundle items 1-4 into a single 2026-05-11.4 prompt revision and re-baseline. Avoid one-at-a-time prompt tweaks — judge variance dominates the signal until we have a 3-fixture mean.
+8. **Rubric/judge calibration.** Run 3's grader called q2 (multi-region) `fabricated_gap` even though `expected_iteration_themes.experience_probes` explicitly lists "multi-region control plane work not yet covered". Multi-region is in `preferred_skills` (not `essential_skills`) and the grader treated preferred ≠ legitimate gap. The `iteration_quality.md` rubric's `fabricated_gap` definition says "cites a signal-source value that doesn't match" — preferred_skills IS a signal source, so the grader was being stricter than the rubric documents. Either tighten the rubric language to spell out that preferred_skills count as legitimate signal sources, OR add an explicit "preferred-skill probes are valid" example. Track whether this manifests on other fixtures or is sre-specific noise.
+
+**Recommended sequencing:**
+
+| Step | Action | Cost     | Outcome |
+|------|--------|----------|---------|
+| A    | Items 5 + 7 (fixture work + grounding worked example, no prompt-numbered version bump for #5 alone; bump for #7 to 2026-05-11.3a or fold into 2026-05-11.4) | $0 API  | More fixtures + closes the user-flagged grounding gap |
+| B    | Run `python evals/runner.py --suite synthetic` ×3 at PROMPT_VERSION 2026-05-11.3 (with item 7 applied) | ~$4.50  | Establishes 3-fixture × 3-run baseline mean for iteration_quality |
+| C    | Bundle prompt revisions 1–4 into ONE commit, PROMPT_VERSION → 2026-05-11.4 | $0 API  | Single attribution event for the prompt change |
+| D    | Run `python evals/runner.py --suite synthetic` ×3 at 2026-05-11.4 | ~$4.50  | Compare means against B to attribute the prompt revision's effect |
+| E    | If means clear acceptance criteria (below), close out. Otherwise append findings here and iterate. | —       | — |
+| F    | Item 6 (re-generate + re-grade) goes in only after iteration_quality is stable ≥4.0; until then it adds cost without unlocking new signal. | ~$0.50/scenario/run additional | — |
+
+### Pick this up cold — exact next steps
+
+If you're returning to this work without context, follow this checklist in order:
+
+1. **Sanity check:** read the four-run table above (PROMPT_VERSION column tells you which prompt produced which score). Then run `git log -- evals/results/` and `git log analyzer.py` to confirm nothing has shifted since this entry was written.
+2. **Confirm baseline still holds:** run `python evals/runner.py --fixture sre-mid-level` once. If iteration_quality scores wildly differently from 3.2 (say, <2.0 or >4.5), the model versions or judge behavior changed and the failure-mode analysis below may not apply — re-diagnose before applying any planned fix.
+3. **Inspect prior eval results:** `evals/results/*.jsonl`. The four runs from this session are at timestamps `20260511_225608Z`, `20260511_235339Z`, `20260512_002205Z`, `20260512_003258Z`. Each line is one (fixture, rubric) grading. The `reasons` array on iteration_quality records is the most useful artifact — it explains what the judge saw.
+4. **Apply structural items first** (5 + 7 from the plan above). These are cheap and unblock attribution.
+5. **Establish the baseline** (step B in the sequencing table above): 3 runs at PROMPT_VERSION 2026-05-11.3 across all three fixtures. Record the mean iteration_quality score per fixture in this TUNING_LOG.
+6. **Apply the prompt bundle** (items 1–4 in ONE commit, version → 2026-05-11.4).
+7. **Re-baseline** (step D). Compare the new 9-grading mean to the prior 9-grading mean.
+8. **Decide:** if acceptance criteria below are met, append a new TUNING_LOG entry summarizing the win and close out. If not, the prompt bundle didn't cleanly land — re-examine which of items 1–4 helped vs hurt by running the eval with subsets of them applied.
+
+### Acceptance criteria — when iteration_quality is "done"
+
+- 3-fixture × 3-run mean iteration_quality ≥ 4.0 at the same PROMPT_VERSION.
+- No (fixture, rubric) regression > 0.5 vs the 2026-05-11.3 baseline on the four other rubrics (ats_format, grounding, keyword_coverage, tone, clarification_quality).
+- iteration_quality `failed_rules` across the 9 records does NOT contain `redundant_question` (would indicate the build-on-don't-re-ask rule isn't holding) or `targets_stale_draft` (would indicate the current-draft awareness isn't holding).
+- `compound_question` and `missing_expected_theme` may appear at most once across the 9 records — they're the residual failure modes prompt revisions 1 and 4 are designed to suppress, but eliminating them entirely is unrealistic given Haiku judge variance.
+
+### Considered and rejected this session
+
+Documenting these so a future tuner doesn't burn budget retrying:
+
+- **Revert PROMPT_VERSION to 2026-05-11.2.** Score didn't move from 3.2 after fix 2 — but the targeted dimension (iteration_probe substance-of-claim quality) clearly improved per grader reasoning. Reverting would give up a real semantic improvement to chase a number that wasn't moving for orthogonal reasons.
+- **Run another iteration_quality pass with no changes to confirm 3.2 is stable vs noise.** Given 2.1 / 3.2 / 3.2 / 3.2, the floor looks like 3.2 with the first run as a one-time outlier. Burning another $0.50 to reconfirm wasn't worth it given the 3.2 wasn't going to be the deciding signal anyway — credible attribution needs structural work (more fixtures) first.
+- **One-at-a-time prompt tweaks** to chase failed_rules individually. Demonstrated this session: each tweak landed but the aggregate stayed flat because Haiku-judge variance plus rubric strictness across 5 questions × 7+ criteria swamps single-dimension wins. Bundle 1–4 into a single 2026-05-11.4 commit.
+- **Lower the iteration_quality pass threshold below 4.0** to make the rubric more forgiving. Rejected because the threshold matches every other rubric in the suite (4.0); making iteration_quality a special case would erode the rubric set's consistency. The fix belongs in the prompt and the fixture, not the threshold.
 
 ### Cost / scope notes
 
-- Four iteration_quality runs in this session: ~$0.60 total in API costs. Each run is one full pipeline (analyze + clarify + generate + clarify_iteration Sonnet calls) plus 6 Haiku grading calls.
-- Three-fixture iteration baseline: ~$1.50 per run × 3 runs for variance ≈ $4.50 to establish the next baseline. Reasonable.
+- Four iteration_quality runs this session: ~$0.60 total in API costs. Each run is one full pipeline (analyze + clarify + generate + clarify_iteration Sonnet calls) plus 6 Haiku grading calls.
+- Three-fixture × 3-run baseline at next PROMPT_VERSION: ~$1.50 per run × 3 runs ≈ $4.50 per baseline (need two baselines — pre and post prompt bundle — so total ~$9.00).
+- Item 6 (re-generate + re-grade) adds ~$0.50/scenario/run, so $1.50 per 3-fixture run once enabled.
 
 ---
 
