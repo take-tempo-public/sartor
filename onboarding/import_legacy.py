@@ -79,8 +79,9 @@ class ImportReport:
     clarifications_skipped: int = 0
     context_files_scanned: int = 0
     experiences_created: int = 0
-    experiences_skipped: int = 0
+    experiences_merged: int = 0
     bullets_created: int = 0
+    alternate_titles_created: int = 0
     resume_files_processed: int = 0
     errors: list[str] = field(default_factory=list)
 
@@ -95,8 +96,9 @@ class ImportReport:
         self.clarifications_skipped += other.clarifications_skipped
         self.context_files_scanned += other.context_files_scanned
         self.experiences_created += other.experiences_created
-        self.experiences_skipped += other.experiences_skipped
+        self.experiences_merged += other.experiences_merged
         self.bullets_created += other.bullets_created
+        self.alternate_titles_created += other.alternate_titles_created
         self.resume_files_processed += other.resume_files_processed
         self.errors.extend(other.errors)
 
@@ -323,13 +325,48 @@ _RESUME_EXTS = (".docx", ".pdf", ".md")
 
 
 def _iter_resume_files(username: str) -> list[Path]:
+    """Return resume files for `username` in deliberate processing order.
+
+    Order: primary first (from `config.latest_resume`), then any other files
+    listed in `config.included_resumes`, then any remaining files alphabetical.
+    The primary-first ordering matters: the first file's `candidate_inferred_title`
+    becomes the experience's `is_official=1` title; subsequent files contribute
+    alternates (see `_merge_into_existing_experience`).
+
+    If config is missing or has no resume hints, falls back to alphabetical.
+    """
     user_dir = RESUMES_DIR / username
     if not user_dir.exists():
         return []
-    return sorted(
+    available = sorted(
         p for p in user_dir.iterdir()
         if p.is_file() and p.suffix.lower() in _RESUME_EXTS
     )
+
+    cfg_path = CONFIGS_DIR / f"{username}.config"
+    if not cfg_path.exists():
+        return available
+
+    try:
+        with cfg_path.open(encoding="utf-8") as fh:
+            cfg = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return available
+
+    primary = (cfg.get("latest_resume") or "").strip()
+    included = cfg.get("included_resumes")
+    # Filter to included files if the whitelist is present. None / [] / missing
+    # all mean "include everything" for compat with configs that never set it.
+    if isinstance(included, list) and included:
+        included_set = {str(name).strip() for name in included if name}
+        available = [p for p in available if p.name in included_set]
+
+    # Sort: primary first, then everything else alphabetical (the original order).
+    if primary:
+        primary_paths = [p for p in available if p.name == primary]
+        rest = [p for p in available if p.name != primary]
+        return primary_paths + rest
+    return available
 
 
 def import_experiences_from_resumes(
@@ -371,7 +408,9 @@ def import_experiences_from_resumes(
         return report
     client = anthropic.Anthropic(api_key=resolved_key)
 
-    for resume_path in _iter_resume_files(username):
+    files = _iter_resume_files(username)
+    for index, resume_path in enumerate(files):
+        is_primary = (index == 0)  # _iter_resume_files puts primary first
         report.resume_files_processed += 1
         try:
             parsed = parse_resume(str(resume_path))
@@ -393,8 +432,10 @@ def import_experiences_from_resumes(
             continue
 
         for exp in extracted:
-            _maybe_insert_experience(
-                exp, candidate_id, source_filename=resume_path.name,
+            _insert_or_merge_experience(
+                exp, candidate_id,
+                source_filename=resume_path.name,
+                is_primary_file=is_primary,
                 session=session, dry_run=dry_run, report=report,
             )
 
@@ -416,43 +457,56 @@ def _resolve_api_key(explicit: str | None) -> str | None:
     return None
 
 
-def _maybe_insert_experience(
+def _insert_or_merge_experience(
     exp: Mapping[str, Any],
     candidate_id: int,
     *,
     source_filename: str,
+    is_primary_file: bool,
     session: Session,
     dry_run: bool,
     report: ImportReport,
 ) -> None:
-    """Insert an extracted experience + its bullets, or skip if already present.
+    """Insert an extracted experience or MERGE into an existing match.
 
-    Dedup key: (candidate_id, company, start_date). A match is treated as
-    "already imported" — we don't try to merge new bullets into an existing
-    experience here; that's the user's call in the Career Corpus review UI.
+    Dedup key: (candidate_id, company, start_date). On match, the new file's
+    `candidate_inferred_title` becomes an alternate `experience_title` row
+    (is_official=0, is_pending_review=1) — preserving the multi-framing
+    intent of the redesign. New bullets append unless (source, text) already
+    exists on the experience.
+
+    `is_primary_file` controls bullet provenance: True → `primary:<file>`,
+    False → `supplemental:<file>`. Only meaningful for new experiences; merge
+    path uses the supplemental prefix because the experience itself was
+    created by an earlier file.
     """
     company = exp.get("company", "")
     start_date = exp.get("start_date", "")
     title_text = exp.get("candidate_inferred_title", "")
     if not company or not start_date:
-        # _normalize_experience returned a sentinel empty record — skip.
-        return
-
-    if not dry_run:
-        existing = session.query(Experience).filter_by(
-            candidate_id=candidate_id, company=company, start_date=start_date,
-        ).first()
-        if existing is not None:
-            report.experiences_skipped += 1
-            return
+        return  # _normalize_experience emitted a sentinel; nothing to do
 
     if dry_run:
+        # Same-shape counting for visibility; can't know existing matches
+        # without LLM extraction, so report all as creates.
         report.experiences_created += 1
         for b in exp.get("bullets", []):
             if b.get("text"):
                 report.bullets_created += 1
         return
 
+    existing = session.query(Experience).filter_by(
+        candidate_id=candidate_id, company=company, start_date=start_date,
+    ).first()
+
+    if existing is not None:
+        _merge_into_existing_experience(
+            existing, exp, source_filename=source_filename,
+            session=session, report=report,
+        )
+        return
+
+    # Net-new experience: create + official title + bullets.
     experience_row = Experience(
         candidate_id=candidate_id,
         company=company,
@@ -475,6 +529,7 @@ def _maybe_insert_experience(
             notes=f"Imported from {source_filename}; review before promoting to canonical.",
         ))
 
+    source_prefix = "primary" if is_primary_file else "supplemental"
     for b in exp.get("bullets", []):
         btext = b.get("text", "")
         if not btext:
@@ -485,12 +540,86 @@ def _maybe_insert_experience(
             display_order=report.bullets_created,
             is_active=1,
             is_pending_review=1,
-            source=f"primary:{source_filename}",
+            source=f"{source_prefix}:{source_filename}",
             has_outcome=1 if b.get("has_outcome") else 0,
         ))
         report.bullets_created += 1
 
     report.experiences_created += 1
+
+
+def _merge_into_existing_experience(
+    existing: Experience,
+    exp: Mapping[str, Any],
+    *,
+    source_filename: str,
+    session: Session,
+    report: ImportReport,
+) -> None:
+    """A subsequent file produced the same (company, start_date). Treat its
+    extraction as alternate framing material:
+
+    - If the new title text doesn't already exist on this experience, add it
+      as an alternate (is_official=0, truthful_enough_to_use=1, is_pending_review=1).
+    - Append every new bullet whose (source, text) isn't already attached.
+      Different files often phrase the same achievement differently — that's
+      the entire point of importing both files. We let the user prune
+      duplicates in review rather than guessing here.
+
+    Implementation note: we query titles/bullets directly rather than going
+    through `existing.titles` / `existing.bullets` because the relationship
+    cache on the in-session Experience object doesn't reflect FK-only inserts
+    until refresh — and we add via FK above for performance. Direct query is
+    cheap (single small index lookup per merge) and unambiguous.
+    """
+    report.experiences_merged += 1
+    title_text = exp.get("candidate_inferred_title", "")
+
+    # Flush any pending inserts from earlier calls so our SELECT queries below
+    # see them. (session.autoflush=False means we have to do this explicitly.)
+    session.flush()
+
+    if title_text:
+        existing_title_set = {
+            row[0] for row in session.query(ExperienceTitle.title).filter(
+                ExperienceTitle.experience_id == existing.id
+            )
+        }
+        if title_text not in existing_title_set:
+            session.add(ExperienceTitle(
+                experience_id=existing.id,
+                title=title_text,
+                is_official=0,
+                truthful_enough_to_use=1,
+                is_pending_review=1,
+                source="user_added",
+                notes=f"Alternate framing from {source_filename}; review and promote if accurate.",
+            ))
+            report.alternate_titles_created += 1
+
+    source_value = f"supplemental:{source_filename}"
+    existing_bullet_keys = {
+        (row[0], row[1]) for row in session.query(Bullet.source, Bullet.text).filter(
+            Bullet.experience_id == existing.id
+        )
+    }
+    existing_bullet_count = session.query(Bullet).filter(
+        Bullet.experience_id == existing.id
+    ).count()
+    for b in exp.get("bullets", []):
+        btext = b.get("text", "")
+        if not btext or (source_value, btext) in existing_bullet_keys:
+            continue
+        session.add(Bullet(
+            experience_id=existing.id,
+            text=btext,
+            display_order=existing_bullet_count + report.bullets_created,
+            is_active=1,
+            is_pending_review=1,
+            source=source_value,
+            has_outcome=1 if b.get("has_outcome") else 0,
+        ))
+        report.bullets_created += 1
 
 
 # ---------------------------------------------------------------------------
@@ -574,13 +703,16 @@ def _format_report(report: ImportReport, *, dry_run: bool) -> str:
         f"skipped={report.clarifications_skipped:3d} "
         f"(scanned {report.context_files_scanned} context files)",
     ]
-    if report.resume_files_processed or report.experiences_created or report.experiences_skipped:
+    if report.resume_files_processed or report.experiences_created or report.experiences_merged:
         lines.append(
             f"{prefix}Experiences:    created={report.experiences_created:3d}, "
-            f"skipped={report.experiences_skipped:3d} "
+            f"merged={report.experiences_merged:3d} "
             f"(processed {report.resume_files_processed} resume files)"
         )
-        lines.append(f"{prefix}Bullets:        created={report.bullets_created:3d}")
+        lines.append(
+            f"{prefix}Bullets:        created={report.bullets_created:3d}, "
+            f"alternate-titles={report.alternate_titles_created:3d}"
+        )
     if report.errors:
         lines.append(f"{prefix}Errors ({len(report.errors)}):")
         for err in report.errors[:10]:

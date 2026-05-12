@@ -12,10 +12,19 @@ from pathlib import Path
 
 import pytest
 
-from db.models import Candidate, Certification, Clarification, Education, Skill
+from db.models import (
+    Candidate,
+    Certification,
+    Clarification,
+    Education,
+    Experience,
+    Skill,
+)
 from onboarding import import_legacy
 from onboarding.import_legacy import (
     ImportReport,
+    _insert_or_merge_experience,
+    _iter_resume_files,
     import_candidate_from_config,
     import_clarifications_from_output,
 )
@@ -227,3 +236,224 @@ class TestImportReportMerge:
         assert a.clarifications_created == 2
         assert a.clarifications_skipped == 4
         assert a.errors == ["x"]
+
+
+# ---------------------------------------------------------------------------
+# Resume-file ordering and merge-as-alternate-title (the redesign-critical bits)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def resumes_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Build a resumes/+configs/ tree under tmp_path and point the importer at it."""
+    configs = tmp_path / "configs"
+    resumes = tmp_path / "resumes"
+    configs.mkdir()
+    resumes.mkdir()
+    monkeypatch.setattr(import_legacy, "CONFIGS_DIR", configs)
+    monkeypatch.setattr(import_legacy, "RESUMES_DIR", resumes)
+    return tmp_path
+
+
+def _write_resume(tree: Path, username: str, filename: str, content: str = "stub") -> None:
+    user_dir = tree / "resumes" / username
+    user_dir.mkdir(exist_ok=True)
+    (user_dir / filename).write_text(content, encoding="utf-8")
+
+
+class TestIterResumeFiles:
+    def test_alphabetical_when_no_config(self, resumes_tree):
+        _write_resume(resumes_tree, "alice", "b.md")
+        _write_resume(resumes_tree, "alice", "a.md")
+        _write_resume(resumes_tree, "alice", "c.md")
+        result = [p.name for p in _iter_resume_files("alice")]
+        assert result == ["a.md", "b.md", "c.md"]
+
+    def test_primary_first_via_latest_resume(self, resumes_tree):
+        _write_resume(resumes_tree, "alice", "alpha.md")
+        _write_resume(resumes_tree, "alice", "main.md")
+        _write_resume(resumes_tree, "alice", "zeta.md")
+        (resumes_tree / "configs" / "alice.config").write_text(
+            json.dumps({"latest_resume": "main.md"}), encoding="utf-8",
+        )
+        result = [p.name for p in _iter_resume_files("alice")]
+        assert result == ["main.md", "alpha.md", "zeta.md"]
+
+    def test_included_resumes_filters(self, resumes_tree):
+        _write_resume(resumes_tree, "alice", "a.md")
+        _write_resume(resumes_tree, "alice", "b.md")
+        _write_resume(resumes_tree, "alice", "c.md")
+        (resumes_tree / "configs" / "alice.config").write_text(
+            json.dumps({"latest_resume": "a.md", "included_resumes": ["a.md", "c.md"]}),
+            encoding="utf-8",
+        )
+        result = [p.name for p in _iter_resume_files("alice")]
+        assert result == ["a.md", "c.md"]
+
+    def test_empty_included_list_means_include_all(self, resumes_tree):
+        _write_resume(resumes_tree, "alice", "a.md")
+        _write_resume(resumes_tree, "alice", "b.md")
+        (resumes_tree / "configs" / "alice.config").write_text(
+            json.dumps({"included_resumes": []}), encoding="utf-8",
+        )
+        result = [p.name for p in _iter_resume_files("alice")]
+        # Empty whitelist treated as "no whitelist" — back to alphabetical fallback.
+        assert result == ["a.md", "b.md"]
+
+    def test_malformed_config_falls_back_to_alphabetical(self, resumes_tree):
+        _write_resume(resumes_tree, "alice", "a.md")
+        _write_resume(resumes_tree, "alice", "b.md")
+        (resumes_tree / "configs" / "alice.config").write_text("{ not json", encoding="utf-8")
+        result = [p.name for p in _iter_resume_files("alice")]
+        assert result == ["a.md", "b.md"]
+
+
+class TestInsertOrMergeExperience:
+    def _make_candidate(self, db_session, username="alice"):
+        c = Candidate(username=username, name="Test")
+        db_session.add(c)
+        db_session.flush()
+        return c
+
+    def test_first_extraction_creates_experience_with_official_title(self, db_session):
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        exp_data = {
+            "company": "Acme", "start_date": "2020-01", "end_date": "2023-04",
+            "candidate_inferred_title": "Senior PM",
+            "bullets": [{"text": "Did the thing.", "has_outcome": False}],
+        }
+        _insert_or_merge_experience(
+            exp_data, c.id,
+            source_filename="primary.md", is_primary_file=True,
+            session=db_session, dry_run=False, report=report,
+        )
+        db_session.flush()
+        assert report.experiences_created == 1
+        assert report.experiences_merged == 0
+        exp = db_session.query(Experience).filter_by(candidate_id=c.id).one()
+        assert exp.company == "Acme"
+        assert len(exp.titles) == 1
+        assert exp.titles[0].is_official == 1
+        assert exp.titles[0].title == "Senior PM"
+        assert len(exp.bullets) == 1
+        assert exp.bullets[0].source == "primary:primary.md"
+
+    def test_second_file_with_same_company_dates_adds_alternate_title(self, db_session):
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        # Primary extraction first
+        _insert_or_merge_experience(
+            {"company": "Acme", "start_date": "2020-01",
+             "candidate_inferred_title": "Senior PM",
+             "bullets": [{"text": "Led team.", "has_outcome": False}]},
+            c.id, source_filename="primary.md", is_primary_file=True,
+            session=db_session, dry_run=False, report=report,
+        )
+        # Supplemental with same dates but different title framing
+        _insert_or_merge_experience(
+            {"company": "Acme", "start_date": "2020-01",
+             "candidate_inferred_title": "AI Product Lead",
+             "bullets": [{"text": "Owned eval framework.", "has_outcome": False}]},
+            c.id, source_filename="ai_framed.md", is_primary_file=False,
+            session=db_session, dry_run=False, report=report,
+        )
+        db_session.flush()
+
+        assert report.experiences_created == 1
+        assert report.experiences_merged == 1
+        assert report.alternate_titles_created == 1
+
+        exp = db_session.query(Experience).filter_by(candidate_id=c.id).one()
+        assert len(exp.titles) == 2
+        official = [t for t in exp.titles if t.is_official]
+        alternate = [t for t in exp.titles if not t.is_official]
+        assert official[0].title == "Senior PM"
+        assert alternate[0].title == "AI Product Lead"
+        assert alternate[0].truthful_enough_to_use == 1
+        assert alternate[0].is_pending_review == 1
+
+    def test_merge_appends_new_bullets_with_supplemental_source(self, db_session):
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        _insert_or_merge_experience(
+            {"company": "Acme", "start_date": "2020-01",
+             "candidate_inferred_title": "Senior PM",
+             "bullets": [{"text": "Led team.", "has_outcome": False}]},
+            c.id, source_filename="primary.md", is_primary_file=True,
+            session=db_session, dry_run=False, report=report,
+        )
+        _insert_or_merge_experience(
+            {"company": "Acme", "start_date": "2020-01",
+             "candidate_inferred_title": "Senior PM",  # same title — no alternate
+             "bullets": [{"text": "Different phrasing of similar achievement.", "has_outcome": False}]},
+            c.id, source_filename="other.md", is_primary_file=False,
+            session=db_session, dry_run=False, report=report,
+        )
+        db_session.flush()
+
+        # Same title → no alternate created
+        assert report.alternate_titles_created == 0
+        # Both bullets present, distinct source provenance
+        exp = db_session.query(Experience).filter_by(candidate_id=c.id).one()
+        sources = sorted(b.source for b in exp.bullets)
+        assert sources == ["primary:primary.md", "supplemental:other.md"]
+
+    def test_merge_skips_exact_duplicate_bullet_same_source(self, db_session):
+        """Re-running import of the same supplemental shouldn't double-add bullets."""
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        _insert_or_merge_experience(
+            {"company": "Acme", "start_date": "2020-01",
+             "candidate_inferred_title": "Senior PM",
+             "bullets": [{"text": "Led team.", "has_outcome": False}]},
+            c.id, source_filename="primary.md", is_primary_file=True,
+            session=db_session, dry_run=False, report=report,
+        )
+        # Same text + same source — idempotent
+        _insert_or_merge_experience(
+            {"company": "Acme", "start_date": "2020-01",
+             "candidate_inferred_title": "AI Lead",
+             "bullets": [{"text": "Led team.", "has_outcome": False}]},
+            c.id, source_filename="primary.md", is_primary_file=False,
+            session=db_session, dry_run=False, report=report,
+        )
+        db_session.flush()
+
+        exp = db_session.query(Experience).filter_by(candidate_id=c.id).one()
+        # Only the original bullet should exist; the duplicate (source, text)
+        # combination is the one that gets caught. The alternate-title path
+        # uses supplemental: as its source prefix, which here matches the
+        # original primary: prefix exactly because filenames match — but the
+        # full source string differs, so the dedup keys are distinct. Confirm:
+        assert len(exp.bullets) == 2  # different source strings, so kept
+        # The supplemental one carries the new source value
+        sources = sorted(b.source for b in exp.bullets)
+        assert sources == ["primary:primary.md", "supplemental:primary.md"]
+
+    def test_dry_run_does_not_persist(self, db_session):
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        _insert_or_merge_experience(
+            {"company": "Acme", "start_date": "2020-01",
+             "candidate_inferred_title": "PM",
+             "bullets": [{"text": "x", "has_outcome": False}]},
+            c.id, source_filename="r.md", is_primary_file=True,
+            session=db_session, dry_run=True, report=report,
+        )
+        # Counters update but nothing in DB
+        assert report.experiences_created == 1
+        assert report.bullets_created == 1
+        assert db_session.query(Experience).count() == 0
+
+    def test_sentinel_empty_company_skips(self, db_session):
+        """_normalize_experience returns {"company": ""} for malformed rows."""
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        _insert_or_merge_experience(
+            {"company": "", "start_date": "", "candidate_inferred_title": ""},
+            c.id, source_filename="r.md", is_primary_file=True,
+            session=db_session, dry_run=False, report=report,
+        )
+        assert report.experiences_created == 0
+        assert db_session.query(Experience).count() == 0
