@@ -64,17 +64,64 @@ discarded those edits. Two distinct fixes were required:
 
 ### What was the result
 
-Initial run pending — this entry is written ahead of the first iteration_quality
-grading run. Expected baseline: iteration_quality ≥ 4.0 on the
-`sre-mid-level/user_typed_slo_ownership` scenario. Will be updated with
-concrete numbers after the first eval pass with the new rubric and prompt
-version.
+First two runs on `sre-mid-level` only (`python evals/runner.py --fixture sre-mid-level`):
 
-Open question for that first run: does the iteration clarifier respect the
-"don't re-ask" rule when prior clarifications are present? If we see
-`redundant_question` in `failed_rules`, the system prompt's instruction may
-need tightening (or the prompt may need an explicit worked example like the
-grounding block has).
+| Run | Timestamp (UTC)         | iteration_quality | Other rubrics                                                       |
+|-----|-------------------------|-------------------|---------------------------------------------------------------------|
+| 1   | 2026-05-11T22:56:08Z    | 2.1               | (not tracked in this entry)                                         |
+| 2   | 2026-05-11T23:53:39Z    | 3.2               | ats=4.8 grounding=4.8 keyword=4.2 tone=4.2 clarification=4.2 (all pass) |
+
+**Both runs FAIL `iteration_quality` against the 4.0 threshold.** The 1.1
+swing on identical inputs (same PROMPT_VERSION, same fixture, same prompts)
+is at the upper edge of expected Haiku-judge variance — the underlying
+Sonnet generation also varies per call, so the question set isn't bit-identical
+across runs either.
+
+Failure mode (from run 2's grader reasoning, the more useful signal):
+
+- The scripted edit (`error budget burn` → `Defined and owned SLOs and the
+  error-budget framework on the API edge layer`) produced a malformed bullet
+  in the iter-0 generated resume (the original phrase appeared in a
+  context that, after substitution, broke the bullet's grammar).
+- The iteration_probe correctly detected an issue and asked about it — but
+  framed the question as a copy-editing fix ("what is the single clean
+  outcome?") rather than as a substantive scope/experience clarification.
+- The fixture's `expected_iteration_themes.iteration_probes` specifically
+  asks for follow-ups on numeric SLO targets, review cadence, and ownership
+  collaboration. The interview missed that opportunity entirely on q1.
+- The other 4 questions (q2 multi-region, q3 service mesh, q4 specificity
+  signal, q5 Go) are well-targeted with concrete cites, no fabricated gaps,
+  no redundancy with priors.
+- `failed_rules: ["missing_expected_theme"]` — the iteration_probe slot was
+  filled but its content didn't hit any expected theme.
+
+**Diagnosis:** the failure is real but not a fundamental prompt flaw. Two
+fixes are plausible:
+
+1. **Tighten the fixture scenario.** The `edit_replacement` produces a
+   malformed bullet because the substitution doesn't account for the
+   surrounding bullet structure (the Sonnet output wrapped the original
+   phrase in a sentence that breaks when substituted). A cleaner
+   `edit_target_substring` / `edit_replacement` pair, or a scenario that
+   substitutes a whole bullet rather than mid-sentence text, would let the
+   iteration_probe focus on substance instead of form.
+2. **Add an iteration-probe worked example to CLARIFY_ITERATION_SYSTEM_PROMPT.**
+   Mirror the grounding block's OK/NOT-OK pattern: "User typed 'shipped V2
+   to enterprise' — OK iteration question: 'Which enterprise customer
+   segment? How many?'. NOT OK: 'The bullet has a typo, please clarify.'"
+   Pure copy-editing follow-ups should not count as clarifying questions
+   because they don't source new ground truth.
+
+Recommended order: (1) first, since the fixture is the proximate cause and
+fixing it both restores the eval signal AND tells us whether the prompt has
+a deeper issue. If a clean fixture still produces copy-editing-style
+questions, then (2) becomes load-bearing.
+
+The "build on, don't re-ask" hypothesis was NOT validated either way in
+this run because `prior_clarifications` was empty (the runner's iteration
+phase doesn't carry forward analyze-time clarify answers — it could, if we
+populate `clarify_answers` from a fixture-supplied dict). That probe gets
+exercised once the fixture or runner adds the prior-answers carry-over.
 
 ### Cost / scope notes
 
@@ -97,14 +144,24 @@ grounding block has).
 
 ### What we learned
 
-To be filled in after the first eval pass. Hypothesis going in:
-
-- The "build on, don't re-ask" rule is the highest-risk failure mode. If
-  iteration questions duplicate prior clarifications, the candidate's trust
-  in the loop erodes fast — they'll skip future interviews.
-- The "first-person edits are ground truth but not extensible" rule is the
-  second highest-risk failure mode. If the LLM extends typed edits with
-  invented specifics, it amplifies user errors with confidence.
+1. **Eval scenarios need to produce a clean iter-0 baseline.** Substituting a
+   substring mid-sentence is fragile when the surrounding generated text
+   varies. Future fixtures should target whole bullets via the
+   edit_target_substring mechanic, OR the runner should grow a smarter edit
+   helper that detects bullet boundaries.
+2. **A copy-editing question is NOT a clarifying question.** The iteration
+   clarifier correctly noticed the malformed bullet but answered the wrong
+   question — "is this grammatical?" instead of "what is the underlying
+   substantive claim?". The CLARIFY_ITERATION_SYSTEM_PROMPT doesn't currently
+   forbid syntax-fix probes; the rubric implicitly does, but the LLM needs
+   the explicit guard. Worth a worked-example pair in a future revision.
+3. **Single-fixture iteration eval is high-variance.** With one fixture and
+   non-deterministic Sonnet generation, score swings of 1.0+ are
+   plausible-but-not-attributable. Adding scenarios to pm-senior and
+   data-scientist-junior would let us reason about iteration_quality with a
+   3-sample mean rather than treating each run as a singular signal.
+4. The original "build on, don't re-ask" hypothesis remains untested — see
+   "Result" section above for why and how to exercise it next.
 
 ---
 
