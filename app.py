@@ -59,6 +59,12 @@ OUTPUT_DIR = BASE_DIR / "output"
 
 ALLOWED_EXTENSIONS = {".docx", ".pdf", ".md"}
 
+# Phase B feature flag: when "1", /api/analyze reads from the SQLite corpus
+# instead of parsing resume files. Both paths produce identical ContextSet
+# shape so downstream routes (clarify, generate, iterate-clarify) work
+# unchanged. Removed in Phase C; not a permanent flag.
+CORPUS_BACKED = os.environ.get("CORPUS_BACKED", "0") == "1"
+
 # Ensure directories exist
 for d in (CONFIGS_DIR, RESUMES_DIR, OUTPUT_DIR):
     d.mkdir(exist_ok=True)
@@ -224,12 +230,18 @@ def run_analysis():
     resume_filename = data.get("resume_filename", "")
     jd_text = data.get("job_description", "")
 
-    if not all([username, resume_filename, jd_text]):
-        return jsonify({"error": "username, resume_filename, and job_description required"}), 400
+    # CORPUS_BACKED ignores resume_filename — content comes from the DB corpus.
+    if not username or not jd_text:
+        return jsonify({"error": "username and job_description required"}), 400
+    if not CORPUS_BACKED and not resume_filename:
+        return jsonify({"error": "resume_filename required (file-based mode)"}), 400
 
     safe_user = _safe_username(username)
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
+
+    if CORPUS_BACKED:
+        return _run_analysis_corpus_backed(safe_user, jd_text, data)
 
     safe_resume = secure_filename(resume_filename)
     resume_path = RESUMES_DIR / safe_user / safe_resume
@@ -330,6 +342,91 @@ def run_analysis():
         "context_path": context_path,
         "template_path": str(resume_path),  # original .docx path for style templating
     })
+
+
+def _run_analysis_corpus_backed(safe_user: str, jd_text: str, data: dict):
+    """DB-backed analyze path used when CORPUS_BACKED=1.
+
+    Produces the same response shape as the file-based path: analysis JSON,
+    keyword_overlap, ats_warnings, context_path. The context_path file still
+    gets written so downstream routes (clarify, generate, iterate-clarify)
+    work unchanged. Additionally creates `application` + `application_run`
+    rows that anchor the new audit chain.
+    """
+    from db.build_context import build_context_set_from_db
+    from db.session import get_session, init_db
+
+    # Defense-in-depth: re-validate username + output path even though the
+    # caller already checked. Internal callers can drift; the guards are cheap.
+    if not _safe_username(safe_user):
+        return jsonify({"error": "Invalid or unknown user"}), 400
+    user_output_dir = OUTPUT_DIR / safe_user
+    if not _within(user_output_dir, OUTPUT_DIR):
+        return jsonify({"error": "Invalid output path"}), 403
+
+    init_db()
+    session = get_session()
+    run_id = uuid.uuid4().hex[:12]
+    try:
+        try:
+            context_set, application, application_run = build_context_set_from_db(
+                session,
+                candidate_username=safe_user,
+                jd_text=jd_text,
+                run_id=run_id,
+                jd_url=data.get("jd_url"),
+                application_title=data.get("application_title"),
+            )
+        except ValueError as exc:
+            session.rollback()
+            return jsonify({"error": str(exc)}), 404
+
+        logger.info(
+            "DB-backed analysis for %s: application_id=%d run_id=%s",
+            safe_user, application.id, run_id,
+        )
+
+        client = _get_client()
+        try:
+            analysis = analyze(client, context_set, username=safe_user, run_id=run_id)
+        except anthropic.APIConnectionError as exc:
+            session.rollback()
+            logger.error("Anthropic API connection error during analysis: %s", exc)
+            return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
+        except LLMResponseError as exc:
+            session.rollback()
+            logger.error(
+                "LLM analysis response failed validation after retry: %s",
+                exc.validation_error,
+            )
+            return jsonify({
+                "error": "AI analysis response was malformed after retry. Please try again.",
+                "detail": exc.validation_error,
+            }), 502
+
+        # Persist analysis on the application_run row + keep the JSON file
+        # path live for unchanged downstream routes.
+        application_run.analysis_json = json.dumps(analysis)
+        context_set["llm_analysis"] = analysis
+        context_set["run_id"] = run_id
+        context_path = save_context_set(context_set, safe_user, str(OUTPUT_DIR))
+
+        session.commit()
+        logger.info("Analysis complete for %s, saved to %s", safe_user, context_path)
+
+        return jsonify({
+            "analysis": analysis,
+            "deterministic": {
+                "keyword_overlap": context_set["deterministic_analysis"]["keyword_overlap"],
+                "ats_warnings": context_set["deterministic_analysis"]["ats_warnings"],
+            },
+            "context_path": context_path,
+            "template_path": "",  # no file-backed template in DB mode; Phase C picks a persona
+            "application_id": application.id,
+            "application_run_id": application_run.id,
+        })
+    finally:
+        session.close()
 
 
 @app.route("/api/clarify", methods=["POST"])
