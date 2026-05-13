@@ -199,6 +199,53 @@ def main(argv: list[str] | None = None) -> int:
                     cache_read_total += rec.get("cache_read_input_tokens", 0)
         print(f"\n[cost] this run: ${total_cost:.4f}, cache_read={cache_read_total} tokens")
 
+        # ---- Phase B.3: persist structured output to DB audit chain ----
+        from db.models import (
+            ApplicationBullet,
+            Bullet,
+            ExperienceTitle,
+            IterationLog,
+            ProposalReview,
+        )
+        from db.persist_run import persist_corpus_generation
+
+        report = persist_corpus_generation(
+            session, application_run, result, candidate_id=application.candidate_id,
+        )
+        print(f"\n[persist] application_bullet rows: {report.application_bullets_created}")
+        print(f"          application_run_title rows: {report.application_run_titles_created}")
+        print(f"          proposed new bullets:        {report.proposed_bullets_created}")
+        print(f"          proposed new titles:         {report.proposed_titles_created}")
+        print(f"          proposal_review rows:        {report.proposal_reviews_created}")
+        if report.bullets_referenced_but_missing:
+            print(f"          {len(report.bullets_referenced_but_missing)} hallucinated bullet_id(s) skipped")
+        if report.titles_referenced_but_missing:
+            print(f"          {len(report.titles_referenced_but_missing)} hallucinated title_id(s) skipped")
+        if report.skipped_due_to_malformed_payload:
+            print(f"          {report.skipped_due_to_malformed_payload} malformed entries skipped")
+
+        # Sanity-check: every bullet selected should match a real bullet text
+        app_bullets = session.query(ApplicationBullet).filter_by(
+            application_run_id=application_run.id,
+        ).all()
+        pending_bullets = session.query(Bullet).filter(
+            Bullet.is_pending_review == 1,
+            Bullet.source == f"llm_proposed:{run_id}",
+        ).all()
+        pending_titles = session.query(ExperienceTitle).filter(
+            ExperienceTitle.is_pending_review == 1,
+            ExperienceTitle.source == f"llm_proposed:{run_id}",
+        ).all()
+        pending_proposals = session.query(ProposalReview).filter_by(
+            application_run_id=application_run.id, decision="pending",
+        ).all()
+        print(f"\n[verify] application_bullet rows in DB:    {len(app_bullets)}")
+        print(f"         pending llm_proposed bullets:      {len(pending_bullets)}")
+        print(f"         pending llm_proposed titles:       {len(pending_titles)}")
+        print(f"         pending proposal_review rows:      {len(pending_proposals)}")
+        print(f"         iteration_log rows for this run:   "
+              f"{session.query(IterationLog).filter_by(application_run_id=application_run.id).count()}")
+
         # ---- Outputs ----
         print(f"\n{'=' * 70}\nGENERATED RESUME\n{'=' * 70}")
         print(resume_md)

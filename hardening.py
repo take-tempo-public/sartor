@@ -138,6 +138,12 @@ class ContextSet(_ContextSetRequired, total=False):
     # selected_bullets / proposed_new_bullets / proposed_experience_titles.
     # When absent, the file-based path runs unchanged.
     career_corpus: list[CorpusExperience]
+    # Phase B.3: DB anchor IDs persisted across the analyze→generate boundary.
+    # /api/analyze (corpus-backed) stashes them; /api/generate reads them and
+    # writes application_bullet / proposal_review rows to record the LLM's
+    # selections and proposals. Absent on file-based contexts.
+    application_id: int
+    application_run_id: int
 
 # Common English stop words to exclude from keyword extraction
 STOP_WORDS = frozenset(

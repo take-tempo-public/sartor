@@ -344,6 +344,52 @@ def run_analysis():
     })
 
 
+def _persist_corpus_generation_to_db(application_run_id: int, generate_result: dict) -> None:
+    """Phase B.3 write-back: persist the structured generate() output to the DB.
+
+    Looks up the `application_run` row, calls `persist_corpus_generation`, and
+    commits. Defense-in-depth: validates the run belongs to a real candidate
+    before any writes. Used by `/api/generate` only when the context carries
+    `application_run_id` (corpus-backed mode).
+    """
+    from db.models import Application, ApplicationRun
+    from db.persist_run import persist_corpus_generation
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        run = session.query(ApplicationRun).filter_by(id=application_run_id).first()
+        if run is None:
+            logger.warning("Application_run not found for persist (id=%s)", application_run_id)
+            return
+        app_row = session.query(Application).filter_by(id=run.application_id).first()
+        if app_row is None:
+            logger.warning("Parent application not found for run id=%s", application_run_id)
+            return
+
+        report = persist_corpus_generation(
+            session, run, generate_result, candidate_id=app_row.candidate_id,
+        )
+        session.commit()
+        logger.info(
+            "Persisted corpus generation: app_run=%d bullets=%d titles=%d "
+            "proposals=%db/%dt (missing: %d exp, %d bul, %d tit)",
+            application_run_id,
+            report.application_bullets_created,
+            report.application_run_titles_created,
+            report.proposed_bullets_created,
+            report.proposed_titles_created,
+            len(report.experiences_referenced_but_missing),
+            len(report.bullets_referenced_but_missing),
+            len(report.titles_referenced_but_missing),
+        )
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 def _run_analysis_corpus_backed(safe_user: str, jd_text: str, data: dict):
     """DB-backed analyze path used when CORPUS_BACKED=1.
 
@@ -409,6 +455,11 @@ def _run_analysis_corpus_backed(safe_user: str, jd_text: str, data: dict):
         application_run.analysis_json = json.dumps(analysis)
         context_set["llm_analysis"] = analysis
         context_set["run_id"] = run_id
+        # Phase B.3: stash the DB anchor IDs in the saved context so /api/generate
+        # can find the application_run and persist the LLM's structured output
+        # (selected_bullets, proposal_review rows, etc.) on its second LLM call.
+        context_set["application_id"] = application.id
+        context_set["application_run_id"] = application_run.id
         context_path = save_context_set(context_set, safe_user, str(OUTPUT_DIR))
 
         session.commit()
@@ -862,6 +913,21 @@ def run_generation():
     )
 
     logger.info("Generation complete: %s, %s", resume_path, cover_letter_path)
+
+    # Phase B.3: when the context carries an application_run_id (set by the
+    # corpus-backed /api/analyze path), persist the LLM's structured output
+    # to the DB audit chain — application_bullet rows, proposal_review rows
+    # for any new bullets/titles the LLM proposed, etc. No-op for file-based
+    # contexts (which don't have an application_run_id).
+    app_run_id = context_set.get("application_run_id")
+    if app_run_id is not None:
+        try:
+            _persist_corpus_generation_to_db(int(app_run_id), result)
+        except Exception as exc:
+            # Persistence failure must not break the user's generate flow —
+            # the markdown is already produced and saved to disk. Log loudly.
+            logger.error("Corpus generation persist failed (run_id=%s): %s",
+                         app_run_id, exc, exc_info=True)
 
     # Snapshot this iteration as a new immutable context file. The chain of
     # parent_context_path pointers forms the iteration audit trail.
