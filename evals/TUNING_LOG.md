@@ -16,6 +16,89 @@ prevent re-running them.
 
 ---
 
+## 2026-05-13 — Phase B.5: regression check for the file-based path at `2026-05-12.1`
+
+### What changed
+
+No code or prompt changes. This entry establishes the new baseline at
+`PROMPT_VERSION 2026-05-12.1` (bumped in Phase B.2) for the file-based
+pipeline path — the regression check that nothing in Phase B.1–B.4
+silently broke the legacy path that the file-based fixtures still
+exercise.
+
+### Why
+
+Phase B introduced a feature-flagged DB-backed pipeline behind
+`CORPUS_BACKED=1`. The flag defaults off, so the eval suite still runs
+the file-based path. Smoke tests covered the DB-backed path against
+the testuser fixture (Casey Rivera). This entry confirms the file-based
+path against the existing 3-fixture synthetic suite.
+
+Full DB-backed A/B parity at fixture scale lives in Phase E (when
+fixtures are converted to `seed.json` form). Phase B.5 covers only the
+regression check.
+
+### Result
+
+3 synthetic fixtures × 5–6 rubrics, all at `2026-05-12.1`:
+
+| Fixture | ats_format | clar_quality | grounding | keyword_cov | tone | iter_quality |
+|---|---|---|---|---|---|---|
+| data-scientist-junior | 4.2 | 4.2 | 4.8 | 4.2 | 4.2 | n/a |
+| pm-senior | 4.6 | 4.2 | 4.8 | 4.2 | 4.2 | n/a |
+| sre-mid-level | 4.8 | **3.2 ⚠** | 4.7 | 4.2 | 4.2 | **None ⚠** |
+
+- **14/16 pass** at threshold ≥ 4.0
+- **1 regression** flagged by the alerter: sre-mid-level::clarification_quality
+  4.2 → 3.2 (Δ=-1.0). The TUNING_LOG entries for 2026-05-11.2 / 2026-05-11.3
+  show this rubric historically bouncing 2.1 / 3.2 / 3.2 / 3.2; the 4.2
+  prior was the outlier, and 3.2 is the historical floor. **Phase B
+  did not touch `CLARIFY_SYSTEM_PROMPT` — this regression is judge +
+  Sonnet variance, not a code regression.**
+- **1 expected None** on sre-mid-level::iteration_quality — known
+  `scenario_misaligned` per the 2026-05-11.3 entry.
+
+Cost: **$0.4068 total** for the full suite (down from ~$1.50 historical).
+Cache_read tokens: 5586 across all calls. The B.2 cache-shape work
+benefits the file-based path too because the byte-stable cached prefix
+discipline is now the same.
+
+### What we learned
+
+1. **Phase B did not break the file-based path.** The 14/16 passes match
+   historical pass rates within Haiku judge variance. The one regression
+   is on a known-unstable rubric whose floor is 3.2.
+2. **Cache discipline improvements cascade.** Total suite cost dropped
+   ~3× vs historical ($0.41 vs $1.50). The B.2 work on `<career_corpus>`
+   didn't touch legacy prompts but did clean up the cache-prefix-stability
+   patterns, which benefits both paths.
+3. **PROMPT_VERSION bump at the Phase B boundary worked as designed.**
+   All 16 records tagged with `2026-05-12.1`. The dashboard's
+   score-over-time chart will show a clean version transition; future
+   regressions are attributable.
+
+### Open questions / future tuning targets
+
+- **Full DB-backed eval A/B (Phase E work):** the 3 synthetic fixtures
+  need to move from `(resume.md, jd.txt, expected.json)` to a single
+  `seed.json` per fixture. Then `evals/runner.py` gains a flag to import
+  the seed into an in-memory SQLite and run via `build_context_set_from_db`.
+  Expected outcome (based on the testuser smoke): DB-backed grounding
+  improves materially (smoke went 18/22 → 19/19 with structural
+  selected_bullets), other rubrics within ±0.5.
+- **sre-mid-level::clarification_quality stability:** the rubric's
+  historical 2.1/3.2 floor suggests the rubric is too strict for
+  Sonnet's actual output or the prompt is too loose. Next iteration
+  should re-examine the rubric's `min_clarification_quality_score` and
+  the SCOPE_PROBE coverage rule the plan flagged.
+
+### Cost / scope notes
+
+- This regression check: $0.41
+- Phase B total LLM spend across all smokes (B.1 + B.2×2 + B.3 + B.4 + this): ~$1.10
+
+---
+
 ## 2026-05-12 — `2026-05-11.3` → `2026-05-12.1`: Phase B.2 `<career_corpus>` prompt block
 
 ### What changed
