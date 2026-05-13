@@ -316,3 +316,98 @@ class TestBuildContextSetFromDb:
             run_id="custom_run_id_123",
         )
         assert run.run_id == "custom_run_id_123"
+
+
+# ---------------------------------------------------------------------------
+# Phase B.2: structured career_corpus payload
+# ---------------------------------------------------------------------------
+
+
+class TestCareerCorpusPayload:
+    def test_career_corpus_field_present_in_contextset(self, db_session):
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        ctx, _app, _run = build_context_set_from_db(
+            db_session, candidate_username="casey", jd_text="x", run_id="r",
+        )
+        assert "career_corpus" in ctx
+        assert isinstance(ctx["career_corpus"], list)
+        assert len(ctx["career_corpus"]) >= 1
+
+    def test_corpus_experience_carries_eligible_titles_official_first(self, db_session):
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        ctx, _app, _run = build_context_set_from_db(
+            db_session, candidate_username="casey", jd_text="x", run_id="r",
+        )
+        polaris = next(
+            e for e in ctx["career_corpus"] if e["company"] == "Polaris"
+        )
+        # Polaris has 2 eligible titles (official + truthful_enough alternate)
+        assert len(polaris["eligible_titles"]) == 2
+        # Official always first
+        assert polaris["eligible_titles"][0]["is_official"] is True
+        assert polaris["eligible_titles"][0]["title"] == "Senior PM, ML Platform"
+        assert polaris["eligible_titles"][1]["is_official"] is False
+        assert polaris["eligible_titles"][1]["title"] == "AI Product Lead"
+
+    def test_corpus_bullets_are_active_only(self, db_session):
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        ctx, _app, _run = build_context_set_from_db(
+            db_session, candidate_username="casey", jd_text="x", run_id="r",
+        )
+        acme = next(e for e in ctx["career_corpus"] if e["company"] == "Acme")
+        # Acme has 2 bullets seeded: 1 active, 1 retired (is_active=0)
+        assert len(acme["bullets"]) == 1
+        assert acme["bullets"][0]["text"] == "Built design org."
+
+    def test_corpus_bullet_carries_id_and_outcome(self, db_session):
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        ctx, _app, _run = build_context_set_from_db(
+            db_session, candidate_username="casey", jd_text="x", run_id="r",
+        )
+        polaris = next(e for e in ctx["career_corpus"] if e["company"] == "Polaris")
+        bullets = polaris["bullets"]
+        assert all("id" in b for b in bullets)
+        assert all(isinstance(b["id"], int) for b in bullets)
+        has_outcome_bullet = next(b for b in bullets if b["text"].startswith("Led 5-person"))
+        assert has_outcome_bullet["has_outcome"] is True
+
+    def test_corpus_skips_excluded_titles(self, db_session):
+        """Titles flagged neither is_official nor truthful_enough_to_use must
+        not appear in eligible_titles."""
+        from db.models import (
+            Candidate,
+            Experience,
+            ExperienceTitle,
+        )
+        c = Candidate(username="bob", name="Bob")
+        db_session.add(c)
+        db_session.flush()
+        e = Experience(
+            candidate_id=c.id, company="X", start_date="2020-01", end_date="2021-12",
+        )
+        db_session.add(e)
+        db_session.flush()
+        # Three titles: official, truthful_enough, and neither
+        db_session.add(ExperienceTitle(
+            experience_id=e.id, title="Real PM", is_official=1, source="official",
+        ))
+        db_session.add(ExperienceTitle(
+            experience_id=e.id, title="Alt PM", truthful_enough_to_use=1, source="user_added",
+        ))
+        db_session.add(ExperienceTitle(
+            experience_id=e.id, title="Suggested but not approved",
+            is_official=0, truthful_enough_to_use=0, source="llm_proposed:rN",
+        ))
+        db_session.commit()
+        ctx, _app, _run = build_context_set_from_db(
+            db_session, candidate_username="bob", jd_text="x", run_id="r",
+        )
+        exp_payload = ctx["career_corpus"][0]
+        titles_in_payload = {t["title"] for t in exp_payload["eligible_titles"]}
+        assert "Real PM" in titles_in_payload
+        assert "Alt PM" in titles_in_payload
+        assert "Suggested but not approved" not in titles_in_payload

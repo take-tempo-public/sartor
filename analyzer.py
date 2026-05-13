@@ -17,7 +17,7 @@ from pathlib import Path
 
 import anthropic
 
-from hardening import ContextSet
+from hardening import ContextSet, CorpusExperience
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +51,19 @@ GENERATE_REQUIRED_KEYS = frozenset({
 
 CLARIFY_REQUIRED_KEYS = frozenset({"questions", "reasoning"})
 
+# Generate output keys when the input contains <career_corpus> (Phase B.2+).
+# Selected_bullets is required so B.3 can write application_bullet audit rows
+# from the LLM's selections. proposed_new_bullets and proposed_experience_titles
+# are always present in the response but may be empty arrays when the LLM has
+# no proposals to make.
+GENERATE_CORPUS_REQUIRED_KEYS = GENERATE_REQUIRED_KEYS | frozenset({
+    "selected_bullets", "proposed_new_bullets", "proposed_experience_titles",
+})
+
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-11.3"
+PROMPT_VERSION = "2026-05-12.1"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -247,24 +256,41 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
     actually changed. Within one iteration (e.g. analyze→generate, or a retry),
     the prefix remains byte-identical and the cache hits.
 
+    Phase B.2: when `context_set["career_corpus"]` is populated, the prefix
+    emits a structured `<career_corpus>` block with ID-tagged experiences and
+    bullets in place of the legacy `<resume>` + `<supplemental_resumes>` blocks.
+    The LLM's selected_bullets output then references bullet IDs directly,
+    making structural grounding cheap to enforce in B.3. The legacy path
+    (no career_corpus field) is unchanged.
+
     Tag names, field order, and the inclusion-condition for the online profile
     are all load-bearing. Do not change one without the other.
     """
     candidate = context_set["candidate"]
     online_profile = candidate.get("profile_text", "").strip()
     iteration = int(context_set.get("iteration", 0) or 0)
-    resume_text, _ = _current_draft_text(context_set)
-    resume_filename = context_set["resume"].get("filename", "primary")
 
     parts = [
         "<job_description>",
         context_set["job_description"],
         "</job_description>",
         "",
-        f'<resume filename="{resume_filename}" iteration="{iteration}">',
-        resume_text,
-        "</resume>",
-        _supplemental_block(context_set, iteration=iteration),
+    ]
+
+    corpus = context_set.get("career_corpus")
+    if corpus:
+        parts.append(_corpus_block(corpus, iteration=iteration))
+    else:
+        resume_text, _ = _current_draft_text(context_set)
+        resume_filename = context_set["resume"].get("filename", "primary")
+        parts.extend([
+            f'<resume filename="{resume_filename}" iteration="{iteration}">',
+            resume_text,
+            "</resume>",
+            _supplemental_block(context_set, iteration=iteration),
+        ])
+
+    parts.extend([
         "<candidate_profile>",
         f"Name: {candidate.get('name', '')}",
         f"Email: {candidate.get('email', '')}",
@@ -276,7 +302,7 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
         f"Education: {candidate.get('education_summary', '')}",
         f"Notes: {candidate.get('notes', '')}",
         "</candidate_profile>",
-    ]
+    ])
 
     if online_profile:
         parts.extend([
@@ -287,6 +313,57 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
         ])
 
     return "\n".join(parts)
+
+
+def _corpus_block(experiences: list[CorpusExperience], iteration: int) -> str:
+    """Emit the `<career_corpus>` XML block when DB-backed mode is active.
+
+    Each `<experience>` lists all eligible titles (the LLM picks the right
+    framing per JD) and every active bullet with `id`, `tags`, `has_outcome`.
+    The LLM's generate output is required to reference bullet IDs in
+    `selected_bullets` and may propose new bullets / new titles in
+    `proposed_new_bullets` / `proposed_experience_titles`.
+
+    Markup conventions are load-bearing: GENERATE_CORPUS_PROMPT_GUIDE below
+    documents the contract the LLM is told about.
+    """
+    parts: list[str] = [f'<career_corpus iteration="{iteration}">']
+    for exp in experiences:
+        end = exp.get("end_date") or "present"
+        attrs = (
+            f'id="e{exp["id"]}" '
+            f'company="{_attr_escape(exp.get("company", ""))}" '
+            f'dates="{exp.get("start_date", "")} → {end}"'
+        )
+        if exp.get("location"):
+            attrs += f' location="{_attr_escape(exp["location"])}"'
+        parts.append(f"  <experience {attrs}>")
+        for t in exp.get("eligible_titles", []) or []:
+            official = "true" if t.get("is_official") else "false"
+            parts.append(
+                f'    <eligible_title id="t{t["id"]}" official="{official}">'
+                f'{_attr_escape(t.get("title", ""))}</eligible_title>'
+            )
+        for b in exp.get("bullets", []) or []:
+            tags = ",".join(b.get("tags") or [])
+            outcome = "true" if b.get("has_outcome") else "false"
+            parts.append(
+                f'    <bullet id="b{b["id"]}" tags="{tags}" has_outcome="{outcome}">'
+                f'{_attr_escape(b.get("text", ""))}</bullet>'
+            )
+        parts.append("  </experience>")
+    parts.append("</career_corpus>")
+    return "\n".join(parts)
+
+
+def _attr_escape(value: str) -> str:
+    """Minimal XML attribute escaping for the values we control.
+
+    `&` MUST be replaced first or it captures the `&` we introduce when
+    escaping `"` and `<`, producing `&amp;quot;` instead of `&quot;`. Tested
+    by tests/test_corpus_mode_prompt.py::test_escapes_double_quotes_in_attributes.
+    """
+    return value.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
 
 
 def _supplemental_block(context_set: ContextSet, iteration: int = 0) -> str:
@@ -955,6 +1032,53 @@ def generate(
             "</current_cover_letter_draft>\n\n"
         )
 
+    # Phase B.2: corpus-mode instructions + extra output fields, present only
+    # when the input carries a <career_corpus> block (DB-backed pipeline).
+    # When absent (legacy file-based path), generate() behaves identically to
+    # prior versions — the LLM sees the legacy <resume> + <supplemental_resumes>
+    # and produces the legacy four-field JSON output.
+    in_corpus_mode = bool(context_set.get("career_corpus"))
+    corpus_mode_block = ""
+    extra_output_fields = ""
+    if in_corpus_mode:
+        corpus_mode_block = """<corpus_mode>
+The candidate's experience pool is the <career_corpus> block above (not a free-text <resume>). Each <experience> carries:
+- One or more <eligible_title> elements — the candidate has approved these framings. Pick the one that best matches THIS JD's positioning.
+- One or more <bullet id="bN" ...> elements — VERBATIM text from the candidate's resumes. Treat each bullet as immutable ground truth: select, reorder, and reframe SURROUNDING context, but the bullet text itself MUST appear verbatim in your resume_content.
+
+When an essential JD requirement is not covered by any existing bullet, you MAY propose a new bullet in `proposed_new_bullets` (see output schema below). The user reviews proposals before they join the canonical corpus.
+
+When none of an experience's <eligible_title> elements fits the JD's framing, you MAY propose a new title in `proposed_experience_titles`. Same review semantics as proposed bullets.
+
+GROUNDING for corpus mode:
+  Every bullet you emit in resume_content must EITHER (a) reproduce a <bullet> text verbatim from the corpus (just record its `id` in selected_bullets), OR (b) be listed in proposed_new_bullets so the user knows it's a new claim. No other bullets are permitted. The legacy GROUNDING CHECK below still governs cover_letter_content and any reframing language between bullets.
+</corpus_mode>
+
+"""
+        extra_output_fields = """,
+  "selected_bullets": [
+    {
+      "experience_id": "e<int>",
+      "chosen_title_id": "t<int>",
+      "bullet_ids_in_order": ["b<int>", "b<int>", ...]
+    }
+  ],
+  "proposed_new_bullets": [
+    {
+      "experience_id": "e<int>",
+      "text": "Verbatim text the LLM is proposing as a new bullet",
+      "pattern_kind": "xyz" | "car" | "manual",
+      "rationale": "Why this fills a JD gap the existing bullets miss"
+    }
+  ],
+  "proposed_experience_titles": [
+    {
+      "experience_id": "e<int>",
+      "title": "New title framing",
+      "rationale": "Why no eligible_title fits this JD"
+    }
+  ]"""
+
     prompt = f"""<task>Generate a tailored resume and cover letter for the candidate based on the analysis.</task>
 
 <output_rules>
@@ -1013,7 +1137,7 @@ Strategy: {analysis.get('overall_strategy', '')}
 Professional vocabulary: {', '.join(analysis.get('professional_vocabulary', []))}
 </analysis>
 
-{clarifications_block}{cover_letter_draft_block}<resume_rules>
+{clarifications_block}{cover_letter_draft_block}{corpus_mode_block}<resume_rules>
 GROUNDING CHECK — apply this before writing every bullet:
   Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — trace to the resume above (the current draft, which may include first-person edits the candidate typed in), any historical or supplemental resume above, OR a candidate clarification answer above?"
   If YES: reframe, strengthen, and keyword-align it freely. Both clarification answers AND first-person typed edits in the current draft are ground truth and may be cited even when the original primary resume did not mention them.
@@ -1109,14 +1233,16 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
   "resume_content": "The complete tailored resume. CRITICAL: use \\n (JSON newline escape) between every section, job entry, and bullet. Never collapse the resume into one long line. Example: '# Name\\nEmail | Phone\\n\\n## Summary\\nText.\\n\\n## Experience\\n\\n### Title — Company\\n- Bullet one\\n- Bullet two'",
   "cover_letter_content": "The complete cover letter as plain text",
   "changes_made": ["change1", "change2"],
-  "proofread_notes": ["Any grammar, spelling, or formatting issues found and fixed"]
+  "proofread_notes": ["Any grammar, spelling, or formatting issues found and fixed"]{extra_output_fields}
 }}
 </output_format>"""
 
     return _parse_or_retry(
         client, prompt,
         cached_user_prefix=_stable_user_prefix(context_set),
-        required_keys=GENERATE_REQUIRED_KEYS,
+        required_keys=(
+            GENERATE_CORPUS_REQUIRED_KEYS if in_corpus_mode else GENERATE_REQUIRED_KEYS
+        ),
         call_kind="generate",
         username=username,
         run_id=run_id,

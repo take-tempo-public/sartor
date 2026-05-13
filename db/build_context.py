@@ -38,6 +38,9 @@ from db.models import (
 )
 from hardening import (
     ContextSet,
+    CorpusBullet,
+    CorpusEligibleTitle,
+    CorpusExperience,
     check_ats_format,
     compute_keyword_overlap,
     extract_keywords,
@@ -142,6 +145,8 @@ def build_context_set_from_db(
     education_summary = _summarize_educations(educations)
     profile_text = candidate.profile_text or ""
 
+    career_corpus = _build_career_corpus_payload(experiences)
+
     context_set: ContextSet = {
         "timestamp": application_run.created_at,
         "candidate": {
@@ -172,8 +177,60 @@ def build_context_set_from_db(
             "ats_warnings": ats_warnings,
         },
         "run_id": run_id,
+        "career_corpus": career_corpus,
     }
     return context_set, application, application_run
+
+
+def _build_career_corpus_payload(experiences: list[Experience]) -> list[CorpusExperience]:
+    """Build the structured corpus the LLM consumes in the new prompt shape.
+
+    Each experience carries:
+    - id, company, location, dates
+    - eligible_titles: every is_official=1 OR truthful_enough_to_use=1 title
+      (so the LLM can pick the right framing per JD)
+    - bullets: active bullets with id, text, tags, has_outcome, source
+
+    Pending-review titles and bullets are INCLUDED so a freshly-imported user
+    can use the pipeline before reviewing. Phase D's review UI will enforce
+    review before "first real application" if needed.
+    """
+    payload: list[CorpusExperience] = []
+    for exp in experiences:
+        eligible_titles: list[CorpusEligibleTitle] = [
+            {
+                "id": t.id,
+                "title": t.title,
+                "is_official": bool(t.is_official),
+            }
+            for t in exp.titles
+            if t.is_official or t.truthful_enough_to_use
+        ]
+        # Order titles: official first, then by id
+        eligible_titles.sort(key=lambda t: (not t["is_official"], t["id"]))
+
+        bullets: list[CorpusBullet] = []
+        for b in sorted(exp.bullets, key=lambda x: x.display_order):
+            if not b.is_active:
+                continue
+            bullets.append({
+                "id": b.id,
+                "text": b.text,
+                "tags": [],  # Phase B.2 doesn't surface tags yet; B.3 adds the join
+                "has_outcome": bool(b.has_outcome),
+                "source": b.source,
+            })
+
+        payload.append({
+            "id": exp.id,
+            "company": exp.company,
+            "location": exp.location or "",
+            "start_date": exp.start_date,
+            "end_date": exp.end_date,
+            "eligible_titles": eligible_titles,
+            "bullets": bullets,
+        })
+    return payload
 
 
 # ---------------------------------------------------------------------------
