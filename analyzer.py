@@ -1296,3 +1296,207 @@ Respond with valid JSON only — no markdown, no explanation outside the JSON:
         # Fail open — scope check failure must never block refinement
         logger.warning("scope check failed, failing open: %s", e)
         return {"valid": True}
+
+
+# ---------------------------------------------------------------------------
+# Phase B.4: critique LLM-proposed bullets/titles + promote clarifications
+# ---------------------------------------------------------------------------
+
+# Required keys for the critique response. `concerns` may be an empty list when
+# the critique is clean, but the field must be present.
+CRITIQUE_REQUIRED_KEYS = frozenset({"verdict", "notes", "concerns"})
+
+# Critique persona — short, sharp, fabrication-focused. Inspired by the
+# SYSTEM_PROMPT ALWAYS/NEVER rules but specialized for proposal review.
+PROPOSAL_CRITIQUE_SYSTEM_PROMPT = """You are a rigorous reviewer evaluating LLM-proposed resume bullets and titles for fabrication risk. You read the original LLM proposal, any user edit, the candidate's source experience (company, official title, existing canonical bullets), the candidate's first-person clarifications, and the JD that triggered the proposal. Your job is to spot fabrication, scope inflation, and grounding drift.
+
+Output JSON only — no markdown fences, no commentary. Required keys:
+{
+  "verdict": "good" | "caution" | "risky",
+  "notes": "one to two sentences summarizing your judgment",
+  "concerns": ["specific concern 1", "specific concern 2", ...],
+  "suggested_revisions": ["alternative phrasing 1", ...]   // optional, may be []
+}
+
+VERDICT RULES (load-bearing — anti-rubber-stamping):
+- "good" is reserved for proposals that genuinely preserve grounding. To use "good", `concerns` MUST be empty AND `notes` MUST explicitly state what specifically traces to source ("preserves the 800-unit fleet metric from the Acme bullet" / "no fabricated specifics; verb downgraded from 'Owned' to 'Contributed to' matches source"). Vague "looks good" is a "caution".
+- "caution" when there are concerns the user should weigh but no outright fabrication.
+- "risky" when the text invents specifics, escalates scope, contradicts clarifications, or claims experience the candidate's corpus doesn't support.
+
+CHECK FOR (and cite specifically in concerns):
+1. **Fabricated specifics** — numbers, tech names, vendor names, customer segments, dollar amounts, team sizes not in the source experience or clarifications.
+2. **Scope inflation** — "team" → "organization", "project" → "company-wide initiative", "two engineers" → "engineering org".
+3. **Domain drift** — adding industry experience the candidate doesn't have (healthcare claim with no healthcare corpus, EHR familiarity with no clinical clarification, etc.).
+4. **Title elevation** — claiming seniority beyond the candidate's official title or clarified scope.
+5. **Verb overreach** — "Owned" / "Led" / "Drove" when source says "Contributed" / "Supported" / "Helped".
+
+When a concern fires, NAME the specific claim ("the '800-unit fleet' phrase appears in source bullet b41 — OK", or "'24 clinicians interviewed' has no source — fabricated specific").
+
+Be brief. 1-3 concerns is plenty per critique."""
+
+
+def critique_proposal(
+    client: anthropic.Anthropic,
+    *,
+    original_text: str,
+    user_edited_text: str | None,
+    subject_kind: str,  # "bullet" or "experience_title"
+    experience_context: dict,
+    clarifications: list[tuple[str, str]] | None = None,
+    jd_excerpt: str = "",
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """Critique a user edit to an LLM-proposed bullet or title.
+
+    Uses Haiku — proposal critique is structured rubric application, not
+    reasoning-depth work. Output schema validated via `_parse_or_retry` with
+    CRITIQUE_REQUIRED_KEYS. Returns the critique dict unchanged for the caller
+    to persist on `proposal_review.llm_critique_json`.
+
+    `experience_context` should carry: company, location, start_date,
+    end_date, official_title, and a list of existing bullet texts. The
+    critique uses these as the grounding pool. `clarifications` is a list of
+    (question, answer) tuples — first-person ground truth.
+
+    `subject_kind` toggles minor wording in the prompt so a title critique
+    doesn't read like a bullet critique.
+    """
+    edit_block = (
+        f"The user edited the proposal to:\n  {user_edited_text}"
+        if user_edited_text and user_edited_text.strip() != original_text.strip()
+        else "The user has not edited the proposal; they are considering accepting it as-is."
+    )
+
+    company = experience_context.get("company", "(unknown)")
+    official_title = experience_context.get("official_title", "(unknown)")
+    dates = (
+        f"{experience_context.get('start_date', '?')} → "
+        f"{experience_context.get('end_date') or 'present'}"
+    )
+    location = experience_context.get("location", "")
+    canonical_bullets = experience_context.get("existing_bullets", []) or []
+    bullets_block = "\n".join(f"  - {b}" for b in canonical_bullets[:20])
+    if not bullets_block:
+        bullets_block = "  (no existing canonical bullets for this experience)"
+
+    clar_lines = []
+    for q, a in (clarifications or [])[:30]:
+        clar_lines.append(f"  Q: {q}\n  A: {a}")
+    clar_block = "\n\n".join(clar_lines) if clar_lines else "  (no relevant candidate clarifications)"
+
+    jd_block = jd_excerpt.strip() or "(no JD excerpt provided)"
+
+    user_prompt = f"""<task>Critique this LLM-proposed {subject_kind} for fabrication risk against the candidate's source. Output JSON only.</task>
+
+<original_proposal>
+{original_text}
+</original_proposal>
+
+<user_action>
+{edit_block}
+</user_action>
+
+<experience_context>
+Company: {company}
+Official title: {official_title}
+Dates: {dates}
+{f"Location: {location}" if location else ""}
+
+Existing canonical bullets for this experience:
+{bullets_block}
+</experience_context>
+
+<candidate_clarifications>
+{clar_block}
+</candidate_clarifications>
+
+<jd_excerpt>
+{jd_block}
+</jd_excerpt>"""
+
+    return _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot, no caching benefit
+        required_keys=CRITIQUE_REQUIRED_KEYS,
+        call_kind="critique_proposal",
+        username=username,
+        run_id=run_id,
+        system_prompt=PROPOSAL_CRITIQUE_SYSTEM_PROMPT,
+        model=HAIKU_MODEL,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase B.4: promote a clarification Q&A into a bullet candidate
+# ---------------------------------------------------------------------------
+
+
+PROMOTE_BULLET_REQUIRED_KEYS = frozenset({"text", "pattern_kind"})
+
+PROMOTE_CLARIFICATION_SYSTEM_PROMPT = """You convert a candidate's clarification Q&A pair into a single resume bullet candidate. The bullet must:
+
+- Be written in past-tense or active voice (the resume voice), not Q&A voice.
+- Start with a strong action verb (Led / Built / Owned / Designed / etc. — NOT "Responsible for" / "Helped with").
+- Preserve every concrete specific (numbers, technologies, scope, durations) the candidate stated, VERBATIM. Do NOT invent specifics.
+- Stay under 35 words.
+- Follow one of these patterns (per docs/bullet_patterns.md):
+  - "xyz" — Accomplished X as measured by Y by doing Z. Use when a measurable outcome is in the answer.
+  - "car" — Challenge / Action / Result. Use when context matters.
+  - "manual" — generic past-tense action; use when the answer is short and qualitative.
+
+The user reviews and edits before this becomes canonical. Your job is to give them a strong starting draft, not a final bullet.
+
+Output JSON only — no markdown fences:
+{
+  "text": "the proposed bullet text",
+  "pattern_kind": "xyz" | "car" | "manual",
+  "rationale": "one sentence explaining the framing choice"
+}"""
+
+
+def promote_clarification_to_bullet(
+    client: anthropic.Anthropic,
+    *,
+    question: str,
+    answer: str,
+    target_company: str = "",
+    target_official_title: str = "",
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """Convert a clarification Q&A into a proposed bullet candidate.
+
+    Returns a dict with `text`, `pattern_kind`, and `rationale`. The caller
+    inserts the bullet (with `is_pending_review=1, source='clarification:<id>'`)
+    and creates a `proposal_review` row keyed to it so the critique loop can
+    examine the result.
+    """
+    target_block = ""
+    if target_company or target_official_title:
+        target_block = (
+            "<target_experience>\n"
+            f"Company: {target_company or '(unspecified)'}\n"
+            f"Official title: {target_official_title or '(unspecified)'}\n"
+            "</target_experience>\n\n"
+        )
+
+    user_prompt = f"""<task>Convert the clarification answer into a proposed resume bullet.</task>
+
+{target_block}<clarification>
+Question: {question}
+Answer: {answer}
+</clarification>"""
+
+    return _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",
+        required_keys=PROMOTE_BULLET_REQUIRED_KEYS,
+        call_kind="promote_clarification_to_bullet",
+        username=username,
+        run_id=run_id,
+        system_prompt=PROMOTE_CLARIFICATION_SYSTEM_PROMPT,
+        model=HAIKU_MODEL,
+    )
