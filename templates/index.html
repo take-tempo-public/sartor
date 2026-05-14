@@ -25,6 +25,22 @@
     <div class="lcars-pill lcars-amber" id="statusPill" aria-live="polite" aria-atomic="true">STANDBY</div>
   </div>
 
+  <!-- Top-level tabs (Phase D). Job-flow is the legacy single-page workflow;
+       Career Corpus is the new DB-backed editor. Persona Templates is a
+       placeholder for D.4. -->
+  <nav class="top-tabs" role="tablist" aria-label="Application sections">
+    <button class="top-tab-btn active" id="topTabApplication"
+            role="tab" aria-controls="tab-application" aria-selected="true"
+            onclick="switchTopTab('application', this)">APPLICATION</button>
+    <button class="top-tab-btn" id="topTabCorpus"
+            role="tab" aria-controls="tab-corpus" aria-selected="false"
+            onclick="switchTopTab('corpus', this)">CAREER CORPUS</button>
+    <button class="top-tab-btn" id="topTabPersonas"
+            role="tab" aria-controls="tab-personas" aria-selected="false"
+            onclick="switchTopTab('personas', this)">PERSONA TEMPLATES</button>
+  </nav>
+
+  <div id="tab-application" class="top-tab-panel" role="tabpanel" aria-labelledby="topTabApplication">
   <div class="lcars-main" id="main">
 
     <!-- USER -->
@@ -248,6 +264,50 @@
       </div>
     </section>
 
+  </div>
+  </div><!-- /tab-application -->
+
+  <!-- ============================================================== -->
+  <!-- CAREER CORPUS TAB (Phase D.2)                                  -->
+  <!-- DB-backed editor for the candidate's experiences / bullets /   -->
+  <!-- alternate titles. Loaded lazily when the user activates the    -->
+  <!-- tab; reads from /api/users/<u>/experiences and uses the D.1    -->
+  <!-- CRUD routes for inline edits.                                  -->
+  <!-- ============================================================== -->
+  <div id="tab-corpus" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabCorpus">
+    <div class="lcars-main">
+      <div class="lcars-block lcars-blue" data-panel="panelCorpus">CORPUS</div>
+      <section class="lcars-panel" id="panelCorpus">
+        <div class="panel-header lcars-bg-blue">CAREER CORPUS</div>
+        <div class="panel-body">
+          <div class="edit-hint" id="corpusEmptyHint">
+            Select a user above to load their experiences. Each experience
+            holds one or more titles (one official, optional alternates)
+            plus a list of bullets the LLM draws from when composing a
+            resume. Edits here apply to the next application, not any
+            in-flight one.
+          </div>
+          <div class="form-row" id="corpusToolbar" style="display:none">
+            <button class="lcars-btn lcars-bg-teal" onclick="openCorpusAddExperience()">+ ADD EXPERIENCE</button>
+            <span class="edit-hint" id="corpusCount">0 experiences</span>
+          </div>
+          <div id="corpusExperienceList" class="corpus-experience-list"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Persona Templates placeholder (D.4 will fill this in) -->
+  <div id="tab-personas" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabPersonas">
+    <div class="lcars-main">
+      <div class="lcars-block lcars-violet" data-panel="panelPersonas">TEMPLATES</div>
+      <section class="lcars-panel" id="panelPersonas">
+        <div class="panel-header lcars-bg-violet">PERSONA TEMPLATES</div>
+        <div class="panel-body">
+          <div class="edit-hint">Persona template gallery comes in Phase D.4.</div>
+        </div>
+      </section>
+    </div>
   </div>
 
   <!-- Edit-detection modal — opens when REFINE or GET INTERVIEW QUESTIONS is

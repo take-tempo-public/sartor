@@ -1392,3 +1392,459 @@ document.querySelectorAll('.panel-header').forEach(header => {
   const panel = header.closest('.lcars-panel');
   if (panel) header.addEventListener('click', () => togglePanel(panel.id));
 });
+
+// ===============================================================
+// Phase D.2 — Top-level tabs + Career Corpus tab
+// ===============================================================
+
+let _corpusLoadedForUser = '';
+let _corpusExperiences = [];
+
+function switchTopTab(name, btn) {
+  document.querySelectorAll('.top-tab-btn').forEach(b => {
+    b.classList.toggle('active', b === btn);
+    b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+  });
+  document.querySelectorAll('.top-tab-panel').forEach(p => p.classList.add('hidden'));
+  const target = document.getElementById(`tab-${name}`);
+  if (target) target.classList.remove('hidden');
+  if (name === 'corpus') loadCorpusIfReady();
+}
+
+async function loadCorpusIfReady() {
+  if (!currentUser) {
+    document.getElementById('corpusEmptyHint').textContent =
+      'Select a user above to load their experiences.';
+    document.getElementById('corpusToolbar').style.display = 'none';
+    _clearChildren(document.getElementById('corpusExperienceList'));
+    _corpusLoadedForUser = '';
+    return;
+  }
+  if (_corpusLoadedForUser === currentUser) return;
+  await refreshCorpus();
+}
+
+async function refreshCorpus() {
+  const list = document.getElementById('corpusExperienceList');
+  _setLoadingPlaceholder(list, 'Loading…');
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
+  } catch (e) {
+    _setLoadingPlaceholder(list, 'Network error.');
+    return;
+  }
+  if (res.status === 404) {
+    _clearChildren(list);
+    document.getElementById('corpusEmptyHint').textContent =
+      'No experiences in the corpus yet for ' + currentUser +
+      '. Onboarding extraction populates this on first import.';
+    document.getElementById('corpusToolbar').style.display = '';
+    _corpusLoadedForUser = currentUser;
+    _corpusExperiences = [];
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(list, 'Failed to load corpus.');
+    return;
+  }
+  const data = await res.json();
+  _corpusExperiences = data;
+  _corpusLoadedForUser = currentUser;
+  _renderCorpusList();
+}
+
+function _renderCorpusList() {
+  const list = document.getElementById('corpusExperienceList');
+  const hint = document.getElementById('corpusEmptyHint');
+  const toolbar = document.getElementById('corpusToolbar');
+  toolbar.style.display = '';
+  document.getElementById('corpusCount').textContent =
+    `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
+  _clearChildren(list);
+  if (_corpusExperiences.length === 0) {
+    hint.textContent = 'No experiences yet. Click + ADD EXPERIENCE to start, or run onboarding.';
+    return;
+  }
+  hint.textContent = 'Click a card to expand and edit titles + bullets. Saves are inline.';
+  _corpusExperiences.forEach(exp => list.appendChild(_renderCorpusSummary(exp)));
+}
+
+function _renderCorpusSummary(exp) {
+  const card = _el('div', { className: 'corpus-card', id: `corpus-exp-${exp.id}` });
+  card.dataset.experienceId = exp.id;
+  const header = _el('div', { className: 'corpus-card-header' });
+  header.onclick = () => toggleCorpusCard(exp.id);
+  header.appendChild(_el('button', { className: 'corpus-card-toggle' }, [], { 'aria-label': 'Expand' }));
+  header.appendChild(_el('div', { className: 'corpus-card-company', textContent: exp.company || '(no company)' }));
+  header.appendChild(_el('div', { className: 'corpus-card-title', textContent: exp.official_title || '(no official title)' }));
+  header.appendChild(_el('div', { className: 'corpus-card-dates', textContent: `${exp.start_date} — ${exp.end_date || 'current'}` }));
+  const metaText = `${exp.bullet_count_active} bullets` +
+    (exp.bullet_count_pending ? ` · ${exp.bullet_count_pending} pending` : '');
+  header.appendChild(_el('div', { className: 'corpus-card-meta', textContent: metaText }));
+  card.appendChild(header);
+  card.appendChild(_el('div', { className: 'corpus-card-body', id: `corpus-body-${exp.id}` }));
+  return card;
+}
+
+async function toggleCorpusCard(experienceId) {
+  const card = document.getElementById(`corpus-exp-${experienceId}`);
+  if (!card) return;
+  const willExpand = !card.classList.contains('expanded');
+  card.classList.toggle('expanded');
+  if (willExpand) await _loadCorpusDetail(experienceId);
+}
+
+async function _loadCorpusDetail(experienceId) {
+  const body = document.getElementById(`corpus-body-${experienceId}`);
+  if (!body) return;
+  _setLoadingPlaceholder(body, 'Loading…');
+  let res;
+  try {
+    res = await fetch(`/api/experiences/${experienceId}`);
+  } catch (e) {
+    _setLoadingPlaceholder(body, 'Network error.');
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(body, 'Failed to load.');
+    return;
+  }
+  _renderCorpusDetail(body, await res.json());
+}
+
+function _renderCorpusDetail(body, exp) {
+  _clearChildren(body);
+  const expId = exp.id;
+  body.appendChild(_renderExperienceFieldGroup(expId, exp));
+  const btnRow = _el('div', { className: 'form-row' });
+  const retire = _el('button', { className: 'lcars-btn lcars-bg-orange', textContent: 'SOFT-RETIRE EXPERIENCE' });
+  retire.onclick = () => deleteExperience(expId);
+  btnRow.appendChild(retire);
+  body.appendChild(btnRow);
+  body.appendChild(_renderTitleSection(expId, exp.titles || []));
+  body.appendChild(_renderBulletSection(expId, exp.bullets || []));
+}
+
+function _renderExperienceFieldGroup(expId, exp) {
+  const fg = _el('div', { className: 'corpus-fieldgroup' });
+  const fields = [
+    { key: 'company',    label: 'Company',         type: 'text',     value: exp.company || '' },
+    { key: 'location',   label: 'Location',        type: 'text',     value: exp.location || '' },
+    { key: 'start_date', label: 'Start (YYYY-MM)', type: 'text',     value: exp.start_date,
+      pattern: '\\d{4}-\\d{2}' },
+    { key: 'end_date',   label: 'End (YYYY-MM)',   type: 'text',     value: exp.end_date || '',
+      pattern: '\\d{4}-\\d{2}', placeholder: '(blank = current)' },
+    { key: 'summary',    label: 'Summary',         type: 'textarea', value: exp.summary || '' },
+  ];
+  fields.forEach(f => {
+    const id = `exp-${expId}-${f.key}`;
+    fg.appendChild(_el('label', { textContent: f.label, htmlFor: id }));
+    const input = f.type === 'textarea'
+      ? _el('textarea', { id, value: f.value })
+      : _el('input', { id, type: f.type, value: f.value });
+    if (f.type === 'textarea') input.textContent = f.value;
+    else input.value = f.value;
+    if (f.pattern) input.pattern = f.pattern;
+    if (f.placeholder) input.placeholder = f.placeholder;
+    input.addEventListener('change', () => _saveExperienceField(expId, f.key, input.value));
+    fg.appendChild(input);
+  });
+  return fg;
+}
+
+function _renderTitleSection(expId, titles) {
+  const sec = _el('div', { className: 'corpus-section' });
+  const header = _el('div', { className: 'corpus-section-header' });
+  header.appendChild(_el('div', { className: 'corpus-section-title', textContent: 'Titles' }));
+  const addBtn = _el('button', { className: 'corpus-action-btn', textContent: '+ ADD TITLE' });
+  addBtn.onclick = () => _addTitlePrompt(expId);
+  header.appendChild(addBtn);
+  sec.appendChild(header);
+  if (titles.length === 0) {
+    sec.appendChild(_el('div', { className: 'corpus-empty-experience',
+      textContent: 'No titles. Add at least one official title for LLM use.' }));
+    return sec;
+  }
+  titles.forEach(t => sec.appendChild(_renderTitleRow(expId, t)));
+  return sec;
+}
+
+function _renderTitleRow(expId, title) {
+  const row = _el('div', { className: 'corpus-row', id: `title-row-${title.id}` });
+  const input = _el('input', { className: 'corpus-row-input', value: title.title });
+  input.addEventListener('change', () =>
+    _putJson(`/api/experience-titles/${title.id}`, { title: input.value })
+      .then(updated => updated && _toast(`Title saved: ${updated.title}`))
+      .catch(e => _toast('Save failed: ' + e.message, true))
+  );
+  row.appendChild(input);
+  row.appendChild(_el('span', {
+    className: 'corpus-row-flag' + (title.is_official ? ' official' : ''),
+    textContent: title.is_official ? 'OFFICIAL' : 'ALT',
+  }));
+  if (title.is_pending_review) {
+    row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
+  }
+  const actions = _el('div', { className: 'corpus-row-actions' });
+  if (!title.is_official) {
+    const setOfficial = _el('button', { className: 'corpus-action-btn', textContent: 'SET OFFICIAL' });
+    setOfficial.onclick = async () => {
+      try {
+        await _putJson(`/api/experience-titles/${title.id}`, { is_official: true });
+        await _reloadCorpusCard(expId);
+        _toast('Promoted to official');
+      } catch (e) { _toast('Failed: ' + e.message, true); }
+    };
+    actions.appendChild(setOfficial);
+  }
+  const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'DELETE' });
+  del.onclick = async () => {
+    if (!confirm('Mark this title non-eligible? Audit row will remain.')) return;
+    try {
+      await _deleteJson(`/api/experience-titles/${title.id}`);
+      await _reloadCorpusCard(expId);
+      _toast('Title retired');
+    } catch (e) { _toast('Failed: ' + e.message, true); }
+  };
+  actions.appendChild(del);
+  row.appendChild(actions);
+  return row;
+}
+
+function _renderBulletSection(expId, bullets) {
+  const sec = _el('div', { className: 'corpus-section' });
+  const header = _el('div', { className: 'corpus-section-header' });
+  header.appendChild(_el('div', { className: 'corpus-section-title', textContent: 'Bullets' }));
+  const addBtn = _el('button', { className: 'corpus-action-btn', textContent: '+ ADD BULLET' });
+  addBtn.onclick = () => _addBulletPrompt(expId);
+  header.appendChild(addBtn);
+  sec.appendChild(header);
+  if (bullets.length === 0) {
+    sec.appendChild(_el('div', { className: 'corpus-empty-experience', textContent: 'No active bullets.' }));
+    return sec;
+  }
+  bullets.forEach(b => sec.appendChild(_renderBulletRow(expId, b)));
+  return sec;
+}
+
+function _renderBulletRow(expId, bullet) {
+  const row = _el('div', { className: 'corpus-row', id: `bullet-row-${bullet.id}` });
+  const input = _el('textarea', { className: 'corpus-row-input' });
+  input.rows = 2;
+  input.value = bullet.text;
+  input.addEventListener('change', async () => {
+    try {
+      const updated = await _putJson(`/api/bullets/${bullet.id}`, { text: input.value });
+      const fresh = await fetch(`/api/experiences/${expId}`).then(r => r.json());
+      const newRow = (fresh.bullets || []).find(b => b.id === bullet.id);
+      if (newRow) row.replaceWith(_renderBulletRow(expId, newRow));
+      _toast(`Bullet saved${updated.has_outcome ? ' (outcome detected)' : ''}`);
+    } catch (e) { _toast('Save failed: ' + e.message, true); }
+  });
+  row.appendChild(input);
+  const flag = _el('span', {
+    className: 'corpus-row-flag ' + (bullet.has_outcome ? 'outcome' : 'no-outcome'),
+    textContent: bullet.has_outcome ? 'OUTCOME' : 'NO OUTCOME',
+  });
+  flag.title = bullet.has_outcome
+    ? 'A numeric outcome was detected (count, %, currency, duration).'
+    : 'No measurable outcome — consider adding one.';
+  row.appendChild(flag);
+  if (bullet.is_pending_review) {
+    row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
+  }
+  const actions = _el('div', { className: 'corpus-row-actions' });
+  const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'RETIRE' });
+  del.onclick = async () => {
+    if (!confirm('Soft-retire this bullet? It stays in the audit log but stops appearing in new applications.')) return;
+    try {
+      await _deleteJson(`/api/bullets/${bullet.id}`);
+      await _reloadCorpusCard(expId);
+      _toast('Bullet retired');
+    } catch (e) { _toast('Failed: ' + e.message, true); }
+  };
+  actions.appendChild(del);
+  row.appendChild(actions);
+  return row;
+}
+
+async function _saveExperienceField(expId, field, value) {
+  const body = {};
+  body[field] = value;
+  try {
+    await _putJson(`/api/experiences/${expId}`, body);
+    _toast(`${field} saved`);
+  } catch (e) {
+    _toast(`Save failed: ${e.message}`, true);
+  }
+}
+
+async function _addTitlePrompt(expId) {
+  const title = prompt('Alternate title (e.g. "Director, AI Research"):');
+  if (!title) return;
+  const makeOfficial = confirm('Mark as the official title? OK = official, Cancel = alternate.');
+  try {
+    await _postJson(`/api/experiences/${expId}/titles`, { title, is_official: makeOfficial });
+    await _reloadCorpusCard(expId);
+    _toast('Title added');
+  } catch (e) { _toast('Add failed: ' + e.message, true); }
+}
+
+async function _addBulletPrompt(expId) {
+  const text = prompt('Bullet text:');
+  if (!text || !text.trim()) return;
+  try {
+    await _postJson(`/api/experiences/${expId}/bullets`, { text: text.trim() });
+    await _reloadCorpusCard(expId);
+    _toast('Bullet added');
+  } catch (e) { _toast('Add failed: ' + e.message, true); }
+}
+
+async function _reloadCorpusCard(expId) {
+  await _loadCorpusDetail(expId);
+  await refreshCorpusSummaryFor(expId);
+}
+
+async function refreshCorpusSummaryFor(expId) {
+  const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
+  if (!res.ok) return;
+  _corpusExperiences = await res.json();
+  const exp = _corpusExperiences.find(e => e.id === expId);
+  if (!exp) return;
+  const card = document.getElementById(`corpus-exp-${expId}`);
+  if (!card) return;
+  const company = card.querySelector('.corpus-card-company');
+  const title = card.querySelector('.corpus-card-title');
+  const meta = card.querySelector('.corpus-card-meta');
+  if (company) company.textContent = exp.company;
+  if (title) title.textContent = exp.official_title || '(no official title)';
+  if (meta) meta.textContent = `${exp.bullet_count_active} bullets` +
+    (exp.bullet_count_pending ? ` · ${exp.bullet_count_pending} pending` : '');
+  document.getElementById('corpusCount').textContent =
+    `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
+}
+
+async function deleteExperience(expId) {
+  if (!confirm('Soft-retire this entire experience? All its bullets become inactive. Audit rows remain.')) return;
+  try {
+    const r = await _deleteJson(`/api/experiences/${expId}`);
+    _toast(`Retired ${r.retired_bullets} bullet(s)`);
+    await refreshCorpus();
+  } catch (e) { _toast('Failed: ' + e.message, true); }
+}
+
+async function openCorpusAddExperience() {
+  const company = prompt('Company name:');
+  if (!company || !company.trim()) return;
+  const start = prompt('Start date (YYYY-MM):');
+  if (!start || !/^\d{4}-\d{2}$/.test(start)) {
+    alert('Start date must be YYYY-MM (e.g. 2023-01)');
+    return;
+  }
+  const end = prompt('End date (YYYY-MM, blank for current):') || '';
+  if (end && !/^\d{4}-\d{2}$/.test(end)) {
+    alert('End date must be YYYY-MM or blank');
+    return;
+  }
+  const location = prompt('Location (optional):') || '';
+  try {
+    await _postJson(`/api/users/${encodeURIComponent(currentUser)}/experiences`, {
+      company: company.trim(),
+      start_date: start,
+      end_date: end || null,
+      location: location.trim() || null,
+    });
+    await refreshCorpus();
+    _toast('Experience added');
+  } catch (e) { _toast('Add failed: ' + e.message, true); }
+}
+
+async function _putJson(url, body) {
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
+async function _postJson(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
+async function _deleteJson(url) {
+  const res = await fetch(url, { method: 'DELETE' });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
+// Tiny DOM constructor — avoids innerHTML for safety. Props can include
+// className, id, textContent, htmlFor, value, type. Children is an array
+// of child Nodes appended in order. Attrs is a flat object for ARIA etc.
+function _el(tag, props = {}, children = [], attrs = {}) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v == null) continue;
+    if (k === 'htmlFor') node.htmlFor = v;
+    else if (k === 'className') node.className = v;
+    else if (k === 'textContent') node.textContent = v;
+    else if (k === 'id') node.id = v;
+    else if (k === 'type') node.type = v;
+    else if (k === 'value') node.value = v;
+    else node[k] = v;
+  }
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  children.forEach(c => node.appendChild(c));
+  return node;
+}
+
+function _clearChildren(el) {
+  if (!el) return;
+  while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+function _setLoadingPlaceholder(el, msg) {
+  _clearChildren(el);
+  el.appendChild(_el('div', { className: 'corpus-empty-experience', textContent: msg }));
+}
+
+function _toast(msg, isError) {
+  let t = document.getElementById('_corpusToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '_corpusToast';
+    t.className = 'corpus-toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.toggle('error', !!isError);
+  t.classList.add('show');
+  clearTimeout(t._hide);
+  t._hide = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// Invalidate the corpus cache when the user changes — pin to onUserSelect.
+const _origOnUserSelect = onUserSelect;
+onUserSelect = async function() {
+  _corpusLoadedForUser = '';
+  _corpusExperiences = [];
+  _clearChildren(document.getElementById('corpusExperienceList'));
+  return await _origOnUserSelect.apply(this, arguments);
+};
