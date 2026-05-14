@@ -1372,3 +1372,112 @@ textarea:focus-visible {
   gap: 6px;
   margin-top: 4px;
 }
+
+/* =============================================================== */
+/* Phase D.5 — Candidate Memory tab                                */
+/* =============================================================== */
+
+.memory-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: #0e0e1e;
+  border-radius: 6px;
+}
+
+.memory-search {
+  flex: 1;
+  min-width: 240px;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid #2b2b40;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-family: var(--font);
+  font-size: 14px;
+}
+
+.memory-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.memory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memory-card {
+  background: var(--panel-bg);
+  border: 1px solid #2b2b40;
+  border-left: 4px solid var(--teal);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.memory-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.memory-card-kind {
+  background: var(--blue);
+  color: var(--black);
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.memory-card-promoted {
+  background: var(--orange);
+  color: var(--black);
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.memory-card-origin {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.memory-card-q {
+  font-size: 14px;
+  color: var(--amber);
+  font-weight: 700;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.memory-card-a {
+  font-size: 14px;
+  color: var(--text);
+  opacity: 0.9;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin-bottom: 6px;
+}
+
+.memory-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}

@@ -2445,6 +2445,94 @@ def update_application_status(application_id: int):
         session.close()
 
 
+# ---------------------------------------------------------------------------
+# Phase D.5: Candidate Memory list route
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/users/<username>/clarifications", methods=["GET"])
+def list_clarifications(username: str):
+    """Return the candidate's clarification history.
+
+    Query params:
+      q=<substring>            optional case-insensitive match against
+                               question OR answer text
+      kind=<kind>              filter by clarification.kind
+      only_outcome_rich=1      filter to answers matching METRIC_RE
+                               (the "promote candidates" view)
+      include_promoted=1       by default suppresses already-promoted rows
+      limit=<n>                max rows (default 200, hard cap 1000)
+    """
+    from db.models import Application, Candidate, Clarification
+    from db.session import get_session, init_db
+    from hardening import METRIC_RE
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    q = (request.args.get("q") or "").strip().lower()
+    kind = request.args.get("kind")
+    only_outcome_rich = request.args.get("only_outcome_rich") == "1"
+    include_promoted = request.args.get("include_promoted") == "1"
+    limit = min(int(request.args.get("limit", 200)), 1000)
+    valid_kinds = {
+        "experience_probe", "scope_probe", "iteration_probe",
+        "outcome_probe", "manual",
+    }
+    if kind and kind not in valid_kinds:
+        return jsonify({"error": f"kind must be one of {sorted(valid_kinds)}"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({"error": "Candidate not in corpus yet"}), 404
+
+        query = session.query(Clarification).filter_by(candidate_id=candidate.id)
+        if not include_promoted:
+            query = query.filter(Clarification.is_promoted_to_bullet == 0)
+        if kind:
+            query = query.filter(Clarification.kind == kind)
+        rows = query.order_by(Clarification.created_at.desc()).limit(limit).all()
+
+        # Resolve origin application titles in one batch so the UI can label
+        # each clarification by its origin without N+1 queries.
+        app_ids = [r.origin_application_id for r in rows if r.origin_application_id]
+        app_title_by_id: dict[int, str] = {}
+        if app_ids:
+            for app_row in session.query(Application).filter(
+                Application.id.in_(app_ids),
+            ).all():
+                app_title_by_id[app_row.id] = app_row.title
+
+        out = []
+        for r in rows:
+            if q and (q not in r.question.lower() and q not in r.answer.lower()):
+                continue
+            outcome_rich = bool(METRIC_RE.search(r.answer))
+            if only_outcome_rich and not outcome_rich:
+                continue
+            out.append({
+                "id": r.id,
+                "question": r.question,
+                "answer": r.answer,
+                "kind": r.kind,
+                "target_gap": r.target_gap,
+                "is_promoted_to_bullet": bool(r.is_promoted_to_bullet),
+                "outcome_rich": outcome_rich,
+                "origin_application_id": r.origin_application_id,
+                "origin_application_title":
+                    app_title_by_id.get(r.origin_application_id) if r.origin_application_id else None,
+                "origin_run_id": r.origin_run_id,
+                "created_at": r.created_at,
+            })
+        return jsonify(out)
+    finally:
+        session.close()
+
+
 if __name__ == "__main__":
     print("\n  Resume Optimizer — http://localhost:5000\n")
     debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"

@@ -1412,6 +1412,7 @@ function switchTopTab(name, btn) {
   if (target) target.classList.remove('hidden');
   if (name === 'corpus') loadCorpusIfReady();
   if (name === 'personas') _personaTabActivated();
+  if (name === 'memory') _memoryTabActivated();
 }
 
 async function loadCorpusIfReady() {
@@ -1849,9 +1850,169 @@ onUserSelect = async function() {
   _corpusLoadedForUser = '';
   _corpusExperiences = [];
   _personasLoaded = false;
+  _memoryLoaded = false;
   _clearChildren(document.getElementById('corpusExperienceList'));
   return await _origOnUserSelect.apply(this, arguments);
 };
+
+// ===============================================================
+// Phase D.5 — Candidate Memory tab
+// ===============================================================
+
+let _memoryLoaded = false;
+let _memoryDebounce = null;
+
+function _memoryTabActivated() {
+  if (_memoryLoaded) return;
+  _wireMemoryFilters();
+  refreshMemory();
+}
+
+function _wireMemoryFilters() {
+  const search = document.getElementById('memorySearch');
+  const kindFilter = document.getElementById('memoryKindFilter');
+  const outcomeOnly = document.getElementById('memoryOutcomeOnly');
+  const incPromoted = document.getElementById('memoryIncludePromoted');
+  if (search && !search._wired) {
+    search.addEventListener('input', () => {
+      clearTimeout(_memoryDebounce);
+      _memoryDebounce = setTimeout(refreshMemory, 250);
+    });
+    search._wired = true;
+  }
+  [kindFilter, outcomeOnly, incPromoted].forEach(el => {
+    if (el && !el._wired) {
+      el.addEventListener('change', refreshMemory);
+      el._wired = true;
+    }
+  });
+}
+
+async function refreshMemory() {
+  const list = document.getElementById('memoryList');
+  const countEl = document.getElementById('memoryCount');
+  if (!currentUser) {
+    _setLoadingPlaceholder(list, 'Select a user to view memory.');
+    countEl.textContent = '0 entries';
+    return;
+  }
+  const params = new URLSearchParams();
+  const q = (document.getElementById('memorySearch').value || '').trim();
+  if (q) params.set('q', q);
+  const kind = document.getElementById('memoryKindFilter').value;
+  if (kind) params.set('kind', kind);
+  if (document.getElementById('memoryOutcomeOnly').checked) params.set('only_outcome_rich', '1');
+  if (document.getElementById('memoryIncludePromoted').checked) params.set('include_promoted', '1');
+
+  _setLoadingPlaceholder(list, 'Loading…');
+  let res;
+  try {
+    res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/clarifications?${params}`,
+    );
+  } catch {
+    _setLoadingPlaceholder(list, 'Network error.');
+    return;
+  }
+  if (res.status === 404) {
+    _setLoadingPlaceholder(list, 'Candidate not in corpus yet.');
+    countEl.textContent = '0 entries';
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(list, 'Failed to load.');
+    return;
+  }
+  const rows = await res.json();
+  _memoryLoaded = true;
+  countEl.textContent = `${rows.length} entr${rows.length === 1 ? 'y' : 'ies'}`;
+  _clearChildren(list);
+  if (rows.length === 0) {
+    _setLoadingPlaceholder(list, 'No matching memory entries.');
+    return;
+  }
+  rows.forEach(r => list.appendChild(_renderMemoryRow(r)));
+}
+
+function _renderMemoryRow(r) {
+  const card = _el('div', { className: 'memory-card', id: `memory-${r.id}` });
+
+  const header = _el('div', { className: 'memory-card-header' });
+  header.appendChild(_el('span', { className: 'memory-card-kind', textContent: r.kind }));
+  if (r.outcome_rich) {
+    header.appendChild(_el('span', {
+      className: 'corpus-row-flag outcome', textContent: 'OUTCOME',
+    }));
+  }
+  if (r.is_promoted_to_bullet) {
+    header.appendChild(_el('span', {
+      className: 'memory-card-promoted', textContent: 'PROMOTED',
+    }));
+  }
+  if (r.origin_application_title) {
+    header.appendChild(_el('span', {
+      className: 'memory-card-origin',
+      textContent: `from: ${r.origin_application_title}`,
+    }));
+  }
+  header.appendChild(_el('span', {
+    className: 'application-card-date',
+    textContent: _formatRelativeDate(r.created_at),
+  }));
+  card.appendChild(header);
+
+  card.appendChild(_el('div', { className: 'memory-card-q', textContent: r.question }));
+  card.appendChild(_el('div', { className: 'memory-card-a', textContent: r.answer }));
+
+  if (!r.is_promoted_to_bullet) {
+    const actions = _el('div', { className: 'memory-card-actions' });
+    const promote = _el('button', {
+      className: 'corpus-action-btn', textContent: 'PROMOTE TO BULLET',
+    });
+    promote.onclick = () => _promoteMemoryRow(r);
+    actions.appendChild(promote);
+    card.appendChild(actions);
+  }
+  return card;
+}
+
+async function _promoteMemoryRow(r) {
+  // Need an experience_id to attach the new bullet to. Ask via prompt
+  // until we have a richer chooser UI in D.5.1.
+  if (!_corpusExperiences || _corpusExperiences.length === 0) {
+    // Lazy-load corpus so we can prompt with company names
+    try {
+      const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
+      if (res.ok) _corpusExperiences = await res.json();
+    } catch {}
+  }
+  if (!_corpusExperiences || _corpusExperiences.length === 0) {
+    _toast('No experiences in corpus — add one in CAREER CORPUS first.', true);
+    return;
+  }
+  const choices = _corpusExperiences.map(
+    (e, i) => `${i + 1}. ${e.company} (${e.start_date})`,
+  ).join('\n');
+  const pick = prompt(`Which experience should this become a bullet under?\n\n${choices}\n\nEnter number:`);
+  const idx = parseInt(pick, 10) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= _corpusExperiences.length) return;
+  const expId = _corpusExperiences[idx].id;
+  try {
+    const res = await fetch(`/api/clarifications/${r.id}/promote-to-bullet`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ experience_id: expId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    _toast(`Promoted to bullet on ${_corpusExperiences[idx].company}`);
+    await refreshMemory();
+  } catch (e) {
+    _toast('Promote failed: ' + e.message, true);
+  }
+}
 
 // ===============================================================
 // Phase D.3 — Applications list (within the APPLICATION tab)

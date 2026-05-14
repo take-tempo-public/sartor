@@ -38,6 +38,9 @@
     <button class="top-tab-btn" id="topTabPersonas"
             role="tab" aria-controls="tab-personas" aria-selected="false"
             onclick="switchTopTab('personas', this)">PERSONA TEMPLATES</button>
+    <button class="top-tab-btn" id="topTabMemory"
+            role="tab" aria-controls="tab-memory" aria-selected="false"
+            onclick="switchTopTab('memory', this)">CANDIDATE MEMORY</button>
   </nav>
 
   <div id="tab-application" class="top-tab-panel" role="tabpanel" aria-labelledby="topTabApplication">
@@ -352,6 +355,51 @@
               <input type="text" id="personaUploadName" placeholder="Display name (optional)"
                      style="flex:1" aria-label="Display name for uploaded template">
             </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Candidate Memory tab (Phase D.5) -->
+  <div id="tab-memory" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabMemory">
+    <div class="lcars-main">
+      <div class="lcars-block lcars-teal" data-panel="panelMemory">MEMORY</div>
+      <section class="lcars-panel" id="panelMemory">
+        <div class="panel-header lcars-bg-teal">CANDIDATE MEMORY</div>
+        <div class="panel-body">
+          <div class="edit-hint">
+            Clarification Q&A pairs accumulated across every application.
+            Outcome-rich answers (those with measurable numbers) are
+            prioritized as bullet-promotion candidates.
+          </div>
+
+          <div class="memory-toolbar">
+            <input type="text" id="memorySearch" class="memory-search"
+                   placeholder="Search question or answer…"
+                   aria-label="Search clarifications">
+            <select id="memoryKindFilter" aria-label="Filter by clarification kind">
+              <option value="">All kinds</option>
+              <option value="experience_probe">Experience probe</option>
+              <option value="scope_probe">Scope probe</option>
+              <option value="iteration_probe">Iteration probe</option>
+              <option value="outcome_probe">Outcome probe</option>
+              <option value="manual">Manual</option>
+            </select>
+            <label class="memory-checkbox">
+              <input type="checkbox" id="memoryOutcomeOnly">
+              Outcome-rich only
+            </label>
+            <label class="memory-checkbox">
+              <input type="checkbox" id="memoryIncludePromoted">
+              Show promoted
+            </label>
+            <button class="lcars-btn lcars-bg-teal" onclick="refreshMemory()">REFRESH</button>
+            <span class="edit-hint" id="memoryCount" style="margin:0">0 entries</span>
+          </div>
+
+          <div id="memoryList" class="memory-list">
+            <div class="corpus-empty-experience">Select a user to view memory.</div>
           </div>
         </div>
       </section>
