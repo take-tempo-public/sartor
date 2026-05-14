@@ -29,18 +29,12 @@ from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
 from hardening import (
     ContextSet,
-    build_context_set,
-    check_ats_format,
     compute_iteration_signals,
-    compute_keyword_overlap,
-    extract_keywords,
     save_context_set,
     save_iteration_context,
     summarize_recent_edits,
     validate_config,
 )
-from parser import parse_resume
-from scraper import fetch_profile_content
 
 # P7 Observability: structured logging
 logging.basicConfig(
@@ -58,12 +52,6 @@ RESUMES_DIR = BASE_DIR / "resumes"
 OUTPUT_DIR = BASE_DIR / "output"
 
 ALLOWED_EXTENSIONS = {".docx", ".pdf", ".md"}
-
-# Phase B feature flag: when "1", /api/analyze reads from the SQLite corpus
-# instead of parsing resume files. Both paths produce identical ContextSet
-# shape so downstream routes (clarify, generate, iterate-clarify) work
-# unchanged. Removed in Phase C; not a permanent flag.
-CORPUS_BACKED = os.environ.get("CORPUS_BACKED", "0") == "1"
 
 # Ensure directories exist
 for d in (CONFIGS_DIR, RESUMES_DIR, OUTPUT_DIR):
@@ -224,124 +212,25 @@ def list_resumes(username):
 
 @app.route("/api/analyze", methods=["POST"])
 def run_analysis():
-    """P8 Human Gate #1: returns analysis for user review before generation."""
+    """P8 Human Gate #1: returns analysis for user review before generation.
+
+    Phase C.4: the file-based legacy path is gone. Every call reads from the
+    DB corpus. Users without a candidate row get a 404 pointing at the
+    onboarding importer. resume_filename is ignored (kept in the request for
+    frontend backward compatibility until Phase D rebuilds the UI).
+    """
     data = request.json
     username = data.get("username", "")
-    resume_filename = data.get("resume_filename", "")
     jd_text = data.get("job_description", "")
 
-    # CORPUS_BACKED ignores resume_filename — content comes from the DB corpus.
     if not username or not jd_text:
         return jsonify({"error": "username and job_description required"}), 400
-    if not CORPUS_BACKED and not resume_filename:
-        return jsonify({"error": "resume_filename required (file-based mode)"}), 400
 
     safe_user = _safe_username(username)
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
 
-    if CORPUS_BACKED:
-        return _run_analysis_corpus_backed(safe_user, jd_text, data)
-
-    safe_resume = secure_filename(resume_filename)
-    resume_path = RESUMES_DIR / safe_user / safe_resume
-    if not _within(resume_path, RESUMES_DIR):
-        return jsonify({"error": "Invalid resume path"}), 403
-    if not resume_path.exists():
-        return jsonify({"error": "Resume file not found"}), 404
-
-    logger.info("Starting analysis for %s with resume %s", safe_user, safe_resume)
-
-    # Resolve source pool selection — None means "all included" (first-use default)
-    included_resumes_raw = data.get("included_resumes")  # list[str] | None
-
-    # P1 Hardening: deterministic steps first
-    parsed = parse_resume(str(resume_path))
-    config = _load_config(safe_user)
-    profile_text = fetch_profile_content(config)
-
-    # Parse supplemental resumes, honoring the user's source pool selection.
-    # Security: filenames from the whitelist are used only for membership testing,
-    # never for path construction — actual paths come from iterdir().
-    supplemental_parsed = []
-    for f in sorted((RESUMES_DIR / safe_user).iterdir()):
-        if f.name == safe_resume or f.suffix.lower() not in ALLOWED_EXTENSIONS:
-            continue
-
-        # Apply whitelist filter when client sent one (None = all included)
-        if included_resumes_raw is not None:
-            if secure_filename(f.name) not in included_resumes_raw:
-                logger.debug("Skipping excluded supplemental resume: %s", f.name)
-                continue
-
-        if not _within(f, RESUMES_DIR / safe_user):
-            logger.warning("Supplemental resume failed containment check: %s", f)
-            continue
-
-        try:
-            supplemental_parsed.append(parse_resume(str(f)))
-            logger.info("Loaded supplemental resume: %s", f.name)
-        except Exception as exc:
-            logger.warning("Skipped supplemental resume %s: %s", f.name, exc)
-
-    logger.info(
-        "Resume sources for %s: 1 primary + %d supplemental",
-        safe_user, len(supplemental_parsed),
-    )
-
-    # Combine ALL resume text for keyword extraction (P1: deterministic, covers full history)
-    all_resume_text = parsed["text"]
-    for r in supplemental_parsed:
-        all_resume_text += "\n" + r["text"]
-
-    jd_keywords = extract_keywords(jd_text)
-    resume_keywords = extract_keywords(all_resume_text)
-    overlap = compute_keyword_overlap(resume_keywords, jd_keywords)
-    ats_warnings = check_ats_format(parsed)  # ATS check applies to primary only
-
-    # P2 Context Hygiene: build compact context
-    context_set = build_context_set(
-        jd_text, parsed, config, profile_text,
-        jd_keywords, resume_keywords, overlap, ats_warnings,
-        supplemental_resumes=supplemental_parsed,
-        original_resume_path=str(resume_path),
-    )
-
-    # Fuzzy work: LLM analysis. Generate a run_id that pairs this analyze
-    # call with the upcoming generate call (issued in /api/generate after
-    # the user reviews the analysis). Both calls share this ID in
-    # logs/llm_calls.jsonl so the dashboard can correlate them.
-    client = _get_client()
-    run_id = uuid.uuid4().hex[:12]
-    try:
-        analysis = analyze(client, context_set, username=safe_user, run_id=run_id)
-    except anthropic.APIConnectionError as exc:
-        logger.error("Anthropic API connection error during analysis: %s", exc)
-        return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
-    except LLMResponseError as exc:
-        logger.error("LLM analysis response failed validation after retry: %s", exc.validation_error)
-        return jsonify({
-            "error": "AI analysis response was malformed after retry. Please try again.",
-            "detail": exc.validation_error,
-        }), 502
-
-    # P4 Disposable Blueprint: save context + analysis (and run_id so the
-    # generate route can re-use it for telemetry correlation)
-    context_set["llm_analysis"] = analysis
-    context_set["run_id"] = run_id
-    context_path = save_context_set(context_set, safe_user, str(OUTPUT_DIR))
-
-    logger.info("Analysis complete for %s, saved to %s", safe_user, context_path)
-
-    return jsonify({
-        "analysis": analysis,
-        "deterministic": {
-            "keyword_overlap": overlap,
-            "ats_warnings": ats_warnings,
-        },
-        "context_path": context_path,
-        "template_path": str(resume_path),  # original .docx path for style templating
-    })
+    return _run_analysis_corpus_backed(safe_user, jd_text, data)
 
 
 def _persist_corpus_generation_to_db(

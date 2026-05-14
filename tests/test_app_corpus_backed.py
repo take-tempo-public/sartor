@@ -1,11 +1,12 @@
-"""Tests for the CORPUS_BACKED feature flag in /api/analyze.
+"""Tests for the DB-backed /api/analyze route (Phase C.4: flag-free).
 
-When CORPUS_BACKED=1, /api/analyze ignores `resume_filename` and reads from
-the SQLite corpus instead of file parsing. This file verifies:
-- Flag toggling between file-based (default) and DB-backed paths
+The CORPUS_BACKED feature flag was removed in Phase C.4. /api/analyze
+ALWAYS runs through the corpus-backed path; resume_filename is ignored.
+This file verifies:
 - Defense-in-depth path-traversal guards survive in the DB-backed helper
-- Unknown candidates return 404 from the DB-backed path
+- Unknown candidates return 404
 - Application + ApplicationRun rows get created on successful analyze
+- Legacy resume_filename in the body is harmless (ignored)
 """
 
 from __future__ import annotations
@@ -18,27 +19,22 @@ import pytest
 
 @pytest.fixture
 def db_app(tmp_path, monkeypatch):
-    """Import app.py with CORPUS_BACKED=1 and DB pointed at a temp file.
+    """Import app.py against a temp DB + temp config dir.
 
-    Returns the app module so tests can use app.test_client() and access
-    the helper directly.
+    Returns the app module so tests can use app.test_client() and seed
+    candidate rows directly.
     """
-    monkeypatch.setenv("CORPUS_BACKED", "1")
-
     # Ensure DB lives in tmp_path and gets a fresh schema for this test
     import db.session as db_session
     monkeypatch.setattr(db_session, "DEFAULT_DB_PATH", tmp_path / "test.sqlite")
-    # Force re-init by clearing module-level cached engine
     db_session._engine = None
     db_session._SessionLocal = None
 
-    # Reload app so the module-level CORPUS_BACKED constant picks up the env var
     import importlib
 
     import app
     importlib.reload(app)
 
-    # Make CONFIGS_DIR a temp dir so _safe_username works for our test user
     monkeypatch.setattr(app, "CONFIGS_DIR", tmp_path / "configs")
     monkeypatch.setattr(app, "OUTPUT_DIR", tmp_path / "output")
     (tmp_path / "configs").mkdir(exist_ok=True)
@@ -83,10 +79,8 @@ def _seed_db_candidate(db_path: Path) -> int:
         engine.dispose()
 
 
-class TestCorpusBackedFlag:
-    def test_flag_enabled_routes_through_db_path(self, db_app, tmp_path):
-        assert db_app.CORPUS_BACKED is True
-
+class TestAnalyzeRoute:
+    def test_corpus_backed_path_is_the_only_path(self, db_app, tmp_path):
         _seed_db_candidate(tmp_path / "test.sqlite")
 
         # Mock the analyze() LLM call so we don't burn money
@@ -105,7 +99,7 @@ class TestCorpusBackedFlag:
                 json={
                     "username": "casey",
                     "job_description": "Senior PM at Foo\nResponsibilities here.",
-                    # resume_filename intentionally omitted — flag should bypass it
+                    # resume_filename intentionally omitted — Phase C.4 ignores it
                 },
             )
 
@@ -116,7 +110,31 @@ class TestCorpusBackedFlag:
         assert body["analysis"] == fake_analysis
         assert body["template_path"] == ""  # no file template in DB mode
 
-    def test_flag_enabled_with_unknown_user_returns_404(self, db_app, tmp_path):
+    def test_resume_filename_in_body_is_ignored(self, db_app, tmp_path):
+        """Phase C.4 contract: legacy frontends still send resume_filename;
+        the route must accept it harmlessly without failing."""
+        _seed_db_candidate(tmp_path / "test.sqlite")
+        fake_analysis = {
+            "essential_skills": [], "preferred_skills": [],
+            "industry_keywords": [], "hidden_qualities": [],
+            "professional_vocabulary": [], "ideal_resume_profile": "x",
+            "comparison": {}, "suggestions": [], "keyword_placement": [],
+            "ats_improvements": [], "overall_strategy": "x",
+        }
+        with patch.object(db_app, "analyze", return_value=fake_analysis), \
+             patch.object(db_app, "_get_client", return_value=object()):
+            client = db_app.app.test_client()
+            response = client.post(
+                "/api/analyze",
+                json={
+                    "username": "casey",
+                    "resume_filename": "ignored.docx",  # legacy field
+                    "job_description": "Senior PM\nJD here.",
+                },
+            )
+        assert response.status_code == 200
+
+    def test_unknown_user_returns_404(self, db_app, tmp_path):
         _seed_db_candidate(tmp_path / "test.sqlite")
         # Set up a config for 'ghost' so _safe_username passes, but DON'T seed
         # a candidate row — build_context_set_from_db should raise.
@@ -167,34 +185,19 @@ class TestCorpusBackedFlag:
             session.close()
             engine.dispose()
 
-
-@pytest.fixture
-def file_app(tmp_path, monkeypatch):
-    """Import app.py with CORPUS_BACKED unset (default = file-based)."""
-    monkeypatch.delenv("CORPUS_BACKED", raising=False)
-    import importlib
-
-    import app
-    importlib.reload(app)
-    return app
-
-
-class TestFileBackedPathStillWorks:
-    """Make sure the legacy path is unchanged when CORPUS_BACKED is unset."""
-
-    def test_flag_default_off(self, file_app):
-        assert file_app.CORPUS_BACKED is False
-
-    def test_missing_resume_filename_returns_400_in_file_mode(self, file_app, tmp_path, monkeypatch):
-        # Set up configs so _safe_username succeeds, then verify the route
-        # demands resume_filename when the flag is off.
-        monkeypatch.setattr(file_app, "CONFIGS_DIR", tmp_path)
-        (tmp_path / "casey.config").write_text("{}", encoding="utf-8")
-
-        client = file_app.app.test_client()
+    def test_missing_username_returns_400(self, db_app, tmp_path):
+        client = db_app.app.test_client()
         response = client.post(
             "/api/analyze",
-            json={"username": "casey", "job_description": "JD"},
+            json={"job_description": "JD"},  # no username
         )
         assert response.status_code == 400
-        assert "resume_filename" in response.get_json()["error"]
+        assert "username" in response.get_json()["error"]
+
+    def test_missing_jd_returns_400(self, db_app, tmp_path):
+        client = db_app.app.test_client()
+        response = client.post(
+            "/api/analyze",
+            json={"username": "casey"},  # no job_description
+        )
+        assert response.status_code == 400
