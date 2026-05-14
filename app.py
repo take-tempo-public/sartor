@@ -902,8 +902,17 @@ def run_generation():
     original_format = context_set["resume"]["format"]
     if output_format not in (".docx", ".md"):
         output_format = ".docx" if original_format != ".md" else ".md"
-    # Provide the original .docx as a style template when available
-    template_path = context_set["resume"].get("path", "") if output_format == ".docx" else None
+    # Phase C.2: template path resolution priority
+    #   1. explicit persona_template_id in the request body (Phase D will set this)
+    #   2. legacy context_set["resume"]["path"] (file-based path, deprecated)
+    #   3. bundled `Classic` as the fallback
+    template_path = None
+    if output_format == ".docx":
+        requested_persona_id = data.get("persona_template_id")
+        if requested_persona_id is not None:
+            template_path = _resolve_persona_template_path(int(requested_persona_id))
+        else:
+            template_path = context_set["resume"].get("path") or _resolve_default_persona_template_path()
     resume_path = generate_resume(
         result["resume_content"], output_format, safe_user, str(OUTPUT_DIR),
         template_path=template_path,
@@ -1383,6 +1392,309 @@ def promote_clarification_route(clarification_id: int):
             "rationale": rationale,
             "proposal_review_anchored_to_run_id": recent_run.id if recent_run else None,
         })
+    finally:
+        session.close()
+
+
+# ---------------------------------------------------------------------------
+# Phase C.2: persona template routes (bundled + user-uploaded)
+# ---------------------------------------------------------------------------
+
+
+PERSONAS_DIR = BASE_DIR / "personas"
+BUNDLED_PERSONAS_DIR = PERSONAS_DIR / "bundled"
+
+
+def _persona_dict(template) -> dict:
+    """Serialize a persona_template row for the API response."""
+    return {
+        "id": template.id,
+        "name": template.name,
+        "path": template.path,
+        "thumbnail_path": template.thumbnail_path,
+        "description": template.description,
+        "source": template.source,
+        "is_default": bool(template.is_default),
+        "candidate_id": template.candidate_id,
+        "created_at": template.created_at,
+    }
+
+
+def _resolve_persona_template_path(persona_template_id: int) -> str | None:
+    """Look up a persona_template's on-disk path. None if not found / missing.
+
+    The DB stores `path` relative to the repo root (e.g.
+    "personas/bundled/classic.docx"). We resolve to absolute, verify
+    containment under PERSONAS_DIR (defense-in-depth), and return the
+    string path generator.py expects.
+    """
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(id=persona_template_id).first()
+        if row is None:
+            return None
+        disk_path = (BASE_DIR / row.path).resolve()
+        if not disk_path.exists() or not _within(disk_path, PERSONAS_DIR):
+            logger.warning(
+                "Persona template id=%s has invalid path %s",
+                persona_template_id, row.path,
+            )
+            return None
+        return str(disk_path)
+    finally:
+        session.close()
+
+
+def _resolve_default_persona_template_path() -> str | None:
+    """Return the bundled `Classic` template's path as the fallback.
+
+    Used when no persona_template_id is supplied AND no legacy
+    file-based resume path is available. The plan calls Classic the
+    'maximally ATS-safe baseline' — appropriate default.
+    """
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(
+            source="bundled", name="Classic Single-Column",
+        ).first()
+        if row is None:
+            return None
+        return _resolve_persona_template_path(row.id)
+    finally:
+        session.close()
+
+
+@app.route("/api/personas/bundled", methods=["GET"])
+def list_bundled_personas():
+    """Return the catalog of bundled (shipped-with-app) persona templates.
+
+    Bundled rows have candidate_id=NULL and source='bundled'. They're shared
+    across every candidate. The frontend persona gallery surfaces these
+    above the user's own uploads.
+    """
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        rows = session.query(PersonaTemplate).filter_by(source="bundled").all()
+        return jsonify([_persona_dict(t) for t in rows])
+    finally:
+        session.close()
+
+
+@app.route("/api/users/<username>/personas", methods=["GET"])
+def list_user_personas(username: str):
+    """Return bundled + this candidate's uploaded persona templates."""
+    from db.models import Candidate, PersonaTemplate
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({"error": "Candidate not in corpus yet"}), 404
+        bundled = session.query(PersonaTemplate).filter_by(source="bundled").all()
+        owned = session.query(PersonaTemplate).filter_by(candidate_id=candidate.id).all()
+        return jsonify({
+            "bundled": [_persona_dict(t) for t in bundled],
+            "owned": [_persona_dict(t) for t in owned],
+        })
+    finally:
+        session.close()
+
+
+@app.route("/api/users/<username>/personas", methods=["POST"])
+def upload_user_persona(username: str):
+    """Upload a user-owned .docx persona template.
+
+    Multipart body: `file` (the .docx), `name` (display label, optional —
+    defaults to the filename stem). The .docx is saved under
+    `personas/{user}/` and a persona_template row is created with
+    candidate_id=<this user> and source='user_upload'.
+    """
+    from db.models import Candidate, PersonaTemplate
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    file = request.files.get("file")
+    if file is None or not file.filename:
+        return jsonify({"error": "Multipart 'file' field is required"}), 400
+    if Path(file.filename).suffix.lower() != ".docx":
+        return jsonify({"error": "Only .docx persona templates are supported"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({"error": "Candidate not in corpus yet"}), 404
+
+        safe_name = secure_filename(file.filename)
+        user_persona_dir = PERSONAS_DIR / safe_user
+        user_persona_dir.mkdir(parents=True, exist_ok=True)
+        target = user_persona_dir / safe_name
+        if not _within(target, PERSONAS_DIR):
+            return jsonify({"error": "Invalid persona path"}), 403
+        file.save(str(target))
+
+        display_name = (request.form.get("name") or Path(safe_name).stem).strip()
+        relative_path = f"personas/{safe_user}/{safe_name}"
+        row = PersonaTemplate(
+            candidate_id=candidate.id,
+            name=display_name or safe_name,
+            path=relative_path,
+            source="user_upload",
+            is_default=0,
+        )
+        session.add(row)
+        session.commit()
+        return jsonify(_persona_dict(row)), 201
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/personas/<int:persona_id>", methods=["GET"])
+def get_persona(persona_id: int):
+    """Return one persona row's metadata. Accessible to anyone (bundled +
+    owned both readable for preview UI)."""
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(id=persona_id).first()
+        if row is None:
+            return jsonify({"error": "Persona not found"}), 404
+        return jsonify(_persona_dict(row))
+    finally:
+        session.close()
+
+
+@app.route("/api/personas/<int:persona_id>", methods=["PUT"])
+def update_persona(persona_id: int):
+    """Update name / is_default on a persona row.
+
+    Body: `{name?: str, is_default?: bool}`. Bundled rows are read-only at
+    this layer — only candidate-owned personas can be updated. `is_default=1`
+    on one persona for a (candidate, primary_role_tag) clears the same flag
+    on any sibling personas for that (candidate, tag) pair.
+    """
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(id=persona_id).first()
+        if row is None:
+            return jsonify({"error": "Persona not found"}), 404
+        if row.source == "bundled":
+            return jsonify({"error": "Bundled personas are immutable"}), 403
+
+        if "name" in data:
+            new_name = (data.get("name") or "").strip()
+            if not new_name:
+                return jsonify({"error": "name cannot be empty"}), 400
+            row.name = new_name
+
+        if "is_default" in data:
+            new_default = 1 if data.get("is_default") else 0
+            if new_default == 1 and row.candidate_id is not None:
+                # Clear existing default in the same (candidate_id, primary_role_tag_id) slot
+                session.query(PersonaTemplate).filter_by(
+                    candidate_id=row.candidate_id,
+                    primary_role_tag_id=row.primary_role_tag_id,
+                    is_default=1,
+                ).update({"is_default": 0})
+            row.is_default = new_default
+
+        session.commit()
+        return jsonify(_persona_dict(row))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/personas/<int:persona_id>", methods=["DELETE"])
+def delete_persona(persona_id: int):
+    """Delete a user-owned persona template (file + DB row).
+
+    Bundled rows are refused (403). User uploads are deleted both from disk
+    and from the DB. Soft delete isn't necessary here because no FK references
+    persona_template (the audit chain via application_run.persona_template_id
+    uses ON DELETE SET NULL, so historical runs survive cleanly).
+    """
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(id=persona_id).first()
+        if row is None:
+            return jsonify({"error": "Persona not found"}), 404
+        if row.source == "bundled":
+            return jsonify({"error": "Bundled personas are immutable"}), 403
+
+        disk_path = BASE_DIR / row.path
+        if disk_path.exists() and _within(disk_path, PERSONAS_DIR):
+            disk_path.unlink()
+
+        session.delete(row)
+        session.commit()
+        return jsonify({"deleted": persona_id})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/personas/<int:persona_id>/download", methods=["GET"])
+def download_persona(persona_id: int):
+    """Stream a persona's .docx file for the preview UI."""
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(id=persona_id).first()
+        if row is None:
+            return jsonify({"error": "Persona not found"}), 404
+        disk_path = BASE_DIR / row.path
+        if not disk_path.exists():
+            return jsonify({"error": "Persona file missing on disk"}), 404
+        # Containment: bundled lives under personas/bundled/, user uploads
+        # under personas/{user}/ — both inside PERSONAS_DIR.
+        if not _within(disk_path, PERSONAS_DIR):
+            return jsonify({"error": "Invalid persona path"}), 403
+        return send_file(str(disk_path), as_attachment=True, download_name=f"{row.name}.docx")
     finally:
         session.close()
 

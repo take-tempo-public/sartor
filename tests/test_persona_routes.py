@@ -1,0 +1,351 @@
+"""Tests for the Phase C.2 persona template routes.
+
+Covers list / get / upload / update / delete / download flows. Tests use
+in-memory SQLite + the existing fixture machinery from conftest, plus a
+fresh per-test app reload so module-level state stays isolated.
+"""
+
+from __future__ import annotations
+
+import io
+from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture
+def persona_app(tmp_path, monkeypatch):
+    """Reload app.py against a fresh in-memory DB and temp config dir.
+
+    Returns the app module + the resolved DB path so individual tests can
+    seed candidate / persona rows directly.
+    """
+    db_file = tmp_path / "personas.sqlite"
+
+    import db.session as db_session_mod
+    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
+    db_session_mod._engine = None
+    db_session_mod._SessionLocal = None
+
+    import importlib
+
+    import app as app_module
+    importlib.reload(app_module)
+    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
+    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
+    monkeypatch.setattr(app_module, "PERSONAS_DIR", tmp_path / "personas")
+    monkeypatch.setattr(app_module, "BUNDLED_PERSONAS_DIR", tmp_path / "personas" / "bundled")
+    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
+    (tmp_path / "configs").mkdir()
+    (tmp_path / "personas").mkdir()
+    (tmp_path / "personas" / "bundled").mkdir()
+    (tmp_path / "output").mkdir()
+    (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
+
+    # Materialize the schema. The seed migration (0002) will populate 5
+    # bundled rows — tests using bundled rows assert their counts against
+    # this baseline. Tests adding their own bundled rows know to expect 5+N.
+    from db.session import init_db
+    init_db(db_file)
+    return app_module
+
+
+def _seed_candidate(app_module, username="alice"):
+    """Insert a candidate row + return its id."""
+    from db.models import Candidate
+    from db.session import get_session
+    session = get_session()
+    try:
+        c = Candidate(username=username, name="Alice Test")
+        session.add(c)
+        session.commit()
+        return c.id
+    finally:
+        session.close()
+
+
+def _seed_bundled_persona_file(app_module, filename="dummy.docx"):
+    """Drop a minimal valid .docx into personas/bundled/ and insert a
+    matching DB row. Returns the row id and the on-disk path."""
+    from docx import Document
+
+    from db.models import PersonaTemplate
+    from db.session import get_session
+    bundled_dir = app_module.BASE_DIR / "personas" / "bundled"
+    target = bundled_dir / filename
+    doc = Document()
+    doc.add_paragraph("Bundled persona placeholder for tests.")
+    doc.save(str(target))
+
+    session = get_session()
+    try:
+        row = PersonaTemplate(
+            candidate_id=None, name=filename.replace(".docx", "").title(),
+            path=f"personas/bundled/{filename}", source="bundled", is_default=0,
+        )
+        session.add(row)
+        session.commit()
+        return row.id, target
+    finally:
+        session.close()
+
+
+# ---------------------------------------------------------------------------
+# GET /api/personas/bundled
+# ---------------------------------------------------------------------------
+
+
+class TestListBundled:
+    def test_lists_bundled_rows_for_anonymous_caller(self, persona_app):
+        _seed_bundled_persona_file(persona_app, "alpha.docx")
+        _seed_bundled_persona_file(persona_app, "beta.docx")
+        client = persona_app.app.test_client()
+        r = client.get("/api/personas/bundled")
+        assert r.status_code == 200
+        body = r.get_json()
+        # 5 pre-seeded from migration 0002 + 2 test additions = 7
+        assert len(body) == 7
+        names = {p["name"] for p in body}
+        assert "Alpha" in names
+        assert "Beta" in names
+        assert all(p["source"] == "bundled" for p in body)
+        assert all(p["candidate_id"] is None for p in body)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/users/<u>/personas
+# ---------------------------------------------------------------------------
+
+
+class TestListUserPersonas:
+    def test_returns_bundled_plus_owned(self, persona_app):
+        cid = _seed_candidate(persona_app)
+        _seed_bundled_persona_file(persona_app, "gamma.docx")
+        # Add an owned row
+        from db.models import PersonaTemplate
+        from db.session import get_session
+        s = get_session()
+        try:
+            (persona_app.BASE_DIR / "personas" / "alice").mkdir(parents=True, exist_ok=True)
+            owned_path = persona_app.BASE_DIR / "personas" / "alice" / "mine.docx"
+            owned_path.write_bytes(b"placeholder")
+            s.add(PersonaTemplate(
+                candidate_id=cid, name="My Persona",
+                path="personas/alice/mine.docx", source="user_upload",
+            ))
+            s.commit()
+        finally:
+            s.close()
+
+        client = persona_app.app.test_client()
+        r = client.get("/api/users/alice/personas")
+        assert r.status_code == 200, r.get_json()
+        body = r.get_json()
+        # 5 pre-seeded bundled rows + the Gamma test row = 6
+        assert len(body["bundled"]) == 6
+        assert any(p["name"] == "Gamma" for p in body["bundled"])
+        assert len(body["owned"]) == 1
+        assert body["owned"][0]["name"] == "My Persona"
+
+    def test_unknown_user_returns_400(self, persona_app):
+        client = persona_app.app.test_client()
+        r = client.get("/api/users/ghost/personas")
+        assert r.status_code == 400
+
+    def test_known_user_without_candidate_returns_404(self, persona_app):
+        # config exists, but no candidate row in DB
+        client = persona_app.app.test_client()
+        r = client.get("/api/users/alice/personas")
+        assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# POST /api/users/<u>/personas — upload
+# ---------------------------------------------------------------------------
+
+
+class TestUploadPersona:
+    def test_upload_saves_file_and_creates_db_row(self, persona_app):
+        _seed_candidate(persona_app)
+        client = persona_app.app.test_client()
+        payload = {
+            "file": (io.BytesIO(b"PK\x03\x04dummy docx bytes"), "my_persona.docx"),
+            "name": "Brand New",
+        }
+        r = client.post(
+            "/api/users/alice/personas",
+            data=payload, content_type="multipart/form-data",
+        )
+        assert r.status_code == 201, r.get_json()
+        body = r.get_json()
+        assert body["name"] == "Brand New"
+        assert body["source"] == "user_upload"
+        assert body["path"].startswith("personas/alice/")
+        # File landed on disk
+        assert (persona_app.BASE_DIR / body["path"]).exists()
+        # DB row landed
+        from db.models import PersonaTemplate
+        from db.session import get_session
+        s = get_session()
+        try:
+            count = s.query(PersonaTemplate).filter_by(source="user_upload").count()
+            assert count == 1
+        finally:
+            s.close()
+
+    def test_rejects_non_docx_extension(self, persona_app):
+        _seed_candidate(persona_app)
+        client = persona_app.app.test_client()
+        r = client.post(
+            "/api/users/alice/personas",
+            data={"file": (io.BytesIO(b"x"), "evil.exe")},
+            content_type="multipart/form-data",
+        )
+        assert r.status_code == 400
+        assert ".docx" in r.get_json()["error"]
+
+
+# ---------------------------------------------------------------------------
+# PUT /api/personas/<id>
+# ---------------------------------------------------------------------------
+
+
+class TestUpdatePersona:
+    def test_rejects_updating_bundled(self, persona_app):
+        pid, _ = _seed_bundled_persona_file(persona_app)
+        client = persona_app.app.test_client()
+        r = client.put(
+            f"/api/personas/{pid}",
+            json={"name": "Renamed"},
+        )
+        assert r.status_code == 403
+        assert "immutable" in r.get_json()["error"].lower()
+
+    def test_updates_name_on_owned(self, persona_app):
+        cid = _seed_candidate(persona_app)
+        from db.models import PersonaTemplate
+        from db.session import get_session
+        s = get_session()
+        try:
+            row = PersonaTemplate(
+                candidate_id=cid, name="Old Name",
+                path="personas/alice/x.docx", source="user_upload",
+            )
+            s.add(row)
+            s.commit()
+            pid = row.id
+        finally:
+            s.close()
+
+        client = persona_app.app.test_client()
+        r = client.put(f"/api/personas/{pid}", json={"name": "New Name"})
+        assert r.status_code == 200
+        assert r.get_json()["name"] == "New Name"
+
+    def test_rejects_empty_name(self, persona_app):
+        cid = _seed_candidate(persona_app)
+        from db.models import PersonaTemplate
+        from db.session import get_session
+        s = get_session()
+        try:
+            row = PersonaTemplate(
+                candidate_id=cid, name="x",
+                path="personas/alice/x.docx", source="user_upload",
+            )
+            s.add(row)
+            s.commit()
+            pid = row.id
+        finally:
+            s.close()
+
+        client = persona_app.app.test_client()
+        r = client.put(f"/api/personas/{pid}", json={"name": "  "})
+        assert r.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/personas/<id>
+# ---------------------------------------------------------------------------
+
+
+class TestDeletePersona:
+    def test_rejects_deleting_bundled(self, persona_app):
+        pid, _ = _seed_bundled_persona_file(persona_app)
+        client = persona_app.app.test_client()
+        r = client.delete(f"/api/personas/{pid}")
+        assert r.status_code == 403
+
+    def test_deletes_owned_file_and_row(self, persona_app):
+        cid = _seed_candidate(persona_app)
+        owned_dir = persona_app.BASE_DIR / "personas" / "alice"
+        owned_dir.mkdir(parents=True, exist_ok=True)
+        disk_path = owned_dir / "del.docx"
+        disk_path.write_bytes(b"placeholder")
+
+        from db.models import PersonaTemplate
+        from db.session import get_session
+        s = get_session()
+        try:
+            row = PersonaTemplate(
+                candidate_id=cid, name="ToDelete",
+                path="personas/alice/del.docx", source="user_upload",
+            )
+            s.add(row)
+            s.commit()
+            pid = row.id
+        finally:
+            s.close()
+
+        client = persona_app.app.test_client()
+        r = client.delete(f"/api/personas/{pid}")
+        assert r.status_code == 200
+        assert not disk_path.exists()
+        # Row gone
+        s = get_session()
+        try:
+            assert s.query(PersonaTemplate).filter_by(id=pid).first() is None
+        finally:
+            s.close()
+
+
+# ---------------------------------------------------------------------------
+# GET /api/personas/<id>/download
+# ---------------------------------------------------------------------------
+
+
+class TestDownloadPersona:
+    def test_downloads_bundled_file(self, persona_app):
+        pid, target = _seed_bundled_persona_file(persona_app, "dl.docx")
+        client = persona_app.app.test_client()
+        r = client.get(f"/api/personas/{pid}/download")
+        assert r.status_code == 200
+        assert len(r.data) > 50  # has body
+
+    def test_404_when_row_missing(self, persona_app):
+        client = persona_app.app.test_client()
+        r = client.get("/api/personas/99999/download")
+        assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Resolver helpers
+# ---------------------------------------------------------------------------
+
+
+class TestResolveHelpers:
+    def test_resolves_persona_to_absolute_path(self, persona_app):
+        pid, target = _seed_bundled_persona_file(persona_app, "resolve.docx")
+        path = persona_app._resolve_persona_template_path(pid)
+        assert path is not None
+        assert Path(path).exists()
+        assert Path(path).name == "resolve.docx"
+
+    def test_resolver_returns_none_when_file_missing(self, persona_app):
+        pid, target = _seed_bundled_persona_file(persona_app, "ghost.docx")
+        target.unlink()  # delete the file but keep the DB row
+        path = persona_app._resolve_persona_template_path(pid)
+        assert path is None
+
+    def test_resolver_returns_none_for_unknown_id(self, persona_app):
+        path = persona_app._resolve_persona_template_path(99999)
+        assert path is None
