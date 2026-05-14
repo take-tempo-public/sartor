@@ -1283,3 +1283,92 @@ textarea:focus-visible {
   letter-spacing: 1px;
   text-transform: uppercase;
 }
+
+/* =============================================================== */
+/* Phase D.4 — Persona Templates tab                               */
+/* =============================================================== */
+
+.persona-section {
+  margin-top: 16px;
+}
+
+.persona-section-header {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 12px;
+  color: var(--violet);
+  font-weight: 700;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #2b2b40;
+}
+
+.persona-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.persona-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--violet);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.persona-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--amber);
+}
+
+.persona-card-desc {
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.persona-card-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+
+.persona-card-source {
+  padding: 2px 8px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 10px;
+}
+.persona-card-source.bundled { background: var(--blue); color: var(--black); }
+.persona-card-source.owned   { background: var(--teal); color: var(--black); }
+
+.persona-card-default {
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--amber);
+  color: var(--black);
+  letter-spacing: 1px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.persona-card-path {
+  color: var(--text-dim);
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+}
+
+.persona-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}

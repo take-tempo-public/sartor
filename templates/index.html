@@ -316,14 +316,43 @@
     </div>
   </div>
 
-  <!-- Persona Templates placeholder (D.4 will fill this in) -->
+  <!-- Persona Templates (Phase D.4) -->
   <div id="tab-personas" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabPersonas">
     <div class="lcars-main">
       <div class="lcars-block lcars-violet" data-panel="panelPersonas">TEMPLATES</div>
       <section class="lcars-panel" id="panelPersonas">
         <div class="panel-header lcars-bg-violet">PERSONA TEMPLATES</div>
         <div class="panel-body">
-          <div class="edit-hint">Persona template gallery comes in Phase D.4.</div>
+          <div class="edit-hint" id="personasHint">
+            Five bundled ATS-safe templates ship with the app. You can also
+            upload your own .docx files — they're scoped to your user.
+            Bundled templates are read-only; you can rename / delete only
+            your own.
+          </div>
+
+          <div class="persona-section">
+            <div class="persona-section-header">BUNDLED GALLERY</div>
+            <div class="persona-grid" id="personaBundledGrid">
+              <div class="corpus-empty-experience">Loading…</div>
+            </div>
+          </div>
+
+          <div class="persona-section">
+            <div class="persona-section-header">MY TEMPLATES</div>
+            <div class="persona-grid" id="personaOwnedGrid">
+              <div class="corpus-empty-experience">Select a user to view uploads.</div>
+            </div>
+            <div class="form-row" style="margin-top:12px">
+              <input type="file" id="personaUploadInput" accept=".docx" style="display:none"
+                     onchange="uploadPersonaFromInput(this)">
+              <button class="lcars-btn lcars-bg-teal" id="btnUploadPersona"
+                      onclick="document.getElementById('personaUploadInput').click()" disabled>
+                UPLOAD .DOCX TEMPLATE
+              </button>
+              <input type="text" id="personaUploadName" placeholder="Display name (optional)"
+                     style="flex:1" aria-label="Display name for uploaded template">
+            </div>
+          </div>
         </div>
       </section>
     </div>

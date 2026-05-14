@@ -1411,6 +1411,7 @@ function switchTopTab(name, btn) {
   const target = document.getElementById(`tab-${name}`);
   if (target) target.classList.remove('hidden');
   if (name === 'corpus') loadCorpusIfReady();
+  if (name === 'personas') _personaTabActivated();
 }
 
 async function loadCorpusIfReady() {
@@ -1847,6 +1848,7 @@ const _origOnUserSelect = onUserSelect;
 onUserSelect = async function() {
   _corpusLoadedForUser = '';
   _corpusExperiences = [];
+  _personasLoaded = false;
   _clearChildren(document.getElementById('corpusExperienceList'));
   return await _origOnUserSelect.apply(this, arguments);
 };
@@ -1975,4 +1977,174 @@ async function _showApplicationDetail(applicationId) {
     if (last.pending_proposals > 0) lines.push(`Pending: ${last.pending_proposals}`);
   }
   _toast(lines.join(' · '));
+}
+
+// ===============================================================
+// Phase D.4 — Persona Templates tab
+// ===============================================================
+
+let _personasLoaded = false;
+let _personaUploadLocked = false;
+
+function _personaTabActivated() {
+  if (_personasLoaded) return;
+  refreshPersonas();
+}
+
+async function refreshPersonas() {
+  await Promise.all([_loadBundledPersonas(), _loadOwnedPersonas()]);
+  _personasLoaded = true;
+  // Unlock upload button if a user is selected
+  const btn = document.getElementById('btnUploadPersona');
+  if (btn) btn.disabled = !currentUser;
+}
+
+async function _loadBundledPersonas() {
+  const grid = document.getElementById('personaBundledGrid');
+  if (!grid) return;
+  _setLoadingPlaceholder(grid, 'Loading bundled gallery…');
+  let res;
+  try {
+    res = await fetch('/api/personas/bundled');
+  } catch {
+    _setLoadingPlaceholder(grid, 'Network error.');
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(grid, 'Failed to load bundled.');
+    return;
+  }
+  const rows = await res.json();
+  _clearChildren(grid);
+  rows.forEach(p => grid.appendChild(_renderPersonaCard(p, /*owned=*/false)));
+}
+
+async function _loadOwnedPersonas() {
+  const grid = document.getElementById('personaOwnedGrid');
+  if (!grid) return;
+  if (!currentUser) {
+    _setLoadingPlaceholder(grid, 'Select a user to view uploads.');
+    return;
+  }
+  _setLoadingPlaceholder(grid, 'Loading…');
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/personas`);
+  } catch {
+    _setLoadingPlaceholder(grid, 'Network error.');
+    return;
+  }
+  if (res.status === 404) {
+    _setLoadingPlaceholder(grid, 'No DB record for this user yet. Onboarding creates one on first import.');
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(grid, 'Failed to load.');
+    return;
+  }
+  const body = await res.json();
+  _clearChildren(grid);
+  const owned = body.owned || [];
+  if (owned.length === 0) {
+    _setLoadingPlaceholder(grid, 'No uploaded templates yet. Use UPLOAD below.');
+    return;
+  }
+  owned.forEach(p => grid.appendChild(_renderPersonaCard(p, /*owned=*/true)));
+}
+
+function _renderPersonaCard(p, owned) {
+  const card = _el('div', { className: 'persona-card', id: `persona-card-${p.id}` });
+  const title = _el('div', { className: 'persona-card-name', textContent: p.name });
+  card.appendChild(title);
+  if (p.description) {
+    card.appendChild(_el('div', { className: 'persona-card-desc', textContent: p.description }));
+  }
+  const meta = _el('div', { className: 'persona-card-meta' });
+  meta.appendChild(_el('span', {
+    className: 'persona-card-source ' + (owned ? 'owned' : 'bundled'),
+    textContent: owned ? 'YOURS' : 'BUNDLED',
+  }));
+  if (p.is_default) {
+    meta.appendChild(_el('span', { className: 'persona-card-default', textContent: 'DEFAULT' }));
+  }
+  meta.appendChild(_el('span', { className: 'persona-card-path', textContent: p.path }));
+  card.appendChild(meta);
+
+  const actions = _el('div', { className: 'persona-card-actions' });
+  const dl = _el('button', { className: 'corpus-action-btn', textContent: 'DOWNLOAD' });
+  dl.onclick = () => window.open(`/api/personas/${p.id}/download`, '_blank');
+  actions.appendChild(dl);
+
+  if (owned) {
+    const rename = _el('button', { className: 'corpus-action-btn', textContent: 'RENAME' });
+    rename.onclick = () => _renamePersona(p.id, p.name);
+    actions.appendChild(rename);
+
+    const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'DELETE' });
+    del.onclick = () => _deletePersona(p.id, p.name);
+    actions.appendChild(del);
+  }
+  card.appendChild(actions);
+  return card;
+}
+
+async function _renamePersona(id, currentName) {
+  const next = prompt('New name:', currentName);
+  if (!next || next.trim() === currentName) return;
+  try {
+    await _putJson(`/api/personas/${id}`, { name: next.trim() });
+    _toast('Renamed');
+    await _loadOwnedPersonas();
+  } catch (e) {
+    _toast('Rename failed: ' + e.message, true);
+  }
+}
+
+async function _deletePersona(id, name) {
+  if (!confirm(`Delete ${name}? The .docx file is removed from disk.`)) return;
+  try {
+    await _deleteJson(`/api/personas/${id}`);
+    _toast('Deleted');
+    await _loadOwnedPersonas();
+  } catch (e) {
+    _toast('Delete failed: ' + e.message, true);
+  }
+}
+
+async function uploadPersonaFromInput(input) {
+  if (_personaUploadLocked) return;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (!currentUser) {
+    _toast('Select a user before uploading.', true);
+    input.value = '';
+    return;
+  }
+  if (!file.name.toLowerCase().endsWith('.docx')) {
+    _toast('Only .docx files allowed.', true);
+    input.value = '';
+    return;
+  }
+  const name = (document.getElementById('personaUploadName').value || '').trim();
+  const fd = new FormData();
+  fd.append('file', file);
+  if (name) fd.append('name', name);
+  _personaUploadLocked = true;
+  try {
+    const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/personas`, {
+      method: 'POST', body: fd,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    _toast('Uploaded');
+    document.getElementById('personaUploadName').value = '';
+    await _loadOwnedPersonas();
+  } catch (e) {
+    _toast('Upload failed: ' + e.message, true);
+  } finally {
+    _personaUploadLocked = false;
+    input.value = '';
+  }
 }
