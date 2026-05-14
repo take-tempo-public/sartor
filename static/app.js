@@ -1431,6 +1431,7 @@ async function loadCorpusIfReady() {
 async function refreshCorpus() {
   const list = document.getElementById('corpusExperienceList');
   _setLoadingPlaceholder(list, 'Loading…');
+  _refreshOnboardingBanner();  // fire-and-forget; doesn't block list load
   let res;
   try {
     res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
@@ -1522,6 +1523,23 @@ function _renderCorpusDetail(body, exp) {
   const expId = exp.id;
   body.appendChild(_renderExperienceFieldGroup(expId, exp));
   const btnRow = _el('div', { className: 'form-row' });
+  const hasPending = (exp.titles || []).some(t => t.is_pending_review) ||
+    (exp.bullets || []).some(b => b.is_pending_review);
+  if (hasPending) {
+    const acceptAll = _el('button', {
+      className: 'lcars-btn lcars-bg-teal',
+      textContent: 'ACCEPT ALL PENDING',
+    });
+    acceptAll.onclick = async () => {
+      try {
+        const r = await _postJson(`/api/experiences/${expId}/accept-all`, {});
+        _toast(`Accepted ${r.bullets_accepted} bullet(s) + ${r.titles_accepted} title(s)`);
+        await _reloadCorpusCard(expId);
+        await _refreshOnboardingBanner();
+      } catch (e) { _toast('Failed: ' + e.message, true); }
+    };
+    btnRow.appendChild(acceptAll);
+  }
   const retire = _el('button', { className: 'lcars-btn lcars-bg-orange', textContent: 'SOFT-RETIRE EXPERIENCE' });
   retire.onclick = () => deleteExperience(expId);
   btnRow.appendChild(retire);
@@ -1591,6 +1609,18 @@ function _renderTitleRow(expId, title) {
     row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
   }
   const actions = _el('div', { className: 'corpus-row-actions' });
+  if (title.is_pending_review) {
+    const accept = _el('button', { className: 'corpus-action-btn', textContent: 'ACCEPT' });
+    accept.onclick = async () => {
+      try {
+        await _postJson(`/api/experience-titles/${title.id}/accept`, {});
+        await _reloadCorpusCard(expId);
+        await _refreshOnboardingBanner();
+        _toast('Title accepted');
+      } catch (e) { _toast('Failed: ' + e.message, true); }
+    };
+    actions.appendChild(accept);
+  }
   if (!title.is_official) {
     const setOfficial = _el('button', { className: 'corpus-action-btn', textContent: 'SET OFFICIAL' });
     setOfficial.onclick = async () => {
@@ -1659,6 +1689,18 @@ function _renderBulletRow(expId, bullet) {
     row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
   }
   const actions = _el('div', { className: 'corpus-row-actions' });
+  if (bullet.is_pending_review) {
+    const accept = _el('button', { className: 'corpus-action-btn', textContent: 'ACCEPT' });
+    accept.onclick = async () => {
+      try {
+        await _postJson(`/api/bullets/${bullet.id}/accept`, {});
+        await _reloadCorpusCard(expId);
+        await _refreshOnboardingBanner();
+        _toast('Bullet accepted');
+      } catch (e) { _toast('Failed: ' + e.message, true); }
+    };
+    actions.appendChild(accept);
+  }
   const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'RETIRE' });
   del.onclick = async () => {
     if (!confirm('Soft-retire this bullet? It stays in the audit log but stops appearing in new applications.')) return;
@@ -2012,6 +2054,60 @@ async function _promoteMemoryRow(r) {
   } catch (e) {
     _toast('Promote failed: ' + e.message, true);
   }
+}
+
+// ===============================================================
+// Phase D.6 — Onboarding banner: pending-review counts
+// ===============================================================
+
+async function _refreshOnboardingBanner() {
+  const banner = document.getElementById('onboardingBanner');
+  const text = document.getElementById('onboardingBannerText');
+  if (!banner || !text || !currentUser) {
+    if (banner) banner.classList.add('hidden');
+    return;
+  }
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/pending-counts`);
+  } catch {
+    banner.classList.add('hidden');
+    return;
+  }
+  if (!res.ok) {
+    banner.classList.add('hidden');
+    return;
+  }
+  const data = await res.json();
+  const total = (data.pending_bullets || 0) + (data.pending_titles || 0);
+  if (total === 0) {
+    banner.classList.add('hidden');
+    return;
+  }
+  banner.classList.remove('hidden');
+  const parts = [];
+  if (data.pending_bullets) parts.push(`${data.pending_bullets} bullet${data.pending_bullets === 1 ? '' : 's'}`);
+  if (data.pending_titles) parts.push(`${data.pending_titles} title${data.pending_titles === 1 ? '' : 's'}`);
+  text.textContent = `${parts.join(' + ')} pending review across ${data.experiences_with_pending} experience${data.experiences_with_pending === 1 ? '' : 's'}`;
+}
+
+function scrollToFirstPending() {
+  // Find the first experience card with a pending badge in its summary
+  // and expand + scroll to it.
+  const firstPending = _corpusExperiences.find(e => (e.bullet_count_pending || 0) > 0);
+  if (!firstPending) {
+    // Fall back: just find the first card with PENDING flag rendered
+    const flag = document.querySelector('.corpus-row-flag.pending');
+    if (flag) {
+      const card = flag.closest('.corpus-card');
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    return;
+  }
+  const card = document.getElementById(`corpus-exp-${firstPending.id}`);
+  if (!card) return;
+  if (!card.classList.contains('expanded')) toggleCorpusCard(firstPending.id);
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ===============================================================

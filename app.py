@@ -2288,6 +2288,171 @@ def download_edited():
 
 
 # ---------------------------------------------------------------------------
+# Phase D.6: Onboarding review — clear is_pending_review on accept
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/bullets/<int:bullet_id>/accept", methods=["POST"])
+def accept_bullet(bullet_id: int):
+    """Clear is_pending_review on one bullet — the GUI affordance for
+    accepting an LLM-extracted bullet during the onboarding review flow.
+    """
+    from db.models import Bullet, Candidate, Experience
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        bullet = session.query(Bullet).filter_by(id=bullet_id).first()
+        if bullet is None:
+            return jsonify({"error": "Bullet not found"}), 404
+        exp = session.query(Experience).filter_by(id=bullet.experience_id).first()
+        if exp is None:
+            return jsonify({"error": "Bullet's experience missing"}), 404
+        candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+        bullet.is_pending_review = 0
+        session.commit()
+        return jsonify({"id": bullet.id, "is_pending_review": False})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/experience-titles/<int:title_id>/accept", methods=["POST"])
+def accept_experience_title(title_id: int):
+    """Clear is_pending_review on one title."""
+    from db.models import Candidate, Experience, ExperienceTitle
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        title = session.query(ExperienceTitle).filter_by(id=title_id).first()
+        if title is None:
+            return jsonify({"error": "Title not found"}), 404
+        exp = session.query(Experience).filter_by(id=title.experience_id).first()
+        if exp is None:
+            return jsonify({"error": "Title's experience missing"}), 404
+        candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+        title.is_pending_review = 0
+        session.commit()
+        return jsonify({"id": title.id, "is_pending_review": False})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/experiences/<int:experience_id>/accept-all", methods=["POST"])
+def accept_experience_all(experience_id: int):
+    """Bulk-accept: clears is_pending_review on every title + active
+    bullet under one experience. Used by the "ACCEPT EXPERIENCE" button
+    in the GUI onboarding review flow."""
+    from db.models import Bullet, ExperienceTitle
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        exp, candidate = _load_experience_for_candidate(session, experience_id)
+        if exp is None or candidate is None:
+            return jsonify({"error": "Experience not found"}), 404
+        if not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+        titles_cleared = session.query(ExperienceTitle).filter_by(
+            experience_id=exp.id, is_pending_review=1,
+        ).update({"is_pending_review": 0})
+        bullets_cleared = session.query(Bullet).filter_by(
+            experience_id=exp.id, is_pending_review=1, is_active=1,
+        ).update({"is_pending_review": 0})
+        session.commit()
+        return jsonify({
+            "experience_id": exp.id,
+            "titles_accepted": titles_cleared,
+            "bullets_accepted": bullets_cleared,
+        })
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/users/<username>/pending-counts", methods=["GET"])
+def pending_counts(username: str):
+    """Counts of pending-review titles + bullets for the candidate.
+
+    Drives the onboarding banner at the top of the Career Corpus tab —
+    shown when the candidate has any pending review left to clear.
+    """
+    from db.models import Bullet, Candidate, Experience, ExperienceTitle
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({
+                "candidate_present": False,
+                "pending_titles": 0,
+                "pending_bullets": 0,
+                "experiences_with_pending": 0,
+            })
+        exp_ids = [row[0] for row in session.query(Experience.id).filter_by(
+            candidate_id=candidate.id,
+        ).all()]
+        if not exp_ids:
+            return jsonify({
+                "candidate_present": True,
+                "pending_titles": 0,
+                "pending_bullets": 0,
+                "experiences_with_pending": 0,
+            })
+        n_titles = session.query(ExperienceTitle).filter(
+            ExperienceTitle.experience_id.in_(exp_ids),
+            ExperienceTitle.is_pending_review == 1,
+        ).count()
+        n_bullets = session.query(Bullet).filter(
+            Bullet.experience_id.in_(exp_ids),
+            Bullet.is_pending_review == 1,
+            Bullet.is_active == 1,
+        ).count()
+        # Experiences with at least one pending row (title or bullet)
+        pending_exp_ids = set()
+        for t in session.query(ExperienceTitle.experience_id).filter(
+            ExperienceTitle.experience_id.in_(exp_ids),
+            ExperienceTitle.is_pending_review == 1,
+        ).all():
+            pending_exp_ids.add(t[0])
+        for b in session.query(Bullet.experience_id).filter(
+            Bullet.experience_id.in_(exp_ids),
+            Bullet.is_pending_review == 1,
+            Bullet.is_active == 1,
+        ).all():
+            pending_exp_ids.add(b[0])
+        return jsonify({
+            "candidate_present": True,
+            "pending_titles": n_titles,
+            "pending_bullets": n_bullets,
+            "experiences_with_pending": len(pending_exp_ids),
+        })
+    finally:
+        session.close()
+
+
+# ---------------------------------------------------------------------------
 # Phase D.3: Applications list routes
 # ---------------------------------------------------------------------------
 

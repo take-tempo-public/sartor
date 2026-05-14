@@ -1,0 +1,192 @@
+"""Tests for the Phase D.6 onboarding-review routes."""
+
+from __future__ import annotations
+
+import pytest
+
+
+@pytest.fixture
+def pr_app(tmp_path, monkeypatch):
+    db_file = tmp_path / "pr.sqlite"
+    import db.session as db_session_mod
+    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
+    db_session_mod._engine = None
+    db_session_mod._SessionLocal = None
+    import importlib
+
+    import app as app_module
+    importlib.reload(app_module)
+    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
+    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
+    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
+    (tmp_path / "configs").mkdir()
+    (tmp_path / "output").mkdir()
+    (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
+    from db.session import init_db
+    init_db(db_file)
+    return app_module
+
+
+def _seed_candidate(username="alice"):
+    from db.models import Candidate
+    from db.session import get_session
+    s = get_session()
+    try:
+        c = Candidate(username=username, name=username.title())
+        s.add(c)
+        s.commit()
+        return c.id
+    finally:
+        s.close()
+
+
+def _seed_exp_with_pending(candidate_id, n_pending_bullets=2,
+                           n_pending_titles=1, n_accepted_bullets=1):
+    from db.models import Bullet, Experience, ExperienceTitle
+    from db.session import get_session
+    s = get_session()
+    try:
+        e = Experience(
+            candidate_id=candidate_id, company="Acme", start_date="2022-01",
+            display_order=0,
+        )
+        s.add(e)
+        s.flush()
+        for i in range(n_pending_titles):
+            s.add(ExperienceTitle(
+                experience_id=e.id, title=f"Title {i}",
+                is_official=0, is_pending_review=1, source="llm_proposed:abc",
+            ))
+        for i in range(n_pending_bullets):
+            s.add(Bullet(
+                experience_id=e.id, text=f"Pending bullet {i}",
+                display_order=i, is_active=1, is_pending_review=1,
+                source="llm_proposed:abc", has_outcome=0,
+            ))
+        for i in range(n_accepted_bullets):
+            s.add(Bullet(
+                experience_id=e.id, text=f"Accepted bullet {i}",
+                display_order=n_pending_bullets + i, is_active=1,
+                is_pending_review=0, source="manual", has_outcome=0,
+            ))
+        s.commit()
+        return e.id
+    finally:
+        s.close()
+
+
+class TestAcceptBullet:
+    def test_clears_pending_flag(self, pr_app):
+        cid = _seed_candidate()
+        eid = _seed_exp_with_pending(cid)
+        from db.models import Bullet
+        from db.session import get_session
+        s = get_session()
+        try:
+            pending = s.query(Bullet).filter_by(
+                experience_id=eid, is_pending_review=1,
+            ).first()
+            bid = pending.id
+        finally:
+            s.close()
+        client = pr_app.app.test_client()
+        r = client.post(f"/api/bullets/{bid}/accept")
+        assert r.status_code == 200
+        assert r.get_json()["is_pending_review"] is False
+        # confirm at DB
+        s = get_session()
+        try:
+            assert s.query(Bullet).filter_by(id=bid).first().is_pending_review == 0
+        finally:
+            s.close()
+
+    def test_404_for_unknown_bullet(self, pr_app):
+        client = pr_app.app.test_client()
+        r = client.post("/api/bullets/99999/accept")
+        assert r.status_code == 404
+
+
+class TestAcceptTitle:
+    def test_clears_pending_flag(self, pr_app):
+        cid = _seed_candidate()
+        eid = _seed_exp_with_pending(cid)
+        from db.models import ExperienceTitle
+        from db.session import get_session
+        s = get_session()
+        try:
+            tid = s.query(ExperienceTitle).filter_by(
+                experience_id=eid, is_pending_review=1,
+            ).first().id
+        finally:
+            s.close()
+        client = pr_app.app.test_client()
+        r = client.post(f"/api/experience-titles/{tid}/accept")
+        assert r.status_code == 200
+        assert r.get_json()["is_pending_review"] is False
+
+
+class TestAcceptExperienceAll:
+    def test_clears_all_pending_under_experience(self, pr_app):
+        cid = _seed_candidate()
+        eid = _seed_exp_with_pending(cid,
+                                     n_pending_bullets=3, n_pending_titles=2,
+                                     n_accepted_bullets=1)
+        client = pr_app.app.test_client()
+        r = client.post(f"/api/experiences/{eid}/accept-all")
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["bullets_accepted"] == 3
+        assert body["titles_accepted"] == 2
+        # confirm no pending left
+        from db.models import Bullet, ExperienceTitle
+        from db.session import get_session
+        s = get_session()
+        try:
+            pending = s.query(Bullet).filter_by(
+                experience_id=eid, is_pending_review=1, is_active=1,
+            ).count()
+            assert pending == 0
+            pending_titles = s.query(ExperienceTitle).filter_by(
+                experience_id=eid, is_pending_review=1,
+            ).count()
+            assert pending_titles == 0
+        finally:
+            s.close()
+
+    def test_404_for_unknown_experience(self, pr_app):
+        client = pr_app.app.test_client()
+        r = client.post("/api/experiences/99999/accept-all")
+        assert r.status_code == 404
+
+
+class TestPendingCounts:
+    def test_zero_when_no_pending(self, pr_app):
+        _seed_candidate()
+        client = pr_app.app.test_client()
+        body = client.get("/api/users/alice/pending-counts").get_json()
+        assert body["candidate_present"] is True
+        assert body["pending_titles"] == 0
+        assert body["pending_bullets"] == 0
+        assert body["experiences_with_pending"] == 0
+
+    def test_returns_aggregate_counts(self, pr_app):
+        cid = _seed_candidate()
+        _seed_exp_with_pending(cid, n_pending_bullets=3, n_pending_titles=2)
+        _seed_exp_with_pending(cid, n_pending_bullets=1, n_pending_titles=0)
+        client = pr_app.app.test_client()
+        body = client.get("/api/users/alice/pending-counts").get_json()
+        assert body["pending_bullets"] == 4
+        assert body["pending_titles"] == 2
+        assert body["experiences_with_pending"] == 2
+
+    def test_missing_candidate_returns_zeros(self, pr_app):
+        # config exists, no candidate row
+        client = pr_app.app.test_client()
+        body = client.get("/api/users/alice/pending-counts").get_json()
+        assert body["candidate_present"] is False
+        assert body["pending_bullets"] == 0
+
+    def test_400_for_unknown_user(self, pr_app):
+        client = pr_app.app.test_client()
+        r = client.get("/api/users/ghost/pending-counts")
+        assert r.status_code == 400

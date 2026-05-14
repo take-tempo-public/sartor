@@ -1481,3 +1481,25 @@ textarea:focus-visible {
   gap: 6px;
   margin-top: 6px;
 }
+
+/* =============================================================== */
+/* Phase D.6 — Onboarding review banner                            */
+/* =============================================================== */
+
+.onboarding-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: #1e1530;
+  border: 1px solid var(--violet);
+  border-left: 4px solid var(--amber);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.onboarding-banner span {
+  flex: 1;
+}
