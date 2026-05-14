@@ -344,13 +344,22 @@ def run_analysis():
     })
 
 
-def _persist_corpus_generation_to_db(application_run_id: int, generate_result: dict) -> None:
+def _persist_corpus_generation_to_db(
+    application_run_id: int,
+    generate_result: dict,
+    *,
+    ats_findings: dict | None = None,
+) -> None:
     """Phase B.3 write-back: persist the structured generate() output to the DB.
 
     Looks up the `application_run` row, calls `persist_corpus_generation`, and
     commits. Defense-in-depth: validates the run belongs to a real candidate
     before any writes. Used by `/api/generate` only when the context carries
     `application_run_id` (corpus-backed mode).
+
+    Phase C.3 addition: when `ats_findings` is supplied, the round-trip
+    self-check result is stored on application_run.ats_roundtrip_json so the
+    dashboard can surface fixtures with failed/warning round-trips.
     """
     from db.models import Application, ApplicationRun
     from db.persist_run import persist_corpus_generation
@@ -370,6 +379,8 @@ def _persist_corpus_generation_to_db(application_run_id: int, generate_result: d
         report = persist_corpus_generation(
             session, run, generate_result, candidate_id=app_row.candidate_id,
         )
+        if ats_findings is not None:
+            run.ats_roundtrip_json = json.dumps(ats_findings)
         session.commit()
         logger.info(
             "Persisted corpus generation: app_run=%d bullets=%d titles=%d "
@@ -923,6 +934,23 @@ def run_generation():
 
     logger.info("Generation complete: %s, %s", resume_path, cover_letter_path)
 
+    # Phase C.3: ATS round-trip self-check. Best-effort; failures are
+    # surfaced in the response + persisted on application_run (when DB-
+    # backed) but never block the user. Pure file operation — no LLM cost.
+    ats_findings: dict | None = None
+    if output_format == ".docx":
+        try:
+            from db.ats_roundtrip import run_ats_roundtrip
+            ats_findings = run_ats_roundtrip(resume_path, result["resume_content"])
+            if ats_findings["status"] != "pass":
+                logger.warning(
+                    "ATS round-trip %s on %s: %s",
+                    ats_findings["status"], resume_path, ats_findings["notes"],
+                )
+        except Exception as exc:
+            logger.warning("ATS round-trip check failed to run: %s", exc)
+            ats_findings = {"status": "not_run", "notes": [f"check raised: {exc}"]}
+
     # Phase B.3: when the context carries an application_run_id (set by the
     # corpus-backed /api/analyze path), persist the LLM's structured output
     # to the DB audit chain — application_bullet rows, proposal_review rows
@@ -931,7 +959,9 @@ def run_generation():
     app_run_id = context_set.get("application_run_id")
     if app_run_id is not None:
         try:
-            _persist_corpus_generation_to_db(int(app_run_id), result)
+            _persist_corpus_generation_to_db(
+                int(app_run_id), result, ats_findings=ats_findings,
+            )
         except Exception as exc:
             # Persistence failure must not break the user's generate flow —
             # the markdown is already produced and saved to disk. Log loudly.
@@ -974,6 +1004,7 @@ def run_generation():
         "context_path": new_context_path,
         "iteration": new_iteration,
         "parent_context_path": str(cp),
+        "ats_roundtrip": ats_findings,
     })
 
 
