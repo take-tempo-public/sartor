@@ -83,6 +83,7 @@ async function onUserSelect() {
   currentUser = username;
   await loadConfig();
   await loadResumes();
+  show('panelApplications');
   show('panelConfig');
   show('panelResume');
   show('panelJD');
@@ -90,6 +91,7 @@ async function onUserSelect() {
   hide('panelOutput');
   _resetIterationState();
   setStatus('READY');
+  refreshApplications();
 }
 
 // Reset all iteration-loop state. Called when switching users or starting a
@@ -1848,3 +1850,129 @@ onUserSelect = async function() {
   _clearChildren(document.getElementById('corpusExperienceList'));
   return await _origOnUserSelect.apply(this, arguments);
 };
+
+// ===============================================================
+// Phase D.3 — Applications list (within the APPLICATION tab)
+// ===============================================================
+
+async function refreshApplications() {
+  const list = document.getElementById('applicationsList');
+  const countEl = document.getElementById('applicationsCount');
+  if (!list) return;
+  if (!currentUser) {
+    _setLoadingPlaceholder(list, 'Select a user to view their applications.');
+    if (countEl) countEl.textContent = '0 applications';
+    return;
+  }
+  _setLoadingPlaceholder(list, 'Loading…');
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/applications`);
+  } catch (e) {
+    _setLoadingPlaceholder(list, 'Network error.');
+    return;
+  }
+  if (res.status === 404) {
+    _setLoadingPlaceholder(list, `No applications yet for ${currentUser}. Analyze a JD below to start one.`);
+    if (countEl) countEl.textContent = '0 applications';
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(list, 'Failed to load applications.');
+    return;
+  }
+  const apps = await res.json();
+  _renderApplicationsList(apps);
+}
+
+function _renderApplicationsList(apps) {
+  const list = document.getElementById('applicationsList');
+  const countEl = document.getElementById('applicationsCount');
+  _clearChildren(list);
+  if (countEl) countEl.textContent = `${apps.length} application${apps.length === 1 ? '' : 's'}`;
+  if (apps.length === 0) {
+    _setLoadingPlaceholder(list, 'No applications yet. Analyze a JD below to start one.');
+    return;
+  }
+  apps.forEach(a => list.appendChild(_renderApplicationCard(a)));
+}
+
+function _renderApplicationCard(app) {
+  const card = _el('div', { className: 'application-card', id: `app-card-${app.id}` });
+  const header = _el('div', { className: 'application-card-header' });
+  header.appendChild(_el('div', { className: 'application-card-title', textContent: app.title }));
+  if (app.company) {
+    header.appendChild(_el('div', { className: 'application-card-company', textContent: app.company }));
+  }
+  card.appendChild(header);
+
+  const meta = _el('div', { className: 'application-card-meta' });
+  meta.appendChild(_el('span', {
+    className: `app-status-chip status-${app.status}`,
+    textContent: (app.status || 'draft').toUpperCase(),
+  }));
+  const iterText = `${app.iteration_count} iter${app.iteration_count === 1 ? '' : 's'}`;
+  meta.appendChild(_el('span', { className: 'application-card-iter', textContent: iterText }));
+  if (app.pending_proposals > 0) {
+    const badge = _el('span', {
+      className: 'application-card-pending',
+      textContent: `${app.pending_proposals} pending`,
+    });
+    badge.title = 'Pending LLM-proposed bullets/titles awaiting your review';
+    meta.appendChild(badge);
+  }
+  meta.appendChild(_el('span', {
+    className: 'application-card-date',
+    textContent: _formatRelativeDate(app.updated_at),
+  }));
+  card.appendChild(meta);
+  card.onclick = () => _showApplicationDetail(app.id);
+  return card;
+}
+
+function _formatRelativeDate(iso) {
+  if (!iso) return '';
+  try {
+    const then = new Date(iso);
+    const diffMs = Date.now() - then.getTime();
+    const diffMin = Math.round(diffMs / 60000);
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.round(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.round(diffHr / 24);
+    if (diffDay < 30) return `${diffDay}d ago`;
+    return then.toISOString().slice(0, 10);
+  } catch {
+    return iso;
+  }
+}
+
+async function _showApplicationDetail(applicationId) {
+  let res;
+  try {
+    res = await fetch(`/api/applications/${applicationId}`);
+  } catch (e) {
+    _toast('Failed to load application: ' + e.message, true);
+    return;
+  }
+  if (!res.ok) {
+    _toast('Application not found', true);
+    return;
+  }
+  const detail = await res.json();
+  // Lightweight info display in the toast for now — resuming an
+  // application into the live editing flow ships in D.3.1.
+  const lines = [
+    `Title: ${detail.title}`,
+    `Status: ${detail.status}`,
+    `Iterations: ${detail.runs.length}`,
+  ];
+  if (detail.runs.length > 0) {
+    const last = detail.runs[detail.runs.length - 1];
+    lines.push(`Last run: ${last.run_id} (iter ${last.iteration})`);
+    if (last.ats_roundtrip_status) lines.push(`ATS check: ${last.ats_roundtrip_status}`);
+    if (last.pending_proposals > 0) lines.push(`Pending: ${last.pending_proposals}`);
+  }
+  _toast(lines.join(' · '));
+}

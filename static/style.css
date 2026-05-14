@@ -1198,3 +1198,88 @@ textarea:focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 2px;
 }
+
+/* =============================================================== */
+/* Phase D.3 — Applications list (within APPLICATION tab)          */
+/* =============================================================== */
+
+.application-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.application-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--teal);
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 120ms;
+}
+
+.application-card:hover {
+  background: #141a26;
+}
+
+.application-card-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.application-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--amber);
+  flex: 1;
+}
+
+.application-card-company {
+  font-size: 13px;
+  color: var(--teal);
+  font-style: italic;
+}
+
+.application-card-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.app-status-chip {
+  padding: 1px 8px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 10px;
+  background: #2b2b40;
+  color: var(--text-dim);
+}
+.app-status-chip.status-draft     { background: #2b2b40; color: var(--text-dim); }
+.app-status-chip.status-submitted { background: var(--teal); color: var(--black); }
+.app-status-chip.status-interview { background: var(--violet); color: var(--black); }
+.app-status-chip.status-closed    { background: var(--orange); color: var(--black); }
+.app-status-chip.status-withdrawn { background: var(--red); color: var(--text); }
+
+.application-card-iter,
+.application-card-date {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.application-card-pending {
+  background: var(--violet);
+  color: var(--black);
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}

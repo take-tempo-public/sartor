@@ -73,6 +73,25 @@
       </div>
     </section>
 
+    <!-- APPLICATIONS (Phase D.3) -->
+    <div class="lcars-block lcars-teal hidden" data-panel="panelApplications">APPS</div>
+    <section class="lcars-panel hidden" id="panelApplications">
+      <div class="panel-header lcars-bg-teal">PRIOR APPLICATIONS</div>
+      <div class="panel-body">
+        <div class="edit-hint">
+          Past applications stored in the DB. Click a card to view its
+          iteration history. Pending proposals are flagged in violet.
+        </div>
+        <div id="applicationsList" class="application-list">
+          <div class="corpus-empty-experience">Loading…</div>
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <button class="lcars-btn lcars-bg-teal" onclick="refreshApplications()">REFRESH</button>
+          <span class="edit-hint" id="applicationsCount" style="margin:0">0 applications</span>
+        </div>
+      </div>
+    </section>
+
     <!-- CONFIG -->
     <div class="lcars-block lcars-violet hidden" data-panel="panelConfig">CONFIG</div>
     <section class="lcars-panel hidden" id="panelConfig">

@@ -2287,6 +2287,164 @@ def download_edited():
     return send_file(str(path), as_attachment=True, download_name=Path(path).name)
 
 
+# ---------------------------------------------------------------------------
+# Phase D.3: Applications list routes
+# ---------------------------------------------------------------------------
+
+
+def _application_summary_dict(app_row, runs, pending_proposal_count: int) -> dict:
+    """Compact application row for the Applications tab list view."""
+    latest_run = runs[-1] if runs else None
+    return {
+        "id": app_row.id,
+        "title": app_row.title,
+        "company": app_row.company,
+        "status": app_row.status,
+        "jd_url": app_row.jd_url,
+        "jd_fingerprint": app_row.jd_fingerprint,
+        "created_at": app_row.created_at,
+        "updated_at": app_row.updated_at,
+        "iteration_count": len(runs),
+        "latest_iteration": latest_run.iteration if latest_run else 0,
+        "latest_run_id": latest_run.run_id if latest_run else None,
+        "pending_proposals": pending_proposal_count,
+    }
+
+
+@app.route("/api/users/<username>/applications", methods=["GET"])
+def list_applications(username: str):
+    """Return all applications for this candidate, newest-first by updated_at."""
+    from db.models import Application, Candidate, ProposalReview
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({"error": "Candidate not in corpus yet"}), 404
+        rows = session.query(Application).filter_by(
+            candidate_id=candidate.id,
+        ).order_by(Application.updated_at.desc()).all()
+        out = []
+        for app_row in rows:
+            runs = sorted(app_row.runs, key=lambda r: r.iteration)
+            pending = 0
+            if runs:
+                run_ids = [r.id for r in runs]
+                pending = session.query(ProposalReview).filter(
+                    ProposalReview.application_run_id.in_(run_ids),
+                    ProposalReview.decision == "pending",
+                ).count()
+            out.append(_application_summary_dict(app_row, runs, pending))
+        return jsonify(out)
+    finally:
+        session.close()
+
+
+@app.route("/api/applications/<int:application_id>", methods=["GET"])
+def get_application(application_id: int):
+    """Full detail for one application: metadata + runs + pending-proposal counts.
+
+    Used by the Applications tab when the user opens a card to see the
+    iteration history and decide whether to resume editing.
+    """
+    from db.models import Application, Candidate, ProposalReview
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        app_row = session.query(Application).filter_by(id=application_id).first()
+        if app_row is None:
+            return jsonify({"error": "Application not found"}), 404
+        candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+
+        runs_sorted = sorted(app_row.runs, key=lambda r: r.iteration)
+        runs_dict = []
+        for r in runs_sorted:
+            pending = session.query(ProposalReview).filter_by(
+                application_run_id=r.id, decision="pending",
+            ).count()
+            runs_dict.append({
+                "id": r.id,
+                "iteration": r.iteration,
+                "run_id": r.run_id,
+                "prompt_version": r.prompt_version,
+                "persona_template_id": r.persona_template_id,
+                "created_at": r.created_at,
+                "has_resume": r.generated_resume_md is not None,
+                "has_cover_letter": r.generated_cover_letter_md is not None,
+                "has_edits": (r.edited_resume_text is not None
+                              or r.edited_cover_letter_text is not None),
+                "pending_proposals": pending,
+                "ats_roundtrip_status": _parse_ats_status(r.ats_roundtrip_json),
+            })
+
+        return jsonify({
+            "id": app_row.id,
+            "title": app_row.title,
+            "company": app_row.company,
+            "status": app_row.status,
+            "jd_text": app_row.jd_text,
+            "jd_url": app_row.jd_url,
+            "jd_fingerprint": app_row.jd_fingerprint,
+            "candidate_username": candidate.username,
+            "created_at": app_row.created_at,
+            "updated_at": app_row.updated_at,
+            "runs": runs_dict,
+        })
+    finally:
+        session.close()
+
+
+def _parse_ats_status(blob: str | None) -> str | None:
+    """Best-effort extract of the 'status' field from ats_roundtrip_json."""
+    if not blob:
+        return None
+    try:
+        return json.loads(blob).get("status")
+    except (json.JSONDecodeError, AttributeError):
+        return None
+
+
+@app.route("/api/applications/<int:application_id>/status", methods=["PUT"])
+def update_application_status(application_id: int):
+    """Set application status to one of the valid lifecycle values."""
+    from db.models import Application, Candidate
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    status = (data.get("status") or "").strip().lower()
+    valid = {"draft", "submitted", "interview", "closed", "withdrawn"}
+    if status not in valid:
+        return jsonify({"error": f"status must be one of {sorted(valid)}"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row = session.query(Application).filter_by(id=application_id).first()
+        if app_row is None:
+            return jsonify({"error": "Application not found"}), 404
+        candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+        app_row.status = status
+        session.commit()
+        return jsonify({"id": app_row.id, "status": app_row.status})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 if __name__ == "__main__":
     print("\n  Resume Optimizer — http://localhost:5000\n")
     debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"
