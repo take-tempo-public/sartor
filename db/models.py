@@ -455,6 +455,12 @@ class ApplicationRun(Base):
     edited_resume_text: Mapped[str | None] = mapped_column(Text)
     edited_cover_letter_text: Mapped[str | None] = mapped_column(Text)
     deterministic_signals_json: Mapped[str | None] = mapped_column(Text)
+    # Phase C.3: JSON result of the ATS round-trip self-check run after
+    # _write_docx emits the generated .docx. Top-level keys: status
+    # ('pass'|'warning'|'fail'|'not_run'), bullet_count_emitted,
+    # bullet_count_recovered, sections_emitted, sections_recovered,
+    # notes (list of human-readable findings).
+    ats_roundtrip_json: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
 
     application: Mapped[Application] = relationship(back_populates="runs")

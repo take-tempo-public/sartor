@@ -29,18 +29,12 @@ from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
 from hardening import (
     ContextSet,
-    build_context_set,
-    check_ats_format,
     compute_iteration_signals,
-    compute_keyword_overlap,
-    extract_keywords,
     save_context_set,
     save_iteration_context,
     summarize_recent_edits,
     validate_config,
 )
-from parser import parse_resume
-from scraper import fetch_profile_content
 
 # P7 Observability: structured logging
 logging.basicConfig(
@@ -58,12 +52,6 @@ RESUMES_DIR = BASE_DIR / "resumes"
 OUTPUT_DIR = BASE_DIR / "output"
 
 ALLOWED_EXTENSIONS = {".docx", ".pdf", ".md"}
-
-# Phase B feature flag: when "1", /api/analyze reads from the SQLite corpus
-# instead of parsing resume files. Both paths produce identical ContextSet
-# shape so downstream routes (clarify, generate, iterate-clarify) work
-# unchanged. Removed in Phase C; not a permanent flag.
-CORPUS_BACKED = os.environ.get("CORPUS_BACKED", "0") == "1"
 
 # Ensure directories exist
 for d in (CONFIGS_DIR, RESUMES_DIR, OUTPUT_DIR):
@@ -224,133 +212,43 @@ def list_resumes(username):
 
 @app.route("/api/analyze", methods=["POST"])
 def run_analysis():
-    """P8 Human Gate #1: returns analysis for user review before generation."""
+    """P8 Human Gate #1: returns analysis for user review before generation.
+
+    Phase C.4: the file-based legacy path is gone. Every call reads from the
+    DB corpus. Users without a candidate row get a 404 pointing at the
+    onboarding importer. resume_filename is ignored (kept in the request for
+    frontend backward compatibility until Phase D rebuilds the UI).
+    """
     data = request.json
     username = data.get("username", "")
-    resume_filename = data.get("resume_filename", "")
     jd_text = data.get("job_description", "")
 
-    # CORPUS_BACKED ignores resume_filename — content comes from the DB corpus.
     if not username or not jd_text:
         return jsonify({"error": "username and job_description required"}), 400
-    if not CORPUS_BACKED and not resume_filename:
-        return jsonify({"error": "resume_filename required (file-based mode)"}), 400
 
     safe_user = _safe_username(username)
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
 
-    if CORPUS_BACKED:
-        return _run_analysis_corpus_backed(safe_user, jd_text, data)
-
-    safe_resume = secure_filename(resume_filename)
-    resume_path = RESUMES_DIR / safe_user / safe_resume
-    if not _within(resume_path, RESUMES_DIR):
-        return jsonify({"error": "Invalid resume path"}), 403
-    if not resume_path.exists():
-        return jsonify({"error": "Resume file not found"}), 404
-
-    logger.info("Starting analysis for %s with resume %s", safe_user, safe_resume)
-
-    # Resolve source pool selection — None means "all included" (first-use default)
-    included_resumes_raw = data.get("included_resumes")  # list[str] | None
-
-    # P1 Hardening: deterministic steps first
-    parsed = parse_resume(str(resume_path))
-    config = _load_config(safe_user)
-    profile_text = fetch_profile_content(config)
-
-    # Parse supplemental resumes, honoring the user's source pool selection.
-    # Security: filenames from the whitelist are used only for membership testing,
-    # never for path construction — actual paths come from iterdir().
-    supplemental_parsed = []
-    for f in sorted((RESUMES_DIR / safe_user).iterdir()):
-        if f.name == safe_resume or f.suffix.lower() not in ALLOWED_EXTENSIONS:
-            continue
-
-        # Apply whitelist filter when client sent one (None = all included)
-        if included_resumes_raw is not None:
-            if secure_filename(f.name) not in included_resumes_raw:
-                logger.debug("Skipping excluded supplemental resume: %s", f.name)
-                continue
-
-        if not _within(f, RESUMES_DIR / safe_user):
-            logger.warning("Supplemental resume failed containment check: %s", f)
-            continue
-
-        try:
-            supplemental_parsed.append(parse_resume(str(f)))
-            logger.info("Loaded supplemental resume: %s", f.name)
-        except Exception as exc:
-            logger.warning("Skipped supplemental resume %s: %s", f.name, exc)
-
-    logger.info(
-        "Resume sources for %s: 1 primary + %d supplemental",
-        safe_user, len(supplemental_parsed),
-    )
-
-    # Combine ALL resume text for keyword extraction (P1: deterministic, covers full history)
-    all_resume_text = parsed["text"]
-    for r in supplemental_parsed:
-        all_resume_text += "\n" + r["text"]
-
-    jd_keywords = extract_keywords(jd_text)
-    resume_keywords = extract_keywords(all_resume_text)
-    overlap = compute_keyword_overlap(resume_keywords, jd_keywords)
-    ats_warnings = check_ats_format(parsed)  # ATS check applies to primary only
-
-    # P2 Context Hygiene: build compact context
-    context_set = build_context_set(
-        jd_text, parsed, config, profile_text,
-        jd_keywords, resume_keywords, overlap, ats_warnings,
-        supplemental_resumes=supplemental_parsed,
-        original_resume_path=str(resume_path),
-    )
-
-    # Fuzzy work: LLM analysis. Generate a run_id that pairs this analyze
-    # call with the upcoming generate call (issued in /api/generate after
-    # the user reviews the analysis). Both calls share this ID in
-    # logs/llm_calls.jsonl so the dashboard can correlate them.
-    client = _get_client()
-    run_id = uuid.uuid4().hex[:12]
-    try:
-        analysis = analyze(client, context_set, username=safe_user, run_id=run_id)
-    except anthropic.APIConnectionError as exc:
-        logger.error("Anthropic API connection error during analysis: %s", exc)
-        return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
-    except LLMResponseError as exc:
-        logger.error("LLM analysis response failed validation after retry: %s", exc.validation_error)
-        return jsonify({
-            "error": "AI analysis response was malformed after retry. Please try again.",
-            "detail": exc.validation_error,
-        }), 502
-
-    # P4 Disposable Blueprint: save context + analysis (and run_id so the
-    # generate route can re-use it for telemetry correlation)
-    context_set["llm_analysis"] = analysis
-    context_set["run_id"] = run_id
-    context_path = save_context_set(context_set, safe_user, str(OUTPUT_DIR))
-
-    logger.info("Analysis complete for %s, saved to %s", safe_user, context_path)
-
-    return jsonify({
-        "analysis": analysis,
-        "deterministic": {
-            "keyword_overlap": overlap,
-            "ats_warnings": ats_warnings,
-        },
-        "context_path": context_path,
-        "template_path": str(resume_path),  # original .docx path for style templating
-    })
+    return _run_analysis_corpus_backed(safe_user, jd_text, data)
 
 
-def _persist_corpus_generation_to_db(application_run_id: int, generate_result: dict) -> None:
+def _persist_corpus_generation_to_db(
+    application_run_id: int,
+    generate_result: dict,
+    *,
+    ats_findings: dict | None = None,
+) -> None:
     """Phase B.3 write-back: persist the structured generate() output to the DB.
 
     Looks up the `application_run` row, calls `persist_corpus_generation`, and
     commits. Defense-in-depth: validates the run belongs to a real candidate
     before any writes. Used by `/api/generate` only when the context carries
     `application_run_id` (corpus-backed mode).
+
+    Phase C.3 addition: when `ats_findings` is supplied, the round-trip
+    self-check result is stored on application_run.ats_roundtrip_json so the
+    dashboard can surface fixtures with failed/warning round-trips.
     """
     from db.models import Application, ApplicationRun
     from db.persist_run import persist_corpus_generation
@@ -370,6 +268,8 @@ def _persist_corpus_generation_to_db(application_run_id: int, generate_result: d
         report = persist_corpus_generation(
             session, run, generate_result, candidate_id=app_row.candidate_id,
         )
+        if ats_findings is not None:
+            run.ats_roundtrip_json = json.dumps(ats_findings)
         session.commit()
         logger.info(
             "Persisted corpus generation: app_run=%d bullets=%d titles=%d "
@@ -902,8 +802,17 @@ def run_generation():
     original_format = context_set["resume"]["format"]
     if output_format not in (".docx", ".md"):
         output_format = ".docx" if original_format != ".md" else ".md"
-    # Provide the original .docx as a style template when available
-    template_path = context_set["resume"].get("path", "") if output_format == ".docx" else None
+    # Phase C.2: template path resolution priority
+    #   1. explicit persona_template_id in the request body (Phase D will set this)
+    #   2. legacy context_set["resume"]["path"] (file-based path, deprecated)
+    #   3. bundled `Classic` as the fallback
+    template_path = None
+    if output_format == ".docx":
+        requested_persona_id = data.get("persona_template_id")
+        if requested_persona_id is not None:
+            template_path = _resolve_persona_template_path(int(requested_persona_id))
+        else:
+            template_path = context_set["resume"].get("path") or _resolve_default_persona_template_path()
     resume_path = generate_resume(
         result["resume_content"], output_format, safe_user, str(OUTPUT_DIR),
         template_path=template_path,
@@ -914,6 +823,23 @@ def run_generation():
 
     logger.info("Generation complete: %s, %s", resume_path, cover_letter_path)
 
+    # Phase C.3: ATS round-trip self-check. Best-effort; failures are
+    # surfaced in the response + persisted on application_run (when DB-
+    # backed) but never block the user. Pure file operation — no LLM cost.
+    ats_findings: dict | None = None
+    if output_format == ".docx":
+        try:
+            from db.ats_roundtrip import run_ats_roundtrip
+            ats_findings = run_ats_roundtrip(resume_path, result["resume_content"])
+            if ats_findings["status"] != "pass":
+                logger.warning(
+                    "ATS round-trip %s on %s: %s",
+                    ats_findings["status"], resume_path, ats_findings["notes"],
+                )
+        except Exception as exc:
+            logger.warning("ATS round-trip check failed to run: %s", exc)
+            ats_findings = {"status": "not_run", "notes": [f"check raised: {exc}"]}
+
     # Phase B.3: when the context carries an application_run_id (set by the
     # corpus-backed /api/analyze path), persist the LLM's structured output
     # to the DB audit chain — application_bullet rows, proposal_review rows
@@ -922,7 +848,9 @@ def run_generation():
     app_run_id = context_set.get("application_run_id")
     if app_run_id is not None:
         try:
-            _persist_corpus_generation_to_db(int(app_run_id), result)
+            _persist_corpus_generation_to_db(
+                int(app_run_id), result, ats_findings=ats_findings,
+            )
         except Exception as exc:
             # Persistence failure must not break the user's generate flow —
             # the markdown is already produced and saved to disk. Log loudly.
@@ -965,6 +893,7 @@ def run_generation():
         "context_path": new_context_path,
         "iteration": new_iteration,
         "parent_context_path": str(cp),
+        "ats_roundtrip": ats_findings,
     })
 
 
@@ -1383,6 +1312,309 @@ def promote_clarification_route(clarification_id: int):
             "rationale": rationale,
             "proposal_review_anchored_to_run_id": recent_run.id if recent_run else None,
         })
+    finally:
+        session.close()
+
+
+# ---------------------------------------------------------------------------
+# Phase C.2: persona template routes (bundled + user-uploaded)
+# ---------------------------------------------------------------------------
+
+
+PERSONAS_DIR = BASE_DIR / "personas"
+BUNDLED_PERSONAS_DIR = PERSONAS_DIR / "bundled"
+
+
+def _persona_dict(template) -> dict:
+    """Serialize a persona_template row for the API response."""
+    return {
+        "id": template.id,
+        "name": template.name,
+        "path": template.path,
+        "thumbnail_path": template.thumbnail_path,
+        "description": template.description,
+        "source": template.source,
+        "is_default": bool(template.is_default),
+        "candidate_id": template.candidate_id,
+        "created_at": template.created_at,
+    }
+
+
+def _resolve_persona_template_path(persona_template_id: int) -> str | None:
+    """Look up a persona_template's on-disk path. None if not found / missing.
+
+    The DB stores `path` relative to the repo root (e.g.
+    "personas/bundled/classic.docx"). We resolve to absolute, verify
+    containment under PERSONAS_DIR (defense-in-depth), and return the
+    string path generator.py expects.
+    """
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(id=persona_template_id).first()
+        if row is None:
+            return None
+        disk_path = (BASE_DIR / row.path).resolve()
+        if not disk_path.exists() or not _within(disk_path, PERSONAS_DIR):
+            logger.warning(
+                "Persona template id=%s has invalid path %s",
+                persona_template_id, row.path,
+            )
+            return None
+        return str(disk_path)
+    finally:
+        session.close()
+
+
+def _resolve_default_persona_template_path() -> str | None:
+    """Return the bundled `Classic` template's path as the fallback.
+
+    Used when no persona_template_id is supplied AND no legacy
+    file-based resume path is available. The plan calls Classic the
+    'maximally ATS-safe baseline' — appropriate default.
+    """
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(
+            source="bundled", name="Classic Single-Column",
+        ).first()
+        if row is None:
+            return None
+        return _resolve_persona_template_path(row.id)
+    finally:
+        session.close()
+
+
+@app.route("/api/personas/bundled", methods=["GET"])
+def list_bundled_personas():
+    """Return the catalog of bundled (shipped-with-app) persona templates.
+
+    Bundled rows have candidate_id=NULL and source='bundled'. They're shared
+    across every candidate. The frontend persona gallery surfaces these
+    above the user's own uploads.
+    """
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        rows = session.query(PersonaTemplate).filter_by(source="bundled").all()
+        return jsonify([_persona_dict(t) for t in rows])
+    finally:
+        session.close()
+
+
+@app.route("/api/users/<username>/personas", methods=["GET"])
+def list_user_personas(username: str):
+    """Return bundled + this candidate's uploaded persona templates."""
+    from db.models import Candidate, PersonaTemplate
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({"error": "Candidate not in corpus yet"}), 404
+        bundled = session.query(PersonaTemplate).filter_by(source="bundled").all()
+        owned = session.query(PersonaTemplate).filter_by(candidate_id=candidate.id).all()
+        return jsonify({
+            "bundled": [_persona_dict(t) for t in bundled],
+            "owned": [_persona_dict(t) for t in owned],
+        })
+    finally:
+        session.close()
+
+
+@app.route("/api/users/<username>/personas", methods=["POST"])
+def upload_user_persona(username: str):
+    """Upload a user-owned .docx persona template.
+
+    Multipart body: `file` (the .docx), `name` (display label, optional —
+    defaults to the filename stem). The .docx is saved under
+    `personas/{user}/` and a persona_template row is created with
+    candidate_id=<this user> and source='user_upload'.
+    """
+    from db.models import Candidate, PersonaTemplate
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    file = request.files.get("file")
+    if file is None or not file.filename:
+        return jsonify({"error": "Multipart 'file' field is required"}), 400
+    if Path(file.filename).suffix.lower() != ".docx":
+        return jsonify({"error": "Only .docx persona templates are supported"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({"error": "Candidate not in corpus yet"}), 404
+
+        safe_name = secure_filename(file.filename)
+        user_persona_dir = PERSONAS_DIR / safe_user
+        user_persona_dir.mkdir(parents=True, exist_ok=True)
+        target = user_persona_dir / safe_name
+        if not _within(target, PERSONAS_DIR):
+            return jsonify({"error": "Invalid persona path"}), 403
+        file.save(str(target))
+
+        display_name = (request.form.get("name") or Path(safe_name).stem).strip()
+        relative_path = f"personas/{safe_user}/{safe_name}"
+        row = PersonaTemplate(
+            candidate_id=candidate.id,
+            name=display_name or safe_name,
+            path=relative_path,
+            source="user_upload",
+            is_default=0,
+        )
+        session.add(row)
+        session.commit()
+        return jsonify(_persona_dict(row)), 201
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/personas/<int:persona_id>", methods=["GET"])
+def get_persona(persona_id: int):
+    """Return one persona row's metadata. Accessible to anyone (bundled +
+    owned both readable for preview UI)."""
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(id=persona_id).first()
+        if row is None:
+            return jsonify({"error": "Persona not found"}), 404
+        return jsonify(_persona_dict(row))
+    finally:
+        session.close()
+
+
+@app.route("/api/personas/<int:persona_id>", methods=["PUT"])
+def update_persona(persona_id: int):
+    """Update name / is_default on a persona row.
+
+    Body: `{name?: str, is_default?: bool}`. Bundled rows are read-only at
+    this layer — only candidate-owned personas can be updated. `is_default=1`
+    on one persona for a (candidate, primary_role_tag) clears the same flag
+    on any sibling personas for that (candidate, tag) pair.
+    """
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(id=persona_id).first()
+        if row is None:
+            return jsonify({"error": "Persona not found"}), 404
+        if row.source == "bundled":
+            return jsonify({"error": "Bundled personas are immutable"}), 403
+
+        if "name" in data:
+            new_name = (data.get("name") or "").strip()
+            if not new_name:
+                return jsonify({"error": "name cannot be empty"}), 400
+            row.name = new_name
+
+        if "is_default" in data:
+            new_default = 1 if data.get("is_default") else 0
+            if new_default == 1 and row.candidate_id is not None:
+                # Clear existing default in the same (candidate_id, primary_role_tag_id) slot
+                session.query(PersonaTemplate).filter_by(
+                    candidate_id=row.candidate_id,
+                    primary_role_tag_id=row.primary_role_tag_id,
+                    is_default=1,
+                ).update({"is_default": 0})
+            row.is_default = new_default
+
+        session.commit()
+        return jsonify(_persona_dict(row))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/personas/<int:persona_id>", methods=["DELETE"])
+def delete_persona(persona_id: int):
+    """Delete a user-owned persona template (file + DB row).
+
+    Bundled rows are refused (403). User uploads are deleted both from disk
+    and from the DB. Soft delete isn't necessary here because no FK references
+    persona_template (the audit chain via application_run.persona_template_id
+    uses ON DELETE SET NULL, so historical runs survive cleanly).
+    """
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(id=persona_id).first()
+        if row is None:
+            return jsonify({"error": "Persona not found"}), 404
+        if row.source == "bundled":
+            return jsonify({"error": "Bundled personas are immutable"}), 403
+
+        disk_path = BASE_DIR / row.path
+        if disk_path.exists() and _within(disk_path, PERSONAS_DIR):
+            disk_path.unlink()
+
+        session.delete(row)
+        session.commit()
+        return jsonify({"deleted": persona_id})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/personas/<int:persona_id>/download", methods=["GET"])
+def download_persona(persona_id: int):
+    """Stream a persona's .docx file for the preview UI."""
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(id=persona_id).first()
+        if row is None:
+            return jsonify({"error": "Persona not found"}), 404
+        disk_path = BASE_DIR / row.path
+        if not disk_path.exists():
+            return jsonify({"error": "Persona file missing on disk"}), 404
+        # Containment: bundled lives under personas/bundled/, user uploads
+        # under personas/{user}/ — both inside PERSONAS_DIR.
+        if not _within(disk_path, PERSONAS_DIR):
+            return jsonify({"error": "Invalid persona path"}), 403
+        return send_file(str(disk_path), as_attachment=True, download_name=f"{row.name}.docx")
     finally:
         session.close()
 

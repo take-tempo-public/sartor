@@ -24,6 +24,13 @@ resumes/*
 output/*
 !output/.gitkeep
 
+# ---- Persona templates: bundled tracked, user-uploaded gitignored ----
+# personas/bundled/*.docx ships with the repo (Phase C).
+# personas/{username}/ is per-user PII and stays gitignored.
+personas/*
+!personas/bundled/
+!personas/bundled/**
+
 # ---- LLM telemetry (per-call JSONL emitted by analyzer.py) ----
 logs/
 
