@@ -16,6 +16,141 @@ prevent re-running them.
 
 ---
 
+## 2026-05-13 — Phase B.5: regression check for the file-based path at `2026-05-12.1`
+
+### What changed
+
+No code or prompt changes. This entry establishes the new baseline at
+`PROMPT_VERSION 2026-05-12.1` (bumped in Phase B.2) for the file-based
+pipeline path — the regression check that nothing in Phase B.1–B.4
+silently broke the legacy path that the file-based fixtures still
+exercise.
+
+### Why
+
+Phase B introduced a feature-flagged DB-backed pipeline behind
+`CORPUS_BACKED=1`. The flag defaults off, so the eval suite still runs
+the file-based path. Smoke tests covered the DB-backed path against
+the testuser fixture (Casey Rivera). This entry confirms the file-based
+path against the existing 3-fixture synthetic suite.
+
+Full DB-backed A/B parity at fixture scale lives in Phase E (when
+fixtures are converted to `seed.json` form). Phase B.5 covers only the
+regression check.
+
+### Result
+
+3 synthetic fixtures × 5–6 rubrics, all at `2026-05-12.1`:
+
+| Fixture | ats_format | clar_quality | grounding | keyword_cov | tone | iter_quality |
+|---|---|---|---|---|---|---|
+| data-scientist-junior | 4.2 | 4.2 | 4.8 | 4.2 | 4.2 | n/a |
+| pm-senior | 4.6 | 4.2 | 4.8 | 4.2 | 4.2 | n/a |
+| sre-mid-level | 4.8 | **3.2 ⚠** | 4.7 | 4.2 | 4.2 | **None ⚠** |
+
+- **14/16 pass** at threshold ≥ 4.0
+- **1 regression** flagged by the alerter: sre-mid-level::clarification_quality
+  4.2 → 3.2 (Δ=-1.0). The TUNING_LOG entries for 2026-05-11.2 / 2026-05-11.3
+  show this rubric historically bouncing 2.1 / 3.2 / 3.2 / 3.2; the 4.2
+  prior was the outlier, and 3.2 is the historical floor. **Phase B
+  did not touch `CLARIFY_SYSTEM_PROMPT` — this regression is judge +
+  Sonnet variance, not a code regression.**
+- **1 expected None** on sre-mid-level::iteration_quality — known
+  `scenario_misaligned` per the 2026-05-11.3 entry.
+
+Cost: **$0.4068 total** for the full suite (down from ~$1.50 historical).
+Cache_read tokens: 5586 across all calls. The B.2 cache-shape work
+benefits the file-based path too because the byte-stable cached prefix
+discipline is now the same.
+
+### What we learned
+
+1. **Phase B did not break the file-based path.** The 14/16 passes match
+   historical pass rates within Haiku judge variance. The one regression
+   is on a known-unstable rubric whose floor is 3.2.
+2. **Cache discipline improvements cascade.** Total suite cost dropped
+   ~3× vs historical ($0.41 vs $1.50). The B.2 work on `<career_corpus>`
+   didn't touch legacy prompts but did clean up the cache-prefix-stability
+   patterns, which benefits both paths.
+3. **PROMPT_VERSION bump at the Phase B boundary worked as designed.**
+   All 16 records tagged with `2026-05-12.1`. The dashboard's
+   score-over-time chart will show a clean version transition; future
+   regressions are attributable.
+
+### Open questions / future tuning targets
+
+- **Full DB-backed eval A/B (Phase E work):** the 3 synthetic fixtures
+  need to move from `(resume.md, jd.txt, expected.json)` to a single
+  `seed.json` per fixture. Then `evals/runner.py` gains a flag to import
+  the seed into an in-memory SQLite and run via `build_context_set_from_db`.
+  Expected outcome (based on the testuser smoke): DB-backed grounding
+  improves materially (smoke went 18/22 → 19/19 with structural
+  selected_bullets), other rubrics within ±0.5.
+- **sre-mid-level::clarification_quality stability:** the rubric's
+  historical 2.1/3.2 floor suggests the rubric is too strict for
+  Sonnet's actual output or the prompt is too loose. Next iteration
+  should re-examine the rubric's `min_clarification_quality_score` and
+  the SCOPE_PROBE coverage rule the plan flagged.
+
+### Cost / scope notes
+
+- This regression check: $0.41
+- Phase B total LLM spend across all smokes (B.1 + B.2×2 + B.3 + B.4 + this): ~$1.10
+
+---
+
+## 2026-05-12 — `2026-05-11.3` → `2026-05-12.1`: Phase B.2 `<career_corpus>` prompt block
+
+### What changed
+
+- `analyzer.py:_stable_user_prefix` now branches: when `context_set["career_corpus"]` is populated (DB-backed path with CORPUS_BACKED=1), the user prefix emits a structured `<career_corpus iteration="N">` XML block with `<experience>` / `<eligible_title>` / `<bullet>` children carrying stable IDs from the corpus DB. The legacy `<resume>` + `<supplemental_resumes>` blocks are OMITTED in this mode. When `career_corpus` is absent (file-based path), the prefix is byte-identical to `2026-05-11.3`.
+- `analyzer.py:generate()` adds a `<corpus_mode>` instruction block when the input carries `<career_corpus>`. The block tells the LLM that each `<bullet>` must be quoted verbatim (selected by ID), and adds three new output schema fields: `selected_bullets`, `proposed_new_bullets`, `proposed_experience_titles`.
+- `analyzer.py:GENERATE_CORPUS_REQUIRED_KEYS` — new frozenset extending `GENERATE_REQUIRED_KEYS`. `_parse_or_retry` is invoked with this set when corpus mode is active; the legacy set remains in use otherwise.
+- `db/build_context.py:_build_career_corpus_payload` — new helper producing the structured corpus payload. Eligible titles are sorted official-first; only `is_active=1` bullets ship.
+- `hardening.py` — new TypedDicts: `CorpusBullet`, `CorpusEligibleTitle`, `CorpusExperience`. `ContextSet` gains an optional `career_corpus` field.
+- `PROMPT_VERSION` bumped to `2026-05-12.1`.
+
+### Why
+
+Phase B.1 brought DB content into the pipeline but kept the prompt structure unchanged. The legacy `<resume>` block forced us to synthesize markdown from DB rows — useful as a transitional bridge but throwing away the per-bullet IDs the downstream phases need. Phase B.2 makes IDs first-class in the prompt:
+
+1. **B.3 needs them.** `application_bullet` rows record which bullets the LLM chose; without IDs in the prompt the LLM can't tell us which selection it made.
+2. **Multi-framing needs them.** Each experience carries multiple `<eligible_title>` elements. The LLM picks one per JD via `selected_bullets[].chosen_title_id`. The synthesized markdown of B.1 could only carry one title per experience.
+3. **Grounding can move from heuristic to structural.** Every output bullet must equal a corpus bullet (lookup by ID). B.3 enforces this; B.2 sets up the data.
+
+### Result
+
+Smoke (DB-backed, testuser corpus, pm-senior JD; 2026-05-12 run):
+
+| Metric | B.1 (`2026-05-11.3`) | B.2 (`2026-05-12.1`) | Δ |
+|---|---|---|---|
+| Total cost | $0.1465 | $0.1652 | **+13%** (extra output schema fields) |
+| cache_read tokens (generate) | 2748 | **3420** | **+24% (improvement)** |
+| Output bullets | 22 | 19 | -3 (more disciplined selection) |
+| Suspicious bullets (heuristic) | 4/22 | **0/19** | **100% trivially grounded** |
+| Required keys in response | 4 (legacy) | 7 (legacy + 3 corpus fields) | — |
+| Errors | none | none | — |
+
+Two headline findings:
+1. **Cache_read tokens went UP, not down.** The fear from Reviewer Risk #2 (the prompt-cache might collapse under the new prefix shape) didn't materialize. The structured `<career_corpus>` block is just as byte-stable across analyze→generate within an iteration as the legacy `<resume>` was, AND its larger size means more cached tokens to read.
+2. **Grounding tightened substantially.** Every output bullet substring-matched a corpus bullet — zero "suspicious" entries (B.1 had 4/22 the heuristic flagged, though those turned out to be legitimate paraphrases on inspection). The LLM appears to have taken the "treat each bullet as immutable, select by ID" instruction seriously. Sets up B.3 (structural enforcement via `application_bullet` rows) to be straightforward.
+
+File-based path (CORPUS_BACKED unset): byte-identical to `2026-05-11.3`. The 247/247 prior tests still pass; the 12 new B.2 tests pass; legacy mock prompts received no corpus_mode block; required-key set defaulted to GENERATE_REQUIRED_KEYS (4 keys).
+
+### What we learned
+
+1. **Cache discipline survives structural prefix changes — when the new structure is itself byte-stable.** The cached prefix block is larger now (more tokens to cache) and the `cache_read_input_tokens` went UP rather than down. Reviewer Risk #2 (cache collapse) doesn't bite when the new prefix is just as deterministic as the old one was.
+2. **Structured presentation reduces fabrication temptation.** Telling the LLM "each `<bullet id="bN">` is immutable, record IDs in `selected_bullets`" produced 19/19 trivially-grounded bullets vs the legacy prompt's 18/22. The framing change matters more than the words on the page.
+3. **Sonnet trims aggressively when given structure.** Output bullets dropped from 22 to 19 with cleaner selection. The LLM appears to be using the structured corpus to be more disciplined about what to include rather than reaching for completeness.
+
+### Open questions / future tuning targets
+
+- Should `<bullet tags="...">` carry actual tag values? B.2 leaves the attribute empty pending B.3's tag join. Surfacing tags helps the LLM filter by role family but adds tokens; the deterministic JD-aware pre-filter (also B.3) may make this unnecessary.
+- `proposed_new_bullets` `pattern_kind` — does the LLM reliably distinguish xyz vs car? Spot-check after a few smoke runs; if it always picks one or the other, drop the field.
+- Should `clarify()` and `clarify_iteration()` also gain corpus-mode instructions? They consume the same prefix so they SEE `<career_corpus>` but their output (questions) doesn't need IDs. Probably defer until we see specific rubric regressions.
+
+---
+
 ## 2026-05-11 — `2026-05-11.2` → `2026-05-11.3`: iteration-probe worked examples
 
 ### What changed

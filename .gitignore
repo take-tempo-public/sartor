@@ -7,18 +7,31 @@
 *.p12
 *.crt
 
-# ---- User PII: configs (keep only example.config as template) ----
+# ---- User PII: configs ----
+# example.config is the documentation template.
+# testuser.config is the committed dummy-user fixture for dev + integration testing.
 configs/*.config
 !configs/example.config
+!configs/testuser.config
 
 # ---- User data: resumes and generated output ----
+# resumes/testuser/ is the committed fixture (synthetic Casey Rivera persona).
+# output/testuser/ stays gitignored — generated artifacts can be wiped freely.
 resumes/*
 !resumes/.gitkeep
+!resumes/testuser/
+!resumes/testuser/**
 output/*
 !output/.gitkeep
 
 # ---- LLM telemetry (per-call JSONL emitted by analyzer.py) ----
 logs/
+
+# ---- SQLite database (career corpus + candidate memory; per-clone, contains PII) ----
+db/*.sqlite
+db/*.sqlite-journal
+db/*.sqlite-wal
+db/*.sqlite-shm
 
 # ---- Eval results and real fixtures (per-clone, may contain real PII) ----
 evals/results/*

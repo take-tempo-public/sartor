@@ -32,6 +32,8 @@ dependencies = [
     "markdown>=3.6,<4.0",
     "beautifulsoup4>=4.12,<5.0",
     "requests>=2.31,<3.0",
+    "sqlalchemy>=2.0,<3.0",
+    "alembic>=1.13,<2.0",
 ]
 
 [project.optional-dependencies]
@@ -52,12 +54,12 @@ Issues = "https://github.com/Cooksey/resume/issues"
 py-modules = ["app", "analyzer", "hardening", "generator", "parser", "scraper"]
 
 [tool.setuptools.packages.find]
-include = ["dashboard*"]
+include = ["dashboard*", "db*", "onboarding*"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-extend-exclude = ["configs", "resumes", "output", "logs", "evals/results", "evals/fixtures/real"]
+extend-exclude = ["configs", "resumes", "output", "logs", "evals/results", "evals/fixtures/real", "db/migrations/versions"]
 
 [tool.ruff.lint]
 select = [
@@ -76,7 +78,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "S105", "S106", "S108"]
+"tests/*" = ["S101", "S105", "S106", "S108", "S607"]
 "evals/*" = ["S101"]
 
 [tool.mypy]

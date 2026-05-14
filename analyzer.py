@@ -17,7 +17,7 @@ from pathlib import Path
 
 import anthropic
 
-from hardening import ContextSet
+from hardening import ContextSet, CorpusExperience
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +51,19 @@ GENERATE_REQUIRED_KEYS = frozenset({
 
 CLARIFY_REQUIRED_KEYS = frozenset({"questions", "reasoning"})
 
+# Generate output keys when the input contains <career_corpus> (Phase B.2+).
+# Selected_bullets is required so B.3 can write application_bullet audit rows
+# from the LLM's selections. proposed_new_bullets and proposed_experience_titles
+# are always present in the response but may be empty arrays when the LLM has
+# no proposals to make.
+GENERATE_CORPUS_REQUIRED_KEYS = GENERATE_REQUIRED_KEYS | frozenset({
+    "selected_bullets", "proposed_new_bullets", "proposed_experience_titles",
+})
+
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-11.3"
+PROMPT_VERSION = "2026-05-12.1"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -179,13 +188,24 @@ RULES:
 #     (~3K tokens of resume_rules + cover_letter_rules + output_format).
 #     Same per-token price as older Sonnet versions; the newer revision has
 #     better structured-output adherence and grounding behavior.
-#   - Haiku 4.5 for scope check (line ~470) and eval grading (evals/runner.py):
-#     binary classification and structured-output rubric application are the
-#     Haiku sweet spot. Volume + structure beats reasoning depth there.
+#   - clarify() and clarify_iteration() also use Sonnet today even though
+#     they're structurally Haiku-friendly (short structured outputs). They're
+#     under active quality tuning against the clarification_quality and
+#     iteration_quality rubrics — switching the model mid-tuning would muddy
+#     regression attribution. Revisit once those rubrics clear 4.0 stably.
+#   - Haiku 4.5 for scope check (_check_refinement_scope), eval grading
+#     (evals/runner.py), and onboarding extraction (extract_experiences):
+#     binary classification, structured rubric application, and one-shot
+#     structured extraction are the Haiku sweet spot. Volume + structure
+#     beats reasoning depth there.
 #   - Opus is intentionally not used: ~5x the cost of Sonnet without a
 #     proportional win on this workload. Reserve for future debugging
 #     sessions if grounding regressions resist prompt-tightening.
-MODEL = "claude-sonnet-4-6"
+SONNET_MODEL = "claude-sonnet-4-6"
+HAIKU_MODEL = "claude-haiku-4-5-20251001"
+# Backward-compat alias — historical code uses MODEL as the default Sonnet handle.
+# New code should reference SONNET_MODEL / HAIKU_MODEL explicitly.
+MODEL = SONNET_MODEL
 # Per-call output cap. analyze() returns a comprehensive JSON with 10+ keyed
 # sections; Sonnet 4.6 is more verbose than older Sonnet 4 was and routinely
 # uses 4–6K tokens on detail-rich real inputs. 8192 leaves headroom without
@@ -236,24 +256,41 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
     actually changed. Within one iteration (e.g. analyze→generate, or a retry),
     the prefix remains byte-identical and the cache hits.
 
+    Phase B.2: when `context_set["career_corpus"]` is populated, the prefix
+    emits a structured `<career_corpus>` block with ID-tagged experiences and
+    bullets in place of the legacy `<resume>` + `<supplemental_resumes>` blocks.
+    The LLM's selected_bullets output then references bullet IDs directly,
+    making structural grounding cheap to enforce in B.3. The legacy path
+    (no career_corpus field) is unchanged.
+
     Tag names, field order, and the inclusion-condition for the online profile
     are all load-bearing. Do not change one without the other.
     """
     candidate = context_set["candidate"]
     online_profile = candidate.get("profile_text", "").strip()
     iteration = int(context_set.get("iteration", 0) or 0)
-    resume_text, _ = _current_draft_text(context_set)
-    resume_filename = context_set["resume"].get("filename", "primary")
 
     parts = [
         "<job_description>",
         context_set["job_description"],
         "</job_description>",
         "",
-        f'<resume filename="{resume_filename}" iteration="{iteration}">',
-        resume_text,
-        "</resume>",
-        _supplemental_block(context_set, iteration=iteration),
+    ]
+
+    corpus = context_set.get("career_corpus")
+    if corpus:
+        parts.append(_corpus_block(corpus, iteration=iteration))
+    else:
+        resume_text, _ = _current_draft_text(context_set)
+        resume_filename = context_set["resume"].get("filename", "primary")
+        parts.extend([
+            f'<resume filename="{resume_filename}" iteration="{iteration}">',
+            resume_text,
+            "</resume>",
+            _supplemental_block(context_set, iteration=iteration),
+        ])
+
+    parts.extend([
         "<candidate_profile>",
         f"Name: {candidate.get('name', '')}",
         f"Email: {candidate.get('email', '')}",
@@ -265,7 +302,7 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
         f"Education: {candidate.get('education_summary', '')}",
         f"Notes: {candidate.get('notes', '')}",
         "</candidate_profile>",
-    ]
+    ])
 
     if online_profile:
         parts.extend([
@@ -276,6 +313,57 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
         ])
 
     return "\n".join(parts)
+
+
+def _corpus_block(experiences: list[CorpusExperience], iteration: int) -> str:
+    """Emit the `<career_corpus>` XML block when DB-backed mode is active.
+
+    Each `<experience>` lists all eligible titles (the LLM picks the right
+    framing per JD) and every active bullet with `id`, `tags`, `has_outcome`.
+    The LLM's generate output is required to reference bullet IDs in
+    `selected_bullets` and may propose new bullets / new titles in
+    `proposed_new_bullets` / `proposed_experience_titles`.
+
+    Markup conventions are load-bearing: GENERATE_CORPUS_PROMPT_GUIDE below
+    documents the contract the LLM is told about.
+    """
+    parts: list[str] = [f'<career_corpus iteration="{iteration}">']
+    for exp in experiences:
+        end = exp.get("end_date") or "present"
+        attrs = (
+            f'id="e{exp["id"]}" '
+            f'company="{_attr_escape(exp.get("company", ""))}" '
+            f'dates="{exp.get("start_date", "")} → {end}"'
+        )
+        if exp.get("location"):
+            attrs += f' location="{_attr_escape(exp["location"])}"'
+        parts.append(f"  <experience {attrs}>")
+        for t in exp.get("eligible_titles", []) or []:
+            official = "true" if t.get("is_official") else "false"
+            parts.append(
+                f'    <eligible_title id="t{t["id"]}" official="{official}">'
+                f'{_attr_escape(t.get("title", ""))}</eligible_title>'
+            )
+        for b in exp.get("bullets", []) or []:
+            tags = ",".join(b.get("tags") or [])
+            outcome = "true" if b.get("has_outcome") else "false"
+            parts.append(
+                f'    <bullet id="b{b["id"]}" tags="{tags}" has_outcome="{outcome}">'
+                f'{_attr_escape(b.get("text", ""))}</bullet>'
+            )
+        parts.append("  </experience>")
+    parts.append("</career_corpus>")
+    return "\n".join(parts)
+
+
+def _attr_escape(value: str) -> str:
+    """Minimal XML attribute escaping for the values we control.
+
+    `&` MUST be replaced first or it captures the `&` we introduce when
+    escaping `"` and `<`, producing `&amp;quot;` instead of `&quot;`. Tested
+    by tests/test_corpus_mode_prompt.py::test_escapes_double_quotes_in_attributes.
+    """
+    return value.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
 
 
 def _supplemental_block(context_set: ContextSet, iteration: int = 0) -> str:
@@ -369,6 +457,7 @@ def _call_llm(
     username: str = "",
     run_id: str = "",
     system_prompt: str = "",
+    model: str | None = None,
 ) -> str:
     """Make a single LLM call using streaming, with prompt caching and JSONL telemetry.
 
@@ -386,9 +475,16 @@ def _call_llm(
     Calls with a non-default system_prompt will not hit the system-block cache
     established by analyze/generate, which is acceptable for cheap small calls.
 
+    The optional model argument lets cheap structured-output calls (e.g.
+    extract_experiences) opt into Haiku for cost without bypassing this
+    helper's caching + telemetry machinery. Defaults to SONNET_MODEL so
+    existing callers are unchanged. See the model-selection rationale comment
+    block for what belongs on which model.
+
     Telemetry: every call appends one record to logs/llm_calls.jsonl with
     timing, token counts (including cache fields), prompt version, and status.
     """
+    effective_model = model or SONNET_MODEL
     user_content: list[dict] = []
     if cached_user_prefix:
         user_content.append({
@@ -409,7 +505,7 @@ def _call_llm(
     final = None
     try:
         with client.messages.stream(
-            model=MODEL,
+            model=effective_model,
             max_tokens=MAX_TOKENS,
             system=[
                 {
@@ -434,7 +530,7 @@ def _call_llm(
             "username": username,
             "run_id": run_id,
             "call": call_kind,
-            "model": MODEL,
+            "model": effective_model,
             "prompt_version": PROMPT_VERSION,
             "input_tokens": getattr(usage, "input_tokens", 0),
             "output_tokens": getattr(usage, "output_tokens", 0),
@@ -493,6 +589,7 @@ def _parse_or_retry(
     run_id: str,
     max_attempts: int = 2,
     system_prompt: str = "",
+    model: str | None = None,
 ) -> dict:
     """Parse an LLM JSON response, retrying once with the validation error
     appended on parse failure or missing required keys.
@@ -510,7 +607,7 @@ def _parse_or_retry(
         client, base_prompt,
         cached_user_prefix=cached_user_prefix,
         call_kind=call_kind, username=username, run_id=run_id,
-        system_prompt=system_prompt,
+        system_prompt=system_prompt, model=model,
     )
     for attempt in range(max_attempts):
         try:
@@ -540,7 +637,7 @@ def _parse_or_retry(
                 client, retry_prompt,
                 cached_user_prefix=cached_user_prefix,
                 call_kind=f"{call_kind}_retry", username=username, run_id=run_id,
-                system_prompt=system_prompt,
+                system_prompt=system_prompt, model=model,
             )
     raise LLMResponseError(raw, "exhausted retries")
 
@@ -935,6 +1032,53 @@ def generate(
             "</current_cover_letter_draft>\n\n"
         )
 
+    # Phase B.2: corpus-mode instructions + extra output fields, present only
+    # when the input carries a <career_corpus> block (DB-backed pipeline).
+    # When absent (legacy file-based path), generate() behaves identically to
+    # prior versions — the LLM sees the legacy <resume> + <supplemental_resumes>
+    # and produces the legacy four-field JSON output.
+    in_corpus_mode = bool(context_set.get("career_corpus"))
+    corpus_mode_block = ""
+    extra_output_fields = ""
+    if in_corpus_mode:
+        corpus_mode_block = """<corpus_mode>
+The candidate's experience pool is the <career_corpus> block above (not a free-text <resume>). Each <experience> carries:
+- One or more <eligible_title> elements — the candidate has approved these framings. Pick the one that best matches THIS JD's positioning.
+- One or more <bullet id="bN" ...> elements — VERBATIM text from the candidate's resumes. Treat each bullet as immutable ground truth: select, reorder, and reframe SURROUNDING context, but the bullet text itself MUST appear verbatim in your resume_content.
+
+When an essential JD requirement is not covered by any existing bullet, you MAY propose a new bullet in `proposed_new_bullets` (see output schema below). The user reviews proposals before they join the canonical corpus.
+
+When none of an experience's <eligible_title> elements fits the JD's framing, you MAY propose a new title in `proposed_experience_titles`. Same review semantics as proposed bullets.
+
+GROUNDING for corpus mode:
+  Every bullet you emit in resume_content must EITHER (a) reproduce a <bullet> text verbatim from the corpus (just record its `id` in selected_bullets), OR (b) be listed in proposed_new_bullets so the user knows it's a new claim. No other bullets are permitted. The legacy GROUNDING CHECK below still governs cover_letter_content and any reframing language between bullets.
+</corpus_mode>
+
+"""
+        extra_output_fields = """,
+  "selected_bullets": [
+    {
+      "experience_id": "e<int>",
+      "chosen_title_id": "t<int>",
+      "bullet_ids_in_order": ["b<int>", "b<int>", ...]
+    }
+  ],
+  "proposed_new_bullets": [
+    {
+      "experience_id": "e<int>",
+      "text": "Verbatim text the LLM is proposing as a new bullet",
+      "pattern_kind": "xyz" | "car" | "manual",
+      "rationale": "Why this fills a JD gap the existing bullets miss"
+    }
+  ],
+  "proposed_experience_titles": [
+    {
+      "experience_id": "e<int>",
+      "title": "New title framing",
+      "rationale": "Why no eligible_title fits this JD"
+    }
+  ]"""
+
     prompt = f"""<task>Generate a tailored resume and cover letter for the candidate based on the analysis.</task>
 
 <output_rules>
@@ -993,7 +1137,7 @@ Strategy: {analysis.get('overall_strategy', '')}
 Professional vocabulary: {', '.join(analysis.get('professional_vocabulary', []))}
 </analysis>
 
-{clarifications_block}{cover_letter_draft_block}<resume_rules>
+{clarifications_block}{cover_letter_draft_block}{corpus_mode_block}<resume_rules>
 GROUNDING CHECK — apply this before writing every bullet:
   Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — trace to the resume above (the current draft, which may include first-person edits the candidate typed in), any historical or supplemental resume above, OR a candidate clarification answer above?"
   If YES: reframe, strengthen, and keyword-align it freely. Both clarification answers AND first-person typed edits in the current draft are ground truth and may be cited even when the original primary resume did not mention them.
@@ -1089,14 +1233,16 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
   "resume_content": "The complete tailored resume. CRITICAL: use \\n (JSON newline escape) between every section, job entry, and bullet. Never collapse the resume into one long line. Example: '# Name\\nEmail | Phone\\n\\n## Summary\\nText.\\n\\n## Experience\\n\\n### Title — Company\\n- Bullet one\\n- Bullet two'",
   "cover_letter_content": "The complete cover letter as plain text",
   "changes_made": ["change1", "change2"],
-  "proofread_notes": ["Any grammar, spelling, or formatting issues found and fixed"]
+  "proofread_notes": ["Any grammar, spelling, or formatting issues found and fixed"]{extra_output_fields}
 }}
 </output_format>"""
 
     return _parse_or_retry(
         client, prompt,
         cached_user_prefix=_stable_user_prefix(context_set),
-        required_keys=GENERATE_REQUIRED_KEYS,
+        required_keys=(
+            GENERATE_CORPUS_REQUIRED_KEYS if in_corpus_mode else GENERATE_REQUIRED_KEYS
+        ),
         call_kind="generate",
         username=username,
         run_id=run_id,
@@ -1150,3 +1296,207 @@ Respond with valid JSON only — no markdown, no explanation outside the JSON:
         # Fail open — scope check failure must never block refinement
         logger.warning("scope check failed, failing open: %s", e)
         return {"valid": True}
+
+
+# ---------------------------------------------------------------------------
+# Phase B.4: critique LLM-proposed bullets/titles + promote clarifications
+# ---------------------------------------------------------------------------
+
+# Required keys for the critique response. `concerns` may be an empty list when
+# the critique is clean, but the field must be present.
+CRITIQUE_REQUIRED_KEYS = frozenset({"verdict", "notes", "concerns"})
+
+# Critique persona — short, sharp, fabrication-focused. Inspired by the
+# SYSTEM_PROMPT ALWAYS/NEVER rules but specialized for proposal review.
+PROPOSAL_CRITIQUE_SYSTEM_PROMPT = """You are a rigorous reviewer evaluating LLM-proposed resume bullets and titles for fabrication risk. You read the original LLM proposal, any user edit, the candidate's source experience (company, official title, existing canonical bullets), the candidate's first-person clarifications, and the JD that triggered the proposal. Your job is to spot fabrication, scope inflation, and grounding drift.
+
+Output JSON only — no markdown fences, no commentary. Required keys:
+{
+  "verdict": "good" | "caution" | "risky",
+  "notes": "one to two sentences summarizing your judgment",
+  "concerns": ["specific concern 1", "specific concern 2", ...],
+  "suggested_revisions": ["alternative phrasing 1", ...]   // optional, may be []
+}
+
+VERDICT RULES (load-bearing — anti-rubber-stamping):
+- "good" is reserved for proposals that genuinely preserve grounding. To use "good", `concerns` MUST be empty AND `notes` MUST explicitly state what specifically traces to source ("preserves the 800-unit fleet metric from the Acme bullet" / "no fabricated specifics; verb downgraded from 'Owned' to 'Contributed to' matches source"). Vague "looks good" is a "caution".
+- "caution" when there are concerns the user should weigh but no outright fabrication.
+- "risky" when the text invents specifics, escalates scope, contradicts clarifications, or claims experience the candidate's corpus doesn't support.
+
+CHECK FOR (and cite specifically in concerns):
+1. **Fabricated specifics** — numbers, tech names, vendor names, customer segments, dollar amounts, team sizes not in the source experience or clarifications.
+2. **Scope inflation** — "team" → "organization", "project" → "company-wide initiative", "two engineers" → "engineering org".
+3. **Domain drift** — adding industry experience the candidate doesn't have (healthcare claim with no healthcare corpus, EHR familiarity with no clinical clarification, etc.).
+4. **Title elevation** — claiming seniority beyond the candidate's official title or clarified scope.
+5. **Verb overreach** — "Owned" / "Led" / "Drove" when source says "Contributed" / "Supported" / "Helped".
+
+When a concern fires, NAME the specific claim ("the '800-unit fleet' phrase appears in source bullet b41 — OK", or "'24 clinicians interviewed' has no source — fabricated specific").
+
+Be brief. 1-3 concerns is plenty per critique."""
+
+
+def critique_proposal(
+    client: anthropic.Anthropic,
+    *,
+    original_text: str,
+    user_edited_text: str | None,
+    subject_kind: str,  # "bullet" or "experience_title"
+    experience_context: dict,
+    clarifications: list[tuple[str, str]] | None = None,
+    jd_excerpt: str = "",
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """Critique a user edit to an LLM-proposed bullet or title.
+
+    Uses Haiku — proposal critique is structured rubric application, not
+    reasoning-depth work. Output schema validated via `_parse_or_retry` with
+    CRITIQUE_REQUIRED_KEYS. Returns the critique dict unchanged for the caller
+    to persist on `proposal_review.llm_critique_json`.
+
+    `experience_context` should carry: company, location, start_date,
+    end_date, official_title, and a list of existing bullet texts. The
+    critique uses these as the grounding pool. `clarifications` is a list of
+    (question, answer) tuples — first-person ground truth.
+
+    `subject_kind` toggles minor wording in the prompt so a title critique
+    doesn't read like a bullet critique.
+    """
+    edit_block = (
+        f"The user edited the proposal to:\n  {user_edited_text}"
+        if user_edited_text and user_edited_text.strip() != original_text.strip()
+        else "The user has not edited the proposal; they are considering accepting it as-is."
+    )
+
+    company = experience_context.get("company", "(unknown)")
+    official_title = experience_context.get("official_title", "(unknown)")
+    dates = (
+        f"{experience_context.get('start_date', '?')} → "
+        f"{experience_context.get('end_date') or 'present'}"
+    )
+    location = experience_context.get("location", "")
+    canonical_bullets = experience_context.get("existing_bullets", []) or []
+    bullets_block = "\n".join(f"  - {b}" for b in canonical_bullets[:20])
+    if not bullets_block:
+        bullets_block = "  (no existing canonical bullets for this experience)"
+
+    clar_lines = []
+    for q, a in (clarifications or [])[:30]:
+        clar_lines.append(f"  Q: {q}\n  A: {a}")
+    clar_block = "\n\n".join(clar_lines) if clar_lines else "  (no relevant candidate clarifications)"
+
+    jd_block = jd_excerpt.strip() or "(no JD excerpt provided)"
+
+    user_prompt = f"""<task>Critique this LLM-proposed {subject_kind} for fabrication risk against the candidate's source. Output JSON only.</task>
+
+<original_proposal>
+{original_text}
+</original_proposal>
+
+<user_action>
+{edit_block}
+</user_action>
+
+<experience_context>
+Company: {company}
+Official title: {official_title}
+Dates: {dates}
+{f"Location: {location}" if location else ""}
+
+Existing canonical bullets for this experience:
+{bullets_block}
+</experience_context>
+
+<candidate_clarifications>
+{clar_block}
+</candidate_clarifications>
+
+<jd_excerpt>
+{jd_block}
+</jd_excerpt>"""
+
+    return _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot, no caching benefit
+        required_keys=CRITIQUE_REQUIRED_KEYS,
+        call_kind="critique_proposal",
+        username=username,
+        run_id=run_id,
+        system_prompt=PROPOSAL_CRITIQUE_SYSTEM_PROMPT,
+        model=HAIKU_MODEL,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase B.4: promote a clarification Q&A into a bullet candidate
+# ---------------------------------------------------------------------------
+
+
+PROMOTE_BULLET_REQUIRED_KEYS = frozenset({"text", "pattern_kind"})
+
+PROMOTE_CLARIFICATION_SYSTEM_PROMPT = """You convert a candidate's clarification Q&A pair into a single resume bullet candidate. The bullet must:
+
+- Be written in past-tense or active voice (the resume voice), not Q&A voice.
+- Start with a strong action verb (Led / Built / Owned / Designed / etc. — NOT "Responsible for" / "Helped with").
+- Preserve every concrete specific (numbers, technologies, scope, durations) the candidate stated, VERBATIM. Do NOT invent specifics.
+- Stay under 35 words.
+- Follow one of these patterns (per docs/bullet_patterns.md):
+  - "xyz" — Accomplished X as measured by Y by doing Z. Use when a measurable outcome is in the answer.
+  - "car" — Challenge / Action / Result. Use when context matters.
+  - "manual" — generic past-tense action; use when the answer is short and qualitative.
+
+The user reviews and edits before this becomes canonical. Your job is to give them a strong starting draft, not a final bullet.
+
+Output JSON only — no markdown fences:
+{
+  "text": "the proposed bullet text",
+  "pattern_kind": "xyz" | "car" | "manual",
+  "rationale": "one sentence explaining the framing choice"
+}"""
+
+
+def promote_clarification_to_bullet(
+    client: anthropic.Anthropic,
+    *,
+    question: str,
+    answer: str,
+    target_company: str = "",
+    target_official_title: str = "",
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """Convert a clarification Q&A into a proposed bullet candidate.
+
+    Returns a dict with `text`, `pattern_kind`, and `rationale`. The caller
+    inserts the bullet (with `is_pending_review=1, source='clarification:<id>'`)
+    and creates a `proposal_review` row keyed to it so the critique loop can
+    examine the result.
+    """
+    target_block = ""
+    if target_company or target_official_title:
+        target_block = (
+            "<target_experience>\n"
+            f"Company: {target_company or '(unspecified)'}\n"
+            f"Official title: {target_official_title or '(unspecified)'}\n"
+            "</target_experience>\n\n"
+        )
+
+    user_prompt = f"""<task>Convert the clarification answer into a proposed resume bullet.</task>
+
+{target_block}<clarification>
+Question: {question}
+Answer: {answer}
+</clarification>"""
+
+    return _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",
+        required_keys=PROMOTE_BULLET_REQUIRED_KEYS,
+        call_kind="promote_clarification_to_bullet",
+        username=username,
+        run_id=run_id,
+        system_prompt=PROMOTE_CLARIFICATION_SYSTEM_PROMPT,
+        model=HAIKU_MODEL,
+    )

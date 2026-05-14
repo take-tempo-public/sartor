@@ -63,6 +63,30 @@ class _ContextSetRequired(TypedDict):
     deterministic_analysis: DeterministicAnalysisBlock
 
 
+class CorpusBullet(TypedDict, total=False):
+    id: int
+    text: str
+    tags: list[str]
+    has_outcome: bool
+    source: str  # provenance: 'primary:<file>' | 'supplemental:<file>' | etc.
+
+
+class CorpusEligibleTitle(TypedDict, total=False):
+    id: int
+    title: str
+    is_official: bool
+
+
+class CorpusExperience(TypedDict, total=False):
+    id: int
+    company: str
+    location: str
+    start_date: str
+    end_date: str | None
+    eligible_titles: list[CorpusEligibleTitle]
+    bullets: list[CorpusBullet]
+
+
 class ClarificationQuestion(TypedDict, total=False):
     id: str
     text: str
@@ -108,6 +132,18 @@ class ContextSet(_ContextSetRequired, total=False):
     # diffs the live preview against this to detect user edits.
     last_generated_resume: str
     last_generated_cover_letter: str
+    # Phase B.2: when populated by db.build_context.build_context_set_from_db,
+    # the LLM prompt emits a structured <career_corpus> XML block instead of
+    # the legacy <resume> block, and the generate output schema requires
+    # selected_bullets / proposed_new_bullets / proposed_experience_titles.
+    # When absent, the file-based path runs unchanged.
+    career_corpus: list[CorpusExperience]
+    # Phase B.3: DB anchor IDs persisted across the analyze→generate boundary.
+    # /api/analyze (corpus-backed) stashes them; /api/generate reads them and
+    # writes application_bullet / proposal_review rows to record the LLM's
+    # selections and proposals. Absent on file-based contexts.
+    application_id: int
+    application_run_id: int
 
 # Common English stop words to exclude from keyword extraction
 STOP_WORDS = frozenset(
