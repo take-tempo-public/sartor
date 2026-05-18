@@ -150,7 +150,8 @@ class TestListClarifications:
         r = client.get("/api/users/alice/clarifications?kind=bogus")
         assert r.status_code == 400
 
-    def test_404_when_candidate_missing(self, memory_app):
+    def test_missing_candidate_returns_409_needs_onboarding(self, memory_app):
         client = memory_app.app.test_client()
         r = client.get("/api/users/alice/clarifications")
-        assert r.status_code == 404
+        assert r.status_code == 409
+        assert r.get_json()["needs_onboarding"] is True

@@ -326,7 +326,10 @@ def _run_analysis_corpus_backed(safe_user: str, jd_text: str, data: dict):
             )
         except ValueError as exc:
             session.rollback()
-            return jsonify({"error": str(exc)}), 404
+            return jsonify({
+                "error": str(exc),
+                "needs_onboarding": True,
+            }), 409
 
         logger.info(
             "DB-backed analysis for %s: application_id=%d run_id=%s",
@@ -1428,7 +1431,10 @@ def list_user_personas(username: str):
     try:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
-            return jsonify({"error": "Candidate not in corpus yet"}), 404
+            return jsonify({
+                "error": "Candidate not in corpus yet",
+                "needs_onboarding": True,
+            }), 409
         bundled = session.query(PersonaTemplate).filter_by(source="bundled").all()
         owned = session.query(PersonaTemplate).filter_by(candidate_id=candidate.id).all()
         return jsonify({
@@ -1466,7 +1472,10 @@ def upload_user_persona(username: str):
     try:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
-            return jsonify({"error": "Candidate not in corpus yet"}), 404
+            return jsonify({
+                "error": "Candidate not in corpus yet",
+                "needs_onboarding": True,
+            }), 409
 
         safe_name = secure_filename(file.filename)
         user_persona_dir = PERSONAS_DIR / safe_user
@@ -1701,7 +1710,10 @@ def list_experiences(username: str):
     try:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
-            return jsonify({"error": "Candidate not in corpus yet"}), 404
+            return jsonify({
+                "error": "Candidate not in corpus yet",
+                "needs_onboarding": True,
+            }), 409
         rows = session.query(Experience).filter_by(
             candidate_id=candidate.id,
         ).order_by(Experience.start_date.desc(), Experience.id.desc()).all()
@@ -1740,7 +1752,10 @@ def create_experience(username: str):
     try:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
-            return jsonify({"error": "Candidate not in corpus yet"}), 404
+            return jsonify({
+                "error": "Candidate not in corpus yet",
+                "needs_onboarding": True,
+            }), 409
 
         existing = session.query(Experience).filter_by(
             candidate_id=candidate.id,
@@ -2288,6 +2303,53 @@ def download_edited():
 
 
 # ---------------------------------------------------------------------------
+# Legacy-user bridge: import a config-only user into the DB corpus
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/users/<username>/import-legacy", methods=["POST"])
+def import_legacy_user(username: str):
+    """Provision a DB candidate row for a pre-existing config-only user.
+
+    Wraps onboarding.import_legacy.run_import. Always imports the candidate
+    identity + skills/certs/education from configs/{user}.config and
+    clarifications from output/{user}/*.json. When the request body sets
+    {"with_llm": true} it ALSO extracts experiences/bullets from
+    resumes/{user}/ via Haiku (~$0.02, costs API credit).
+
+    Idempotent — run_import dedupes, so calling this repeatedly is safe.
+    Returns the ImportReport summary as JSON.
+    """
+    import dataclasses
+
+    from onboarding.import_legacy import run_import
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    data = request.json or {}
+    with_llm = bool(data.get("with_llm", False))
+
+    try:
+        report = run_import(safe_user, with_llm=with_llm)
+    except FileNotFoundError as exc:
+        return jsonify({"error": f"No config for {safe_user}: {exc}"}), 404
+    except Exception as exc:  # noqa: BLE001 — surface importer failures to the UI
+        logger.exception("Legacy import failed for %s", safe_user)
+        return jsonify({"error": f"Import failed: {exc}"}), 500
+
+    summary = dataclasses.asdict(report)
+    logger.info(
+        "Legacy import for %s: candidate_id=%s with_llm=%s exp=%d bullets=%d",
+        safe_user, summary.get("candidate_id"), with_llm,
+        summary.get("experiences_created", 0), summary.get("bullets_created", 0),
+    )
+    status = 201 if report.candidate_created else 200
+    return jsonify(summary), status
+
+
+# ---------------------------------------------------------------------------
 # Phase D.6: Onboarding review — clear is_pending_review on accept
 # ---------------------------------------------------------------------------
 
@@ -2491,7 +2553,10 @@ def list_applications(username: str):
     try:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
-            return jsonify({"error": "Candidate not in corpus yet"}), 404
+            return jsonify({
+                "error": "Candidate not in corpus yet",
+                "needs_onboarding": True,
+            }), 409
         rows = session.query(Application).filter_by(
             candidate_id=candidate.id,
         ).order_by(Application.updated_at.desc()).all()
@@ -2653,7 +2718,10 @@ def list_clarifications(username: str):
     try:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
-            return jsonify({"error": "Candidate not in corpus yet"}), 404
+            return jsonify({
+                "error": "Candidate not in corpus yet",
+                "needs_onboarding": True,
+            }), 409
 
         query = session.query(Clarification).filter_by(candidate_id=candidate.id)
         if not include_promoted:

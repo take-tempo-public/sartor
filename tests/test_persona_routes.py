@@ -152,11 +152,13 @@ class TestListUserPersonas:
         r = client.get("/api/users/ghost/personas")
         assert r.status_code == 400
 
-    def test_known_user_without_candidate_returns_404(self, persona_app):
-        # config exists, but no candidate row in DB
+    def test_known_user_without_candidate_returns_409(self, persona_app):
+        # config exists, but no candidate row in DB → needs_onboarding so the
+        # UI can offer the legacy-import flow.
         client = persona_app.app.test_client()
         r = client.get("/api/users/alice/personas")
-        assert r.status_code == 404
+        assert r.status_code == 409
+        assert r.get_json()["needs_onboarding"] is True
 
 
 # ---------------------------------------------------------------------------

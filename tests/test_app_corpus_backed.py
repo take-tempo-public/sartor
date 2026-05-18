@@ -134,10 +134,12 @@ class TestAnalyzeRoute:
             )
         assert response.status_code == 200
 
-    def test_unknown_user_returns_404(self, db_app, tmp_path):
+    def test_unknown_user_returns_409_needs_onboarding(self, db_app, tmp_path):
         _seed_db_candidate(tmp_path / "test.sqlite")
         # Set up a config for 'ghost' so _safe_username passes, but DON'T seed
-        # a candidate row — build_context_set_from_db should raise.
+        # a candidate row — build_context_set_from_db raises ValueError, which
+        # the route now maps to 409 + needs_onboarding so the frontend can
+        # offer the legacy-import flow instead of a dead error.
         (tmp_path / "configs" / "ghost.config").write_text("{}", encoding="utf-8")
 
         with patch.object(db_app, "_get_client", return_value=object()):
@@ -147,8 +149,10 @@ class TestAnalyzeRoute:
                 json={"username": "ghost", "job_description": "Some JD"},
             )
 
-        assert response.status_code == 404
-        assert "No candidate" in response.get_json()["error"]
+        assert response.status_code == 409
+        body = response.get_json()
+        assert "No candidate" in body["error"]
+        assert body["needs_onboarding"] is True
 
     def test_creates_application_row_in_db(self, db_app, tmp_path):
         _seed_db_candidate(tmp_path / "test.sqlite")

@@ -456,6 +456,56 @@
     </div>
   </div>
 
+  <!-- Error modal — opened by reportError() and re-opened by clicking the
+       red status pill. Shows the full last error in a readonly textarea
+       with a COPY button so the user can paste it into a bug report. -->
+  <div id="errorModal" class="lcars-modal hidden" role="dialog" aria-modal="true"
+       aria-labelledby="errModalTitle" aria-describedby="errModalBody">
+    <div class="lcars-modal-backdrop" data-err-dismiss></div>
+    <div class="lcars-modal-content" role="document">
+      <h2 id="errModalTitle" class="lcars-modal-title">ERROR DETAIL</h2>
+      <p id="errModalBody" class="lcars-modal-body">
+        The last operation failed. Copy the text below into a bug report.
+        This dialog re-opens any time you click the red status pill.
+      </p>
+      <label for="errorModalText" class="sr-only">Error detail text</label>
+      <textarea id="errorModalText" class="error-modal-text" readonly rows="10"
+                aria-label="Error detail text"></textarea>
+      <div class="modal-actions">
+        <button class="lcars-btn lcars-bg-teal" id="btnCopyError">COPY</button>
+        <button class="lcars-btn lcars-bg-blue" id="btnCloseError" data-err-dismiss>CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding modal — shown when a DB-backed route reports the selected
+       user has no candidate row yet (legacy config-only user). One click
+       imports identity + memory from the existing config/output files. -->
+  <div id="onboardingModal" class="lcars-modal hidden" role="dialog" aria-modal="true"
+       aria-labelledby="onbModalTitle" aria-describedby="onbModalBody">
+    <div class="lcars-modal-backdrop" data-onboard-dismiss></div>
+    <div class="lcars-modal-content" role="document">
+      <h2 id="onbModalTitle" class="lcars-modal-title">IMPORT INTO CORPUS</h2>
+      <p id="onbModalBody" class="lcars-modal-body">
+        <strong id="onboardingUserName">this user</strong> exists from before
+        the database migration and isn't in the career corpus yet. Import
+        creates the candidate record plus skills, certifications, and past
+        clarifications from the existing config &amp; output files. This is
+        free and idempotent.
+      </p>
+      <label class="memory-checkbox" for="onboardingWithLlm">
+        <input type="checkbox" id="onboardingWithLlm">
+        Also extract experiences &amp; bullets from saved resumes with AI
+        (Haiku, ~$0.02)
+      </label>
+      <p id="onboardingStatus" class="lcars-modal-body" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button class="lcars-btn lcars-bg-teal" id="btnRunImport">IMPORT IDENTITY + MEMORY</button>
+        <button class="lcars-btn lcars-bg-blue" id="btnCancelOnboard" data-onboard-dismiss>CANCEL</button>
+      </div>
+    </div>
+  </div>
+
   <!-- LCARS Bottom Bar -->
   <div class="lcars-bar lcars-bar-bottom">
     <div class="lcars-elbow lcars-elbow-bl"></div>

@@ -129,12 +129,15 @@ class TestListExperiences:
         assert body[0]["bullet_count_pending"] == 0
         assert body[1]["id"] == e2
 
-    def test_404_when_candidate_missing(self, corpus_app):
-        # Config exists, but no candidate row seeded
+    def test_missing_candidate_returns_409_needs_onboarding(self, corpus_app):
+        # Config exists, but no candidate row seeded — the route signals
+        # needs_onboarding so the UI offers the legacy-import flow.
         client = corpus_app.app.test_client()
         r = client.get("/api/users/alice/experiences")
-        assert r.status_code == 404
-        assert "corpus" in r.get_json()["error"].lower()
+        assert r.status_code == 409
+        body = r.get_json()
+        assert "corpus" in body["error"].lower()
+        assert body["needs_onboarding"] is True
 
     def test_400_when_user_unknown(self, corpus_app):
         client = corpus_app.app.test_client()
@@ -200,13 +203,14 @@ class TestCreateExperience:
         )
         assert r.status_code == 400
 
-    def test_404_when_candidate_missing(self, corpus_app):
+    def test_missing_candidate_returns_409_needs_onboarding(self, corpus_app):
         client = corpus_app.app.test_client()
         r = client.post(
             "/api/users/alice/experiences",
             json={"company": "X", "start_date": "2023-01"},
         )
-        assert r.status_code == 404
+        assert r.status_code == 409
+        assert r.get_json()["needs_onboarding"] is True
 
 
 # ---------------------------------------------------------------------------

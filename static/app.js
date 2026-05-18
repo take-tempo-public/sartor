@@ -183,8 +183,7 @@ async function uploadFile(file) {
   const res = await fetch('/api/upload', { method: 'POST', body: fd });
   const uploadData = await res.json();
   if (!res.ok) {
-    setStatus('ERROR');
-    return alert(uploadData.error || 'Upload failed');
+    return reportError('Upload', uploadData.error || 'Upload failed', uploadData.detail);
   }
   setStatus('UPLOADED');
   // If a whitelist exists, auto-include the new file so it defaults to SOURCE
@@ -335,8 +334,11 @@ async function runAnalysis() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setStatus('ERROR');
-      return alert(data.error || 'Analysis failed');
+      if (_needsOnboarding(res, data)) {
+        document.getElementById('btnAnalyze').disabled = false;
+        return openOnboardingModal(runAnalysis);
+      }
+      return reportError('Analyze', data.error || 'Analysis failed', data.detail);
     }
     lastContextPath = data.context_path;
     lastTemplatePath = data.template_path || '';
@@ -346,8 +348,7 @@ async function runAnalysis() {
     _announce('Analysis complete. Review the analysis or skip to generation.');
     document.getElementById('panelAnalysis').scrollIntoView({ behavior: 'smooth' });
   } catch (e) {
-    setStatus('ERROR');
-    alert('Analysis failed: ' + e.message);
+    reportError('Analyze', 'Analysis request failed', e.message);
   } finally {
     document.getElementById('btnAnalyze').disabled = false;
   }
@@ -497,18 +498,16 @@ async function runClarify() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setStatus('ERROR');
       if (btn) btn.disabled = false;
-      return alert(data.error || 'Clarification failed');
+      return reportError('Clarify', data.error || 'Clarification failed', data.detail);
     }
     lastClarifyQuestions = data.questions || [];
     _renderClarifyQuestions(lastClarifyQuestions, data.reasoning || '');
     setStatus('QUESTIONS READY');
     _announce(`${lastClarifyQuestions.length} clarifying question${lastClarifyQuestions.length === 1 ? '' : 's'} ready for review.`);
   } catch (e) {
-    setStatus('ERROR');
     if (btn) btn.disabled = false;
-    alert('Clarification failed: ' + e.message);
+    reportError('Clarify', 'Clarification request failed', e.message);
   }
 }
 
@@ -613,14 +612,12 @@ async function submitClarificationsAndGenerate() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setStatus('ERROR');
       if (btnSubmit) btnSubmit.disabled = false;
-      return alert(data.error || 'Saving answers failed');
+      return reportError('Save answers', data.error || 'Saving answers failed', data.detail);
     }
   } catch (e) {
-    setStatus('ERROR');
     if (btnSubmit) btnSubmit.disabled = false;
-    return alert('Saving answers failed: ' + e.message);
+    return reportError('Save answers', 'Saving answers request failed', e.message);
   }
 
   // Proceed to generate with the now-saved clarifications on disk.
@@ -678,8 +675,7 @@ async function runGeneration() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setStatus('ERROR');
-      return alert(data.error || 'Generation failed');
+      return reportError('Generate', data.error || 'Generation failed', data.detail);
     }
     lastResumePath = data.resume_path;
     lastCoverLetterPath = data.cover_letter_path;
@@ -691,8 +687,7 @@ async function runGeneration() {
     _announce(`Iteration ${currentIteration} ready. Resume and cover letter generated.`);
     document.getElementById('panelOutput').scrollIntoView({ behavior: 'smooth' });
   } catch (e) {
-    setStatus('ERROR');
-    alert('Generation failed: ' + e.message);
+    reportError('Generate', 'Generation request failed', e.message);
   } finally {
     document.getElementById('btnGenerate').disabled = false;
   }
@@ -833,6 +828,192 @@ function openDiagnosticsModal() {
   if (openBtn) openBtn.focus();
 }
 
+// ===============================================================
+// Error reporting — copyable error modal + clickable status pill
+// ===============================================================
+
+let _lastError = null;  // { stage, message, detail, ts, user }
+
+// Central error sink. Replaces the old `setStatus('ERROR'); alert(...)`
+// pairs: stores the error so the (now clickable) red pill can re-open a
+// copyable modal, then surfaces it immediately.
+function reportError(stage, message, detail) {
+  _lastError = {
+    stage: stage || 'Unknown',
+    message: message || 'Unknown error',
+    detail: detail || '',
+    ts: new Date().toISOString(),
+    user: currentUser || '(none)',
+  };
+  setStatus('ERROR');
+  openErrorModal();
+}
+
+function _formatLastError() {
+  if (!_lastError) return 'No error recorded.';
+  const e = _lastError;
+  let out = `Stage:   ${e.stage}\n`;
+  out += `User:    ${e.user}\n`;
+  out += `When:    ${e.ts}\n`;
+  out += `Message: ${e.message}\n`;
+  if (e.detail) out += `\nDetail:\n${e.detail}\n`;
+  return out;
+}
+
+function openErrorModal() {
+  const modal = document.getElementById('errorModal');
+  if (!modal) return;
+  const ta = document.getElementById('errorModalText');
+  if (ta) ta.value = _formatLastError();
+  const trigger = document.getElementById('statusPill');
+  const focusable = modal.querySelectorAll('button, textarea');
+
+  const cleanup = () => {
+    modal.classList.add('hidden');
+    modal.removeEventListener('keydown', onKey);
+    dismissers.forEach(b => b.removeEventListener('click', cleanup));
+    if (copyBtn) copyBtn.removeEventListener('click', onCopy);
+    if (trigger && typeof trigger.focus === 'function') trigger.focus();
+  };
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
+    if (e.key !== 'Tab' || focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  const onCopy = async () => {
+    const text = _formatLastError();
+    try {
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent = 'COPIED ✓';
+    } catch {
+      // Clipboard API blocked (non-secure context etc.) — fall back to
+      // selecting the textarea so the user can Ctrl+C manually.
+      if (ta) { ta.focus(); ta.select(); }
+      copyBtn.textContent = 'SELECTED — PRESS CTRL+C';
+    }
+    setTimeout(() => { copyBtn.textContent = 'COPY'; }, 2000);
+  };
+
+  const dismissers = Array.from(modal.querySelectorAll('[data-err-dismiss]'));
+  const copyBtn = document.getElementById('btnCopyError');
+  dismissers.forEach(b => b.addEventListener('click', cleanup));
+  if (copyBtn) copyBtn.addEventListener('click', onCopy);
+  modal.addEventListener('keydown', onKey);
+  modal.classList.remove('hidden');
+  if (copyBtn) copyBtn.focus();
+}
+
+// ===============================================================
+// Legacy-user onboarding bridge (needs_onboarding → import → retry)
+// ===============================================================
+
+// True when a DB-backed route reports the selected user has no candidate
+// row yet (HTTP 409 + needs_onboarding). Pre-existing config-only users
+// (e.g. imported before the DB migration) hit this until imported.
+function _needsOnboarding(res, data) {
+  return res && res.status === 409 && data && data.needs_onboarding === true;
+}
+
+// Opens the onboarding modal. On successful import it closes and calls
+// retryFn() so the action the user originally attempted just proceeds.
+function openOnboardingModal(retryFn) {
+  const modal = document.getElementById('onboardingModal');
+  if (!modal) return;
+  const nameEl = document.getElementById('onboardingUserName');
+  if (nameEl) nameEl.textContent = currentUser || '(no user)';
+  const withLlm = document.getElementById('onboardingWithLlm');
+  if (withLlm) withLlm.checked = false;
+  const statusEl = document.getElementById('onboardingStatus');
+  if (statusEl) statusEl.textContent = '';
+  const importBtn = document.getElementById('btnRunImport');
+  const focusable = modal.querySelectorAll('button, input');
+
+  const cleanup = () => {
+    modal.classList.add('hidden');
+    modal.removeEventListener('keydown', onKey);
+    dismissers.forEach(b => b.removeEventListener('click', cleanup));
+    if (importBtn) importBtn.removeEventListener('click', onImport);
+  };
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
+    if (e.key !== 'Tab' || focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  const onImport = async () => {
+    if (!currentUser) return;
+    importBtn.disabled = true;
+    if (statusEl) statusEl.textContent = 'Importing… (this can take a moment)';
+    try {
+      const res = await fetch(
+        `/api/users/${encodeURIComponent(currentUser)}/import-legacy`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ with_llm: !!(withLlm && withLlm.checked) }),
+        },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (statusEl) statusEl.textContent = '';
+        cleanup();
+        reportError('Legacy import', data.error || `HTTP ${res.status}`,
+          JSON.stringify(data, null, 2));
+        return;
+      }
+      const exp = data.experiences_created || 0;
+      const bul = data.bullets_created || 0;
+      const clar = data.clarifications_created || 0;
+      if (statusEl) {
+        statusEl.textContent =
+          `Imported: ${exp} experience(s), ${bul} bullet(s), ${clar} clarification(s).`;
+      }
+      cleanup();
+      _toast(`${currentUser} imported into the corpus`);
+      if (typeof retryFn === 'function') retryFn();
+    } catch (e) {
+      if (statusEl) statusEl.textContent = '';
+      cleanup();
+      reportError('Legacy import', e.message);
+    } finally {
+      importBtn.disabled = false;
+    }
+  };
+
+  const dismissers = Array.from(modal.querySelectorAll('[data-onboard-dismiss]'));
+  dismissers.forEach(b => b.addEventListener('click', cleanup));
+  if (importBtn) importBtn.addEventListener('click', onImport);
+  modal.addEventListener('keydown', onKey);
+  modal.classList.remove('hidden');
+  if (importBtn) importBtn.focus();
+}
+
+// Inline placeholder for passive tab refreshes (Corpus / Applications /
+// Memory / Personas) when the user isn't onboarded yet. Renders a short
+// message + a button that opens the onboarding modal and re-runs the
+// tab refresh on success.
+function _renderNeedsOnboarding(container, retryFn) {
+  if (!container) return;
+  _clearChildren(container);
+  const wrap = _el('div', { className: 'corpus-empty-experience' });
+  wrap.appendChild(_el('div', {
+    textContent: `${currentUser} isn't in the career corpus yet.`,
+  }));
+  const btn = _el('button', {
+    className: 'lcars-btn lcars-bg-teal',
+    textContent: 'IMPORT INTO CORPUS',
+  });
+  btn.style.marginTop = '10px';
+  btn.onclick = () => openOnboardingModal(retryFn);
+  wrap.appendChild(btn);
+  container.appendChild(wrap);
+}
+
 // Persist the live preview text as the next iteration's baseline.
 // Returns true on success, false on failure (caller should abort the chain).
 async function _saveEdits(edits) {
@@ -949,7 +1130,7 @@ async function submitRefinement() {
       entry.status = 'rejected';
       entry.reason = data.error || 'Generation failed.';
       _renderRefinementHistory();
-      setStatus('ERROR');
+      reportError('Refine', data.error || 'Refinement generation failed', data.detail);
       return;
     }
     lastResumePath = data.resume_path;
@@ -963,7 +1144,7 @@ async function submitRefinement() {
     entry.status = 'rejected';
     entry.reason = 'Request failed: ' + e.message;
     _renderRefinementHistory();
-    setStatus('ERROR');
+    reportError('Refine', 'Refinement request failed', e.message);
   } finally {
     document.getElementById('btnRefinement').disabled = false;
     document.getElementById('btnGenerate').disabled = false;
@@ -1008,18 +1189,17 @@ async function runIterateClarify() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setStatus('ERROR');
       if (btn) btn.disabled = false;
-      return alert(data.error || 'Iteration interview failed');
+      return reportError('Iteration interview',
+        data.error || 'Iteration interview failed', data.detail);
     }
     lastIterateClarifyQuestions = data.questions || [];
     _renderIterateClarifyQuestions(lastIterateClarifyQuestions, data.reasoning || '');
     setStatus('QUESTIONS READY');
     _announce(`${lastIterateClarifyQuestions.length} iteration question${lastIterateClarifyQuestions.length === 1 ? '' : 's'} ready for review.`);
   } catch (e) {
-    setStatus('ERROR');
     if (btn) btn.disabled = false;
-    alert('Iteration interview failed: ' + e.message);
+    reportError('Iteration interview', 'Iteration interview request failed', e.message);
   }
 }
 
@@ -1128,14 +1308,12 @@ async function submitIterateClarificationsAndGenerate() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setStatus('ERROR');
       if (btn) btn.disabled = false;
-      return alert(data.error || 'Saving answers failed');
+      return reportError('Save answers', data.error || 'Saving answers failed', data.detail);
     }
   } catch (e) {
-    setStatus('ERROR');
     if (btn) btn.disabled = false;
-    return alert('Saving answers failed: ' + e.message);
+    return reportError('Save answers', 'Saving answers request failed', e.message);
   }
 
   // Run a fresh generation against the now-augmented context. The new
@@ -1389,6 +1567,30 @@ function setStatus(text) {
   pill.style.background = isError ? 'var(--red)' : '';
   pill.style.color      = isError ? 'var(--black)' : '';
 
+  // In error state the pill becomes a button that re-opens the copyable
+  // error modal; outside error state it's an inert status indicator.
+  if (isError) {
+    pill.classList.add('pill-clickable');
+    pill.setAttribute('role', 'button');
+    pill.setAttribute('tabindex', '0');
+    pill.setAttribute('title', 'Click to view / copy the error');
+    if (!pill._errBound) {
+      pill._errHandler = (ev) => {
+        if (ev.type === 'keydown' && ev.key !== 'Enter' && ev.key !== ' ') return;
+        if (ev.type === 'keydown') ev.preventDefault();
+        if (pill.classList.contains('pill-clickable')) openErrorModal();
+      };
+      pill.addEventListener('click', pill._errHandler);
+      pill.addEventListener('keydown', pill._errHandler);
+      pill._errBound = true;
+    }
+  } else {
+    pill.classList.remove('pill-clickable');
+    pill.removeAttribute('role');
+    pill.removeAttribute('tabindex');
+    pill.removeAttribute('title');
+  }
+
   // Flash top-bar elbow in sync with pill
   const elbow = document.querySelector('.lcars-elbow-tl');
   if (elbow) elbow.classList.toggle('step-active', isActive);
@@ -1473,6 +1675,14 @@ async function refreshCorpus() {
   } catch (e) {
     _setLoadingPlaceholder(list, 'Network error.');
     return;
+  }
+  if (res.status === 409) {
+    const data = await res.json().catch(() => ({}));
+    if (_needsOnboarding(res, data)) {
+      document.getElementById('corpusToolbar').style.display = 'none';
+      _renderNeedsOnboarding(list, refreshCorpus);
+      return;
+    }
   }
   if (res.status === 404) {
     _clearChildren(list);
@@ -1991,6 +2201,14 @@ async function refreshMemory() {
     _setLoadingPlaceholder(list, 'Network error.');
     return;
   }
+  if (res.status === 409) {
+    const data = await res.json().catch(() => ({}));
+    if (_needsOnboarding(res, data)) {
+      countEl.textContent = '0 entries';
+      _renderNeedsOnboarding(list, refreshMemory);
+      return;
+    }
+  }
   if (res.status === 404) {
     _setLoadingPlaceholder(list, 'Candidate not in corpus yet.');
     countEl.textContent = '0 entries';
@@ -2166,6 +2384,14 @@ async function refreshApplications() {
     _setLoadingPlaceholder(list, 'Network error.');
     return;
   }
+  if (res.status === 409) {
+    const data = await res.json().catch(() => ({}));
+    if (_needsOnboarding(res, data)) {
+      if (countEl) countEl.textContent = '0 applications';
+      _renderNeedsOnboarding(list, refreshApplications);
+      return;
+    }
+  }
   if (res.status === 404) {
     _setLoadingPlaceholder(list, `No applications yet for ${currentUser}. Analyze a JD below to start one.`);
     if (countEl) countEl.textContent = '0 applications';
@@ -2325,6 +2551,13 @@ async function _loadOwnedPersonas() {
   } catch {
     _setLoadingPlaceholder(grid, 'Network error.');
     return;
+  }
+  if (res.status === 409) {
+    const data = await res.json().catch(() => ({}));
+    if (_needsOnboarding(res, data)) {
+      _renderNeedsOnboarding(grid, _loadOwnedPersonas);
+      return;
+    }
   }
   if (res.status === 404) {
     _setLoadingPlaceholder(grid, 'No DB record for this user yet. Onboarding creates one on first import.');
