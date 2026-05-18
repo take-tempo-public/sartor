@@ -894,3 +894,612 @@ textarea:focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 2px;
 }
+
+/* =============================================================== */
+/* Phase D.2 — Top-level tabs + Career Corpus tab                  */
+/* =============================================================== */
+
+.top-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px;
+  margin-bottom: 8px;
+}
+
+.top-tab-btn {
+  background: var(--dark);
+  color: var(--text-dim);
+  border: none;
+  padding: 12px 24px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: var(--radius) var(--radius) 0 0;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+
+.top-tab-btn:hover {
+  background: #14141f;
+  color: var(--amber);
+}
+
+.top-tab-btn.active {
+  background: var(--amber);
+  color: var(--black);
+}
+
+.top-tab-panel {
+  /* Reuse .hidden for show/hide. No specific styles needed — the inner
+     .lcars-main carries the layout. */
+}
+
+.corpus-experience-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.corpus-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--blue);
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.corpus-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #11142a;
+  cursor: pointer;
+  user-select: none;
+}
+
+.corpus-card-header:hover {
+  background: #161a36;
+}
+
+.corpus-card-company {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--amber);
+  flex: 1;
+}
+
+.corpus-card-title {
+  font-size: 14px;
+  color: var(--teal);
+  font-style: italic;
+}
+
+.corpus-card-dates {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.corpus-card-meta {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.corpus-card-body {
+  padding: 16px;
+  display: none;
+}
+
+.corpus-card.expanded .corpus-card-body {
+  display: block;
+}
+
+.corpus-card.expanded .corpus-card-toggle::before {
+  content: "−";
+}
+
+.corpus-card-toggle {
+  background: none;
+  border: 1px solid var(--blue);
+  color: var(--blue);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.corpus-card-toggle::before {
+  content: "+";
+}
+
+.corpus-fieldgroup {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 6px 12px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.corpus-fieldgroup label {
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.corpus-fieldgroup input,
+.corpus-fieldgroup textarea {
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid #2b2b40;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: var(--font);
+  font-size: 14px;
+}
+
+.corpus-fieldgroup textarea { min-height: 50px; resize: vertical; }
+
+.corpus-section {
+  margin-top: 16px;
+}
+
+.corpus-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #2b2b40;
+}
+
+.corpus-section-title {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 12px;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.corpus-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: #0a0a18;
+  margin-bottom: 6px;
+}
+
+.corpus-row:hover {
+  border-color: #2b2b40;
+}
+
+.corpus-row-input {
+  flex: 1;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  font-family: var(--font);
+  font-size: 14px;
+  padding: 4px 6px;
+  resize: vertical;
+  min-height: 24px;
+}
+
+.corpus-row-input:focus {
+  background: var(--input-bg);
+  outline: 1px solid var(--teal);
+  outline-offset: -1px;
+  border-radius: 4px;
+}
+
+.corpus-row-flag {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #1a1a30;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.corpus-row-flag.official { background: var(--amber); color: var(--black); }
+.corpus-row-flag.outcome  { background: var(--teal);  color: var(--black); }
+.corpus-row-flag.pending  { background: var(--violet); color: var(--black); }
+.corpus-row-flag.no-outcome { background: var(--orange); color: var(--black); }
+
+.corpus-row-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.corpus-action-btn {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid #2b2b40;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+.corpus-action-btn:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.corpus-action-btn.delete:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.corpus-empty-experience {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.corpus-add-experience-form {
+  border: 2px dashed var(--teal);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.corpus-toast {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  background: var(--dark);
+  color: var(--text);
+  padding: 12px 16px;
+  border-radius: 6px;
+  border-left: 4px solid var(--teal);
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 180ms, transform 180ms;
+  pointer-events: none;
+  font-size: 13px;
+  max-width: 380px;
+}
+
+.corpus-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.corpus-toast.error {
+  border-left-color: var(--red);
+  color: #ffd9d9;
+}
+
+.top-tab-btn:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+/* =============================================================== */
+/* Phase D.3 — Applications list (within APPLICATION tab)          */
+/* =============================================================== */
+
+.application-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.application-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--teal);
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 120ms;
+}
+
+.application-card:hover {
+  background: #141a26;
+}
+
+.application-card-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.application-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--amber);
+  flex: 1;
+}
+
+.application-card-company {
+  font-size: 13px;
+  color: var(--teal);
+  font-style: italic;
+}
+
+.application-card-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.app-status-chip {
+  padding: 1px 8px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 10px;
+  background: #2b2b40;
+  color: var(--text-dim);
+}
+.app-status-chip.status-draft     { background: #2b2b40; color: var(--text-dim); }
+.app-status-chip.status-submitted { background: var(--teal); color: var(--black); }
+.app-status-chip.status-interview { background: var(--violet); color: var(--black); }
+.app-status-chip.status-closed    { background: var(--orange); color: var(--black); }
+.app-status-chip.status-withdrawn { background: var(--red); color: var(--text); }
+
+.application-card-iter,
+.application-card-date {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.application-card-pending {
+  background: var(--violet);
+  color: var(--black);
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* =============================================================== */
+/* Phase D.4 — Persona Templates tab                               */
+/* =============================================================== */
+
+.persona-section {
+  margin-top: 16px;
+}
+
+.persona-section-header {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 12px;
+  color: var(--violet);
+  font-weight: 700;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #2b2b40;
+}
+
+.persona-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.persona-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--violet);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.persona-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--amber);
+}
+
+.persona-card-desc {
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.persona-card-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+
+.persona-card-source {
+  padding: 2px 8px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 10px;
+}
+.persona-card-source.bundled { background: var(--blue); color: var(--black); }
+.persona-card-source.owned   { background: var(--teal); color: var(--black); }
+
+.persona-card-default {
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--amber);
+  color: var(--black);
+  letter-spacing: 1px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.persona-card-path {
+  color: var(--text-dim);
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+}
+
+.persona-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* =============================================================== */
+/* Phase D.5 — Candidate Memory tab                                */
+/* =============================================================== */
+
+.memory-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: #0e0e1e;
+  border-radius: 6px;
+}
+
+.memory-search {
+  flex: 1;
+  min-width: 240px;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid #2b2b40;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-family: var(--font);
+  font-size: 14px;
+}
+
+.memory-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.memory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memory-card {
+  background: var(--panel-bg);
+  border: 1px solid #2b2b40;
+  border-left: 4px solid var(--teal);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.memory-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.memory-card-kind {
+  background: var(--blue);
+  color: var(--black);
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.memory-card-promoted {
+  background: var(--orange);
+  color: var(--black);
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.memory-card-origin {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.memory-card-q {
+  font-size: 14px;
+  color: var(--amber);
+  font-weight: 700;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.memory-card-a {
+  font-size: 14px;
+  color: var(--text);
+  opacity: 0.9;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin-bottom: 6px;
+}
+
+.memory-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* =============================================================== */
+/* Phase D.6 — Onboarding review banner                            */
+/* =============================================================== */
+
+.onboarding-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: #1e1530;
+  border: 1px solid var(--violet);
+  border-left: 4px solid var(--amber);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.onboarding-banner span {
+  flex: 1;
+}

@@ -25,6 +25,25 @@
     <div class="lcars-pill lcars-amber" id="statusPill" aria-live="polite" aria-atomic="true">STANDBY</div>
   </div>
 
+  <!-- Top-level tabs (Phase D). Job-flow is the legacy single-page workflow;
+       Career Corpus is the new DB-backed editor. Persona Templates is a
+       placeholder for D.4. -->
+  <nav class="top-tabs" role="tablist" aria-label="Application sections">
+    <button class="top-tab-btn active" id="topTabApplication"
+            role="tab" aria-controls="tab-application" aria-selected="true"
+            onclick="switchTopTab('application', this)">APPLICATION</button>
+    <button class="top-tab-btn" id="topTabCorpus"
+            role="tab" aria-controls="tab-corpus" aria-selected="false"
+            onclick="switchTopTab('corpus', this)">CAREER CORPUS</button>
+    <button class="top-tab-btn" id="topTabPersonas"
+            role="tab" aria-controls="tab-personas" aria-selected="false"
+            onclick="switchTopTab('personas', this)">PERSONA TEMPLATES</button>
+    <button class="top-tab-btn" id="topTabMemory"
+            role="tab" aria-controls="tab-memory" aria-selected="false"
+            onclick="switchTopTab('memory', this)">CANDIDATE MEMORY</button>
+  </nav>
+
+  <div id="tab-application" class="top-tab-panel" role="tabpanel" aria-labelledby="topTabApplication">
   <div class="lcars-main" id="main">
 
     <!-- USER -->
@@ -53,6 +72,25 @@
             <input type="url" id="newWebsite" placeholder="Website URL" aria-label="New user website URL">
           </div>
           <button class="lcars-btn lcars-bg-teal" onclick="createUser()">CREATE</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- APPLICATIONS (Phase D.3) -->
+    <div class="lcars-block lcars-teal hidden" data-panel="panelApplications">APPS</div>
+    <section class="lcars-panel hidden" id="panelApplications">
+      <div class="panel-header lcars-bg-teal">PRIOR APPLICATIONS</div>
+      <div class="panel-body">
+        <div class="edit-hint">
+          Past applications stored in the DB. Click a card to view its
+          iteration history. Pending proposals are flagged in violet.
+        </div>
+        <div id="applicationsList" class="application-list">
+          <div class="corpus-empty-experience">Loading…</div>
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <button class="lcars-btn lcars-bg-teal" onclick="refreshApplications()">REFRESH</button>
+          <span class="edit-hint" id="applicationsCount" style="margin:0">0 applications</span>
         </div>
       </div>
     </section>
@@ -248,6 +286,128 @@
       </div>
     </section>
 
+  </div>
+  </div><!-- /tab-application -->
+
+  <!-- ============================================================== -->
+  <!-- CAREER CORPUS TAB (Phase D.2)                                  -->
+  <!-- DB-backed editor for the candidate's experiences / bullets /   -->
+  <!-- alternate titles. Loaded lazily when the user activates the    -->
+  <!-- tab; reads from /api/users/<u>/experiences and uses the D.1    -->
+  <!-- CRUD routes for inline edits.                                  -->
+  <!-- ============================================================== -->
+  <div id="tab-corpus" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabCorpus">
+    <div class="lcars-main">
+      <div class="lcars-block lcars-blue" data-panel="panelCorpus">CORPUS</div>
+      <section class="lcars-panel" id="panelCorpus">
+        <div class="panel-header lcars-bg-blue">CAREER CORPUS</div>
+        <div class="panel-body">
+          <div id="onboardingBanner" class="onboarding-banner hidden" role="status">
+            <span id="onboardingBannerText"></span>
+            <button class="lcars-btn lcars-bg-amber" onclick="scrollToFirstPending()">REVIEW NOW</button>
+          </div>
+          <div class="edit-hint" id="corpusEmptyHint">
+            Select a user above to load their experiences. Each experience
+            holds one or more titles (one official, optional alternates)
+            plus a list of bullets the LLM draws from when composing a
+            resume. Edits here apply to the next application, not any
+            in-flight one.
+          </div>
+          <div class="form-row" id="corpusToolbar" style="display:none">
+            <button class="lcars-btn lcars-bg-teal" onclick="openCorpusAddExperience()">+ ADD EXPERIENCE</button>
+            <span class="edit-hint" id="corpusCount">0 experiences</span>
+          </div>
+          <div id="corpusExperienceList" class="corpus-experience-list"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Persona Templates (Phase D.4) -->
+  <div id="tab-personas" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabPersonas">
+    <div class="lcars-main">
+      <div class="lcars-block lcars-violet" data-panel="panelPersonas">TEMPLATES</div>
+      <section class="lcars-panel" id="panelPersonas">
+        <div class="panel-header lcars-bg-violet">PERSONA TEMPLATES</div>
+        <div class="panel-body">
+          <div class="edit-hint" id="personasHint">
+            Five bundled ATS-safe templates ship with the app. You can also
+            upload your own .docx files — they're scoped to your user.
+            Bundled templates are read-only; you can rename / delete only
+            your own.
+          </div>
+
+          <div class="persona-section">
+            <div class="persona-section-header">BUNDLED GALLERY</div>
+            <div class="persona-grid" id="personaBundledGrid">
+              <div class="corpus-empty-experience">Loading…</div>
+            </div>
+          </div>
+
+          <div class="persona-section">
+            <div class="persona-section-header">MY TEMPLATES</div>
+            <div class="persona-grid" id="personaOwnedGrid">
+              <div class="corpus-empty-experience">Select a user to view uploads.</div>
+            </div>
+            <div class="form-row" style="margin-top:12px">
+              <input type="file" id="personaUploadInput" accept=".docx" style="display:none"
+                     onchange="uploadPersonaFromInput(this)">
+              <button class="lcars-btn lcars-bg-teal" id="btnUploadPersona"
+                      onclick="document.getElementById('personaUploadInput').click()" disabled>
+                UPLOAD .DOCX TEMPLATE
+              </button>
+              <input type="text" id="personaUploadName" placeholder="Display name (optional)"
+                     style="flex:1" aria-label="Display name for uploaded template">
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Candidate Memory tab (Phase D.5) -->
+  <div id="tab-memory" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabMemory">
+    <div class="lcars-main">
+      <div class="lcars-block lcars-teal" data-panel="panelMemory">MEMORY</div>
+      <section class="lcars-panel" id="panelMemory">
+        <div class="panel-header lcars-bg-teal">CANDIDATE MEMORY</div>
+        <div class="panel-body">
+          <div class="edit-hint">
+            Clarification Q&A pairs accumulated across every application.
+            Outcome-rich answers (those with measurable numbers) are
+            prioritized as bullet-promotion candidates.
+          </div>
+
+          <div class="memory-toolbar">
+            <input type="text" id="memorySearch" class="memory-search"
+                   placeholder="Search question or answer…"
+                   aria-label="Search clarifications">
+            <select id="memoryKindFilter" aria-label="Filter by clarification kind">
+              <option value="">All kinds</option>
+              <option value="experience_probe">Experience probe</option>
+              <option value="scope_probe">Scope probe</option>
+              <option value="iteration_probe">Iteration probe</option>
+              <option value="outcome_probe">Outcome probe</option>
+              <option value="manual">Manual</option>
+            </select>
+            <label class="memory-checkbox">
+              <input type="checkbox" id="memoryOutcomeOnly">
+              Outcome-rich only
+            </label>
+            <label class="memory-checkbox">
+              <input type="checkbox" id="memoryIncludePromoted">
+              Show promoted
+            </label>
+            <button class="lcars-btn lcars-bg-teal" onclick="refreshMemory()">REFRESH</button>
+            <span class="edit-hint" id="memoryCount" style="margin:0">0 entries</span>
+          </div>
+
+          <div id="memoryList" class="memory-list">
+            <div class="corpus-empty-experience">Select a user to view memory.</div>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 
   <!-- Edit-detection modal — opens when REFINE or GET INTERVIEW QUESTIONS is

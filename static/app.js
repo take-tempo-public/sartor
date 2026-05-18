@@ -83,6 +83,7 @@ async function onUserSelect() {
   currentUser = username;
   await loadConfig();
   await loadResumes();
+  show('panelApplications');
   show('panelConfig');
   show('panelResume');
   show('panelJD');
@@ -90,6 +91,7 @@ async function onUserSelect() {
   hide('panelOutput');
   _resetIterationState();
   setStatus('READY');
+  refreshApplications();
 }
 
 // Reset all iteration-loop state. Called when switching users or starting a
@@ -1392,3 +1394,1014 @@ document.querySelectorAll('.panel-header').forEach(header => {
   const panel = header.closest('.lcars-panel');
   if (panel) header.addEventListener('click', () => togglePanel(panel.id));
 });
+
+// ===============================================================
+// Phase D.2 — Top-level tabs + Career Corpus tab
+// ===============================================================
+
+let _corpusLoadedForUser = '';
+let _corpusExperiences = [];
+
+function switchTopTab(name, btn) {
+  document.querySelectorAll('.top-tab-btn').forEach(b => {
+    b.classList.toggle('active', b === btn);
+    b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+  });
+  document.querySelectorAll('.top-tab-panel').forEach(p => p.classList.add('hidden'));
+  const target = document.getElementById(`tab-${name}`);
+  if (target) target.classList.remove('hidden');
+  if (name === 'corpus') loadCorpusIfReady();
+  if (name === 'personas') _personaTabActivated();
+  if (name === 'memory') _memoryTabActivated();
+}
+
+async function loadCorpusIfReady() {
+  if (!currentUser) {
+    document.getElementById('corpusEmptyHint').textContent =
+      'Select a user above to load their experiences.';
+    document.getElementById('corpusToolbar').style.display = 'none';
+    _clearChildren(document.getElementById('corpusExperienceList'));
+    _corpusLoadedForUser = '';
+    return;
+  }
+  if (_corpusLoadedForUser === currentUser) return;
+  await refreshCorpus();
+}
+
+async function refreshCorpus() {
+  const list = document.getElementById('corpusExperienceList');
+  _setLoadingPlaceholder(list, 'Loading…');
+  _refreshOnboardingBanner();  // fire-and-forget; doesn't block list load
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
+  } catch (e) {
+    _setLoadingPlaceholder(list, 'Network error.');
+    return;
+  }
+  if (res.status === 404) {
+    _clearChildren(list);
+    document.getElementById('corpusEmptyHint').textContent =
+      'No experiences in the corpus yet for ' + currentUser +
+      '. Onboarding extraction populates this on first import.';
+    document.getElementById('corpusToolbar').style.display = '';
+    _corpusLoadedForUser = currentUser;
+    _corpusExperiences = [];
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(list, 'Failed to load corpus.');
+    return;
+  }
+  const data = await res.json();
+  _corpusExperiences = data;
+  _corpusLoadedForUser = currentUser;
+  _renderCorpusList();
+}
+
+function _renderCorpusList() {
+  const list = document.getElementById('corpusExperienceList');
+  const hint = document.getElementById('corpusEmptyHint');
+  const toolbar = document.getElementById('corpusToolbar');
+  toolbar.style.display = '';
+  document.getElementById('corpusCount').textContent =
+    `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
+  _clearChildren(list);
+  if (_corpusExperiences.length === 0) {
+    hint.textContent = 'No experiences yet. Click + ADD EXPERIENCE to start, or run onboarding.';
+    return;
+  }
+  hint.textContent = 'Click a card to expand and edit titles + bullets. Saves are inline.';
+  _corpusExperiences.forEach(exp => list.appendChild(_renderCorpusSummary(exp)));
+}
+
+function _renderCorpusSummary(exp) {
+  const card = _el('div', { className: 'corpus-card', id: `corpus-exp-${exp.id}` });
+  card.dataset.experienceId = exp.id;
+  const header = _el('div', { className: 'corpus-card-header' });
+  header.onclick = () => toggleCorpusCard(exp.id);
+  header.appendChild(_el('button', { className: 'corpus-card-toggle' }, [], { 'aria-label': 'Expand' }));
+  header.appendChild(_el('div', { className: 'corpus-card-company', textContent: exp.company || '(no company)' }));
+  header.appendChild(_el('div', { className: 'corpus-card-title', textContent: exp.official_title || '(no official title)' }));
+  header.appendChild(_el('div', { className: 'corpus-card-dates', textContent: `${exp.start_date} — ${exp.end_date || 'current'}` }));
+  const metaText = `${exp.bullet_count_active} bullets` +
+    (exp.bullet_count_pending ? ` · ${exp.bullet_count_pending} pending` : '');
+  header.appendChild(_el('div', { className: 'corpus-card-meta', textContent: metaText }));
+  card.appendChild(header);
+  card.appendChild(_el('div', { className: 'corpus-card-body', id: `corpus-body-${exp.id}` }));
+  return card;
+}
+
+async function toggleCorpusCard(experienceId) {
+  const card = document.getElementById(`corpus-exp-${experienceId}`);
+  if (!card) return;
+  const willExpand = !card.classList.contains('expanded');
+  card.classList.toggle('expanded');
+  if (willExpand) await _loadCorpusDetail(experienceId);
+}
+
+async function _loadCorpusDetail(experienceId) {
+  const body = document.getElementById(`corpus-body-${experienceId}`);
+  if (!body) return;
+  _setLoadingPlaceholder(body, 'Loading…');
+  let res;
+  try {
+    res = await fetch(`/api/experiences/${experienceId}`);
+  } catch (e) {
+    _setLoadingPlaceholder(body, 'Network error.');
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(body, 'Failed to load.');
+    return;
+  }
+  _renderCorpusDetail(body, await res.json());
+}
+
+function _renderCorpusDetail(body, exp) {
+  _clearChildren(body);
+  const expId = exp.id;
+  body.appendChild(_renderExperienceFieldGroup(expId, exp));
+  const btnRow = _el('div', { className: 'form-row' });
+  const hasPending = (exp.titles || []).some(t => t.is_pending_review) ||
+    (exp.bullets || []).some(b => b.is_pending_review);
+  if (hasPending) {
+    const acceptAll = _el('button', {
+      className: 'lcars-btn lcars-bg-teal',
+      textContent: 'ACCEPT ALL PENDING',
+    });
+    acceptAll.onclick = async () => {
+      try {
+        const r = await _postJson(`/api/experiences/${expId}/accept-all`, {});
+        _toast(`Accepted ${r.bullets_accepted} bullet(s) + ${r.titles_accepted} title(s)`);
+        await _reloadCorpusCard(expId);
+        await _refreshOnboardingBanner();
+      } catch (e) { _toast('Failed: ' + e.message, true); }
+    };
+    btnRow.appendChild(acceptAll);
+  }
+  const retire = _el('button', { className: 'lcars-btn lcars-bg-orange', textContent: 'SOFT-RETIRE EXPERIENCE' });
+  retire.onclick = () => deleteExperience(expId);
+  btnRow.appendChild(retire);
+  body.appendChild(btnRow);
+  body.appendChild(_renderTitleSection(expId, exp.titles || []));
+  body.appendChild(_renderBulletSection(expId, exp.bullets || []));
+}
+
+function _renderExperienceFieldGroup(expId, exp) {
+  const fg = _el('div', { className: 'corpus-fieldgroup' });
+  const fields = [
+    { key: 'company',    label: 'Company',         type: 'text',     value: exp.company || '' },
+    { key: 'location',   label: 'Location',        type: 'text',     value: exp.location || '' },
+    { key: 'start_date', label: 'Start (YYYY-MM)', type: 'text',     value: exp.start_date,
+      pattern: '\\d{4}-\\d{2}' },
+    { key: 'end_date',   label: 'End (YYYY-MM)',   type: 'text',     value: exp.end_date || '',
+      pattern: '\\d{4}-\\d{2}', placeholder: '(blank = current)' },
+    { key: 'summary',    label: 'Summary',         type: 'textarea', value: exp.summary || '' },
+  ];
+  fields.forEach(f => {
+    const id = `exp-${expId}-${f.key}`;
+    fg.appendChild(_el('label', { textContent: f.label, htmlFor: id }));
+    const input = f.type === 'textarea'
+      ? _el('textarea', { id, value: f.value })
+      : _el('input', { id, type: f.type, value: f.value });
+    if (f.type === 'textarea') input.textContent = f.value;
+    else input.value = f.value;
+    if (f.pattern) input.pattern = f.pattern;
+    if (f.placeholder) input.placeholder = f.placeholder;
+    input.addEventListener('change', () => _saveExperienceField(expId, f.key, input.value));
+    fg.appendChild(input);
+  });
+  return fg;
+}
+
+function _renderTitleSection(expId, titles) {
+  const sec = _el('div', { className: 'corpus-section' });
+  const header = _el('div', { className: 'corpus-section-header' });
+  header.appendChild(_el('div', { className: 'corpus-section-title', textContent: 'Titles' }));
+  const addBtn = _el('button', { className: 'corpus-action-btn', textContent: '+ ADD TITLE' });
+  addBtn.onclick = () => _addTitlePrompt(expId);
+  header.appendChild(addBtn);
+  sec.appendChild(header);
+  if (titles.length === 0) {
+    sec.appendChild(_el('div', { className: 'corpus-empty-experience',
+      textContent: 'No titles. Add at least one official title for LLM use.' }));
+    return sec;
+  }
+  titles.forEach(t => sec.appendChild(_renderTitleRow(expId, t)));
+  return sec;
+}
+
+function _renderTitleRow(expId, title) {
+  const row = _el('div', { className: 'corpus-row', id: `title-row-${title.id}` });
+  const input = _el('input', { className: 'corpus-row-input', value: title.title });
+  input.addEventListener('change', () =>
+    _putJson(`/api/experience-titles/${title.id}`, { title: input.value })
+      .then(updated => updated && _toast(`Title saved: ${updated.title}`))
+      .catch(e => _toast('Save failed: ' + e.message, true))
+  );
+  row.appendChild(input);
+  row.appendChild(_el('span', {
+    className: 'corpus-row-flag' + (title.is_official ? ' official' : ''),
+    textContent: title.is_official ? 'OFFICIAL' : 'ALT',
+  }));
+  if (title.is_pending_review) {
+    row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
+  }
+  const actions = _el('div', { className: 'corpus-row-actions' });
+  if (title.is_pending_review) {
+    const accept = _el('button', { className: 'corpus-action-btn', textContent: 'ACCEPT' });
+    accept.onclick = async () => {
+      try {
+        await _postJson(`/api/experience-titles/${title.id}/accept`, {});
+        await _reloadCorpusCard(expId);
+        await _refreshOnboardingBanner();
+        _toast('Title accepted');
+      } catch (e) { _toast('Failed: ' + e.message, true); }
+    };
+    actions.appendChild(accept);
+  }
+  if (!title.is_official) {
+    const setOfficial = _el('button', { className: 'corpus-action-btn', textContent: 'SET OFFICIAL' });
+    setOfficial.onclick = async () => {
+      try {
+        await _putJson(`/api/experience-titles/${title.id}`, { is_official: true });
+        await _reloadCorpusCard(expId);
+        _toast('Promoted to official');
+      } catch (e) { _toast('Failed: ' + e.message, true); }
+    };
+    actions.appendChild(setOfficial);
+  }
+  const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'DELETE' });
+  del.onclick = async () => {
+    if (!confirm('Mark this title non-eligible? Audit row will remain.')) return;
+    try {
+      await _deleteJson(`/api/experience-titles/${title.id}`);
+      await _reloadCorpusCard(expId);
+      _toast('Title retired');
+    } catch (e) { _toast('Failed: ' + e.message, true); }
+  };
+  actions.appendChild(del);
+  row.appendChild(actions);
+  return row;
+}
+
+function _renderBulletSection(expId, bullets) {
+  const sec = _el('div', { className: 'corpus-section' });
+  const header = _el('div', { className: 'corpus-section-header' });
+  header.appendChild(_el('div', { className: 'corpus-section-title', textContent: 'Bullets' }));
+  const addBtn = _el('button', { className: 'corpus-action-btn', textContent: '+ ADD BULLET' });
+  addBtn.onclick = () => _addBulletPrompt(expId);
+  header.appendChild(addBtn);
+  sec.appendChild(header);
+  if (bullets.length === 0) {
+    sec.appendChild(_el('div', { className: 'corpus-empty-experience', textContent: 'No active bullets.' }));
+    return sec;
+  }
+  bullets.forEach(b => sec.appendChild(_renderBulletRow(expId, b)));
+  return sec;
+}
+
+function _renderBulletRow(expId, bullet) {
+  const row = _el('div', { className: 'corpus-row', id: `bullet-row-${bullet.id}` });
+  const input = _el('textarea', { className: 'corpus-row-input' });
+  input.rows = 2;
+  input.value = bullet.text;
+  input.addEventListener('change', async () => {
+    try {
+      const updated = await _putJson(`/api/bullets/${bullet.id}`, { text: input.value });
+      const fresh = await fetch(`/api/experiences/${expId}`).then(r => r.json());
+      const newRow = (fresh.bullets || []).find(b => b.id === bullet.id);
+      if (newRow) row.replaceWith(_renderBulletRow(expId, newRow));
+      _toast(`Bullet saved${updated.has_outcome ? ' (outcome detected)' : ''}`);
+    } catch (e) { _toast('Save failed: ' + e.message, true); }
+  });
+  row.appendChild(input);
+  const flag = _el('span', {
+    className: 'corpus-row-flag ' + (bullet.has_outcome ? 'outcome' : 'no-outcome'),
+    textContent: bullet.has_outcome ? 'OUTCOME' : 'NO OUTCOME',
+  });
+  flag.title = bullet.has_outcome
+    ? 'A numeric outcome was detected (count, %, currency, duration).'
+    : 'No measurable outcome — consider adding one.';
+  row.appendChild(flag);
+  if (bullet.is_pending_review) {
+    row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
+  }
+  const actions = _el('div', { className: 'corpus-row-actions' });
+  if (bullet.is_pending_review) {
+    const accept = _el('button', { className: 'corpus-action-btn', textContent: 'ACCEPT' });
+    accept.onclick = async () => {
+      try {
+        await _postJson(`/api/bullets/${bullet.id}/accept`, {});
+        await _reloadCorpusCard(expId);
+        await _refreshOnboardingBanner();
+        _toast('Bullet accepted');
+      } catch (e) { _toast('Failed: ' + e.message, true); }
+    };
+    actions.appendChild(accept);
+  }
+  const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'RETIRE' });
+  del.onclick = async () => {
+    if (!confirm('Soft-retire this bullet? It stays in the audit log but stops appearing in new applications.')) return;
+    try {
+      await _deleteJson(`/api/bullets/${bullet.id}`);
+      await _reloadCorpusCard(expId);
+      _toast('Bullet retired');
+    } catch (e) { _toast('Failed: ' + e.message, true); }
+  };
+  actions.appendChild(del);
+  row.appendChild(actions);
+  return row;
+}
+
+async function _saveExperienceField(expId, field, value) {
+  const body = {};
+  body[field] = value;
+  try {
+    await _putJson(`/api/experiences/${expId}`, body);
+    _toast(`${field} saved`);
+  } catch (e) {
+    _toast(`Save failed: ${e.message}`, true);
+  }
+}
+
+async function _addTitlePrompt(expId) {
+  const title = prompt('Alternate title (e.g. "Director, AI Research"):');
+  if (!title) return;
+  const makeOfficial = confirm('Mark as the official title? OK = official, Cancel = alternate.');
+  try {
+    await _postJson(`/api/experiences/${expId}/titles`, { title, is_official: makeOfficial });
+    await _reloadCorpusCard(expId);
+    _toast('Title added');
+  } catch (e) { _toast('Add failed: ' + e.message, true); }
+}
+
+async function _addBulletPrompt(expId) {
+  const text = prompt('Bullet text:');
+  if (!text || !text.trim()) return;
+  try {
+    await _postJson(`/api/experiences/${expId}/bullets`, { text: text.trim() });
+    await _reloadCorpusCard(expId);
+    _toast('Bullet added');
+  } catch (e) { _toast('Add failed: ' + e.message, true); }
+}
+
+async function _reloadCorpusCard(expId) {
+  await _loadCorpusDetail(expId);
+  await refreshCorpusSummaryFor(expId);
+}
+
+async function refreshCorpusSummaryFor(expId) {
+  const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
+  if (!res.ok) return;
+  _corpusExperiences = await res.json();
+  const exp = _corpusExperiences.find(e => e.id === expId);
+  if (!exp) return;
+  const card = document.getElementById(`corpus-exp-${expId}`);
+  if (!card) return;
+  const company = card.querySelector('.corpus-card-company');
+  const title = card.querySelector('.corpus-card-title');
+  const meta = card.querySelector('.corpus-card-meta');
+  if (company) company.textContent = exp.company;
+  if (title) title.textContent = exp.official_title || '(no official title)';
+  if (meta) meta.textContent = `${exp.bullet_count_active} bullets` +
+    (exp.bullet_count_pending ? ` · ${exp.bullet_count_pending} pending` : '');
+  document.getElementById('corpusCount').textContent =
+    `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
+}
+
+async function deleteExperience(expId) {
+  if (!confirm('Soft-retire this entire experience? All its bullets become inactive. Audit rows remain.')) return;
+  try {
+    const r = await _deleteJson(`/api/experiences/${expId}`);
+    _toast(`Retired ${r.retired_bullets} bullet(s)`);
+    await refreshCorpus();
+  } catch (e) { _toast('Failed: ' + e.message, true); }
+}
+
+async function openCorpusAddExperience() {
+  const company = prompt('Company name:');
+  if (!company || !company.trim()) return;
+  const start = prompt('Start date (YYYY-MM):');
+  if (!start || !/^\d{4}-\d{2}$/.test(start)) {
+    alert('Start date must be YYYY-MM (e.g. 2023-01)');
+    return;
+  }
+  const end = prompt('End date (YYYY-MM, blank for current):') || '';
+  if (end && !/^\d{4}-\d{2}$/.test(end)) {
+    alert('End date must be YYYY-MM or blank');
+    return;
+  }
+  const location = prompt('Location (optional):') || '';
+  try {
+    await _postJson(`/api/users/${encodeURIComponent(currentUser)}/experiences`, {
+      company: company.trim(),
+      start_date: start,
+      end_date: end || null,
+      location: location.trim() || null,
+    });
+    await refreshCorpus();
+    _toast('Experience added');
+  } catch (e) { _toast('Add failed: ' + e.message, true); }
+}
+
+async function _putJson(url, body) {
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
+async function _postJson(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
+async function _deleteJson(url) {
+  const res = await fetch(url, { method: 'DELETE' });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
+// Tiny DOM constructor — avoids innerHTML for safety. Props can include
+// className, id, textContent, htmlFor, value, type. Children is an array
+// of child Nodes appended in order. Attrs is a flat object for ARIA etc.
+function _el(tag, props = {}, children = [], attrs = {}) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v == null) continue;
+    if (k === 'htmlFor') node.htmlFor = v;
+    else if (k === 'className') node.className = v;
+    else if (k === 'textContent') node.textContent = v;
+    else if (k === 'id') node.id = v;
+    else if (k === 'type') node.type = v;
+    else if (k === 'value') node.value = v;
+    else node[k] = v;
+  }
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  children.forEach(c => node.appendChild(c));
+  return node;
+}
+
+function _clearChildren(el) {
+  if (!el) return;
+  while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+function _setLoadingPlaceholder(el, msg) {
+  _clearChildren(el);
+  el.appendChild(_el('div', { className: 'corpus-empty-experience', textContent: msg }));
+}
+
+function _toast(msg, isError) {
+  let t = document.getElementById('_corpusToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '_corpusToast';
+    t.className = 'corpus-toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.toggle('error', !!isError);
+  t.classList.add('show');
+  clearTimeout(t._hide);
+  t._hide = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// Invalidate the corpus cache when the user changes — pin to onUserSelect.
+const _origOnUserSelect = onUserSelect;
+onUserSelect = async function() {
+  _corpusLoadedForUser = '';
+  _corpusExperiences = [];
+  _personasLoaded = false;
+  _memoryLoaded = false;
+  _clearChildren(document.getElementById('corpusExperienceList'));
+  return await _origOnUserSelect.apply(this, arguments);
+};
+
+// ===============================================================
+// Phase D.5 — Candidate Memory tab
+// ===============================================================
+
+let _memoryLoaded = false;
+let _memoryDebounce = null;
+
+function _memoryTabActivated() {
+  if (_memoryLoaded) return;
+  _wireMemoryFilters();
+  refreshMemory();
+}
+
+function _wireMemoryFilters() {
+  const search = document.getElementById('memorySearch');
+  const kindFilter = document.getElementById('memoryKindFilter');
+  const outcomeOnly = document.getElementById('memoryOutcomeOnly');
+  const incPromoted = document.getElementById('memoryIncludePromoted');
+  if (search && !search._wired) {
+    search.addEventListener('input', () => {
+      clearTimeout(_memoryDebounce);
+      _memoryDebounce = setTimeout(refreshMemory, 250);
+    });
+    search._wired = true;
+  }
+  [kindFilter, outcomeOnly, incPromoted].forEach(el => {
+    if (el && !el._wired) {
+      el.addEventListener('change', refreshMemory);
+      el._wired = true;
+    }
+  });
+}
+
+async function refreshMemory() {
+  const list = document.getElementById('memoryList');
+  const countEl = document.getElementById('memoryCount');
+  if (!currentUser) {
+    _setLoadingPlaceholder(list, 'Select a user to view memory.');
+    countEl.textContent = '0 entries';
+    return;
+  }
+  const params = new URLSearchParams();
+  const q = (document.getElementById('memorySearch').value || '').trim();
+  if (q) params.set('q', q);
+  const kind = document.getElementById('memoryKindFilter').value;
+  if (kind) params.set('kind', kind);
+  if (document.getElementById('memoryOutcomeOnly').checked) params.set('only_outcome_rich', '1');
+  if (document.getElementById('memoryIncludePromoted').checked) params.set('include_promoted', '1');
+
+  _setLoadingPlaceholder(list, 'Loading…');
+  let res;
+  try {
+    res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/clarifications?${params}`,
+    );
+  } catch {
+    _setLoadingPlaceholder(list, 'Network error.');
+    return;
+  }
+  if (res.status === 404) {
+    _setLoadingPlaceholder(list, 'Candidate not in corpus yet.');
+    countEl.textContent = '0 entries';
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(list, 'Failed to load.');
+    return;
+  }
+  const rows = await res.json();
+  _memoryLoaded = true;
+  countEl.textContent = `${rows.length} entr${rows.length === 1 ? 'y' : 'ies'}`;
+  _clearChildren(list);
+  if (rows.length === 0) {
+    _setLoadingPlaceholder(list, 'No matching memory entries.');
+    return;
+  }
+  rows.forEach(r => list.appendChild(_renderMemoryRow(r)));
+}
+
+function _renderMemoryRow(r) {
+  const card = _el('div', { className: 'memory-card', id: `memory-${r.id}` });
+
+  const header = _el('div', { className: 'memory-card-header' });
+  header.appendChild(_el('span', { className: 'memory-card-kind', textContent: r.kind }));
+  if (r.outcome_rich) {
+    header.appendChild(_el('span', {
+      className: 'corpus-row-flag outcome', textContent: 'OUTCOME',
+    }));
+  }
+  if (r.is_promoted_to_bullet) {
+    header.appendChild(_el('span', {
+      className: 'memory-card-promoted', textContent: 'PROMOTED',
+    }));
+  }
+  if (r.origin_application_title) {
+    header.appendChild(_el('span', {
+      className: 'memory-card-origin',
+      textContent: `from: ${r.origin_application_title}`,
+    }));
+  }
+  header.appendChild(_el('span', {
+    className: 'application-card-date',
+    textContent: _formatRelativeDate(r.created_at),
+  }));
+  card.appendChild(header);
+
+  card.appendChild(_el('div', { className: 'memory-card-q', textContent: r.question }));
+  card.appendChild(_el('div', { className: 'memory-card-a', textContent: r.answer }));
+
+  if (!r.is_promoted_to_bullet) {
+    const actions = _el('div', { className: 'memory-card-actions' });
+    const promote = _el('button', {
+      className: 'corpus-action-btn', textContent: 'PROMOTE TO BULLET',
+    });
+    promote.onclick = () => _promoteMemoryRow(r);
+    actions.appendChild(promote);
+    card.appendChild(actions);
+  }
+  return card;
+}
+
+async function _promoteMemoryRow(r) {
+  // Need an experience_id to attach the new bullet to. Ask via prompt
+  // until we have a richer chooser UI in D.5.1.
+  if (!_corpusExperiences || _corpusExperiences.length === 0) {
+    // Lazy-load corpus so we can prompt with company names
+    try {
+      const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
+      if (res.ok) _corpusExperiences = await res.json();
+    } catch {}
+  }
+  if (!_corpusExperiences || _corpusExperiences.length === 0) {
+    _toast('No experiences in corpus — add one in CAREER CORPUS first.', true);
+    return;
+  }
+  const choices = _corpusExperiences.map(
+    (e, i) => `${i + 1}. ${e.company} (${e.start_date})`,
+  ).join('\n');
+  const pick = prompt(`Which experience should this become a bullet under?\n\n${choices}\n\nEnter number:`);
+  const idx = parseInt(pick, 10) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= _corpusExperiences.length) return;
+  const expId = _corpusExperiences[idx].id;
+  try {
+    const res = await fetch(`/api/clarifications/${r.id}/promote-to-bullet`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ experience_id: expId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    _toast(`Promoted to bullet on ${_corpusExperiences[idx].company}`);
+    await refreshMemory();
+  } catch (e) {
+    _toast('Promote failed: ' + e.message, true);
+  }
+}
+
+// ===============================================================
+// Phase D.6 — Onboarding banner: pending-review counts
+// ===============================================================
+
+async function _refreshOnboardingBanner() {
+  const banner = document.getElementById('onboardingBanner');
+  const text = document.getElementById('onboardingBannerText');
+  if (!banner || !text || !currentUser) {
+    if (banner) banner.classList.add('hidden');
+    return;
+  }
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/pending-counts`);
+  } catch {
+    banner.classList.add('hidden');
+    return;
+  }
+  if (!res.ok) {
+    banner.classList.add('hidden');
+    return;
+  }
+  const data = await res.json();
+  const total = (data.pending_bullets || 0) + (data.pending_titles || 0);
+  if (total === 0) {
+    banner.classList.add('hidden');
+    return;
+  }
+  banner.classList.remove('hidden');
+  const parts = [];
+  if (data.pending_bullets) parts.push(`${data.pending_bullets} bullet${data.pending_bullets === 1 ? '' : 's'}`);
+  if (data.pending_titles) parts.push(`${data.pending_titles} title${data.pending_titles === 1 ? '' : 's'}`);
+  text.textContent = `${parts.join(' + ')} pending review across ${data.experiences_with_pending} experience${data.experiences_with_pending === 1 ? '' : 's'}`;
+}
+
+function scrollToFirstPending() {
+  // Find the first experience card with a pending badge in its summary
+  // and expand + scroll to it.
+  const firstPending = _corpusExperiences.find(e => (e.bullet_count_pending || 0) > 0);
+  if (!firstPending) {
+    // Fall back: just find the first card with PENDING flag rendered
+    const flag = document.querySelector('.corpus-row-flag.pending');
+    if (flag) {
+      const card = flag.closest('.corpus-card');
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    return;
+  }
+  const card = document.getElementById(`corpus-exp-${firstPending.id}`);
+  if (!card) return;
+  if (!card.classList.contains('expanded')) toggleCorpusCard(firstPending.id);
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ===============================================================
+// Phase D.3 — Applications list (within the APPLICATION tab)
+// ===============================================================
+
+async function refreshApplications() {
+  const list = document.getElementById('applicationsList');
+  const countEl = document.getElementById('applicationsCount');
+  if (!list) return;
+  if (!currentUser) {
+    _setLoadingPlaceholder(list, 'Select a user to view their applications.');
+    if (countEl) countEl.textContent = '0 applications';
+    return;
+  }
+  _setLoadingPlaceholder(list, 'Loading…');
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/applications`);
+  } catch (e) {
+    _setLoadingPlaceholder(list, 'Network error.');
+    return;
+  }
+  if (res.status === 404) {
+    _setLoadingPlaceholder(list, `No applications yet for ${currentUser}. Analyze a JD below to start one.`);
+    if (countEl) countEl.textContent = '0 applications';
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(list, 'Failed to load applications.');
+    return;
+  }
+  const apps = await res.json();
+  _renderApplicationsList(apps);
+}
+
+function _renderApplicationsList(apps) {
+  const list = document.getElementById('applicationsList');
+  const countEl = document.getElementById('applicationsCount');
+  _clearChildren(list);
+  if (countEl) countEl.textContent = `${apps.length} application${apps.length === 1 ? '' : 's'}`;
+  if (apps.length === 0) {
+    _setLoadingPlaceholder(list, 'No applications yet. Analyze a JD below to start one.');
+    return;
+  }
+  apps.forEach(a => list.appendChild(_renderApplicationCard(a)));
+}
+
+function _renderApplicationCard(app) {
+  const card = _el('div', { className: 'application-card', id: `app-card-${app.id}` });
+  const header = _el('div', { className: 'application-card-header' });
+  header.appendChild(_el('div', { className: 'application-card-title', textContent: app.title }));
+  if (app.company) {
+    header.appendChild(_el('div', { className: 'application-card-company', textContent: app.company }));
+  }
+  card.appendChild(header);
+
+  const meta = _el('div', { className: 'application-card-meta' });
+  meta.appendChild(_el('span', {
+    className: `app-status-chip status-${app.status}`,
+    textContent: (app.status || 'draft').toUpperCase(),
+  }));
+  const iterText = `${app.iteration_count} iter${app.iteration_count === 1 ? '' : 's'}`;
+  meta.appendChild(_el('span', { className: 'application-card-iter', textContent: iterText }));
+  if (app.pending_proposals > 0) {
+    const badge = _el('span', {
+      className: 'application-card-pending',
+      textContent: `${app.pending_proposals} pending`,
+    });
+    badge.title = 'Pending LLM-proposed bullets/titles awaiting your review';
+    meta.appendChild(badge);
+  }
+  meta.appendChild(_el('span', {
+    className: 'application-card-date',
+    textContent: _formatRelativeDate(app.updated_at),
+  }));
+  card.appendChild(meta);
+  card.onclick = () => _showApplicationDetail(app.id);
+  return card;
+}
+
+function _formatRelativeDate(iso) {
+  if (!iso) return '';
+  try {
+    const then = new Date(iso);
+    const diffMs = Date.now() - then.getTime();
+    const diffMin = Math.round(diffMs / 60000);
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.round(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.round(diffHr / 24);
+    if (diffDay < 30) return `${diffDay}d ago`;
+    return then.toISOString().slice(0, 10);
+  } catch {
+    return iso;
+  }
+}
+
+async function _showApplicationDetail(applicationId) {
+  let res;
+  try {
+    res = await fetch(`/api/applications/${applicationId}`);
+  } catch (e) {
+    _toast('Failed to load application: ' + e.message, true);
+    return;
+  }
+  if (!res.ok) {
+    _toast('Application not found', true);
+    return;
+  }
+  const detail = await res.json();
+  // Lightweight info display in the toast for now — resuming an
+  // application into the live editing flow ships in D.3.1.
+  const lines = [
+    `Title: ${detail.title}`,
+    `Status: ${detail.status}`,
+    `Iterations: ${detail.runs.length}`,
+  ];
+  if (detail.runs.length > 0) {
+    const last = detail.runs[detail.runs.length - 1];
+    lines.push(`Last run: ${last.run_id} (iter ${last.iteration})`);
+    if (last.ats_roundtrip_status) lines.push(`ATS check: ${last.ats_roundtrip_status}`);
+    if (last.pending_proposals > 0) lines.push(`Pending: ${last.pending_proposals}`);
+  }
+  _toast(lines.join(' · '));
+}
+
+// ===============================================================
+// Phase D.4 — Persona Templates tab
+// ===============================================================
+
+let _personasLoaded = false;
+let _personaUploadLocked = false;
+
+function _personaTabActivated() {
+  if (_personasLoaded) return;
+  refreshPersonas();
+}
+
+async function refreshPersonas() {
+  await Promise.all([_loadBundledPersonas(), _loadOwnedPersonas()]);
+  _personasLoaded = true;
+  // Unlock upload button if a user is selected
+  const btn = document.getElementById('btnUploadPersona');
+  if (btn) btn.disabled = !currentUser;
+}
+
+async function _loadBundledPersonas() {
+  const grid = document.getElementById('personaBundledGrid');
+  if (!grid) return;
+  _setLoadingPlaceholder(grid, 'Loading bundled gallery…');
+  let res;
+  try {
+    res = await fetch('/api/personas/bundled');
+  } catch {
+    _setLoadingPlaceholder(grid, 'Network error.');
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(grid, 'Failed to load bundled.');
+    return;
+  }
+  const rows = await res.json();
+  _clearChildren(grid);
+  rows.forEach(p => grid.appendChild(_renderPersonaCard(p, /*owned=*/false)));
+}
+
+async function _loadOwnedPersonas() {
+  const grid = document.getElementById('personaOwnedGrid');
+  if (!grid) return;
+  if (!currentUser) {
+    _setLoadingPlaceholder(grid, 'Select a user to view uploads.');
+    return;
+  }
+  _setLoadingPlaceholder(grid, 'Loading…');
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/personas`);
+  } catch {
+    _setLoadingPlaceholder(grid, 'Network error.');
+    return;
+  }
+  if (res.status === 404) {
+    _setLoadingPlaceholder(grid, 'No DB record for this user yet. Onboarding creates one on first import.');
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(grid, 'Failed to load.');
+    return;
+  }
+  const body = await res.json();
+  _clearChildren(grid);
+  const owned = body.owned || [];
+  if (owned.length === 0) {
+    _setLoadingPlaceholder(grid, 'No uploaded templates yet. Use UPLOAD below.');
+    return;
+  }
+  owned.forEach(p => grid.appendChild(_renderPersonaCard(p, /*owned=*/true)));
+}
+
+function _renderPersonaCard(p, owned) {
+  const card = _el('div', { className: 'persona-card', id: `persona-card-${p.id}` });
+  const title = _el('div', { className: 'persona-card-name', textContent: p.name });
+  card.appendChild(title);
+  if (p.description) {
+    card.appendChild(_el('div', { className: 'persona-card-desc', textContent: p.description }));
+  }
+  const meta = _el('div', { className: 'persona-card-meta' });
+  meta.appendChild(_el('span', {
+    className: 'persona-card-source ' + (owned ? 'owned' : 'bundled'),
+    textContent: owned ? 'YOURS' : 'BUNDLED',
+  }));
+  if (p.is_default) {
+    meta.appendChild(_el('span', { className: 'persona-card-default', textContent: 'DEFAULT' }));
+  }
+  meta.appendChild(_el('span', { className: 'persona-card-path', textContent: p.path }));
+  card.appendChild(meta);
+
+  const actions = _el('div', { className: 'persona-card-actions' });
+  const dl = _el('button', { className: 'corpus-action-btn', textContent: 'DOWNLOAD' });
+  dl.onclick = () => window.open(`/api/personas/${p.id}/download`, '_blank');
+  actions.appendChild(dl);
+
+  if (owned) {
+    const rename = _el('button', { className: 'corpus-action-btn', textContent: 'RENAME' });
+    rename.onclick = () => _renamePersona(p.id, p.name);
+    actions.appendChild(rename);
+
+    const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'DELETE' });
+    del.onclick = () => _deletePersona(p.id, p.name);
+    actions.appendChild(del);
+  }
+  card.appendChild(actions);
+  return card;
+}
+
+async function _renamePersona(id, currentName) {
+  const next = prompt('New name:', currentName);
+  if (!next || next.trim() === currentName) return;
+  try {
+    await _putJson(`/api/personas/${id}`, { name: next.trim() });
+    _toast('Renamed');
+    await _loadOwnedPersonas();
+  } catch (e) {
+    _toast('Rename failed: ' + e.message, true);
+  }
+}
+
+async function _deletePersona(id, name) {
+  if (!confirm(`Delete ${name}? The .docx file is removed from disk.`)) return;
+  try {
+    await _deleteJson(`/api/personas/${id}`);
+    _toast('Deleted');
+    await _loadOwnedPersonas();
+  } catch (e) {
+    _toast('Delete failed: ' + e.message, true);
+  }
+}
+
+async function uploadPersonaFromInput(input) {
+  if (_personaUploadLocked) return;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (!currentUser) {
+    _toast('Select a user before uploading.', true);
+    input.value = '';
+    return;
+  }
+  if (!file.name.toLowerCase().endsWith('.docx')) {
+    _toast('Only .docx files allowed.', true);
+    input.value = '';
+    return;
+  }
+  const name = (document.getElementById('personaUploadName').value || '').trim();
+  const fd = new FormData();
+  fd.append('file', file);
+  if (name) fd.append('name', name);
+  _personaUploadLocked = true;
+  try {
+    const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/personas`, {
+      method: 'POST', body: fd,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    _toast('Uploaded');
+    document.getElementById('personaUploadName').value = '';
+    await _loadOwnedPersonas();
+  } catch (e) {
+    _toast('Upload failed: ' + e.message, true);
+  } finally {
+    _personaUploadLocked = false;
+    input.value = '';
+  }
+}
