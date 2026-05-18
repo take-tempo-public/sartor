@@ -22,6 +22,9 @@
     <div class="lcars-elbow lcars-elbow-tl"></div>
     <div class="lcars-title">RESUME OPTIMIZER</div>
     <div class="lcars-pill iteration-pill hidden" id="iterationPill" aria-label="Current iteration" title="Current iteration of the resume loop">ITER 0</div>
+    <button class="lcars-pill lcars-teal" id="diagnosticsPill"
+            onclick="openDiagnosticsModal()"
+            title="Open the read-only telemetry + eval dashboard">DIAGNOSTICS</button>
     <div class="lcars-pill lcars-amber" id="statusPill" aria-live="polite" aria-atomic="true">STANDBY</div>
   </div>
 
@@ -427,6 +430,28 @@
         <button class="lcars-btn lcars-bg-teal" id="btnUseEdits" data-modal-dismiss="use">USE EDITS AS BASELINE</button>
         <button class="lcars-btn lcars-bg-amber" id="btnDiscardEdits" data-modal-dismiss="discard">DISCARD EDITS</button>
         <button class="lcars-btn lcars-bg-blue" id="btnCancelRefine" data-modal-dismiss="cancel">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diagnostics modal — links to the read-only /_dashboard blueprint
+       (telemetry + eval results). The dashboard is served by this same
+       Flask process; localhost-only by its own host-header guard. -->
+  <div id="diagnosticsModal" class="lcars-modal hidden" role="dialog" aria-modal="true"
+       aria-labelledby="diagModalTitle" aria-describedby="diagModalBody">
+    <div class="lcars-modal-backdrop" data-diag-dismiss></div>
+    <div class="lcars-modal-content" role="document">
+      <h2 id="diagModalTitle" class="lcars-modal-title">DIAGNOSTICS DASHBOARD</h2>
+      <p id="diagModalBody" class="lcars-modal-body">
+        Read-only telemetry from the LLM pipeline and eval harness: score
+        trend, rubric &times; fixture heatmap, failure-mode clustering, and
+        per-call cost. Served by this app at <code>/_dashboard</code>;
+        reachable only over localhost.
+      </p>
+      <div class="modal-actions">
+        <a class="lcars-btn lcars-bg-teal" id="btnOpenDashboard"
+           href="/_dashboard" target="_blank" rel="noopener">OPEN DASHBOARD &#8599;</a>
+        <button class="lcars-btn lcars-bg-blue" id="btnCloseDiag" data-diag-dismiss>CLOSE</button>
       </div>
     </div>
   </div>

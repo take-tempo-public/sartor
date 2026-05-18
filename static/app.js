@@ -798,6 +798,41 @@ function _showEditModal(triggerEl) {
   });
 }
 
+// Diagnostics modal — a thin launcher for the /_dashboard blueprint.
+// The dashboard is served by this same Flask process, so there is no
+// server to "start"; the modal just gives a labelled, keyboard-safe
+// entry point. Mirrors _showEditModal's a11y posture (Esc closes,
+// focus trap, focus restored to the trigger).
+function openDiagnosticsModal() {
+  const modal = document.getElementById('diagnosticsModal');
+  if (!modal) return;
+  const trigger = document.getElementById('diagnosticsPill');
+  const focusable = modal.querySelectorAll('a[href], button');
+
+  const cleanup = () => {
+    modal.classList.add('hidden');
+    modal.removeEventListener('keydown', onKey);
+    dismissers.forEach(b => b.removeEventListener('click', cleanup));
+    if (trigger && typeof trigger.focus === 'function') trigger.focus();
+  };
+
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
+    if (e.key !== 'Tab' || focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+
+  const dismissers = Array.from(modal.querySelectorAll('[data-diag-dismiss]'));
+  dismissers.forEach(b => b.addEventListener('click', cleanup));
+  modal.addEventListener('keydown', onKey);
+  modal.classList.remove('hidden');
+  const openBtn = document.getElementById('btnOpenDashboard');
+  if (openBtn) openBtn.focus();
+}
+
 // Persist the live preview text as the next iteration's baseline.
 // Returns true on success, false on failure (caller should abort the chain).
 async function _saveEdits(edits) {
