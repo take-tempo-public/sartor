@@ -144,6 +144,12 @@ class ContextSet(_ContextSetRequired, total=False):
     # selections and proposals. Absent on file-based contexts.
     application_id: int
     application_run_id: int
+    # Wizard "Compose" step (Workstream B): user pin/exclude overrides on the
+    # per-application fit-ranked corpus. {"pinned": [bullet_id...],
+    # "excluded": [bullet_id...]}. generate() drops excluded bullets from the
+    # corpus block and marks pinned ones must-include. total=False so older
+    # contexts round-trip unchanged.
+    composition_overrides: dict
 
 # Common English stop words to exclude from keyword extraction
 STOP_WORDS = frozenset(

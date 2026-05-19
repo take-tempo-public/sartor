@@ -254,3 +254,100 @@ class TestUpdateApplicationStatus:
         client = app_app.app.test_client()
         r = client.put("/api/applications/99999/status", json={"status": "draft"})
         assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Workstream B — GET/POST /api/applications/<id>/composition
+# ---------------------------------------------------------------------------
+
+
+def _seed_exp_with_bullets(candidate_id, company="Acme"):
+    from db.models import Bullet, Experience, ExperienceTitle
+    from db.session import get_session
+    s = get_session()
+    try:
+        e = Experience(candidate_id=candidate_id, company=company,
+                       start_date="2021-01", display_order=0)
+        s.add(e)
+        s.flush()
+        s.add(ExperienceTitle(experience_id=e.id, title="Staff Engineer",
+                              is_official=1, is_pending_review=0, source="official"))
+        # One JD-relevant bullet, one not.
+        s.add(Bullet(experience_id=e.id,
+                     text="Reduced Kubernetes latency 40% across 12 services",
+                     display_order=0, is_active=1, is_pending_review=0,
+                     source="manual", has_outcome=1))
+        s.add(Bullet(experience_id=e.id, text="Attended weekly syncs",
+                     display_order=1, is_active=1, is_pending_review=0,
+                     source="manual", has_outcome=0))
+        s.commit()
+        return e.id
+    finally:
+        s.close()
+
+
+class TestComposition:
+    def test_get_ranks_relevant_bullet_first(self, app_app):
+        cid = _seed_candidate()
+        _seed_exp_with_bullets(cid)
+        aid = _seed_application(
+            cid, jd_text="Seeking Kubernetes latency optimization at scale",
+        )
+        client = app_app.app.test_client()
+        r = client.get(f"/api/applications/{aid}/composition")
+        assert r.status_code == 200, r.get_json()
+        exps = r.get_json()["experiences"]
+        assert len(exps) == 1
+        bullets = exps[0]["bullets"]
+        # The Kubernetes/latency bullet must outrank "Attended weekly syncs"
+        assert bullets[0]["text"].startswith("Reduced Kubernetes")
+        assert bullets[0]["score"] >= bullets[1]["score"]
+
+    def test_post_persists_overrides_to_context_file(self, app_app, tmp_path):
+        cid = _seed_candidate()
+        eid = _seed_exp_with_bullets(cid)
+        aid = _seed_application(cid)
+        # Minimal context file under OUTPUT_DIR/alice/
+        import json
+        out = tmp_path / "output" / "alice"
+        out.mkdir(parents=True, exist_ok=True)
+        ctx = out / "context_x.json"
+        ctx.write_text(json.dumps({"application_id": aid}), encoding="utf-8")
+
+        from db.models import Bullet
+        from db.session import get_session
+        s = get_session()
+        try:
+            bid = s.query(Bullet).filter_by(experience_id=eid).first().id
+        finally:
+            s.close()
+
+        client = app_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={"context_path": str(ctx), "pinned": [bid], "excluded": []},
+        )
+        assert r.status_code == 200, r.get_json()
+        saved = json.loads(ctx.read_text(encoding="utf-8"))
+        assert saved["composition_overrides"]["pinned"] == [bid]
+
+        # GET reflects the pinned flag back
+        g = client.get(
+            f"/api/applications/{aid}/composition?context_path={ctx}",
+        ).get_json()
+        pinned_flags = [
+            b["pinned"] for e in g["experiences"] for b in e["bullets"]
+        ]
+        assert any(pinned_flags)
+
+    def test_404_for_unknown_application(self, app_app):
+        client = app_app.app.test_client()
+        assert client.get("/api/applications/99999/composition").status_code == 404
+
+    def test_post_rejects_missing_context_path(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        r = client.post(f"/api/applications/{aid}/composition",
+                        json={"pinned": [], "excluded": []})
+        assert r.status_code == 400

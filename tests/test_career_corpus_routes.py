@@ -604,3 +604,86 @@ class TestSuggestTags:
         client = corpus_app.app.test_client()
         r = client.get("/api/users/ghost/tags")
         assert r.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Workstream A — tag link/unlink on bullets + titles, tags in payload
+# ---------------------------------------------------------------------------
+
+
+class TestBulletTagLinkUnlink:
+    def test_link_creates_tag_and_appears_in_payload(self, corpus_app):
+        cid = _seed_candidate()
+        eid = _seed_experience(cid)
+        bid = _seed_bullet(eid)
+        client = corpus_app.app.test_client()
+
+        r = client.post(f"/api/bullets/{bid}/tags",
+                         json={"value": "AI / ML", "kind": "domain"})
+        assert r.status_code == 201, r.get_json()
+        tag = r.get_json()
+        assert tag["value"] == "ai-ml"          # normalized
+        assert tag["display_value"] == "AI / ML"  # original casing kept
+
+        # Tag shows up in the experience detail payload
+        detail = client.get(f"/api/experiences/{eid}").get_json()
+        bullet = detail["bullets"][0]
+        assert any(t["value"] == "ai-ml" for t in bullet["tags"])
+
+    def test_link_is_idempotent_and_bumps_usage(self, corpus_app):
+        cid = _seed_candidate()
+        eid = _seed_experience(cid)
+        bid = _seed_bullet(eid)
+        client = corpus_app.app.test_client()
+        client.post(f"/api/bullets/{bid}/tags", json={"value": "ai", "kind": "domain"})
+        client.post(f"/api/bullets/{bid}/tags", json={"value": "ai", "kind": "domain"})
+        detail = client.get(f"/api/experiences/{eid}").get_json()
+        ai = [t for t in detail["bullets"][0]["tags"] if t["value"] == "ai"]
+        assert len(ai) == 1  # not double-linked
+
+    def test_unlink_removes_tag(self, corpus_app):
+        cid = _seed_candidate()
+        eid = _seed_experience(cid)
+        bid = _seed_bullet(eid)
+        client = corpus_app.app.test_client()
+        tag = client.post(f"/api/bullets/{bid}/tags",
+                          json={"value": "ai", "kind": "domain"}).get_json()
+        r = client.delete(f"/api/bullets/{bid}/tags/{tag['id']}")
+        assert r.status_code == 200
+        detail = client.get(f"/api/experiences/{eid}").get_json()
+        assert detail["bullets"][0]["tags"] == []
+
+    def test_rejects_empty_value_and_bad_kind(self, corpus_app):
+        cid = _seed_candidate()
+        eid = _seed_experience(cid)
+        bid = _seed_bullet(eid)
+        client = corpus_app.app.test_client()
+        assert client.post(f"/api/bullets/{bid}/tags",
+                           json={"value": "  ", "kind": "skill"}).status_code == 400
+        assert client.post(f"/api/bullets/{bid}/tags",
+                           json={"value": "x", "kind": "bogus"}).status_code == 400
+
+    def test_404_for_unknown_bullet(self, corpus_app):
+        _seed_candidate()
+        client = corpus_app.app.test_client()
+        r = client.post("/api/bullets/99999/tags",
+                        json={"value": "ai", "kind": "domain"})
+        assert r.status_code == 404
+
+
+class TestTitleTagLinkUnlink:
+    def test_link_and_unlink_title_tag(self, corpus_app):
+        cid = _seed_candidate()
+        eid = _seed_experience(cid)
+        tid = _seed_title(eid, title="Director, AI")
+        client = corpus_app.app.test_client()
+        tag = client.post(f"/api/experience-titles/{tid}/tags",
+                          json={"value": "design-mgmt", "kind": "role"}).get_json()
+        detail = client.get(f"/api/experiences/{eid}").get_json()
+        title = next(t for t in detail["titles"] if t["id"] == tid)
+        assert any(x["value"] == "design-mgmt" for x in title["tags"])
+
+        client.delete(f"/api/experience-titles/{tid}/tags/{tag['id']}")
+        detail = client.get(f"/api/experiences/{eid}").get_json()
+        title = next(t for t in detail["titles"] if t["id"] == tid)
+        assert title["tags"] == []

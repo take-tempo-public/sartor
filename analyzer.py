@@ -63,7 +63,7 @@ GENERATE_CORPUS_REQUIRED_KEYS = GENERATE_REQUIRED_KEYS | frozenset({
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-12.1"
+PROMPT_VERSION = "2026-05-18.1"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -279,7 +279,27 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
 
     corpus = context_set.get("career_corpus")
     if corpus:
-        parts.append(_corpus_block(corpus, iteration=iteration))
+        # Workstream B: honor the Compose step's pin/exclude overrides.
+        # Excluded bullets are dropped from the prompt entirely; pinned
+        # bullets are flagged so the LLM must include them in
+        # selected_bullets. Overrides are bullet ids (ints).
+        ov = context_set.get("composition_overrides") or {}
+        excluded_ids = {int(x) for x in (ov.get("excluded") or [])}
+        pinned_ids = {int(x) for x in (ov.get("pinned") or [])}
+        if excluded_ids:
+            corpus = [
+                {
+                    **exp,
+                    "bullets": [
+                        b for b in (exp.get("bullets") or [])
+                        if b.get("id") not in excluded_ids
+                    ],
+                }
+                for exp in corpus
+            ]
+        parts.append(_corpus_block(
+            corpus, iteration=iteration, pinned_ids=pinned_ids,
+        ))
     else:
         resume_text, _ = _current_draft_text(context_set)
         resume_filename = context_set["resume"].get("filename", "primary")
@@ -315,7 +335,11 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
     return "\n".join(parts)
 
 
-def _corpus_block(experiences: list[CorpusExperience], iteration: int) -> str:
+def _corpus_block(
+    experiences: list[CorpusExperience],
+    iteration: int,
+    pinned_ids: frozenset[int] | set[int] = frozenset(),
+) -> str:
     """Emit the `<career_corpus>` XML block when DB-backed mode is active.
 
     Each `<experience>` lists all eligible titles (the LLM picks the right
@@ -347,8 +371,10 @@ def _corpus_block(experiences: list[CorpusExperience], iteration: int) -> str:
         for b in exp.get("bullets", []) or []:
             tags = ",".join(b.get("tags") or [])
             outcome = "true" if b.get("has_outcome") else "false"
+            pinned_attr = ' pinned="true"' if b.get("id") in pinned_ids else ""
             parts.append(
-                f'    <bullet id="b{b["id"]}" tags="{tags}" has_outcome="{outcome}">'
+                f'    <bullet id="b{b["id"]}" tags="{tags}" '
+                f'has_outcome="{outcome}"{pinned_attr}>'
                 f'{_attr_escape(b.get("text", ""))}</bullet>'
             )
         parts.append("  </experience>")
@@ -1049,6 +1075,8 @@ The candidate's experience pool is the <career_corpus> block above (not a free-t
 When an essential JD requirement is not covered by any existing bullet, you MAY propose a new bullet in `proposed_new_bullets` (see output schema below). The user reviews proposals before they join the canonical corpus.
 
 When none of an experience's <eligible_title> elements fits the JD's framing, you MAY propose a new title in `proposed_experience_titles`. Same review semantics as proposed bullets.
+
+A <bullet> marked `pinned="true"` was explicitly pinned by the user for this application. You MUST include every pinned bullet's id in `selected_bullets` (the user has decided it belongs). Bullets the user excluded are already removed from the corpus above.
 
 GROUNDING for corpus mode:
   Every bullet you emit in resume_content must EITHER (a) reproduce a <bullet> text verbatim from the corpus (just record its `id` in selected_bullets), OR (b) be listed in proposed_new_bullets so the user knows it's a new claim. No other bullets are permitted. The legacy GROUNDING CHECK below still governs cover_letter_content and any reframing language between bullets.

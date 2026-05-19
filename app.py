@@ -11,6 +11,7 @@ import re
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import anthropic
 from flask import Flask, jsonify, render_template, request, send_file
@@ -232,6 +233,25 @@ def run_analysis():
         return jsonify({"error": "Invalid or unknown user"}), 400
 
     return _run_analysis_corpus_backed(safe_user, jd_text, data)
+
+
+def _persist_run_persona(application_run_id: int, persona_template_id: int) -> None:
+    """Record which persona template the user generated with on the run
+    (audit; the column exists but was always NULL before Workstream C)."""
+    from db.models import ApplicationRun
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        run = session.query(ApplicationRun).filter_by(id=application_run_id).first()
+        if run is not None:
+            run.persona_template_id = persona_template_id
+            session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 def _persist_corpus_generation_to_db(
@@ -811,10 +831,12 @@ def run_generation():
     #   2. legacy context_set["resume"]["path"] (file-based path, deprecated)
     #   3. bundled `Classic` as the fallback
     template_path = None
+    resolved_persona_id: int | None = None
     if output_format == ".docx":
         requested_persona_id = data.get("persona_template_id")
         if requested_persona_id is not None:
-            template_path = _resolve_persona_template_path(int(requested_persona_id))
+            resolved_persona_id = int(requested_persona_id)
+            template_path = _resolve_persona_template_path(resolved_persona_id)
         else:
             template_path = context_set["resume"].get("path") or _resolve_default_persona_template_path()
     resume_path = generate_resume(
@@ -852,6 +874,8 @@ def run_generation():
     app_run_id = context_set.get("application_run_id")
     if app_run_id is not None:
         try:
+            if resolved_persona_id is not None:
+                _persist_run_persona(int(app_run_id), resolved_persona_id)
             _persist_corpus_generation_to_db(
                 int(app_run_id), result, ats_findings=ats_findings,
             )
@@ -898,6 +922,9 @@ def run_generation():
         "iteration": new_iteration,
         "parent_context_path": str(cp),
         "ats_roundtrip": ats_findings,
+        # Workstream C: echo the persona used so the frontend can thread it
+        # to /api/download-edited (so DOWNLOAD honors the chosen template).
+        "persona_template_id": resolved_persona_id,
     })
 
 
@@ -1629,6 +1656,82 @@ def download_persona(persona_id: int):
         session.close()
 
 
+def _latest_generated_resume_md(candidate_id: int) -> str | None:
+    """Most recent non-empty generated_resume_md across a candidate's
+    application runs (Workstream C preview). None when the user hasn't
+    generated yet."""
+    from db.models import Application, ApplicationRun
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        row = (
+            session.query(ApplicationRun)
+            .join(Application, ApplicationRun.application_id == Application.id)
+            .filter(
+                Application.candidate_id == candidate_id,
+                ApplicationRun.generated_resume_md.isnot(None),
+            )
+            .order_by(ApplicationRun.created_at.desc())
+            .first()
+        )
+        return row.generated_resume_md if row else None
+    finally:
+        session.close()
+
+
+@app.route("/api/personas/<int:persona_id>/preview", methods=["POST"])
+def preview_persona_with_resume(persona_id: int):
+    """Render the user's latest generated resume through this persona
+    template and stream the real .docx (Workstream C #6). Honest artifact
+    reuse via generate_resume — no separate rendering engine.
+
+    Body: {username}. Touches the filesystem (writes + streams a .docx),
+    so both _safe_username and _within guards apply.
+    """
+    from db.models import Candidate, PersonaTemplate
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    username = data.get("username", "")
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        row = session.query(PersonaTemplate).filter_by(id=persona_id).first()
+        if row is None:
+            return jsonify({"error": "Persona not found"}), 404
+        disk_path = (BASE_DIR / row.path).resolve()
+        if not disk_path.exists() or not _within(disk_path, PERSONAS_DIR):
+            return jsonify({"error": "Invalid persona path"}), 403
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({
+                "error": "Candidate not in corpus yet",
+                "needs_onboarding": True,
+            }), 409
+        resume_md = _latest_generated_resume_md(candidate.id)
+        if not resume_md:
+            return jsonify({
+                "error": "No generated resume yet — run GENERATE in an "
+                         "application first, then preview a template against it.",
+            }), 409
+    finally:
+        session.close()
+
+    out_path = generate_resume(
+        resume_md, ".docx", safe_user, str(OUTPUT_DIR),
+        template_path=str(disk_path),
+    )
+    return send_file(
+        str(out_path), as_attachment=True,
+        download_name=f"preview_{row.name}.docx",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Phase D.1: Career Corpus CRUD routes (experiences / bullets / titles / tags)
 # ---------------------------------------------------------------------------
@@ -1654,6 +1757,29 @@ def _experience_summary_dict(exp) -> dict:
     }
 
 
+def _normalize_tag_value(s: str) -> str:
+    """Canonical tag form: lowercase, trimmed, non-alphanumerics → single
+    hyphens (e.g. "AI / ML" → "ai-ml"). Mirrors the normalization the
+    plan's Tag schema specifies; display_value keeps the user's casing."""
+    s = (s or "").strip().lower()
+    out = re.sub(r"[^a-z0-9]+", "-", s)
+    return out.strip("-")
+
+
+def _tag_list(tag_links) -> list[dict]:
+    """Serialize a bullet/title's tag_links (each carries .tag) for the UI."""
+    out = []
+    for link in tag_links:
+        t = link.tag
+        if t is None:
+            continue
+        out.append({
+            "id": t.id, "value": t.value,
+            "display_value": t.display_value, "kind": t.kind,
+        })
+    return sorted(out, key=lambda d: d["value"])
+
+
 def _experience_detail_dict(exp) -> dict:
     """Full experience payload for the inline expand view."""
     titles = sorted(exp.titles, key=lambda t: (0 if t.is_official else 1, t.id))
@@ -1676,6 +1802,7 @@ def _experience_detail_dict(exp) -> dict:
                 "truthful_enough_to_use": bool(t.truthful_enough_to_use),
                 "is_pending_review": bool(t.is_pending_review),
                 "source": t.source, "notes": t.notes,
+                "tags": _tag_list(t.tag_links),
             }
             for t in titles
         ],
@@ -1688,6 +1815,7 @@ def _experience_detail_dict(exp) -> dict:
                 "has_outcome": bool(b.has_outcome),
                 "pattern_kind": b.pattern_kind,
                 "source": b.source,
+                "tags": _tag_list(b.tag_links),
             }
             for b in bullets
         ],
@@ -2252,6 +2380,232 @@ def suggest_tags(username: str):
         session.close()
 
 
+# ---------------------------------------------------------------------------
+# Tag link / unlink on bullets + experience titles (DB-only; no filesystem)
+# ---------------------------------------------------------------------------
+
+
+def _find_or_create_tag(session, candidate_id: int, kind: str, value: str):
+    """Return the Tag for (candidate, kind, normalized value), creating it
+    if absent. Follows the merged_into alias chain so links always point at
+    the canonical tag."""
+    from db.models import Tag
+    norm = _normalize_tag_value(value)
+    tag = session.query(Tag).filter_by(
+        candidate_id=candidate_id, kind=kind, value=norm,
+    ).first()
+    if tag is None:
+        tag = Tag(
+            candidate_id=candidate_id, kind=kind, value=norm,
+            display_value=(value or "").strip() or norm, usage_count=0,
+        )
+        session.add(tag)
+        session.flush()
+    while tag.merged_into_id is not None:
+        nxt = session.query(Tag).filter_by(id=tag.merged_into_id).first()
+        if nxt is None:
+            break
+        tag = nxt
+    return tag
+
+
+def _tag_link_target(session, kind: str, subject_id: int):
+    """Resolve a bullet/title subject to (subject, candidate, LinkModel,
+    fk_name) or (None, None, None, None)."""
+    from db.models import (
+        Bullet,
+        BulletTag,
+        Candidate,
+        Experience,
+        ExperienceTitle,
+        ExperienceTitleTag,
+    )
+    link_model: type
+    if kind == "bullet":
+        subject = session.query(Bullet).filter_by(id=subject_id).first()
+        link_model, fk = BulletTag, "bullet_id"
+    else:
+        subject = session.query(ExperienceTitle).filter_by(id=subject_id).first()
+        link_model, fk = ExperienceTitleTag, "experience_title_id"
+    if subject is None:
+        return None, None, None, None
+    exp = session.query(Experience).filter_by(id=subject.experience_id).first()
+    if exp is None:
+        return None, None, None, None
+    candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
+    return subject, candidate, link_model, fk
+
+
+def _link_tag_route(subject_kind: str, subject_id: int):
+    """Shared body for POST .../tags. DB-only — no filesystem access, so
+    the _within() guard does not apply; _safe_username still gates the
+    candidate the row belongs to."""
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    value = (data.get("value") or "").strip()
+    tag_kind = data.get("kind") or "skill"
+    if not value:
+        return jsonify({"error": "value is required"}), 400
+    if tag_kind not in {"role", "domain", "skill", "tech"}:
+        return jsonify({"error": "kind must be role|domain|skill|tech"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        subject, candidate, link_model, fk = _tag_link_target(
+            session, subject_kind, subject_id,
+        )
+        if subject is None or candidate is None:
+            return jsonify({"error": f"{subject_kind} not found"}), 404
+        if not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+
+        tag = _find_or_create_tag(session, candidate.id, tag_kind, value)
+        existing = session.query(link_model).filter_by(
+            **{fk: subject_id, "tag_id": tag.id},
+        ).first()
+        if existing is None:
+            session.add(link_model(**{fk: subject_id, "tag_id": tag.id}))
+            tag.usage_count = (tag.usage_count or 0) + 1
+        session.commit()
+        return jsonify({
+            "id": tag.id, "value": tag.value,
+            "display_value": tag.display_value, "kind": tag.kind,
+        }), 201
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def _unlink_tag_route(subject_kind: str, subject_id: int, tag_id: int):
+    """Shared body for DELETE .../tags/<tag_id>. DB-only — no filesystem."""
+    from db.models import Tag
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        subject, candidate, link_model, fk = _tag_link_target(
+            session, subject_kind, subject_id,
+        )
+        if subject is None or candidate is None:
+            return jsonify({"error": f"{subject_kind} not found"}), 404
+        if not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+
+        link = session.query(link_model).filter_by(
+            **{fk: subject_id, "tag_id": tag_id},
+        ).first()
+        if link is None:
+            return jsonify({"error": "Tag not linked"}), 404
+        session.delete(link)
+        tag = session.query(Tag).filter_by(id=tag_id).first()
+        if tag is not None and (tag.usage_count or 0) > 0:
+            tag.usage_count -= 1
+        session.commit()
+        return jsonify({"unlinked": tag_id})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/bullets/<int:bullet_id>/tags", methods=["POST"])
+def link_bullet_tag(bullet_id: int):
+    """Attach a tag (find-or-create) to a bullet. Body: {value, kind}."""
+    return _link_tag_route("bullet", bullet_id)
+
+
+@app.route("/api/bullets/<int:bullet_id>/tags/<int:tag_id>", methods=["DELETE"])
+def unlink_bullet_tag(bullet_id: int, tag_id: int):
+    """Detach a tag from a bullet."""
+    return _unlink_tag_route("bullet", bullet_id, tag_id)
+
+
+@app.route("/api/experience-titles/<int:title_id>/tags", methods=["POST"])
+def link_title_tag(title_id: int):
+    """Attach a tag (find-or-create) to an experience title."""
+    return _link_tag_route("title", title_id)
+
+
+@app.route("/api/experience-titles/<int:title_id>/tags/<int:tag_id>",
+           methods=["DELETE"])
+def unlink_title_tag(title_id: int, tag_id: int):
+    """Detach a tag from an experience title."""
+    return _unlink_tag_route("title", title_id, tag_id)
+
+
+@app.route("/api/users/<username>/corpus/ingest-resume", methods=["POST"])
+def ingest_resume_to_corpus(username: str):
+    """Workstream D: the repurposed RESUME panel. Save an uploaded resume
+    under resumes/{user}/, Haiku-extract its experiences, and merge them
+    into the candidate's corpus as is_pending_review=1 (the Career Corpus
+    pending banner then surfaces them for review).
+
+    Reuses onboarding.import_legacy.ingest_one_resume so the
+    merge-as-alternate-title behavior is identical to the CLI importer.
+    One Haiku call per upload (~$0.01-0.03, costs API credit).
+
+    Touches the filesystem (saves the upload) → _safe_username + _within.
+    """
+    from db.models import Candidate
+    from db.session import get_session, init_db
+    from onboarding.import_legacy import ImportReport, ingest_one_resume
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    file = request.files.get("file")
+    if not file or not file.filename:
+        return jsonify({"error": "No file provided"}), 400
+    ext = Path(file.filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        return jsonify({"error": f"Unsupported format: {ext}"}), 400
+
+    safe_name = secure_filename(file.filename)
+    user_dir = RESUMES_DIR / safe_user
+    user_dir.mkdir(exist_ok=True)
+    save_path = (user_dir / safe_name).resolve()
+    if not _within(save_path, RESUMES_DIR):
+        return jsonify({"error": "Invalid upload path"}), 403
+    file.save(str(save_path))
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({
+                "error": "Candidate not in corpus yet",
+                "needs_onboarding": True,
+            }), 409
+        report = ImportReport()
+        ingest_one_resume(
+            save_path, candidate.id, session,
+            client=_get_client(), username=safe_user,
+            is_primary=False, dry_run=False, report=report,
+        )
+        session.commit()
+        return jsonify({
+            "filename": safe_name,
+            "experiences_created": report.experiences_created,
+            "experiences_merged": report.experiences_merged,
+            "bullets_created": report.bullets_created,
+            "alternate_titles_created": report.alternate_titles_created,
+            "errors": report.errors,
+        }), 201
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 @app.route("/api/download/<path:filepath>")
 def download_file(filepath):
     full_path = Path(filepath)
@@ -2274,6 +2628,7 @@ def download_edited():
     doc_type = data.get("type", "resume")  # "resume" or "cover_letter"
     output_format = data.get("original_format", ".docx")  # field name kept for JS compat
     template_path = data.get("template_path", "")
+    persona_template_id = data.get("persona_template_id")
 
     if not username or not content:
         return jsonify({"error": "username and content required"}), 400
@@ -2285,8 +2640,15 @@ def download_edited():
     if output_format not in (".docx", ".md"):
         output_format = ".docx"
 
-    # Validate template path if provided
-    if template_path:
+    # Workstream C (#7 fix): a persona template lives under PERSONAS_DIR, not
+    # RESUMES_DIR, so the legacy _within(RESUMES_DIR) gate silently dropped
+    # it and DOWNLOAD produced an un-templated doc. When the request carries
+    # a persona_template_id, resolve it through the persona resolver (which
+    # itself enforces _within(PERSONAS_DIR)); otherwise fall back to the
+    # legacy file-based template_path (still RESUMES_DIR-gated).
+    if persona_template_id is not None and output_format == ".docx":
+        template_path = _resolve_persona_template_path(int(persona_template_id))
+    elif template_path:
         tp = Path(template_path)
         if not _within(tp, RESUMES_DIR) or not tp.exists():
             template_path = None
@@ -2671,6 +3033,184 @@ def update_application_status(application_id: int):
     except Exception:
         session.rollback()
         raise
+    finally:
+        session.close()
+
+
+# ---------------------------------------------------------------------------
+# Workstream B: per-application Compose step (fit-ranked bullets/titles)
+# ---------------------------------------------------------------------------
+
+
+def _load_application_owned(session, application_id: int):
+    """(app_row, candidate) for an application, or (None, None). Runs the
+    standard _safe_username defense on the owning candidate."""
+    from db.models import Application, Candidate
+    app_row = session.query(Application).filter_by(id=application_id).first()
+    if app_row is None:
+        return None, None
+    candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
+    if candidate is None or not _safe_username(candidate.username):
+        return None, None
+    return app_row, candidate
+
+
+def _latest_analysis_essentials(app_row) -> set[str]:
+    """essential_skills from the application's most recent run, lowercased."""
+    runs = sorted(app_row.runs, key=lambda r: r.iteration)
+    for r in reversed(runs):
+        if not r.analysis_json:
+            continue
+        try:
+            analysis = json.loads(r.analysis_json)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        out: set[str] = set()
+        for s in analysis.get("essential_skills", []) or []:
+            out |= {w for w in re.split(r"[^a-z0-9]+", str(s).lower()) if len(w) > 2}
+        return out
+    return set()
+
+
+def _read_composition_overrides(context_path: str) -> tuple[set[int], set[int]]:
+    """(pinned, excluded) bullet-id sets from a context file, validated to
+    live under OUTPUT_DIR. Empty sets when absent/invalid."""
+    if not context_path:
+        return set(), set()
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR) or not cp.exists():
+        return set(), set()
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return set(), set()
+    ov = ctx.get("composition_overrides") or {}
+    return set(ov.get("pinned", []) or []), set(ov.get("excluded", []) or [])
+
+
+@app.route("/api/applications/<int:application_id>/composition", methods=["GET"])
+def get_application_composition(application_id: int):
+    """Fit-ranked bullets + eligible titles for the Compose wizard step.
+
+    Scores against the application's JD keywords + the latest run's
+    analysis essential_skills, using the same `score_corpus_bullet`
+    helper the iteration-0 snapshot pre-filter uses, so display order
+    matches what the pipeline will favor. Pinned/excluded flags come from
+    the context file's `composition_overrides` (query param
+    `context_path`, validated within OUTPUT_DIR).
+    """
+    from db.build_context import _bullet_tag_values, score_corpus_bullet
+    from db.models import Experience
+    from db.session import get_session, init_db
+    from hardening import extract_keywords
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None:
+            return jsonify({"error": "Application not found"}), 404
+
+        jd_kw = set(extract_keywords(app_row.jd_text).get("keywords", {}).keys())
+        essential = _latest_analysis_essentials(app_row)
+        pinned, excluded = _read_composition_overrides(
+            request.args.get("context_path", ""),
+        )
+
+        experiences = session.query(Experience).filter_by(
+            candidate_id=candidate.id,
+        ).order_by(Experience.start_date.desc(), Experience.id.desc()).all()
+
+        out = []
+        for exp in experiences:
+            scored_bullets: list[dict[str, Any]] = []
+            for b in exp.bullets:
+                if not b.is_active:
+                    continue
+                tags = _bullet_tag_values(b)
+                score = score_corpus_bullet(
+                    b.text, bool(b.has_outcome), tags, jd_kw, essential,
+                )
+                scored_bullets.append({
+                    "id": b.id, "text": b.text,
+                    "score": round(score, 2),
+                    "has_outcome": bool(b.has_outcome),
+                    "is_pending_review": bool(b.is_pending_review),
+                    "tags": _tag_list(b.tag_links),
+                    "pinned": b.id in pinned,
+                    "excluded": b.id in excluded,
+                })
+            scored_bullets.sort(
+                key=lambda d: (not d["pinned"], -float(d["score"]), int(d["id"])),
+            )
+            titles: list[dict[str, Any]] = []
+            for t in exp.titles:
+                if not (t.is_official or t.truthful_enough_to_use):
+                    continue
+                t_toks = {
+                    w for w in re.split(r"[^a-z0-9]+", t.title.lower())
+                    if len(w) > 2
+                }
+                titles.append({
+                    "id": t.id, "title": t.title,
+                    "is_official": bool(t.is_official),
+                    "score": round(
+                        float(len(t_toks & (jd_kw | essential))), 2,
+                    ),
+                    "tags": _tag_list(t.tag_links),
+                })
+            titles.sort(
+                key=lambda d: (not d["is_official"], -float(d["score"]), int(d["id"])),
+            )
+            if scored_bullets or titles:
+                out.append({
+                    "id": exp.id, "company": exp.company,
+                    "start_date": exp.start_date, "end_date": exp.end_date,
+                    "bullets": scored_bullets, "titles": titles,
+                })
+        return jsonify({"application_id": application_id, "experiences": out})
+    finally:
+        session.close()
+
+
+@app.route("/api/applications/<int:application_id>/composition", methods=["POST"])
+def save_application_composition(application_id: int):
+    """Persist pin/exclude overrides into the application's context file so
+    the next generate() honors them. Body: {context_path, pinned[],
+    excluded[]}. Writes back in place (same pattern as
+    /api/answer-clarifications)."""
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    pinned = [int(x) for x in (data.get("pinned") or [])]
+    excluded = [int(x) for x in (data.get("excluded") or [])]
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None:
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, OUTPUT_DIR) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        ctx["composition_overrides"] = {"pinned": pinned, "excluded": excluded}
+        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        return jsonify({
+            "application_id": application_id,
+            "pinned": pinned, "excluded": excluded,
+        })
     finally:
         session.close()
 

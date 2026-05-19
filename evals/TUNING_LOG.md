@@ -16,6 +16,32 @@ prevent re-running them.
 
 ---
 
+## 2026-05-18 — Wizard Workstream B: pin/exclude in the corpus prompt (`2026-05-12.1` → `2026-05-18.1`)
+
+1. **What changed?** `analyzer.py:_stable_user_prefix` now filters
+   `composition_overrides.excluded` bullet ids out of the `<career_corpus>`
+   block entirely and passes `composition_overrides.pinned` into
+   `_corpus_block`, which emits `pinned="true"` on those `<bullet>`
+   elements. The `<corpus_mode>` guide gained one paragraph instructing the
+   LLM that every `pinned="true"` bullet id MUST appear in
+   `selected_bullets`. `PROMPT_VERSION` bumped accordingly. Overrides come
+   from the new Compose wizard step via
+   `POST /api/applications/<id>/composition` → `context_set`.
+2. **Why?** Users had no deterministic way to force-include or drop a
+   specific bullet for one application; the LLM's selection was the only
+   lever. The Compose step makes pin/exclude a first-class, user-owned
+   decision.
+3. **Result?** No eval-suite run yet (deterministic prompt-shape change,
+   not a quality-tuning change). 469 unit tests green; existing
+   corpus-mode prompt tests still pass — the pinned attr is additive and
+   absent when there are no overrides, so the no-override prompt is
+   byte-identical and the prompt cache for existing applications is
+   unchanged.
+4. **Learned?** Keep override plumbing in the cached user-prefix only when
+   it changes corpus *content* (exclude) or a stable attribute (pinned),
+   and keep the no-override path byte-identical to preserve the prompt
+   cache for every application that doesn't use the feature.
+
 ## 2026-05-13 — Phase B.5: regression check for the file-based path at `2026-05-12.1`
 
 ### What changed

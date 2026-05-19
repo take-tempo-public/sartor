@@ -104,6 +104,12 @@ if not _within(path, PARENT_DIR): abort(403)  # resolved-path containment check
 ```
 A `route-security-lint` hook enforces this once Step 5 lands — see `.claude-plugin/hooks/`.
 
+**Branch before code changes:** a `require-feature-branch` PreToolUse hook
+(`.claude-plugin/hooks/`) blocks `Edit`/`Write` while on `main`/`master`.
+Create a feature branch when moving from plan to execute (`git checkout -b
+<type>/<short-desc>`). Intentional main edits: `export
+CLAUDE_ALLOW_MAIN_EDITS=1`.
+
 **Document generation:**
 - Always pass `template_path` (original `.docx`) to `generate_resume()` when output is docx
 - `_write_docx()` opens the original as a style template — never call `docx.Document()` on blank

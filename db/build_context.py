@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 from collections.abc import Iterable
 
 from sqlalchemy import select
@@ -128,7 +129,9 @@ def build_context_set_from_db(
     session.add(application)
     session.flush()
 
-    snapshot = _select_corpus_snapshot(experiences)
+    snapshot = _select_corpus_snapshot(
+        experiences, set(jd_keywords.get("keywords", {}).keys()),
+    )
 
     application_run = ApplicationRun(
         application_id=application.id,
@@ -334,20 +337,91 @@ def _summarize_educations(educations: list[Education]) -> str:
     return "; ".join(ed.institution for ed in educations)
 
 
-def _select_corpus_snapshot(experiences: list[Experience]) -> str:
+_WORD_RE = re.compile(r"\b[a-zA-Z][a-zA-Z+#.-]{1,}\b")
+
+
+def _tokenize(text: str) -> set[str]:
+    """Lowercase word set for overlap scoring (same shape as extract_keywords)."""
+    return {w for w in _WORD_RE.findall((text or "").lower()) if len(w) > 2}
+
+
+def score_corpus_bullet(
+    text: str,
+    has_outcome: bool,
+    tag_values: list[str],
+    jd_kw: set[str],
+    essential: set[str] | None = None,
+) -> float:
+    """Deterministic fit score for one bullet against a JD (P1 hardening —
+    no LLM). Higher = better fit. Used by the iteration-0 pre-filter AND
+    the Compose-step composition endpoint so ranking is consistent.
+
+    - essential-skill word overlap is weighted highest (2.0)
+    - JD-keyword word overlap (1.0)
+    - tag overlap vs JD ∪ essential, splitting hyphenated tags (1.5/tag)
+    - measurable-outcome bonus (1.5)
+    """
+    essential = essential or set()
+    toks = _tokenize(text)
+    jd_overlap = len(toks & jd_kw)
+    ess_overlap = len(toks & essential)
+    tag_target = jd_kw | essential
+    tag_hits = 0
+    for tv in tag_values:
+        parts = {p for p in (tv or "").lower().split("-") if len(p) > 2}
+        if parts & tag_target:
+            tag_hits += 1
+    return (
+        2.0 * ess_overlap
+        + 1.0 * jd_overlap
+        + 1.5 * tag_hits
+        + (1.5 if has_outcome else 0.0)
+    )
+
+
+def _bullet_tag_values(bullet) -> list[str]:
+    """Normalized tag values linked to a bullet (empty if none)."""
+    out: list[str] = []
+    for link in getattr(bullet, "tag_links", []) or []:
+        tag = getattr(link, "tag", None)
+        if tag is not None and tag.value:
+            out.append(tag.value)
+    return out
+
+
+def _select_corpus_snapshot(
+    experiences: list[Experience],
+    jd_kw: set[str] | None = None,
+    top_n: int = 30,
+) -> str:
     """Pick the bullet/title ID set this application iteration will see.
 
-    Phase B.1: include every active bullet + every eligible title. The
-    deterministic JD-aware pre-filter (top-N scored) lands in B.2; its
-    output replaces this function's body and the rest of the pipeline
-    keeps reading the same snapshot field.
+    Workstream B: deterministic JD-aware pre-filter. Per experience, keep
+    the top-N active bullets by `score_corpus_bullet` (tie-break on
+    display_order for stability so the snapshot — and thus the cached
+    prompt prefix — is reproducible). All eligible titles are kept (small
+    set; the official title must never be dropped). When `jd_kw` is None
+    (no JD context) every active bullet is kept, preserving prior behavior.
     """
     bullet_ids: list[int] = []
     title_ids: list[int] = []
     for exp in experiences:
-        for b in exp.bullets:
-            if b.is_active:
-                bullet_ids.append(b.id)
+        active = [b for b in exp.bullets if b.is_active]
+        if jd_kw is None:
+            chosen = sorted(active, key=lambda b: b.display_order)
+        else:
+            scored = sorted(
+                active,
+                key=lambda b: (
+                    -score_corpus_bullet(
+                        b.text, bool(b.has_outcome),
+                        _bullet_tag_values(b), jd_kw,
+                    ),
+                    b.display_order,
+                ),
+            )
+            chosen = scored[:top_n]
+        bullet_ids.extend(b.id for b in chosen)
         for t in exp.titles:
             if t.is_official or t.truthful_enough_to_use:
                 title_ids.append(t.id)

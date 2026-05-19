@@ -393,11 +393,9 @@ def import_experiences_from_resumes(
     """
     report = ImportReport()
 
-    # Lazy imports — these pull in anthropic SDK; defer until --with-llm is engaged.
+    # Lazy import — pulls in anthropic SDK; defer until --with-llm is engaged.
+    # (parse_resume / extract_experiences are imported inside ingest_one_resume.)
     import anthropic
-
-    from onboarding.extract_experiences import extract_experiences
-    from parser import parse_resume
 
     resolved_key = _resolve_api_key(api_key)
     if not resolved_key:
@@ -411,34 +409,65 @@ def import_experiences_from_resumes(
     files = _iter_resume_files(username)
     for index, resume_path in enumerate(files):
         is_primary = (index == 0)  # _iter_resume_files puts primary first
-        report.resume_files_processed += 1
-        try:
-            parsed = parse_resume(str(resume_path))
-        except Exception as exc:
-            report.errors.append(f"parse {resume_path.name}: {exc}")
-            continue
+        ingest_one_resume(
+            resume_path, candidate_id, session,
+            client=client, username=username, is_primary=is_primary,
+            dry_run=dry_run, report=report,
+        )
 
-        resume_text = parsed.get("text", "")
-        if not resume_text.strip():
-            report.errors.append(f"parse {resume_path.name}: empty text after parsing")
-            continue
+    if not dry_run:
+        session.flush()
+    return report
 
-        try:
-            extracted = extract_experiences(
-                client, resume_text, username=username,
-            )
-        except Exception as exc:
-            report.errors.append(f"extract {resume_path.name}: {exc}")
-            continue
 
-        for exp in extracted:
-            _insert_or_merge_experience(
-                exp, candidate_id,
-                source_filename=resume_path.name,
-                is_primary_file=is_primary,
-                session=session, dry_run=dry_run, report=report,
-            )
+def ingest_one_resume(
+    resume_path: Path,
+    candidate_id: int,
+    session: Session,
+    *,
+    client: Any,
+    username: str,
+    is_primary: bool = False,
+    dry_run: bool = False,
+    report: ImportReport | None = None,
+) -> ImportReport:
+    """Parse + Haiku-extract a single resume file and insert/merge its
+    experiences as `is_pending_review=1`. Shared by the CLI importer's
+    per-file loop AND the live `/api/users/<u>/corpus/ingest-resume`
+    route so the merge-as-alternate-title behavior never forks.
 
+    The caller owns session lifecycle + commit; this only flushes (when
+    not dry_run) so it composes inside both call sites.
+    """
+    from onboarding.extract_experiences import extract_experiences
+    from parser import parse_resume
+
+    report = report if report is not None else ImportReport()
+    report.resume_files_processed += 1
+    try:
+        parsed = parse_resume(str(resume_path))
+    except Exception as exc:
+        report.errors.append(f"parse {resume_path.name}: {exc}")
+        return report
+
+    resume_text = parsed.get("text", "")
+    if not resume_text.strip():
+        report.errors.append(f"parse {resume_path.name}: empty text after parsing")
+        return report
+
+    try:
+        extracted = extract_experiences(client, resume_text, username=username)
+    except Exception as exc:
+        report.errors.append(f"extract {resume_path.name}: {exc}")
+        return report
+
+    for exp in extracted:
+        _insert_or_merge_experience(
+            exp, candidate_id,
+            source_filename=resume_path.name,
+            is_primary_file=is_primary,
+            session=session, dry_run=dry_run, report=report,
+        )
     if not dry_run:
         session.flush()
     return report

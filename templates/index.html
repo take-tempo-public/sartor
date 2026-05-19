@@ -147,25 +147,46 @@
       </div>
     </section>
 
-    <!-- RESUME -->
-    <div class="lcars-block lcars-amber hidden" data-panel="panelResume">RESUME</div>
-    <section class="lcars-panel hidden" id="panelResume">
-      <div class="panel-header lcars-bg-amber">RESUME UPLOAD</div>
+    <!-- Wizard step rail (Workstream E) — navigation layer over the
+         existing panels; clicking a step jumps if its prerequisite is met. -->
+    <nav class="wizard-rail hidden" id="wizardRail" aria-label="Application steps">
+      <button class="wizard-step" data-wstep="1" onclick="wizardGoTo(1)"><span class="wizard-num">1</span> CORPUS</button>
+      <button class="wizard-step" data-wstep="2" onclick="wizardGoTo(2)"><span class="wizard-num">2</span> JOB + ANALYZE</button>
+      <button class="wizard-step" data-wstep="3" onclick="wizardGoTo(3)"><span class="wizard-num">3</span> COMPOSE</button>
+      <button class="wizard-step" data-wstep="4" onclick="wizardGoTo(4)"><span class="wizard-num">4</span> CLARIFY</button>
+      <button class="wizard-step" data-wstep="5" onclick="wizardGoTo(5)"><span class="wizard-num">5</span> GENERATE</button>
+      <button class="wizard-step" data-wstep="6" onclick="wizardGoTo(6)"><span class="wizard-num">6</span> DOWNLOAD</button>
+    </nav>
+
+    <!-- STEP 1 — CORPUS: add-to-corpus dropzone (repurposed; the legacy
+         primary/supplemental chip selection is removed — corpus is the
+         source of truth now). -->
+    <div class="lcars-block lcars-amber hidden" data-panel="panelResume">CORPUS</div>
+    <section class="lcars-panel hidden" id="panelResume" data-wstep-body="1">
+      <div class="panel-header lcars-bg-amber">STEP 1 · CORPUS</div>
       <div class="panel-body">
+        <div class="edit-hint">
+          Drop a resume to extract its experiences into your career corpus.
+          Extracted experiences land as <strong>pending review</strong> —
+          confirm them in the CAREER CORPUS tab before they're used.
+        </div>
         <div class="upload-zone" id="dropZone">
-          <p>Drop resume here or click to browse</p>
-          <p class="small">Supported: .docx, .pdf, .md</p>
+          <p>Drop a resume here or click to browse</p>
+          <p class="small">Supported: .docx, .pdf, .md · adds to corpus (AI extract, ~$0.02)</p>
           <input type="file" id="fileInput" accept=".docx,.pdf,.md" class="hidden">
         </div>
-        <div id="resumeList" class="file-list"></div>
-        <div class="edit-hint">Left: click name to set primary (amber). Right: click badge to include/exclude from source pool.</div>
+        <div id="ingestResult" class="edit-hint" aria-live="polite"></div>
+        <div class="form-row" style="margin-top:10px">
+          <button class="lcars-btn lcars-bg-blue" onclick="switchTopTab('corpus', document.getElementById('topTabCorpus'))">OPEN CAREER CORPUS TAB</button>
+          <button class="lcars-btn lcars-bg-teal" onclick="wizardNext()">NEXT · JOB →</button>
+        </div>
       </div>
     </section>
 
-    <!-- JOB -->
+    <!-- STEP 2 — JOB + ANALYZE -->
     <div class="lcars-block lcars-teal hidden" data-panel="panelJD">JOB</div>
-    <section class="lcars-panel hidden" id="panelJD">
-      <div class="panel-header lcars-bg-teal">JOB DESCRIPTION</div>
+    <section class="lcars-panel hidden" id="panelJD" data-wstep-body="2">
+      <div class="panel-header lcars-bg-teal">STEP 2 · JOB DESCRIPTION</div>
       <div class="panel-body">
         <label for="jdText" class="sr-only">Job description</label>
         <textarea id="jdText" rows="12" placeholder="Paste the full job description text here..." aria-label="Job description"></textarea>
@@ -175,10 +196,30 @@
       </div>
     </section>
 
-    <!-- ANALYSIS -->
+    <!-- STEP 3 — COMPOSE: fit-ranked bullets + eligible titles, with
+         pin/exclude and inline tag chips. Populated after ANALYZE. -->
+    <div class="lcars-block lcars-violet hidden" data-panel="panelCompose">COMPOSE</div>
+    <section class="lcars-panel hidden" id="panelCompose" data-wstep-body="3">
+      <div class="panel-header lcars-bg-violet">STEP 3 · COMPOSE</div>
+      <div class="panel-body">
+        <div class="edit-hint">
+          Bullets &amp; titles ranked by fit to this job. <strong>Pin</strong>
+          forces inclusion; <strong>Exclude</strong> drops it from this
+          application. Tag chips refine future ranking. Edits here affect
+          this application only.
+        </div>
+        <div id="composeList" class="corpus-experience-list"></div>
+        <div class="form-row" style="margin-top:10px">
+          <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(2)">← BACK</button>
+          <button class="lcars-btn lcars-bg-teal" onclick="saveCompositionThenNext()">SAVE &amp; CONTINUE →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEPS 4+5 — CLARIFY (optional) + GENERATE (with template pick) -->
     <div class="lcars-block lcars-orange hidden" data-panel="panelAnalysis">ANALYSIS</div>
-    <section class="lcars-panel hidden" id="panelAnalysis">
-      <div class="panel-header lcars-bg-orange">ANALYSIS RESULTS</div>
+    <section class="lcars-panel hidden" id="panelAnalysis" data-wstep-body="4 5">
+      <div class="panel-header lcars-bg-orange">STEP 4·5 · ANALYSIS / CLARIFY / GENERATE</div>
       <div class="panel-body">
         <div id="analysisContent"></div>
 
@@ -205,14 +246,21 @@
           <button class="lcars-btn format-btn active" id="fmtDocx" onclick="setOutputFormat('.docx', this)">DOCX</button>
           <button class="lcars-btn format-btn" id="fmtMd" onclick="setOutputFormat('.md', this)">MARKDOWN</button>
         </div>
+        <div class="form-row" id="personaPickRow" style="align-items:center;gap:10px;margin-bottom:8px;">
+          <label for="personaSelect" class="edit-hint" style="margin:0">Template:</label>
+          <select id="personaSelect" aria-label="Persona template for output">
+            <option value="">Default (Classic)</option>
+          </select>
+          <span class="edit-hint" style="margin:0;opacity:0.6">styles the .docx; content unchanged</span>
+        </div>
         <button class="lcars-btn lcars-bg-amber" onclick="runGeneration()" id="btnGenerate">GENERATE DOCUMENTS</button>
       </div>
     </section>
 
-    <!-- OUTPUT -->
+    <!-- STEP 6 — OUTPUT / DOWNLOAD -->
     <div class="lcars-block lcars-amber hidden" data-panel="panelOutput">OUTPUT</div>
-    <section class="lcars-panel hidden" id="panelOutput">
-      <div class="panel-header lcars-bg-amber">GENERATED OUTPUT</div>
+    <section class="lcars-panel hidden" id="panelOutput" data-wstep-body="6">
+      <div class="panel-header lcars-bg-amber">STEP 6 · GENERATED OUTPUT</div>
       <div class="panel-body">
         <div class="output-tabs" role="tablist" aria-label="Output sections">
           <button class="tab-btn active" id="tabBtnResume" onclick="showTab('resume', this)" role="tab" aria-controls="tabResume" aria-selected="true">RESUME</button>

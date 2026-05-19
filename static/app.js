@@ -82,16 +82,13 @@ async function onUserSelect() {
   }
   currentUser = username;
   await loadConfig();
-  await loadResumes();
   show('panelApplications');
   show('panelConfig');
-  show('panelResume');
-  show('panelJD');
-  hide('panelAnalysis');
-  hide('panelOutput');
   _resetIterationState();
   setStatus('READY');
   refreshApplications();
+  _loadPersonaOptions();
+  wizardInit();
 }
 
 // Reset all iteration-loop state. Called when switching users or starting a
@@ -173,132 +170,52 @@ function setupDropZone() {
   });
 }
 
+// Step 1 — drop a resume to extract its experiences into the corpus.
+// (Workstream E: the legacy primary/supplemental chip selection is gone;
+// the DB corpus is the single source of truth.)
 async function uploadFile(file) {
   if (!currentUser) return alert('Select a user first');
+  const out = document.getElementById('ingestResult');
   const fd = new FormData();
-  fd.append('username', currentUser);
   fd.append('file', file);
 
-  setStatus('UPLOADING');
-  const res = await fetch('/api/upload', { method: 'POST', body: fd });
-  const uploadData = await res.json();
+  setStatus('INGESTING');
+  if (out) out.textContent = `Extracting experiences from ${file.name}… (AI, ~$0.02)`;
+  let res;
+  try {
+    res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/corpus/ingest-resume`,
+      { method: 'POST', body: fd },
+    );
+  } catch (e) {
+    return reportError('Corpus ingest', 'Upload request failed', e.message);
+  }
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 409 && data.needs_onboarding) {
+    setStatus('READY');
+    if (out) out.textContent = '';
+    return openOnboardingModal(() => uploadFile(file));
+  }
   if (!res.ok) {
-    return reportError('Upload', uploadData.error || 'Upload failed', uploadData.detail);
+    if (out) out.textContent = '';
+    return reportError('Corpus ingest', data.error || 'Ingest failed', data.detail);
   }
-  setStatus('UPLOADED');
-  // If a whitelist exists, auto-include the new file so it defaults to SOURCE
-  if (currentConfig.included_resumes && !currentConfig.included_resumes.includes(uploadData.filename)) {
-    currentConfig = Object.assign({}, currentConfig, {
-      included_resumes: [...currentConfig.included_resumes, uploadData.filename],
-    });
-    await fetch(`/api/users/${currentUser}/config`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(currentConfig),
-    });
+  setStatus('READY');
+  const made = data.experiences_created || 0;
+  const merged = data.experiences_merged || 0;
+  const bullets = data.bullets_created || 0;
+  if (out) {
+    out.textContent =
+      `Added ${made} experience(s), ${merged} merged, ${bullets} bullet(s) — ` +
+      `now pending review in the CAREER CORPUS tab.`;
   }
-  await loadResumes();
+  _toast('Resume ingested into corpus');
+  _corpusLoadedForUser = '';  // force corpus tab refetch next visit
 }
 
-async function loadResumes() {
-  const res = await fetch(`/api/users/${currentUser}/resumes`);
-  const files = await res.json();
-  const list = document.getElementById('resumeList');
-  const sel = document.getElementById('resumeSelect');
-
-  list.innerHTML = '';
-  sel.innerHTML = '<option value="">-- Select Resume --</option>';
-
-  // Whitelist: null = all included (key absent from config = first use default)
-  const includedSet = currentConfig.included_resumes
-    ? new Set(currentConfig.included_resumes)
-    : null;
-
-  files.forEach(f => {
-    const isIncluded = includedSet === null || includedSet.has(f);
-
-    const chip = document.createElement('span');
-    chip.className = 'file-chip';
-    chip.dataset.filename = f;
-
-    // Left zone: click filename = set as primary resume
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = f;
-    nameSpan.style.cursor = 'pointer';
-    chip.appendChild(nameSpan);
-
-    // Divider between zones
-    const divider = document.createElement('span');
-    divider.className = 'chip-divider';
-    chip.appendChild(divider);
-
-    // Right zone: badge toggles include/exclude
-    const badge = document.createElement('span');
-    badge.className = 'resume-source-badge' + (isIncluded ? '' : ' excluded');
-    badge.textContent = isIncluded ? '✓ SOURCE' : '✗ EXCL';
-    badge.title = isIncluded ? 'Click to exclude from source pool' : 'Click to include in source pool';
-    chip.appendChild(badge);
-
-    nameSpan.addEventListener('click', () => {
-      document.querySelectorAll('.file-chip').forEach(c => c.classList.remove('selected'));
-      chip.classList.add('selected');
-      sel.value = f;
-      _savePrimaryResume(f);
-    });
-
-    badge.addEventListener('click', e => {
-      e.stopPropagation();
-      const nowExcluded = badge.classList.toggle('excluded');
-      badge.textContent = nowExcluded ? '✗ EXCL' : '✓ SOURCE';
-      badge.title = nowExcluded ? 'Click to include in source pool' : 'Click to exclude from source pool';
-      _saveIncludedResumes();
-    });
-
-    list.appendChild(chip);
-
-    const opt = document.createElement('option');
-    opt.value = f;
-    opt.textContent = f;
-    sel.appendChild(opt);
-  });
-
-  // Auto-select latest resume from config and highlight the chip
-  if (currentConfig.latest_resume && files.includes(currentConfig.latest_resume)) {
-    sel.value = currentConfig.latest_resume;
-    primaryResume = currentConfig.latest_resume;
-    list.querySelectorAll('.file-chip').forEach(c => {
-      if (c.dataset.filename === currentConfig.latest_resume) c.classList.add('selected');
-    });
-  }
-}
-
-async function _saveIncludedResumes() {
-  const included = [];
-  document.querySelectorAll('.file-chip').forEach(chip => {
-    const badge = chip.querySelector('.resume-source-badge');
-    if (badge && !badge.classList.contains('excluded')) {
-      included.push(chip.dataset.filename);
-    }
-  });
-  const config = Object.assign({}, currentConfig, { included_resumes: included });
-  const res = await fetch(`/api/users/${currentUser}/config`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(config),
-  });
-  if (res.ok) currentConfig = config;
-}
-
-async function _savePrimaryResume(filename) {
-  primaryResume = filename;
-  const config = Object.assign({}, currentConfig, { latest_resume: filename });
-  const res = await fetch(`/api/users/${currentUser}/config`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(config),
-  });
-  if (res.ok) currentConfig = config;
-}
+// loadResumes is retained as a harmless no-op so existing callers
+// (onUserSelect) don't break; the file-based resume list is gone.
+async function loadResumes() { /* corpus is the source of truth now */ }
 
 function setOutputFormat(fmt, btn) {
   outputFormat = fmt;
@@ -308,9 +225,10 @@ function setOutputFormat(fmt, btn) {
 
 // ---- Analysis (P8 Gate #1) ----
 async function runAnalysis() {
-  const resume = primaryResume || document.getElementById('resumeSelect').value;
+  // DB-backed pipeline: the corpus is the source of truth. resume_filename
+  // is ignored server-side (Phase C.4); no primary-resume gate anymore.
   const jd = document.getElementById('jdText').value.trim();
-  if (!resume) return alert('Select a primary resume from the Resume Upload panel');
+  if (!currentUser) return alert('Select a user first');
   if (!jd) return alert('Paste a job description');
 
   setStatus('ANALYZING');
@@ -327,9 +245,7 @@ async function runAnalysis() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         username: currentUser,
-        resume_filename: resume,
         job_description: jd,
-        included_resumes: currentConfig.included_resumes ?? null,
       }),
     });
     const data = await res.json();
@@ -342,11 +258,13 @@ async function runAnalysis() {
     }
     lastContextPath = data.context_path;
     lastTemplatePath = data.template_path || '';
+    _composeApplicationId = data.application_id ?? null;
     renderAnalysis(data);
-    show('panelAnalysis');
     setStatus('ANALYSIS COMPLETE');
-    _announce('Analysis complete. Review the analysis or skip to generation.');
-    document.getElementById('panelAnalysis').scrollIntoView({ behavior: 'smooth' });
+    _announce('Analysis complete. Compose your application or skip to generation.');
+    // Wizard: ANALYZE unlocks step 3 (Compose). Auto-advance the rail.
+    _wizardAdvanceTo(3);
+    if (_wizardStep === 3) loadComposition();
   } catch (e) {
     reportError('Analyze', 'Analysis request failed', e.message);
   } finally {
@@ -671,6 +589,7 @@ async function runGeneration() {
         context_path: lastContextPath,
         output_format: outputFormat,
         refinement_notes: acceptedNotes,
+        persona_template_id: _readSelectedPersonaId(),
       }),
     });
     const data = await res.json();
@@ -680,12 +599,12 @@ async function runGeneration() {
     lastResumePath = data.resume_path;
     lastCoverLetterPath = data.cover_letter_path;
     lastResumeFormat = data.resume_format || '.docx';
+    _selectedPersonaId = data.persona_template_id ?? _readSelectedPersonaId();
     _onGenerationComplete(data);
     renderOutput(data);
-    show('panelOutput');
     setStatus('GENERATION COMPLETE');
     _announce(`Iteration ${currentIteration} ready. Resume and cover letter generated.`);
-    document.getElementById('panelOutput').scrollIntoView({ behavior: 'smooth' });
+    _wizardAdvanceTo(6);
   } catch (e) {
     reportError('Generate', 'Generation request failed', e.message);
   } finally {
@@ -1416,7 +1335,10 @@ async function downloadResume() {
     content,
     type: 'resume',
     original_format: lastResumeFormat,
-    template_path: lastTemplatePath,
+    // Workstream C #7: thread the chosen persona so DOWNLOAD honors the
+    // template (the legacy template_path was empty in DB mode + gated to
+    // RESUMES_DIR, which silently dropped persona templates).
+    persona_template_id: _selectedPersonaId ?? _readSelectedPersonaId(),
   });
 }
 
@@ -2600,6 +2522,12 @@ function _renderPersonaCard(p, owned) {
   dl.onclick = () => window.open(`/api/personas/${p.id}/download`, '_blank');
   actions.appendChild(dl);
 
+  const prev = _el('button', {
+    className: 'corpus-action-btn', textContent: 'PREVIEW WITH MY RESUME',
+  });
+  prev.onclick = () => _previewPersonaWithResume(p.id, p.name);
+  actions.appendChild(prev);
+
   if (owned) {
     const rename = _el('button', { className: 'corpus-action-btn', textContent: 'RENAME' });
     rename.onclick = () => _renamePersona(p.id, p.name);
@@ -2672,4 +2600,373 @@ async function uploadPersonaFromInput(input) {
     _personaUploadLocked = false;
     input.value = '';
   }
+}
+
+// ===============================================================
+// Workstream E — Wizard navigation (rail over the existing panels)
+// ===============================================================
+
+let _wizardStep = 1;
+const _WIZARD_PANELS = {
+  1: ['panelResume'],
+  2: ['panelJD'],
+  3: ['panelCompose'],
+  4: ['panelAnalysis'],
+  5: ['panelAnalysis'],
+  6: ['panelOutput'],
+};
+
+function wizardInit() {
+  const rail = document.getElementById('wizardRail');
+  if (rail) rail.classList.remove('hidden');
+  _wizardStep = 1;
+  _wizardRender();
+}
+
+function _wizardReachable(step) {
+  // Forward gating: 3+ needs a successful analysis (lastContextPath).
+  if (step >= 3 && !lastContextPath) return false;
+  if (step >= 6 && !lastResumePath) return false;
+  return true;
+}
+
+function wizardGoTo(step) {
+  if (!_wizardReachable(step)) {
+    _toast(step >= 6
+      ? 'Generate the documents first.'
+      : 'Run ANALYZE first (step 2).', true);
+    return;
+  }
+  _wizardStep = step;
+  _wizardRender();
+  if (step === 3) loadComposition();
+  if (step === 5) _loadPersonaOptions();
+}
+
+function wizardNext() { wizardGoTo(Math.min(6, _wizardStep + 1)); }
+function wizardBack() { wizardGoTo(Math.max(1, _wizardStep - 1)); }
+
+function _wizardRender() {
+  // Show only the active step's panel(s); keep User/Applications/Config
+  // visible as ambient context (they aren't wizard steps).
+  const stepPanels = new Set(_WIZARD_PANELS[_wizardStep] || []);
+  Object.values(_WIZARD_PANELS).flat().forEach(pid => {
+    if (stepPanels.has(pid)) show(pid); else hide(pid);
+  });
+  document.querySelectorAll('.wizard-step').forEach(btn => {
+    const s = parseInt(btn.dataset.wstep, 10);
+    btn.classList.toggle('active', s === _wizardStep);
+    btn.classList.toggle('done', s < _wizardStep);
+    btn.disabled = !_wizardReachable(s);
+  });
+  const active = document.getElementById((_WIZARD_PANELS[_wizardStep] || [])[0]);
+  if (active) active.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Advance the rail automatically as the underlying flow completes.
+function _wizardAdvanceTo(step) {
+  if (step > _wizardStep && _wizardReachable(step)) {
+    _wizardStep = step;
+  }
+  _wizardRender();
+}
+
+// ===============================================================
+// Workstream E — Step 3 Compose (fit-ranked bullets/titles)
+// ===============================================================
+
+let _composeApplicationId = null;
+
+async function loadComposition() {
+  const list = document.getElementById('composeList');
+  if (!list) return;
+  _setLoadingPlaceholder(list, 'Scoring corpus against this job…');
+  if (_composeApplicationId == null) {
+    _setLoadingPlaceholder(list, 'Run ANALYZE first.');
+    return;
+  }
+  let res;
+  try {
+    res = await fetch(
+      `/api/applications/${_composeApplicationId}/composition`
+      + `?context_path=${encodeURIComponent(lastContextPath || '')}`,
+    );
+  } catch (e) {
+    _setLoadingPlaceholder(list, 'Network error.');
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(list, 'Failed to load composition.');
+    return;
+  }
+  const data = await res.json();
+  _clearChildren(list);
+  if (!data.experiences || data.experiences.length === 0) {
+    _setLoadingPlaceholder(list, 'No corpus experiences to rank.');
+    return;
+  }
+  data.experiences.forEach(exp => list.appendChild(_renderComposeCard(exp)));
+}
+
+function _renderComposeCard(exp) {
+  const card = _el('div', { className: 'corpus-card expanded' });
+  const header = _el('div', { className: 'corpus-card-header' });
+  header.appendChild(_el('div', {
+    className: 'corpus-card-company', textContent: exp.company || '(no company)',
+  }));
+  header.appendChild(_el('div', {
+    className: 'corpus-card-dates',
+    textContent: `${exp.start_date} — ${exp.end_date || 'current'}`,
+  }));
+  card.appendChild(header);
+  const body = _el('div', { className: 'corpus-card-body' });
+
+  if ((exp.titles || []).length) {
+    const ts = _el('div', { className: 'corpus-section' });
+    const th = _el('div', { className: 'corpus-section-header' });
+    th.appendChild(_el('div', { className: 'corpus-section-title', textContent: 'Titles (by fit)' }));
+    ts.appendChild(th);
+    exp.titles.forEach(t => {
+      const row = _el('div', { className: 'corpus-row' });
+      row.appendChild(_el('span', {
+        className: 'score-chip', textContent: t.score.toFixed(0),
+      }));
+      row.appendChild(_el('span', {
+        className: 'corpus-row-input', textContent: t.title,
+      }));
+      if (t.is_official) {
+        row.appendChild(_el('span', {
+          className: 'corpus-row-flag official', textContent: 'OFFICIAL',
+        }));
+      }
+      const tagWrap = _el('div', { className: 'tag-chip-wrap' });
+      _renderTagChips(tagWrap, 'title', t.id, t.tags || []);
+      row.appendChild(tagWrap);
+      ts.appendChild(row);
+    });
+    body.appendChild(ts);
+  }
+
+  const bs = _el('div', { className: 'corpus-section' });
+  const bh = _el('div', { className: 'corpus-section-header' });
+  bh.appendChild(_el('div', { className: 'corpus-section-title', textContent: 'Bullets (by fit)' }));
+  bs.appendChild(bh);
+  (exp.bullets || []).forEach(b => {
+    const row = _el('div', { className: 'corpus-row compose-row' });
+    if (b.excluded) row.classList.add('excluded');
+    if (b.pinned) row.classList.add('pinned');
+    row.appendChild(_el('span', {
+      className: 'score-chip', textContent: b.score.toFixed(0),
+    }));
+    row.appendChild(_el('span', { className: 'corpus-row-input', textContent: b.text }));
+    if (b.has_outcome) {
+      row.appendChild(_el('span', {
+        className: 'corpus-row-flag outcome', textContent: 'OUTCOME',
+      }));
+    }
+    const tagWrap = _el('div', { className: 'tag-chip-wrap' });
+    _renderTagChips(tagWrap, 'bullet', b.id, b.tags || []);
+    row.appendChild(tagWrap);
+
+    const actions = _el('div', { className: 'corpus-row-actions' });
+    const pin = _el('button', {
+      className: 'corpus-action-btn' + (b.pinned ? ' on' : ''),
+      textContent: b.pinned ? 'PINNED' : 'PIN',
+    });
+    pin.onclick = () => {
+      b.pinned = !b.pinned;
+      if (b.pinned) b.excluded = false;
+      _recolorComposeRow(row, b);
+      pin.textContent = b.pinned ? 'PINNED' : 'PIN';
+      pin.classList.toggle('on', b.pinned);
+      exc.textContent = b.excluded ? 'EXCLUDED' : 'EXCLUDE';
+      exc.classList.toggle('on', b.excluded);
+    };
+    const exc = _el('button', {
+      className: 'corpus-action-btn delete' + (b.excluded ? ' on' : ''),
+      textContent: b.excluded ? 'EXCLUDED' : 'EXCLUDE',
+    });
+    exc.onclick = () => {
+      b.excluded = !b.excluded;
+      if (b.excluded) b.pinned = false;
+      _recolorComposeRow(row, b);
+      exc.textContent = b.excluded ? 'EXCLUDED' : 'EXCLUDE';
+      exc.classList.toggle('on', b.excluded);
+      pin.textContent = b.pinned ? 'PINNED' : 'PIN';
+      pin.classList.toggle('on', b.pinned);
+    };
+    actions.appendChild(pin);
+    actions.appendChild(exc);
+    row.appendChild(actions);
+    row._bulletState = b;
+    bs.appendChild(row);
+  });
+  body.appendChild(bs);
+  card.appendChild(body);
+  return card;
+}
+
+function _recolorComposeRow(row, b) {
+  row.classList.toggle('excluded', !!b.excluded);
+  row.classList.toggle('pinned', !!b.pinned);
+}
+
+async function saveCompositionThenNext() {
+  if (_composeApplicationId == null) { wizardGoTo(4); return; }
+  const pinned = [];
+  const excluded = [];
+  document.querySelectorAll('#composeList .compose-row').forEach(row => {
+    const b = row._bulletState;
+    if (!b) return;
+    if (b.pinned) pinned.push(b.id);
+    if (b.excluded) excluded.push(b.id);
+  });
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/composition`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          context_path: lastContextPath, pinned, excluded,
+        }),
+      },
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    _toast(`Composition saved (${pinned.length} pinned, ${excluded.length} excluded)`);
+  } catch (e) {
+    _toast('Save failed: ' + e.message, true);
+    return;
+  }
+  wizardGoTo(4);
+}
+
+// ===============================================================
+// Workstream E — shared tag-chip component (Compose + Career Corpus)
+// ===============================================================
+
+function _renderTagChips(container, subjectKind, subjectId, tags) {
+  _clearChildren(container);
+  (tags || []).forEach(t => {
+    const chip = _el('span', { className: 'tag-chip' });
+    chip.appendChild(_el('span', { textContent: t.display_value || t.value }));
+    const x = _el('button', {
+      className: 'tag-chip-x', textContent: '×',
+    });
+    x.title = 'Remove tag';
+    x.onclick = async (e) => {
+      e.stopPropagation();
+      try {
+        await _deleteJson(
+          `/api/${subjectKind === 'bullet' ? 'bullets' : 'experience-titles'}`
+          + `/${subjectId}/tags/${t.id}`,
+        );
+        chip.remove();
+      } catch (err) { _toast('Remove failed: ' + err.message, true); }
+    };
+    chip.appendChild(x);
+    container.appendChild(chip);
+  });
+  const add = _el('button', { className: 'tag-chip-add', textContent: '+ tag' });
+  add.onclick = () => _promptAddTag(container, subjectKind, subjectId);
+  container.appendChild(add);
+}
+
+async function _promptAddTag(container, subjectKind, subjectId) {
+  const value = prompt('Tag (e.g. "ai", "design-leadership"):');
+  if (!value || !value.trim()) return;
+  const kind = (prompt('Kind: role | domain | skill | tech', 'skill') || 'skill').trim();
+  try {
+    const tag = await _postJson(
+      `/api/${subjectKind === 'bullet' ? 'bullets' : 'experience-titles'}`
+      + `/${subjectId}/tags`,
+      { value: value.trim(), kind },
+    );
+    // Re-render: append the new chip before the add button
+    const chip = _el('span', { className: 'tag-chip' });
+    chip.appendChild(_el('span', { textContent: tag.display_value || tag.value }));
+    const x = _el('button', { className: 'tag-chip-x', textContent: '×' });
+    x.onclick = async (e) => {
+      e.stopPropagation();
+      try {
+        await _deleteJson(
+          `/api/${subjectKind === 'bullet' ? 'bullets' : 'experience-titles'}`
+          + `/${subjectId}/tags/${tag.id}`,
+        );
+        chip.remove();
+      } catch (err) { _toast('Remove failed: ' + err.message, true); }
+    };
+    chip.appendChild(x);
+    const addBtn = container.querySelector('.tag-chip-add');
+    container.insertBefore(chip, addBtn);
+    _toast('Tag added');
+  } catch (e) {
+    _toast('Add tag failed: ' + e.message, true);
+  }
+}
+
+// ===============================================================
+// Workstream E — Step 5 persona picker + preview
+// ===============================================================
+
+let _selectedPersonaId = null;
+
+async function _loadPersonaOptions() {
+  const sel = document.getElementById('personaSelect');
+  if (!sel || !currentUser) return;
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/personas`);
+  } catch { return; }
+  if (!res.ok) return;
+  const body = await res.json();
+  const prev = sel.value;
+  while (sel.options.length > 1) sel.remove(1);
+  const addOpt = (p, group) => {
+    const o = document.createElement('option');
+    o.value = String(p.id);
+    o.textContent = `${group}: ${p.name}`;
+    sel.appendChild(o);
+  };
+  (body.bundled || []).forEach(p => addOpt(p, 'Bundled'));
+  (body.owned || []).forEach(p => addOpt(p, 'Yours'));
+  if (prev) sel.value = prev;
+}
+
+function _readSelectedPersonaId() {
+  const sel = document.getElementById('personaSelect');
+  if (!sel || !sel.value) return null;
+  const n = parseInt(sel.value, 10);
+  return Number.isNaN(n) ? null : n;
+}
+
+async function _previewPersonaWithResume(personaId, name) {
+  if (!currentUser) { _toast('Select a user first', true); return; }
+  _toast(`Rendering your resume with ${name}…`);
+  let res;
+  try {
+    res = await fetch(`/api/personas/${personaId}/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUser }),
+    });
+  } catch (e) {
+    return _toast('Preview failed: ' + e.message, true);
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    return _toast(err.error || `Preview failed (HTTP ${res.status})`, true);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `preview_${name}.docx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }

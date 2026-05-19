@@ -351,3 +351,73 @@ class TestResolveHelpers:
     def test_resolver_returns_none_for_unknown_id(self, persona_app):
         path = persona_app._resolve_persona_template_path(99999)
         assert path is None
+
+
+# ---------------------------------------------------------------------------
+# Workstream C — preview-with-resume + download-edited persona path
+# ---------------------------------------------------------------------------
+
+
+def _seed_app_run_with_resume(candidate_id, md="# Jane\n\n## Experience\n\n- Did X"):
+    import hashlib
+
+    from db.models import Application, ApplicationRun
+    from db.session import get_session
+    s = get_session()
+    try:
+        a = Application(
+            candidate_id=candidate_id, title="T", jd_text="jd",
+            jd_fingerprint=hashlib.sha256(b"jd").hexdigest()[:16],
+        )
+        s.add(a)
+        s.flush()
+        s.add(ApplicationRun(
+            application_id=a.id, iteration=0, run_id="prevrun12345",
+            prompt_version="t", corpus_snapshot_json="{}",
+            generated_resume_md=md,
+        ))
+        s.commit()
+    finally:
+        s.close()
+
+
+class TestPersonaPreview:
+    def test_preview_streams_docx_from_latest_resume(self, persona_app):
+        cid = _seed_candidate(persona_app)
+        pid, _ = _seed_bundled_persona_file(persona_app, "prev.docx")
+        _seed_app_run_with_resume(cid)
+        client = persona_app.app.test_client()
+        r = client.post(f"/api/personas/{pid}/preview", json={"username": "alice"})
+        assert r.status_code == 200, r.get_json() if r.is_json else r.data[:200]
+        # python-docx files are PK zip archives
+        assert r.data[:2] == b"PK"
+
+    def test_preview_409_when_no_generated_resume(self, persona_app):
+        _seed_candidate(persona_app)
+        pid, _ = _seed_bundled_persona_file(persona_app, "prev2.docx")
+        client = persona_app.app.test_client()
+        r = client.post(f"/api/personas/{pid}/preview", json={"username": "alice"})
+        assert r.status_code == 409
+        assert "generate" in r.get_json()["error"].lower()
+
+    def test_preview_404_unknown_persona(self, persona_app):
+        _seed_candidate(persona_app)
+        client = persona_app.app.test_client()
+        r = client.post("/api/personas/99999/preview", json={"username": "alice"})
+        assert r.status_code == 404
+
+
+class TestDownloadEditedPersona:
+    def test_persona_template_id_resolves_under_personas_dir(self, persona_app):
+        _seed_candidate(persona_app)
+        pid, _ = _seed_bundled_persona_file(persona_app, "dl.docx")
+        client = persona_app.app.test_client()
+        r = client.post("/api/download-edited", json={
+            "username": "alice",
+            "content": "# Jane\n\n## Experience\n\n- Built things",
+            "type": "resume",
+            "original_format": ".docx",
+            "persona_template_id": pid,
+        })
+        assert r.status_code == 200
+        assert r.data[:2] == b"PK"  # produced a real .docx (templated, not dropped)
