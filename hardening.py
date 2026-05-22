@@ -144,12 +144,22 @@ class ContextSet(_ContextSetRequired, total=False):
     # selections and proposals. Absent on file-based contexts.
     application_id: int
     application_run_id: int
-    # Wizard "Compose" step (Workstream B): user pin/exclude overrides on the
-    # per-application fit-ranked corpus. {"pinned": [bullet_id...],
-    # "excluded": [bullet_id...]}. generate() drops excluded bullets from the
-    # corpus block and marks pinned ones must-include. total=False so older
+    # Wizard "Compose" step (Workstream B + H + I): user overrides on the
+    # per-application fit-ranked corpus.
+    #   {"pinned":   [bullet_id...],   # must-include
+    #    "excluded": [bullet_id...],   # drop from prompt entirely
+    #    "added":    [bullet_id...]}   # pulled in via the per-experience drawer (I)
+    # generate() drops excluded bullets, marks pinned ones must-include,
+    # and when llm_recommendations is also present restricts the corpus to
+    # (recommended ∪ added ∪ pinned) − excluded. total=False so older
     # contexts round-trip unchanged.
     composition_overrides: dict
+    # Workstream H: the recommend_bullets() output keyed by experience id
+    # (str or int). {"<exp_id>": {"bullet_ids": [<int>...], "rationale": str}}
+    # When present, the corpus block restricts to the curated effective set.
+    # total=False — applications generated before the recommendation step
+    # ran (or whose call failed) keep the prior full-corpus behavior.
+    llm_recommendations: dict
 
 # Common English stop words to exclude from keyword extraction
 STOP_WORDS = frozenset(

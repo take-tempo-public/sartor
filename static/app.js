@@ -261,8 +261,31 @@ async function runAnalysis() {
     _composeApplicationId = data.application_id ?? null;
     renderAnalysis(data);
     setStatus('ANALYSIS COMPLETE');
-    _announce('Analysis complete. Compose your application or skip to generation.');
-    // Wizard: ANALYZE unlocks step 3 (Compose). Auto-advance the rail.
+    _announce('Analysis complete. Picking recommended bullets…');
+    // Workstream H: fire the recommend call so Compose can default to a
+    // curated set. Awaited so Compose loads with rationale visible. On
+    // failure the Compose step falls back to top-5 by score with a banner.
+    if (_composeApplicationId != null) {
+      try {
+        setStatus('RECOMMENDING BULLETS');
+        const rec = await fetch(
+          `/api/applications/${_composeApplicationId}/recommend`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ context_path: lastContextPath }),
+          },
+        );
+        if (!rec.ok) {
+          const err = await rec.json().catch(() => ({}));
+          _toast(`Recommend skipped: ${err.error || rec.status} — using top-5 fallback`, true);
+        } else {
+          setStatus('RECOMMENDATIONS READY');
+        }
+      } catch (e) {
+        _toast(`Recommend skipped: ${e.message} — using top-5 fallback`, true);
+      }
+    }
     _wizardAdvanceTo(3);
     if (_wizardStep === 3) loadComposition();
   } catch (e) {
@@ -1546,9 +1569,8 @@ function togglePanel(panelId) {
   if (block) block.classList.toggle('collapsed', isCollapsed);
 }
 
-document.querySelectorAll('.lcars-block[data-panel]').forEach(block => {
-  block.addEventListener('click', () => togglePanel(block.dataset.panel));
-});
+// (Workstream G removed the .lcars-block tile sidebar; the panel-header
+//  click handler remains the sole collapse trigger.)
 document.querySelectorAll('.panel-header').forEach(header => {
   const panel = header.closest('.lcars-panel');
   if (panel) header.addEventListener('click', () => togglePanel(panel.id));
@@ -1894,24 +1916,57 @@ async function _saveExperienceField(expId, field, value) {
 }
 
 async function _addTitlePrompt(expId) {
-  const title = prompt('Alternate title (e.g. "Director, AI Research"):');
-  if (!title) return;
-  const makeOfficial = confirm('Mark as the official title? OK = official, Cancel = alternate.');
-  try {
-    await _postJson(`/api/experiences/${expId}/titles`, { title, is_official: makeOfficial });
-    await _reloadCorpusCard(expId);
-    _toast('Title added');
-  } catch (e) { _toast('Add failed: ' + e.message, true); }
+  const result = await openFormModal({
+    title: 'ADD TITLE',
+    subtitle: 'Add an alternate experience title.',
+    submitLabel: 'ADD TITLE',
+    fields: [
+      { name: 'title', label: 'Title', type: 'text', required: true,
+        placeholder: 'e.g. Director, AI Research' },
+      { name: 'is_official', label: 'Role', type: 'select',
+        options: [
+          { value: 'alt', label: 'Alternate framing' },
+          { value: 'official', label: 'Official title' },
+        ], defaultValue: 'alt' },
+    ],
+    onSubmit: async (v) => {
+      await _postJson(`/api/experiences/${expId}/titles`, {
+        title: v.title.trim(),
+        is_official: v.is_official === 'official',
+      });
+    },
+  });
+  if (!result) return;
+  await _reloadCorpusCard(expId);
+  _toast('Title added');
 }
 
 async function _addBulletPrompt(expId) {
-  const text = prompt('Bullet text:');
-  if (!text || !text.trim()) return;
-  try {
-    await _postJson(`/api/experiences/${expId}/bullets`, { text: text.trim() });
-    await _reloadCorpusCard(expId);
-    _toast('Bullet added');
-  } catch (e) { _toast('Add failed: ' + e.message, true); }
+  const result = await openFormModal({
+    title: 'ADD BULLET',
+    subtitle: 'Add a canonical bullet to this experience.',
+    submitLabel: 'ADD BULLET',
+    fields: [
+      { name: 'text', label: 'Bullet text', type: 'textarea', required: true,
+        placeholder: 'e.g. Reduced API latency by 40% by introducing connection pooling.' },
+      { name: 'pattern', label: 'Pattern', type: 'select',
+        options: [
+          { value: '', label: '(none)' },
+          { value: 'xyz', label: 'XYZ (accomplished X as measured by Y by doing Z)' },
+          { value: 'car', label: 'CAR (challenge, action, result)' },
+          { value: 'star', label: 'STAR' },
+          { value: 'manual', label: 'Manual' },
+        ], defaultValue: '' },
+    ],
+    onSubmit: async (v) => {
+      const body = { text: v.text.trim() };
+      if (v.pattern) body.pattern_kind = v.pattern;
+      await _postJson(`/api/experiences/${expId}/bullets`, body);
+    },
+  });
+  if (!result) return;
+  await _reloadCorpusCard(expId);
+  _toast('Bullet added');
 }
 
 async function _reloadCorpusCard(expId) {
@@ -1948,29 +2003,33 @@ async function deleteExperience(expId) {
 }
 
 async function openCorpusAddExperience() {
-  const company = prompt('Company name:');
-  if (!company || !company.trim()) return;
-  const start = prompt('Start date (YYYY-MM):');
-  if (!start || !/^\d{4}-\d{2}$/.test(start)) {
-    alert('Start date must be YYYY-MM (e.g. 2023-01)');
-    return;
-  }
-  const end = prompt('End date (YYYY-MM, blank for current):') || '';
-  if (end && !/^\d{4}-\d{2}$/.test(end)) {
-    alert('End date must be YYYY-MM or blank');
-    return;
-  }
-  const location = prompt('Location (optional):') || '';
-  try {
-    await _postJson(`/api/users/${encodeURIComponent(currentUser)}/experiences`, {
-      company: company.trim(),
-      start_date: start,
-      end_date: end || null,
-      location: location.trim() || null,
-    });
-    await refreshCorpus();
-    _toast('Experience added');
-  } catch (e) { _toast('Add failed: ' + e.message, true); }
+  const result = await openFormModal({
+    title: 'ADD EXPERIENCE',
+    subtitle: 'New experience for the corpus.',
+    submitLabel: 'ADD EXPERIENCE',
+    fields: [
+      { name: 'company',    label: 'Company',    type: 'text', required: true },
+      { name: 'start_date', label: 'Start',      type: 'text', required: true,
+        placeholder: 'YYYY-MM', pattern: '\\d{4}-\\d{2}' },
+      { name: 'end_date',   label: 'End',        type: 'text',
+        placeholder: 'YYYY-MM (blank = current)', pattern: '\\d{4}-\\d{2}' },
+      { name: 'location',   label: 'Location',   type: 'text', placeholder: 'Remote / NYC / ...' },
+      { name: 'summary',    label: 'Summary',    type: 'textarea',
+        placeholder: 'Optional one-line context for this stint.' },
+    ],
+    onSubmit: async (v) => {
+      await _postJson(`/api/users/${encodeURIComponent(currentUser)}/experiences`, {
+        company: v.company.trim(),
+        start_date: v.start_date,
+        end_date: v.end_date || null,
+        location: v.location.trim() || null,
+        summary: v.summary.trim() || null,
+      });
+    },
+  });
+  if (!result) return;
+  await refreshCorpus();
+  _toast('Experience added');
 }
 
 async function _putJson(url, body) {
@@ -2194,10 +2253,8 @@ function _renderMemoryRow(r) {
 }
 
 async function _promoteMemoryRow(r) {
-  // Need an experience_id to attach the new bullet to. Ask via prompt
-  // until we have a richer chooser UI in D.5.1.
+  // Workstream G: real dropdown picker replaces the numbered-prompt UX.
   if (!_corpusExperiences || _corpusExperiences.length === 0) {
-    // Lazy-load corpus so we can prompt with company names
     try {
       const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
       if (res.ok) _corpusExperiences = await res.json();
@@ -2207,13 +2264,22 @@ async function _promoteMemoryRow(r) {
     _toast('No experiences in corpus — add one in CAREER CORPUS first.', true);
     return;
   }
-  const choices = _corpusExperiences.map(
-    (e, i) => `${i + 1}. ${e.company} (${e.start_date})`,
-  ).join('\n');
-  const pick = prompt(`Which experience should this become a bullet under?\n\n${choices}\n\nEnter number:`);
-  const idx = parseInt(pick, 10) - 1;
-  if (isNaN(idx) || idx < 0 || idx >= _corpusExperiences.length) return;
-  const expId = _corpusExperiences[idx].id;
+  const expOptions = _corpusExperiences.map(e => ({
+    value: String(e.id),
+    label: `${e.company} (${e.start_date} — ${e.end_date || 'present'})`,
+  }));
+  const result = await openFormModal({
+    title: 'PROMOTE TO BULLET',
+    subtitle: 'Pick which experience this Q&A should become a bullet under.',
+    submitLabel: 'PROMOTE',
+    fields: [
+      { name: 'experience_id', label: 'Experience', type: 'select',
+        required: true, options: expOptions,
+        defaultValue: expOptions[0].value },
+    ],
+  });
+  if (!result) return;
+  const expId = parseInt(result.experience_id, 10);
   try {
     const res = await fetch(`/api/clarifications/${r.id}/promote-to-bullet`, {
       method: 'POST',
@@ -2224,7 +2290,8 @@ async function _promoteMemoryRow(r) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
-    _toast(`Promoted to bullet on ${_corpusExperiences[idx].company}`);
+    const targetExp = _corpusExperiences.find(e => e.id === expId);
+    _toast(`Promoted to bullet on ${targetExp ? targetExp.company : 'experience'}`);
     await refreshMemory();
   } catch (e) {
     _toast('Promote failed: ' + e.message, true);
@@ -2708,118 +2775,234 @@ async function loadComposition() {
   data.experiences.forEach(exp => list.appendChild(_renderComposeCard(exp)));
 }
 
+// Workstream G+I: two-line Compose row, recommended-only by default,
+// per-experience drawer for "find more bullets".
 function _renderComposeCard(exp) {
-  const card = _el('div', { className: 'corpus-card expanded' });
-  const header = _el('div', { className: 'corpus-card-header' });
+  const card = _el('div', { className: 'compose-experience-card' });
+  const header = _el('div', { className: 'compose-exp-header' });
   header.appendChild(_el('div', {
-    className: 'corpus-card-company', textContent: exp.company || '(no company)',
+    className: 'compose-exp-company',
+    textContent: exp.company || '(no company)',
   }));
   header.appendChild(_el('div', {
-    className: 'corpus-card-dates',
+    className: 'compose-exp-dates',
     textContent: `${exp.start_date} — ${exp.end_date || 'current'}`,
   }));
   card.appendChild(header);
-  const body = _el('div', { className: 'corpus-card-body' });
 
-  if ((exp.titles || []).length) {
-    const ts = _el('div', { className: 'corpus-section' });
-    const th = _el('div', { className: 'corpus-section-header' });
-    th.appendChild(_el('div', { className: 'corpus-section-title', textContent: 'Titles (by fit)' }));
-    ts.appendChild(th);
-    exp.titles.forEach(t => {
-      const row = _el('div', { className: 'corpus-row' });
-      row.appendChild(_el('span', {
-        className: 'score-chip', textContent: t.score.toFixed(0),
-      }));
-      row.appendChild(_el('span', {
-        className: 'corpus-row-input', textContent: t.title,
-      }));
-      if (t.is_official) {
-        row.appendChild(_el('span', {
-          className: 'corpus-row-flag official', textContent: 'OFFICIAL',
-        }));
-      }
-      const tagWrap = _el('div', { className: 'tag-chip-wrap' });
-      _renderTagChips(tagWrap, 'title', t.id, t.tags || []);
-      row.appendChild(tagWrap);
-      ts.appendChild(row);
-    });
-    body.appendChild(ts);
+  if (exp.rationale) {
+    card.appendChild(_el('div', {
+      className: 'compose-exp-rationale', textContent: exp.rationale,
+    }));
   }
 
-  const bs = _el('div', { className: 'corpus-section' });
-  const bh = _el('div', { className: 'corpus-section-header' });
-  bh.appendChild(_el('div', { className: 'corpus-section-title', textContent: 'Bullets (by fit)' }));
-  bs.appendChild(bh);
-  (exp.bullets || []).forEach(b => {
-    const row = _el('div', { className: 'corpus-row compose-row' });
-    if (b.excluded) row.classList.add('excluded');
-    if (b.pinned) row.classList.add('pinned');
-    row.appendChild(_el('span', {
-      className: 'score-chip', textContent: b.score.toFixed(0),
+  // Titles section
+  if ((exp.titles || []).length) {
+    card.appendChild(_el('div', {
+      className: 'compose-exp-section-title', textContent: 'Titles (by fit)',
     }));
-    row.appendChild(_el('span', { className: 'corpus-row-input', textContent: b.text }));
-    if (b.has_outcome) {
-      row.appendChild(_el('span', {
-        className: 'corpus-row-flag outcome', textContent: 'OUTCOME',
-      }));
-    }
-    const tagWrap = _el('div', { className: 'tag-chip-wrap' });
-    _renderTagChips(tagWrap, 'bullet', b.id, b.tags || []);
-    row.appendChild(tagWrap);
+    exp.titles.forEach(t => card.appendChild(_renderTitleRow_compose(t)));
+  }
 
-    const actions = _el('div', { className: 'corpus-row-actions' });
-    const pin = _el('button', {
-      className: 'corpus-action-btn' + (b.pinned ? ' on' : ''),
-      textContent: b.pinned ? 'PINNED' : 'PIN',
-    });
-    pin.onclick = () => {
-      b.pinned = !b.pinned;
-      if (b.pinned) b.excluded = false;
-      _recolorComposeRow(row, b);
-      pin.textContent = b.pinned ? 'PINNED' : 'PIN';
-      pin.classList.toggle('on', b.pinned);
-      exc.textContent = b.excluded ? 'EXCLUDED' : 'EXCLUDE';
-      exc.classList.toggle('on', b.excluded);
-    };
-    const exc = _el('button', {
-      className: 'corpus-action-btn delete' + (b.excluded ? ' on' : ''),
-      textContent: b.excluded ? 'EXCLUDED' : 'EXCLUDE',
-    });
-    exc.onclick = () => {
-      b.excluded = !b.excluded;
-      if (b.excluded) b.pinned = false;
-      _recolorComposeRow(row, b);
-      exc.textContent = b.excluded ? 'EXCLUDED' : 'EXCLUDE';
-      exc.classList.toggle('on', b.excluded);
-      pin.textContent = b.pinned ? 'PINNED' : 'PIN';
-      pin.classList.toggle('on', b.pinned);
-    };
-    actions.appendChild(pin);
-    actions.appendChild(exc);
-    row.appendChild(actions);
-    row._bulletState = b;
-    bs.appendChild(row);
-  });
-  body.appendChild(bs);
-  card.appendChild(body);
+  // Bullets split into visible (recommended/pinned/added) + drawer (rest).
+  const visible = (exp.bullets || []).filter(
+    b => b.recommended || b.pinned || b.added,
+  );
+  const hidden = (exp.bullets || []).filter(
+    b => !(b.recommended || b.pinned || b.added),
+  );
+  const headerLabel = exp.has_recommendations
+    ? `Recommended bullets (${visible.length})`
+    : `Top bullets (${visible.length || hidden.slice(0, 5).length})`;
+  card.appendChild(_el('div', {
+    className: 'compose-exp-section-title', textContent: headerLabel,
+  }));
+  // If no recommendations exist (LLM call failed) AND nothing is pinned/added,
+  // fall back to showing top-5 by score so the user isn't left empty.
+  let initial = visible;
+  if (!exp.has_recommendations && initial.length === 0) {
+    initial = hidden.slice(0, 5);
+    initial.forEach(b => b._fallback = true);
+  }
+  initial.forEach(b => card.appendChild(_renderBulletRow_compose(b)));
+
+  // Drawer: remaining bullets, searchable. v1: client-side filter.
+  if (hidden.length > 0) {
+    const drawerBullets = initial.length
+      ? hidden.filter(b => !initial.includes(b))
+      : hidden.slice(5);  // when fallback consumed the first 5
+    if (drawerBullets.length) {
+      const toggle = _el('button', {
+        className: 'compose-drawer-toggle',
+        textContent: `+ FIND MORE BULLETS IN ${exp.company.toUpperCase()} (${drawerBullets.length})`,
+      });
+      const drawer = _el('div', { className: 'compose-drawer hidden' });
+      const toolbar = _el('div', { className: 'compose-drawer-toolbar' });
+      const search = _el('input', {
+        className: 'compose-drawer-search', type: 'search',
+      });
+      search.placeholder = 'Search this experience…';
+      toolbar.appendChild(search);
+      drawer.appendChild(toolbar);
+      const rowsHost = _el('div');
+      drawer.appendChild(rowsHost);
+      drawerBullets.forEach(b => rowsHost.appendChild(_renderBulletRow_compose(b)));
+      toggle.onclick = () => {
+        drawer.classList.toggle('hidden');
+        if (!drawer.classList.contains('hidden')) search.focus();
+      };
+      search.addEventListener('input', () => {
+        const q = search.value.toLowerCase().trim();
+        rowsHost.querySelectorAll('.compose-row').forEach(r => {
+          const b = r._bulletState;
+          const txt = (b.text || '').toLowerCase();
+          const tagHits = (b.tags || []).some(
+            t => (t.value || '').includes(q) ||
+                 (t.display_value || '').toLowerCase().includes(q),
+          );
+          const match = !q || txt.includes(q) || tagHits;
+          r.classList.toggle('hidden', !match);
+        });
+      });
+      card.appendChild(toggle);
+      card.appendChild(drawer);
+    }
+  }
   return card;
 }
 
-function _recolorComposeRow(row, b) {
-  row.classList.toggle('excluded', !!b.excluded);
+function _renderTitleRow_compose(t) {
+  const row = _el('div', { className: 'compose-row' });
+  row.appendChild(_el('span', { className: 'row-text', textContent: t.title }));
+  const meta = _el('div', { className: 'row-meta' });
+  meta.appendChild(_el('span', {
+    className: 'score-chip', textContent: String(Math.round(t.score)),
+  }));
+  if (t.is_official) {
+    meta.appendChild(_el('span', {
+      className: 'corpus-row-flag official', textContent: 'OFFICIAL',
+    }));
+  }
+  const tagWrap = _el('span', { className: 'tag-chip-wrap' });
+  _renderTagChips(tagWrap, 'title', t.id, t.tags || []);
+  meta.appendChild(tagWrap);
+  row.appendChild(meta);
+  return row;
+}
+
+function _renderBulletRow_compose(b) {
+  const row = _el('div', { className: 'compose-row' });
+  if (b.recommended) row.classList.add('recommended');
+  if (b.pinned)     row.classList.add('pinned');
+  if (b.excluded)   row.classList.add('excluded');
+  row._bulletState = b;
+
+  row.appendChild(_el('div', { className: 'row-text', textContent: b.text }));
+
+  // Actions (top-right)
+  const actions = _el('div', { className: 'row-actions' });
+  const pin = _el('button', {
+    className: 'corpus-action-btn' + (b.pinned ? ' on' : ''),
+    textContent: b.pinned ? 'PINNED' : 'PIN',
+  });
+  const exc = _el('button', {
+    className: 'corpus-action-btn delete' + (b.excluded ? ' on' : ''),
+    textContent: b.excluded ? 'EXCLUDED' : 'EXCLUDE',
+  });
+  // Toggle "add" only for non-recommended bullets reached via drawer;
+  // recommended/already-added bullets always count as added.
+  const addBtn = _el('button', {
+    className: 'corpus-action-btn' + (b.added ? ' on' : ''),
+    textContent: b.added ? 'ADDED' : '+ ADD',
+  });
+  if (b.recommended) addBtn.style.display = 'none';
+  pin.onclick = () => {
+    b.pinned = !b.pinned;
+    if (b.pinned) b.excluded = false;
+    _refreshComposeRow(row);
+  };
+  exc.onclick = () => {
+    b.excluded = !b.excluded;
+    if (b.excluded) { b.pinned = false; b.added = false; }
+    _refreshComposeRow(row);
+  };
+  addBtn.onclick = () => {
+    b.added = !b.added;
+    if (b.added) b.excluded = false;
+    _refreshComposeRow(row);
+  };
+  actions.appendChild(pin);
+  actions.appendChild(exc);
+  if (!b.recommended) actions.appendChild(addBtn);
+  row.appendChild(actions);
+
+  // Metadata line (score, outcome, tags)
+  const meta = _el('div', { className: 'row-meta' });
+  meta.appendChild(_el('span', {
+    className: 'score-chip', textContent: String(Math.round(b.score)),
+  }));
+  if (b.recommended) {
+    meta.appendChild(_el('span', {
+      className: 'corpus-row-flag', textContent: 'RECOMMENDED',
+      style: 'background:var(--teal);color:var(--black);',
+    }));
+  }
+  if (b._fallback) {
+    meta.appendChild(_el('span', {
+      className: 'corpus-row-flag',
+      textContent: 'TOP-5 FALLBACK',
+    }));
+  }
+  if (b.has_outcome) {
+    meta.appendChild(_el('span', {
+      className: 'corpus-row-flag outcome', textContent: 'OUTCOME',
+    }));
+  }
+  if (b.is_pending_review) {
+    meta.appendChild(_el('span', {
+      className: 'corpus-row-flag pending', textContent: 'PENDING',
+    }));
+  }
+  const tagWrap = _el('span', { className: 'tag-chip-wrap' });
+  _renderTagChips(tagWrap, 'bullet', b.id, b.tags || []);
+  meta.appendChild(tagWrap);
+  row.appendChild(meta);
+  return row;
+}
+
+function _refreshComposeRow(row) {
+  const b = row._bulletState;
+  if (!b) return;
   row.classList.toggle('pinned', !!b.pinned);
+  row.classList.toggle('excluded', !!b.excluded);
+  const actions = row.querySelector('.row-actions');
+  if (!actions) return;
+  const btns = actions.querySelectorAll('button');
+  if (btns[0]) {
+    btns[0].textContent = b.pinned ? 'PINNED' : 'PIN';
+    btns[0].classList.toggle('on', !!b.pinned);
+  }
+  if (btns[1]) {
+    btns[1].textContent = b.excluded ? 'EXCLUDED' : 'EXCLUDE';
+    btns[1].classList.toggle('on', !!b.excluded);
+  }
+  if (btns[2]) {
+    btns[2].textContent = b.added ? 'ADDED' : '+ ADD';
+    btns[2].classList.toggle('on', !!b.added);
+  }
 }
 
 async function saveCompositionThenNext() {
   if (_composeApplicationId == null) { wizardGoTo(4); return; }
   const pinned = [];
   const excluded = [];
+  const added = [];
   document.querySelectorAll('#composeList .compose-row').forEach(row => {
     const b = row._bulletState;
     if (!b) return;
     if (b.pinned) pinned.push(b.id);
     if (b.excluded) excluded.push(b.id);
+    if (b.added) added.push(b.id);
   });
   try {
     const res = await fetch(
@@ -2828,7 +3011,7 @@ async function saveCompositionThenNext() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          context_path: lastContextPath, pinned, excluded,
+          context_path: lastContextPath, pinned, excluded, added,
         }),
       },
     );
@@ -2836,7 +3019,7 @@ async function saveCompositionThenNext() {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
-    _toast(`Composition saved (${pinned.length} pinned, ${excluded.length} excluded)`);
+    _toast(`Composition saved (${pinned.length} pinned, ${added.length} added, ${excluded.length} excluded)`);
   } catch (e) {
     _toast('Save failed: ' + e.message, true);
     return;
@@ -2871,7 +3054,7 @@ function _renderTagChips(container, subjectKind, subjectId, tags) {
     container.appendChild(chip);
   });
   const add = _el('button', { className: 'tag-chip-add', textContent: '+ tag' });
-  add.onclick = () => _promptAddTag(container, subjectKind, subjectId);
+  add.onclick = () => _openInlineTagComposer(add, subjectKind, subjectId);
   container.appendChild(add);
 }
 
@@ -2969,4 +3152,206 @@ async function _previewPersonaWithResume(personaId, name) {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+// ===============================================================
+// Workstream G — generic form modal (replaces prompt() chains)
+// ===============================================================
+
+// openFormModal({
+//   title, subtitle, submitLabel, fields: [{name,label,type,required,
+//     placeholder,options:[{value,label}],defaultValue}], onSubmit(values)
+// }) -> Promise that resolves with the entered values or null on cancel.
+function openFormModal(opts) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('formModal');
+    const titleEl = document.getElementById('formModalTitle');
+    const subEl = document.getElementById('formModalSubtitle');
+    const body = document.getElementById('formModalBody');
+    const submit = document.getElementById('formModalSubmit');
+    const trigger = document.activeElement;
+    if (!modal || !body) { resolve(null); return; }
+
+    titleEl.textContent = opts.title || 'FORM';
+    subEl.textContent = opts.subtitle || '';
+    submit.textContent = opts.submitLabel || 'SAVE';
+    _clearChildren(body);
+
+    const inputs = {};
+    (opts.fields || []).forEach(f => {
+      const id = `formModal_${f.name}`;
+      body.appendChild(_el('label', { htmlFor: id, textContent: f.label }));
+      let input;
+      if (f.type === 'textarea') {
+        input = _el('textarea', { id });
+        if (f.defaultValue) input.value = f.defaultValue;
+      } else if (f.type === 'select') {
+        input = _el('select', { id });
+        (f.options || []).forEach(o => {
+          const opt = document.createElement('option');
+          opt.value = o.value; opt.textContent = o.label;
+          if (o.value === f.defaultValue) opt.selected = true;
+          input.appendChild(opt);
+        });
+      } else {
+        input = _el('input', { id, type: f.type || 'text' });
+        if (f.defaultValue) input.value = f.defaultValue;
+      }
+      if (f.placeholder) input.placeholder = f.placeholder;
+      if (f.required) input.required = true;
+      if (f.pattern) input.pattern = f.pattern;
+      body.appendChild(input);
+      inputs[f.name] = input;
+    });
+    const errRow = _el('div', { className: 'form-row-error', id: 'formModalError' });
+    body.appendChild(errRow);
+
+    const focusable = modal.querySelectorAll('button, input, textarea, select');
+    const cleanup = (result) => {
+      modal.classList.add('hidden');
+      modal.removeEventListener('keydown', onKey);
+      submit.onclick = null;
+      dismissers.forEach(b => b.removeEventListener('click', onCancel));
+      if (trigger && typeof trigger.focus === 'function') trigger.focus();
+      resolve(result);
+    };
+    const onCancel = () => cleanup(null);
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); cleanup(null); return; }
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault(); submit.click(); return;
+      }
+      if (e.key !== 'Tab' || focusable.length === 0) return;
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    submit.onclick = async () => {
+      const vals = {};
+      for (const f of opts.fields || []) {
+        const v = inputs[f.name].value;
+        if (f.required && !String(v || '').trim()) {
+          errRow.textContent = `${f.label} is required`;
+          inputs[f.name].focus();
+          return;
+        }
+        if (f.pattern && v && !new RegExp(`^${f.pattern}$`).test(v)) {
+          errRow.textContent = `${f.label} doesn't match the expected format`;
+          inputs[f.name].focus();
+          return;
+        }
+        vals[f.name] = v;
+      }
+      errRow.textContent = '';
+      // Caller can optionally validate / return false to keep modal open
+      if (opts.onSubmit) {
+        try {
+          const ok = await opts.onSubmit(vals);
+          if (ok === false) return;  // keep modal open
+        } catch (e) {
+          errRow.textContent = e.message || 'Save failed';
+          return;
+        }
+      }
+      cleanup(vals);
+    };
+
+    const dismissers = Array.from(modal.querySelectorAll('[data-form-dismiss]'));
+    dismissers.forEach(b => b.addEventListener('click', onCancel));
+    modal.addEventListener('keydown', onKey);
+    modal.classList.remove('hidden');
+    const firstInput = body.querySelector('input,textarea,select');
+    if (firstInput) firstInput.focus();
+  });
+}
+
+// ===============================================================
+// Workstream G — inline tag composer (replaces _promptAddTag)
+// ===============================================================
+
+let _tagDatalistId = '_tagSuggestList';
+
+async function _ensureTagDatalist() {
+  let list = document.getElementById(_tagDatalistId);
+  if (!list) {
+    list = document.createElement('datalist');
+    list.id = _tagDatalistId;
+    document.body.appendChild(list);
+  }
+  if (!currentUser) return list;
+  try {
+    const r = await fetch(`/api/users/${encodeURIComponent(currentUser)}/tags?limit=100`);
+    if (!r.ok) return list;
+    const rows = await r.json();
+    _clearChildren(list);
+    rows.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t.display_value || t.value;
+      list.appendChild(o);
+    });
+  } catch {}
+  return list;
+}
+
+function _openInlineTagComposer(addBtn, subjectKind, subjectId) {
+  // addBtn is the "+ tag" button; replace it with an inline composer until
+  // the user submits or cancels. Datalist auto-fills from /api/users/<u>/tags.
+  const parent = addBtn.parentNode;
+  if (!parent) return;
+  const composer = _el('span', { className: 'tag-composer' });
+  const input = _el('input', { type: 'text' });
+  input.setAttribute('list', _tagDatalistId);
+  input.placeholder = 'tag value';
+  const kind = _el('select');
+  ['skill', 'role', 'domain', 'tech'].forEach(k => {
+    const o = document.createElement('option');
+    o.value = k; o.textContent = k;
+    kind.appendChild(o);
+  });
+  const go = _el('button', { className: 'tag-composer-go', textContent: 'ADD' });
+  const cancel = _el('button', { className: 'tag-composer-cancel', textContent: '×' });
+  composer.appendChild(input); composer.appendChild(kind);
+  composer.appendChild(go); composer.appendChild(cancel);
+  parent.replaceChild(composer, addBtn);
+  _ensureTagDatalist();
+  input.focus();
+
+  const restore = () => parent.replaceChild(addBtn, composer);
+  cancel.onclick = restore;
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); restore(); }
+    else if (e.key === 'Enter') { e.preventDefault(); go.click(); }
+  });
+  go.onclick = async () => {
+    const v = input.value.trim();
+    if (!v) { input.focus(); return; }
+    go.disabled = true;
+    try {
+      const tag = await _postJson(
+        `/api/${subjectKind === 'bullet' ? 'bullets' : 'experience-titles'}`
+        + `/${subjectId}/tags`,
+        { value: v, kind: kind.value },
+      );
+      const chip = _el('span', { className: 'tag-chip' });
+      chip.appendChild(_el('span', { textContent: tag.display_value || tag.value }));
+      const x = _el('button', { className: 'tag-chip-x', textContent: '×' });
+      x.onclick = async (ev) => {
+        ev.stopPropagation();
+        try {
+          await _deleteJson(
+            `/api/${subjectKind === 'bullet' ? 'bullets' : 'experience-titles'}`
+            + `/${subjectId}/tags/${tag.id}`,
+          );
+          chip.remove();
+        } catch (err) { _toast('Remove failed: ' + err.message, true); }
+      };
+      chip.appendChild(x);
+      parent.insertBefore(chip, composer);
+      restore();
+      _toast('Tag added');
+    } catch (e) {
+      _toast('Add failed: ' + e.message, true);
+      go.disabled = false;
+    }
+  };
 }

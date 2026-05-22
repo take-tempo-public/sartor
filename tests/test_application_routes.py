@@ -351,3 +351,68 @@ class TestComposition:
         r = client.post(f"/api/applications/{aid}/composition",
                         json={"pinned": [], "excluded": []})
         assert r.status_code == 400
+
+
+class TestCompositionAddedField:
+    def test_post_persists_added_field(self, app_app, tmp_path):
+        """Workstream I: composition POST round-trips the 'added' list."""
+        cid = _seed_candidate()
+        _seed_exp_with_bullets(cid)
+        aid = _seed_application(cid)
+        import json
+        out = tmp_path / "output" / "alice"
+        out.mkdir(parents=True, exist_ok=True)
+        ctx = out / "context_add.json"
+        ctx.write_text(json.dumps({"application_id": aid}), encoding="utf-8")
+
+        client = app_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={"context_path": str(ctx),
+                  "pinned": [], "excluded": [], "added": [42, 43]},
+        )
+        assert r.status_code == 200, r.get_json()
+        saved = json.loads(ctx.read_text(encoding="utf-8"))
+        assert saved["composition_overrides"]["added"] == [42, 43]
+        assert r.get_json()["added"] == [42, 43]
+
+    def test_get_surfaces_recommended_and_added_flags(self, app_app, tmp_path):
+        """Workstream H+I: GET composition exposes the per-bullet recommended
+        + added flags so the Compose UI can default to the curated set."""
+        cid = _seed_candidate()
+        eid = _seed_exp_with_bullets(cid)
+        aid = _seed_application(cid, jd_text="Kubernetes latency at scale")
+        import json
+        out = tmp_path / "output" / "alice"
+        out.mkdir(parents=True, exist_ok=True)
+        ctx = out / "context_flags.json"
+        # Need a real bullet id to mark recommended
+        from db.models import Bullet
+        from db.session import get_session
+        s = get_session()
+        try:
+            bids = [b.id for b in s.query(Bullet).filter_by(experience_id=eid).all()]
+        finally:
+            s.close()
+        ctx.write_text(json.dumps({
+            "application_id": aid,
+            "llm_recommendations": {
+                str(eid): {"bullet_ids": [bids[0]], "rationale": "best fit"},
+            },
+            "composition_overrides": {
+                "pinned": [], "excluded": [], "added": [bids[1]],
+            },
+        }), encoding="utf-8")
+
+        client = app_app.app.test_client()
+        r = client.get(
+            f"/api/applications/{aid}/composition?context_path={ctx}",
+        )
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["any_recommendations"] is True
+        exp = body["experiences"][0]
+        assert exp["rationale"] == "best fit"
+        flags = {b["id"]: (b["recommended"], b["added"]) for b in exp["bullets"]}
+        assert flags[bids[0]] == (True, False)
+        assert flags[bids[1]] == (False, True)

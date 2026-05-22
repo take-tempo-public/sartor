@@ -243,3 +243,58 @@ class TestRequiredKeySets:
         assert new_in_corpus == {
             "selected_bullets", "proposed_new_bullets", "proposed_experience_titles",
         }
+
+
+# ---------------------------------------------------------------------------
+# Workstream H — effective-set filter when llm_recommendations is present
+# ---------------------------------------------------------------------------
+
+
+class TestCorpusEffectiveSetFilter:
+    def test_no_recommendations_keeps_all_bullets(self):
+        """Without llm_recommendations the prompt is unchanged
+        (cache-stable for applications that don't use the recommend call)."""
+        ctx = _make_corpus_context()
+        prefix = _stable_user_prefix(ctx)
+        assert "Led 5-person team." in prefix
+        assert "Defined roadmap." in prefix
+
+    def test_recommendations_restrict_to_effective_set(self):
+        """Only recommended ∪ added ∪ pinned bullets are emitted; the
+        non-recommended ones are dropped from the prompt entirely."""
+        ctx = _make_corpus_context()
+        ctx["llm_recommendations"] = {
+            "1": {"bullet_ids": [100], "rationale": "x"},
+        }
+        prefix = _stable_user_prefix(ctx)
+        assert "Led 5-person team." in prefix     # recommended → kept
+        assert "Defined roadmap." not in prefix   # non-recommended → dropped
+
+    def test_added_and_pinned_join_recommended(self):
+        ctx = _make_corpus_context()
+        ctx["llm_recommendations"] = {
+            "1": {"bullet_ids": [100], "rationale": "x"},
+        }
+        ctx["composition_overrides"] = {"pinned": [], "excluded": [], "added": [101]}
+        prefix = _stable_user_prefix(ctx)
+        assert "Led 5-person team." in prefix
+        assert "Defined roadmap." in prefix  # added via drawer
+
+    def test_excluded_drops_even_when_recommended(self):
+        ctx = _make_corpus_context()
+        ctx["llm_recommendations"] = {
+            "1": {"bullet_ids": [100, 101], "rationale": "x"},
+        }
+        ctx["composition_overrides"] = {"pinned": [], "excluded": [100], "added": []}
+        prefix = _stable_user_prefix(ctx)
+        assert "Led 5-person team." not in prefix  # excluded wins
+        assert "Defined roadmap." in prefix
+
+    def test_pinned_attr_survives_with_recommendations(self):
+        ctx = _make_corpus_context()
+        ctx["llm_recommendations"] = {
+            "1": {"bullet_ids": [100], "rationale": "x"},
+        }
+        ctx["composition_overrides"] = {"pinned": [100], "excluded": [], "added": []}
+        prefix = _stable_user_prefix(ctx)
+        assert 'pinned="true"' in prefix

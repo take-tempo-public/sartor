@@ -51,6 +51,12 @@ GENERATE_REQUIRED_KEYS = frozenset({
 
 CLARIFY_REQUIRED_KEYS = frozenset({"questions", "reasoning"})
 
+# Workstream H: recommend_bullets() output. `recommendations` is a list of
+# {experience_id, bullet_ids, rationale}; bullet_ids are 3-7 ids from the
+# corpus, rationale is one sentence. The route persists this on the context
+# so the Compose UI can render the curated set as the default view.
+RECOMMEND_REQUIRED_KEYS = frozenset({"recommendations"})
+
 # Generate output keys when the input contains <career_corpus> (Phase B.2+).
 # Selected_bullets is required so B.3 can write application_bullet audit rows
 # from the LLM's selections. proposed_new_bullets and proposed_experience_titles
@@ -63,7 +69,7 @@ GENERATE_CORPUS_REQUIRED_KEYS = GENERATE_REQUIRED_KEYS | frozenset({
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-18.1"
+PROMPT_VERSION = "2026-05-22.1"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -280,23 +286,57 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
     corpus = context_set.get("career_corpus")
     if corpus:
         # Workstream B: honor the Compose step's pin/exclude overrides.
-        # Excluded bullets are dropped from the prompt entirely; pinned
-        # bullets are flagged so the LLM must include them in
-        # selected_bullets. Overrides are bullet ids (ints).
+        # Workstream H: when llm_recommendations are present, restrict the
+        # per-experience bullets to the curated effective set:
+        #   (recommended ∪ added ∪ pinned) − excluded
+        # The user_added "added" list comes from the per-experience drawer
+        # (Workstream I). When no recommendations are present, behavior
+        # is the prior pin/exclude-only filter (cache stays byte-identical).
         ov = context_set.get("composition_overrides") or {}
         excluded_ids = {int(x) for x in (ov.get("excluded") or [])}
         pinned_ids = {int(x) for x in (ov.get("pinned") or [])}
-        if excluded_ids:
-            corpus = [
-                {
-                    **exp,
-                    "bullets": [
-                        b for b in (exp.get("bullets") or [])
-                        if b.get("id") not in excluded_ids
-                    ],
-                }
-                for exp in corpus
-            ]
+        added_ids = {int(x) for x in (ov.get("added") or [])}
+        recommendations = context_set.get("llm_recommendations") or {}
+        # `recommendations` is keyed by experience-id string when persisted
+        # from JSON; coerce both shapes (dict or list) into per-exp sets.
+        rec_by_exp: dict[int, set[int]] = {}
+        if isinstance(recommendations, dict):
+            for k, v in recommendations.items():
+                try:
+                    eid = int(k)
+                except (TypeError, ValueError):
+                    continue
+                ids = v.get("bullet_ids") if isinstance(v, dict) else v
+                rec_by_exp[eid] = {int(x) for x in (ids or [])}
+        elif isinstance(recommendations, list):
+            for rec in recommendations:
+                if not isinstance(rec, dict):
+                    continue
+                eid = rec.get("experience_id")
+                if eid is None:
+                    continue
+                rec_by_exp[int(eid)] = {int(x) for x in (rec.get("bullet_ids") or [])}
+
+        use_recommendations = bool(rec_by_exp)
+        if excluded_ids or use_recommendations:
+            new_corpus: list[CorpusExperience] = []
+            for exp in corpus:
+                raw_eid = exp.get("id")
+                if raw_eid is None:
+                    new_corpus.append(exp)
+                    continue
+                eid = int(raw_eid)
+                exp_bullets = exp.get("bullets") or []
+                if use_recommendations:
+                    effective = rec_by_exp.get(eid, set()) | added_ids | pinned_ids
+                    exp_bullets = [b for b in exp_bullets
+                                   if int(b.get("id") or 0) in effective]
+                if excluded_ids:
+                    exp_bullets = [b for b in exp_bullets
+                                   if b.get("id") not in excluded_ids]
+                new_exp: CorpusExperience = {**exp, "bullets": exp_bullets}
+                new_corpus.append(new_exp)
+            corpus = new_corpus
         parts.append(_corpus_block(
             corpus, iteration=iteration, pinned_ids=pinned_ids,
         ))
@@ -1452,6 +1492,97 @@ Existing canonical bullets for this experience:
         username=username,
         run_id=run_id,
         system_prompt=PROPOSAL_CRITIQUE_SYSTEM_PROMPT,
+        model=HAIKU_MODEL,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Workstream H: per-application bullet recommendations (the "Compose" view)
+# ---------------------------------------------------------------------------
+
+
+RECOMMEND_SYSTEM_PROMPT = """You are helping a candidate curate a tailored resume for ONE specific job. The candidate's full bullet corpus is given as <career_corpus> XML; the job is given as <jd>. You see the analyst's prior breakdown of the JD in <analysis> when present.
+
+Your one task: for EACH experience in the corpus, pick 3-7 bullets that best fit THIS JD. Optimize for: relevance to JD requirements, variety (don't pick three bullets that say the same thing), measurable outcomes when present, and recency where signal-equivalent.
+
+NEVER invent bullets. NEVER reword bullets — return only ids from the corpus. If an experience has fewer than 3 strong fits, return as few as you genuinely recommend (down to 1); don't pad.
+
+Output JSON only, this exact shape:
+{
+  "recommendations": [
+    {
+      "experience_id": <int>,
+      "bullet_ids": [<int>, <int>, ...],
+      "rationale": "one-sentence reason these bullets fit this JD"
+    },
+    ...
+  ]
+}
+
+Skip experiences whose bullets don't fit at all (omit them from the array entirely; don't return empty bullet_ids). Use the numeric ids only — do NOT prefix with "b" or "e"."""
+
+
+def recommend_bullets(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    *,
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """Pick the 3-7 most-relevant bullets per experience for this JD.
+
+    Haiku call — structured selection, not reasoning-depth work. Fires
+    automatically after `analyze()` succeeds so the Compose UI can render
+    a curated set as the default. Returns the parsed dict; the caller
+    persists it on `context_set["llm_recommendations"]`.
+
+    Caller must populate `context_set` with a corpus-mode payload
+    (`career_corpus` + `llm_analysis` after analyze). Falls back to
+    raising the same LLMResponseError as the other calls when the model
+    output can't be parsed after a retry.
+    """
+    corpus = context_set.get("career_corpus") or []
+    if not corpus:
+        # No corpus means nothing to recommend — return an empty payload
+        # so callers can persist a benign value and the UI falls back to
+        # deterministic ordering.
+        return {"recommendations": []}
+
+    corpus_block = _corpus_block(list(corpus), iteration=0)
+    # The JD lives on the application row; the route stashes it on the
+    # context as `jd_text` before calling us. Coerce to str so mypy is
+    # happy even though the field isn't in the ContextSet TypedDict.
+    jd_value = context_set.get("jd_text", "")
+    jd_str = (str(jd_value) if jd_value else "").strip() or "(JD text unavailable in context)"
+    analysis = context_set.get("llm_analysis") or {}
+
+    essential = ", ".join(analysis.get("essential_skills", []) or [])
+    preferred = ", ".join(analysis.get("preferred_skills", []) or [])
+    keywords = ", ".join(analysis.get("industry_keywords", []) or [])
+
+    user_prompt = f"""<task>Pick 3-7 best-fit bullet ids per experience for this JD. Output JSON only.</task>
+
+{corpus_block}
+
+<jd>
+{jd_str}
+</jd>
+
+<analysis>
+Essential skills the JD names: {essential or '(none surfaced)'}
+Preferred skills: {preferred or '(none)'}
+Industry keywords: {keywords or '(none)'}
+</analysis>"""
+
+    return _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot per application; cache benefit is small
+        required_keys=RECOMMEND_REQUIRED_KEYS,
+        call_kind="recommend",
+        username=username,
+        run_id=run_id,
+        system_prompt=RECOMMEND_SYSTEM_PROMPT,
         model=HAIKU_MODEL,
     )
 

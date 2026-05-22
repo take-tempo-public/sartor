@@ -50,7 +50,6 @@
   <div class="lcars-main" id="main">
 
     <!-- USER -->
-    <div class="lcars-block lcars-blue" data-panel="panelUser">USER</div>
     <section class="lcars-panel" id="panelUser">
       <div class="panel-header lcars-bg-blue">USER SELECTION</div>
       <div class="panel-body">
@@ -80,7 +79,6 @@
     </section>
 
     <!-- APPLICATIONS (Phase D.3) -->
-    <div class="lcars-block lcars-teal hidden" data-panel="panelApplications">APPS</div>
     <section class="lcars-panel hidden" id="panelApplications">
       <div class="panel-header lcars-bg-teal">PRIOR APPLICATIONS</div>
       <div class="panel-body">
@@ -99,7 +97,6 @@
     </section>
 
     <!-- CONFIG -->
-    <div class="lcars-block lcars-violet hidden" data-panel="panelConfig">CONFIG</div>
     <section class="lcars-panel hidden" id="panelConfig">
       <div class="panel-header lcars-bg-violet">USER CONFIGURATION</div>
       <div class="panel-body">
@@ -161,7 +158,6 @@
     <!-- STEP 1 — CORPUS: add-to-corpus dropzone (repurposed; the legacy
          primary/supplemental chip selection is removed — corpus is the
          source of truth now). -->
-    <div class="lcars-block lcars-amber hidden" data-panel="panelResume">CORPUS</div>
     <section class="lcars-panel hidden" id="panelResume" data-wstep-body="1">
       <div class="panel-header lcars-bg-amber">STEP 1 · CORPUS</div>
       <div class="panel-body">
@@ -184,7 +180,6 @@
     </section>
 
     <!-- STEP 2 — JOB + ANALYZE -->
-    <div class="lcars-block lcars-teal hidden" data-panel="panelJD">JOB</div>
     <section class="lcars-panel hidden" id="panelJD" data-wstep-body="2">
       <div class="panel-header lcars-bg-teal">STEP 2 · JOB DESCRIPTION</div>
       <div class="panel-body">
@@ -198,7 +193,6 @@
 
     <!-- STEP 3 — COMPOSE: fit-ranked bullets + eligible titles, with
          pin/exclude and inline tag chips. Populated after ANALYZE. -->
-    <div class="lcars-block lcars-violet hidden" data-panel="panelCompose">COMPOSE</div>
     <section class="lcars-panel hidden" id="panelCompose" data-wstep-body="3">
       <div class="panel-header lcars-bg-violet">STEP 3 · COMPOSE</div>
       <div class="panel-body">
@@ -217,7 +211,6 @@
     </section>
 
     <!-- STEPS 4+5 — CLARIFY (optional) + GENERATE (with template pick) -->
-    <div class="lcars-block lcars-orange hidden" data-panel="panelAnalysis">ANALYSIS</div>
     <section class="lcars-panel hidden" id="panelAnalysis" data-wstep-body="4 5">
       <div class="panel-header lcars-bg-orange">STEP 4·5 · ANALYSIS / CLARIFY / GENERATE</div>
       <div class="panel-body">
@@ -258,7 +251,6 @@
     </section>
 
     <!-- STEP 6 — OUTPUT / DOWNLOAD -->
-    <div class="lcars-block lcars-amber hidden" data-panel="panelOutput">OUTPUT</div>
     <section class="lcars-panel hidden" id="panelOutput" data-wstep-body="6">
       <div class="panel-header lcars-bg-amber">STEP 6 · GENERATED OUTPUT</div>
       <div class="panel-body">
@@ -349,7 +341,6 @@
   <!-- ============================================================== -->
   <div id="tab-corpus" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabCorpus">
     <div class="lcars-main">
-      <div class="lcars-block lcars-blue" data-panel="panelCorpus">CORPUS</div>
       <section class="lcars-panel" id="panelCorpus">
         <div class="panel-header lcars-bg-blue">CAREER CORPUS</div>
         <div class="panel-body">
@@ -377,7 +368,6 @@
   <!-- Persona Templates (Phase D.4) -->
   <div id="tab-personas" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabPersonas">
     <div class="lcars-main">
-      <div class="lcars-block lcars-violet" data-panel="panelPersonas">TEMPLATES</div>
       <section class="lcars-panel" id="panelPersonas">
         <div class="panel-header lcars-bg-violet">PERSONA TEMPLATES</div>
         <div class="panel-body">
@@ -419,7 +409,6 @@
   <!-- Candidate Memory tab (Phase D.5) -->
   <div id="tab-memory" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabMemory">
     <div class="lcars-main">
-      <div class="lcars-block lcars-teal" data-panel="panelMemory">MEMORY</div>
       <section class="lcars-panel" id="panelMemory">
         <div class="panel-header lcars-bg-teal">CANDIDATE MEMORY</div>
         <div class="panel-body">
@@ -551,6 +540,25 @@
         <button class="lcars-btn lcars-bg-teal" id="btnRunImport">IMPORT IDENTITY + MEMORY</button>
         <button class="lcars-btn lcars-bg-blue" id="btnCancelOnboard" data-onboard-dismiss>CANCEL</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Generic form modal — JS fills #formModalBody with field rows. Used by
+       add-experience, add-bullet, add-title, promote-clarification-picker
+       (Workstream G replaces the prompt() dialogs). -->
+  <div id="formModal" class="lcars-modal hidden" role="dialog" aria-modal="true"
+       aria-labelledby="formModalTitle" aria-describedby="formModalSubtitle">
+    <div class="lcars-modal-backdrop" data-form-dismiss="cancel"></div>
+    <div class="lcars-modal-content" role="document">
+      <h2 id="formModalTitle" class="lcars-modal-title">FORM</h2>
+      <p id="formModalSubtitle" class="lcars-modal-body"></p>
+      <form id="formModalForm" onsubmit="return false">
+        <div id="formModalBody" class="form-modal-body"></div>
+        <div class="modal-actions">
+          <button type="button" class="lcars-btn lcars-bg-teal" id="formModalSubmit">SAVE</button>
+          <button type="button" class="lcars-btn lcars-bg-blue" data-form-dismiss="cancel">CANCEL</button>
+        </div>
+      </form>
     </div>
   </div>
 

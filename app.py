@@ -3088,6 +3088,36 @@ def _read_composition_overrides(context_path: str) -> tuple[set[int], set[int]]:
     return set(ov.get("pinned", []) or []), set(ov.get("excluded", []) or [])
 
 
+def _read_recommendations_and_added(
+    context_path: str,
+) -> tuple[set[int], dict[int, dict]]:
+    """(added bullet-id set, recommendations dict keyed by experience id).
+    Reads `composition_overrides.added` and `llm_recommendations` from the
+    context file. Empty / {} when absent. _within-gated by OUTPUT_DIR."""
+    if not context_path:
+        return set(), {}
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR) or not cp.exists():
+        return set(), {}
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return set(), {}
+    added = set(int(x) for x in ((ctx.get("composition_overrides") or {}).get("added") or []))
+    rec_by_exp: dict[int, dict] = {}
+    for k, v in (ctx.get("llm_recommendations") or {}).items():
+        try:
+            eid = int(k)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(v, dict):
+            rec_by_exp[eid] = {
+                "bullet_ids": [int(b) for b in (v.get("bullet_ids") or [])],
+                "rationale": (v.get("rationale") or "").strip(),
+            }
+    return added, rec_by_exp
+
+
 @app.route("/api/applications/<int:application_id>/composition", methods=["GET"])
 def get_application_composition(application_id: int):
     """Fit-ranked bullets + eligible titles for the Compose wizard step.
@@ -3113,9 +3143,12 @@ def get_application_composition(application_id: int):
 
         jd_kw = set(extract_keywords(app_row.jd_text).get("keywords", {}).keys())
         essential = _latest_analysis_essentials(app_row)
-        pinned, excluded = _read_composition_overrides(
-            request.args.get("context_path", ""),
-        )
+        ctx_path = request.args.get("context_path", "")
+        pinned, excluded = _read_composition_overrides(ctx_path)
+        # Workstreams H + I: surface llm_recommendations + composition_overrides.added
+        # so the Compose UI can default to the curated set and mark drawer-added
+        # bullets as included.
+        added, rec_by_exp = _read_recommendations_and_added(ctx_path)
 
         experiences = session.query(Experience).filter_by(
             candidate_id=candidate.id,
@@ -3123,6 +3156,8 @@ def get_application_composition(application_id: int):
 
         out = []
         for exp in experiences:
+            rec = rec_by_exp.get(exp.id, {})
+            rec_ids = set(rec.get("bullet_ids", []))
             scored_bullets: list[dict[str, Any]] = []
             for b in exp.bullets:
                 if not b.is_active:
@@ -3139,9 +3174,16 @@ def get_application_composition(application_id: int):
                     "tags": _tag_list(b.tag_links),
                     "pinned": b.id in pinned,
                     "excluded": b.id in excluded,
+                    "recommended": b.id in rec_ids,
+                    "added": b.id in added,
                 })
             scored_bullets.sort(
-                key=lambda d: (not d["pinned"], -float(d["score"]), int(d["id"])),
+                key=lambda d: (
+                    # Pinned and recommended sit at the top; excluded sink.
+                    not (d["pinned"] or d["recommended"] or d["added"]),
+                    -float(d["score"]),
+                    int(d["id"]),
+                ),
             )
             titles: list[dict[str, Any]] = []
             for t in exp.titles:
@@ -3167,24 +3209,36 @@ def get_application_composition(application_id: int):
                     "id": exp.id, "company": exp.company,
                     "start_date": exp.start_date, "end_date": exp.end_date,
                     "bullets": scored_bullets, "titles": titles,
+                    "rationale": rec.get("rationale", ""),
+                    "has_recommendations": bool(rec_ids),
                 })
-        return jsonify({"application_id": application_id, "experiences": out})
+        return jsonify({
+            "application_id": application_id,
+            "experiences": out,
+            "any_recommendations": any(e["has_recommendations"] for e in out),
+        })
     finally:
         session.close()
 
 
 @app.route("/api/applications/<int:application_id>/composition", methods=["POST"])
 def save_application_composition(application_id: int):
-    """Persist pin/exclude overrides into the application's context file so
-    the next generate() honors them. Body: {context_path, pinned[],
-    excluded[]}. Writes back in place (same pattern as
-    /api/answer-clarifications)."""
+    """Persist pin/exclude/add overrides into the application's context file
+    so the next generate() honors them. Body:
+        {context_path, pinned[], excluded[], added[]}
+    `added` (Workstream I) is bullet ids the user pulled in via the
+    per-experience drawer; combined with `llm_recommendations` at
+    prompt-build time to form the effective corpus the LLM sees.
+    Writes back in place (same pattern as /api/answer-clarifications).
+    Filesystem + ownership: _safe_username is enforced inside
+    _load_application_owned; _within gates context_path."""
     from db.session import get_session, init_db
 
     data = request.json or {}
     context_path = (data.get("context_path") or "").strip()
     pinned = [int(x) for x in (data.get("pinned") or [])]
     excluded = [int(x) for x in (data.get("excluded") or [])]
+    added = [int(x) for x in (data.get("added") or [])]
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
 
@@ -3192,7 +3246,7 @@ def save_application_composition(application_id: int):
     session = get_session()
     try:
         app_row, candidate = _load_application_owned(session, application_id)
-        if app_row is None:
+        if app_row is None or not _safe_username(candidate.username):
             return jsonify({"error": "Application not found"}), 404
 
         cp = Path(context_path)
@@ -3205,11 +3259,93 @@ def save_application_composition(application_id: int):
         if ctx.get("application_id") not in (None, application_id):
             return jsonify({"error": "context_path does not match application"}), 400
 
-        ctx["composition_overrides"] = {"pinned": pinned, "excluded": excluded}
+        ctx["composition_overrides"] = {
+            "pinned": pinned, "excluded": excluded, "added": added,
+        }
         cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
         return jsonify({
             "application_id": application_id,
-            "pinned": pinned, "excluded": excluded,
+            "pinned": pinned, "excluded": excluded, "added": added,
+        })
+    finally:
+        session.close()
+
+
+@app.route("/api/applications/<int:application_id>/recommend", methods=["POST"])
+def recommend_application_bullets(application_id: int):
+    """Workstream H: pick 3-7 bullets/experience via Haiku and stash them
+    on the context file as `llm_recommendations`, so the Compose UI can
+    render only the curated set by default.
+
+    Body: {context_path}. Fired by the frontend right after a successful
+    /api/analyze; the route is also re-runnable (overwrites the field).
+    Failure (LLM error) returns the error to the caller; the Compose UI
+    falls back to the deterministic fit-ranked top-5.
+
+    Filesystem + ownership: _safe_username is enforced inside
+    _load_application_owned; _within gates context_path.
+    """
+    from analyzer import LLMResponseError, recommend_bullets
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, OUTPUT_DIR) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        # The recommend prompt wants the JD text; the context_set's
+        # synthesized resume is the corpus markdown, not the JD. Stash the
+        # JD from the DB application row into a transient key the
+        # analyzer reads, then strip it before persisting.
+        ctx["jd_text"] = app_row.jd_text
+        run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
+        try:
+            result = recommend_bullets(
+                _get_client(), ctx,
+                username=candidate.username, run_id=run_id,
+            )
+        except anthropic.APIConnectionError as exc:
+            logger.error("Recommend: Anthropic connection error: %s", exc)
+            return jsonify({"error": "AI service connection failed"}), 503
+        except LLMResponseError as exc:
+            logger.error("Recommend: malformed LLM response: %s", exc.validation_error)
+            return jsonify({
+                "error": "AI recommendation response was malformed",
+                "detail": str(exc.validation_error),
+            }), 502
+
+        by_exp: dict[str, dict] = {}
+        for rec in result.get("recommendations", []) or []:
+            eid = rec.get("experience_id")
+            if eid is None:
+                continue
+            by_exp[str(int(eid))] = {
+                "bullet_ids": [int(b) for b in (rec.get("bullet_ids") or [])],
+                "rationale": (rec.get("rationale") or "").strip(),
+            }
+        ctx["llm_recommendations"] = by_exp
+        ctx.pop("jd_text", None)  # transient; don't leak into iteration chain
+        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        return jsonify({
+            "application_id": application_id,
+            "recommendations": by_exp,
         })
     finally:
         session.close()

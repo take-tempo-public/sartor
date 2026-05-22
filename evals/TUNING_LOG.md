@@ -16,6 +16,39 @@ prevent re-running them.
 
 ---
 
+## 2026-05-22 — Workstream H: LLM-curated corpus per application (`2026-05-18.1` → `2026-05-22.1`)
+
+1. **What changed?** New `recommend_bullets()` Haiku call + system prompt
+   (`RECOMMEND_SYSTEM_PROMPT`); new route
+   `POST /api/applications/<id>/recommend`. Output is persisted on the
+   context file as `llm_recommendations: {str(exp_id): {bullet_ids,
+   rationale}}`. `analyzer.py:_stable_user_prefix` now, when
+   `llm_recommendations` is present, restricts the per-experience bullets
+   in the `<career_corpus>` block to the *effective* set
+   `(recommended ∪ added ∪ pinned) − excluded`. Composition overrides
+   gained an `added` list (Workstream I, drawer-added bullets). The
+   `pinned="true"` attribute survives the filter. When
+   `llm_recommendations` is absent, the prompt path is byte-identical to
+   `2026-05-18.1` so cache behavior for older / non-recommend-using
+   applications is unchanged.
+2. **Why?** UI smoke test showed Compose flood-shows every bullet,
+   making review impossible. The user wants the LLM to curate ~3–7 per
+   experience by default; the remainder reachable via a per-experience
+   "find more" drawer. Shrinking the corpus block also reduces prompt
+   tokens at `generate()` time when recommendations are used.
+3. **Result?** No full eval-suite run yet (UI / prompt-shape change
+   without an evaluable scoring delta). 480 unit tests green
+   (469 + 11 new across `test_corpus_mode_prompt.py` effective-set
+   filter, `test_application_routes.py` `added` field, and new
+   `test_recommend_bullets.py`). A new Haiku call adds ~$0.01–0.02 per
+   application; analyze prompt cache untouched.
+4. **Learned?** Adding override / curation shape on top of the existing
+   `composition_overrides` rather than introducing parallel DB columns
+   keeps the data model coherent and the change to `_stable_user_prefix`
+   surgical — one new branch, byte-identical when feature-off. Lesson:
+   `total=False` `ContextSet` fields are the right escape valve for
+   features that need round-tripping state without a migration.
+
 ## 2026-05-18 — Wizard Workstream B: pin/exclude in the corpus prompt (`2026-05-12.1` → `2026-05-18.1`)
 
 1. **What changed?** `analyzer.py:_stable_user_prefix` now filters

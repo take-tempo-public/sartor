@@ -97,36 +97,20 @@ body {
 .lcars-bg-orange { background: var(--orange); color: var(--black); }
 .lcars-bg-violet { background: var(--violet); color: var(--black); }
 
-/* ---- Main Layout ---- */
+/* ---- Main Layout (Workstream G: single-column; sidebar tiles removed) ---- */
 .lcars-main {
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: 6px;
-  padding: 0 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 24px 24px;
+  max-width: 1180px;
+  margin: 0 auto;
   min-height: calc(100vh - 120px);
-  align-items: start;
 }
 
-/* ---- Sidebar blocks ---- */
-.lcars-block {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  writing-mode: horizontal-tb;
-  text-transform: uppercase;
-  border-radius: 0 var(--radius) var(--radius) 0;
-  min-height: 60px;
-  cursor: pointer;
-  align-self: stretch;
-  transition: opacity 0.2s;
-  user-select: none;
-}
-.lcars-block.collapsed {
-  opacity: 0.35;
-}
+/* Legacy block-tile rules retained but inert (no .lcars-block tiles in the
+   DOM after Workstream G); kept defensively for any third-party content. */
+.lcars-block { display: none; }
 
 /* ---- Panels ---- */
 .lcars-panel {
@@ -1643,3 +1627,226 @@ textarea:focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 1px;
 }
+
+/* =============================================================== */
+/* Workstream G+I — refined LCARS: panel polish, two-line Compose,  */
+/* per-experience drawer, inline tag composer, form modals          */
+/* =============================================================== */
+
+/* Panels get a touch more breathing room now that they own the full width. */
+.lcars-main .lcars-panel { padding: 4px 0; }
+.lcars-main .panel-body { padding: 18px 22px; }
+.lcars-main .panel-header { padding: 10px 22px; letter-spacing: 3px; }
+
+/* Wizard rail — centered, less cramped, modern stepper feel */
+.wizard-rail {
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: #0a0a16;
+  border-radius: 10px;
+  margin: 0 24px 4px;
+}
+.wizard-step { padding: 10px 16px; font-size: 12px; }
+.wizard-step .wizard-num { width: 22px; height: 22px; font-size: 12px; }
+
+/* ----- Compose: TWO-LINE row layout (the key legibility fix) ----- */
+.compose-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 6px 12px;
+  padding: 12px 14px;
+  background: #0a0a18;
+  border: 1px solid #2b2b40;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: border-color 120ms, background 120ms;
+}
+.compose-row:hover { border-color: var(--blue); }
+.compose-row.pinned   { border-color: var(--amber); background: rgba(255,153,0,0.08); }
+.compose-row.excluded { opacity: 0.4; text-decoration: line-through; }
+.compose-row.recommended { border-left: 3px solid var(--teal); }
+
+.compose-row .row-text {
+  grid-column: 1 / 2;
+  grid-row: 1;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  word-break: break-word;
+}
+.compose-row .row-actions {
+  grid-column: 2 / 3;
+  grid-row: 1;
+  display: flex;
+  gap: 6px;
+  align-self: start;
+}
+.compose-row .row-meta {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.compose-experience-card {
+  background: var(--panel-bg);
+  border: 1px solid #2b2b40;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.compose-exp-header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+.compose-exp-company {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--amber);
+}
+.compose-exp-dates {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+.compose-exp-rationale {
+  color: var(--teal);
+  font-style: italic;
+  font-size: 13px;
+  margin-bottom: 10px;
+  padding-left: 8px;
+  border-left: 2px solid var(--teal);
+}
+.compose-exp-section-title {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 10px 0 6px;
+}
+
+/* ----- Per-experience drawer ("find more bullets") ----- */
+.compose-drawer-toggle {
+  background: none;
+  border: 1px dashed #2b2b40;
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-family: var(--font);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 8px;
+  width: 100%;
+  transition: border-color 120ms, color 120ms;
+}
+.compose-drawer-toggle:hover { border-color: var(--blue); color: var(--blue); }
+.compose-drawer {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #07070f;
+  border: 1px solid #2b2b40;
+  border-radius: 8px;
+}
+.compose-drawer-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.compose-drawer-search {
+  flex: 1;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid #2b2b40;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-family: var(--font);
+  font-size: 13px;
+}
+
+/* ----- Inline tag composer (replaces prompt() for tag add) ----- */
+.tag-composer {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 2px 4px;
+  border: 1px dashed var(--amber);
+  border-radius: 10px;
+  background: #11141a;
+}
+.tag-composer input,
+.tag-composer select {
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid #2b2b40;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-family: var(--font);
+  font-size: 11px;
+  min-width: 70px;
+}
+.tag-composer input { width: 110px; }
+.tag-composer .tag-composer-go {
+  background: var(--teal);
+  color: var(--black);
+  border: none;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tag-composer .tag-composer-cancel {
+  background: none;
+  color: var(--text-dim);
+  border: none;
+  padding: 2px 4px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* ----- Form modal (generic; populated by JS) ----- */
+.form-modal-body {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 10px 14px;
+  margin: 14px 0 18px;
+  align-items: center;
+}
+.form-modal-body label {
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 11px;
+}
+.form-modal-body input,
+.form-modal-body select,
+.form-modal-body textarea {
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid #2b2b40;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-family: var(--font);
+  font-size: 14px;
+  width: 100%;
+}
+.form-modal-body textarea { min-height: 70px; resize: vertical; }
+.form-modal-body .form-row-error {
+  grid-column: 1 / -1;
+  color: var(--red);
+  font-size: 12px;
+  min-height: 0;
+}
+
+/* Pulse animation kept (used elsewhere); .step-active legacy hook is inert. */
