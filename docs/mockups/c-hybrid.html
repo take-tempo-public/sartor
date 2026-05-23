@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup C — Hybrid: brand accent + step-zone tint</title>
+<!-- DESIGN NOTES
+  Direction:  Best of A and B. Neutral surfaces (B's discipline), brand
+              amber for active/primary actions (B's signature accent),
+              AND each wizard panel carries a slim top-border tint in its
+              step's zone color (A's wayfinding). The tint is decorative
+              + locational — you always know where you are without color
+              dominating every chrome element.
+  Type:       System body; Antonio reserved for app title + step numerals.
+              Sentence case body; ALL CAPS only on short chips/labels.
+  Color:      Neutral grays + signature amber + semantic chips (green /
+              amber / red / blue). Six step tints used only as thin
+              top-borders, NOT as background fills.
+  Reveals:    Same wizard + drawer. The active step's tint pulses gently
+              (respects prefers-reduced-motion).
+-->
+<style>
+:root {
+  --bg-0: #0c0d12;
+  --bg-1: #14161e;
+  --bg-2: #1d1f29;
+  --fg-0: #f4f4f8;
+  --fg-1: #a8a8b4;
+  --fg-2: #6c6c7a;
+  --border: #2a2c38;
+
+  /* Signature brand */
+  --brand: #f5a64e;
+  --brand-soft: rgba(245,166,78,0.12);
+  --brand-edge: rgba(245,166,78,0.4);
+
+  /* Step-zone tints — used as thin top-borders + step indicators only */
+  --tint-job:      #6e8df6;
+  --tint-clarify:  #b094f3;
+  --tint-compose:  #5ed4c2;
+  --tint-template: #f3c168;
+  --tint-generate: #f59563;
+  --tint-download: #5ed47d;
+
+  /* Functional */
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger:  #f87171;
+  --info:    #60a5fa;
+
+  /* Active step (resolved by data-step in real impl) */
+  --active-tint: var(--tint-compose);
+
+  /* Typography */
+  --font-display: 'Antonio', system-ui, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI Variable",
+               "Segoe UI", Inter, system-ui, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg-0);
+  color: var(--fg-0);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* Top bar */
+.topbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 32px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+}
+.topbar h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 2.5px;
+  color: var(--brand);
+  text-transform: uppercase;
+}
+.topbar .grow { flex: 1; }
+.topbar select {
+  background: var(--bg-2);
+  color: var(--fg-0);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 13px;
+}
+.topbar .pill {
+  background: var(--bg-2);
+  color: var(--fg-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+}
+.topbar .pill.ready { color: var(--success); border-color: rgba(74,222,128,0.3); }
+.topbar .iconbtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg-1);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.topbar .iconbtn:hover { color: var(--brand); border-color: var(--brand-edge); }
+
+/* Tab nav */
+.tabnav {
+  display: flex; gap: 0;
+  padding: 0 32px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+}
+.tabnav button {
+  background: none;
+  color: var(--fg-1);
+  border: none;
+  padding: 12px 18px;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tabnav button:hover { color: var(--fg-0); }
+.tabnav button.active {
+  color: var(--fg-0);
+  border-bottom-color: var(--brand);
+}
+
+/* Stepper — numerals carry zone tint */
+.stepper {
+  display: flex;
+  gap: 0;
+  padding: 18px 32px;
+  background: var(--bg-0);
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+.step {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--fg-2);
+  font-size: 13px;
+  padding: 0 6px;
+}
+.step-connector {
+  flex: 1; height: 1px;
+  background: var(--border);
+  max-width: 48px;
+  margin: 0 6px;
+}
+.step .num {
+  font-family: var(--font-display);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  color: var(--fg-2);
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+}
+.step.done { color: var(--fg-1); }
+.step.done .num {
+  background: var(--bg-1);
+  color: var(--fg-0);
+  border-color: var(--fg-2);
+}
+.step.active .num {
+  background: var(--active-tint);
+  color: var(--bg-0);
+  border-color: transparent;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--active-tint) 15%, transparent);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+.step.active { color: var(--fg-0); font-weight: 500; }
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--active-tint) 15%, transparent); }
+  50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--active-tint) 8%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step.active .num { animation: none; }
+}
+
+/* Content panel — step tint as thin top-border */
+main { max-width: 980px; margin: 0 auto; padding: 32px; }
+.step-panel {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--active-tint);
+  border-radius: 12px;
+  padding: 24px 28px;
+  margin-bottom: 18px;
+}
+.step-header {
+  display: flex; align-items: baseline; gap: 14px;
+  margin-bottom: 4px;
+}
+.step-eyebrow {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 2.5px;
+  color: var(--active-tint);
+  text-transform: uppercase;
+}
+.step-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+.subhead {
+  color: var(--fg-1);
+  font-size: 14px;
+  margin-bottom: 22px;
+}
+.subhead em { color: var(--brand); font-style: normal; }
+
+/* Experience card */
+.exp-card {
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+.exp-head {
+  display: flex; align-items: baseline; gap: 14px;
+  margin-bottom: 4px;
+}
+.exp-company {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg-0);
+}
+.exp-dates {
+  color: var(--fg-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.exp-rationale {
+  color: var(--fg-1);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 8px 0 14px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--active-tint) 8%, transparent);
+  border-left: 2px solid var(--active-tint);
+  border-radius: 6px;
+}
+.section-label {
+  font-size: 11px;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 12px 0 10px;
+  display: flex; justify-content: space-between;
+}
+
+/* Bullet */
+.bullet {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 8px 14px;
+  padding: 13px 16px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  transition: background 120ms, border-color 120ms;
+}
+.bullet:hover { background: var(--bg-2); border-color: var(--fg-2); }
+.bullet .text {
+  grid-column: 1; grid-row: 1;
+  color: var(--fg-0);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.bullet .actions {
+  grid-column: 2; grid-row: 1;
+  display: flex; gap: 4px;
+  align-self: start;
+  opacity: 0.5;
+  transition: opacity 120ms;
+}
+.bullet:hover .actions { opacity: 1; }
+.bullet .meta {
+  grid-column: 1 / -1; grid-row: 2;
+  display: flex; gap: 6px;
+  flex-wrap: wrap; align-items: center;
+}
+
+/* Chips */
+.chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+.chip-score {
+  background: var(--bg-2);
+  color: var(--fg-1);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.chip-recommended {
+  background: rgba(74,222,128,0.13);
+  color: var(--success);
+  border: 1px solid rgba(74,222,128,0.3);
+}
+.chip-outcome { color: var(--success); }
+.chip-outcome::before { content: "● "; }
+.chip-tag {
+  color: var(--fg-1);
+  background: var(--bg-2);
+  font-size: 11px;
+}
+.chip-tag::before { content: "#"; color: var(--fg-2); margin-right: 1px; }
+
+.btn-icon {
+  padding: 3px 10px;
+  font-size: 11px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--fg-1);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-icon:hover { color: var(--fg-0); border-color: var(--fg-2); }
+.btn-icon.danger:hover { color: var(--danger); border-color: rgba(248,113,113,0.4); }
+
+.drawer-toggle {
+  width: 100%;
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--fg-2);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.drawer-toggle:hover {
+  color: var(--active-tint);
+  border-color: var(--active-tint);
+  background: color-mix(in srgb, var(--active-tint) 6%, transparent);
+}
+
+.footer-actions {
+  display: flex; gap: 10px;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+  justify-content: flex-end;
+}
+.btn-primary {
+  background: var(--brand);
+  color: var(--bg-0);
+  border: none;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-secondary {
+  background: transparent;
+  color: var(--fg-1);
+  border: 1px solid var(--border);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.btn-secondary:hover { color: var(--fg-0); border-color: var(--fg-2); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>Resume Optimizer</h1>
+    <span class="grow"></span>
+    <select aria-label="User"><option>Casey Rivera</option></select>
+    <span class="pill ready">Ready</span>
+    <button class="iconbtn" aria-label="Settings">⚙ Settings</button>
+  </div>
+
+  <nav class="tabnav">
+    <button class="active">Apply</button>
+    <button>Library</button>
+    <button>Diagnostics</button>
+  </nav>
+
+  <nav class="stepper" aria-label="Application steps">
+    <div class="step done"><span class="num">✓</span> Job</div>
+    <div class="step-connector"></div>
+    <div class="step done"><span class="num">✓</span> Clarify</div>
+    <div class="step-connector"></div>
+    <div class="step active"><span class="num">3</span> Compose</div>
+    <div class="step-connector"></div>
+    <div class="step"><span class="num">4</span> Template</div>
+    <div class="step-connector"></div>
+    <div class="step"><span class="num">5</span> Generate</div>
+    <div class="step-connector"></div>
+    <div class="step"><span class="num">6</span> Download</div>
+  </nav>
+
+  <main>
+    <section class="step-panel">
+      <header class="step-header">
+        <span class="step-eyebrow">Step 3</span>
+        <h2 class="step-title">Compose</h2>
+      </header>
+      <p class="subhead">The AI picked the strongest bullets for this job. Pin to force-include, Exclude to drop, or open <em>Find more</em> to add others from your corpus. Edits affect this application only.</p>
+
+      <article class="exp-card">
+        <header class="exp-head">
+          <span class="exp-company">Polaris Cognition</span>
+          <span class="exp-dates">2022-09 → present</span>
+        </header>
+        <p class="exp-rationale">Strongest fit for the AI platform + cross-functional leadership themes the JD calls out.</p>
+
+        <div class="section-label">Recommended bullets <span>3</span></div>
+
+        <div class="bullet">
+          <p class="text">Led a 5-person team shipping a RAG evaluation framework adopted by 3 product orgs.</p>
+          <div class="actions">
+            <button class="btn-icon">Pin</button>
+            <button class="btn-icon danger">Exclude</button>
+          </div>
+          <div class="meta">
+            <span class="chip chip-score">14</span>
+            <span class="chip chip-recommended">Recommended</span>
+            <span class="chip chip-outcome">Outcome</span>
+            <span class="chip chip-tag">ai</span>
+            <span class="chip chip-tag">platform</span>
+            <span class="chip chip-tag">leadership</span>
+          </div>
+        </div>
+
+        <div class="bullet">
+          <p class="text">Synthesized hospital-ops customer interviews into a roadmap that cut onboarding time 60%.</p>
+          <div class="actions">
+            <button class="btn-icon">Pin</button>
+            <button class="btn-icon danger">Exclude</button>
+          </div>
+          <div class="meta">
+            <span class="chip chip-score">12</span>
+            <span class="chip chip-recommended">Recommended</span>
+            <span class="chip chip-outcome">Outcome</span>
+            <span class="chip chip-tag">discovery</span>
+            <span class="chip chip-tag">roadmap</span>
+          </div>
+        </div>
+
+        <div class="bullet">
+          <p class="text">Defined OKRs across engagement, retention, and NPS for the seed-stage product.</p>
+          <div class="actions">
+            <button class="btn-icon">Pin</button>
+            <button class="btn-icon danger">Exclude</button>
+          </div>
+          <div class="meta">
+            <span class="chip chip-score">11</span>
+            <span class="chip chip-recommended">Recommended</span>
+            <span class="chip chip-tag">okrs</span>
+            <span class="chip chip-tag">metrics</span>
+          </div>
+        </div>
+
+        <button class="drawer-toggle">+ Find more bullets in Polaris Cognition (8)</button>
+      </article>
+
+      <article class="exp-card">
+        <header class="exp-head">
+          <span class="exp-company">Intel Robotics</span>
+          <span class="exp-dates">2018-04 → 2022-08</span>
+        </header>
+        <p class="exp-rationale">Adds platform + SDK product depth the AI platform role wants.</p>
+
+        <div class="section-label">Recommended bullets <span>2</span></div>
+
+        <div class="bullet">
+          <p class="text">Authored the multi-product AI framework that became the platform's strategic foundation.</p>
+          <div class="actions">
+            <button class="btn-icon">Pin</button>
+            <button class="btn-icon danger">Exclude</button>
+          </div>
+          <div class="meta">
+            <span class="chip chip-score">10</span>
+            <span class="chip chip-recommended">Recommended</span>
+            <span class="chip chip-tag">ai</span>
+            <span class="chip chip-tag">platform</span>
+            <span class="chip chip-tag">strategy</span>
+          </div>
+        </div>
+
+        <div class="bullet">
+          <p class="text">Drove 95% stakeholder alignment on the developer-experience roadmap across 6 releases.</p>
+          <div class="actions">
+            <button class="btn-icon">Pin</button>
+            <button class="btn-icon danger">Exclude</button>
+          </div>
+          <div class="meta">
+            <span class="chip chip-score">9</span>
+            <span class="chip chip-recommended">Recommended</span>
+            <span class="chip chip-outcome">Outcome</span>
+            <span class="chip chip-tag">dx</span>
+            <span class="chip chip-tag">alignment</span>
+          </div>
+        </div>
+
+        <button class="drawer-toggle">+ Find more bullets in Intel Robotics (14)</button>
+      </article>
+
+      <div class="footer-actions">
+        <button class="btn-secondary">← Back</button>
+        <button class="btn-primary">Continue → Template</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

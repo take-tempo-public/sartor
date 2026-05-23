@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup A — Step-zone palette</title>
+<!-- DESIGN NOTES
+  Direction:  Closest to LCARS philosophy — color does wayfinding.
+  Type:       Antonio for headers/numerals (LCARS nod), system stack for body.
+  Color:      Each wizard step has its own muted accent. The active step's
+              accent appears as a 3px left-border on its content panel, in
+              the rail step's number badge, and as a hairline under the
+              step's section titles. Surfaces stay neutral.
+  Functional: Semantic green/amber/red/blue chips overlay step color.
+  Reveals:    Drawer for "find more bullets"; recommended set is default;
+              meta on a second line so bullets are full-width readable.
+-->
+<style>
+:root {
+  --bg-0: #0a0a12;
+  --bg-1: #14141e;
+  --bg-2: #1e1e2c;
+  --fg-0: #f4f4f8;
+  --fg-1: #a6a6b0;
+  --fg-2: #6c6c78;
+  --border: #2a2a3a;
+
+  /* Step-zone palette — one per wizard step */
+  --step-job:      #5b8def;  /* blue */
+  --step-clarify:  #a78bfa;  /* violet */
+  --step-compose:  #5eead4;  /* teal — this mockup's active step */
+  --step-template: #fbbf24;  /* amber */
+  --step-generate: #fb923c;  /* orange */
+  --step-download: #4ade80;  /* green */
+
+  /* Functional / semantic */
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger:  #f87171;
+  --info:    #60a5fa;
+
+  /* Active step accent (driven by data-active in real impl) */
+  --accent: var(--step-compose);
+
+  /* Typography */
+  --font-display: 'Antonio', system-ui, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI Variable",
+               "Segoe UI", system-ui, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg-0);
+  color: var(--fg-0);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Top bar */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-1);
+}
+.topbar h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.topbar .grow { flex: 1; }
+.topbar select {
+  background: var(--bg-2);
+  color: var(--fg-0);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 13px;
+}
+.topbar .pill {
+  background: var(--bg-2);
+  color: var(--fg-1);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.topbar .pill.ready { color: var(--success); border-color: rgba(74,222,128,0.3); }
+
+/* Tab nav (3-surface IA) */
+.tabnav {
+  display: flex;
+  gap: 4px;
+  padding: 0 32px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+}
+.tabnav button {
+  background: none;
+  color: var(--fg-1);
+  border: none;
+  padding: 12px 18px;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+}
+.tabnav button:hover { color: var(--fg-0); }
+.tabnav button.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* Wizard rail — step zones */
+.rail {
+  display: flex;
+  gap: 8px;
+  padding: 16px 32px;
+  background: var(--bg-0);
+  border-bottom: 1px solid var(--border);
+}
+.rail-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.rail-step .num {
+  font-family: var(--font-display);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  color: var(--fg-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+.rail-step.done { color: var(--fg-1); }
+.rail-step.done .num { background: var(--step-clarify); color: var(--bg-0); }
+.rail-step[data-color="job"].done .num     { background: var(--step-job); }
+.rail-step[data-color="clarify"].done .num { background: var(--step-clarify); }
+.rail-step.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(94,234,212,0.06);
+}
+.rail-step.active .num {
+  background: var(--accent);
+  color: var(--bg-0);
+}
+
+/* Content surface */
+main { max-width: 1100px; margin: 0 auto; padding: 32px; }
+.step-hint {
+  color: var(--fg-1);
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+.step-hint strong { color: var(--fg-0); }
+
+/* Compose experience card */
+.exp-card {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);  /* step accent */
+  border-radius: 10px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+.exp-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+.exp-company {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+.exp-dates {
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+.exp-rationale {
+  color: var(--accent);
+  font-style: italic;
+  font-size: 13px;
+  margin: 8px 0 14px;
+  padding-left: 12px;
+  border-left: 2px solid var(--accent);
+  opacity: 0.85;
+}
+
+.section-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--fg-2);
+  margin: 14px 0 8px;
+  display: flex;
+  justify-content: space-between;
+}
+.section-label .count { color: var(--fg-2); }
+
+/* Bullet row */
+.bullet {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 6px 12px;
+  padding: 12px 14px;
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: border-color 120ms;
+}
+.bullet:hover { border-color: var(--accent); }
+.bullet .text {
+  grid-column: 1; grid-row: 1;
+  color: var(--fg-0);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.bullet .actions {
+  grid-column: 2; grid-row: 1;
+  display: flex; gap: 6px;
+  align-self: start;
+}
+.bullet .meta {
+  grid-column: 1 / -1; grid-row: 2;
+  display: flex; gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 11px;
+}
+
+/* Chips — functional / semantic */
+.chip {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-family: var(--font-body);
+}
+.chip-score {
+  background: var(--bg-2);
+  color: var(--fg-1);
+  font-family: var(--font-display);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+.chip-recommended { background: var(--success); color: #0b1d12; }
+.chip-outcome     { background: rgba(74,222,128,0.18); color: var(--success); border: 1px solid rgba(74,222,128,0.35); }
+.chip-tag         { background: rgba(94,234,212,0.12); color: var(--accent); border: 1px solid rgba(94,234,212,0.3); font-weight: 500; text-transform: none; letter-spacing: 0; }
+
+/* Action buttons (icon-style) */
+.btn-icon {
+  padding: 4px 10px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg-1);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-icon:hover { color: var(--accent); border-color: var(--accent); }
+.btn-icon.danger:hover { color: var(--danger); border-color: var(--danger); }
+
+/* Drawer toggle */
+.drawer-toggle {
+  width: 100%;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  color: var(--fg-2);
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.drawer-toggle:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Footer actions */
+.footer-actions {
+  display: flex; gap: 12px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg-0);
+  border: none;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--fg-1);
+  border: 1px solid var(--border);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.btn-primary:hover  { filter: brightness(1.1); }
+.btn-secondary:hover{ color: var(--fg-0); border-color: var(--fg-1); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>Resume Optimizer</h1>
+    <span class="pill">Iter 0</span>
+    <span class="grow"></span>
+    <select aria-label="User"><option>Casey Rivera</option></select>
+    <span class="pill ready">Ready</span>
+    <span class="pill">⚙ Settings</span>
+  </div>
+
+  <nav class="tabnav">
+    <button class="active">Apply</button>
+    <button>Library</button>
+    <button>Diagnostics</button>
+  </nav>
+
+  <nav class="rail" aria-label="Application steps">
+    <div class="rail-step done" data-color="job"><span class="num">1</span> Job + Analyze</div>
+    <div class="rail-step done" data-color="clarify"><span class="num">2</span> Clarify</div>
+    <div class="rail-step active" data-color="compose"><span class="num">3</span> Compose</div>
+    <div class="rail-step" data-color="template"><span class="num">4</span> Template</div>
+    <div class="rail-step" data-color="generate"><span class="num">5</span> Generate</div>
+    <div class="rail-step" data-color="download"><span class="num">6</span> Download</div>
+  </nav>
+
+  <main>
+    <h2 style="font-family:var(--font-display);font-weight:700;letter-spacing:2px;font-size:24px;color:var(--accent);text-transform:uppercase;margin-bottom:6px;">Step 3 · Compose</h2>
+    <p class="step-hint">The AI picked the strongest bullets for this job. <strong>Pin</strong> to force-include, <strong>Exclude</strong> to drop, or open <em>find more</em> to add others from your corpus. Edits affect this application only.</p>
+
+    <article class="exp-card">
+      <header class="exp-head">
+        <span class="exp-company">Polaris Cognition</span>
+        <span class="exp-dates">2022-09 — present</span>
+      </header>
+      <p class="exp-rationale">Strongest fit for the AI platform + cross-functional leadership themes the JD calls out.</p>
+
+      <div class="section-label">Recommended bullets <span class="count">3</span></div>
+
+      <div class="bullet">
+        <p class="text">Led a 5-person team shipping a RAG evaluation framework adopted by 3 product orgs.</p>
+        <div class="actions">
+          <button class="btn-icon">Pin</button>
+          <button class="btn-icon danger">Exclude</button>
+        </div>
+        <div class="meta">
+          <span class="chip chip-score">14</span>
+          <span class="chip chip-recommended">Recommended</span>
+          <span class="chip chip-outcome">Outcome</span>
+          <span class="chip chip-tag">ai</span>
+          <span class="chip chip-tag">platform</span>
+          <span class="chip chip-tag">leadership</span>
+        </div>
+      </div>
+
+      <div class="bullet">
+        <p class="text">Synthesized hospital-ops customer interviews into a roadmap that cut onboarding time 60%.</p>
+        <div class="actions">
+          <button class="btn-icon">Pin</button>
+          <button class="btn-icon danger">Exclude</button>
+        </div>
+        <div class="meta">
+          <span class="chip chip-score">12</span>
+          <span class="chip chip-recommended">Recommended</span>
+          <span class="chip chip-outcome">Outcome</span>
+          <span class="chip chip-tag">discovery</span>
+          <span class="chip chip-tag">roadmap</span>
+        </div>
+      </div>
+
+      <div class="bullet">
+        <p class="text">Defined OKRs across engagement, retention, and NPS for the seed-stage product.</p>
+        <div class="actions">
+          <button class="btn-icon">Pin</button>
+          <button class="btn-icon danger">Exclude</button>
+        </div>
+        <div class="meta">
+          <span class="chip chip-score">11</span>
+          <span class="chip chip-recommended">Recommended</span>
+          <span class="chip chip-tag">okrs</span>
+          <span class="chip chip-tag">metrics</span>
+        </div>
+      </div>
+
+      <button class="drawer-toggle">+ Find more bullets in Polaris Cognition (8)</button>
+    </article>
+
+    <article class="exp-card">
+      <header class="exp-head">
+        <span class="exp-company">Intel Robotics</span>
+        <span class="exp-dates">2018-04 — 2022-08</span>
+      </header>
+      <p class="exp-rationale">Adds platform + SDK product depth the AI platform role wants.</p>
+
+      <div class="section-label">Recommended bullets <span class="count">2</span></div>
+
+      <div class="bullet">
+        <p class="text">Authored the multi-product AI framework that became the platform's strategic foundation.</p>
+        <div class="actions">
+          <button class="btn-icon">Pin</button>
+          <button class="btn-icon danger">Exclude</button>
+        </div>
+        <div class="meta">
+          <span class="chip chip-score">10</span>
+          <span class="chip chip-recommended">Recommended</span>
+          <span class="chip chip-tag">ai</span>
+          <span class="chip chip-tag">platform</span>
+          <span class="chip chip-tag">strategy</span>
+        </div>
+      </div>
+
+      <div class="bullet">
+        <p class="text">Drove 95% stakeholder alignment on the developer-experience roadmap across 6 releases.</p>
+        <div class="actions">
+          <button class="btn-icon">Pin</button>
+          <button class="btn-icon danger">Exclude</button>
+        </div>
+        <div class="meta">
+          <span class="chip chip-score">9</span>
+          <span class="chip chip-recommended">Recommended</span>
+          <span class="chip chip-outcome">Outcome</span>
+          <span class="chip chip-tag">dx</span>
+          <span class="chip chip-tag">alignment</span>
+        </div>
+      </div>
+
+      <button class="drawer-toggle">+ Find more bullets in Intel Robotics (14)</button>
+    </article>
+
+    <div class="footer-actions">
+      <button class="btn-secondary">← Back · Clarify</button>
+      <button class="btn-primary">Continue → Template</button>
+    </div>
+  </main>
+</body>
+</html>
