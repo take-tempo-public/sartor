@@ -1,38 +1,143 @@
-/* LCARS Theme — 1990s Star Trek aesthetic
-   Dark background, amber/blue/teal/orange panels,
-   rounded rectangular shapes, clean sans-serif type */
+/* callback. — modern dark UI, brand-amber accent, subtle skeuomorphic edges.
+   Visual lineage: LCARS color-as-wayfinding, recast in a neutral chrome
+   with system type and an 8/14px radius scale. Mockup reference:
+   docs/mockups/b-refined-v2.html.
 
-@import url('https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&display=swap');
+   Legacy LCARS class names (.lcars-bar, .lcars-pill, .lcars-amber, etc.)
+   are kept available so templates continue to work; their colors and
+   radii are remapped onto the callback. token system below. */
 
 :root {
-  --black: #000000;
-  --dark: #0a0a12;
-  --amber: #ff9900;
-  --blue: #9999ff;
-  --teal: #66cccc;
-  --orange: #cc6633;
-  --violet: #cc99cc;
-  --red: #cc4444;
-  --light: #ffcc99;
-  --text: #fff8e8;
-  --text-dim: #99908a;
-  --panel-bg: #0d0d1a;
-  --input-bg: #111122;
-  --radius: 24px;
-  --font: 'Antonio', 'Arial Narrow', Arial, Helvetica, sans-serif;
+  /* === callback. tokens === */
+  /* Surfaces */
+  --bg-0: #0c0d14;
+  --bg-1: #161721;
+  --bg-2: #1e2030;
+  --bg-3: #262838;
+
+  /* Foreground */
+  --fg-0: #f6f6fa;
+  --fg-1: #a8a8b4;
+  --fg-2: #6c6c7a;
+  --fg-3: #4a4a56;
+
+  --border:   #2a2c3a;
+  --border-2: #36384a;
+
+  /* Brand */
+  --brand:      #e8a754;
+  --brand-hi:   #f0b56b;
+  --brand-soft: rgba(232, 167, 84, 0.10);
+  --brand-glow: rgba(232, 167, 84, 0.22);
+  --brand-edge: rgba(232, 167, 84, 0.45);
+
+  /* Functional */
+  --success:      #4ade80;
+  --success-soft: rgba(74, 222, 128, 0.14);
+  --success-hi:   #6ee99a;
+  --warning:      #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.14);
+  --danger:       #f87171;
+  --danger-soft:  rgba(248, 113, 113, 0.10);
+  --info:         #60a5fa;
+  --info-soft:    rgba(96, 165, 250, 0.12);
+
+  /* Radii */
+  --radius-xs:    4px;
+  --radius-sm:    6px;
+  --radius-md:    8px;
+  --radius-lg:   10px;
+  --radius-xl:   14px;
+  --radius-2xl:  18px;
+  --radius-pill: 999px;
+
+  /* Edges (composable inset shadows) */
+  --edge-top:   inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  --edge-soft:  inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  --edge-line:  inset 0 0 0 1px rgba(255, 255, 255, 0.015);
+
+  /* Elevation */
+  --shadow-1:     0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-2:     0 4px 12px -4px rgba(0, 0, 0, 0.40);
+  --shadow-3:     0 14px 36px -18px rgba(0, 0, 0, 0.55);
+  --shadow-brand: 0 8px 24px -10px var(--brand-glow);
+
+  /* Surface gradients */
+  --grad-card:    linear-gradient(180deg, #181a26 0%, #14151f 100%);
+  --grad-bullet:  linear-gradient(180deg, #0e0f17 0%, #0a0b12 100%);
+  --grad-brand:   linear-gradient(180deg, var(--brand-hi) 0%, var(--brand) 100%);
+  --grad-btn:     linear-gradient(180deg, #232536 0%, #1c1d2a 100%);
+  --grad-btn-hi:  linear-gradient(180deg, #2c2e42 0%, #232536 100%);
+
+  /* Motion */
+  --ease:      cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+  --t-xfast:    90ms;
+  --t-fast:    140ms;
+  --t-med:     240ms;
+  --t-slow:    420ms;
+
+  /* === Legacy LCARS aliases — remapped onto callback. tokens ===
+     Templates and components that still reference these names keep
+     working; the visual identity flips to callback. uniformly. */
+  --black:      var(--bg-0);
+  --dark:       var(--bg-0);
+  --amber:      var(--brand);
+  --blue:       var(--info);
+  --teal:       var(--success);
+  --orange:     var(--brand);
+  --violet:     #b08fc7;
+  --red:        var(--danger);
+  --light:      var(--brand-hi);
+  --text:       var(--fg-0);
+  --text-dim:   var(--fg-1);
+  --panel-bg:   var(--bg-1);
+  --input-bg:   var(--bg-0);
+  --radius:     var(--radius-xl);
+  --font:       -apple-system, BlinkMacSystemFont, "Segoe UI Variable",
+                "Segoe UI", Inter, system-ui, sans-serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html { color-scheme: dark; }
+
 body {
-  background: var(--black);
-  color: var(--text);
+  background: var(--bg-0);
+  color: var(--fg-0);
   font-family: var(--font);
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss01', 'cv09';
+  position: relative;
 }
+
+/* Ambient page wash — barely-perceptible brand halo at the top, with a
+   very slow drift. Gives the surface life without becoming wallpaper. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -10% -10% auto -10%;
+  height: 480px;
+  background:
+    radial-gradient(50% 60% at 22% 18%, var(--brand-glow), transparent 70%),
+    radial-gradient(40% 50% at 78% 12%, rgba(96, 165, 250, 0.07), transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+  animation: cb-ambient-drift 18s ease-in-out infinite alternate;
+}
+@keyframes cb-ambient-drift {
+  from { transform: translate3d(-10px, -6px, 0); opacity: 0.85; }
+  to   { transform: translate3d( 12px,  4px, 0); opacity: 1; }
+}
+/* Hoist app chrome above the wash */
+.lcars-bar, .top-tabs, .lcars-main, .top-tab-panel,
+.modal-overlay, .settings-drawer-backdrop, .settings-drawer { position: relative; z-index: 1; }
 
 /* ---- LCARS Bars ---- */
 .lcars-bar {
@@ -830,47 +935,93 @@ textarea:focus-visible {
 /* Workstream E — wizard rail, score/tag chips, compose states     */
 /* =============================================================== */
 
+/* Wizard rail — callback. stepper. Numbered circle + label, hover surfaces
+   are quiet, active uses brand gradient with halo + breath. */
 .wizard-rail {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 8px 12px;
+  gap: 2px;
+  padding: 14px 12px 16px;
+  align-items: center;
 }
 .wizard-step {
-  background: var(--dark);
-  color: var(--text-dim);
-  border: 1px solid #2b2b40;
-  border-radius: 6px;
-  padding: 8px 14px;
+  background: transparent;
+  color: var(--fg-2);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
   font-family: var(--font);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  text-transform: none;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  transition: background 120ms, color 120ms, border-color 120ms;
+  gap: 8px;
+  transition: color var(--t-fast) var(--ease),
+              background var(--t-fast) var(--ease);
 }
-.wizard-step:hover:not(:disabled) { color: var(--amber); border-color: var(--amber); }
-.wizard-step.active { background: var(--amber); color: var(--black); border-color: var(--amber); }
-.wizard-step.done { color: var(--teal); border-color: var(--teal); }
+.wizard-step:hover:not(:disabled) {
+  color: var(--fg-0);
+  background: var(--bg-2);
+}
+.wizard-step.active {
+  color: var(--fg-0);
+  font-weight: 600;
+  background: transparent;
+}
+.wizard-step.done { color: var(--fg-1); }
 .wizard-step:disabled { opacity: 0.4; cursor: not-allowed; }
-.wizard-step:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.wizard-step:focus-visible { outline: 2px solid var(--brand-edge); outline-offset: 2px; }
 .wizard-num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: #2b2b40;
-  color: var(--text);
-  font-size: 11px;
+  background: var(--grad-btn);
+  color: var(--fg-2);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  box-shadow: var(--edge-soft);
+  font-variant-numeric: tabular-nums;
+  transition: all var(--t-med) var(--ease);
 }
-.wizard-step.active .wizard-num { background: var(--black); color: var(--amber); }
-.wizard-step.done .wizard-num { background: var(--teal); color: var(--black); }
+.wizard-step.active .wizard-num {
+  background: var(--grad-brand);
+  color: #1a1004;
+  border-color: rgba(0,0,0,0.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.30),
+    0 1px 2px rgba(0,0,0,0.35),
+    0 0 0 4px var(--brand-soft);
+  animation: cb-step-pulse 3.2s var(--ease) infinite;
+}
+@keyframes cb-step-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.30),
+      0 1px 2px rgba(0,0,0,0.35),
+      0 0 0 4px var(--brand-soft);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.30),
+      0 1px 2px rgba(0,0,0,0.35),
+      0 0 0 8px transparent;
+  }
+}
+.wizard-step.done .wizard-num {
+  background: linear-gradient(180deg, var(--success-hi) 0%, var(--success) 100%);
+  color: #062012;
+  border-color: rgba(0,0,0,0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    0 1px 2px rgba(0,0,0,0.3);
+}
 
 .score-chip {
   background: var(--blue);
@@ -1980,6 +2131,346 @@ textarea:focus-visible {
   cursor: pointer;
 }
 .template-pick-card.selected {
-  border-color: var(--amber);
-  box-shadow: 0 0 0 2px rgba(255, 153, 0, 0.18);
+  border-color: var(--brand);
+  box-shadow: var(--edge-top), 0 0 0 2px var(--brand-soft);
+}
+
+/* =============================================================== */
+/* callback. component layer (feat/release-visual-ia)              */
+/* Wordmark, status, pills, refined tab nav, panel + button polish */
+/* Mockup reference: docs/mockups/b-refined-v2.html                */
+/* =============================================================== */
+
+/* ---- Top bar ---- */
+.cb-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(22, 23, 33, 0.85);
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  border-bottom: 1px solid var(--border);
+  transition: box-shadow var(--t-med) var(--ease);
+}
+.cb-topbar.is-scrolled {
+  box-shadow: 0 8px 24px -16px rgba(0,0,0,0.6);
+}
+.cb-topbar-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 28px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.cb-grow { flex: 1; }
+
+/* ---- Wordmark — "callback." dot is the brand mark ---- */
+.cb-wordmark {
+  display: inline-flex; align-items: baseline; gap: 1px;
+  text-decoration: none;
+  color: var(--fg-0);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  position: relative;
+}
+.cb-wordmark .ch {
+  display: inline-block;
+  animation: cb-wm-in 520ms var(--ease-out) backwards;
+}
+.cb-wordmark .ch:nth-child(1) { animation-delay:  60ms; }
+.cb-wordmark .ch:nth-child(2) { animation-delay:  90ms; }
+.cb-wordmark .ch:nth-child(3) { animation-delay: 120ms; }
+.cb-wordmark .ch:nth-child(4) { animation-delay: 150ms; }
+.cb-wordmark .ch:nth-child(5) { animation-delay: 180ms; }
+.cb-wordmark .ch:nth-child(6) { animation-delay: 210ms; }
+.cb-wordmark .ch:nth-child(7) { animation-delay: 240ms; }
+.cb-wordmark .ch:nth-child(8) { animation-delay: 270ms; }
+@keyframes cb-wm-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cb-wordmark .cb-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  margin-left: 3px;
+  transform: translateY(-1px);
+  animation: cb-wm-in 520ms var(--ease-out) 320ms backwards,
+             cb-dot-pulse 3.2s var(--ease) 1200ms infinite;
+  box-shadow: 0 0 0 0 var(--brand-glow);
+}
+@keyframes cb-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--brand-glow); }
+  50%      { box-shadow: 0 0 0 6px transparent; }
+}
+.cb-wordmark:hover .cb-dot { background: var(--brand-hi); }
+
+/* ---- Top-bar pills (ghost + iter) ---- */
+.cb-pill {
+  background: var(--grad-btn);
+  border: 1px solid var(--border);
+  color: var(--fg-1);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  box-shadow: var(--edge-soft);
+  transition: all var(--t-fast) var(--ease);
+  letter-spacing: 0.1px;
+}
+.cb-pill:hover {
+  color: var(--fg-0);
+  border-color: var(--border-2);
+  background: var(--grad-btn-hi);
+  box-shadow: var(--edge-top), 0 1px 2px rgba(0,0,0,0.3);
+}
+.cb-pill:active {
+  background: var(--bg-2);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
+}
+.cb-iter-pill {
+  font-variant-numeric: tabular-nums;
+  color: var(--brand);
+  border-color: var(--brand-edge);
+}
+.cb-iter-pill.hidden { display: none; }
+
+/* ---- Status pill (replaces lcars-pill statusPill) ---- */
+.cb-status {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12px;
+  padding: 5px 12px 5px 11px;
+  background: linear-gradient(180deg,
+    rgba(74,222,128,0.18) 0%,
+    rgba(74,222,128,0.10) 100%);
+  border: 1px solid rgba(74,222,128,0.28);
+  border-radius: var(--radius-pill);
+  color: var(--success);
+  box-shadow: var(--edge-soft);
+  letter-spacing: 0.2px;
+  transition:
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+.cb-status .cb-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: cb-status-pulse 2.4s var(--ease) infinite;
+  flex-shrink: 0;
+}
+@keyframes cb-status-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+  50%      { box-shadow: 0 0 0 5px transparent; opacity: 0.7; }
+}
+.cb-status.is-active {
+  color: var(--brand);
+  background: linear-gradient(180deg,
+    rgba(232,167,84,0.20) 0%,
+    rgba(232,167,84,0.10) 100%);
+  border-color: var(--brand-edge);
+}
+.cb-status.is-error {
+  color: var(--danger);
+  background: linear-gradient(180deg,
+    rgba(248,113,113,0.20) 0%,
+    rgba(248,113,113,0.10) 100%);
+  border-color: rgba(248,113,113,0.40);
+  cursor: pointer;
+}
+.cb-status.is-error:hover {
+  filter: brightness(1.1);
+}
+
+/* ---- Tab nav (.top-tabs) — restyle on top of existing rules ---- */
+.top-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 28px;
+  max-width: 1280px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+.top-tab-btn {
+  background: none;
+  color: var(--fg-1);
+  border: none;
+  padding: 12px 18px;
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  text-transform: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--t-fast) var(--ease);
+}
+.top-tab-btn:hover { color: var(--fg-0); }
+.top-tab-btn.active,
+.top-tab-btn[aria-selected="true"] {
+  color: var(--fg-0);
+  border-bottom-color: var(--brand);
+  background: transparent;
+}
+
+/* ---- Main container (.lcars-main) — neutralize LCARS chrome ---- */
+.lcars-main {
+  padding: 28px 28px 60px;
+  max-width: 1180px;
+  margin: 0 auto;
+  gap: 16px;
+}
+
+/* ---- Panels (.lcars-panel) — refined card surface ---- */
+.lcars-panel {
+  background: var(--grad-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  box-shadow: var(--edge-top), var(--shadow-1);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-med) var(--ease);
+}
+.lcars-panel:hover {
+  border-color: var(--border-2);
+}
+
+/* ---- Panel header — sentence case, brand left accent ---- */
+.panel-header {
+  padding: 14px 22px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--fg-1);
+  background: transparent !important; /* override .lcars-bg-* on header */
+  border-bottom: 1px solid transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: color var(--t-fast) var(--ease);
+}
+.panel-header:hover { color: var(--fg-0); }
+/* The collapsed-state separator only appears when the panel is open */
+.lcars-panel:not(.collapsed) > .panel-header {
+  border-bottom-color: var(--border);
+}
+.panel-header::after {
+  font-size: 10px;
+  opacity: 0.6;
+}
+.panel-body {
+  padding: 18px 22px 20px;
+}
+
+/* ---- Primary buttons (.lcars-btn) — brand gradient ---- */
+.lcars-btn {
+  background: var(--grad-brand);
+  color: #1a1004;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.1px;
+  text-transform: none;
+  cursor: pointer;
+  position: relative;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.20),
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 6px 18px -8px var(--brand-glow);
+  transition:
+    background var(--t-fast) var(--ease),
+    box-shadow var(--t-med) var(--ease),
+    transform var(--t-xfast) var(--ease),
+    filter var(--t-fast) var(--ease);
+}
+.lcars-btn:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.20),
+    0 2px 4px rgba(0, 0, 0, 0.35),
+    0 10px 24px -8px var(--brand-glow),
+    0 0 0 4px var(--brand-soft);
+}
+.lcars-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+  box-shadow:
+    inset 0 1px 1px rgba(0, 0, 0, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.lcars-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Secondary button variants — color classes used on .lcars-btn keep their
+   meaning but render in the neutral pill style with a colored accent. */
+.lcars-btn.lcars-bg-teal,
+.lcars-btn.lcars-bg-blue,
+.lcars-btn.lcars-bg-orange,
+.lcars-btn.lcars-bg-violet {
+  background: var(--grad-btn);
+  color: var(--fg-0);
+  border: 1px solid var(--border);
+  box-shadow: var(--edge-soft), var(--shadow-1);
+}
+.lcars-btn.lcars-bg-teal:hover,
+.lcars-btn.lcars-bg-blue:hover,
+.lcars-btn.lcars-bg-orange:hover,
+.lcars-btn.lcars-bg-violet:hover {
+  background: var(--grad-btn-hi);
+  border-color: var(--border-2);
+  filter: none;
+  transform: translateY(-1px);
+  box-shadow: var(--edge-top), 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px -4px rgba(0,0,0,0.3);
+}
+
+/* ---- Form fields ---- */
+input, select, textarea {
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  color: var(--fg-0);
+  font-family: var(--font);
+  font-size: 13.5px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  outline: none;
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,0.25),
+    inset 0 0 0 1px rgba(255,255,255,0.01);
+  transition: all var(--t-fast) var(--ease);
+}
+input::placeholder, textarea::placeholder { color: var(--fg-3); }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--brand);
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,0.25),
+    0 0 0 3px var(--brand-soft);
+}
+
+/* ---- Focus rings (keyboard-only) ---- */
+:focus-visible { outline: 2px solid var(--brand-edge); outline-offset: 2px; }
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

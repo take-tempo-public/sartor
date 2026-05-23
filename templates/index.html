@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Resume Optimizer</title>
+  <title>callback.</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -17,19 +17,30 @@
        announcement waits for the SR to finish current speech. -->
   <div id="srAnnounce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- LCARS Top Bar -->
-  <div class="lcars-bar lcars-bar-top">
-    <div class="lcars-elbow lcars-elbow-tl"></div>
-    <div class="lcars-title">RESUME OPTIMIZER</div>
-    <div class="lcars-pill iteration-pill hidden" id="iterationPill" aria-label="Current iteration" title="Current iteration of the resume loop">ITER 0</div>
-    <button class="lcars-pill lcars-teal" id="diagnosticsPill"
-            onclick="openDiagnosticsModal()"
-            title="Open the read-only telemetry + eval dashboard">DIAGNOSTICS</button>
-    <button class="lcars-pill lcars-violet" id="settingsPill"
-            onclick="openSettingsDrawer()"
-            title="Profile, templates, diagnostics">⚙ SETTINGS</button>
-    <div class="lcars-pill lcars-amber" id="statusPill" aria-live="polite" aria-atomic="true">STANDBY</div>
-  </div>
+  <!-- callback. top bar — wordmark + controls row, app-context row.
+       Replaces the LCARS elbow + title block (feat/release-visual-ia).
+       Legacy IDs (iterationPill, statusPill, diagnosticsPill, settingsPill)
+       are preserved so app.js bindings keep working. -->
+  <header class="cb-topbar" id="cbTopbar">
+    <div class="cb-topbar-row">
+      <a href="#" class="cb-wordmark" aria-label="callback">
+        <span class="ch">c</span><span class="ch">a</span><span class="ch">l</span><span class="ch">l</span><span class="ch">b</span><span class="ch">a</span><span class="ch">c</span><span class="ch">k</span><span class="cb-dot" aria-hidden="true"></span>
+      </a>
+      <span class="cb-grow"></span>
+      <div class="cb-pill cb-iter-pill hidden" id="iterationPill"
+           aria-label="Current iteration" title="Current iteration of the resume loop">iter 0</div>
+      <button class="cb-pill cb-pill-ghost" id="diagnosticsPill"
+              onclick="openDiagnosticsModal()"
+              title="Open the read-only telemetry + eval dashboard">Diagnostics</button>
+      <button class="cb-pill cb-pill-ghost" id="settingsPill"
+              onclick="openSettingsDrawer()"
+              title="Profile, templates, diagnostics">⚙ Settings</button>
+      <div class="cb-status" id="statusPill" aria-live="polite" aria-atomic="true">
+        <span class="cb-status-dot" aria-hidden="true"></span>
+        <span class="cb-status-text">Standby</span>
+      </div>
+    </div>
+  </header>
 
   <!-- Top-level tabs (Phase D). Job-flow is the legacy single-page workflow;
        Career Corpus is the new DB-backed editor. Persona Templates is a

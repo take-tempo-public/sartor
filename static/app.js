@@ -26,6 +26,18 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('refinementInput').addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitRefinement(); }
   });
+
+  // callback. top bar — drop a soft shadow once scrolled past 4px. Cheap
+  // affordance that says "this bar is anchored above the scroll surface."
+  // Idempotent: harmless if #cbTopbar isn't in the DOM.
+  const cbBar = document.getElementById('cbTopbar');
+  if (cbBar) {
+    const onScroll = () => {
+      cbBar.classList.toggle('is-scrolled', window.scrollY > 4);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
 });
 
 // ---- Users ----
@@ -676,7 +688,7 @@ function _updateIterationPill() {
     pill.classList.add('hidden');
     return;
   }
-  pill.textContent = `ITER ${currentIteration}`;
+  pill.textContent = `iter ${currentIteration}`;
   pill.classList.remove('hidden');
 }
 
@@ -1546,9 +1558,23 @@ function _announce(text) {
   setTimeout(() => { el.textContent = text; }, 16);
 }
 
+// Sentence-case a short status string ('GENERATION COMPLETE' → 'Generation
+// complete'). Kept here because every setStatus() call passes ALL CAPS
+// from the LCARS era; the callback. chrome uses sentence case.
+function _toSentence(s) {
+  if (!s) return '';
+  const lower = s.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
 function setStatus(text) {
   const pill = document.getElementById('statusPill');
-  pill.textContent = text;
+  // callback. status pill wraps text in .cb-status-text; legacy LCARS pill
+  // wrote textContent on the pill itself. Support both so this function
+  // works through the visual-bind transition.
+  const textEl = pill.querySelector('.cb-status-text');
+  if (textEl) textEl.textContent = _toSentence(text);
+  else pill.textContent = text;
 
   // Clear any prior aria-busy state from the previously-active panel so
   // assistive tech stops announcing the panel as busy once work completes.
@@ -1560,10 +1586,16 @@ function setStatus(text) {
   const isActive  = !!activeKey;
   const isError   = text.includes('ERROR');
 
-  // Pill: amber + flashing when active, amber solid when idle, red solid on error
-  pill.className        = 'lcars-pill' + (isError ? '' : ' lcars-amber') + (isActive ? ' pill-active' : '');
-  pill.style.background = isError ? 'var(--red)' : '';
-  pill.style.color      = isError ? 'var(--black)' : '';
+  if (textEl) {
+    // New callback. pill — toggle is-active / is-error modifiers
+    pill.classList.toggle('is-active', isActive);
+    pill.classList.toggle('is-error',  isError);
+  } else {
+    // Legacy LCARS pill
+    pill.className        = 'lcars-pill' + (isError ? '' : ' lcars-amber') + (isActive ? ' pill-active' : '');
+    pill.style.background = isError ? 'var(--red)' : '';
+    pill.style.color      = isError ? 'var(--black)' : '';
+  }
 
   // In error state the pill becomes a button that re-opens the copyable
   // error modal; outside error state it's an inert status indicator.
