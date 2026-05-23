@@ -25,6 +25,9 @@
     <button class="lcars-pill lcars-teal" id="diagnosticsPill"
             onclick="openDiagnosticsModal()"
             title="Open the read-only telemetry + eval dashboard">DIAGNOSTICS</button>
+    <button class="lcars-pill lcars-violet" id="settingsPill"
+            onclick="openSettingsDrawer()"
+            title="Profile, templates, diagnostics">⚙ SETTINGS</button>
     <div class="lcars-pill lcars-amber" id="statusPill" aria-live="polite" aria-atomic="true">STANDBY</div>
   </div>
 
@@ -96,157 +99,135 @@
       </div>
     </section>
 
-    <!-- CONFIG -->
-    <section class="lcars-panel hidden" id="panelConfig">
-      <div class="panel-header lcars-bg-violet">USER CONFIGURATION</div>
-      <div class="panel-body">
-        <div class="form-row">
-          <label for="cfgName">Name</label>
-          <input type="text" id="cfgName">
-        </div>
-        <div class="form-row">
-          <label for="cfgEmail">Email</label>
-          <input type="email" id="cfgEmail">
-        </div>
-        <div class="form-row">
-          <label for="cfgPhone">Phone</label>
-          <input type="tel" id="cfgPhone">
-        </div>
-        <div class="form-row">
-          <label for="cfgLinkedin">LinkedIn</label>
-          <input type="url" id="cfgLinkedin">
-        </div>
-        <div class="form-row">
-          <label for="cfgWebsite">Website</label>
-          <input type="url" id="cfgWebsite">
-        </div>
-        <div class="form-row">
-          <label for="cfgSkills">Skills</label>
-          <input type="text" id="cfgSkills" placeholder="Comma-separated skills">
-        </div>
-        <div class="form-row">
-          <label for="cfgCerts">Certifications</label>
-          <input type="text" id="cfgCerts" placeholder="Comma-separated certifications">
-        </div>
-        <div class="form-row">
-          <label for="cfgEducation">Education</label>
-          <input type="text" id="cfgEducation" placeholder="Education summary">
-        </div>
-        <div class="form-row">
-          <label for="cfgNotes">Notes</label>
-          <textarea id="cfgNotes" rows="2" placeholder="Directives for the LLM, e.g. DIRECTIVE: Remote-only positions."></textarea>
-        </div>
-        <div class="form-row">
-          <label for="cfgPortfolioUrls">Portfolio URLs</label>
-          <textarea id="cfgPortfolioUrls" rows="3" placeholder="One URL per line&#10;https://github.com/you&#10;https://yoursite.com"></textarea>
-        </div>
-        <button class="lcars-btn lcars-bg-violet" onclick="saveConfig()">SAVE CONFIG</button>
-      </div>
-    </section>
+    <!-- (Workstream B1.3: USER CONFIGURATION moved to the Settings
+         drawer; only the wizard + dynamic surfaces live in the
+         Application tab now.) -->
 
     <!-- Wizard step rail (Workstream E) — navigation layer over the
          existing panels; clicking a step jumps if its prerequisite is met. -->
     <nav class="wizard-rail hidden" id="wizardRail" aria-label="Application steps">
-      <button class="wizard-step" data-wstep="1" onclick="wizardGoTo(1)"><span class="wizard-num">1</span> CORPUS</button>
-      <button class="wizard-step" data-wstep="2" onclick="wizardGoTo(2)"><span class="wizard-num">2</span> JOB + ANALYZE</button>
+      <button class="wizard-step" data-wstep="1" onclick="wizardGoTo(1)"><span class="wizard-num">1</span> JOB + ANALYZE</button>
+      <button class="wizard-step" data-wstep="2" onclick="wizardGoTo(2)"><span class="wizard-num">2</span> CLARIFY</button>
       <button class="wizard-step" data-wstep="3" onclick="wizardGoTo(3)"><span class="wizard-num">3</span> COMPOSE</button>
-      <button class="wizard-step" data-wstep="4" onclick="wizardGoTo(4)"><span class="wizard-num">4</span> CLARIFY</button>
+      <button class="wizard-step" data-wstep="4" onclick="wizardGoTo(4)"><span class="wizard-num">4</span> TEMPLATE</button>
       <button class="wizard-step" data-wstep="5" onclick="wizardGoTo(5)"><span class="wizard-num">5</span> GENERATE</button>
       <button class="wizard-step" data-wstep="6" onclick="wizardGoTo(6)"><span class="wizard-num">6</span> DOWNLOAD</button>
     </nav>
 
-    <!-- STEP 1 — CORPUS: add-to-corpus dropzone (repurposed; the legacy
-         primary/supplemental chip selection is removed — corpus is the
-         source of truth now). -->
-    <section class="lcars-panel hidden" id="panelResume" data-wstep-body="1">
-      <div class="panel-header lcars-bg-amber">STEP 1 · CORPUS</div>
-      <div class="panel-body">
-        <div class="edit-hint">
-          Drop a resume to extract its experiences into your career corpus.
-          Extracted experiences land as <strong>pending review</strong> —
-          confirm them in the CAREER CORPUS tab before they're used.
-        </div>
-        <div class="upload-zone" id="dropZone">
-          <p>Drop a resume here or click to browse</p>
-          <p class="small">Supported: .docx, .pdf, .md · adds to corpus (AI extract, ~$0.02)</p>
-          <input type="file" id="fileInput" accept=".docx,.pdf,.md" class="hidden">
-        </div>
-        <div id="ingestResult" class="edit-hint" aria-live="polite"></div>
-        <div class="form-row" style="margin-top:10px">
-          <button class="lcars-btn lcars-bg-blue" onclick="switchTopTab('corpus', document.getElementById('topTabCorpus'))">OPEN CAREER CORPUS TAB</button>
-          <button class="lcars-btn lcars-bg-teal" onclick="wizardNext()">NEXT · JOB →</button>
-        </div>
-      </div>
-    </section>
+    <!-- (Workstream B1: the "Corpus" wizard step is retired. Adding
+         resumes to the corpus now lives in the CAREER CORPUS tab via
+         the + DROP RESUME button + dropzone. The wizard starts at
+         Job + Analyze.) -->
 
-    <!-- STEP 2 — JOB + ANALYZE -->
-    <section class="lcars-panel hidden" id="panelJD" data-wstep-body="2">
-      <div class="panel-header lcars-bg-teal">STEP 2 · JOB DESCRIPTION</div>
+    <!-- STEP 1 — JOB + ANALYZE
+         Pasted JD on top; analysis result fills underneath once ANALYZE
+         returns. Both panels belong to Step 1 (the user does not advance
+         until they've read the analysis). -->
+    <section class="lcars-panel hidden" id="panelJD" data-wstep-body="1">
+      <div class="panel-header lcars-bg-teal">STEP 1 · JOB DESCRIPTION</div>
       <div class="panel-body">
         <label for="jdText" class="sr-only">Job description</label>
         <textarea id="jdText" rows="12" placeholder="Paste the full job description text here..." aria-label="Job description"></textarea>
-        <!-- resumeSelect hidden — value tracked via primaryResume JS variable -->
-        <select id="resumeSelect" class="hidden" aria-hidden="true" tabindex="-1"></select>
-        <button class="lcars-btn lcars-bg-teal" onclick="runAnalysis()" id="btnAnalyze">ANALYZE</button>
+        <div class="form-row" style="margin-top:8px">
+          <button class="lcars-btn lcars-bg-teal" onclick="runAnalysis()" id="btnAnalyze">ANALYZE</button>
+          <span class="edit-hint" style="margin:0;opacity:0.6">~10–20s and a few cents per analyze</span>
+        </div>
+      </div>
+    </section>
+    <section class="lcars-panel hidden" id="panelAnalysis" data-wstep-body="1">
+      <div class="panel-header lcars-bg-orange">STEP 1 · ANALYSIS</div>
+      <div class="panel-body">
+        <div id="analysisContent"></div>
+        <div class="form-row" style="margin-top:12px">
+          <button class="lcars-btn lcars-bg-teal" onclick="wizardGoTo(2)">CONTINUE → CLARIFY</button>
+          <button class="lcars-btn lcars-bg-amber" onclick="wizardGoTo(3); skipClarifications()" id="btnSkipFromAnalysis">SKIP CLARIFY → COMPOSE</button>
+        </div>
       </div>
     </section>
 
-    <!-- STEP 3 — COMPOSE: fit-ranked bullets + eligible titles, with
-         pin/exclude and inline tag chips. Populated after ANALYZE. -->
+    <!-- STEP 2 — CLARIFY (optional): probe the LLM for clarifying
+         questions; user answers feed recommend + generate as ground truth. -->
+    <section class="lcars-panel hidden" id="panelClarify" data-wstep-body="2">
+      <div class="panel-header lcars-bg-violet">STEP 2 · CLARIFY</div>
+      <div class="panel-body">
+        <div class="edit-hint" id="clarifyHint">
+          Surface real experience missing from your resume and disambiguate
+          scope flagged by the analysis. <strong>Optional</strong> — you
+          can skip and proceed straight to Compose.
+        </div>
+        <div id="clarifyArea" class="clarify-area">
+          <div class="form-row" id="clarifyStartRow">
+            <button class="lcars-btn lcars-bg-violet" id="btnClarify" onclick="runClarify()">GET CLARIFYING QUESTIONS</button>
+            <button class="lcars-btn lcars-bg-amber" onclick="skipClarifications()">SKIP CLARIFY</button>
+          </div>
+          <div id="clarifyQuestions" class="hidden"></div>
+          <div id="clarifyActions" class="hidden form-row">
+            <button class="lcars-btn lcars-bg-teal" id="btnSubmitClarifications" onclick="submitClarifications()">SUBMIT ANSWERS → COMPOSE</button>
+            <button class="lcars-btn lcars-bg-amber" onclick="skipClarifications()">SKIP CLARIFY</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3 — COMPOSE: LLM-recommended bullets per experience + drawer. -->
     <section class="lcars-panel hidden" id="panelCompose" data-wstep-body="3">
       <div class="panel-header lcars-bg-violet">STEP 3 · COMPOSE</div>
       <div class="panel-body">
         <div class="edit-hint">
-          Bullets &amp; titles ranked by fit to this job. <strong>Pin</strong>
-          forces inclusion; <strong>Exclude</strong> drops it from this
-          application. Tag chips refine future ranking. Edits here affect
-          this application only.
+          The AI picked the strongest bullets for this job. Pin to force-
+          include, exclude to drop, or open <em>find more</em> to add
+          others from your corpus. Edits affect this application only.
         </div>
         <div id="composeList" class="corpus-experience-list"></div>
         <div class="form-row" style="margin-top:10px">
           <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(2)">← BACK</button>
-          <button class="lcars-btn lcars-bg-teal" onclick="saveCompositionThenNext()">SAVE &amp; CONTINUE →</button>
+          <button class="lcars-btn lcars-bg-teal" onclick="saveCompositionThenNext()">SAVE &amp; CONTINUE → TEMPLATE</button>
         </div>
       </div>
     </section>
 
-    <!-- STEPS 4+5 — CLARIFY (optional) + GENERATE (with template pick) -->
-    <section class="lcars-panel hidden" id="panelAnalysis" data-wstep-body="4 5">
-      <div class="panel-header lcars-bg-orange">STEP 4·5 · ANALYSIS / CLARIFY / GENERATE</div>
+    <!-- STEP 4 — TEMPLATE: card-based picker (no buried select). -->
+    <section class="lcars-panel hidden" id="panelTemplate" data-wstep-body="4">
+      <div class="panel-header lcars-bg-blue">STEP 4 · TEMPLATE</div>
       <div class="panel-body">
-        <div id="analysisContent"></div>
-
-        <!-- OPTIONAL CLARIFYING INTERVIEW -->
-        <div id="clarifyArea" class="clarify-area">
-          <div class="clarify-divider">
-            <span class="clarify-divider-label">OPTIONAL: CLARIFYING INTERVIEW</span>
-          </div>
-          <div class="edit-hint">
-            Surface real experience missing from your resume and disambiguate scope flagged by the analysis. Optional — you can skip and generate directly.
-          </div>
-          <div class="form-row" id="clarifyStartRow">
-            <button class="lcars-btn lcars-bg-violet" id="btnClarify" onclick="runClarify()">GET CLARIFYING QUESTIONS</button>
-          </div>
-          <div id="clarifyQuestions" class="hidden"></div>
-          <div id="clarifyActions" class="hidden form-row">
-            <button class="lcars-btn lcars-bg-teal" id="btnSubmitClarifications" onclick="submitClarificationsAndGenerate()">SUBMIT ANSWERS &amp; GENERATE</button>
-            <button class="lcars-btn lcars-bg-amber" onclick="skipClarifications()">SKIP</button>
-          </div>
+        <div class="edit-hint">
+          Pick the .docx styling for your generated resume. The content
+          stays the same — only the typography, spacing, and headings
+          change. <em>Preview with my resume</em> renders a real .docx
+          from your latest generated resume.
         </div>
+        <!-- Hidden select preserved for state-holding compatibility with
+             the existing _readSelectedPersonaId helper. The card picker
+             updates this value when a card is clicked. -->
+        <select id="personaSelect" class="hidden" aria-hidden="true" tabindex="-1">
+          <option value="">Default (Classic)</option>
+        </select>
+        <div id="templatePickList" class="persona-grid"></div>
+        <div class="form-row" style="margin-top:12px">
+          <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(3)">← BACK</button>
+          <button class="lcars-btn lcars-bg-teal" onclick="wizardGoTo(5)">CONTINUE → GENERATE</button>
+        </div>
+      </div>
+    </section>
 
+    <!-- STEP 5 — GENERATE: format + generate button. -->
+    <section class="lcars-panel hidden" id="panelGenerate" data-wstep-body="5">
+      <div class="panel-header lcars-bg-amber">STEP 5 · GENERATE</div>
+      <div class="panel-body">
+        <div class="edit-hint">
+          The AI writes a tailored resume + cover letter using your
+          curated bullets and the template you picked. ~30–60s and a few
+          cents per generate.
+        </div>
         <div class="form-row" style="align-items:center;gap:12px;margin-bottom:8px;">
           <span class="edit-hint" style="margin:0">Output format:</span>
           <button class="lcars-btn format-btn active" id="fmtDocx" onclick="setOutputFormat('.docx', this)">DOCX</button>
           <button class="lcars-btn format-btn" id="fmtMd" onclick="setOutputFormat('.md', this)">MARKDOWN</button>
         </div>
-        <div class="form-row" id="personaPickRow" style="align-items:center;gap:10px;margin-bottom:8px;">
-          <label for="personaSelect" class="edit-hint" style="margin:0">Template:</label>
-          <select id="personaSelect" aria-label="Persona template for output">
-            <option value="">Default (Classic)</option>
-          </select>
-          <span class="edit-hint" style="margin:0;opacity:0.6">styles the .docx; content unchanged</span>
+        <div class="form-row">
+          <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(4)">← BACK</button>
+          <button class="lcars-btn lcars-bg-amber" onclick="runGeneration()" id="btnGenerate">GENERATE DOCUMENTS</button>
         </div>
-        <button class="lcars-btn lcars-bg-amber" onclick="runGeneration()" id="btnGenerate">GENERATE DOCUMENTS</button>
       </div>
     </section>
 
@@ -357,7 +338,18 @@
           </div>
           <div class="form-row" id="corpusToolbar" style="display:none">
             <button class="lcars-btn lcars-bg-teal" onclick="openCorpusAddExperience()">+ ADD EXPERIENCE</button>
+            <button class="lcars-btn lcars-bg-violet" onclick="document.getElementById('corpusIngestFile').click()">+ DROP RESUME (AI EXTRACT)</button>
+            <input type="file" id="corpusIngestFile" accept=".docx,.pdf,.md" class="hidden" onchange="uploadFile(this.files[0])">
+            <button class="lcars-btn lcars-bg-orange" onclick="loadCorpusDuplicates()">FIND DUPLICATES</button>
             <span class="edit-hint" id="corpusCount">0 experiences</span>
+          </div>
+          <div id="ingestResult" class="edit-hint" aria-live="polite"></div>
+          <div id="duplicatesSection" class="hidden">
+            <div class="corpus-section-header">
+              <div class="corpus-section-title">Near-duplicate bullets</div>
+              <button class="corpus-action-btn" onclick="document.getElementById('duplicatesSection').classList.add('hidden')">CLOSE</button>
+            </div>
+            <div id="duplicatesList"></div>
           </div>
           <div id="corpusExperienceList" class="corpus-experience-list"></div>
         </div>
@@ -562,11 +554,74 @@
     </div>
   </div>
 
-  <!-- LCARS Bottom Bar -->
-  <div class="lcars-bar lcars-bar-bottom">
-    <div class="lcars-elbow lcars-elbow-bl"></div>
-    <div class="lcars-pill lcars-teal" id="tokenInfo">TOKENS: --</div>
-  </div>
+  <!-- Settings drawer (Workstream B1.3) — slides in from the right.
+       Houses rarely-touched configuration (Profile + Diagnostics link).
+       Templates remain on the PERSONA TEMPLATES tab + are picked in-flow
+       via Step 4 of the wizard. -->
+  <aside id="settingsDrawer" class="settings-drawer hidden" role="dialog"
+         aria-modal="true" aria-labelledby="settingsDrawerTitle">
+    <div class="settings-drawer-backdrop" data-settings-dismiss></div>
+    <div class="settings-drawer-content">
+      <header class="settings-drawer-header">
+        <h2 id="settingsDrawerTitle" class="lcars-modal-title">SETTINGS</h2>
+        <button class="corpus-action-btn" data-settings-dismiss aria-label="Close settings">CLOSE</button>
+      </header>
+      <div class="settings-drawer-body">
+        <section class="settings-section">
+          <h3 class="settings-section-title">Profile</h3>
+          <p class="edit-hint">Your candidate profile. Used as ground truth in the LLM prompts. Rarely changes after first setup.</p>
+          <div id="panelConfig">
+            <div class="form-row">
+              <label for="cfgName">Name</label>
+              <input type="text" id="cfgName">
+            </div>
+            <div class="form-row">
+              <label for="cfgEmail">Email</label>
+              <input type="email" id="cfgEmail">
+            </div>
+            <div class="form-row">
+              <label for="cfgPhone">Phone</label>
+              <input type="tel" id="cfgPhone">
+            </div>
+            <div class="form-row">
+              <label for="cfgLinkedin">LinkedIn</label>
+              <input type="url" id="cfgLinkedin">
+            </div>
+            <div class="form-row">
+              <label for="cfgWebsite">Website</label>
+              <input type="url" id="cfgWebsite">
+            </div>
+            <div class="form-row">
+              <label for="cfgSkills">Skills</label>
+              <input type="text" id="cfgSkills" placeholder="Comma-separated skills">
+            </div>
+            <div class="form-row">
+              <label for="cfgCerts">Certifications</label>
+              <input type="text" id="cfgCerts" placeholder="Comma-separated certifications">
+            </div>
+            <div class="form-row">
+              <label for="cfgEducation">Education</label>
+              <input type="text" id="cfgEducation" placeholder="Education summary">
+            </div>
+            <div class="form-row">
+              <label for="cfgNotes">Notes</label>
+              <textarea id="cfgNotes" rows="2" placeholder="Directives for the LLM, e.g. DIRECTIVE: Remote-only positions."></textarea>
+            </div>
+            <div class="form-row">
+              <label for="cfgPortfolioUrls">Portfolio URLs</label>
+              <textarea id="cfgPortfolioUrls" rows="3" placeholder="One URL per line&#10;https://github.com/you&#10;https://yoursite.com"></textarea>
+            </div>
+            <button class="lcars-btn lcars-bg-violet" onclick="saveConfig()">SAVE CONFIG</button>
+          </div>
+        </section>
+        <section class="settings-section">
+          <h3 class="settings-section-title">Diagnostics</h3>
+          <p class="edit-hint">Read-only telemetry + eval dashboard.</p>
+          <a class="lcars-btn lcars-bg-teal" href="/_dashboard" target="_blank" rel="noopener">OPEN DASHBOARD ↗</a>
+        </section>
+      </div>
+    </div>
+  </aside>
 
   <script src="/static/app.js"></script>
 </body>

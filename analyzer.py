@@ -69,7 +69,7 @@ GENERATE_CORPUS_REQUIRED_KEYS = GENERATE_REQUIRED_KEYS | frozenset({
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-22.1"
+PROMPT_VERSION = "2026-05-22.2"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -1507,6 +1507,8 @@ Your one task: for EACH experience in the corpus, pick 3-7 bullets that best fit
 
 NEVER invent bullets. NEVER reword bullets — return only ids from the corpus. If an experience has fewer than 3 strong fits, return as few as you genuinely recommend (down to 1); don't pad.
 
+**No near-duplicates.** The corpus often contains multiple phrasings of the same achievement (different resumes wrote the same accomplishment differently). NEVER select more than one bullet describing the same achievement. When two bullets read as near-restatements of each other, pick the single strongest phrasing (prefer the one with measurable outcomes, then the more specific verb set) and skip the rest. A safety pass downstream removes any leaked duplicates, but you should not produce them in the first place.
+
 Output JSON only, this exact shape:
 {
   "recommendations": [
@@ -1574,7 +1576,7 @@ Preferred skills: {preferred or '(none)'}
 Industry keywords: {keywords or '(none)'}
 </analysis>"""
 
-    return _parse_or_retry(
+    result = _parse_or_retry(
         client,
         user_prompt,
         cached_user_prefix="",  # one-shot per application; cache benefit is small
@@ -1585,6 +1587,46 @@ Industry keywords: {keywords or '(none)'}
         system_prompt=RECOMMEND_SYSTEM_PROMPT,
         model=HAIKU_MODEL,
     )
+    # Workstream B1.2 safety pass: even with the explicit prompt rule, the
+    # LLM occasionally returns two near-restatements of the same achievement
+    # in one experience's bullet_ids. Drop them deterministically (Jaccard
+    # ≥ 0.75 on bullet text), preferring outcome-bearing bullets and
+    # preserving original order otherwise.
+    _dedup_recommendations(result, corpus)
+    return result
+
+
+def _dedup_recommendations(result: dict, corpus: list[CorpusExperience]) -> None:
+    """Mutate result['recommendations'][i]['bullet_ids'] in place to drop
+    near-duplicate bullet ids per experience. Same-experience scope only —
+    two experiences referring to the same achievement is rare but legal."""
+    from hardening import bullet_jaccard
+    text_by_id: dict[int, str] = {}
+    has_outcome_by_id: dict[int, bool] = {}
+    for exp in corpus or []:
+        for b in exp.get("bullets", []) or []:
+            try:
+                bid = int(b.get("id"))  # type: ignore[arg-type]
+            except (TypeError, ValueError):
+                continue
+            text_by_id[bid] = b.get("text", "") or ""
+            has_outcome_by_id[bid] = bool(b.get("has_outcome"))
+    for rec in result.get("recommendations", []) or []:
+        ids = [int(x) for x in (rec.get("bullet_ids") or [])]
+        kept: list[int] = []
+        for bid in ids:
+            text = text_by_id.get(bid, "")
+            dropped = False
+            for i, k in enumerate(kept):
+                if bullet_jaccard(text, text_by_id.get(k, "")) >= 0.75:
+                    # Prefer the outcome-bearing bullet between the two.
+                    if has_outcome_by_id.get(bid) and not has_outcome_by_id.get(k):
+                        kept[i] = bid
+                    dropped = True
+                    break
+            if not dropped:
+                kept.append(bid)
+        rec["bullet_ids"] = kept
 
 
 # ---------------------------------------------------------------------------

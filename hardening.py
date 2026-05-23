@@ -214,6 +214,33 @@ MODEL_PRICING: dict[str, dict[str, float]] = {
 }
 
 
+_DEDUP_TOKEN_RE = re.compile(r"\b[a-zA-Z][a-zA-Z+#.-]{1,}\b")
+
+
+def bullet_token_set(text: str) -> frozenset[str]:
+    """Tokenize a bullet for near-duplicate detection.
+
+    Lowercase, drop stopwords + tokens <3 chars. Returns a frozenset so
+    the result is cheap to compare across bullets. Used by
+    `bullet_jaccard()` and the corpus-duplicates clusterer (B1.2)."""
+    return frozenset(
+        w for w in _DEDUP_TOKEN_RE.findall((text or "").lower())
+        if w not in STOP_WORDS and len(w) > 2
+    )
+
+
+def bullet_jaccard(a: str, b: str) -> float:
+    """Jaccard similarity between two bullet texts on `bullet_token_set`.
+    Returns 0.0 when both are empty (degenerate)."""
+    sa = bullet_token_set(a)
+    sb = bullet_token_set(b)
+    if not sa and not sb:
+        return 0.0
+    inter = len(sa & sb)
+    union = len(sa | sb)
+    return inter / union if union else 0.0
+
+
 def extract_keywords(text: str, top_n: int = 50) -> dict:
     """Extract keyword frequencies from text. Deterministic — no LLM needed."""
     words = re.findall(r"\b[a-zA-Z][a-zA-Z+#.-]{1,}\b", text.lower())

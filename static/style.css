@@ -1850,3 +1850,136 @@ textarea:focus-visible {
 }
 
 /* Pulse animation kept (used elsewhere); .step-active legacy hook is inert. */
+
+/* =============================================================== */
+/* Workstream B1.3 — Settings drawer (right-side slide-in)         */
+/* =============================================================== */
+
+#settingsPill {
+  border: none;
+  font-family: var(--font);
+  cursor: pointer;
+  height: 100%;
+  transition: filter 120ms;
+}
+#settingsPill:hover { filter: brightness(1.12); }
+#settingsPill:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.settings-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: block;
+}
+.settings-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  cursor: pointer;
+}
+.settings-drawer-content {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: min(520px, 100vw);
+  background: var(--panel-bg);
+  border-left: 1px solid #2b2b40;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: drawerSlideIn 200ms ease-out;
+}
+@keyframes drawerSlideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-drawer-content { animation: none; }
+}
+.settings-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #2b2b40;
+  background: var(--dark);
+  flex-shrink: 0;
+}
+.settings-drawer-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+.settings-section {
+  margin-bottom: 28px;
+}
+.settings-section-title {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 12px;
+  color: var(--violet);
+  font-weight: 700;
+  padding-bottom: 6px;
+  margin: 0 0 10px;
+  border-bottom: 1px solid #2b2b40;
+}
+
+/* =============================================================== */
+/* Workstream B1.2 — duplicates clusters in the Career Corpus tab  */
+/* =============================================================== */
+
+#duplicatesSection {
+  margin: 14px 0 18px;
+  padding: 12px;
+  border: 1px dashed var(--orange);
+  border-radius: 8px;
+  background: rgba(204, 102, 51, 0.05);
+}
+
+.duplicate-cluster {
+  background: #0a0a18;
+  border: 1px solid #2b2b40;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.duplicate-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 8px 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid #1a1a30;
+  align-items: start;
+  font-size: 13px;
+  cursor: pointer;
+}
+.duplicate-row:last-of-type { border-bottom: none; }
+
+.duplicate-row input[type="radio"] {
+  width: 16px; height: 16px;
+  align-self: center;
+}
+
+.duplicate-meta {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-self: center;
+}
+
+.duplicate-text {
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* Template-picker card "selected" state */
+.template-pick-card {
+  cursor: pointer;
+}
+.template-pick-card.selected {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px rgba(255, 153, 0, 0.18);
+}

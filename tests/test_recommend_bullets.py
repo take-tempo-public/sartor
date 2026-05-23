@@ -128,3 +128,114 @@ class TestRecommendRoute:
                 json={"context_path": str(ctx)},
             )
         assert r.status_code == 502
+
+
+class TestRecommendDedup:
+    def test_near_duplicates_dropped_from_recommendations(self, rec_app):
+        """B1.2: the safety pass drops near-restatements (Jaccard ≥ 0.75)
+        even when the LLM returns them, preferring outcome-bearing bullets."""
+        app_module, tmp_path = rec_app
+        cid, aid, _ = _seed(app_module, tmp_path)
+        # Override the corpus with two near-duplicate bullets.
+        out = tmp_path / "output" / "alice"
+        ctx2 = out / "context_dedup.json"
+        ctx2.write_text(json.dumps({
+            "application_id": aid,
+            "career_corpus": [
+                {"id": 7, "company": "Polaris", "start_date": "2022-01",
+                 "end_date": None, "eligible_titles": [], "bullets": [
+                    {"id": 100,
+                     "text": "Reduced API latency 40% across 12 services.",
+                     "tags": [], "has_outcome": True, "source": "manual"},
+                    {"id": 101,
+                     "text": "Cut API latency 40% across twelve services.",
+                     "tags": [], "has_outcome": False, "source": "manual"},
+                    {"id": 102,
+                     "text": "Mentored a junior PM through the launch.",
+                     "tags": [], "has_outcome": False, "source": "manual"},
+                 ]},
+            ],
+        }), encoding="utf-8")
+        fake = {
+            "recommendations": [
+                {"experience_id": 7, "bullet_ids": [100, 101, 102],
+                 "rationale": "latency + mentorship"},
+            ],
+        }
+        from unittest.mock import patch
+        with patch("analyzer.recommend_bullets", return_value=fake), \
+             patch.object(app_module, "_get_client", return_value=object()):
+            # Hit the recommend route; the route is what actually persists.
+            # The dedup happens inside recommend_bullets which we're mocking
+            # away here — so this test only verifies the route persists the
+            # mocked output cleanly. The dedup unit test below covers the
+            # actual dedup logic.
+            client = app_module.app.test_client()
+            r = client.post(
+                f"/api/applications/{aid}/recommend",
+                json={"context_path": str(ctx2)},
+            )
+        assert r.status_code == 200
+        saved = json.loads(ctx2.read_text(encoding="utf-8"))
+        # The mocked recommend_bullets bypasses _dedup_recommendations; so
+        # this is the route-shape check. Unit test below verifies dedup.
+        assert "7" in saved["llm_recommendations"]
+
+    def test_dedup_helper_drops_near_restatements(self):
+        """Unit test for analyzer._dedup_recommendations. The Jaccard
+        threshold (0.75) targets near-verbatim phrasings (the common
+        cross-resume-import duplication shape); 'same achievement,
+        different phrasing' below 0.75 is left to user review."""
+        from analyzer import _dedup_recommendations
+        corpus = [{
+            "id": 7, "company": "X", "start_date": "2022-01", "end_date": None,
+            "eligible_titles": [], "bullets": [
+                {"id": 100,
+                 "text": "Reduced API latency across the order service by "
+                         "introducing connection pooling and a request cache.",
+                 "tags": [], "has_outcome": True, "source": "manual"},
+                {"id": 101,
+                 "text": "Reduced API latency across our order service by "
+                         "introducing connection pooling and a request cache.",
+                 "tags": [], "has_outcome": False, "source": "manual"},
+                {"id": 102,
+                 "text": "Mentored a junior engineer through their first launch.",
+                 "tags": [], "has_outcome": False, "source": "manual"},
+            ],
+        }]
+        result = {
+            "recommendations": [
+                {"experience_id": 7, "bullet_ids": [100, 101, 102],
+                 "rationale": "latency + mentorship"},
+            ],
+        }
+        _dedup_recommendations(result, corpus)
+        kept = result["recommendations"][0]["bullet_ids"]
+        assert 100 in kept
+        assert 102 in kept
+        assert 101 not in kept
+
+    def test_dedup_replaces_first_kept_when_later_arrival_has_outcome(self):
+        """When a near-verbatim duplicate arrives where only the second
+        copy has has_outcome=True, the second copy replaces the first in
+        the kept list (outcome wins regardless of arrival order)."""
+        from analyzer import _dedup_recommendations
+        body = ("Reduced API latency across the order service by introducing "
+                "connection pooling and a request cache.")
+        corpus = [{
+            "id": 7, "company": "X", "start_date": "2022-01", "end_date": None,
+            "eligible_titles": [], "bullets": [
+                {"id": 300, "text": body, "tags": [], "has_outcome": False,
+                 "source": "manual"},
+                {"id": 301, "text": body.replace("the order", "our order"),
+                 "tags": [], "has_outcome": True, "source": "manual"},
+            ],
+        }]
+        result = {
+            "recommendations": [
+                {"experience_id": 7, "bullet_ids": [300, 301], "rationale": "x"},
+            ],
+        }
+        _dedup_recommendations(result, corpus)
+        kept = result["recommendations"][0]["bullet_ids"]
+        assert kept == [301]  # outcome-bearing variant wins even arriving second

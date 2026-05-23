@@ -16,6 +16,36 @@ prevent re-running them.
 
 ---
 
+## 2026-05-22 — Release-Readiness Branch 1: no-near-duplicates rule (`2026-05-22.1` → `2026-05-22.2`)
+
+1. **What changed?** `RECOMMEND_SYSTEM_PROMPT` (`analyzer.py`) gained one
+   load-bearing paragraph telling the LLM to never include two
+   near-restatements of the same achievement in its
+   `recommendations[].bullet_ids`, with a directive to prefer the
+   measurable-outcome phrasing when multiple variants exist. A
+   deterministic safety pass (`_dedup_recommendations()`, new) runs after
+   `_parse_or_retry()` and drops near-duplicates at Jaccard ≥ 0.75 on
+   `hardening.bullet_token_set()` — the same token shape the Library
+   duplicates clusterer uses. PROMPT_VERSION bumped accordingly. The
+   no-recommendations path remains byte-identical (when the recommend
+   call hasn't fired or has been skipped); cache discipline preserved.
+2. **Why?** UI smoke test surfaced two failure modes: corpus imports
+   from multiple resume files left near-verbatim duplicates of the same
+   achievement, AND the LLM happily picked two variants into the
+   curated 3–7 set. Bothered the review experience and burned tokens.
+3. **Result?** No eval-suite run yet (UI/prompt change with deterministic
+   guard; no eval scoring delta expected). 488 unit tests green
+   (480 + 8 new across `test_corpus_duplicates_route.py` and
+   `test_recommend_bullets.py::TestRecommendDedup`). Jaccard threshold
+   chosen at 0.75 to catch near-verbatim cross-resume imports while
+   leaving "same achievement, different phrasing" pairs for user review.
+4. **Learned?** The right place for dedup is **both** the prompt and a
+   deterministic safety net — the LLM honors the rule most of the time
+   but the safety pass closes the residual hole. Same pattern as the
+   metric-fabrication backstop on the cover letter. The Jaccard
+   threshold also matches the corpus-level duplicates clusterer so the
+   two surfaces (LLM-picked + user-curated) speak the same language.
+
 ## 2026-05-22 — Workstream H: LLM-curated corpus per application (`2026-05-18.1` → `2026-05-22.1`)
 
 1. **What changed?** New `recommend_bullets()` Haiku call + system prompt

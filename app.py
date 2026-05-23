@@ -2539,6 +2539,108 @@ def unlink_title_tag(title_id: int, tag_id: int):
     return _unlink_tag_route("title", title_id, tag_id)
 
 
+@app.route("/api/users/<username>/duplicates", methods=["GET"])
+def list_corpus_duplicates(username: str):
+    """Workstream B1.2: cluster near-duplicate bullets in the candidate's
+    corpus (Jaccard ≥ 0.75 on `hardening.bullet_token_set`). Returns
+    clusters per experience so the Library "Duplicates" surface can offer
+    keep-one-soft-retire-others merging.
+
+    DB-only (no filesystem); _safe_username scopes the candidate. The
+    cluster threshold is configurable via ?threshold=0.75.
+    """
+    from db.models import Bullet, Candidate, Experience
+    from db.session import get_session, init_db
+    from hardening import bullet_jaccard
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+    try:
+        threshold = float(request.args.get("threshold", "0.75"))
+    except (TypeError, ValueError):
+        threshold = 0.75
+    threshold = max(0.5, min(1.0, threshold))
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({
+                "error": "Candidate not in corpus yet",
+                "needs_onboarding": True,
+            }), 409
+
+        out_experiences = []
+        for exp in session.query(Experience).filter_by(
+            candidate_id=candidate.id,
+        ).order_by(Experience.start_date.desc(), Experience.id.desc()).all():
+            active = [
+                b for b in session.query(Bullet).filter_by(
+                    experience_id=exp.id, is_active=1,
+                ).order_by(Bullet.display_order, Bullet.id).all()
+            ]
+            # Union-find clustering by Jaccard ≥ threshold (_find_root is
+            # module-level to avoid late-binding of the per-iteration parent
+            # dict — same outcome, satisfies ruff B023).
+            parent: dict[int, int] = {b.id: b.id for b in active}
+            for i in range(len(active)):
+                for j in range(i + 1, len(active)):
+                    if bullet_jaccard(active[i].text, active[j].text) >= threshold:
+                        ra = _find_root(parent, active[i].id)
+                        rb = _find_root(parent, active[j].id)
+                        if ra != rb:
+                            parent[ra] = rb
+            clusters: dict[int, list[int]] = {}
+            for b in active:
+                clusters.setdefault(_find_root(parent, b.id), []).append(b.id)
+            multi = [ids for ids in clusters.values() if len(ids) > 1]
+            if not multi:
+                continue
+            text_by_id = {b.id: b.text for b in active}
+            has_outcome_by_id = {b.id: bool(b.has_outcome) for b in active}
+            out_clusters = []
+            for ids in multi:
+                # Recommend the candidate with measurable outcomes; tie-break
+                # on the lower id (deterministic across reloads).
+                recommended = sorted(
+                    ids,
+                    key=lambda bid: (
+                        not has_outcome_by_id.get(bid, False),
+                        bid,
+                    ),
+                )[0]
+                out_clusters.append({
+                    "recommended_keep": recommended,
+                    "bullets": [
+                        {
+                            "id": bid,
+                            "text": text_by_id[bid],
+                            "has_outcome": has_outcome_by_id[bid],
+                        }
+                        for bid in ids
+                    ],
+                })
+            out_experiences.append({
+                "id": exp.id,
+                "company": exp.company,
+                "start_date": exp.start_date,
+                "end_date": exp.end_date,
+                "clusters": out_clusters,
+            })
+        cluster_count = 0
+        for e in out_experiences:
+            cluster_count += len(e["clusters"])  # type: ignore[arg-type]
+        return jsonify({
+            "threshold": threshold,
+            "experiences": out_experiences,
+            "cluster_count": cluster_count,
+        })
+    finally:
+        session.close()
+
+
 @app.route("/api/users/<username>/corpus/ingest-resume", methods=["POST"])
 def ingest_resume_to_corpus(username: str):
     """Workstream D: the repurposed RESUME panel. Save an uploaded resume
@@ -3040,6 +3142,15 @@ def update_application_status(application_id: int):
 # ---------------------------------------------------------------------------
 # Workstream B: per-application Compose step (fit-ranked bullets/titles)
 # ---------------------------------------------------------------------------
+
+
+def _find_root(parent: dict[int, int], x: int) -> int:
+    """Union-find path-compression helper used by the corpus-duplicates
+    clusterer. Mutates `parent` to flatten the chain as it goes."""
+    while parent[x] != x:
+        parent[x] = parent[parent[x]]
+        x = parent[x]
+    return x
 
 
 def _load_application_owned(session, application_id: int):

@@ -83,7 +83,9 @@ async function onUserSelect() {
   currentUser = username;
   await loadConfig();
   show('panelApplications');
-  show('panelConfig');
+  // panelConfig moved to the Settings drawer (Workstream B1.3); no longer
+  // a flow panel. loadConfig() still populates the same #cfgX inputs
+  // because the drawer hosts them via the same ids.
   _resetIterationState();
   setStatus('READY');
   refreshApplications();
@@ -156,6 +158,14 @@ async function saveConfig() {
 function setupDropZone() {
   const zone = document.getElementById('dropZone');
   const input = document.getElementById('fileInput');
+  // Workstream B1 removed the Application-tab Corpus panel; the dropzone
+  // now lives in the Career Corpus tab as the inline `+ DROP RESUME`
+  // button (a different element id, wired via its own onchange).
+  // setupDropZone() is kept as a defensive no-op so an absent #dropZone
+  // doesn't throw — that would break the DOMContentLoaded chain, which
+  // also wires the userSelect change handler (i.e. "nothing happens
+  // when you pick a name").
+  if (!zone || !input) return;
 
   zone.addEventListener('click', () => input.click());
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
@@ -260,34 +270,12 @@ async function runAnalysis() {
     lastTemplatePath = data.template_path || '';
     _composeApplicationId = data.application_id ?? null;
     renderAnalysis(data);
+    show('panelAnalysis');
     setStatus('ANALYSIS COMPLETE');
-    _announce('Analysis complete. Picking recommended bullets…');
-    // Workstream H: fire the recommend call so Compose can default to a
-    // curated set. Awaited so Compose loads with rationale visible. On
-    // failure the Compose step falls back to top-5 by score with a banner.
-    if (_composeApplicationId != null) {
-      try {
-        setStatus('RECOMMENDING BULLETS');
-        const rec = await fetch(
-          `/api/applications/${_composeApplicationId}/recommend`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ context_path: lastContextPath }),
-          },
-        );
-        if (!rec.ok) {
-          const err = await rec.json().catch(() => ({}));
-          _toast(`Recommend skipped: ${err.error || rec.status} — using top-5 fallback`, true);
-        } else {
-          setStatus('RECOMMENDATIONS READY');
-        }
-      } catch (e) {
-        _toast(`Recommend skipped: ${e.message} — using top-5 fallback`, true);
-      }
-    }
-    _wizardAdvanceTo(3);
-    if (_wizardStep === 3) loadComposition();
+    _announce('Analysis complete. Review it, then continue to clarify or skip to compose.');
+    // Workstream B1 reorder: recommend no longer fires here. It fires
+    // after the user submits or skips clarify (Step 2), so the
+    // clarifications can inform the recommendation.
   } catch (e) {
     reportError('Analyze', 'Analysis request failed', e.message);
   } finally {
@@ -533,7 +521,10 @@ function _collectClarifyAnswers() {
   return answers;
 }
 
-async function submitClarificationsAndGenerate() {
+// Workstream B1 reorder: submit + skip no longer trigger generate; they
+// save clarifications (or clear them), fire the recommend call (so its
+// output reflects the clarifications), and advance the wizard to Compose.
+async function submitClarifications() {
   if (!lastContextPath) return alert('Run analysis first');
 
   const answers = _collectClarifyAnswers();
@@ -560,15 +551,13 @@ async function submitClarificationsAndGenerate() {
     if (btnSubmit) btnSubmit.disabled = false;
     return reportError('Save answers', 'Saving answers request failed', e.message);
   }
-
-  // Proceed to generate with the now-saved clarifications on disk.
-  await runGeneration();
+  await _fireRecommendThenCompose();
   if (btnSubmit) btnSubmit.disabled = false;
 }
 
 async function skipClarifications() {
-  // No answers submitted — clear any previously saved clarifications so the
-  // generate call doesn't pick up stale answers from a prior run.
+  // No answers submitted — clear any previously saved clarifications so
+  // recommend + generate don't pick up stale answers from a prior run.
   if (lastContextPath) {
     try {
       await fetch('/api/answer-clarifications', {
@@ -581,11 +570,39 @@ async function skipClarifications() {
         }),
       });
     } catch (e) {
-      // Non-fatal: generate works without this. Log and continue.
+      // Non-fatal: continue to recommend + compose regardless.
       console.warn('Failed to clear clarifications on skip:', e);
     }
   }
-  await runGeneration();
+  await _fireRecommendThenCompose();
+}
+
+// Workstream B1: fire the recommend call so Compose can default to the
+// curated set, then advance the wizard to step 3 (Compose). On recommend
+// failure the Compose step falls back to top-5 by score with a toast.
+async function _fireRecommendThenCompose() {
+  if (_composeApplicationId != null) {
+    try {
+      setStatus('RECOMMENDING BULLETS');
+      const rec = await fetch(
+        `/api/applications/${_composeApplicationId}/recommend`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ context_path: lastContextPath }),
+        },
+      );
+      if (!rec.ok) {
+        const err = await rec.json().catch(() => ({}));
+        _toast(`Recommend skipped: ${err.error || rec.status} — using top-5 fallback`, true);
+      } else {
+        setStatus('RECOMMENDATIONS READY');
+      }
+    } catch (e) {
+      _toast(`Recommend skipped: ${e.message} — using top-5 fallback`, true);
+    }
+  }
+  wizardGoTo(3);
 }
 
 // ---- Generation (P8 Gate #2) ----
@@ -768,6 +785,39 @@ function openDiagnosticsModal() {
   modal.classList.remove('hidden');
   const openBtn = document.getElementById('btnOpenDashboard');
   if (openBtn) openBtn.focus();
+}
+
+// ===============================================================
+// Workstream B1.3 — Settings drawer (Profile + Diagnostics link)
+// ===============================================================
+
+function openSettingsDrawer() {
+  const drawer = document.getElementById('settingsDrawer');
+  if (!drawer) return;
+  const trigger = document.getElementById('settingsPill');
+  const focusable = drawer.querySelectorAll(
+    'button, input, textarea, select, a[href]',
+  );
+  const cleanup = () => {
+    drawer.classList.add('hidden');
+    drawer.removeEventListener('keydown', onKey);
+    dismissers.forEach(b => b.removeEventListener('click', cleanup));
+    if (trigger && typeof trigger.focus === 'function') trigger.focus();
+  };
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
+    if (e.key !== 'Tab' || focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  const dismissers = Array.from(drawer.querySelectorAll('[data-settings-dismiss]'));
+  dismissers.forEach(b => b.addEventListener('click', cleanup));
+  drawer.addEventListener('keydown', onKey);
+  drawer.classList.remove('hidden');
+  const first = drawer.querySelector('input, textarea');
+  if (first) first.focus();
 }
 
 // ===============================================================
@@ -1446,17 +1496,27 @@ function _renderMarkdown(text) {
 // ---- Helpers ----
 function show(id) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.classList.remove('hidden', 'collapsed');
   const block = document.querySelector(`[data-panel="${id}"]`);
   if (block) block.classList.remove('hidden', 'collapsed');
 }
 function hide(id) {
-  document.getElementById(id).classList.add('hidden');
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('hidden');
   const block = document.querySelector(`[data-panel="${id}"]`);
   if (block) block.classList.add('hidden');
 }
 function hideAllPanels() {
-  ['panelConfig', 'panelResume', 'panelJD', 'panelAnalysis', 'panelOutput'].forEach(hide);
+  // Workstream B1: panelConfig moved to Settings drawer + panelResume
+  // removed; remaining flow panels are listed explicitly + the wizard
+  // panels are added so hideAllPanels keeps doing what it advertises.
+  [
+    'panelApplications',
+    'panelJD', 'panelAnalysis', 'panelClarify',
+    'panelCompose', 'panelTemplate', 'panelGenerate', 'panelOutput',
+  ].forEach(hide);
 }
 
 // Active states: pill and sidebar block flash together; idle states are solid.
@@ -1467,7 +1527,9 @@ const _ACTIVE_PANEL = {
   GENERATING: 'panelOutput',
   REFINING:   'panelOutput',
 };
-let _activeBlock = null;  // sidebar block currently flashing; cleared on next call
+// (Workstream G removed the .lcars-block sidebar tiles; the panel-block
+//  flash mechanic is gone. Status communication now lives in the pill +
+//  the aria-busy attribute on the active panel only.)
 
 // Push a one-shot announcement into the hidden aria-live region. Use only
 // for meaningful transitions a screen-reader user wouldn't otherwise notice
@@ -1488,15 +1550,6 @@ function setStatus(text) {
   const pill = document.getElementById('statusPill');
   pill.textContent = text;
 
-  // Clear previous sidebar flash; re-hide block if its panel never opened (e.g. error)
-  if (_activeBlock) {
-    _activeBlock.classList.remove('step-active');
-    const prevPanel = document.getElementById(_activeBlock.dataset.panel);
-    if (prevPanel && prevPanel.classList.contains('hidden')) {
-      _activeBlock.classList.add('hidden');
-    }
-    _activeBlock = null;
-  }
   // Clear any prior aria-busy state from the previously-active panel so
   // assistive tech stops announcing the panel as busy once work completes.
   document.querySelectorAll('.lcars-panel[aria-busy="true"]').forEach(p => {
@@ -1540,15 +1593,10 @@ function setStatus(text) {
   const elbow = document.querySelector('.lcars-elbow-tl');
   if (elbow) elbow.classList.toggle('step-active', isActive);
 
-  // Flash the sidebar block AND mark the active panel aria-busy so screen
-  // readers can announce that work is in progress on that section.
+  // Mark the active panel aria-busy so screen readers know work is in
+  // progress on that section (the .lcars-block tile flash mechanic was
+  // removed with the sidebar in Workstream G).
   if (isActive) {
-    const block = document.querySelector(`[data-panel="${_ACTIVE_PANEL[activeKey]}"]`);
-    if (block) {
-      block.classList.remove('hidden');
-      block.classList.add('step-active');
-      _activeBlock = block;
-    }
     const activePanel = document.getElementById(_ACTIVE_PANEL[activeKey]);
     if (activePanel) activePanel.setAttribute('aria-busy', 'true');
   }
@@ -2353,6 +2401,109 @@ function scrollToFirstPending() {
 }
 
 // ===============================================================
+// Workstream B1.2 — Corpus duplicates: find + merge
+// ===============================================================
+
+async function loadCorpusDuplicates() {
+  const section = document.getElementById('duplicatesSection');
+  const list = document.getElementById('duplicatesList');
+  if (!currentUser || !section || !list) return;
+  section.classList.remove('hidden');
+  _setLoadingPlaceholder(list, 'Scanning for near-duplicates…');
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/duplicates`);
+  } catch (e) {
+    _setLoadingPlaceholder(list, 'Network error.');
+    return;
+  }
+  if (res.status === 409) {
+    _setLoadingPlaceholder(list, 'Candidate not onboarded yet.');
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(list, 'Failed to load duplicates.');
+    return;
+  }
+  const body = await res.json();
+  _clearChildren(list);
+  if (body.cluster_count === 0) {
+    _setLoadingPlaceholder(list, 'No near-duplicate clusters found (threshold ' + body.threshold + ').');
+    return;
+  }
+  list.appendChild(_el('div', {
+    className: 'edit-hint',
+    textContent: `${body.cluster_count} cluster${body.cluster_count === 1 ? '' : 's'} across ${body.experiences.length} experience${body.experiences.length === 1 ? '' : 's'} (threshold ${body.threshold}). Pick one bullet to keep per cluster; the others are soft-retired (audit rows survive).`,
+  }));
+  body.experiences.forEach(exp => list.appendChild(_renderDuplicateExp(exp)));
+}
+
+function _renderDuplicateExp(exp) {
+  const wrap = _el('div', { className: 'compose-experience-card' });
+  const header = _el('div', { className: 'compose-exp-header' });
+  header.appendChild(_el('div', {
+    className: 'compose-exp-company', textContent: exp.company || '(no company)',
+  }));
+  header.appendChild(_el('div', {
+    className: 'compose-exp-dates',
+    textContent: `${exp.start_date} — ${exp.end_date || 'current'}`,
+  }));
+  wrap.appendChild(header);
+  exp.clusters.forEach((cluster, ci) => {
+    const card = _el('div', { className: 'duplicate-cluster' });
+    let keepId = cluster.recommended_keep;
+    const groupName = `dup-${exp.id}-${ci}`;
+    cluster.bullets.forEach(b => {
+      const row = _el('label', { className: 'duplicate-row' });
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = groupName;
+      radio.value = String(b.id);
+      if (b.id === keepId) radio.checked = true;
+      radio.onchange = () => { keepId = b.id; };
+      row.appendChild(radio);
+      const meta = _el('span', { className: 'duplicate-meta' });
+      if (b.has_outcome) {
+        meta.appendChild(_el('span', {
+          className: 'corpus-row-flag outcome', textContent: 'OUTCOME',
+        }));
+      }
+      if (b.id === cluster.recommended_keep) {
+        meta.appendChild(_el('span', {
+          className: 'corpus-row-flag', textContent: 'RECOMMENDED',
+        }));
+      }
+      row.appendChild(meta);
+      row.appendChild(_el('span', { className: 'duplicate-text', textContent: b.text }));
+      card.appendChild(row);
+    });
+    const actions = _el('div', { className: 'form-row', style: 'margin-top:8px' });
+    const mergeBtn = _el('button', {
+      className: 'lcars-btn lcars-bg-orange', textContent: 'KEEP SELECTED · RETIRE OTHERS',
+    });
+    mergeBtn.onclick = async () => {
+      const toRetire = cluster.bullets.filter(b => b.id !== keepId).map(b => b.id);
+      mergeBtn.disabled = true;
+      try {
+        for (const bid of toRetire) {
+          await _deleteJson(`/api/bullets/${bid}`);
+        }
+        _toast(`Retired ${toRetire.length} duplicate bullet(s)`);
+        card.style.opacity = '0.4';
+        card.style.pointerEvents = 'none';
+      } catch (e) {
+        _toast('Merge failed: ' + e.message, true);
+        mergeBtn.disabled = false;
+      }
+    };
+    actions.appendChild(mergeBtn);
+    card.appendChild(actions);
+    wrap.appendChild(card);
+  });
+  return wrap;
+}
+
+// ===============================================================
 // Phase D.3 — Applications list (within the APPLICATION tab)
 // ===============================================================
 
@@ -2674,12 +2825,15 @@ async function uploadPersonaFromInput(input) {
 // ===============================================================
 
 let _wizardStep = 1;
+// Workstream B1 reorder: Job+Analyze → Clarify → Compose → Template → Generate → Download.
+// Step 1 spans two panels (JD input + analysis results) because the user
+// needs to see the analysis before advancing.
 const _WIZARD_PANELS = {
-  1: ['panelResume'],
-  2: ['panelJD'],
+  1: ['panelJD', 'panelAnalysis'],
+  2: ['panelClarify'],
   3: ['panelCompose'],
-  4: ['panelAnalysis'],
-  5: ['panelAnalysis'],
+  4: ['panelTemplate'],
+  5: ['panelGenerate'],
   6: ['panelOutput'],
 };
 
@@ -2691,8 +2845,10 @@ function wizardInit() {
 }
 
 function _wizardReachable(step) {
-  // Forward gating: 3+ needs a successful analysis (lastContextPath).
-  if (step >= 3 && !lastContextPath) return false;
+  // Forward gating after B1 reorder:
+  //   Step 1 always reachable; Step 2+ needs a successful analysis;
+  //   Step 6 needs a successful generation.
+  if (step >= 2 && !lastContextPath) return false;
   if (step >= 6 && !lastResumePath) return false;
   return true;
 }
@@ -2701,13 +2857,13 @@ function wizardGoTo(step) {
   if (!_wizardReachable(step)) {
     _toast(step >= 6
       ? 'Generate the documents first.'
-      : 'Run ANALYZE first (step 2).', true);
+      : 'Run ANALYZE first (step 1).', true);
     return;
   }
   _wizardStep = step;
   _wizardRender();
   if (step === 3) loadComposition();
-  if (step === 5) _loadPersonaOptions();
+  if (step === 4) _loadTemplatePicker();
 }
 
 function wizardNext() { wizardGoTo(Math.min(6, _wizardStep + 1)); }
@@ -3098,15 +3254,30 @@ async function _promptAddTag(container, subjectKind, subjectId) {
 let _selectedPersonaId = null;
 
 async function _loadPersonaOptions() {
+  // Kept as a thin wrapper for any callers that still want options
+  // populated without the card UI. Workstream B1 introduces the card
+  // picker as the primary UX; both share the same hidden <select> as
+  // state and the same /api/users/<u>/personas fetch.
+  return _loadTemplatePicker();
+}
+
+async function _loadTemplatePicker() {
   const sel = document.getElementById('personaSelect');
+  const list = document.getElementById('templatePickList');
   if (!sel || !currentUser) return;
   let res;
   try {
     res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/personas`);
-  } catch { return; }
-  if (!res.ok) return;
+  } catch {
+    if (list) _setLoadingPlaceholder(list, 'Failed to load templates.');
+    return;
+  }
+  if (!res.ok) {
+    if (list) _setLoadingPlaceholder(list, 'Failed to load templates.');
+    return;
+  }
   const body = await res.json();
-  const prev = sel.value;
+  // Populate the hidden <select> so _readSelectedPersonaId keeps working.
   while (sel.options.length > 1) sel.remove(1);
   const addOpt = (p, group) => {
     const o = document.createElement('option');
@@ -3116,7 +3287,62 @@ async function _loadPersonaOptions() {
   };
   (body.bundled || []).forEach(p => addOpt(p, 'Bundled'));
   (body.owned || []).forEach(p => addOpt(p, 'Yours'));
-  if (prev) sel.value = prev;
+
+  // Render cards (Step 4 picker).
+  if (!list) return;
+  _clearChildren(list);
+  const renderCard = (p, source) => {
+    const card = _el('div', {
+      className: 'persona-card template-pick-card', id: `tpl-card-${p.id}`,
+    });
+    if (String(p.id) === sel.value) card.classList.add('selected');
+    card.appendChild(_el('div', { className: 'persona-card-name', textContent: p.name }));
+    if (p.description) {
+      card.appendChild(_el('div', { className: 'persona-card-desc', textContent: p.description }));
+    }
+    const meta = _el('div', { className: 'persona-card-meta' });
+    meta.appendChild(_el('span', {
+      className: 'persona-card-source ' + (source === 'YOURS' ? 'owned' : 'bundled'),
+      textContent: source,
+    }));
+    card.appendChild(meta);
+    const actions = _el('div', { className: 'persona-card-actions' });
+    const pickBtn = _el('button', {
+      className: 'lcars-btn lcars-bg-teal',
+      textContent: String(p.id) === sel.value ? '✓ SELECTED' : 'USE THIS',
+    });
+    pickBtn.onclick = () => {
+      sel.value = String(p.id);
+      _selectedPersonaId = p.id;
+      list.querySelectorAll('.template-pick-card').forEach(c => {
+        c.classList.toggle('selected', c.id === `tpl-card-${p.id}`);
+        const btn = c.querySelector('.lcars-btn.lcars-bg-teal');
+        if (btn) btn.textContent = (c.id === `tpl-card-${p.id}`) ? '✓ SELECTED' : 'USE THIS';
+      });
+    };
+    actions.appendChild(pickBtn);
+    const preview = _el('button', {
+      className: 'corpus-action-btn',
+      textContent: 'PREVIEW WITH MY RESUME',
+    });
+    preview.onclick = () => _previewPersonaWithResume(p.id, p.name);
+    actions.appendChild(preview);
+    card.appendChild(actions);
+    return card;
+  };
+  (body.bundled || []).forEach(p => list.appendChild(renderCard(p, 'BUNDLED')));
+  (body.owned || []).forEach(p => list.appendChild(renderCard(p, 'YOURS')));
+  // Default-select the first bundled card if nothing selected.
+  if (!sel.value && (body.bundled || []).length) {
+    sel.value = String(body.bundled[0].id);
+    _selectedPersonaId = body.bundled[0].id;
+    const first = document.getElementById(`tpl-card-${body.bundled[0].id}`);
+    if (first) {
+      first.classList.add('selected');
+      const btn = first.querySelector('.lcars-btn.lcars-bg-teal');
+      if (btn) btn.textContent = '✓ SELECTED';
+    }
+  }
 }
 
 function _readSelectedPersonaId() {
