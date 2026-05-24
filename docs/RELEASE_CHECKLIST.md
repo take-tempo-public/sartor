@@ -1,5 +1,11 @@
 # Release Checklist — callback.
 
+> Companion: see [`docs/PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) for the
+> unified Corpus Item pattern this checklist works toward (cover
+> letters optional, master résumés per role, PDF output via
+> WeasyPrint, JSON Resume v1.0 as canonical intermediate, live
+> preview).
+
 The notes below are the committed scope for the
 `feat/release-visual-ia` → release-readiness arc. Each item is sized
 for an independent commit; check them off in order, but most can be
