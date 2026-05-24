@@ -1,5 +1,24 @@
 /* Frontend logic — vanilla JS, fetch API.
-   P8 Human Gate: workflow enforces review at two points. */
+   P8 Human Gate: workflow enforces review at two points.
+
+   Naming conventions (docs/RELEASE_CHECKLIST.md A.3):
+   - Public functions (called from HTML onclick OR from other modules):
+       camelCase, no leading underscore (`loadUsers`, `wizardGoTo`,
+       `setStatus`). The onclick handlers in templates/index.html are
+       the binding contract.
+   - Private helpers (used only within this file):
+       _camelCase with a leading underscore (`_wizardRender`,
+       `_toSentence`, `_fireRecommendThenCompose`).
+   - Documented exceptions still without the underscore for historical
+       reasons: `esc`, `show`, `hide`, `hideAllPanels` — heavy internal
+       callsites; renaming filed under a future cleanup pass.
+   - Constants: UPPER_SNAKE_CASE with a leading underscore for module-
+       private (`_ACTIVE_PANEL`, `_WIZARD_PANELS`, `_WIZARD_STEP_LABELS`).
+   - DOM-element IDs: camelCase (`statusPill`, `userSelect`,
+       `cbStatusbar`).
+   - CSS classes referenced from JS: kebab-case (`cb-wordmark`,
+       `wizard-step`, `is-active`).
+*/
 
 let currentUser = '';
 let currentConfig = {};
@@ -235,10 +254,6 @@ async function uploadFile(file) {
   _corpusLoadedForUser = '';  // force corpus tab refetch next visit
 }
 
-// loadResumes is retained as a harmless no-op so existing callers
-// (onUserSelect) don't break; the file-based resume list is gone.
-async function loadResumes() { /* corpus is the source of truth now */ }
-
 function setOutputFormat(fmt, btn) {
   outputFormat = fmt;
   document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
@@ -288,7 +303,7 @@ async function runAnalysis() {
     lastContextPath = data.context_path;
     lastTemplatePath = data.template_path || '';
     _composeApplicationId = data.application_id ?? null;
-    renderAnalysis(data);
+    _renderAnalysis(data);
     show('panelAnalysis');
     // Reveal the Continue/Skip actions now that the analysis has
     // landed and lastContextPath is populated (so wizardGoTo(2/3)
@@ -312,7 +327,7 @@ async function runAnalysis() {
   }
 }
 
-function renderAnalysis(data) {
+function _renderAnalysis(data) {
   const a = data.analysis;
   const d = data.deterministic;
   const el = document.getElementById('analysisContent');
@@ -670,7 +685,7 @@ async function runGeneration() {
     lastResumeFormat = data.resume_format || '.docx';
     _selectedPersonaId = data.persona_template_id ?? _readSelectedPersonaId();
     _onGenerationComplete(data);
-    renderOutput(data);
+    _renderOutput(data);
     setStatus('GENERATION COMPLETE');
     _announce(`Iteration ${currentIteration} ready. Resume and cover letter generated.`);
     _wizardAdvanceTo(6);
@@ -1158,7 +1173,7 @@ async function submitRefinement() {
     lastCoverLetterPath = data.cover_letter_path;
     lastResumeFormat = data.resume_format || lastResumeFormat;
     _onGenerationComplete(data);
-    renderOutput(data);
+    _renderOutput(data);
     setStatus('REFINED');
     _announce(`Iteration ${currentIteration} refined.`);
   } catch (e) {
@@ -1375,7 +1390,7 @@ function _renderRefinementHistory() {
   }).join('');
 }
 
-function renderOutput(data) {
+function _renderOutput(data) {
   document.getElementById('resumePreview').innerText = data.resume_preview || '';
   document.getElementById('coverLetterPreview').innerText = data.cover_letter_preview || '';
   // Reset view mode to RAW on each generation
@@ -1657,7 +1672,7 @@ function esc(str) {
 }
 
 // ---- Panel collapse / expand ----
-function togglePanel(panelId) {
+function _togglePanel(panelId) {
   const panel = document.getElementById(panelId);
   if (!panel || panel.classList.contains('hidden')) return;
   const isCollapsed = panel.classList.toggle('collapsed');
@@ -1669,7 +1684,7 @@ function togglePanel(panelId) {
 // and collapsed states (CSS grid-template-rows transition).
 document.querySelectorAll('.panel-header').forEach(header => {
   const panel = header.closest('.lcars-panel');
-  if (panel) header.addEventListener('click', () => togglePanel(panel.id));
+  if (panel) header.addEventListener('click', () => _togglePanel(panel.id));
 });
 
 // ===============================================================
