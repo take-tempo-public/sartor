@@ -70,6 +70,11 @@ class Candidate(Base):
     clarifications: Mapped[list[Clarification]] = relationship(
         back_populates="candidate", cascade="all, delete-orphan"
     )
+    # β.6 — SummaryItem variants. Candidate has 1..N; recommend_summaries
+    # picks one per JD; composition_overrides can pin/exclude per app.
+    summary_items: Mapped[list[SummaryItem]] = relationship(
+        back_populates="candidate", cascade="all, delete-orphan",
+    )
 
 
 class Experience(Base):
@@ -248,6 +253,90 @@ class BulletMetric(Base):
             name="ck_bullet_metric_kind",
         ),
     )
+
+
+# ---------------------------------------------------------------------------
+# β.6 — Summary items (Corpus Item pattern for the candidate's
+# positioning summary). Parallel to Bullet for experience-bound content.
+# Per docs/PRODUCT_SHAPE.md §3 + §6, every curatable résumé element gets
+# the same lifecycle: variants, tags, scoring, has_outcome, soft-retire,
+# pin/exclude per application. SummaryItem is the first new CorpusItem
+# specialization landing in v1.0.
+#
+# Parent: Candidate (the candidate has multiple positioning variants —
+# "AI platform PM", "enterprise PM", "early-stage builder PM" — and the
+# Compose step picks one per application).
+# ---------------------------------------------------------------------------
+
+
+class SummaryItem(Base):
+    """One variant of the candidate's overall positioning summary.
+
+    Mirrors Bullet's shape (text + has_outcome + is_active +
+    is_pending_review + tags) but parented by Candidate instead of
+    Experience. A single candidate has 1..N variants; recommend_summaries
+    picks one per JD (β.6b); composition_overrides can pin/exclude
+    variants per application (β.6c).
+
+    Backfill semantics (alembic 0004): every Candidate.profile_text
+    that's non-empty becomes a SummaryItem row at migration time.
+    Candidate.profile_text stays on the schema as a denormalized cache
+    of "the candidate's go-to summary" for back-compat with code that
+    reads it directly; new code should query SummaryItem rows.
+    """
+
+    __tablename__ = "summary_item"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    label: Mapped[str | None] = mapped_column(String)  # optional human-readable name like "AI platform PM"
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    is_pending_review: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    source: Mapped[str] = mapped_column(String, nullable=False, default="manual")  # 'manual' | 'imported' | 'llm_proposed'
+    has_outcome: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+
+    candidate: Mapped[Candidate] = relationship(back_populates="summary_items")
+    tag_links: Mapped[list[SummaryItemTag]] = relationship(
+        back_populates="summary_item", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "source IN ('manual', 'imported', 'llm_proposed')",
+            name="ck_summary_item_source",
+        ),
+        Index(
+            "ix_summary_item_candidate_active_pending_order",
+            "candidate_id", "is_active", "is_pending_review", "display_order",
+        ),
+    )
+
+
+class SummaryItemTag(Base):
+    """Tag join table for SummaryItem. Mirrors BulletTag exactly so the
+    tag-composer UI and corpus-tag operations can treat both kinds
+    identically."""
+
+    __tablename__ = "summary_item_tag"
+
+    summary_item_id: Mapped[int] = mapped_column(
+        ForeignKey("summary_item.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_id: Mapped[int] = mapped_column(
+        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    )
+    confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
+
+    summary_item: Mapped[SummaryItem] = relationship(back_populates="tag_links")
+    tag: Mapped[Tag] = relationship()
+
+    __table_args__ = (Index("ix_summary_item_tag_tag", "tag_id"),)
 
 
 # ---------------------------------------------------------------------------

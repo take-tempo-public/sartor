@@ -2475,6 +2475,190 @@ def delete_bullet(bullet_id: int):
         session.close()
 
 
+# ---------------------------------------------------------------------------
+# β.6a — SummaryItem CRUD. Mirrors bullet routes for the candidate's
+# positioning-summary variants. Parented by Candidate, not Experience.
+# ---------------------------------------------------------------------------
+
+
+def _summary_item_to_dict(s) -> dict:
+    """Shared response shape for SummaryItem routes."""
+    return {
+        "id": s.id,
+        "candidate_id": s.candidate_id,
+        "text": s.text,
+        "label": s.label,
+        "display_order": s.display_order,
+        "is_active": bool(s.is_active),
+        "is_pending_review": bool(s.is_pending_review),
+        "has_outcome": bool(s.has_outcome),
+        "source": s.source,
+        "created_at": s.created_at,
+        "updated_at": s.updated_at,
+    }
+
+
+@app.route("/api/users/<username>/summaries", methods=["GET"])
+def list_summary_items(username: str):
+    """List the candidate's SummaryItem variants in display order.
+
+    Returns active rows by default; pass ?include_inactive=1 to include
+    soft-retired ones (the Corpus editor uses this to surface retired
+    variants).
+    """
+    from db.models import Candidate, SummaryItem
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    include_inactive = request.args.get("include_inactive") in ("1", "true", "yes")
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({"summaries": []})
+        q = session.query(SummaryItem).filter_by(candidate_id=candidate.id)
+        if not include_inactive:
+            q = q.filter(SummaryItem.is_active == 1)
+        rows = q.order_by(SummaryItem.display_order, SummaryItem.id).all()
+        return jsonify({"summaries": [_summary_item_to_dict(s) for s in rows]})
+    finally:
+        session.close()
+
+
+@app.route("/api/users/<username>/summaries", methods=["POST"])
+def create_summary_item(username: str):
+    """Add a new SummaryItem variant for the candidate.
+
+    Body: {text (required), label?, has_outcome?, source?}. New
+    user-typed variants default to source='manual',
+    is_pending_review=0 (the user wrote it themselves).
+    """
+    from db.models import Candidate, SummaryItem
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    data = request.json or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+
+    source = data.get("source", "manual")
+    if source not in ("manual", "imported", "llm_proposed"):
+        return jsonify({"error": "source must be manual|imported|llm_proposed"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({"error": "Candidate not found"}), 404
+
+        next_order = session.query(SummaryItem).filter_by(candidate_id=candidate.id).count()
+        si = SummaryItem(
+            candidate_id=candidate.id,
+            text=text,
+            label=(data.get("label") or None),
+            display_order=next_order,
+            is_active=1,
+            is_pending_review=0,
+            source=source,
+            has_outcome=1 if data.get("has_outcome") else 0,
+        )
+        session.add(si)
+        session.commit()
+        session.refresh(si)
+        return jsonify(_summary_item_to_dict(si)), 201
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/summaries/<int:summary_id>", methods=["PUT"])
+def update_summary_item(summary_id: int):
+    """Update a SummaryItem. Body accepts: text, label, has_outcome,
+    is_pending_review, display_order. Ownership check via _safe_username."""
+    from db.models import Candidate, SummaryItem
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+
+    init_db()
+    session = get_session()
+    try:
+        si = session.query(SummaryItem).filter_by(id=summary_id).first()
+        if si is None:
+            return jsonify({"error": "SummaryItem not found"}), 404
+        candidate = session.query(Candidate).filter_by(id=si.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+
+        if "text" in data:
+            text = (data.get("text") or "").strip()
+            if not text:
+                return jsonify({"error": "text cannot be empty"}), 400
+            si.text = text
+        if "label" in data:
+            label = data.get("label")
+            si.label = (label or None) if label is None or isinstance(label, str) else None
+        if "has_outcome" in data:
+            si.has_outcome = 1 if data["has_outcome"] else 0
+        if "is_pending_review" in data:
+            si.is_pending_review = 1 if data["is_pending_review"] else 0
+        if "display_order" in data:
+            try:
+                si.display_order = int(data["display_order"])
+            except (TypeError, ValueError):
+                return jsonify({"error": "display_order must be int"}), 400
+
+        session.commit()
+        session.refresh(si)
+        return jsonify(_summary_item_to_dict(si))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/summaries/<int:summary_id>", methods=["DELETE"])
+def delete_summary_item(summary_id: int):
+    """Soft-retire a SummaryItem (is_active=0). Mirrors bullet delete
+    semantics — composition_overrides may reference this id from past
+    applications so a hard-delete would orphan them."""
+    from db.models import Candidate, SummaryItem
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        si = session.query(SummaryItem).filter_by(id=summary_id).first()
+        if si is None:
+            return jsonify({"error": "SummaryItem not found"}), 404
+        candidate = session.query(Candidate).filter_by(id=si.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+
+        si.is_active = 0
+        si.is_pending_review = 0
+        session.commit()
+        return jsonify({"id": si.id, "is_active": False})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 @app.route("/api/experiences/<int:experience_id>/titles", methods=["POST"])
 def create_experience_title(experience_id: int):
     """Add an alternate title to an experience.
