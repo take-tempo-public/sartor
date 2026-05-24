@@ -245,6 +245,30 @@
           <option value="">Default (Classic)</option>
         </select>
         <div id="templatePickList" class="persona-grid"></div>
+
+        <!-- β.4 — Live HTML preview. Iframe loads
+             /api/applications/<id>/preview?template_id=<id>, which
+             returns a fully self-contained HTML page (CSS inlined)
+             rendered through the selected persona. Refreshes whenever
+             the user clicks a different template card (no LLM call,
+             no Chromium subprocess — just the Jinja2 + CSS swap).
+             Requires the application to have generated at least once
+             so the JSON Resume sidecar exists. -->
+        <div id="livePreviewBlock" class="live-preview-block hidden" style="margin-top:16px">
+          <div class="edit-hint" style="margin-bottom:6px">
+            <strong>Live preview</strong> · what your résumé looks like
+            with the selected template. The same HTML becomes the PDF
+            (WYSIWYG).
+          </div>
+          <iframe id="livePreviewFrame"
+                  title="Résumé live preview"
+                  class="live-preview-frame"
+                  sandbox="allow-same-origin"></iframe>
+          <div id="livePreviewEmpty" class="edit-hint hidden" style="margin-top:6px">
+            Generate at least once in Step 5 to unlock the live preview.
+          </div>
+        </div>
+
         <div class="form-row" style="margin-top:12px">
           <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(3)">← BACK</button>
           <button class="lcars-btn lcars-bg-teal" onclick="wizardGoTo(5)">Continue to Generate →</button>

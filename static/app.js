@@ -3459,6 +3459,10 @@ async function _loadTemplatePicker() {
         const btn = c.querySelector('.lcars-btn.lcars-bg-teal');
         if (btn) btn.textContent = (c.id === `tpl-card-${p.id}`) ? '✓ SELECTED' : 'USE THIS';
       });
+      // β.4 — re-render live preview with the newly-picked template.
+      // No LLM call, no Chromium subprocess; the iframe just swaps
+      // src to a URL whose only delta is template_id=<new>.
+      _refreshLivePreview(p.id);
     };
     actions.appendChild(pickBtn);
     const preview = _el('button', {
@@ -3483,6 +3487,60 @@ async function _loadTemplatePicker() {
       if (btn) btn.textContent = '✓ SELECTED';
     }
   }
+
+  // β.4 — kick off the live preview for whatever template ends up
+  // selected. The preview iframe will fetch and render; if no résumé
+  // has been generated yet (no JSON Resume sidecar on disk), the
+  // route returns 409 and we surface the "generate at least once"
+  // hint instead of the frame.
+  if (sel.value) _refreshLivePreview(parseInt(sel.value, 10));
+}
+
+// β.4 — refresh the embedded live preview iframe for the current
+// application + the given template id. Idempotent: safe to call on
+// step entry, on template-card click, and after a fresh generate
+// (when the sidecar lands).
+async function _refreshLivePreview(templateId) {
+  const block = document.getElementById('livePreviewBlock');
+  const frame = document.getElementById('livePreviewFrame');
+  const empty = document.getElementById('livePreviewEmpty');
+  if (!block || !frame || !empty) return;
+  if (_composeApplicationId == null) {
+    block.classList.add('hidden');
+    return;
+  }
+  block.classList.remove('hidden');
+
+  // Probe with HEAD-like GET to detect the 409 (no sidecar yet) case
+  // before setting the iframe src — gives us a clean empty-state
+  // message instead of an iframe full of JSON error text.
+  const url = `/api/applications/${_composeApplicationId}/preview?template_id=${templateId}`;
+  let probe;
+  try {
+    probe = await fetch(url, { method: 'GET' });
+  } catch {
+    empty.classList.remove('hidden');
+    empty.textContent = 'Could not reach the preview server.';
+    frame.classList.add('hidden');
+    return;
+  }
+  if (probe.status === 409) {
+    // No JSON Resume sidecar yet — user hasn't generated.
+    empty.classList.remove('hidden');
+    empty.textContent = 'Generate at least once in Step 5 to unlock the live preview.';
+    frame.classList.add('hidden');
+    return;
+  }
+  if (!probe.ok) {
+    empty.classList.remove('hidden');
+    empty.textContent = `Preview unavailable (${probe.status}).`;
+    frame.classList.add('hidden');
+    return;
+  }
+  // Happy path — load the URL directly into the iframe.
+  empty.classList.add('hidden');
+  frame.classList.remove('hidden');
+  frame.src = url;
 }
 
 function _readSelectedPersonaId() {
