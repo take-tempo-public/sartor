@@ -256,6 +256,13 @@ async function runAnalysis() {
   setStatus('ANALYZING');
   document.getElementById('btnAnalyze').disabled = true;
   _resetClarifyUI();
+  // Surface the in-flight state inside panelAnalysis: show the pending
+  // placeholder, hide the Continue/Skip action row (clicking those
+  // mid-flight previously fired "Run ANALYZE first"). The status pill
+  // at the top also pulses amber via setStatus('ANALYZING').
+  document.getElementById('analysisPending')?.classList.remove('hidden');
+  document.getElementById('analysisActions')?.classList.add('hidden');
+  document.getElementById('analysisContent').innerHTML = '';
   // Fresh analysis starts a new iteration chain — drop stale baselines so
   // edit-detection doesn't compare the next generation's preview against a
   // prior run's lastGenerated* snapshot.
@@ -283,6 +290,11 @@ async function runAnalysis() {
     _composeApplicationId = data.application_id ?? null;
     renderAnalysis(data);
     show('panelAnalysis');
+    // Reveal the Continue/Skip actions now that the analysis has
+    // landed and lastContextPath is populated (so wizardGoTo(2/3)
+    // passes _wizardReachable). Hide the in-flight placeholder.
+    document.getElementById('analysisPending')?.classList.add('hidden');
+    document.getElementById('analysisActions')?.classList.remove('hidden');
     setStatus('ANALYSIS COMPLETE');
     _announce('Analysis complete. Review it, then continue to clarify or skip to compose.');
     // Workstream B1 reorder: recommend no longer fires here. It fires
@@ -292,6 +304,11 @@ async function runAnalysis() {
     reportError('Analyze', 'Analysis request failed', e.message);
   } finally {
     document.getElementById('btnAnalyze').disabled = false;
+    // Always clear the in-flight placeholder even if analyze errored —
+    // leaving "Analyzing…" up after a failure would be misleading. The
+    // actions row stays gated on lastContextPath (only the success path
+    // above un-hides it).
+    document.getElementById('analysisPending')?.classList.add('hidden');
   }
 }
 

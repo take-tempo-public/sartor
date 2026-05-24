@@ -1088,21 +1088,42 @@ textarea:focus-visible {
   to { transform: translateX(100%); }
 }
 
+/* Score pill — quiet grad-btn surface, tabular-nums for stable digit
+   widths. The number is what the user reads first; keep the chrome out
+   of the way. */
 .score-chip {
-  background: var(--blue);
-  color: var(--black);
-  font-weight: 700;
+  background: var(--grad-btn);
+  color: var(--fg-1);
+  font-weight: 600;
   font-size: 11px;
-  padding: 2px 7px;
-  border-radius: 10px;
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--edge-soft);
   flex-shrink: 0;
   align-self: center;
   font-variant-numeric: tabular-nums;
+  min-width: 30px;
+  text-align: center;
 }
 
+/* Pinned row — brand-soft fill with brand left-edge accent stripe.
+   Cleaner than the old solid amber background; the row stays readable. */
 .compose-row.pinned {
-  border-color: var(--amber);
-  background: rgba(255, 153, 0, 0.08);
+  border-color: var(--brand-edge);
+  background: linear-gradient(180deg,
+    rgba(232, 167, 84, 0.10) 0%,
+    rgba(232, 167, 84, 0.05) 100%);
+  box-shadow: var(--edge-top);
+  position: relative;
+}
+.compose-row.pinned::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 12px; bottom: 12px;
+  width: 3px;
+  background: var(--brand);
+  border-radius: 0 2px 2px 0;
 }
 .compose-row.excluded {
   opacity: 0.45;
@@ -1128,34 +1149,47 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #1a1a30;
-  color: var(--teal);
-  border: 1px solid var(--teal);
-  border-radius: 10px;
-  padding: 1px 4px 1px 8px;
+  background: var(--grad-btn);
+  color: var(--fg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 2px 4px 2px 9px;
   font-size: 11px;
+  letter-spacing: 0.1px;
+  box-shadow: var(--edge-soft);
+  transition: all var(--t-fast) var(--ease);
+}
+.tag-chip:hover {
+  color: var(--fg-0);
+  border-color: var(--border-2);
 }
 .tag-chip-x {
   background: none;
   border: none;
-  color: var(--teal);
+  color: var(--fg-2);
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
   padding: 0 3px;
+  transition: color var(--t-fast) var(--ease);
 }
-.tag-chip-x:hover { color: var(--red); }
+.tag-chip-x:hover { color: var(--danger); }
 .tag-chip-add {
   background: none;
-  border: 1px dashed #2b2b40;
-  color: var(--text-dim);
-  border-radius: 10px;
-  padding: 1px 8px;
+  border: 1px dashed var(--border);
+  color: var(--fg-2);
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
   font-size: 11px;
   cursor: pointer;
   font-family: var(--font);
+  transition: all var(--t-fast) var(--ease);
 }
-.tag-chip-add:hover { border-color: var(--amber); color: var(--amber); }
+.tag-chip-add:hover {
+  border-color: var(--brand-edge);
+  color: var(--brand);
+  background: var(--brand-soft);
+}
 
 #personaSelect {
   background: var(--input-bg);
@@ -1482,17 +1516,25 @@ textarea:focus-visible {
   margin-bottom: 8px;
 }
 
+/* Application card — callback. surface: gradient + edge-top + shadow-1,
+   hover brightens border + raises shadow + brand-soft halo. */
 .application-card {
-  background: var(--panel-bg);
-  border: 1px solid var(--teal);
-  border-radius: 8px;
-  padding: 10px 14px;
+  background: var(--grad-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 14px 18px;
   cursor: pointer;
-  transition: background 120ms;
+  box-shadow: var(--edge-top), var(--shadow-1);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease);
 }
 
 .application-card:hover {
-  background: #141a26;
+  border-color: var(--border-2);
+  box-shadow: var(--edge-top), var(--shadow-2), var(--shadow-brand);
+  transform: translateY(-1px);
 }
 
 .application-card-header {
@@ -1504,15 +1546,16 @@ textarea:focus-visible {
 
 .application-card-title {
   font-size: 15px;
-  font-weight: 700;
-  color: var(--amber);
+  font-weight: 600;
+  color: var(--fg-0);
+  letter-spacing: -0.2px;
   flex: 1;
 }
 
 .application-card-company {
   font-size: 13px;
-  color: var(--teal);
-  font-style: italic;
+  color: var(--fg-1);
+  font-style: normal;
 }
 
 .application-card-meta {
@@ -1524,36 +1567,66 @@ textarea:focus-visible {
 }
 
 .app-status-chip {
-  padding: 1px 8px;
-  border-radius: 3px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  font-weight: 700;
-  font-size: 10px;
-  background: #2b2b40;
-  color: var(--text-dim);
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.2px;
+  text-transform: none;
+  font-weight: 500;
+  font-size: 11px;
+  background: var(--grad-btn);
+  border: 1px solid var(--border);
+  color: var(--fg-1);
+  box-shadow: var(--edge-soft);
 }
-.app-status-chip.status-draft     { background: #2b2b40; color: var(--text-dim); }
-.app-status-chip.status-submitted { background: var(--teal); color: var(--black); }
-.app-status-chip.status-interview { background: var(--violet); color: var(--black); }
-.app-status-chip.status-closed    { background: var(--orange); color: var(--black); }
-.app-status-chip.status-withdrawn { background: var(--red); color: var(--text); }
+.app-status-chip.status-draft {
+  /* Neutral grad-btn keeps the default — draft is the least-loud state */
+}
+.app-status-chip.status-submitted {
+  color: var(--success);
+  background: linear-gradient(180deg,
+    rgba(74,222,128,0.18) 0%,
+    rgba(74,222,128,0.10) 100%);
+  border-color: rgba(74,222,128,0.28);
+}
+.app-status-chip.status-interview {
+  color: var(--brand);
+  background: linear-gradient(180deg,
+    rgba(232,167,84,0.20) 0%,
+    rgba(232,167,84,0.10) 100%);
+  border-color: var(--brand-edge);
+}
+.app-status-chip.status-closed {
+  color: var(--fg-2);
+  background: var(--grad-btn);
+}
+.app-status-chip.status-withdrawn {
+  color: var(--danger);
+  background: linear-gradient(180deg,
+    rgba(248,113,113,0.18) 0%,
+    rgba(248,113,113,0.10) 100%);
+  border-color: rgba(248,113,113,0.32);
+}
 
 .application-card-iter,
 .application-card-date {
-  color: var(--text-dim);
+  color: var(--fg-2);
   font-variant-numeric: tabular-nums;
 }
 
+/* Pending proposal — brand attention treatment (was solid violet tile) */
 .application-card-pending {
-  background: var(--violet);
-  color: var(--black);
-  padding: 1px 8px;
-  border-radius: 3px;
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  background: linear-gradient(180deg,
+    rgba(232,167,84,0.22) 0%,
+    rgba(232,167,84,0.12) 100%);
+  color: var(--brand);
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  text-transform: none;
+  border: 1px solid var(--brand-edge);
+  box-shadow: var(--edge-soft);
 }
 
 /* =============================================================== */
@@ -1582,13 +1655,23 @@ textarea:focus-visible {
 }
 
 .persona-card {
-  background: var(--panel-bg);
-  border: 1px solid var(--violet);
-  border-radius: 8px;
-  padding: 14px;
+  background: var(--grad-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  box-shadow: var(--edge-top), var(--shadow-1);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease);
+}
+.persona-card:hover {
+  border-color: var(--border-2);
+  box-shadow: var(--edge-top), var(--shadow-2);
+  transform: translateY(-1px);
 }
 
 .persona-card-name {
@@ -1854,35 +1937,61 @@ textarea:focus-visible {
 .lcars-main .panel-body { padding: 18px 22px; }
 .lcars-main .panel-header { padding: 10px 22px; letter-spacing: 3px; }
 
-/* Wizard rail — centered, less cramped, modern stepper feel */
-.wizard-rail {
-  justify-content: center;
-  gap: 6px;
-  padding: 12px 16px;
-  background: #0a0a16;
-  border-radius: 10px;
-  margin: 0 24px 4px;
-}
-.wizard-step { padding: 10px 16px; font-size: 12px; }
-.wizard-step .wizard-num { width: 22px; height: 22px; font-size: 12px; }
+/* Wizard rail Phase-D override removed — the callback. spec earlier in
+   this file is the source of truth. (Kept this comment as a marker so
+   future tuners don't reintroduce a competing rail style by accident.) */
 
-/* ----- Compose: TWO-LINE row layout (the key legibility fix) ----- */
+/* ----- Compose: two-line row layout with the callback. surface stack. */
 .compose-row {
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-rows: auto auto;
   gap: 6px 12px;
   padding: 12px 14px;
-  background: #0a0a18;
-  border: 1px solid #2b2b40;
-  border-radius: 8px;
+  background: var(--grad-bullet);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   margin-bottom: 8px;
-  transition: border-color 120ms, background 120ms;
+  box-shadow: var(--edge-soft);
+  position: relative;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
 }
-.compose-row:hover { border-color: var(--blue); }
-.compose-row.pinned   { border-color: var(--amber); background: rgba(255,153,0,0.08); }
-.compose-row.excluded { opacity: 0.4; text-decoration: line-through; }
-.compose-row.recommended { border-left: 3px solid var(--teal); }
+.compose-row:hover {
+  border-color: var(--border-2);
+  background: linear-gradient(180deg, #20212e 0%, #1a1b27 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--edge-top), var(--shadow-2);
+}
+.compose-row.pinned {
+  border-color: var(--brand-edge);
+  background: linear-gradient(180deg,
+    rgba(232,167,84,0.10) 0%,
+    rgba(232,167,84,0.05) 100%);
+}
+.compose-row.pinned::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 12px; bottom: 12px;
+  width: 3px;
+  background: var(--brand);
+  border-radius: 0 2px 2px 0;
+}
+.compose-row.excluded { opacity: 0.42; text-decoration: line-through; }
+.compose-row.recommended {
+  border-color: rgba(74,222,128,0.20);
+}
+.compose-row.recommended::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 12px; bottom: 12px;
+  width: 3px;
+  background: var(--success);
+  border-radius: 0 2px 2px 0;
+}
 
 .compose-row .row-text {
   grid-column: 1 / 2;
@@ -1910,11 +2019,18 @@ textarea:focus-visible {
 }
 
 .compose-experience-card {
-  background: var(--panel-bg);
-  border: 1px solid #2b2b40;
-  border-radius: 10px;
-  padding: 16px 18px;
-  margin-bottom: 14px;
+  background: var(--grad-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  box-shadow: var(--edge-top), var(--shadow-1);
+  transition: border-color var(--t-fast) var(--ease),
+              box-shadow var(--t-med) var(--ease);
+}
+.compose-experience-card:hover {
+  border-color: var(--border-2);
+  box-shadow: var(--edge-top), var(--shadow-2);
 }
 .compose-exp-header {
   display: flex;
@@ -1923,12 +2039,13 @@ textarea:focus-visible {
   margin-bottom: 6px;
 }
 .compose-exp-company {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--amber);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg-0);
+  letter-spacing: -0.2px;
 }
 .compose-exp-dates {
-  color: var(--text-dim);
+  color: var(--fg-2);
   font-variant-numeric: tabular-nums;
   font-size: 13px;
 }
@@ -2657,6 +2774,34 @@ input:focus, select:focus, textarea:focus {
 
 /* ---- Focus rings (keyboard-only) ---- */
 :focus-visible { outline: 2px solid var(--brand-edge); outline-offset: 2px; }
+
+/* ---- Analysis pending placeholder — surfaces in-flight state inside
+   panelAnalysis while /api/analyze is running. The topbar status pill
+   pulses too; this is the local affordance so the user sees the same
+   signal next to the (gated) Continue/Skip buttons. ---- */
+.analysis-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg,
+    rgba(232,167,84,0.10) 0%,
+    rgba(232,167,84,0.05) 100%);
+  border: 1px solid var(--brand-edge);
+  border-radius: var(--radius-lg);
+  color: var(--brand-hi);
+  font-size: 13.5px;
+  letter-spacing: 0.1px;
+  box-shadow: var(--edge-soft);
+}
+.analysis-pending-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 0 var(--brand);
+  animation: cb-status-pulse-strong 1.4s var(--ease) infinite;
+  flex-shrink: 0;
+}
 
 /* ---- Reduced motion ---- */
 @media (prefers-reduced-motion: reduce) {

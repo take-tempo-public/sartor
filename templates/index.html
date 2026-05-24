@@ -155,8 +155,17 @@
     <section class="lcars-panel hidden" id="panelAnalysis" data-wstep-body="1">
       <div class="panel-header lcars-bg-orange">Step 1 · Analysis</div>
       <div class="panel-body">
+        <!-- In-flight placeholder shown while /api/analyze is running.
+             Removed once analysisContent gets rendered. -->
+        <div class="analysis-pending hidden" id="analysisPending" aria-live="polite">
+          <span class="analysis-pending-dot" aria-hidden="true"></span>
+          Analyzing your job description against the corpus…
+        </div>
         <div id="analysisContent"></div>
-        <div class="form-row" style="margin-top:12px">
+        <!-- Continue / Skip buttons are hidden until analysis completes,
+             since clicking them mid-flight previously fired the
+             "Run ANALYZE first" toast (wizardGoTo gate on lastContextPath). -->
+        <div class="form-row hidden" id="analysisActions" style="margin-top:12px">
           <button class="lcars-btn lcars-bg-teal" onclick="wizardGoTo(2)">Continue to Clarify →</button>
           <button class="lcars-btn lcars-bg-amber" onclick="wizardGoTo(3); skipClarifications()" id="btnSkipFromAnalysis">Skip to Compose →</button>
         </div>
