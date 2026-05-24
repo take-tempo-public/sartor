@@ -62,6 +62,12 @@ CLARIFY_REQUIRED_KEYS = frozenset({"questions", "reasoning"})
 # corpus, rationale is one sentence. The route persists this on the context
 # so the Compose UI can render the curated set as the default view.
 RECOMMEND_REQUIRED_KEYS = frozenset({"recommendations"})
+# β.6b — Output shape for recommend_summaries: a single pick (or null
+# when the candidate has no active SummaryItem variants) plus optional
+# alternates. Mirrors recommend_bullets's "recommendations" array shape
+# but specialized — there is only one positioning summary per résumé,
+# so the top-level shape is a recommendation, not a list.
+RECOMMEND_SUMMARIES_REQUIRED_KEYS = frozenset({"recommendation"})
 
 # Generate output keys when the input contains <career_corpus> (Phase B.2+).
 # Selected_bullets is required so B.3 can write application_bullet audit rows
@@ -79,7 +85,7 @@ GENERATE_CORPUS_NO_CL_REQUIRED_KEYS = GENERATE_NO_CL_REQUIRED_KEYS | frozenset({
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-24.3"
+PROMPT_VERSION = "2026-05-24.4"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -1831,6 +1837,205 @@ def _dedup_recommendations(result: dict, corpus: list[CorpusExperience]) -> None
             if not dropped:
                 kept.append(bid)
         rec["bullet_ids"] = kept
+
+
+# ---------------------------------------------------------------------------
+# β.6b — recommend the best positioning summary variant per JD.
+# Mirrors recommend_bullets's pattern: Haiku call, no-near-duplicates
+# rule, deterministic Jaccard dedup safety pass. The candidate has
+# multiple SummaryItem variants ("AI platform PM", "early-stage
+# builder PM", etc.); this pick chooses one + optional alternates.
+# ---------------------------------------------------------------------------
+
+
+RECOMMEND_SUMMARIES_SYSTEM_PROMPT = """You are helping a candidate pick the strongest positioning summary for ONE specific job. The candidate's available summary variants are given as <summary_items> XML; the job is given as <jd>. You see the analyst's JD breakdown in <analysis> when present.
+
+Your one task: pick the SINGLE best-fit summary variant for THIS JD, and (optionally) name 1-2 alternates worth surfacing to the user. Optimize for: relevance to JD requirements, framing alignment (the JD's primary domain language), measurable outcomes when the variant includes them, and tone match (the JD's seniority + industry register).
+
+**No near-duplicates.** The candidate's variant set sometimes contains near-restatements of the same positioning. NEVER surface two near-restatements (the primary recommendation + an alternate that is essentially the same text). When two variants read alike, pick the single strongest phrasing and skip the rest. A safety pass downstream removes leaked duplicates, but you should not produce them in the first place.
+
+**Quality over quantity.** Only name alternates that are genuinely different positionings the user might prefer. If the chosen recommendation is obviously the only fit, return alternates as []. Do not pad.
+
+NEVER invent summaries. NEVER reword variants — return only ids from the <summary_items> block.
+
+Output JSON only, this exact shape:
+{
+  "recommendation": {
+    "summary_item_id": <int>,
+    "rationale": "one-sentence reason this positioning fits this JD"
+  },
+  "alternates": [
+    {
+      "summary_item_id": <int>,
+      "rationale": "one-sentence reason this variant is also worth considering"
+    },
+    ...
+  ]
+}
+
+If the candidate has zero summary variants in <summary_items>, return:
+{"recommendation": null, "alternates": []}
+
+Use the numeric ids only — do NOT prefix with "s"."""
+
+
+def recommend_summaries(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    *,
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """β.6b — pick the best SummaryItem variant for this JD.
+
+    Haiku call, mirroring recommend_bullets. Caller stages the active
+    SummaryItem variants on `context_set["summary_items"]` as a list
+    of {id, text, label, has_outcome} dicts before calling. Returns:
+
+        {
+          "recommendation": {"summary_item_id": int, "rationale": str} | None,
+          "alternates":     [{"summary_item_id": int, "rationale": str}, ...],
+        }
+
+    Short-circuits without an LLM call when the candidate has zero or
+    one variants (no decision to make + saves the token cost).
+    `recommendation` is None when there are zero variants; the single
+    variant otherwise. Alternates is always [].
+    """
+    # context_set is a TypedDict; `summary_items` is a transient key the
+    # route stashes, so it's typed as object. Coerce defensively.
+    items_raw = context_set.get("summary_items") or []
+    items: list[dict] = list(items_raw) if isinstance(items_raw, list) else []
+    items = [it for it in items if (it.get("text") or "").strip()]  # ignore blank rows
+
+    # Short-circuit — no LLM needed when the answer is trivial
+    if len(items) == 0:
+        return {"recommendation": None, "alternates": []}
+    if len(items) == 1:
+        only = items[0]
+        return {
+            "recommendation": {
+                "summary_item_id": int(only.get("id", 0)),
+                "rationale": "Only variant available — no alternates to weigh.",
+            },
+            "alternates": [],
+        }
+
+    items_block = _summary_items_block(items)
+    jd_value = context_set.get("jd_text", "")
+    jd_str = (str(jd_value) if jd_value else "").strip() or "(JD text unavailable in context)"
+    analysis = context_set.get("llm_analysis") or {}
+    essential = ", ".join(analysis.get("essential_skills", []) or [])
+    preferred = ", ".join(analysis.get("preferred_skills", []) or [])
+    keywords = ", ".join(analysis.get("industry_keywords", []) or [])
+
+    user_prompt = f"""<task>Pick the single best-fit summary variant id for this JD (with optional alternates). Output JSON only.</task>
+
+{items_block}
+
+<jd>
+{jd_str}
+</jd>
+
+<analysis>
+Essential skills the JD names: {essential or '(none surfaced)'}
+Preferred skills: {preferred or '(none)'}
+Industry keywords: {keywords or '(none)'}
+</analysis>"""
+
+    result = _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot per application
+        required_keys=RECOMMEND_SUMMARIES_REQUIRED_KEYS,
+        call_kind="recommend_summary",
+        username=username,
+        run_id=run_id,
+        system_prompt=RECOMMEND_SUMMARIES_SYSTEM_PROMPT,
+        model=HAIKU_MODEL,
+    )
+    # Ensure the alternates key exists even when the LLM omits it
+    result.setdefault("alternates", [])
+    # β.6b safety pass: drop alternates that are near-restatements of
+    # the recommendation or of each other. Same Jaccard ≥ 0.75 threshold
+    # as _dedup_recommendations on bullets.
+    _dedup_summary_recommendations(result, items)
+    return result
+
+
+def _summary_items_block(items: list[dict]) -> str:
+    """XML-format the candidate's SummaryItem variants for the prompt.
+    Mirrors `_corpus_block`'s shape conventions: numeric ids only, no
+    free-form metadata that the LLM might echo back into a bullet."""
+    from xml.sax.saxutils import escape
+
+    lines = ["<summary_items>"]
+    for it in items:
+        try:
+            sid = int(it.get("id", 0))
+        except (TypeError, ValueError):
+            continue
+        text = (it.get("text") or "").strip()
+        if not text:
+            continue
+        label = (it.get("label") or "").strip()
+        has_outcome = bool(it.get("has_outcome"))
+        attrs = f'id="{sid}"'
+        if label:
+            attrs += f' label="{escape(label)}"'
+        if has_outcome:
+            attrs += ' has_outcome="true"'
+        lines.append(f"  <summary_item {attrs}>{escape(text)}</summary_item>")
+    lines.append("</summary_items>")
+    return "\n".join(lines)
+
+
+def _dedup_summary_recommendations(result: dict, items: list[dict]) -> None:
+    """Mutate result['alternates'] in place to drop entries that are
+    near-restatements of the recommendation (or of each other). Jaccard
+    ≥ 0.75 on the variant text, same threshold as bullets.
+
+    The recommendation itself is preserved — the LLM's top pick is the
+    user's primary surface and we don't touch it. Only alternates get
+    trimmed."""
+    from hardening import bullet_jaccard
+
+    text_by_id: dict[int, str] = {}
+    for it in items or []:
+        try:
+            sid = int(it.get("id", 0))
+        except (TypeError, ValueError):
+            continue
+        text_by_id[sid] = (it.get("text") or "").strip()
+
+    rec = result.get("recommendation") or {}
+    rec_id_raw = rec.get("summary_item_id")
+    try:
+        rec_id = int(rec_id_raw) if rec_id_raw is not None else None
+    except (TypeError, ValueError):
+        rec_id = None
+    rec_text = text_by_id.get(rec_id, "") if rec_id is not None else ""
+
+    kept: list[dict] = []
+    kept_texts: list[str] = [rec_text] if rec_text else []
+    for alt in result.get("alternates", []) or []:
+        try:
+            sid = int(alt.get("summary_item_id", 0))
+        except (TypeError, ValueError):
+            continue
+        if sid == rec_id:
+            continue  # never surface the primary pick as its own alternate
+        text = text_by_id.get(sid, "")
+        if not text:
+            continue
+        is_dup = any(
+            bullet_jaccard(text, k) >= 0.75 for k in kept_texts
+        )
+        if is_dup:
+            continue
+        kept.append(alt)
+        kept_texts.append(text)
+    result["alternates"] = kept
 
 
 # ---------------------------------------------------------------------------

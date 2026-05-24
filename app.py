@@ -3945,6 +3945,90 @@ def recommend_application_bullets(application_id: int):
         session.close()
 
 
+@app.route("/api/applications/<int:application_id>/recommend-summary", methods=["POST"])
+def recommend_application_summary(application_id: int):
+    """β.6b — pick the best SummaryItem variant for this application.
+
+    Mirrors recommend_application_bullets's shape: Haiku call, persists
+    to `context_set["llm_summary_recommendation"]`. Fires from the
+    Compose step (β.6c) when the user enters that step; re-runnable
+    (overwrites the field). Short-circuits without an LLM call when
+    the candidate has 0 or 1 variants.
+
+    Body: {context_path}. Filesystem + ownership: _safe_username via
+    _load_application_owned; _within gates context_path.
+    """
+    from analyzer import LLMResponseError, recommend_summaries
+    from db.models import SummaryItem
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, OUTPUT_DIR) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        # Load active SummaryItem variants for this candidate.
+        rows = session.query(SummaryItem).filter_by(
+            candidate_id=candidate.id, is_active=1,
+        ).order_by(SummaryItem.display_order, SummaryItem.id).all()
+        items = [
+            {
+                "id": r.id, "text": r.text, "label": r.label,
+                "has_outcome": bool(r.has_outcome),
+            }
+            for r in rows
+        ]
+
+        # Stash transient context for the LLM call (matches the
+        # recommend_bullets jd_text pattern). Strip before persisting.
+        ctx["summary_items"] = items
+        ctx["jd_text"] = app_row.jd_text
+        run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
+        try:
+            result = recommend_summaries(
+                _get_client(), ctx,
+                username=candidate.username, run_id=run_id,
+            )
+        except anthropic.APIConnectionError as exc:
+            logger.error("Recommend-summary: Anthropic connection error: %s", exc)
+            return jsonify({"error": "AI service connection failed"}), 503
+        except LLMResponseError as exc:
+            logger.error("Recommend-summary: malformed LLM response: %s", exc.validation_error)
+            return jsonify({
+                "error": "AI summary recommendation was malformed",
+                "detail": str(exc.validation_error),
+            }), 502
+
+        # Persist + strip the transient keys
+        ctx["llm_summary_recommendation"] = result
+        ctx.pop("summary_items", None)
+        ctx.pop("jd_text", None)
+        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        return jsonify({
+            "application_id": application_id,
+            **result,
+        })
+    finally:
+        session.close()
+
+
 # ---------------------------------------------------------------------------
 # Phase D.5: Candidate Memory list route
 # ---------------------------------------------------------------------------

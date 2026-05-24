@@ -16,6 +16,77 @@ prevent re-running them.
 
 ---
 
+## 2026-05-24 — recommend_summaries Haiku call (β.6b) (`2026-05-24.3` → `2026-05-24.4`)
+
+1. **What changed?** New Haiku call `analyzer.recommend_summaries()`
+   that picks the best SummaryItem variant per JD, mirroring
+   `recommend_bullets`. Output shape:
+   ```
+   {
+     "recommendation": {"summary_item_id": <int>, "rationale": <str>} | null,
+     "alternates":     [{"summary_item_id": <int>, "rationale": <str>}, ...]
+   }
+   ```
+   Top-level is a single pick (not a list) since there's one
+   positioning per résumé. Alternates surface 1-2 other variants
+   worth weighing.
+
+   New module-level `RECOMMEND_SUMMARIES_SYSTEM_PROMPT` carries the
+   "no near-duplicates" rule + the "quality over quantity" alternates
+   guidance from `2026-05-22.2` + `2026-05-24.2` (the bullet
+   recommend rules learned the hard way; summaries inherit the
+   same constraints).
+
+   Deterministic safety pass `_dedup_summary_recommendations()`
+   trims alternates at Jaccard ≥ 0.75 against the recommendation
+   AND each other — same threshold as the bullet dedup. Never
+   surfaces the recommendation id as its own alternate (defensive
+   against LLM echoing).
+
+   Short-circuit: when the candidate has 0 or 1 active SummaryItem
+   variants, the function returns the trivial answer without an
+   LLM call. Saves the Haiku token cost on the long tail of users
+   who only ever have one positioning.
+
+   New route `/api/applications/<id>/recommend-summary` (POST,
+   body: `{context_path}`). Loads active SummaryItem rows, stashes
+   them as a transient `context_set["summary_items"]` for the LLM
+   call, persists the result on
+   `context_set["llm_summary_recommendation"]` (mirrors the
+   `llm_recommendations` pattern bullets use), strips both
+   transient keys before write.
+
+   PROMPT_VERSION → `2026-05-24.4`.
+
+2. **Why?** β.6a shipped the SummaryItem schema + CRUD; users could
+   curate multiple positioning variants but the LLM had no way to
+   pick one per JD. This commit closes the loop so the Compose step
+   (β.6c) can surface a scored pick the same way bullets do today.
+
+3. **What was the result?** 11 new tests in
+   `tests/test_recommend_summaries.py`:
+   - `TestRecommendSummariesShortCircuit` (3 tests) — zero / blank /
+     single-variant paths skip the LLM
+   - `TestDedupSummaryRecommendations` (4 tests) — Jaccard dedup
+     drops near-restatement alternates while preserving distinct
+     ones; recommendation id never echoes as an alternate
+   - `TestRecommendSummaryRoute` (4 tests) — happy path persists +
+     strips transient keys; unknown application → 404; missing
+     context_path → 400; zero-variant candidate → 200 with
+     recommendation=null
+
+4. **What did we learn?** Two patterns now established across the
+   recommend family:
+   - **Short-circuit before the LLM** when the answer is trivial
+     (zero/one inputs). Cheaper on the common path.
+   - **The dedup safety pass is independent of input shape.** Same
+     Jaccard ≥ 0.75 threshold on `bullet_jaccard` works for bullets
+     (per-experience), summaries (per-application), and will work
+     for whatever CorpusItem kind lands next (β.6d–e + future
+     SkillGroupItem / CoverLetterChunkItem in v1.1+).
+
+---
+
 ## 2026-05-24 — Cover-letter detachment (`2026-05-24.2` → `2026-05-24.3`)
 
 1. **What changed?** `analyzer.generate()` gained a `with_cover_letter:
