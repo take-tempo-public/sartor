@@ -94,7 +94,19 @@ def generate_resume(
     base_dir: str = "output",
     template_path: str | None = None,
 ) -> str:
-    """Generate the tailored resume in the requested format."""
+    """Generate the tailored resume in the requested format.
+
+    Phase β.2: every generate call also writes a JSON Resume v1.0
+    sidecar (`resume_{ts}.jsonresume.json`) next to the primary output.
+    The sidecar is the canonical structured form that β.3 (WeasyPrint
+    PDF) and β.4 (live HTML preview) will consume. Failures in the
+    sidecar write are logged but do not block the primary output.
+    """
+    import json as _json
+    from pathlib import Path as _Path
+
+    from json_resume import md_to_json_resume
+
     out_dir = Path(base_dir) / username
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -110,6 +122,25 @@ def generate_resume(
     else:
         path = out_dir / f"resume_{ts}.docx"
         _write_docx(content, path, template_path=template_path)
+
+    # JSON Resume sidecar — best-effort. Parsing is deterministic and
+    # tested; the only realistic failure here would be a disk write
+    # issue, which we'd want to surface but not block the primary
+    # output the caller is waiting on.
+    try:
+        json_doc = md_to_json_resume(content)
+        sidecar = _Path(str(path)).with_suffix(".jsonresume.json")
+        # `.with_suffix` only replaces the final extension; we want the
+        # sidecar named e.g. `resume_20260524_153012.jsonresume.json`
+        # alongside `resume_20260524_153012.docx`. Path.with_suffix
+        # handles this for both .docx and .md cases.
+        sidecar.write_text(_json.dumps(json_doc, indent=2, ensure_ascii=False),
+                           encoding="utf-8")
+    except Exception as exc:  # noqa: BLE001 — non-blocking sidecar
+        import logging
+        logging.getLogger(__name__).warning(
+            "JSON Resume sidecar write failed for %s: %s", path, exc,
+        )
 
     return str(path)
 
