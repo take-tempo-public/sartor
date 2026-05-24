@@ -142,7 +142,10 @@
          returns. Both panels belong to Step 1 (the user does not advance
          until they've read the analysis). -->
     <section class="lcars-panel hidden" id="panelJD" data-wstep-body="1">
-      <div class="panel-header lcars-bg-teal">Step 1 · Job description</div>
+      <div class="panel-header cb-step-header">
+        <span class="cb-step-eyebrow">Step 1</span>
+        <span class="cb-step-title">Job description</span>
+      </div>
       <div class="panel-body">
         <label for="jdText" class="sr-only">Job description</label>
         <textarea id="jdText" rows="12" placeholder="Paste the full job description text here..." aria-label="Job description"></textarea>
@@ -153,7 +156,10 @@
       </div>
     </section>
     <section class="lcars-panel hidden" id="panelAnalysis" data-wstep-body="1">
-      <div class="panel-header lcars-bg-orange">Step 1 · Analysis</div>
+      <div class="panel-header cb-step-header">
+        <span class="cb-step-eyebrow">Step 1</span>
+        <span class="cb-step-title">Analysis</span>
+      </div>
       <div class="panel-body">
         <!-- In-flight placeholder shown while /api/analyze is running.
              Removed once analysisContent gets rendered. -->
@@ -175,7 +181,10 @@
     <!-- STEP 2 — CLARIFY (optional): probe the LLM for clarifying
          questions; user answers feed recommend + generate as ground truth. -->
     <section class="lcars-panel hidden" id="panelClarify" data-wstep-body="2">
-      <div class="panel-header lcars-bg-violet">Step 2 · Clarify</div>
+      <div class="panel-header cb-step-header">
+        <span class="cb-step-eyebrow">Step 2</span>
+        <span class="cb-step-title">Clarify</span>
+      </div>
       <div class="panel-body">
         <div class="edit-hint" id="clarifyHint">
           Surface real experience missing from your resume and disambiguate
@@ -198,7 +207,10 @@
 
     <!-- STEP 3 — COMPOSE: LLM-recommended bullets per experience + drawer. -->
     <section class="lcars-panel hidden" id="panelCompose" data-wstep-body="3">
-      <div class="panel-header lcars-bg-violet">Step 3 · Compose</div>
+      <div class="panel-header cb-step-header">
+        <span class="cb-step-eyebrow">Step 3</span>
+        <span class="cb-step-title">Compose</span>
+      </div>
       <div class="panel-body">
         <div class="edit-hint">
           The AI picked the strongest bullets for this job. Pin to force-
@@ -215,7 +227,10 @@
 
     <!-- STEP 4 — TEMPLATE: card-based picker (no buried select). -->
     <section class="lcars-panel hidden" id="panelTemplate" data-wstep-body="4">
-      <div class="panel-header lcars-bg-blue">Step 4 · Template</div>
+      <div class="panel-header cb-step-header">
+        <span class="cb-step-eyebrow">Step 4</span>
+        <span class="cb-step-title">Template</span>
+      </div>
       <div class="panel-body">
         <div class="edit-hint">
           Pick the .docx styling for your generated resume. The content
@@ -239,7 +254,10 @@
 
     <!-- STEP 5 — GENERATE: format + generate button. -->
     <section class="lcars-panel hidden" id="panelGenerate" data-wstep-body="5">
-      <div class="panel-header lcars-bg-amber">Step 5 · Generate</div>
+      <div class="panel-header cb-step-header">
+        <span class="cb-step-eyebrow">Step 5</span>
+        <span class="cb-step-title">Generate</span>
+      </div>
       <div class="panel-body">
         <div class="edit-hint">
           The AI writes a tailored resume + cover letter using your
@@ -260,7 +278,10 @@
 
     <!-- STEP 6 — OUTPUT / DOWNLOAD -->
     <section class="lcars-panel hidden" id="panelOutput" data-wstep-body="6">
-      <div class="panel-header lcars-bg-amber">Step 6 · Generated output</div>
+      <div class="panel-header cb-step-header">
+        <span class="cb-step-eyebrow">Step 6</span>
+        <span class="cb-step-title">Generated output</span>
+      </div>
       <div class="panel-body">
         <div class="output-tabs" role="tablist" aria-label="Output sections">
           <button class="tab-btn active" id="tabBtnResume" onclick="showTab('resume', this)" role="tab" aria-controls="tabResume" aria-selected="true">Résumé</button>

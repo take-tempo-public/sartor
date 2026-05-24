@@ -374,17 +374,17 @@ function renderAnalysis(data) {
   if (a.comparison) {
     html += `<div class="analysis-section"><h3>Resume vs. Ideal Comparison</h3>`;
     if (a.comparison.strengths) {
-      html += `<p style="color:var(--teal);font-size:13px;margin-bottom:4px">STRENGTHS</p><ul>`;
+      html += `<p class="analysis-label analysis-label-strengths">Strengths</p><ul>`;
       a.comparison.strengths.forEach(s => { html += `<li>${esc(s)}</li>`; });
       html += `</ul>`;
     }
     if (a.comparison.gaps) {
-      html += `<p style="color:var(--red);font-size:13px;margin:8px 0 4px">GAPS</p><ul>`;
+      html += `<p class="analysis-label analysis-label-gaps">Gaps</p><ul>`;
       a.comparison.gaps.forEach(g => { html += `<li>${esc(g)}</li>`; });
       html += `</ul>`;
     }
     if (a.comparison.title_alignment) {
-      html += `<p style="color:var(--amber);font-size:13px;margin-top:8px">TITLE ALIGNMENT: ${esc(a.comparison.title_alignment)}</p>`;
+      html += `<p class="analysis-label analysis-label-title">Title alignment: <span class="analysis-label-detail">${esc(a.comparison.title_alignment)}</span></p>`;
     }
     html += `</div>`;
   }

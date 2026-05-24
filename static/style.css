@@ -2803,6 +2803,69 @@ input:focus, select:focus, textarea:focus {
 /* ---- Focus rings (keyboard-only) ---- */
 :focus-visible { outline: 2px solid var(--brand-edge); outline-offset: 2px; }
 
+/* ---- Wizard step header — mockup-matched typography.
+   Replaces the modest single-line panel-header for wizard panels with
+   an eyebrow + dramatic title pair:
+     STEP 3     ← 11px, brand-amber, uppercase, +1.5px letter-spacing
+     Compose    ← 24px, fg-0, weight 600, tight letter-spacing
+   Reference: docs/mockups/b-refined-v2.html `.step-heading`. Used only
+   on wizard panels via the explicit .cb-step-header class so the
+   non-wizard panel-headers (User selection, Career corpus, etc.) keep
+   the quiet 13px treatment. ---- */
+.panel-header.cb-step-header {
+  align-items: baseline;
+  gap: 12px;
+  padding: 20px 22px 14px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fg-0);
+}
+.cb-step-eyebrow {
+  font-size: 11px;
+  color: var(--brand);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.cb-step-title {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
+  color: var(--fg-0);
+  flex-grow: 1;
+}
+
+/* ---- Analysis section labels (Strengths / Gaps / Title alignment).
+   STRENGTHS used to be teal (→ success green); GAPS used to be red (→
+   danger salmon), which read dimmer than the green at equal lightness
+   because the eye perceives green as brighter. Now both labels carry
+   the same visual weight: brand-amber GAPS reads "areas to improve"
+   semantically (not "error") AND matches the green's perceived punch.
+   Letter-spaced eyebrow treatment so the two labels read as
+   structural section markers, not body text. ---- */
+.analysis-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 14px 0 6px;
+}
+.analysis-label-strengths { color: var(--success); }
+.analysis-label-gaps      { color: var(--warning); }
+.analysis-label-title     {
+  color: var(--brand);
+  letter-spacing: 1px;
+  margin-top: 14px;
+}
+.analysis-label-detail {
+  color: var(--fg-0);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 /* ---- Analysis pending placeholder — surfaces in-flight state inside
    panelAnalysis while /api/analyze is running. The topbar status pill
    pulses too; this is the local affordance so the user sees the same
