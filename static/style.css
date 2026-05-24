@@ -944,24 +944,44 @@ textarea:focus-visible {
    shows an amber gradient with a slow sheen sweep. Active step number
    has a halo + 3.2s breath pulse. Done numbers swap to a ✓ glyph.
    Upcoming step labels are hidden to keep the rail visually clean —
-   the number alone carries the step identity ahead of you. */
+   the number alone carries the step identity ahead of you.
+
+   Layout: nowrap + horizontal-scroll fallback. As the user advances
+   through the wizard the rail accumulates done labels (✓ + sentence-
+   case label), and at the later phases the total content can exceed
+   the viewport. We keep everything on a single visual row by:
+     1. flex-wrap: nowrap (never break to a second line)
+     2. labels are white-space: nowrap (never wrap mid-word)
+     3. connectors are allowed to shrink below their preferred 56px
+        down to 14px (1 1 0 with min-width 14)
+     4. overflow-x: auto as a last-resort escape hatch on very narrow
+        viewports — scrolls horizontally rather than wrapping
+   This preserves the visual identity (one line) at every step. */
 .wizard-rail {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0;
-  padding: 22px 28px 24px;
+  padding: 22px 24px 24px;
   align-items: center;
   justify-content: flex-start;
   border-bottom: 1px solid var(--border);
   max-width: 1180px;
   margin: 0 auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-2) transparent;
+}
+.wizard-rail::-webkit-scrollbar { height: 4px; }
+.wizard-rail::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 2px;
 }
 .wizard-step {
   background: transparent;
   color: var(--fg-2);
   border: none;
   border-radius: var(--radius-md);
-  padding: 0 8px;
+  padding: 0 6px;
   font-family: var(--font);
   font-size: 13.5px;
   font-weight: 500;
@@ -970,9 +990,12 @@ textarea:focus-visible {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: color var(--t-fast) var(--ease);
 }
+.wizard-step .wizard-label { white-space: nowrap; }
 .wizard-step:hover:not(:disabled) { color: var(--fg-1); }
 .wizard-step.active {
   color: var(--fg-0);
@@ -1055,16 +1078,21 @@ textarea:focus-visible {
 }
 
 /* Connector ink-trail — 2px line between step circles. Done = filled
-   green. active-edge = green→amber gradient with a slow sheen sweep. */
+   green. active-edge = green→amber gradient with a slow sheen sweep.
+   `flex: 1 1 56px` lets the connector grow (when space is plentiful)
+   AND shrink (when later phases add done-labels that push the rail
+   wider) — without this, the rail would either wrap or overflow.
+   `min-width: 14px` is the floor so the ink-trail stays readable
+   even on narrow viewports. */
 .wizard-connector {
-  flex: 0 1 56px;
+  flex: 1 1 56px;
   height: 2px;
   background: var(--border);
   margin: 0 2px;
   border-radius: 2px;
   position: relative;
   overflow: hidden;
-  min-width: 24px;
+  min-width: 14px;
 }
 .wizard-connector.done {
   background: var(--success);
