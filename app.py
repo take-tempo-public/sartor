@@ -3553,7 +3553,21 @@ def list_clarifications(username: str):
         session.close()
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Launch the Flask app on http://localhost:5000.
+
+    Entry point for the `callback` console script registered in
+    `pyproject.toml [project.scripts]`. Equivalent to `python app.py`
+    for users who installed via `pip install -e .` or `pip install
+    callback`.
+
+    Set `FLASK_DEBUG=0` in the environment to disable Flask's
+    reloader + verbose error pages (see SECURITY.md for rationale).
+    """
     print("\n  callback. — http://localhost:5000\n")
     debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"
     app.run(debug=debug_mode, port=5000)
+
+
+if __name__ == "__main__":
+    main()

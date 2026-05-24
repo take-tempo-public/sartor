@@ -1,0 +1,47 @@
+# .editorconfig — cross-editor consistency for the callback. repo
+# https://editorconfig.org
+#
+# Set defaults conservatively: LF line endings (matches the repo's
+# existing files; Windows clones converted by git autocrlf will still
+# see CRLF locally), 4-space indent for Python, 2-space for everything
+# else where 2 is the conventional house style.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_size = 4
+max_line_length = 100
+
+[*.{js,ts,jsx,tsx}]
+indent_size = 2
+
+[*.{html,htm}]
+indent_size = 2
+
+[*.{css,scss}]
+indent_size = 2
+
+[*.{yaml,yml}]
+indent_size = 2
+
+[*.{json,jsonl}]
+indent_size = 2
+
+[*.md]
+# Markdown trailing whitespace is sometimes meaningful (two trailing
+# spaces = hard break). Don't trim.
+trim_trailing_whitespace = false
+
+[Makefile]
+indent_style = tab
+
+[*.toml]
+indent_size = 2

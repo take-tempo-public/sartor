@@ -1,6 +1,6 @@
-# Contributing to Resume Optimizer
+# Contributing to callback.
 
-Thanks for your interest. This project optimizes resumes against job descriptions using a deterministic Python core and the Claude API for fuzzy reasoning. It is intentionally small — most contributions should *make it more deterministic*, not less.
+Thanks for your interest. callback. tailors a résumé and (optionally) a cover letter to one specific job at a time, using a deterministic Python core and the Claude API for fuzzy reasoning. It is intentionally small — most contributions should *make it more deterministic*, not less.
 
 The guiding philosophy is the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/). Read [`vision.md`](vision.md) before proposing significant changes.
 
@@ -108,7 +108,7 @@ Sensitive issues should go through GitHub Security Advisories — see [`SECURITY
 The plugin's subagents currently act under your local `gh auth` identity, with `Co-Authored-By:` trailers attributing assistant work. If this project ever grows to need scheduled or multi-agent autonomy, the pathway is:
 
 1. **GitHub Actions with built-in `GITHUB_TOKEN`** for scheduled jobs (no secrets to manage)
-2. **A scoped GitHub App** ("Resume Optimizer Bot") for distinct-identity automation
+2. **A scoped GitHub App** ("callback. Bot") for distinct-identity automation
 
 Per-agent personal access tokens or separate user accounts are explicitly *not* the recommended path. See the agent definitions in `.claude-plugin/agents/` for the current personas and their permissions.
 
