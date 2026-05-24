@@ -1597,6 +1597,17 @@ function setStatus(text) {
     pill.style.color      = isError ? 'var(--black)' : '';
   }
 
+  // Mirror state into the floating bottom status bar so the user gets
+  // the same status signal whether their eye is at the top or the bottom
+  // of the page during long LLM calls.
+  const sbText   = document.getElementById('cbStatusbarText');
+  const sbStatus = sbText ? sbText.closest('.cb-statusbar-status') : null;
+  if (sbText)   sbText.textContent = _toSentence(text);
+  if (sbStatus) {
+    sbStatus.classList.toggle('is-active', isActive);
+    sbStatus.classList.toggle('is-error',  isError);
+  }
+
   // In error state the pill becomes a button that re-opens the copyable
   // error modal; outside error state it's an inert status indicator.
   if (isError) {
@@ -2869,11 +2880,30 @@ const _WIZARD_PANELS = {
   6: ['panelOutput'],
 };
 
+// Sentence-case labels for the six wizard steps — mirrored into the
+// floating bottom statusbar's context line. Kept in JS (not derived from
+// DOM) so it survives label edits in the rail without breaking the
+// bottom-bar context.
+const _WIZARD_STEP_LABELS = {
+  1: 'Job + Analyze',
+  2: 'Clarify',
+  3: 'Compose',
+  4: 'Template',
+  5: 'Generate',
+  6: 'Download',
+};
+
 function wizardInit() {
   const rail = document.getElementById('wizardRail');
   if (rail) rail.classList.remove('hidden');
   _wizardStep = 1;
   _wizardRender();
+  // Reveal the floating bottom statusbar once the wizard engages.
+  const sb = document.getElementById('cbStatusbar');
+  if (sb) {
+    sb.classList.add('is-visible');
+    sb.setAttribute('aria-hidden', 'false');
+  }
 }
 
 function _wizardReachable(step) {
@@ -2910,10 +2940,36 @@ function _wizardRender() {
   });
   document.querySelectorAll('.wizard-step').forEach(btn => {
     const s = parseInt(btn.dataset.wstep, 10);
-    btn.classList.toggle('active', s === _wizardStep);
-    btn.classList.toggle('done', s < _wizardStep);
+    const isDone     = s < _wizardStep;
+    const isActive   = s === _wizardStep;
+    const isUpcoming = s > _wizardStep;
+    btn.classList.toggle('active', isActive);
+    btn.classList.toggle('done', isDone);
+    btn.classList.toggle('upcoming', isUpcoming);
     btn.disabled = !_wizardReachable(s);
+    // Swap the number for ✓ on done steps; restore the digit otherwise.
+    // The original digit is read from data-wstep so we don't need to
+    // store it separately. aria-hidden on the glyph keeps SR users on
+    // the visible label.
+    const num = btn.querySelector('.wizard-num');
+    if (num) {
+      num.textContent = isDone ? '✓' : btn.dataset.wstep;
+      if (isDone) num.setAttribute('aria-hidden', 'true');
+      else num.removeAttribute('aria-hidden');
+    }
   });
+  // Connector ink-trail: done = filled green, active-edge = the connector
+  // leading INTO the active step (gradient + sheen sweep), else neutral.
+  document.querySelectorAll('.wizard-connector').forEach(c => {
+    const n = parseInt(c.dataset.conn, 10);
+    c.classList.toggle('done', n < _wizardStep - 1);
+    c.classList.toggle('active-edge', n === _wizardStep - 1);
+  });
+  // Bottom statusbar context: "Step 3 of 6 · Compose"
+  const sbStep  = document.getElementById('cbStatusbarStep');
+  const sbLabel = document.getElementById('cbStatusbarLabel');
+  if (sbStep)  sbStep.textContent  = `Step ${_wizardStep} of 6`;
+  if (sbLabel) sbLabel.textContent = _WIZARD_STEP_LABELS[_wizardStep] || '';
   const active = document.getElementById((_WIZARD_PANELS[_wizardStep] || [])[0]);
   if (active) active.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }

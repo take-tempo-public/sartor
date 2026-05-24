@@ -114,15 +114,22 @@
          drawer; only the wizard + dynamic surfaces live in the
          Application tab now.) -->
 
-    <!-- Wizard step rail (Workstream E) — navigation layer over the
-         existing panels; clicking a step jumps if its prerequisite is met. -->
+    <!-- Wizard step rail — sentence-case labels, connector ink-trail
+         between steps (filled green for done, amber-gradient sheen for
+         the edge leading into the active step), ✓ glyph on done numbers,
+         labels hidden on upcoming steps. Mockup: docs/mockups/b-refined-v2.html. -->
     <nav class="wizard-rail hidden" id="wizardRail" aria-label="Application steps">
-      <button class="wizard-step" data-wstep="1" onclick="wizardGoTo(1)"><span class="wizard-num">1</span> JOB + ANALYZE</button>
-      <button class="wizard-step" data-wstep="2" onclick="wizardGoTo(2)"><span class="wizard-num">2</span> CLARIFY</button>
-      <button class="wizard-step" data-wstep="3" onclick="wizardGoTo(3)"><span class="wizard-num">3</span> COMPOSE</button>
-      <button class="wizard-step" data-wstep="4" onclick="wizardGoTo(4)"><span class="wizard-num">4</span> TEMPLATE</button>
-      <button class="wizard-step" data-wstep="5" onclick="wizardGoTo(5)"><span class="wizard-num">5</span> GENERATE</button>
-      <button class="wizard-step" data-wstep="6" onclick="wizardGoTo(6)"><span class="wizard-num">6</span> DOWNLOAD</button>
+      <button class="wizard-step" data-wstep="1" onclick="wizardGoTo(1)"><span class="wizard-num">1</span><span class="wizard-label">Job + Analyze</span></button>
+      <span class="wizard-connector" data-conn="1" aria-hidden="true"></span>
+      <button class="wizard-step" data-wstep="2" onclick="wizardGoTo(2)"><span class="wizard-num">2</span><span class="wizard-label">Clarify</span></button>
+      <span class="wizard-connector" data-conn="2" aria-hidden="true"></span>
+      <button class="wizard-step" data-wstep="3" onclick="wizardGoTo(3)"><span class="wizard-num">3</span><span class="wizard-label">Compose</span></button>
+      <span class="wizard-connector" data-conn="3" aria-hidden="true"></span>
+      <button class="wizard-step" data-wstep="4" onclick="wizardGoTo(4)"><span class="wizard-num">4</span><span class="wizard-label">Template</span></button>
+      <span class="wizard-connector" data-conn="4" aria-hidden="true"></span>
+      <button class="wizard-step" data-wstep="5" onclick="wizardGoTo(5)"><span class="wizard-num">5</span><span class="wizard-label">Generate</span></button>
+      <span class="wizard-connector" data-conn="5" aria-hidden="true"></span>
+      <button class="wizard-step" data-wstep="6" onclick="wizardGoTo(6)"><span class="wizard-num">6</span><span class="wizard-label">Download</span></button>
     </nav>
 
     <!-- (Workstream B1: the "Corpus" wizard step is retired. Adding
@@ -633,6 +640,24 @@
       </div>
     </div>
   </aside>
+
+  <!-- callback. floating status strip — viewport-bottom sticky element
+       that mirrors statusPill state and surfaces the active wizard step.
+       Pulses during active phases (analysis, recommend, generate). -->
+  <div class="cb-statusbar" id="cbStatusbar" aria-hidden="true">
+    <div class="cb-statusbar-row">
+      <div class="cb-statusbar-context">
+        <span class="cb-statusbar-step" id="cbStatusbarStep">Step — of 6</span>
+        <span class="cb-statusbar-sep">·</span>
+        <span class="cb-statusbar-label" id="cbStatusbarLabel">Standby</span>
+      </div>
+      <span class="cb-grow"></span>
+      <div class="cb-statusbar-status">
+        <span class="cb-status-dot" aria-hidden="true"></span>
+        <span class="cb-statusbar-text" id="cbStatusbarText">Ready</span>
+      </div>
+    </div>
+  </div>
 
   <script src="/static/app.js"></script>
 </body>
