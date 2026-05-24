@@ -39,10 +39,14 @@ def app_client(tmp_path, monkeypatch):
 
     # Stub the generate() LLM call — return deterministic content.
     def _stub_generate(client, context_set, analysis, refinement_notes="",
-                      username="", run_id=""):
+                      username="", run_id="", with_cover_letter=True):
+        # β.5 — accept the new kwarg. When False, mimic the production
+        # behavior of an empty cover_letter_content so the route's
+        # "skip cover-letter write" branch is exercised.
         return {
             "resume_content": f"# Generated resume (iter input={context_set.get('iteration', 0)})",
-            "cover_letter_content": "Generated cover letter body.",
+            "cover_letter_content":
+                "Generated cover letter body." if with_cover_letter else "",
             "changes_made": ["a"],
             "proofread_notes": [],
         }

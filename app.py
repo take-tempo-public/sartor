@@ -775,6 +775,10 @@ def run_generation():
     context_path = data.get("context_path", "")
     output_format = data.get("output_format", "")  # ".docx" or ".md"; falls back to context
     refinement_notes = data.get("refinement_notes", "")
+    # Phase β.5 — cover-letter generation is opt-in. The common résumé-only
+    # path skips the cover-letter LLM tokens entirely; /api/generate-cover-letter
+    # produces it on demand against the finalized résumé.
+    with_cover_letter = bool(data.get("generate_cover_letter", False))
 
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
@@ -805,6 +809,7 @@ def run_generation():
             refinement_notes=refinement_notes,
             username=username,
             run_id=run_id,
+            with_cover_letter=with_cover_letter,
         )
     except anthropic.APIConnectionError as exc:
         logger.error("Anthropic API connection error during generation: %s", exc)
@@ -855,9 +860,14 @@ def run_generation():
         result["resume_content"], output_format, safe_user, str(OUTPUT_DIR),
         template_path=template_path,
     )
-    cover_letter_path = generate_cover_letter(
-        result["cover_letter_content"], safe_user, str(OUTPUT_DIR)
-    )
+    # Phase β.5 — only write the cover-letter file when the call actually
+    # produced one. The /api/generate-cover-letter route does the writing
+    # for opt-in cover letters after the résumé is finalized.
+    cover_letter_path = ""
+    if (result.get("cover_letter_content") or "").strip():
+        cover_letter_path = generate_cover_letter(
+            result["cover_letter_content"], safe_user, str(OUTPUT_DIR)
+        )
 
     logger.info("Generation complete: %s, %s", resume_path, cover_letter_path)
 
@@ -950,6 +960,110 @@ def validate_refinement():
     client = _get_client()
     result = check_refinement_scope(client, note)
     return jsonify(result)
+
+
+@app.route("/api/generate-cover-letter", methods=["POST"])
+def run_generate_cover_letter():
+    """Phase β.5 — focused cover-letter generation against the finalized résumé.
+
+    Called from the Download step (Step 6) after the user has run a
+    résumé generation. Cheaper than re-running /api/generate (no résumé
+    rules, no résumé schema, no résumé tokens). Uses the finalized
+    résumé from the current context's `last_generated_resume` (or the
+    user's typed-in `edited_resume_text` if more recent).
+
+    Body: {context_path, username, refinement_notes (optional)}
+
+    Returns {cover_letter_path, cover_letter_preview, context_path}.
+    Updates the existing context file in place with the new
+    `last_generated_cover_letter` so subsequent /api/generate calls
+    (résumé refinements) preserve the cover letter and /api/iterate-clarify
+    can probe it.
+    """
+    from analyzer import (
+        LLMResponseError,
+        generate_cover_letter_against_resume,
+    )
+
+    data = request.json or {}
+    username = data.get("username", "")
+    context_path = data.get("context_path", "")
+    refinement_notes = data.get("refinement_notes", "")
+
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR):
+        return jsonify({"error": "Invalid context path"}), 403
+    if not cp.exists():
+        return jsonify({"error": "Context file not found"}), 404
+
+    context_set: ContextSet = json.loads(cp.read_text(encoding="utf-8"))
+    analysis = context_set.get("llm_analysis", {})
+    if not analysis:
+        return jsonify({"error": "No valid analysis found in context"}), 400
+
+    # The finalized résumé is whatever's latest: edited > last_generated >
+    # original resume.text. Mirrors _current_draft_text's order.
+    resume_content = (
+        (context_set.get("edited_resume_text") or "").strip()
+        or (context_set.get("last_generated_resume") or "").strip()
+        or (context_set.get("resume", {}).get("text") or "").strip()
+    )
+    if not resume_content:
+        return jsonify({
+            "error": "No résumé to base the cover letter on. "
+                     "Run /api/generate first.",
+            "needs_resume": True,
+        }), 409
+
+    safe_user = _safe_username(username) if username else None
+    if not safe_user:
+        safe_user = secure_filename(cp.parent.name)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    client = _get_client()
+    run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
+    try:
+        result = generate_cover_letter_against_resume(
+            client, context_set, analysis, resume_content,
+            refinement_notes=refinement_notes,
+            username=username, run_id=run_id,
+        )
+    except anthropic.APIConnectionError as exc:
+        logger.error("Anthropic connection error during cover-letter generate: %s", exc)
+        return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
+    except LLMResponseError as exc:
+        logger.error("Cover-letter LLM response failed validation: %s", exc.validation_error)
+        return jsonify({
+            "error": "AI cover-letter response was malformed after retry.",
+            "detail": exc.validation_error,
+        }), 502
+
+    cl_content = (result.get("cover_letter_content") or "").strip()
+    if not cl_content:
+        return jsonify({"error": "LLM returned an empty cover letter."}), 502
+
+    cover_letter_path = generate_cover_letter(cl_content, safe_user, str(OUTPUT_DIR))
+
+    # Update the existing context with the new cover letter so the
+    # iteration loop + edit-detect pick it up the same way résumé state
+    # propagates. No new iteration counter bump — the cover letter is
+    # additive to the current generation, not a fresh résumé revision.
+    context_set["last_generated_cover_letter"] = cl_content
+    # Drop any prior typed-edit shadow: the user just got a fresh
+    # LLM-generated letter; the next refine cycle should diff against it.
+    if "edited_cover_letter_text" in context_set:
+        context_set.pop("edited_cover_letter_text", None)
+    cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+
+    return jsonify({
+        "cover_letter_path":    cover_letter_path,
+        "cover_letter_preview": cl_content,
+        "context_path":         str(cp),
+        "proofread_notes":      result.get("proofread_notes", []),
+    })
 
 
 # ---------------------------------------------------------------------------

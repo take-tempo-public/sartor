@@ -48,6 +48,12 @@ GENERATE_REQUIRED_KEYS = frozenset({
     "resume_content", "cover_letter_content",
     "changes_made", "proofread_notes",
 })
+# Phase β.5 — résumé-only variant. /api/generate defaults here so the
+# common path doesn't pay for cover-letter tokens; /api/generate-cover-letter
+# produces the cover letter on demand against the finalized résumé.
+GENERATE_NO_CL_REQUIRED_KEYS = frozenset({
+    "resume_content", "changes_made", "proofread_notes",
+})
 
 CLARIFY_REQUIRED_KEYS = frozenset({"questions", "reasoning"})
 
@@ -65,11 +71,15 @@ RECOMMEND_REQUIRED_KEYS = frozenset({"recommendations"})
 GENERATE_CORPUS_REQUIRED_KEYS = GENERATE_REQUIRED_KEYS | frozenset({
     "selected_bullets", "proposed_new_bullets", "proposed_experience_titles",
 })
+# Phase β.5 — corpus-mode résumé-only variant.
+GENERATE_CORPUS_NO_CL_REQUIRED_KEYS = GENERATE_NO_CL_REQUIRED_KEYS | frozenset({
+    "selected_bullets", "proposed_new_bullets", "proposed_experience_titles",
+})
 
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-24.2"
+PROMPT_VERSION = "2026-05-24.3"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -1014,6 +1024,57 @@ def _current_cover_letter_draft(context_set: ContextSet) -> tuple[str, str]:
     return "", "none"
 
 
+# The cover-letter contract — VP-level voice, 3-paragraph structure,
+# format rules, banned phrases. Used by both generate() (when
+# with_cover_letter=True) and the dedicated
+# generate_cover_letter_against_resume() (β.5). Promoted to a module-level
+# constant so the two call sites stay byte-identical and the cover-letter
+# contract has one source of truth.
+_COVER_LETTER_RULES_BLOCK = """<cover_letter_rules>
+VOICE — VP-level professional: courteous, concise, direct, confident, considerate. A clear outlier.
+
+  Sentence construction:
+  - Average sentence length: 12-16 words. Never exceed 25 words in a single sentence.
+  - Vary rhythm deliberately: a longer setup sentence followed by a short, punchy payoff.
+    Example: "Scaling a platform from 50K to 4M users taught me where distributed systems actually break. I've since rebuilt three of them."
+  - One idea per sentence. Split compound thoughts ruthlessly.
+  - Lead every sentence with the subject and an active verb. Cut the run-up.
+    Weak: "I have had the opportunity to work with cross-functional teams to deliver..."
+    Strong: "I've led cross-functional teams through four product launches, each on schedule."
+  - No hedging: never "I believe," "I think," "I hope," "I feel," "I would like to."
+    State it: "I will," "I have," "I deliver," "I build."
+  - No throat-clearing: never "I am excited to," "I am pleased to," "I am writing to."
+    The letter's existence says that. Open with substance.
+  - Do not start consecutive sentences with "I." Recast where needed.
+  - Confident, not arrogant. Acknowledge the company's work specifically; show you've done homework.
+
+STRUCTURE — 3 paragraphs, 250-320 words total, one page only:
+
+Paragraph 1 — HOOK (2-3 sentences):
+  Open with a specific observation about the company or role — something that signals genuine attention.
+  Name the exact role in the first or second sentence. Lead with what you bring, not what you want.
+  Never open with "I am writing to apply for..." or any variation.
+
+Paragraph 2 — EVIDENCE (3-5 sentences):
+  Connect 2-3 specific, quantified accomplishments directly to the role's key requirements.
+  Tell the story, not the bullet point. Show cause and effect: what you did, the result, why it matters here.
+  Weave in 2-3 of the JD's essential keywords naturally — never force them.
+  Do not repeat the resume verbatim. The letter illuminates; the resume documents.
+
+Paragraph 3 — CLOSE (2-3 sentences):
+  Confident forward look — not "I hope to hear from you." More: "I'd welcome a direct conversation about what this team is building."
+  One sentence on fit or timing if relevant. Close cleanly. No trailing pleasantries.
+
+FORMAT:
+  - Date, then hiring manager name/title/company (use "Hiring Manager" if name unknown)
+  - Salutation: "Dear [Name]," or "Dear Hiring Manager,"
+  - Close: "Sincerely," or "Best regards,"
+  - Match industry register: measured for finance/law; direct for tech; considered for mission-driven orgs
+  - Banned phrases: "passionate about," "team player," "detail-oriented," "hard worker," "results-driven," "leverage," "synergy"
+  - The letter must stand alone. Assume the reader has not seen the resume.
+</cover_letter_rules>"""
+
+
 def generate(
     client: anthropic.Anthropic,
     context_set: ContextSet,
@@ -1021,14 +1082,25 @@ def generate(
     refinement_notes: str = "",
     username: str = "",
     run_id: str = "",
+    with_cover_letter: bool = True,
 ) -> dict:
     """Call 2: Generation.
 
-    Produces tailored resume content and cover letter.
+    Produces tailored resume content and (optionally) a cover letter.
     Includes proofreading pass. The username is threaded through to JSONL
     telemetry only — no behavior depends on it. The run_id (when provided)
     lets dashboard tooling correlate this call's telemetry with its sibling
     analyze() call and any eval result that consumed the output.
+
+    `with_cover_letter` (Phase β.5):
+      Default True for backward compatibility with existing callers + the
+      iteration loop. When False (e.g. the route layer's default for the
+      common résumé-only path), the cover_letter_rules block is dropped
+      from the prompt, the JSON schema does not include
+      cover_letter_content, and the returned dict has cover_letter_content
+      set to "" so downstream renderers that always touch the field don't
+      KeyError. The user can call /api/generate-cover-letter later to
+      produce a cover letter against the finalized résumé.
 
     When the context_set contains clarifications (set by /api/answer-clarifications
     after the optional interview step), they are injected into the prompt as
@@ -1040,7 +1112,8 @@ def generate(
         draft (edited > last_generated) via _current_draft_text. Originals
         live under <historical_resumes>.
       - A <current_cover_letter_draft> block is inserted so the LLM evolves
-        the prior cover letter rather than starting fresh.
+        the prior cover letter rather than starting fresh. (Skipped when
+        with_cover_letter is False.)
       - Grounding wording widens to acknowledge first-person typed edits as
         legitimate source material (mirrors the clarification carve-out).
     """
@@ -1079,11 +1152,35 @@ def generate(
             cb_lines.append("</candidate_clarifications>")
             clarifications_block = "\n".join(cb_lines) + "\n\n"
 
+    # Phase β.5 — cover-letter rules block. Built as a Python variable so
+    # the prompt can interpolate it; empty when with_cover_letter is False
+    # so the LLM doesn't see (and doesn't pay tokens for) the cover-letter
+    # contract on résumé-only calls. The dedicated
+    # generate_cover_letter_against_resume() carries these same rules
+    # when the user opts in to a cover letter later.
+    cover_letter_rules_block = _COVER_LETTER_RULES_BLOCK if with_cover_letter else ""
+
+    # Phase β.5 — refinement-target wording. With cover letter on, refinement
+    # notes apply to both documents; without, only to the résumé.
+    refinement_target = (
+        "to both the resume and cover letter" if with_cover_letter
+        else "to the resume"
+    )
+
+    # Phase β.5 — JSON output schema line for cover_letter_content. When
+    # with_cover_letter is False the field is omitted entirely so the LLM
+    # does not produce (or pay tokens for) a cover letter on this call.
+    cover_letter_schema_line = (
+        '"cover_letter_content": "The complete cover letter as plain text",\n  '
+        if with_cover_letter else ""
+    )
+
     # Cover letter draft block — present only when iterating from a prior
-    # generation. The <resume> block already carries the current resume draft
-    # via _current_draft_text in the cached prefix; this is the parallel for
+    # generation AND the caller wants a cover letter on this call. The
+    # <resume> block already carries the current resume draft via
+    # _current_draft_text in the cached prefix; this is the parallel for
     # the cover letter, which has no "original" file on disk.
-    cover_draft, _ = _current_cover_letter_draft(context_set)
+    cover_draft, _ = _current_cover_letter_draft(context_set) if with_cover_letter else ("", "")
     cover_letter_draft_block = ""
     if cover_draft:
         cover_letter_draft_block = (
@@ -1249,54 +1346,11 @@ GROUNDING CHECK — apply this before writing every bullet:
 7. Preserve the original resume's section structure and ordering.
 8. Ensure all content is ATS-compatible — no tables, columns, or special characters.
 </resume_rules>
-
-<cover_letter_rules>
-VOICE — VP-level professional: courteous, concise, direct, confident, considerate. A clear outlier.
-
-  Sentence construction:
-  - Average sentence length: 12-16 words. Never exceed 25 words in a single sentence.
-  - Vary rhythm deliberately: a longer setup sentence followed by a short, punchy payoff.
-    Example: "Scaling a platform from 50K to 4M users taught me where distributed systems actually break. I've since rebuilt three of them."
-  - One idea per sentence. Split compound thoughts ruthlessly.
-  - Lead every sentence with the subject and an active verb. Cut the run-up.
-    Weak: "I have had the opportunity to work with cross-functional teams to deliver..."
-    Strong: "I've led cross-functional teams through four product launches, each on schedule."
-  - No hedging: never "I believe," "I think," "I hope," "I feel," "I would like to."
-    State it: "I will," "I have," "I deliver," "I build."
-  - No throat-clearing: never "I am excited to," "I am pleased to," "I am writing to."
-    The letter's existence says that. Open with substance.
-  - Do not start consecutive sentences with "I." Recast where needed.
-  - Confident, not arrogant. Acknowledge the company's work specifically; show you've done homework.
-
-STRUCTURE — 3 paragraphs, 250-320 words total, one page only:
-
-Paragraph 1 — HOOK (2-3 sentences):
-  Open with a specific observation about the company or role — something that signals genuine attention.
-  Name the exact role in the first or second sentence. Lead with what you bring, not what you want.
-  Never open with "I am writing to apply for..." or any variation.
-
-Paragraph 2 — EVIDENCE (3-5 sentences):
-  Connect 2-3 specific, quantified accomplishments directly to the role's key requirements.
-  Tell the story, not the bullet point. Show cause and effect: what you did, the result, why it matters here.
-  Weave in 2-3 of the JD's essential keywords naturally — never force them.
-  Do not repeat the resume verbatim. The letter illuminates; the resume documents.
-
-Paragraph 3 — CLOSE (2-3 sentences):
-  Confident forward look — not "I hope to hear from you." More: "I'd welcome a direct conversation about what this team is building."
-  One sentence on fit or timing if relevant. Close cleanly. No trailing pleasantries.
-
-FORMAT:
-  - Date, then hiring manager name/title/company (use "Hiring Manager" if name unknown)
-  - Salutation: "Dear [Name]," or "Dear Hiring Manager,"
-  - Close: "Sincerely," or "Best regards,"
-  - Match industry register: measured for finance/law; direct for tech; considered for mission-driven orgs
-  - Banned phrases: "passionate about," "team player," "detail-oriented," "hard worker," "results-driven," "leverage," "synergy"
-  - The letter must stand alone. Assume the reader has not seen the resume.
-</cover_letter_rules>
+{cover_letter_rules_block}
 {f'''
 <refinement_instructions>
 The user has reviewed the generated documents and provided the following adjustment instructions.
-Apply ALL of the following to both the resume and cover letter.
+Apply ALL of the following {refinement_target}.
 Earlier instructions remain in effect unless explicitly superseded by a later one.
 Do NOT make any other changes beyond what is requested here.
 
@@ -1307,19 +1361,159 @@ Do NOT make any other changes beyond what is requested here.
 Respond with valid JSON only. No markdown code fences. Use this exact structure:
 {{
   "resume_content": "The complete tailored resume. CRITICAL: use \\n (JSON newline escape) between every section, job entry, and bullet. Never collapse the resume into one long line. Example: '# Name\\nEmail | Phone\\n\\n## Summary\\nText.\\n\\n## Experience\\n\\n### Title — Company\\n- Bullet one\\n- Bullet two'",
-  "cover_letter_content": "The complete cover letter as plain text",
-  "changes_made": ["change1", "change2"],
+  {cover_letter_schema_line}"changes_made": ["change1", "change2"],
   "proofread_notes": ["Any grammar, spelling, or formatting issues found and fixed"]{extra_output_fields}
+}}
+</output_format>"""
+
+    # Phase β.5 — pick required_keys based on mode + cover-letter flag
+    if in_corpus_mode:
+        required = (GENERATE_CORPUS_REQUIRED_KEYS if with_cover_letter
+                    else GENERATE_CORPUS_NO_CL_REQUIRED_KEYS)
+    else:
+        required = (GENERATE_REQUIRED_KEYS if with_cover_letter
+                    else GENERATE_NO_CL_REQUIRED_KEYS)
+
+    result = _parse_or_retry(
+        client, prompt,
+        cached_user_prefix=_stable_user_prefix(context_set),
+        required_keys=required,
+        call_kind="generate",
+        username=username,
+        run_id=run_id,
+    )
+    # Phase β.5 — downstream code (generator.generate_cover_letter, eval
+    # harness, telemetry) always touches cover_letter_content. Ensure
+    # the key exists when the call was résumé-only so a KeyError doesn't
+    # bubble up from a deferred file write.
+    if not with_cover_letter:
+        result.setdefault("cover_letter_content", "")
+    return result
+
+
+# β.5 — required keys for the focused cover-letter-only call below.
+COVER_LETTER_ONLY_REQUIRED_KEYS = frozenset({
+    "cover_letter_content", "proofread_notes",
+})
+
+
+def generate_cover_letter_against_resume(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    analysis: dict,
+    resume_content: str,
+    refinement_notes: str = "",
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """Phase β.5 — focused cover-letter call against a finalized résumé.
+
+    Used by /api/generate-cover-letter after the user has run a résumé
+    generation and (optionally) iterated on it. Produces ONLY a cover
+    letter — no résumé regeneration, no token cost for résumé rules. The
+    finalized résumé is provided as input context so the letter can echo
+    its concrete numbers + framing.
+
+    Returns a dict with at least `cover_letter_content` (string) and
+    `proofread_notes` (list). The shape mirrors generate()'s return so
+    downstream code (the iteration loop, refine flow, edit-detect modal)
+    sees the same fields. `resume_content` is NOT in the response — the
+    caller passes the existing finalized résumé through unchanged.
+
+    The same clarifications + iteration-aware draft block + grounding-
+    widening that generate() uses are applied here so a cover letter
+    iterated multiple times stays consistent with the candidate's
+    typed-in edits and clarification answers.
+    """
+    # Reuse the clarifications + iteration draft block construction
+    # from generate(). These are pure functions of context_set so we
+    # can build them inline here without duplicating logic.
+    clarifications_block = ""
+    answers = context_set.get("clarifications") or {}
+    questions = context_set.get("clarification_questions") or []
+    if answers and questions:
+        cb_lines = [
+            "<candidate_clarifications>",
+            "First-person ground truth from the candidate. You MAY cite "
+            "the experience and details they reveal even when those details "
+            "are not in the résumé. You MUST NOT invent specifics BEYOND "
+            "what the candidate explicitly states.",
+            "",
+        ]
+        for q in questions:
+            qid = q.get("id", "")
+            ans = answers.get(qid, "").strip()
+            if not ans:
+                continue
+            kind = q.get("kind", "")
+            cb_lines.append(f'<q id="{qid}" kind="{kind}">')
+            cb_lines.append(f"Question: {q.get('text', '')}")
+            cb_lines.append(f"Candidate answer: {ans}")
+            cb_lines.append("</q>")
+            cb_lines.append("")
+        if any(answers.get(q.get("id", ""), "").strip() for q in questions):
+            cb_lines.append("</candidate_clarifications>")
+            clarifications_block = "\n".join(cb_lines) + "\n\n"
+
+    cover_draft, _ = _current_cover_letter_draft(context_set)
+    cover_letter_draft_block = ""
+    if cover_draft:
+        cover_letter_draft_block = (
+            "<current_cover_letter_draft>\n"
+            "This is the prior iteration's cover letter (possibly with the "
+            "candidate's first-person edits typed in). EVOLVE this draft "
+            "rather than starting from scratch — preserve its voice and "
+            "structure unless an explicit refinement instruction requires "
+            "a change. Treat candidate-typed text as first-person ground "
+            "truth.\n\n"
+            f"{cover_draft}\n"
+            "</current_cover_letter_draft>\n\n"
+        )
+
+    jd_excerpt = (context_set.get("jd_text") or "")
+    if isinstance(jd_excerpt, str):
+        jd_excerpt = jd_excerpt[:6000]
+
+    prompt = f"""<task>Write a tailored cover letter for the candidate based on the finalized résumé and JD.</task>
+
+{clarifications_block}{cover_letter_draft_block}<finalized_resume>
+{resume_content}
+</finalized_resume>
+
+<jd>
+{jd_excerpt}
+</jd>
+
+<analysis>
+Essential skills: {', '.join(analysis.get('essential_skills', []))}
+Strategy: {analysis.get('overall_strategy', '')}
+Professional vocabulary: {', '.join(analysis.get('professional_vocabulary', []))}
+</analysis>
+
+{_COVER_LETTER_RULES_BLOCK}
+{f'''
+<refinement_instructions>
+The user has reviewed the cover letter and provided the following adjustment instructions.
+Apply ALL of the following to the cover letter.
+Earlier instructions remain in effect unless explicitly superseded by a later one.
+Do NOT make any other changes beyond what is requested here.
+
+{refinement_notes}
+</refinement_instructions>
+''' if refinement_notes.strip() else ''}
+<output_format>
+Respond with valid JSON only. No markdown code fences. Use this exact structure:
+{{
+  "cover_letter_content": "The complete cover letter as plain text",
+  "proofread_notes": ["Any grammar, spelling, or formatting issues found and fixed"]
 }}
 </output_format>"""
 
     return _parse_or_retry(
         client, prompt,
-        cached_user_prefix=_stable_user_prefix(context_set),
-        required_keys=(
-            GENERATE_CORPUS_REQUIRED_KEYS if in_corpus_mode else GENERATE_REQUIRED_KEYS
-        ),
-        call_kind="generate",
+        cached_user_prefix="",  # focused one-shot; cache benefit is small
+        required_keys=COVER_LETTER_ONLY_REQUIRED_KEYS,
+        call_kind="generate_cover_letter",
         username=username,
         run_id=run_id,
     )

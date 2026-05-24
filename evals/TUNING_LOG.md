@@ -16,6 +16,66 @@ prevent re-running them.
 
 ---
 
+## 2026-05-24 — Cover-letter detachment (`2026-05-24.2` → `2026-05-24.3`)
+
+1. **What changed?** `analyzer.generate()` gained a `with_cover_letter:
+   bool = True` parameter. When False (the new default for the
+   `/api/generate` route — opt-in cover letters), the cover-letter
+   rules block is dropped from the prompt, `cover_letter_content` is
+   removed from the JSON schema + required_keys, the refinement-target
+   wording switches from "to both the resume and cover letter" to "to
+   the resume", and the returned dict has
+   `cover_letter_content` set to `""` so downstream code that always
+   touches the field doesn't KeyError. The cover-letter rules block
+   was extracted to a module-level `_COVER_LETTER_RULES_BLOCK`
+   constant so it has one source of truth.
+
+   New focused call `analyzer.generate_cover_letter_against_resume()`
+   takes the finalized résumé text + the same context_set/analysis as
+   input and returns just `{cover_letter_content, proofread_notes}`.
+   Used by the new `/api/generate-cover-letter` route after the user
+   has run a résumé generation and (optionally) iterated on it. Same
+   clarifications + cover-letter-draft + grounding rules as
+   `generate()`'s cover-letter portion, but without any résumé-rules
+   tokens. The route updates the existing context with the new
+   `last_generated_cover_letter` so the iteration loop + edit-detect
+   pick it up via the standard machinery.
+
+   PROMPT_VERSION → `2026-05-24.3`.
+
+2. **Why?** The user reported "I almost never use cover letters."
+   The old design paid full LLM cost for cover-letter rules + content
+   on every generate, even when the user immediately discarded it.
+   The new design ships:
+   - **résumé-only by default** — saves ~30-40% of generate-call
+     tokens on the common path
+   - **opt-in cover letter** via a button on the Download step that
+     calls the focused route, paying only for the cover-letter LLM
+     cost when the user actually wants one
+
+3. **What was the result?** Test coverage: 6 new tests in
+   `tests/test_cover_letter_detached.py` covering both the opt-out
+   default behavior on `/api/generate` and the new
+   `/api/generate-cover-letter` route (happy path, 409 when no
+   résumé, 400 missing context_path, path-traversal blocked).
+   Existing tests updated: the `_stub_generate` in
+   `tests/test_app_iteration.py` accepts the new kwarg.
+
+   Manual smoke against `testuser`: `/api/generate` without the flag
+   produces only the résumé .docx + the .jsonresume.json sidecar (no
+   cover-letter file written). A subsequent
+   `/api/generate-cover-letter` call produces the cover letter .docx
+   and writes `last_generated_cover_letter` into the context — the
+   existing refine flow then picks it up.
+
+4. **What did we learn?** Per-feature opt-in saves real money. The
+   cover-letter detachment alone is ~30-40% LLM-cost reduction on the
+   common path. The pattern: surface every optional artifact as a
+   distinct call so the default path is the cheapest path, and only
+   the user's explicit "I want this" presses pay for it.
+
+---
+
 ## 2026-05-24 — Quality-over-quantity drop-off rule in recommend (`2026-05-24.1` → `2026-05-24.2`)
 
 1. **What changed?** Two coupled changes targeting the bottom of the

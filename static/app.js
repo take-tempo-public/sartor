@@ -711,6 +711,72 @@ function _onGenerationComplete(data) {
   lastGeneratedCoverLetter = data.cover_letter_preview || '';
   // A fresh generation supersedes any in-progress iteration interview.
   _resetIterateClarifyUI();
+  // β.5 — toggle the Generate cover letter / Download cover letter
+  // affordance based on whether the current generation actually
+  // produced a cover letter. /api/generate's default is now résumé-only
+  // (with_cover_letter=False), so the Generate button shows after the
+  // first résumé generation and swaps for Download once a cover letter
+  // exists.
+  _updateCoverLetterButtons();
+}
+
+// β.5 — show "+ Generate cover letter" when no cover letter exists yet,
+// "Download cover letter" once one does. Idempotent.
+function _updateCoverLetterButtons() {
+  const gen = document.getElementById('btnGenerateCover');
+  const dl  = document.getElementById('btnDownloadCover');
+  if (!gen || !dl) return;
+  const haveCoverLetter = (lastGeneratedCoverLetter || '').trim().length > 0;
+  gen.classList.toggle('hidden', haveCoverLetter);
+  dl.classList.toggle('hidden', !haveCoverLetter);
+}
+
+// β.5 — fire the focused /api/generate-cover-letter call. Cheaper than
+// re-running /api/generate (no résumé tokens). Reuses the same status-
+// pill + edit-detect flow so the cover letter inherits the existing
+// refine / iterate / edit-detect affordances.
+async function runGenerateCoverLetter() {
+  if (!currentUser) return alert('Select a user first');
+  if (!lastContextPath) return alert('Generate the résumé first');
+  setStatus('GENERATING COVER LETTER');
+  const gen = document.getElementById('btnGenerateCover');
+  if (gen) gen.disabled = true;
+  try {
+    const res = await fetch('/api/generate-cover-letter', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        username: currentUser,
+        context_path: lastContextPath,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return reportError(
+        'Cover letter',
+        data.error || 'Cover letter generation failed',
+        data.detail,
+      );
+    }
+    lastCoverLetterPath = data.cover_letter_path || '';
+    lastGeneratedCoverLetter = data.cover_letter_preview || '';
+    if (data.context_path) lastContextPath = data.context_path;
+    // Populate the editable preview + rendered side the same way
+    // runGeneration → _renderOutput does. downloadCoverLetter reads from
+    // #coverLetterPreview so the preview MUST be populated for download
+    // to work.
+    const preview = document.getElementById('coverLetterPreview');
+    if (preview) preview.textContent = lastGeneratedCoverLetter;
+    const rendered = document.getElementById('coverLetterRendered');
+    if (rendered) rendered.innerHTML = _renderMarkdown(lastGeneratedCoverLetter);
+    _updateCoverLetterButtons();
+    setStatus('COVER LETTER READY');
+    _announce('Cover letter generated. Download it from Step 6.');
+  } catch (e) {
+    reportError('Cover letter', 'Cover letter request failed', e.message);
+  } finally {
+    if (gen) gen.disabled = false;
+  }
 }
 
 function _updateIterationPill() {
@@ -1566,10 +1632,12 @@ function hideAllPanels() {
 // Active states: pill and sidebar block flash together; idle states are solid.
 // Maps each active state keyword to the panel whose block should flash.
 const _ACTIVE_PANEL = {
-  UPLOADING:  'panelResume',
-  ANALYZING:  'panelAnalysis',
-  GENERATING: 'panelOutput',
-  REFINING:   'panelOutput',
+  UPLOADING:                'panelResume',
+  ANALYZING:                'panelAnalysis',
+  GENERATING:               'panelOutput',
+  REFINING:                 'panelOutput',
+  // β.5 — focused cover-letter call; same panel as résumé generation.
+  'GENERATING COVER LETTER': 'panelOutput',
 };
 // Status communication lives on the topbar + bottom statusbar pills (the
 // pulsing-dot is-active state) and the aria-busy attribute on the active

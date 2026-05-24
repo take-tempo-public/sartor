@@ -339,7 +339,12 @@
         </div>
         <div class="form-row">
           <button class="lcars-btn lcars-bg-teal" id="btnDownloadResume" onclick="downloadResume()">Download résumé</button>
-          <button class="lcars-btn lcars-bg-blue" id="btnDownloadCover" onclick="downloadCoverLetter()">Download cover letter</button>
+          <!-- β.5 — cover letter is now opt-in. The "Generate cover letter"
+               button surfaces by default after a résumé generation. Once
+               the cover letter exists it swaps for the "Download cover
+               letter" affordance. -->
+          <button class="lcars-btn lcars-bg-violet" id="btnGenerateCover" onclick="runGenerateCoverLetter()">+ Generate cover letter</button>
+          <button class="lcars-btn lcars-bg-blue hidden" id="btnDownloadCover" onclick="downloadCoverLetter()">Download cover letter</button>
         </div>
         <!-- REFINEMENT: hidden until first generation -->
         <div id="refinementArea" class="hidden">
