@@ -1556,9 +1556,9 @@ const _ACTIVE_PANEL = {
   GENERATING: 'panelOutput',
   REFINING:   'panelOutput',
 };
-// (Workstream G removed the .lcars-block sidebar tiles; the panel-block
-//  flash mechanic is gone. Status communication now lives in the pill +
-//  the aria-busy attribute on the active panel only.)
+// Status communication lives on the topbar + bottom statusbar pills (the
+// pulsing-dot is-active state) and the aria-busy attribute on the active
+// panel. No DOM tile flash.
 
 // Push a one-shot announcement into the hidden aria-live region. Use only
 // for meaningful transitions a screen-reader user wouldn't otherwise notice
@@ -1586,12 +1586,11 @@ function _toSentence(s) {
 
 function setStatus(text) {
   const pill = document.getElementById('statusPill');
-  // callback. status pill wraps text in .cb-status-text; legacy LCARS pill
-  // wrote textContent on the pill itself. Support both so this function
-  // works through the visual-bind transition.
+  // .cb-status-text is the dedicated label child of the callback. status
+  // pill. The whole pill was migrated from .lcars-pill to .cb-status in
+  // feat/release-visual-ia, so this element is always present.
   const textEl = pill.querySelector('.cb-status-text');
   if (textEl) textEl.textContent = _toSentence(text);
-  else pill.textContent = text;
 
   // Clear any prior aria-busy state from the previously-active panel so
   // assistive tech stops announcing the panel as busy once work completes.
@@ -1603,16 +1602,8 @@ function setStatus(text) {
   const isActive  = !!activeKey;
   const isError   = text.includes('ERROR');
 
-  if (textEl) {
-    // New callback. pill — toggle is-active / is-error modifiers
-    pill.classList.toggle('is-active', isActive);
-    pill.classList.toggle('is-error',  isError);
-  } else {
-    // Legacy LCARS pill
-    pill.className        = 'lcars-pill' + (isError ? '' : ' lcars-amber') + (isActive ? ' pill-active' : '');
-    pill.style.background = isError ? 'var(--red)' : '';
-    pill.style.color      = isError ? 'var(--black)' : '';
-  }
+  pill.classList.toggle('is-active', isActive);
+  pill.classList.toggle('is-error',  isError);
 
   // Mirror state into the floating bottom status bar so the user gets
   // the same status signal whether their eye is at the top or the bottom
@@ -1649,13 +1640,10 @@ function setStatus(text) {
     pill.removeAttribute('title');
   }
 
-  // Flash top-bar elbow in sync with pill
-  const elbow = document.querySelector('.lcars-elbow-tl');
-  if (elbow) elbow.classList.toggle('step-active', isActive);
-
   // Mark the active panel aria-busy so screen readers know work is in
-  // progress on that section (the .lcars-block tile flash mechanic was
-  // removed with the sidebar in Workstream G).
+  // progress on that section. (Visual feedback lives on the topbar +
+  // bottom status pills; the LCARS-era elbow flash + .lcars-block tile
+  // flash were retired in feat/release-visual-ia.)
   if (isActive) {
     const activePanel = document.getElementById(_ACTIVE_PANEL[activeKey]);
     if (activePanel) activePanel.setAttribute('aria-busy', 'true');
@@ -1677,8 +1665,8 @@ function togglePanel(panelId) {
   if (block) block.classList.toggle('collapsed', isCollapsed);
 }
 
-// (Workstream G removed the .lcars-block tile sidebar; the panel-header
-//  click handler remains the sole collapse trigger.)
+// Panel-header click toggles the parent .lcars-panel between expanded
+// and collapsed states (CSS grid-template-rows transition).
 document.querySelectorAll('.panel-header').forEach(header => {
   const panel = header.closest('.lcars-panel');
   if (panel) header.addEventListener('click', () => togglePanel(panel.id));

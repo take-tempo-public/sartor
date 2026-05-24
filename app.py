@@ -3554,6 +3554,6 @@ def list_clarifications(username: str):
 
 
 if __name__ == "__main__":
-    print("\n  Resume Optimizer — http://localhost:5000\n")
+    print("\n  callback. — http://localhost:5000\n")
     debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"
     app.run(debug=debug_mode, port=5000)

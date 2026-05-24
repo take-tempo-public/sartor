@@ -78,8 +78,20 @@
   --t-slow:    420ms;
 
   /* === Legacy LCARS aliases — remapped onto callback. tokens ===
-     Templates and components that still reference these names keep
-     working; the visual identity flips to callback. uniformly. */
+     Stable redirect layer. ~220 references across this file resolve
+     through these aliases, so the visual identity flips uniformly
+     without per-rule edits.
+
+     New code SHOULD use the canonical tokens directly:
+       --amber  → --brand        --teal     → --success
+       --blue   → --info         --orange   → --brand
+       --red    → --danger       --light    → --brand-hi
+       --text   → --fg-0         --text-dim → --fg-1
+       --black  → --bg-0         --dark     → --bg-0
+       --panel-bg → --bg-1       --input-bg → --bg-0
+       --radius → --radius-xl    --font     → (system stack inlined)
+     Migration to canonical tokens is filed as a v1.0 cleanup task
+     in docs/RELEASE_CHECKLIST.md A.4. */
   --black:      var(--bg-0);
   --dark:       var(--bg-0);
   --amber:      var(--brand);
@@ -139,66 +151,20 @@ body::before {
   to   { transform: translate3d( 12px,  4px, 0); opacity: 1; }
 }
 /* Hoist app chrome above the wash */
-.lcars-bar, .top-tabs, .lcars-main, .top-tab-panel,
+/* Layout layers above the body::before ambient wash — anything that
+   needs to sit on top of the page background gets stacked here.
+   .cb-topbar has its own higher z-index (20). */
+.top-tabs, .lcars-main, .top-tab-panel,
 .modal-overlay, .settings-drawer-backdrop, .settings-drawer { position: relative; z-index: 1; }
 
-/* ---- LCARS Bars ---- */
-.lcars-bar {
-  display: flex;
-  align-items: stretch;
-  gap: 6px;
-  padding: 0 12px;
-  height: 48px;
-}
-.lcars-bar-top { margin-bottom: 8px; }
-.lcars-bar-bottom { margin-top: 8px; }
-
-.lcars-elbow {
-  width: 120px;
-  min-width: 80px;
-  background: var(--amber);
-  flex-shrink: 0;
-}
-.lcars-elbow-tl {
-  border-radius: 0 0 var(--radius) 0;
-  border-bottom-right-radius: 40px;
-}
-.lcars-elbow-bl {
-  border-radius: 0 var(--radius) 0 0;
-  border-top-right-radius: 40px;
-}
-
-.lcars-title {
-  background: var(--dark);
-  color: var(--amber);
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  flex: 1;
-  text-transform: uppercase;
-}
-
-.lcars-pill {
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  border-radius: var(--radius);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-/* ---- Color classes ---- */
-.lcars-amber { background: var(--amber); color: var(--black); }
-.lcars-blue { background: var(--blue); color: var(--black); }
-.lcars-teal { background: var(--teal); color: var(--black); }
-.lcars-orange { background: var(--orange); color: var(--black); }
-.lcars-violet { background: var(--violet); color: var(--black); }
+/* ---- Background color classes ---- *
+ * The .lcars-bg-* set is still applied to .lcars-btn variants in the
+ * markup as a *classifier* (secondary action color). Their visual
+ * treatment is now overridden by the callback. button layer further
+ * down — they render as quiet grad-btn pills regardless of which color
+ * variant is set. Kept for backward compatibility with existing JS that
+ * sets these classes programmatically; future cleanup pass can rename
+ * to semantic class names (.btn-secondary, etc.). */
 .lcars-bg-amber { background: var(--amber); color: var(--black); }
 .lcars-bg-blue { background: var(--blue); color: var(--black); }
 .lcars-bg-teal { background: var(--teal); color: var(--black); }
@@ -218,8 +184,6 @@ body::before {
 
 /* Legacy block-tile rules retained but inert (no .lcars-block tiles in the
    DOM after Workstream G); kept defensively for any third-party content. */
-.lcars-block { display: none; }
-
 /* ---- Panels ---- */
 .lcars-panel {
   background: var(--panel-bg);
@@ -575,15 +539,6 @@ textarea {
   color: var(--teal);
   background: rgba(102, 204, 204, 0.08);
 }
-
-/* ---- Active state — pill, sidebar block, and top-bar elbow flash in sync ---- */
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.25; }
-}
-.pill-active,
-.lcars-block.step-active,
-.lcars-elbow.step-active { animation: pulse 1.2s ease-in-out infinite; }
 
 /* ---- Utility ---- */
 .hidden { display: none !important; }
