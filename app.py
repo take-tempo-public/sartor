@@ -798,6 +798,17 @@ def run_generation():
     logger.info("Starting generation for %s (iteration=%s)", username,
                 context_set.get("iteration", 0))
 
+    # β.6d — apply the chosen SummaryItem variant to the candidate's
+    # positioning text before the LLM sees the context. Priority chain:
+    #   1. composition_overrides.pinned_summary_id (user explicit pin)
+    #   2. llm_summary_recommendation.recommendation.summary_item_id
+    #   3. Candidate.profile_text (the back-compat default; preserved
+    #      when no SummaryItem rows exist or none is chosen)
+    # In-memory patch — save_iteration_context will persist the patched
+    # value into the next iteration's context, which is what we want:
+    # the user's chosen positioning carries forward into refinement.
+    _apply_chosen_summary(context_set)
+
     client = _get_client()
     # Re-use the run_id minted in /api/analyze when present so both calls
     # share an ID in telemetry. New ID for legacy contexts that pre-date
@@ -3680,6 +3691,72 @@ def _read_composition_overrides(context_path: str) -> tuple[set[int], set[int]]:
         return set(), set()
     ov = ctx.get("composition_overrides") or {}
     return set(ov.get("pinned", []) or []), set(ov.get("excluded", []) or [])
+
+
+def _apply_chosen_summary(context_set: dict) -> None:
+    """β.6d — patch context_set["candidate"]["profile_text"] in-place
+    with the chosen SummaryItem variant's text.
+
+    Priority chain (first match wins):
+      1. composition_overrides.pinned_summary_id  (user's explicit pin)
+      2. llm_summary_recommendation.recommendation.summary_item_id
+      3. unchanged — Candidate.profile_text already in the context
+
+    Resolution is by SummaryItem.id, scoped to the candidate carried
+    on the context's `application_id` row. Lookups fail gracefully:
+    a missing/inactive variant falls through to the next priority
+    rather than 500ing. _safe_username is not needed here because
+    the resolution is bounded by the application that the route
+    already owns.
+
+    No-op when no application_id, no candidate username, or no
+    SummaryItem rows — preserves the back-compat path for legacy
+    candidates and for tests that don't seed summaries.
+    """
+    from db.models import Application, Candidate, SummaryItem
+    from db.session import get_session
+
+    candidate_block = context_set.get("candidate") or {}
+    app_id = context_set.get("application_id")
+    if app_id is None:
+        return  # legacy or non-application-bound generate
+    overrides = context_set.get("composition_overrides") or {}
+    rec_block = context_set.get("llm_summary_recommendation") or {}
+    rec = rec_block.get("recommendation") if isinstance(rec_block, dict) else None
+
+    def _coerce(val) -> int | None:
+        try:
+            return int(val) if val is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    pinned_id = _coerce(overrides.get("pinned_summary_id") if isinstance(overrides, dict) else None)
+    rec_id = _coerce(rec.get("summary_item_id") if isinstance(rec, dict) else None)
+    chosen_id = pinned_id if pinned_id is not None else rec_id
+    if chosen_id is None:
+        return  # no chosen variant; fall back to existing profile_text
+
+    session = get_session()
+    try:
+        app_row = session.query(Application).filter_by(id=int(app_id)).first()
+        if app_row is None:
+            return
+        candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
+        if candidate is None:
+            return
+        row = session.query(SummaryItem).filter_by(
+            id=chosen_id, candidate_id=candidate.id, is_active=1,
+        ).first()
+        if row is None or not (row.text or "").strip():
+            return  # chosen variant is inactive / missing / blank → fallback
+        candidate_block["profile_text"] = row.text
+        context_set["candidate"] = candidate_block
+        logger.info(
+            "β.6d — applied summary variant id=%d (%s) to context for app=%s",
+            row.id, "pinned" if pinned_id is not None else "recommended", app_id,
+        )
+    finally:
+        session.close()
 
 
 def _read_summary_overrides(
