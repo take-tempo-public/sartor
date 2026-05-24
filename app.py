@@ -3682,6 +3682,44 @@ def _read_composition_overrides(context_path: str) -> tuple[set[int], set[int]]:
     return set(ov.get("pinned", []) or []), set(ov.get("excluded", []) or [])
 
 
+def _read_summary_overrides(
+    context_path: str,
+) -> tuple[dict | None, int | None]:
+    """β.6c — (summary_recommendation, pinned_summary_id) from the context.
+
+    summary_recommendation is the dict persisted by
+    /api/applications/<id>/recommend-summary (shape:
+    {recommendation, alternates}), or None if not present.
+
+    pinned_summary_id is the user's pin from composition_overrides
+    (the override that wins over the LLM recommendation in the
+    Compose UI), or None if no pin is set.
+
+    _within-gated by OUTPUT_DIR. Returns (None, None) on read/parse
+    failure so the route can degrade to "no recommendation, no pin"
+    rather than 500ing.
+    """
+    if not context_path:
+        return None, None
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR) or not cp.exists():
+        return None, None
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None, None
+    summary_rec = ctx.get("llm_summary_recommendation")
+    raw = (ctx.get("composition_overrides") or {}).get("pinned_summary_id")
+    try:
+        pinned_id = int(raw) if raw is not None else None
+    except (TypeError, ValueError):
+        pinned_id = None
+    return (
+        summary_rec if isinstance(summary_rec, dict) else None,
+        pinned_id,
+    )
+
+
 def _read_recommendations_and_added(
     context_path: str,
 ) -> tuple[set[int], dict[int, dict]]:
@@ -3724,7 +3762,7 @@ def get_application_composition(application_id: int):
     `context_path`, validated within OUTPUT_DIR).
     """
     from db.build_context import _bullet_tag_values, score_corpus_bullet
-    from db.models import Experience
+    from db.models import Experience, SummaryItem
     from db.session import get_session, init_db
     from hardening import extract_keywords
 
@@ -3743,6 +3781,11 @@ def get_application_composition(application_id: int):
         # so the Compose UI can default to the curated set and mark drawer-added
         # bullets as included.
         added, rec_by_exp = _read_recommendations_and_added(ctx_path)
+        # β.6c — pull the summary recommendation + pinned_summary_id
+        # from the context (both optional). The UI renders a Positioning
+        # card at the top with the LLM's pick flagged + any user pin
+        # overriding it.
+        summary_recommendation, pinned_summary_id = _read_summary_overrides(ctx_path)
 
         experiences = session.query(Experience).filter_by(
             candidate_id=candidate.id,
@@ -3806,10 +3849,65 @@ def get_application_composition(application_id: int):
                     "rationale": rec.get("rationale", ""),
                     "has_recommendations": bool(rec_ids),
                 })
+        # β.6c — Positioning block. Variants come from the candidate's
+        # active SummaryItem rows; the LLM recommendation (if any) flags
+        # the "recommended" pick; the user's pinned_summary_id overrides
+        # what shows as selected.
+        summary_variants: list[dict[str, Any]] = []
+        rec = (summary_recommendation or {}).get("recommendation") or {}
+        rec_id_raw = rec.get("summary_item_id")
+        try:
+            rec_id = int(rec_id_raw) if rec_id_raw is not None else None
+        except (TypeError, ValueError):
+            rec_id = None
+        si_rows = session.query(SummaryItem).filter_by(
+            candidate_id=candidate.id, is_active=1,
+        ).order_by(SummaryItem.display_order, SummaryItem.id).all()
+        for s in si_rows:
+            summary_variants.append({
+                "id": s.id,
+                "text": s.text,
+                "label": s.label,
+                "has_outcome": bool(s.has_outcome),
+                "recommended": s.id == rec_id,
+                "pinned": s.id == pinned_summary_id,
+            })
+        # Surface alternates' rationales so the UI can show a tooltip
+        # for each "Recommended" / alternate chip.
+        alternates = (summary_recommendation or {}).get("alternates") or []
+        alt_rationale: dict[int, str] = {}
+        rec_rationale = (rec.get("rationale") or "").strip()
+        if rec_id is not None and rec_rationale:
+            alt_rationale[rec_id] = rec_rationale
+        for a in alternates:
+            try:
+                a_id = int(a.get("summary_item_id", 0))
+            except (TypeError, ValueError):
+                continue
+            r = (a.get("rationale") or "").strip()
+            if r:
+                alt_rationale[a_id] = r
+        for sv in summary_variants:
+            sv["rationale"] = alt_rationale.get(sv["id"], "")
+
+        # The chosen variant for this application: pinned wins, else the
+        # LLM recommendation, else null. Surfaces the user-effective
+        # state without making the frontend re-derive it.
+        chosen_summary_id = (
+            pinned_summary_id if pinned_summary_id is not None else rec_id
+        )
+
         return jsonify({
             "application_id": application_id,
             "experiences": out,
             "any_recommendations": any(e["has_recommendations"] for e in out),
+            "summary": {
+                "variants": summary_variants,
+                "recommended_id": rec_id,
+                "pinned_id": pinned_summary_id,
+                "chosen_id": chosen_summary_id,
+                "has_recommendation": rec_id is not None,
+            },
         })
     finally:
         session.close()
@@ -3833,6 +3931,20 @@ def save_application_composition(application_id: int):
     pinned = [int(x) for x in (data.get("pinned") or [])]
     excluded = [int(x) for x in (data.get("excluded") or [])]
     added = [int(x) for x in (data.get("added") or [])]
+    # β.6c — optional summary pin. The user explicitly chose this
+    # variant for this application; it overrides the LLM
+    # recommendation when generate() runs. None / 0 means "no pin"
+    # → fall back to recommendation → fall back to candidate's
+    # default profile_text.
+    pinned_summary_raw = data.get("pinned_summary_id")
+    pinned_summary_id: int | None = None
+    if pinned_summary_raw is not None:
+        try:
+            v = int(pinned_summary_raw)
+            pinned_summary_id = v if v > 0 else None
+        except (TypeError, ValueError):
+            return jsonify({"error": "pinned_summary_id must be a positive integer or null"}), 400
+
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
 
@@ -3853,13 +3965,17 @@ def save_application_composition(application_id: int):
         if ctx.get("application_id") not in (None, application_id):
             return jsonify({"error": "context_path does not match application"}), 400
 
-        ctx["composition_overrides"] = {
+        overrides: dict[str, Any] = {
             "pinned": pinned, "excluded": excluded, "added": added,
         }
+        if pinned_summary_id is not None:
+            overrides["pinned_summary_id"] = pinned_summary_id
+        ctx["composition_overrides"] = overrides
         cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
         return jsonify({
             "application_id": application_id,
             "pinned": pinned, "excluded": excluded, "added": added,
+            "pinned_summary_id": pinned_summary_id,
         })
     finally:
         session.close()

@@ -2772,6 +2772,58 @@ input:focus, select:focus, textarea:focus {
   flex-grow: 1;
 }
 
+/* ---- Positioning card (β.6c) — sits above the experience cards in
+   Step 3 Compose. Renders the candidate's SummaryItem variants with
+   the LLM recommendation flagged and the user's pin (if any) marking
+   the chosen variant. Same gradient-card surface as compose-experience-card
+   for visual continuity. The chosen variant gets a brand-soft fill +
+   a 3px left-edge brand stripe (same affordance as compose-row.pinned). */
+.positioning-card {
+  margin-bottom: 18px;
+}
+.positioning-card .compose-exp-company {
+  color: var(--brand);
+  letter-spacing: -0.2px;
+}
+.positioning-variant {
+  cursor: pointer;
+  position: relative;
+  transition: background var(--t-fast) var(--ease),
+              border-color var(--t-fast) var(--ease),
+              transform var(--t-fast) var(--ease);
+}
+.positioning-variant:hover {
+  background: linear-gradient(180deg, #20212e 0%, #1a1b27 100%);
+  border-color: var(--border-2);
+  transform: translateY(-1px);
+}
+.positioning-variant.positioning-chosen {
+  border-color: var(--brand-edge);
+  background: linear-gradient(180deg,
+    rgba(232, 167, 84, 0.10) 0%,
+    rgba(232, 167, 84, 0.05) 100%);
+}
+.positioning-variant.positioning-chosen::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 12px; bottom: 12px;
+  width: 3px;
+  background: var(--brand);
+  border-radius: 0 2px 2px 0;
+}
+.positioning-variant .positioning-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-1);
+  letter-spacing: 0.2px;
+  margin-bottom: 4px;
+}
+.positioning-variant .positioning-text {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg-0);
+}
+
 /* ---- Live preview (β.4) — iframe panel embedded in Step 4 Template.
    Renders the application's latest JSON Resume through the selected
    persona's HTML+CSS template. Same render path as the PDF (WYSIWYG).

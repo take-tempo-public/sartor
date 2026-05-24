@@ -3100,11 +3100,153 @@ async function loadComposition() {
   }
   const data = await res.json();
   _clearChildren(list);
+  // β.6c — Positioning card renders first, above the experience cards.
+  // Shows the candidate's SummaryItem variants with the recommendation
+  // (if any) flagged and the user's pin (if any) marking the chosen one.
+  // Auto-fires recommend-summary in the background when there's no
+  // recommendation yet and the candidate has 2+ variants.
+  const summary = data.summary || {};
+  if ((summary.variants || []).length > 0) {
+    list.appendChild(_renderPositioningCard(summary));
+    if (!summary.has_recommendation && (summary.variants || []).length > 1) {
+      _fireRecommendSummary();
+    }
+  }
   if (!data.experiences || data.experiences.length === 0) {
     _setLoadingPlaceholder(list, 'No corpus experiences to rank.');
     return;
   }
   data.experiences.forEach(exp => list.appendChild(_renderComposeCard(exp)));
+}
+
+// β.6c — fire recommend-summary in the background. Idempotent on the
+// server (it overwrites llm_summary_recommendation on each call). The
+// route returns the same shape as a fresh composition refresh, so we
+// reload composition after to surface the recommendation chips.
+async function _fireRecommendSummary() {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/recommend-summary`,
+      { method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ context_path: lastContextPath }) },
+    );
+    if (res.ok) {
+      // Refresh the composition view so the new recommendation chip
+      // shows on the Positioning card. Cheap — no LLM call on this
+      // refresh, just a re-read of the persisted JSON.
+      loadComposition();
+    }
+  } catch {
+    // Non-blocking — Compose still works without the recommendation.
+  }
+}
+
+// β.6c — Positioning card. Sits above the experience cards in Step 3.
+// One variant chosen per application (either the LLM's recommendation
+// or a user pin). Clicking a non-chosen variant pins it; clicking the
+// pinned variant unpins (falls back to the recommendation).
+function _renderPositioningCard(summary) {
+  const card = _el('div', { className: 'compose-experience-card positioning-card' });
+  const header = _el('div', { className: 'compose-exp-header' });
+  header.appendChild(_el('div', {
+    className: 'compose-exp-company', textContent: 'Positioning',
+  }));
+  card.appendChild(header);
+
+  card.appendChild(_el('div', {
+    className: 'edit-hint', style: 'margin-top:4px',
+    textContent: 'Which summary variant frames you for this JD. '
+      + 'Click a variant to pin it for this application; '
+      + 'click the pinned one again to unpin and accept the recommendation.',
+  }));
+
+  const variants = summary.variants || [];
+  variants.forEach(v => card.appendChild(_renderPositioningVariant(v, summary.chosen_id)));
+  return card;
+}
+
+function _renderPositioningVariant(v, chosenId) {
+  const row = _el('div', { className: 'compose-row positioning-variant' });
+  const isChosen = v.id === chosenId;
+  if (isChosen) row.classList.add('positioning-chosen');
+
+  const text = _el('div', { className: 'row-text' });
+  if (v.label) {
+    text.appendChild(_el('div', {
+      className: 'positioning-label', textContent: v.label,
+    }));
+  }
+  text.appendChild(_el('div', { className: 'positioning-text', textContent: v.text }));
+  row.appendChild(text);
+
+  const meta = _el('div', { className: 'row-meta' });
+  if (v.recommended) {
+    const chip = _el('span', {
+      className: 'corpus-row-flag',
+      textContent: 'Recommended',
+      style: 'background:var(--brand);color:var(--bg-0);',
+    });
+    if (v.rationale) chip.title = v.rationale;
+    meta.appendChild(chip);
+  }
+  if (v.pinned) {
+    meta.appendChild(_el('span', {
+      className: 'corpus-row-flag',
+      textContent: 'Pinned',
+      style: 'background:var(--brand-hi);color:var(--bg-0);',
+    }));
+  }
+  if (v.has_outcome) {
+    meta.appendChild(_el('span', {
+      className: 'corpus-row-flag outcome', textContent: 'Outcome',
+    }));
+  }
+  row.appendChild(meta);
+
+  // Click handler — pin/unpin via /api/applications/<id>/composition
+  row.style.cursor = 'pointer';
+  row.onclick = () => _togglePositioningPin(v.id, isChosen && v.pinned);
+  return row;
+}
+
+// β.6c — toggle pin state. The caller passes the variant id + whether
+// it's currently the user-pinned (not just LLM-recommended) variant.
+// When already pinned: send pinned_summary_id=null to clear; when not
+// pinned: send the id. Refreshes composition after so the chips
+// re-render.
+async function _togglePositioningPin(summaryId, alreadyPinned) {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  // Gather the existing pinned/excluded/added bullet state so we
+  // don't clobber it when writing this pin. The server merges with
+  // the full body it receives, so we must round-trip whatever's
+  // already on the row.
+  const list = document.getElementById('composeList');
+  const pinnedBullets = [], excludedBullets = [], addedBullets = [];
+  list.querySelectorAll('.compose-row[data-bullet-id]').forEach(row => {
+    const id = parseInt(row.dataset.bulletId, 10);
+    if (row.classList.contains('pinned'))   pinnedBullets.push(id);
+    if (row.classList.contains('excluded')) excludedBullets.push(id);
+    if (row.dataset.added === '1')          addedBullets.push(id);
+  });
+
+  const body = {
+    context_path: lastContextPath,
+    pinned: pinnedBullets,
+    excluded: excludedBullets,
+    added: addedBullets,
+    pinned_summary_id: alreadyPinned ? null : summaryId,
+  };
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/composition`,
+      { method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body) },
+    );
+    if (res.ok) loadComposition();
+  } catch {
+    // Non-blocking
+  }
 }
 
 // Pick the strongest bullets from a score-sorted list using a quality
