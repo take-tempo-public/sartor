@@ -824,7 +824,7 @@ def run_generation():
     # P1 Hardening: deterministic document creation
     # Use user-selected output format; fall back to original resume format
     original_format = context_set["resume"]["format"]
-    if output_format not in (".docx", ".md"):
+    if output_format not in (".docx", ".md", ".pdf"):
         output_format = ".docx" if original_format != ".md" else ".md"
     # Phase C.2 + β.1: template path resolution priority
     #   1. explicit persona_template_id in the request body
@@ -832,9 +832,12 @@ def run_generation():
     #   3. candidate's is_default template matching JD role (β.1)
     #   4. candidate's general is_default template (β.1)
     #   5. bundled `Classic` as the universal fallback
+    # Both .docx and .pdf need a persona template — .docx uses it as the
+    # python-docx style template; .pdf uses its .html sibling for the
+    # Playwright render (β.3).
     template_path = None
     resolved_persona_id: int | None = None
-    if output_format == ".docx":
+    if output_format in (".docx", ".pdf"):
         requested_persona_id = data.get("persona_template_id")
         if requested_persona_id is not None:
             resolved_persona_id = int(requested_persona_id)

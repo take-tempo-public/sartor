@@ -34,6 +34,13 @@ dependencies = [
     "requests>=2.31,<3.0",
     "sqlalchemy>=2.0,<3.0",
     "alembic>=1.13,<2.0",
+    # β.3 — Playwright drives headless Chromium for PDF + live HTML
+    # preview rendering. Requires a one-time Chromium binary download:
+    #   python -m playwright install chromium
+    # The browser binary is ~150MB and lives in the OS user cache
+    # (%LOCALAPPDATA%\ms-playwright on Windows, ~/.cache on Linux,
+    # ~/Library/Caches on macOS), NOT inside the repo.
+    "playwright>=1.40,<2.0",
 ]
 
 [project.optional-dependencies]
@@ -107,3 +114,6 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+markers = [
+    "slow: tests that launch a real headless Chromium (β.3 PDF end-to-end)",
+]

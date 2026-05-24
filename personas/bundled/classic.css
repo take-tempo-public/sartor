@@ -1,0 +1,229 @@
+/* Classic Single-Column persona — print-optimized, ATS-friendly.
+ *
+ * Design intent:
+ *  - One column. ATS parsers reliably read top-to-bottom in a single
+ *    column; multi-column layouts often get scrambled.
+ *  - Semantic HTML (h1/h2/h3/p/ul/li). No CSS grid or float magic
+ *    that ATS could trip on.
+ *  - System / web-safe font. Helvetica/Arial first; serif fallback
+ *    last. No webfonts (offline-render-safe).
+ *  - 0.6in margins. Tight enough to fit a senior résumé in 2 pages
+ *    with summary + 4 roles + skills + certs + education.
+ *  - All color is grayscale + one accent (brand amber) on h2 underline
+ *    for a quiet identity nod. Print-safe.
+ *  - Reused as the live HTML preview source (β.4) — same template
+ *    feeds both the in-app preview AND the PDF render. WYSIWYG.
+ */
+
+@page {
+  size: letter;
+  margin: 0.6in 0.65in;
+}
+
+:root {
+  --fg-0:     #111;
+  --fg-1:     #333;
+  --fg-2:     #666;
+  --rule:     #ccc;
+  --accent:   #b87333;  /* warm brand-derived bronze; prints well in B&W */
+  --gap-1:    4px;
+  --gap-2:    8px;
+  --gap-3:    14px;
+  --gap-4:    20px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.4;
+  color: var(--fg-0);
+  background: #fff;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+}
+
+/* === Header === */
+
+.resume-header {
+  text-align: center;
+  margin-bottom: var(--gap-4);
+  padding-bottom: var(--gap-3);
+  border-bottom: 1px solid var(--rule);
+}
+
+.resume-header .name {
+  font-size: 22pt;
+  font-weight: 600;
+  letter-spacing: 0.5pt;
+  margin-bottom: 2pt;
+}
+
+.resume-header .label {
+  font-size: 11pt;
+  color: var(--fg-1);
+  margin-bottom: 4pt;
+  font-weight: 400;
+}
+
+.resume-header .contact {
+  font-size: 9.5pt;
+  color: var(--fg-2);
+  letter-spacing: 0.1pt;
+}
+
+/* === Section headings === */
+
+h2 {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--fg-0);
+  text-transform: uppercase;
+  letter-spacing: 1.4pt;
+  margin-top: var(--gap-4);
+  margin-bottom: var(--gap-2);
+  padding-bottom: 2pt;
+  border-bottom: 1.5pt solid var(--accent);
+}
+
+/* First section after header shouldn't get the big top margin */
+section:first-of-type h2 {
+  margin-top: var(--gap-2);
+}
+
+/* === Summary === */
+
+.summary p {
+  font-size: 10.5pt;
+  color: var(--fg-0);
+  line-height: 1.5;
+}
+
+/* === Experience === */
+
+.job, .degree, .project {
+  margin-bottom: var(--gap-3);
+  page-break-inside: avoid;
+}
+
+.job-header, .degree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--gap-2);
+  margin-bottom: 2pt;
+}
+
+.job-title, .degree-header h3 {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--fg-0);
+}
+
+.job-title .company,
+.degree-header .institution {
+  font-weight: 600;
+}
+
+.job-title .position,
+.degree-header .area {
+  font-weight: 400;
+  color: var(--fg-1);
+}
+
+.job-title .sep,
+.degree-header .sep {
+  color: var(--fg-2);
+  margin-right: 2pt;
+}
+
+.dates {
+  font-size: 9.5pt;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.job-summary {
+  font-size: 10pt;
+  color: var(--fg-1);
+  font-style: italic;
+  margin-bottom: 3pt;
+}
+
+.highlights {
+  list-style: disc;
+  padding-left: 16pt;
+  margin-top: 2pt;
+}
+
+.highlights li {
+  font-size: 10.5pt;
+  color: var(--fg-0);
+  margin-bottom: 2pt;
+  line-height: 1.4;
+}
+
+/* === Skills === */
+
+.skills .skill-line {
+  font-size: 10pt;
+  color: var(--fg-0);
+  line-height: 1.6;
+}
+
+.skill-groups {
+  list-style: none;
+  padding-left: 0;
+}
+
+.skill-groups li {
+  font-size: 10pt;
+  color: var(--fg-0);
+  margin-bottom: 4pt;
+  line-height: 1.5;
+}
+
+.skill-groups strong {
+  color: var(--fg-0);
+  font-weight: 600;
+}
+
+/* === Certifications === */
+
+.certifications ul {
+  list-style: disc;
+  padding-left: 16pt;
+}
+
+.certifications li {
+  font-size: 10pt;
+  color: var(--fg-0);
+  margin-bottom: 2pt;
+}
+
+/* === Print-safe page breaks === */
+
+h2 {
+  page-break-after: avoid;
+}
+
+article {
+  page-break-inside: avoid;
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

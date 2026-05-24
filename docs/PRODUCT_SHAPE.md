@@ -200,30 +200,46 @@ This is a 5-line fix and a v1.0 quick win.
 used for submissions for jobs because of its fixed presentation. We
 need this as an output format."
 
-**Decision (v1.0):** WeasyPrint.
+**Decision (v1.0):** Playwright + headless Chromium.
 
-**Why WeasyPrint over alternatives:**
+**Decision history.** The original choice was WeasyPrint on the
+belief that it had no system dependencies. In practice WeasyPrint
+requires GTK3 / Pango system libs on Windows + macOS — `pip install`
+alone fails to render. Mid-build in β.3 we reassessed and switched
+to Playwright, which has a one-time browser-binary download that's
+pip-driven and cross-platform.
 
 | Option | Pros | Cons |
 |---|---|---|
-| **WeasyPrint** ✓ | Python-native, pip-installable (~20MB), no system deps, mature (used by Mozilla), HTML+CSS templates pair with the live HTML preview | Slightly less perfect CSS fidelity than Chromium |
-| LibreOffice headless | Reuses existing `.docx` template 1:1, highest fidelity to existing personas | Requires LibreOffice installed system-wide (Docker / CI friction) |
-| Playwright (headless Chromium) | Perfect CSS, web fonts | ~100MB browser binary, heaviest dep |
+| **Playwright + Chromium** ✓ | Perfect CSS + web fonts; pip-installable; Chromium auto-downloads via `python -m playwright install chromium`; same template feeds both PDF + live preview (WYSIWYG); unlocks future visual-regression testing | ~150MB browser binary in the OS user cache (NOT in the repo); heaviest dep among the candidates |
+| WeasyPrint | Mature, Python-native, used by Mozilla | Requires GTK3 / Pango system libs on Windows + macOS; `pip install` alone is not enough |
+| LibreOffice headless | Reuses existing `.docx` template 1:1 | Requires LibreOffice installed system-wide |
 
-**Implementation sketch:**
+**Implementation (shipped in β.3):**
 
-- New dependency: `weasyprint` in [`pyproject.toml`](../pyproject.toml)
-- New rendering path: `generate_resume(content, ".pdf", ...)` —
-  parse markdown → JSON Resume (§5.4) → render HTML via Jinja2
-  template → WeasyPrint to PDF
-- Persona Templates evolve from `.docx`-only to a *pair*: existing
-  `.docx` for Word output AND an HTML/CSS pair for HTML preview +
-  PDF output. Existing bundled templates need HTML companions.
-- Live preview (§5.5) re-uses the HTML render — same Jinja2
-  template, displayed in-app.
-- **Backward compat:** `.docx` output stays the same (existing
-  `_write_docx` flow in [`generator.py`](../generator.py) with
-  python-docx). PDF and HTML are new parallel paths.
+- New dependency: `playwright>=1.40,<2.0` in `pyproject.toml`. The
+  Chromium binary is a one-time `python -m playwright install
+  chromium`; binary lives in the OS user cache, NOT in the repo.
+  `.gitignore` has defensive entries for `ms-playwright/` etc.
+- New module: [`pdf_render.py`](../pdf_render.py) — Jinja2 renders
+  HTML, Playwright loads it via `file://` URL (so the relative CSS
+  link resolves), `page.pdf()` emits bytes. Letter format,
+  0.6in/0.65in margins.
+- New rendering path: `generate_resume(content, ".pdf", ...)` uses
+  the JSON Resume document from β.2 (no markdown reparse).
+- Persona Templates evolve from `.docx`-only to `.docx + .html +
+  .css` triples. Convention: `personas/bundled/classic.docx` →
+  `personas/bundled/classic.html` + `personas/bundled/classic.css`.
+  `pdf_render.html_template_path_for()` resolves the companion.
+  Personas without HTML companions fall back to the bundled Classic
+  template.
+- Bundled Classic HTML+CSS shipped in β.3: ATS-friendly single-
+  column, semantic HTML, system-stack typography (no webfonts), B&W
+  safe, 0.6in margins, brand-amber h2 underline as the only color
+  accent. Reused as the live preview source (§5.5).
+- **Backward compat:** `.docx` output stays the same (`_write_docx`
+  via python-docx). `.md` stays the same. PDF and HTML are new
+  parallel paths.
 
 ### 5.4 Canonical intermediate format — JSON Resume v1.0
 
@@ -309,8 +325,8 @@ different templates would be ideal."
   - **Composition (pin/exclude/add) changes** — JSON Resume
     rebuilds from corpus + overrides; cheap, no LLM call
   - **Template selection changes** — pure CSS swap
-- **Reuses the WeasyPrint HTML render** (§5.3) — the live preview
-  IS the same HTML that will become the PDF. True WYSIWYG.
+- **Reuses the Playwright HTML render** (§5.3) — the live preview
+  IS the same HTML that becomes the PDF. True WYSIWYG.
 
 ## 6. Wizard flow — current vs sketched + clarified
 
@@ -358,7 +374,7 @@ Proposed final shape:
 4. Template + Live Preview    — pick template; preview live updates
                                 WYSIWYG HTML render (Jinja2 + CSS)
 5. Generate + Download        — choose output format(s);
-                                WeasyPrint HTML→PDF, python-docx,
+                                Playwright HTML→PDF, python-docx,
                                 raw .md; multi-select OK
 6. (Optional) Cover letter    — Sonnet, against the finalized
                                 résumé; same refine / iterate
@@ -392,7 +408,7 @@ Build the unified pattern in stages, no schema breaks between stages.
   the no-near-duplicate rule + Jaccard dedup safety net)
 - Compose step gets a "Positioning" card above the experience cards
 - JSON Resume v1.0 intermediate format introduced
-- WeasyPrint PDF output path added
+- Playwright PDF output path added (Chromium-based, see §5.3)
 - Live HTML preview component
 - Cover-letter detachment + dedicated button + full refine/iterate
 - Operationalize `PersonaTemplate.is_default` (bug fix from §5.2)
@@ -446,7 +462,8 @@ line fix; ship as part of operationalizing master résumés in §5.2.
 
 - [JSON Resume v1.0 schema](https://jsonresume.org/schema/) — canonical
   intermediate format adopted in v1.0
-- [WeasyPrint](https://weasyprint.org/) — HTML→PDF rendering library
+- [Playwright](https://playwright.dev/python/) — headless Chromium
+  driver for the v1 PDF + live-preview render pipeline (§5.3)
 - [schema.org/Person](https://schema.org/Person) — structured profile
   fields (not adopted; complementary to JSON Resume's `basics`)
 - [HR-Open Standards](https://www.hropenstandards.org/) — enterprise

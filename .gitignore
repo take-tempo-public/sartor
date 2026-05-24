@@ -83,3 +83,12 @@ ehthumbs.db
 .claude/*
 !.claude/settings.json
 CLAUDE.local.md
+
+# ---- Playwright (β.3) — Chromium binary is ~150MB and lives outside
+#       the repo by default (%LOCALAPPDATA%\ms-playwright\). These
+#       entries defend against PLAYWRIGHT_BROWSERS_PATH being set to
+#       a repo-relative path or `playwright test` default output dirs.
+ms-playwright/
+playwright-report/
+test-results/
+.playwright/

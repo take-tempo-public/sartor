@@ -96,11 +96,19 @@ def generate_resume(
 ) -> str:
     """Generate the tailored resume in the requested format.
 
-    Phase β.2: every generate call also writes a JSON Resume v1.0
-    sidecar (`resume_{ts}.jsonresume.json`) next to the primary output.
-    The sidecar is the canonical structured form that β.3 (WeasyPrint
-    PDF) and β.4 (live HTML preview) will consume. Failures in the
-    sidecar write are logged but do not block the primary output.
+    Supported formats:
+      .md   — write the normalized markdown directly
+      .docx — render via python-docx + the persona .docx as style template
+      .pdf  — render via Playwright (β.3): parse markdown → JSON Resume
+              → Jinja2 HTML → headless Chromium → PDF. Requires the
+              persona's `.html` + `.css` companions next to the .docx
+              file, and the Chromium binary (one-time install via
+              `python -m playwright install chromium`).
+
+    Every call also writes a JSON Resume v1.0 sidecar
+    (`resume_{ts}.jsonresume.json`) next to the primary output (β.2).
+    The sidecar is best-effort — write failures log a warning but do
+    not block the primary output.
     """
     import json as _json
     from pathlib import Path as _Path
@@ -111,29 +119,28 @@ def generate_resume(
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Normalize before BOTH .md and .docx — _write_docx parses content
-    # line-by-line and only dispatches heading styles when markers begin
-    # a line, so a smushed payload would render as one giant paragraph.
+    # Normalize before every renderer — _write_docx parses content
+    # line-by-line and dispatches heading styles only on lines that
+    # begin with a marker, and md_to_json_resume relies on the same
+    # structural assumptions. A smushed payload would render as one
+    # giant paragraph in either path.
     content = _normalize_markdown(content)
+    json_doc = md_to_json_resume(content)
 
     if output_format == ".md":
         path = out_dir / f"resume_{ts}.md"
         path.write_text(content, encoding="utf-8")
+    elif output_format == ".pdf":
+        path = out_dir / f"resume_{ts}.pdf"
+        _render_pdf_from_json(json_doc, template_path, path)
     else:
         path = out_dir / f"resume_{ts}.docx"
         _write_docx(content, path, template_path=template_path)
 
     # JSON Resume sidecar — best-effort. Parsing is deterministic and
-    # tested; the only realistic failure here would be a disk write
-    # issue, which we'd want to surface but not block the primary
-    # output the caller is waiting on.
+    # tested; realistic failure modes are disk-write issues.
     try:
-        json_doc = md_to_json_resume(content)
         sidecar = _Path(str(path)).with_suffix(".jsonresume.json")
-        # `.with_suffix` only replaces the final extension; we want the
-        # sidecar named e.g. `resume_20260524_153012.jsonresume.json`
-        # alongside `resume_20260524_153012.docx`. Path.with_suffix
-        # handles this for both .docx and .md cases.
         sidecar.write_text(_json.dumps(json_doc, indent=2, ensure_ascii=False),
                            encoding="utf-8")
     except Exception as exc:  # noqa: BLE001 — non-blocking sidecar
@@ -143,6 +150,45 @@ def generate_resume(
         )
 
     return str(path)
+
+
+def _render_pdf_from_json(
+    json_doc: dict,
+    docx_template_path: str | None,
+    output_pdf_path: Path,
+) -> None:
+    """Render the JSON Resume document to PDF via the persona's HTML
+    companion. The companion is the .html sibling of the .docx template
+    (e.g. `personas/bundled/classic.docx` → `personas/bundled/classic.html`).
+
+    Falls back to the bundled Classic HTML template if the resolved
+    persona doesn't ship an .html companion yet — keeps the output
+    path working as more personas pick up HTML companions over time.
+    """
+    from pdf_render import html_template_path_for, render_pdf
+
+    html_template: Path | None = None
+    if docx_template_path:
+        html_template = html_template_path_for(docx_template_path)
+
+    if html_template is None:
+        # Fallback: bundled Classic. The path resolves relative to the
+        # generator.py file at the repo root so it works whether the
+        # caller passed an absolute or relative template_path.
+        repo_root = Path(__file__).resolve().parent
+        fallback = repo_root / "personas" / "bundled" / "classic.html"
+        if fallback.exists():
+            html_template = fallback
+
+    if html_template is None:
+        raise FileNotFoundError(
+            "No HTML persona template available for PDF rendering. "
+            "Drop classic.html + classic.css into personas/bundled/."
+        )
+
+    render_pdf(json_doc,
+               html_template_path=html_template,
+               output_pdf_path=output_pdf_path)
 
 
 def generate_cover_letter(content: str, username: str, base_dir: str = "output") -> str:
