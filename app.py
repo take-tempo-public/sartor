@@ -826,10 +826,12 @@ def run_generation():
     original_format = context_set["resume"]["format"]
     if output_format not in (".docx", ".md"):
         output_format = ".docx" if original_format != ".md" else ".md"
-    # Phase C.2: template path resolution priority
-    #   1. explicit persona_template_id in the request body (Phase D will set this)
+    # Phase C.2 + β.1: template path resolution priority
+    #   1. explicit persona_template_id in the request body
     #   2. legacy context_set["resume"]["path"] (file-based path, deprecated)
-    #   3. bundled `Classic` as the fallback
+    #   3. candidate's is_default template matching JD role (β.1)
+    #   4. candidate's general is_default template (β.1)
+    #   5. bundled `Classic` as the universal fallback
     template_path = None
     resolved_persona_id: int | None = None
     if output_format == ".docx":
@@ -838,7 +840,14 @@ def run_generation():
             resolved_persona_id = int(requested_persona_id)
             template_path = _resolve_persona_template_path(resolved_persona_id)
         else:
-            template_path = context_set["resume"].get("path") or _resolve_default_persona_template_path()
+            ctx_app_id = context_set.get("application_id")
+            template_path = (
+                context_set["resume"].get("path")
+                or _resolve_default_persona_template_path(
+                    username=safe_user,
+                    application_id=int(ctx_app_id) if ctx_app_id is not None else None,
+                )
+            )
     resume_path = generate_resume(
         result["resume_content"], output_format, safe_user, str(OUTPUT_DIR),
         template_path=template_path,
@@ -1400,19 +1409,67 @@ def _resolve_persona_template_path(persona_template_id: int) -> str | None:
         session.close()
 
 
-def _resolve_default_persona_template_path() -> str | None:
-    """Return the bundled `Classic` template's path as the fallback.
+def _resolve_default_persona_template_path(
+    username: str | None = None,
+    application_id: int | None = None,
+) -> str | None:
+    """Resolve the default template path for the current candidate + JD role.
 
-    Used when no persona_template_id is supplied AND no legacy
-    file-based resume path is available. The plan calls Classic the
-    'maximally ATS-safe baseline' — appropriate default.
+    Lookup priority (first match wins):
+      1. Candidate's `is_default = 1` template matching this application's
+         `target_role_tag_id`, if both are known. (E.g. the user marked a
+         "Design IC" template default; this application's JD was tagged
+         "Design IC".)
+      2. Candidate's `is_default = 1` template with `primary_role_tag_id
+         IS NULL` — the candidate's general default that applies when
+         no role-specific template wins.
+      3. Bundled `Classic Single-Column` as the maximally ATS-safe
+         baseline (the original behavior; preserved for back-compat
+         and for routes that don't pass a username).
+
+    The partial unique index `ix_persona_template_default` enforces at
+    most one `is_default = 1` per (candidate_id, primary_role_tag_id),
+    so the candidate-scoped queries return at most one row.
+
+    Used by /api/generate when no explicit `persona_template_id` was
+    supplied and no legacy file-based resume path is available.
     """
-    from db.models import PersonaTemplate
+    from db.models import Application, Candidate, PersonaTemplate
     from db.session import get_session, init_db
 
     init_db()
     session = get_session()
     try:
+        # Priority 1+2: candidate-scoped defaults (require username)
+        if username:
+            candidate = session.query(Candidate).filter_by(username=username).first()
+            if candidate is not None:
+                role_tag_id: int | None = None
+                if application_id is not None:
+                    app_row = session.query(Application).filter_by(id=application_id).first()
+                    if app_row is not None:
+                        role_tag_id = app_row.target_role_tag_id
+
+                # Priority 1: role-specific default
+                if role_tag_id is not None:
+                    row = session.query(PersonaTemplate).filter_by(
+                        candidate_id=candidate.id,
+                        primary_role_tag_id=role_tag_id,
+                        is_default=1,
+                    ).first()
+                    if row is not None:
+                        return _resolve_persona_template_path(row.id)
+
+                # Priority 2: general default (no role tag)
+                row = session.query(PersonaTemplate).filter_by(
+                    candidate_id=candidate.id,
+                    primary_role_tag_id=None,
+                    is_default=1,
+                ).first()
+                if row is not None:
+                    return _resolve_persona_template_path(row.id)
+
+        # Priority 3: bundled Classic (existing fallback)
         row = session.query(PersonaTemplate).filter_by(
             source="bundled", name="Classic Single-Column",
         ).first()
