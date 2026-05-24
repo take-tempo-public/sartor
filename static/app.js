@@ -327,7 +327,7 @@ function renderAnalysis(data) {
   // Keyword overlap score
   const score = d.keyword_overlap.match_score;
   const pct = Math.round(score * 100);
-  const color = pct > 60 ? 'var(--teal)' : pct > 35 ? 'var(--amber)' : 'var(--red)';
+  const color = pct > 60 ? 'var(--success)' : pct > 35 ? 'var(--brand)' : 'var(--danger)';
   html += `<div class="analysis-section">
     <h3>Keyword Match Score: ${pct}%</h3>
     <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${color}"></div></div>
@@ -416,7 +416,7 @@ function renderAnalysis(data) {
 
   // Strategy
   if (a.overall_strategy) {
-    html += `<div class="analysis-section"><h3>Overall Strategy</h3><p style="color:var(--light)">${esc(a.overall_strategy)}</p></div>`;
+    html += `<div class="analysis-section"><h3>Overall Strategy</h3><p style="color:var(--brand-hi)">${esc(a.overall_strategy)}</p></div>`;
   }
 
   el.innerHTML = html;
@@ -3225,7 +3225,7 @@ function _renderBulletRow_compose(b) {
   if (b.recommended) {
     meta.appendChild(_el('span', {
       className: 'corpus-row-flag', textContent: 'RECOMMENDED',
-      style: 'background:var(--teal);color:var(--black);',
+      style: 'background:var(--success);color:var(--bg-0);',
     }));
   }
   if (b._fallback) {
