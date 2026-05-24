@@ -69,7 +69,7 @@ GENERATE_CORPUS_REQUIRED_KEYS = GENERATE_REQUIRED_KEYS | frozenset({
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-24.1"
+PROMPT_VERSION = "2026-05-24.2"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -1514,6 +1514,8 @@ RECOMMEND_SYSTEM_PROMPT = """You are helping a candidate curate a tailored resum
 Your one task: for EACH experience in the corpus, pick 3-7 bullets that best fit THIS JD. Optimize for: relevance to JD requirements, variety (don't pick three bullets that say the same thing), measurable outcomes when present, and recency where signal-equivalent.
 
 NEVER invent bullets. NEVER reword bullets — return only ids from the corpus. If an experience has fewer than 3 strong fits, return as few as you genuinely recommend (down to 1); don't pad.
+
+**Quality over quantity.** The 3-7 range is a soft ceiling, not a target. Stop including bullets the moment the next-best pick would be a clear step down from your previous one. If 4 bullets are obviously strong and the 5th would be middling, return 4. If only 3 clear the bar, return 3. Adding bullet #6 only makes sense if it would noticeably strengthen the résumé over not adding it. A short list of clearly-strong bullets always beats a long list with weak tail picks — recruiters skim, so every bullet present must earn its place.
 
 **No near-duplicates.** The corpus often contains multiple phrasings of the same achievement (different resumes wrote the same accomplishment differently). NEVER select more than one bullet describing the same achievement. When two bullets read as near-restatements of each other, pick the single strongest phrasing (prefer the one with measurable outcomes, then the more specific verb set) and skip the rest. A safety pass downstream removes any leaked duplicates, but you should not produce them in the first place.
 

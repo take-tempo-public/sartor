@@ -3036,6 +3036,36 @@ async function loadComposition() {
   data.experiences.forEach(exp => list.appendChild(_renderComposeCard(exp)));
 }
 
+// Pick the strongest bullets from a score-sorted list using a quality
+// drop-off rule, replacing the prior hard top-5 fallback.
+//
+//   minKeep: always return at least this many (when available) — the
+//            recruiter expects multiple bullets per role, so we don't
+//            cut below 3 even if scores are flat.
+//   maxKeep: never return more than this — even if all bullets are
+//            equally strong, beyond 7 the eye glazes over.
+//   ratio:   the drop-off threshold. After minKeep picks, stop once
+//            the next pick scores below `ratio × median(picks-so-far)`.
+//            0.65 catches obvious step-downs without being trigger-
+//            happy on uniformly-strong corpora.
+//
+// Mirrors the prompt-side "quality over quantity" rule so the fallback
+// path and the LLM path have the same shape (3-7 with drop-off).
+// Input is expected to be sorted by score descending (the
+// /api/applications/<id>/composition route already sorts that way).
+function _dropoffPick(bullets, { minKeep = 3, maxKeep = 7, ratio = 0.65 } = {}) {
+  if (!bullets || bullets.length === 0) return [];
+  const sorted = bullets.slice().sort((a, b) => (b.score || 0) - (a.score || 0));
+  const kept = sorted.slice(0, Math.min(minKeep, sorted.length));
+  for (let i = minKeep; i < Math.min(sorted.length, maxKeep); i++) {
+    const median = kept[Math.floor(kept.length / 2)].score || 0;
+    const candidate = sorted[i].score || 0;
+    if (median > 0 && candidate < median * ratio) break;
+    kept.push(sorted[i]);
+  }
+  return kept;
+}
+
 // Workstream G+I: two-line Compose row, recommended-only by default,
 // per-experience drawer for "find more bullets".
 function _renderComposeCard(exp) {
@@ -3072,17 +3102,19 @@ function _renderComposeCard(exp) {
   const hidden = (exp.bullets || []).filter(
     b => !(b.recommended || b.pinned || b.added),
   );
+  // Fallback when no LLM recommendations exist (call failed or returned
+  // empty for this experience): pick 3-7 bullets by score with a
+  // drop-off cut so the tail doesn't include obviously weaker picks.
+  const fallback = _dropoffPick(hidden, { minKeep: 3, maxKeep: 7, ratio: 0.65 });
   const headerLabel = exp.has_recommendations
     ? `Recommended bullets (${visible.length})`
-    : `Top bullets (${visible.length || hidden.slice(0, 5).length})`;
+    : `Top bullets (${visible.length || fallback.length})`;
   card.appendChild(_el('div', {
     className: 'compose-exp-section-title', textContent: headerLabel,
   }));
-  // If no recommendations exist (LLM call failed) AND nothing is pinned/added,
-  // fall back to showing top-5 by score so the user isn't left empty.
   let initial = visible;
   if (!exp.has_recommendations && initial.length === 0) {
-    initial = hidden.slice(0, 5);
+    initial = fallback;
     initial.forEach(b => b._fallback = true);
   }
   initial.forEach(b => card.appendChild(_renderBulletRow_compose(b)));
@@ -3091,7 +3123,7 @@ function _renderComposeCard(exp) {
   if (hidden.length > 0) {
     const drawerBullets = initial.length
       ? hidden.filter(b => !initial.includes(b))
-      : hidden.slice(5);  // when fallback consumed the first 5
+      : hidden.slice(fallback.length);  // when fallback consumed the strongest
     if (drawerBullets.length) {
       const toggle = _el('button', {
         className: 'compose-drawer-toggle',
@@ -3211,7 +3243,7 @@ function _renderBulletRow_compose(b) {
   if (b._fallback) {
     meta.appendChild(_el('span', {
       className: 'corpus-row-flag',
-      textContent: 'TOP-5 FALLBACK',
+      textContent: 'Fallback pick',
     }));
   }
   if (b.has_outcome) {

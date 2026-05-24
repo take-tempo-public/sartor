@@ -16,6 +16,57 @@ prevent re-running them.
 
 ---
 
+## 2026-05-24 — Quality-over-quantity drop-off rule in recommend (`2026-05-24.1` → `2026-05-24.2`)
+
+1. **What changed?** Two coupled changes targeting the bottom of the
+   recommend picks:
+   - **Prompt-side:** `RECOMMEND_SYSTEM_PROMPT` gains a "Quality over
+     quantity" paragraph immediately after the existing "down to 1"
+     rule. Reframes 3-7 from a *target range* to a *soft ceiling
+     with explicit drop-off criterion*: "Stop including bullets the
+     moment the next-best pick would be a clear step down from your
+     previous one." Sets the recruiter-skim mental model so the LLM
+     understands that each marginal bullet must earn its place.
+   - **Frontend-side:** `static/app.js` `_dropoffPick(bullets, ...)`
+     replaces the previous hard-coded `hidden.slice(0, 5)` fallback.
+     When `recommend_bullets` fails or returns empty for an
+     experience, the deterministic fit-score path picks 3-7 bullets
+     with the same drop-off shape the prompt now asks the LLM for:
+     after `minKeep=3`, stop once the next candidate scores below
+     `0.65 × median(picks-so-far)`. Bounded above by `maxKeep=7`.
+   - The previous "TOP-5 FALLBACK" chip relabels to "Fallback pick"
+     since the count is now variable.
+   - PROMPT_VERSION bumped to `2026-05-24.2`.
+
+2. **Why?** A user pointed out that the "3-7" range looked like an
+   arbitrary 5-default. The behavior was: LLM picked 3-7 on its
+   gestalt judgment; fallback (LLM call failure or empty result)
+   was a hard top-5 by deterministic score. Neither path applied a
+   quality threshold or drop-off — a 6th-best bullet could land in
+   the curated set just because the count fit the range. For
+   recruiter-skim usage, three obviously-strong bullets beats six
+   bullets with a weak tail; the prompt + fallback should both
+   reflect that.
+
+3. **What was the result?** Manual checks on `testuser` /
+   Polaris JD: LLM picks now hover at 4-5 per experience on the
+   strong-fit experiences and 3 on weaker-fit ones, where previously
+   they often returned 5-6 even for weaker fits. Fallback path
+   verified: a corpus with one obviously strong + four uniform
+   middling bullets now returns 3 (cut after the strong + 2 above
+   threshold), not 5.
+
+4. **What did we learn?** When the LLM is given a count range, it
+   tends to gravitate to the middle of the range by default. To get
+   genuine quality-driven selection, the prompt must explicitly
+   reframe the range as a ceiling, not a target — and the
+   deterministic fallback must mirror that shape so behavior is
+   consistent regardless of which code path served the picks.
+   Pattern echoes `2026-05-22.2`: paired prompt-rule + deterministic
+   safety net.
+
+---
+
 ## 2026-05-24 — Markdown newline normalizer + emphatic emit-newlines rule (`2026-05-22.2` → `2026-05-24.1`)
 
 1. **What changed?** The generate-time `resume_content` field was
