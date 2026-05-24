@@ -69,7 +69,7 @@ GENERATE_CORPUS_REQUIRED_KEYS = GENERATE_REQUIRED_KEYS | frozenset({
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-22.2"
+PROMPT_VERSION = "2026-05-24.1"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -1195,6 +1195,14 @@ DO NOT skip the `# `, `## `, `### ` markers. DO NOT use ALL CAPS as a substitute
 for `## `. The downstream Python writer dispatches on these markers to apply the
 template's heading styles, list numbering, and bold runs — without them the
 output is plain paragraphs.
+
+CRITICAL — EMIT LITERAL NEWLINES BETWEEN EVERY LINE OF THE RESUME.
+Inside the JSON string, every section heading, job entry, bullet, and the
+contact line MUST be separated by `\n` (escaped JSON newline). If you
+emit `# Name` followed immediately by `Subtitle` with no `\n` between,
+the downstream renderer cannot tell the lines apart. Every example
+shape above has line breaks; reproduce them exactly. A resume on one
+long line is malformed output regardless of how complete the text is.
 </output_rules>
 
 <analysis>

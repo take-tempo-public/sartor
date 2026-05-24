@@ -26,6 +26,66 @@ BULLET_RE = re.compile(
 # Inline markdown: ***bold+italic***, **bold**, *italic*
 _INLINE_RE = re.compile(r"(\*\*\*[^*\n]+?\*\*\*|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)")
 
+# Markdown structural markers used by _normalize_markdown to re-inject
+# newlines when an LLM smushes a whole resume into a single line.
+# Header boundary: only the FIRST `#` of an `# / ## / ###` heading (the
+# non-`#` lookbehind prevents matching the 2nd `#` of `##` etc.).
+_MD_HEADER_BOUNDARY_RE = re.compile(r"(?<![\n#])(?=#{1,3}\s)")
+# Bullet boundary: `- <Capital>` preceded by text (letter / digit /
+# period / question / exclamation / tab / closing paren). The capital-
+# letter requirement avoids false positives on hyphenated words
+# ("front-end", "real-time").
+_MD_BULLET_BOUNDARY_RE = re.compile(r"(?<=[.!?\w\t)])(- [A-Z])")
+# H2 → body boundary. After a `## <Title>` (single-word title, h2 only —
+# `##(?!#)` excludes h3), break before the first body char (any capital).
+# `\w+?` is non-greedy so it stops at the shortest word before the next
+# capital letter — without this, `## SkillsUX` would split as
+# `## SkillsU\nX` (greedy `\w+` consumes into the body word).
+# Multi-word h2 titles ("Work Experience") are a known limitation; the
+# LLM should emit them with proper newlines or the heading will be
+# clipped at the first word.
+_MD_H2_BODY_BOUNDARY_RE = re.compile(r"(##(?!#)\s+\w+?)([A-Z])")
+_MD_TRIPLE_NEWLINE_RE = re.compile(r"\n{3,}")
+
+
+def _normalize_markdown(content: str) -> str:
+    """Re-inject newlines lost when an LLM emits markdown as one line.
+
+    P1 Hardening — deterministic Python repairs LLM formatting drift so
+    every downstream renderer (markdown export, .docx writer, the
+    template-style heading dispatch in `_write_docx`) sees the structural
+    markers on their own lines. Conservative by design: only inserts
+    newlines around unambiguous markdown markers, never inside running
+    text.
+
+    Markers handled:
+      `# ` / `## ` / `### `       — start a new line preceded by a blank
+      `- <Capital>`                — bullet preceded by text; +1 newline
+      `## <Title><Body>`           — single-word section title → body
+
+    Not handled (rare, left to LLM-side):
+      The name / subtitle / contact triad smushed into the first line
+      (e.g. `# Jane DoeSenior EngineerJane@ex.com`). There is no clean
+      algorithmic signal for where each chunk ends — the LLM should
+      emit them on separate lines. A prompt-side fix in
+      `analyzer.py:RESUME_RULES` is the right lever; this normalizer
+      handles the structural body of the document so a smushed top
+      line is recoverable by hand.
+
+    Idempotent: already-well-formed markdown passes through unchanged.
+    """
+    if not content:
+        return content
+    # Pass 1: blank line before headers
+    content = _MD_HEADER_BOUNDARY_RE.sub("\n\n", content)
+    # Pass 2: newline before bullets
+    content = _MD_BULLET_BOUNDARY_RE.sub(r"\n\1", content)
+    # Pass 3: blank line between h2 title and body
+    content = _MD_H2_BODY_BOUNDARY_RE.sub(r"\1\n\n\2", content)
+    # Pass 4: collapse 3+ newlines to 2
+    content = _MD_TRIPLE_NEWLINE_RE.sub("\n\n", content)
+    return content.strip() + "\n"
+
 
 def generate_resume(
     content: str,
@@ -38,6 +98,11 @@ def generate_resume(
     out_dir = Path(base_dir) / username
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Normalize before BOTH .md and .docx — _write_docx parses content
+    # line-by-line and only dispatches heading styles when markers begin
+    # a line, so a smushed payload would render as one giant paragraph.
+    content = _normalize_markdown(content)
 
     if output_format == ".md":
         path = out_dir / f"resume_{ts}.md"
@@ -55,7 +120,7 @@ def generate_cover_letter(content: str, username: str, base_dir: str = "output")
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = out_dir / f"cover_letter_{ts}.docx"
-    _write_docx(content, path, is_cover_letter=True)
+    _write_docx(_normalize_markdown(content), path, is_cover_letter=True)
     return str(path)
 
 

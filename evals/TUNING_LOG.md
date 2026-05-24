@@ -16,6 +16,59 @@ prevent re-running them.
 
 ---
 
+## 2026-05-24 — Markdown newline normalizer + emphatic emit-newlines rule (`2026-05-22.2` → `2026-05-24.1`)
+
+1. **What changed?** The generate-time `resume_content` field was
+   sometimes coming back collapsed onto a single line — every section
+   heading, job entry, and bullet emitted without `\n` separators
+   despite the multi-line example in the prompt. Two fixes:
+   - **Prompt-side:** a new CRITICAL paragraph at the end of
+     `<output_rules>` in `analyzer.py` explicitly requires literal
+     `\n` between every line of the resume. Existing example shape
+     was retained; this just adds an emphatic restatement of the
+     newline contract so the LLM treats it as a hard constraint.
+   - **Deterministic safety net (`generator.py:_normalize_markdown`):**
+     a four-pass regex normalizer runs on every `resume_content` and
+     `cover_letter_content` before write. Inserts `\n\n` before `# /
+     ## / ###` headers (with a `(?<![\n#])` lookbehind so it doesn't
+     mid-split a multi-`#` marker), `\n` before `- <Capital>` bullets
+     preceded by text, `\n\n` between a single-word `## <Title>` and
+     its body (non-greedy `\w+?` to avoid eating into the body word),
+     then collapses 3+ newlines to 2. Idempotent on well-formed input
+     — regression-tested in `tests/test_normalize_markdown.py` (16
+     tests covering each pass, hyphenated-word safety, and a full
+     realistic smushed-resume fixture).
+   - PROMPT_VERSION bumped to `2026-05-24.1`.
+
+2. **Why?** A user downloaded a generated `.md` and the entire resume
+   was on one line — the markdown renderer treated it as a single H1
+   heading. Root cause: the LLM produced semantically-correct markdown
+   markers but without `\n` between them. The .docx writer suffers the
+   same bug because `_write_docx` parses content line-by-line and
+   dispatches heading styles only on lines beginning with `#`/`-`/etc.
+   — a smushed payload collapses to one paragraph with no template
+   styles applied.
+
+3. **What was the result?** The user's broken fixture (0 newlines,
+   ~7.2 KB) normalizes to 57 newlines with every section, job entry,
+   and bullet on its own line. The h1 + subtitle + contact triad at
+   the very top remains smushed — there is no clean algorithmic
+   signal for where each chunk ends, and any heuristic (lowercase →
+   uppercase boundary) would break on names like McDonald and product
+   names like iPhone. Documented as a known limitation; the emphatic
+   prompt is the lever for closing the remaining gap.
+
+4. **What did we learn?** When LLM output is structurally regular
+   (the markers are correct, just the separators are missing), a
+   deterministic regex pass is materially safer than additional
+   prompt iteration — every prompt revision adds tokens and creates
+   regression risk, while a normalizer with regression tests stays
+   green forever. The pattern is the same as `_dedup_recommendations`
+   from `2026-05-22.2`: the LLM does the fuzzy work, deterministic
+   Python repairs the mechanical drift. P1 Hardening compounds.
+
+---
+
 ## 2026-05-22 — Release-Readiness Branch 1: no-near-duplicates rule (`2026-05-22.1` → `2026-05-22.2`)
 
 1. **What changed?** `RECOMMEND_SYSTEM_PROMPT` (`analyzer.py`) gained one
