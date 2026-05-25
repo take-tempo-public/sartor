@@ -1,0 +1,218 @@
+/*!
+ * compact.css — print-friendly CSS for callback. compact résumé layout.
+ *
+ * PORTED FROM:
+ *   jsonresume-theme-flat by erming
+ *   https://github.com/erming/jsonresume-theme-flat
+ *   Licensed MIT (declared in README).
+ *
+ * Original © erming. Port modifications © callback. contributors.
+ * Distribution continues under MIT to preserve upstream license terms.
+ *
+ * PORT ADAPTATIONS:
+ *   - Replaced Bootstrap col-sm-* with a minimal flexbox grid so the
+ *     theme renders offline (Playwright PDF + iframe live preview).
+ *   - Removed Octicons font-glyph bullets; replaced with a plain
+ *     CSS disc + indent so the ATS round-trip parser keeps every
+ *     bullet on its own line.
+ *   - System font stack (`-apple-system, ...`) instead of Google
+ *     Fonts @import. Lato is still preferred when locally installed.
+ *   - Muted accent palette (single neutral gray accent) so the
+ *     rendered output stays ATS-friendly. Original green / yellow
+ *     link tints replaced with subtle underline.
+ *   - Print rules (@media print + @page) added so PDF output has
+ *     consistent margins.
+ */
+
+/* ---------------------------------------------------------------
+   Page setup
+   --------------------------------------------------------------- */
+@page {
+  size: Letter;
+  margin: 0.6in 0.65in;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: #fff;
+  color: #2b2f33;
+  font-family: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.45;
+  margin: 0 0 30px;
+}
+
+a { color: #2b2f33; text-decoration: underline; }
+a:hover { color: #555; }
+
+p { line-height: 1.5; margin: 0; }
+p + p { margin-top: 8px; }
+
+h1, h2, h3, h4 { margin: 0; font-weight: 700; }
+
+section { margin-top: 22px; }
+
+/* ---------------------------------------------------------------
+   Minimal grid (replaces Bootstrap col-sm-*).
+   The theme only uses 3-of-12 / 9-of-12 / 6-of-12 / 12-of-12.
+   --------------------------------------------------------------- */
+.container { max-width: 720px; padding: 0 24px; margin: 0 auto; }
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -12px;
+  margin-right: -12px;
+}
+.row > [class^="col-sm-"] { padding: 0 12px; }
+
+.col-sm-3  { flex: 0 0 25%;  max-width: 25%; }
+.col-sm-6  { flex: 0 0 50%;  max-width: 50%; margin-bottom: 8px; }
+.col-sm-9  { flex: 0 0 75%;  max-width: 75%; }
+.col-sm-12 { flex: 0 0 100%; max-width: 100%; }
+
+/* Theme convention: aside (sidebar label) sits left of content. */
+#content aside {
+  text-align: right;
+  padding-right: 24px;
+}
+
+/* ---------------------------------------------------------------
+   Header
+   --------------------------------------------------------------- */
+#header {
+  background: #f4f6f6;
+  padding: 32px 0;
+  margin-bottom: 22px;
+}
+#header h1 {
+  font-size: 28pt;
+  letter-spacing: -0.01em;
+}
+#header h2 {
+  color: #6b7378;
+  font-size: 14pt;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+/* ---------------------------------------------------------------
+   Section headers (sidebar label)
+   --------------------------------------------------------------- */
+#content h3 {
+  color: #4a5258;
+  font-size: 13pt;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: -2px;
+}
+
+/* ---------------------------------------------------------------
+   Strike-through job/edu header (the theme's signature)
+   --------------------------------------------------------------- */
+.strike-through {
+  border-top: 1px solid #e3e6e8;
+  height: 18px;
+  margin-top: 8px;
+  margin-bottom: -2px;
+  position: relative;
+}
+.strike-through span,
+.strike-through a {
+  background: #fff;
+  position: absolute;
+}
+.strike-through span:first-child {
+  font-size: 12pt;
+  padding-right: 12px;
+  margin-top: -10px;
+}
+.strike-through span + span {
+  font-size: 10pt;
+  color: #6b7378;
+  font-weight: 400;
+  margin-top: -8px;
+  padding-left: 12px;
+  right: 0;
+}
+
+/* ---------------------------------------------------------------
+   Work / volunteer details
+   --------------------------------------------------------------- */
+.position {
+  font-weight: 700;
+  margin-bottom: 4px;
+  margin-top: 12px;
+}
+.summary { margin-top: 4px; }
+
+/* ---------------------------------------------------------------
+   Highlights / bullets — plain disc, ATS-safe
+   --------------------------------------------------------------- */
+ul.highlights,
+ul.keywords,
+ul.cert-list {
+  margin: 6px 0 0 0;
+  padding-left: 18px;
+}
+ul.highlights li,
+ul.cert-list li {
+  list-style: disc;
+  line-height: 1.5;
+  margin-bottom: 2px;
+}
+ul.keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding-left: 0;
+}
+ul.keywords li {
+  list-style: none;
+  font-size: 10pt;
+  color: #4a5258;
+}
+
+/* Skills row — when no keywords are grouped, render as inline list. */
+.skill-line {
+  margin-top: 4px;
+  line-height: 1.6;
+}
+
+/* ---------------------------------------------------------------
+   Education
+   --------------------------------------------------------------- */
+#education .area { font-weight: 700; margin-top: 8px; }
+#education .studyType { color: #4a5258; }
+
+/* ---------------------------------------------------------------
+   Two columns stay side-by-side at print width; degrade gracefully
+   on narrow screens (live preview iframe < 480px).
+   --------------------------------------------------------------- */
+@media (max-width: 600px) {
+  #content aside { text-align: left; padding-right: 0; margin-bottom: 8px; }
+  .col-sm-3, .col-sm-9 { flex: 0 0 100%; max-width: 100%; }
+  .col-sm-6 { flex: 0 0 100%; max-width: 100%; }
+  .strike-through {
+    border-top: 1px solid #e3e6e8;
+    height: auto;
+    margin-top: 10px;
+  }
+  .strike-through span,
+  .strike-through span + span {
+    background: transparent;
+    position: static;
+    display: block;
+    padding: 0;
+    margin: 0;
+  }
+}
+
+@media print {
+  body { font-size: 10.5pt; }
+  section { page-break-inside: avoid; }
+  article, .col-sm-12 { page-break-inside: avoid; }
+  a { color: #2b2f33; }
+}

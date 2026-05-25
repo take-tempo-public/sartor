@@ -2146,6 +2146,13 @@ function _renderTitleRow(expId, title) {
   if (title.is_pending_review) {
     row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
   }
+  // Tag chips — Career Corpus parity with the Compose step. Tags
+  // already exist on the detail payload via _experience_detail_dict;
+  // _renderTagChips wires add/remove inline against the existing
+  // /api/experience-titles/<id>/tags endpoints.
+  const tagWrap = _el('span', { className: 'tag-chip-wrap' });
+  _renderTagChips(tagWrap, 'title', title.id, title.tags || []);
+  row.appendChild(tagWrap);
   const actions = _el('div', { className: 'corpus-row-actions' });
   if (title.is_pending_review) {
     const accept = _el('button', { className: 'corpus-action-btn', textContent: 'ACCEPT' });
@@ -2226,6 +2233,13 @@ function _renderBulletRow(expId, bullet) {
   if (bullet.is_pending_review) {
     row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
   }
+  // Tag chips — Career Corpus parity with the Compose step. Tags
+  // already ride on the detail payload (_experience_detail_dict),
+  // _renderTagChips wires add/remove inline against the existing
+  // /api/bullets/<id>/tags endpoints.
+  const tagWrap = _el('span', { className: 'tag-chip-wrap' });
+  _renderTagChips(tagWrap, 'bullet', bullet.id, bullet.tags || []);
+  row.appendChild(tagWrap);
   const actions = _el('div', { className: 'corpus-row-actions' });
   if (bullet.is_pending_review) {
     const accept = _el('button', { className: 'corpus-action-btn', textContent: 'ACCEPT' });
