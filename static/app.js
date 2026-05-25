@@ -718,6 +718,10 @@ function _onGenerationComplete(data) {
   // first résumé generation and swaps for Download once a cover letter
   // exists.
   _updateCoverLetterButtons();
+  // β.6 post-review — refresh the inline output preview once content
+  // lands. Reads corpus + the freshly-saved context_path; the WYSIWYG
+  // styled view sits alongside the RAW / RENDERED editor tabs.
+  _refreshOutputPreview();
 }
 
 // β.5 — show "+ Generate cover letter" when no cover letter exists yet,
@@ -3038,7 +3042,7 @@ function _renderPersonaCard(p, owned) {
   actions.appendChild(dl);
 
   const prev = _el('button', {
-    className: 'corpus-action-btn', textContent: 'PREVIEW WITH MY RESUME',
+    className: 'corpus-action-btn', textContent: 'OPEN PREVIEW',
   });
   prev.onclick = () => _previewPersonaWithResume(p.id, p.name);
   actions.appendChild(prev);
@@ -3283,6 +3287,47 @@ async function loadComposition() {
     return;
   }
   data.experiences.forEach(exp => list.appendChild(_renderComposeCard(exp)));
+  // β.6 post-review — show the inline preview alongside Compose so
+  // pin/exclude/add land visibly without waiting for Step 4.
+  _refreshComposePreview();
+}
+
+// β.6 post-review — refresh the Step 3 (Compose) inline preview iframe.
+// Corpus-direct: the preview reflects whatever pin/exclude/add state is
+// currently saved to lastContextPath. Cheap — no LLM call, no Chromium.
+async function _refreshComposePreview() {
+  const block = document.getElementById('composePreviewBlock');
+  const frame = document.getElementById('composePreviewFrame');
+  if (!block || !frame) return;
+  if (_composeApplicationId == null) {
+    block.classList.add('hidden');
+    return;
+  }
+  const params = new URLSearchParams();
+  const sel = _readSelectedPersonaId();
+  if (sel != null) params.set('template_id', String(sel));
+  if (lastContextPath) params.set('context_path', lastContextPath);
+  block.classList.remove('hidden');
+  frame.src = `/api/applications/${_composeApplicationId}/preview?${params.toString()}`;
+}
+
+// β.6 post-review — refresh the Step 6 (Output) inline preview iframe.
+// Shows the styled output the user is about to download, separate from
+// the RAW / RENDERED markdown editor tabs above it.
+async function _refreshOutputPreview() {
+  const block = document.getElementById('outputPreviewBlock');
+  const frame = document.getElementById('outputPreviewFrame');
+  if (!block || !frame) return;
+  if (_composeApplicationId == null) {
+    block.classList.add('hidden');
+    return;
+  }
+  const params = new URLSearchParams();
+  const sel = _readSelectedPersonaId();
+  if (sel != null) params.set('template_id', String(sel));
+  if (lastContextPath) params.set('context_path', lastContextPath);
+  block.classList.remove('hidden');
+  frame.src = `/api/applications/${_composeApplicationId}/preview?${params.toString()}`;
 }
 
 // β.6c — fire recommend-summary in the background. Idempotent on the
@@ -3841,12 +3886,11 @@ async function _loadTemplatePicker() {
       _refreshLivePreview(p.id);
     };
     actions.appendChild(pickBtn);
-    const preview = _el('button', {
-      className: 'corpus-action-btn',
-      textContent: 'PREVIEW WITH MY RESUME',
-    });
-    preview.onclick = () => _previewPersonaWithResume(p.id, p.name);
-    actions.appendChild(preview);
+    // β.6 post-review: the inline live-preview iframe below the
+    // template grid already updates on every card click, so the
+    // "PREVIEW WITH MY RESUME" download button is removed from this
+    // wizard step. The Library tab still surfaces an explicit
+    // "OPEN PREVIEW" affordance for the side-by-side flow.
     card.appendChild(actions);
     return card;
   };
@@ -3872,25 +3916,49 @@ async function _loadTemplatePicker() {
   if (sel.value) _refreshLivePreview(parseInt(sel.value, 10));
 }
 
-// β.4 — refresh the embedded live preview iframe for the current
-// application + the given template id. Idempotent: safe to call on
-// step entry, on template-card click, and after a fresh generate
-// (when the sidecar lands).
+// β.4 / β.6 — refresh the embedded live preview iframe for the
+// current application + the given template id. Corpus-direct now: the
+// route reads Candidate + Experience + Bullet + SummaryItem rows
+// straight from the DB and applies composition_overrides from the
+// active context file (passed via `context_path`), so the preview
+// works BEFORE any /api/generate has run. Idempotent: safe to call on
+// step entry, on template-card click, after pin/exclude/add changes,
+// and after a generate.
+//
+// If `_composeApplicationId` is null we fall back to the user-scoped
+// preview (`/api/users/<u>/preview`) — covers the "library" flow where
+// the user wants to see how their corpus renders without an
+// application yet.
 async function _refreshLivePreview(templateId) {
   const block = document.getElementById('livePreviewBlock');
   const frame = document.getElementById('livePreviewFrame');
   const empty = document.getElementById('livePreviewEmpty');
   if (!block || !frame || !empty) return;
-  if (_composeApplicationId == null) {
-    block.classList.add('hidden');
-    return;
-  }
   block.classList.remove('hidden');
 
-  // Probe with HEAD-like GET to detect the 409 (no sidecar yet) case
-  // before setting the iframe src — gives us a clean empty-state
-  // message instead of an iframe full of JSON error text.
-  const url = `/api/applications/${_composeApplicationId}/preview?template_id=${templateId}`;
+  const params = new URLSearchParams();
+  if (templateId != null) params.set('template_id', String(templateId));
+  // Thread the active context file when present so composition
+  // overrides (pin/exclude/add, pinned_summary_id) and LLM
+  // recommendations shape the preview output.
+  if (typeof lastContextPath === 'string' && lastContextPath) {
+    params.set('context_path', lastContextPath);
+  }
+  const base = (_composeApplicationId != null)
+    ? `/api/applications/${_composeApplicationId}/preview`
+    : (currentUser ? `/api/users/${encodeURIComponent(currentUser)}/preview` : null);
+  if (!base) {
+    empty.classList.remove('hidden');
+    empty.textContent = 'Select a user (or start an application) to preview.';
+    frame.classList.add('hidden');
+    return;
+  }
+  const qs = params.toString();
+  const url = qs ? `${base}?${qs}` : base;
+
+  // Probe for the only remaining failure mode (no candidate row yet
+  // → 409 needs_onboarding) so we surface a clean hint instead of
+  // dropping an error blob into the iframe.
   let probe;
   try {
     probe = await fetch(url, { method: 'GET' });
@@ -3901,9 +3969,8 @@ async function _refreshLivePreview(templateId) {
     return;
   }
   if (probe.status === 409) {
-    // No JSON Resume sidecar yet — user hasn't generated.
     empty.classList.remove('hidden');
-    empty.textContent = 'Generate at least once in Step 5 to unlock the live preview.';
+    empty.textContent = 'Import a résumé first to unlock the live preview.';
     frame.classList.add('hidden');
     return;
   }
@@ -3913,7 +3980,6 @@ async function _refreshLivePreview(templateId) {
     frame.classList.add('hidden');
     return;
   }
-  // Happy path — load the URL directly into the iframe.
   empty.classList.add('hidden');
   frame.classList.remove('hidden');
   frame.src = url;
@@ -3926,32 +3992,16 @@ function _readSelectedPersonaId() {
   return Number.isNaN(n) ? null : n;
 }
 
-async function _previewPersonaWithResume(personaId, name) {
+// β.6 post-review — preview a template against the user's corpus by
+// opening the live HTML preview in a new tab. Replaces the legacy
+// "stream a .docx preview file" flow per the hands-on review (#1):
+// the user asked for a viewable rendering, not a download. The
+// corpus-direct route (`/api/users/<u>/preview`) renders without
+// requiring any prior /api/generate run.
+function _previewPersonaWithResume(personaId, _name) {
   if (!currentUser) { _toast('Select a user first', true); return; }
-  _toast(`Rendering your resume with ${name}…`);
-  let res;
-  try {
-    res = await fetch(`/api/personas/${personaId}/preview`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: currentUser }),
-    });
-  } catch (e) {
-    return _toast('Preview failed: ' + e.message, true);
-  }
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    return _toast(err.error || `Preview failed (HTTP ${res.status})`, true);
-  }
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `preview_${name}.docx`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  const url = `/api/users/${encodeURIComponent(currentUser)}/preview?template_id=${personaId}`;
+  window.open(url, '_blank', 'noopener');
 }
 
 // ===============================================================

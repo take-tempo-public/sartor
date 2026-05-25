@@ -218,6 +218,23 @@
           others from your corpus. Edits affect this application only.
         </div>
         <div id="composeList" class="corpus-experience-list"></div>
+
+        <!-- β.6 post-review — Inline live preview, corpus-direct. Shows
+             what the résumé looks like with the user's CURRENT
+             curation state (pinned bullets / summary, exclusions,
+             added bullets). Refreshes on every composition change so
+             pin/exclude/add land visibly without leaving Step 3. -->
+        <div id="composePreviewBlock" class="live-preview-block hidden" style="margin-top:16px">
+          <div class="edit-hint" style="margin-bottom:6px">
+            <strong>Live preview</strong> · updates as you pin / exclude /
+            add bullets. Same HTML becomes the PDF (WYSIWYG).
+          </div>
+          <iframe id="composePreviewFrame"
+                  title="Résumé live preview (compose)"
+                  class="live-preview-frame"
+                  sandbox="allow-same-origin"></iframe>
+        </div>
+
         <div class="form-row" style="margin-top:10px">
           <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(2)">← BACK</button>
           <button class="lcars-btn lcars-bg-teal" onclick="saveCompositionThenNext()">Save and continue to Template →</button>
@@ -233,10 +250,10 @@
       </div>
       <div class="panel-body">
         <div class="edit-hint">
-          Pick the .docx styling for your generated resume. The content
+          Pick the styling for your generated résumé. The content
           stays the same — only the typography, spacing, and headings
-          change. <em>Preview with my resume</em> renders a real .docx
-          from your latest generated resume.
+          change. The live preview below updates the moment you click
+          a card (same HTML becomes the PDF).
         </div>
         <!-- Hidden select preserved for state-holding compatibility with
              the existing _readSelectedPersonaId helper. The card picker
@@ -291,6 +308,7 @@
         <div class="form-row" style="align-items:center;gap:12px;margin-bottom:8px;">
           <span class="edit-hint" style="margin:0">Output format:</span>
           <button class="lcars-btn format-btn active" id="fmtDocx" onclick="setOutputFormat('.docx', this)">DOCX</button>
+          <button class="lcars-btn format-btn" id="fmtPdf" onclick="setOutputFormat('.pdf', this)">PDF</button>
           <button class="lcars-btn format-btn" id="fmtMd" onclick="setOutputFormat('.md', this)">Markdown</button>
         </div>
         <div class="form-row">
@@ -336,6 +354,23 @@
         </div>
         <div id="tabChanges" class="tab-content">
           <div id="changesContent"></div>
+        </div>
+
+        <!-- β.6 post-review — Inline live preview alongside the RAW /
+             RENDERED tab views. Shows the templated/styled output the
+             user is about to download, refreshed against the current
+             corpus + the chosen template. The RAW view stays the LLM's
+             markdown (so the user can keep editing); this iframe shows
+             what comes out of the printer. -->
+        <div id="outputPreviewBlock" class="live-preview-block hidden" style="margin-top:16px">
+          <div class="edit-hint" style="margin-bottom:6px">
+            <strong>Live preview</strong> · the styled output your
+            download will produce.
+          </div>
+          <iframe id="outputPreviewFrame"
+                  title="Résumé live preview (output)"
+                  class="live-preview-frame"
+                  sandbox="allow-same-origin"></iframe>
         </div>
         <div class="form-row">
           <button class="lcars-btn lcars-bg-teal" id="btnDownloadResume" onclick="downloadResume()">Download résumé</button>

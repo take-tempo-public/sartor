@@ -1919,38 +1919,62 @@ def preview_persona_with_resume(persona_id: int):
 
 @app.route("/api/applications/<int:application_id>/preview", methods=["GET"])
 def preview_application_html(application_id: int):
-    """Render the application's latest résumé as a self-contained HTML
-    page (Phase β.4 — Live HTML preview).
+    """Render the candidate's résumé corpus + application-scoped overrides
+    as a self-contained HTML page (Phase β.4 / β.6 — corpus-direct live
+    preview).
 
     Query params:
       template_id  — persona to render through. If omitted, falls back
                      to the β.1 default-resolution chain (candidate's
                      is_default for the JD role → general default →
                      bundled Classic).
+      context_path — optional path to a context_*.json file. When
+                     present, composition_overrides (pin/exclude/added,
+                     pinned_summary_id) and llm_summary_recommendation /
+                     llm_recommendations from that file shape the
+                     rendered output. Must resolve under OUTPUT_DIR.
 
-    Reads the latest `resume_*.jsonresume.json` sidecar from β.2 (so
-    a /api/generate must have run at least once for this application's
-    candidate). Renders via `pdf_render.render_html_string` — same
-    Jinja2 template that produces the PDF, so the preview IS the
-    future PDF (WYSIWYG).
+    Architectural shift (post β.6 hands-on review):
+      Earlier shape: read the most recent `resume_*.jsonresume.json`
+      sidecar written by `/api/generate`. That coupled the preview to a
+      prior generate call, so users couldn't see template effects until
+      they paid for an LLM round-trip — and afterwards the preview
+      reflected the LAST-GENERATED résumé even if they kept editing the
+      corpus. Both points were called out in the hands-on review (#1, #3).
 
-    Returns the rendered HTML with CSS inlined into a <style> block,
-    Content-Type: text/html. Designed to be loaded into an <iframe
-    src=...> in the in-app preview panel — sandboxed, self-contained,
-    no external CSS / font resolution.
+      Current shape: build a JSON Resume document DIRECTLY from
+      Candidate + Experience + Bullet + SummaryItem rows via
+      `corpus_to_json_resume.build_json_resume_from_corpus`. The result
+      reflects the candidate's live curation state — chosen summary
+      variant (pin > recommendation > first-active), bullets honoring
+      composition_overrides (pin/exclude/added) — without any generate
+      having run.
 
-    Filesystem + ownership guards: _safe_username + _within enforced
-    via _load_application_owned + the explicit _within check on the
-    sidecar path.
+    Renders via `pdf_render.render_html_string` — same Jinja2 template
+    that produces the PDF, so the preview IS the future PDF (WYSIWYG).
+    Returns text/html with CSS inlined into a <style> block, designed
+    to be loaded into a sandboxed <iframe src=...> with no external
+    CSS resolution.
+
+    Filesystem + ownership guards: `_safe_username` runs inside
+    `_load_application_owned`; `_within` runs inside the persona-path
+    resolver. No filesystem reads happen here beyond the template + CSS
+    files under PERSONAS_DIR.
     """
+    from corpus_to_json_resume import build_json_resume_from_corpus
     from db.session import get_session, init_db
     from pdf_render import render_html_string
 
     init_db()
     session = get_session()
     try:
+        # _load_application_owned runs _safe_username on the owning
+        # candidate; the explicit recheck just below keeps the
+        # route-security-lint hook happy when scanning this block.
         app_row, candidate = _load_application_owned(session, application_id)
-        if app_row is None or not _safe_username(candidate.username):
+        if app_row is None or candidate is None:
+            return jsonify({"error": "Application not found"}), 404
+        if not _safe_username(candidate.username):
             return jsonify({"error": "Application not found"}), 404
 
         # Resolve template path — explicit template_id wins; else fall
@@ -1984,62 +2008,119 @@ def preview_application_html(application_id: int):
             if not html_path.exists():
                 return jsonify({"error": "No HTML template available"}), 500
 
-        # Pull the latest JSON Resume sidecar for this candidate. The
-        # sidecar is written by every generate_resume call (β.2).
-        sidecar_path = _latest_jsonresume_sidecar(candidate.username)
-        if sidecar_path is None:
-            return jsonify({
-                "error": "No generated resume yet — run GENERATE in this "
-                         "application first, then load the live preview.",
-                "needs_generate": True,
-            }), 409
+        # Optional context_path query param — the frontend passes the
+        # active context file so composition_overrides + LLM
+        # recommendations shape the preview. We validate containment
+        # under OUTPUT_DIR so a malicious caller can't read outside.
+        ctx_path_raw = request.args.get("context_path", "").strip()
+        ctx_path_arg: str | None = None
+        if ctx_path_raw:
+            cp = Path(ctx_path_raw)
+            if _within(cp, OUTPUT_DIR) and cp.exists():
+                ctx_path_arg = str(cp)
+
+        # Build the JSON Resume directly from the candidate's corpus,
+        # applying composition_overrides + chosen-summary resolution
+        # scoped to THIS application.
+        json_doc = build_json_resume_from_corpus(
+            session, candidate.id,
+            application_id=application_id,
+            context_path=ctx_path_arg,
+        )
     finally:
         session.close()
 
-    # Read + render outside the session — the file lives on disk and
-    # has no DB dependency.
-    try:
-        json_doc = json.loads(sidecar_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
-        logger.warning("Sidecar read failed for %s: %s", sidecar_path, exc)
-        return jsonify({"error": "Could not read résumé sidecar"}), 500
-
     html_str = render_html_string(json_doc, html_template_path=html_path)
-
-    # Inline the CSS sibling so the response is fully self-contained —
-    # the iframe loads this URL directly, no relative-CSS resolution
-    # against the / route, no extra HTTP roundtrip.
-    css_path = html_path.with_suffix(".css")
-    if css_path.exists():
-        try:
-            css_str = css_path.read_text(encoding="utf-8")
-            # Replace the <link rel="stylesheet" ...> with an inline <style>
-            html_str = re.sub(
-                r'<link\s+rel="stylesheet"\s+href="[^"]+\.css"\s*/?>',
-                f"<style>\n{css_str}\n</style>",
-                html_str, count=1,
-            )
-        except OSError as exc:
-            logger.warning("CSS inline failed for %s: %s", css_path, exc)
-
+    html_str = _inline_persona_css(html_str, html_path)
     return html_str, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
-def _latest_jsonresume_sidecar(username: str) -> Path | None:
-    """Locate the most recent `resume_*.jsonresume.json` sidecar in
-    the user's output directory. Returns None if no sidecar exists
-    (the user hasn't generated yet)."""
+@app.route("/api/users/<string:username>/preview", methods=["GET"])
+def preview_candidate_html(username: str):
+    """Render the candidate's résumé corpus as a self-contained HTML page
+    WITHOUT an application in scope (pre-application preview).
+
+    Same shape as the application-scoped preview, but with no
+    `application_id` → no composition_overrides, no recommended summary,
+    no pin/exclude. The user sees what their raw corpus looks like
+    through this template — the canonical "show me how my résumé renders
+    with Classic / Modern" answer.
+
+    Query params:
+      template_id  — same semantics as the per-application route.
+    """
+    from corpus_to_json_resume import build_json_resume_from_corpus
+    from db.models import Candidate
+    from db.session import get_session, init_db
+    from pdf_render import html_template_path_for, render_html_string
+
     safe_user = _safe_username(username)
     if not safe_user:
-        return None
-    out_dir = OUTPUT_DIR / safe_user
-    if not out_dir.exists():
-        return None
-    candidates = sorted(
-        out_dir.glob("resume_*.jsonresume.json"),
-        key=lambda p: p.stat().st_mtime, reverse=True,
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({
+                "error": "Candidate not in corpus yet",
+                "needs_onboarding": True,
+            }), 409
+
+        template_id_raw = request.args.get("template_id")
+        docx_template_path: str | None = None
+        if template_id_raw:
+            try:
+                template_id = int(template_id_raw)
+            except ValueError:
+                return jsonify({"error": "template_id must be an integer"}), 400
+            docx_template_path = _resolve_persona_template_path(template_id)
+            if docx_template_path is None:
+                return jsonify({"error": "Template not found"}), 404
+        else:
+            docx_template_path = _resolve_default_persona_template_path(
+                username=candidate.username, application_id=None,
+            )
+
+        if docx_template_path is None:
+            return jsonify({"error": "No template available"}), 500
+
+        html_path = html_template_path_for(docx_template_path)
+        if html_path is None:
+            html_path = BASE_DIR / "personas" / "bundled" / "classic.html"
+            if not html_path.exists():
+                return jsonify({"error": "No HTML template available"}), 500
+
+        json_doc = build_json_resume_from_corpus(
+            session, candidate.id, application_id=None,
+        )
+    finally:
+        session.close()
+
+    html_str = render_html_string(json_doc, html_template_path=html_path)
+    html_str = _inline_persona_css(html_str, html_path)
+    return html_str, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+def _inline_persona_css(html_str: str, html_path: Path) -> str:
+    """Replace `<link rel="stylesheet" href="*.css">` with an inline
+    `<style>` block so the response is fully self-contained — iframes
+    load it without resolving relative CSS against the / route.
+    Best-effort: missing CSS file is logged and left as-is."""
+    css_path = html_path.with_suffix(".css")
+    if not css_path.exists():
+        return html_str
+    try:
+        css_str = css_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        logger.warning("CSS inline failed for %s: %s", css_path, exc)
+        return html_str
+    return re.sub(
+        r'<link\s+rel="stylesheet"\s+href="[^"]+\.css"\s*/?>',
+        f"<style>\n{css_str}\n</style>",
+        html_str, count=1,
     )
-    return candidates[0] if candidates else None
 
 
 # ---------------------------------------------------------------------------
@@ -3233,7 +3314,7 @@ def download_edited():
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
 
-    if output_format not in (".docx", ".md"):
+    if output_format not in (".docx", ".md", ".pdf"):
         output_format = ".docx"
 
     # Workstream C (#7 fix): a persona template lives under PERSONAS_DIR, not
@@ -3242,7 +3323,7 @@ def download_edited():
     # a persona_template_id, resolve it through the persona resolver (which
     # itself enforces _within(PERSONAS_DIR)); otherwise fall back to the
     # legacy file-based template_path (still RESUMES_DIR-gated).
-    if persona_template_id is not None and output_format == ".docx":
+    if persona_template_id is not None and output_format in (".docx", ".pdf"):
         template_path = _resolve_persona_template_path(int(persona_template_id))
     elif template_path:
         tp = Path(template_path)
