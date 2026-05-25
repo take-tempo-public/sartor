@@ -1,70 +1,304 @@
 # Vision — callback.
 
-> **Purpose:** the original product brief. What good résumé / cover-letter
-> output looks like, the hiring-manager persona's voice, ATS constraints,
-> what is in vs out of scope for the LLM. The source material that
-> `analyzer.py`'s `SYSTEM_PROMPT` / `CLARIFY_SYSTEM_PROMPT` /
-> `CLARIFY_ITERATION_SYSTEM_PROMPT` derive from.
-> **Audience:** humans evaluating a feature against original intent;
-> LLMs proposing new prompt rules, rubric items, or eval fixtures.
-> **Authoritative for:** persona voice; ATS round-trip rules; what counts
-> as "résumé output" vs adjacent surface area (cover letters, interview
-> prep, etc.). Sibling docs:
-> [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (architecture),
-> [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) (release gates),
-> [`CLAUDE.md`](CLAUDE.md) (contributor contract).
+> **Purpose:** the high-level guide to what callback. is, what
+> it isn't, and the self-imposed constraints that shape every
+> decision. The "why" behind the architecture and the product
+> shape.
+> **Audience:** humans evaluating whether to use or contribute
+> to callback.; LLM agents proposing significant changes who
+> need to check their proposal against the project's stance.
+> **Authoritative for:** the product's intent, the 10 Principles
+> grounding, the open / standards / minimal-dependencies stance,
+> what counts as in vs out of scope for v1.x. Sibling docs:
+> [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (architecture
+> details + sequencing ladder), [`docs/architecture.md`](docs/architecture.md)
+> (module map + diagrams), [`README.md`](README.md) (user-facing
+> overview).
 
-## Role
+---
 
-1.  You should approach this task with the mindset of a seasoned, professional hiring manager with a decade of experience in HR, but you should not let this limit you from making suggestions based upon your broader access to information and the insights that you have gleaned from that. In the end, your north star is creating the best opportunity for the candidate to be a leading candidate through human and ATS screeners, interviewers in the field, and hiring manager review. Remain truthful, but be ruthless in presenting this candidate in the best possible light for this role and the role into which it will promote.
+## What it is
 
-## App
+callback. answers one question, honestly:
 
-1.  the app should run locally on windows, linux, or Mac and be self contained in a single directory that can be shared with others
-2.  read and analyze the following website and generate an LLM friendly guide based upon it: https://jdforsythe.github.io/10-principles/overview/ is the main page. read it and the following expositions of each of the ten principles
-3.  analyze the tasks to be accomplished and generate efficient, deterministic code to handle each of these tasks, reserving LLM calls for the non-deterministic and complex work of the LLM. 
-4.  choose user. source user list from the .config files. each user will have a \*.config where \*=username
-5.  Prompt for a general resume to be uploaded. Supported formats are word, pdf, and markdown
-6.  save the resume in a resumes folder with a subdirectory for each user
-7.  prompt for text for a JD (job description) with space to paste the job description text
-8.  have a config file for each user called \*.config that includes general information that might be useful to the llm when doing the work outlined in this document (for instance, linkedin profile url, website, reference for the most recent uploaded general resume of this user, skills, etc.)
-9. comply with best practices for open source projects, privacy, and security and maintain a reference file for this to reduce repetition of this phase and form a guidance document for privacy and security to be used in all iterations. Review the plan in the role of an open source security and data compliance engineer and make changes as you gain more knowledge
+> *"What résumé and (optional) cover letter should I send for
+> this specific job?"*
 
+It's a single-tenant local-first web app that takes a job
+description and a candidate's career corpus, then produces a
+tailored résumé using the Claude API. Everything lives on the
+candidate's own machine. Nothing leaves it except the LLM
+calls themselves.
 
-### Step 1
+It is **not** an applicant tracking system, a job board, a
+LinkedIn scraper, a multi-tenant SaaS, or a generic résumé
+template generator. The scope is narrow on purpose: one
+person, one machine, one job at a time.
 
-1.  Analyze the job description for most relevant skills, qualifications, and keywords. categorize them into Essential skills, Preferred Skills, and Industry specific keywords.
-2.  Find reliable professional source of professional vocabulary to match this industry and role and use it 
-3.  identify what hidden skills, experience, or qualities are being looked for
-4.  create an efficient set of context optimized for you to operate efficiently with enough context to provide best answers, but not so much that it impacts efficiency. this should be available for resourcing at any time if we get drift
-5.  Generate an ideal resume for the job description based upon this context
-6.  compare the submitted resume to the ideal resume and the job description
-    -  evaluate job titles, descriptions, and bullet points
-7.  evaluate all information, skills, experience, projects, etc. from the linkedin profile
-8.  make suggestions as to how to position and improve the submitted resume to be competitive with the ideal resume for this job without embellishment or hallucination. keep the bullet points and skills concise, descriptive and fitting for the role in the JD 
-9.  if there are keywords missing in the resume, suggest places to incorporate those
-10. suggest ways to improve ATS compatibility
-11. generate a concise and detailed set of suggestions and add that to the optimized context set
-12. generate resume and cover letter
-13. review both documents for clarity, conciseness, and consistent tone. ensure all language is professional and avoid generic and over-used phrasing. proofread the resume for grammar, spelling, or punctuation errors. check formatting for any errors that might cause parsing errors by an ATS. 
+---
 
-## Resume
+## What it's trying to accomplish
 
-1.  A resume tailored to the specific job description and based off of the document structure, formatting and content included in the context of this job
-2.  Resume should be in the document format submitted as a general resume and match the formatting of the text of the original document
-3.  the resume should include a one sentence summary that answers the following points. If they cannot fit elegantly into a single sentence, then draft a sentence with a very short list of bullet points,
-    1.  what job title that I am seeking
-    2.  what is special about me and why they should hire me over other candidates
-    3.  what i am going to bring to the team and do for the team
-4.  Do not invent experience. 
-5.  prioritize matching keywords
-6.  reorder bullet points by relevance
-7.  rework bullets to focus on measurable accomplishments rather than generic responsibilities. use strong and varied action verbs relevant to the job description, company, domain, and industry. include numbers or metrics wherever possible in alignment with the job description
+Three goals, in order of priority:
 
-## Cover Letter
+1. **Honest tailoring.** The LLM cannot invent facts. Every
+   bullet, title, and summary in the output traces back to
+   either (a) the candidate's existing corpus or (b) a
+   first-person clarification they typed. The grounding check
+   in the generate prompt is load-bearing; the eval harness's
+   `grounding_overlap` metric measures whether the rule held.
 
-1.  draft a cover letter appropriate to the details provided in the job description
-2.  the cover letter should follow job field and professional domain best practices for cover letters, addresses, closes, length, number of paragraphs, etc.
-3.  the cover letter should reflect current best practices for cover letters and match the experience, skills, and interests of the applicant to the role and company to which they are applying
+2. **ATS-safe output by default.** Most applications are
+   parsed by software before any human sees them. callback.
+   ships templates that are single-column, plain-bullet, in
+   standard fonts, with no tables / text boxes / icons / sidebars.
+   Templates that *aren't* ATS-safe are retired — even when
+   they look prettier. See
+   [`docs/PRODUCT_SHAPE.md §5.3`](docs/PRODUCT_SHAPE.md) for
+   the bundled-template curation rationale.
 
-##
+3. **The candidate stays in control.** Two required human
+   review gates (analyze review + post-generation refinement)
+   plus optional clarification interviews between them. The
+   user can edit anything before downloading. The LLM never
+   submits an application or sends an email — only produces a
+   document the user then chooses what to do with.
+
+---
+
+## Self-imposed constraints
+
+These are the lines callback. won't cross, even when crossing
+them would be convenient. Together they define what kind of
+software this is.
+
+### Local-first, single-tenant
+
+- The Flask server binds to `127.0.0.1:5000` only. There is
+  no auth, no CSRF, no rate-limit, no multi-user logic. The
+  threat model assumes the user owns the machine.
+- All artifacts (configs, résumés, generated documents,
+  iteration history, LLM call logs) stay on disk in the repo
+  root. Gitignored. Never uploaded.
+- The ONLY network calls are: (a) the Anthropic API, (b) the
+  optional LinkedIn / portfolio URL scrape if the user opts in.
+  No telemetry, no analytics, no error reporting, no
+  third-party CDN fetches at runtime — see
+  [`SECURITY.md`](SECURITY.md) for the full disclosure.
+
+### Open standards over proprietary formats
+
+- **JSON Resume v1.0** as the canonical intermediate. The LLM
+  emits Markdown; a deterministic post-pass lifts it into JSON
+  Resume; renderers consume the JSON Resume. This means
+  callback.'s structured candidate data is portable to any
+  jsonresume.org-compatible tool.
+- **Standard fonts only** in the bundled templates: Arial,
+  Calibri, Georgia, Helvetica, Roboto, Times New Roman. No
+  font hosting, no Google Fonts at runtime, no `@font-face`
+  with custom files. The PDF renders offline.
+- **MIT-compatible licensing throughout.** Vendored
+  dependencies (paged.js, jsonresume-theme-class adaptations)
+  preserve their MIT headers. Bundled templates inspired by
+  community jsonresume themes credit the upstream by name.
+
+### Minimal dependencies, audited surface
+
+The dependency list is intentionally short
+([`pyproject.toml`](pyproject.toml)):
+
+- Flask + SQLAlchemy + Alembic (the web/persistence layer)
+- Anthropic Python SDK (the only LLM client)
+- python-docx + pdfplumber + Playwright (parsing + rendering)
+- beautifulsoup4 + requests (the scraper)
+- markdown (rendering preview HTML)
+
+Adding a dependency requires a `pyproject.toml` update AND a
+CHANGELOG entry. The bar is "this could not be reasonably
+implemented in pure Python or with an existing dep." See
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+### Deterministic where possible; LLM only for fuzzy work
+
+This is **P1 Hardening** from the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/).
+Per-file responsibility:
+
+- `hardening.py`, `parser.py`, `generator.py`, `scraper.py`,
+  `json_resume.py`, `corpus_to_json_resume.py`,
+  `pdf_render.py` — **no LLM calls allowed**. These are the
+  deterministic core: file I/O, keyword extraction, ATS
+  format checks, document rendering, schema transformations.
+- `analyzer.py` — the only module that calls the LLM. Every
+  call has a stated `call_kind`, a model assignment (Sonnet
+  4.6 for heavy reasoning; Haiku 4.5 for structured
+  selection), and a logged cost. The prompt set is
+  versioned via `PROMPT_VERSION` so the eval dashboard can
+  attribute behavior to specific prompt revisions.
+- `app.py` — Flask routes only; never originates LLM calls;
+  always proxies through `analyzer.py`.
+
+The deterministic boundary is enforced by tests
+(`tests/test_response_validation.py`,
+`tests/test_safe_username_within.py`) and by the
+`route-security-lint` hook.
+
+### No invention, ever
+
+Three layers of defense against LLM hallucination:
+
+1. **The SYSTEM_PROMPT carries an explicit no-invention rule**
+   with worked examples (OK / NOT OK pairs) for the failure
+   modes we've actually observed in real runs.
+2. **Clarifications widen ground truth surgically.** When the
+   user provides first-person clarification text, the LLM
+   treats it as citable ground truth — but the no-invention
+   rule still applies beyond the union of (résumé +
+   clarifications + typed edits).
+3. **The eval harness's `grounding_overlap` metric** measures
+   whether the output's tri-grams overlap the input corpus
+   above a threshold. Below threshold = regression alert in
+   the dashboard.
+
+### Auditable iterations
+
+Every `/api/generate` writes a NEW timestamped child context
+file rather than mutating the parent. The `parent_context_path`
+chain forms the iteration audit trail. A user (or a developer
+debugging an issue) can always trace what the LLM saw at each
+step.
+
+---
+
+## Principles backbone
+
+callback. follows the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/).
+The codebase is annotated with principle references (P1, P2,
+P5, P6, P8, P9) where they apply. Five principles are
+load-bearing for callback. specifically:
+
+- **P1 Hardening** — deterministic Python for mechanical
+  work, LLM only for fuzzy reasoning. Drives the file
+  boundary above.
+- **P2 Context Hygiene** — `context_set` is the structured
+  JSON contract between stages. Iteration state is
+  `total=False` so pre-iteration files round-trip safely.
+- **P5 Institutional Memory** — ALWAYS / NEVER BECAUSE rules
+  in `analyzer.py:SYSTEM_PROMPT`; tuning history in
+  `evals/TUNING_LOG.md`; release reasoning in
+  [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md).
+- **P8 Human Gates** — two required review checkpoints plus
+  optional clarification interviews. Skipping any clarification
+  step does not degrade output below the prior behavior.
+- **P9 Observability** — JSONL telemetry per LLM call (model,
+  tokens, latency, cost) in `logs/llm_calls.jsonl`; read-only
+  dashboard at `/_dashboard` aggregates trends.
+
+These are not decoration. When a proposed change conflicts
+with one, the proposal usually loses.
+
+---
+
+## Learnings + direction
+
+This section is the project's running record of what we
+discovered as we built. Updated as new learnings land.
+
+### The Corpus Item asymmetry (v1.0 unified pattern)
+
+The first version of callback. treated `Bullet` as the only
+first-class curatable element — it had its own table, variants,
+tags, scores, pin-per-application logic, and a Haiku
+`recommend_bullets` LLM call. Everything else (summaries,
+skills, titles, cover letter content) was either a freeform
+text column on the parent or generated fresh each time.
+
+This asymmetry meant the LLM couldn't help the user pick the
+best summary variant the way it could pick the best bullets,
+and the user couldn't pin a great summary across similar
+applications. v1.0 introduced `SummaryItem` as the second
+specialization of an emerging "Corpus Item" base concept.
+[`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) covers the
+full pattern and the v1.1 / v1.2 plan to extend it to
+`ExperienceSummaryItem`, `SkillGroupItem`,
+`CoverLetterChunkItem`.
+
+### PDF rendering: WeasyPrint → Playwright
+
+Initial implementation used WeasyPrint (pure-Python HTML→PDF,
+no system deps). On Windows it required GTK3/Pango at the OS
+level despite pip-install. The honest answer was to switch to
+Playwright + headless Chromium: ~150 MB one-time download to
+the OS user cache (not in the repo), but works identically
+across Windows / macOS / Linux. The renderer pairs naturally
+with the in-browser preview, which uses the same HTML.
+
+### Cover letters are optional
+
+Empirically, the user almost never sends one. Earlier versions
+generated a résumé + cover letter together on every
+`/api/generate` call. v1.0 detached the cover letter to a
+dedicated `/api/generate-cover-letter` route, gated behind a
+single "+ Generate cover letter" button. Saves about $0.05
+per typical application by skipping the unwanted call.
+
+### ATS-safety is the product
+
+v1.0 shipped with 5 bundled templates. Two of them
+(Compact's sidebar layout; Hybrid Tech's inline `<code>`
+chips) turned out to be ATS-unsafe — they broke parser
+expectations in subtle ways. Both retired. The bundled set is
+now 4 templates, all single-column, all using standard fonts,
+all explicitly tested against ATS rules. The Template-step UI
+now badges each card with its ATS status. Templates that look
+prettier but don't parse don't ship.
+
+### The analyze step is the latency floor
+
+`analyze` is the slowest call on the critical path (p50 ~90s
+on Sonnet 4.6 for ~4500 output tokens). Two v1.1 optimizations
+are queued: streaming the response so perceived latency drops
+to 10-15s, and splitting the call into a Haiku-fast first
+pass (structured JD fields) + Sonnet-deep second pass (prose
+analysis). See [`docs/PERF_ANALYZE.md`](docs/PERF_ANALYZE.md)
+for the audit.
+
+---
+
+## What's out of scope
+
+Listed explicitly so future feature proposals can check
+themselves:
+
+- **Multi-user / multi-tenant** — callback. is single-tenant
+  by design. Adding auth would change the threat model
+  fundamentally; we won't.
+- **Auto-apply** — the LLM produces documents; it doesn't
+  submit them. There is no "click to send to LinkedIn"
+  affordance and there won't be.
+- **Job-board scraping** — the candidate pastes one JD at a
+  time. We don't iterate over job boards, we don't queue
+  applications, we don't watch postings.
+- **Generic résumé templates / themes / marketplace** — the
+  4 bundled ATS-safe templates exist to support the tailoring
+  loop. Adding more (user-uploaded) is supported. Building a
+  template marketplace is not.
+- **Telemetry, analytics, error reporting to a server** —
+  see [`SECURITY.md`](SECURITY.md). Local-only by design.
+
+---
+
+## Working agreement with LLM agents
+
+If you're an LLM agent (Claude Code, etc.) reading this file
+to propose changes:
+
+- Check your proposal against the **Self-imposed constraints**
+  section above. If it conflicts with one, default to "no" or
+  ask the user.
+- The **Working agreement** is also in
+  [`CLAUDE.md`](CLAUDE.md). That file has the operational
+  details (branch conventions, security guardrails, the
+  ruff + mypy + pytest gate).
+- Document new learnings in the **Learnings + direction**
+  section above as they emerge. The file should grow over
+  the project's lifetime.
