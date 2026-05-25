@@ -34,134 +34,63 @@ Two explicit review gates before any output is generated or downloaded — you s
 
 ## Installation
 
-### Windows
+Quick install (Python 3.10+):
 
-1. **Install Python** (if not already installed)
-   Download from [python.org](https://www.python.org/downloads/). During install, check **"Add Python to PATH"**.
+```bash
+git clone https://github.com/amodal1/callback
+cd callback
+pip install -e .
+python -m playwright install chromium       # one-time, ~150 MB, for PDF output
+export ANTHROPIC_API_KEY=your-key-here       # or put it in a `.api_key` file
+python app.py
+```
 
-2. **Open a terminal** — press `Win + R`, type `cmd`, press Enter.
+Then open `http://localhost:5000` in your browser.
 
-3. **Navigate to the project folder:**
-   ```cmd
-   cd C:\Dev\resume
-   ```
-
-4. **Install dependencies:**
-   ```cmd
-   pip install -e .
-   ```
-
-5. **Set your API key** (choose one method):
-
-   *Option A — Environment variable (recommended):*
-   ```cmd
-   set ANTHROPIC_API_KEY=your-key-here
-   ```
-   To make it permanent, add it via **System Properties → Environment Variables**.
-
-   *Option B — Key file:*
-   Create a file named `.api_key` in the project folder containing only your API key.
-
-6. **Run the app:**
-   ```cmd
-   python app.py
-   ```
-
-7. **Open your browser** and go to: `http://localhost:5000`
+**Full step-by-step instructions** for Windows, macOS, and Linux —
+including troubleshooting and a first-run walkthrough — live in
+[`docs/install.md`](docs/install.md).
 
 ---
 
-### macOS
+## What gets saved on your machine
 
-1. **Install Python** (if not already installed)
-   Download from [python.org](https://www.python.org/downloads/) or use Homebrew:
-   ```bash
-   brew install python
-   ```
+callback. is local-first: **nothing leaves your computer** except
+the API calls to Anthropic (and the LinkedIn/portfolio scrape if
+you opt in). Everything else stays on disk under the repo root:
 
-2. **Open Terminal** — press `Cmd + Space`, type `Terminal`, press Enter.
+| Path                            | What it holds                                                                  | Gitignored |
+|---------------------------------|--------------------------------------------------------------------------------|:---:|
+| `configs/<user>.config`         | One file per user: name, email, phone, LinkedIn URL, settings, prefs           | ✓ |
+| `resumes/<user>/`               | Uploaded .docx / .pdf / .md résumés you imported into the corpus               | ✓ |
+| `output/<user>/`                | Generated résumés, cover letters, and the JSON `context_set` per iteration     | ✓ |
+| `db/resume.sqlite`              | The structured career corpus (experiences, bullets, summaries, applications)   | ✓ |
+| `logs/llm_calls.jsonl`          | One JSON line per Anthropic call (model, tokens, latency, cost) for observability | ✓ |
+| `personas/owned/<user>/`        | Custom `.docx` templates you upload via the Template step                      | ✓ |
+| `evals/results/*.jsonl`         | Eval harness scores; only present if you run `python evals/runner.py`          | ✓ |
 
-3. **Navigate to the project folder:**
-   ```bash
-   cd /path/to/resume
-   ```
-
-4. **Install dependencies:**
-   ```bash
-   pip3 install -e .
-   ```
-   > If you have multiple Python versions, use `pip3` or `python3 -m pip`.
-
-5. **Set your API key** (choose one method):
-
-   *Option A — Environment variable (recommended):*
-   ```bash
-   export ANTHROPIC_API_KEY=your-key-here
-   ```
-   To make it permanent, add that line to your `~/.zshrc` (or `~/.bash_profile`) and run `source ~/.zshrc`.
-
-   *Option B — Key file:*
-   ```bash
-   echo "your-key-here" > .api_key
-   ```
-
-6. **Run the app:**
-   ```bash
-   python3 app.py
-   ```
-
-7. **Open your browser** and go to: `http://localhost:5000`
+The `.gitignore` keeps all of these out of source control. The
+[`SECURITY.md`](SECURITY.md) doc has the full threat model.
 
 ---
 
-### Linux
+## Cost guidance
 
-1. **Install Python** (most distros include it; verify version):
-   ```bash
-   python3 --version
-   ```
-   If needed, install via your package manager:
-   ```bash
-   # Ubuntu / Debian
-   sudo apt install python3 python3-pip
+Per-application API cost in typical use:
 
-   # Fedora / RHEL
-   sudo dnf install python3 python3-pip
+- **Résumé only, no iteration, no clarify** — ~**$0.05 – $0.10**
+- **Résumé + clarify + 1-2 refine iterations** — ~**$0.15 – $0.25**
+- **Full loop with iterate-clarify + multiple refines + cover letter** — ~**$0.30 – $0.50**
 
-   # Arch
-   sudo pacman -S python python-pip
-   ```
+Empirical numbers from your own usage live in
+`logs/llm_calls.jsonl` (each line has `input_tokens`,
+`cache_read_input_tokens`, `output_tokens`); the
+[`/_dashboard`](http://localhost:5000/_dashboard) view aggregates
+them while the app is running.
 
-2. **Navigate to the project folder:**
-   ```bash
-   cd /path/to/resume
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip3 install -e .
-   ```
-   > On some systems: `python3 -m pip install -r requirements.txt`
-
-4. **Set your API key** (choose one method):
-
-   *Option A — Environment variable (recommended):*
-   ```bash
-   export ANTHROPIC_API_KEY=your-key-here
-   ```
-   To persist, add to `~/.bashrc` or `~/.zshrc`.
-
-   *Option B — Key file:*
-   ```bash
-   echo "your-key-here" > .api_key
-   ```
-
-5. **Run the app:**
-   ```bash
-   python3 app.py
-   ```
-
-6. **Open your browser** and go to: `http://localhost:5000`
+To cap spending, set a usage budget in your
+[Anthropic Console](https://console.anthropic.com/settings/limits) —
+callback. has no built-in spending guard.
 
 ---
 
