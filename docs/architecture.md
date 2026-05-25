@@ -40,6 +40,117 @@ a human review or curation step:
 
 Full sequence diagram: [`docs/diagrams/pipeline.mmd`](diagrams/pipeline.mmd).
 
+```mermaid
+%% Pipeline of one full callback. apply-run.
+%%
+%% Shows the eight LLM calls that can fire across a single application,
+%% the Flask route that triggers each, and which model is used. Sonnet
+%% 4.6 handles the heavy reasoning calls (analyze, clarify, generate);
+%% Haiku 4.5 handles the structured-recommendation calls (recommend,
+%% recommend_summary, critique_proposal, promote_clarification_to_bullet).
+%%
+%% Renders natively on GitHub Markdown and in any Mermaid live editor.
+%% Source: analyzer.py + app.py route map (verified 2026-05-25).
+
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant FE as Frontend<br/>(static/app.js)
+    participant APP as Flask app.py
+    participant ANL as analyzer.py
+    participant SO as Sonnet 4.6
+    participant HK as Haiku 4.5
+    participant DB as SQLite<br/>(db/resume.sqlite)
+    participant FS as Disk<br/>(output/&lt;user&gt;/)
+
+    Note over U,FS: Step 1 — Analyze
+    U->>FE: paste JD, click ANALYZE
+    FE->>APP: POST /api/analyze
+    APP->>ANL: analyze(ctx, jd)
+    ANL->>SO: call_kind="analyze" (~90s, ~4.5k out)
+    SO-->>ANL: JSON {essential_skills, ideal_resume, ...}
+    ANL-->>APP: parsed result
+    APP->>FS: save context_*.json (iter 0)
+    APP-->>FE: 200 + context_path
+    FE-->>U: Step 1 panel + Continue
+
+    Note over U,FS: Step 2 — Clarify (optional)
+    U->>FE: click GET INTERVIEW QUESTIONS
+    FE->>APP: POST /api/clarify
+    APP->>ANL: clarify(ctx)
+    ANL->>SO: call_kind="clarify" (~13s)
+    SO-->>ANL: 3-5 questions
+    ANL-->>APP: questions
+    APP->>FS: write back to same context file
+    APP-->>FE: questions
+    FE-->>U: render Q&A form
+    U->>FE: submit answers
+    FE->>APP: POST /api/answer-clarifications
+    APP->>FS: merge answers into context
+
+    Note over U,FS: Step 3 — Compose (recommend + curate)
+    FE->>APP: POST /api/applications/&lt;id&gt;/recommend
+    APP->>ANL: recommend_bullets(ctx)
+    ANL->>HK: call_kind="recommend" (~5s)
+    HK-->>ANL: bullet_ids[] per experience
+    ANL-->>APP: recommendations
+    APP->>FS: write llm_recommendations to context
+    FE->>APP: POST /api/applications/&lt;id&gt;/recommend-summary
+    APP->>ANL: recommend_summaries(ctx)
+    ANL->>HK: call_kind="recommend_summary" (~3s)
+    HK-->>ANL: summary_item_id
+    ANL-->>APP: rec
+    APP->>FS: write llm_summary_recommendation
+    U->>FE: pin/exclude/add bullets, pick summary
+    FE->>APP: POST /api/applications/&lt;id&gt;/composition
+    APP->>FS: write composition_overrides
+
+    Note over U,FS: Step 4 — Template (live preview, no LLM)
+    U->>FE: select persona
+    FE->>APP: GET /api/applications/&lt;id&gt;/preview?template_id=N
+    APP->>DB: build_json_resume_from_corpus()
+    DB-->>APP: JSON Resume v1.0 doc
+    APP-->>FE: rendered HTML
+    FE-->>U: iframe shows live preview
+
+    Note over U,FS: Step 5 — Generate
+    U->>FE: click GENERATE
+    FE->>APP: POST /api/generate
+    APP->>ANL: generate(ctx, with_cover_letter=False)
+    ANL->>SO: call_kind="generate" (~50s, ~2.3k out)
+    SO-->>ANL: {resume_content, changes_summary}
+    ANL-->>APP: parsed
+    APP->>FS: save_iteration_context() → context_*_iter1.json
+    APP->>FS: write resume_*.docx / .pdf / .md
+    APP->>DB: insert ApplicationRun
+    APP-->>FE: paths + previews
+    FE-->>U: Step 6 panel with downloads
+
+    Note over U,FS: Step 6 — Iterate (optional, repeatable)
+    U->>FE: edit preview, click REFINE / ITERATE CLARIFY
+    FE->>APP: POST /api/iterate-clarify
+    APP->>ANL: clarify_iteration(ctx, edits, signals)
+    ANL->>SO: call_kind="iterate_clarify" (~14s)
+    SO-->>ANL: 3-5 follow-up questions
+    APP->>FS: append to clarification_questions
+    U->>FE: submit answers
+    FE->>APP: POST /api/generate (again)
+    APP->>ANL: generate(ctx with iter≥1)
+    ANL->>SO: call_kind="generate" again
+    Note over APP: child context: parent_context_path chain
+
+    Note over U,FS: Optional — Cover letter
+    U->>FE: click + GENERATE COVER LETTER
+    FE->>APP: POST /api/generate-cover-letter
+    APP->>ANL: generate_cover_letter_against_resume()
+    ANL->>SO: call_kind="generate_cover_letter" (~17s)
+    SO-->>ANL: {cover_letter_content}
+    APP->>FS: write cover_*.docx / .pdf / .md
+    APP-->>FE: preview
+```
+
+*(Source: [`docs/diagrams/pipeline.mmd`](diagrams/pipeline.mmd). Embedded above so the diagram renders inline on GitHub; edit either copy and keep both in sync.)*
+
 ### The four canonical diagrams
 
 | Diagram | Source | Purpose |
@@ -89,6 +200,198 @@ import `analyzer.py`; `analyzer.py` does not import `app.py`.
 ## Persistence model
 
 The DB schema is in [`docs/diagrams/persistence.mmd`](diagrams/persistence.mmd).
+
+```mermaid
+%% Persistence model — db/resume.sqlite ER diagram.
+%%
+%% Shows the active DB tables and their foreign-key relationships.
+%% Cascade behavior (ON DELETE CASCADE vs SET NULL) noted per edge
+%% where it differs from the SQLAlchemy default. Source of truth:
+%% db/models.py — verify with `grep -nE "^class |ForeignKey" db/models.py`.
+%%
+%% Pattern legend:
+%%   ||--o{   one (required) to many
+%%   }o--||   many to one (required)
+%%   ||--o|   one to (optional) one
+%%   }o--o{   many to many (junction table; rendered as two edges)
+%%
+%% Renders on GitHub Markdown via `mermaid` fenced block.
+%% Field lists are abbreviated to the joinable / curatable columns;
+%% audit timestamps (created_at, updated_at) omitted for readability.
+
+erDiagram
+    candidate {
+        int id PK
+        string username UK
+        string name
+        string email
+        string phone
+        string linkedin_url
+        string website_url
+        text profile_text "legacy; SummaryItem variants are canonical post-v1.0"
+    }
+
+    experience {
+        int id PK
+        int candidate_id FK
+        string company
+        string location
+        string start_date "YYYY-MM"
+        string end_date "YYYY-MM or NULL=current"
+        text summary
+        int is_active "soft-retire"
+        int is_pending_review
+    }
+
+    experience_title {
+        int id PK
+        int experience_id FK
+        string title
+        int is_official "partial unique idx: one per experience"
+        int truthful_enough_to_use
+        int is_pending_review
+        string source "official | user_added | llm_proposed:&lt;run_id&gt;"
+    }
+
+    bullet {
+        int id PK
+        int experience_id FK
+        text text
+        int display_order
+        int is_active "soft-retire"
+        int is_pending_review
+        string source
+        string pattern_kind "xyz | car | star"
+        int has_outcome
+    }
+
+    summary_item {
+        int id PK
+        int candidate_id FK
+        text text
+        string label
+        int display_order
+        int is_active
+        int has_outcome
+    }
+
+    tag {
+        int id PK
+        string kind "role | domain | skill | tech"
+        string value
+        string display_value
+    }
+
+    bullet_tag {
+        int bullet_id PK_FK
+        int tag_id PK_FK
+        float confidence
+    }
+
+    experience_title_tag {
+        int experience_title_id PK_FK
+        int tag_id PK_FK
+        float confidence
+    }
+
+    summary_item_tag {
+        int summary_item_id PK_FK
+        int tag_id PK_FK
+        float confidence
+    }
+
+    skill {
+        int id PK
+        int candidate_id FK
+        string name
+        string category
+        string proficiency
+    }
+
+    persona_template {
+        int id PK
+        int candidate_id FK "NULL=bundled"
+        string name
+        string path
+        string source "bundled | owned"
+        int is_default
+        int primary_role_tag_id FK
+        text description
+    }
+
+    application {
+        int id PK
+        int candidate_id FK
+        string title
+        text jd_text
+        string jd_fingerprint
+        string status "draft | submitted | rejected | interview | offer | accepted"
+    }
+
+    application_run {
+        int id PK
+        int application_id FK
+        int iteration
+        int parent_run_id FK "self-FK; iteration audit trail"
+        string run_id UK "12-hex correlation primitive"
+        string prompt_version
+        int persona_template_id FK
+        text corpus_snapshot_json
+        text analysis_json
+        text clarifications_json
+        text generated_resume_md
+        text generated_cover_letter_md
+        text ats_roundtrip_json
+    }
+
+    application_bullet {
+        int id PK
+        int application_run_id FK
+        int bullet_id FK "no cascade; retire instead"
+        int position
+    }
+
+    clarification {
+        int id PK
+        int candidate_id FK
+        int application_id FK
+        string question
+        text answer
+        string kind "experience_probe | scope_probe | iteration_probe"
+        int promoted_to_bullet_id FK
+    }
+
+    candidate ||--o{ experience          : "1 → N (cascade)"
+    candidate ||--o{ summary_item        : "1 → N (cascade)"
+    candidate ||--o{ skill               : "1 → N (cascade)"
+    candidate ||--o{ persona_template    : "1 → N (owned only)"
+    candidate ||--o{ application         : "1 → N (cascade)"
+    candidate ||--o{ clarification       : "1 → N (cascade)"
+
+    experience ||--o{ experience_title   : "1 → N (cascade)"
+    experience ||--o{ bullet             : "1 → N (cascade)"
+
+    bullet ||--o{ bullet_tag             : "1 → N (cascade)"
+    experience_title ||--o{ experience_title_tag : "1 → N (cascade)"
+    summary_item ||--o{ summary_item_tag : "1 → N (cascade)"
+
+    tag ||--o{ bullet_tag                : "1 → N"
+    tag ||--o{ experience_title_tag      : "1 → N"
+    tag ||--o{ summary_item_tag          : "1 → N"
+    tag ||--o{ persona_template          : "1 → N (primary_role_tag_id)"
+
+    application ||--o{ application_run   : "1 → N (cascade); parent_run_id chains iterations"
+    application_run ||--o| application_run : "parent_run_id (self, SET NULL)"
+    application_run ||--o{ application_bullet : "1 → N (cascade)"
+    application_run }o--o| persona_template   : "N → 1 (SET NULL)"
+
+    bullet ||--o{ application_bullet     : "1 → N (NO CASCADE; soft-retire only)"
+
+    application ||--o{ clarification     : "1 → N (cascade)"
+    bullet ||--o| clarification          : "promoted_to_bullet_id"
+```
+
+*(Source: [`docs/diagrams/persistence.mmd`](diagrams/persistence.mmd). Embedded above so the diagram renders inline on GitHub; edit either copy and keep both in sync.)*
 Highlights:
 
 - **Candidate** is the root of nearly every other table. One row
@@ -113,6 +416,78 @@ Highlights:
 ## LLM routing + cost
 
 Full picture: [`docs/diagrams/llm-routing.mmd`](diagrams/llm-routing.mmd).
+
+```mermaid
+%% LLM routing — every _call_llm site in analyzer.py, with model
+%% assignment and cache-prefix usage.
+%%
+%% Source: analyzer.py `_call_llm(...)` invocations + the SONNET_MODEL
+%% / HAIKU_MODEL constants. Cost / latency numbers from
+%% docs/PERF_ANALYZE.md (real production data across 83+ runs).
+%%
+%% Two model tiers:
+%%   - Sonnet 4.6: heavy reasoning, JSON-structured output, costlier
+%%   - Haiku 4.5:  structured selection / classification, cheap, fast
+%%
+%% A call uses the "cached_user_prefix" trick when it can re-use a long
+%% static user-message block across attempts within the same run (the
+%% retry path shares the cache). The clarify variants override the
+%% system prompt, so they pay one extra cache-miss on the system block.
+
+graph LR
+    subgraph SO[Sonnet 4.6 — heavy reasoning]
+        direction TB
+        A1[analyze<br/>p50 = 90 s<br/>median out: 4471 tok]
+        A2[clarify<br/>p50 = 13 s<br/>median out: 630 tok]
+        A3[iterate_clarify<br/>p50 = 14 s<br/>median out: 665 tok]
+        A4[generate<br/>p50 = 50 s<br/>median out: 2268 tok]
+        A5[generate_cover_letter<br/>p50 = 17 s<br/>median out: 732 tok]
+    end
+
+    subgraph HK[Haiku 4.5 — structured selection]
+        direction TB
+        H1[recommend bullets<br/>p50 = 5 s<br/>median out: 417 tok]
+        H2[recommend_summary<br/>p50 = 3 s<br/>median out: 164 tok]
+        H3[critique_proposal<br/>p50 = 5 s<br/>median out: 387 tok]
+        H4[promote_clarification_to_bullet<br/>per-promotion]
+        H5[extract_experiences<br/>onboarding/import_legacy]
+    end
+
+    %% Routes that fire each call
+    R_AN[/POST /api/analyze/] --> A1
+    R_CL[/POST /api/clarify/] --> A2
+    R_IT[/POST /api/iterate-clarify/] --> A3
+    R_GE[/POST /api/generate/] --> A4
+    R_CO[/POST /api/generate-cover-letter/] --> A5
+
+    R_RC[/POST /api/applications/&lt;id&gt;/recommend/] --> H1
+    R_RS[/POST /api/applications/&lt;id&gt;/recommend-summary/] --> H2
+    R_PC[/POST /api/proposals/&lt;id&gt;/critique/] --> H3
+    R_PR[/POST /api/clarifications/&lt;id&gt;/promote-to-bullet/] --> H4
+    R_IM[/POST /api/users/&lt;u&gt;/import-legacy/] --> H5
+
+    %% Cache-prefix usage. analyze + generate share the heavy cached
+    %% user prefix (corpus + resume blocks). clarify variants
+    %% override the system prompt, paying one extra cache-miss on
+    %% the system block but reusing the user prefix.
+    classDef cached fill:#0f172a,stroke:#10b981,color:#d1fae5
+    classDef nocache fill:#0f172a,stroke:#ef4444,color:#fecaca
+
+    class A1,A4 cached
+    class A2,A3,A5,H1,H2,H3,H4,H5 nocache
+
+    %% Legend (rendered as a subgraph that visually clarifies the colors)
+    subgraph Legend["legend"]
+        L1[green border = uses cached_user_prefix]:::cached
+        L2[red border = no cache prefix, cache_read=0]:::nocache
+    end
+
+    %% Retry attribution — every call kind has a sibling "<kind>_retry"
+    %% call_kind for dashboard breakdowns. Implementation:
+    %% analyzer.py:_parse_or_retry() line 730 sets the retry call_kind.
+```
+
+*(Source: [`docs/diagrams/llm-routing.mmd`](diagrams/llm-routing.mmd). Embedded above so the diagram renders inline on GitHub; edit either copy and keep both in sync.)*
 Latency data from real production usage in
 [`docs/PERF_ANALYZE.md`](PERF_ANALYZE.md).
 
@@ -144,6 +519,89 @@ heavy user prefix is unaffected.
 
 The `context_set` JSON file is the contract between every stage.
 Full data-flow diagram: [`docs/diagrams/data-flow.mmd`](diagrams/data-flow.mmd).
+
+```mermaid
+%% Data flow — context_set lifecycle.
+%%
+%% Shows how the JSON `context_set` artifact is built, mutated, and
+%% chained across the wizard steps and iterations. The context file is
+%% the single source of truth between LLM calls — every route that
+%% touches it does so through `hardening.py:build_context_set` or
+%% `save_iteration_context`, and validates containment under OUTPUT_DIR
+%% via `_within()`.
+%%
+%% A NEW timestamped child file is written on every /api/generate so
+%% the parent_context_path chain is the iteration audit trail.
+%%
+%% Source: hardening.py (ContextSet TypedDict, save_iteration_context),
+%% app.py route handlers, CLAUDE.md "context_set lifecycle" diagram.
+
+flowchart TD
+    %% On-disk artifacts (rectangles)
+    %% Routes (rounded)
+    %% LLM-touching nodes (yellow)
+    %% Deterministic Python (blue)
+
+    classDef onDisk fill:#1f2937,stroke:#9ca3af,color:#f3f4f6
+    classDef route fill:#374151,stroke:#60a5fa,color:#e5e7eb
+    classDef llm fill:#78350f,stroke:#fbbf24,color:#fef3c7
+    classDef det fill:#1e3a8a,stroke:#60a5fa,color:#dbeafe
+
+    Start([User picks JD]) --> R1
+    R1[/POST /api/analyze/]:::route --> BCS[build_context_set<br/>candidate + experience + bullet snapshot]:::det
+    BCS --> LLM1{{analyze<br/>Sonnet 4.6}}:::llm
+    LLM1 --> SCS[save_context_set<br/>writes iter 0]:::det
+    SCS --> CTX0[(output/&lt;u&gt;/context_TS.json<br/>iter=0)]:::onDisk
+
+    CTX0 --> R2{Clarify?}:::route
+    R2 -->|skip| R3
+    R2 -->|/api/clarify| LLM2{{clarify<br/>Sonnet 4.6}}:::llm
+    LLM2 --> M1[merge clarification_questions]:::det
+    M1 --> CTX0
+    CTX0 --> R2A[/POST /api/answer-clarifications/]:::route
+    R2A --> M2[merge clarifications]:::det
+    M2 --> CTX0
+
+    CTX0 --> R3[/POST /api/applications/&lt;id&gt;/recommend/]:::route
+    R3 --> LLM3{{recommend_bullets<br/>Haiku 4.5}}:::llm
+    LLM3 --> M3[merge llm_recommendations]:::det
+    M3 --> CTX0
+    CTX0 --> R3A[/POST /api/applications/&lt;id&gt;/recommend-summary/]:::route
+    R3A --> LLM3A{{recommend_summary<br/>Haiku 4.5}}:::llm
+    LLM3A --> M3A[merge llm_summary_recommendation]:::det
+    M3A --> CTX0
+
+    CTX0 --> R4[/POST /api/applications/&lt;id&gt;/composition<br/>user pins / excludes / adds/]:::route
+    R4 --> M4[merge composition_overrides]:::det
+    M4 --> CTX0
+
+    CTX0 --> R5[/POST /api/generate/]:::route
+    R5 --> ACS[_apply_chosen_summary<br/>resolve pin > rec > default]:::det
+    ACS --> LLM4{{generate<br/>Sonnet 4.6}}:::llm
+    LLM4 --> SIC[save_iteration_context<br/>writes NEW child file]:::det
+    SIC --> CTX1[(output/&lt;u&gt;/context_TS_iter1.json<br/>parent_context_path → iter 0)]:::onDisk
+    SIC --> ARTOUT[(output/&lt;u&gt;/resume_TS.docx /<br/>.pdf / .md / .jsonresume.json)]:::onDisk
+
+    CTX1 --> R6{Iterate?}:::route
+    R6 -->|/api/save-edits| M5[merge edited_resume_text / edited_cover_letter_text<br/>NO iteration advance]:::det
+    M5 --> CTX1
+    R6 -->|/api/iterate-clarify| CIS[compute_iteration_signals<br/>verb diversity + grounding + edits]:::det
+    CIS --> LLM5{{clarify_iteration<br/>Sonnet 4.6}}:::llm
+    LLM5 --> M6[append iter_qN questions]:::det
+    M6 --> CTX1
+    R6 -->|/api/generate again| ACS2[_apply_chosen_summary]:::det
+    ACS2 --> LLM6{{generate iter ≥ 1<br/>Sonnet 4.6<br/>historical_resumes block}}:::llm
+    LLM6 --> SIC2[save_iteration_context]:::det
+    SIC2 --> CTX2[(output/&lt;u&gt;/context_TS_iter2.json<br/>parent_context_path → iter 1)]:::onDisk
+
+    CTX2 --> R7{Cover letter?}:::route
+    R7 -->|/api/generate-cover-letter| LLM7{{generate_cover_letter<br/>Sonnet 4.6}}:::llm
+    LLM7 --> AROUTCL[(output/&lt;u&gt;/cover_TS.docx)]:::onDisk
+
+    R7 -->|done| Done([Download])
+```
+
+*(Source: [`docs/diagrams/data-flow.mmd`](diagrams/data-flow.mmd). Embedded above so the diagram renders inline on GitHub; edit either copy and keep both in sync.)*
 
 Key invariants:
 
