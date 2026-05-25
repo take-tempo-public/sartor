@@ -4,12 +4,15 @@ A local web application that tailors resumes and cover letters to specific job d
 
 **Runs locally. LLM calls to Anthropic (without a proxy that would force API billing without monthly credits)**
 
-> **Doc map:** [`vision.md`](vision.md) (product intent) ·
-> [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (architecture) ·
-> [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) (release gates) ·
-> [`CLAUDE.md`](CLAUDE.md) (contributor contract) ·
+> **Doc map:** [`vision.md`](vision.md) (intent + constraints) ·
+> [`docs/install.md`](docs/install.md) (install + first-run) ·
+> [`docs/architecture.md`](docs/architecture.md) (system + module map) ·
+> [`AGENTS.md`](AGENTS.md) (AI-agent contract) ·
+> [`CLAUDE.md`](CLAUDE.md) (Claude-specific overrides) ·
 > [`CONTRIBUTING.md`](CONTRIBUTING.md) (PR workflow) ·
-> [`SECURITY.md`](SECURITY.md) (threat model).
+> [`SECURITY.md`](SECURITY.md) (threat model) ·
+> [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (v1 → v2 ladder) ·
+> [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) (active release gates).
 > Each doc opens with a `Purpose / Audience / Authoritative for` block.
 
 ---

@@ -7,8 +7,10 @@
 > **Authoritative for:** the proposal/review process; the
 > ruff + mypy + pytest minimum-bar; the rule that any LLM prompt
 > change bumps `PROMPT_VERSION` in the same commit. Sibling docs:
-> [`vision.md`](vision.md) (product intent),
-> [`CLAUDE.md`](CLAUDE.md) (contributor contract),
+> [`vision.md`](vision.md) (product intent + constraints),
+> [`AGENTS.md`](AGENTS.md) (AI-agent operational contract — same
+> rules apply to humans),
+> [`docs/architecture.md`](docs/architecture.md) (system + modules),
 > [`SECURITY.md`](SECURITY.md) (threat model).
 
 Thanks for your interest. callback. tailors a résumé and (optionally) a cover letter to one specific job at a time, using a deterministic Python core and the Claude API for fuzzy reasoning. It is intentionally small — most contributions should *make it more deterministic*, not less.
@@ -24,6 +26,10 @@ git clone <your-fork-url>
 cd resume
 pip install -e ".[dev]"
 
+# One-time: download the Chromium binary Playwright needs for PDF
+# rendering. ~150 MB, lives in your OS user cache (NOT in the repo).
+python -m playwright install chromium
+
 # Sanity-check the toolchain
 ruff check .
 mypy .
@@ -34,6 +40,8 @@ python app.py            # → http://localhost:5000
 ```
 
 Set your Anthropic API key in `ANTHROPIC_API_KEY` or in a local `.api_key` file (gitignored).
+
+For a deeper architectural tour before opening a PR, read [`docs/architecture.md`](docs/architecture.md) (system + module map + four Mermaid diagrams) and [`AGENTS.md`](AGENTS.md) (the universal contract — same rules apply whether you're a human or an LLM agent).
 
 ---
 

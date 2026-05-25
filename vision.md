@@ -12,8 +12,9 @@
 > what counts as in vs out of scope for v1.x. Sibling docs:
 > [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (architecture
 > details + sequencing ladder), [`docs/architecture.md`](docs/architecture.md)
-> (module map + diagrams), [`README.md`](README.md) (user-facing
-> overview).
+> (module map + diagrams), [`AGENTS.md`](AGENTS.md) (operational
+> contract for AI agents and human contributors), [`README.md`](README.md)
+> (user-facing overview).
 
 ---
 
@@ -287,18 +288,20 @@ themselves:
 
 ---
 
-## Working agreement with LLM agents
+## Working agreement with AI agents
 
-If you're an LLM agent (Claude Code, etc.) reading this file
-to propose changes:
+If you're an AI coding agent (Claude Code, Cursor, Codex,
+Continue, Aider, etc.) reading this file to propose changes:
 
 - Check your proposal against the **Self-imposed constraints**
   section above. If it conflicts with one, default to "no" or
   ask the user.
-- The **Working agreement** is also in
-  [`CLAUDE.md`](CLAUDE.md). That file has the operational
-  details (branch conventions, security guardrails, the
-  ruff + mypy + pytest gate).
+- The **operational contract** lives in
+  [`AGENTS.md`](AGENTS.md) — branch conventions, security
+  guardrails, the ruff + mypy + pytest gate, what NOT to do.
+  Claude-Code-specific overrides are in
+  [`CLAUDE.md`](CLAUDE.md), which imports AGENTS.md.
 - Document new learnings in the **Learnings + direction**
-  section above as they emerge. The file should grow over
-  the project's lifetime.
+  section above as they emerge. This file should grow over
+  the project's lifetime — it's the running record of why
+  callback. looks the way it does.

@@ -62,6 +62,29 @@ operation and there are no plans to add it.
   only on your machine; the tool literally cannot compare you to
   other users because it cannot see them.
 
+## Bundled third-party assets
+
+callback. vendors a small set of third-party files into the repo
+so that the runtime stays offline-capable. None of these phone
+home, none of these send data to third-party servers, none of
+these execute outside the browser preview iframe.
+
+- **`static/vendor/paged.polyfill.js`** — [paged.js](https://pagedjs.org/)
+  v0.4.3, MIT-licensed. Loaded only by the in-browser preview
+  iframe to render real Letter-sized page boundaries. The PDF
+  render path (Playwright + Chromium) does NOT use this file;
+  it handles `@page` CSS natively. Original copyright notice
+  preserved at the top of the bundled file.
+- **`personas/bundled/*.html`** — Jinja2 résumé templates,
+  some adapted from community jsonresume.org themes. Attribution
+  + MIT license preserved in the header of each adapted file.
+- **`personas/bundled/*.docx`** — generated programmatically by
+  `scripts/build_bundled_templates.py`; not vendored from any
+  upstream.
+
+No external CDN is loaded at runtime. Every static asset in the
+preview / generated output ships from the local repo.
+
 ## API key handling
 
 Your Anthropic API key is sensitive. Follow these rules:
