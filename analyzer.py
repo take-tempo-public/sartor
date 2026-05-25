@@ -693,7 +693,16 @@ def _parse_or_retry(
     )
     for attempt in range(max_attempts):
         try:
-            data = json.loads(_strip_fences(raw))
+            # `strict=False` allows ASCII control characters (0x00-0x1F)
+            # to appear inside JSON string values. Claude sometimes emits
+            # literal newlines/tabs inside multi-line content fields
+            # (résumé markdown, cover-letter prose) — the spec says to
+            # escape them but the model doesn't always comply, and
+            # appending the error to a retry prompt does not reliably
+            # fix it. Structural malformations (missing brace, trailing
+            # comma) still fail and trigger the retry path; we are only
+            # widening tolerance for the one quirky case we observe.
+            data = json.loads(_strip_fences(raw), strict=False)
             missing = required_keys - data.keys()
             if missing:
                 raise ValueError(f"missing required keys: {sorted(missing)}")

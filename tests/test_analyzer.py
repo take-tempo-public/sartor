@@ -91,6 +91,41 @@ def test_parse_or_retry_strips_markdown_fences(monkeypatch):
     assert fake.calls == ["analyze"]
 
 
+def test_parse_or_retry_tolerates_literal_control_chars_in_strings(monkeypatch):
+    """Claude sometimes emits raw newlines inside JSON string values
+    instead of escaping them as `\\n`. Strict `json.loads()` rejects
+    those with `Invalid control character at: line N column M`. We
+    pass `strict=False` to widen tolerance — multi-line content in
+    résumé / cover-letter fields is exactly the case we observe.
+
+    Regression guard: the user hit this on Step 5 Generate
+    (2026-05-25). Before the fix this would have failed parse and
+    consumed a retry; after the fix it parses on the first attempt.
+    """
+    # Build a valid analyze payload then inject a literal newline
+    # inside the `overall_strategy` string. Mirrors what Sonnet 4.6
+    # produces for multi-line résumé content (the actual case
+    # observed had a 4471-token résumé body with embedded \n).
+    body = json.loads(_valid_analysis_json())
+    body["overall_strategy"] = "First line.\nSecond line.\nThird line."
+    # Bypass json.dumps's default escaping so the response contains
+    # literal newlines, the way the LLM actually emits them.
+    raw = json.dumps(body).replace("\\n", "\n")
+
+    fake = _scripted_call_llm([raw])
+    monkeypatch.setattr(analyzer, "_call_llm", fake)
+
+    result = _parse_or_retry(
+        client=None, base_prompt="prompt",
+        cached_user_prefix="prefix",
+        required_keys=ANALYZE_REQUIRED_KEYS,
+        call_kind="analyze", username="u", run_id="r",
+    )
+
+    assert result["overall_strategy"] == "First line.\nSecond line.\nThird line."
+    assert fake.calls == ["analyze"]  # NO retry consumed
+
+
 # ---------- _parse_or_retry retry succeeds ----------------------------------
 
 def test_parse_or_retry_recovers_from_missing_keys(monkeypatch):
