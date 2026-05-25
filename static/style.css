@@ -2772,6 +2772,60 @@ input:focus, select:focus, textarea:focus {
   flex-grow: 1;
 }
 
+/* ---- Summary variants editor (β.6e) — Career Corpus tab section
+   that manages the candidate's SummaryItem rows. Same chrome as the
+   bullet-row editor below it: gradient surface, soft border, inline
+   textarea edit, retire button on the right. ---- */
+.summary-variants-section {
+  background: var(--grad-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  box-shadow: var(--edge-top), var(--shadow-1);
+}
+.summary-variant-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  background: var(--grad-bullet);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--edge-soft);
+}
+.summary-variant-row .positioning-label {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--brand-hi);
+  letter-spacing: 0.2px;
+}
+.summary-variant-text {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--fg-0);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  resize: vertical;
+  min-height: 60px;
+  padding: 0;
+}
+.summary-variant-text:focus {
+  outline: 2px solid var(--brand-edge);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.summary-variant-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: start;
+}
+
 /* ---- Positioning card (β.6c) — sits above the experience cards in
    Step 3 Compose. Renders the candidate's SummaryItem variants with
    the LLM recommendation flagged and the user's pin (if any) marking

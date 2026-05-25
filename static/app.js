@@ -1792,6 +1792,10 @@ async function refreshCorpus() {
   const list = document.getElementById('corpusExperienceList');
   _setLoadingPlaceholder(list, 'Loading…');
   _refreshOnboardingBanner();  // fire-and-forget; doesn't block list load
+  // β.6e — load summary variants alongside experiences. Independent
+  // route, independent failure mode — a 5xx on summaries doesn't
+  // block the experience list.
+  refreshSummaryVariants();
   let res;
   try {
     res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
@@ -1826,6 +1830,168 @@ async function refreshCorpus() {
   _corpusLoadedForUser = currentUser;
   _renderCorpusList();
 }
+
+// β.6e — Summary variants editor. Lives at the top of the Career
+// Corpus tab; manages the SummaryItem rows the Compose step picks
+// from in β.6c. Add / edit / soft-delete; the LLM recommendation +
+// per-application pin live in Compose (not here).
+async function refreshSummaryVariants() {
+  if (!currentUser) return;
+  const section = document.getElementById('summaryVariantsSection');
+  const listEl  = document.getElementById('summaryVariantsList');
+  const hint    = document.getElementById('summaryVariantsEmptyHint');
+  if (!section || !listEl) return;
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/summaries`);
+  } catch {
+    section.style.display = 'none';
+    return;
+  }
+  if (!res.ok) {
+    section.style.display = 'none';
+    return;
+  }
+  const body = await res.json();
+  const variants = body.summaries || [];
+  section.style.display = '';
+  _clearChildren(listEl);
+  if (variants.length === 0) {
+    hint.textContent = 'No summary variants yet. Click + Add variant to '
+      + 'create your first positioning summary. If you imported a résumé, '
+      + 'the migration backfilled one from the Summary section.';
+    return;
+  }
+  hint.textContent = 'Multiple positioning summaries you can pick from '
+    + 'per application. The Compose step recommends the strongest fit '
+    + 'for each JD; you can pin a different one there.';
+  variants.forEach(v => listEl.appendChild(_renderSummaryVariantRow(v)));
+}
+
+function _renderSummaryVariantRow(v) {
+  const row = _el('div', { className: 'summary-variant-row' });
+  if (v.label) {
+    row.appendChild(_el('div', {
+      className: 'positioning-label', textContent: v.label,
+    }));
+  }
+  // Editable text. Save on blur (cheaper than typing-rate writes; also
+  // matches the bullet-row inline-edit pattern).
+  const ta = _el('textarea', {
+    className: 'summary-variant-text',
+  });
+  ta.value = v.text;
+  ta.rows = 3;
+  ta.onblur = () => _saveSummaryVariantText(v.id, ta.value, v.text);
+  row.appendChild(ta);
+
+  const actions = _el('div', { className: 'summary-variant-actions' });
+  const labelBtn = _el('button', {
+    className: 'corpus-action-btn',
+    textContent: v.label ? 'Rename' : '+ Label',
+  });
+  labelBtn.onclick = () => _editSummaryVariantLabel(v.id, v.label);
+  actions.appendChild(labelBtn);
+
+  const delBtn = _el('button', {
+    className: 'corpus-action-btn delete',
+    textContent: 'Retire',
+    title: 'Soft-retire this variant. Past applications that pinned it '
+      + 'still reference it; future Compose steps will skip it.',
+  });
+  delBtn.onclick = () => _deleteSummaryVariant(v.id);
+  actions.appendChild(delBtn);
+  row.appendChild(actions);
+  return row;
+}
+
+async function _saveSummaryVariantText(id, newText, oldText) {
+  const trimmed = (newText || '').trim();
+  if (!trimmed) {
+    _toast('Variant text cannot be empty.', true);
+    refreshSummaryVariants();  // restore the original value in the UI
+    return;
+  }
+  if (trimmed === (oldText || '').trim()) return;  // no change
+  try {
+    const res = await fetch(`/api/summaries/${id}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text: trimmed }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      _toast(data.error || 'Could not save variant.', true);
+      refreshSummaryVariants();
+    }
+  } catch {
+    _toast('Network error saving variant.', true);
+    refreshSummaryVariants();
+  }
+}
+
+async function _editSummaryVariantLabel(id, currentLabel) {
+  const next = prompt(
+    'Label this variant (e.g. "AI platform PM", "Design IC"):',
+    currentLabel || '',
+  );
+  if (next === null) return;  // cancelled
+  const trimmed = next.trim();
+  try {
+    const res = await fetch(`/api/summaries/${id}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ label: trimmed || null }),
+    });
+    if (res.ok) refreshSummaryVariants();
+    else _toast('Could not save label.', true);
+  } catch {
+    _toast('Network error.', true);
+  }
+}
+
+async function _deleteSummaryVariant(id) {
+  if (!confirm('Retire this summary variant?\n\nPast applications that '
+               + 'pinned it still reference it; future Compose steps '
+               + 'will skip it. You can\'t undo from here.')) return;
+  try {
+    const res = await fetch(`/api/summaries/${id}`, { method: 'DELETE' });
+    if (res.ok) refreshSummaryVariants();
+    else _toast('Could not retire variant.', true);
+  } catch {
+    _toast('Network error.', true);
+  }
+}
+
+async function openSummaryVariantAdd() {
+  if (!currentUser) return;
+  const text = prompt('Paste the positioning summary text:');
+  if (text === null) return;
+  const trimmed = text.trim();
+  if (!trimmed) {
+    _toast('Variant text cannot be empty.', true);
+    return;
+  }
+  const label = prompt('Optional label (e.g. "AI platform PM"). Leave blank to skip:');
+  try {
+    const res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/summaries`,
+      { method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          text: trimmed,
+          label: (label || '').trim() || null,
+        }) },
+    );
+    if (res.ok) refreshSummaryVariants();
+    else {
+      const data = await res.json().catch(() => ({}));
+      _toast(data.error || 'Could not add variant.', true);
+    }
+  } catch {
+    _toast('Network error.', true);
+  }
+}
+
 
 function _renderCorpusList() {
   const list = document.getElementById('corpusExperienceList');

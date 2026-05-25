@@ -428,6 +428,24 @@
             </div>
             <div id="duplicatesList"></div>
           </div>
+
+          <!-- β.6e — Summary variants editor. Same chrome as the
+               experience-bullet rows below; the user manages their
+               positioning-summary CorpusItems here. Pin / exclude /
+               recommend lives in the Compose step (β.6c). -->
+          <section class="summary-variants-section" id="summaryVariantsSection" style="display:none">
+            <div class="corpus-section-header">
+              <div class="corpus-section-title">Summary variants</div>
+              <button class="corpus-action-btn" onclick="openSummaryVariantAdd()">+ Add variant</button>
+            </div>
+            <div class="edit-hint" id="summaryVariantsEmptyHint" style="margin-bottom:8px">
+              Multiple positioning summaries you can pick from per
+              application. The Compose step recommends the strongest
+              fit for each JD; you can pin a different one there.
+            </div>
+            <div id="summaryVariantsList"></div>
+          </section>
+
           <div id="corpusExperienceList" class="corpus-experience-list"></div>
         </div>
       </section>
