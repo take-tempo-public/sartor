@@ -19,8 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unified Corpus Item pattern (Bullet + SummaryItem + ExperienceTitle as variants-with-tags-with-score-with-recommend-call)
 - JSON Resume v1.0 as canonical intermediate format
 - Three output formats: `.md`, `.docx` (python-docx), `.pdf` (Playwright + Chromium)
-- Five bundled persona templates with HTML+CSS companions (classic / compact / modern / hybrid_tech / spacious)
-- Live HTML preview, corpus-direct (no sidecar dependency)
+- **Four curated bundled persona templates**, all ATS-safe by construction — `classic` (Arial 11pt baseline), `modern` (rebuilt from the official jsonresume-theme-class with blue accent header band), `spacious` (Arial 11pt with generous whitespace for early-career), `tech` (rebuilt from jsonresume-theme-dev-ats with Georgia serif + centered name + underlined sections for engineering / data / AI roles). Compact and Hybrid Tech retired as not-actually-ATS-safe (sidebar layouts / inline `<code>` chips both break parsers).
+- ATS-safety badges on every template card in the Template step UI — green "ATS · safe" for the 4 bundled templates; neutral "ATS · unverified" for user-uploaded `.docx` files (which we can't introspect)
+- **Real in-iframe pagination** via paged.js (MIT v0.4.3, self-hosted at `static/vendor/paged.polyfill.js`) — preview shows discrete Letter-sized page boxes, not a scroll-height estimate. The "Page 1 of N" toolbar reflects the real count via postMessage.
+- Live HTML preview, corpus-direct (no sidecar dependency); surfaced in Step 4 (Template) and Step 6 (Output). The Step 3 (Compose) preview was removed after hands-on testing showed it competed for attention with the bullet-curation work.
 - Six-step wizard: Job → Clarify (opt) → Compose → Template → Generate → Download
 - Cover-letter detachment (opt-in, post-résumé) with full refine/iterate parity
 - Iterative refinement with edit-aware baselines and per-iteration audit trail
