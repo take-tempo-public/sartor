@@ -2962,3 +2962,247 @@ input:focus, select:focus, textarea:focus {
     transition: none !important;
   }
 }
+
+/* =============================================================
+   Step 4 Template — compact chooser + paginated preview (v1.0 redesign)
+
+   Layout:
+     +-----------------------------------------------------+
+     | TEMPLATES (chooser, ~280px) | LIVE PREVIEW (flex)   |
+     | search                       | toolbar + page info  |
+     | source chips                 |                      |
+     | scroll list of rows          | preview-stage with   |
+     | + upload                     | letter-aspect iframe |
+     +-----------------------------------------------------+
+
+   The chooser is scroll-isolated so it can hold many templates as
+   the corpus grows. The preview-stage is fixed-aspect (Letter) so
+   pagination math is meaningful.
+   ============================================================= */
+.template-step-layout {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  min-height: 540px;
+}
+@media (max-width: 880px) {
+  .template-step-layout { flex-direction: column; }
+}
+
+/* ---- Chooser column ---- */
+.template-chooser {
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  max-height: 600px;
+  overflow: hidden;
+}
+.template-chooser-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.template-chooser-title {
+  color: var(--fg-1);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.template-count {
+  color: var(--fg-3);
+  font-weight: 400;
+  margin-left: 4px;
+  font-size: 11px;
+}
+.template-search {
+  background: var(--bg-0);
+  color: var(--fg-0);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-family: var(--font);
+  font-size: 12px;
+  width: 100%;
+}
+.template-search:focus { outline: 2px solid var(--brand-edge); outline-offset: 1px; }
+
+.template-filter-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.template-filter {
+  flex: 1;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--fg-2);
+  padding: 4px 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all var(--t-fast) var(--ease);
+}
+.template-filter:hover { color: var(--fg-1); border-color: var(--border-2); }
+.template-filter.active {
+  background: var(--brand-soft);
+  border-color: var(--brand-edge);
+  color: var(--brand);
+}
+
+.template-mini-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 2px;        /* keep scrollbar from kissing borders */
+}
+.template-mini-row {
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.template-mini-row:hover {
+  border-color: var(--border-2);
+  border-left-color: var(--brand-edge);
+  background: var(--bg-2);
+}
+.template-mini-row.selected {
+  border-color: var(--brand-edge);
+  border-left-color: var(--brand);
+  background: var(--brand-soft);
+}
+.template-mini-name {
+  color: var(--fg-0);
+  font-size: 12.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.template-mini-row.selected .template-mini-name::before {
+  content: '✓';
+  color: var(--brand);
+  font-weight: 700;
+}
+.template-mini-source {
+  color: var(--fg-3);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.template-mini-source.owned { color: var(--brand); }
+.template-mini-sub {
+  color: var(--fg-2);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.template-mini-empty {
+  color: var(--fg-3);
+  font-style: italic;
+  font-size: 11px;
+  padding: 12px 4px;
+  text-align: center;
+}
+
+.template-upload-row {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.template-upload-btn {
+  width: 100%;
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+/* ---- Preview column ---- */
+.template-preview-area {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  max-height: 600px;
+}
+.preview-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+.preview-toolbar-title {
+  color: var(--fg-1);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.preview-active-name {
+  color: var(--brand);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+.preview-pagination {
+  color: var(--fg-2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-stage {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  background: #d6d8da;          /* neutral page-trough */
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  min-height: 0;
+}
+.preview-page-frame {
+  width: 8.5in;
+  max-width: 100%;
+  /* Render at Letter aspect ratio. The iframe content has its own
+     @page Letter rules so the inner CSS is print-accurate. */
+  aspect-ratio: 8.5 / 11;
+  background: #fff;
+  border: 1px solid #b5b8bb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  display: block;
+  /* When the iframe is wider than the stage, scale down to fit.
+     We rely on the JS sizing pass for accurate page-fit math. */
+  transform-origin: top center;
+}
+.preview-empty {
+  color: var(--fg-2);
+  font-style: italic;
+  padding: 16px;
+  text-align: center;
+}
+.preview-foot-hint { margin: 6px 0 0 0; font-size: 10.5px; }

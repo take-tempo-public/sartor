@@ -249,44 +249,74 @@
         <span class="cb-step-title">Template</span>
       </div>
       <div class="panel-body">
-        <div class="edit-hint">
-          Pick the styling for your generated résumé. The content
-          stays the same — only the typography, spacing, and headings
-          change. The live preview below updates the moment you click
-          a card (same HTML becomes the PDF).
-        </div>
+        <p class="edit-hint" style="margin:0 0 10px 0">
+          Pick a template — the preview shows pages just as they'll print.
+          Same content, different typography and layout.
+        </p>
+
         <!-- Hidden select preserved for state-holding compatibility with
-             the existing _readSelectedPersonaId helper. The card picker
-             updates this value when a card is clicked. -->
+             the existing _readSelectedPersonaId helper. The compact
+             chooser updates this value when a row is clicked. -->
         <select id="personaSelect" class="hidden" aria-hidden="true" tabindex="-1">
           <option value="">Default (Classic)</option>
         </select>
-        <div id="templatePickList" class="persona-grid"></div>
 
-        <!-- β.4 — Live HTML preview. Iframe loads
-             /api/applications/<id>/preview?template_id=<id>, which
-             returns a fully self-contained HTML page (CSS inlined)
-             rendered through the selected persona. Refreshes whenever
-             the user clicks a different template card (no LLM call,
-             no Chromium subprocess — just the Jinja2 + CSS swap).
-             Requires the application to have generated at least once
-             so the JSON Resume sidecar exists. -->
-        <div id="livePreviewBlock" class="live-preview-block hidden" style="margin-top:16px">
-          <div class="edit-hint" style="margin-bottom:6px">
-            <strong>Live preview</strong> · what your résumé looks like
-            with the selected template. The same HTML becomes the PDF
-            (WYSIWYG).
-          </div>
-          <iframe id="livePreviewFrame"
-                  title="Résumé live preview"
-                  class="live-preview-frame"
-                  sandbox="allow-same-origin"></iframe>
-          <div id="livePreviewEmpty" class="edit-hint hidden" style="margin-top:6px">
-            Generate at least once in Step 5 to unlock the live preview.
-          </div>
+        <!-- v1.0 redesign: side-by-side compact chooser + paginated
+             preview. Built to handle MANY templates across MANY
+             fields (search filters by name/subtitle; chips filter by
+             source). Scrolls within fixed-height columns so the
+             whole step fits a single viewport. -->
+        <div class="template-step-layout">
+          <aside class="template-chooser" aria-labelledby="templateChooserTitle">
+            <header class="template-chooser-head">
+              <span id="templateChooserTitle" class="template-chooser-title">
+                Templates <span id="templateCountChip" class="template-count">(0)</span>
+              </span>
+              <input id="templateSearch" type="search" placeholder="Search…"
+                     class="template-search" aria-label="Search templates">
+            </header>
+            <div class="template-filter-row" role="tablist" aria-label="Filter by source">
+              <button class="template-filter active" data-source="all"  role="tab" aria-selected="true">All</button>
+              <button class="template-filter" data-source="bundled" role="tab" aria-selected="false">Bundled</button>
+              <button class="template-filter" data-source="owned"   role="tab" aria-selected="false">Mine</button>
+            </div>
+            <div id="templatePickList" class="template-mini-list" role="listbox"
+                 aria-label="Available templates"></div>
+            <div class="template-upload-row">
+              <input type="file" id="templateUploadInput" accept=".docx"
+                     style="display:none"
+                     onchange="uploadTemplateFromTemplateStep(this)">
+              <button class="lcars-btn lcars-bg-blue template-upload-btn"
+                      onclick="document.getElementById('templateUploadInput').click()"
+                      id="templateUploadBtn">+ Upload .docx</button>
+            </div>
+          </aside>
+
+          <main class="template-preview-area" aria-labelledby="templatePreviewTitle">
+            <header class="preview-toolbar">
+              <span id="templatePreviewTitle" class="preview-toolbar-title">
+                Live preview · <span id="previewActiveName" class="preview-active-name">—</span>
+              </span>
+              <span class="preview-pagination" aria-live="polite">
+                <span id="previewPageInfo">Page — of —</span>
+              </span>
+            </header>
+            <div class="preview-stage" id="previewStage">
+              <iframe id="livePreviewFrame"
+                      title="Résumé live preview"
+                      class="preview-page-frame"
+                      sandbox="allow-same-origin"></iframe>
+              <div id="livePreviewEmpty" class="preview-empty hidden">
+                Select a user and start an application to load the preview.
+              </div>
+            </div>
+            <p class="edit-hint preview-foot-hint">
+              WYSIWYG — this HTML is exactly what the PDF render uses.
+            </p>
+          </main>
         </div>
 
-        <div class="form-row" style="margin-top:12px">
+        <div class="form-row" style="margin-top:14px">
           <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(3)">← BACK</button>
           <button class="lcars-btn lcars-bg-teal" onclick="wizardGoTo(5)">Continue to Generate →</button>
         </div>

@@ -3863,71 +3863,178 @@ async function _loadTemplatePicker() {
   (body.bundled || []).forEach(p => addOpt(p, 'Bundled'));
   (body.owned || []).forEach(p => addOpt(p, 'Yours'));
 
-  // Render cards (Step 4 picker).
-  if (!list) return;
-  _clearChildren(list);
-  const renderCard = (p, source) => {
-    const card = _el('div', {
-      className: 'persona-card template-pick-card', id: `tpl-card-${p.id}`,
-    });
-    if (String(p.id) === sel.value) card.classList.add('selected');
-    card.appendChild(_el('div', { className: 'persona-card-name', textContent: p.name }));
-    if (p.description) {
-      card.appendChild(_el('div', { className: 'persona-card-desc', textContent: p.description }));
-    }
-    const meta = _el('div', { className: 'persona-card-meta' });
-    meta.appendChild(_el('span', {
-      className: 'persona-card-source ' + (source === 'YOURS' ? 'owned' : 'bundled'),
-      textContent: source,
-    }));
-    card.appendChild(meta);
-    const actions = _el('div', { className: 'persona-card-actions' });
-    const pickBtn = _el('button', {
-      className: 'lcars-btn lcars-bg-teal',
-      textContent: String(p.id) === sel.value ? '✓ SELECTED' : 'USE THIS',
-    });
-    pickBtn.onclick = () => {
-      sel.value = String(p.id);
-      _selectedPersonaId = p.id;
-      list.querySelectorAll('.template-pick-card').forEach(c => {
-        c.classList.toggle('selected', c.id === `tpl-card-${p.id}`);
-        const btn = c.querySelector('.lcars-btn.lcars-bg-teal');
-        if (btn) btn.textContent = (c.id === `tpl-card-${p.id}`) ? '✓ SELECTED' : 'USE THIS';
-      });
-      // β.4 — re-render live preview with the newly-picked template.
-      // No LLM call, no Chromium subprocess; the iframe just swaps
-      // src to a URL whose only delta is template_id=<new>.
-      _refreshLivePreview(p.id);
-    };
-    actions.appendChild(pickBtn);
-    // β.6 post-review: the inline live-preview iframe below the
-    // template grid already updates on every card click, so the
-    // "PREVIEW WITH MY RESUME" download button is removed from this
-    // wizard step. The Library tab still surfaces an explicit
-    // "OPEN PREVIEW" affordance for the side-by-side flow.
-    card.appendChild(actions);
-    return card;
-  };
-  (body.bundled || []).forEach(p => list.appendChild(renderCard(p, 'BUNDLED')));
-  (body.owned || []).forEach(p => list.appendChild(renderCard(p, 'YOURS')));
-  // Default-select the first bundled card if nothing selected.
-  if (!sel.value && (body.bundled || []).length) {
-    sel.value = String(body.bundled[0].id);
-    _selectedPersonaId = body.bundled[0].id;
-    const first = document.getElementById(`tpl-card-${body.bundled[0].id}`);
-    if (first) {
-      first.classList.add('selected');
-      const btn = first.querySelector('.lcars-btn.lcars-bg-teal');
-      if (btn) btn.textContent = '✓ SELECTED';
-    }
+  // v1.0 Step 4 redesign: stash the full list in state so search +
+  // source-filter chips can re-render without re-fetching. Built to
+  // handle MANY templates (search becomes load-bearing as the count
+  // grows; the chooser column is scroll-isolated).
+  _templatePickerState.bundled = body.bundled || [];
+  _templatePickerState.owned   = body.owned   || [];
+
+  // Default-select the first bundled card if nothing selected. The
+  // selection drives the hidden <select> value AND _selectedPersonaId,
+  // both of which downstream code reads.
+  if (!sel.value && _templatePickerState.bundled.length) {
+    sel.value = String(_templatePickerState.bundled[0].id);
+    _selectedPersonaId = _templatePickerState.bundled[0].id;
   }
 
-  // β.4 — kick off the live preview for whatever template ends up
-  // selected. The preview iframe will fetch and render; if no résumé
-  // has been generated yet (no JSON Resume sidecar on disk), the
-  // route returns 409 and we surface the "generate at least once"
-  // hint instead of the frame.
+  _renderTemplatePickList();
+  _bindTemplateFilterHandlers();
+
+  // Kick off the live preview for whatever template ended up selected
+  // when the picker first hydrates.
   if (sel.value) _refreshLivePreview(parseInt(sel.value, 10));
+}
+
+// State for the compact picker (v1.0 redesign). Held module-level so
+// search input + source filter chips can re-render against the cached
+// fetch without re-hitting /api/users/<u>/personas on every keystroke.
+const _templatePickerState = {
+  bundled: [],
+  owned:   [],
+  source:  'all',   // 'all' | 'bundled' | 'owned'
+  query:   '',      // search box text (lowercased)
+  _bound:  false,   // ensure the search / chip handlers wire once
+};
+
+function _renderTemplatePickList() {
+  const list = document.getElementById('templatePickList');
+  const sel  = document.getElementById('personaSelect');
+  const countChip = document.getElementById('templateCountChip');
+  if (!list || !sel) return;
+  _clearChildren(list);
+
+  const q = _templatePickerState.query;
+  const src = _templatePickerState.source;
+
+  const matches = (p) => {
+    if (!q) return true;
+    const hay = (p.name + ' ' + (p.description || '')).toLowerCase();
+    return hay.indexOf(q) !== -1;
+  };
+  const fromBundled = src === 'owned' ? [] :
+    _templatePickerState.bundled.filter(matches);
+  const fromOwned = src === 'bundled' ? [] :
+    _templatePickerState.owned.filter(matches);
+  const total = fromBundled.length + fromOwned.length;
+  if (countChip) countChip.textContent = `(${total})`;
+
+  if (total === 0) {
+    list.appendChild(_el('div', {
+      className: 'template-mini-empty',
+      textContent: q ? `No templates match "${q}".` : 'No templates available.',
+    }));
+    return;
+  }
+
+  const renderRow = (p, source) => {
+    const isSelected = String(p.id) === sel.value;
+    const row = _el('div', {
+      className: 'template-mini-row' + (isSelected ? ' selected' : ''),
+      id: `tpl-row-${p.id}`,
+    });
+    row.setAttribute('role', 'option');
+    row.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+    row.tabIndex = 0;
+
+    const nameRow = _el('div', { className: 'template-mini-name' });
+    nameRow.appendChild(_el('span', { textContent: p.name }));
+    nameRow.appendChild(_el('span', {
+      className: 'template-mini-source ' + (source === 'owned' ? 'owned' : 'bundled'),
+      textContent: source === 'owned' ? 'MINE' : 'BUNDLED',
+    }));
+    row.appendChild(nameRow);
+
+    if (p.description) {
+      row.appendChild(_el('div', {
+        className: 'template-mini-sub',
+        textContent: p.description,
+      }));
+    }
+
+    const onActivate = () => {
+      sel.value = String(p.id);
+      _selectedPersonaId = p.id;
+      list.querySelectorAll('.template-mini-row').forEach(r => {
+        const me = r.id === `tpl-row-${p.id}`;
+        r.classList.toggle('selected', me);
+        r.setAttribute('aria-selected', me ? 'true' : 'false');
+      });
+      _refreshLivePreview(p.id);
+    };
+    row.onclick = onActivate;
+    row.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(); }
+    };
+    return row;
+  };
+
+  fromBundled.forEach(p => list.appendChild(renderRow(p, 'bundled')));
+  fromOwned.forEach(p   => list.appendChild(renderRow(p, 'owned')));
+}
+
+function _bindTemplateFilterHandlers() {
+  if (_templatePickerState._bound) return;
+  _templatePickerState._bound = true;
+
+  const search = document.getElementById('templateSearch');
+  if (search) {
+    search.addEventListener('input', () => {
+      _templatePickerState.query = (search.value || '').toLowerCase().trim();
+      _renderTemplatePickList();
+    });
+  }
+  document.querySelectorAll('.template-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.template-filter').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      _templatePickerState.source = btn.dataset.source || 'all';
+      _renderTemplatePickList();
+    });
+  });
+}
+
+// Step 4 inline upload — reuses /api/users/<u>/personas POST. After a
+// successful upload we re-fetch + re-render so the new template
+// appears in the chooser without a page reload.
+async function uploadTemplateFromTemplateStep(input) {
+  if (!input || !input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (!currentUser) {
+    _toast('Select a user before uploading.', true);
+    input.value = '';
+    return;
+  }
+  if (!file.name.toLowerCase().endsWith('.docx')) {
+    _toast('Only .docx files allowed.', true);
+    input.value = '';
+    return;
+  }
+  const btn = document.getElementById('templateUploadBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/personas`, {
+      method: 'POST', body: fd,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    _toast('Template uploaded');
+    // Refresh the picker (re-fetches /api/users/<u>/personas).
+    await _loadTemplatePicker();
+  } catch (e) {
+    _toast('Upload failed: ' + e.message, true);
+  } finally {
+    if (btn) btn.disabled = false;
+    input.value = '';
+  }
 }
 
 // β.4 / β.6 — refresh the embedded live preview iframe for the
@@ -3944,11 +4051,20 @@ async function _loadTemplatePicker() {
 // the user wants to see how their corpus renders without an
 // application yet.
 async function _refreshLivePreview(templateId) {
-  const block = document.getElementById('livePreviewBlock');
   const frame = document.getElementById('livePreviewFrame');
   const empty = document.getElementById('livePreviewEmpty');
-  if (!block || !frame || !empty) return;
-  block.classList.remove('hidden');
+  if (!frame) return;
+
+  // v1.0 Step 4 redesign: update toolbar with active template name and
+  // reset the page-count display while we load the new iframe.
+  const nameSpan = document.getElementById('previewActiveName');
+  const pageInfo = document.getElementById('previewPageInfo');
+  if (nameSpan) {
+    const found = [..._templatePickerState.bundled, ..._templatePickerState.owned]
+      .find(p => String(p.id) === String(templateId));
+    nameSpan.textContent = found ? found.name : '—';
+  }
+  if (pageInfo) pageInfo.textContent = 'Page — of —';
 
   const params = new URLSearchParams();
   if (templateId != null) params.set('template_id', String(templateId));
@@ -3962,8 +4078,8 @@ async function _refreshLivePreview(templateId) {
     ? `/api/applications/${_composeApplicationId}/preview`
     : (currentUser ? `/api/users/${encodeURIComponent(currentUser)}/preview` : null);
   if (!base) {
-    empty.classList.remove('hidden');
-    empty.textContent = 'Select a user (or start an application) to preview.';
+    if (empty) { empty.classList.remove('hidden');
+      empty.textContent = 'Select a user (or start an application) to preview.'; }
     frame.classList.add('hidden');
     return;
   }
@@ -3977,26 +4093,57 @@ async function _refreshLivePreview(templateId) {
   try {
     probe = await fetch(url, { method: 'GET' });
   } catch {
-    empty.classList.remove('hidden');
-    empty.textContent = 'Could not reach the preview server.';
+    if (empty) { empty.classList.remove('hidden');
+      empty.textContent = 'Could not reach the preview server.'; }
     frame.classList.add('hidden');
     return;
   }
   if (probe.status === 409) {
-    empty.classList.remove('hidden');
-    empty.textContent = 'Import a résumé first to unlock the live preview.';
+    if (empty) { empty.classList.remove('hidden');
+      empty.textContent = 'Import a résumé first to unlock the live preview.'; }
     frame.classList.add('hidden');
     return;
   }
   if (!probe.ok) {
-    empty.classList.remove('hidden');
-    empty.textContent = `Preview unavailable (${probe.status}).`;
+    if (empty) { empty.classList.remove('hidden');
+      empty.textContent = `Preview unavailable (${probe.status}).`; }
     frame.classList.add('hidden');
     return;
   }
-  empty.classList.add('hidden');
+  if (empty) empty.classList.add('hidden');
   frame.classList.remove('hidden');
+
+  // Wire the post-load page-count detector ONCE (it survives src
+  // swaps). The handler reads the iframe's own contentDocument; the
+  // sandbox="allow-same-origin" attribute on the iframe permits this.
+  if (!frame._pageCountHookInstalled) {
+    frame.addEventListener('load', () => _updatePreviewPageCount(frame));
+    frame._pageCountHookInstalled = true;
+  }
   frame.src = url;
+}
+
+// v1.0 Step 4: compute approximate page count from the loaded iframe's
+// own content. The preview content has CSS `@page Letter` rules baked
+// in, so we measure the body scrollHeight against an 11" page height
+// at 96 DPI (~1056 px). A floor of 1 prevents `Page 1 of 0` on empty
+// content.
+function _updatePreviewPageCount(frame) {
+  const pageInfo = document.getElementById('previewPageInfo');
+  if (!pageInfo) return;
+  let pages = 1;
+  try {
+    const doc = frame.contentDocument;
+    if (doc && doc.body) {
+      const PAGE_PX = 11 * 96;  // Letter height at 96 DPI
+      const h = doc.documentElement.scrollHeight || doc.body.scrollHeight;
+      pages = Math.max(1, Math.ceil(h / PAGE_PX));
+    }
+  } catch (e) {
+    // contentDocument may be inaccessible briefly during navigation —
+    // silently fall through to the safe default of 1.
+  }
+  pageInfo.textContent = pages === 1 ? `Page 1 of 1` : `~ ${pages} pages`;
 }
 
 function _readSelectedPersonaId() {

@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import anthropic
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, jsonify, make_response, render_template, request, send_file
 from werkzeug.utils import secure_filename
 
 from analyzer import (
@@ -110,7 +110,17 @@ def _within(path: Path, parent: Path) -> bool:
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    """Serve the single-page app shell.
+
+    Cache headers are set to `no-cache` so a freshly-deployed
+    `templates/index.html` is always picked up on the next request —
+    avoids the "I shipped a UI change but the user still sees the old
+    button set" footgun. Static CSS/JS continue to use Flask's
+    default caching; we cache-bust those by file path when needed.
+    """
+    resp = make_response(render_template("index.html"))
+    resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return resp
 
 
 @app.route("/api/users", methods=["GET"])
