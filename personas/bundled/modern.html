@@ -1,0 +1,185 @@
+{#
+   modern.html — Jinja2 résumé template for callback.
+
+   PORTED FROM:
+     jsonresume-theme-kendall by LinuxBozo
+     https://github.com/LinuxBozo/jsonresume-theme-kendall
+     Licensed MIT (LICENSE in upstream repo).
+
+   Original © LinuxBozo. Port modifications and Jinja2/CSS
+   adaptations © callback. contributors. Distribution continues
+   under MIT to preserve the upstream license terms.
+
+   PORT ADAPTATIONS:
+     - Handlebars/Mustache → Jinja2.
+     - Removed Bootstrap and Font Awesome CDN deps (offline PDF).
+     - Replaced FA icons with plain unicode glyphs / spans so the
+       PDF renders without network access.
+     - Replaced the col-xs-12 / col-sm-7 / col-sm-5 grid with a
+       minimal flexbox layout that preserves the two-column work-
+       on-left / contact-on-right signature of the theme.
+     - Removed the avatar/photo block — our corpus doesn't capture
+       it and ATS readers typically strip images anyway.
+     - System font stack (Open Sans-style) instead of Google Fonts
+       @import.
+     - Trimmed sections that don't exist in our schema (awards,
+       publications, languages, interests, references, volunteer).
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ basics.name | default("Résumé") }}</title>
+<link rel="stylesheet" href="modern.css">
+</head>
+<body>
+
+<div class="container">
+
+  <header class="text-center">
+    <div id="text-header">
+      <h1>
+        {{ basics.name | default("") }}{% if basics.label %}<br><span>{{ basics.label }}</span>{% endif %}
+      </h1>
+    </div>
+  </header>
+
+  <div class="row">
+    {# === Left column: Summary, Work, Projects === #}
+    <div class="col-main">
+
+      {% if basics.summary %}
+      <div class="box">
+        <h2>About</h2>
+        <p>{{ basics.summary }}</p>
+      </div>
+      {% endif %}
+
+      {% if work %}
+      <div class="box">
+        <h2>Work Experience</h2>
+        {% for job in work %}
+        <div class="job">
+          <div class="details">
+            <div class="where">
+              {{ job.name }}
+              {% if job.location %}<span class="loc">{{ job.location }}</span>{% endif %}
+            </div>
+            {% if job.startDate or job.endDate %}
+              <div class="year">{{ job.startDate or "" }}{% if job.startDate and job.endDate %} – {% endif %}{{ job.endDate or "" }}</div>
+            {% endif %}
+          </div>
+          <div class="job-details">
+            {% if job.position %}<div class="profession">{{ job.position }}</div>{% endif %}
+            {% if job.summary %}<div class="description"><p>{{ job.summary }}</p></div>{% endif %}
+            {% if job.highlights %}
+            <div class="highlights-label">Highlights</div>
+            <ul class="list-group">
+              {% for h in job.highlights %}<li>{{ h }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if projects %}
+      <div class="box">
+        <h2>Projects</h2>
+        <ul class="list-group">
+          {% for p in projects %}
+          <li><span class="proj-name">{{ p.name }}</span>{% if p.description %}: {{ p.description }}{% endif %}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+    </div>
+
+    {# === Right column: Contact, Education, Skills, Certifications === #}
+    <div class="col-side">
+
+      <div class="box">
+        <h2>Contact</h2>
+        {% if basics.phone %}
+        <div class="contact-item">
+          <div class="title">{{ basics.phone }}</div>
+        </div>
+        {% endif %}
+        {% if basics.email %}
+        <div class="contact-item">
+          <div class="title">{{ basics.email }}</div>
+        </div>
+        {% endif %}
+        {% if basics.url %}
+        <div class="contact-item">
+          <div class="title">{{ basics.url | replace("https://", "") | replace("http://", "") }}</div>
+        </div>
+        {% endif %}
+        {% for profile in basics.profiles or [] %}
+        <div class="contact-item">
+          <div class="title">{{ profile.network or "Profile" }}</div>
+          <div class="description">{{ profile.username or (profile.url | replace("https://", "") | replace("http://", "")) }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if education %}
+      <div class="box">
+        <h2>Education</h2>
+        <ul class="timeline">
+          {% for ed in education %}
+          <li>
+            <div class="year">{{ ed.startDate or "" }}{% if ed.startDate and ed.endDate %}–{% endif %}{{ ed.endDate or "" }}</div>
+            <div class="description">
+              <h3>{{ ed.institution }}</h3>
+              {% if ed.studyType %}<p>{{ ed.studyType }}</p>{% endif %}
+              {% if ed.area %}<p>{{ ed.area }}</p>{% endif %}
+              {% if ed.score %}<p>Grade: {{ ed.score }}</p>{% endif %}
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if skills %}
+      <div class="box">
+        <h2>Skills</h2>
+        {% set grouped = skills | selectattr("keywords") | list %}
+        {% if grouped %}
+          {% for s in skills %}
+          <div class="skills">
+            {% if s.name %}<div class="item-skills">{{ s.name }}</div>{% endif %}
+            {% if s.keywords %}
+            <div class="skill-row">
+              {% for k in s.keywords %}<span class="skill badge">{{ k }}</span>{% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="skill-row">
+            {% for s in skills %}<span class="skill badge">{{ s.name }}</span>{% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if certificates %}
+      <div class="box">
+        <h2>Certifications</h2>
+        <ul class="list-group">
+          {% for c in certificates %}<li>{{ c.name }}</li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

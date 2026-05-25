@@ -1,0 +1,182 @@
+/*!
+ * spacious.css — print-friendly CSS for callback. spacious persona.
+ *
+ * ORIGINAL DESIGN authored from scratch for callback. by the project
+ * contributors. Visual intent inspired by jsonresume-theme-even
+ * (https://github.com/rbardini/jsonresume-theme-even, MIT) but no
+ * upstream CSS was copied — the upstream is a TypeScript/Vite
+ * project, not directly portable into our Jinja2 + Chromium render
+ * pipeline.
+ *
+ * Aesthetic:
+ *   - Serif typography (Georgia / system serif stack)
+ *   - Generous vertical whitespace; tight horizontal measure
+ *   - Centered letterhead-style header
+ *   - Subtle small-caps section headers with a thin rule beneath
+ *   - Single column throughout; ATS-friendly
+ */
+
+@page {
+  size: Letter;
+  margin: 0.75in 0.85in;     /* notably more breathing room than other personas */
+}
+
+* { box-sizing: border-box; }
+
+:root {
+  --ink: #1b1d20;
+  --ink-soft: #4d5359;
+  --rule: #cdd1d4;
+}
+
+body {
+  font-family: Georgia, "Times New Roman", Cambria, "Liberation Serif",
+               serif;
+  color: var(--ink);
+  font-size: 11pt;
+  line-height: 1.55;
+  margin: 0;
+  padding: 0 0 32px;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+/* -----------------------------------------------------------------
+   Letterhead header — centered, generous spacing
+   ----------------------------------------------------------------- */
+.resume-header {
+  text-align: center;
+  padding: 28px 0 22px 0;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--rule);
+}
+.resume-header h1.name {
+  margin: 0;
+  font-size: 24pt;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+.resume-header p.label {
+  margin: 6px 0 10px 0;
+  font-size: 11pt;
+  color: var(--ink-soft);
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+.resume-header p.contact {
+  margin: 0;
+  font-size: 9.5pt;
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+}
+
+/* -----------------------------------------------------------------
+   Section headers — small caps with thin rule
+   ----------------------------------------------------------------- */
+section { margin-bottom: 26px; page-break-inside: avoid; }
+section > h2 {
+  margin: 0 0 12px 0;
+  font-size: 10.5pt;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--ink);
+  text-align: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--rule);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+p { margin: 0 0 8px 0; }
+p:last-child { margin-bottom: 0; }
+
+/* -----------------------------------------------------------------
+   Experience + education + projects
+   ----------------------------------------------------------------- */
+article.job, article.degree, article.project {
+  margin-bottom: 18px;     /* notably airier than other personas */
+  page-break-inside: avoid;
+}
+.job-header, .degree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.job-title, .degree-header h3, article.project h3 {
+  margin: 0;
+  font-size: 11.5pt;
+  font-weight: 700;
+  font-family: Georgia, "Times New Roman", serif;
+}
+.job-title .position { color: var(--ink); }
+.job-title .company,
+.degree-header .institution { color: var(--ink); }
+.job-title .sep,
+.degree-header .sep { color: var(--ink-soft); font-weight: 400; }
+.dates {
+  font-size: 9.5pt;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  font-style: italic;
+  font-variant-numeric: tabular-nums;
+}
+.job-summary {
+  margin: 4px 0 6px 0;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* -----------------------------------------------------------------
+   Bullets — plain disc, well-indented, ATS-safe
+   ----------------------------------------------------------------- */
+ul.highlights {
+  margin: 6px 0 0 0;
+  padding-left: 22px;
+}
+ul.highlights li {
+  list-style: disc;
+  line-height: 1.55;
+  margin-bottom: 4px;
+}
+
+/* -----------------------------------------------------------------
+   Skills + certifications
+   ----------------------------------------------------------------- */
+ul.skill-groups {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+ul.skill-groups li {
+  margin-bottom: 8px;
+  line-height: 1.55;
+}
+ul.skill-groups li strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.skill-line {
+  text-align: center;
+  font-size: 10.5pt;
+}
+
+.certifications ul,
+.education ul {
+  list-style: disc;
+  padding-left: 22px;
+  margin: 0;
+}
+.certifications li {
+  margin-bottom: 4px;
+}
+
+@media print {
+  body { font-size: 10.5pt; padding-left: 0; padding-right: 0; }
+  section { page-break-inside: avoid; }
+}

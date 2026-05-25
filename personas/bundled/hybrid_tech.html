@@ -1,0 +1,147 @@
+{#
+   hybrid_tech.html — Jinja2 résumé template for callback.
+
+   ORIGINAL DESIGN:
+     Authored from scratch for callback. by the project contributors.
+     Visual intent inspired by jsonresume-theme-elegant
+     (https://github.com/mudassir0909/jsonresume-theme-elegant, MIT)
+     — but the upstream is Pug + SCSS with a build chain, so this is
+     a fresh implementation rather than a port. No upstream HTML/CSS
+     code was copied verbatim.
+
+   Aesthetic goal:
+     Tech-flavored hybrid: skills and projects get more visual weight
+     than in classic / compact / modern. Code-blocky monospace accents
+     for skill chips and tech-stack callouts; section headers in a
+     bold sans-serif with a left accent bar.
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ basics.name | default("Résumé") }}</title>
+<link rel="stylesheet" href="hybrid_tech.css">
+</head>
+<body>
+
+<header class="resume-header">
+  {% if basics.name %}<h1 class="name">{{ basics.name }}</h1>{% endif %}
+  {% if basics.label %}<p class="label">{{ basics.label }}</p>{% endif %}
+  <p class="contact">
+    {% set items = [] %}
+    {% if basics.email %}{% set _ = items.append(basics.email) %}{% endif %}
+    {% if basics.phone %}{% set _ = items.append(basics.phone) %}{% endif %}
+    {% for profile in basics.profiles or [] %}
+      {% set _ = items.append(profile.url | replace("https://", "") | replace("http://", "")) %}
+    {% endfor %}
+    {% if basics.url %}
+      {% set _ = items.append(basics.url | replace("https://", "") | replace("http://", "")) %}
+    {% endif %}
+    {{ items | join(" · ") }}
+  </p>
+</header>
+
+{# Skills first — the signature move. Tech roles get a recruiter-
+   scannable stack callout near the top, not buried mid-page. #}
+{% if skills %}
+<section class="skills tech-stack">
+  <h2>Stack</h2>
+  {% set grouped = skills | selectattr("keywords") | list %}
+  {% if grouped %}
+    <ul class="skill-groups">
+      {% for s in skills %}
+      <li>
+        <strong>{{ s.name }}:</strong>
+        <span class="kw-row">
+          {% for k in s.keywords %}<code class="kw">{{ k }}</code>{% endfor %}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="kw-row inline">
+      {% for s in skills %}<code class="kw">{{ s.name }}</code>{% endfor %}
+    </p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if basics.summary %}
+<section class="summary">
+  <h2>Summary</h2>
+  <p>{{ basics.summary }}</p>
+</section>
+{% endif %}
+
+{% if work %}
+<section class="experience">
+  <h2>Experience</h2>
+  {% for job in work %}
+  <article class="job">
+    <header class="job-header">
+      <h3 class="job-title">
+        {% if job.position %}<span class="position">{{ job.position }}</span>{% endif %}
+        {% if job.position and job.name %}<span class="sep"> · </span>{% endif %}
+        {% if job.name %}<span class="company">{{ job.name }}</span>{% endif %}
+      </h3>
+      {% if job.startDate or job.endDate %}
+      <span class="dates">{{ job.startDate or "" }}{% if job.startDate and job.endDate %} – {% endif %}{{ job.endDate or "" }}</span>
+      {% endif %}
+    </header>
+    {% if job.summary %}<p class="job-summary">{{ job.summary }}</p>{% endif %}
+    {% if job.highlights %}
+    <ul class="highlights">
+      {% for h in job.highlights %}<li>{{ h }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if projects %}
+<section class="projects">
+  <h2>Projects</h2>
+  {% for p in projects %}
+  <article class="project">
+    <h3>{{ p.name }}</h3>
+    {% if p.description %}<p>{{ p.description }}</p>{% endif %}
+    {% if p.highlights %}
+    <ul class="highlights">
+      {% for h in p.highlights %}<li>{{ h }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if certificates %}
+<section class="certifications">
+  <h2>Certifications</h2>
+  <ul>{% for c in certificates %}<li>{{ c.name }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% if education %}
+<section class="education">
+  <h2>Education</h2>
+  {% for ed in education %}
+  <article class="degree">
+    <header class="degree-header">
+      <h3>
+        {% if ed.institution %}<span class="institution">{{ ed.institution }}</span>{% endif %}
+        {% if ed.institution and ed.area %}<span class="sep">, </span>{% endif %}
+        {% if ed.area %}<span class="area">{{ ed.area }}</span>{% endif %}
+      </h3>
+      {% if ed.startDate or ed.endDate %}
+      <span class="dates">{{ ed.startDate or "" }}{% if ed.startDate and ed.endDate %} – {% endif %}{{ ed.endDate or "" }}</span>
+      {% endif %}
+    </header>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+</body>
+</html>
