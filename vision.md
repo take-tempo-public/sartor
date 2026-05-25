@@ -1,3 +1,19 @@
+# Vision — callback.
+
+> **Purpose:** the original product brief. What good résumé / cover-letter
+> output looks like, the hiring-manager persona's voice, ATS constraints,
+> what is in vs out of scope for the LLM. The source material that
+> `analyzer.py`'s `SYSTEM_PROMPT` / `CLARIFY_SYSTEM_PROMPT` /
+> `CLARIFY_ITERATION_SYSTEM_PROMPT` derive from.
+> **Audience:** humans evaluating a feature against original intent;
+> LLMs proposing new prompt rules, rubric items, or eval fixtures.
+> **Authoritative for:** persona voice; ATS round-trip rules; what counts
+> as "résumé output" vs adjacent surface area (cover letters, interview
+> prep, etc.). Sibling docs:
+> [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (architecture),
+> [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) (release gates),
+> [`CLAUDE.md`](CLAUDE.md) (contributor contract).
+
 ## Role
 
 1.  You should approach this task with the mindset of a seasoned, professional hiring manager with a decade of experience in HR, but you should not let this limit you from making suggestions based upon your broader access to information and the insights that you have gleaned from that. In the end, your north star is creating the best opportunity for the candidate to be a leading candidate through human and ATS screeners, interviewers in the field, and hiring manager review. Remain truthful, but be ruthless in presenting this candidate in the best possible light for this role and the role into which it will promote.

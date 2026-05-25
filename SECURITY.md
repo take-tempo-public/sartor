@@ -1,5 +1,17 @@
 # Security Policy
 
+> **Purpose:** the threat model, accepted risks, and security guardrails
+> for a local-first single-tenant tool. What is in scope to protect
+> against, what is explicitly out of scope, how API keys flow, what
+> never leaves the machine.
+> **Audience:** humans considering deploying callback. in a non-default
+> tenancy model; contributors landing changes that touch routes, file
+> I/O, or LLM call paths.
+> **Authoritative for:** the `_safe_username` + `_within` route gates;
+> what user-data files MUST stay gitignored; how to report a
+> vulnerability. Sibling docs: [`CLAUDE.md`](CLAUDE.md) (contract),
+> [`CONTRIBUTING.md`](CONTRIBUTING.md) (workflow).
+
 ## Scope
 
 callback. is a **single-tenant, local-first tool**. It runs on your

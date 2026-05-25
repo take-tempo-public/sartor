@@ -4,6 +4,14 @@ A local web application that tailors resumes and cover letters to specific job d
 
 **LCARS-styled interface. Runs locally. No data leaves your machine except API calls to Anthropic.**
 
+> **Doc map:** [`vision.md`](vision.md) (product intent) ·
+> [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (architecture) ·
+> [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) (release gates) ·
+> [`CLAUDE.md`](CLAUDE.md) (contributor contract) ·
+> [`CONTRIBUTING.md`](CONTRIBUTING.md) (PR workflow) ·
+> [`SECURITY.md`](SECURITY.md) (threat model).
+> Each doc opens with a `Purpose / Audience / Authoritative for` block.
+
 ---
 
 ## Workflow

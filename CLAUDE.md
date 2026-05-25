@@ -1,5 +1,19 @@
 # Resume Optimizer — Agent and Contributor Contract
 
+> **Purpose:** the project-shared contract that any contributor — human
+> or LLM agent — reads before non-trivial changes. Pointers to deeper
+> docs, key code patterns, branch/commit conventions, security
+> guardrails, and the things that absolutely must not happen.
+> **Audience:** humans and LLM agents (Claude Code, sub-agents, etc.)
+> working in this repo.
+> **Authoritative for:** branch/commit conventions; the
+> `_safe_username` / `_within` security gate; the `ruff` + `mypy` +
+> `pytest` minimum-bar; `PROMPT_VERSION` discipline; what kinds of
+> changes are NOT welcome. Sibling docs:
+> [`vision.md`](vision.md) (product intent),
+> [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (architecture),
+> [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) (release gates).
+
 This file is the project-shared contract. Read it before any non-trivial change.
 For machine-specific overrides, see your local `CLAUDE.local.md` (gitignored).
 

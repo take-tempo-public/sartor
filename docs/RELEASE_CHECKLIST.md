@@ -1,9 +1,17 @@
 # Release Checklist — callback.
 
-> Companion: see [`docs/PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) for the
+> **Purpose:** the ship-list. What must be true before tagging a release,
+> in what order, to what quality bar. The verify-before-ship gates.
+> **Audience:** humans driving a release; LLMs proposing version-bump
+> work or release-blocking fixes.
+> **Authoritative for:** the v1.0.0 / v1.x release definitions; the
+> minimum-bar tests / ruff / mypy / eval gates; which items are
+> shipping-blockers vs nice-to-haves.
+>
+> **Companion:** see [`docs/PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) for the
 > unified Corpus Item pattern this checklist works toward (cover
 > letters optional, master résumés per role, PDF output via
-> WeasyPrint, JSON Resume v1.0 as canonical intermediate, live
+> Playwright, JSON Resume v1.0 as canonical intermediate, live
 > preview).
 
 The notes below are the committed scope for the

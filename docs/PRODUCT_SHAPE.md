@@ -1,6 +1,16 @@
 # Product shape — callback.
 
-> Companion to [`docs/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md).
+> **Purpose:** the architectural intent. The unified Corpus Item pattern,
+> the v1 → v2 sequencing ladder, the locked-in technology choices
+> (JSON Resume v1.0 as the canonical intermediate, Playwright for PDF,
+> SQLite + Alembic for persistence).
+> **Audience:** humans and LLMs planning features that touch the corpus,
+> the rendering pipeline, or future schema work.
+> **Authoritative for:** which architectural patterns the codebase
+> converges toward; what is deferred to v1.1 / v1.2 / v2; the asymmetry
+> matrix that explains why each remaining gap exists.
+>
+> **Companion** to [`docs/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md).
 > That doc is *what we ship*. This doc is *what shape we're aiming
 > for* — the unified data model the product converges toward and the
 > sequencing ladder that gets us there without schema breaks.

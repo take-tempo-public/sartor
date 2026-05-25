@@ -1,5 +1,16 @@
 # Contributing to callback.
 
+> **Purpose:** how to propose changes — quick start, branch and commit
+> conventions, the local dev loop, what kinds of contributions are
+> welcome vs out of scope.
+> **Audience:** external contributors (humans) sending PRs.
+> **Authoritative for:** the proposal/review process; the
+> ruff + mypy + pytest minimum-bar; the rule that any LLM prompt
+> change bumps `PROMPT_VERSION` in the same commit. Sibling docs:
+> [`vision.md`](vision.md) (product intent),
+> [`CLAUDE.md`](CLAUDE.md) (contributor contract),
+> [`SECURITY.md`](SECURITY.md) (threat model).
+
 Thanks for your interest. callback. tailors a résumé and (optionally) a cover letter to one specific job at a time, using a deterministic Python core and the Claude API for fuzzy reasoning. It is intentionally small — most contributions should *make it more deterministic*, not less.
 
 The guiding philosophy is the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/). Read [`vision.md`](vision.md) before proposing significant changes.
