@@ -21,7 +21,9 @@ For machine-specific overrides, see your local `CLAUDE.local.md` (gitignored).
 
 ## Read These First
 
+- [docs/architecture.md](docs/architecture.md) — system overview, module map, four Mermaid diagrams (pipeline / persistence / data-flow / llm-routing). Start here for a fast tour.
 - [vision.md](vision.md) — product intent, LLM persona rules, output requirements
+- [docs/PRODUCT_SHAPE.md](docs/PRODUCT_SHAPE.md) — unified Corpus Item pattern; v1.0 → v2 sequencing
 - [SECURITY.md](SECURITY.md) — threat model, API key rules, accepted risks
 - [CONTRIBUTING.md](CONTRIBUTING.md) — branch + commit conventions, dev loop
 - [README.md](README.md) — user-facing workflow

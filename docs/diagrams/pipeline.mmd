@@ -1,0 +1,106 @@
+%% Pipeline of one full callback. apply-run.
+%%
+%% Shows the eight LLM calls that can fire across a single application,
+%% the Flask route that triggers each, and which model is used. Sonnet
+%% 4.6 handles the heavy reasoning calls (analyze, clarify, generate);
+%% Haiku 4.5 handles the structured-recommendation calls (recommend,
+%% recommend_summary, critique_proposal, promote_clarification_to_bullet).
+%%
+%% Renders natively on GitHub Markdown and in any Mermaid live editor.
+%% Source: analyzer.py + app.py route map (verified 2026-05-25).
+
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant FE as Frontend<br/>(static/app.js)
+    participant APP as Flask app.py
+    participant ANL as analyzer.py
+    participant SO as Sonnet 4.6
+    participant HK as Haiku 4.5
+    participant DB as SQLite<br/>(db/resume.sqlite)
+    participant FS as Disk<br/>(output/&lt;user&gt;/)
+
+    Note over U,FS: Step 1 — Analyze
+    U->>FE: paste JD, click ANALYZE
+    FE->>APP: POST /api/analyze
+    APP->>ANL: analyze(ctx, jd)
+    ANL->>SO: call_kind="analyze" (~90s, ~4.5k out)
+    SO-->>ANL: JSON {essential_skills, ideal_resume, ...}
+    ANL-->>APP: parsed result
+    APP->>FS: save context_*.json (iter 0)
+    APP-->>FE: 200 + context_path
+    FE-->>U: Step 1 panel + Continue
+
+    Note over U,FS: Step 2 — Clarify (optional)
+    U->>FE: click GET INTERVIEW QUESTIONS
+    FE->>APP: POST /api/clarify
+    APP->>ANL: clarify(ctx)
+    ANL->>SO: call_kind="clarify" (~13s)
+    SO-->>ANL: 3-5 questions
+    ANL-->>APP: questions
+    APP->>FS: write back to same context file
+    APP-->>FE: questions
+    FE-->>U: render Q&A form
+    U->>FE: submit answers
+    FE->>APP: POST /api/answer-clarifications
+    APP->>FS: merge answers into context
+
+    Note over U,FS: Step 3 — Compose (recommend + curate)
+    FE->>APP: POST /api/applications/&lt;id&gt;/recommend
+    APP->>ANL: recommend_bullets(ctx)
+    ANL->>HK: call_kind="recommend" (~5s)
+    HK-->>ANL: bullet_ids[] per experience
+    ANL-->>APP: recommendations
+    APP->>FS: write llm_recommendations to context
+    FE->>APP: POST /api/applications/&lt;id&gt;/recommend-summary
+    APP->>ANL: recommend_summaries(ctx)
+    ANL->>HK: call_kind="recommend_summary" (~3s)
+    HK-->>ANL: summary_item_id
+    ANL-->>APP: rec
+    APP->>FS: write llm_summary_recommendation
+    U->>FE: pin/exclude/add bullets, pick summary
+    FE->>APP: POST /api/applications/&lt;id&gt;/composition
+    APP->>FS: write composition_overrides
+
+    Note over U,FS: Step 4 — Template (live preview, no LLM)
+    U->>FE: select persona
+    FE->>APP: GET /api/applications/&lt;id&gt;/preview?template_id=N
+    APP->>DB: build_json_resume_from_corpus()
+    DB-->>APP: JSON Resume v1.0 doc
+    APP-->>FE: rendered HTML
+    FE-->>U: iframe shows live preview
+
+    Note over U,FS: Step 5 — Generate
+    U->>FE: click GENERATE
+    FE->>APP: POST /api/generate
+    APP->>ANL: generate(ctx, with_cover_letter=False)
+    ANL->>SO: call_kind="generate" (~50s, ~2.3k out)
+    SO-->>ANL: {resume_content, changes_summary}
+    ANL-->>APP: parsed
+    APP->>FS: save_iteration_context() → context_*_iter1.json
+    APP->>FS: write resume_*.docx / .pdf / .md
+    APP->>DB: insert ApplicationRun
+    APP-->>FE: paths + previews
+    FE-->>U: Step 6 panel with downloads
+
+    Note over U,FS: Step 6 — Iterate (optional, repeatable)
+    U->>FE: edit preview, click REFINE / ITERATE CLARIFY
+    FE->>APP: POST /api/iterate-clarify
+    APP->>ANL: clarify_iteration(ctx, edits, signals)
+    ANL->>SO: call_kind="iterate_clarify" (~14s)
+    SO-->>ANL: 3-5 follow-up questions
+    APP->>FS: append to clarification_questions
+    U->>FE: submit answers
+    FE->>APP: POST /api/generate (again)
+    APP->>ANL: generate(ctx with iter≥1)
+    ANL->>SO: call_kind="generate" again
+    Note over APP: child context: parent_context_path chain
+
+    Note over U,FS: Optional — Cover letter
+    U->>FE: click + GENERATE COVER LETTER
+    FE->>APP: POST /api/generate-cover-letter
+    APP->>ANL: generate_cover_letter_against_resume()
+    ANL->>SO: call_kind="generate_cover_letter" (~17s)
+    SO-->>ANL: {cover_letter_content}
+    APP->>FS: write cover_*.docx / .pdf / .md
+    APP-->>FE: preview
