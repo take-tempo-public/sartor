@@ -464,7 +464,100 @@ unique index ([`db/models.py:359, 368-372`](../db/models.py)) — but
 [`app.py:1403-1423`](../app.py)
 `_resolve_default_persona_template_path()` never consults it. The
 default resolver hardcodes to bundled Classic Single-Column. Five-
-line fix; ship as part of operationalizing master résumés in §5.2.
+line fix; **deferred during v1.0.0 cut** (see §10) to v1.1 along
+with the rest of the master-résumé surfacing in §5.2.
+
+---
+
+## 10. Deferred during v1.0.0 release cut
+
+Items that surfaced during the v1.0.0 release work and were
+explicitly deferred to keep the v1.0.0 scope honest. Captured here
+so v1.0.1 / v1.1 / v2 planning can pick them up without
+re-deriving the context. Each entry: **what / why deferred /
+acceptance criteria / target version**.
+
+### v1.0.1 (point release after v1.0.0)
+
+**Visual assets — screenshots, demo GIF, onboarding HTML page.**
+- *Why deferred:* the user has a full UI redesign planned (memory
+  note: "current LCARS UI is throwaway"). Capturing screenshots of
+  a UI that's about to be replaced wastes effort.
+- *Acceptance:* after the v1.1 UI redesign, a `scripts/screenshot.py`
+  + `docs/screenshots/*.png` + optional `docs/demo.gif` cycle is
+  added; `docs/onboarding.html` adapts the new design system.
+- *Target:* v1.0.1 if UI redesign slips; otherwise rolled into v1.1.
+
+**`docs/diagrams/data-flow.mmd` / `docs/diagrams/llm-routing.mmd`.**
+- *Why deferred (original plan):* `pipeline.mmd` + `persistence.mmd`
+  were the minimum-viable diagram set. *Override on 2026-05-25:* user
+  promoted both diagrams INTO v1.0.0 by personal preference. **No
+  longer deferred** — both ship with v1.0.0.
+
+**BACK/Continue spacing polish on Compose step.**
+- *Why deferred:* cosmetic; the existing layout reads cleanly even
+  if the `←` arrow on BACK visually neighbors the `Continue →` button.
+- *Acceptance:* one CSS rule on `.form-row` separates BACK from
+  next-step actions via either `margin-right: auto` on BACK or a
+  wider `gap`.
+
+### v1.1 (next minor release)
+
+**R2 — stream `analyze()` output.** ([docs/PERF_ANALYZE.md](PERF_ANALYZE.md))
+- *Why deferred:* deserves its own commit + eval cycle; v1.0.0
+  scope is "all initial documentation", not new pipeline behavior.
+- *Acceptance:* Anthropic SSE streaming wired through the
+  `/api/analyze` route; frontend renders tokens incrementally;
+  perceived latency 90 s → 10-15 s with total latency unchanged.
+- *Cost:* zero; same call, different transport.
+
+**R1 — split `analyze()` into Haiku-fast + Sonnet-deep passes.**
+([docs/PERF_ANALYZE.md](PERF_ANALYZE.md))
+- *Why deferred:* touches the prompt, the response schema, and the
+  frontend ordering — not a one-commit change. Needs an eval cycle
+  before / after so we know we didn't regress analyze quality.
+- *Acceptance:* Haiku-fast returns essential_skills + role_family +
+  seniority + JD breakdown in 5-8 s; Sonnet-deep returns
+  ideal_resume_summary + comparison + keyword_strategy in the
+  background. Frontend unlocks Clarify on the fast pass.
+- *Cost:* +1 Haiku call (~$0.002 per application).
+
+**Field-filter chips above source chips on the Step 4 Template chooser.**
+- *Why deferred:* `PersonaTemplate.primary_role_tag_id` already
+  exists in the schema, but the bundled set of 5 templates doesn't
+  have meaningful role-tag coverage yet. Filter chips with one
+  template each per chip is worse UX than no chips.
+- *Acceptance:* user has uploaded ≥ 3 owned templates spanning
+  ≥ 2 role tags. The chip row appears above the source chips and
+  filters the chooser list.
+
+**Master résumés operationalization** (the §9 bug).
+- *Why deferred:* user explicitly deferred during 2026-05-25 plan
+  revision (originally listed in §5.2 for v1.0; pulled out to keep
+  v1.0.0 focused on docs + bug fixes).
+- *Acceptance:* `_resolve_default_persona_template_path()`
+  consults `PersonaTemplate.is_default` filtered by JD role tag;
+  the "Masters" Library sub-tab lists pinned masters per role.
+
+**`Dockerfile` + `docker-compose.yml` for one-command run.**
+- *Why deferred:* `pip install -e .` + `python app.py` works
+  cleanly per `docs/install.md`. Docker adds maintenance overhead
+  without clear v1.0 user demand.
+- *Acceptance:* a contributor or external user requests it; image
+  builds in CI; image size < 1 GB including Chromium.
+
+### v2 (next major release)
+
+**`recommend_template` Haiku call per JD class.**
+- *Why deferred:* needs outcome data we don't have yet. Without
+  signal from past applications ("this template + this JD class →
+  interview"), template recommendation reduces to deterministic
+  scoring against template metadata — already implementable as a
+  v1.1 nice-to-have but the LLM call adds no value without outcome
+  feedback.
+- *Acceptance:* `ApplicationOutcome` table exists (also v2);
+  enough rows for the recommend prompt to ground against; eval
+  rubric for "template appropriateness" exists.
 
 ---
 
