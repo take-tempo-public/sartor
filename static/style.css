@@ -3183,21 +3183,30 @@ input:focus, select:focus, textarea:focus {
   background: #d6d8da;          /* neutral page-trough */
   border-radius: var(--radius-sm);
   padding: 16px;
-  min-height: 0;
+  /* Definite fallback so the stage stays visible even if every
+     downstream height computation fails — guards against the
+     iframe-collapse-to-0 footgun. */
+  min-height: 480px;
 }
-.preview-page-frame {
+/* The card div owns aspect-ratio sizing — reliable on block-level
+   elements. The iframe inside absolutely-positions to fill. */
+.preview-page-card {
+  position: relative;
   width: 8.5in;
   max-width: 100%;
-  /* Render at Letter aspect ratio. The iframe content has its own
-     @page Letter rules so the inner CSS is print-accurate. */
   aspect-ratio: 8.5 / 11;
   background: #fff;
   border: 1px solid #b5b8bb;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+.preview-page-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
   display: block;
-  /* When the iframe is wider than the stage, scale down to fit.
-     We rely on the JS sizing pass for accurate page-fit math. */
-  transform-origin: top center;
 }
 .preview-empty {
   color: var(--fg-2);

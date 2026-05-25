@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>callback.</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v={{ static_version }}">
 </head>
 <body>
   <!-- Skip link — visible only on focus. Lets keyboard users bypass the
@@ -302,10 +302,18 @@
               </span>
             </header>
             <div class="preview-stage" id="previewStage">
-              <iframe id="livePreviewFrame"
-                      title="Résumé live preview"
-                      class="preview-page-frame"
-                      sandbox="allow-same-origin"></iframe>
+              <!-- The card div owns the Letter aspect ratio; the iframe
+                   absolutely-positions to fill it. Doing the aspect-ratio
+                   sizing on a block-level <div> is reliable across
+                   browsers; doing it directly on a replaced element (the
+                   iframe) collapsed to 0 height inside the flex stage
+                   parent in some renderers. -->
+              <div class="preview-page-card">
+                <iframe id="livePreviewFrame"
+                        title="Résumé live preview"
+                        class="preview-page-frame"
+                        sandbox="allow-same-origin"></iframe>
+              </div>
               <div id="livePreviewEmpty" class="preview-empty hidden">
                 Select a user and start an application to load the preview.
               </div>
@@ -801,6 +809,6 @@
     </div>
   </div>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v={{ static_version }}"></script>
 </body>
 </html>

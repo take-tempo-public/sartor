@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -47,6 +48,20 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.register_blueprint(dashboard_bp, url_prefix="/_dashboard")
+
+
+# Process-start token for cache-busting linked static assets. Stable
+# for the life of one server process; restart bumps it. Templates
+# append `?v={{ static_version }}` to /static/* URLs so a Flask
+# restart guarantees browsers re-fetch JS/CSS even when they
+# previously cached aggressively. Cheap (one int, computed once).
+_STATIC_VERSION = str(int(time.time()))
+
+
+@app.context_processor
+def inject_static_version() -> dict[str, str]:
+    """Expose the cache-bust token to every template render."""
+    return {"static_version": _STATIC_VERSION}
 
 BASE_DIR = Path(__file__).parent
 CONFIGS_DIR = BASE_DIR / "configs"
