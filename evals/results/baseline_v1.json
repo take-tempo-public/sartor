@@ -1,0 +1,34 @@
+{
+  "schema_version": 2,
+  "run_id": "v1.0.0_baseline",
+  "sourced_from": "evals/results/20260513_221926Z.jsonl",
+  "recorded_on": "2026-05-25",
+  "prompt_versions": [
+    "2026-05-12.1"
+  ],
+  "total_cost_usd": 2.034,
+  "fixtures": {
+    "data-scientist-junior": {
+      "ats_format": 4.2,
+      "clarification_quality": 4.2,
+      "grounding": 4.8,
+      "keyword_coverage": 4.2,
+      "tone": 4.2
+    },
+    "pm-senior": {
+      "ats_format": 4.6,
+      "clarification_quality": 4.2,
+      "grounding": 4.8,
+      "keyword_coverage": 4.2,
+      "tone": 4.2
+    },
+    "sre-mid-level": {
+      "ats_format": 4.8,
+      "clarification_quality": 3.2,
+      "grounding": 4.7,
+      "keyword_coverage": 4.2,
+      "tone": 4.2
+    }
+  },
+  "notes": "v1.0.0 baseline pinned for regression detection. evals/runner.py _load_baseline_scores() reads this on subsequent runs to flag rubric-score deltas. Sourced from the most recent clean synthetic run on prompt_version 2026-05-12.1; subsequent prompt revisions (2026-05-24.1 through 2026-05-24.4) ship with v1.0.0 but a re-baseline is recommended early in v1.0.1 once the streaming/split-analyze changes from PERF_ANALYZE.md land."
+}

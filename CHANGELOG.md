@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(No unreleased changes yet — v1.0.1 work starts here.)
+
+---
+
+## [1.0.0] — 2026-05-25
+
+**First public release.** Local-first résumé tailor with:
+- Unified Corpus Item pattern (Bullet + SummaryItem + ExperienceTitle as variants-with-tags-with-score-with-recommend-call)
+- JSON Resume v1.0 as canonical intermediate format
+- Three output formats: `.md`, `.docx` (python-docx), `.pdf` (Playwright + Chromium)
+- Five bundled persona templates with HTML+CSS companions (classic / compact / modern / hybrid_tech / spacious)
+- Live HTML preview, corpus-direct (no sidecar dependency)
+- Six-step wizard: Job → Clarify (opt) → Compose → Template → Generate → Download
+- Cover-letter detachment (opt-in, post-résumé) with full refine/iterate parity
+- Iterative refinement with edit-aware baselines and per-iteration audit trail
+- LLM eval harness with 0.0–5.0 rubric scoring (`baseline_v1.json` pinned)
+- Read-only `/_dashboard` blueprint for score trends, cost cards, failure-mode clustering
+
+**Visual assets** (screenshots, demo GIF, onboarding HTML page) deferred to v1.0.1, after the planned UI redesign — see [`docs/PRODUCT_SHAPE.md §10`](docs/PRODUCT_SHAPE.md) for the full v1.0.1 / v1.1 / v2 deferred list.
+
 ### Changed — Phase β.6 post-review: corpus-direct live preview + PDF format + ubiquitous iframe (2026-05-24)
 
 The β.6 hands-on review surfaced five issues, three of which shared an

@@ -43,6 +43,9 @@ db/*.sqlite-shm
 # ---- Eval results and real fixtures (per-clone, may contain real PII) ----
 evals/results/*
 !evals/results/.gitkeep
+# baseline_*.json files are aggregated rubric scores only (no résumé text),
+# safe and intended to ship for regression detection per evals/runner.py.
+!evals/results/baseline_*.json
 evals/fixtures/real/*
 !evals/fixtures/real/.gitkeep
 
