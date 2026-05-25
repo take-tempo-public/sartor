@@ -4106,21 +4106,31 @@ async function _refreshLivePreview(templateId) {
   if (empty) empty.classList.add('hidden');
   frame.classList.remove('hidden');
 
-  // Wire the post-load page-count detector ONCE (it survives src
-  // swaps). The handler reads the iframe's own contentDocument; the
-  // sandbox="allow-same-origin" attribute on the iframe permits this.
+  // The preview iframe runs paged.js (injected by the preview route)
+  // and posts the rendered page count back to us. Wire the listener
+  // ONCE — it persists across src swaps. We still have a fallback
+  // path that measures via the iframe's own DOM, in case paged.js
+  // ever fails to load (e.g., a corrupt vendor file).
   if (!frame._pageCountHookInstalled) {
+    window.addEventListener('message', (ev) => {
+      if (!ev || !ev.data || ev.data.type !== 'pagedjs_rendered') return;
+      const pageInfo = document.getElementById('previewPageInfo');
+      if (!pageInfo) return;
+      const n = parseInt(ev.data.pages, 10);
+      if (!Number.isFinite(n) || n < 1) return;
+      pageInfo.textContent = n === 1 ? 'Page 1 of 1' : `Page 1 of ${n}`;
+    });
     frame.addEventListener('load', () => _updatePreviewPageCount(frame));
     frame._pageCountHookInstalled = true;
   }
   frame.src = url;
 }
 
-// v1.0 Step 4: compute approximate page count from the loaded iframe's
-// own content. The preview content has CSS `@page Letter` rules baked
-// in, so we measure the body scrollHeight against an 11" page height
-// at 96 DPI (~1056 px). A floor of 1 prevents `Page 1 of 0` on empty
-// content.
+// Fallback page-count estimator when paged.js doesn't (yet) post a
+// count — runs once on iframe load, before paged.js has finished its
+// layout pass. Estimates from the iframe's own scrollHeight against
+// an 11"×96-DPI Letter page. Paged.js's postMessage will overwrite
+// this with the real count usually within 500–1500 ms.
 function _updatePreviewPageCount(frame) {
   const pageInfo = document.getElementById('previewPageInfo');
   if (!pageInfo) return;

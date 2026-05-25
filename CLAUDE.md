@@ -1,4 +1,4 @@
-# Resume Optimizer — Agent and Contributor Contract
+# callback. — Agent and Contributor Contract
 
 > **Purpose:** the project-shared contract that any contributor — human
 > or LLM agent — reads before non-trivial changes. Pointers to deeper

@@ -2052,6 +2052,7 @@ def preview_application_html(application_id: int):
 
     html_str = render_html_string(json_doc, html_template_path=html_path)
     html_str = _inline_persona_css(html_str, html_path)
+    html_str = _inject_paged_polyfill(html_str)
     return html_str, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
@@ -2120,6 +2121,7 @@ def preview_candidate_html(username: str):
 
     html_str = render_html_string(json_doc, html_template_path=html_path)
     html_str = _inline_persona_css(html_str, html_path)
+    html_str = _inject_paged_polyfill(html_str)
     return html_str, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
@@ -2141,6 +2143,70 @@ def _inline_persona_css(html_str: str, html_path: Path) -> str:
         f"<style>\n{css_str}\n</style>",
         html_str, count=1,
     )
+
+
+_PAGED_PREVIEW_INJECTION = """
+<style>
+  /* Paged.js styling for in-browser preview. Each .pagedjs_page is a
+     visible Letter-sized "page card" on a neutral trough — what you'd
+     see if you exported the same HTML to PDF and laid the pages side-
+     by-side. */
+  html, body { background: #d6d8da; margin: 0; }
+  .pagedjs_pages {
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .pagedjs_page {
+    background: #fff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    border: 1px solid #b5b8bb;
+  }
+</style>
+<script src="/static/vendor/paged.polyfill.js"></script>
+<script>
+  // Paged.js auto-polyfills on DOMContentLoaded. After it finishes
+  // laying out pages, postMessage the count to the parent frame so the
+  // wizard's "Page N of M" toolbar can update. paged.js exposes the
+  // 'rendered' event on the global PagedPolyfill instance; we also fall
+  // back to a 1.5s retry in case the event fires before our handler
+  // attaches.
+  (function () {
+    function send() {
+      var pages = document.querySelectorAll('.pagedjs_page').length;
+      try { window.parent.postMessage({ type: 'pagedjs_rendered', pages: pages }, '*'); }
+      catch (e) { /* same-origin only; safe to ignore */ }
+    }
+    if (window.PagedPolyfill && typeof window.PagedPolyfill.on === 'function') {
+      window.PagedPolyfill.on('rendered', send);
+    }
+    // Defensive fallback — paged.js layout typically completes within
+    // 500–1500 ms; the count is correct once the page DOM stabilizes.
+    setTimeout(send, 1500);
+  })();
+</script>
+"""
+
+
+def _inject_paged_polyfill(html_str: str) -> str:
+    """Append paged.js + a small init script before `</body>` so the
+    preview iframe renders content as discrete Letter-sized pages —
+    real page boundaries, not a scroll-height estimate.
+
+    Paged.js is bundled as `/static/vendor/paged.polyfill.js` (MIT,
+    v0.4.3). The script auto-polyfills CSS @page rules. The init
+    callback postMessages the rendered page count to the parent
+    frame so the wizard toolbar can show "Page N of M" accurately.
+
+    The PDF render path does NOT go through this helper —
+    `pdf_render.render_pdf()` uses Playwright's `page.pdf()` which
+    handles @page CSS natively. Paged.js is browser-preview only.
+    """
+    if "</body>" not in html_str:
+        return html_str + _PAGED_PREVIEW_INJECTION
+    return html_str.replace("</body>", _PAGED_PREVIEW_INJECTION + "</body>", 1)
 
 
 # ---------------------------------------------------------------------------
