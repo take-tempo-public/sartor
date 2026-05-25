@@ -103,8 +103,10 @@ class TestListBundled:
         r = client.get("/api/personas/bundled")
         assert r.status_code == 200
         body = r.get_json()
-        # 5 pre-seeded from migration 0002 + 2 test additions = 7
-        assert len(body) == 7
+        # 4 v1.0.0-curated bundled (classic / modern / spacious / tech;
+        # migration 0005 drops Compact and renames Hybrid Tech) +
+        # 2 test additions = 6
+        assert len(body) == 6
         names = {p["name"] for p in body}
         assert "Alpha" in names
         assert "Beta" in names
@@ -141,8 +143,8 @@ class TestListUserPersonas:
         r = client.get("/api/users/alice/personas")
         assert r.status_code == 200, r.get_json()
         body = r.get_json()
-        # 5 pre-seeded bundled rows + the Gamma test row = 6
-        assert len(body["bundled"]) == 6
+        # 4 v1.0.0-curated bundled rows + the Gamma test row = 5
+        assert len(body["bundled"]) == 5
         assert any(p["name"] == "Gamma" for p in body["bundled"])
         assert len(body["owned"]) == 1
         assert body["owned"][0]["name"] == "My Persona"

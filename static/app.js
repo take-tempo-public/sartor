@@ -3921,6 +3921,17 @@ function _renderTemplatePickList() {
 
     const nameRow = _el('div', { className: 'template-mini-name' });
     nameRow.appendChild(_el('span', { textContent: p.name }));
+    // ATS-safety badge. All 4 v1.0.0-curated bundled templates are
+    // ATS-safe by construction (single column, plain bullets, no
+    // tables / icons / sidebars). Owned uploads are marked
+    // "unverified" — we can't introspect arbitrary user .docx files
+    // for ATS-safety, so we don't claim it.
+    const atsLabel = source === 'owned' ? 'ATS · unverified' : 'ATS · safe';
+    const atsClass = source === 'owned' ? 'unverified' : 'safe';
+    nameRow.appendChild(_el('span', {
+      className: 'template-mini-ats ' + atsClass,
+      textContent: atsLabel,
+    }));
     nameRow.appendChild(_el('span', {
       className: 'template-mini-source ' + (source === 'owned' ? 'owned' : 'bundled'),
       textContent: source === 'owned' ? 'MINE' : 'BUNDLED',

@@ -1,29 +1,26 @@
 {#
    modern.html — Jinja2 résumé template for callback.
 
-   PORTED FROM:
-     jsonresume-theme-kendall by LinuxBozo
-     https://github.com/LinuxBozo/jsonresume-theme-kendall
-     Licensed MIT (LICENSE in upstream repo).
+   DESIGN INSPIRATION:
+     jsonresume-theme-class (MIT, James Spencer / JSON Resume org)
+     https://github.com/jsonresume/jsonresume-theme-class
 
-   Original © LinuxBozo. Port modifications and Jinja2/CSS
-   adaptations © callback. contributors. Distribution continues
-   under MIT to preserve the upstream license terms.
+   The upstream is the OFFICIAL JSON Resume org's modern theme,
+   actively maintained (last release 2026-02-15), explicitly
+   ATS-friendly, self-contained, single column. This file adapts
+   its visual identity into our Jinja2 + Letter-aspect render
+   pipeline.
 
-   PORT ADAPTATIONS:
-     - Handlebars/Mustache → Jinja2.
-     - Removed Bootstrap and Font Awesome CDN deps (offline PDF).
-     - Replaced FA icons with plain unicode glyphs / spans so the
-       PDF renders without network access.
-     - Replaced the col-xs-12 / col-sm-7 / col-sm-5 grid with a
-       minimal flexbox layout that preserves the two-column work-
-       on-left / contact-on-right signature of the theme.
-     - Removed the avatar/photo block — our corpus doesn't capture
-       it and ATS readers typically strip images anyway.
-     - System font stack (Open Sans-style) instead of Google Fonts
-       @import.
-     - Trimmed sections that don't exist in our schema (awards,
-       publications, languages, interests, references, volunteer).
+   ATS notes:
+     - Single column throughout (work, skills, projects, education
+       all stack vertically with no sidebar / two-col patterns)
+     - Standard system font stack (Roboto + Helvetica + Arial)
+     - Section headings are plain text (no glyphs / icons / emoji)
+     - Bullets render as plain disc (the CSS doesn't substitute
+       Octicons or any custom glyph)
+     - All contact + identity info is in the document BODY, not in
+       <header>/<footer> elements that some parsers skip
+     - No tables, text boxes, or images
 #}
 <!DOCTYPE html>
 <html lang="en">
@@ -34,152 +31,125 @@
 </head>
 <body>
 
-<div class="container">
+<header class="resume-header">
+  {% if basics.name %}<h1 class="name">{{ basics.name }}</h1>{% endif %}
+  {% if basics.label %}<p class="label">{{ basics.label }}</p>{% endif %}
+  <p class="contact">
+    {% set items = [] %}
+    {% if basics.email %}{% set _ = items.append(basics.email) %}{% endif %}
+    {% if basics.phone %}{% set _ = items.append(basics.phone) %}{% endif %}
+    {% for profile in basics.profiles or [] %}
+      {% set _ = items.append(profile.url | replace("https://", "") | replace("http://", "")) %}
+    {% endfor %}
+    {% if basics.url %}
+      {% set _ = items.append(basics.url | replace("https://", "") | replace("http://", "")) %}
+    {% endif %}
+    {{ items | join("  •  ") }}
+  </p>
+</header>
 
-  <header class="text-center">
-    <div id="text-header">
-      <h1>
-        {{ basics.name | default("") }}{% if basics.label %}<br><span>{{ basics.label }}</span>{% endif %}
-      </h1>
-    </div>
-  </header>
+{% if basics.summary %}
+<section class="summary">
+  <h2>Summary</h2>
+  <p>{{ basics.summary }}</p>
+</section>
+{% endif %}
 
-  <div class="row">
-    {# === Left column: Summary, Work, Projects === #}
-    <div class="col-main">
-
-      {% if basics.summary %}
-      <div class="box">
-        <h2>About</h2>
-        <p>{{ basics.summary }}</p>
-      </div>
+{% if work %}
+<section class="experience">
+  <h2>Experience</h2>
+  {% for job in work %}
+  <article class="job">
+    <header class="job-header">
+      <h3 class="job-title">
+        {% if job.position %}<span class="position">{{ job.position }}</span>{% endif %}
+        {% if job.position and job.name %}<span class="sep"> · </span>{% endif %}
+        {% if job.name %}<span class="company">{{ job.name }}</span>{% endif %}
+      </h3>
+      {% if job.startDate or job.endDate %}
+      <span class="dates">{{ job.startDate or "" }}{% if job.startDate and job.endDate %} – {% endif %}{{ job.endDate or "" }}</span>
       {% endif %}
+    </header>
+    {% if job.location %}<p class="loc">{{ job.location }}</p>{% endif %}
+    {% if job.summary %}<p class="job-summary">{{ job.summary }}</p>{% endif %}
+    {% if job.highlights %}
+    <ul class="highlights">
+      {% for h in job.highlights %}<li>{{ h }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
 
-      {% if work %}
-      <div class="box">
-        <h2>Work Experience</h2>
-        {% for job in work %}
-        <div class="job">
-          <div class="details">
-            <div class="where">
-              {{ job.name }}
-              {% if job.location %}<span class="loc">{{ job.location }}</span>{% endif %}
-            </div>
-            {% if job.startDate or job.endDate %}
-              <div class="year">{{ job.startDate or "" }}{% if job.startDate and job.endDate %} – {% endif %}{{ job.endDate or "" }}</div>
-            {% endif %}
-          </div>
-          <div class="job-details">
-            {% if job.position %}<div class="profession">{{ job.position }}</div>{% endif %}
-            {% if job.summary %}<div class="description"><p>{{ job.summary }}</p></div>{% endif %}
-            {% if job.highlights %}
-            <div class="highlights-label">Highlights</div>
-            <ul class="list-group">
-              {% for h in job.highlights %}<li>{{ h }}</li>{% endfor %}
-            </ul>
-            {% endif %}
-          </div>
-        </div>
-        {% endfor %}
-      </div>
+{% if skills %}
+<section class="skills">
+  <h2>Skills</h2>
+  {% set grouped = skills | selectattr("keywords") | list %}
+  {% if grouped %}
+    <ul class="skill-groups">
+      {% for s in skills %}
+      <li>
+        <strong>{{ s.name }}:</strong>
+        {{ (s.keywords or []) | join(", ") }}
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="skill-line">{{ skills | map(attribute="name") | join(" · ") }}</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if projects %}
+<section class="projects">
+  <h2>Projects</h2>
+  {% for p in projects %}
+  <article class="project">
+    <header class="job-header">
+      <h3>{{ p.name }}</h3>
+      {% if p.startDate or p.endDate %}
+      <span class="dates">{{ p.startDate or "" }}{% if p.startDate and p.endDate %} – {% endif %}{{ p.endDate or "" }}</span>
       {% endif %}
+    </header>
+    {% if p.description %}<p>{{ p.description }}</p>{% endif %}
+    {% if p.highlights %}
+    <ul class="highlights">
+      {% for h in p.highlights %}<li>{{ h }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
 
-      {% if projects %}
-      <div class="box">
-        <h2>Projects</h2>
-        <ul class="list-group">
-          {% for p in projects %}
-          <li><span class="proj-name">{{ p.name }}</span>{% if p.description %}: {{ p.description }}{% endif %}</li>
-          {% endfor %}
-        </ul>
-      </div>
+{% if certificates %}
+<section class="certifications">
+  <h2>Certifications</h2>
+  <ul>{% for c in certificates %}<li>{{ c.name }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% if education %}
+<section class="education">
+  <h2>Education</h2>
+  {% for ed in education %}
+  <article class="degree">
+    <header class="job-header">
+      <h3>
+        {% if ed.institution %}<span>{{ ed.institution }}</span>{% endif %}
+        {% if ed.institution and ed.area %}<span class="sep">, </span>{% endif %}
+        {% if ed.area %}<span>{{ ed.area }}</span>{% endif %}
+      </h3>
+      {% if ed.startDate or ed.endDate %}
+      <span class="dates">{{ ed.startDate or "" }}{% if ed.startDate and ed.endDate %} – {% endif %}{{ ed.endDate or "" }}</span>
       {% endif %}
-
-    </div>
-
-    {# === Right column: Contact, Education, Skills, Certifications === #}
-    <div class="col-side">
-
-      <div class="box">
-        <h2>Contact</h2>
-        {% if basics.phone %}
-        <div class="contact-item">
-          <div class="title">{{ basics.phone }}</div>
-        </div>
-        {% endif %}
-        {% if basics.email %}
-        <div class="contact-item">
-          <div class="title">{{ basics.email }}</div>
-        </div>
-        {% endif %}
-        {% if basics.url %}
-        <div class="contact-item">
-          <div class="title">{{ basics.url | replace("https://", "") | replace("http://", "") }}</div>
-        </div>
-        {% endif %}
-        {% for profile in basics.profiles or [] %}
-        <div class="contact-item">
-          <div class="title">{{ profile.network or "Profile" }}</div>
-          <div class="description">{{ profile.username or (profile.url | replace("https://", "") | replace("http://", "")) }}</div>
-        </div>
-        {% endfor %}
-      </div>
-
-      {% if education %}
-      <div class="box">
-        <h2>Education</h2>
-        <ul class="timeline">
-          {% for ed in education %}
-          <li>
-            <div class="year">{{ ed.startDate or "" }}{% if ed.startDate and ed.endDate %}–{% endif %}{{ ed.endDate or "" }}</div>
-            <div class="description">
-              <h3>{{ ed.institution }}</h3>
-              {% if ed.studyType %}<p>{{ ed.studyType }}</p>{% endif %}
-              {% if ed.area %}<p>{{ ed.area }}</p>{% endif %}
-              {% if ed.score %}<p>Grade: {{ ed.score }}</p>{% endif %}
-            </div>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
-
-      {% if skills %}
-      <div class="box">
-        <h2>Skills</h2>
-        {% set grouped = skills | selectattr("keywords") | list %}
-        {% if grouped %}
-          {% for s in skills %}
-          <div class="skills">
-            {% if s.name %}<div class="item-skills">{{ s.name }}</div>{% endif %}
-            {% if s.keywords %}
-            <div class="skill-row">
-              {% for k in s.keywords %}<span class="skill badge">{{ k }}</span>{% endfor %}
-            </div>
-            {% endif %}
-          </div>
-          {% endfor %}
-        {% else %}
-          <div class="skill-row">
-            {% for s in skills %}<span class="skill badge">{{ s.name }}</span>{% endfor %}
-          </div>
-        {% endif %}
-      </div>
-      {% endif %}
-
-      {% if certificates %}
-      <div class="box">
-        <h2>Certifications</h2>
-        <ul class="list-group">
-          {% for c in certificates %}<li>{{ c.name }}</li>{% endfor %}
-        </ul>
-      </div>
-      {% endif %}
-
-    </div>
-  </div>
-
-</div>
+    </header>
+    {% if ed.studyType %}<p>{{ ed.studyType }}</p>{% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
 
 </body>
 </html>

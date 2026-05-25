@@ -1,8 +1,8 @@
-# Resume Optimizer
+# callback. 
 
 A local web application that tailors resumes and cover letters to specific job descriptions using the Claude AI API. Built on the [10 Principles](https://jdforsythe.github.io/10-principles/overview/) — deterministic Python tools handle all mechanical work; the LLM handles analysis and writing.
 
-**LCARS-styled interface. Runs locally. No data leaves your machine except API calls to Anthropic.**
+**Runs locally. LLM calls to Anthropic (without a proxy that would force API billing without monthly credits)**
 
 > **Doc map:** [`vision.md`](vision.md) (product intent) ·
 > [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (architecture) ·

@@ -1,6 +1,7 @@
-"""Generate the 5 bundled ATS-friendly persona templates.
+"""Generate the 4 bundled ATS-friendly persona templates.
 
-Phase C.1: produces `personas/bundled/{classic,modern,compact,spacious,hybrid_tech}.docx`
+Phase C.1 / v1.0.0 curation: produces
+`personas/bundled/{classic,modern,spacious,tech}.docx`
 programmatically via python-docx. The templates are STYLE CARRIERS — they
 contain placeholder paragraphs in the role order that `generator.py:_capture_template_styles`
 captures (name, subtitle, contact, section_heading, job_title, job_subtitle,
@@ -133,31 +134,6 @@ PRESETS: list[TypographyPreset] = [
         suggested_role_tags=["pm", "design-mgmt", "generalist"],
     ),
     TypographyPreset(
-        filename="compact.docx",
-        display_name="Compact (Senior)",
-        description=(
-            "Calibri 10pt with very tight spacing. Built for senior candidates "
-            "with lots of experience to fit on one page. Same ATS rules — just dense."
-        ),
-        font_family="Calibri",
-        name_pt=14,
-        subtitle_pt=10,
-        contact_pt=9,
-        section_heading_pt=11,
-        section_heading_uppercase=True,
-        body_pt=10,
-        bullet_pt=10,
-        job_title_pt=10,
-        job_subtitle_pt=9,
-        line_spacing=1.0,
-        body_space_after_pt=2,
-        section_space_before_pt=8,
-        section_space_after_pt=3,
-        bullet_space_after_pt=1,
-        margin_inches=0.6,
-        suggested_role_tags=["pm", "design-mgmt", "generalist"],
-    ),
-    TypographyPreset(
         filename="spacious.docx",
         display_name="Spacious (Career Changer / Junior)",
         description=(
@@ -177,21 +153,23 @@ PRESETS: list[TypographyPreset] = [
         suggested_role_tags=["ic-design", "generalist"],
     ),
     TypographyPreset(
-        filename="hybrid_tech.docx",
-        display_name="Hybrid Tech",
+        filename="tech.docx",
+        display_name="Tech (ATS-optimized)",
         description=(
-            "Helvetica 11pt with underline-accented section headings. Mild "
-            "typographic distinction for engineering/design/AI roles. Still "
-            "single-column, no flair beyond the underline."
+            "Georgia 11pt with centered name and underlined section headings. "
+            "Single column, plain bullets, no inline glyphs — designed for "
+            "engineering / data / AI roles where the parser must catch every "
+            "tech keyword verbatim. Inspired by the community "
+            "jsonresume-theme-dev-ats."
         ),
-        font_family="Helvetica",
-        name_pt=14,
+        font_family="Georgia",
+        name_pt=15,
         section_heading_pt=12,
         section_heading_underline=True,
-        line_spacing=1.15,
-        body_space_after_pt=6,
+        line_spacing=1.2,
+        body_space_after_pt=5,
         section_space_before_pt=10,
-        suggested_role_tags=["ai", "spatial", "physical-compute", "ic-design"],
+        suggested_role_tags=["ai", "engineering", "data-science", "physical-compute"],
     ),
 ]
 

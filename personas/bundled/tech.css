@@ -1,0 +1,162 @@
+/*!
+ * tech.css — dev-ats-inspired ATS-safe single-column résumé.
+ *
+ * DESIGN INSPIRATION:
+ *   jsonresume-theme-dev-ats (MIT, asqrzk)
+ *   https://github.com/asqrzk/jsonresume-theme-dev-ats
+ *
+ * Adapted for callback.: same visual conventions but our Letter
+ * page geometry and self-contained CSS (no external imports).
+ *
+ * Signature look:
+ *   - Georgia serif body (ATS-tested across Workday, Greenhouse,
+ *     Lever per the upstream README)
+ *   - Centered name as the only centered element
+ *   - Section headings as plain h2 with a bottom border, all caps
+ *   - Two-side header per item: job title left, dates right
+ *     (this is FLOAT-based — NOT a table or grid; floats parse
+ *     cleanly through every ATS we know of)
+ *   - Plain disc bullets, no inline glyphs
+ *
+ * ATS verification:
+ *   - The float-clearing .clearfix div is a CSS-only pattern; the
+ *     DOM is still a linear flow of <h2>, <div>, <ul> elements
+ *     that a parser walks top-to-bottom as expected.
+ *   - No <code>, <pre>, <table>, <svg>, or <img> elements anywhere
+ *   - All copy is text content
+ */
+
+@page {
+  size: Letter;
+  margin: 0.5in 0.75in;
+}
+
+* { box-sizing: border-box; }
+
+:root {
+  --ink:        #1d2125;
+  --ink-soft:   #4a5258;
+  --rule:       #1d2125;     /* dark heading underline for ATS clarity */
+  --rule-soft:  #d8dce0;
+}
+
+body {
+  font-family: Georgia, "Times New Roman", "Liberation Serif", serif;
+  font-size: 10.5pt;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 0;
+  padding: 24px 48px;
+  background: #fff;
+}
+
+/* -----------------------------------------------------------------
+   Header
+   ----------------------------------------------------------------- */
+.resume-header {
+  text-align: center;
+  margin-bottom: 12px;
+}
+.resume-header .name {
+  font-size: 22pt;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  letter-spacing: 0.01em;
+}
+.resume-header .label {
+  margin: 0 0 4px 0;
+  color: var(--ink-soft);
+  font-style: italic;
+  font-size: 10.5pt;
+}
+.resume-header .contact {
+  margin: 0;
+  font-size: 9.5pt;
+  color: var(--ink);
+}
+
+/* -----------------------------------------------------------------
+   Sections
+   ----------------------------------------------------------------- */
+section {
+  margin: 12px 0;
+  page-break-inside: avoid;
+}
+section > h2 {
+  margin: 6px 0 4px 0;
+  font-size: 12pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 2px;
+}
+p { margin: 0 0 4px 0; }
+
+/* -----------------------------------------------------------------
+   Two-side item layout (signature dev-ats pattern)
+   Title floats left, dates float right, .clearfix wraps each row
+   ----------------------------------------------------------------- */
+article.item {
+  margin: 8px 0;
+  page-break-inside: avoid;
+}
+.item-header {
+  float: left;
+}
+.item-header-title {
+  font-weight: 700;
+  font-size: 11pt;
+}
+.item-header-subtitle {
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 10pt;
+}
+.item-details {
+  float: right;
+  text-align: right;
+  font-size: 9.5pt;
+  color: var(--ink-soft);
+}
+.item-details-date {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+.item-summary {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* -----------------------------------------------------------------
+   Bullets + skill groups + certifications
+   ----------------------------------------------------------------- */
+ul.highlights, ul.skill-groups, .certifications ul {
+  margin: 4px 0 0 0;
+  padding-left: 20px;
+}
+ul.highlights li, ul.skill-groups li, .certifications li {
+  list-style: disc;
+  line-height: 1.45;
+  margin-bottom: 2px;
+}
+ul.skill-groups li strong {
+  font-weight: 700;
+}
+.skill-line {
+  margin: 0;
+}
+
+@media print {
+  body {
+    padding: 0;
+    font-size: 10pt;
+  }
+  section { page-break-inside: avoid; }
+}

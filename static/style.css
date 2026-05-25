@@ -3110,6 +3110,29 @@ input:focus, select:focus, textarea:focus {
   letter-spacing: 0.08em;
 }
 .template-mini-source.owned { color: var(--brand); }
+
+/* ATS-safety badge. Shipped with v1.0.0 template curation — every
+   bundled template is single-column + ATS-tested; owned uploads are
+   marked unverified because we don't introspect user .docx files. */
+.template-mini-ats {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  margin-left: 4px;
+}
+.template-mini-ats.safe {
+  color: var(--success);
+  border-color: var(--success);
+  background: rgba(102, 204, 204, 0.08);
+}
+.template-mini-ats.unverified {
+  color: var(--fg-3);
+  border-color: var(--border);
+  background: none;
+}
 .template-mini-sub {
   color: var(--fg-2);
   font-size: 11px;

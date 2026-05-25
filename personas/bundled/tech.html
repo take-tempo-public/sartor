@@ -1,0 +1,154 @@
+{#
+   tech.html — Jinja2 résumé template for callback.
+
+   DESIGN INSPIRATION:
+     jsonresume-theme-dev-ats (MIT, asqrzk)
+     https://github.com/asqrzk/jsonresume-theme-dev-ats
+
+   The upstream is explicitly ATS-tested for developer/engineering
+   résumés. This file adapts the upstream's visual conventions
+   (centered name, underlined section headings, item-header /
+   item-details split for job titles, plain disc bullets) into our
+   Jinja2 + Letter-aspect render pipeline.
+
+   ATS notes:
+     - Single column throughout; no sidebar, no two-col grid
+     - Georgia serif body — ATS-tested font
+     - Centered name in the header (one of the few centering uses
+       parsers handle well — it's a single-line H1, not a table cell)
+     - Section headings use plain text with a bottom border
+       (rendered as underline; no graphic, no color)
+     - Bullets are plain disc — no Octicons, no custom glyphs
+     - Tech keywords appear as plain inline text in body / highlights
+       (NOT in <code> elements, which the original v0 hybrid_tech
+       used and which some ATSes treat as separators)
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ basics.name | default("Résumé") }}</title>
+<link rel="stylesheet" href="tech.css">
+</head>
+<body>
+
+<header class="resume-header">
+  {% if basics.name %}<h1 class="name">{{ basics.name }}</h1>{% endif %}
+  {% if basics.label %}<p class="label">{{ basics.label }}</p>{% endif %}
+  <p class="contact">
+    {% set items = [] %}
+    {% if basics.email %}{% set _ = items.append(basics.email) %}{% endif %}
+    {% if basics.phone %}{% set _ = items.append(basics.phone) %}{% endif %}
+    {% for profile in basics.profiles or [] %}
+      {% set _ = items.append(profile.url | replace("https://", "") | replace("http://", "")) %}
+    {% endfor %}
+    {% if basics.url %}
+      {% set _ = items.append(basics.url | replace("https://", "") | replace("http://", "")) %}
+    {% endif %}
+    {{ items | join(" | ") }}
+  </p>
+</header>
+
+{% if basics.summary %}
+<section class="summary">
+  <h2>Summary</h2>
+  <p>{{ basics.summary }}</p>
+</section>
+{% endif %}
+
+{% if skills %}
+<section class="skills">
+  <h2>Skills</h2>
+  {% set grouped = skills | selectattr("keywords") | list %}
+  {% if grouped %}
+    <ul class="skill-groups">
+      {% for s in skills %}
+      <li><strong>{{ s.name }}:</strong> {{ (s.keywords or []) | join(", ") }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="skill-line">{{ skills | map(attribute="name") | join(", ") }}</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if work %}
+<section class="experience">
+  <h2>Experience</h2>
+  {% for job in work %}
+  <article class="item">
+    <div class="item-header">
+      <div class="item-header-title">{{ job.position or "" }}</div>
+      <div class="item-header-subtitle">{{ job.name or "" }}{% if job.location %} — {{ job.location }}{% endif %}</div>
+    </div>
+    <div class="item-details">
+      {% if job.startDate or job.endDate %}
+        <div class="item-details-date">{{ job.startDate or "" }}{% if job.startDate and job.endDate %} – {% endif %}{{ job.endDate or "" }}</div>
+      {% endif %}
+    </div>
+    <div class="clearfix"></div>
+    {% if job.summary %}<p class="item-summary">{{ job.summary }}</p>{% endif %}
+    {% if job.highlights %}
+    <ul class="highlights">
+      {% for h in job.highlights %}<li>{{ h }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if projects %}
+<section class="projects">
+  <h2>Projects</h2>
+  {% for p in projects %}
+  <article class="item">
+    <div class="item-header">
+      <div class="item-header-title">{{ p.name }}</div>
+    </div>
+    <div class="item-details">
+      {% if p.startDate or p.endDate %}
+        <div class="item-details-date">{{ p.startDate or "" }}{% if p.startDate and p.endDate %} – {% endif %}{{ p.endDate or "" }}</div>
+      {% endif %}
+    </div>
+    <div class="clearfix"></div>
+    {% if p.description %}<p class="item-summary">{{ p.description }}</p>{% endif %}
+    {% if p.highlights %}
+    <ul class="highlights">
+      {% for h in p.highlights %}<li>{{ h }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if education %}
+<section class="education">
+  <h2>Education</h2>
+  {% for ed in education %}
+  <article class="item">
+    <div class="item-header">
+      <div class="item-header-title">{{ ed.institution or "" }}</div>
+      <div class="item-header-subtitle">{{ ed.area or "" }}{% if ed.studyType %} — {{ ed.studyType }}{% endif %}</div>
+    </div>
+    <div class="item-details">
+      {% if ed.startDate or ed.endDate %}
+        <div class="item-details-date">{{ ed.startDate or "" }}{% if ed.startDate and ed.endDate %} – {% endif %}{{ ed.endDate or "" }}</div>
+      {% endif %}
+    </div>
+    <div class="clearfix"></div>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if certificates %}
+<section class="certifications">
+  <h2>Certifications</h2>
+  <ul>{% for c in certificates %}<li>{{ c.name }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+</body>
+</html>

@@ -1,242 +1,172 @@
 /*!
- * modern.css — print-friendly CSS for callback. modern résumé layout.
+ * modern.css — class-inspired ATS-safe single-column résumé.
  *
- * PORTED FROM:
- *   jsonresume-theme-kendall by LinuxBozo
- *   https://github.com/LinuxBozo/jsonresume-theme-kendall
- *   Licensed MIT.
+ * DESIGN INSPIRATION:
+ *   jsonresume-theme-class (MIT, James Spencer / JSON Resume org)
+ *   https://github.com/jsonresume/jsonresume-theme-class
+ *   Last release 2026-02-15; actively maintained.
  *
- * Original © LinuxBozo. Port modifications © callback. contributors.
- * Distribution continues under MIT to preserve upstream license terms.
+ * Signature look:
+ *   - Blue accent header band with white name + lighter-blue subtitle
+ *   - Roboto / Helvetica system sans-serif stack (no @font-face / no
+ *     Google Fonts @import — must render offline for PDF)
+ *   - Plain disc bullets (no Octicons, no custom glyphs)
+ *   - Single column, single column, single column
+ *   - Section heading bottom-rule for visual separation without
+ *     boxes or tables (ATS-safe)
  *
- * PORT ADAPTATIONS:
- *   - Replaced Bootstrap col-xs-12 / col-sm-7 / col-sm-5 with a
- *     minimal flexbox grid (col-main / col-side) so the theme
- *     renders offline.
- *   - Dropped Font Awesome (CDN). Sections use plain text headers
- *     instead of icon glyphs to keep the PDF ATS-friendly.
- *   - Removed the avatar photo block and circular border treatments.
- *   - Toned the dark-navy body background (#334960) → white. The
- *     teal accent (#227c74) survives as the section-header color
- *     because it's the theme's visual identity.
- *   - Open Sans replaced with a system font stack; the rendered
- *     output picks up the closest available sans-serif at print time.
- *   - Education + work cards use a simple eee tinted block instead
- *     of the gradient timeline (which renders poorly to PDF and
- *     adds parsing noise for ATS).
- *   - Print rules (@page, @media print) added.
+ * ATS verification points:
+ *   - All copy is in plain HTML text (no <img>, no <svg>, no <pre>
+ *     blocks that some parsers strip)
+ *   - Contact info is in the document BODY <header>, not a
+ *     <header>/<footer> page region that ATSes sometimes skip
+ *   - Section names use the verbatim industry-standard words
+ *     (Summary / Experience / Skills / Projects / Certifications
+ *     / Education) for keyword-spotters
  */
 
 @page {
   size: Letter;
-  margin: 0.6in 0.65in;
+  margin: 0.55in 0.7in;
 }
 
 * { box-sizing: border-box; }
 
 :root {
-  --ink: #2c3338;
-  --ink-soft: #4a5258;
-  --accent: #227c74;
-  --accent-dark: #32475c;
-  --rule: #d4d8db;
-  --tint: #f3f5f7;
+  --ink:        #1d2125;
+  --ink-soft:   #4a5258;
+  --accent:     #13509b;      /* class theme signature blue */
+  --accent-fg:  #ffffff;
+  --accent-sub: #d6e2f0;
+  --rule:       #d8dce0;
 }
 
 body {
-  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
-               Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: Roboto, "Helvetica Neue", Helvetica, Arial,
+               "Liberation Sans", sans-serif;
   color: var(--ink);
-  background: #fff;
   font-size: 10.5pt;
   line-height: 1.5;
   margin: 0;
+  background: #fff;
 }
 
-.container {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 24px 24px 40px;
+/* -----------------------------------------------------------------
+   Header band — class's signature element
+   ----------------------------------------------------------------- */
+.resume-header {
+  background: var(--accent);
+  color: var(--accent-fg);
+  padding: 22px 28px 18px;
+  margin: 0;
 }
-
-.text-center { text-align: center; }
-
-/* ----------------------------------------------------------------
-   Header
-   ---------------------------------------------------------------- */
-#text-header h1 {
+.resume-header .name {
+  margin: 0;
   font-size: 22pt;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
-  color: var(--ink);
-  margin: 0 0 4px 0;
-  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--accent-fg);
 }
-#text-header h1 span {
-  display: inline-block;
-  margin-top: 4px;
-  color: var(--accent-dark);
+.resume-header .label {
+  margin: 4px 0 8px 0;
+  color: var(--accent-sub);
   font-size: 11pt;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: none;
-  opacity: 0.85;
+  font-weight: 400;
 }
-#text-header {
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--rule);
-  margin-bottom: 20px;
+.resume-header .contact {
+  margin: 0;
+  color: var(--accent-sub);
+  font-size: 9.5pt;
+  word-spacing: 0.04em;
 }
 
-/* ----------------------------------------------------------------
-   Two-column flex layout (replaces col-sm-7 + col-sm-5)
-   ---------------------------------------------------------------- */
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
+/* -----------------------------------------------------------------
+   Body sections
+   ----------------------------------------------------------------- */
+section {
+  padding: 14px 28px 4px;
+  page-break-inside: avoid;
 }
-.col-main { flex: 1 1 60%; min-width: 0; }
-.col-side { flex: 1 1 35%; min-width: 0; }
-
-@media (max-width: 640px) {
-  .col-main, .col-side { flex: 1 1 100%; }
-}
-
-/* ----------------------------------------------------------------
-   Section boxes
-   ---------------------------------------------------------------- */
-.box { margin-bottom: 22px; page-break-inside: avoid; }
-.box h2 {
+section > h2 {
+  margin: 0 0 8px 0;
   color: var(--accent);
   font-size: 12pt;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  margin: 0 0 10px 0;
   padding-bottom: 4px;
   border-bottom: 1px solid var(--rule);
 }
-h3 { margin: 0 0 4px 0; font-size: 11pt; font-weight: 700; }
-
 p { margin: 0 0 6px 0; }
+p:last-child { margin-bottom: 0; }
 
-/* ----------------------------------------------------------------
-   Work card (signature: filled rounded block with rule lines)
-   ---------------------------------------------------------------- */
-.job { margin-bottom: 14px; }
-.job .details {
-  background: var(--tint);
-  border-bottom: 1px solid var(--rule);
-  border-right: 1px solid var(--rule);
-  padding: 8px 10px;
-  margin-bottom: 6px;
+/* -----------------------------------------------------------------
+   Job / project / education entries
+   ----------------------------------------------------------------- */
+article.job, article.project, article.degree {
+  margin-bottom: 12px;
+  page-break-inside: avoid;
 }
-.job .where {
+article.job:last-child,
+article.project:last-child,
+article.degree:last-child { margin-bottom: 0; }
+
+.job-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+.job-title, .job-header h3 {
+  margin: 0;
   font-size: 11pt;
   font-weight: 700;
   color: var(--ink);
 }
-.job .where .loc {
-  float: right;
-  font-weight: 400;
+.job-title .position { color: var(--ink); }
+.job-title .company  { color: var(--ink-soft); font-weight: 600; }
+.job-title .sep      { color: var(--ink-soft); font-weight: 400; }
+.dates {
   font-size: 9.5pt;
   color: var(--ink-soft);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
-.job .year {
-  font-size: 9.5pt;
+.loc {
   color: var(--ink-soft);
-  opacity: 0.85;
-  margin-top: 2px;
+  font-size: 9.5pt;
+  margin: 0 0 4px 0;
 }
-.job .job-details { padding-left: 6px; }
-.job .profession {
-  font-size: 10.5pt;
-  font-weight: 700;
-  margin: 4px 0 4px 0;
-}
-.job .description { line-height: 1.5; }
-.job .highlights-label {
-  font-weight: 700;
-  margin-top: 6px;
+.job-summary {
   font-size: 10pt;
+  color: var(--ink-soft);
+  margin: 2px 0 4px 0;
 }
 
-ul.list-group, ul.timeline {
+ul.highlights, ul.skill-groups, .certifications ul {
   margin: 4px 0 0 0;
-  padding-left: 18px;
+  padding-left: 20px;
 }
-ul.list-group li, ul.timeline li {
-  list-style: disc;
+ul.highlights li, ul.skill-groups li, .certifications li {
+  list-style: disc;        /* plain disc — ATS-friendly */
   line-height: 1.5;
   margin-bottom: 2px;
 }
-
-/* ----------------------------------------------------------------
-   Contact (right column)
-   ---------------------------------------------------------------- */
-.contact-item {
-  padding: 4px 0;
-  border-bottom: 1px dotted var(--rule);
-}
-.contact-item:last-child { border-bottom: none; }
-.contact-item .title { font-weight: 600; }
-.contact-item .description {
-  color: var(--ink-soft);
-  font-size: 9.5pt;
-  word-break: break-all;
+ul.skill-groups li strong { color: var(--ink); }
+.skill-line {
+  margin: 0;
+  line-height: 1.6;
 }
 
-/* ----------------------------------------------------------------
-   Education (right column, simple stack — gradient timeline removed)
-   ---------------------------------------------------------------- */
-ul.timeline { list-style: none; padding: 0; }
-ul.timeline li {
-  display: block;
-  padding: 8px 10px;
-  background: var(--tint);
-  border-bottom: 1px solid var(--rule);
-  border-right: 1px solid var(--rule);
-  margin-bottom: 6px;
-}
-ul.timeline .year {
-  font-size: 9.5pt;
-  font-weight: 700;
-  color: var(--ink-soft);
-  margin-bottom: 4px;
-}
-
-/* ----------------------------------------------------------------
-   Skills (right column) — chips
-   ---------------------------------------------------------------- */
-.skills { margin-bottom: 10px; }
-.item-skills {
-  font-size: 10.5pt;
-  font-weight: 600;
-  color: var(--accent-dark);
-  margin-bottom: 4px;
-}
-.skill-row { display: flex; flex-wrap: wrap; gap: 4px; }
-.skill.badge {
-  display: inline-block;
-  background: var(--accent-dark);
-  color: #fff;
-  font-size: 8.5pt;
-  letter-spacing: 0.02em;
-  padding: 3px 8px;
-  border-radius: 3px;
-}
-
-/* ----------------------------------------------------------------
-   Projects
-   ---------------------------------------------------------------- */
-.proj-name { font-weight: 700; }
-
-/* ----------------------------------------------------------------
-   Print
-   ---------------------------------------------------------------- */
 @media print {
   body { font-size: 10pt; }
-  .box, .job, ul.timeline li { page-break-inside: avoid; }
+  section { page-break-inside: avoid; }
+  .resume-header {
+    /* Some print drivers strip backgrounds — force the accent band
+       even when "print background graphics" is off. WebKit and Chromium
+       respect this; Firefox also via -webkit prefix fallback. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
