@@ -219,22 +219,6 @@
         </div>
         <div id="composeList" class="corpus-experience-list"></div>
 
-        <!-- β.6 post-review — Inline live preview, corpus-direct. Shows
-             what the résumé looks like with the user's CURRENT
-             curation state (pinned bullets / summary, exclusions,
-             added bullets). Refreshes on every composition change so
-             pin/exclude/add land visibly without leaving Step 3. -->
-        <div id="composePreviewBlock" class="live-preview-block hidden" style="margin-top:16px">
-          <div class="edit-hint" style="margin-bottom:6px">
-            <strong>Live preview</strong> · updates as you pin / exclude /
-            add bullets. Same HTML becomes the PDF (WYSIWYG).
-          </div>
-          <iframe id="composePreviewFrame"
-                  title="Résumé live preview (compose)"
-                  class="live-preview-frame"
-                  sandbox="allow-same-origin"></iframe>
-        </div>
-
         <div class="form-row" style="margin-top:10px">
           <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(2)">← BACK</button>
           <button class="lcars-btn lcars-bg-teal" onclick="saveCompositionThenNext()">Save and continue to Template →</button>

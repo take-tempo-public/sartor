@@ -3301,28 +3301,10 @@ async function loadComposition() {
     return;
   }
   data.experiences.forEach(exp => list.appendChild(_renderComposeCard(exp)));
-  // β.6 post-review — show the inline preview alongside Compose so
-  // pin/exclude/add land visibly without waiting for Step 4.
-  _refreshComposePreview();
-}
-
-// β.6 post-review — refresh the Step 3 (Compose) inline preview iframe.
-// Corpus-direct: the preview reflects whatever pin/exclude/add state is
-// currently saved to lastContextPath. Cheap — no LLM call, no Chromium.
-async function _refreshComposePreview() {
-  const block = document.getElementById('composePreviewBlock');
-  const frame = document.getElementById('composePreviewFrame');
-  if (!block || !frame) return;
-  if (_composeApplicationId == null) {
-    block.classList.add('hidden');
-    return;
-  }
-  const params = new URLSearchParams();
-  const sel = _readSelectedPersonaId();
-  if (sel != null) params.set('template_id', String(sel));
-  if (lastContextPath) params.set('context_path', lastContextPath);
-  block.classList.remove('hidden');
-  frame.src = `/api/applications/${_composeApplicationId}/preview?${params.toString()}`;
+  // Compose-step inline preview was removed in the 2026-05-25 punch list
+  // — it competed for attention with the bullet-curation work and didn't
+  // pay for its real estate. The preview lives in Step 4 (Template) and
+  // Step 6 (Output) where it's clearly relevant.
 }
 
 // β.6 post-review — refresh the Step 6 (Output) inline preview iframe.
