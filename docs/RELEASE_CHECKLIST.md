@@ -51,6 +51,189 @@ release.
       in PRODUCT_SHAPE §10 as deferred from v1.0.0.
 - [ ] **`docs/install.md` updated** for any platform-specific
       lessons learned during v1.0.0 hands-on testing.
+- [ ] **Accessibility scan of all user-facing documentation** —
+      surfaced during the screenshot-capture pass (2026-05-26).
+      Run an a11y audit across the user-facing doc set
+      ([`README.md`](../README.md),
+      [`docs/install.md`](install.md),
+      [`docs/walkthrough.md`](walkthrough.md),
+      [`docs/walkthrough_example.md`](walkthrough_example.md),
+      [`vision.md`](../vision.md)) and the screenshots that just
+      landed in [`docs/screenshots/`](screenshots/). Specifically
+      check:
+      - **Alt text on every image** — the manifest at
+        [`docs/ux/screenshot_capture.md`](ux/screenshot_capture.md)
+        has drafts; verify they get applied during the markdown
+        insertion pass and that none describe the image only
+        cosmetically ("a screenshot") instead of substantively.
+      - **Mermaid diagrams** — the two flow diagrams in
+        `walkthrough.md` render as SVG that most screen readers
+        can't traverse meaningfully. Add a prose summary
+        immediately after each diagram (the existing "Read this
+        top-down: …" line is already this pattern; check whether
+        the user-flow diagram needs an equivalent paragraph).
+      - **Heading hierarchy** — no skipped levels (H1 → H3 with
+        no H2 between).
+      - **Link text** — no "click here" / "see this" links;
+        link text should describe its destination ("see
+        [Cost guidance](../README.md#cost)" rather than "see
+        [here](../README.md#cost)").
+      - **Color-only meaning in diagrams** — the four-color
+        classDef vocabulary (gate/llm/det/opt) carries semantic
+        load; verify the per-diagram legend prose makes that
+        meaning available without color.
+      - **Tables** — verify column headers are real `<th>` (the
+        markdown `| Header |` syntax already produces them; just
+        a sanity check after any handwritten HTML tables).
+      Tooling: axe DevTools or WAVE for the rendered HTML
+      preview; a manual VoiceOver / NVDA sweep is the gold
+      standard but a30-min axe pass surfaces the obvious
+      issues. **Defer the actual scan** to a focused later pass;
+      this entry just tracks the obligation.
+- [ ] **Doc-vs-UI label drift on the corpus import button** —
+      surfaced during the screenshot-capture pass (2026-05-26).
+      [`docs/walkthrough.md`](walkthrough.md),
+      [`docs/install.md`](install.md), and the audit at
+      [`docs/ux/onboarding_audit_2026-05-25.md`](ux/onboarding_audit_2026-05-25.md)
+      all refer to the corpus-import affordance as **"+ IMPORT
+      LEGACY"** but the actual UI button reads **"+ Drop résumé
+      (AI extract)"** (see
+      [`templates/index.html:475`](../templates/index.html)).
+      Either update the docs to match the UI or rename the
+      button — the audit's screenshot manifest will look wrong
+      against the current UI text otherwise.
+- [ ] **Bullet-dedup gap in corpus re-import** — surfaced during
+      the screenshot-capture pass (2026-05-26). Re-running
+      [`onboarding/import_legacy.py`](../onboarding/import_legacy.py)
+      with `with_llm=True` against the same source `.docx` correctly
+      dedupes experiences (by `(company, start_date)`) but creates
+      a fresh batch of bullets each time, so each re-import
+      doubles the bullet count for already-imported experiences
+      (observed: a 22-bullet first import grew to 44 bullets on the
+      second import of the same file). The current behavior is
+      documented as intentional in
+      [`onboarding/import_legacy.py:387-388`](../onboarding/import_legacy.py)
+      ("Bullets are NOT deduped — different resume files often
+      have different phrasings"), but the same-file case
+      shouldn't trigger that path. Add a `(experience_id,
+      normalized_text)` dedup at the same-file boundary.
+- [ ] **Wizard rail step buttons don't re-enable after prior step
+      completes** — surfaced during the screenshot-capture pass
+      (2026-05-26). The wizard rail buttons
+      ([`templates/index.html:121-132`](../templates/index.html))
+      are rendered with `disabled` + `class="upcoming"` and only
+      update via [`_wizardRender()`](../static/app.js), which
+      itself only fires from `wizardGoTo()` or `wizardInit()`. So
+      after a successful `runAnalysis()` (which sets
+      `lastContextPath` — see
+      [`static/app.js:303`](../static/app.js)), step 2 IS
+      `_wizardReachable` but the rail's step-2 button stays
+      disabled until the user clicks the in-flow "Continue to
+      Clarify →" button (which calls `wizardGoTo(2)`, which
+      triggers `_wizardRender`). A user who sees the analysis
+      land and tries to click step 2 in the rail directly gets
+      nothing — the button is still disabled. Same shape for
+      step 6 vs. `lastResumePath` after generate. Fix: call
+      `_wizardRender()` from the `runAnalysis` and `runGeneration`
+      success paths after setting `lastContextPath` /
+      `lastResumePath`. This is also why
+      [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py)
+      navigates forward via the in-flow Continue buttons rather
+      than rail clicks.
+- [ ] **Playwright UX clickthrough regression suite** — surfaced
+      during the screenshot-capture pass (2026-05-26). The
+      screenshot script at
+      [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py)
+      drives the wizard end-to-end and incidentally exposed
+      several UI bugs above (rail re-enable, corpus render,
+      bullet-dedup gap, label drift) that the existing `pytest`
+      unit suite doesn't catch because they live in JS render
+      paths, not Python. Build a proper UX regression suite
+      under `tests/ux/` so future PRs can't reintroduce these
+      classes of bug. Structure (industry-standard
+      Playwright + Page Object Model):
+      - **`tests/ux/conftest.py`** — session Flask fixture on
+        an ephemeral port; per-test browser context with a
+        **console-error sentinel** (any `pageerror` or
+        `console.error` fails the test — this alone would have
+        caught the silent corpus-render failure); autouse
+        fixture that isolates `configs/` / `resumes/` /
+        `output/` + cleans demo-user DB rows on teardown.
+      - **`tests/ux/pages/`** — one POM class per panel
+        (`user_picker.py`, `corpus.py`, `wizard_step1_job.py`
+        through `wizard_step6_output.py`, `cover_letter.py`).
+        Mechanical refactor of the navigation already in
+        [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py).
+      - **`tests/ux/fixtures/`** — `factories.py` (lift
+        `write_priya_docx` + `PRIYA_JD` from the screenshot
+        script); `api_stubs.py` (`page.route()` handlers
+        returning canned LLM JSON for fast/free runs); a JD
+        corpus with diverse shapes (Kafka backend, frontend,
+        junior IC, exec).
+      - **`tests/ux/flows/`** — full multi-step journeys:
+        happy-path-stubbed, happy-path-real-llm, navigation
+        (forward/back/jump/rail-disabled invariants),
+        interruptions (reload mid-LLM, user-switch
+        mid-wizard, close+reopen), state-reset, iteration
+        loop (`parent_context_path` chain integrity).
+      - **`tests/ux/error_handling/`** — stubbed API 5xx /
+        timeout / offline / invalid input / concurrent-tab
+        writeback. The category most likely to surface
+        regressions.
+      - **`tests/ux/regression/`** — one test per shipped
+        bug, named `test_<YYYYMMDD>_<slug>.py`, never
+        deleted. Backfill the five bugs from the 2026-05-26
+        pass first (rail re-enable, corpus render, bullet
+        dedup, doc-vs-UI label, plus any others the
+        Playwright debug pass surfaces).
+      - **`tests/ux/a11y/test_axe_smoke.py`** —
+        `@axe-core/playwright` against each panel; no
+        serious/critical violations.
+      Two-tier execution via pytest markers (add `ux` +
+      `real_llm` to `pyproject.toml`'s existing `markers`
+      list):
+      - `pytest -m "ux and not real_llm"` — stubbed, ~30s,
+        $0; runs on every PR.
+      - `pytest -m "ux and real_llm"` — one happy-path
+        real-API smoke, ~$0.30 + ~6min; gated on `.api_key`
+        presence (skip if absent so forks don't fail).
+      Wire `pytest -m ux` into `.git/hooks/pre-push` (or a
+      `make pre-pr` target) and document in
+      [`CONTRIBUTING.md`](../CONTRIBUTING.md) as the standard
+      pre-PR ritual. **Defer if time-bound:** land the harness
+      + `conftest.py` + one happy-path-stubbed test in v1.0.1;
+      backfill the `regression/` + `error_handling/` +
+      `flows/` tests across v1.0.1 and v1.1 as the screenshot-
+      pass bugs get fixed (each fix lands with its regression
+      test). **Prereq:** the screenshot script itself must
+      stabilize first (currently being debugged) — the POMs
+      lift directly from its navigation logic, so a moving
+      script means churning POMs.
+- [ ] **Corpus tab render-after-refresh bug** — surfaced during
+      the screenshot-capture pass (2026-05-26).
+      [`static/app.js:1795`](../static/app.js) `refreshCorpus()`
+      fetches `/api/users/<user>/experiences` successfully and
+      populates `_corpusExperiences` (observed length 3 against a
+      DB that had 3 experiences for the demo user), then calls
+      [`_renderCorpusList()`](../static/app.js) at
+      [`static/app.js:2000`](../static/app.js) — but the DOM
+      doesn't end up with any `.corpus-card` elements. The list
+      element's `innerHTML.length` is ~65 chars (placeholder-sized)
+      even though the JS state shows 3 experiences. Either
+      `_renderCorpusList()` is throwing silently inside its
+      `forEach`, or some later code path is clearing the list
+      back to placeholder state. Repro:
+      1. Hit `/api/users/<user>/import-legacy` with `with_llm=True`
+         against a user with an existing résumé in `resumes/<user>/`.
+      2. Open the Career Corpus tab in a fresh browser session.
+      3. Observe: the UI shows the empty-corpus hint despite the
+         DB having experiences (`GET /api/users/<user>/experiences`
+         returns them).
+      Workaround currently used by [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py):
+      `page.reload()` + re-select user clears the bad state.
+      Real fix: instrument `_renderCorpusList` / `_renderCorpusSummary`
+      with a try/catch + console.error so the silent failure becomes
+      visible, then chase the root cause.
 
 ### Nice to have (defer to v1.1 if time-bound)
 
