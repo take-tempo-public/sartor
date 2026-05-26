@@ -355,53 +355,62 @@
         <span class="cb-step-title">Generated output</span>
       </div>
       <div class="panel-body">
+        <!-- B1 (2026-05-26): Step 6 restructure. Pre-B1 had three tabs
+             (Résumé / Cover letter / Changes) with a Raw / Rendered toggle
+             inside each text tab and a separate live-preview iframe at the
+             bottom. The Raw / Rendered toggle was redundant with the iframe
+             (both showed the same thing in different fidelities), and the
+             Changes tab was rarely opened. B1 keeps two tabs (Résumé / Cover
+             letter), promotes the iframe to the TOP of the Résumé tab, moves
+             the raw editor behind a right-side "Edit before downloading"
+             drawer (split-pane so the preview stays visible during edit),
+             and moves Changes behind an info-icon modal alongside the
+             Download button. The drawer→preview live-reflection wiring
+             lands in B2; B1 is UI shell only. -->
         <div class="output-tabs" role="tablist" aria-label="Output sections">
           <button class="tab-btn active" id="tabBtnResume" onclick="showTab('resume', this)" role="tab" aria-controls="tabResume" aria-selected="true">Résumé</button>
           <button class="tab-btn" id="tabBtnCoverLetter" onclick="showTab('coverLetter', this)" role="tab" aria-controls="tabCoverLetter" aria-selected="false">Cover letter</button>
-          <button class="tab-btn" id="tabBtnChanges" onclick="showTab('changes', this)" role="tab" aria-controls="tabChanges" aria-selected="false">Changes</button>
         </div>
         <div id="tabResume" class="tab-content active" role="tabpanel" aria-labelledby="tabBtnResume">
-          <div class="view-controls">
-            <button class="view-btn active" onclick="setViewMode('raw','resume',this)" aria-label="Show resume as editable raw markdown">Raw</button>
-            <button class="view-btn" onclick="setViewMode('rendered','resume',this)" aria-label="Show resume rendered as formatted preview">Rendered</button>
-            <span id="resumeEditHint" class="edit-hint" style="margin:0">&#9998; Edit in RAW before downloading</span>
+          <!-- Iframe at the TOP: this is what the user actually downloads —
+               JSON-Resume rendered through the chosen persona's HTML + CSS
+               shell. The raw editor lives in the drawer below; it's the
+               escape hatch for per-application polish that bypasses the
+               structured corpus path. -->
+          <div id="outputPreviewBlock" class="live-preview-block hidden">
+            <div class="output-preview-header">
+              <div class="edit-hint" style="margin:0">
+                <strong>Live preview</strong> · the styled output your download will produce.
+              </div>
+              <button class="lcars-btn lcars-bg-blue" id="btnOpenEditDrawer" onclick="openEditDrawer()" aria-label="Open editor to edit résumé markdown before downloading" style="font-size:12px;padding:4px 12px">
+                &#9998; Edit before downloading
+              </button>
+            </div>
+            <iframe id="outputPreviewFrame"
+                    title="Résumé live preview (output)"
+                    class="live-preview-frame"
+                    sandbox="allow-same-origin"></iframe>
           </div>
-          <div id="resumePreview" class="preview-editable" contenteditable="true" spellcheck="true"
-               role="textbox" aria-multiline="true" aria-label="Generated resume preview, editable"
-               aria-describedby="resumeEditHint"></div>
-          <div id="resumeRendered" class="preview-rendered hidden" aria-label="Rendered resume preview"></div>
+          <!-- The raw markdown editor is HIDDEN in the tab body — it's
+               relocated into the edit drawer below at runtime. We keep it
+               in the DOM because downloadResume() reads its innerText, and
+               _renderOutput() writes the generated markdown into it. -->
+          <div id="resumePreview" class="preview-editable hidden" contenteditable="true" spellcheck="true"
+               role="textbox" aria-multiline="true" aria-label="Generated résumé markdown, editable"></div>
         </div>
         <div id="tabCoverLetter" class="tab-content" role="tabpanel" aria-labelledby="tabBtnCoverLetter">
-          <div class="view-controls">
-            <button class="view-btn active" onclick="setViewMode('raw','coverLetter',this)" aria-label="Show cover letter as editable raw markdown">Raw</button>
-            <button class="view-btn" onclick="setViewMode('rendered','coverLetter',this)" aria-label="Show cover letter rendered as formatted preview">Rendered</button>
-            <span id="coverEditHint" class="edit-hint" style="margin:0">&#9998; Edit in RAW before downloading</span>
+          <!-- Cover letter has no corpus — the markdown IS the document.
+               Raw editor stays as the primary surface here. (B3 will add a
+               cover-letter live-preview iframe alongside with persona
+               styling, but in B1 we keep the editor as the surface.) -->
+          <div class="edit-hint" id="coverEditHint" style="margin-bottom:6px">
+            &#9998; This is the document — edit directly, then click Download.
           </div>
           <div id="coverLetterPreview" class="preview-editable" contenteditable="true" spellcheck="true"
-               role="textbox" aria-multiline="true" aria-label="Generated cover letter preview, editable"
+               role="textbox" aria-multiline="true" aria-label="Generated cover letter, editable"
                aria-describedby="coverEditHint"></div>
-          <div id="coverLetterRendered" class="preview-rendered hidden" aria-label="Rendered cover letter preview"></div>
-        </div>
-        <div id="tabChanges" class="tab-content">
-          <div id="changesContent"></div>
         </div>
 
-        <!-- β.6 post-review — Inline live preview alongside the RAW /
-             RENDERED tab views. Shows the templated/styled output the
-             user is about to download, refreshed against the current
-             corpus + the chosen template. The RAW view stays the LLM's
-             markdown (so the user can keep editing); this iframe shows
-             what comes out of the printer. -->
-        <div id="outputPreviewBlock" class="live-preview-block hidden" style="margin-top:16px">
-          <div class="edit-hint" style="margin-bottom:6px">
-            <strong>Live preview</strong> · the styled output your
-            download will produce.
-          </div>
-          <iframe id="outputPreviewFrame"
-                  title="Résumé live preview (output)"
-                  class="live-preview-frame"
-                  sandbox="allow-same-origin"></iframe>
-        </div>
         <div class="form-row">
           <button class="lcars-btn lcars-bg-teal" id="btnDownloadResume" onclick="downloadResume()">Download résumé</button>
           <!-- β.5 — cover letter is now opt-in. The "Generate cover letter"
@@ -410,6 +419,14 @@
                letter" affordance. -->
           <button class="lcars-btn lcars-bg-violet" id="btnGenerateCover" onclick="runGenerateCoverLetter()">+ Generate cover letter</button>
           <button class="lcars-btn lcars-bg-blue hidden" id="btnDownloadCover" onclick="downloadCoverLetter()">Download cover letter</button>
+          <!-- B1: Changes moved out of tabs into this info-icon modal.
+               The icon sits in the download row because that's where the
+               user is when they want to know "what did the LLM change?"
+               (right before downloading and reviewing). -->
+          <button class="lcars-btn lcars-bg-blue hidden" id="btnViewChanges" onclick="openChangesModal()"
+                  aria-label="View what the LLM changed compared to the original résumé" title="View LLM changes" style="padding:6px 12px">
+            &#9432; What changed?
+          </button>
         </div>
         <!-- REFINEMENT: hidden until first generation -->
         <div id="refinementArea" class="hidden">
@@ -711,6 +728,55 @@
           <button type="button" class="lcars-btn lcars-bg-blue" data-form-dismiss="cancel">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- B1 (2026-05-26) — "Edit before downloading" drawer for Step 6.
+       Slides in from the right; the iframe stays visible behind the
+       drawer's backdrop so the user can see the styled preview while
+       editing the raw markdown. The actual #resumePreview editor is
+       relocated INTO this drawer at runtime by openEditDrawer() —
+       keeping it as a single DOM element means downloadResume()'s
+       innerText read continues to work without changes. In B2 we'll
+       wire a debounced save-edits + preview iframe refresh so edits
+       made here reflect in the iframe within ~1s of drop. -->
+  <aside id="editDrawer" class="settings-drawer hidden" role="dialog"
+         aria-modal="true" aria-labelledby="editDrawerTitle">
+    <div class="settings-drawer-backdrop" onclick="closeEditDrawer()"></div>
+    <div class="settings-drawer-content">
+      <header class="settings-drawer-header">
+        <h2 id="editDrawerTitle" class="lcars-modal-title">Edit résumé before downloading</h2>
+        <button class="corpus-action-btn" onclick="closeEditDrawer()" aria-label="Close editor">Close</button>
+      </header>
+      <div class="settings-drawer-body">
+        <p class="edit-hint" style="margin-top:0">
+          Edit the raw markdown the LLM produced. Your edits are used
+          when you click <strong>Download résumé</strong>. The styled
+          preview behind this drawer updates as you type (B2 — coming
+          soon).
+        </p>
+        <div id="editDrawerHost" class="edit-drawer-host"
+             aria-label="Edit drawer editor host"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- B1 (2026-05-26) — "What changed?" info-icon modal for Step 6.
+       Displays the LLM's changes_made + proofread_notes lists. Replaces
+       the pre-B1 Changes tab. Surfaces in the download row because
+       that's where the user wants to know "what's different vs. the
+       original?" right before downloading. -->
+  <div id="changesModal" class="lcars-modal hidden" role="dialog"
+       aria-modal="true" aria-labelledby="changesModalTitle">
+    <div class="lcars-modal-backdrop" onclick="closeChangesModal()"></div>
+    <div class="lcars-modal-content">
+      <header class="settings-drawer-header">
+        <h2 id="changesModalTitle" class="lcars-modal-title">What the LLM changed</h2>
+        <button class="corpus-action-btn" onclick="closeChangesModal()" aria-label="Close changes view">Close</button>
+      </header>
+      <div class="lcars-modal-body">
+        <div id="changesContent"></div>
+      </div>
     </div>
   </div>
 

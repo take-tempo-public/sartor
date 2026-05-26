@@ -1019,14 +1019,13 @@ async function runGenerateCoverLetter() {
     lastCoverLetterPath = data.cover_letter_path || '';
     lastGeneratedCoverLetter = data.cover_letter_preview || '';
     if (data.context_path) lastContextPath = data.context_path;
-    // Populate the editable preview + rendered side the same way
-    // runGeneration → _renderOutput does. downloadCoverLetter reads from
+    // Populate the editable preview the same way runGeneration →
+    // _renderOutput does. downloadCoverLetter reads from
     // #coverLetterPreview so the preview MUST be populated for download
-    // to work.
+    // to work. B1 (2026-05-26): the separate Rendered view was removed
+    // along with the Raw / Rendered toggle.
     const preview = document.getElementById('coverLetterPreview');
     if (preview) preview.textContent = lastGeneratedCoverLetter;
-    const rendered = document.getElementById('coverLetterRendered');
-    if (rendered) rendered.innerHTML = _renderMarkdown(lastGeneratedCoverLetter);
     _updateCoverLetterButtons();
     setStatus('COVER LETTER READY');
     _announce('Cover letter generated. Download it from Step 6.');
@@ -1717,18 +1716,16 @@ function _renderRefinementHistory() {
 function _renderOutput(data) {
   document.getElementById('resumePreview').innerText = data.resume_preview || '';
   document.getElementById('coverLetterPreview').innerText = data.cover_letter_preview || '';
-  // Reset view mode to RAW on each generation
-  ['resume', 'coverLetter'].forEach(which => {
-    const previewId = which === 'resume' ? 'resumePreview' : 'coverLetterPreview';
-    const renderedId = which === 'resume' ? 'resumeRendered' : 'coverLetterRendered';
-    document.getElementById(previewId).classList.remove('hidden');
-    document.getElementById(renderedId).classList.add('hidden');
-    const tabId = which === 'resume' ? 'tabResume' : 'tabCoverLetter';
-    document.getElementById(tabId).querySelectorAll('.view-btn').forEach((b, i) => {
-      b.classList.toggle('active', i === 0);
-    });
-  });
 
+  // B1 (2026-05-26): the Raw / Rendered toggle was removed; the raw
+  // editor stays hidden in the tab body and surfaces inside the edit
+  // drawer (résumé) or as the primary cover-letter surface. No view-
+  // mode reset needed anymore.
+
+  // Populate the "What changed?" modal body. Visibility of the
+  // #btnViewChanges trigger button is tied to whether either list has
+  // content — empty changes_made AND empty proofread_notes means
+  // there's nothing to show.
   let changesHtml = '';
   if (data.changes_made && data.changes_made.length) {
     changesHtml += '<div class="analysis-section"><h3>Changes Made</h3><ul>';
@@ -1741,12 +1738,23 @@ function _renderOutput(data) {
     changesHtml += '</ul></div>';
   }
   document.getElementById('changesContent').innerHTML = changesHtml;
+  const btnViewChanges = document.getElementById('btnViewChanges');
+  if (btnViewChanges) btnViewChanges.classList.toggle('hidden', !changesHtml);
+
   showTab('resume');
   document.getElementById('refinementArea').classList.remove('hidden');
   document.getElementById('refinementInput').value = '';
 }
 
 function showTab(name, clickedBtn) {
+  // B1 (2026-05-26): only two output tabs remain — 'resume' and 'coverLetter'.
+  // The pre-B1 'changes' tab moved to an info-icon modal next to the
+  // download button (openChangesModal). Passing 'changes' is a no-op
+  // for backwards safety; callers should use openChangesModal directly.
+  if (name === 'changes') {
+    openChangesModal();
+    return;
+  }
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   // Reset all tab-btns' visual + ARIA state in one pass; the matching button
   // is set selected below. Without aria-selected updates, screen readers
@@ -1755,11 +1763,11 @@ function showTab(name, clickedBtn) {
     b.classList.remove('active');
     if (b.getAttribute('role') === 'tab') b.setAttribute('aria-selected', 'false');
   });
-  const tabId = name === 'coverLetter' ? 'tabCoverLetter' : name === 'changes' ? 'tabChanges' : 'tabResume';
+  const tabId = name === 'coverLetter' ? 'tabCoverLetter' : 'tabResume';
   document.getElementById(tabId).classList.add('active');
   let activeBtn = clickedBtn;
   if (!activeBtn) {
-    const btnIndex = name === 'coverLetter' ? 1 : name === 'changes' ? 2 : 0;
+    const btnIndex = name === 'coverLetter' ? 1 : 0;
     const btns = document.querySelectorAll('.tab-btn');
     activeBtn = btns[btnIndex];
   }
@@ -1767,6 +1775,58 @@ function showTab(name, clickedBtn) {
     activeBtn.classList.add('active');
     if (activeBtn.getAttribute('role') === 'tab') activeBtn.setAttribute('aria-selected', 'true');
   }
+}
+
+// B1 — "Edit before downloading" drawer for the Résumé tab. Hosts the
+// raw markdown editor (#resumePreview) so it doesn't compete with the
+// styled iframe for screen real estate. We MOVE the existing DOM node
+// in/out of the drawer host (rather than cloning) because:
+//   - downloadResume() and _renderOutput() both reference #resumePreview
+//     by id; moving (not cloning) keeps that contract intact.
+//   - moving preserves the contenteditable state, focus, selection,
+//     and any inline event listeners that may have been attached.
+// The original parent is captured on open so closeEditDrawer can return
+// the node home cleanly.
+let _editDrawerOriginalParent = null;
+
+function openEditDrawer() {
+  const drawer = document.getElementById('editDrawer');
+  const host = document.getElementById('editDrawerHost');
+  const editor = document.getElementById('resumePreview');
+  if (!drawer || !host || !editor) return;
+  if (_editDrawerOriginalParent == null) {
+    _editDrawerOriginalParent = editor.parentNode;
+  }
+  // Unhide the editor — it lives hidden in the tab body until the drawer
+  // opens. The aria-label and contenteditable attributes stay intact.
+  editor.classList.remove('hidden');
+  host.appendChild(editor);
+  drawer.classList.remove('hidden');
+  // Defer focus until after the slide-in animation so screen readers
+  // announce the drawer + heading first.
+  setTimeout(() => editor.focus(), 220);
+}
+
+function closeEditDrawer() {
+  const drawer = document.getElementById('editDrawer');
+  const editor = document.getElementById('resumePreview');
+  if (!drawer || !editor) return;
+  drawer.classList.add('hidden');
+  if (_editDrawerOriginalParent) {
+    _editDrawerOriginalParent.appendChild(editor);
+    editor.classList.add('hidden');
+  }
+}
+
+// B1 — "What changed?" info-icon modal. Replaces the pre-B1 Changes tab.
+// changesContent's innerHTML is populated by _renderOutput; this just
+// shows/hides the modal wrapper.
+function openChangesModal() {
+  document.getElementById('changesModal')?.classList.remove('hidden');
+}
+
+function closeChangesModal() {
+  document.getElementById('changesModal')?.classList.add('hidden');
 }
 
 async function downloadResume() {
@@ -1815,51 +1875,13 @@ async function _downloadEdited(url, payload) {
   URL.revokeObjectURL(a.href);
 }
 
-// ---- Preview view mode (RAW / RENDERED) ----
-function setViewMode(mode, which, btn) {
-  const previewId = which === 'resume' ? 'resumePreview' : 'coverLetterPreview';
-  const renderedId = which === 'resume' ? 'resumeRendered' : 'coverLetterRendered';
-  const preview = document.getElementById(previewId);
-  const rendered = document.getElementById(renderedId);
-  const controls = btn.closest('.view-controls');
-  controls.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  if (mode === 'rendered') {
-    rendered.innerHTML = _renderMarkdown(preview.innerText);
-    preview.classList.add('hidden');
-    rendered.classList.remove('hidden');
-  } else {
-    preview.classList.remove('hidden');
-    rendered.classList.add('hidden');
-  }
-}
-
-function _renderMarkdown(text) {
-  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const inline = s => esc(s)
-    .replace(/\*\*\*([^*\n]+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-    .replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
-  const lines = text.split('\n');
-  let html = '';
-  let inList = false;
-  for (const raw of lines) {
-    const s = raw.trim();
-    const isBullet = /^[-*\u2022\u2013\u2014\u00b7\u25c6\u25cf\u25aa]\s/.test(s);
-    if (!isBullet && inList) { html += '</ul>'; inList = false; }
-    if (!s)               { html += '<br>'; }
-    else if (s.startsWith('# '))  { html += `<h1>${inline(s.slice(2))}</h1>`; }
-    else if (s.startsWith('## ')) { html += `<h2>${inline(s.slice(3))}</h2>`; }
-    else if (s.startsWith('### ')){ html += `<h3>${inline(s.slice(4))}</h3>`; }
-    else if (isBullet)  {
-      if (!inList) { html += '<ul>'; inList = true; }
-      html += `<li>${inline(s.replace(/^[-*\u2022\u2013\u2014\u00b7\u25c6\u25cf\u25aa]\s+/,''))}</li>`;
-    }
-    else { html += `<p>${inline(s)}</p>`; }
-  }
-  if (inList) html += '</ul>';
-  return html;
-}
+// B1 (2026-05-26): setViewMode + _renderMarkdown removed along with the
+// Raw / Rendered toggle. The styled iframe at the top of the R\u00e9sum\u00e9 tab
+// now serves the "Rendered" purpose; the raw editor lives in the
+// "Edit before downloading" drawer. Cover letter has no rendered view
+// (the markdown IS the document until B3 lands a persona-styled
+// preview iframe). If a future step needs markdown\u2192HTML rendering,
+// restore `_renderMarkdown` from git history rather than re-inventing.
 
 // ---- Helpers ----
 function show(id) {

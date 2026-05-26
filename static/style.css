@@ -494,30 +494,33 @@ textarea {
 .preview-rendered strong { font-weight: 700; color: var(--brand-hi); }
 .preview-rendered br { display: block; content: ''; margin: 3px 0; }
 
-/* ---- View mode controls ---- */
-.view-controls {
+/* ---- View mode controls (REMOVED in B1, 2026-05-26) ----
+ * Pre-B1 had a Raw / Rendered toggle inside each Step 6 text tab.
+ * That toggle is gone — the styled iframe at the top of the Résumé tab
+ * does the "Rendered" job, and the raw editor lives in the
+ * "Edit before downloading" drawer. Keeping this comment so a future
+ * grep can find what was removed and why; the styles are dropped. */
+
+/* ---- B1 — Step 6 output preview header (icon-row above the iframe) ---- */
+.output-preview-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 6px;
 }
-.view-btn {
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
-  color: var(--fg-1);
-  font-family: var(--font);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: var(--radius-xl);
-  cursor: pointer;
+
+/* ---- B1 — Edit drawer host: holds the relocated #resumePreview while
+ *      the drawer is open. The editor's own padding + min-height come
+ *      from .preview-editable; this host just gives it room inside
+ *      .settings-drawer-body. ---- */
+.edit-drawer-host {
+  min-height: 240px;
 }
-.view-btn.active {
-  border-color: var(--success);
-  color: var(--success);
-  background: rgba(102, 204, 204, 0.08);
+.edit-drawer-host .preview-editable {
+  /* The drawer body already scrolls; let the editor expand naturally. */
+  max-height: none;
+  min-height: 320px;
 }
 
 /* ---- Utility ---- */
@@ -854,7 +857,6 @@ textarea {
    users a clear ring without bringing back outlines on mouse clicks. */
 .lcars-btn:focus-visible,
 .tab-btn:focus-visible,
-.view-btn:focus-visible,
 .format-btn:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
