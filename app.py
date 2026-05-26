@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import anthropic
-from flask import Flask, jsonify, make_response, render_template, request, send_file
+from flask import Flask, Response, jsonify, make_response, render_template, request, send_file
 from werkzeug.utils import secure_filename
 
 from analyzer import (
@@ -22,6 +22,7 @@ from analyzer import (
     _current_cover_letter_draft,
     _current_draft_text,
     analyze,
+    analyze_streaming,
     check_refinement_scope,
     clarify,
     clarify_iteration,
@@ -255,6 +256,44 @@ def run_analysis():
     return _run_analysis_corpus_backed(safe_user, jd_text, data)
 
 
+def _sse(event: str, payload: dict) -> str:
+    """Format a Server-Sent Event line block. SSE protocol requires:
+    `event: <name>\\ndata: <line>\\n\\n` with the trailing blank line.
+    Multi-line data values aren't used here so a single data line suffices.
+    """
+    return f"event: {event}\ndata: {json.dumps(payload)}\n\n"
+
+
+@app.route("/api/analyze/stream", methods=["POST"])
+def run_analysis_stream():
+    """R2 streaming variant of /api/analyze.
+
+    Same request shape and same final response payload as /api/analyze,
+    but the response is delivered as Server-Sent Events so the frontend
+    can render tokens as they arrive instead of waiting ~90s for the
+    full Sonnet 4.6 response. Backed by `analyze_streaming` in analyzer.py.
+
+    Event types emitted on the SSE stream:
+      - `chunk`: `{"text": "<delta>"}` for each text delta from the model
+      - `retry`: `{"reason": "<error>"}` when the parse failed and a retry begins
+      - `done`:  the full JSON the non-streaming route would have returned
+      - `error`: `{"error": "<msg>", "http_status": <int>, "detail"?: "..."}`
+        on terminal failure (LLM connection / parse-after-retry)
+    """
+    data = request.json
+    username = data.get("username", "")
+    jd_text = data.get("job_description", "")
+
+    if not username or not jd_text:
+        return jsonify({"error": "username and job_description required"}), 400
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    return _run_analysis_corpus_backed_streaming(safe_user, jd_text, data)
+
+
 def _persist_run_persona(application_run_id: int, persona_template_id: int) -> None:
     """Record which persona template the user generated with on the run
     (audit; the column exists but was always NULL before Workstream C)."""
@@ -329,6 +368,152 @@ def _persist_corpus_generation_to_db(
         raise
     finally:
         session.close()
+
+
+def _run_analysis_corpus_backed_streaming(safe_user: str, jd_text: str, data: dict):
+    """SSE-streaming counterpart to `_run_analysis_corpus_backed`.
+
+    Identical setup (build_context_set_from_db, application + run rows,
+    same persistence semantics post-analysis). The only difference: the
+    LLM call is driven via `analyze_streaming` so token deltas can be
+    forwarded to the browser as SSE events, and the final saved-context
+    state + IDs ride on a `done` event rather than a JSON 200 body.
+
+    Errors during setup return regular JSON responses (4xx/409) so the
+    frontend can branch before opening the SSE stream. Errors during the
+    LLM call surface as `error` SSE events with an `http_status` hint.
+    """
+    from db.build_context import build_context_set_from_db
+    from db.models import ApplicationRun
+    from db.session import get_session, init_db
+
+    if not _safe_username(safe_user):
+        return jsonify({"error": "Invalid or unknown user"}), 400
+    user_output_dir = OUTPUT_DIR / safe_user
+    if not _within(user_output_dir, OUTPUT_DIR):
+        return jsonify({"error": "Invalid output path"}), 403
+
+    init_db()
+    setup_session = get_session()
+    run_id = uuid.uuid4().hex[:12]
+    try:
+        try:
+            context_set, application, application_run = build_context_set_from_db(
+                setup_session,
+                candidate_username=safe_user,
+                jd_text=jd_text,
+                run_id=run_id,
+                jd_url=data.get("jd_url"),
+                application_title=data.get("application_title"),
+            )
+        except ValueError as exc:
+            setup_session.rollback()
+            return jsonify({"error": str(exc), "needs_onboarding": True}), 409
+        application_id = application.id
+        application_run_id = application_run.id
+        # Commit the application + application_run rows up front so we don't
+        # hold the session open across the ~90s LLM call. The analysis_json
+        # update happens in a new short-lived session in the stream's done branch.
+        setup_session.commit()
+        logger.info(
+            "DB-backed streaming analysis for %s: application_id=%d run_id=%s",
+            safe_user, application_id, run_id,
+        )
+    finally:
+        setup_session.close()
+
+    client = _get_client()
+
+    def stream():
+        try:
+            analysis: dict | None = None
+            for event_kind, payload in analyze_streaming(
+                client, context_set, username=safe_user, run_id=run_id,
+            ):
+                if event_kind == "chunk":
+                    yield _sse("chunk", {"text": payload})
+                elif event_kind == "retry":
+                    yield _sse("retry", {"reason": str(payload)})
+                elif event_kind == "done":
+                    analysis = payload if isinstance(payload, dict) else None
+            if analysis is None:
+                yield _sse("error", {
+                    "error": "Streaming analyze finished without a parsed result.",
+                    "http_status": 502,
+                })
+                return
+
+            # Persist analysis_json on the application_run row + write the
+            # context_*.json file the downstream routes (clarify, generate,
+            # save-edits, iterate-clarify) all consume.
+            persist_session = get_session()
+            try:
+                run_row = persist_session.query(ApplicationRun).filter_by(
+                    id=application_run_id,
+                ).first()
+                if run_row is not None:
+                    run_row.analysis_json = json.dumps(analysis)
+                    persist_session.commit()
+                else:
+                    logger.warning(
+                        "application_run %d not found at analysis-persist time",
+                        application_run_id,
+                    )
+            finally:
+                persist_session.close()
+
+            context_set["llm_analysis"] = analysis
+            context_set["run_id"] = run_id
+            context_set["application_id"] = application_id
+            context_set["application_run_id"] = application_run_id
+            context_path = save_context_set(context_set, safe_user, str(OUTPUT_DIR))
+            logger.info(
+                "Streaming analysis complete for %s, saved to %s",
+                safe_user, context_path,
+            )
+
+            yield _sse("done", {
+                "analysis": analysis,
+                "deterministic": {
+                    "keyword_overlap": context_set["deterministic_analysis"]["keyword_overlap"],
+                    "ats_warnings": context_set["deterministic_analysis"]["ats_warnings"],
+                },
+                "context_path": context_path,
+                "template_path": "",
+                "application_id": application_id,
+                "application_run_id": application_run_id,
+            })
+        except anthropic.APIConnectionError as exc:
+            logger.error("Anthropic API connection error during streaming analysis: %s", exc)
+            yield _sse("error", {
+                "error": "Connection to AI service failed. Please try again.",
+                "http_status": 503,
+            })
+        except LLMResponseError as exc:
+            logger.error(
+                "LLM streaming analysis response failed validation after retry: %s",
+                exc.validation_error,
+            )
+            yield _sse("error", {
+                "error": "AI analysis response was malformed after retry. Please try again.",
+                "detail": exc.validation_error,
+                "http_status": 502,
+            })
+        except Exception:
+            logger.exception("Streaming analysis failed unexpectedly")
+            yield _sse("error", {
+                "error": "Internal error during analysis.",
+                "http_status": 500,
+            })
+
+    return Response(
+        stream(),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # disable nginx-style buffering if proxied
+        },
+    )
 
 
 def _run_analysis_corpus_backed(safe_user: str, jd_text: str, data: dict):

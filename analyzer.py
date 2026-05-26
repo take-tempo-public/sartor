@@ -12,6 +12,7 @@ import json
 import logging
 import re
 import time
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -530,7 +531,23 @@ def _supplemental_block(context_set: ContextSet, iteration: int = 0) -> str:
     return "\n".join(parts)
 
 
-def _call_llm(
+class _StreamDone:
+    """Sentinel yielded as the LAST item of `_call_llm_streaming`. Carries
+    the accumulated text plus the stop_reason from the final message so
+    parse/retry logic can decide what to do next.
+
+    Distinguishable from text-chunk yields by isinstance check; callers
+    that don't care about streaming chunks can drain via `_call_llm` below.
+    """
+
+    __slots__ = ("text", "stop_reason")
+
+    def __init__(self, text: str, stop_reason: str | None):
+        self.text = text
+        self.stop_reason = stop_reason
+
+
+def _call_llm_streaming(
     client: anthropic.Anthropic,
     user_prompt: str,
     *,
@@ -540,31 +557,34 @@ def _call_llm(
     run_id: str = "",
     system_prompt: str = "",
     model: str | None = None,
-) -> str:
-    """Make a single LLM call using streaming, with prompt caching and JSONL telemetry.
+) -> Iterator[str | _StreamDone]:
+    """Streaming generator yielding text deltas, then a final `_StreamDone`.
 
-    Streaming avoids intermediate gateway timeouts on long-running generations:
-    tokens flow back as they're produced, keeping the TCP connection warm.
+    Yields:
+        - `str` for each text delta as it arrives from the Anthropic stream
+        - `_StreamDone` exactly once at the end with the full accumulated
+          text + `stop_reason` from the final Message
 
-    Caching: the system block is sent with cache_control; when cached_user_prefix
-    is non-empty it is sent as a cacheable user block preceding user_prompt.
-    Anthropic's cache requires 1024+ tokens to engage on Sonnet — the system
-    prompt alone is typically below that threshold, so the user-prefix block is
-    what actually drives cache hits across analyze→generate within a session.
+    Telemetry, caching, and model-selection semantics match the non-streaming
+    `_call_llm` (which is now a wrapper over this generator). One JSONL
+    record per call, emitted in the finally block.
 
-    The optional system_prompt argument lets narrowly-scoped calls (e.g.
-    clarify()) use a smaller dedicated persona without overloading SYSTEM_PROMPT.
-    Calls with a non-default system_prompt will not hit the system-block cache
-    established by analyze/generate, which is acceptable for cheap small calls.
+    Caching: the system block is sent with cache_control; when
+    `cached_user_prefix` is non-empty it is sent as a cacheable user block
+    preceding `user_prompt`. Anthropic's cache requires 1024+ tokens to
+    engage on Sonnet — the system prompt alone is typically below that
+    threshold, so the user-prefix block is what actually drives cache hits
+    across analyze→generate within a session.
 
-    The optional model argument lets cheap structured-output calls (e.g.
+    The optional `system_prompt` argument lets narrowly-scoped calls (e.g.
+    clarify()) use a smaller dedicated persona without overloading
+    SYSTEM_PROMPT. Calls with a non-default system_prompt will not hit the
+    system-block cache established by analyze/generate, which is acceptable
+    for cheap small calls.
+
+    The optional `model` argument lets cheap structured-output calls (e.g.
     extract_experiences) opt into Haiku for cost without bypassing this
-    helper's caching + telemetry machinery. Defaults to SONNET_MODEL so
-    existing callers are unchanged. See the model-selection rationale comment
-    block for what belongs on which model.
-
-    Telemetry: every call appends one record to logs/llm_calls.jsonl with
-    timing, token counts (including cache fields), prompt version, and status.
+    helper's caching + telemetry machinery. Defaults to SONNET_MODEL.
     """
     effective_model = model or SONNET_MODEL
     user_content: list[dict] = []
@@ -585,6 +605,7 @@ def _call_llm(
     t0 = time.perf_counter()
     status = "ok"
     final = None
+    chunks: list[str] = []
     try:
         with client.messages.stream(
             model=effective_model,
@@ -598,7 +619,9 @@ def _call_llm(
             ],
             messages=[{"role": "user", "content": user_content}],  # type: ignore[typeddict-item]
         ) as stream:
-            text = "".join(stream.text_stream)
+            for delta in stream.text_stream:
+                chunks.append(delta)
+                yield delta
             final = stream.get_final_message()
     except Exception:
         status = "error"
@@ -641,7 +664,38 @@ def _call_llm(
         stop_reason,
         elapsed_ms,
     )
-    return text
+    yield _StreamDone(text="".join(chunks), stop_reason=stop_reason)
+
+
+def _call_llm(
+    client: anthropic.Anthropic,
+    user_prompt: str,
+    *,
+    cached_user_prefix: str = "",
+    call_kind: str = "analyze",
+    username: str = "",
+    run_id: str = "",
+    system_prompt: str = "",
+    model: str | None = None,
+) -> str:
+    """Non-streaming wrapper — drain `_call_llm_streaming` and return the
+    accumulated text. Preserves the existing call signature for all callers
+    that don't need token-level streaming; new SSE routes use the underlying
+    generator directly.
+    """
+    final_text = ""
+    for item in _call_llm_streaming(
+        client, user_prompt,
+        cached_user_prefix=cached_user_prefix,
+        call_kind=call_kind,
+        username=username,
+        run_id=run_id,
+        system_prompt=system_prompt,
+        model=model,
+    ):
+        if isinstance(item, _StreamDone):
+            final_text = item.text
+    return final_text
 
 
 _FENCE_RE = re.compile(r"^```(?:[a-zA-Z]+)?\s*\n?(.*?)\n?\s*```$", re.DOTALL)
@@ -658,6 +712,85 @@ def _strip_fences(raw: str) -> str:
     if m:
         return m.group(1).strip()
     return cleaned
+
+
+def _parse_or_retry_streaming(
+    client: anthropic.Anthropic,
+    base_prompt: str,
+    *,
+    cached_user_prefix: str,
+    required_keys: frozenset[str],
+    call_kind: str,
+    username: str,
+    run_id: str,
+    max_attempts: int = 2,
+    system_prompt: str = "",
+    model: str | None = None,
+) -> Iterator[tuple[str, object]]:
+    """Streaming generator variant of `_parse_or_retry`.
+
+    Yields:
+        - `("chunk", str)` for each text delta as it arrives from the LLM
+        - `("retry", str)` when a parse attempt fails and a retry begins;
+          the str is a short human-readable reason
+        - `("done", dict)` exactly once on success with the parsed JSON
+
+    Raises `LLMResponseError` if retries are exhausted (same as the
+    non-streaming variant).
+
+    The streaming behavior follows the same retry shape as
+    `_parse_or_retry`: the first attempt streams chunks; if parsing
+    fails, a `retry` event fires and the retry's chunks begin streaming.
+    The caller is expected to render chunks live for perceived-latency
+    purposes; `_strip_fences` + `json.loads` only runs on the
+    fully-accumulated text once each attempt's stream completes.
+    """
+    base_text = ""
+    retry_prompt = base_prompt
+    current_kind = call_kind
+    for attempt in range(max_attempts):
+        accumulated = ""
+        for item in _call_llm_streaming(
+            client, retry_prompt,
+            cached_user_prefix=cached_user_prefix,
+            call_kind=current_kind,
+            username=username,
+            run_id=run_id,
+            system_prompt=system_prompt,
+            model=model,
+        ):
+            if isinstance(item, _StreamDone):
+                accumulated = item.text
+            else:
+                yield ("chunk", item)
+        base_text = accumulated
+        try:
+            data = json.loads(_strip_fences(accumulated), strict=False)
+            missing = required_keys - data.keys()
+            if missing:
+                raise ValueError(f"missing required keys: {sorted(missing)}")
+            yield ("done", data)
+            return
+        except (json.JSONDecodeError, ValueError) as e:
+            if attempt + 1 >= max_attempts:
+                logger.error(
+                    "LLM response validation failed after %d attempts — call=%s err=%s",
+                    max_attempts, call_kind, e,
+                )
+                raise LLMResponseError(accumulated, str(e)) from e
+            logger.warning(
+                "LLM response validation failed on attempt %d — call=%s err=%s, retrying",
+                attempt + 1, call_kind, e,
+            )
+            yield ("retry", str(e))
+            retry_prompt = (
+                f"{base_prompt}\n\n<retry_reason>Your previous response failed "
+                f"validation: {e}. Respond again with valid JSON matching the "
+                f"exact structure requested above. Output JSON only, no markdown "
+                f"fences, no commentary.</retry_reason>"
+            )
+            current_kind = f"{call_kind}_retry"
+    raise LLMResponseError(base_text, "exhausted retries")
 
 
 def _parse_or_retry(
@@ -749,7 +882,28 @@ def analyze(
     """
     # P2 Context Hygiene: stable inputs (resume + JD + profile) live in the
     # cached prefix; only task-specific variable content is in the per-call prompt.
-    prompt = f"""<task>Analyze the job description against the candidate's resume and profile. Produce a comprehensive strategic analysis.</task>
+    # Prompt template shared with `analyze_streaming` via `_analyze_prompt`.
+    return _parse_or_retry(
+        client, _analyze_prompt(context_set),
+        cached_user_prefix=_stable_user_prefix(context_set),
+        required_keys=ANALYZE_REQUIRED_KEYS,
+        call_kind="analyze",
+        username=username,
+        run_id=run_id,
+    )
+
+
+
+
+def _analyze_prompt(context_set: ContextSet) -> str:
+    """Build the analyze user prompt. Shared by `analyze` and
+    `analyze_streaming` so both call sites use the same prompt template.
+
+    Extracted as a function so `analyze_streaming` (added 2026-05-26 for
+    R2 SSE streaming) doesn't duplicate the schema embedded in `analyze()`
+    above.
+    """
+    return f"""<task>Analyze the job description against the candidate's resume and profile. Produce a comprehensive strategic analysis.</task>
 
 <deterministic_analysis>
 Keyword match score: {context_set['deterministic_analysis']['keyword_overlap']['match_score']}
@@ -791,8 +945,27 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 }}
 </instructions>"""
 
-    return _parse_or_retry(
-        client, prompt,
+
+def analyze_streaming(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    username: str = "",
+    run_id: str = "",
+) -> Iterator[tuple[str, object]]:
+    """Streaming generator counterpart to `analyze()`.
+
+    Yields the same event shape as `_parse_or_retry_streaming`:
+        - `("chunk", str)` per text delta
+        - `("retry", str)` if a parse attempt fails and a retry begins
+        - `("done", dict)` on success with the parsed analysis
+
+    Routes that want token-level SSE call this generator and forward
+    each event as a Server-Sent Event. Existing non-streaming callers
+    keep using `analyze()` (which still drains `_call_llm_streaming`
+    internally via `_call_llm`).
+    """
+    yield from _parse_or_retry_streaming(
+        client, _analyze_prompt(context_set),
         cached_user_prefix=_stable_user_prefix(context_set),
         required_keys=ANALYZE_REQUIRED_KEYS,
         call_kind="analyze",

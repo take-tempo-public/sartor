@@ -260,6 +260,60 @@ function setOutputFormat(fmt, btn) {
   btn.classList.add('active');
 }
 
+// ---- Server-Sent Events helper (for streaming routes) ----
+//
+// EventSource doesn't support POST, and our analyze/generate/clarify
+// payloads carry multi-KB JD/context that don't fit a query string. So
+// we POST via fetch() and parse the SSE protocol manually off the
+// response body. SSE frames are separated by blank lines; within each
+// frame the lines are `event: <name>\n` and `data: <json>\n`.
+//
+// Calls onEvent(eventName, parsedData) for every complete frame.
+// Returns when the stream ends or the server closes. Throws on
+// network failure (caller's try/catch handles).
+async function _consumeSSE(url, body, onEvent) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    // Pre-stream error (4xx/409 etc.) — surface the JSON body the way
+    // the non-streaming routes do so onboarding-modal / error toasts
+    // still work.
+    const errBody = await res.json().catch(() => ({}));
+    onEvent('http_error', { status: res.status, body: errBody });
+    return;
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    // SSE frames are separated by \n\n. Process all complete frames in
+    // the buffer; keep any partial trailing frame for the next read.
+    let sep;
+    while ((sep = buffer.indexOf('\n\n')) !== -1) {
+      const frame = buffer.slice(0, sep);
+      buffer = buffer.slice(sep + 2);
+      if (!frame.trim()) continue;
+      let eventName = 'message';
+      const dataLines = [];
+      for (const line of frame.split('\n')) {
+        if (line.startsWith('event: ')) eventName = line.slice(7).trim();
+        else if (line.startsWith('data: ')) dataLines.push(line.slice(6));
+      }
+      const raw = dataLines.join('\n');
+      let parsed;
+      try { parsed = JSON.parse(raw); }
+      catch { parsed = raw; }
+      onEvent(eventName, parsed);
+    }
+  }
+}
+
 // ---- Analysis (P8 Gate #1) ----
 async function runAnalysis() {
   // DB-backed pipeline: the corpus is the source of truth. resume_filename
@@ -283,27 +337,76 @@ async function runAnalysis() {
   // prior run's lastGenerated* snapshot.
   _resetIterationState();
 
-  try {
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        username: currentUser,
-        job_description: jd,
-      }),
+  // Show a live token-stream view inside the pending placeholder so the
+  // user sees tokens arriving instead of staring at the spinner for ~90s.
+  // The aria-live="polite" on #analysisPending ensures screen readers get
+  // progressive updates too. On `done` we hide the stream view and switch
+  // to the structured `_renderAnalysis` output.
+  const pendingEl = document.getElementById('analysisPending');
+  if (pendingEl) {
+    _clearChildren(pendingEl);
+    const header = _el('div', {
+      className: 'edit-hint',
+      textContent: 'Analyzing — tokens stream in as the model responds:',
     });
-    const data = await res.json();
-    if (!res.ok) {
-      if (_needsOnboarding(res, data)) {
+    header.style.marginBottom = '8px';
+    const streamPre = _el('pre', { id: 'analysisStreamPre' });
+    streamPre.style.whiteSpace = 'pre-wrap';
+    streamPre.style.maxHeight = '320px';
+    streamPre.style.overflow = 'auto';
+    streamPre.style.fontFamily = 'ui-monospace, Menlo, Consolas, monospace';
+    streamPre.style.fontSize = '12px';
+    streamPre.style.opacity = '0.9';
+    pendingEl.appendChild(header);
+    pendingEl.appendChild(streamPre);
+  }
+
+  try {
+    let finalData = null;
+    let httpError = null;
+    let streamErr = null;
+    await _consumeSSE(
+      '/api/analyze/stream',
+      { username: currentUser, job_description: jd },
+      (eventName, payload) => {
+        if (eventName === 'chunk') {
+          const pre = document.getElementById('analysisStreamPre');
+          if (pre) {
+            pre.textContent += payload.text || '';
+            pre.scrollTop = pre.scrollHeight;
+          }
+        } else if (eventName === 'retry') {
+          const pre = document.getElementById('analysisStreamPre');
+          if (pre) pre.textContent += `\n\n[retry: ${payload.reason}]\n\n`;
+        } else if (eventName === 'done') {
+          finalData = payload;
+        } else if (eventName === 'error') {
+          streamErr = payload;
+        } else if (eventName === 'http_error') {
+          httpError = payload;
+        }
+      },
+    );
+
+    if (httpError) {
+      const { status, body } = httpError;
+      if (_needsOnboarding({ status }, body)) {
         document.getElementById('btnAnalyze').disabled = false;
         return openOnboardingModal(runAnalysis);
       }
-      return reportError('Analyze', data.error || 'Analysis failed', data.detail);
+      return reportError('Analyze', body.error || 'Analysis failed', body.detail);
     }
-    lastContextPath = data.context_path;
-    lastTemplatePath = data.template_path || '';
-    _composeApplicationId = data.application_id ?? null;
-    _renderAnalysis(data);
+    if (streamErr) {
+      return reportError('Analyze', streamErr.error || 'Analysis failed', streamErr.detail);
+    }
+    if (!finalData) {
+      return reportError('Analyze', 'Analysis stream ended without a result.');
+    }
+
+    lastContextPath = finalData.context_path;
+    lastTemplatePath = finalData.template_path || '';
+    _composeApplicationId = finalData.application_id ?? null;
+    _renderAnalysis(finalData);
     show('panelAnalysis');
     // Reveal the Continue/Skip actions now that the analysis has
     // landed and lastContextPath is populated (so wizardGoTo(2/3)
@@ -326,8 +429,8 @@ async function runAnalysis() {
   } finally {
     document.getElementById('btnAnalyze').disabled = false;
     // Always clear the in-flight placeholder even if analyze errored —
-    // leaving "Analyzing…" up after a failure would be misleading. The
-    // actions row stays gated on lastContextPath (only the success path
+    // leaving the streamed-tokens view up after a failure would be misleading.
+    // The actions row stays gated on lastContextPath (only the success path
     // above un-hides it).
     document.getElementById('analysisPending')?.classList.add('hidden');
   }

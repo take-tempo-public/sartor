@@ -14,6 +14,8 @@ from analyzer import (
     ANALYZE_REQUIRED_KEYS,
     LLMResponseError,
     _parse_or_retry,
+    _parse_or_retry_streaming,
+    _StreamDone,
     _strip_fences,
 )
 
@@ -243,6 +245,101 @@ def test_parse_or_retry_threads_system_prompt(monkeypatch):
     )
 
     assert received_system_prompts == ["DEDICATED"]
+
+
+# ---------- _parse_or_retry_streaming (R2 SSE streaming path) --------------
+
+def _scripted_call_llm_streaming(scripted_chunks_per_attempt):
+    """Fake _call_llm_streaming that yields a scripted chunk sequence per call.
+
+    Each element of `scripted_chunks_per_attempt` is a list of text chunks
+    representing one full LLM response; the generator yields those as
+    streaming text deltas then a _StreamDone sentinel carrying the joined
+    text. Reuse the same fake across multiple calls in a parse-then-retry
+    test by passing a list of multiple chunk-lists.
+    """
+    attempts = iter(scripted_chunks_per_attempt)
+    call_kinds: list[str] = []
+
+    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, **kwargs):
+        call_kinds.append(call_kind)
+        chunks = next(attempts)
+        yield from chunks
+        yield _StreamDone(text="".join(chunks), stop_reason="end_turn")
+
+    fake.call_kinds = call_kinds
+    return fake
+
+
+def test_parse_or_retry_streaming_yields_chunks_then_done(monkeypatch):
+    """Happy path: streaming emits each chunk verbatim, then a `done` tuple
+    carrying the parsed JSON dict. No retry events."""
+    full_json = _valid_analysis_json()
+    third = len(full_json) // 3
+    valid_chunks = [full_json[:third], full_json[third:2 * third], full_json[2 * third:]]
+    fake = _scripted_call_llm_streaming([valid_chunks])
+    monkeypatch.setattr(analyzer, "_call_llm_streaming", fake)
+
+    events = list(_parse_or_retry_streaming(
+        client=None, base_prompt="prompt",
+        cached_user_prefix="prefix",
+        required_keys=ANALYZE_REQUIRED_KEYS,
+        call_kind="analyze", username="u", run_id="r",
+    ))
+
+    chunks = [payload for kind, payload in events if kind == "chunk"]
+    retries = [payload for kind, payload in events if kind == "retry"]
+    dones = [payload for kind, payload in events if kind == "done"]
+
+    assert chunks == valid_chunks, "every chunk must propagate to the caller"
+    assert retries == []
+    assert len(dones) == 1
+    assert isinstance(dones[0], dict)
+    assert set(dones[0].keys()) >= ANALYZE_REQUIRED_KEYS
+    assert fake.call_kinds == ["analyze"]
+
+
+def test_parse_or_retry_streaming_emits_retry_on_first_parse_failure(monkeypatch):
+    """When first attempt's text fails parse, streaming emits a `retry`
+    event with the validation error, then re-streams the retry's chunks,
+    then `done` with the parsed result."""
+    junk_chunks = ["this is not", " valid json"]
+    good_chunks = [_valid_analysis_json()]
+    fake = _scripted_call_llm_streaming([junk_chunks, good_chunks])
+    monkeypatch.setattr(analyzer, "_call_llm_streaming", fake)
+
+    events = list(_parse_or_retry_streaming(
+        client=None, base_prompt="prompt",
+        cached_user_prefix="prefix",
+        required_keys=ANALYZE_REQUIRED_KEYS,
+        call_kind="analyze", username="u", run_id="r",
+    ))
+
+    kinds = [k for k, _ in events]
+    # Order: junk chunks, retry, good chunk, done.
+    assert kinds.count("retry") == 1
+    assert kinds.index("retry") > 0  # retry comes AFTER at least one chunk
+    assert kinds.index("done") > kinds.index("retry")
+    assert fake.call_kinds == ["analyze", "analyze_retry"]
+
+
+def test_parse_or_retry_streaming_raises_after_exhausted_retries(monkeypatch):
+    """Two consecutive parse failures must raise LLMResponseError, same as
+    the non-streaming variant. No `done` event in this case."""
+    junk1 = ["totally invalid"]
+    junk2 = ["still invalid"]
+    fake = _scripted_call_llm_streaming([junk1, junk2])
+    monkeypatch.setattr(analyzer, "_call_llm_streaming", fake)
+
+    with pytest.raises(LLMResponseError):
+        list(_parse_or_retry_streaming(
+            client=None, base_prompt="prompt",
+            cached_user_prefix="prefix",
+            required_keys=ANALYZE_REQUIRED_KEYS,
+            call_kind="analyze", username="u", run_id="r",
+        ))
+
+    assert fake.call_kinds == ["analyze", "analyze_retry"]
 
 
 # ---------- clarify() ------------------------------------------------------
