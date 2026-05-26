@@ -201,7 +201,8 @@ release.
       stabilize first (currently being debugged) — the POMs
       lift directly from its navigation logic, so a moving
       script means churning POMs.
-- [ ] **Corpus tab render-after-refresh bug** — surfaced during
+- [ ] **Corpus tab render-after-refresh bug** *(instrumented
+      2026-05-26; root cause TBD)* — surfaced during
       the screenshot-capture pass (2026-05-26).
       [`static/app.js:1795`](../static/app.js) `refreshCorpus()`
       fetches `/api/users/<user>/experiences` successfully and
@@ -223,9 +224,18 @@ release.
          returns them).
       Workaround currently used by [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py):
       `page.reload()` + re-select user clears the bad state.
-      Real fix: instrument `_renderCorpusList` / `_renderCorpusSummary`
-      with a try/catch + console.error so the silent failure becomes
-      visible, then chase the root cause.
+      **Status:** instrumentation landed 2026-05-26 —
+      `_renderCorpusList` is now wrapped in try/catch with an
+      element-presence guard, and `_renderCorpusSummary` calls
+      are guarded per-iteration so a single bad row doesn't
+      blank the whole list. Any future trigger will surface the
+      culprit via `console.error` instead of failing silently.
+      Root-cause chase still open: needs a repro that exhibits
+      the bug with DevTools open to read the error. Most likely
+      candidates per static read of the code: a missing DOM
+      element (`corpusToolbar` / `corpusCount`) at the moment
+      `_renderCorpusList` runs, or a property access on `exp`
+      that the API doesn't always provide.
 - [ ] **Judge JSON parse failures mis-categorized as `status=ok`** —
       surfaced during the eval-baseline smoke pass (2026-05-26).
       [`evals/runner.py:289`](../evals/runner.py) returns

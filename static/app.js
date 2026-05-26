@@ -2004,19 +2004,42 @@ async function openSummaryVariantAdd() {
 
 
 function _renderCorpusList() {
-  const list = document.getElementById('corpusExperienceList');
-  const hint = document.getElementById('corpusEmptyHint');
-  const toolbar = document.getElementById('corpusToolbar');
-  toolbar.style.display = '';
-  document.getElementById('corpusCount').textContent =
-    `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
-  _clearChildren(list);
-  if (_corpusExperiences.length === 0) {
-    hint.textContent = 'No experiences yet. Click + ADD EXPERIENCE to start, or run onboarding.';
-    return;
+  // Wrapped in try/catch with explicit element guards: an earlier
+  // screenshot-pass observed _corpusExperiences populated (length 3)
+  // but the DOM never receiving .corpus-card elements — a silent
+  // throw somewhere between the element lookups and the forEach.
+  // Surface any failure to the console so the next reproduction
+  // names the culprit directly.
+  try {
+    const list = document.getElementById('corpusExperienceList');
+    const hint = document.getElementById('corpusEmptyHint');
+    const toolbar = document.getElementById('corpusToolbar');
+    const countEl = document.getElementById('corpusCount');
+    if (!list || !hint || !toolbar || !countEl) {
+      console.error('[_renderCorpusList] missing required element', {
+        list: !!list, hint: !!hint, toolbar: !!toolbar, countEl: !!countEl,
+      });
+      return;
+    }
+    toolbar.style.display = '';
+    countEl.textContent =
+      `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
+    _clearChildren(list);
+    if (_corpusExperiences.length === 0) {
+      hint.textContent = 'No experiences yet. Click + ADD EXPERIENCE to start, or run onboarding.';
+      return;
+    }
+    hint.textContent = 'Click a card to expand and edit titles + bullets. Saves are inline.';
+    _corpusExperiences.forEach((exp, idx) => {
+      try {
+        list.appendChild(_renderCorpusSummary(exp));
+      } catch (e) {
+        console.error('[_renderCorpusList] _renderCorpusSummary threw for index', idx, 'exp:', exp, 'err:', e);
+      }
+    });
+  } catch (e) {
+    console.error('[_renderCorpusList] threw at top level:', e);
   }
-  hint.textContent = 'Click a card to expand and edit titles + bullets. Saves are inline.';
-  _corpusExperiences.forEach(exp => list.appendChild(_renderCorpusSummary(exp)));
 }
 
 function _renderCorpusSummary(exp) {
