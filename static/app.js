@@ -337,27 +337,57 @@ async function runAnalysis() {
   // prior run's lastGenerated* snapshot.
   _resetIterationState();
 
-  // Show a live token-stream view inside the pending placeholder so the
-  // user sees tokens arriving instead of staring at the spinner for ~90s.
-  // The aria-live="polite" on #analysisPending ensures screen readers get
-  // progressive updates too. On `done` we hide the stream view and switch
-  // to the structured `_renderAnalysis` output.
+  // Stream tokens off /api/analyze/stream so the user can see we're alive
+  // during the ~90s Sonnet call. The default UI is a spinner + a token
+  // counter ("Received N tokens") inside the pending placeholder; a small
+  // "Show progress" toggle reveals the raw stream for debugging or the
+  // curious. The aria-live="polite" region announces analysis-complete
+  // separately, so the spinner-by-default doesn't lose screen-reader signal.
+  // On `done` we hide the placeholder and `_renderAnalysis` produces the
+  // structured view.
   const pendingEl = document.getElementById('analysisPending');
   if (pendingEl) {
     _clearChildren(pendingEl);
-    const header = _el('div', {
+    const status = _el('div', {
       className: 'edit-hint',
-      textContent: 'Analyzing — tokens stream in as the model responds:',
+      id: 'analysisStreamStatus',
+      textContent: 'Analyzing… (~30–60s)',
     });
-    header.style.marginBottom = '8px';
-    const streamPre = _el('pre', { id: 'analysisStreamPre' });
+    status.style.marginBottom = '6px';
+    const counter = _el('div', {
+      className: 'edit-hint',
+      id: 'analysisStreamCounter',
+      textContent: 'Received 0 tokens',
+    });
+    counter.style.opacity = '0.7';
+    counter.style.fontSize = '12px';
+    counter.style.marginBottom = '8px';
+    const toggleBtn = _el('button', {
+      id: 'analysisStreamToggle',
+      className: 'lcars-btn lcars-bg-blue',
+      textContent: 'Show progress',
+    });
+    toggleBtn.style.fontSize = '12px';
+    toggleBtn.style.padding = '2px 10px';
+    toggleBtn.onclick = () => {
+      const pre = document.getElementById('analysisStreamPre');
+      const btn = document.getElementById('analysisStreamToggle');
+      if (!pre || !btn) return;
+      const showing = !pre.classList.contains('hidden');
+      pre.classList.toggle('hidden', showing);
+      btn.textContent = showing ? 'Show progress' : 'Hide progress';
+    };
+    const streamPre = _el('pre', { id: 'analysisStreamPre', className: 'hidden' });
     streamPre.style.whiteSpace = 'pre-wrap';
     streamPre.style.maxHeight = '320px';
     streamPre.style.overflow = 'auto';
     streamPre.style.fontFamily = 'ui-monospace, Menlo, Consolas, monospace';
     streamPre.style.fontSize = '12px';
     streamPre.style.opacity = '0.9';
-    pendingEl.appendChild(header);
+    streamPre.style.marginTop = '8px';
+    pendingEl.appendChild(status);
+    pendingEl.appendChild(counter);
+    pendingEl.appendChild(toggleBtn);
     pendingEl.appendChild(streamPre);
   }
 
@@ -365,17 +395,32 @@ async function runAnalysis() {
     let finalData = null;
     let httpError = null;
     let streamErr = null;
+    let tokenCount = 0;
     await _consumeSSE(
       '/api/analyze/stream',
       { username: currentUser, job_description: jd },
       (eventName, payload) => {
         if (eventName === 'chunk') {
+          // Quick coarse "tokens" proxy — Anthropic deltas typically carry
+          // 1-4 characters each. We count chunks, not tokens, because we
+          // can't see the model's token boundaries from text deltas. The
+          // visible label says "tokens" because it's close enough for an
+          // alive-indicator and the precise number doesn't matter.
+          tokenCount += 1;
+          const counterEl = document.getElementById('analysisStreamCounter');
+          if (counterEl) counterEl.textContent = `Received ${tokenCount} tokens`;
+          // Append to the (hidden by default) raw-stream view so the
+          // "Show progress" toggle has something to reveal.
           const pre = document.getElementById('analysisStreamPre');
           if (pre) {
             pre.textContent += payload.text || '';
-            pre.scrollTop = pre.scrollHeight;
+            if (!pre.classList.contains('hidden')) {
+              pre.scrollTop = pre.scrollHeight;
+            }
           }
         } else if (eventName === 'retry') {
+          const status = document.getElementById('analysisStreamStatus');
+          if (status) status.textContent = `Analyzing… (retrying: ${payload.reason})`;
           const pre = document.getElementById('analysisStreamPre');
           if (pre) pre.textContent += `\n\n[retry: ${payload.reason}]\n\n`;
         } else if (eventName === 'done') {

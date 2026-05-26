@@ -1263,47 +1263,20 @@ FORMAT:
 </cover_letter_rules>"""
 
 
-def generate(
-    client: anthropic.Anthropic,
+def _build_generate_prompt(
     context_set: ContextSet,
     analysis: dict,
     refinement_notes: str = "",
-    username: str = "",
-    run_id: str = "",
     with_cover_letter: bool = True,
-) -> dict:
-    """Call 2: Generation.
+) -> tuple[str, frozenset[str]]:
+    """Build the generate-prompt + the matching required_keys for the
+    expected JSON output. Shared by `generate()` and `generate_streaming()`
+    so the prompt template lives in one place. Returns (prompt, required).
 
-    Produces tailored resume content and (optionally) a cover letter.
-    Includes proofreading pass. The username is threaded through to JSONL
-    telemetry only — no behavior depends on it. The run_id (when provided)
-    lets dashboard tooling correlate this call's telemetry with its sibling
-    analyze() call and any eval result that consumed the output.
-
-    `with_cover_letter` (Phase β.5):
-      Default True for backward compatibility with existing callers + the
-      iteration loop. When False (e.g. the route layer's default for the
-      common résumé-only path), the cover_letter_rules block is dropped
-      from the prompt, the JSON schema does not include
-      cover_letter_content, and the returned dict has cover_letter_content
-      set to "" so downstream renderers that always touch the field don't
-      KeyError. The user can call /api/generate-cover-letter later to
-      produce a cover letter against the finalized résumé.
-
-    When the context_set contains clarifications (set by /api/answer-clarifications
-    after the optional interview step), they are injected into the prompt as
-    first-person ground truth and the GROUNDING CHECK is widened to accept
-    them as legitimate source material.
-
-    Iteration-aware behavior (iteration >= 1):
-      - The <resume> block in the cached prefix already shows the current
-        draft (edited > last_generated) via _current_draft_text. Originals
-        live under <historical_resumes>.
-      - A <current_cover_letter_draft> block is inserted so the LLM evolves
-        the prior cover letter rather than starting fresh. (Skipped when
-        with_cover_letter is False.)
-      - Grounding wording widens to acknowledge first-person typed edits as
-        legitimate source material (mirrors the clarification carve-out).
+    Mirrors `_analyze_prompt` — extracted 2026-05-26 to support the R2
+    streaming path without duplicating ~80 lines of conditional prompt
+    construction (clarifications block / cover-letter rules / corpus mode /
+    refinement instructions / output schema).
     """
     # Build the optional candidate clarifications block. The clarify step is
     # opt-in — most contexts won't have these fields. When present, the answers
@@ -1328,46 +1301,29 @@ def generate(
             qid = q.get("id", "")
             ans = answers.get(qid, "").strip()
             if not ans:
-                continue  # user skipped this question
+                continue
             kind = q.get("kind", "")
             cb_lines.append(f'<q id="{qid}" kind="{kind}">')
             cb_lines.append(f"Question: {q.get('text', '')}")
             cb_lines.append(f"Candidate answer: {ans}")
             cb_lines.append("</q>")
             cb_lines.append("")
-        # Only include the block if at least one answer was actually present
         if any(answers.get(q.get("id", ""), "").strip() for q in questions):
             cb_lines.append("</candidate_clarifications>")
             clarifications_block = "\n".join(cb_lines) + "\n\n"
 
-    # Phase β.5 — cover-letter rules block. Built as a Python variable so
-    # the prompt can interpolate it; empty when with_cover_letter is False
-    # so the LLM doesn't see (and doesn't pay tokens for) the cover-letter
-    # contract on résumé-only calls. The dedicated
-    # generate_cover_letter_against_resume() carries these same rules
-    # when the user opts in to a cover letter later.
     cover_letter_rules_block = _COVER_LETTER_RULES_BLOCK if with_cover_letter else ""
 
-    # Phase β.5 — refinement-target wording. With cover letter on, refinement
-    # notes apply to both documents; without, only to the résumé.
     refinement_target = (
         "to both the resume and cover letter" if with_cover_letter
         else "to the resume"
     )
 
-    # Phase β.5 — JSON output schema line for cover_letter_content. When
-    # with_cover_letter is False the field is omitted entirely so the LLM
-    # does not produce (or pay tokens for) a cover letter on this call.
     cover_letter_schema_line = (
         '"cover_letter_content": "The complete cover letter as plain text",\n  '
         if with_cover_letter else ""
     )
 
-    # Cover letter draft block — present only when iterating from a prior
-    # generation AND the caller wants a cover letter on this call. The
-    # <resume> block already carries the current resume draft via
-    # _current_draft_text in the cached prefix; this is the parallel for
-    # the cover letter, which has no "original" file on disk.
     cover_draft, _ = _current_cover_letter_draft(context_set) if with_cover_letter else ("", "")
     cover_letter_draft_block = ""
     if cover_draft:
@@ -1383,11 +1339,6 @@ def generate(
             "</current_cover_letter_draft>\n\n"
         )
 
-    # Phase B.2: corpus-mode instructions + extra output fields, present only
-    # when the input carries a <career_corpus> block (DB-backed pipeline).
-    # When absent (legacy file-based path), generate() behaves identically to
-    # prior versions — the LLM sees the legacy <resume> + <supplemental_resumes>
-    # and produces the legacy four-field JSON output.
     in_corpus_mode = bool(context_set.get("career_corpus"))
     corpus_mode_block = ""
     extra_output_fields = ""
@@ -1554,7 +1505,6 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 }}
 </output_format>"""
 
-    # Phase β.5 — pick required_keys based on mode + cover-letter flag
     if in_corpus_mode:
         required = (GENERATE_CORPUS_REQUIRED_KEYS if with_cover_letter
                     else GENERATE_CORPUS_NO_CL_REQUIRED_KEYS)
@@ -1562,6 +1512,56 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
         required = (GENERATE_REQUIRED_KEYS if with_cover_letter
                     else GENERATE_NO_CL_REQUIRED_KEYS)
 
+    return prompt, required
+
+
+def generate(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    analysis: dict,
+    refinement_notes: str = "",
+    username: str = "",
+    run_id: str = "",
+    with_cover_letter: bool = True,
+) -> dict:
+    """Call 2: Generation.
+
+    Produces tailored resume content and (optionally) a cover letter.
+    Includes proofreading pass. The username is threaded through to JSONL
+    telemetry only — no behavior depends on it. The run_id (when provided)
+    lets dashboard tooling correlate this call's telemetry with its sibling
+    analyze() call and any eval result that consumed the output.
+
+    `with_cover_letter` (Phase β.5):
+      Default True for backward compatibility with existing callers + the
+      iteration loop. When False (e.g. the route layer's default for the
+      common résumé-only path), the cover_letter_rules block is dropped
+      from the prompt, the JSON schema does not include
+      cover_letter_content, and the returned dict has cover_letter_content
+      set to "" so downstream renderers that always touch the field don't
+      KeyError. The user can call /api/generate-cover-letter later to
+      produce a cover letter against the finalized résumé.
+
+    When the context_set contains clarifications (set by /api/answer-clarifications
+    after the optional interview step), they are injected into the prompt as
+    first-person ground truth and the GROUNDING CHECK is widened to accept
+    them as legitimate source material.
+
+    Iteration-aware behavior (iteration >= 1):
+      - The <resume> block in the cached prefix already shows the current
+        draft (edited > last_generated) via _current_draft_text. Originals
+        live under <historical_resumes>.
+      - A <current_cover_letter_draft> block is inserted so the LLM evolves
+        the prior cover letter rather than starting fresh. (Skipped when
+        with_cover_letter is False.)
+      - Grounding wording widens to acknowledge first-person typed edits as
+        legitimate source material (mirrors the clarification carve-out).
+    """
+    prompt, required = _build_generate_prompt(
+        context_set, analysis,
+        refinement_notes=refinement_notes,
+        with_cover_letter=with_cover_letter,
+    )
     result = _parse_or_retry(
         client, prompt,
         cached_user_prefix=_stable_user_prefix(context_set),
@@ -1570,13 +1570,57 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
         username=username,
         run_id=run_id,
     )
-    # Phase β.5 — downstream code (generator.generate_cover_letter, eval
-    # harness, telemetry) always touches cover_letter_content. Ensure
-    # the key exists when the call was résumé-only so a KeyError doesn't
-    # bubble up from a deferred file write.
     if not with_cover_letter:
         result.setdefault("cover_letter_content", "")
     return result
+
+
+def generate_streaming(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    analysis: dict,
+    refinement_notes: str = "",
+    username: str = "",
+    run_id: str = "",
+    with_cover_letter: bool = True,
+) -> Iterator[tuple[str, object]]:
+    """Streaming generator counterpart to `generate()`.
+
+    Yields the same event shape as `_parse_or_retry_streaming`:
+        - `("chunk", str)` per text delta
+        - `("retry", str)` if a parse attempt fails and a retry begins
+        - `("done", dict)` on success with the parsed generation result.
+          When `with_cover_letter` is False the dict carries an empty
+          `cover_letter_content` so downstream renderers don't KeyError —
+          same shape as the non-streaming `generate()` return.
+
+    Routes that want token-level SSE call this generator and forward
+    each event as a Server-Sent Event. Existing non-streaming callers
+    keep using `generate()`.
+    """
+    prompt, required = _build_generate_prompt(
+        context_set, analysis,
+        refinement_notes=refinement_notes,
+        with_cover_letter=with_cover_letter,
+    )
+    for event in _parse_or_retry_streaming(
+        client, prompt,
+        cached_user_prefix=_stable_user_prefix(context_set),
+        required_keys=required,
+        call_kind="generate",
+        username=username,
+        run_id=run_id,
+    ):
+        kind, payload = event
+        if kind == "done" and not with_cover_letter and isinstance(payload, dict):
+            # Mirror generate()'s post-parse setdefault so callers that
+            # always touch cover_letter_content don't KeyError.
+            payload.setdefault("cover_letter_content", "")
+            yield ("done", payload)
+        else:
+            yield event
+
+
 
 
 # β.5 — required keys for the focused cover-letter-only call below.

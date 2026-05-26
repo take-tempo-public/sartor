@@ -27,6 +27,7 @@ from analyzer import (
     clarify,
     clarify_iteration,
     generate,
+    generate_streaming,
 )
 from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
@@ -1164,6 +1165,218 @@ def run_generation():
         # to /api/download-edited (so DOWNLOAD honors the chosen template).
         "persona_template_id": resolved_persona_id,
     })
+
+
+@app.route("/api/generate/stream", methods=["POST"])
+def run_generation_stream():
+    """R2 streaming variant of /api/generate.
+
+    Same request shape and same final response payload as /api/generate,
+    but the LLM call streams tokens via SSE so the frontend can show a
+    live "alive" indicator (token counter + collapsible raw stream)
+    during the ~50s Sonnet 4.6 call. All pre-LLM validation runs upfront
+    and returns plain JSON on failure; all post-LLM persistence (file
+    writes, ATS round-trip, DB persist, iteration snapshot) runs inside
+    the stream's `done` branch and rides the final SSE event.
+
+    Event types on the SSE stream:
+      - `chunk`: `{"text": "<delta>"}` per text delta
+      - `retry`: `{"reason": "<error>"}` when a parse retry begins
+      - `done`:  the full payload the non-streaming /api/generate returns
+      - `error`: `{"error": "<msg>", "http_status": <int>, "detail"?: "..."}`
+    """
+    data = request.json
+    username = data.get("username", "")
+    context_path = data.get("context_path", "")
+    output_format = data.get("output_format", "")
+    refinement_notes = data.get("refinement_notes", "")
+    with_cover_letter = bool(data.get("generate_cover_letter", False))
+
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR):
+        return jsonify({"error": "Invalid context path"}), 403
+    if not cp.exists():
+        return jsonify({"error": "Context file not found"}), 404
+
+    context_set: ContextSet = json.loads(cp.read_text(encoding="utf-8"))
+    analysis = context_set.get("llm_analysis", {})
+    if not analysis:
+        return jsonify({"error": "No valid analysis found in context"}), 400
+
+    logger.info(
+        "Starting streaming generation for %s (iteration=%s)",
+        username, context_set.get("iteration", 0),
+    )
+    _apply_chosen_summary(context_set)
+
+    safe_user = _safe_username(username) if username else None
+    if not safe_user:
+        safe_user = secure_filename(cp.parent.name)
+
+    # Resolve template_path + output_format up front so all post-LLM
+    # persistence inside the stream has them in closure.
+    original_format = context_set["resume"]["format"]
+    resolved_output_format = output_format
+    if resolved_output_format not in (".docx", ".md", ".pdf"):
+        resolved_output_format = ".docx" if original_format != ".md" else ".md"
+
+    template_path = None
+    resolved_persona_id: int | None = None
+    if resolved_output_format in (".docx", ".pdf"):
+        requested_persona_id = data.get("persona_template_id")
+        if requested_persona_id is not None:
+            resolved_persona_id = int(requested_persona_id)
+            template_path = _resolve_persona_template_path(resolved_persona_id)
+        else:
+            ctx_app_id = context_set.get("application_id")
+            template_path = (
+                context_set["resume"].get("path")
+                or _resolve_default_persona_template_path(
+                    username=safe_user,
+                    application_id=int(ctx_app_id) if ctx_app_id is not None else None,
+                )
+            )
+
+    client = _get_client()
+    run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
+
+    def stream():
+        try:
+            result: dict | None = None
+            for event_kind, payload in generate_streaming(
+                client, context_set, analysis,
+                refinement_notes=refinement_notes,
+                username=safe_user,
+                run_id=run_id,
+                with_cover_letter=with_cover_letter,
+            ):
+                if event_kind == "chunk":
+                    yield _sse("chunk", {"text": payload})
+                elif event_kind == "retry":
+                    yield _sse("retry", {"reason": str(payload)})
+                elif event_kind == "done":
+                    result = payload if isinstance(payload, dict) else None
+            if result is None:
+                yield _sse("error", {
+                    "error": "Streaming generate finished without a parsed result.",
+                    "http_status": 502,
+                })
+                return
+
+            # Post-LLM persistence — mirror the non-streaming route.
+            resume_path = generate_resume(
+                result["resume_content"], resolved_output_format,
+                safe_user, str(OUTPUT_DIR),
+                template_path=template_path,
+            )
+            cover_letter_path = ""
+            if (result.get("cover_letter_content") or "").strip():
+                cover_letter_path = generate_cover_letter(
+                    result["cover_letter_content"], safe_user, str(OUTPUT_DIR),
+                )
+            logger.info(
+                "Streaming generation complete: %s, %s",
+                resume_path, cover_letter_path,
+            )
+
+            ats_findings: dict | None = None
+            if resolved_output_format == ".docx":
+                try:
+                    from db.ats_roundtrip import run_ats_roundtrip
+                    ats_findings = run_ats_roundtrip(resume_path, result["resume_content"])
+                    if ats_findings["status"] != "pass":
+                        logger.warning(
+                            "ATS round-trip %s on %s: %s",
+                            ats_findings["status"], resume_path, ats_findings["notes"],
+                        )
+                except Exception as exc:
+                    logger.warning("ATS round-trip check failed to run: %s", exc)
+                    ats_findings = {"status": "not_run", "notes": [f"check raised: {exc}"]}
+
+            app_run_id = context_set.get("application_run_id")
+            if app_run_id is not None:
+                try:
+                    if resolved_persona_id is not None:
+                        _persist_run_persona(int(app_run_id), resolved_persona_id)
+                    _persist_corpus_generation_to_db(
+                        int(app_run_id), result, ats_findings=ats_findings,
+                    )
+                except Exception as exc:
+                    logger.error(
+                        "Corpus generation persist failed (run_id=%s): %s",
+                        app_run_id, exc, exc_info=True,
+                    )
+
+            summary_parts = []
+            if refinement_notes.strip():
+                summary_parts.append("refinement")
+            if context_set.get("edited_resume_text") or context_set.get("edited_cover_letter_text"):
+                summary_parts.append("from edited baseline")
+            summary = " + ".join(summary_parts) if summary_parts else "fresh generation"
+
+            new_context_path = save_iteration_context(
+                parent_context=context_set,
+                parent_path=str(cp),
+                last_generated_resume=result["resume_content"],
+                last_generated_cover_letter=result["cover_letter_content"],
+                username=safe_user,
+                base_dir=str(OUTPUT_DIR),
+                action="generate",
+                summary=summary,
+            )
+            new_iteration = int(context_set.get("iteration", 0) or 0) + 1
+            logger.info(
+                "Iteration %d snapshotted: %s (parent=%s)",
+                new_iteration, new_context_path, str(cp),
+            )
+
+            yield _sse("done", {
+                "resume_path": resume_path,
+                "cover_letter_path": cover_letter_path,
+                "resume_format": resolved_output_format,
+                "changes_made": result.get("changes_made", []),
+                "proofread_notes": result.get("proofread_notes", []),
+                "resume_preview": result["resume_content"],
+                "cover_letter_preview": result.get("cover_letter_content", ""),
+                "context_path": new_context_path,
+                "iteration": new_iteration,
+                "parent_context_path": str(cp),
+                "ats_roundtrip": ats_findings,
+                "persona_template_id": resolved_persona_id,
+            })
+        except anthropic.APIConnectionError as exc:
+            logger.error("Anthropic API connection error during streaming generation: %s", exc)
+            yield _sse("error", {
+                "error": "Connection to AI service failed. Please try again.",
+                "http_status": 503,
+            })
+        except LLMResponseError as exc:
+            logger.error(
+                "LLM streaming generation response failed validation after retry: %s",
+                exc.validation_error,
+            )
+            yield _sse("error", {
+                "error": "AI generation response was malformed after retry. Please try again.",
+                "detail": exc.validation_error,
+                "http_status": 502,
+            })
+        except Exception:
+            logger.exception("Streaming generation failed unexpectedly")
+            yield _sse("error", {
+                "error": "Internal error during generation.",
+                "http_status": 500,
+            })
+
+    return Response(
+        stream(),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.route("/api/validate-refinement", methods=["POST"])
