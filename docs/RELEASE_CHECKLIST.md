@@ -105,21 +105,20 @@ release.
       reports the doc/UI mismatch as it existed on 2026-05-25).
       The internal API route `/api/users/<user>/import-legacy`
       keeps its name — route rename is a separate cleanup, v1.1.
-- [ ] **Bullet-dedup gap in corpus re-import** — surfaced during
-      the screenshot-capture pass (2026-05-26). Re-running
+- [x] **~~Bullet-dedup gap in corpus re-import~~** — ✅ resolved
+      2026-05-26. Changed `_merge_into_existing_experience` in
       [`onboarding/import_legacy.py`](../onboarding/import_legacy.py)
-      with `with_llm=True` against the same source `.docx` correctly
-      dedupes experiences (by `(company, start_date)`) but creates
-      a fresh batch of bullets each time, so each re-import
-      doubles the bullet count for already-imported experiences
-      (observed: a 22-bullet first import grew to 44 bullets on the
-      second import of the same file). The current behavior is
-      documented as intentional in
-      [`onboarding/import_legacy.py:387-388`](../onboarding/import_legacy.py)
-      ("Bullets are NOT deduped — different resume files often
-      have different phrasings"), but the same-file case
-      shouldn't trigger that path. Add a `(experience_id,
-      normalized_text)` dedup at the same-file boundary.
+      to dedup on **normalized bullet text** instead of
+      `(source, text)`. The old key missed same-file re-imports
+      because the source flips from `primary:<file>` to
+      `supplemental:<file>` on the merge path, so the same text
+      under two different sources slipped through as a "new"
+      bullet. The new key matches regardless of source; different
+      phrasings from different files still survive (they have
+      different normalized text). Test
+      `test_merge_dedupes_identical_bullet_text_across_sources`
+      in [`tests/test_onboarding_import_legacy.py`](../tests/test_onboarding_import_legacy.py)
+      pins the new behavior; all 24 tests in that file pass.
 - [x] **~~Wizard rail step buttons don't re-enable after prior step
       completes~~** — ✅ resolved 2026-05-26. Added a
       `_wizardRender()` call in `runAnalysis()`'s success path
@@ -227,6 +226,67 @@ release.
       Real fix: instrument `_renderCorpusList` / `_renderCorpusSummary`
       with a try/catch + console.error so the silent failure becomes
       visible, then chase the root cause.
+- [ ] **Judge JSON parse failures mis-categorized as `status=ok`** —
+      surfaced during the eval-baseline smoke pass (2026-05-26).
+      [`evals/runner.py:289`](../evals/runner.py) returns
+      `{"score": 0, "reasons": ["judge response was not valid JSON"]}`
+      when the judge response isn't parseable JSON, but does NOT
+      set `status: "judge_error"` on the returned dict. The caller
+      at [`evals/runner.py:546`](../evals/runner.py) then runs
+      `grade.setdefault("status", "ok")`, silently labelling the
+      record as a successful grading with a real 0 score. The
+      regression-detector at
+      [`evals/runner.py:229-262`](../evals/runner.py) sees a
+      4.8 → 0.0 delta and fires a false-positive WARN. Observed
+      live in
+      [`evals/results/20260526_170400Z.jsonl`](../evals/results/20260526_170400Z.jsonl)
+      record 1: `data-scientist-junior × grounding` flagged as a
+      -4.8 regression, but the pipeline metrics
+      (`grounding_overlap.overlap_ratio=0.195`, `verb_diversity=1.0`,
+      normal latency + cost) and the paraphrase-shaped
+      `missing_samples` are consistent with the two passing
+      fixtures — i.e., the underlying generation was fine; only
+      the judge's response was malformed. Fix: return
+      `{"score": 0, "reasons": [...], "raw": raw, "status": "judge_error"}`
+      at [`evals/runner.py:289`](../evals/runner.py) so the
+      existing `judge_error` path in `_detect_regression` /
+      summary logic skips these records correctly. One-line
+      change; add a test in
+      [`tests/test_eval_runner.py`](../tests/test_eval_runner.py)
+      that injects a malformed-JSON judge response and asserts
+      `status == "judge_error"`.
+- [ ] **Re-baseline eval scores for v1.0.1** —
+      [`evals/results/baseline_v1.json`](../evals/results/baseline_v1.json)
+      was sourced from
+      [`evals/results/20260513_221926Z.jsonl`](../evals/results/20260513_221926Z.jsonl)
+      on `prompt_version=2026-05-12.1` (recorded 2026-05-25), but
+      [`analyzer.py`](../analyzer.py)'s current `PROMPT_VERSION`
+      is `2026-05-24.4` — three prompt revisions shipped with
+      v1.0.0 between the baseline source-run and tag. The
+      baseline file's own `notes` field already calls this out
+      ("a re-baseline is recommended early in v1.0.1 once the
+      streaming/split-analyze changes from PERF_ANALYZE.md
+      land"). The smoke pass on 2026-05-26 showed the two
+      successfully-graded fixtures essentially unchanged
+      (`pm-senior`: 4.8 = 4.8; `sre-mid-level`: 4.8 vs 4.7,
+      Δ=+0.1), so the drift appears benign — but the "Eval
+      baseline check" Must-do at
+      [`docs/RELEASE_CHECKLIST.md:32-35`](RELEASE_CHECKLIST.md)
+      is comparing against scores no longer apples-to-apples
+      with shipping code. Action: once the
+      [`evals/runner.py:289`](../evals/runner.py) judge-error
+      fix lands AND the v1.0.1 prompt landscape is final (R2
+      streaming work either in or explicitly deferred), run
+      the full synthetic suite (`python evals/runner.py --suite
+      synthetic`, ~$1.50, all five rubrics × three fixtures)
+      and replace `baseline_v1.json` with a v1.0.1 baseline.
+      Document the cut as a dated entry in
+      [`evals/TUNING_LOG.md`](../evals/TUNING_LOG.md) per its
+      four-question structure. **Defer:** v1.0.1 CAN ship
+      against `baseline_v1` (smoke noise from the judge-error
+      bug aside, the underlying scores are stable); the
+      re-baseline is hygiene, not a blocker — slip to early
+      v1.1 if v1.0.1 ships fast.
 
 ### Nice to have (defer to v1.1 if time-bound)
 

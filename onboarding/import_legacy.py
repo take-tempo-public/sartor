@@ -590,10 +590,15 @@ def _merge_into_existing_experience(
 
     - If the new title text doesn't already exist on this experience, add it
       as an alternate (is_official=0, truthful_enough_to_use=1, is_pending_review=1).
-    - Append every new bullet whose (source, text) isn't already attached.
-      Different files often phrase the same achievement differently — that's
-      the entire point of importing both files. We let the user prune
-      duplicates in review rather than guessing here.
+    - Append every new bullet whose *normalized text* isn't already attached.
+      Different files often phrase the same achievement differently — those
+      different phrasings get kept and the user prunes them in review.
+      Identical phrasings dedupe at the (experience_id, normalized_text)
+      boundary regardless of source. (The previous (source, text) key
+      missed same-file re-imports because the source flips from
+      `primary:<file>` to `supplemental:<file>` on the merge path, so the
+      same text under two different sources looked like two distinct
+      bullets.)
 
     Implementation note: we query titles/bullets directly rather than going
     through `existing.titles` / `existing.bullets` because the relationship
@@ -627,8 +632,13 @@ def _merge_into_existing_experience(
             report.alternate_titles_created += 1
 
     source_value = f"supplemental:{source_filename}"
+    # Dedup on normalized text only (lowercased + whitespace-collapsed).
+    # The old (source, text) key let same-file re-imports through because
+    # the source flips primary→supplemental between runs; normalizing
+    # the text and ignoring the source catches that case AND continues
+    # to keep genuinely different phrasings from different files.
     existing_bullet_keys = {
-        (row[0], row[1]) for row in session.query(Bullet.source, Bullet.text).filter(
+        _normalize(row[0]) for row in session.query(Bullet.text).filter(
             Bullet.experience_id == existing.id
         )
     }
@@ -637,7 +647,10 @@ def _merge_into_existing_experience(
     ).count()
     for b in exp.get("bullets", []):
         btext = b.get("text", "")
-        if not btext or (source_value, btext) in existing_bullet_keys:
+        if not btext:
+            continue
+        norm_btext = _normalize(btext)
+        if norm_btext in existing_bullet_keys:
             continue
         session.add(Bullet(
             experience_id=existing.id,
@@ -648,6 +661,9 @@ def _merge_into_existing_experience(
             source=source_value,
             has_outcome=1 if b.get("has_outcome") else 0,
         ))
+        # Track within this loop so two identical bullets in the same
+        # extraction don't both insert.
+        existing_bullet_keys.add(norm_btext)
         report.bullets_created += 1
 
 

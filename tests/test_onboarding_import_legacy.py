@@ -399,8 +399,16 @@ class TestInsertOrMergeExperience:
         sources = sorted(b.source for b in exp.bullets)
         assert sources == ["primary:primary.md", "supplemental:other.md"]
 
-    def test_merge_skips_exact_duplicate_bullet_same_source(self, db_session):
-        """Re-running import of the same supplemental shouldn't double-add bullets."""
+    def test_merge_dedupes_identical_bullet_text_across_sources(self, db_session):
+        """Re-running import of the same résumé file shouldn't double-add bullets.
+
+        The dedup key is (experience_id, normalized_text) — it ignores
+        source so the same-file re-import case (where the source prefix
+        flips primary→supplemental between runs) doesn't slip through.
+        Same achievement phrased identically across two files is also
+        treated as one bullet; the user prunes intra-file duplicates by
+        editing the corpus directly.
+        """
         c = self._make_candidate(db_session)
         report = ImportReport()
         _insert_or_merge_experience(
@@ -410,7 +418,8 @@ class TestInsertOrMergeExperience:
             c.id, source_filename="primary.md", is_primary_file=True,
             session=db_session, dry_run=False, report=report,
         )
-        # Same text + same source — idempotent
+        # Same text — should be deduped on second insert despite the
+        # source prefix flipping to supplemental on the merge path.
         _insert_or_merge_experience(
             {"company": "Acme", "start_date": "2020-01",
              "candidate_inferred_title": "AI Lead",
@@ -421,15 +430,10 @@ class TestInsertOrMergeExperience:
         db_session.flush()
 
         exp = db_session.query(Experience).filter_by(candidate_id=c.id).one()
-        # Only the original bullet should exist; the duplicate (source, text)
-        # combination is the one that gets caught. The alternate-title path
-        # uses supplemental: as its source prefix, which here matches the
-        # original primary: prefix exactly because filenames match — but the
-        # full source string differs, so the dedup keys are distinct. Confirm:
-        assert len(exp.bullets) == 2  # different source strings, so kept
-        # The supplemental one carries the new source value
-        sources = sorted(b.source for b in exp.bullets)
-        assert sources == ["primary:primary.md", "supplemental:primary.md"]
+        assert len(exp.bullets) == 1
+        # The surviving bullet is the original (primary) insert.
+        assert exp.bullets[0].source == "primary:primary.md"
+        assert exp.bullets[0].text == "Led team."
 
     def test_dry_run_does_not_persist(self, db_session):
         c = self._make_candidate(db_session)
