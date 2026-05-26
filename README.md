@@ -1,11 +1,12 @@
 # callback. 
 
-A local web application that tailors resumes and cover letters to specific job descriptions using the Claude AI API. Built on the [10 Principles](https://jdforsythe.github.io/10-principles/overview/) — deterministic Python tools handle all mechanical work; the LLM handles analysis and writing.
+A local web application that tailors résumés and cover letters to specific job descriptions (JDs) using the Claude AI API. Built on the [10 Principles](https://jdforsythe.github.io/10-principles/overview/) — deterministic Python tools handle all mechanical work; the LLM (large language model — Anthropic's Claude, in callback.'s case) handles analysis and writing.
 
-**Runs locally. LLM calls to Anthropic (without a proxy that would force API billing without monthly credits)**
+**callback. runs on your machine.** Every LLM call hits Anthropic's API directly — there's no callback.-operated proxy, so your Anthropic billing reflects your real usage, not a markup.
 
 > **Doc map:** [`vision.md`](vision.md) (intent + constraints) ·
 > [`docs/install.md`](docs/install.md) (install + first-run) ·
+> [`docs/walkthrough.md`](docs/walkthrough.md) (screen-by-screen guide + flow diagrams) ·
 > [`docs/architecture.md`](docs/architecture.md) (system + module map) ·
 > [`AGENTS.md`](AGENTS.md) (AI-agent contract) ·
 > [`CLAUDE.md`](CLAUDE.md) (Claude-specific overrides) ·
@@ -67,6 +68,7 @@ The `.gitignore` keeps all of these out of source control. The
 
 ---
 
+<a name="cost"></a>
 ## Cost guidance
 
 Per-application API cost in typical use:
@@ -95,10 +97,13 @@ Sign in at [console.anthropic.com](https://console.anthropic.com/), navigate to 
 
 ## The wizard at a glance
 
-A single application moves through six steps. The first three are corpus + analysis (cheap or free). The last three produce + refine + download the output (each generate is ~$0.05–$0.30).
+Your **corpus** is the pool of every bullet, summary, and experience you've ever written — callback. mines it for what fits this specific JD. You import it once and reuse it across every application.
+
+A single application moves through six steps. The first three are corpus + analysis (cheap or free). The last three produce + refine + download the output (each generate is ~$0.05–$0.30; see [Cost guidance](#cost) for the full breakdown).
 
 ```
-1. Job + Analyze    — paste JD, run analyze; LLM reports skill match + ATS warnings
+1. Job + Analyze    — paste the job description (JD), run analyze; the LLM reports
+                      skill match + ATS (applicant tracking system) warnings
 2. Clarify (opt)    — answer 3-5 questions surfacing real-but-undocumented experience
 3. Compose          — pin / exclude / add bullets; pick the summary variant
 4. Template         — pick one of 4 ATS-safe templates (live paginated preview)
@@ -107,9 +112,11 @@ A single application moves through six steps. The first three are corpus + analy
                       Optional: + Generate cover letter against the finalized résumé
 ```
 
-Two human review gates are required: the post-analyze review (step 1→2) and the post-generation refinement (step 6). Clarification interviews between them are optional but cheap.
+### The two human review gates
 
-**For a step-by-step first-run walkthrough**, see [`docs/install.md`](docs/install.md). For the code shape under the hood, see [`docs/architecture.md`](docs/architecture.md).
+callback. pauses for your judgement at two points: the post-analyze review (step 1 → 2, where you decide whether to enter Clarify or skip ahead) and the post-generation refinement (step 6, where you read the generated résumé and either refine via natural-language note or approve). Clarification interviews between them are optional but cheap.
+
+**For a screen-by-screen walkthrough** with user-flow + information-flow diagrams and what's happening under the hood at each step, see [`docs/walkthrough.md`](docs/walkthrough.md). For install steps, see [`docs/install.md`](docs/install.md). For the code shape, see [`docs/architecture.md`](docs/architecture.md).
 
 ---
 
@@ -146,6 +153,7 @@ The project ships a Claude Code plugin under [.claude-plugin/](.claude-plugin/) 
 | [`eval-judge`](.claude-plugin/agents/eval-judge.md) | Grade one (artifact × rubric) → JSON verdict |
 | [`prompt-archaeologist`](.claude-plugin/agents/prompt-archaeologist.md) | Trace an eval failure to a prompt rule and propose a unified-diff fix |
 | [`git-flow`](.claude-plugin/agents/git-flow.md) | Execute git workflow under the project's conventions |
+| [`ux-onboarding-designer`](.claude-plugin/agents/ux-onboarding-designer.md) | Audit user-facing docs from a first-time-user lens → structured rewrite ladder |
 
 ### Hooks
 
