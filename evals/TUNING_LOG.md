@@ -16,6 +16,121 @@ prevent re-running them.
 
 ---
 
+## 2026-05-26 — Atomic extraction + context-probe clarify (R1 quality fix) (`2026-05-26.1` → `2026-05-26.2`)
+
+### What changed
+
+Three surgical changes layered on top of the R1 two-pass split, in response to a measured −1.0 regression on `pm-senior/clarification_quality` and −0.4 on `sre-mid-level/clarification_quality` against the clean pre-R1 baseline. Diagnosis confirmed by a recruiting-specialist consultation: the Haiku extraction was producing naturalistic phrases ("EHR systems including Epic and Cerner") where it should produce atomic tokens, and the clarify pass was emitting tool-name probes when the JD's underlying signal was portable operating-context that adjacent-background candidates could map onto.
+
+**A. Atomic extraction rule** ([`analyzer.py:EXTRACTION_SYSTEM_PROMPT`](../analyzer.py))
+Added an explicit ALWAYS rule requiring ONE concept per item in `essential_skills`, `preferred_skills`, and `industry_keywords`, with worked OK / NOT OK examples (`["EHR", "Epic", "Cerner"]` vs. `["EHR systems including Epic and Cerner"]`). Rationale: extraction is a structured intermediate representation, not prose — naturalistic phrasing is a rendering concern for the final résumé bullet; conflating them hides individual tokens from ATS matchers and from downstream theme-matching.
+
+**B. `hidden_qualities` redefined: context signals, not trait-words** ([`analyzer.py:EXTRACTION_SYSTEM_PROMPT` + `_analyze_extraction_prompt`](../analyzer.py))
+Pre-R1.2 the `hidden_qualities` schema example said "unstated trait the JD implies — collaborative, autonomous, etc." Per the recruiter consultation: *"Trait-words are the WEAKEST hidden signals. The strong ones are domain-context, scope-of-ownership, and stakeholder-gravity."* Redefined to require items in one of four shapes — operating-context fit / scope of ownership / stakeholder gravity / resilience signal — with the JD wording that surfaced each signal where helpful. Schema shape unchanged (still `list[str]`), only the semantic guidance.
+
+**C. New `context_probe` question kind in clarify** ([`analyzer.py:CLARIFY_SYSTEM_PROMPT` + `clarify()` prompt template](../analyzer.py))
+Added a third question kind alongside `experience_probe` and `scope_probe`: `context_probe`. Each context_probe translates a `hidden_qualities` context signal into a PORTABLE experience question — the recruiter's quoted example: *"Have you built products for users in regulated, workflow-heavy environments where errors have real-world consequences — healthcare, fintech, transportation, anything similar?"* — so that an adjacent-background candidate (logistics PM applying to healthtech) can map their experience onto the role. Composition rule updated from "≥50% experience probes" to "≥60% experience + context probes combined." The clarify prompt template now emits a new `<context_signals>` block carrying `hidden_qualities` so the model actually sees them. The system prompt opens with a load-bearing framing line: *"Tool-name probes ... are dead ends when the answer is 'no' — they create fatigue and don't surface adjacent experience. Context probes that translate JD requirements into PORTABLE experience asks let candidates from adjacent backgrounds map their experience onto the role. That's the recruiter move."*
+
+### Why
+
+Measured regression on `clarification_quality` after R1 landed:
+
+| Fixture | Rubric | Clean pre-R1 baseline | R1.1 | Δ |
+|---|---|---|---|---|
+| pm-senior | clarification_quality | 4.2 | 3.2 | **−1.0** |
+| sre-mid-level | clarification_quality | 4.2 | 3.8 | **−0.4** |
+
+The judge's `failed_rules: ["missing_expected_theme"]` reasoning made the cause explicit: questions correctly cited extracted keywords (EHR, Epic, Cerner, HL7, FHIR) but did not match expected themes like "healthcare/healthtech exposure" and "workflow products for clinicians." The fixture's expected themes are PORTABLE context-probes; the R1.1 system was emitting tool-name experience-probes.
+
+Recruiter quote that anchored the fix: *"Asking 'have you used Epic' of someone who hasn't is dead-end. Asking 'have you built products for users in regulated, workflow-heavy environments where errors have real-world consequences' lets a logistics-PM or a fintech-PM map THEIR experience onto a healthtech JD."*
+
+### Result
+
+To be populated after the post-R1.2 eval run. The expectation is:
+- `pm-senior/clarification_quality` recovers to ≥4.0 (the threshold), driven by context_probes hitting expected themes
+- `sre-mid-level/clarification_quality` recovers to ≥4.0 (was 4.2 pre-R1)
+- `keyword_coverage` improves or holds — atomic tokens give the generate pass more ATS-matchable items
+- Other rubrics hold within ±0.3
+
+### What we learned
+
+(to be filled in after eval run)
+
+### Open questions / future tuning targets
+
+- **Quality proxies beyond evals** — the recruiter named three measurable proxies usable before we have callback-outcome data: (1) **top-third density** (first 3 bullets of first job contain JD's top 3 essentials?), (2) **quantification rate** (% of bullets with a number / %, $, scale indicator), (3) **distinctiveness** ("would this bullet look the same on 100 other résumés?"). All three are deterministic, computable from generated output, and addressable without prompt changes — surface them as `deterministic_metrics` on eval records in a follow-up.
+- **Hidden qualities propagation beyond clarify** — the recruiter flagged that hidden_qualities should drive clarify questions but NOT suggestion prose or bullet selection ("demonstrated strong collaboration" in suggestion prose is exactly what gets bullets ignored). Today we don't surface hidden_qualities to generate() at all; that's correctly skipping the middle layer. Verify nothing regresses on `tone` (which would be the canary if generate started absorbing them indirectly).
+- **`recommend_bullets` quality** — Haiku selection on bullets uses essential_skills + preferred_skills + industry_keywords from extraction. With the atomic rule landed, the matching surface should improve (more individual tokens to match against bullet text). Watch the eval suite's grounding + keyword_coverage rubrics for evidence; if no improvement, the bullet-text → keyword match may need its own atomic normalization step.
+
+---
+
+## 2026-05-26 — Two-pass analyze: Haiku extraction + Sonnet synthesis (R1) (`2026-05-24.4` → `2026-05-26.1`)
+
+### What changed
+
+Split the single `analyze()` Sonnet 4.6 call into two specialized calls:
+
+- **Pass 1 — `analyze_extraction`** (Haiku 4.5): produces `essential_skills`,
+  `preferred_skills`, `industry_keywords`, `hidden_qualities`,
+  `professional_vocabulary`, `keyword_placement`. New `EXTRACTION_SYSTEM_PROMPT`
+  — an "ATS scanner" persona with extraction-only vocabulary (Boolean search,
+  exact-match keywords, minimum vs preferred quals). Outputs structured lists,
+  not prose.
+- **Pass 2 — `analyze_synthesis`** (Sonnet 4.6): produces `comparison`,
+  `suggestions`, `overall_strategy`. New `SYNTHESIS_SYSTEM_PROMPT` — the
+  hiring-manager from `SYSTEM_PROMPT` narrowed to strategy vocabulary only
+  (ATS terms removed, bullet-writing rules removed — those live in
+  `SYSTEM_PROMPT` for `generate()`). Receives Pass 1's output as
+  `<extracted_signal>` so it grounds its synthesis on concrete extracted
+  signals rather than re-extracting in line.
+- **`analyze()` becomes a thin orchestrator** that runs Pass 1 → Pass 2
+  sequentially and merges into the legacy `ANALYZE_REQUIRED_KEYS` shape.
+  Streaming variant (`analyze_streaming`) emits a new `("phase", {"phase":
+  "extraction"|"synthesis"})` sentinel before each pass so the SSE route
+  can swap the frontend status label.
+- **Two phantom keys dropped:** `ats_improvements` (caught by R3 audit) and
+  `ideal_resume_profile` (caught by R1 consumer audit — no downstream
+  consumer in `static/app.js`, `analyzer.py`, `app.py`, or any eval rubric).
+
+Files: [`analyzer.py`](../analyzer.py), [`app.py`](../app.py) (`/api/analyze/stream` forwards `phase`), [`static/app.js`](../static/app.js) (`runAnalysis()` handles `phase`).
+
+### Why
+
+Two motivations, the second confirmed against the framework the codebase already follows:
+
+1. **Measured performance deficit.** Pre-R1 analyze p50 = 91s, p90 = 121s, max 292s. Median output tokens = 4,471 — Sonnet is paying its per-token price for ~half the output that is structurally Haiku-friendly (skill lists, keyword extraction, vocabulary classification).
+2. **P6 Specialized Review hypothesis** ([10 Principles](https://jdforsythe.github.io/10-principles/overview/)): *"A generalist reviewer trends toward the median. Specialists find what generalists can't."* The pre-R1 prompt asked one persona to be both an ATS scanner AND a hiring manager AND an ATS-format auditor in one pass. Each context-switch dilutes adherence. P9 Token Economy counterweight (*"diminishing returns above 45% single-agent performance"*) is the check: the split is justified only if the single-agent call shows measurable underperformance — the 91s latency is the trigger.
+
+External literature backing was attempted via a research agent but blocked by sandbox WebFetch denials for all external domains. The half-remembered citations (Tessera 2019 ATS study, MIT Sloan tailored-résumé callback rates, TheLadders eye-tracking) are **unverified** and were intentionally NOT cited in the new prompts. The eval gate (next section) is the actual quality-floor enforcement.
+
+### Result
+
+**Eval gate is load-bearing for this change.** Full `python evals/runner.py --suite synthetic` run after the implementation lands. Scores will be appended here once captured.
+
+Expected qualitatively:
+- **`keyword_coverage`**: should be **equal or better**. The dedicated extraction persona is paying closer attention to exact-match vs synonym keywords; `keyword_placement` quality should sharpen. Floor: no regression.
+- **`grounding`**: should be **unchanged**. The synthesis pass still bans invention; the rule is narrower-scoped (no bullet-writing rules) but the no-invention spine remains. Floor: no regression.
+- **`tone`**: should be **unchanged or slightly improved**. Removing the ATS jargon from the synthesis prompt may produce more natural strategy prose. Floor: no regression.
+- **`clarification_quality` / `iteration_quality`**: depend on `essential_skills`, `comparison.gaps`, `comparison.title_alignment`, `keyword_placement` — all still produced by the orchestrator. Should be **unchanged**. Floor: no regression.
+
+Performance expectation:
+- Pass 1 (Haiku): ~5–10s, ~2,000 output tokens, ~$0.002.
+- Pass 2 (Sonnet): ~30–50s, ~2,000 output tokens (~half pre-R1 because the schema is narrower).
+- Total wall clock: ~35–60s vs. 91s. Perceived latency further improved by phase-event UI (the user sees concrete extracted keywords within ~10s instead of waiting 91s for everything).
+
+### What we learned
+
+(to be filled in after eval run)
+
+### Open questions / future tuning targets
+
+- **If `keyword_coverage` drops:** the extraction persona may be too terse — consider adding a worked example pair (OK/NOT OK) for `keyword_placement`. The current rules say "exact-match beats synonyms" but don't show what a high-quality placement entry looks like.
+- **If `tone` drops:** narrowing `SYNTHESIS_SYSTEM_PROMPT` may have removed institutional-memory rules that were doing work. Specifically, the pre-R1 SYSTEM_PROMPT had ALWAYS/NEVER rules around generic phrases ("results-driven professional", "team player"). Those rules are preserved in the new synthesis prompt but in a narrower form — watch for regression there.
+- **If the split shows no quality improvement:** P9 counterweight wins, R1 is a pure perf win (still useful — 91s → ~50s) and the framing in this entry should be revised to "perf split with quality-preserved baseline."
+- **Cache hit verification:** both passes share `_stable_user_prefix` byte-identically. Telemetry should show cache_read_input_tokens on Pass 2 ≈ Pass 1's cache write. Verify in dashboard after first real run.
+
+---
+
 ## 2026-05-24 — recommend_summaries Haiku call (β.6b) (`2026-05-24.3` → `2026-05-24.4`)
 
 1. **What changed?** New Haiku call `analyzer.recommend_summaries()`

@@ -29,10 +29,17 @@ release.
       install chromium` + `python app.py`; complete one
       application end-to-end. Time-to-first-generation < 5
       minutes (D.4 below).
-- [ ] **Eval baseline check** — run
-      `python evals/runner.py --suite synthetic --subset smoke`;
-      confirm no regression against
-      `evals/results/baseline_v1.json`.
+- [x] **~~Eval baseline check~~** — ✅ verified 2026-05-26.
+      `python evals/runner.py --suite synthetic --subset smoke`
+      run twice (cost ~$0.79 across both); second run clean with
+      all three synthetic fixtures at or within ±0.0 of
+      `evals/results/baseline_v1.json` (data-scientist-junior 4.8
+      = 4.8; pm-senior 4.8 = 4.8; sre-mid-level 4.7 = 4.7). First
+      run surfaced a transient judge JSON parse failure on
+      data-scientist-junior; see the "Judge JSON parse failures
+      mis-categorized as `status=ok`" entry under "Should do" for
+      the one-line `evals/runner.py:289` follow-up that would have
+      prevented the false-positive regression alarm.
 - [ ] **Quality gate** — `ruff check .` + `mypy .` + `pytest`
       all clean.
 - [ ] **`pyproject.toml` version bump** — `1.0.0` → `1.0.1`
@@ -66,6 +73,17 @@ release.
       (replaced by paged.js preview); preview at the top of
       the step; edit-raw via modal; Changes → info-icon modal;
       cover letter → single "+ Generate" button until generated.
+      **Cover-letter styling decisions (user-confirmed 2026-05-26
+      for the B-phase work):**
+      - **Header treatment:** terser than the résumé — business-
+        letter style. No big name banner / contact bar repeat;
+        use fonts appropriate to (i.e., matching) the chosen
+        résumé template, but plain — nothing fancy.
+      - **Body line spacing:** business-letter dense (single-
+        spaced or near it), NOT breathy / generous line-height.
+      - **Addressee block** (`Hiring Manager,` / company name /
+        date): rendered **inline** with the body — no separately
+        styled block, no boxed treatment.
 - [ ] **BACK / Continue spacing polish on Compose** — listed
       in PRODUCT_SHAPE §10 as deferred from v1.0.0.
 - [ ] **`docs/install.md` updated** for any platform-specific
@@ -255,6 +273,41 @@ release.
       element (`corpusToolbar` / `corpusCount`) at the moment
       `_renderCorpusList` runs, or a property access on `exp`
       that the API doesn't always provide.
+- [ ] **Corpus tab: 5xx on first-load API calls** — surfaced
+      2026-05-26 during a dev-console capture of the Corpus tab
+      load. Distinct from the render-after-refresh bug above
+      (that one is a 200 OK that leaves the DOM empty; this one
+      is a real 5xx that hits the `!res.ok` branch at
+      [`static/app.js:1834`](../static/app.js) and shows
+      "Failed to load corpus."), but they likely share a root
+      cause — both are "first-load Corpus tab from a fresh
+      session" stories. The `refreshCorpus()` flow at
+      [`static/app.js:1801`](../static/app.js) calls four
+      endpoints in sequence — all four returned 500:
+      `GET /api/users/<user>/experiences`
+      ([`app.py:2341`](../app.py)),
+      `GET /api/users/<user>/summaries`
+      ([`app.py:2718`](../app.py)),
+      `GET /api/users/<user>/personas`
+      ([`app.py:1690`](../app.py)), and
+      `GET /api/users/<user>/applications`. A page reload via
+      the corpus reload link recovers and subsequent loads
+      succeed. Repro:
+      1. Restart `python app.py`.
+      2. Open a fresh browser tab to `http://localhost:5000`.
+      3. Select an existing user from the dropdown.
+      4. Click the Career Corpus tab.
+      5. Observe in dev-console: four 500 responses; UI shows
+         "Failed to load corpus."
+      6. Click the corpus reload link → all four routes return
+         200 and the list renders.
+      Fix probably starts by adding server-side exception
+      logging on those four route handlers so the 5xx's
+      traceback is visible in the Flask log; current behavior
+      is a silent 500 with no Python-side stack trace. Once
+      the underlying exception is visible, this and the
+      render-after-refresh bug above can probably be closed
+      together.
 - [x] **~~Judge JSON parse failures mis-categorized as `status=ok`~~** —
       ✅ resolved 2026-05-26.
       [`evals/runner.py:289`](../evals/runner.py) now returns
@@ -301,6 +354,124 @@ release.
       bug aside, the underlying scores are stable); the
       re-baseline is hygiene, not a blocker — slip to early
       v1.1 if v1.0.1 ships fast.
+- [ ] **Walkthrough documentation pass — three fixes** —
+      surfaced 2026-05-26 during a user review of
+      [`docs/walkthrough.md`](walkthrough.md).
+      1. **Add Corpus → Application transition.** Setup section
+         (lines ~154-182) tells the reader to use the Career
+         Corpus tab for résumé import, then jumps straight to
+         `## Step 1 — Job + Analyze` with no instruction to
+         navigate back to the Application tab + click Step 1 in
+         the wizard rail. A sequential reader is left on the
+         Corpus tab when the doc says "paste the JD." Fix: one
+         short paragraph between Setup and Step 1, e.g. *"Once
+         the corpus is populated, click the **Application** tab
+         in the top bar and select **Step 1 — Job + Analyze**
+         in the wizard rail."*
+      2. **Re-capture `walkthrough_step2_clarify-questions.png`
+         scrolled to show the actual questions.** The current
+         capture at
+         [`scripts/capture_screenshots.py:285-315`](../scripts/capture_screenshots.py)
+         waits for questions to render and types a partial
+         answer, then snapshots at 1440×900 without scrolling.
+         Panel header + "Continue" + clarify-instructions push
+         the exemplar question content past the fold, so the
+         screenshot shows framing instead of the questions
+         themselves. Fix: one line before the `cap()` call —
+         `page.locator("#clarifyQuestions").scroll_into_view_if_needed();
+         wait_quiet(page, 300)`. Then re-run Step 2 capture (or
+         the whole script; the rest of the screenshots are
+         current and stable).
+      3. **Confirm `docs/walkthrough_example.md` is intentional,
+         not a leftover.** Its purpose statement at
+         [`docs/walkthrough_example.md:1-14`](walkthrough_example.md)
+         establishes it as the concrete Priya companion to the
+         abstract walkthrough — same synthetic candidate used by
+         [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py)
+         `write_priya_docx()`. No file change needed; this
+         sub-bullet exists so a future skim doesn't mistake the
+         file for orphaned scaffolding.
+- [ ] **CSP `unsafe-eval` violation on script execution** —
+      surfaced 2026-05-26 in the browser dev-console while
+      loading the Corpus tab. Some code path calls a
+      string-evaluating JavaScript primitive — `eval`, the
+      dynamic-Function constructor, or string-form `setTimeout`
+      / `setInterval` — and is being blocked by the site's CSP
+      `script-src` directive. Likely a vendor library (paged.js
+      is a candidate — page-rendering libraries sometimes
+      synthesize CSS / JS at runtime via dynamic-string code
+      paths) but could be our code too. Action: (1) grep
+      `static/` and any bundled vendor directories for the
+      blocked primitives; (2) decide whether to narrow the
+      offending callsite or relax the CSP with `unsafe-eval`.
+      **Prefer narrowing the callsite** — `unsafe-eval`
+      reopens inline-script-injection risk per
+      [`SECURITY.md`](../SECURITY.md)'s threat model. If the
+      offender is a vendor lib with no easy workaround,
+      document the trade-off as an accepted-risk entry in
+      `SECURITY.md` rather than relax the CSP silently.
+- [ ] **Sandboxed iframe blocks script execution ×17** —
+      surfaced 2026-05-26 in the dev-console. "Blocked script
+      execution in '<URL>' because the document's frame is
+      sandboxed and the 'allow-scripts' permission is not set"
+      fired 17 times during a single Corpus-tab load. Likely
+      culprit: the live-preview iframe (`#livePreviewFrame` in
+      [`templates/index.html`](../templates/index.html)) or
+      paged.js's internal render iframe. Determine which iframe,
+      whether the sandbox is intentional, and either: (a) add
+      `allow-scripts` to the sandbox attribute if scripts are
+      expected to run inside the frame (caveat: pairing with
+      `allow-same-origin` defeats the sandbox; `allow-scripts`
+      alone is fine), or (b) move the offending script tag out
+      of the sandboxed frame. The ×17 multiplier suggests a
+      render-loop is re-attempting script execution; fixing
+      this is also a perceived-perf win.
+- [ ] **Form fields without `id` or `name` attribute** —
+      surfaced 2026-05-26 in the dev-console. Chrome flagged
+      seven form-field elements ("violating nodes") with neither
+      an `id` nor a `name` attribute, which prevents
+      browser-autofill and is a soft a11y signal. Distinct from
+      the "Accessibility scan of all user-facing documentation"
+      entry above — that one covers `docs/screenshots/` alt-text
+      + Mermaid prose summaries + heading hierarchy; this one is
+      about live form inputs in
+      [`templates/index.html`](../templates/index.html) and any
+      partials. Fix: find the seven offending elements via
+      Chrome's `Inspect → Issues → "A form field element should
+      have an id or name attribute"` view, add stable `id`s, and
+      add matching `<label for="…">` elements where missing.
+      Cheap; bundle with the doc-side a11y scan if that one
+      lands first.
+- [ ] **Two `POST /api/analyze 409`s observed during Corpus-tab
+      session (investigation needed)** — surfaced 2026-05-26 in
+      the dev-console. `POST /api/analyze` returned 409 twice
+      during a session whose other primary activity was loading
+      the Corpus tab. The 409 path is used elsewhere in the
+      codebase as an onboarding-needed / reconcile signal (see
+      `_needsOnboarding(res, data)` at
+      [`static/app.js:1818`](../static/app.js)), so 409 may be
+      expected when analyze is called against an un-onboarded
+      user — but it shouldn't fire unless the user actually
+      triggered analyze. User confirmed they don't recall
+      whether they were mid-application or fresh-session when
+      the 409s fired, so this is filed as "investigation
+      needed" rather than asserted-bug. Investigation steps:
+      (1) grep `app.py` for the `/api/analyze` route and
+      enumerate all branches returning 409; (2) check whether
+      anything on the Corpus tab can implicitly call analyze
+      (e.g., a pre-warming side effect, an iteration-resume on
+      tab switch); (3) add request-context logging on the
+      analyze route's 409 paths so the next observed 409
+      carries the reason in the Flask log. Outcome: either
+      close as "expected, document the triggering UI path" or
+      file a follow-up bug if the call is truly unsolicited.
+      **Aside on console noise:** the bulk of the dev-console
+      output during this capture was
+      `content.js:360 The kernel 'X' for backend 'webgl|cpu'
+      is already registered` from a browser extension's content
+      script (TensorFlow.js classifier running in `content.js`
+      + `classifier.js`) — NOT our code. Do not chase those
+      warnings; they originate outside the app.
 
 ### Nice to have (defer to v1.1 if time-bound)
 
@@ -323,11 +494,144 @@ for the deferred table.
 
 Highlights pulled from §10:
 
-- **v1.1:** R1 (split analyze: Haiku-fast + Sonnet-deep),
-  field-filter chips for templates by role tag, master résumé
-  operationalization, Docker.
+- **v1.0.2:** R1 (split analyze: Haiku-fast + Sonnet-deep)
+  **— ATTEMPTED + REVERTED in v1.0.1, deferred to v1.0.2.**
+  Three iterations attempted on 2026-05-26 (`2026-05-26.1`
+  naive split, `2026-05-26.2` atomic extraction + context_probe
+  clarify fix); each degraded `clarification_quality` further
+  vs. the pre-R1 baseline (pm-senior went 4.2 → 3.2 → 2.1,
+  ds-junior 4.2 → 4.2 → 3.2). Performance was a real win
+  (analyze p50 103s → ~72s, ~30% reduction) but the
+  "no quality loss" floor was hard-binding. The R1.2 attempt
+  is preserved on the `r1-attempted-2026-05-26` branch as the
+  starting point for v1.0.2; see `evals/TUNING_LOG.md` entries
+  `2026-05-24.4 → 2026-05-26.1` and `2026-05-26.1 → 2026-05-26.2`
+  for the full diagnosis and recruiting-specialist consultation.
+  **v1.0.2 plan:** use the `/prompt-tune` skill for smaller
+  iteration cycles (cheaper than full eval runs each change) +
+  the new `.claude-plugin/agents/headhunter.md` agent for
+  sharper diagnosis between attempts.
+- **v1.1:** field-filter chips for templates by role tag,
+  master résumé operationalization, Docker.
 - **v2:** `recommend_template` Haiku call per JD class (gated
   on outcome data + an `ApplicationOutcome` table).
+
+### v1.1 — User-driven bullet ordering on Compose stage (new 2026-05-26)
+
+**The ask** (user-stated, 2026-05-26): bullets in the Compose
+stage should be ordered intentionally, with most-valuable
+bullets at the top of each experience and least-valuable at the
+bottom. The user should be able to click-and-drag to reorder
+these. Functional change + documentation to support.
+
+**Current state.** Bullets are already sorted server-side in
+[`app.py:get_application_composition`](../app.py) by
+`(not (pinned or recommended or added), -score, id)` —
+pinned / LLM-recommended / drawer-added bullets sink to the top,
+then by descending `score_corpus_bullet()` (deterministic fit
+score against JD keywords + analysis essentials), then by id
+for a stable tiebreaker. **There is no explicit user
+ordering today**; pin/exclude/add are the only user
+affordances over order.
+
+**Why this matters beyond UI polish.** The order influences the
+final document in two ways the user may not see directly:
+
+1. **Recruiter scan order.** Surveys consistently report
+   recruiters initial-scan résumés top-down in 6–8 seconds.
+   The first bullet under each role does the load-bearing
+   work of selling that role's relevance. (The literature on
+   exact scan times is messy — see the R1 researcher's note
+   that the half-remembered "TheLadders eye-tracking" study
+   wasn't verifiable in our session. Treat the 6–8s as
+   directionally true, not citation-quality.)
+2. **LLM prompt order shapes the generated bullets.** The
+   `_corpus_block` in [`analyzer.py`](../analyzer.py)
+   iterates experiences and bullets in the order they appear
+   in the corpus payload. The Sonnet generate prompt
+   processes bullets in that order — when it picks which
+   bullets to keep in a constrained-length résumé, the
+   earlier-listed ones are weighted by sequence position,
+   not just by score. So a user reordering on Compose isn't
+   cosmetic; it's a prompt-engineering knob the user holds.
+
+**Design notes (my own thoughts, deferred to v1.1
+implementation):**
+
+1. **Persistence shape.** Extend `composition_overrides` in the
+   context file with `bullet_order: {[experience_id]:
+   [bullet_id, ...]}`. When present, this is authoritative
+   over the server-computed sort. Absent ⇒ fall back to the
+   current `(not pinned, -score, id)` ordering. Same context
+   file already carries `pinned` / `excluded` / `added` — the
+   ordering data lives in the same place for the same lifecycle.
+2. **Render impact in `_stable_user_prefix`.** Honor
+   `bullet_order` when building the `<career_corpus>` block so
+   the user's reordering propagates into the generate prompt.
+   This is the load-bearing piece — without it, drag-and-drop
+   is cosmetic and the LLM's output won't reflect the user's
+   intent.
+3. **UI.** HTML5 native drag-and-drop on bullet cards. No new
+   dependency needed — the rest of the codebase avoids
+   framework dependencies. Add a small grab-handle ("≡")
+   on each card; whole card is the drop zone. Cursor
+   changes to `grab` on the handle and `grabbing` while
+   dragging so the affordance is discoverable without a
+   tooltip.
+4. **In-interface instructions (user-stated 2026-05-26).**
+   Docs alone are insufficient — users in the wizard won't
+   reread the walkthrough mid-flow. Add a short
+   instructional line at the top of each experience's
+   bullet list:
+
+   > *"Bullets are ranked by callback's AI by fit to this job.
+   > Drag to reorder — your order shapes the final résumé."*
+
+   Two load-bearing words there: "AI" (sets expectation that
+   the default order is already intentional, not random or
+   chronological) and "shapes" (telegraphs that the order
+   isn't cosmetic — see point 2). Keep it ONE sentence;
+   anything longer gets skipped. Pair with an info "(i)"
+   icon that reveals the longer "why ordering matters"
+   explanation on hover/click, for the curious user who
+   wants depth without forcing depth on everyone.
+5. **Accessibility floor.** Keyboard-controlled reordering is
+   non-negotiable (deprecated `aria-grabbed` / `aria-dropeffect`
+   should NOT be used). Add Up/Down buttons on each row with
+   `aria-label="Move bullet up"` etc. — these are the
+   keyboard path; drag-and-drop is the pointer path. Both
+   write to the same persistence layer.
+6. **Persistence trigger.** Debounced (~300ms) POST to
+   `/api/applications/<id>/composition/order` (new route, or
+   extend the existing PATCH) with the full new order
+   per-experience. Optimistic UI update; reconcile on response.
+7. **Reset affordance.** "Reset to AI ranking" button
+   per experience (matches the in-interface instruction's
+   "ranked by callback's AI" framing — consistent vocabulary
+   beats clever vocabulary). Clears `bullet_order` and falls
+   back to the server sort. Disabled state when no custom
+   order exists, so the user sees they're already on the
+   default.
+8. **Edge case — bullets added later.** If the user added a
+   bullet via the drawer AFTER setting an explicit order,
+   default to slotting it at the END of the list with a
+   subtle "newly added — drag to reposition" hint. Don't
+   silently re-sort, which would erase the user's other
+   choices.
+9. **Documentation impact.** Update
+   [`docs/walkthrough.md`](walkthrough.md) Step 3 (Compose) to
+   teach the WHY of ordering (recruiter scan + LLM
+   sequence-position bias), not just the HOW (drag to
+   reorder). The educational depth is the differentiator vs.
+   "click and drag" docs that just describe the affordance.
+10. **Eval implication.** This is a UX change with prompt-
+    structure side effects (point 2). After implementation,
+    run a manual eval against synthetic fixtures with one
+    reordered ⇄ one default-order condition to confirm the
+    generated résumé honors the reorder. Not a full
+    `PROMPT_VERSION` bump — the prompt template doesn't
+    change, only the order of the data fed to it — but worth
+    capturing in `evals/TUNING_LOG.md` as a behavior shift.
 
 ---
 

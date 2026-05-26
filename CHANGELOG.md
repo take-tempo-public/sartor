@@ -9,7 +9,206 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(No unreleased changes yet — v1.0.1 work starts here.)
+(No unreleased changes yet.)
+
+---
+
+## [1.0.1] — 2026-05-26
+
+User-documentation overhaul + UX polish + bug fixes surfaced by a
+Playwright-driven screenshot pass against a synthetic candidate,
+plus an SSE streaming pass on `analyze()` and `generate()` for
+perceived-latency improvement (R2). No prompt changes —
+`PROMPT_VERSION` unchanged at `2026-05-24.4` (R1 split was attempted
+and reverted; see "Attempted and deferred" below).
+
+### Added — Performance (R2 streaming)
+
+- **`/api/analyze/stream` and `/api/generate/stream` SSE routes**
+  ([`app.py`](app.py)) — wrap the existing `_call_llm` /
+  `_parse_or_retry` machinery with new streaming counterparts
+  (`_call_llm_streaming`, `_parse_or_retry_streaming`,
+  `analyze_streaming`, `generate_streaming` in
+  [`analyzer.py`](analyzer.py)). Frontend consumes via a new
+  `_consumeSSE` helper in [`static/app.js`](static/app.js) that
+  parses Server-Sent Events off `fetch` + ReadableStream (POST-
+  capable, unlike `EventSource`).
+- **Spinner-default UX with collapsible "Show progress" toggle**
+  on Step 1 (Analyze) and Step 5 (Generate). The token counter
+  ticks during the call so the user knows the app isn't frozen;
+  the raw stream is hidden by default and revealed via a small
+  toggle button. `aria-live="polite"` regions announce progress
+  to screen readers. Total LLM duration is unchanged; perceived
+  latency improves from "90s of blank screen" to "alive within
+  ~1s and showing progress throughout."
+- **3 streaming tests** in [`tests/test_analyzer.py`](tests/test_analyzer.py)
+  pin the chunk → retry → done event shape (happy path, retry-
+  on-parse-failure, exhausted-retry failure).
+
+### Added — `.claude-plugin/agents/headhunter.md`
+
+- New subagent (Sonnet 4.6, restrictive tools: Read / Grep / Glob)
+  for recruiting-domain quality consultations. Reasons from
+  recruiting-domain expertise (10+ years placing engineers / PMs /
+  SREs at mid-to-senior levels) to diagnose what would actually
+  move a candidate from ATS-pass to scheduled interview. Returns
+  recruiting-domain recommendations the engineer translates into
+  prompt / schema edits; does NOT propose code or prompt fragments
+  itself. Created in service of the R1 quality work and retained
+  for v1.0.2's prompt-tune cycles.
+
+### Attempted and deferred to v1.0.2 — R1 analyze split
+
+- **R1 (split `analyze()` into Haiku extraction + Sonnet synthesis)**
+  was attempted on 2026-05-26 with two iterations
+  (`2026-05-26.1` naive split, `2026-05-26.2` atomic-extraction +
+  `context_probe` clarify fix following a headhunter-agent
+  consultation). Performance was a real win (analyze p50 103s →
+  ~72s, ~30% reduction) but `clarification_quality` regressed on
+  both pm-senior (4.2 → 3.2 → 2.1) and ds-junior (4.2 → 4.2 → 3.2)
+  fixtures vs. the clean pre-R1 baseline. The "no quality loss"
+  floor was hard-binding; the R1.2 code state is preserved on the
+  `r1-attempted-2026-05-26` branch as the starting point for a
+  focused v1.0.2 sprint using `/prompt-tune` smaller iteration
+  cycles. Full diagnosis in [`evals/TUNING_LOG.md`](evals/TUNING_LOG.md)
+  entries `2026-05-24.4 → 2026-05-26.1` and `2026-05-26.1 →
+  2026-05-26.2`.
+
+### Added — User documentation
+
+- **`docs/walkthrough.md`** — screen-by-screen guide for first-time users.
+  Two Mermaid flow diagrams (user-flow + information-flow), per-step
+  educational depth ("What you see / What you do / Under the hood / Verify
+  before continuing"), two human review gates explicit. Each step names the
+  Flask route, the `analyzer.py` function, the model (Sonnet 4.6 vs.
+  Haiku 4.5), cost band, latency. Includes a `## If something goes
+  wrong mid-wizard` section covering tab-close / next-day return / LLM
+  errors / start-over.
+- **`docs/walkthrough_example.md`** — worked example threading a synthetic
+  candidate (Priya, senior backend engineer) through all six wizard steps
+  against a synthetic JD (Vertica Logistics Platform, Kafka-heavy). Concrete
+  decisions per step, per-call cost table summing to ~$0.22.
+- **10 wizard screenshots** embedded into [`README.md`](README.md) (1 hero),
+  [`docs/install.md`](docs/install.md) (1 user-picker), and
+  [`docs/walkthrough.md`](docs/walkthrough.md) (8 per-step). Captured at
+  1440×900 light mode from a clean app state with the synthetic Priya
+  corpus. Plain-git tracked (~1.2 MB total).
+- **`docs/ux/onboarding_audit_2026-05-25.md`** — first UX audit pass via the
+  new `ux-onboarding-designer` subagent. Seven fixed sections (Diagram
+  Critique, Screenshot Manifest, Readability Pass, Decision-Point
+  Inventory, Worked-Example Specification, Failure-Mode Coverage, Rewrite
+  Ladder with 8 sequenced batches).
+- **`docs/ux/screenshot_capture.md`** — capture checklist + filename
+  convention + post-capture markdown-insertion pattern.
+- **`scripts/capture_screenshots.py`** — Playwright harness that drives the
+  wizard end-to-end against a synthetic corpus, captures the 10 manifest
+  PNGs, and cleans up the demo user/artefacts. ~$0.27 per full run; runs
+  via `python -m scripts.capture_screenshots --headless`.
+- **`.claude-plugin/agents/ux-onboarding-designer.md`** — new subagent
+  (Sonnet 4.6, restrictive tool list, scope-locked Write) for future UX
+  audits of user-facing documentation. Auto-discovered from the
+  `.claude-plugin/agents/` directory.
+
+### Changed — Documentation polish
+
+- **[`README.md`](README.md)** — canonical cost anchor (`<a name="cost">`)
+  added so [`docs/install.md`](docs/install.md) and [`docs/walkthrough.md`](docs/walkthrough.md)
+  link to a single source of truth instead of citing inconsistent ranges
+  ($0.05–$0.10 vs. $0.15–$0.25 vs. $0.30–$0.50). LLM, JD, ATS, and corpus
+  defined on first use in the README body (the walkthrough already had a
+  glossary at line 28, but the README is read standalone). Line-5
+  disclaimer rewritten in second person to remove the double negative.
+  "The two human review gates" lifted to its own subsection so the load-
+  bearing UX claim isn't buried under the wizard ASCII diagram.
+- **[`docs/install.md`](docs/install.md)** — cost paragraph now links to
+  the README anchor. "First-run walkthrough" intro flipped from
+  reference-voice to teaching-voice ("By the end of these eight steps
+  you'll have your first tailored résumé"). Ubuntu 22.04+ Playwright
+  `apt install` fallback added (libnss3 / libatk1.0-0 / libxkbcommon0 /
+  etc.). Commit-SHA reference dropped from the malformed-JSON
+  troubleshooting entry. New Anthropic-API-error troubleshooting block
+  covering 4xx/5xx, network drop, rate limit, key not picked up, and
+  monthly cap.
+- **[`vision.md`](vision.md)** — the "one question, honestly" quote
+  lifted above the Purpose metadata block so the punch lands on the
+  first screen. Acronym block under the H1 defining JD/LLM/ATS.
+  `PERF_ANALYZE.md` link soft-gated as `(dev-facing)`.
+- **[`docs/architecture.md`](docs/architecture.md)** — the four Mermaid
+  diagrams (`pipeline.mmd`, `persistence.mmd`, `data-flow.mmd`,
+  `llm-routing.mmd`) embedded inline so GitHub renders them natively.
+- **AGENTS.md is now canonical**; [`CLAUDE.md`](CLAUDE.md) imports it
+  via `@AGENTS.md` and layers only Claude-Code-specific overrides (skill
+  catalog, plan-mode hook, `CLAUDE.local.md` machine-local file).
+
+### Fixed — UI/UX
+
+- **Corpus import button label** — `+ Drop résumé (AI extract)` →
+  `+ Import résumé`. The old label conflated drag-and-drop (one input
+  affordance) with the action, and the parenthetical leaked the AI-
+  extract technique into a button label. The internal route
+  `/api/users/<u>/import-legacy` keeps its name (route rename deferred
+  to v1.1).
+- **Wizard rail step 2 stays disabled after analyze** — `runAnalysis()`
+  set `lastContextPath` but did not re-render the rail, so the step-2
+  button stayed `disabled class="upcoming"` until the user clicked the
+  in-flow "Continue to Clarify →" button. Now `runAnalysis()`'s success
+  path calls `_wizardRender()` directly. `runGeneration()` was already
+  fine via its existing `_wizardAdvanceTo(6)` call.
+- **Bullet-dedup gap on same-file corpus re-import** — the dedup key
+  flipped from `(source, text)` to `_normalize(text)` so the source-
+  prefix flip from `primary:<file>` to `supplemental:<file>` on the
+  merge path doesn't slip identical text through as a new bullet.
+  Observed before the fix: a 22-bullet first import became 44 bullets
+  on the second import of the same `.docx`.
+
+### Fixed — Eval harness
+
+- **Malformed judge JSON mis-categorized as `status=ok`** — when the
+  judge's response wasn't parseable JSON, [`evals/runner.py`](evals/runner.py)
+  returned `{"score": 0, "reasons": [...]}` without setting
+  `status: "judge_error"`. The caller's `grade.setdefault("status",
+  "ok")` then silently labelled the record as a successful grading,
+  firing false-positive WARN regressions against the baseline. Now the
+  return dict carries `"status": "judge_error"` and the existing
+  `_detect_regression` / summary-roll-up skip path handles it.
+
+### Changed — Observability
+
+- **`_renderCorpusList()` and `_renderCorpusSummary()` wrapped in
+  try/catch with element-presence guards + per-row guards.** A silent
+  throw was observed during the screenshot pass (`_corpusExperiences`
+  populated with length 3, DOM never updated, list `innerHTML.length`
+  ~65 chars / placeholder-sized). The instrumentation surfaces any
+  future trigger via `console.error`; root cause TBD on next repro
+  with DevTools open. Workaround in
+  [`scripts/capture_screenshots.py`](scripts/capture_screenshots.py)
+  is `page.reload()` + re-select user, which clears the bad state.
+
+### Tests
+
+- **[`tests/test_onboarding_import_legacy.py`](tests/test_onboarding_import_legacy.py)** — 24/24 pass.
+  `test_merge_dedupes_identical_bullet_text_across_sources` replaces
+  `test_merge_skips_exact_duplicate_bullet_same_source` (which
+  codified the bullet-dedup bug — its name said "skips" but its
+  assertion expected `len == 2`).
+- **[`tests/test_eval_runner.py`](tests/test_eval_runner.py)** — 25/25
+  pass. New `test_unparseable_json_marks_status_judge_error` pins the
+  `judge_error` categorization.
+- **Full suite:** 633 passed in ~2 min. `ruff` + `mypy` clean.
+
+### Carried forward to next release
+
+Items tracked in [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) as
+v1.0.1 "Should do (deferred)" / v1.1 work:
+
+- Accessibility scan of all user-facing documentation (deferred actual
+  scan; alt-text drafts already in screenshots).
+- Playwright UX clickthrough regression suite under `tests/ux/` (specification only).
+- Corpus tab render-after-refresh bug — root-cause chase pending a
+  manual repro with DevTools open.
+- Eval baseline re-cut against the v1.0.1 prompt landscape (the
+  `baseline_v1.json` was sourced on `prompt_version=2026-05-12.1`;
+  v1.0.1 ships on `2026-05-24.4`).
 
 ---
 
