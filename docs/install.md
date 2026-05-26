@@ -190,7 +190,7 @@ After the app is running:
 
 1. **Select or create a user** in the top-right user picker.
    Each user has their own corpus, settings, and output history.
-2. **Open the Career Corpus tab** and click `+ IMPORT LEGACY` if
+2. **Open the Career Corpus tab** and click `+ Import résumé` if
    you have an existing résumé file in `resumes/<user>/`. The
    importer extracts experiences and bullets into the structured
    corpus (uses one Haiku call, ~$0.02).

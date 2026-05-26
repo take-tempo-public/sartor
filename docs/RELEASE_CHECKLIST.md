@@ -90,18 +90,21 @@ release.
       standard but a30-min axe pass surfaces the obvious
       issues. **Defer the actual scan** to a focused later pass;
       this entry just tracks the obligation.
-- [ ] **Doc-vs-UI label drift on the corpus import button** —
-      surfaced during the screenshot-capture pass (2026-05-26).
-      [`docs/walkthrough.md`](walkthrough.md),
-      [`docs/install.md`](install.md), and the audit at
+- [x] **~~Doc-vs-UI label drift on the corpus import button~~** —
+      ✅ resolved 2026-05-26. Button renamed
+      `+ Drop résumé (AI extract)` → `+ Import résumé` (cleaner
+      action verb than "Drop" which conflated drag-and-drop with
+      the action itself; the parenthetical leaked the AI-extract
+      implementation detail into a button label). Live docs
+      ([`docs/walkthrough.md`](walkthrough.md),
+      [`docs/install.md`](install.md),
+      [`docs/ux/screenshot_capture.md`](ux/screenshot_capture.md))
+      synced to the new label. The audit at
       [`docs/ux/onboarding_audit_2026-05-25.md`](ux/onboarding_audit_2026-05-25.md)
-      all refer to the corpus-import affordance as **"+ IMPORT
-      LEGACY"** but the actual UI button reads **"+ Drop résumé
-      (AI extract)"** (see
-      [`templates/index.html:475`](../templates/index.html)).
-      Either update the docs to match the UI or rename the
-      button — the audit's screenshot manifest will look wrong
-      against the current UI text otherwise.
+      is left as the historical record (the audit accurately
+      reports the doc/UI mismatch as it existed on 2026-05-25).
+      The internal API route `/api/users/<user>/import-legacy`
+      keeps its name — route rename is a separate cleanup, v1.1.
 - [ ] **Bullet-dedup gap in corpus re-import** — surfaced during
       the screenshot-capture pass (2026-05-26). Re-running
       [`onboarding/import_legacy.py`](../onboarding/import_legacy.py)

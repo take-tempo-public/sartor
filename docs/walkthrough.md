@@ -153,7 +153,7 @@ and output history. Files live under `configs/<user>.config`,
 
 ### Import your existing résumé (one-time)
 
-Open the **Career Corpus** tab → click **+ IMPORT LEGACY** → upload
+Open the **Career Corpus** tab → click **+ Import résumé** → upload
 your existing `.docx`, `.pdf`, or `.md` résumé.
 
 **Under the hood:** [`/api/upload`](../app.py) runs `parser.py`

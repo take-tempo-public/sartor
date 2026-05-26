@@ -29,7 +29,7 @@ state so the screenshots will age well.
    [`docs/walkthrough_example.md`](../walkthrough_example.md);
    construct a 3-experience, ~8-bullets-each `.docx` matching
    her shape, save as `resumes/demo/priya_master.docx`, and
-   import via `+ IMPORT LEGACY`.
+   import via `+ Import résumé`.
 3. **Use a synthetic JD.** For Step 1+ shots, paste the Vertica
    Logistics JD from
    [`docs/walkthrough_example.md`](../walkthrough_example.md#the-job)
@@ -106,13 +106,13 @@ when Claude does the insertion pass.
 
 - **Filename:** `walkthrough_setup_corpus-empty.png`
 - **UI state:** Career Corpus tab selected, empty experience
-  list visible, the `+ IMPORT LEGACY` button prominent. Take
+  list visible, the `+ Import résumé` button prominent. Take
   the shot *before* importing the synthetic résumé so it shows
   the empty state.
 - **Insertion site:** docs/walkthrough.md, "Setup (before the
   wizard)" §, after "Import your existing résumé" (line ~144).
 - **Alt-text draft:** *"The Career Corpus tab in its empty
-  state. The + IMPORT LEGACY button parses an existing résumé
+  state. The + Import résumé button parses an existing résumé
   into the structured corpus (one Haiku call, ~$0.02)."*
 
 ### S04 — Step 1 pre-analyze (P0)
