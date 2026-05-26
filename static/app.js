@@ -310,6 +310,12 @@ async function runAnalysis() {
     // passes _wizardReachable). Hide the in-flight placeholder.
     document.getElementById('analysisPending')?.classList.add('hidden');
     document.getElementById('analysisActions')?.classList.remove('hidden');
+    // Re-render the wizard rail so step 2 (now _wizardReachable thanks
+    // to lastContextPath) loses its disabled `upcoming` state. Without
+    // this, the user has to click the in-flow Continue button to
+    // refresh the rail — see the wizard-rail regression note in
+    // docs/RELEASE_CHECKLIST.md.
+    _wizardRender();
     setStatus('ANALYSIS COMPLETE');
     _announce('Analysis complete. Review it, then continue to clarify or skip to compose.');
     // Workstream B1 reorder: recommend no longer fires here. It fires

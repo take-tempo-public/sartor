@@ -120,29 +120,19 @@ release.
       have different phrasings"), but the same-file case
       shouldn't trigger that path. Add a `(experience_id,
       normalized_text)` dedup at the same-file boundary.
-- [ ] **Wizard rail step buttons don't re-enable after prior step
-      completes** — surfaced during the screenshot-capture pass
-      (2026-05-26). The wizard rail buttons
-      ([`templates/index.html:121-132`](../templates/index.html))
-      are rendered with `disabled` + `class="upcoming"` and only
-      update via [`_wizardRender()`](../static/app.js), which
-      itself only fires from `wizardGoTo()` or `wizardInit()`. So
-      after a successful `runAnalysis()` (which sets
-      `lastContextPath` — see
-      [`static/app.js:303`](../static/app.js)), step 2 IS
-      `_wizardReachable` but the rail's step-2 button stays
-      disabled until the user clicks the in-flow "Continue to
-      Clarify →" button (which calls `wizardGoTo(2)`, which
-      triggers `_wizardRender`). A user who sees the analysis
-      land and tries to click step 2 in the rail directly gets
-      nothing — the button is still disabled. Same shape for
-      step 6 vs. `lastResumePath` after generate. Fix: call
-      `_wizardRender()` from the `runAnalysis` and `runGeneration`
-      success paths after setting `lastContextPath` /
-      `lastResumePath`. This is also why
+- [x] **~~Wizard rail step buttons don't re-enable after prior step
+      completes~~** — ✅ resolved 2026-05-26. Added a
+      `_wizardRender()` call in `runAnalysis()`'s success path
+      (after `lastContextPath` is set), so the rail picks up
+      step 2 as `_wizardReachable` immediately. `runGeneration()`
+      was already calling `_wizardAdvanceTo(6)` (which includes
+      a `_wizardRender`), so the step-6 side of the bug was
+      already covered — the bug only existed on the analyze →
+      step 2 transition.
       [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py)
-      navigates forward via the in-flow Continue buttons rather
-      than rail clicks.
+      still navigates forward via the in-flow Continue buttons;
+      that's fine and matches the real-user happy path, but rail
+      clicks would now work too.
 - [ ] **Playwright UX clickthrough regression suite** — surfaced
       during the screenshot-capture pass (2026-05-26). The
       screenshot script at
