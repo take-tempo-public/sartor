@@ -1835,27 +1835,51 @@ function closeChangesModal() {
 }
 
 async function downloadResume() {
-  const content = document.getElementById('resumePreview').innerText;
-  await _downloadEdited('/api/download-edited', {
-    username: currentUser,
-    content,
-    type: 'resume',
-    original_format: lastResumeFormat,
-    // Workstream C #7: thread the chosen persona so DOWNLOAD honors the
-    // template (the legacy template_path was empty in DB mode + gated to
-    // RESUMES_DIR, which silently dropped persona templates).
-    persona_template_id: _selectedPersonaId ?? _readSelectedPersonaId(),
+  const btn = document.getElementById('btnDownloadResume');
+  await _runDownload(btn, async () => {
+    const content = document.getElementById('resumePreview').innerText;
+    await _downloadEdited('/api/download-edited', {
+      username: currentUser,
+      content,
+      type: 'resume',
+      original_format: lastResumeFormat,
+      // Workstream C #7: thread the chosen persona so DOWNLOAD honors the
+      // template (the legacy template_path was empty in DB mode + gated to
+      // RESUMES_DIR, which silently dropped persona templates).
+      persona_template_id: _selectedPersonaId ?? _readSelectedPersonaId(),
+    });
   });
 }
 
 async function downloadCoverLetter() {
-  const content = document.getElementById('coverLetterPreview').innerText;
-  await _downloadEdited('/api/download-edited', {
-    username: currentUser,
-    content,
-    type: 'cover_letter',
-    original_format: lastResumeFormat,
+  const btn = document.getElementById('btnDownloadCover');
+  await _runDownload(btn, async () => {
+    const content = document.getElementById('coverLetterPreview').innerText;
+    await _downloadEdited('/api/download-edited', {
+      username: currentUser,
+      content,
+      type: 'cover_letter',
+      original_format: lastResumeFormat,
+    });
   });
+}
+
+// B1 smoke fix (2026-05-26): wrap the download flow so a thrown error
+// inside _downloadEdited surfaces to the user (was silent before — the
+// thrown error in fetch / blob / click would unwind the await and the
+// user would just see a non-responsive button). The disabled-then-
+// re-enabled toggle also prevents a second click during the in-flight
+// fetch from racing the first one and (on some browsers) tripping the
+// "multiple downloads" defense that silently blocks both.
+async function _runDownload(btn, doDownload) {
+  if (btn) btn.disabled = true;
+  try {
+    await doDownload();
+  } catch (e) {
+    reportError('Download', 'Download failed', e && e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function _downloadEdited(url, payload) {
@@ -1866,18 +1890,39 @@ async function _downloadEdited(url, payload) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    return alert(err.error || 'Download failed');
+    throw new Error(err.error || `Download failed (${res.status})`);
   }
-  // Stream the file as a download
+  // Stream the file as a download.
   const blob = await res.blob();
   const disposition = res.headers.get('Content-Disposition') || '';
   const nameMatch = disposition.match(/filename="?([^"]+)"?/);
   const filename = nameMatch ? nameMatch[1] : 'document.docx';
+
+  // B1 smoke fix (2026-05-26): attach the anchor to the DOM briefly
+  // before clicking, and DEFER URL.revokeObjectURL until after the
+  // browser has had a chance to read the blob. Pre-fix behavior:
+  // detached <a> + immediate revokeObjectURL was fragile across
+  // browsers — Chrome on Windows specifically broke subsequent
+  // downloads if the user canceled the "Save As" dialog. Both
+  // download buttons (résumé AND cover letter) appeared frozen
+  // because the leftover state from the first canceled download
+  // confused the browser's per-page download-anchor accounting.
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  const objectUrl = URL.createObjectURL(blob);
+  a.href = objectUrl;
   a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  try {
+    a.click();
+  } finally {
+    document.body.removeChild(a);
+    // Hold the URL alive long enough for the browser to start the
+    // download (or open the Save As dialog). 5 seconds is excessive
+    // for a successful read but cheap (one blob URL); the GC will
+    // reclaim the blob once revoked.
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+  }
 }
 
 // B1 (2026-05-26): setViewMode + _renderMarkdown removed along with the

@@ -525,6 +525,23 @@ before the version-bump commit.
       --include='*.js' --include='*.html'`. Either close them in
       this release or convert to RELEASE_CHECKLIST entries for
       v1.0.2. Don't ship the tag with floating reminders.
+- [ ] **`lcars-*` CSS class rename → `cb-*`** (user-surfaced
+      2026-05-26 during B1 smoke). ~175 occurrences across
+      [`static/style.css`](../static/style.css),
+      [`static/app.js`](../static/app.js), and
+      [`templates/index.html`](../templates/index.html). The
+      project has partially adopted `cb-` as the canonical prefix
+      (`.cb-step-eyebrow`, `.cb-topbar` exist); the `lcars-*`
+      classes are leftovers from the pre-redesign visual treatment
+      (the visuals were already overridden by the "callback button
+      layer" per the comment at [`static/style.css:140-147`](../static/style.css#L140-L147)).
+      Mechanical sed-style rename (`lcars-btn` → `cb-btn`,
+      `lcars-bg-*` → `cb-bg-*`, etc.), no behavioral change.
+      **Decide before tag:** do this rename now, or punt to the
+      full UI redesign that's planned post-end-to-end-verification
+      (per the user's `ui-redesign-planned.md` memory). Doing it
+      now is cleaner doc-wise but adds churn if the redesign is
+      imminent.
 
 ---
 
