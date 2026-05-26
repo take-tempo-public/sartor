@@ -1,5 +1,15 @@
 # Vision — callback.
 
+callback. answers one question, honestly:
+
+> *"What résumé and (optional) cover letter should I send for
+> this specific job?"*
+
+Acronyms used throughout: **JD** = job description; **LLM** =
+large language model (Anthropic's Claude, here); **ATS** =
+applicant tracking system (résumé-parsing software employers run
+on incoming files).
+
 > **Purpose:** the high-level guide to what callback. is, what
 > it isn't, and the self-imposed constraints that shape every
 > decision. The "why" behind the architecture and the product
@@ -19,11 +29,6 @@
 ---
 
 ## What it is
-
-callback. answers one question, honestly:
-
-> *"What résumé and (optional) cover letter should I send for
-> this specific job?"*
 
 It's a single-tenant local-first web app that takes a job
 description and a candidate's career corpus, then produces a
@@ -261,7 +266,7 @@ are queued: streaming the response so perceived latency drops
 to 10-15s, and splitting the call into a Haiku-fast first
 pass (structured JD fields) + Sonnet-deep second pass (prose
 analysis). See [`docs/PERF_ANALYZE.md`](docs/PERF_ANALYZE.md)
-for the audit.
+(dev-facing) for the audit.
 
 ---
 
