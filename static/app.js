@@ -1027,6 +1027,11 @@ async function runGenerateCoverLetter() {
     const preview = document.getElementById('coverLetterPreview');
     if (preview) preview.textContent = lastGeneratedCoverLetter;
     _updateCoverLetterButtons();
+    // Auto-switch to the Cover letter tab so the user lands on the
+    // generated content without an extra click. Pre-fix behavior left
+    // the user on the Résumé tab and required them to discover the
+    // Cover letter tab themselves — bad ux during a wizard flow.
+    showTab('coverLetter');
     setStatus('COVER LETTER READY');
     _announce('Cover letter generated. Download it from Step 6.');
   } catch (e) {

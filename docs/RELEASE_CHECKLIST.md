@@ -483,6 +483,49 @@ release.
       perceived latency 90s → 10-15s). Owns its own commit
       and eval cycle.
 
+### Pre-tag cleanup + review stage (do last, before v1.0.1 tag)
+
+User-stated 2026-05-26: cull temporary exploration artifacts so
+they don't continue to track. Run this as a focused stage AFTER
+B1–B3 land and AFTER the fresh-clone verification, immediately
+before the version-bump commit.
+
+- [ ] **Remove `docs/mockups/`** — five HTML files
+      ([`a-step-zones.html`](mockups/a-step-zones.html),
+      [`b-brand-accent.html`](mockups/b-brand-accent.html),
+      [`b-refined.html`](mockups/b-refined.html),
+      [`b-refined-v2.html`](mockups/b-refined-v2.html),
+      [`c-hybrid.html`](mockups/c-hybrid.html)) created during the
+      visual-IA exploration on `feat/release-visual-ia`. They
+      reference a fixture user ("Casey Rivera") in a dropdown that
+      doesn't match any live UI surface, and they aren't linked
+      from any user-facing doc. Confirm none of the live app
+      consumes them (`grep -r "docs/mockups"`) before deleting.
+- [ ] **Audit `docs/archive/`** — already-archived material. If
+      anything in here predates v1.0.0 and is no longer load-
+      bearing reference material, move it to a separate `archive/`
+      branch or delete outright.
+- [ ] **Strip dead-link references from CHANGELOG history** —
+      pre-v1.0.0 changelog entries link to files that may have
+      moved or been deleted (the dashboard refactors moved files
+      around in May 2026). Run `grep -oP '\[.+?\]\(.+?\)' CHANGELOG.md`,
+      verify each link resolves, mark broken ones with `(removed
+      <date>)` rather than deleting the entry (preserves history).
+- [ ] **`scripts/perf_baseline.py`** — useful for v1.0.2 R1
+      iteration cycles; keep it, but document its purpose in the
+      [`docs/architecture.md`](architecture.md) module map so a
+      future reader knows it's a release-cycle tool, not part of
+      the runtime.
+- [ ] **`r1-attempted-2026-05-26` branch** — keep through v1.0.2;
+      it's the starting point for that release's R1 rework. After
+      v1.0.2 ships (R1 successful or formally abandoned), delete
+      this branch. Tracked here so it doesn't drift.
+- [ ] **Grep for TODO / FIXME / XXX comments added during v1.0.1
+      development** — `grep -rn 'TODO\|FIXME\|XXX' --include='*.py'
+      --include='*.js' --include='*.html'`. Either close them in
+      this release or convert to RELEASE_CHECKLIST entries for
+      v1.0.2. Don't ship the tag with floating reminders.
+
 ---
 
 ## Forward-looking — v1.1 and v2

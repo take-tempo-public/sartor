@@ -775,6 +775,15 @@ textarea {
   padding: 22px 26px;
   max-width: 540px;
   width: 100%;
+  /* Bound the modal to the viewport with internal scroll so long
+     bodies (e.g. the B1 "What changed?" modal with many
+     changes_made + proofread_notes items) don't overflow off-screen
+     with no way to reach the close button. The 90vh ceiling keeps
+     the modal from touching the viewport edges; the body inside
+     scrolls when content exceeds available space. */
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
   animation: lcars-modal-in 120ms ease-out;
 }
@@ -797,6 +806,13 @@ textarea {
   color: var(--fg-0);
   font-size: 13px;
   line-height: 1.55;
+  /* Internal scroll for long bodies — paired with the 90vh ceiling on
+     .lcars-modal-content. flex:1 lets the body fill the modal's
+     available height; the header (.settings-drawer-header) stays
+     pinned at the top so the Close button is always reachable. */
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .modal-actions {
   display: flex;
@@ -2188,6 +2204,17 @@ textarea:focus-visible {
   flex-direction: column;
   overflow: hidden;
   animation: drawerSlideIn 200ms ease-out;
+  /* The .settings-drawer-backdrop rule earlier in this file gives the
+     backdrop z-index: 1 (so the whole app sits above the body wash).
+     Without an explicit higher z-index on the content, the backdrop
+     paints ON TOP of the content — clicks inside the drawer hit the
+     backdrop and fire the dismiss handler. Latent before B1 because
+     the settings drawer's interactive elements (inputs, buttons) take
+     focus directly; surfaced when B1's edit drawer put a
+     contenteditable area inside the content (clicking it to type
+     dismisses the drawer). z-index: 2 keeps content above backdrop
+     without changing the global stacking order. */
+  z-index: 2;
 }
 @keyframes drawerSlideIn {
   from { transform: translateX(100%); }

@@ -1702,7 +1702,14 @@ def generate_cover_letter_against_resume(
             "</current_cover_letter_draft>\n\n"
         )
 
-    jd_excerpt = (context_set.get("jd_text") or "")
+    # The canonical key in ContextSet is `job_description` (defined in
+    # hardening.py and populated by build_context_set). The pre-fix code
+    # read `jd_text`, which is the name of the function parameter that
+    # POPULATES `job_description` — not the field name on the context.
+    # Symptom of the bug: cover-letter LLM received an empty <jd>
+    # block, produced generic / off-target prose, and surfaced as a UI-
+    # facing "no job description was attached to this request" complaint.
+    jd_excerpt = (context_set.get("job_description") or "")
     if isinstance(jd_excerpt, str):
         jd_excerpt = jd_excerpt[:6000]
 
