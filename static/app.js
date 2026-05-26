@@ -364,7 +364,7 @@ async function runAnalysis() {
     counter.style.marginBottom = '8px';
     const toggleBtn = _el('button', {
       id: 'analysisStreamToggle',
-      className: 'lcars-btn lcars-bg-blue',
+      className: 'cb-btn cb-bg-blue',
       textContent: 'Show progress',
     });
     toggleBtn.style.fontSize = '12px';
@@ -835,7 +835,7 @@ async function runGeneration() {
     counter.style.marginBottom = '8px';
     const toggleBtn = _el('button', {
       id: 'generateStreamToggle',
-      className: 'lcars-btn lcars-bg-blue',
+      className: 'cb-btn cb-bg-blue',
       textContent: 'Show progress',
     });
     toggleBtn.style.fontSize = '12px';
@@ -1090,7 +1090,7 @@ function _showEditModal(triggerEl) {
       modal.classList.add('hidden');
       modal.removeEventListener('keydown', onKey);
       buttons.forEach(b => b.removeEventListener('click', onClick));
-      const backdrop = modal.querySelector('.lcars-modal-backdrop');
+      const backdrop = modal.querySelector('.cb-modal-backdrop');
       if (backdrop) backdrop.removeEventListener('click', onClick);
       // Restore focus to the element that opened the modal so keyboard users
       // don't lose their place. Falls back to body when the trigger is gone.
@@ -1114,7 +1114,7 @@ function _showEditModal(triggerEl) {
     };
 
     buttons.forEach(b => b.addEventListener('click', onClick));
-    const backdrop = modal.querySelector('.lcars-modal-backdrop');
+    const backdrop = modal.querySelector('.cb-modal-backdrop');
     if (backdrop) backdrop.addEventListener('click', onClick);
     modal.addEventListener('keydown', onKey);
     modal.classList.remove('hidden');
@@ -1369,7 +1369,7 @@ function _renderNeedsOnboarding(container, retryFn) {
     textContent: `${currentUser} isn't in the career corpus yet.`,
   }));
   const btn = _el('button', {
-    className: 'lcars-btn lcars-bg-teal',
+    className: 'cb-btn cb-bg-teal',
     textContent: 'IMPORT INTO CORPUS',
   });
   btn.style.marginTop = '10px';
@@ -2000,14 +2000,14 @@ function _toSentence(s) {
 function setStatus(text) {
   const pill = document.getElementById('statusPill');
   // .cb-status-text is the dedicated label child of the callback. status
-  // pill. The whole pill was migrated from .lcars-pill to .cb-status in
+  // pill. The whole pill was migrated from .cb-pill to .cb-status in
   // feat/release-visual-ia, so this element is always present.
   const textEl = pill.querySelector('.cb-status-text');
   if (textEl) textEl.textContent = _toSentence(text);
 
   // Clear any prior aria-busy state from the previously-active panel so
   // assistive tech stops announcing the panel as busy once work completes.
-  document.querySelectorAll('.lcars-panel[aria-busy="true"]').forEach(p => {
+  document.querySelectorAll('.cb-panel[aria-busy="true"]').forEach(p => {
     p.removeAttribute('aria-busy');
   });
 
@@ -2055,7 +2055,7 @@ function setStatus(text) {
 
   // Mark the active panel aria-busy so screen readers know work is in
   // progress on that section. (Visual feedback lives on the topbar +
-  // bottom status pills; the LCARS-era elbow flash + .lcars-block tile
+  // bottom status pills; the LCARS-era elbow flash + .cb-block tile
   // flash were retired in feat/release-visual-ia.)
   if (isActive) {
     const activePanel = document.getElementById(_ACTIVE_PANEL[activeKey]);
@@ -2078,10 +2078,10 @@ function _togglePanel(panelId) {
   if (block) block.classList.toggle('collapsed', isCollapsed);
 }
 
-// Panel-header click toggles the parent .lcars-panel between expanded
+// Panel-header click toggles the parent .cb-panel between expanded
 // and collapsed states (CSS grid-template-rows transition).
 document.querySelectorAll('.panel-header').forEach(header => {
-  const panel = header.closest('.lcars-panel');
+  const panel = header.closest('.cb-panel');
   if (panel) header.addEventListener('click', () => _togglePanel(panel.id));
 });
 
@@ -2261,12 +2261,24 @@ async function _saveSummaryVariantText(id, newText, oldText) {
 }
 
 async function _editSummaryVariantLabel(id, currentLabel) {
-  const next = prompt(
-    'Label this variant (e.g. "AI platform PM", "Design IC"):',
-    currentLabel || '',
-  );
-  if (next === null) return;  // cancelled
-  const trimmed = next.trim();
+  // Migrated from window.prompt() to openFormModal (2026-05-26) so the
+  // visual treatment matches the rest of the app. Blank label clears
+  // the label on the server (null in the JSON body) — that flow is
+  // preserved by trimming and falling back to null below.
+  const values = await openFormModal({
+    title: 'Label summary variant',
+    subtitle: 'A short tag so you can tell variants apart in the picker.',
+    submitLabel: 'Save label',
+    fields: [{
+      name: 'label',
+      label: 'Label',
+      type: 'text',
+      defaultValue: currentLabel || '',
+      placeholder: 'e.g. "AI platform PM", "Design IC"',
+    }],
+  });
+  if (!values) return;  // cancelled
+  const trimmed = (values.label || '').trim();
   try {
     const res = await fetch(`/api/summaries/${id}`, {
       method: 'PUT',
@@ -2295,21 +2307,42 @@ async function _deleteSummaryVariant(id) {
 
 async function openSummaryVariantAdd() {
   if (!currentUser) return;
-  const text = prompt('Paste the positioning summary text:');
-  if (text === null) return;
-  const trimmed = text.trim();
+  // Migrated from a two-prompt chain to openFormModal (2026-05-26).
+  // The textarea field gets a sensible-height row count for paragraph-
+  // sized summary prose, vs. window.prompt()'s single-line input.
+  const values = await openFormModal({
+    title: 'Add positioning summary',
+    subtitle: 'A reusable positioning paragraph the LLM can pick from. Add label so future picks are recognizable.',
+    submitLabel: 'Add variant',
+    fields: [
+      {
+        name: 'text',
+        label: 'Summary text',
+        type: 'textarea',
+        required: true,
+        placeholder: 'Paste a positioning paragraph — 2–4 sentences that frame this candidate for a specific kind of role.',
+      },
+      {
+        name: 'label',
+        label: 'Label (optional)',
+        type: 'text',
+        placeholder: 'e.g. "AI platform PM", "Design IC"',
+      },
+    ],
+  });
+  if (!values) return;
+  const trimmed = (values.text || '').trim();
   if (!trimmed) {
     _toast('Variant text cannot be empty.', true);
     return;
   }
-  const label = prompt('Optional label (e.g. "AI platform PM"). Leave blank to skip:');
   try {
     const res = await fetch(
       `/api/users/${encodeURIComponent(currentUser)}/summaries`,
       { method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           text: trimmed,
-          label: (label || '').trim() || null,
+          label: (values.label || '').trim() || null,
         }) },
     );
     if (res.ok) refreshSummaryVariants();
@@ -2414,7 +2447,7 @@ function _renderCorpusDetail(body, exp) {
     (exp.bullets || []).some(b => b.is_pending_review);
   if (hasPending) {
     const acceptAll = _el('button', {
-      className: 'lcars-btn lcars-bg-teal',
+      className: 'cb-btn cb-bg-teal',
       textContent: 'ACCEPT ALL PENDING',
     });
     acceptAll.onclick = async () => {
@@ -2427,7 +2460,7 @@ function _renderCorpusDetail(body, exp) {
     };
     btnRow.appendChild(acceptAll);
   }
-  const retire = _el('button', { className: 'lcars-btn lcars-bg-orange', textContent: 'SOFT-RETIRE EXPERIENCE' });
+  const retire = _el('button', { className: 'cb-btn cb-bg-orange', textContent: 'SOFT-RETIRE EXPERIENCE' });
   retire.onclick = () => deleteExperience(expId);
   btnRow.appendChild(retire);
   body.appendChild(btnRow);
@@ -3143,7 +3176,7 @@ function _renderDuplicateExp(exp) {
     });
     const actions = _el('div', { className: 'form-row', style: 'margin-top:8px' });
     const mergeBtn = _el('button', {
-      className: 'lcars-btn lcars-bg-orange', textContent: 'KEEP SELECTED · RETIRE OTHERS',
+      className: 'cb-btn cb-bg-orange', textContent: 'KEEP SELECTED · RETIRE OTHERS',
     });
     mergeBtn.onclick = async () => {
       const toRetire = cluster.bullets.filter(b => b.id !== keepId).map(b => b.id);
@@ -3424,10 +3457,26 @@ function _renderPersonaCard(p, owned) {
 }
 
 async function _renamePersona(id, currentName) {
-  const next = prompt('New name:', currentName);
-  if (!next || next.trim() === currentName) return;
+  // Migrated from window.prompt() to openFormModal (2026-05-26) for
+  // visual consistency with the rest of the corpus / persona editors.
+  const values = await openFormModal({
+    title: 'Rename persona',
+    subtitle: 'The name shown in the template picker. Renames the persona row; does not move the underlying .docx on disk.',
+    submitLabel: 'Rename',
+    fields: [{
+      name: 'name',
+      label: 'New name',
+      type: 'text',
+      required: true,
+      defaultValue: currentName,
+      placeholder: 'e.g. "Modern One-Column", "Classic With Sidebar"',
+    }],
+  });
+  if (!values) return;
+  const next = (values.name || '').trim();
+  if (!next || next === currentName) return;
   try {
-    await _putJson(`/api/personas/${id}`, { name: next.trim() });
+    await _putJson(`/api/personas/${id}`, { name: next });
     _toast('Renamed');
     await _loadOwnedPersonas();
   } catch (e) {
@@ -4120,38 +4169,12 @@ function _renderTagChips(container, subjectKind, subjectId, tags) {
   container.appendChild(add);
 }
 
-async function _promptAddTag(container, subjectKind, subjectId) {
-  const value = prompt('Tag (e.g. "ai", "design-leadership"):');
-  if (!value || !value.trim()) return;
-  const kind = (prompt('Kind: role | domain | skill | tech', 'skill') || 'skill').trim();
-  try {
-    const tag = await _postJson(
-      `/api/${subjectKind === 'bullet' ? 'bullets' : 'experience-titles'}`
-      + `/${subjectId}/tags`,
-      { value: value.trim(), kind },
-    );
-    // Re-render: append the new chip before the add button
-    const chip = _el('span', { className: 'tag-chip' });
-    chip.appendChild(_el('span', { textContent: tag.display_value || tag.value }));
-    const x = _el('button', { className: 'tag-chip-x', textContent: '×' });
-    x.onclick = async (e) => {
-      e.stopPropagation();
-      try {
-        await _deleteJson(
-          `/api/${subjectKind === 'bullet' ? 'bullets' : 'experience-titles'}`
-          + `/${subjectId}/tags/${tag.id}`,
-        );
-        chip.remove();
-      } catch (err) { _toast('Remove failed: ' + err.message, true); }
-    };
-    chip.appendChild(x);
-    const addBtn = container.querySelector('.tag-chip-add');
-    container.insertBefore(chip, addBtn);
-    _toast('Tag added');
-  } catch (e) {
-    _toast('Add tag failed: ' + e.message, true);
-  }
-}
+// _promptAddTag was the original two-prompt() chain for adding a tag
+// to a bullet or experience title. Superseded by _openInlineTagComposer
+// (Workstream G) which uses an inline composer instead of stacked
+// browser prompts; the only "+ tag" button caller (line above this
+// block, container.appendChild(add)) now calls _openInlineTagComposer
+// directly. Removed 2026-05-26 during the v1.0.1 redesign cleanup pass.
 
 // ===============================================================
 // Workstream E — Step 5 persona picker + preview

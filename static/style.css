@@ -3,7 +3,7 @@
    with system type and an 8/14px radius scale. Mockup reference:
    docs/mockups/b-refined-v2.html.
 
-   Legacy LCARS class names (.lcars-bar, .lcars-pill, .lcars-amber, etc.)
+   Legacy LCARS class names (.cb-bar, .cb-pill, .cb-amber, etc.)
    are kept available so templates continue to work; their colors and
    radii are remapped onto the callback. token system below. */
 
@@ -134,25 +134,25 @@ body::before {
 /* Layout layers above the body::before ambient wash — anything that
    needs to sit on top of the page background gets stacked here.
    .cb-topbar has its own higher z-index (20). */
-.top-tabs, .lcars-main, .top-tab-panel,
+.top-tabs, .cb-main, .top-tab-panel,
 .modal-overlay, .settings-drawer-backdrop, .settings-drawer { position: relative; z-index: 1; }
 
 /* ---- Background color classes ---- *
- * The .lcars-bg-* set is still applied to .lcars-btn variants in the
+ * The .cb-bg-* set is still applied to .cb-btn variants in the
  * markup as a *classifier* (secondary action color). Their visual
  * treatment is now overridden by the callback. button layer further
  * down — they render as quiet grad-btn pills regardless of which color
  * variant is set. Kept for backward compatibility with existing JS that
  * sets these classes programmatically; future cleanup pass can rename
  * to semantic class names (.btn-secondary, etc.). */
-.lcars-bg-amber { background: var(--brand); color: var(--bg-0); }
-.lcars-bg-blue { background: var(--info); color: var(--bg-0); }
-.lcars-bg-teal { background: var(--success); color: var(--bg-0); }
-.lcars-bg-orange { background: var(--brand); color: var(--bg-0); }
-.lcars-bg-violet { background: var(--violet); color: var(--bg-0); }
+.cb-bg-amber { background: var(--brand); color: var(--bg-0); }
+.cb-bg-blue { background: var(--info); color: var(--bg-0); }
+.cb-bg-teal { background: var(--success); color: var(--bg-0); }
+.cb-bg-orange { background: var(--brand); color: var(--bg-0); }
+.cb-bg-violet { background: var(--violet); color: var(--bg-0); }
 
 /* ---- Main Layout (Workstream G: single-column; sidebar tiles removed) ---- */
-.lcars-main {
+.cb-main {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -162,10 +162,10 @@ body::before {
   min-height: calc(100vh - 120px);
 }
 
-/* Legacy block-tile rules retained but inert (no .lcars-block tiles in the
+/* Legacy block-tile rules retained but inert (no .cb-block tiles in the
    DOM after Workstream G); kept defensively for any third-party content. */
 /* ---- Panels ---- */
-.lcars-panel {
+.cb-panel {
   background: var(--bg-1);
   border-radius: var(--radius-xl);
   overflow: hidden;
@@ -174,7 +174,7 @@ body::before {
   grid-template-rows: auto 1fr;
   transition: grid-template-rows 0.35s ease;
 }
-.lcars-panel.collapsed {
+.cb-panel.collapsed {
   grid-template-rows: auto 0fr;
 }
 
@@ -197,7 +197,7 @@ body::before {
   flex-shrink: 0;
   margin-left: 12px;
 }
-.lcars-panel.collapsed .panel-header::after {
+.cb-panel.collapsed .panel-header::after {
   transform: rotate(-90deg);
 }
 
@@ -260,7 +260,7 @@ textarea {
 }
 
 /* ---- Buttons ---- */
-.lcars-btn {
+.cb-btn {
   padding: 8px 24px;
   border: none;
   border-radius: var(--radius-xl);
@@ -274,14 +274,14 @@ textarea {
   white-space: nowrap;
   color: var(--bg-0);
 }
-.lcars-btn:hover {
+.cb-btn:hover {
   filter: brightness(1.2);
   transform: scale(1.02);
 }
-.lcars-btn:active {
+.cb-btn:active {
   transform: scale(0.98);
 }
-.lcars-btn:disabled {
+.cb-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
   transform: none;
@@ -545,9 +545,9 @@ textarea {
 
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
-  .lcars-sidebar { display: none; }
-  .lcars-elbow { width: 60px; min-width: 40px; }
-  .lcars-title { font-size: 18px; letter-spacing: 1px; }
+  .cb-sidebar { display: none; }
+  .cb-elbow { width: 60px; min-width: 40px; }
+  .cb-title { font-size: 18px; letter-spacing: 1px; }
   .panel-body { padding: 12px 16px; }
 }
 
@@ -750,7 +750,7 @@ textarea {
    preview contains user edits not yet baselined. The role/aria attrs in
    the markup are the load-bearing accessibility surface; this CSS handles
    layout, color, and reduced-motion behavior only. */
-.lcars-modal {
+.cb-modal {
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -759,14 +759,14 @@ textarea {
   justify-content: center;
   padding: 24px;
 }
-.lcars-modal.hidden { display: none; }
-.lcars-modal-backdrop {
+.cb-modal.hidden { display: none; }
+.cb-modal-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(2px);
 }
-.lcars-modal-content {
+.cb-modal-content {
   position: relative;
   z-index: 1;
   background: #0a0a10;
@@ -785,29 +785,29 @@ textarea {
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  animation: lcars-modal-in 120ms ease-out;
+  animation: cb-modal-in 120ms ease-out;
 }
-@keyframes lcars-modal-in {
+@keyframes cb-modal-in {
   from { transform: translateY(-6px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .lcars-modal-content { animation: none; }
+  .cb-modal-content { animation: none; }
 }
-.lcars-modal-title {
+.cb-modal-title {
   margin: 0 0 12px;
   color: var(--brand);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 2px;
 }
-.lcars-modal-body {
+.cb-modal-body {
   margin: 0 0 18px;
   color: var(--fg-0);
   font-size: 13px;
   line-height: 1.55;
   /* Internal scroll for long bodies — paired with the 90vh ceiling on
-     .lcars-modal-content. flex:1 lets the body fill the modal's
+     .cb-modal-content. flex:1 lets the body fill the modal's
      available height; the header (.settings-drawer-header) stays
      pinned at the top so the Close button is always reachable. */
   overflow-y: auto;
@@ -822,7 +822,7 @@ textarea {
 }
 /* Visible focus ring on modal buttons — Phase 4 will roll this out across
    the rest of the UI, but the modal is unusable without it so it ships now. */
-.lcars-modal .lcars-btn:focus-visible {
+.cb-modal .cb-btn:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
@@ -871,7 +871,7 @@ textarea {
    uses outline:none + border-color shifts on inputs which work for mouse
    focus but are too subtle for keyboard nav. focus-visible gives keyboard
    users a clear ring without bringing back outlines on mouse clicks. */
-.lcars-btn:focus-visible,
+.cb-btn:focus-visible,
 .tab-btn:focus-visible,
 .format-btn:focus-visible {
   outline: 2px solid var(--brand);
@@ -1220,7 +1220,7 @@ textarea:focus-visible {
 
 .top-tab-panel {
   /* Reuse .hidden for show/hide. No specific styles needed — the inner
-     .lcars-main carries the layout. */
+     .cb-main carries the layout. */
 }
 
 .corpus-experience-list {
@@ -1841,7 +1841,7 @@ textarea:focus-visible {
 }
 
 /* =============================================================== */
-/* Diagnostics pill (a <button> wearing .lcars-pill) + modal code  */
+/* Diagnostics pill (a <button> wearing .cb-pill) + modal code  */
 /* =============================================================== */
 
 #diagnosticsPill {
@@ -1861,7 +1861,7 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
-.lcars-modal-body code {
+.cb-modal-body code {
   background: var(--bg-0);
   color: var(--success);
   padding: 1px 6px;
@@ -1914,9 +1914,9 @@ textarea:focus-visible {
 /* =============================================================== */
 
 /* Panels get a touch more breathing room now that they own the full width. */
-.lcars-main .lcars-panel { padding: 4px 0; }
-.lcars-main .panel-body { padding: 18px 22px; }
-.lcars-main .panel-header { padding: 10px 22px; letter-spacing: 3px; }
+.cb-main .cb-panel { padding: 4px 0; }
+.cb-main .panel-body { padding: 18px 22px; }
+.cb-main .panel-header { padding: 10px 22px; letter-spacing: 3px; }
 
 /* Wizard rail Phase-D override removed — the callback. spec earlier in
    this file is the source of truth. (Kept this comment as a marker so
@@ -2528,7 +2528,7 @@ textarea:focus-visible {
   50%      { box-shadow: 0 0 0 7px transparent; opacity: 0.6; }
 }
 
-/* ---- Status pill (replaces lcars-pill statusPill) ---- */
+/* ---- Status pill (replaces cb-pill statusPill) ---- */
 .cb-status {
   display: inline-flex; align-items: center; gap: 7px;
   font-size: 12px;
@@ -2619,16 +2619,16 @@ textarea:focus-visible {
   background: transparent;
 }
 
-/* ---- Main container (.lcars-main) — neutralize LCARS chrome ---- */
-.lcars-main {
+/* ---- Main container (.cb-main) — neutralize LCARS chrome ---- */
+.cb-main {
   padding: 28px 28px 60px;
   max-width: 1180px;
   margin: 0 auto;
   gap: 16px;
 }
 
-/* ---- Panels (.lcars-panel) — refined card surface ---- */
-.lcars-panel {
+/* ---- Panels (.cb-panel) — refined card surface ---- */
+.cb-panel {
   background: var(--grad-card);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
@@ -2637,7 +2637,7 @@ textarea:focus-visible {
     border-color var(--t-fast) var(--ease),
     box-shadow var(--t-med) var(--ease);
 }
-.lcars-panel:hover {
+.cb-panel:hover {
   border-color: var(--border-2);
 }
 
@@ -2649,7 +2649,7 @@ textarea:focus-visible {
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: var(--fg-1);
-  background: transparent !important; /* override .lcars-bg-* on header */
+  background: transparent !important; /* override .cb-bg-* on header */
   border-bottom: 1px solid transparent;
   display: flex;
   justify-content: space-between;
@@ -2658,7 +2658,7 @@ textarea:focus-visible {
 }
 .panel-header:hover { color: var(--fg-0); }
 /* The collapsed-state separator only appears when the panel is open */
-.lcars-panel:not(.collapsed) > .panel-header {
+.cb-panel:not(.collapsed) > .panel-header {
   border-bottom-color: var(--border);
 }
 .panel-header::after {
@@ -2669,8 +2669,8 @@ textarea:focus-visible {
   padding: 18px 22px 20px;
 }
 
-/* ---- Primary buttons (.lcars-btn) — brand gradient ---- */
-.lcars-btn {
+/* ---- Primary buttons (.cb-btn) — brand gradient ---- */
+.cb-btn {
   background: var(--grad-brand);
   color: #1a1004;
   border: 1px solid rgba(0, 0, 0, 0.25);
@@ -2694,7 +2694,7 @@ textarea:focus-visible {
     transform var(--t-xfast) var(--ease),
     filter var(--t-fast) var(--ease);
 }
-.lcars-btn:hover {
+.cb-btn:hover {
   filter: brightness(1.04);
   transform: translateY(-1px);
   box-shadow:
@@ -2704,14 +2704,14 @@ textarea:focus-visible {
     0 10px 24px -8px var(--brand-glow),
     0 0 0 4px var(--brand-soft);
 }
-.lcars-btn:active {
+.cb-btn:active {
   transform: translateY(0);
   filter: brightness(0.98);
   box-shadow:
     inset 0 1px 1px rgba(0, 0, 0, 0.15),
     0 1px 2px rgba(0, 0, 0, 0.35);
 }
-.lcars-btn:disabled {
+.cb-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   transform: none;
@@ -2719,21 +2719,21 @@ textarea:focus-visible {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
-/* Secondary button variants — color classes used on .lcars-btn keep their
+/* Secondary button variants — color classes used on .cb-btn keep their
    meaning but render in the neutral pill style with a colored accent. */
-.lcars-btn.lcars-bg-teal,
-.lcars-btn.lcars-bg-blue,
-.lcars-btn.lcars-bg-orange,
-.lcars-btn.lcars-bg-violet {
+.cb-btn.cb-bg-teal,
+.cb-btn.cb-bg-blue,
+.cb-btn.cb-bg-orange,
+.cb-btn.cb-bg-violet {
   background: var(--grad-btn);
   color: var(--fg-0);
   border: 1px solid var(--border);
   box-shadow: var(--edge-soft), var(--shadow-1);
 }
-.lcars-btn.lcars-bg-teal:hover,
-.lcars-btn.lcars-bg-blue:hover,
-.lcars-btn.lcars-bg-orange:hover,
-.lcars-btn.lcars-bg-violet:hover {
+.cb-btn.cb-bg-teal:hover,
+.cb-btn.cb-bg-blue:hover,
+.cb-btn.cb-bg-orange:hover,
+.cb-btn.cb-bg-violet:hover {
   background: var(--grad-btn-hi);
   border-color: var(--border-2);
   filter: none;

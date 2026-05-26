@@ -525,23 +525,20 @@ before the version-bump commit.
       --include='*.js' --include='*.html'`. Either close them in
       this release or convert to RELEASE_CHECKLIST entries for
       v1.0.2. Don't ship the tag with floating reminders.
-- [ ] **`lcars-*` CSS class rename → `cb-*`** (user-surfaced
-      2026-05-26 during B1 smoke). ~175 occurrences across
-      [`static/style.css`](../static/style.css),
-      [`static/app.js`](../static/app.js), and
-      [`templates/index.html`](../templates/index.html). The
-      project has partially adopted `cb-` as the canonical prefix
-      (`.cb-step-eyebrow`, `.cb-topbar` exist); the `lcars-*`
-      classes are leftovers from the pre-redesign visual treatment
-      (the visuals were already overridden by the "callback button
-      layer" per the comment at [`static/style.css:140-147`](../static/style.css#L140-L147)).
-      Mechanical sed-style rename (`lcars-btn` → `cb-btn`,
-      `lcars-bg-*` → `cb-bg-*`, etc.), no behavioral change.
-      **Decide before tag:** do this rename now, or punt to the
-      full UI redesign that's planned post-end-to-end-verification
-      (per the user's `ui-redesign-planned.md` memory). Doing it
-      now is cleaner doc-wise but adds churn if the redesign is
-      imminent.
+- [x] **~~`lcars-*` CSS class rename → `cb-*`~~** — ✅ resolved
+      2026-05-26. After surfacing during the B1 smoke, the user
+      reviewed the actual scope (the visual redesign had already
+      landed in commits `dc062e4` Phase 1 → `3a3f891` Phase 2; only
+      class NAMES were leftover) and chose to close the rename out
+      in v1.0.1. Mechanical `lcars-` → `cb-` substitution across
+      [`static/style.css`](../static/style.css) (73 refs →  0),
+      [`static/app.js`](../static/app.js) (19 → 0), and
+      [`templates/index.html`](../templates/index.html) (147 → 0).
+      Zero behavior change; class shape preserved
+      (`lcars-btn` → `cb-btn`, `lcars-bg-*` → `cb-bg-*`, etc.).
+      Historical CHANGELOG entries still describe the original
+      `lcars-*` names as they existed at the time — those are
+      not rewritten.
 
 ---
 

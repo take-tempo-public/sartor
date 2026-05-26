@@ -61,18 +61,18 @@
   </nav>
 
   <div id="tab-application" class="top-tab-panel" role="tabpanel" aria-labelledby="topTabApplication">
-  <div class="lcars-main" id="main">
+  <div class="cb-main" id="main">
 
     <!-- USER -->
-    <section class="lcars-panel" id="panelUser">
-      <div class="panel-header lcars-bg-blue">User selection</div>
+    <section class="cb-panel" id="panelUser">
+      <div class="panel-header cb-bg-blue">User selection</div>
       <div class="panel-body">
         <div class="form-row">
           <label for="userSelect" class="sr-only">Select user</label>
           <select id="userSelect" aria-label="Select user">
             <option value="">-- Select User --</option>
           </select>
-          <button class="lcars-btn lcars-bg-amber" onclick="showNewUserForm()">New user</button>
+          <button class="cb-btn cb-bg-amber" onclick="showNewUserForm()">New user</button>
         </div>
         <div id="newUserForm" class="hidden">
           <div class="form-row">
@@ -87,14 +87,14 @@
             <input type="url" id="newLinkedin" placeholder="LinkedIn URL" aria-label="New user LinkedIn URL">
             <input type="url" id="newWebsite" placeholder="Website URL" aria-label="New user website URL">
           </div>
-          <button class="lcars-btn lcars-bg-teal" onclick="createUser()">Create</button>
+          <button class="cb-btn cb-bg-teal" onclick="createUser()">Create</button>
         </div>
       </div>
     </section>
 
     <!-- APPLICATIONS (Phase D.3) -->
-    <section class="lcars-panel hidden" id="panelApplications">
-      <div class="panel-header lcars-bg-teal">Prior applications</div>
+    <section class="cb-panel hidden" id="panelApplications">
+      <div class="panel-header cb-bg-teal">Prior applications</div>
       <div class="panel-body">
         <div class="edit-hint">
           Past applications stored in the DB. Click a card to view its
@@ -104,7 +104,7 @@
           <div class="corpus-empty-experience">Loading…</div>
         </div>
         <div class="form-row" style="margin-top:8px">
-          <button class="lcars-btn lcars-bg-teal" onclick="refreshApplications()">Refresh</button>
+          <button class="cb-btn cb-bg-teal" onclick="refreshApplications()">Refresh</button>
           <span class="edit-hint" id="applicationsCount" style="margin:0">0 applications</span>
         </div>
       </div>
@@ -141,7 +141,7 @@
          Pasted JD on top; analysis result fills underneath once ANALYZE
          returns. Both panels belong to Step 1 (the user does not advance
          until they've read the analysis). -->
-    <section class="lcars-panel hidden" id="panelJD" data-wstep-body="1">
+    <section class="cb-panel hidden" id="panelJD" data-wstep-body="1">
       <div class="panel-header cb-step-header">
         <span class="cb-step-eyebrow">Step 1</span>
         <span class="cb-step-title">Job description</span>
@@ -150,12 +150,12 @@
         <label for="jdText" class="sr-only">Job description</label>
         <textarea id="jdText" rows="12" placeholder="Paste the full job description text here..." aria-label="Job description"></textarea>
         <div class="form-row" style="margin-top:8px">
-          <button class="lcars-btn lcars-bg-teal" onclick="runAnalysis()" id="btnAnalyze">Analyze</button>
+          <button class="cb-btn cb-bg-teal" onclick="runAnalysis()" id="btnAnalyze">Analyze</button>
           <span class="edit-hint" style="margin:0;opacity:0.6">~10–20s and a few cents per analyze</span>
         </div>
       </div>
     </section>
-    <section class="lcars-panel hidden" id="panelAnalysis" data-wstep-body="1">
+    <section class="cb-panel hidden" id="panelAnalysis" data-wstep-body="1">
       <div class="panel-header cb-step-header">
         <span class="cb-step-eyebrow">Step 1</span>
         <span class="cb-step-title">Analysis</span>
@@ -172,15 +172,15 @@
              since clicking them mid-flight previously fired the
              "Run ANALYZE first" toast (wizardGoTo gate on lastContextPath). -->
         <div class="form-row hidden" id="analysisActions" style="margin-top:12px">
-          <button class="lcars-btn lcars-bg-teal" onclick="wizardGoTo(2)">Continue to Clarify →</button>
-          <button class="lcars-btn lcars-bg-amber" onclick="wizardGoTo(3); skipClarifications()" id="btnSkipFromAnalysis">Skip to Compose →</button>
+          <button class="cb-btn cb-bg-teal" onclick="wizardGoTo(2)">Continue to Clarify →</button>
+          <button class="cb-btn cb-bg-amber" onclick="wizardGoTo(3); skipClarifications()" id="btnSkipFromAnalysis">Skip to Compose →</button>
         </div>
       </div>
     </section>
 
     <!-- STEP 2 — CLARIFY (optional): probe the LLM for clarifying
          questions; user answers feed recommend + generate as ground truth. -->
-    <section class="lcars-panel hidden" id="panelClarify" data-wstep-body="2">
+    <section class="cb-panel hidden" id="panelClarify" data-wstep-body="2">
       <div class="panel-header cb-step-header">
         <span class="cb-step-eyebrow">Step 2</span>
         <span class="cb-step-title">Clarify</span>
@@ -193,20 +193,20 @@
         </div>
         <div id="clarifyArea" class="clarify-area">
           <div class="form-row" id="clarifyStartRow">
-            <button class="lcars-btn lcars-bg-violet" id="btnClarify" onclick="runClarify()">Get clarifying questions</button>
-            <button class="lcars-btn lcars-bg-amber" onclick="skipClarifications()">Skip</button>
+            <button class="cb-btn cb-bg-violet" id="btnClarify" onclick="runClarify()">Get clarifying questions</button>
+            <button class="cb-btn cb-bg-amber" onclick="skipClarifications()">Skip</button>
           </div>
           <div id="clarifyQuestions" class="hidden"></div>
           <div id="clarifyActions" class="hidden form-row">
-            <button class="lcars-btn lcars-bg-teal" id="btnSubmitClarifications" onclick="submitClarifications()">Submit answers, continue →</button>
-            <button class="lcars-btn lcars-bg-amber" onclick="skipClarifications()">Skip</button>
+            <button class="cb-btn cb-bg-teal" id="btnSubmitClarifications" onclick="submitClarifications()">Submit answers, continue →</button>
+            <button class="cb-btn cb-bg-amber" onclick="skipClarifications()">Skip</button>
           </div>
         </div>
       </div>
     </section>
 
     <!-- STEP 3 — COMPOSE: LLM-recommended bullets per experience + drawer. -->
-    <section class="lcars-panel hidden" id="panelCompose" data-wstep-body="3">
+    <section class="cb-panel hidden" id="panelCompose" data-wstep-body="3">
       <div class="panel-header cb-step-header">
         <span class="cb-step-eyebrow">Step 3</span>
         <span class="cb-step-title">Compose</span>
@@ -220,14 +220,14 @@
         <div id="composeList" class="corpus-experience-list"></div>
 
         <div class="form-row" style="margin-top:10px">
-          <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(2)">← BACK</button>
-          <button class="lcars-btn lcars-bg-teal" onclick="saveCompositionThenNext()">Save and continue to Template →</button>
+          <button class="cb-btn cb-bg-blue" onclick="wizardGoTo(2)">← BACK</button>
+          <button class="cb-btn cb-bg-teal" onclick="saveCompositionThenNext()">Save and continue to Template →</button>
         </div>
       </div>
     </section>
 
     <!-- STEP 4 — TEMPLATE: card-based picker (no buried select). -->
-    <section class="lcars-panel hidden" id="panelTemplate" data-wstep-body="4">
+    <section class="cb-panel hidden" id="panelTemplate" data-wstep-body="4">
       <div class="panel-header cb-step-header">
         <span class="cb-step-eyebrow">Step 4</span>
         <span class="cb-step-title">Template</span>
@@ -270,7 +270,7 @@
               <input type="file" id="templateUploadInput" accept=".docx"
                      style="display:none"
                      onchange="uploadTemplateFromTemplateStep(this)">
-              <button class="lcars-btn lcars-bg-blue template-upload-btn"
+              <button class="cb-btn cb-bg-blue template-upload-btn"
                       onclick="document.getElementById('templateUploadInput').click()"
                       id="templateUploadBtn">+ Upload .docx</button>
             </div>
@@ -309,14 +309,14 @@
         </div>
 
         <div class="form-row" style="margin-top:14px">
-          <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(3)">← BACK</button>
-          <button class="lcars-btn lcars-bg-teal" onclick="wizardGoTo(5)">Continue to Generate →</button>
+          <button class="cb-btn cb-bg-blue" onclick="wizardGoTo(3)">← BACK</button>
+          <button class="cb-btn cb-bg-teal" onclick="wizardGoTo(5)">Continue to Generate →</button>
         </div>
       </div>
     </section>
 
     <!-- STEP 5 — GENERATE: format + generate button. -->
-    <section class="lcars-panel hidden" id="panelGenerate" data-wstep-body="5">
+    <section class="cb-panel hidden" id="panelGenerate" data-wstep-body="5">
       <div class="panel-header cb-step-header">
         <span class="cb-step-eyebrow">Step 5</span>
         <span class="cb-step-title">Generate</span>
@@ -329,13 +329,13 @@
         </div>
         <div class="form-row" style="align-items:center;gap:12px;margin-bottom:8px;">
           <span class="edit-hint" style="margin:0">Output format:</span>
-          <button class="lcars-btn format-btn active" id="fmtDocx" onclick="setOutputFormat('.docx', this)">DOCX</button>
-          <button class="lcars-btn format-btn" id="fmtPdf" onclick="setOutputFormat('.pdf', this)">PDF</button>
-          <button class="lcars-btn format-btn" id="fmtMd" onclick="setOutputFormat('.md', this)">Markdown</button>
+          <button class="cb-btn format-btn active" id="fmtDocx" onclick="setOutputFormat('.docx', this)">DOCX</button>
+          <button class="cb-btn format-btn" id="fmtPdf" onclick="setOutputFormat('.pdf', this)">PDF</button>
+          <button class="cb-btn format-btn" id="fmtMd" onclick="setOutputFormat('.md', this)">Markdown</button>
         </div>
         <div class="form-row">
-          <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(4)">← BACK</button>
-          <button class="lcars-btn lcars-bg-amber" onclick="runGeneration()" id="btnGenerate">Generate documents</button>
+          <button class="cb-btn cb-bg-blue" onclick="wizardGoTo(4)">← BACK</button>
+          <button class="cb-btn cb-bg-amber" onclick="runGeneration()" id="btnGenerate">Generate documents</button>
         </div>
         <!-- Pending placeholder filled by runGeneration() during the
              ~30–60s Sonnet 4.6 streaming call. Holds the spinner-style
@@ -349,7 +349,7 @@
     </section>
 
     <!-- STEP 6 — OUTPUT / DOWNLOAD -->
-    <section class="lcars-panel hidden" id="panelOutput" data-wstep-body="6">
+    <section class="cb-panel hidden" id="panelOutput" data-wstep-body="6">
       <div class="panel-header cb-step-header">
         <span class="cb-step-eyebrow">Step 6</span>
         <span class="cb-step-title">Generated output</span>
@@ -382,7 +382,7 @@
               <div class="edit-hint" style="margin:0">
                 <strong>Live preview</strong> · the styled output your download will produce.
               </div>
-              <button class="lcars-btn lcars-bg-blue" id="btnOpenEditDrawer" onclick="openEditDrawer()" aria-label="Open editor to edit résumé markdown before downloading" style="font-size:12px;padding:4px 12px">
+              <button class="cb-btn cb-bg-blue" id="btnOpenEditDrawer" onclick="openEditDrawer()" aria-label="Open editor to edit résumé markdown before downloading" style="font-size:12px;padding:4px 12px">
                 &#9998; Edit before downloading
               </button>
             </div>
@@ -413,18 +413,18 @@
         </div>
 
         <div class="form-row">
-          <button class="lcars-btn lcars-bg-teal" id="btnDownloadResume" onclick="downloadResume()">Download résumé</button>
+          <button class="cb-btn cb-bg-teal" id="btnDownloadResume" onclick="downloadResume()">Download résumé</button>
           <!-- β.5 — cover letter is now opt-in. The "Generate cover letter"
                button surfaces by default after a résumé generation. Once
                the cover letter exists it swaps for the "Download cover
                letter" affordance. -->
-          <button class="lcars-btn lcars-bg-violet" id="btnGenerateCover" onclick="runGenerateCoverLetter()">+ Generate cover letter</button>
-          <button class="lcars-btn lcars-bg-blue hidden" id="btnDownloadCover" onclick="downloadCoverLetter()">Download cover letter</button>
+          <button class="cb-btn cb-bg-violet" id="btnGenerateCover" onclick="runGenerateCoverLetter()">+ Generate cover letter</button>
+          <button class="cb-btn cb-bg-blue hidden" id="btnDownloadCover" onclick="downloadCoverLetter()">Download cover letter</button>
           <!-- B1: Changes moved out of tabs into this info-icon modal.
                The icon sits in the download row because that's where the
                user is when they want to know "what did the LLM change?"
                (right before downloading and reviewing). -->
-          <button class="lcars-btn lcars-bg-blue hidden" id="btnViewChanges" onclick="openChangesModal()"
+          <button class="cb-btn cb-bg-blue hidden" id="btnViewChanges" onclick="openChangesModal()"
                   aria-label="View what the LLM changed compared to the original résumé" title="View LLM changes" style="padding:6px 12px">
             &#9432; What changed?
           </button>
@@ -445,8 +445,8 @@
               placeholder="Describe an adjustment (e.g. &quot;make the tone more formal&quot;, &quot;emphasize cloud experience&quot;)..."
               aria-label="Refinement instruction"
             ></textarea>
-            <button class="lcars-btn lcars-bg-orange" id="btnRefinement" onclick="submitRefinement()">Refine</button>
-            <button class="lcars-btn lcars-bg-violet" id="btnIterateClarify" onclick="runIterateClarify()" title="Probe the current draft's specific weaknesses with new clarifying questions">Get interview questions</button>
+            <button class="cb-btn cb-bg-orange" id="btnRefinement" onclick="submitRefinement()">Refine</button>
+            <button class="cb-btn cb-bg-violet" id="btnIterateClarify" onclick="runIterateClarify()" title="Probe the current draft's specific weaknesses with new clarifying questions">Get interview questions</button>
           </div>
           <div class="edit-hint" style="color:var(--brand);opacity:0.5;margin-bottom:0">
             Scope: document content only — tone, emphasis, keyword placement, structure.
@@ -462,8 +462,8 @@
             </div>
             <div id="iterateClarifyQuestions"></div>
             <div id="iterateClarifyActions" class="hidden form-row">
-              <button class="lcars-btn lcars-bg-teal" id="btnSubmitIterateClarifications" onclick="submitIterateClarificationsAndGenerate()">Submit answers and regenerate</button>
-              <button class="lcars-btn lcars-bg-amber" onclick="skipIterateClarifications()">Skip and close</button>
+              <button class="cb-btn cb-bg-teal" id="btnSubmitIterateClarifications" onclick="submitIterateClarificationsAndGenerate()">Submit answers and regenerate</button>
+              <button class="cb-btn cb-bg-amber" onclick="skipIterateClarifications()">Skip and close</button>
             </div>
           </div>
         </div>
@@ -481,13 +481,13 @@
   <!-- CRUD routes for inline edits.                                  -->
   <!-- ============================================================== -->
   <div id="tab-corpus" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabCorpus">
-    <div class="lcars-main">
-      <section class="lcars-panel" id="panelCorpus">
-        <div class="panel-header lcars-bg-blue">Career corpus</div>
+    <div class="cb-main">
+      <section class="cb-panel" id="panelCorpus">
+        <div class="panel-header cb-bg-blue">Career corpus</div>
         <div class="panel-body">
           <div id="onboardingBanner" class="onboarding-banner hidden" role="status">
             <span id="onboardingBannerText"></span>
-            <button class="lcars-btn lcars-bg-amber" onclick="scrollToFirstPending()">Review now</button>
+            <button class="cb-btn cb-bg-amber" onclick="scrollToFirstPending()">Review now</button>
           </div>
           <div class="edit-hint" id="corpusEmptyHint">
             Select a user above to load their experiences. Each experience
@@ -497,10 +497,10 @@
             in-flight one.
           </div>
           <div class="form-row" id="corpusToolbar" style="display:none">
-            <button class="lcars-btn lcars-bg-teal" onclick="openCorpusAddExperience()">+ ADD EXPERIENCE</button>
-            <button class="lcars-btn lcars-bg-violet" onclick="document.getElementById('corpusIngestFile').click()">+ Import résumé</button>
+            <button class="cb-btn cb-bg-teal" onclick="openCorpusAddExperience()">+ ADD EXPERIENCE</button>
+            <button class="cb-btn cb-bg-violet" onclick="document.getElementById('corpusIngestFile').click()">+ Import résumé</button>
             <input type="file" id="corpusIngestFile" accept=".docx,.pdf,.md" class="hidden" onchange="uploadFile(this.files[0])">
-            <button class="lcars-btn lcars-bg-orange" onclick="loadCorpusDuplicates()">Find duplicates</button>
+            <button class="cb-btn cb-bg-orange" onclick="loadCorpusDuplicates()">Find duplicates</button>
             <span class="edit-hint" id="corpusCount">0 experiences</span>
           </div>
           <div id="ingestResult" class="edit-hint" aria-live="polite"></div>
@@ -537,9 +537,9 @@
 
   <!-- Persona Templates (Phase D.4) -->
   <div id="tab-personas" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabPersonas">
-    <div class="lcars-main">
-      <section class="lcars-panel" id="panelPersonas">
-        <div class="panel-header lcars-bg-violet">Résumé templates</div>
+    <div class="cb-main">
+      <section class="cb-panel" id="panelPersonas">
+        <div class="panel-header cb-bg-violet">Résumé templates</div>
         <div class="panel-body">
           <div class="edit-hint" id="personasHint">
             Five bundled ATS-safe templates ship with the app. You can also
@@ -563,7 +563,7 @@
             <div class="form-row" style="margin-top:12px">
               <input type="file" id="personaUploadInput" accept=".docx" style="display:none"
                      onchange="uploadPersonaFromInput(this)">
-              <button class="lcars-btn lcars-bg-teal" id="btnUploadPersona"
+              <button class="cb-btn cb-bg-teal" id="btnUploadPersona"
                       onclick="document.getElementById('personaUploadInput').click()" disabled>
                 UPLOAD .DOCX TEMPLATE
               </button>
@@ -578,9 +578,9 @@
 
   <!-- Candidate Memory tab (Phase D.5) -->
   <div id="tab-memory" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabMemory">
-    <div class="lcars-main">
-      <section class="lcars-panel" id="panelMemory">
-        <div class="panel-header lcars-bg-teal">Candidate memory</div>
+    <div class="cb-main">
+      <section class="cb-panel" id="panelMemory">
+        <div class="panel-header cb-bg-teal">Candidate memory</div>
         <div class="panel-body">
           <div class="edit-hint">
             Clarification Q&A pairs accumulated across every application.
@@ -608,7 +608,7 @@
               <input type="checkbox" id="memoryIncludePromoted">
               Show promoted
             </label>
-            <button class="lcars-btn lcars-bg-teal" onclick="refreshMemory()">Refresh</button>
+            <button class="cb-btn cb-bg-teal" onclick="refreshMemory()">Refresh</button>
             <span class="edit-hint" id="memoryCount" style="margin:0">0 entries</span>
           </div>
 
@@ -623,20 +623,20 @@
   <!-- Edit-detection modal — opens when REFINE or GET INTERVIEW QUESTIONS is
        clicked while the preview contains user edits not yet baselined. The
        three-button cluster lets the user use, discard, or back out. -->
-  <div id="editModal" class="lcars-modal hidden" role="dialog" aria-modal="true"
+  <div id="editModal" class="cb-modal hidden" role="dialog" aria-modal="true"
        aria-labelledby="editModalTitle" aria-describedby="editModalBody">
-    <div class="lcars-modal-backdrop" data-modal-dismiss="cancel"></div>
-    <div class="lcars-modal-content" role="document">
-      <h2 id="editModalTitle" class="lcars-modal-title">You edited the preview</h2>
-      <p id="editModalBody" class="lcars-modal-body">
+    <div class="cb-modal-backdrop" data-modal-dismiss="cancel"></div>
+    <div class="cb-modal-content" role="document">
+      <h2 id="editModalTitle" class="cb-modal-title">You edited the preview</h2>
+      <p id="editModalBody" class="cb-modal-body">
         Use your edits as the new baseline for this iteration, or discard them and
         continue from the original generated text? First-person edits are treated as
         ground truth — they are citable but never extended without your input.
       </p>
       <div class="modal-actions">
-        <button class="lcars-btn lcars-bg-teal" id="btnUseEdits" data-modal-dismiss="use">Use edits as baseline</button>
-        <button class="lcars-btn lcars-bg-amber" id="btnDiscardEdits" data-modal-dismiss="discard">Discard edits</button>
-        <button class="lcars-btn lcars-bg-blue" id="btnCancelRefine" data-modal-dismiss="cancel">Cancel</button>
+        <button class="cb-btn cb-bg-teal" id="btnUseEdits" data-modal-dismiss="use">Use edits as baseline</button>
+        <button class="cb-btn cb-bg-amber" id="btnDiscardEdits" data-modal-dismiss="discard">Discard edits</button>
+        <button class="cb-btn cb-bg-blue" id="btnCancelRefine" data-modal-dismiss="cancel">Cancel</button>
       </div>
     </div>
   </div>
@@ -644,21 +644,21 @@
   <!-- Diagnostics modal — links to the read-only /_dashboard blueprint
        (telemetry + eval results). The dashboard is served by this same
        Flask process; localhost-only by its own host-header guard. -->
-  <div id="diagnosticsModal" class="lcars-modal hidden" role="dialog" aria-modal="true"
+  <div id="diagnosticsModal" class="cb-modal hidden" role="dialog" aria-modal="true"
        aria-labelledby="diagModalTitle" aria-describedby="diagModalBody">
-    <div class="lcars-modal-backdrop" data-diag-dismiss></div>
-    <div class="lcars-modal-content" role="document">
-      <h2 id="diagModalTitle" class="lcars-modal-title">Diagnostics dashboard</h2>
-      <p id="diagModalBody" class="lcars-modal-body">
+    <div class="cb-modal-backdrop" data-diag-dismiss></div>
+    <div class="cb-modal-content" role="document">
+      <h2 id="diagModalTitle" class="cb-modal-title">Diagnostics dashboard</h2>
+      <p id="diagModalBody" class="cb-modal-body">
         Read-only telemetry from the LLM pipeline and eval harness: score
         trend, rubric &times; fixture heatmap, failure-mode clustering, and
         per-call cost. Served by this app at <code>/_dashboard</code>;
         reachable only over localhost.
       </p>
       <div class="modal-actions">
-        <a class="lcars-btn lcars-bg-teal" id="btnOpenDashboard"
+        <a class="cb-btn cb-bg-teal" id="btnOpenDashboard"
            href="/_dashboard" target="_blank" rel="noopener">Open dashboard &#8599;</a>
-        <button class="lcars-btn lcars-bg-blue" id="btnCloseDiag" data-diag-dismiss>Close</button>
+        <button class="cb-btn cb-bg-blue" id="btnCloseDiag" data-diag-dismiss>Close</button>
       </div>
     </div>
   </div>
@@ -666,12 +666,12 @@
   <!-- Error modal — opened by reportError() and re-opened by clicking the
        red status pill. Shows the full last error in a readonly textarea
        with a COPY button so the user can paste it into a bug report. -->
-  <div id="errorModal" class="lcars-modal hidden" role="dialog" aria-modal="true"
+  <div id="errorModal" class="cb-modal hidden" role="dialog" aria-modal="true"
        aria-labelledby="errModalTitle" aria-describedby="errModalBody">
-    <div class="lcars-modal-backdrop" data-err-dismiss></div>
-    <div class="lcars-modal-content" role="document">
-      <h2 id="errModalTitle" class="lcars-modal-title">Error detail</h2>
-      <p id="errModalBody" class="lcars-modal-body">
+    <div class="cb-modal-backdrop" data-err-dismiss></div>
+    <div class="cb-modal-content" role="document">
+      <h2 id="errModalTitle" class="cb-modal-title">Error detail</h2>
+      <p id="errModalBody" class="cb-modal-body">
         The last operation failed. Copy the text below into a bug report.
         This dialog re-opens any time you click the red status pill.
       </p>
@@ -679,8 +679,8 @@
       <textarea id="errorModalText" class="error-modal-text" readonly rows="10"
                 aria-label="Error detail text"></textarea>
       <div class="modal-actions">
-        <button class="lcars-btn lcars-bg-teal" id="btnCopyError">Copy</button>
-        <button class="lcars-btn lcars-bg-blue" id="btnCloseError" data-err-dismiss>Close</button>
+        <button class="cb-btn cb-bg-teal" id="btnCopyError">Copy</button>
+        <button class="cb-btn cb-bg-blue" id="btnCloseError" data-err-dismiss>Close</button>
       </div>
     </div>
   </div>
@@ -688,12 +688,12 @@
   <!-- Onboarding modal — shown when a DB-backed route reports the selected
        user has no candidate row yet (legacy config-only user). One click
        imports identity + memory from the existing config/output files. -->
-  <div id="onboardingModal" class="lcars-modal hidden" role="dialog" aria-modal="true"
+  <div id="onboardingModal" class="cb-modal hidden" role="dialog" aria-modal="true"
        aria-labelledby="onbModalTitle" aria-describedby="onbModalBody">
-    <div class="lcars-modal-backdrop" data-onboard-dismiss></div>
-    <div class="lcars-modal-content" role="document">
-      <h2 id="onbModalTitle" class="lcars-modal-title">Import into corpus</h2>
-      <p id="onbModalBody" class="lcars-modal-body">
+    <div class="cb-modal-backdrop" data-onboard-dismiss></div>
+    <div class="cb-modal-content" role="document">
+      <h2 id="onbModalTitle" class="cb-modal-title">Import into corpus</h2>
+      <p id="onbModalBody" class="cb-modal-body">
         <strong id="onboardingUserName">this user</strong> exists from before
         the database migration and isn't in the career corpus yet. Import
         creates the candidate record plus skills, certifications, and past
@@ -705,10 +705,10 @@
         Also extract experiences &amp; bullets from saved resumes with AI
         (Haiku, ~$0.02)
       </label>
-      <p id="onboardingStatus" class="lcars-modal-body" aria-live="polite"></p>
+      <p id="onboardingStatus" class="cb-modal-body" aria-live="polite"></p>
       <div class="modal-actions">
-        <button class="lcars-btn lcars-bg-teal" id="btnRunImport">Import identity and memory</button>
-        <button class="lcars-btn lcars-bg-blue" id="btnCancelOnboard" data-onboard-dismiss>Cancel</button>
+        <button class="cb-btn cb-bg-teal" id="btnRunImport">Import identity and memory</button>
+        <button class="cb-btn cb-bg-blue" id="btnCancelOnboard" data-onboard-dismiss>Cancel</button>
       </div>
     </div>
   </div>
@@ -716,17 +716,17 @@
   <!-- Generic form modal — JS fills #formModalBody with field rows. Used by
        add-experience, add-bullet, add-title, promote-clarification-picker
        (Workstream G replaces the prompt() dialogs). -->
-  <div id="formModal" class="lcars-modal hidden" role="dialog" aria-modal="true"
+  <div id="formModal" class="cb-modal hidden" role="dialog" aria-modal="true"
        aria-labelledby="formModalTitle" aria-describedby="formModalSubtitle">
-    <div class="lcars-modal-backdrop" data-form-dismiss="cancel"></div>
-    <div class="lcars-modal-content" role="document">
-      <h2 id="formModalTitle" class="lcars-modal-title">Form</h2>
-      <p id="formModalSubtitle" class="lcars-modal-body"></p>
+    <div class="cb-modal-backdrop" data-form-dismiss="cancel"></div>
+    <div class="cb-modal-content" role="document">
+      <h2 id="formModalTitle" class="cb-modal-title">Form</h2>
+      <p id="formModalSubtitle" class="cb-modal-body"></p>
       <form id="formModalForm" onsubmit="return false">
         <div id="formModalBody" class="form-modal-body"></div>
         <div class="modal-actions">
-          <button type="button" class="lcars-btn lcars-bg-teal" id="formModalSubmit">Save</button>
-          <button type="button" class="lcars-btn lcars-bg-blue" data-form-dismiss="cancel">Cancel</button>
+          <button type="button" class="cb-btn cb-bg-teal" id="formModalSubmit">Save</button>
+          <button type="button" class="cb-btn cb-bg-blue" data-form-dismiss="cancel">Cancel</button>
         </div>
       </form>
     </div>
@@ -746,7 +746,7 @@
     <div class="settings-drawer-backdrop" onclick="closeEditDrawer()"></div>
     <div class="settings-drawer-content">
       <header class="settings-drawer-header">
-        <h2 id="editDrawerTitle" class="lcars-modal-title">Edit résumé before downloading</h2>
+        <h2 id="editDrawerTitle" class="cb-modal-title">Edit résumé before downloading</h2>
         <button class="corpus-action-btn" onclick="closeEditDrawer()" aria-label="Close editor">Close</button>
       </header>
       <div class="settings-drawer-body">
@@ -767,15 +767,15 @@
        the pre-B1 Changes tab. Surfaces in the download row because
        that's where the user wants to know "what's different vs. the
        original?" right before downloading. -->
-  <div id="changesModal" class="lcars-modal hidden" role="dialog"
+  <div id="changesModal" class="cb-modal hidden" role="dialog"
        aria-modal="true" aria-labelledby="changesModalTitle">
-    <div class="lcars-modal-backdrop" onclick="closeChangesModal()"></div>
-    <div class="lcars-modal-content">
+    <div class="cb-modal-backdrop" onclick="closeChangesModal()"></div>
+    <div class="cb-modal-content">
       <header class="settings-drawer-header">
-        <h2 id="changesModalTitle" class="lcars-modal-title">What the LLM changed</h2>
+        <h2 id="changesModalTitle" class="cb-modal-title">What the LLM changed</h2>
         <button class="corpus-action-btn" onclick="closeChangesModal()" aria-label="Close changes view">Close</button>
       </header>
-      <div class="lcars-modal-body">
+      <div class="cb-modal-body">
         <div id="changesContent"></div>
       </div>
     </div>
@@ -790,7 +790,7 @@
     <div class="settings-drawer-backdrop" data-settings-dismiss></div>
     <div class="settings-drawer-content">
       <header class="settings-drawer-header">
-        <h2 id="settingsDrawerTitle" class="lcars-modal-title">Settings</h2>
+        <h2 id="settingsDrawerTitle" class="cb-modal-title">Settings</h2>
         <button class="corpus-action-btn" data-settings-dismiss aria-label="Close settings">Close</button>
       </header>
       <div class="settings-drawer-body">
@@ -838,13 +838,13 @@
               <label for="cfgPortfolioUrls">Portfolio URLs</label>
               <textarea id="cfgPortfolioUrls" rows="3" placeholder="One URL per line&#10;https://github.com/you&#10;https://yoursite.com"></textarea>
             </div>
-            <button class="lcars-btn lcars-bg-violet" onclick="saveConfig()">Save config</button>
+            <button class="cb-btn cb-bg-violet" onclick="saveConfig()">Save config</button>
           </div>
         </section>
         <section class="settings-section">
           <h3 class="settings-section-title">Diagnostics</h3>
           <p class="edit-hint">Read-only telemetry + eval dashboard.</p>
-          <a class="lcars-btn lcars-bg-teal" href="/_dashboard" target="_blank" rel="noopener">Open dashboard ↗</a>
+          <a class="cb-btn cb-bg-teal" href="/_dashboard" target="_blank" rel="noopener">Open dashboard ↗</a>
         </section>
       </div>
     </div>
