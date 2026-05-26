@@ -483,7 +483,8 @@ def main() -> int:
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=args.headless)
         ctx = browser.new_context(
-            viewport=VIEWPORT, color_scheme="light"
+            viewport=VIEWPORT,  # type: ignore[arg-type]
+            color_scheme="light",
         )
         page = ctx.new_page()
         page.set_default_timeout(SHORT_TIMEOUT_MS)

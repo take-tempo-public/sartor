@@ -39,6 +39,25 @@ release.
       in the release commit.
 - [ ] **`CHANGELOG.md` flip** — rename `[Unreleased]` →
       `[1.0.1] — <date>`; add new empty `[Unreleased]` block.
+- [ ] **Push to GitHub + verify the `https://github.com/amodal1/callback`
+      URL resolves** — the repo is still local-only (no `origin`
+      remote configured). Multiple shipping artefacts already
+      reference the GitHub URL as if it exists:
+      - [`pyproject.toml:56-59`](../pyproject.toml) — Homepage,
+        Repository, Issues, Changelog package metadata.
+      - [`README.md:34`](../README.md) — quick-install
+        `git clone` line.
+      - [`docs/install.md:45, 90, 143`](install.md) — Windows /
+        macOS / Linux clone instructions.
+      Anyone following those docs against the unpublished repo
+      hits a 404. Action before tag: create the GitHub repo
+      (public, name `callback`, under `amodal1`), `git remote add
+      origin git@github.com:amodal1/callback.git`, push
+      `feat/v1-unified-corpus` and `main`, push the v1.0.1 tag,
+      then spot-check that all four pyproject URLs resolve and
+      that `git clone https://github.com/amodal1/callback` works
+      from a separate machine (or fresh clone path) without
+      auth prompts.
 
 ### Should do (v1.0.1 polish; document if skipped)
 
@@ -236,35 +255,20 @@ release.
       element (`corpusToolbar` / `corpusCount`) at the moment
       `_renderCorpusList` runs, or a property access on `exp`
       that the API doesn't always provide.
-- [ ] **Judge JSON parse failures mis-categorized as `status=ok`** —
-      surfaced during the eval-baseline smoke pass (2026-05-26).
-      [`evals/runner.py:289`](../evals/runner.py) returns
-      `{"score": 0, "reasons": ["judge response was not valid JSON"]}`
-      when the judge response isn't parseable JSON, but does NOT
-      set `status: "judge_error"` on the returned dict. The caller
-      at [`evals/runner.py:546`](../evals/runner.py) then runs
-      `grade.setdefault("status", "ok")`, silently labelling the
-      record as a successful grading with a real 0 score. The
-      regression-detector at
-      [`evals/runner.py:229-262`](../evals/runner.py) sees a
-      4.8 → 0.0 delta and fires a false-positive WARN. Observed
-      live in
-      [`evals/results/20260526_170400Z.jsonl`](../evals/results/20260526_170400Z.jsonl)
-      record 1: `data-scientist-junior × grounding` flagged as a
-      -4.8 regression, but the pipeline metrics
-      (`grounding_overlap.overlap_ratio=0.195`, `verb_diversity=1.0`,
-      normal latency + cost) and the paraphrase-shaped
-      `missing_samples` are consistent with the two passing
-      fixtures — i.e., the underlying generation was fine; only
-      the judge's response was malformed. Fix: return
+- [x] **~~Judge JSON parse failures mis-categorized as `status=ok`~~** —
+      ✅ resolved 2026-05-26.
+      [`evals/runner.py:289`](../evals/runner.py) now returns
       `{"score": 0, "reasons": [...], "raw": raw, "status": "judge_error"}`
-      at [`evals/runner.py:289`](../evals/runner.py) so the
-      existing `judge_error` path in `_detect_regression` /
-      summary logic skips these records correctly. One-line
-      change; add a test in
+      so the existing `judge_error` path in `_detect_regression` /
+      summary logic skips these records correctly. New test
+      `test_unparseable_json_marks_status_judge_error` in
       [`tests/test_eval_runner.py`](../tests/test_eval_runner.py)
-      that injects a malformed-JSON judge response and asserts
-      `status == "judge_error"`.
+      pins the behavior; all 25 tests in that file pass. The
+      false-positive WARN observed in
+      [`evals/results/20260526_170400Z.jsonl`](../evals/results/20260526_170400Z.jsonl)
+      (`data-scientist-junior × grounding`, -4.8 delta) won't
+      recur — re-running the smoke pass should produce a clean
+      result.
 - [ ] **Re-baseline eval scores for v1.0.1** —
       [`evals/results/baseline_v1.json`](../evals/results/baseline_v1.json)
       was sourced from

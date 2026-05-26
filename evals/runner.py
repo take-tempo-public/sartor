@@ -286,7 +286,18 @@ def _grade(client: anthropic.Anthropic, rubric_path: Path, payload: dict) -> dic
     try:
         grade = json.loads(raw)
     except json.JSONDecodeError:
-        return {"score": 0, "reasons": ["judge response was not valid JSON"], "raw": raw}
+        # Mark explicitly as judge_error so _detect_regression and the
+        # summary roll-up can skip this record. Without the status the
+        # caller's `grade.setdefault("status", "ok")` would label a
+        # judge-side malformation as a successful 0-score grading,
+        # which fires a false-positive regression WARN against the
+        # baseline.
+        return {
+            "score": 0,
+            "reasons": ["judge response was not valid JSON"],
+            "raw": raw,
+            "status": "judge_error",
+        }
     # Force-float at the boundary: rubrics now allow fractional scores
     # (0.0–5.0, one decimal), but Haiku still occasionally emits an integer.
     # Downstream aggregations rely on a uniform numeric type.

@@ -161,6 +161,27 @@ class TestGradeCoercion:
         assert grade["score"] == 0
         assert "raw" in grade
 
+    def test_unparseable_json_marks_status_judge_error(self, tmp_path: Path):
+        """Malformed judge responses must be flagged as judge_error so
+        _detect_regression and the summary roll-up skip them. Without
+        this, the caller's grade.setdefault('status', 'ok') labels the
+        record as a successful 0-score grading and fires a
+        false-positive WARN against the baseline.
+        """
+        from evals.runner import _grade
+
+        client = MagicMock()
+        client.messages.create.return_value = self._make_judge_response(
+            "not json at all"
+        )
+
+        rubric = tmp_path / "rubric.md"
+        rubric.write_text("Grade this.", encoding="utf-8")
+
+        grade = _grade(client, rubric, {"fixture": "test"})
+        assert grade["status"] == "judge_error"
+        assert "judge response was not valid JSON" in grade["reasons"]
+
 
 class TestSchemaConstants:
     """Schema version + score max constants must be exported from the runner."""
