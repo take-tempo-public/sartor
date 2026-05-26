@@ -337,6 +337,14 @@
           <button class="lcars-btn lcars-bg-blue" onclick="wizardGoTo(4)">← BACK</button>
           <button class="lcars-btn lcars-bg-amber" onclick="runGeneration()" id="btnGenerate">Generate documents</button>
         </div>
+        <!-- Pending placeholder filled by runGeneration() during the
+             ~30–60s Sonnet 4.6 streaming call. Holds the spinner-style
+             status + token counter + the collapsible "Show progress"
+             toggle that reveals the raw streamed text. Hidden until
+             runGeneration() runs; populated via _clearChildren / _el so
+             the same aria-live region announces progressive updates to
+             screen readers. -->
+        <div class="analysis-pending hidden" id="generatePending" aria-live="polite"></div>
       </div>
     </section>
 

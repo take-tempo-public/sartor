@@ -810,6 +810,58 @@ async function runGeneration() {
   setStatus('GENERATING');
   document.getElementById('btnGenerate').disabled = true;
 
+  // Build the streaming pending UI — same shape as runAnalysis(): a
+  // spinner-style status line, a token counter, and a collapsible
+  // "Show progress" toggle that reveals the raw streamed text for
+  // debugging or curiosity. Default UI is clean (just status + counter);
+  // the raw <pre> starts hidden and only opens on the toggle click.
+  const pendingEl = document.getElementById('generatePending');
+  if (pendingEl) {
+    pendingEl.classList.remove('hidden');
+    _clearChildren(pendingEl);
+    const status = _el('div', {
+      className: 'edit-hint',
+      id: 'generateStreamStatus',
+      textContent: 'Generating documents… (~30–60s)',
+    });
+    status.style.marginBottom = '6px';
+    const counter = _el('div', {
+      className: 'edit-hint',
+      id: 'generateStreamCounter',
+      textContent: 'Received 0 tokens',
+    });
+    counter.style.opacity = '0.7';
+    counter.style.fontSize = '12px';
+    counter.style.marginBottom = '8px';
+    const toggleBtn = _el('button', {
+      id: 'generateStreamToggle',
+      className: 'lcars-btn lcars-bg-blue',
+      textContent: 'Show progress',
+    });
+    toggleBtn.style.fontSize = '12px';
+    toggleBtn.style.padding = '2px 10px';
+    toggleBtn.onclick = () => {
+      const pre = document.getElementById('generateStreamPre');
+      const btn = document.getElementById('generateStreamToggle');
+      if (!pre || !btn) return;
+      const showing = !pre.classList.contains('hidden');
+      pre.classList.toggle('hidden', showing);
+      btn.textContent = showing ? 'Show progress' : 'Hide progress';
+    };
+    const streamPre = _el('pre', { id: 'generateStreamPre', className: 'hidden' });
+    streamPre.style.whiteSpace = 'pre-wrap';
+    streamPre.style.maxHeight = '320px';
+    streamPre.style.overflow = 'auto';
+    streamPre.style.fontFamily = 'ui-monospace, Menlo, Consolas, monospace';
+    streamPre.style.fontSize = '12px';
+    streamPre.style.opacity = '0.9';
+    streamPre.style.marginTop = '8px';
+    pendingEl.appendChild(status);
+    pendingEl.appendChild(counter);
+    pendingEl.appendChild(toggleBtn);
+    pendingEl.appendChild(streamPre);
+  }
+
   try {
     // refinementHistory holds {note, status} objects — only applied notes
     // count; serializing without filtering would send rejected ones, and
@@ -819,27 +871,72 @@ async function runGeneration() {
       .map((e, i) => `${i + 1}. ${e.note}`)
       .join('\n');
 
-    const res = await fetch('/api/generate', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
+    let finalData = null;
+    let httpError = null;
+    let streamErr = null;
+    let tokenCount = 0;
+    await _consumeSSE(
+      '/api/generate/stream',
+      {
         username: currentUser,
         context_path: lastContextPath,
         output_format: outputFormat,
         refinement_notes: acceptedNotes,
         persona_template_id: _readSelectedPersonaId(),
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return reportError('Generate', data.error || 'Generation failed', data.detail);
+        // generate_cover_letter defaults False on the backend (β.5 — cover
+        // letter is opt-in via /api/generate-cover-letter); preserved here
+        // by omission so we don't widen the request unintentionally.
+      },
+      (eventName, payload) => {
+        if (eventName === 'chunk') {
+          // Counting chunks (each delta is 1-4 chars) — close enough for
+          // an alive-indicator label that reads "tokens" without the
+          // precision of a real tokenizer.
+          tokenCount += 1;
+          const counterEl = document.getElementById('generateStreamCounter');
+          if (counterEl) counterEl.textContent = `Received ${tokenCount} tokens`;
+          const pre = document.getElementById('generateStreamPre');
+          if (pre) {
+            pre.textContent += payload.text || '';
+            if (!pre.classList.contains('hidden')) {
+              pre.scrollTop = pre.scrollHeight;
+            }
+          }
+        } else if (eventName === 'retry') {
+          const status = document.getElementById('generateStreamStatus');
+          if (status) status.textContent = `Generating… (retrying: ${payload.reason})`;
+          const pre = document.getElementById('generateStreamPre');
+          if (pre) pre.textContent += `\n\n[retry: ${payload.reason}]\n\n`;
+        } else if (eventName === 'done') {
+          finalData = payload;
+        } else if (eventName === 'error') {
+          streamErr = payload;
+        } else if (eventName === 'http_error') {
+          httpError = payload;
+        }
+      },
+    );
+
+    if (httpError) {
+      return reportError(
+        'Generate',
+        httpError.body.error || 'Generation failed',
+        httpError.body.detail,
+      );
     }
-    lastResumePath = data.resume_path;
-    lastCoverLetterPath = data.cover_letter_path;
-    lastResumeFormat = data.resume_format || '.docx';
-    _selectedPersonaId = data.persona_template_id ?? _readSelectedPersonaId();
-    _onGenerationComplete(data);
-    _renderOutput(data);
+    if (streamErr) {
+      return reportError('Generate', streamErr.error || 'Generation failed', streamErr.detail);
+    }
+    if (!finalData) {
+      return reportError('Generate', 'Generation stream ended without a result.');
+    }
+
+    lastResumePath = finalData.resume_path;
+    lastCoverLetterPath = finalData.cover_letter_path;
+    lastResumeFormat = finalData.resume_format || '.docx';
+    _selectedPersonaId = finalData.persona_template_id ?? _readSelectedPersonaId();
+    _onGenerationComplete(finalData);
+    _renderOutput(finalData);
     setStatus('GENERATION COMPLETE');
     _announce(`Iteration ${currentIteration} ready. Resume and cover letter generated.`);
     _wizardAdvanceTo(6);
@@ -847,6 +944,9 @@ async function runGeneration() {
     reportError('Generate', 'Generation request failed', e.message);
   } finally {
     document.getElementById('btnGenerate').disabled = false;
+    // Always hide the pending placeholder — leaving the streamed-tokens
+    // view up after success or failure would be misleading.
+    document.getElementById('generatePending')?.classList.add('hidden');
   }
 }
 
