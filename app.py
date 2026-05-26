@@ -2037,13 +2037,27 @@ def list_bundled_personas():
     from db.models import PersonaTemplate
     from db.session import get_session, init_db
 
-    init_db()
-    session = get_session()
+    # Wrapped with logger.exception (2026-05-26) — this route was
+    # silently 500'ing under specific conditions (per the
+    # "Corpus tab: 5xx on first-load API calls" entry in
+    # RELEASE_CHECKLIST) and the bare default-handler 500 dropped the
+    # traceback. Logging here surfaces the actual cause in the Flask
+    # log; the JSON detail field surfaces the exception class in dev-
+    # console for quick triage.
     try:
-        rows = session.query(PersonaTemplate).filter_by(source="bundled").all()
-        return jsonify([_persona_dict(t) for t in rows])
-    finally:
-        session.close()
+        init_db()
+        session = get_session()
+        try:
+            rows = session.query(PersonaTemplate).filter_by(source="bundled").all()
+            return jsonify([_persona_dict(t) for t in rows])
+        finally:
+            session.close()
+    except Exception as exc:
+        logger.exception("list_bundled_personas failed")
+        return jsonify({
+            "error": "Failed to load bundled personas",
+            "detail": f"{type(exc).__name__}: {exc}",
+        }), 500
 
 
 @app.route("/api/users/<username>/personas", methods=["GET"])
@@ -2056,23 +2070,31 @@ def list_user_personas(username: str):
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
 
-    init_db()
-    session = get_session()
+    # Wrapped with logger.exception (2026-05-26) — see list_bundled_personas.
     try:
-        candidate = session.query(Candidate).filter_by(username=safe_user).first()
-        if candidate is None:
+        init_db()
+        session = get_session()
+        try:
+            candidate = session.query(Candidate).filter_by(username=safe_user).first()
+            if candidate is None:
+                return jsonify({
+                    "error": "Candidate not in corpus yet",
+                    "needs_onboarding": True,
+                }), 409
+            bundled = session.query(PersonaTemplate).filter_by(source="bundled").all()
+            owned = session.query(PersonaTemplate).filter_by(candidate_id=candidate.id).all()
             return jsonify({
-                "error": "Candidate not in corpus yet",
-                "needs_onboarding": True,
-            }), 409
-        bundled = session.query(PersonaTemplate).filter_by(source="bundled").all()
-        owned = session.query(PersonaTemplate).filter_by(candidate_id=candidate.id).all()
+                "bundled": [_persona_dict(t) for t in bundled],
+                "owned": [_persona_dict(t) for t in owned],
+            })
+        finally:
+            session.close()
+    except Exception as exc:
+        logger.exception("list_user_personas failed for user=%s", safe_user)
         return jsonify({
-            "bundled": [_persona_dict(t) for t in bundled],
-            "owned": [_persona_dict(t) for t in owned],
-        })
-    finally:
-        session.close()
+            "error": "Failed to load personas",
+            "detail": f"{type(exc).__name__}: {exc}",
+        }), 500
 
 
 @app.route("/api/users/<username>/personas", methods=["POST"])
@@ -2708,21 +2730,31 @@ def list_experiences(username: str):
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
 
-    init_db()
-    session = get_session()
+    # Wrapped with logger.exception (2026-05-26) — see list_bundled_personas
+    # for rationale. The frontend surfaces "Failed to load corpus." on 500
+    # which gives the user no clue about the root cause.
     try:
-        candidate = session.query(Candidate).filter_by(username=safe_user).first()
-        if candidate is None:
-            return jsonify({
-                "error": "Candidate not in corpus yet",
-                "needs_onboarding": True,
-            }), 409
-        rows = session.query(Experience).filter_by(
-            candidate_id=candidate.id,
-        ).order_by(Experience.start_date.desc(), Experience.id.desc()).all()
-        return jsonify([_experience_summary_dict(e) for e in rows])
-    finally:
-        session.close()
+        init_db()
+        session = get_session()
+        try:
+            candidate = session.query(Candidate).filter_by(username=safe_user).first()
+            if candidate is None:
+                return jsonify({
+                    "error": "Candidate not in corpus yet",
+                    "needs_onboarding": True,
+                }), 409
+            rows = session.query(Experience).filter_by(
+                candidate_id=candidate.id,
+            ).order_by(Experience.start_date.desc(), Experience.id.desc()).all()
+            return jsonify([_experience_summary_dict(e) for e in rows])
+        finally:
+            session.close()
+    except Exception as exc:
+        logger.exception("list_experiences failed for user=%s", safe_user)
+        return jsonify({
+            "error": "Failed to load corpus",
+            "detail": f"{type(exc).__name__}: {exc}",
+        }), 500
 
 
 @app.route("/api/users/<username>/experiences", methods=["POST"])
@@ -3091,19 +3123,27 @@ def list_summary_items(username: str):
 
     include_inactive = request.args.get("include_inactive") in ("1", "true", "yes")
 
-    init_db()
-    session = get_session()
+    # Wrapped with logger.exception (2026-05-26) — see list_bundled_personas.
     try:
-        candidate = session.query(Candidate).filter_by(username=safe_user).first()
-        if candidate is None:
-            return jsonify({"summaries": []})
-        q = session.query(SummaryItem).filter_by(candidate_id=candidate.id)
-        if not include_inactive:
-            q = q.filter(SummaryItem.is_active == 1)
-        rows = q.order_by(SummaryItem.display_order, SummaryItem.id).all()
-        return jsonify({"summaries": [_summary_item_to_dict(s) for s in rows]})
-    finally:
-        session.close()
+        init_db()
+        session = get_session()
+        try:
+            candidate = session.query(Candidate).filter_by(username=safe_user).first()
+            if candidate is None:
+                return jsonify({"summaries": []})
+            q = session.query(SummaryItem).filter_by(candidate_id=candidate.id)
+            if not include_inactive:
+                q = q.filter(SummaryItem.is_active == 1)
+            rows = q.order_by(SummaryItem.display_order, SummaryItem.id).all()
+            return jsonify({"summaries": [_summary_item_to_dict(s) for s in rows]})
+        finally:
+            session.close()
+    except Exception as exc:
+        logger.exception("list_summary_items failed for user=%s", safe_user)
+        return jsonify({
+            "error": "Failed to load summaries",
+            "detail": f"{type(exc).__name__}: {exc}",
+        }), 500
 
 
 @app.route("/api/users/<username>/summaries", methods=["POST"])
@@ -4071,32 +4111,40 @@ def list_applications(username: str):
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
 
-    init_db()
-    session = get_session()
+    # Wrapped with logger.exception (2026-05-26) — see list_bundled_personas.
     try:
-        candidate = session.query(Candidate).filter_by(username=safe_user).first()
-        if candidate is None:
-            return jsonify({
-                "error": "Candidate not in corpus yet",
-                "needs_onboarding": True,
-            }), 409
-        rows = session.query(Application).filter_by(
-            candidate_id=candidate.id,
-        ).order_by(Application.updated_at.desc()).all()
-        out = []
-        for app_row in rows:
-            runs = sorted(app_row.runs, key=lambda r: r.iteration)
-            pending = 0
-            if runs:
-                run_ids = [r.id for r in runs]
-                pending = session.query(ProposalReview).filter(
-                    ProposalReview.application_run_id.in_(run_ids),
-                    ProposalReview.decision == "pending",
-                ).count()
-            out.append(_application_summary_dict(app_row, runs, pending))
-        return jsonify(out)
-    finally:
-        session.close()
+        init_db()
+        session = get_session()
+        try:
+            candidate = session.query(Candidate).filter_by(username=safe_user).first()
+            if candidate is None:
+                return jsonify({
+                    "error": "Candidate not in corpus yet",
+                    "needs_onboarding": True,
+                }), 409
+            rows = session.query(Application).filter_by(
+                candidate_id=candidate.id,
+            ).order_by(Application.updated_at.desc()).all()
+            out = []
+            for app_row in rows:
+                runs = sorted(app_row.runs, key=lambda r: r.iteration)
+                pending = 0
+                if runs:
+                    run_ids = [r.id for r in runs]
+                    pending = session.query(ProposalReview).filter(
+                        ProposalReview.application_run_id.in_(run_ids),
+                        ProposalReview.decision == "pending",
+                    ).count()
+                out.append(_application_summary_dict(app_row, runs, pending))
+            return jsonify(out)
+        finally:
+            session.close()
+    except Exception as exc:
+        logger.exception("list_applications failed for user=%s", safe_user)
+        return jsonify({
+            "error": "Failed to load applications",
+            "detail": f"{type(exc).__name__}: {exc}",
+        }), 500
 
 
 @app.route("/api/applications/<int:application_id>", methods=["GET"])

@@ -793,11 +793,18 @@ async function _fireRecommendThenCompose() {
       if (!rec.ok) {
         const err = await rec.json().catch(() => ({}));
         _toast(`Recommend skipped: ${err.error || rec.status} — using top-5 fallback`, true);
+        // Pre-fix (2026-05-26): on recommend failure the status pill
+        // was left stuck at 'RECOMMENDING BULLETS' until something else
+        // set it — the user saw "recommending bullets" on the wizard
+        // for the entire rest of the flow including Template + Generate.
+        // Reset to READY here so the pill reflects reality.
+        setStatus('READY');
       } else {
         setStatus('RECOMMENDATIONS READY');
       }
     } catch (e) {
       _toast(`Recommend skipped: ${e.message} — using top-5 fallback`, true);
+      setStatus('READY');
     }
   }
   wizardGoTo(3);
@@ -2201,9 +2208,29 @@ async function refreshSummaryVariants() {
 function _renderSummaryVariantRow(v) {
   const row = _el('div', { className: 'summary-variant-row' });
   if (v.label) {
-    row.appendChild(_el('div', {
-      className: 'positioning-label', textContent: v.label,
-    }));
+    // Make the label itself clickable so users can edit it inline,
+    // matching the bullet-row click-to-edit pattern. The dedicated
+    // "Rename" button in the row's action area still works (and stays
+    // as the primary discoverable affordance with explicit text). The
+    // label is also wired as a button via role+tabindex+keyboard handlers
+    // so screen-reader and keyboard users have the same access.
+    const labelEl = _el('div', {
+      className: 'positioning-label',
+      textContent: v.label,
+      title: 'Click to rename this variant',
+    });
+    labelEl.style.cursor = 'pointer';
+    labelEl.setAttribute('role', 'button');
+    labelEl.setAttribute('tabindex', '0');
+    labelEl.setAttribute('aria-label', `Rename variant ${v.label}`);
+    labelEl.onclick = () => _editSummaryVariantLabel(v.id, v.label);
+    labelEl.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        _editSummaryVariantLabel(v.id, v.label);
+      }
+    };
+    row.appendChild(labelEl);
   }
   // Editable text. Save on blur (cheaper than typing-rate writes; also
   // matches the bullet-row inline-edit pattern).
