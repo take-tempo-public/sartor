@@ -190,6 +190,9 @@ After the app is running:
 
 1. **Select or create a user** in the top-right user picker.
    Each user has their own corpus, settings, and output history.
+
+   ![The user picker dropdown in the top-right corner. Each user has their own corpus, settings, and output history.](screenshots/install_setup_user-picker.png)
+
 2. **Open the Career Corpus tab** and click `+ Import résumé` if
    you have an existing résumé file in `resumes/<user>/`. The
    importer extracts experiences and bullets into the structured

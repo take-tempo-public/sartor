@@ -112,6 +112,8 @@ A single application moves through six steps. The first three are corpus + analy
                       Optional: + Generate cover letter against the finalized résumé
 ```
 
+![callback.'s six-step wizard with Step 1 active. The wizard rail at the top shows step progression; the right panel shows the analysis output that the user reviews at Human Gate #1 before deciding whether to enter Clarify or skip to Compose.](docs/screenshots/readme_hero_wizard-step1-filled.png)
+
 ### The two human review gates
 
 callback. pauses for your judgement at two points: the post-analyze review (step 1 → 2, where you decide whether to enter Clarify or skip ahead) and the post-generation refinement (step 6, where you read the generated résumé and either refine via natural-language note or approve). Clarification interviews between them are optional but cheap.

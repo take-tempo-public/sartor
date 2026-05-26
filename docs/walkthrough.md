@@ -156,6 +156,8 @@ and output history. Files live under `configs/<user>.config`,
 Open the **Career Corpus** tab → click **+ Import résumé** → upload
 your existing `.docx`, `.pdf`, or `.md` résumé.
 
+![The Career Corpus tab in its empty state. The + Import résumé button parses an existing résumé into the structured corpus (one Haiku call, ~$0.02).](screenshots/walkthrough_setup_corpus-empty.png)
+
 **Under the hood:** [`/api/upload`](../app.py) runs `parser.py`
 deterministically (no LLM) to extract text, then one Haiku 4.5
 call to `extract_experiences()` parses the text into structured
@@ -187,6 +189,8 @@ through every later step.
 description" with a paste-the-JD prompt. Right: an empty analysis
 panel that fills in once you click **Analyze**.
 
+![Step 1 with the job description pasted into the left textarea. Clicking Analyze triggers a ~30–60s Sonnet 4.6 call that fills the right panel with skill matches, gaps, and ATS warnings.](screenshots/walkthrough_step1pre_jd-textarea.png)
+
 **What you do:** paste the full JD (title + body + requirements +
 nice-to-haves). Click **Analyze**.
 
@@ -208,6 +212,8 @@ nice-to-haves). Click **Analyze**.
 
 **Verify before continuing (Human gate #1):**
 
+![Step 1 after analyze: the right panel shows skill matches, a gaps section, and ATS warnings. This is Human Gate #1 — the user reads it and decides whether to enter Clarify next.](screenshots/walkthrough_step1post_analysis-filled.png)
+
 - Skim the match summary. Does the LLM's read of the JD align with
   what you'd say about the role?
 - Look at the gaps section. Are any of those *real but
@@ -225,6 +231,8 @@ Clarify next.
 
 **What you see:** 3–5 LLM-generated interview questions in a
 scrollable list, each with a textarea for your answer.
+
+![The Clarify step with 4 targeted questions. Answers given here become legitimate source material for Step 5 generation.](screenshots/walkthrough_step2_clarify-questions.png)
 
 **What you do:** answer the questions in your own words. Skip any
 that aren't relevant. Click **Submit clarifications**.
@@ -267,6 +275,8 @@ point: a vague answer here produces a vague bullet at Step 5.
 bullets plus LLM-recommended bullets (badged differently). At the
 top, a **Positioning** card with the draft summary; a summary
 variants picker; a tag-chip filter for bullets.
+
+![The Compose step showing one experience card with pinned, excluded, and LLM-recommended bullets, plus the summary variant picker. Compose is a selection problem; Haiku 4.5 ranks and proposes, the user decides.](screenshots/walkthrough_step3_compose-experience-card.png)
 
 **What you do:** for each experience —
 
@@ -312,6 +322,8 @@ grounding check in Step 5 catches anything Haiku slips through.
 **What you see:** four template cards (Classic, Modern, Spacious,
 Tech) with ATS-safety badges; a live paginated preview on the
 right; an **+ Upload template** button for your own `.docx`.
+
+![The Template step with four ATS-safe templates shown as cards. Live preview re-renders on selection — no LLM call. The Page 1 of N counter reflects the real paged.js page count.](screenshots/walkthrough_step4_template-modern-preview.png)
 
 **What you do:** click a template. The preview re-renders in real
 time using the bullets and summary you composed in Step 3.
@@ -386,6 +398,8 @@ runs; a preview of the generated text once done.
 **Refine** textarea; a **Download** button; an **+ Generate cover
 letter** button.
 
+![The Download step. The generated résumé preview is on the left; the Refine textarea on the right takes natural-language change requests. Each Refine click re-runs generate() (~$0.05–$0.15) and writes a new child context_*.json to preserve the audit trail.](screenshots/walkthrough_step6_download-with-refine.png)
+
 **What you do (Human gate #2):**
 
 - **Read the generated résumé carefully.** Does every claim ring
@@ -425,6 +439,8 @@ clarifications, or your typed edit.
 
 **What you see:** a **+ Generate cover letter** button at the
 bottom of Step 6, available once the résumé is generated.
+
+![The cover-letter generation surface. The cover letter is generated against the finalized résumé, with the same refine / iterate parity as the résumé flow.](screenshots/walkthrough_coverletter_first-generation.png)
 
 **What you do:** click it. The cover letter generates against the
 *finalized* résumé (so it doesn't claim anything the résumé
