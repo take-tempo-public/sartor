@@ -8,6 +8,7 @@
 > Chromium download step, API-key setup, troubleshooting.
 > Sibling docs:
 > [`README.md`](../README.md) (overview),
+> [`docs/walkthrough.md`](walkthrough.md) (screen-by-screen guide + flow diagrams),
 > [`SECURITY.md`](../SECURITY.md) (what stays on your machine),
 > [`docs/architecture.md`](architecture.md) (developer view).
 
@@ -18,9 +19,10 @@
 - **Python 3.10 or newer.** Verify with `python --version` (or
   `python3 --version` on macOS/Linux).
 - **An Anthropic API key.** Get one at
-  [console.anthropic.com](https://console.anthropic.com/). The
-  first generation is ~$0.05–$0.30 in API spend; budget guards
-  documented in [`SECURITY.md`](../SECURITY.md).
+  [console.anthropic.com](https://console.anthropic.com/). See
+  [Cost guidance](../README.md#cost) for the per-application
+  breakdown; budget guards are documented in
+  [`SECURITY.md`](../SECURITY.md).
 - **~150 MB of free disk space** for the Chromium binary
   Playwright downloads for PDF rendering. The binary lives in
   your OS user cache (`%LOCALAPPDATA%\ms-playwright` on Windows,
@@ -153,7 +155,14 @@
    ```
    On some distros Playwright also needs system libraries. If the
    `chromium install` command warns about missing deps, follow its
-   on-screen instructions (usually one `apt install` line).
+   on-screen instructions (usually one `apt install` line). On
+   Ubuntu 22.04+ the canonical fallback is:
+   ```bash
+   sudo apt install libnss3 libatk1.0-0 libatk-bridge2.0-0 \
+                    libxkbcommon0 libxcomposite1 libxdamage1 \
+                    libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 \
+                    libcairo2 libasound2
+   ```
 
 5. **Set your API key:**
    ```bash
@@ -171,6 +180,11 @@
 ---
 
 ## First-run walkthrough
+
+By the end of these eight steps you'll have your first tailored
+résumé sitting in `output/<your-user>/`. Total time: about 5
+minutes plus one ~30–60s LLM analyze call. Total cost: ~$0.05–$0.30
+([see breakdown](../README.md#cost)).
 
 After the app is running:
 
@@ -193,9 +207,10 @@ After the app is running:
 5. *(Optional)* Generate a cover letter against the finalized
    résumé using the **+ Generate cover letter** button.
 
-Total cost per application: typically **$0.05–$0.30** in
-Anthropic API spend (more if you iterate clarify + generate
-several times).
+For the full screen-by-screen guide — including user-flow and
+information-flow diagrams, what each LLM call is actually doing,
+and the two human review gates — read
+[`docs/walkthrough.md`](walkthrough.md) next.
 
 ---
 
@@ -211,10 +226,21 @@ then reload). One-time fix.
 
 **"Generation fails with 'AI generation response was malformed
 after retry.'"**
-The LLM occasionally emits raw control characters in the JSON
-response. The parser tolerates this since `2d7c564` (added
-`strict=False`). If you still see this error on current `main`,
-file an issue with the `detail:` line attached.
+Rare. The LLM occasionally emits raw control characters in its
+JSON response — the parser tolerates the common case, but new
+failure modes occasionally surface. If you hit this on current
+`main`, file an issue with the `detail:` field attached.
+
+**Anthropic API error mid-call (4xx, 5xx, or network drop during a 30–60s analyze or generate call).**
+You'll see an error toast in the UI. Your `context_set` for that
+iteration is already saved on disk, so nothing is lost — just
+click the step's main action button again to retry. Common causes:
+network blip (retry), rate-limit hit (wait a minute), invalid API
+key (re-check `.api_key` or `$ANTHROPIC_API_KEY`), or your
+Anthropic billing cap being exceeded (raise it in the
+[Anthropic Console](https://console.anthropic.com/settings/limits)).
+The `logs/llm_calls.jsonl` file records every attempt with the
+status code, so you can see exactly which call failed.
 
 **"Chromium not found" when trying to generate PDF.**
 Run `python -m playwright install chromium` again. The Chromium
