@@ -145,6 +145,50 @@ We aim to respond within 5 business days and to issue a fix within
 | Flask sessions disabled | Info | No login state to protect; no cookies issued. |
 | JSON logs contain LLM responses | Info | `logs/llm_calls.jsonl` is sensitive; gitignored; lives only on your machine. |
 
+## Error-detail disclosure policy
+
+Several 5xx route handlers (`list_bundled_personas`,
+`list_user_personas`, `list_experiences`, `list_summary_items`,
+`list_applications`, `recommend_application_bullets`) wrap their
+body in `try / except` with `logger.exception` and respond via
+the `_error_detail_payload()` helper in [`app.py`](app.py).
+
+The helper's behavior is **gated on `app.debug`**:
+
+- **Debug mode** (Flask's default for `python app.py` —
+  controlled by `FLASK_DEBUG` defaulting to `1`): the response
+  body includes a `detail` field with the exception class, the
+  exception message, and the last 3 traceback frames. This is
+  load-bearing for the dev-console smoke-debugging workflow —
+  the developer opens dev tools, sees the response body, copies
+  the traceback into a bug report without needing terminal
+  access. Acceptable risk given local-only access.
+
+- **Production mode** (`FLASK_DEBUG=0`): the `detail` field is
+  suppressed. The response body returns only the generic
+  `"error"` message plus a `request_id` (8 hex chars). The full
+  traceback continues to land in the server log via
+  `logger.exception()`, tagged with the same `request_id` so
+  support can correlate (`grep <request_id> logs/`) without
+  exposing internals to the response body.
+
+**Why this is documented and not "just remove the detail":**
+the application is positioned as local-first single-user, but
+the same code paths may run behind reverse proxies or in
+container deployments where leaking class names + paths to
+unauthenticated callers would be a legitimate information-
+disclosure issue. The gate is the contract; the gate's
+mechanism is `app.debug`; turning `app.debug` off in any
+non-local deployment is the operator's responsibility.
+
+If you intentionally want richer 5xx detail in a non-debug
+deployment (e.g., a private staging environment with trusted
+callers only), don't enable `unsafe-eval` or remove the gate —
+instead set `FLASK_DEBUG=1` for that environment with a
+documented rationale, or add a dedicated `CALLBACK_VERBOSE_5XX`
+flag that the helper consults. Don't drift the behavior
+silently.
+
 ## Security architecture
 
 Path traversal is prevented in all file-serving routes via:

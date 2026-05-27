@@ -494,6 +494,28 @@ release.
       (a) tighten template densities, (b) drop
       `page-break-inside: avoid`, (c) add a "compact" mode.
 
+- [ ] **Chrome "multiple downloads blocked" silently kills 2nd download**
+      (user-confirmed 2026-05-27 round-9 smoke). All six
+      `[download]` checkpoint logs succeed for both clicks (fetch
+      200 → blob → anchor in DOM → `a.click()` returns), but the
+      browser silently blocks the second save dialog. Cause:
+      Chrome's per-site "Allow downloading multiple files?" policy.
+      The user can fix by clicking the small downloads-blocked icon
+      in the address bar after the first download and choosing
+      "Always allow downloads from localhost". This isn't a JS bug
+      and isn't fixable from app code without changing the download
+      mechanism (e.g., serve a redirect-to-attachment that doesn't
+      use programmatic anchor click). Defer to v1.0.2; for v1.0.1
+      document in user-facing docs.
+- [ ] **paged.js polyfill "Cannot read getBoundingClientRect of
+      null"** (surfaced 2026-05-27 round-9). The polyfill fires an
+      uncaught promise rejection when content is empty / missing
+      certain DOM nodes (e.g., the preview iframe loads a sparse
+      corpus). Cosmetic — preview iframe still renders, just emits
+      a noisy console error. Three options: (a) wrap paged.js init
+      in try/catch inside `_inject_paged_polyfill`, (b) gate paged.js
+      injection on non-empty corpus, (c) replace paged.js with a
+      simpler pagination approach. Defer to v1.0.2.
 - [ ] **Cover-letter download honors the chosen output format**
       (user-surfaced 2026-05-26 round-7 smoke). Today
       `downloadCoverLetter()` passes `original_format: lastResumeFormat`

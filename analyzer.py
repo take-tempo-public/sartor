@@ -326,13 +326,24 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
                 ids = v.get("bullet_ids") if isinstance(v, dict) else v
                 rec_by_exp[eid] = {int(x) for x in (ids or [])}
         elif isinstance(recommendations, list):
+            # Defensive: the LLM sometimes echoes "e3"/"b12" prefix
+            # despite the prompt rule; strip before int(). See the
+            # matching defense in app.py:recommend_application_bullets.
+            def _norm_id(v: object) -> int | None:
+                if v is None:
+                    return None
+                try:
+                    return int(str(v).strip().lstrip("eEbB"))
+                except (TypeError, ValueError):
+                    return None
             for rec in recommendations:
                 if not isinstance(rec, dict):
                     continue
-                eid = rec.get("experience_id")
-                if eid is None:
+                eid_int = _norm_id(rec.get("experience_id"))
+                if eid_int is None:
                     continue
-                rec_by_exp[int(eid)] = {int(x) for x in (rec.get("bullet_ids") or [])}
+                bullet_ints = {bi for bi in (_norm_id(x) for x in (rec.get("bullet_ids") or [])) if bi is not None}
+                rec_by_exp[eid_int] = bullet_ints
 
         use_recommendations = bool(rec_by_exp)
         if excluded_ids or use_recommendations:

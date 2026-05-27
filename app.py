@@ -4861,13 +4861,30 @@ def recommend_application_bullets(application_id: int):
                     "detail": str(exc.validation_error),
                 }), 502
 
+            # The recommend prompt explicitly tells the LLM "Use the numeric
+            # ids only — do NOT prefix with 'e' or 'b'" (analyzer.py:1967),
+            # but Sonnet sometimes echoes the corpus_block format back
+            # ('e3' / 'b12'). Strip the prefix defensively before int() so
+            # one bad row doesn't 500 the whole recommend run with
+            # ValueError: invalid literal for int().
+            def _to_int(v: object) -> int | None:
+                if v is None:
+                    return None
+                s = str(v).strip().lstrip("eEbB")
+                try:
+                    return int(s)
+                except (TypeError, ValueError):
+                    logger.warning("recommend: dropping unparseable id %r", v)
+                    return None
+
             by_exp: dict[str, dict] = {}
             for rec in result.get("recommendations", []) or []:
-                eid = rec.get("experience_id")
-                if eid is None:
+                eid_int = _to_int(rec.get("experience_id"))
+                if eid_int is None:
                     continue
-                by_exp[str(int(eid))] = {
-                    "bullet_ids": [int(b) for b in (rec.get("bullet_ids") or [])],
+                bullet_ids_int = [bi for bi in (_to_int(b) for b in (rec.get("bullet_ids") or [])) if bi is not None]
+                by_exp[str(eid_int)] = {
+                    "bullet_ids": bullet_ids_int,
                     "rationale": (rec.get("rationale") or "").strip(),
                 }
             ctx["llm_recommendations"] = by_exp
