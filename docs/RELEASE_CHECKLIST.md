@@ -273,16 +273,24 @@ release.
       element (`corpusToolbar` / `corpusCount`) at the moment
       `_renderCorpusList` runs, or a property access on `exp`
       that the API doesn't always provide.
-- [x] **Corpus tab: 5xx on first-load API calls** — fixed by
-      commit `0c598df` (`_persona_dicts_safe` defensive
-      per-row serializer on the `/personas` route). Verified
-      2026-05-27: fresh `python app.py` restart → select user
-      → click Career Corpus → all routes return 200 on first
-      load, no reload needed. The other three routes
-      (`/experiences`, `/summaries`, `/applications`) were
-      not broken; only `/personas` was 500-ing. Branch
-      `fix/corpus-tab-5xx-first-load` closed with no
-      additional code change.
+- [ ] **`/personas` 500 on first user-select after server restart**
+      *(root cause identified 2026-05-27; fix deferred)* —
+      `_persona_dicts_safe` (commit `0c598df`) fixed per-row
+      serialization failures but did NOT fix this bug. Root cause
+      is a thread-safety gap in [`db/session.py`](../db/session.py)
+      `init_db()`: the check-then-act on `_initialized_paths`
+      (line 137–141) is not protected by a lock. On first user-select
+      after restart, `onUserSelect` fires multiple requests
+      simultaneously (`/config`, `/applications`, `/personas`, corpus
+      routes — all calling `init_db()`). All threads see an empty
+      `_initialized_paths`, all attempt `command.upgrade()` concurrently,
+      alembic's module-level globals get corrupted, and one thread
+      returns 500. Second user-select succeeds because
+      `_initialized_paths` is now populated. Fix: add a
+      `threading.Lock()` around the check-and-init block in `init_db()`
+      (three-line change). Branch `fix/corpus-tab-5xx-first-load`
+      was closed prematurely — this bug was not caught during that
+      session's verification. New branch: `fix/personas-500-thread-race`.
 - [x] **~~Judge JSON parse failures mis-categorized as `status=ok`~~** —
       ✅ resolved 2026-05-26.
       [`evals/runner.py:289`](../evals/runner.py) now returns
@@ -574,6 +582,21 @@ before the version-bump commit.
       it's the starting point for that release's R1 rework. After
       v1.0.2 ships (R1 successful or formally abandoned), delete
       this branch. Tracked here so it doesn't drift.
+- [ ] **Retire `/api/users/<username>/import-legacy` route** — all
+      existing users are now migrated to the DB; the route's original
+      purpose (provisioning DB rows for pre-existing config-file-only
+      users) is complete. Résumé upload for existing users is a
+      separate feature with a separate route. Steps: (a) confirm no
+      user's workflow still depends on this route (grep call sites in
+      `scripts/`, `docs/`, `templates/`); (b) remove the route from
+      [`app.py`](../app.py) (`import_legacy_user`, line ~4056) and the
+      `onboarding/import_legacy.py` module if no longer imported
+      elsewhere; (c) update [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py)
+      which calls `onboarding.import_legacy.run_import` directly
+      (line 232) — replace with the résumé-upload route or a direct
+      DB fixture; (d) remove any references in
+      [`docs/walkthrough.md`](walkthrough.md) and
+      [`README.md`](../README.md).
 - [ ] **Grep for TODO / FIXME / XXX comments added during v1.0.1
       development** — `grep -rn 'TODO\|FIXME\|XXX' --include='*.py'
       --include='*.js' --include='*.html'`. Either close them in
