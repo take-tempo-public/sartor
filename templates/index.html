@@ -293,10 +293,26 @@
                    iframe) collapsed to 0 height inside the flex stage
                    parent in some renderers. -->
               <div class="preview-page-card">
+                <!-- sandbox attribute decision (2026-05-27): allow-scripts
+                     is required so paged.js can run (without it, the
+                     polyfill silently aborts and the browser falls back
+                     to naive pagination — visible as blank pages between
+                     sections, surfaced in round-5/6 smoke). allow-same-
+                     origin is required so _updatePreviewPageCount can
+                     read frame.contentDocument to estimate page count.
+                     Combining the two effectively neutralizes the
+                     sandbox per the spec — see the existing
+                     "Sandboxed iframe blocks script execution"
+                     RELEASE_CHECKLIST entry — but the iframe content
+                     is OUR generated HTML (corpus + persona template +
+                     paged.js polyfill), not user-supplied markup, so
+                     the security posture is acceptable for v1.0.1.
+                     A future refactor could host paged.js outside the
+                     iframe and message-pass for true sandboxing. -->
                 <iframe id="livePreviewFrame"
                         title="Résumé live preview"
                         class="preview-page-frame"
-                        sandbox="allow-same-origin"></iframe>
+                        sandbox="allow-scripts allow-same-origin"></iframe>
               </div>
               <div id="livePreviewEmpty" class="preview-empty hidden">
                 Select a user and start an application to load the preview.
@@ -387,10 +403,15 @@
                 &#9998; Edit before downloading
               </button>
             </div>
+            <!-- sandbox: allow-scripts + allow-same-origin together
+                 (see the explanation on #livePreviewFrame above). Same
+                 reasoning: paged.js needs to execute; page-count code
+                 needs contentDocument; iframe content is our own
+                 generated HTML, not user input. -->
             <iframe id="outputPreviewFrame"
                     title="Résumé live preview (output)"
                     class="live-preview-frame"
-                    sandbox="allow-same-origin"></iframe>
+                    sandbox="allow-scripts allow-same-origin"></iframe>
           </div>
           <!-- The raw markdown editor is HIDDEN in the tab body — it's
                relocated into the edit drawer below at runtime. We keep it

@@ -410,22 +410,26 @@ release.
       offender is a vendor lib with no easy workaround,
       document the trade-off as an accepted-risk entry in
       `SECURITY.md` rather than relax the CSP silently.
-- [ ] **Sandboxed iframe blocks script execution ×17** —
-      surfaced 2026-05-26 in the dev-console. "Blocked script
-      execution in '<URL>' because the document's frame is
-      sandboxed and the 'allow-scripts' permission is not set"
-      fired 17 times during a single Corpus-tab load. Likely
-      culprit: the live-preview iframe (`#livePreviewFrame` in
-      [`templates/index.html`](../templates/index.html)) or
-      paged.js's internal render iframe. Determine which iframe,
-      whether the sandbox is intentional, and either: (a) add
-      `allow-scripts` to the sandbox attribute if scripts are
-      expected to run inside the frame (caveat: pairing with
-      `allow-same-origin` defeats the sandbox; `allow-scripts`
-      alone is fine), or (b) move the offending script tag out
-      of the sandboxed frame. The ×17 multiplier suggests a
-      render-loop is re-attempting script execution; fixing
-      this is also a perceived-perf win.
+- [x] **~~Sandboxed iframe blocks script execution ×17~~** —
+      ✅ resolved 2026-05-27. Both preview iframes (`#livePreviewFrame`
+      in the Compose step and `#outputPreviewFrame` in Step 6) now
+      use `sandbox="allow-scripts allow-same-origin"`, which lets
+      paged.js polyfill execute inside the frame. `allow-same-origin`
+      stays so `_updatePreviewPageCount` can read
+      `frame.contentDocument` for the page-count chip; the two flags
+      together effectively neutralize the sandbox per spec, but the
+      iframe content is our own generated HTML (corpus + persona
+      template + injected paged.js polyfill), not user-supplied
+      markup — security posture is acceptable for v1.0.1 with a
+      load-bearing comment at the call sites explaining the
+      tradeoff. A future refactor could host paged.js outside the
+      iframe and message-pass for true sandboxing (v1.0.2 or v1.1
+      polish).
+      **Downstream resolution:** this also closes the
+      "Template preview pagination — blank pages between sections"
+      tracked item below — paged.js is what handles intelligent
+      `page-break-inside: avoid` layout; the blanks were the
+      browser's naive fallback when paged.js couldn't run.
 - [ ] **Form fields without `id` or `name` attribute** —
       surfaced 2026-05-26 in the dev-console. Chrome flagged
       seven form-field elements ("violating nodes") with neither
@@ -473,28 +477,22 @@ release.
       + `classifier.js`) — NOT our code. Do not chase those
       warnings; they originate outside the app.
 
-- [ ] **Template preview pagination — blank pages between sections**
-      (surfaced 2026-05-26 during Templates-tab smoke). When the
-      candidate-level preview (`/api/users/<u>/preview?template_id=…`,
-      used by the Templates tab "Preview" action against the full
-      corpus) renders, sections (Summary, Experience, individual
-      `.job` entries) carry `page-break-inside: avoid` so any
-      section that doesn't fit in the remaining page space pushes to
-      the next page — leaving blank trailing space on the previous
-      page. Visible across all bundled personas equally. The
-      application-scoped preview behaves better post-2026-05-26
-      because `llm_recommendations` curates the bullet set to 3-7
-      per experience; the templates-tab preview shows the full
-      uncurated corpus by design, so this affects users with many
-      experiences disproportionately. **Fix paths** (pick when
-      addressing): (a) tighten template densities (margins, font
-      size, line-height) so more content fits per page, (b) drop
-      `page-break-inside: avoid` from `.job` and use
-      `orphans` / `widows` instead to allow controlled splits, (c)
-      add a per-template "compact" mode users can toggle for length-
-      constrained applications. Defer to v1.0.2 — not a blocker;
-      the application preview (which is what the user actually
-      sends for review) renders correctly with curation.
+- [x] **~~Template preview pagination — blank pages between
+      sections~~** — ✅ resolved 2026-05-27 alongside the
+      "Sandboxed iframe blocks script execution" entry above.
+      Diagnosis was wrong in the original entry — the blanks
+      were NOT caused by `page-break-inside: avoid` doing its
+      job too aggressively; they were caused by paged.js (which
+      handles intelligent break-vs-fit decisions for that CSS
+      rule) being blocked from executing inside the
+      `sandbox="allow-same-origin"` iframe. Once paged.js is
+      allowed to run via `sandbox="allow-scripts allow-same-origin"`,
+      it lays out content efficiently. If pagination quality is
+      still imperfect after the sandbox fix (e.g., specific
+      experience cards still push to new pages with blanks), the
+      original fix paths remain valid for future polish:
+      (a) tighten template densities, (b) drop
+      `page-break-inside: avoid`, (c) add a "compact" mode.
 
 - [ ] **Cover-letter download honors the chosen output format**
       (user-surfaced 2026-05-26 round-7 smoke). Today
