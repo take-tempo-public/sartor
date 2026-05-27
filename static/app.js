@@ -4295,7 +4295,12 @@ async function _loadTemplatePicker() {
     return;
   }
   if (!res.ok) {
-    if (list) _setLoadingPlaceholder(list, 'Failed to load templates.');
+    // Surface the backend's detail field (logger.exception wrapper in
+    // list_user_personas added the traceback tail so we can see the
+    // actual exception here in the dev console too).
+    const data = await res.json().catch(() => ({}));
+    const detail = data.detail || data.error || `status ${res.status}`;
+    if (list) _setLoadingPlaceholder(list, `Failed to load templates: ${detail}`);
     return;
   }
   const body = await res.json();
