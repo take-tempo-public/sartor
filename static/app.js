@@ -1066,9 +1066,11 @@ function _updateIterationPill() {
 // The current* fields are the live preview text the caller will send to
 // /api/save-edits if the user picks USE EDITS AS BASELINE.
 function _detectEdits() {
-  const live = (id) => (document.getElementById(id)?.innerText || '').trim();
-  const resume = live('resumePreview');
-  const cover = live('coverLetterPreview');
+  // _readEditorText handles hidden-element innerText reads (see helper
+  // above downloadResume). Without it, edits to #resumePreview made
+  // inside the drawer would not be detected after the drawer closed.
+  const resume = (_readEditorText('resumePreview') || '').trim();
+  const cover = (_readEditorText('coverLetterPreview') || '').trim();
   const resumeEdited = !!lastGeneratedResume && resume !== lastGeneratedResume.trim();
   const coverEdited = !!lastGeneratedCoverLetter && cover !== lastGeneratedCoverLetter.trim();
   return {
@@ -1841,10 +1843,34 @@ function closeChangesModal() {
   document.getElementById('changesModal')?.classList.add('hidden');
 }
 
+// Read an editable preview's text, even when it's display:none.
+// innerText is style-aware (per MDN) and returns "" for hidden
+// elements; the B1 redesign keeps #resumePreview hidden when the
+// edit drawer is closed so a naive innerText read returned empty
+// — which silently posted empty content to /api/download-edited
+// and broke the résumé download path (round-5 smoke). We restore
+// the original hidden state immediately, so the mutation isn't
+// visible to the user (no reflow paint in the same JS tick).
+function _readEditorText(id) {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  const wasHidden = el.classList.contains('hidden');
+  if (wasHidden) el.classList.remove('hidden');
+  const text = el.innerText;
+  if (wasHidden) el.classList.add('hidden');
+  return text;
+}
+
 async function downloadResume() {
   const btn = document.getElementById('btnDownloadResume');
   await _runDownload(btn, async () => {
-    const content = document.getElementById('resumePreview').innerText;
+    const content = _readEditorText('resumePreview');
+    if (!content || !content.trim()) {
+      throw new Error(
+        'Cannot read résumé content from the editor — internal: '
+        + '#resumePreview is empty. Try regenerating from Step 5.',
+      );
+    }
     await _downloadEdited('/api/download-edited', {
       username: currentUser,
       content,
@@ -1861,7 +1887,10 @@ async function downloadResume() {
 async function downloadCoverLetter() {
   const btn = document.getElementById('btnDownloadCover');
   await _runDownload(btn, async () => {
-    const content = document.getElementById('coverLetterPreview').innerText;
+    // Use the same helper as downloadResume for symmetry — even though
+    // #coverLetterPreview is visible in its tab body today (no drawer
+    // for cover letter in B1), B3 may move it behind a drawer too.
+    const content = _readEditorText('coverLetterPreview');
     await _downloadEdited('/api/download-edited', {
       username: currentUser,
       content,
@@ -2159,7 +2188,10 @@ async function refreshCorpus() {
     return;
   }
   if (!res.ok) {
-    _setLoadingPlaceholder(list, 'Failed to load corpus.');
+    // Surface backend detail (added by list_experiences wrapper).
+    const data = await res.json().catch(() => ({}));
+    const detail = data.detail || data.error || `status ${res.status}`;
+    _setLoadingPlaceholder(list, `Failed to load corpus: ${detail}`);
     return;
   }
   const data = await res.json();
@@ -3393,7 +3425,10 @@ async function _loadBundledPersonas() {
     return;
   }
   if (!res.ok) {
-    _setLoadingPlaceholder(grid, 'Failed to load bundled.');
+    // Surface backend detail (added by list_bundled_personas wrapper).
+    const data = await res.json().catch(() => ({}));
+    const detail = data.detail || data.error || `status ${res.status}`;
+    _setLoadingPlaceholder(grid, `Failed to load bundled: ${detail}`);
     return;
   }
   const rows = await res.json();
@@ -3428,7 +3463,14 @@ async function _loadOwnedPersonas() {
     return;
   }
   if (!res.ok) {
-    _setLoadingPlaceholder(grid, 'Failed to load.');
+    // Surface the backend's detail field when present (added by the
+    // 5xx-logging wrapper on list_user_personas in app.py 2026-05-26).
+    // Pre-fix this returned a bare "Failed to load." with no clue;
+    // now the user sees the exception class so triage is possible
+    // without checking the Flask terminal.
+    const data = await res.json().catch(() => ({}));
+    const detail = data.detail || data.error || `status ${res.status}`;
+    _setLoadingPlaceholder(grid, `Failed to load: ${detail}`);
     return;
   }
   const body = await res.json();

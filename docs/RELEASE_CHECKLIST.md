@@ -473,6 +473,29 @@ release.
       + `classifier.js`) — NOT our code. Do not chase those
       warnings; they originate outside the app.
 
+- [ ] **Template preview pagination — blank pages between sections**
+      (surfaced 2026-05-26 during Templates-tab smoke). When the
+      candidate-level preview (`/api/users/<u>/preview?template_id=…`,
+      used by the Templates tab "Preview" action against the full
+      corpus) renders, sections (Summary, Experience, individual
+      `.job` entries) carry `page-break-inside: avoid` so any
+      section that doesn't fit in the remaining page space pushes to
+      the next page — leaving blank trailing space on the previous
+      page. Visible across all bundled personas equally. The
+      application-scoped preview behaves better post-2026-05-26
+      because `llm_recommendations` curates the bullet set to 3-7
+      per experience; the templates-tab preview shows the full
+      uncurated corpus by design, so this affects users with many
+      experiences disproportionately. **Fix paths** (pick when
+      addressing): (a) tighten template densities (margins, font
+      size, line-height) so more content fits per page, (b) drop
+      `page-break-inside: avoid` from `.job` and use
+      `orphans` / `widows` instead to allow controlled splits, (c)
+      add a per-template "compact" mode users can toggle for length-
+      constrained applications. Defer to v1.0.2 — not a blocker;
+      the application preview (which is what the user actually
+      sends for review) renders correctly with curation.
+
 ### Nice to have (defer to v1.1 if time-bound)
 
 - [ ] **Visual assets** — screenshots, demo GIF, onboarding HTML
