@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+import traceback
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -2056,7 +2057,11 @@ def list_bundled_personas():
         logger.exception("list_bundled_personas failed")
         return jsonify({
             "error": "Failed to load bundled personas",
-            "detail": f"{type(exc).__name__}: {exc}",
+            "detail": "{cls}: {msg}\n\n{tb}".format(
+                cls=type(exc).__name__,
+                msg=str(exc),
+                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
+            ),
         }), 500
 
 
@@ -2093,7 +2098,11 @@ def list_user_personas(username: str):
         logger.exception("list_user_personas failed for user=%s", safe_user)
         return jsonify({
             "error": "Failed to load personas",
-            "detail": f"{type(exc).__name__}: {exc}",
+            "detail": "{cls}: {msg}\n\n{tb}".format(
+                cls=type(exc).__name__,
+                msg=str(exc),
+                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
+            ),
         }), 500
 
 
@@ -2838,7 +2847,11 @@ def list_experiences(username: str):
         logger.exception("list_experiences failed for user=%s", safe_user)
         return jsonify({
             "error": "Failed to load corpus",
-            "detail": f"{type(exc).__name__}: {exc}",
+            "detail": "{cls}: {msg}\n\n{tb}".format(
+                cls=type(exc).__name__,
+                msg=str(exc),
+                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
+            ),
         }), 500
 
 
@@ -3227,7 +3240,11 @@ def list_summary_items(username: str):
         logger.exception("list_summary_items failed for user=%s", safe_user)
         return jsonify({
             "error": "Failed to load summaries",
-            "detail": f"{type(exc).__name__}: {exc}",
+            "detail": "{cls}: {msg}\n\n{tb}".format(
+                cls=type(exc).__name__,
+                msg=str(exc),
+                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
+            ),
         }), 500
 
 
@@ -4228,7 +4245,11 @@ def list_applications(username: str):
         logger.exception("list_applications failed for user=%s", safe_user)
         return jsonify({
             "error": "Failed to load applications",
-            "detail": f"{type(exc).__name__}: {exc}",
+            "detail": "{cls}: {msg}\n\n{tb}".format(
+                cls=type(exc).__name__,
+                msg=str(exc),
+                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
+            ),
         }), 500
 
 

@@ -751,10 +751,17 @@
       </header>
       <div class="settings-drawer-body">
         <p class="edit-hint" style="margin-top:0">
-          Edit the raw markdown the LLM produced. Your edits are used
-          when you click <strong>Download résumé</strong>. The styled
-          preview behind this drawer updates as you type (B2 — coming
-          soon).
+          This is the <strong>LLM-rewritten résumé</strong> &mdash; the
+          actual document that downloads when you click
+          <strong>Download résumé</strong>. It may read differently
+          from the live preview behind this drawer: the preview shows
+          your <strong>corpus</strong> (bullets as you wrote them) +
+          the chosen template, while this editor holds what the LLM
+          produced after rewriting for this JD (sharpened verbs,
+          reordered bullets, tailored summary). True WYSIWYG between
+          the two surfaces is tracked for v1.0.2; in v1.0.1 the
+          download always reflects what you see <em>here</em>, not
+          what's in the preview.
         </p>
         <div id="editDrawerHost" class="edit-drawer-host"
              aria-label="Edit drawer editor host"></div>
@@ -776,6 +783,14 @@
         <button class="corpus-action-btn" onclick="closeChangesModal()" aria-label="Close changes view">Close</button>
       </header>
       <div class="cb-modal-body">
+        <p class="edit-hint" style="margin-top:0">
+          These are the changes the LLM made between your corpus and
+          the rewritten résumé in the edit drawer. They will appear in
+          the downloaded file. The live preview at the top of Step 6
+          renders directly from your corpus and does <em>not</em>
+          reflect these LLM rewrites &mdash; that's a known gap
+          tracked for v1.0.2.
+        </p>
         <div id="changesContent"></div>
       </div>
     </div>

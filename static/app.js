@@ -1144,10 +1144,13 @@ function openDiagnosticsModal() {
   const trigger = document.getElementById('diagnosticsPill');
   const focusable = modal.querySelectorAll('a[href], button');
 
+  const openBtn = document.getElementById('btnOpenDashboard');
+
   const cleanup = () => {
     modal.classList.add('hidden');
     modal.removeEventListener('keydown', onKey);
     dismissers.forEach(b => b.removeEventListener('click', cleanup));
+    if (openBtn) openBtn.removeEventListener('click', cleanup);
     if (trigger && typeof trigger.focus === 'function') trigger.focus();
   };
 
@@ -1163,8 +1166,15 @@ function openDiagnosticsModal() {
   const dismissers = Array.from(modal.querySelectorAll('[data-diag-dismiss]'));
   dismissers.forEach(b => b.addEventListener('click', cleanup));
   modal.addEventListener('keydown', onKey);
+  // Auto-close the modal when the user clicks "Open dashboard" — the
+  // link opens /_dashboard in a new tab (target="_blank"), so leaving
+  // the modal open afterwards is dead weight. Pre-fix the user had to
+  // click Close as a separate action; surfaced 2026-05-26 smoke. The
+  // listener fires AFTER the anchor's default action (new-tab open)
+  // because we don't preventDefault. cleanup() removes it on close so
+  // repeated open/close cycles don't stack handlers.
+  if (openBtn) openBtn.addEventListener('click', cleanup);
   modal.classList.remove('hidden');
-  const openBtn = document.getElementById('btnOpenDashboard');
   if (openBtn) openBtn.focus();
 }
 
@@ -1863,6 +1873,18 @@ function _readEditorText(id) {
 
 async function downloadResume() {
   const btn = document.getElementById('btnDownloadResume');
+  // Diagnostic logging (round 6 smoke, 2026-05-26) — the user reported
+  // résumé download still fails after a successful cover-letter
+  // download. The console.log shows whether the button click is even
+  // firing (rules out CSS pseudo-disabled), the button's actual
+  // disabled prop, and the content length we read. With this we can
+  // tell which of three things broke: (a) button has stuck disabled
+  // state, (b) editor content is empty post-cl-download, or (c)
+  // Chrome's "multiple downloads" policy is silently blocking the
+  // second download (in which case the address bar would show a
+  // small downloads-blocked icon).
+  console.log('[download] résumé click; btn.disabled=', btn?.disabled,
+              'content len=', _readEditorText('resumePreview')?.length);
   await _runDownload(btn, async () => {
     const content = _readEditorText('resumePreview');
     if (!content || !content.trim()) {
@@ -1886,6 +1908,8 @@ async function downloadResume() {
 
 async function downloadCoverLetter() {
   const btn = document.getElementById('btnDownloadCover');
+  console.log('[download] cover letter click; btn.disabled=', btn?.disabled,
+              'content len=', _readEditorText('coverLetterPreview')?.length);
   await _runDownload(btn, async () => {
     // Use the same helper as downloadResume for symmetry — even though
     // #coverLetterPreview is visible in its tab body today (no drawer
