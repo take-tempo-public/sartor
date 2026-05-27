@@ -266,6 +266,43 @@ def _sse(event: str, payload: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(payload)}\n\n"
 
 
+def _error_detail_payload(exc: Exception) -> dict:
+    """Return the per-route 5xx error payload extras.
+
+    In debug mode (Flask's default for `python app.py`): includes the
+    exception class + message + the last 3 traceback frames. This is
+    load-bearing for the dev-console / smoke-debugging workflow — the
+    user opens dev tools, sees the response body, copies the traceback
+    into a bug report without needing terminal access.
+
+    In production-mode (FLASK_DEBUG=0): returns only a short
+    `request_id` (8 hex chars) so the user / support can correlate
+    with the server log (`logger.exception` emits the full traceback
+    server-side regardless). Suppresses class names, file paths, and
+    function names that an attacker could fingerprint to scope
+    follow-up attacks. Per the security review (2026-05-27):
+    "Information Disclosure via Error Details".
+
+    The request_id is logged alongside the exception so support can
+    look it up via `grep <request_id> logs/` to retrieve the full
+    traceback.
+    """
+    request_id = uuid.uuid4().hex[:8]
+    # logger.exception is called by the route wrapper one level up;
+    # this just adds the correlation id to the response.
+    logger.error("error request_id=%s class=%s", request_id, type(exc).__name__)
+    if app.debug:
+        return {
+            "detail": "{cls}: {msg}\n\n{tb}".format(
+                cls=type(exc).__name__,
+                msg=str(exc),
+                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
+            ),
+            "request_id": request_id,
+        }
+    return {"request_id": request_id}
+
+
 @app.route("/api/analyze/stream", methods=["POST"])
 def run_analysis_stream():
     """R2 streaming variant of /api/analyze.
@@ -2057,11 +2094,7 @@ def list_bundled_personas():
         logger.exception("list_bundled_personas failed")
         return jsonify({
             "error": "Failed to load bundled personas",
-            "detail": "{cls}: {msg}\n\n{tb}".format(
-                cls=type(exc).__name__,
-                msg=str(exc),
-                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
-            ),
+            **_error_detail_payload(exc),
         }), 500
 
 
@@ -2098,11 +2131,7 @@ def list_user_personas(username: str):
         logger.exception("list_user_personas failed for user=%s", safe_user)
         return jsonify({
             "error": "Failed to load personas",
-            "detail": "{cls}: {msg}\n\n{tb}".format(
-                cls=type(exc).__name__,
-                msg=str(exc),
-                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
-            ),
+            **_error_detail_payload(exc),
         }), 500
 
 
@@ -2847,11 +2876,7 @@ def list_experiences(username: str):
         logger.exception("list_experiences failed for user=%s", safe_user)
         return jsonify({
             "error": "Failed to load corpus",
-            "detail": "{cls}: {msg}\n\n{tb}".format(
-                cls=type(exc).__name__,
-                msg=str(exc),
-                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
-            ),
+            **_error_detail_payload(exc),
         }), 500
 
 
@@ -3240,11 +3265,7 @@ def list_summary_items(username: str):
         logger.exception("list_summary_items failed for user=%s", safe_user)
         return jsonify({
             "error": "Failed to load summaries",
-            "detail": "{cls}: {msg}\n\n{tb}".format(
-                cls=type(exc).__name__,
-                msg=str(exc),
-                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
-            ),
+            **_error_detail_payload(exc),
         }), 500
 
 
@@ -4245,11 +4266,7 @@ def list_applications(username: str):
         logger.exception("list_applications failed for user=%s", safe_user)
         return jsonify({
             "error": "Failed to load applications",
-            "detail": "{cls}: {msg}\n\n{tb}".format(
-                cls=type(exc).__name__,
-                msg=str(exc),
-                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
-            ),
+            **_error_detail_payload(exc),
         }), 500
 
 
@@ -4866,11 +4883,7 @@ def recommend_application_bullets(application_id: int):
         logger.exception("recommend_application_bullets failed for app=%s", application_id)
         return jsonify({
             "error": "Recommend failed",
-            "detail": "{cls}: {msg}\n\n{tb}".format(
-                cls=type(exc).__name__,
-                msg=str(exc),
-                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
-            ),
+            **_error_detail_payload(exc),
         }), 500
 
 
