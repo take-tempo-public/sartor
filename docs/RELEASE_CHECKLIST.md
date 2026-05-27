@@ -273,41 +273,16 @@ release.
       element (`corpusToolbar` / `corpusCount`) at the moment
       `_renderCorpusList` runs, or a property access on `exp`
       that the API doesn't always provide.
-- [ ] **Corpus tab: 5xx on first-load API calls** — surfaced
-      2026-05-26 during a dev-console capture of the Corpus tab
-      load. Distinct from the render-after-refresh bug above
-      (that one is a 200 OK that leaves the DOM empty; this one
-      is a real 5xx that hits the `!res.ok` branch at
-      [`static/app.js:1834`](../static/app.js) and shows
-      "Failed to load corpus."), but they likely share a root
-      cause — both are "first-load Corpus tab from a fresh
-      session" stories. The `refreshCorpus()` flow at
-      [`static/app.js:1801`](../static/app.js) calls four
-      endpoints in sequence — all four returned 500:
-      `GET /api/users/<user>/experiences`
-      ([`app.py:2341`](../app.py)),
-      `GET /api/users/<user>/summaries`
-      ([`app.py:2718`](../app.py)),
-      `GET /api/users/<user>/personas`
-      ([`app.py:1690`](../app.py)), and
-      `GET /api/users/<user>/applications`. A page reload via
-      the corpus reload link recovers and subsequent loads
-      succeed. Repro:
-      1. Restart `python app.py`.
-      2. Open a fresh browser tab to `http://localhost:5000`.
-      3. Select an existing user from the dropdown.
-      4. Click the Career Corpus tab.
-      5. Observe in dev-console: four 500 responses; UI shows
-         "Failed to load corpus."
-      6. Click the corpus reload link → all four routes return
-         200 and the list renders.
-      Fix probably starts by adding server-side exception
-      logging on those four route handlers so the 5xx's
-      traceback is visible in the Flask log; current behavior
-      is a silent 500 with no Python-side stack trace. Once
-      the underlying exception is visible, this and the
-      render-after-refresh bug above can probably be closed
-      together.
+- [x] **Corpus tab: 5xx on first-load API calls** — fixed by
+      commit `0c598df` (`_persona_dicts_safe` defensive
+      per-row serializer on the `/personas` route). Verified
+      2026-05-27: fresh `python app.py` restart → select user
+      → click Career Corpus → all routes return 200 on first
+      load, no reload needed. The other three routes
+      (`/experiences`, `/summaries`, `/applications`) were
+      not broken; only `/personas` was 500-ing. Branch
+      `fix/corpus-tab-5xx-first-load` closed with no
+      additional code change.
 - [x] **~~Judge JSON parse failures mis-categorized as `status=ok`~~** —
       ✅ resolved 2026-05-26.
       [`evals/runner.py:289`](../evals/runner.py) now returns
