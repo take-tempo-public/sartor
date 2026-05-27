@@ -60,6 +60,11 @@ A `route-security-lint` hook enforces this on `app.py` edits — see [`.claude-p
 
 A `require-feature-branch` PreToolUse hook blocks `Edit`/`Write` while on `main`/`master`. Create a feature branch when moving from plan to execute (`git checkout -b <type>/<short-desc>`). Intentional main edits: `export CLAUDE_ALLOW_MAIN_EDITS=1`.
 
+**Branch close-out checklist (closing agent, in order):**
+1. Quality gate green (`python -m ruff check .` + `python -m mypy .` + `python -m pytest`).
+2. Commit — message records what was done and why (or "no code change — verified" if the branch closed clean).
+3. Write a next-agent prompt and give it to the user as the last act before closing the window. Must include: branch name + base branch, source doc references (RELEASE_CHECKLIST lines etc.), what this session did, the bug/symptom + repro steps, first move (write plan then ask — not code first), do-not-touch guard-rails, and a pointer to `docs/SESSION_HANDOFF_2026-05-27.md §5` (failure patterns to avoid).
+
 ### Document generation
 
 - Always pass `template_path` (original `.docx`) to `generate_resume()` when output is docx.
