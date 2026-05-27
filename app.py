@@ -4799,62 +4799,79 @@ def recommend_application_bullets(application_id: int):
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
 
-    init_db()
-    session = get_session()
+    # Wrapped with logger.exception + traceback in detail (2026-05-27) —
+    # the recommend call is the upstream cause of "preview waiting on
+    # curation" when it 500s, and the original handler only caught
+    # APIConnectionError / LLMResponseError; anything else bubbled up
+    # as a bare 500 with no traceback in the response. The wrapper makes
+    # the actual exception visible in dev console + Flask log.
     try:
-        app_row, candidate = _load_application_owned(session, application_id)
-        if app_row is None or not _safe_username(candidate.username):
-            return jsonify({"error": "Application not found"}), 404
-
-        cp = Path(context_path)
-        if not _within(cp, OUTPUT_DIR) or not cp.exists():
-            return jsonify({"error": "Invalid context_path"}), 400
+        init_db()
+        session = get_session()
         try:
-            ctx = json.loads(cp.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            return jsonify({"error": "Context file unreadable"}), 400
-        if ctx.get("application_id") not in (None, application_id):
-            return jsonify({"error": "context_path does not match application"}), 400
+            app_row, candidate = _load_application_owned(session, application_id)
+            if app_row is None or not _safe_username(candidate.username):
+                return jsonify({"error": "Application not found"}), 404
 
-        # The recommend prompt wants the JD text; the context_set's
-        # synthesized resume is the corpus markdown, not the JD. Stash the
-        # JD from the DB application row into a transient key the
-        # analyzer reads, then strip it before persisting.
-        ctx["jd_text"] = app_row.jd_text
-        run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
-        try:
-            result = recommend_bullets(
-                _get_client(), ctx,
-                username=candidate.username, run_id=run_id,
-            )
-        except anthropic.APIConnectionError as exc:
-            logger.error("Recommend: Anthropic connection error: %s", exc)
-            return jsonify({"error": "AI service connection failed"}), 503
-        except LLMResponseError as exc:
-            logger.error("Recommend: malformed LLM response: %s", exc.validation_error)
+            cp = Path(context_path)
+            if not _within(cp, OUTPUT_DIR) or not cp.exists():
+                return jsonify({"error": "Invalid context_path"}), 400
+            try:
+                ctx = json.loads(cp.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                return jsonify({"error": "Context file unreadable"}), 400
+            if ctx.get("application_id") not in (None, application_id):
+                return jsonify({"error": "context_path does not match application"}), 400
+
+            # The recommend prompt wants the JD text; the context_set's
+            # synthesized resume is the corpus markdown, not the JD. Stash the
+            # JD from the DB application row into a transient key the
+            # analyzer reads, then strip it before persisting.
+            ctx["jd_text"] = app_row.jd_text
+            run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
+            try:
+                result = recommend_bullets(
+                    _get_client(), ctx,
+                    username=candidate.username, run_id=run_id,
+                )
+            except anthropic.APIConnectionError as exc:
+                logger.error("Recommend: Anthropic connection error: %s", exc)
+                return jsonify({"error": "AI service connection failed"}), 503
+            except LLMResponseError as exc:
+                logger.error("Recommend: malformed LLM response: %s", exc.validation_error)
+                return jsonify({
+                    "error": "AI recommendation response was malformed",
+                    "detail": str(exc.validation_error),
+                }), 502
+
+            by_exp: dict[str, dict] = {}
+            for rec in result.get("recommendations", []) or []:
+                eid = rec.get("experience_id")
+                if eid is None:
+                    continue
+                by_exp[str(int(eid))] = {
+                    "bullet_ids": [int(b) for b in (rec.get("bullet_ids") or [])],
+                    "rationale": (rec.get("rationale") or "").strip(),
+                }
+            ctx["llm_recommendations"] = by_exp
+            ctx.pop("jd_text", None)  # transient; don't leak into iteration chain
+            cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
             return jsonify({
-                "error": "AI recommendation response was malformed",
-                "detail": str(exc.validation_error),
-            }), 502
-
-        by_exp: dict[str, dict] = {}
-        for rec in result.get("recommendations", []) or []:
-            eid = rec.get("experience_id")
-            if eid is None:
-                continue
-            by_exp[str(int(eid))] = {
-                "bullet_ids": [int(b) for b in (rec.get("bullet_ids") or [])],
-                "rationale": (rec.get("rationale") or "").strip(),
-            }
-        ctx["llm_recommendations"] = by_exp
-        ctx.pop("jd_text", None)  # transient; don't leak into iteration chain
-        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+                "application_id": application_id,
+                "recommendations": by_exp,
+            })
+        finally:
+            session.close()
+    except Exception as exc:
+        logger.exception("recommend_application_bullets failed for app=%s", application_id)
         return jsonify({
-            "application_id": application_id,
-            "recommendations": by_exp,
-        })
-    finally:
-        session.close()
+            "error": "Recommend failed",
+            "detail": "{cls}: {msg}\n\n{tb}".format(
+                cls=type(exc).__name__,
+                msg=str(exc),
+                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
+            ),
+        }), 500
 
 
 @app.route("/api/applications/<int:application_id>/recommend-summary", methods=["POST"])

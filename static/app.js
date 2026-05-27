@@ -792,7 +792,15 @@ async function _fireRecommendThenCompose() {
       );
       if (!rec.ok) {
         const err = await rec.json().catch(() => ({}));
-        _toast(`Recommend skipped: ${err.error || rec.status} — using top-5 fallback`, true);
+        // Surface backend's detail field (the recommend route now
+        // includes a traceback tail) via reportError so the cause is
+        // copyable + the click-to-view path is consistent with other
+        // 5xx surfacing. Also fire a quick toast so the user knows
+        // the wizard is proceeding without curation.
+        _toast(`Recommend failed: ${err.error || rec.status} — using top-5 fallback`, true);
+        if (err.detail) {
+          reportError('Recommend', err.error || `status ${rec.status}`, err.detail);
+        }
         // Pre-fix (2026-05-26): on recommend failure the status pill
         // was left stuck at 'RECOMMENDING BULLETS' until something else
         // set it — the user saw "recommending bullets" on the wizard
@@ -1943,20 +1951,25 @@ async function _runDownload(btn, doDownload) {
 }
 
 async function _downloadEdited(url, payload) {
+  console.log('[download] fetching', url, 'type=', payload.type);
   const res = await fetch(url, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(payload),
   });
+  console.log('[download] fetch resolved status=', res.status, 'type=', payload.type);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    console.error('[download] non-ok response', err);
     throw new Error(err.error || `Download failed (${res.status})`);
   }
   // Stream the file as a download.
   const blob = await res.blob();
+  console.log('[download] blob size=', blob.size, 'type=', blob.type);
   const disposition = res.headers.get('Content-Disposition') || '';
   const nameMatch = disposition.match(/filename="?([^"]+)"?/);
   const filename = nameMatch ? nameMatch[1] : 'document.docx';
+  console.log('[download] resolved filename=', filename);
 
   // B1 smoke fix (2026-05-26): attach the anchor to the DOM briefly
   // before clicking, and DEFER URL.revokeObjectURL until after the
@@ -1973,8 +1986,10 @@ async function _downloadEdited(url, payload) {
   a.download = filename;
   a.rel = 'noopener';
   document.body.appendChild(a);
+  console.log('[download] anchor in DOM, about to click; href.length=', objectUrl.length);
   try {
     a.click();
+    console.log('[download] a.click() returned; if no save dialog appears, browser policy may be blocking (check address bar for downloads-blocked icon)');
   } finally {
     document.body.removeChild(a);
     // Hold the URL alive long enough for the browser to start the
