@@ -136,15 +136,70 @@ def _seed_experience_with_bullets(candidate_id: int, *,
 # -------------------------------------------------------------------
 
 
+def _write_context_with_recommendations(
+    out_dir: Path, application_id: int, experience_id: int,
+    bullet_ids: list[int], *, extra_overrides: dict | None = None,
+    pinned_summary_id: int | None = None, filename: str = "context_test.json",
+) -> Path:
+    """Persist a context_*.json under out_dir with the curation fields
+    the preview route now requires (per the 2026-05-26 architectural
+    decision: preview reflects curation, never falls back to all
+    bullets).
+
+    Returns the resolved path so callers can pass it as context_path=.
+    """
+    import json as _json
+    from typing import Any
+    out_dir.mkdir(parents=True, exist_ok=True)
+    composition_overrides: dict[str, Any] = {
+        "pinned": [], "excluded": [], "added": [],
+    }
+    if pinned_summary_id is not None:
+        composition_overrides["pinned_summary_id"] = pinned_summary_id
+    if extra_overrides:
+        composition_overrides.update(extra_overrides)
+    ctx_path = out_dir / filename
+    ctx_path.write_text(_json.dumps({
+        "application_id": application_id,
+        "composition_overrides": composition_overrides,
+        "llm_recommendations": {
+            str(experience_id): {
+                "bullet_ids": [int(b) for b in bullet_ids],
+                "rationale": "test fixture",
+            },
+        },
+    }), encoding="utf-8")
+    return ctx_path
+
+
 class TestApplicationPreviewHappyPath:
-    def test_returns_html_from_corpus(self, preview_app):
-        """The preview reads from corpus rows directly — no sidecar
-        required. Generates BEFORE any /api/generate has run."""
+    def test_returns_html_when_recommendations_present(self, preview_app):
+        """Per the 2026-05-26 architectural decision: the preview only
+        renders the curated set when `llm_recommendations` is populated
+        in the context_path's JSON. This test sets up the recommendations
+        explicitly and confirms the full render happens."""
+        from db.models import Bullet
+        from db.session import get_session
         cid, aid = _seed_candidate_app(preview_app, username="casey")
-        _seed_experience_with_bullets(cid)
+        exp_id = _seed_experience_with_bullets(cid)
+        # Resolve the bullet ids we just seeded so we can put them in
+        # llm_recommendations.
+        session = get_session()
+        try:
+            bullet_ids = [
+                b.id for b in session.query(Bullet)
+                .filter_by(experience_id=exp_id).all()
+            ]
+        finally:
+            session.close()
+        ctx_file = _write_context_with_recommendations(
+            preview_app.OUTPUT_DIR / "casey", aid, exp_id, bullet_ids,
+        )
 
         client = preview_app.app.test_client()
-        r = client.get(f"/api/applications/{aid}/preview")
+        r = client.get(
+            f"/api/applications/{aid}/preview?context_path={ctx_file}",
+        )
         assert r.status_code == 200
         assert r.content_type.startswith("text/html")
         body = r.get_data(as_text=True)
@@ -152,6 +207,27 @@ class TestApplicationPreviewHappyPath:
         assert "Senior PM with a decade of leadership." in body
         assert "Polaris" in body
         assert "Shipped the unified corpus." in body
+
+    def test_returns_placeholder_when_no_recommendations(self, preview_app):
+        """The preview returns a placeholder HTML — NOT a full render
+        of all active bullets — when llm_recommendations is missing.
+        Pre-2026-05-26 behavior was to fall back to all active bullets;
+        the user explicitly rejected that as "no changes that aren't
+        seen or approved" — un-curated bullets surfaced silently would
+        bloat the preview and mislead the user about the download
+        shape. The placeholder explains the empty-state honestly."""
+        cid, aid = _seed_candidate_app(preview_app, username="casey")
+        _seed_experience_with_bullets(cid)
+
+        client = preview_app.app.test_client()
+        # No context_path at all.
+        r = client.get(f"/api/applications/{aid}/preview")
+        assert r.status_code == 200
+        assert r.content_type.startswith("text/html")
+        body = r.get_data(as_text=True)
+        assert "Preview is waiting on curation" in body
+        # The actual corpus content must NOT be rendered.
+        assert "Shipped the unified corpus." not in body
 
     def test_css_is_inlined(self, preview_app):
         """The response must be fully self-contained — no remote
@@ -171,11 +247,16 @@ class TestApplicationPreviewHappyPath:
     def test_pinned_summary_wins_over_profile_text(self, preview_app):
         """A pinned SummaryItem must override Candidate.profile_text in
         the rendered preview — proves corpus_to_json_resume honors
-        composition_overrides.pinned_summary_id passed via context_path."""
-        from db.models import SummaryItem
+        composition_overrides.pinned_summary_id passed via context_path.
+
+        Context file also carries llm_recommendations so the post-
+        2026-05-26 preview-requires-curation check passes; the
+        recommendations cover the seeded experience's only bullet."""
+        from db.models import Bullet, SummaryItem
         from db.session import get_session
 
         cid, aid = _seed_candidate_app(preview_app, username="casey")
+        exp_id = _seed_experience_with_bullets(cid)
         session = get_session()
         try:
             si = SummaryItem(
@@ -186,22 +267,19 @@ class TestApplicationPreviewHappyPath:
             session.flush()
             si_id = si.id
             session.commit()
+            bullet_ids = [
+                b.id for b in session.query(Bullet)
+                .filter_by(experience_id=exp_id).all()
+            ]
         finally:
             session.close()
 
-        # Persist a context file under OUTPUT_DIR with the pin so the
-        # preview route's _within(cp, OUTPUT_DIR) gate passes.
-        import json as _json
-        out_dir = (preview_app.OUTPUT_DIR / "casey").resolve()
-        out_dir.mkdir(parents=True, exist_ok=True)
-        ctx_file = out_dir / "context_pin.json"
-        ctx_file.write_text(_json.dumps({
-            "application_id": aid,
-            "composition_overrides": {
-                "pinned": [], "excluded": [], "added": [],
-                "pinned_summary_id": si_id,
-            },
-        }), encoding="utf-8")
+        ctx_file = _write_context_with_recommendations(
+            (preview_app.OUTPUT_DIR / "casey").resolve(),
+            aid, exp_id, bullet_ids,
+            pinned_summary_id=si_id,
+            filename="context_pin.json",
+        )
 
         client = preview_app.app.test_client()
         body = client.get(
@@ -238,13 +316,17 @@ class TestPreviewWithExplicitTemplate:
     def test_uses_specified_template(self, preview_app):
         """When template_id is passed, the route resolves through that
         persona's HTML companion (or falls back to bundled Classic if
-        no companion exists)."""
-        from db.models import PersonaTemplate
+        no companion exists). Per the 2026-05-26 architectural decision
+        the preview also requires llm_recommendations in the
+        context_path — without those it returns a placeholder."""
+        from db.models import Bullet, PersonaTemplate
         from db.session import get_session
 
-        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        cid, aid = _seed_candidate_app(preview_app, username="casey")
+        exp_id = _seed_experience_with_bullets(cid)
 
-        # Find the bundled Classic row from the seed migration
+        # Find the bundled Classic row from the seed migration; resolve
+        # the seeded bullet ids so llm_recommendations covers them.
         session = get_session()
         try:
             classic = session.query(PersonaTemplate).filter_by(
@@ -252,11 +334,23 @@ class TestPreviewWithExplicitTemplate:
             ).first()
             assert classic is not None
             classic_id = classic.id
+            bullet_ids = [
+                b.id for b in session.query(Bullet)
+                .filter_by(experience_id=exp_id).all()
+            ]
         finally:
             session.close()
 
+        ctx_file = _write_context_with_recommendations(
+            preview_app.OUTPUT_DIR / "casey", aid, exp_id, bullet_ids,
+            filename="context_tpl.json",
+        )
+
         client = preview_app.app.test_client()
-        r = client.get(f"/api/applications/{aid}/preview?template_id={classic_id}")
+        r = client.get(
+            f"/api/applications/{aid}/preview"
+            f"?template_id={classic_id}&context_path={ctx_file}",
+        )
         assert r.status_code == 200
         assert "Casey" in r.get_data(as_text=True)
 

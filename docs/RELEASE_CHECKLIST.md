@@ -573,6 +573,79 @@ Highlights pulled from §10:
 - **v2:** `recommend_template` Haiku call per JD class (gated
   on outcome data + an `ApplicationOutcome` table).
 
+### v1.0.2 — Live preview = downloaded résumé (true WYSIWYG) (new 2026-05-26)
+
+**The ask** (user-stated, 2026-05-26): *"the live preview should
+be on the selected corpus and json produced in the JD specific
+resume corpus and title selections. the user should see a live
+preview of what will be produced."*
+
+**Current state after v1.0.1.** The Step 6 iframe (preview route
+`/api/applications/<id>/preview`) is now properly bounded — it
+only renders when `llm_recommendations` exists; otherwise it
+returns a placeholder HTML explaining that curation is needed.
+This stops the misleading 3-page un-curated render. But the
+preview is still **corpus-rendered**, while the downloaded file
+is **LLM-rendered**. They can diverge:
+
+- **Preview path**: `build_json_resume_from_corpus()` reads
+  Candidate + Experience + Bullet rows from the DB, filters by
+  `composition_overrides` (pin/exclude/added) and
+  `llm_recommendations`, renders through the persona's HTML
+  template via `pdf_render.render_html_string`.
+- **Download path**: `analyzer.generate()` produces markdown the
+  LLM wrote (informed by the same corpus + curation, but free to
+  reword each bullet for sharpness / JD relevance). The markdown
+  lands in `#resumePreview` (editable), then
+  `/api/download-edited` renders it to `.docx`.
+
+So the LLM rewrite can change bullet wording, ordering within an
+experience, and sometimes the summary phrasing — the preview
+doesn't see any of that.
+
+**Implementation options for v1.0.2** (pick one when planning):
+
+1. **Render preview from the LLM markdown when one exists.** The
+   most recent generate's `last_generated_resume` (in the
+   context_set) is the canonical "what the LLM wrote." Convert
+   that markdown → JSON Resume via a deterministic parser, then
+   render through the same template pipeline. Pre-generate
+   (mid-wizard, before the user has clicked Generate), the
+   preview falls back to the corpus-based render OR the v1.0.1
+   placeholder. **Pro:** matches download exactly once Generate
+   has run. **Con:** needs a robust markdown → JSON Resume
+   parser; resume markdown has a lot of shape variation (sections,
+   subsections, dash-vs-bullet, multiple title formats).
+2. **Make the LLM produce structured JSON Resume directly.**
+   Change the generate() prompt to emit JSON Resume instead of
+   markdown. The download path renders that JSON through the
+   template (same as preview). **Pro:** preview = download is
+   trivially byte-identical. **Con:** large prompt change,
+   PROMPT_VERSION bump, full eval re-run, AND the editor (a
+   contenteditable markdown surface) needs replacement — users
+   can't hand-edit raw JSON; needs a structured-edit UI or a
+   JSON Resume → markdown → JSON Resume round-trip with parser
+   on each save.
+3. **Dual-render approach.** Keep the markdown path for the
+   editor (humans edit markdown well), but also store a parallel
+   JSON Resume artifact updated whenever the markdown changes
+   (debounced server-side). Preview reads the JSON Resume; the
+   editor / download read the markdown. **Pro:** preserves the
+   markdown editor; gives the preview ground truth. **Con:**
+   keeps two artifacts in sync, which is exactly the kind of
+   "two sources of truth" the v1 architecture was designed to
+   avoid.
+
+**Recommendation when planning v1.0.2:** option 1 (markdown →
+JSON Resume parser) is the lowest-risk path that preserves the
+markdown editor. The parser is bounded scope (markdown shape is
+known) and doesn't touch the generate prompt or the editor UX.
+Option 2 is the long-term cleanest answer but bigger surface.
+
+**Eval implication:** none of the three options changes the LLM
+output by itself; preview shape is a rendering concern. No new
+rubric needed unless option 2 is chosen.
+
 ### v1.1 — User-driven bullet ordering on Compose stage (new 2026-05-26)
 
 **The ask** (user-stated, 2026-05-26): bullets in the Compose

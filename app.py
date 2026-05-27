@@ -2454,10 +2454,32 @@ def preview_application_html(application_id: int):
         # under OUTPUT_DIR so a malicious caller can't read outside.
         ctx_path_raw = request.args.get("context_path", "").strip()
         ctx_path_arg: str | None = None
+        ctx_has_recommendations = False
         if ctx_path_raw:
             cp = Path(ctx_path_raw)
             if _within(cp, OUTPUT_DIR) and cp.exists():
                 ctx_path_arg = str(cp)
+                # Probe the context for llm_recommendations BEFORE building
+                # the JSON Resume. Per user requirement (2026-05-26): the
+                # preview must reflect the JD-specific curated selection,
+                # never silently fall back to "all active bullets" when
+                # recommendations are missing. If they're missing, return
+                # a placeholder HTML so the iframe surfaces an honest
+                # empty-state instead of an inflated full-corpus render.
+                try:
+                    ctx_data = json.loads(cp.read_text(encoding="utf-8"))
+                    recs = ctx_data.get("llm_recommendations") or {}
+                    # Non-empty dict of recommendations counts as "curation
+                    # has happened." Empty dict (or missing key) means
+                    # recommend_bullets either hasn't run or failed.
+                    ctx_has_recommendations = bool(recs)
+                except (json.JSONDecodeError, OSError):
+                    ctx_has_recommendations = False
+
+        if not ctx_has_recommendations:
+            return _preview_placeholder_html(html_path), 200, {
+                "Content-Type": "text/html; charset=utf-8",
+            }
 
         # Build the JSON Resume directly from the candidate's corpus,
         # applying composition_overrides + chosen-summary resolution
@@ -2474,6 +2496,69 @@ def preview_application_html(application_id: int):
     html_str = _inline_persona_css(html_str, html_path)
     html_str = _inject_paged_polyfill(html_str)
     return html_str, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+def _preview_placeholder_html(html_path: Path) -> str:
+    """Self-contained HTML for the Step 6 iframe when this application
+    has no LLM recommendations yet (recommend_bullets either hasn't run
+    or failed).
+
+    Per user requirement (2026-05-26): the preview must show
+    "what will be produced," not "the un-curated full corpus." When
+    curation is missing we explicitly surface that state instead of
+    silently rendering all active bullets — that prior behavior gave
+    a misleading 3-page preview that didn't represent the final
+    download.
+
+    `html_path` is accepted for future use (e.g. inlining the persona's
+    background color into the placeholder) but currently unused — the
+    placeholder is template-agnostic on purpose.
+    """
+    del html_path  # reserved for a future style-matching pass
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Preview waiting on curation</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 48px 32px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+      color: #444;
+      background: #fafafa;
+    }
+    .placeholder-wrap {
+      max-width: 520px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #222;
+      margin: 0 0 12px;
+    }
+    p { margin: 0 0 12px; }
+    .hint {
+      font-size: 12px;
+      color: #777;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="placeholder-wrap">
+    <h1>Preview is waiting on curation</h1>
+    <p>This preview reflects the bullets the AI recommended for THIS job, not your full corpus. Run analysis (Step 1) so the recommendation pass can curate the right set.</p>
+    <p class="hint">If you've already analyzed and still see this message, the recommendation pass may have failed silently — check the dev console for an error and re-run analysis.</p>
+  </div>
+</body>
+</html>"""
 
 
 @app.route("/api/users/<string:username>/preview", methods=["GET"])
