@@ -1964,6 +1964,41 @@ def _persona_dict(template) -> dict:
     }
 
 
+def _persona_dicts_safe(templates) -> list[dict]:
+    """Serialize a list of persona_template rows, skipping (and logging)
+    any row that fails serialization.
+
+    Rationale (2026-05-27 handoff §4): the user reported
+    `GET /api/users/<u>/personas 500` across several smoke rounds.
+    The route's serializer pattern was `[_persona_dict(t) for t in rows]`
+    — one bad row (e.g. a NULL in a NOT-NULL column from a botched
+    seed, an FK pointing at a deleted candidate, a path containing a
+    chararcter the JSON encoder can't handle) brings down the whole
+    response with no per-row visibility.
+
+    Per-row try/except lets the surviving rows render and writes the
+    offending row's id to the server log so the next agent (or this
+    user on next smoke) can pin the exact data problem. Returns a
+    list; logs warnings for skipped rows.
+    """
+    out: list[dict] = []
+    for t in templates:
+        try:
+            out.append(_persona_dict(t))
+        except Exception as exc:
+            # Identify the row by id when possible — if id itself is
+            # broken, fall back to the repr so we have SOME handle.
+            try:
+                row_id: object = t.id
+            except Exception:
+                row_id = repr(t)
+            logger.warning(
+                "_persona_dict failed for persona_template row=%s: %s: %s",
+                row_id, type(exc).__name__, exc,
+            )
+    return out
+
+
 def _resolve_persona_template_path(persona_template_id: int) -> str | None:
     """Look up a persona_template's on-disk path. None if not found / missing.
 
@@ -2087,7 +2122,7 @@ def list_bundled_personas():
         session = get_session()
         try:
             rows = session.query(PersonaTemplate).filter_by(source="bundled").all()
-            return jsonify([_persona_dict(t) for t in rows])
+            return jsonify(_persona_dicts_safe(rows))
         finally:
             session.close()
     except Exception as exc:
@@ -2122,8 +2157,8 @@ def list_user_personas(username: str):
             bundled = session.query(PersonaTemplate).filter_by(source="bundled").all()
             owned = session.query(PersonaTemplate).filter_by(candidate_id=candidate.id).all()
             return jsonify({
-                "bundled": [_persona_dict(t) for t in bundled],
-                "owned": [_persona_dict(t) for t in owned],
+                "bundled": _persona_dicts_safe(bundled),
+                "owned": _persona_dicts_safe(owned),
             })
         finally:
             session.close()
