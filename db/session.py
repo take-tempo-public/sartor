@@ -99,14 +99,33 @@ def get_session() -> Session:
     return get_session_factory()()
 
 
+_initialized_paths: set[Path] = set()
+
+
 def init_db(db_path: Path | str | None = None) -> bool:
     """Run alembic migrations to head against the given DB.
 
     Returns True if the DB was freshly created (caller should kick off any
     seed-data work like bundled-template insertion), False if it was already
-    at head. Idempotent — safe to call on every app startup.
+    at head OR was previously initialized in this process. Idempotent — safe
+    to call repeatedly; alembic only runs on the FIRST call per (process,
+    db_path) pair.
 
-    Called from `app.py` on first launch per the plan's auto-migrate decision.
+    Per-process cache rationale (2026-05-26): alembic's
+    `command.upgrade()` mutates module-level globals via
+    `EnvironmentContext.__enter__/__exit__`. Repeated invocations in the
+    same Python process can leave the globals in a state where
+    `_remove_proxy()`'s `del globals_[attr_name]` raises KeyError on the
+    next run (observed: `KeyError: 'script'` and `KeyError: 'config'`
+    cascading from corpus + templates routes). Flask's threaded dev
+    server amplifies this because every request that touches the DB
+    calls init_db(). Caching by resolved db_path ensures alembic runs
+    once per DB the process ever sees — tests passing a fresh tmp_path
+    each get their own first run; the runtime app pays the cost on
+    first request and skips afterwards.
+
+    Called from `app.py` on first launch per the plan's auto-migrate
+    decision, plus defensively from each route that opens a session.
     """
     from alembic import command
     from alembic.config import Config
@@ -114,12 +133,20 @@ def init_db(db_path: Path | str | None = None) -> bool:
     if db_path is None:
         db_path = DEFAULT_DB_PATH
 
-    was_fresh = not Path(db_path).exists()
-    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+    resolved = Path(db_path).resolve()
+    if resolved in _initialized_paths:
+        # Already migrated in this process — alembic is at head; skip.
+        # Returning False matches the "DB already at head" semantics
+        # callers expect (no bundled-seed work needed).
+        return False
+
+    was_fresh = not resolved.exists()
+    resolved.parent.mkdir(parents=True, exist_ok=True)
 
     cfg = Config(str(_REPO_ROOT / "alembic.ini"))
-    cfg.set_main_option("sqlalchemy.url", _db_url(db_path))
+    cfg.set_main_option("sqlalchemy.url", _db_url(resolved))
     command.upgrade(cfg, "head")
+    _initialized_paths.add(resolved)
     return was_fresh
 
 

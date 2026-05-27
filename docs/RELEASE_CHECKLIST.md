@@ -496,6 +496,22 @@ release.
       the application preview (which is what the user actually
       sends for review) renders correctly with curation.
 
+- [ ] **Cover-letter download honors the chosen output format**
+      (user-surfaced 2026-05-26 round-7 smoke). Today
+      `downloadCoverLetter()` passes `original_format: lastResumeFormat`
+      to `/api/download-edited`, but `generator.generate_cover_letter`
+      hardcodes `.docx` (see [`generator.py:194-201`](../generator.py#L194)
+      with comment *"Generate the cover letter as .docx (always — no
+      template needed)"*). The PDF and Markdown format buttons appear
+      to apply to both résumé and cover letter, but only the résumé
+      actually honors them. Two paths: (a) update
+      `generate_cover_letter` to accept output_format + render markdown
+      via the same path as the résumé (md → docx via template, or md
+      → pdf via paged.js). (b) Surface the limitation in the UI
+      explicitly: a small "Cover letter is .docx-only in v1.0.1; PDF
+      + Markdown coming in v1.0.2" hint on the Cover letter tab. Path
+      (b) is the v1.0.1 fix; (a) is v1.0.2 alongside the B3 persona
+      styling work.
 - [ ] **Prior-application click resumes the wizard at that
       application's last state** (user-surfaced 2026-05-26 during
       round-6 smoke). Today, clicking a card in the "Prior
