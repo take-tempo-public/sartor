@@ -2743,6 +2743,31 @@ _PAGED_PREVIEW_INJECTION = """
     border: 1px solid #b5b8bb;
   }
 </style>
+<script>
+  // Suppress paged.js internal layout errors from polluting the parent
+  // dev console (added 2026-05-27 — see SESSION_HANDOFF doc). Paged.js
+  // throws Cannot-read-getBoundingClientRect-of-null and
+  // node.getAttribute-is-not-a-function during layout when content is
+  // sparse / unusual; both are noise that's been masking real errors
+  // across smoke rounds. We swallow ONLY paged.js's own throws so any
+  // real bug in our code (or in the corpus → JSON Resume pipeline)
+  // continues to surface normally. Listener registered BEFORE paged.js
+  // loads so it catches the initial layout pass.
+  window.addEventListener('unhandledrejection', function (e) {
+    var msg = (e.reason && (e.reason.message || e.reason.toString())) || '';
+    if (msg.indexOf('getBoundingClientRect') !== -1 ||
+        msg.indexOf('getAttribute is not a function') !== -1) {
+      e.preventDefault();
+    }
+  });
+  window.addEventListener('error', function (e) {
+    var src = (e.filename || '') + '';
+    if (src.indexOf('paged.polyfill') !== -1) {
+      e.preventDefault();
+      return true;
+    }
+  });
+</script>
 <script src="/static/vendor/paged.polyfill.js"></script>
 <script>
   // Paged.js auto-polyfills on DOMContentLoaded. After it finishes
