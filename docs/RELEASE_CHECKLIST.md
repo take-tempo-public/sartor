@@ -496,6 +496,26 @@ release.
       the application preview (which is what the user actually
       sends for review) renders correctly with curation.
 
+- [ ] **Prior-application click resumes the wizard at that
+      application's last state** (user-surfaced 2026-05-26 during
+      round-6 smoke). Today, clicking a card in the "Prior
+      applications" panel of Step 1 shows a one-line toast with
+      title/status/iter-count and nothing else — that's an
+      acknowledged placeholder per the comment at
+      [`static/app.js:3404-3406`](../static/app.js#L3404):
+      *"Lightweight info display in the toast for now — resuming an
+      application into the live editing flow ships in D.3.1."*
+      Expected behavior (user-confirmed): clicking should load the
+      application's context_path + selected persona + last-generated
+      résumé/cover letter into the wizard and jump to the most
+      advanced step that has data (typically Step 6 — Generated
+      output). Implementation: the application row's runs[] already
+      carries a `context_path` per iteration; the most recent run's
+      context_path is the load target, the run's persona_template_id
+      drives the template selection, and the run's resume_path /
+      cover_letter_path hydrate the editors. Defer to v1.0.2; user
+      can re-create from scratch in v1.0.1.
+
 ### Nice to have (defer to v1.1 if time-bound)
 
 - [ ] **Visual assets** — screenshots, demo GIF, onboarding HTML
