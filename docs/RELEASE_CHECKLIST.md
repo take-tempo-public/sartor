@@ -469,27 +469,22 @@ they don't continue to track. Run this as a focused stage AFTER
 B1–B3 land and AFTER the fresh-clone verification, immediately
 before the version-bump commit.
 
-- [ ] **Remove `docs/mockups/`** — five HTML files
-      ([`a-step-zones.html`](mockups/a-step-zones.html),
-      [`b-brand-accent.html`](mockups/b-brand-accent.html),
-      [`b-refined.html`](mockups/b-refined.html),
-      [`b-refined-v2.html`](mockups/b-refined-v2.html),
-      [`c-hybrid.html`](mockups/c-hybrid.html)) created during the
-      visual-IA exploration on `feat/release-visual-ia`. They
-      reference a fixture user ("Casey Rivera") in a dropdown that
-      doesn't match any live UI surface, and they aren't linked
-      from any user-facing doc. Confirm none of the live app
-      consumes them (`grep -r "docs/mockups"`) before deleting.
-- [ ] **Audit `docs/archive/`** — already-archived material. If
-      anything in here predates v1.0.0 and is no longer load-
-      bearing reference material, move it to a separate `archive/`
-      branch or delete outright.
-- [ ] **Strip dead-link references from CHANGELOG history** —
-      pre-v1.0.0 changelog entries link to files that may have
-      moved or been deleted (the dashboard refactors moved files
-      around in May 2026). Run `grep -oP '\[.+?\]\(.+?\)' CHANGELOG.md`,
-      verify each link resolves, mark broken ones with `(removed
-      <date>)` rather than deleting the entry (preserves history).
+- [x] **~~Remove `docs/mockups/`~~** — ✅ resolved 2026-05-28.
+      Grepped `templates/`, `scripts/`, `docs/` for `docs/mockups`
+      — the only hit was a comment in `templates/index.html:126`
+      (no live consumer). Deleted the directory (6 files including
+      the undocumented `index.html`); stripped the comment
+      reference. Branch `chore/pre-tag-cleanup-docs`.
+- [x] **~~Audit `docs/archive/`~~** — ✅ resolved 2026-05-28.
+      Only file: `docs/archive/2026-05-25_doc_audit.md` (pre-release
+      v1.0.0 documentation audit). Confirmed not referenced anywhere
+      outside itself. Deleted outright — all recommendations in that
+      audit were implemented in v1.0.0 commits. Branch
+      `chore/pre-tag-cleanup-docs`.
+- [x] **~~Strip dead-link references from CHANGELOG history~~** —
+      ✅ resolved 2026-05-28. Extracted all 17 relative-path links
+      from `CHANGELOG.md`; all 17 resolve. No broken links found.
+      Branch `chore/pre-tag-cleanup-docs`.
 - [ ] **`scripts/perf_baseline.py`** — useful for v1.0.2 R1
       iteration cycles; keep it, but document its purpose in the
       [`docs/architecture.md`](architecture.md) module map so a
