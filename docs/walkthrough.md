@@ -183,6 +183,13 @@ through every later step.
 
 ---
 
+Once the corpus is populated, click the **Application** tab in the top bar,
+then select **Step 1 — Job + Analyze** in the wizard rail that appears across
+the top of the page. The wizard rail is how you move between steps; the
+Corpus and Application tabs are the two top-level views of the app.
+
+---
+
 ## Step 1 — Job + Analyze
 
 **What you see:** two panels. Left: a textarea labeled "Job
