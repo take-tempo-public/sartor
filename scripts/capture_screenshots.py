@@ -199,11 +199,8 @@ def ensure_demo_user(page: Page) -> None:
 def ensure_corpus_imported(page: Page) -> None:
     """Import the synthetic .docx into the demo user's corpus.
 
-    For a brand-new user, the UI's upload path returns 409 +
-    opens an onboarding modal; the modal's "Import" button hits
-    /api/users/<user>/import-legacy which reads from resumes/<user>/.
-    We bypass the modal entirely and call that route directly via
-    Playwright's request context — same outcome, no headless flake.
+    Calls onboarding.import_legacy.run_import directly (bypassing HTTP)
+    to seed the demo user's DB corpus from resumes/<user>/.
     """
     page.click("#topTabCorpus")
     page.wait_for_selector("#panelCorpus", state="visible")

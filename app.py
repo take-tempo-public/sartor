@@ -4059,48 +4059,6 @@ def download_edited():
 # ---------------------------------------------------------------------------
 
 
-@app.route("/api/users/<username>/import-legacy", methods=["POST"])
-def import_legacy_user(username: str):
-    """Provision a DB candidate row for a pre-existing config-only user.
-
-    Wraps onboarding.import_legacy.run_import. Always imports the candidate
-    identity + skills/certs/education from configs/{user}.config and
-    clarifications from output/{user}/*.json. When the request body sets
-    {"with_llm": true} it ALSO extracts experiences/bullets from
-    resumes/{user}/ via Haiku (~$0.02, costs API credit).
-
-    Idempotent — run_import dedupes, so calling this repeatedly is safe.
-    Returns the ImportReport summary as JSON.
-    """
-    import dataclasses
-
-    from onboarding.import_legacy import run_import
-
-    safe_user = _safe_username(username)
-    if not safe_user:
-        return jsonify({"error": "Invalid or unknown user"}), 400
-
-    data = request.json or {}
-    with_llm = bool(data.get("with_llm", False))
-
-    try:
-        report = run_import(safe_user, with_llm=with_llm)
-    except FileNotFoundError as exc:
-        return jsonify({"error": f"No config for {safe_user}: {exc}"}), 404
-    except Exception as exc:  # noqa: BLE001 — surface importer failures to the UI
-        logger.exception("Legacy import failed for %s", safe_user)
-        return jsonify({"error": f"Import failed: {exc}"}), 500
-
-    summary = dataclasses.asdict(report)
-    logger.info(
-        "Legacy import for %s: candidate_id=%s with_llm=%s exp=%d bullets=%d",
-        safe_user, summary.get("candidate_id"), with_llm,
-        summary.get("experiences_created", 0), summary.get("bullets_created", 0),
-    )
-    status = 201 if report.candidate_created else 200
-    return jsonify(summary), status
-
-
 # ---------------------------------------------------------------------------
 # Phase D.6: Onboarding review — clear is_pending_review on accept
 # ---------------------------------------------------------------------------

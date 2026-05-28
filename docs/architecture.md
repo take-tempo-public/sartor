@@ -188,6 +188,7 @@ purpose. Code that belongs elsewhere goes elsewhere.
 | [`db/build_context.py`](../db/build_context.py) | DB-backed `build_context_set` variant; bullet scorer | `score_corpus_bullet()`, `_bullet_tag_values()` | Route handlers |
 | [`dashboard/`](../dashboard/) | Read-only Flask blueprint at `/_dashboard` for eval results, cost cards, failure-mode heatmap | `dashboard_bp` | LLM calls, mutation |
 | [`evals/runner.py`](../evals/runner.py) | LLM eval harness — synthetic + real fixtures, 0.0-5.0 rubric scoring | `run_suite()`, `_load_baseline_scores()` | Production paths |
+| [`scripts/perf_baseline.py`](../scripts/perf_baseline.py) | Release-cycle tool: print p50/p90 latency percentiles from `logs/llm_calls.jsonl` as a before/after snapshot for perf interventions (R2 streaming, R3 schema trim, R1 split). Not part of the runtime. | CLI only — `python -m scripts.perf_baseline [--since N] [--log path]` | Production import |
 
 **Code that crosses modules.** When a route in `app.py` needs to
 call the LLM, it imports the analyzer function. When the analyzer
@@ -464,7 +465,7 @@ graph LR
     R_RS[/POST /api/applications/&lt;id&gt;/recommend-summary/] --> H2
     R_PC[/POST /api/proposals/&lt;id&gt;/critique/] --> H3
     R_PR[/POST /api/clarifications/&lt;id&gt;/promote-to-bullet/] --> H4
-    R_IM[/POST /api/users/&lt;u&gt;/import-legacy/] --> H5
+    R_IM[/POST /api/users/&lt;u&gt;/corpus/ingest-resume/] --> H5
 
     %% Cache-prefix usage. analyze + generate share the heavy cached
     %% user prefix (corpus + resume blocks). clarify variants

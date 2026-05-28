@@ -490,35 +490,31 @@ before the version-bump commit.
       around in May 2026). Run `grep -oP '\[.+?\]\(.+?\)' CHANGELOG.md`,
       verify each link resolves, mark broken ones with `(removed
       <date>)` rather than deleting the entry (preserves history).
-- [ ] **`scripts/perf_baseline.py`** — useful for v1.0.2 R1
-      iteration cycles; keep it, but document its purpose in the
-      [`docs/architecture.md`](architecture.md) module map so a
-      future reader knows it's a release-cycle tool, not part of
-      the runtime.
+- [x] **~~`scripts/perf_baseline.py`~~** — ✅ resolved 2026-05-28.
+      Added to `docs/architecture.md` module map as a release-cycle
+      tool (p50/p90 latency snapshot before/after perf interventions).
+      Branch `chore/pre-tag-cleanup-code`.
 - [ ] **`r1-attempted-2026-05-26` branch** — keep through v1.0.2;
       it's the starting point for that release's R1 rework. After
       v1.0.2 ships (R1 successful or formally abandoned), delete
       this branch. Tracked here so it doesn't drift.
-- [ ] **Retire `/api/users/<username>/import-legacy` route** — all
-      existing users are now migrated to the DB; the route's original
-      purpose (provisioning DB rows for pre-existing config-file-only
-      users) is complete. Résumé upload for existing users is a
-      separate feature with a separate route. Steps: (a) confirm no
-      user's workflow still depends on this route (grep call sites in
-      `scripts/`, `docs/`, `templates/`); (b) remove the route from
-      [`app.py`](../app.py) (`import_legacy_user`, line ~4056) and the
-      `onboarding/import_legacy.py` module if no longer imported
-      elsewhere; (c) update [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py)
-      which calls `onboarding.import_legacy.run_import` directly
-      (line 232) — replace with the résumé-upload route or a direct
-      DB fixture; (d) remove any references in
-      [`docs/walkthrough.md`](walkthrough.md) and
-      [`README.md`](../README.md).
-- [ ] **Grep for TODO / FIXME / XXX comments added during v1.0.1
-      development** — `grep -rn 'TODO\|FIXME\|XXX' --include='*.py'
-      --include='*.js' --include='*.html'`. Either close them in
-      this release or convert to RELEASE_CHECKLIST entries for
-      v1.0.2. Don't ship the tag with floating reminders.
+- [x] **~~Retire `/api/users/<username>/import-legacy` route~~** —
+      ✅ resolved 2026-05-28. (a) Confirmed only consumer was
+      `scripts/capture_screenshots.py`, which already calls
+      `run_import` directly, not via the Flask route. (b) Removed
+      `import_legacy_user` route from `app.py`; `onboarding/import_legacy.py`
+      kept — `ingest_one_resume` is still used by the live
+      `/corpus/ingest-resume` route. (c) Updated comment in
+      `scripts/capture_screenshots.py` that referenced the deleted
+      route. (d) No references in `walkthrough.md` or `README.md`.
+      Removed `tests/test_import_legacy_route.py`; updated
+      `docs/architecture.md` route reference to the live
+      `ingest-resume` route. Branch `chore/pre-tag-cleanup-code`.
+- [x] **~~Grep for TODO / FIXME / XXX comments~~** — ✅ resolved
+      2026-05-28. Grepped `*.py`, `*.html`, `static/app.js` — zero
+      hits in our own code. All TODOs/FIXMEs are in the vendored
+      `static/vendor/paged.polyfill.js` (not our code). No action
+      needed. Branch `chore/pre-tag-cleanup-code`.
 - [x] **~~`lcars-*` CSS class rename → `cb-*`~~** — ✅ resolved
       2026-05-26. After surfacing during the B1 smoke, the user
       reviewed the actual scope (the visual redesign had already
