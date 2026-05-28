@@ -93,45 +93,27 @@ release.
       covers PowerShell `$env:` syntax for the API-key step, a
       `python -m pip` fallback for Windows Store Python installs,
       and the `sysdm.cpl` shortcut for setting a permanent env var.
-- [ ] **Accessibility scan of all user-facing documentation** —
-      surfaced during the screenshot-capture pass (2026-05-26).
-      Run an a11y audit across the user-facing doc set
-      ([`README.md`](../README.md),
+- [x] **~~Accessibility scan of all user-facing documentation~~** —
+      ✅ resolved 2026-05-28. Full audit of
+      [`README.md`](../README.md),
       [`docs/install.md`](install.md),
       [`docs/walkthrough.md`](walkthrough.md),
       [`docs/walkthrough_example.md`](walkthrough_example.md),
-      [`vision.md`](../vision.md)) and the screenshots that just
-      landed in [`docs/screenshots/`](screenshots/). Specifically
-      check:
-      - **Alt text on every image** — the manifest at
-        [`docs/ux/screenshot_capture.md`](ux/screenshot_capture.md)
-        has drafts; verify they get applied during the markdown
-        insertion pass and that none describe the image only
-        cosmetically ("a screenshot") instead of substantively.
-      - **Mermaid diagrams** — the two flow diagrams in
-        `walkthrough.md` render as SVG that most screen readers
-        can't traverse meaningfully. Add a prose summary
-        immediately after each diagram (the existing "Read this
-        top-down: …" line is already this pattern; check whether
-        the user-flow diagram needs an equivalent paragraph).
-      - **Heading hierarchy** — no skipped levels (H1 → H3 with
-        no H2 between).
-      - **Link text** — no "click here" / "see this" links;
-        link text should describe its destination ("see
-        [Cost guidance](../README.md#cost)" rather than "see
-        [here](../README.md#cost)").
-      - **Color-only meaning in diagrams** — the four-color
-        classDef vocabulary (gate/llm/det/opt) carries semantic
-        load; verify the per-diagram legend prose makes that
-        meaning available without color.
-      - **Tables** — verify column headers are real `<th>` (the
-        markdown `| Header |` syntax already produces them; just
-        a sanity check after any handwritten HTML tables).
-      Tooling: axe DevTools or WAVE for the rendered HTML
-      preview; a manual VoiceOver / NVDA sweep is the gold
-      standard but a30-min axe pass surfaces the obvious
-      issues. **Defer the actual scan** to a focused later pass;
-      this entry just tracks the obligation.
+      [`vision.md`](../vision.md), and the 10 PNGs in
+      [`docs/screenshots/`](screenshots/).
+      - **Alt text** — all 10 images have substantive, descriptive
+        alt text. No "a screenshot" placeholders.
+      - **Mermaid diagrams** — the second diagram already had
+        "Read this top-down: …". Added an equivalent
+        "Read this left-to-right: …" prose summary immediately
+        after the first (user-flow) diagram in `walkthrough.md`.
+      - **Heading hierarchy** — no skipped levels in any file.
+      - **Link text** — no "click here" / "see this" patterns.
+      - **Color-only meaning** — first diagram: explicit 4-class
+        text legend. Second diagram: semantic subgraph labels
+        encode meaning independently of color.
+      - **Tables** — all use markdown `| Header |` syntax;
+        no hand-rolled HTML tables found.
 - [x] **~~Doc-vs-UI label drift on the corpus import button~~** —
       ✅ resolved 2026-05-26. Button renamed
       `+ Drop résumé (AI extract)` → `+ Import résumé` (cleaner
