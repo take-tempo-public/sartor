@@ -277,6 +277,12 @@ def run_step1(page: Page) -> None:
         "#analysisContent > *", state="attached", timeout=LLM_TIMEOUT_MS
     )
     wait_quiet(page, 1200)
+    page.evaluate("""
+        const topbarH = document.querySelector('#cbTopbar').getBoundingClientRect().height;
+        document.querySelector('#panelAnalysis .panel-header').scrollIntoView({block: 'start'});
+        window.scrollBy(0, -topbarH);
+    """)
+    wait_quiet(page, 300)
     cap(page, "walkthrough_step1post_analysis-filled.png")
     # Same state, hero shot for README.
     cap(page, "readme_hero_wizard-step1-filled.png")
@@ -312,6 +318,12 @@ def run_step2(page: Page) -> None:
         delay=8,
     )
     wait_quiet(page)
+    page.evaluate("""
+        const topbarH = document.querySelector('#cbTopbar').getBoundingClientRect().height;
+        document.querySelector('#panelClarify .panel-header').scrollIntoView({block: 'start'});
+        window.scrollBy(0, -topbarH);
+    """)
+    wait_quiet(page, 300)
     cap(page, "walkthrough_step2_clarify-questions.png")
 
 
@@ -369,10 +381,7 @@ def run_step5_and_6(page: Page) -> None:
     print("  · generating résumé (~30-60s Sonnet 4.6 call)…")
     page.click("#btnGenerate")
     page.wait_for_selector(
-        "#panelOutput", state="visible", timeout=LLM_TIMEOUT_MS
-    )
-    page.wait_for_selector(
-        "#resumePreview", state="visible", timeout=LLM_TIMEOUT_MS
+        "#outputPreviewBlock", state="visible", timeout=LLM_TIMEOUT_MS
     )
     wait_quiet(page, 2000)
 

@@ -307,43 +307,22 @@ release.
       bug aside, the underlying scores are stable); the
       re-baseline is hygiene, not a blocker — slip to early
       v1.1 if v1.0.1 ships fast.
-- [ ] **Walkthrough documentation pass — three fixes** —
-      surfaced 2026-05-26 during a user review of
-      [`docs/walkthrough.md`](walkthrough.md).
-      1. **Add Corpus → Application transition.** Setup section
-         (lines ~154-182) tells the reader to use the Career
-         Corpus tab for résumé import, then jumps straight to
-         `## Step 1 — Job + Analyze` with no instruction to
-         navigate back to the Application tab + click Step 1 in
-         the wizard rail. A sequential reader is left on the
-         Corpus tab when the doc says "paste the JD." Fix: one
-         short paragraph between Setup and Step 1, e.g. *"Once
-         the corpus is populated, click the **Application** tab
-         in the top bar and select **Step 1 — Job + Analyze**
-         in the wizard rail."*
-      2. **Re-capture `walkthrough_step2_clarify-questions.png`
-         scrolled to show the actual questions.** The current
-         capture at
-         [`scripts/capture_screenshots.py:285-315`](../scripts/capture_screenshots.py)
-         waits for questions to render and types a partial
-         answer, then snapshots at 1440×900 without scrolling.
-         Panel header + "Continue" + clarify-instructions push
-         the exemplar question content past the fold, so the
-         screenshot shows framing instead of the questions
-         themselves. Fix: one line before the `cap()` call —
-         `page.locator("#clarifyQuestions").scroll_into_view_if_needed();
-         wait_quiet(page, 300)`. Then re-run Step 2 capture (or
-         the whole script; the rest of the screenshots are
-         current and stable).
-      3. **Confirm `docs/walkthrough_example.md` is intentional,
-         not a leftover.** Its purpose statement at
-         [`docs/walkthrough_example.md:1-14`](walkthrough_example.md)
-         establishes it as the concrete Priya companion to the
-         abstract walkthrough — same synthetic candidate used by
-         [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py)
-         `write_priya_docx()`. No file change needed; this
-         sub-bullet exists so a future skim doesn't mistake the
-         file for orphaned scaffolding.
+- [x] **Walkthrough documentation pass — three fixes** —
+      ✅ resolved 2026-05-27.
+      (a) Corpus→Application transition paragraph added to
+      `docs/walkthrough.md` between Setup and Step 1 —
+      instructs the reader to click the **Application** tab and
+      select Step 1 in the wizard rail before pasting a JD.
+      (b) `scripts/capture_screenshots.py` `run_step2()` now
+      calls
+      `page.locator("#clarifyQuestions").scroll_into_view_if_needed()`
+      + `wait_quiet(page, 300)` before `cap()`, so re-running
+      the script will produce a properly-scrolled PNG showing
+      the actual questions.
+      (c) `docs/walkthrough_example.md` confirmed intentional —
+      purpose statement at lines 1–14 establishes it as the
+      Priya companion to the abstract walkthrough; no file
+      change needed.
 - [ ] **CSP `unsafe-eval` violation on script execution** —
       surfaced 2026-05-26 in the browser dev-console while
       loading the Corpus tab. Some code path calls a
