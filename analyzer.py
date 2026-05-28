@@ -15,8 +15,10 @@ import time
 from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import anthropic
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from hardening import ContextSet, CorpusExperience
 
@@ -82,6 +84,86 @@ GENERATE_CORPUS_REQUIRED_KEYS = GENERATE_REQUIRED_KEYS | frozenset({
 GENERATE_CORPUS_NO_CL_REQUIRED_KEYS = GENERATE_NO_CL_REQUIRED_KEYS | frozenset({
     "selected_bullets", "proposed_new_bullets", "proposed_experience_titles",
 })
+
+# ---------------------------------------------------------------------------
+# Pydantic response models — validate _parse_or_retry output shape.
+# extra="allow" lets the LLM include undocumented keys without error; only
+# the declared fields are required. All fields typed Any because we validate
+# presence only — deep structure validation is out of scope for this layer.
+# ---------------------------------------------------------------------------
+
+
+class _LLMResponse(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+
+class AnalyzeResponse(_LLMResponse):
+    essential_skills: Any
+    preferred_skills: Any
+    industry_keywords: Any
+    hidden_qualities: Any
+    professional_vocabulary: Any
+    ideal_resume_profile: Any
+    comparison: Any
+    suggestions: Any
+    keyword_placement: Any
+    ats_improvements: Any
+    overall_strategy: Any
+
+
+class GenerateResponse(_LLMResponse):
+    resume_content: Any
+    cover_letter_content: Any
+    changes_made: Any
+    proofread_notes: Any
+
+
+class GenerateNoCLResponse(_LLMResponse):
+    resume_content: Any
+    changes_made: Any
+    proofread_notes: Any
+
+
+class ClarifyResponse(_LLMResponse):
+    questions: Any
+    reasoning: Any
+
+
+class RecommendResponse(_LLMResponse):
+    recommendations: Any
+
+
+class RecommendSummariesResponse(_LLMResponse):
+    recommendation: Any
+
+
+class GenerateCorpusResponse(GenerateResponse):
+    selected_bullets: Any
+    proposed_new_bullets: Any
+    proposed_experience_titles: Any
+
+
+class GenerateCorpusNoCLResponse(GenerateNoCLResponse):
+    selected_bullets: Any
+    proposed_new_bullets: Any
+    proposed_experience_titles: Any
+
+
+class CoverLetterOnlyResponse(_LLMResponse):
+    cover_letter_content: Any
+    proofread_notes: Any
+
+
+class CritiqueResponse(_LLMResponse):
+    verdict: Any
+    notes: Any
+    concerns: Any
+
+
+class PromoteBulletResponse(_LLMResponse):
+    text: Any
+    pattern_kind: Any
+
 
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
@@ -730,7 +812,7 @@ def _parse_or_retry_streaming(
     base_prompt: str,
     *,
     cached_user_prefix: str,
-    required_keys: frozenset[str],
+    response_model: type[BaseModel],
     call_kind: str,
     username: str,
     run_id: str,
@@ -777,12 +859,10 @@ def _parse_or_retry_streaming(
         base_text = accumulated
         try:
             data = json.loads(_strip_fences(accumulated), strict=False)
-            missing = required_keys - data.keys()
-            if missing:
-                raise ValueError(f"missing required keys: {sorted(missing)}")
+            response_model.model_validate(data)
             yield ("done", data)
             return
-        except (json.JSONDecodeError, ValueError) as e:
+        except (json.JSONDecodeError, ValidationError) as e:
             if attempt + 1 >= max_attempts:
                 logger.error(
                     "LLM response validation failed after %d attempts — call=%s err=%s",
@@ -809,7 +889,7 @@ def _parse_or_retry(
     base_prompt: str,
     *,
     cached_user_prefix: str,
-    required_keys: frozenset[str],
+    response_model: type[BaseModel],
     call_kind: str,
     username: str,
     run_id: str,
@@ -847,11 +927,9 @@ def _parse_or_retry(
             # comma) still fail and trigger the retry path; we are only
             # widening tolerance for the one quirky case we observe.
             data = json.loads(_strip_fences(raw), strict=False)
-            missing = required_keys - data.keys()
-            if missing:
-                raise ValueError(f"missing required keys: {sorted(missing)}")
+            response_model.model_validate(data)
             return data
-        except (json.JSONDecodeError, ValueError) as e:
+        except (json.JSONDecodeError, ValidationError) as e:
             if attempt + 1 >= max_attempts:
                 logger.error(
                     "LLM response validation failed after %d attempts — call=%s err=%s",
@@ -897,7 +975,7 @@ def analyze(
     return _parse_or_retry(
         client, _analyze_prompt(context_set),
         cached_user_prefix=_stable_user_prefix(context_set),
-        required_keys=ANALYZE_REQUIRED_KEYS,
+        response_model=AnalyzeResponse,
         call_kind="analyze",
         username=username,
         run_id=run_id,
@@ -978,7 +1056,7 @@ def analyze_streaming(
     yield from _parse_or_retry_streaming(
         client, _analyze_prompt(context_set),
         cached_user_prefix=_stable_user_prefix(context_set),
-        required_keys=ANALYZE_REQUIRED_KEYS,
+        response_model=AnalyzeResponse,
         call_kind="analyze",
         username=username,
         run_id=run_id,
@@ -1062,7 +1140,7 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
     return _parse_or_retry(
         client, prompt,
         cached_user_prefix="",
-        required_keys=CLARIFY_REQUIRED_KEYS,
+        response_model=ClarifyResponse,
         call_kind="clarify",
         username=username,
         run_id=run_id,
@@ -1191,7 +1269,7 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
     return _parse_or_retry(
         client, prompt,
         cached_user_prefix="",
-        required_keys=CLARIFY_REQUIRED_KEYS,
+        response_model=ClarifyResponse,
         call_kind="iterate_clarify",
         username=username,
         run_id=run_id,
@@ -1279,10 +1357,10 @@ def _build_generate_prompt(
     analysis: dict,
     refinement_notes: str = "",
     with_cover_letter: bool = True,
-) -> tuple[str, frozenset[str]]:
-    """Build the generate-prompt + the matching required_keys for the
+) -> tuple[str, type[BaseModel]]:
+    """Build the generate-prompt + the matching response_model for the
     expected JSON output. Shared by `generate()` and `generate_streaming()`
-    so the prompt template lives in one place. Returns (prompt, required).
+    so the prompt template lives in one place. Returns (prompt, response_model).
 
     Mirrors `_analyze_prompt` — extracted 2026-05-26 to support the R2
     streaming path without duplicating ~80 lines of conditional prompt
@@ -1517,13 +1595,13 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 </output_format>"""
 
     if in_corpus_mode:
-        required = (GENERATE_CORPUS_REQUIRED_KEYS if with_cover_letter
-                    else GENERATE_CORPUS_NO_CL_REQUIRED_KEYS)
+        model_cls: type[BaseModel] = (GenerateCorpusResponse if with_cover_letter
+                    else GenerateCorpusNoCLResponse)
     else:
-        required = (GENERATE_REQUIRED_KEYS if with_cover_letter
-                    else GENERATE_NO_CL_REQUIRED_KEYS)
+        model_cls = (GenerateResponse if with_cover_letter
+                    else GenerateNoCLResponse)
 
-    return prompt, required
+    return prompt, model_cls
 
 
 def generate(
@@ -1568,7 +1646,7 @@ def generate(
       - Grounding wording widens to acknowledge first-person typed edits as
         legitimate source material (mirrors the clarification carve-out).
     """
-    prompt, required = _build_generate_prompt(
+    prompt, model_cls = _build_generate_prompt(
         context_set, analysis,
         refinement_notes=refinement_notes,
         with_cover_letter=with_cover_letter,
@@ -1576,7 +1654,7 @@ def generate(
     result = _parse_or_retry(
         client, prompt,
         cached_user_prefix=_stable_user_prefix(context_set),
-        required_keys=required,
+        response_model=model_cls,
         call_kind="generate",
         username=username,
         run_id=run_id,
@@ -1609,7 +1687,7 @@ def generate_streaming(
     each event as a Server-Sent Event. Existing non-streaming callers
     keep using `generate()`.
     """
-    prompt, required = _build_generate_prompt(
+    prompt, model_cls = _build_generate_prompt(
         context_set, analysis,
         refinement_notes=refinement_notes,
         with_cover_letter=with_cover_letter,
@@ -1617,7 +1695,7 @@ def generate_streaming(
     for event in _parse_or_retry_streaming(
         client, prompt,
         cached_user_prefix=_stable_user_prefix(context_set),
-        required_keys=required,
+        response_model=model_cls,
         call_kind="generate",
         username=username,
         run_id=run_id,
@@ -1762,7 +1840,7 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
     return _parse_or_retry(
         client, prompt,
         cached_user_prefix="",  # focused one-shot; cache benefit is small
-        required_keys=COVER_LETTER_ONLY_REQUIRED_KEYS,
+        response_model=CoverLetterOnlyResponse,
         call_kind="generate_cover_letter",
         username=username,
         run_id=run_id,
@@ -1939,7 +2017,7 @@ Existing canonical bullets for this experience:
         client,
         user_prompt,
         cached_user_prefix="",  # one-shot, no caching benefit
-        required_keys=CRITIQUE_REQUIRED_KEYS,
+        response_model=CritiqueResponse,
         call_kind="critique_proposal",
         username=username,
         run_id=run_id,
@@ -2034,7 +2112,7 @@ Industry keywords: {keywords or '(none)'}
         client,
         user_prompt,
         cached_user_prefix="",  # one-shot per application; cache benefit is small
-        required_keys=RECOMMEND_REQUIRED_KEYS,
+        response_model=RecommendResponse,
         call_kind="recommend",
         username=username,
         run_id=run_id,
@@ -2191,7 +2269,7 @@ Industry keywords: {keywords or '(none)'}
         client,
         user_prompt,
         cached_user_prefix="",  # one-shot per application
-        required_keys=RECOMMEND_SUMMARIES_REQUIRED_KEYS,
+        response_model=RecommendSummariesResponse,
         call_kind="recommend_summary",
         username=username,
         run_id=run_id,
@@ -2347,7 +2425,7 @@ Answer: {answer}
         client,
         user_prompt,
         cached_user_prefix="",
-        required_keys=PROMOTE_BULLET_REQUIRED_KEYS,
+        response_model=PromoteBulletResponse,
         call_kind="promote_clarification_to_bullet",
         username=username,
         run_id=run_id,

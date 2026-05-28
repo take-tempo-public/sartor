@@ -32,6 +32,7 @@ dependencies = [
     "markdown>=3.6,<4.0",
     "beautifulsoup4>=4.12,<5.0",
     "requests>=2.31,<3.0",
+    "pydantic>=2.0,<3.0",
     "sqlalchemy>=2.0,<3.0",
     "alembic>=1.13,<2.0",
     # β.3 — Playwright drives headless Chromium for PDF + live HTML
