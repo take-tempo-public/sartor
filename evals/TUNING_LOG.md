@@ -16,6 +16,55 @@ prevent re-running them.
 
 ---
 
+## BASELINE — v1.0.1 — 2026-05-28
+
+> **Purpose:** regression floor for Phase 1 (eval apparatus, v1.0.2).
+> Five consecutive runs of `python evals/runner.py --suite synthetic`
+> at `PROMPT_VERSION 2026-05-24.4` with no code changes between runs.
+> All runs on branch `eval/pre-tag-baseline` (base: main, post-cleanup).
+>
+> **This table is the pass/fail gate for Phase 2 (R1 Phase 2, v1.0.3):**
+> any (fixture × rubric) that drops more than 0.5 below the mean below
+> blocks merge on the R1 branch.
+
+### Run metadata
+
+| Run | Timestamp (UTC) | PROMPT_VERSION | Result file |
+|---|---|---|---|
+| 1 | TBD | 2026-05-24.4 | TBD |
+| 2 | TBD | 2026-05-24.4 | TBD |
+| 3 | TBD | 2026-05-24.4 | TBD |
+| 4 | TBD | 2026-05-24.4 | TBD |
+| 5 | TBD | 2026-05-24.4 | TBD |
+
+### Per-(fixture × rubric) mean ± stdev (n=5)
+
+*To be filled in after all 5 runs complete.*
+
+| Fixture | ats_format | clarification_quality | grounding | keyword_coverage | tone | iteration_quality |
+|---|---|---|---|---|---|---|
+| data-scientist-junior | — | — | — | — | — | — |
+| pm-senior | — | — | — | — | — | — |
+| sre-mid-level | — | — | — | — | — |  — |
+
+### Raw scores per run
+
+*To be filled in after all 5 runs complete.*
+
+### Deterministic metrics baseline (mean across 5 runs)
+
+| Fixture | verb_diversity | specificity_density | grounding_overlap_ratio | cost_usd |
+|---|---|---|---|---|
+| data-scientist-junior | — | — | — | — |
+| pm-senior | — | — | — | — |
+| sre-mid-level | — | — | — | — |
+
+### What we learned
+
+(To be filled in after all 5 runs complete.)
+
+---
+
 ## 2026-05-26 — Atomic extraction + context-probe clarify (R1 quality fix) (`2026-05-26.1` → `2026-05-26.2`)
 
 ### What changed
