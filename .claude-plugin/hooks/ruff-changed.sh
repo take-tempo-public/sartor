@@ -11,8 +11,8 @@ if ! echo "$CMD" | grep -qE '\bgit[[:space:]]+commit\b'; then
   exit 0
 fi
 
-# Find staged .py files (cwd-relative). If none, nothing to do.
-STAGED=$(git diff --cached --name-only -- '*.py' 2>/dev/null)
+# Find staged .py files (cwd-relative), excluding deletions. If none, nothing to do.
+STAGED=$(git diff --cached --name-only --diff-filter=ACM -- '*.py' 2>/dev/null)
 if [ -z "$STAGED" ]; then
   exit 0
 fi
