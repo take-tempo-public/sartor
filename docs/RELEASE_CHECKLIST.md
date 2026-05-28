@@ -24,11 +24,12 @@ release.
 
 ### Must do before tag (shipping blockers)
 
-- [ ] **Manual fresh-clone verification** — clone in a clean
-      directory; run `pip install -e .` + `python -m playwright
-      install chromium` + `python app.py`; complete one
-      application end-to-end. Time-to-first-generation < 5
-      minutes (D.4 below).
+- [ ] **Manual fresh-clone verification** *(deferred to v1.3 — no
+      public release until the UI and R1 work below lands)* — clone
+      in a clean directory; run `pip install -e .` +
+      `python -m playwright install chromium` + `python app.py`;
+      complete one application end-to-end. Time-to-first-generation
+      < 5 minutes (D.4 below).
 - [x] **~~Eval baseline check~~** — ✅ verified 2026-05-26.
       `python evals/runner.py --suite synthetic --subset smoke`
       run twice (cost ~$0.79 across both); second run clean with
@@ -43,31 +44,23 @@ release.
 - [x] **~~Quality gate~~** — ✅ verified 2026-05-28. `ruff check .` +
       `mypy .` (81 files, no issues) + `pytest` (637 passed) all
       clean on branch `chore/quality-gate-version-bump-v1.0.1`.
-- [ ] **`pyproject.toml` version bump** — `1.0.0` → `1.0.1`
-      in the release commit.
+- [x] **~~`pyproject.toml` version bump~~** — ✅ done 2026-05-28.
+      `version = "1.0.1"` in [`pyproject.toml:7`](../pyproject.toml).
+      Landed in `chore/quality-gate-version-bump-v1.0.1`.
 - [x] **~~`CHANGELOG.md` flip~~** — ✅ confirmed 2026-05-28. The
       `[1.0.1] — 2026-05-28` section was written ahead of time and is
       correct; `[Unreleased]` placeholder is clean. "Resume Optimizer"
       name in line 3 fixed to "callback." in this branch.
 - [ ] **Push to GitHub + verify the `https://github.com/amodal1/callback`
-      URL resolves** — the repo is still local-only (no `origin`
-      remote configured). Multiple shipping artefacts already
-      reference the GitHub URL as if it exists:
-      - [`pyproject.toml:56-59`](../pyproject.toml) — Homepage,
-        Repository, Issues, Changelog package metadata.
-      - [`README.md:34`](../README.md) — quick-install
-        `git clone` line.
-      - [`docs/install.md:45, 90, 143`](install.md) — Windows /
-        macOS / Linux clone instructions.
-      Anyone following those docs against the unpublished repo
-      hits a 404. Action before tag: create the GitHub repo
-      (public, name `callback`, under `amodal1`), `git remote add
-      origin git@github.com:amodal1/callback.git`, push
-      `feat/v1-unified-corpus` and `main`, push the v1.0.1 tag,
-      then spot-check that all four pyproject URLs resolve and
-      that `git clone https://github.com/amodal1/callback` works
-      from a separate machine (or fresh clone path) without
-      auth prompts.
+      URL resolves** *(deferred to v1.3 — no public release until
+      UI redesign and R1 work land)* — the repo is still local-only
+      (no `origin` remote configured). Action before first public
+      tag: create the GitHub repo (public, name `callback`, under
+      `amodal1`), `git remote add origin
+      git@github.com:amodal1/callback.git`, push `main` and the
+      release tag, then verify that `pyproject.toml` Homepage /
+      Repository / Issues / Changelog URLs and `README.md`/
+      `docs/install.md` clone instructions all resolve.
 
 ### Should do (v1.0.1 polish; document if skipped)
 
