@@ -1,4 +1,4 @@
-# Resume Optimizer — Dashboard
+# callback. — Dashboard
 
 Read-only Flask blueprint that surfaces telemetry from the LLM pipeline and eval harness. Localhost-only by guard.
 

@@ -1,4 +1,4 @@
-"""Dashboard blueprint — observability for the Resume Optimizer LLM pipeline.
+"""Dashboard blueprint — observability for the callback. LLM pipeline.
 
 Reads logs/llm_calls.jsonl (per-call telemetry from analyzer._call_llm) and
 evals/results/*.jsonl (per-rubric verdicts from evals/runner.py), renders two
