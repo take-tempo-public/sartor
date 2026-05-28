@@ -76,15 +76,21 @@
         </div>
         <div id="newUserForm" class="hidden">
           <div class="form-row">
+            <label for="newUsername" class="sr-only">Username</label>
             <input type="text" id="newUsername" placeholder="Username" aria-label="New user username">
+            <label for="newName" class="sr-only">Full name</label>
             <input type="text" id="newName" placeholder="Full Name" aria-label="New user full name">
           </div>
           <div class="form-row">
+            <label for="newEmail" class="sr-only">Email</label>
             <input type="email" id="newEmail" placeholder="Email" aria-label="New user email">
+            <label for="newPhone" class="sr-only">Phone</label>
             <input type="tel" id="newPhone" placeholder="Phone" aria-label="New user phone">
           </div>
           <div class="form-row">
+            <label for="newLinkedin" class="sr-only">LinkedIn URL</label>
             <input type="url" id="newLinkedin" placeholder="LinkedIn URL" aria-label="New user LinkedIn URL">
+            <label for="newWebsite" class="sr-only">Website URL</label>
             <input type="url" id="newWebsite" placeholder="Website URL" aria-label="New user website URL">
           </div>
           <button class="cb-btn cb-bg-teal" onclick="createUser()">Create</button>
@@ -621,6 +627,7 @@
             <input type="text" id="memorySearch" class="memory-search"
                    placeholder="Search question or answer…"
                    aria-label="Search clarifications">
+            <label for="memoryKindFilter" class="sr-only">Filter by clarification kind</label>
             <select id="memoryKindFilter" aria-label="Filter by clarification kind">
               <option value="">All kinds</option>
               <option value="experience_probe">Experience probe</option>
