@@ -40,12 +40,15 @@ release.
       mis-categorized as `status=ok`" entry under "Should do" for
       the one-line `evals/runner.py:289` follow-up that would have
       prevented the false-positive regression alarm.
-- [ ] **Quality gate** — `ruff check .` + `mypy .` + `pytest`
-      all clean.
+- [x] **~~Quality gate~~** — ✅ verified 2026-05-28. `ruff check .` +
+      `mypy .` (81 files, no issues) + `pytest` (637 passed) all
+      clean on branch `chore/quality-gate-version-bump-v1.0.1`.
 - [ ] **`pyproject.toml` version bump** — `1.0.0` → `1.0.1`
       in the release commit.
-- [ ] **`CHANGELOG.md` flip** — rename `[Unreleased]` →
-      `[1.0.1] — <date>`; add new empty `[Unreleased]` block.
+- [x] **~~`CHANGELOG.md` flip~~** — ✅ confirmed 2026-05-28. The
+      `[1.0.1] — 2026-05-28` section was written ahead of time and is
+      correct; `[Unreleased]` placeholder is clean. "Resume Optimizer"
+      name in line 3 fixed to "callback." in this branch.
 - [ ] **Push to GitHub + verify the `https://github.com/amodal1/callback`
       URL resolves** — the repo is still local-only (no `origin`
       remote configured). Multiple shipping artefacts already

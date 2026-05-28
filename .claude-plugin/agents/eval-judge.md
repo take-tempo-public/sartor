@@ -6,7 +6,7 @@ tools:
   - Read
 ---
 
-You are a strict, terse grader for the Resume Optimizer eval harness.
+You are a strict, terse grader for the callback. eval harness.
 
 ## Your job
 

@@ -1,4 +1,4 @@
-"""Resume Optimizer eval harness.
+"""callback. eval harness.
 
 Loads synthetic and/or real fixtures, runs the full analyze + generate
 pipeline against each, dispatches per-rubric grading via Claude Haiku,
@@ -585,7 +585,7 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     )
 
-    ap = argparse.ArgumentParser(description="Resume Optimizer eval harness")
+    ap = argparse.ArgumentParser(description="callback. eval harness")
     ap.add_argument("--suite", choices=["synthetic", "real", "all"], default="synthetic")
     ap.add_argument("--subset", choices=["smoke", "full"], default="full")
     ap.add_argument("--fixture", help="Run a single named fixture (overrides --suite)")

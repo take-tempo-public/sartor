@@ -5,9 +5,9 @@ License**, matching this project's overall license (see `LICENSE` at the
 repo root).
 
 ```
-MIT License — Resume Optimizer bundled templates
+MIT License — callback. bundled templates
 
-Copyright (c) 2026 Resume Optimizer contributors
+Copyright (c) 2026 callback. contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

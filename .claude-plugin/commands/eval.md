@@ -1,5 +1,5 @@
 ---
-description: Run the Resume Optimizer eval harness against synthetic or real fixtures.
+description: Run the callback. eval harness against synthetic or real fixtures.
 argument-hint: [--suite synthetic|real|all] [--subset smoke|full] [--fixture NAME]
 allowed-tools:
   - Bash

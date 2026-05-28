@@ -1,4 +1,4 @@
-# Resume Optimizer — Eval Harness
+# callback. — Eval Harness
 
 A regression-detection system for the project's two-call LLM pipeline. Runs the full `analyze()` + `generate()` flow against fixture inputs with known properties, grades each output against rubrics, and writes results as JSONL for the dashboard and CI.
 
