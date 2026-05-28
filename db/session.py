@@ -12,6 +12,7 @@ on first launch via alembic upgrade head.
 
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -100,6 +101,7 @@ def get_session() -> Session:
 
 
 _initialized_paths: set[Path] = set()
+_init_lock = threading.Lock()
 
 
 def init_db(db_path: Path | str | None = None) -> bool:
@@ -134,19 +136,20 @@ def init_db(db_path: Path | str | None = None) -> bool:
         db_path = DEFAULT_DB_PATH
 
     resolved = Path(db_path).resolve()
-    if resolved in _initialized_paths:
-        # Already migrated in this process — alembic is at head; skip.
-        # Returning False matches the "DB already at head" semantics
-        # callers expect (no bundled-seed work needed).
-        return False
+    with _init_lock:
+        if resolved in _initialized_paths:
+            # Already migrated in this process — alembic is at head; skip.
+            # Returning False matches the "DB already at head" semantics
+            # callers expect (no bundled-seed work needed).
+            return False
 
-    was_fresh = not resolved.exists()
-    resolved.parent.mkdir(parents=True, exist_ok=True)
+        was_fresh = not resolved.exists()
+        resolved.parent.mkdir(parents=True, exist_ok=True)
 
-    cfg = Config(str(_REPO_ROOT / "alembic.ini"))
-    cfg.set_main_option("sqlalchemy.url", _db_url(resolved))
-    command.upgrade(cfg, "head")
-    _initialized_paths.add(resolved)
+        cfg = Config(str(_REPO_ROOT / "alembic.ini"))
+        cfg.set_main_option("sqlalchemy.url", _db_url(resolved))
+        command.upgrade(cfg, "head")
+        _initialized_paths.add(resolved)
     return was_fresh
 
 

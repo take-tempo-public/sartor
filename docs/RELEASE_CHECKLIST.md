@@ -273,24 +273,19 @@ release.
       element (`corpusToolbar` / `corpusCount`) at the moment
       `_renderCorpusList` runs, or a property access on `exp`
       that the API doesn't always provide.
-- [ ] **`/personas` 500 on first user-select after server restart**
-      *(root cause identified 2026-05-27; fix deferred)* —
-      `_persona_dicts_safe` (commit `0c598df`) fixed per-row
-      serialization failures but did NOT fix this bug. Root cause
-      is a thread-safety gap in [`db/session.py`](../db/session.py)
-      `init_db()`: the check-then-act on `_initialized_paths`
-      (line 137–141) is not protected by a lock. On first user-select
-      after restart, `onUserSelect` fires multiple requests
-      simultaneously (`/config`, `/applications`, `/personas`, corpus
-      routes — all calling `init_db()`). All threads see an empty
-      `_initialized_paths`, all attempt `command.upgrade()` concurrently,
-      alembic's module-level globals get corrupted, and one thread
-      returns 500. Second user-select succeeds because
-      `_initialized_paths` is now populated. Fix: add a
-      `threading.Lock()` around the check-and-init block in `init_db()`
-      (three-line change). Branch `fix/corpus-tab-5xx-first-load`
-      was closed prematurely — this bug was not caught during that
-      session's verification. New branch: `fix/personas-500-thread-race`.
+- [x] **~~`/personas` 500 on first user-select after server restart~~** —
+      ✅ resolved 2026-05-27. Added `threading.Lock()` around the
+      check-and-init block in [`db/session.py`](../db/session.py)
+      `init_db()` (three lines: `import threading`, `_init_lock =
+      threading.Lock()` at module level, `with _init_lock:` wrapping
+      the entire check-then-`_initialized_paths.add()` sequence). The
+      race: `onUserSelect` fires multiple concurrent requests on first
+      user-select after restart; all threads saw an empty
+      `_initialized_paths`, all attempted `command.upgrade()`
+      simultaneously, corrupting alembic's module-level globals. The
+      lock makes the check-and-add atomic — only the first thread runs
+      `upgrade()`; the rest short-circuit once it completes. Branch
+      `fix/personas-500-thread-race`.
 - [x] **~~Judge JSON parse failures mis-categorized as `status=ok`~~** —
       ✅ resolved 2026-05-26.
       [`evals/runner.py:289`](../evals/runner.py) now returns
