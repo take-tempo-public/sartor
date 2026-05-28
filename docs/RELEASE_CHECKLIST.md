@@ -84,10 +84,15 @@ release.
       - **Addressee block** (`Hiring Manager,` / company name /
         date): rendered **inline** with the body — no separately
         styled block, no boxed treatment.
-- [ ] **BACK / Continue spacing polish on Compose** — listed
-      in PRODUCT_SHAPE §10 as deferred from v1.0.0.
-- [ ] **`docs/install.md` updated** for any platform-specific
-      lessons learned during v1.0.0 hands-on testing.
+- [x] **~~BACK / Continue spacing polish on Compose~~** — ✅ verified
+      2026-05-28 (commit `8d59361`). Spacing confirmed correct; no
+      visual change needed. Listed in PRODUCT_SHAPE §10 as deferred
+      from v1.0.0.
+- [x] **~~`docs/install.md` updated~~** — ✅ resolved 2026-05-28.
+      Test count updated (`627+` → `637+`); Windows section now
+      covers PowerShell `$env:` syntax for the API-key step, a
+      `python -m pip` fallback for Windows Store Python installs,
+      and the `sysdm.cpl` shortcut for setting a permanent env var.
 - [ ] **Accessibility scan of all user-facing documentation** —
       surfaced during the screenshot-capture pass (2026-05-26).
       Run an a11y audit across the user-facing doc set

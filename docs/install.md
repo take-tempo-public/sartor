@@ -39,6 +39,9 @@
    During install, check **"Add Python to PATH"**.
 
 2. **Open a terminal** — press `Win + R`, type `cmd`, press Enter.
+   (PowerShell users: open Windows Terminal or press `Win + X → Terminal`.
+   All commands below work in both; see the API-key step for the
+   PowerShell equivalent of `set`.)
 
 3. **Clone the repo and navigate into it:**
    ```cmd
@@ -49,6 +52,10 @@
 4. **Install dependencies:**
    ```cmd
    pip install -e .
+   ```
+   If `pip` is not found (common with Windows Store Python), use:
+   ```cmd
+   python -m pip install -e .
    ```
 
 5. **Download the Chromium binary for PDF rendering** (one-time, ~150 MB):
@@ -62,7 +69,12 @@
      ```cmd
      set ANTHROPIC_API_KEY=your-key-here
      ```
-     Permanent: System Properties → Environment Variables.
+     PowerShell equivalent:
+     ```powershell
+     $env:ANTHROPIC_API_KEY = "your-key-here"
+     ```
+     Permanent (both shells): `Win + R` → `sysdm.cpl` → Advanced →
+     Environment Variables → New under "User variables".
    - **Key file:** create a file named `.api_key` in the repo
      root containing only your key.
 
@@ -280,7 +292,7 @@ After the steps above:
 python -m pytest -q
 ```
 
-Should report `627+ passed`. Then:
+Should report `637+ passed`. Then:
 
 ```bash
 python -m ruff check .
