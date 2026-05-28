@@ -362,52 +362,48 @@ release.
       tracked item below — paged.js is what handles intelligent
       `page-break-inside: avoid` layout; the blanks were the
       browser's naive fallback when paged.js couldn't run.
-- [ ] **Form fields without `id` or `name` attribute** —
-      surfaced 2026-05-26 in the dev-console. Chrome flagged
-      seven form-field elements ("violating nodes") with neither
-      an `id` nor a `name` attribute, which prevents
-      browser-autofill and is a soft a11y signal. Distinct from
-      the "Accessibility scan of all user-facing documentation"
-      entry above — that one covers `docs/screenshots/` alt-text
-      + Mermaid prose summaries + heading hierarchy; this one is
-      about live form inputs in
-      [`templates/index.html`](../templates/index.html) and any
-      partials. Fix: find the seven offending elements via
-      Chrome's `Inspect → Issues → "A form field element should
-      have an id or name attribute"` view, add stable `id`s, and
-      add matching `<label for="…">` elements where missing.
-      Cheap; bundle with the doc-side a11y scan if that one
-      lands first.
-- [ ] **Two `POST /api/analyze 409`s observed during Corpus-tab
-      session (investigation needed)** — surfaced 2026-05-26 in
-      the dev-console. `POST /api/analyze` returned 409 twice
-      during a session whose other primary activity was loading
-      the Corpus tab. The 409 path is used elsewhere in the
-      codebase as an onboarding-needed / reconcile signal (see
-      `_needsOnboarding(res, data)` at
-      [`static/app.js:1818`](../static/app.js)), so 409 may be
-      expected when analyze is called against an un-onboarded
-      user — but it shouldn't fire unless the user actually
-      triggered analyze. User confirmed they don't recall
-      whether they were mid-application or fresh-session when
-      the 409s fired, so this is filed as "investigation
-      needed" rather than asserted-bug. Investigation steps:
-      (1) grep `app.py` for the `/api/analyze` route and
-      enumerate all branches returning 409; (2) check whether
-      anything on the Corpus tab can implicitly call analyze
-      (e.g., a pre-warming side effect, an iteration-resume on
-      tab switch); (3) add request-context logging on the
-      analyze route's 409 paths so the next observed 409
-      carries the reason in the Flask log. Outcome: either
-      close as "expected, document the triggering UI path" or
-      file a follow-up bug if the call is truly unsolicited.
+- [x] **~~Form fields without `id` or `name` attribute~~** —
+      ✅ resolved 2026-05-28 (commit `b904a87`). Added `sr-only`
+      `<label for="…">` elements for the six new-user form fields
+      (`newUsername`, `newName`, `newEmail`, `newPhone`,
+      `newLinkedin`, `newWebsite`) and the `memoryKindFilter`
+      select in [`templates/index.html`](../templates/index.html).
+      All seven Chrome-flagged "violating nodes" now have
+      associated labels; browser-autofill and screen-reader
+      association restored. No functional change.
+- [x] **~~Two `POST /api/analyze 409`s observed during Corpus-tab
+      session~~** — ✅ investigated + logged 2026-05-28. Code
+      audit confirmed:
+      - **Single 409 trigger in `/api/analyze`:** both
+        `_run_analysis_corpus_backed` and its streaming sibling
+        return 409 only when `build_context_set_from_db` raises
+        `ValueError` — i.e., the selected user has no `Candidate`
+        row in the DB yet. Message: `"No candidate with
+        username=..."`. No other 409 branches exist in these two
+        functions.
+      - **Corpus tab cannot implicitly call analyze:** `onUserSelect`
+        fires `loadConfig`, `refreshApplications`,
+        `_loadPersonaOptions`, `wizardInit` — none touch
+        `/api/analyze`. The Corpus-tab 409 handler
+        (`refreshCorpus`, `refreshMemory`, `refreshApplications`)
+        is a *separate* set of routes, not analyze.
+      - **Conclusion: expected behavior.** The two 409s were
+        triggered by a user clicking Analyze for a user not yet
+        onboarded (or by the post-onboarding-modal retry path).
+        The JS correctly responds by opening the onboarding modal
+        (`openOnboardingModal(runAnalysis)`); after successful
+        import the analyze call retries and succeeds.
+      - **Logging added** (commit on this branch): both 409
+        branches now emit `logger.warning("[analyze 409] user=X
+        needs_onboarding: ...")` so future occurrences are
+        self-describing in the Flask log. Response payload
+        unchanged.
       **Aside on console noise:** the bulk of the dev-console
-      output during this capture was
+      output during the original capture was
       `content.js:360 The kernel 'X' for backend 'webgl|cpu'
       is already registered` from a browser extension's content
       script (TensorFlow.js classifier running in `content.js`
-      + `classifier.js`) — NOT our code. Do not chase those
-      warnings; they originate outside the app.
+      + `classifier.js`) — NOT our code.
 
 - [x] **~~Template preview pagination — blank pages between
       sections~~** — ✅ resolved 2026-05-27 alongside the

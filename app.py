@@ -447,6 +447,9 @@ def _run_analysis_corpus_backed_streaming(safe_user: str, jd_text: str, data: di
             )
         except ValueError as exc:
             setup_session.rollback()
+            logger.warning(
+                "[analyze/stream 409] user=%s needs_onboarding: %s", safe_user, exc
+            )
             return jsonify({"error": str(exc), "needs_onboarding": True}), 409
         application_id = application.id
         application_run_id = application_run.id
@@ -590,6 +593,9 @@ def _run_analysis_corpus_backed(safe_user: str, jd_text: str, data: dict):
             )
         except ValueError as exc:
             session.rollback()
+            logger.warning(
+                "[analyze 409] user=%s needs_onboarding: %s", safe_user, exc
+            )
             return jsonify({
                 "error": str(exc),
                 "needs_onboarding": True,
