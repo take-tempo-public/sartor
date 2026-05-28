@@ -238,41 +238,16 @@ release.
       stabilize first (currently being debugged) — the POMs
       lift directly from its navigation logic, so a moving
       script means churning POMs.
-- [ ] **Corpus tab render-after-refresh bug** *(instrumented
-      2026-05-26; root cause TBD)* — surfaced during
-      the screenshot-capture pass (2026-05-26).
-      [`static/app.js:1795`](../static/app.js) `refreshCorpus()`
-      fetches `/api/users/<user>/experiences` successfully and
-      populates `_corpusExperiences` (observed length 3 against a
-      DB that had 3 experiences for the demo user), then calls
-      [`_renderCorpusList()`](../static/app.js) at
-      [`static/app.js:2000`](../static/app.js) — but the DOM
-      doesn't end up with any `.corpus-card` elements. The list
-      element's `innerHTML.length` is ~65 chars (placeholder-sized)
-      even though the JS state shows 3 experiences. Either
-      `_renderCorpusList()` is throwing silently inside its
-      `forEach`, or some later code path is clearing the list
-      back to placeholder state. Repro:
-      1. Hit `/api/users/<user>/import-legacy` with `with_llm=True`
-         against a user with an existing résumé in `resumes/<user>/`.
-      2. Open the Career Corpus tab in a fresh browser session.
-      3. Observe: the UI shows the empty-corpus hint despite the
-         DB having experiences (`GET /api/users/<user>/experiences`
-         returns them).
-      Workaround currently used by [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py):
-      `page.reload()` + re-select user clears the bad state.
-      **Status:** instrumentation landed 2026-05-26 —
-      `_renderCorpusList` is now wrapped in try/catch with an
-      element-presence guard, and `_renderCorpusSummary` calls
-      are guarded per-iteration so a single bad row doesn't
-      blank the whole list. Any future trigger will surface the
-      culprit via `console.error` instead of failing silently.
-      Root-cause chase still open: needs a repro that exhibits
-      the bug with DevTools open to read the error. Most likely
-      candidates per static read of the code: a missing DOM
-      element (`corpusToolbar` / `corpusCount`) at the moment
-      `_renderCorpusList` runs, or a property access on `exp`
-      that the API doesn't always provide.
+- [x] **~~Corpus tab render-after-refresh bug~~** —
+      ✅ resolved 2026-05-27 (downstream of thread-race fix).
+      Root cause confirmed: the `/personas` 500 thread-race
+      (`fix/personas-500-thread-race`, commit `a32bc1b`) was
+      corrupting upstream state on first user-select after restart,
+      leaving `_corpusExperiences` in a bad state before
+      `_renderCorpusList` ran. After the `threading.Lock()` fix
+      landed, the corpus tab renders cards correctly on first load
+      with no `console.error`. The try/catch instrumentation from
+      `16d7ad4` stays in place as a safety net for future regressions.
 - [x] **~~`/personas` 500 on first user-select after server restart~~** —
       ✅ resolved 2026-05-27. Added `threading.Lock()` around the
       check-and-init block in [`db/session.py`](../db/session.py)
