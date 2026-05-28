@@ -16,6 +16,88 @@ prevent re-running them.
 
 ---
 
+## BASELINE — v1.0.1 — 2026-05-28
+
+> **Purpose:** regression floor for Phase 1 (eval apparatus, v1.0.2).
+> Five consecutive runs of `python evals/runner.py --suite synthetic`
+> at `PROMPT_VERSION 2026-05-24.4` with no code changes between runs.
+> All runs on branch `eval/pre-tag-baseline` (base: main, post-cleanup).
+>
+> **This table is the pass/fail gate for Phase 2 (R1 Phase 2, v1.0.3):**
+> any (fixture × rubric) that drops more than 0.5 below the mean below
+> blocks merge on the R1 branch.
+
+### Run metadata
+
+| Run | Timestamp (UTC) | PROMPT_VERSION | Result file |
+|---|---|---|---|
+| 1 | 2026-05-28T21:26:16Z | 2026-05-24.4 | `evals/results/20260528_212616Z.jsonl` |
+| 2 | 2026-05-28T21:38:15Z | 2026-05-24.4 | `evals/results/20260528_213815Z.jsonl` |
+| 3 | 2026-05-28T21:55:41Z | 2026-05-24.4 | `evals/results/20260528_215541Z.jsonl` |
+| 4 | 2026-05-28T22:05:45Z | 2026-05-24.4 | `evals/results/20260528_220545Z.jsonl` |
+| 5 | 2026-05-28T22:15:53Z | 2026-05-24.4 | `evals/results/20260528_221553Z.jsonl` |
+
+**Total cost:** USD 2.07 across 5 runs (~$0.41/run). Significantly below the $7.50 roadmap estimate — cache hit rate is strong (cache_read_input_tokens landing on both analyze and generate prefix blocks). Wall clock: ~3.5h total.
+
+**Note on exit codes:** all 5 runs exited with code 2 (`n_fail > 0`). This is expected during baseline collection: two known-below-threshold rubrics (`pm-senior × clarification_quality` and `sre-mid-level × iteration_quality`) and cross-run Haiku judge variance (Δ up to 0.6) routinely trigger the exit signal. Not a blocker for baseline validity.
+
+**Also fixed in this branch:** `evals/runner.py:871` — regression detection was firing on `judge_error` records (score=0 passes `isinstance(0, int)`). Added `record.get("status") != "judge_error"` guard. See commit `27dcea5`.
+
+### Per-(fixture × rubric) mean ± stdev (n=5, judge_errors excluded)
+
+`*` = below 4.0 threshold; `—` = all runs scenario_misaligned (edit didn't land)
+
+| Fixture | ats_format | clarification_quality | grounding | keyword_coverage | tone | iteration_quality |
+|---|---|---|---|---|---|---|
+| data-scientist-junior | 4.56 ± 0.25 | 3.90 ± 0.45 `*` | 4.62 ± 0.25 | 4.20 ± 0.00 | 4.20 ± 0.00 | n/a |
+| pm-senior | 4.60 ± 0.10 | 3.92 ± 0.44 `*` | 4.76 ± 0.09 | 4.17 ± 0.05 (n=4) | 4.20 ± 0.00 | n/a |
+| sre-mid-level | 4.72 ± 0.13 | 4.06 ± 0.31 | 4.60 ± 0.24 | 4.28 ± 0.18 | 4.32 ± 0.27 | 3.20 (n=1) `*` |
+
+### Raw scores per run
+
+| Fixture | Rubric | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 |
+|---|---|---|---|---|---|---|
+| data-scientist-junior | ats_format | 4.5 | 4.8 | 4.5 | 4.8 | 4.2 |
+| data-scientist-junior | clarification_quality | 4.2 | 4.2 | 3.7 | 4.2 | 3.2 |
+| data-scientist-junior | grounding | 4.2 | 4.8 | 4.8 | 4.7 | 4.6 |
+| data-scientist-junior | keyword_coverage | 4.2 | 4.2 | 4.2 | 4.2 | 4.2 |
+| data-scientist-junior | tone | 4.2 | 4.2 | 4.2 | 4.2 | 4.2 |
+| pm-senior | ats_format | 4.6 | 4.5 | 4.7 | 4.5 | 4.7 |
+| pm-senior | clarification_quality | 3.2 | 3.8 | 4.2 | 4.2 | 4.2 |
+| pm-senior | grounding | 4.6 | 4.8 | 4.8 | 4.8 | 4.8 |
+| pm-senior | keyword_coverage | JE | 4.2 | 4.2 | 4.1 | 4.2 |
+| pm-senior | tone | 4.2 | 4.2 | 4.2 | 4.2 | 4.2 |
+| sre-mid-level | ats_format | 4.8 | 4.5 | 4.8 | 4.7 | 4.8 |
+| sre-mid-level | clarification_quality | 4.2 | 4.2 | 4.2 | 3.5 | 4.2 |
+| sre-mid-level | grounding | 4.8 | 4.2 | 4.6 | 4.6 | 4.8 |
+| sre-mid-level | iteration_quality | N/A | N/A | N/A | 3.2 | N/A |
+| sre-mid-level | keyword_coverage | 4.2 | 4.2 | 4.6 | 4.2 | 4.2 |
+| sre-mid-level | tone | 4.8 | 4.2 | 4.2 | 4.2 | 4.2 |
+
+`JE` = judge_error (Haiku returned invalid JSON; excluded from stats). `N/A` = scenario_misaligned (scripted edit substring not in generated output that run).
+
+### Deterministic metrics baseline (mean ± stdev across 5 runs)
+
+| Fixture | verb_diversity | specificity_density | grounding_overlap_ratio | cost_usd/run | latency_ms p50 |
+|---|---|---|---|---|---|
+| data-scientist-junior | 0.982 ± 0.041 | 0.060 ± 0.056 | 0.214 ± 0.024 | $0.1286 ± $0.0015 | 140,890 ms |
+| pm-senior | 0.895 ± 0.079 | 0.100 ± 0.015 | 0.320 ± 0.045 | $0.1363 ± $0.0048 | 148,266 ms |
+| sre-mid-level | 0.910 ± 0.062 | 0.356 ± 0.056 | 0.269 ± 0.041 | $0.1483 ± $0.0058 | 157,326 ms |
+
+### What we learned
+
+1. **Two clarification_quality rubrics are persistently below 4.0.** `pm-senior` (3.92) and `data-scientist-junior` (3.90) show mean scores below the 4.0 pass threshold with stdev ~0.44. This is not a new regression — it's the known post-R1-attempt state at `PROMPT_VERSION=2026-05-24.4`. The R1 Phase 2 work (v1.0.3) must recover `pm-senior × clarification_quality` to ≥4.0 before merge; `data-scientist-junior` recovery is a secondary target. The floor established here (3.90, 3.92) is the baseline these values must beat.
+
+2. **`sre-mid-level × iteration_quality` fires in only 1 of 5 runs.** The scripted edit (`edit_target_substring`) didn't land in the generated output 4/5 runs. This is the known fixture-fragility issue from the 2026-05-11.3 TUNING_LOG entry. The single valid score (3.2) is below threshold. The v1.0.2 fixture work (add scenarios to pm-senior + data-scientist-junior) must precede any iteration_quality improvement work.
+
+3. **Cache behavior is healthy.** `cache_create` fires on every analyze call (as expected — first call per fixture per run can't hit the cache). The `cache_read` on generate (~1,781–1,928 tokens) confirms the stable user-prefix caching from v1.0.0 work is holding. Per-run cost is 3.5× below the roadmap estimate — the caching improvements have compounded well.
+
+4. **judge_errors are transient.** Only 1 judge_error in 5 runs (pm-senior × keyword_coverage, Run 1). Haiku occasionally returns malformed JSON under API load; the rate (~1 per 80 gradings) is within acceptable noise. The `status: "judge_error"` fix at `evals/runner.py:289` correctly marks these; the new guard at `:871` prevents them from triggering false regression alarms.
+
+5. **Regression alerter design note.** During N-run baseline collection, the alerter compares each run against the prior run. Natural Haiku variance (Δ up to 0.6 on same-prompt runs) will regularly exceed the 0.5 regression threshold. Exit code 2 during baseline collection is expected and not actionable. The v1.0.2 work should consider a `--baseline-mode` flag that disables run-to-run regression checking during baseline collection.
+
+---
+
 ## 2026-05-26 — Atomic extraction + context-probe clarify (R1 quality fix) (`2026-05-26.1` → `2026-05-26.2`)
 
 ### What changed

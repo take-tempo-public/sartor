@@ -868,7 +868,7 @@ def main(argv: list[str] | None = None) -> int:
                     fixture["name"], rubric_path.stem, score, verdict,
                 )
 
-                if isinstance(score, (int, float)):
+                if isinstance(score, (int, float)) and record.get("status") != "judge_error":
                     delta = _detect_regression(
                         fixture["name"], rubric_path.stem, float(score), baseline,
                     )
