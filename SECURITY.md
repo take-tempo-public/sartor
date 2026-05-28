@@ -141,6 +141,7 @@ We aim to respond within 5 business days and to issue a fix within
 | Flask debug mode on by default | Low | Local-only tool; debug mode provides useful error output for the single user. Set `FLASK_DEBUG=0` to disable. |
 | No authentication | Low | Localhost only; OS-level access controls are the boundary. |
 | Prompt injection via JD text | Low | Mitigated by system-prompt constraints; no sensitive data returned to attacker. |
+| No `Content-Security-Policy` header | Low | Localhost-only tool; no third-party content is loaded (all assets are local). Confirmed v1.0.1: no `eval`, `new Function`, or string-form timer in `app.js` or `paged.polyfill.js`. The "CSP unsafe-eval" dev-console message observed 2026-05-26 was a downstream symptom of the sandboxed-iframe bug (resolved 2026-05-27); it was Chrome surfacing the `sandbox` block as a CSP-style error, not a server CSP violation. Add a real `Content-Security-Policy` header before any networked deployment. |
 | LinkedIn / portfolio scraping blocked | Info | Not a security risk; sites may block the scraper, which fails gracefully. |
 | Flask sessions disabled | Info | No login state to protect; no cookies issued. |
 | JSON logs contain LLM responses | Info | `logs/llm_calls.jsonl` is sensitive; gitignored; lives only on your machine. |

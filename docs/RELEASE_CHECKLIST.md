@@ -323,25 +323,26 @@ release.
       purpose statement at lines 1–14 establishes it as the
       Priya companion to the abstract walkthrough; no file
       change needed.
-- [ ] **CSP `unsafe-eval` violation on script execution** —
-      surfaced 2026-05-26 in the browser dev-console while
-      loading the Corpus tab. Some code path calls a
-      string-evaluating JavaScript primitive — `eval`, the
-      dynamic-Function constructor, or string-form `setTimeout`
-      / `setInterval` — and is being blocked by the site's CSP
-      `script-src` directive. Likely a vendor library (paged.js
-      is a candidate — page-rendering libraries sometimes
-      synthesize CSS / JS at runtime via dynamic-string code
-      paths) but could be our code too. Action: (1) grep
-      `static/` and any bundled vendor directories for the
-      blocked primitives; (2) decide whether to narrow the
-      offending callsite or relax the CSP with `unsafe-eval`.
-      **Prefer narrowing the callsite** — `unsafe-eval`
-      reopens inline-script-injection risk per
-      [`SECURITY.md`](../SECURITY.md)'s threat model. If the
-      offender is a vendor lib with no easy workaround,
-      document the trade-off as an accepted-risk entry in
-      `SECURITY.md` rather than relax the CSP silently.
+- [x] **~~CSP `unsafe-eval` violation on script execution~~** —
+      ✅ investigated 2026-05-28. Full grep of `static/app.js`,
+      `static/vendor/paged.polyfill.js` (33 K lines), and
+      `templates/index.html` found **zero** instances of `eval(`,
+      dynamic-Function constructor, or string-form
+      `setTimeout`/`setInterval`. The app sets **no**
+      `Content-Security-Policy` response header; there is no
+      server CSP to be violated. Root cause of the original
+      dev-console message: Chrome surfaces sandbox-block events
+      using CSP-style error text. Before the 2026-05-27 sandbox
+      fix ("`Sandboxed iframe blocks script execution ×17`"
+      item above), the preview iframes carried `sandbox` without
+      `allow-scripts` — effectively `script-src 'none'` — which
+      blocked paged.js and appeared as an `unsafe-eval` violation
+      in the console. The sandbox fix (`allow-scripts
+      allow-same-origin`) resolved it. The absence of a real
+      `Content-Security-Policy` header is documented as an
+      accepted-risk entry in [`SECURITY.md`](../SECURITY.md)
+      (appropriate for localhost-only v1.0.1; add before any
+      networked deployment).
 - [x] **~~Sandboxed iframe blocks script execution ×17~~** —
       ✅ resolved 2026-05-27. Both preview iframes (`#livePreviewFrame`
       in the Compose step and `#outputPreviewFrame` in Step 6) now
@@ -439,22 +440,15 @@ release.
       in try/catch inside `_inject_paged_polyfill`, (b) gate paged.js
       injection on non-empty corpus, (c) replace paged.js with a
       simpler pagination approach. Defer to v1.0.2.
-- [ ] **Cover-letter download honors the chosen output format**
-      (user-surfaced 2026-05-26 round-7 smoke). Today
-      `downloadCoverLetter()` passes `original_format: lastResumeFormat`
-      to `/api/download-edited`, but `generator.generate_cover_letter`
-      hardcodes `.docx` (see [`generator.py:194-201`](../generator.py#L194)
-      with comment *"Generate the cover letter as .docx (always — no
-      template needed)"*). The PDF and Markdown format buttons appear
-      to apply to both résumé and cover letter, but only the résumé
-      actually honors them. Two paths: (a) update
-      `generate_cover_letter` to accept output_format + render markdown
-      via the same path as the résumé (md → docx via template, or md
-      → pdf via paged.js). (b) Surface the limitation in the UI
-      explicitly: a small "Cover letter is .docx-only in v1.0.1; PDF
-      + Markdown coming in v1.0.2" hint on the Cover letter tab. Path
-      (b) is the v1.0.1 fix; (a) is v1.0.2 alongside the B3 persona
-      styling work.
+- [x] **~~Cover-letter download honors the chosen output format~~** —
+      ✅ resolved 2026-05-28 (path b, UI hint). Added a one-line hint
+      paragraph below the download button row in
+      [`templates/index.html`](../templates/index.html):
+      *"Cover letter downloads as .docx in v1.0.1. PDF and Markdown
+      format support coming in v1.0.2."* The underlying
+      `generator.generate_cover_letter` still hardcodes `.docx` (no
+      change — path (a), full format support, is v1.0.2 alongside
+      B3 persona styling work).
 - [ ] **Prior-application click resumes the wizard at that
       application's last state** (user-surfaced 2026-05-26 during
       round-6 smoke). Today, clicking a card in the "Prior
