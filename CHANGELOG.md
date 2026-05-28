@@ -9,7 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-(No unreleased changes yet.)
+### Added — Pydantic v2 response models (`eval/pydantic-response-models`)
+
+- **`pydantic>=2.0,<3.0`** added to `pyproject.toml` dependencies.
+- **Pydantic response models** in [`analyzer.py`](analyzer.py) replace the
+  six `frozenset *_REQUIRED_KEYS` presence checks in `_parse_or_retry` and
+  `_parse_or_retry_streaming`:
+  `AnalyzeResponse`, `GenerateResponse` / `GenerateNoCLResponse`,
+  `ClarifyResponse`, `RecommendResponse`, `RecommendSummariesResponse`,
+  `GenerateCorpusResponse` / `GenerateCorpusNoCLResponse`.
+  Collateral models for the remaining callers:
+  `CoverLetterOnlyResponse`, `CritiqueResponse`, `PromoteBulletResponse`.
+- **`ExtractResponse`** in [`onboarding/extract_experiences.py`](onboarding/extract_experiences.py)
+  mirrors the same pattern for the Haiku extraction call.
+- `_parse_or_retry` and `_parse_or_retry_streaming` now accept
+  `response_model: type[BaseModel]` (replaces `required_keys: frozenset[str]`).
+  On `ValidationError`, the full Pydantic error text is appended to the retry
+  prompt, giving the model richer feedback than the old "missing required keys" message.
 
 ---
 

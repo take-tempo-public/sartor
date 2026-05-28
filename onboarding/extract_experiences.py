@@ -21,9 +21,10 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TypedDict
+from typing import Any, TypedDict
 
 import anthropic
+from pydantic import BaseModel, ConfigDict
 
 from analyzer import HAIKU_MODEL, _parse_or_retry
 from hardening import METRIC_RE
@@ -58,6 +59,11 @@ class ExtractedExperience(TypedDict, total=False):
 
 
 EXTRACT_REQUIRED_KEYS = frozenset({"experiences"})
+
+
+class ExtractResponse(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    experiences: Any
 
 
 EXTRACT_EXPERIENCES_SYSTEM_PROMPT = """You are a resume parser converting unstructured resume text into a structured career corpus.
@@ -121,7 +127,7 @@ def extract_experiences(
         client,
         user_prompt,
         cached_user_prefix="",  # one-shot call; no prefix worth caching
-        required_keys=EXTRACT_REQUIRED_KEYS,
+        response_model=ExtractResponse,
         call_kind="extract_experiences",
         username=username,
         run_id=run_id,

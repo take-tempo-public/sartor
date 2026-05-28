@@ -12,6 +12,7 @@ import pytest
 import analyzer
 from analyzer import (
     ANALYZE_REQUIRED_KEYS,
+    AnalyzeResponse,
     LLMResponseError,
     _parse_or_retry,
     _parse_or_retry_streaming,
@@ -69,7 +70,7 @@ def test_parse_or_retry_happy_path(monkeypatch):
     result = _parse_or_retry(
         client=None, base_prompt="prompt",
         cached_user_prefix="prefix",
-        required_keys=ANALYZE_REQUIRED_KEYS,
+        response_model=AnalyzeResponse,
         call_kind="analyze", username="u", run_id="r",
     )
 
@@ -85,7 +86,7 @@ def test_parse_or_retry_strips_markdown_fences(monkeypatch):
     result = _parse_or_retry(
         client=None, base_prompt="prompt",
         cached_user_prefix="prefix",
-        required_keys=ANALYZE_REQUIRED_KEYS,
+        response_model=AnalyzeResponse,
         call_kind="analyze", username="u", run_id="r",
     )
 
@@ -120,7 +121,7 @@ def test_parse_or_retry_tolerates_literal_control_chars_in_strings(monkeypatch):
     result = _parse_or_retry(
         client=None, base_prompt="prompt",
         cached_user_prefix="prefix",
-        required_keys=ANALYZE_REQUIRED_KEYS,
+        response_model=AnalyzeResponse,
         call_kind="analyze", username="u", run_id="r",
     )
 
@@ -141,7 +142,7 @@ def test_parse_or_retry_recovers_from_missing_keys(monkeypatch):
     result = _parse_or_retry(
         client=None, base_prompt="prompt",
         cached_user_prefix="prefix",
-        required_keys=ANALYZE_REQUIRED_KEYS,
+        response_model=AnalyzeResponse,
         call_kind="analyze", username="u", run_id="r",
     )
 
@@ -160,7 +161,7 @@ def test_parse_or_retry_recovers_from_invalid_json(monkeypatch):
     result = _parse_or_retry(
         client=None, base_prompt="prompt",
         cached_user_prefix="prefix",
-        required_keys=ANALYZE_REQUIRED_KEYS,
+        response_model=AnalyzeResponse,
         call_kind="analyze", username="u", run_id="r",
     )
 
@@ -179,11 +180,11 @@ def test_parse_or_retry_raises_on_persistent_missing_keys(monkeypatch):
         _parse_or_retry(
             client=None, base_prompt="prompt",
             cached_user_prefix="prefix",
-            required_keys=ANALYZE_REQUIRED_KEYS,
+            response_model=AnalyzeResponse,
             call_kind="analyze", username="u", run_id="r",
         )
 
-    assert "missing required keys" in excinfo.value.validation_error
+    assert excinfo.value.validation_error
     assert excinfo.value.raw == bad
     assert fake.calls == ["analyze", "analyze_retry"]
 
@@ -197,7 +198,7 @@ def test_parse_or_retry_raises_on_persistent_invalid_json(monkeypatch):
         _parse_or_retry(
             client=None, base_prompt="prompt",
             cached_user_prefix="prefix",
-            required_keys=ANALYZE_REQUIRED_KEYS,
+            response_model=AnalyzeResponse,
             call_kind="analyze", username="u", run_id="r",
         )
 
@@ -216,7 +217,7 @@ def test_parse_or_retry_uses_retry_call_kind(monkeypatch):
     _parse_or_retry(
         client=None, base_prompt="prompt",
         cached_user_prefix="prefix",
-        required_keys=ANALYZE_REQUIRED_KEYS,
+        response_model=AnalyzeResponse,
         call_kind="generate", username="u", run_id="r",
     )
 
@@ -239,7 +240,7 @@ def test_parse_or_retry_threads_system_prompt(monkeypatch):
     _parse_or_retry(
         client=None, base_prompt="p",
         cached_user_prefix="",
-        required_keys=ANALYZE_REQUIRED_KEYS,
+        response_model=AnalyzeResponse,
         call_kind="clarify", username="u", run_id="r",
         system_prompt="DEDICATED",
     )
@@ -283,7 +284,7 @@ def test_parse_or_retry_streaming_yields_chunks_then_done(monkeypatch):
     events = list(_parse_or_retry_streaming(
         client=None, base_prompt="prompt",
         cached_user_prefix="prefix",
-        required_keys=ANALYZE_REQUIRED_KEYS,
+        response_model=AnalyzeResponse,
         call_kind="analyze", username="u", run_id="r",
     ))
 
@@ -311,7 +312,7 @@ def test_parse_or_retry_streaming_emits_retry_on_first_parse_failure(monkeypatch
     events = list(_parse_or_retry_streaming(
         client=None, base_prompt="prompt",
         cached_user_prefix="prefix",
-        required_keys=ANALYZE_REQUIRED_KEYS,
+        response_model=AnalyzeResponse,
         call_kind="analyze", username="u", run_id="r",
     ))
 
@@ -335,7 +336,7 @@ def test_parse_or_retry_streaming_raises_after_exhausted_retries(monkeypatch):
         list(_parse_or_retry_streaming(
             client=None, base_prompt="prompt",
             cached_user_prefix="prefix",
-            required_keys=ANALYZE_REQUIRED_KEYS,
+            response_model=AnalyzeResponse,
             call_kind="analyze", username="u", run_id="r",
         ))
 
