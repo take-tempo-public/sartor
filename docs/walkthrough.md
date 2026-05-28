@@ -66,6 +66,8 @@ flowchart LR
   class S det
 ```
 
+**Read this left-to-right:** Setup and Import feed into the six wizard steps, which always flow left-to-right; the two amber gates are where you decide whether to branch into an optional step (Clarify) or re-run a step (Generate → refine); the purple-dashed cover-letter path is fully optional.
+
 **Legend:** blue = LLM call fires here · green = deterministic
 (no LLM) · amber = human review gate · purple-dashed = optional path.
 
