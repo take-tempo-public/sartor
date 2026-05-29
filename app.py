@@ -4241,6 +4241,8 @@ def _application_summary_dict(app_row, runs, pending_proposal_count: int) -> dic
         "jd_fingerprint": app_row.jd_fingerprint,
         "created_at": app_row.created_at,
         "updated_at": app_row.updated_at,
+        "sent_at": app_row.sent_at,
+        "outcome_at": app_row.outcome_at,
         "iteration_count": len(runs),
         "latest_iteration": latest_run.iteration if latest_run else 0,
         "latest_run_id": latest_run.run_id if latest_run else None,
@@ -4365,12 +4367,15 @@ def _parse_ats_status(blob: str | None) -> str | None:
 @app.route("/api/applications/<int:application_id>/status", methods=["PUT"])
 def update_application_status(application_id: int):
     """Set application status to one of the valid lifecycle values."""
+    from datetime import timezone
+
     from db.models import Application, Candidate
     from db.session import get_session, init_db
 
     data = request.json or {}
     status = (data.get("status") or "").strip().lower()
-    valid = {"draft", "submitted", "interview", "closed", "withdrawn"}
+    valid = {"draft", "submitted", "interview", "withdrawn",
+             "offer", "accepted", "rejected", "no_response"}
     if status not in valid:
         return jsonify({"error": f"status must be one of {sorted(valid)}"}), 400
 
@@ -4384,8 +4389,18 @@ def update_application_status(application_id: int):
         if candidate is None or not _safe_username(candidate.username):
             return jsonify({"error": "Candidate validation failed"}), 403
         app_row.status = status
+        now_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        if status == "submitted" and app_row.sent_at is None:
+            app_row.sent_at = now_ts
+        if status in {"offer", "accepted", "rejected", "no_response"} and app_row.outcome_at is None:
+            app_row.outcome_at = now_ts
         session.commit()
-        return jsonify({"id": app_row.id, "status": app_row.status})
+        return jsonify({
+            "id": app_row.id,
+            "status": app_row.status,
+            "sent_at": app_row.sent_at,
+            "outcome_at": app_row.outcome_at,
+        })
     except Exception:
         session.rollback()
         raise

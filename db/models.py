@@ -502,6 +502,9 @@ class Application(Base):
     status: Mapped[str] = mapped_column(String, nullable=False, default="draft")
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
     updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+    sent_at: Mapped[str | None] = mapped_column(String)
+    outcome_at: Mapped[str | None] = mapped_column(String)
+    notes: Mapped[str | None] = mapped_column(String)
 
     candidate: Mapped[Candidate] = relationship(back_populates="applications")
     runs: Mapped[list[ApplicationRun]] = relationship(
@@ -510,7 +513,8 @@ class Application(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "status IN ('draft', 'submitted', 'interview', 'closed', 'withdrawn')",
+            "status IN ('draft', 'submitted', 'interview', 'withdrawn', "
+            "'offer', 'accepted', 'rejected', 'no_response')",
             name="ck_application_status",
         ),
         Index("ix_application_candidate_status_updated", "candidate_id", "status", "updated_at"),
