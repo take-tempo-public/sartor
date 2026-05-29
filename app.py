@@ -4348,6 +4348,9 @@ def get_application(application_id: int):
             "candidate_username": candidate.username,
             "created_at": app_row.created_at,
             "updated_at": app_row.updated_at,
+            "sent_at": app_row.sent_at,
+            "outcome_at": app_row.outcome_at,
+            "notes": app_row.notes,
             "runs": runs_dict,
         })
     finally:
@@ -4401,6 +4404,32 @@ def update_application_status(application_id: int):
             "sent_at": app_row.sent_at,
             "outcome_at": app_row.outcome_at,
         })
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/applications/<int:application_id>/notes", methods=["PUT"])
+def update_application_notes(application_id: int):
+    """Set the freeform notes field for an application."""
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    notes = data.get("notes", "")
+    if not isinstance(notes, str):
+        return jsonify({"error": "notes must be a string"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, _candidate = _load_application_owned(session, application_id)
+        if app_row is None:
+            return jsonify({"error": "Application not found"}), 404
+        app_row.notes = notes.strip() or None
+        session.commit()
+        return jsonify({"id": app_row.id, "notes": app_row.notes})
     except Exception:
         session.rollback()
         raise

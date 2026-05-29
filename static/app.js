@@ -3376,9 +3376,19 @@ function _renderApplicationCard(app) {
     badge.title = 'Pending LLM-proposed bullets/titles awaiting your review';
     meta.appendChild(badge);
   }
+  const outcomeStatuses = new Set(['offer', 'accepted', 'rejected', 'no_response']);
+  const postSubmitStatuses = new Set(['submitted', 'interview', 'offer', 'accepted', 'rejected', 'no_response']);
+  let dateLabel;
+  if (outcomeStatuses.has(app.status) && app.outcome_at) {
+    dateLabel = 'Outcome · ' + _formatRelativeDate(app.outcome_at);
+  } else if (postSubmitStatuses.has(app.status) && app.sent_at) {
+    dateLabel = 'Sent · ' + _formatRelativeDate(app.sent_at);
+  } else {
+    dateLabel = _formatRelativeDate(app.updated_at);
+  }
   meta.appendChild(_el('span', {
     className: 'application-card-date',
-    textContent: _formatRelativeDate(app.updated_at),
+    textContent: dateLabel,
   }));
   card.appendChild(meta);
 
@@ -3449,20 +3459,82 @@ async function _showApplicationDetail(applicationId) {
     return;
   }
   const detail = await res.json();
-  // Lightweight info display in the toast for now — resuming an
-  // application into the live editing flow ships in D.3.1.
-  const lines = [
-    `Title: ${detail.title}`,
-    `Status: ${detail.status}`,
-    `Iterations: ${detail.runs.length}`,
-  ];
-  if (detail.runs.length > 0) {
-    const last = detail.runs[detail.runs.length - 1];
-    lines.push(`Last run: ${last.run_id} (iter ${last.iteration})`);
-    if (last.ats_roundtrip_status) lines.push(`ATS check: ${last.ats_roundtrip_status}`);
-    if (last.pending_proposals > 0) lines.push(`Pending: ${last.pending_proposals}`);
-  }
-  _toast(lines.join(' · '));
+
+  const modal = document.getElementById('appDetailModal');
+  if (!modal) return;
+
+  // Title
+  const titleEl = document.getElementById('appDetailModalTitle');
+  titleEl.textContent = detail.company
+    ? `${detail.title} @ ${detail.company}`
+    : detail.title;
+
+  // Status chip
+  const metaEl = document.getElementById('appDetailMeta');
+  while (metaEl.firstChild) metaEl.removeChild(metaEl.firstChild);
+  const chip = _el('span', {
+    className: `app-status-chip status-${detail.status}`,
+    textContent: (detail.status || 'draft').toUpperCase(),
+  });
+  const iters = _el('span', {
+    style: 'font-size:12px;color:var(--fg-2);margin-left:10px',
+    textContent: `${detail.runs.length} iter${detail.runs.length === 1 ? '' : 's'}`,
+  });
+  metaEl.appendChild(chip);
+  metaEl.appendChild(iters);
+
+  // Timestamps
+  const tsEl = document.getElementById('appDetailTimestamps');
+  while (tsEl.firstChild) tsEl.removeChild(tsEl.firstChild);
+  const tsLines = [];
+  if (detail.sent_at) tsLines.push(`Submitted: ${_formatRelativeDate(detail.sent_at)}`);
+  if (detail.outcome_at) tsLines.push(`Outcome: ${_formatRelativeDate(detail.outcome_at)}`);
+  if (tsLines.length) tsEl.textContent = tsLines.join('  ·  ');
+
+  // Notes textarea
+  const notesEl = document.getElementById('appDetailNotes');
+  notesEl.value = detail.notes || '';
+
+  // Remove any previous blur listener before adding a new one
+  const newNotesEl = notesEl.cloneNode(true);
+  notesEl.parentNode.replaceChild(newNotesEl, notesEl);
+  newNotesEl.value = detail.notes || '';
+  newNotesEl.addEventListener('blur', async () => {
+    try {
+      const r = await fetch(`/api/applications/${applicationId}/notes`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: newNotesEl.value }),
+      });
+      if (r.ok) {
+        _toast('Notes saved');
+      } else {
+        _toast('Failed to save notes', true);
+      }
+    } catch (e) {
+      _toast('Failed to save notes: ' + e.message, true);
+    }
+  });
+
+  // Open modal with Escape + close-button wiring
+  const closeBtn = document.getElementById('btnCloseAppDetail');
+  const backdrop = document.getElementById('appDetailModalBackdrop');
+
+  const cleanup = () => {
+    modal.classList.add('hidden');
+    modal.removeEventListener('keydown', onKey);
+    if (closeBtn) closeBtn.removeEventListener('click', cleanup);
+    if (backdrop) backdrop.removeEventListener('click', cleanup);
+  };
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); cleanup(); }
+  };
+
+  if (closeBtn) closeBtn.addEventListener('click', cleanup);
+  if (backdrop) backdrop.addEventListener('click', cleanup);
+  modal.addEventListener('keydown', onKey);
+  modal.classList.remove('hidden');
+  newNotesEl.focus();
 }
 
 // ===============================================================

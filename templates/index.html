@@ -835,6 +835,31 @@
     </div>
   </div>
 
+  <!-- Application detail modal — opened when the user clicks a card in the
+       Applications tab. Shows title, status, timestamps, and a notes field
+       that saves on blur. Resuming the full wizard from a prior application
+       (D.3.1) is deferred; this modal is the Phase 2 tracker surface. -->
+  <div id="appDetailModal" class="cb-modal hidden" role="dialog" aria-modal="true"
+       aria-labelledby="appDetailModalTitle">
+    <div class="cb-modal-backdrop" id="appDetailModalBackdrop"></div>
+    <div class="cb-modal-content" role="document">
+      <h2 id="appDetailModalTitle" class="cb-modal-title"></h2>
+      <div class="cb-modal-body">
+        <div id="appDetailMeta" style="margin-bottom:8px"></div>
+        <div id="appDetailTimestamps"
+             style="font-size:12px;color:var(--fg-2);margin-bottom:12px"></div>
+        <label for="appDetailNotes"
+               style="font-size:12px;color:var(--fg-1);display:block;margin-bottom:4px">Notes</label>
+        <textarea id="appDetailNotes" rows="4"
+                  style="width:100%;box-sizing:border-box;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--fg-0);font-size:13px;resize:vertical;font-family:inherit"
+                  placeholder="Add notes (saved on blur)"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="cb-btn cb-bg-blue" id="btnCloseAppDetail">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Settings drawer (Workstream B1.3) — slides in from the right.
        Houses rarely-touched configuration (Profile + Diagnostics link).
        Templates remain on the PERSONA TEMPLATES tab + are picked in-flow

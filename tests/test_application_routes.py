@@ -463,3 +463,63 @@ class TestCompositionAddedField:
         flags = {b["id"]: (b["recommended"], b["added"]) for b in exp["bullets"]}
         assert flags[bids[0]] == (True, False)
         assert flags[bids[1]] == (False, True)
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 tracker — PUT /api/applications/<id>/notes
+# ---------------------------------------------------------------------------
+
+
+class TestNotesEndpoint:
+    def test_put_notes_saves_note(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        r = client.put(f"/api/applications/{aid}/notes",
+                       json={"notes": "Follow up on Thursday"})
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["notes"] == "Follow up on Thursday"
+
+    def test_put_notes_clears_note(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        client.put(f"/api/applications/{aid}/notes",
+                   json={"notes": "some note"})
+        r = client.put(f"/api/applications/{aid}/notes", json={"notes": ""})
+        assert r.status_code == 200
+        assert r.get_json()["notes"] is None
+
+    def test_put_notes_404_unknown(self, app_app):
+        client = app_app.app.test_client()
+        r = client.put("/api/applications/99999/notes", json={"notes": "x"})
+        assert r.status_code == 404
+
+    def test_put_notes_rejects_non_string(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        r = client.put(f"/api/applications/{aid}/notes", json={"notes": 42})
+        assert r.status_code == 400
+
+
+class TestGetApplicationDetail:
+    def test_get_includes_notes_and_timestamps(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        # Seed notes via the notes endpoint
+        client.put(f"/api/applications/{aid}/notes",
+                   json={"notes": "Check LinkedIn"})
+        # Seed sent_at / outcome_at via the status endpoint
+        client.put(f"/api/applications/{aid}/status",
+                   json={"status": "submitted"})
+        client.put(f"/api/applications/{aid}/status",
+                   json={"status": "rejected"})
+        r = client.get(f"/api/applications/{aid}")
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["notes"] == "Check LinkedIn"
+        assert body["sent_at"] is not None
+        assert body["outcome_at"] is not None
