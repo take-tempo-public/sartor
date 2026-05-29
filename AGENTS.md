@@ -63,7 +63,8 @@ A `require-feature-branch` PreToolUse hook blocks `Edit`/`Write` while on `main`
 **Branch close-out checklist (closing agent, in order):**
 1. Quality gate green (`python -m ruff check .` + `python -m mypy .` + `python -m pytest`).
 2. Commit — message records what was done and why (or "no code change — verified" if the branch closed clean).
-3. Write a next-agent prompt and give it to the user as the last act before closing the window. Must include: branch name + base branch, source doc references (RELEASE_CHECKLIST lines etc.), what this session did, the bug/symptom + repro steps, first move (write plan then ask — not code first), do-not-touch guard-rails, and a pointer to `docs/SESSION_HANDOFF_2026-05-27.md §5` (failure patterns to avoid).
+3. Ask user to confirm merge to `main`; execute merge after confirmation.
+4. Generate the next-agent handoff prompt using [`docs/AGENT_HANDOFF_TEMPLATE.md`](docs/AGENT_HANDOFF_TEMPLATE.md) and give it to the user as the **last act** before closing the window.
 
 ### Document generation
 
