@@ -27,6 +27,41 @@ Closes #<!-- issue number, if any -->
 - [ ] No real personal data committed (`evals/fixtures/real/` stays gitignored, `configs/*.config` ignored except `example.config`)
 - [ ] If this changes user-visible behavior, the README is updated
 
+## Eval evidence
+
+> **Required** when this PR touches `analyzer.py` or any file under `evals/`.
+> Delete this section for pure infra / UI / non-prompt changes.
+
+Run **n=3 times** at the same `PROMPT_VERSION`:
+
+```bash
+python evals/runner.py --suite anchor --subset smoke   # ~$0.10, grounding only
+python evals/runner.py --suite anchor                  # ~$0.50, all rubrics
+```
+
+### Results (n=3 runs, mean ± stdev)
+
+| Fixture | ats_format | clarification_quality | grounding | keyword_coverage | tone | iteration_quality |
+|---|---|---|---|---|---|---|
+| data-scientist-junior | | | | | | |
+| pm-senior | | | | | | |
+| sre-mid-level | | | | | | |
+
+### Deterministic metrics (mean across n=3)
+
+| Fixture | verb_diversity | specificity_density | grounding_overlap_ratio | cost_usd/run | latency p50 ms |
+|---|---|---|---|---|---|
+| data-scientist-junior | | | | | |
+| pm-senior | | | | | |
+| sre-mid-level | | | | | |
+
+### Gate checklist
+
+- [ ] No (fixture × rubric) mean dropped > **0.5** vs `baseline_v1.json` — **regression > 0.5 = blocked**
+- [ ] Latency p50 did not increase > **20%** vs baseline — **latency regression > 20% = blocked**
+- [ ] Cost/run did not increase > **20%** vs baseline — **cost regression > 20% = blocked**
+- [ ] `evals/TUNING_LOG.md` entry written (what changed, why, scores before/after)
+
 ## Test plan
 
 <!-- How did you verify? Include commands run, fixtures used, manual gestures performed. -->

@@ -7,6 +7,7 @@ and writes per-grading JSONL records to evals/results/{timestamp}.jsonl.
 Usage:
     python evals/runner.py --suite synthetic
     python evals/runner.py --suite synthetic --subset smoke
+    python evals/runner.py --suite anchor --subset smoke
     python evals/runner.py --suite real
     python evals/runner.py --fixture sre-mid-level
 
@@ -17,6 +18,7 @@ configuration error.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -62,6 +64,12 @@ EVALS_DIR = Path(__file__).resolve().parent
 FIXTURES_DIR = EVALS_DIR / "fixtures"
 RUBRICS_DIR = EVALS_DIR / "rubrics"
 RESULTS_DIR = EVALS_DIR / "results"
+ANCHOR_DIR = EVALS_DIR / "anchors" / "anchor-v1"
+
+MODEL_SNAPSHOTS = {
+    "sonnet": "claude-sonnet-4-6",
+    "haiku_judge": "claude-haiku-4-5-20251001",
+}
 
 JUDGE_MODEL = "claude-haiku-4-5-20251001"
 PASS_THRESHOLD = 4.0
@@ -108,11 +116,16 @@ def _load_fixture(fixture_dir: Path) -> dict:
         raise FileNotFoundError(f"No resume file in fixture {fixture_dir.name}")
 
     expected = json.loads((fixture_dir / "expected.json").read_text(encoding="utf-8"))
+    h = hashlib.sha256()
+    h.update((fixture_dir / "jd.txt").read_bytes())
+    h.update(resume_path.read_bytes())
+    h.update((fixture_dir / "expected.json").read_bytes())
     return {
         "name": fixture_dir.name,
         "jd": jd,
         "resume_path": resume_path,
         "expected": expected,
+        "hash": h.hexdigest(),
     }
 
 
@@ -253,6 +266,29 @@ def _load_baseline_scores(out_path: Path) -> dict[tuple[str, str], dict]:
     return baseline
 
 
+def _compute_baseline_comparison(
+    fixture_name: str,
+    rubric_name: str,
+    score: float | None,
+    bdata: dict,
+) -> dict | None:
+    """Return baseline mean + delta for a (fixture, rubric, score) triple.
+
+    Returns None when baseline data is absent or the pair isn't in the baseline.
+    """
+    if score is None or not bdata:
+        return None
+    rubric_stats = bdata.get("fixtures", {}).get(fixture_name, {}).get(rubric_name, {})
+    mean = rubric_stats.get("mean")
+    if mean is None:
+        return None
+    return {
+        "baseline_id": bdata.get("baseline_id", ""),
+        "mean": float(mean),
+        "delta": round(float(score) - float(mean), 3),
+    }
+
+
 def _detect_regression(
     fixture: str,
     rubric: str,
@@ -354,18 +390,30 @@ def _select_fixtures(suite: str, single: str | None) -> list[Path]:
         real_dir = FIXTURES_DIR / "real"
         if real_dir.exists():
             fixtures.extend(sorted(p for p in real_dir.iterdir() if p.is_dir()))
+    if suite == "anchor":
+        anchor_fixtures_dir = ANCHOR_DIR / "fixtures"
+        if anchor_fixtures_dir.exists():
+            fixtures.extend(sorted(p for p in anchor_fixtures_dir.iterdir() if p.is_dir()))
+    if suite == "exploration":
+        exploration_dir = EVALS_DIR / "exploration"
+        if exploration_dir.exists():
+            fixtures.extend(sorted(p for p in exploration_dir.iterdir() if p.is_dir()))
     return fixtures
 
 
-def _select_rubrics(subset: str) -> list[Path]:
+def _select_rubrics(subset: str, rubrics_dir: Path | None = None) -> list[Path]:
     """Smoke = grounding only; full = every rubric.
 
     iteration_quality is special: it only runs against fixtures that have
     `iteration_scenarios` defined in their expected.json. The runner skips
     iteration_quality grading silently for fixtures without a scenario rather
     than emitting score=None rows that would muddy the dashboard's heatmap.
+
+    `rubrics_dir` overrides the default RUBRICS_DIR; used by --suite anchor to
+    load rubrics from the frozen anchor copy rather than the live evals/rubrics/.
     """
-    all_rubrics = sorted(RUBRICS_DIR.glob("*.md"))
+    dir_ = rubrics_dir or RUBRICS_DIR
+    all_rubrics = sorted(dir_.glob("*.md"))
     if subset == "smoke":
         return [r for r in all_rubrics if r.stem == "grounding"]
     return all_rubrics
@@ -613,11 +661,27 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     ap = argparse.ArgumentParser(description="callback. eval harness")
-    ap.add_argument("--suite", choices=["synthetic", "real", "all"], default="synthetic")
+    ap.add_argument(
+        "--suite",
+        choices=["synthetic", "real", "all", "anchor", "exploration"],
+        default="synthetic",
+    )
     ap.add_argument("--subset", choices=["smoke", "full"], default="full")
     ap.add_argument("--fixture", help="Run a single named fixture (overrides --suite)")
     ap.add_argument("--out-dir", default=str(RESULTS_DIR))
     args = ap.parse_args(argv)
+
+    # Load static baseline data once for baseline_comparison fields on JSONL records.
+    baseline_v1_data: dict = {}
+    if BASELINE_JSON.exists():
+        try:
+            _bdata = json.loads(BASELINE_JSON.read_text(encoding="utf-8"))
+            if _bdata.get("schema_version") == 3:
+                baseline_v1_data = _bdata
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    anchor_version: str | None = "v1" if args.suite == "anchor" else None
 
     try:
         fixtures = _select_fixtures(args.suite, args.fixture)
@@ -629,7 +693,9 @@ def main(argv: list[str] | None = None) -> int:
         logger.warning("No fixtures matched the selection")
         return 0
 
-    rubrics = _select_rubrics(args.subset)
+    rubrics_dir = ANCHOR_DIR / "rubrics" if args.suite == "anchor" else None
+    rubrics = _select_rubrics(args.subset, rubrics_dir=rubrics_dir)
+    rubric_versions = {rp: hashlib.sha256(rp.read_bytes()).hexdigest() for rp in rubrics}
     if not rubrics:
         logger.warning("No rubrics matched the selection")
         return 0
@@ -682,13 +748,19 @@ def main(argv: list[str] | None = None) -> int:
             clarify_questions: list[dict] = []
             clarify_reasoning = ""
             clarify_error: str | None = None
+            _t_analyze: float | None = None
+            _t_clarify: float | None = None
+            _t_generate: float | None = None
+            _t_generate_end: float | None = None
             try:
                 context = _build_context(fixture)
+                _t_analyze = time.perf_counter()
                 analysis = analyze(
                     client, context,
                     username=f"eval:{fixture['name']}",
                     run_id=run_id,
                 )
+                _t_clarify = time.perf_counter()
                 try:
                     clarify_result = clarify(
                         client, context, analysis,
@@ -705,11 +777,13 @@ def main(argv: list[str] | None = None) -> int:
                         "Clarify step failed for %s, continuing without it: %s",
                         fixture["name"], exc,
                     )
+                _t_generate = time.perf_counter()
                 result = generate(
                     client, context, analysis,
                     username=f"eval:{fixture['name']}",
                     run_id=run_id,
                 )
+                _t_generate_end = time.perf_counter()
             except Exception as exc:
                 logger.error("Pipeline failed for %s: %s", fixture["name"], exc)
                 out.write(json.dumps({
@@ -724,11 +798,23 @@ def main(argv: list[str] | None = None) -> int:
                     "error": str(exc),
                     "run_id": run_id,
                     "prompt_version": PROMPT_VERSION,
+                    "anchor_version": anchor_version,
+                    "suite": args.suite,
+                    "fixture_hash": fixture["hash"],
+                    "rubric_version": None,
+                    "model_snapshots": MODEL_SNAPSHOTS,
+                    "baseline_comparison": None,
+                    "phase_latencies_ms": None,
                 }) + "\n")
                 n_fail += 1
                 continue
 
             elapsed_ms = int((time.perf_counter() - t0) * 1000)
+            phase_latencies_ms = {
+                "analyze": int((_t_clarify - _t_analyze) * 1000) if (_t_analyze and _t_clarify) else None,
+                "clarify": int((_t_generate - _t_clarify) * 1000) if (_t_clarify and _t_generate) else None,
+                "generate": int((_t_generate_end - _t_generate) * 1000) if (_t_generate and _t_generate_end) else None,
+            }
             logger.info("  pipeline %s done in %dms", fixture["name"], elapsed_ms)
             if clarify_error is None:
                 exp_probes = sum(
@@ -786,6 +872,13 @@ def main(argv: list[str] | None = None) -> int:
                         "deterministic_metrics": det_metrics,
                         "cost_usd": cost_usd,
                         "pipeline_latency_ms": elapsed_ms,
+                        "anchor_version": anchor_version,
+                        "suite": args.suite,
+                        "fixture_hash": fixture["hash"],
+                        "rubric_version": rubric_versions.get(rubric_path),
+                        "model_snapshots": MODEL_SNAPSHOTS,
+                        "baseline_comparison": None,
+                        "phase_latencies_ms": phase_latencies_ms,
                     }) + "\n")
                     n_fail += 1
                     logger.info(
@@ -818,8 +911,21 @@ def main(argv: list[str] | None = None) -> int:
                         # Fixture has no iteration_scenarios — silently skip,
                         # mirroring how the dashboard's heatmap handles N/A cells.
                         continue
-                    out.write(json.dumps(iter_record) + "\n")
                     iter_score = iter_record.get("score")
+                    iter_record.update({
+                        "anchor_version": anchor_version,
+                        "suite": args.suite,
+                        "fixture_hash": fixture["hash"],
+                        "rubric_version": rubric_versions.get(rubric_path),
+                        "model_snapshots": MODEL_SNAPSHOTS,
+                        "baseline_comparison": _compute_baseline_comparison(
+                            fixture["name"], rubric_path.stem,
+                            iter_score if isinstance(iter_score, (int, float)) else None,
+                            baseline_v1_data,
+                        ),
+                        "phase_latencies_ms": phase_latencies_ms,
+                    })
+                    out.write(json.dumps(iter_record) + "\n")
                     if isinstance(iter_score, (int, float)) and iter_score >= PASS_THRESHOLD:
                         n_pass += 1
                         verdict = "pass"
@@ -864,6 +970,7 @@ def main(argv: list[str] | None = None) -> int:
                     )
                     grade = {"score": None, "reasons": [str(exc)], "status": "judge_error"}
 
+                _score = grade.get("score")
                 record = {
                     "schema_version": SCHEMA_VERSION,
                     "score_max": SCORE_MAX,
@@ -871,7 +978,7 @@ def main(argv: list[str] | None = None) -> int:
                     "source": "eval",
                     "fixture": fixture["name"],
                     "rubric": rubric_path.stem,
-                    "score": grade.get("score"),
+                    "score": _score,
                     "reasons": grade.get("reasons", []),
                     "failed_rules": grade.get("failed_rules", []),
                     "status": grade.get("status", "ok"),
@@ -880,6 +987,17 @@ def main(argv: list[str] | None = None) -> int:
                     "deterministic_metrics": det_metrics,
                     "cost_usd": cost_usd,
                     "pipeline_latency_ms": elapsed_ms,
+                    "anchor_version": anchor_version,
+                    "suite": args.suite,
+                    "fixture_hash": fixture["hash"],
+                    "rubric_version": rubric_versions.get(rubric_path),
+                    "model_snapshots": MODEL_SNAPSHOTS,
+                    "baseline_comparison": _compute_baseline_comparison(
+                        fixture["name"], rubric_path.stem,
+                        _score if isinstance(_score, (int, float)) else None,
+                        baseline_v1_data,
+                    ),
+                    "phase_latencies_ms": phase_latencies_ms,
                 }
                 out.write(json.dumps(record) + "\n")
 
@@ -938,7 +1056,7 @@ def main(argv: list[str] | None = None) -> int:
                 len(regressions), REGRESSION_DELTA,
             )
 
-    return 0 if n_fail == 0 else 2
+    return 0 if (n_fail == 0 and not regressions) else 2
 
 
 if __name__ == "__main__":

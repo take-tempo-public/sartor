@@ -1,0 +1,74 @@
+# Promptfoo configuration for callback. anchor fixtures.
+#
+# Wraps the 3 anchor-v1 fixtures against the generate call so CI can produce
+# a side-by-side diff table on prompt-change PRs.
+#
+# Usage:
+#   npx promptfoo eval
+#   npx promptfoo eval --no-cache
+#
+# Provider: Anthropic claude-sonnet-4-6 (mirrors MODEL_SNAPSHOTS in runner.py)
+# Fixtures: evals/anchors/anchor-v1/fixtures/
+# Gate: regression > 0.5 on any rubric vs baseline_v1.json = blocked
+
+description: "callback. anchor-v1 fixture eval"
+
+providers:
+  - id: anthropic:claude-sonnet-4-6
+    config:
+      max_tokens: 4096
+
+prompts:
+  - id: generate_resume
+    label: "Generate resume"
+    raw: |
+      You are a resume optimization assistant. Given a job description and a
+      candidate's resume, produce an optimized resume tailored to the role.
+
+      Job Description:
+      {{jd}}
+
+      Resume:
+      {{resume}}
+
+      Output the optimized resume as Markdown.
+
+tests:
+  - description: data-scientist-junior
+    vars:
+      jd: |
+        {{file://evals/anchors/anchor-v1/fixtures/data-scientist-junior/jd.txt}}
+      resume: |
+        {{file://evals/anchors/anchor-v1/fixtures/data-scientist-junior/resume.md}}
+    assert:
+      - type: llm-rubric
+        value: >
+          The resume is tailored to the job description, highlights relevant
+          data science skills, and uses concise action-oriented language.
+        threshold: 0.7
+
+  - description: pm-senior
+    vars:
+      jd: |
+        {{file://evals/anchors/anchor-v1/fixtures/pm-senior/jd.txt}}
+      resume: |
+        {{file://evals/anchors/anchor-v1/fixtures/pm-senior/resume.md}}
+    assert:
+      - type: llm-rubric
+        value: >
+          The resume is tailored to the senior PM role, emphasizes leadership,
+          cross-functional experience, and measurable outcomes.
+        threshold: 0.7
+
+  - description: sre-mid-level
+    vars:
+      jd: |
+        {{file://evals/anchors/anchor-v1/fixtures/sre-mid-level/jd.txt}}
+      resume: |
+        {{file://evals/anchors/anchor-v1/fixtures/sre-mid-level/resume.md}}
+    assert:
+      - type: llm-rubric
+        value: >
+          The resume is tailored to the SRE role, highlights reliability
+          engineering skills, incident response, and infrastructure experience.
+        threshold: 0.7

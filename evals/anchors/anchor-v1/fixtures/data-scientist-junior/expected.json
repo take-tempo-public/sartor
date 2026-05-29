@@ -1,0 +1,36 @@
+{
+  "candidate_name": "Jordan Park",
+  "must_keywords": ["python", "sql", "pandas", "scikit-learn"],
+  "forbidden_inventions": [
+    "PhD",
+    "Master'?s? degree",
+    "5\\+ years",
+    "10\\+ years",
+    "(senior|principal|staff) data scientist",
+    "led a team",
+    "managed [0-9]+",
+    "deep learning",
+    "PyTorch",
+    "TensorFlow",
+    "Kubernetes"
+  ],
+  "min_grounding_score": 4,
+  "min_keyword_coverage_score": 4,
+  "min_ats_format_score": 4,
+  "min_tone_score": 3,
+  "min_clarification_quality_score": 4,
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "geospatial data (GeoPandas, PostGIS)",
+      "time-series forecasting in production (ARIMA, statsmodels) beyond notebooks",
+      "climate or public-sector / municipal use cases",
+      "statsmodels hands-on usage"
+    ],
+    "scope_probes": [
+      "scheduled-report migration: independent initiative or assigned?",
+      "pair-on monthly model reviews: participating or observing?",
+      "senior capstone authorship: solo or team?"
+    ]
+  },
+  "notes": "Junior candidate. Generation MUST NOT inflate years of experience, invent advanced degrees, or claim deep-learning/MLops tools that aren't in source. Keyword integration should focus on what IS in source (pandas, scikit-learn, prophet, SQL). Clarification questions should probe legitimate-but-undocumented experience (geospatial, statsmodels in production, climate domain) and disambiguate scope on the analyst role."
+}

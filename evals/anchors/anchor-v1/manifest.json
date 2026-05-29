@@ -1,0 +1,11 @@
+{
+  "anchor_version": "v1",
+  "prompt_version": "2026-05-24.4",
+  "fixture_set_hash": {
+    "data-scientist-junior": "58df68a9552ff94fce0f8c67174ef810c5e5d0f0fa53dea9787f91427e61fa42",
+    "pm-senior": "c4235d3064762f2435fe66d70b035ba619c946ffa09a24ac94d1f4d0bb42c819",
+    "sre-mid-level": "dde5a584428b899f6896e7fb76a8585c3983e8af794640a355fdfe5c164c5d56"
+  },
+  "created": "2026-05-28",
+  "rubrics": ["ats_format", "clarification_quality", "grounding", "iteration_quality", "keyword_coverage", "tone"]
+}

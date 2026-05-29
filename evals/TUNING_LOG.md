@@ -1319,3 +1319,23 @@ Expected impact qualitatively:
 ### Open questions / future tuning targets
 <things this iteration noticed but didn't fix>
 ```
+
+---
+
+## Anchor promotion rule
+
+A fixture is promoted from `evals/exploration/` to `anchor-v2` when all three
+conditions are met:
+
+1. **Stable scores** — stdev ≤ 0.6 across ≥3 consecutive runs at the same
+   PROMPT_VERSION (judge variance must not swamp the signal).
+2. **Discriminating** — the fixture produces meaningfully different scores
+   across ≥2 distinct PROMPT_VERSIONs (a fixture that always returns 4.2
+   regardless of prompt changes carries no signal).
+3. **Documented failure mode** — at least one concrete failure mode (a rubric
+   the fixture reliably exercises below 4.0, or a specific `failed_rules` tag
+   that fires) must be documented in this TUNING_LOG.
+
+Until all three conditions are met the fixture stays in `evals/exploration/`.
+Scores from exploration fixtures appear in JSONL (with `"suite": "exploration"`)
+but do not gate merges.
