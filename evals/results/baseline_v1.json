@@ -1,34 +1,72 @@
 {
-  "schema_version": 2,
-  "run_id": "v1.0.0_baseline",
-  "sourced_from": "evals/results/20260513_221926Z.jsonl",
-  "recorded_on": "2026-05-25",
-  "prompt_versions": [
-    "2026-05-12.1"
+  "schema_version": 3,
+  "baseline_id": "v1.0.2_2026-05-28",
+  "prompt_version": "2026-05-24.4",
+  "model_snapshots": {
+    "sonnet": "claude-sonnet-4-6",
+    "haiku_judge": "claude-haiku-4-5-20251001"
+  },
+  "fixture_set_hash": {
+    "data-scientist-junior": "58df68a9552ff94fce0f8c67174ef810c5e5d0f0fa53dea9787f91427e61fa42",
+    "pm-senior": "c4235d3064762f2435fe66d70b035ba619c946ffa09a24ac94d1f4d0bb42c819",
+    "sre-mid-level": "dde5a584428b899f6896e7fb76a8585c3983e8af794640a355fdfe5c164c5d56"
+  },
+  "runs_aggregated": 5,
+  "source_runs": [
+    "20260528_233635Z.jsonl",
+    "20260528_235041Z.jsonl",
+    "20260529_000027Z.jsonl",
+    "20260529_001953Z.jsonl",
+    "20260529_003517Z.jsonl"
   ],
-  "total_cost_usd": 2.034,
   "fixtures": {
     "data-scientist-junior": {
-      "ats_format": 4.2,
-      "clarification_quality": 4.2,
-      "grounding": 4.8,
-      "keyword_coverage": 4.2,
-      "tone": 4.2
+      "ats_format":            {"mean": 4.58,   "stdev": 0.1304, "n": 5, "min": 4.5, "max": 4.8},
+      "clarification_quality": {"mean": 3.92,   "stdev": 0.4382, "n": 5, "min": 3.2, "max": 4.2},
+      "grounding":             {"mean": 4.70,   "stdev": 0.1000, "n": 5, "min": 4.6, "max": 4.8},
+      "keyword_coverage":      {"mean": 4.30,   "stdev": 0.2236, "n": 5, "min": 4.2, "max": 4.7},
+      "tone":                  {"mean": 4.20,   "stdev": 0.0000, "n": 5, "min": 4.2, "max": 4.2}
     },
     "pm-senior": {
-      "ats_format": 4.6,
-      "clarification_quality": 4.2,
-      "grounding": 4.8,
-      "keyword_coverage": 4.2,
-      "tone": 4.2
+      "ats_format":            {"mean": 4.44,   "stdev": 0.2510, "n": 5, "min": 4.2, "max": 4.8},
+      "clarification_quality": {"mean": 4.00,   "stdev": 0.4472, "n": 5, "min": 3.2, "max": 4.2},
+      "grounding":             {"mean": 4.40,   "stdev": 0.2828, "n": 5, "min": 4.2, "max": 4.8},
+      "keyword_coverage":      {"mean": 4.12,   "stdev": 0.1789, "n": 5, "min": 3.8, "max": 4.2},
+      "tone":                  {"mean": 4.18,   "stdev": 0.0447, "n": 5, "min": 4.1, "max": 4.2}
     },
     "sre-mid-level": {
-      "ats_format": 4.8,
-      "clarification_quality": 3.2,
-      "grounding": 4.7,
-      "keyword_coverage": 4.2,
-      "tone": 4.2
+      "ats_format":            {"mean": 4.52,   "stdev": 0.3033, "n": 5, "min": 4.2, "max": 4.8},
+      "clarification_quality": {"mean": 4.02,   "stdev": 0.2490, "n": 5, "min": 3.7, "max": 4.2},
+      "grounding":             {"mean": 4.64,   "stdev": 0.2510, "n": 5, "min": 4.2, "max": 4.8},
+      "iteration_quality":     {"mean": 3.7333, "stdev": 0.5033, "n": 3, "min": 3.2, "max": 4.2},
+      "keyword_coverage":      {"mean": 4.32,   "stdev": 0.1789, "n": 5, "min": 4.2, "max": 4.6},
+      "tone":                  {"mean": 4.12,   "stdev": 0.1789, "n": 5, "min": 3.8, "max": 4.2}
     }
   },
-  "notes": "v1.0.0 baseline pinned for regression detection. evals/runner.py _load_baseline_scores() reads this on subsequent runs to flag rubric-score deltas. Sourced from the most recent clean synthetic run on prompt_version 2026-05-12.1; subsequent prompt revisions (2026-05-24.1 through 2026-05-24.4) ship with v1.0.0 but a re-baseline is recommended early in v1.0.1 once the streaming/split-analyze changes from PERF_ANALYZE.md land."
+  "deterministic_metrics_baseline": {
+    "data-scientist-junior": {
+      "verb_diversity_mean": 1.0000,
+      "specificity_density_mean": 0.0422,
+      "grounding_overlap_ratio_mean": 0.2284,
+      "cost_usd_mean": 0.1319
+    },
+    "pm-senior": {
+      "verb_diversity_mean": 0.9778,
+      "specificity_density_mean": 0.0986,
+      "grounding_overlap_ratio_mean": 0.3016,
+      "cost_usd_mean": 0.1363
+    },
+    "sre-mid-level": {
+      "verb_diversity_mean": 0.9834,
+      "specificity_density_mean": 0.3354,
+      "grounding_overlap_ratio_mean": 0.2812,
+      "cost_usd_mean": 0.1469
+    }
+  },
+  "performance_baseline": {
+    "data-scientist-junior": {"pipeline_latency_ms_p50": 144697},
+    "pm-senior":              {"pipeline_latency_ms_p50": 155544},
+    "sre-mid-level":          {"pipeline_latency_ms_p50": 156425}
+  },
+  "notes": "v1.0.2 baseline. SCHEMA_VERSION 2->3 adds per-rubric stdev/min/max. Two known below-threshold rubrics carried forward from v1.0.1: data-scientist-junior x clarification_quality (3.92, pre-existing at PROMPT_VERSION=2026-05-24.4) and sre-mid-level x iteration_quality (3.73 n=3, known fixture fragility). data-scientist-junior grounding_overlap_ratio=0.228 < 0.25 threshold is also pre-existing (was 0.214 at v1.0.1). Recovery targets for Phase 2 (v1.0.3)."
 }
