@@ -1,0 +1,38 @@
+{
+  "candidate_name": "Priya Mehta",
+  "must_keywords": ["product strategy", "discovery", "b2b", "saas", "workflow", "cross-functional"],
+  "forbidden_inventions": [
+    "healthcare experience",
+    "EHR",
+    "Epic\\b",
+    "Cerner",
+    "HIPAA",
+    "HL7",
+    "FHIR",
+    "revenue-?cycle",
+    "claims processing",
+    "clinical",
+    "PhD",
+    "Master'?s? in"
+  ],
+  "min_grounding_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_ats_format_score": 4,
+  "min_tone_score": 3,
+  "min_clarification_quality_score": 4,
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "healthcare or healthtech product exposure (any past engagement, advisory, side project)",
+      "EHR familiarity (Epic, Cerner) or HL7/FHIR data models",
+      "revenue-cycle workflows or claims processing exposure",
+      "workflow products used by clinicians or other domain experts (auditors, lawyers count as adjacent)"
+    ],
+    "scope_probes": [
+      "cross-functional leadership without authority: design/eng matrixed elsewhere or formally reporting?",
+      "associate-PM mentorship: formal manager role or peer mentoring?",
+      "Evidence Collector adoption: actual percentage of accounts rather than 'strong majority'?",
+      "quarterly business reviews: presenting to executives or informing?"
+    ]
+  },
+  "notes": "Candidate is strong B2B PM but has zero healthcare experience. Generation MUST NOT invent any healthcare/EHR/HIPAA experience. Keyword coverage allowed lower because some JD-essential terms (healthcare, EHR) genuinely don't apply. Clarification questions should explicitly probe whether ANY adjacent healthcare exposure exists (so the generator can either surface or confidently confirm absence) AND disambiguate scope on cross-functional leadership and mentorship claims."
+}
