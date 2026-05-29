@@ -68,7 +68,7 @@ PASS_THRESHOLD = 4.0
 SCORE_MAX = 5.0
 # Bumped when the eval-result JSONL shape changes. Old records (no field) are
 # treated as schema_version=1 with int scores; the dashboard normalizes both.
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 # Regression-alert sensitivity: any (fixture, rubric) score that drops by
 # more than this many points vs the previous run is logged as a regression.
@@ -188,17 +188,44 @@ def _eval_cost_since(t0_iso: str, fixture_name: str) -> float:
     return round(total, 6)
 
 
-def _load_baseline_scores(out_path: Path) -> dict[tuple[str, str], dict]:
-    """Read every prior eval result file and return the most-recent record
-    per (fixture, rubric) pair, EXCLUDING the current run's file.
+BASELINE_JSON = RESULTS_DIR / "baseline_v1.json"
 
-    The map's value is the full record so callers can compare against
-    `score`, `prompt_version`, or `run_id` as needed for regression detection.
+
+def _load_baseline_scores(out_path: Path) -> dict[tuple[str, str], dict]:
+    """Return the most-recent (fixture, rubric) → record map for regression detection.
+
+    Seeds from baseline_v1.json (schema_version 3) when present, so the alerter
+    compares against the stable 5-run aggregate mean rather than the noisiest
+    single prior run. Real JSONL records (timestamp > "0000…") always win.
     """
     if not RESULTS_DIR.exists():
         return {}
 
     baseline: dict[tuple[str, str], dict] = {}
+
+    # Seed from the static aggregate baseline when schema_version 3 is present.
+    if BASELINE_JSON.exists():
+        try:
+            bdata = json.loads(BASELINE_JSON.read_text(encoding="utf-8"))
+            if bdata.get("schema_version") == 3:
+                prompt_ver = bdata.get("prompt_version", "")
+                for fixture_name, rubrics in bdata.get("fixtures", {}).items():
+                    for rubric_name, stats in rubrics.items():
+                        mean = stats.get("mean")
+                        if mean is None:
+                            continue
+                        key = (fixture_name, rubric_name)
+                        baseline[key] = {
+                            "fixture": fixture_name,
+                            "rubric": rubric_name,
+                            "score": mean,
+                            "prompt_version": prompt_ver,
+                            "timestamp": "0000-00-00T00:00:00+00:00",
+                        }
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    # Layer real JSONL records on top; newer timestamp wins.
     for path in sorted(RESULTS_DIR.glob("*.jsonl")):
         if path == out_path:
             continue

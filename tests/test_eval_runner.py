@@ -188,7 +188,7 @@ class TestSchemaConstants:
 
     def test_schema_version_present(self):
         from evals.runner import SCHEMA_VERSION
-        assert SCHEMA_VERSION == 2
+        assert SCHEMA_VERSION == 3
 
     def test_score_max_present(self):
         from evals.runner import SCORE_MAX

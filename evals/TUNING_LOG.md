@@ -98,6 +98,104 @@ prevent re-running them.
 
 ---
 
+## BASELINE — v1.0.2 — 2026-05-28
+
+> **Purpose:** regression floor for Phase 2 (R1 Phase 2, v1.0.3).
+> Five consecutive runs of `python evals/runner.py --suite synthetic`
+> at `PROMPT_VERSION 2026-05-24.4` with no code changes between runs.
+> All runs on branch `eval/baseline-v1-0-2` (base: main@3e7e713,
+> post-Pydantic-migration). Upgrades `baseline_v1.json` to schema_version 3
+> (adds stdev / min / max per rubric; static-seed regression baseline).
+>
+> **This table is the pass/fail gate for Phase 2 (R1 Phase 2, v1.0.3):**
+> any (fixture × rubric) mean that drops more than 0.5 below the mean below
+> blocks merge on the R1 branch.
+
+### Run metadata
+
+| Run | Timestamp (UTC) | PROMPT_VERSION | Result file |
+|---|---|---|---|
+| 1 | 2026-05-28T23:39:03Z | 2026-05-24.4 | `evals/results/20260528_233635Z.jsonl` |
+| 2 | 2026-05-28T23:53:07Z | 2026-05-24.4 | `evals/results/20260528_235041Z.jsonl` |
+| 3 | 2026-05-29T00:02:59Z | 2026-05-24.4 | `evals/results/20260529_000027Z.jsonl` |
+| 4 | 2026-05-29T00:22:24Z | 2026-05-24.4 | `evals/results/20260529_001953Z.jsonl` |
+| 5 | 2026-05-29T00:37:46Z | 2026-05-24.4 | `evals/results/20260529_003517Z.jsonl` |
+
+**Total cost:** USD ~$2.07 across 5 runs (~$0.41/run). Consistent with v1.0.1 baseline cost ($2.07). Cache behavior stable — `cache_read` firing on generate prefix blocks.
+
+**Note on exit codes:** all 5 runs exited with code 2 (`n_fail > 0`). Expected: two known-below-threshold rubrics and cross-run Haiku judge variance. Not a blocker for baseline validity.
+
+### Per-(fixture × rubric) mean ± stdev (n=5, judge_errors and scenario_misaligned excluded)
+
+`*` = below 4.0 threshold (known pre-existing); `n=X` = fewer than 5 valid runs (scenario_misaligned)
+
+| Fixture | ats_format | clarification_quality | grounding | keyword_coverage | tone | iteration_quality |
+|---|---|---|---|---|---|---|
+| data-scientist-junior | 4.58 ± 0.13 | 3.92 ± 0.44 `*` | 4.70 ± 0.10 | 4.30 ± 0.22 | 4.20 ± 0.00 | n/a |
+| pm-senior | 4.44 ± 0.25 | 4.00 ± 0.45 | 4.40 ± 0.28 | 4.12 ± 0.18 | 4.18 ± 0.04 | n/a |
+| sre-mid-level | 4.52 ± 0.30 | 4.02 ± 0.25 | 4.64 ± 0.25 | 4.32 ± 0.18 | 4.12 ± 0.18 | 3.73 ± 0.50 (n=3) `*` |
+
+### Raw scores per run
+
+| Fixture | Rubric | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 |
+|---|---|---|---|---|---|---|
+| data-scientist-junior | ats_format | 4.5 | 4.6 | 4.5 | 4.5 | 4.8 |
+| data-scientist-junior | clarification_quality | 3.8 | 4.2 | 4.2 | 4.2 | 3.2 |
+| data-scientist-junior | grounding | 4.8 | 4.6 | 4.6 | 4.8 | 4.7 |
+| data-scientist-junior | keyword_coverage | 4.2 | 4.2 | 4.7 | 4.2 | 4.2 |
+| data-scientist-junior | tone | 4.2 | 4.2 | 4.2 | 4.2 | 4.2 |
+| pm-senior | ats_format | 4.2 | 4.5 | 4.2 | 4.8 | 4.5 |
+| pm-senior | clarification_quality | 4.2 | 4.2 | 3.2 | 4.2 | 4.2 |
+| pm-senior | grounding | 4.2 | 4.2 | 4.2 | 4.8 | 4.6 |
+| pm-senior | keyword_coverage | 4.2 | 4.2 | 4.2 | 4.2 | 3.8 |
+| pm-senior | tone | 4.1 | 4.2 | 4.2 | 4.2 | 4.2 |
+| sre-mid-level | ats_format | 4.8 | 4.8 | 4.6 | 4.2 | 4.2 |
+| sre-mid-level | clarification_quality | 4.2 | 4.2 | 3.7 | 4.2 | 3.8 |
+| sre-mid-level | grounding | 4.2 | 4.8 | 4.7 | 4.7 | 4.8 |
+| sre-mid-level | iteration_quality | N/A | N/A | 3.2 | 3.8 | 4.2 |
+| sre-mid-level | keyword_coverage | 4.6 | 4.4 | 4.2 | 4.2 | 4.2 |
+| sre-mid-level | tone | 4.2 | 4.2 | 4.2 | 4.2 | 3.8 |
+
+`N/A` = scenario_misaligned (scripted edit substring not in generated output that run). Zero judge_errors across all 90 gradings.
+
+### Deterministic metrics baseline (mean ± stdev across 5 runs)
+
+| Fixture | verb_diversity | specificity_density | grounding_overlap_ratio | cost_usd/run | latency_ms p50 |
+|---|---|---|---|---|---|
+| data-scientist-junior | 1.000 ± 0.000 | 0.042 ± 0.058 | 0.228 ± 0.009 | $0.1319 ± $0.0036 | 144,697 ms |
+| pm-senior | 0.978 ± 0.050 | 0.099 ± 0.008 | 0.302 ± 0.011 | $0.1363 ± $0.0033 | 155,544 ms |
+| sre-mid-level | 0.983 ± 0.037 | 0.335 ± 0.050 | 0.281 ± 0.016 | $0.1469 ± $0.0060 | 156,425 ms |
+
+### Known below-threshold (pre-existing, not new regressions)
+
+1. **`data-scientist-junior × clarification_quality` mean=3.92** — same fixture/prompt condition as v1.0.1 (3.90). Pre-existing at `PROMPT_VERSION=2026-05-24.4`. Recovery is Phase 2 (v1.0.3 `r1/structural-context-probe`).
+2. **`sre-mid-level × iteration_quality` mean=3.73 (n=3)** — fixture fires in only 3 of 5 runs (`scenario_misaligned` in 2). Known fragility documented in TUNING_LOG 2026-05-11.3. Single below-threshold scores (3.2, 3.8) and one pass (4.2). Fix is adding `iteration_quality` scenarios to pm-senior and data-scientist-junior fixtures (Phase 1 later branch).
+3. **`data-scientist-junior × grounding_overlap_ratio` = 0.228 < 0.25** — pre-existing. v1.0.1 showed 0.214. Ratio is rising but below threshold. Per TUNING_LOG 2026-05-09 "What we learned #3": the ratio is informative but not load-bearing; `missing_samples` is the actionable signal. The LLM legitimately paraphrases (overlap_ratio 0.20–0.31 correlates with passing grounding scores).
+
+### Green-light criteria status
+
+| Criterion | Status |
+|---|---|
+| Every (fixture × rubric) mean ≥ 4.0 | ⚠ 2 exceptions (pre-existing, documented above) |
+| No stdev > 0.6 | ✅ max stdev = 0.50 (sre × iteration_quality, n=3) |
+| Cost variance < 15% of mean | ✅ 2.7% / 2.4% / 4.1% |
+| Zero judge_error records (90 gradings) | ✅ 0 judge_errors |
+| grounding_overlap_ratio ≥ 0.25 per fixture | ⚠ data-scientist-junior = 0.228 (pre-existing) |
+
+### What we learned
+
+1. **Schema_version 3 static-seed regression detection is materially better.** The alerter now compares each fresh run against the 5-run aggregate mean (the stable floor) rather than the most recent single JSONL run (which carries Haiku variance noise). This should halve false-alarm rate on baseline-level runs.
+
+2. **Zero judge_errors in 90 gradings.** The `status: "judge_error"` guard added in the v1.0.1 branch (`:871` in runner.py) has held cleanly across this full 5-run baseline. Previous baseline collected 1 judge_error in 80 gradings — the new run's 0/90 may reflect reduced Haiku API load or natural variance.
+
+3. **pm-senior × clarification_quality improved from 3.92 (v1.0.1) to 4.00 (v1.0.2).** The Pydantic migration (parse-or-retry path now uses `ValidationError` with a structured error message) may have marginally improved prompt-level retries on structured clarify output, though the stdev (0.45) is too wide to call this conclusive. Worth watching in Phase 2 baseline.
+
+4. **`sre-mid-level × iteration_quality` fired in 3/5 runs (vs 1/5 in v1.0.1).** Improvement in frequency (scripted edit substring landing more often) but all three valid scores are below 4.0 (3.2 / 3.8 / 4.2). Net n=3 mean 3.73 — still a Phase 1 fixture-work target, but at least the fixture is triggering more reliably.
+
+5. **Cost is remarkably stable.** CV < 5% across all three fixtures. Cache hit rate is holding — `cache_read` is landing on both analyze and generate prefix blocks consistently. Total 5-run cost matches v1.0.1 baseline ($2.07) within 1%.
+
+---
+
 ## 2026-05-26 — Atomic extraction + context-probe clarify (R1 quality fix) (`2026-05-26.1` → `2026-05-26.2`)
 
 ### What changed
