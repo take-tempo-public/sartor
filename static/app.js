@@ -3381,6 +3381,39 @@ function _renderApplicationCard(app) {
     textContent: _formatRelativeDate(app.updated_at),
   }));
   card.appendChild(meta);
+
+  if (app.status === 'submitted') {
+    const outcomeRow = _el('div', { className: 'outcome-action-row' });
+    const outcomes = [
+      { label: 'Got callback', status: 'interview' },
+      { label: 'Got rejection', status: 'rejected' },
+      { label: 'No response', status: 'no_response' },
+    ];
+    outcomes.forEach(({ label, status }) => {
+      const btn = _el('button', { className: 'outcome-btn', textContent: label });
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+          const res = await fetch(`/api/applications/${app.id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+          });
+          if (res.ok) {
+            refreshApplications();
+          } else {
+            const err = await res.json().catch(() => ({}));
+            _toast(err.error || 'Failed to update status', true);
+          }
+        } catch (e) {
+          _toast('Failed to update status: ' + e.message, true);
+        }
+      });
+      outcomeRow.appendChild(btn);
+    });
+    card.appendChild(outcomeRow);
+  }
+
   card.onclick = () => _showApplicationDetail(app.id);
   return card;
 }

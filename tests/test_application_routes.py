@@ -255,6 +255,53 @@ class TestUpdateApplicationStatus:
         r = client.put("/api/applications/99999/status", json={"status": "draft"})
         assert r.status_code == 404
 
+    def test_sets_sent_at_on_submitted(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        r = client.put(f"/api/applications/{aid}/status", json={"status": "submitted"})
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["sent_at"] is not None
+        assert body["outcome_at"] is None
+
+    def test_sets_outcome_at_on_rejected(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        r = client.put(f"/api/applications/{aid}/status", json={"status": "rejected"})
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["outcome_at"] is not None
+
+    def test_accepts_no_response(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        r = client.put(f"/api/applications/{aid}/status", json={"status": "no_response"})
+        assert r.status_code == 200
+        assert r.get_json()["status"] == "no_response"
+
+    def test_rejects_closed(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        r = client.put(f"/api/applications/{aid}/status", json={"status": "closed"})
+        assert r.status_code == 400
+
+    def test_accepts_offer_and_accepted(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        r = client.put(f"/api/applications/{aid}/status", json={"status": "offer"})
+        assert r.status_code == 200
+        assert r.get_json()["outcome_at"] is not None
+
+        aid2 = _seed_application(cid)
+        r2 = client.put(f"/api/applications/{aid2}/status", json={"status": "accepted"})
+        assert r2.status_code == 200
+        assert r2.get_json()["outcome_at"] is not None
+
 
 # ---------------------------------------------------------------------------
 # Workstream B — GET/POST /api/applications/<id>/composition
