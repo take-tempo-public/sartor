@@ -13,7 +13,7 @@ A local web application that tailors résumés and cover letters to specific job
 > [`CONTRIBUTING.md`](CONTRIBUTING.md) (PR workflow) ·
 > [`SECURITY.md`](SECURITY.md) (threat model) ·
 > [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (v1 → v2 ladder) ·
-> [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) (active release gates).
+> [`docs/dev/RELEASE_CHECKLIST.md`](docs/dev/RELEASE_CHECKLIST.md) (active release gates).
 > Each doc opens with a `Purpose / Audience / Authoritative for` block.
 
 ---

@@ -10,7 +10,7 @@
 > converges toward; what is deferred to v1.1 / v1.2 / v2; the asymmetry
 > matrix that explains why each remaining gap exists.
 >
-> **Companion** to [`docs/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md).
+> **Companion** to [`docs/dev/RELEASE_CHECKLIST.md`](dev/RELEASE_CHECKLIST.md).
 > That doc is *what we ship*. This doc is *what shape we're aiming
 > for* — the unified data model the product converges toward and the
 > sequencing ladder that gets us there without schema breaks.
@@ -575,7 +575,7 @@ acceptance criteria / target version**.
 
 ## Related project docs
 
-- [`docs/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) — the *what we
+- [`docs/dev/RELEASE_CHECKLIST.md`](dev/RELEASE_CHECKLIST.md) — the *what we
   ship for v1* checklist (PII scrub, cleanup pass, docs)
 - [`CLAUDE.md`](../CLAUDE.md) — agent and contributor contract; the
   10-principles framework references
@@ -587,5 +587,5 @@ acceptance criteria / target version**.
 ---
 
 *This file lives in `docs/` so it ships with the repo. Its sibling
-`docs/RELEASE_CHECKLIST.md` is the execution lens; this one is the
+`docs/dev/RELEASE_CHECKLIST.md` is the execution lens; this one is the
 shape lens. Update either when the corresponding lens shifts.*

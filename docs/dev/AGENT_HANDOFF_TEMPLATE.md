@@ -24,9 +24,9 @@
    The durable plan. Do not deviate without user sign-off.
 2. [docs/RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) — what is open, closed,
    and deferred per release. Before proposing anything, check here first.
-3. [docs/SESSION_HANDOFF_2026-05-27.md §5](SESSION_HANDOFF_2026-05-27.md) —
-   failure patterns to avoid. Read §5 in full before writing any code.
-4. [docs/architecture.md](architecture.md) — module map and LLM routing
+3. [docs/dev/AGENT_FAILURE_PATTERNS.md](AGENT_FAILURE_PATTERNS.md) —
+   failure patterns to avoid. Read in full before writing any code.
+4. [docs/architecture.md](../architecture.md) — module map and LLM routing
    boundary. The deterministic / LLM split is load-bearing.
 5. [evals/TUNING_LOG.md](../evals/TUNING_LOG.md) — baseline floors and
    prompt change history.
@@ -114,5 +114,5 @@ code. **Do not code first.**
    verified" if the branch closed clean)
 3. Ask user to confirm merge to `main`; execute merge after confirmation
 4. Generate the next-agent handoff prompt using this template
-   ([docs/AGENT_HANDOFF_TEMPLATE.md](AGENT_HANDOFF_TEMPLATE.md)) and give
+   ([docs/dev/AGENT_HANDOFF_TEMPLATE.md](AGENT_HANDOFF_TEMPLATE.md)) and give
    it to the user as the **last act** before closing the window

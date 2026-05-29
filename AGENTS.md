@@ -64,7 +64,7 @@ A `require-feature-branch` PreToolUse hook blocks `Edit`/`Write` while on `main`
 1. Quality gate green (`python -m ruff check .` + `python -m mypy .` + `python -m pytest`).
 2. Commit — message records what was done and why (or "no code change — verified" if the branch closed clean).
 3. Ask user to confirm merge to `main`; execute merge after confirmation.
-4. Generate the next-agent handoff prompt using [`docs/AGENT_HANDOFF_TEMPLATE.md`](docs/AGENT_HANDOFF_TEMPLATE.md) and give it to the user as the **last act** before closing the window.
+4. Generate the next-agent handoff prompt using [`docs/dev/AGENT_HANDOFF_TEMPLATE.md`](docs/dev/AGENT_HANDOFF_TEMPLATE.md) and give it to the user as the **last act** before closing the window.
 
 ### Document generation
 

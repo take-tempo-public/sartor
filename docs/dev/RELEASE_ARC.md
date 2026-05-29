@@ -28,7 +28,7 @@ Public release = v1.1.0. GitHub push is a release-process action on the v1.1.0 t
 4. **MiniCheck + DeBERTa.** Belt+suspenders offline grounding scorers; eval-only, never in hot path. MiniCheck license documented in `CONTRIBUTING.md`.
 5. **WYSIWYG Option 1.** Post-generate: run `md_to_json_resume()` on `last_generated_resume`, store as `last_generated_json_resume` in context; preview route serves this. No prompt change, no PROMPT_VERSION bump.
 6. **Applications tracker.** Extend `Application` table: add `sent_at`, `outcome_at`, `notes`; expand `status` CHECK to include `rejected | offer | accepted | no_response`; rename `closed` → `withdrawn`. No separate table.
-7. **Sequential streams.** One branch at a time per `SESSION_HANDOFF_2026-05-27.md §5` discipline.
+7. **Sequential streams.** One branch at a time per `docs/dev/AGENT_FAILURE_PATTERNS.md` discipline.
 
 ---
 
@@ -251,9 +251,9 @@ New Pareto frontier panel at top of `/_dashboard`:
 
 | Document | What it's authoritative for |
 |---|---|
-| `docs/RELEASE_CHECKLIST.md` | Open items per release |
+| `docs/dev/RELEASE_CHECKLIST.md` | Open items per release |
 | `evals/TUNING_LOG.md` | Baseline floors; prompt change history |
-| `docs/SESSION_HANDOFF_2026-05-27.md §5` | Failure patterns to avoid |
+| `docs/dev/AGENT_FAILURE_PATTERNS.md` | Failure patterns to avoid |
 | `docs/architecture.md` | Module map, LLM routing |
 | `C:\Users\iam\.claude\research\resume-eval-2026-05\followup.md` | 25-item Phase 1 checklist |
 | `docs/R1_BENCHMARK_2026-05-26.md` | R1 diagnosis (Phase 2 start point) |

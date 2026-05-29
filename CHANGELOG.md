@@ -214,7 +214,7 @@ and reverted; see "Attempted and deferred" below).
 
 ### Carried forward to next release
 
-Items tracked in [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) as
+Items tracked in [`docs/dev/RELEASE_CHECKLIST.md`](docs/dev/RELEASE_CHECKLIST.md) as
 v1.0.1 "Should do (deferred)" / v1.1 work:
 
 - Accessibility scan of all user-facing documentation (deferred actual
