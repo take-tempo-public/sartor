@@ -184,6 +184,13 @@ ATS_HEADINGS = {
 # bullets at the start of a line (after optional whitespace).
 BULLET_LINE_RE = re.compile(r"^\s*[-*•]\s+(.*)$", re.MULTILINE)
 
+# Matches markdown headings that introduce an experience/work-history section.
+# Used by compute_top_third_density to find where job bullets start.
+EXPERIENCE_HEADER_RE = re.compile(
+    r"^#{1,3}\s+(?:experience|work\s+experience|professional\s+experience|employment)",
+    re.MULTILINE | re.IGNORECASE,
+)
+
 # Pattern that matches a quantity inside a bullet. Captures percentages,
 # currency, plain integers with optional `+`, and scale words. Tuned to
 # match the kinds of numbers candidates legitimately put on resumes.
@@ -416,6 +423,71 @@ def compute_specificity_density(resume_text: str) -> dict:
         "bullets_with_metric": bullets_with,
         "density": round(density, 3),
         "metric_count": metric_count,
+    }
+
+
+def compute_top_third_density(generated_resume: str, jd_keywords: dict) -> dict:
+    """Ratio of the first 3 bullets in the first experience section that contain
+    the JD's top 3 essentials.
+
+    A high density (1.0) means the candidate leads with role-critical keywords
+    where recruiters are most likely to look. Low density signals that the LLM
+    buried the hook or failed to front-load relevant evidence.
+
+    Operational range:
+      - 1.0: all three opening bullets reference at least one of the top essentials
+      - 0.67: two of three — borderline; check which essential is missing
+      - 0.0: none of the opening bullets surface a top essential
+    """
+    kw_dict = jd_keywords.get("keywords", {}) if jd_keywords else {}
+    top3: list[str] = [kw for kw, _ in sorted(kw_dict.items(), key=lambda x: -x[1])[:3]]
+
+    text = generated_resume or ""
+    m = EXPERIENCE_HEADER_RE.search(text)
+    search_text = text[m.end() :] if m else text
+
+    bullets = BULLET_LINE_RE.findall(search_text)[:3]
+
+    if not bullets or not top3:
+        return {
+            "top3_essentials": top3,
+            "bullets_checked": len(bullets),
+            "bullets_with_essential": 0,
+            "density": 0.0,
+        }
+
+    hits = sum(
+        1 for b in bullets if any(kw.lower() in b.lower() for kw in top3)
+    )
+    return {
+        "top3_essentials": top3,
+        "bullets_checked": len(bullets),
+        "bullets_with_essential": hits,
+        "density": round(hits / len(bullets), 3),
+    }
+
+
+def compute_quantification_rate(generated_resume: str) -> dict:
+    """Rate of resume bullets that contain a number, %, $, or scale word.
+
+    Simpler than specificity_density: one float (rate) for the eval composite
+    and Pareto dashboard to ingest directly. Shares METRIC_RE so definitions
+    stay in sync.
+
+    Operational range:
+      - rate >= 0.5: well-quantified; most bullets have concrete metrics
+      - 0.3 <= rate < 0.5: partial; some bullets lack numbers
+      - rate < 0.3: under-quantified; check grounding to rule out fabrication
+    """
+    bullets = BULLET_LINE_RE.findall(generated_resume or "")
+    if not bullets:
+        return {"total_bullets": 0, "bullets_with_quantity": 0, "rate": 0.0}
+
+    hits = sum(1 for b in bullets if METRIC_RE.search(b))
+    return {
+        "total_bullets": len(bullets),
+        "bullets_with_quantity": hits,
+        "rate": round(hits / len(bullets), 3),
     }
 
 

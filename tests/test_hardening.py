@@ -10,7 +10,9 @@ from hardening import (
     compute_call_cost,
     compute_grounding_overlap,
     compute_keyword_overlap,
+    compute_quantification_rate,
     compute_specificity_density,
+    compute_top_third_density,
     compute_verb_diversity,
     extract_keywords,
     save_context_set,
@@ -346,3 +348,84 @@ class TestContextSetClarificationFields:
         loaded = json.loads(open(path, encoding="utf-8").read())
         assert loaded["clarification_questions"][0]["kind"] == "experience_probe"
         assert loaded["clarifications"]["q1"] == "Briefly in 2024."
+
+
+class TestComputeTopThirdDensity:
+    _BULLETS = "- Led cloud migration\n- Wrote python automation scripts\n- Managed kubernetes clusters\n"
+    _JD_KW: dict = {"keywords": {"kubernetes": 5, "cloud": 4, "python": 3}, "total_unique": 3}
+
+    def test_empty_resume_returns_zero(self):
+        out = compute_top_third_density("", self._JD_KW)
+        assert out["density"] == 0.0
+        assert out["bullets_checked"] == 0
+
+    def test_empty_jd_keywords_returns_zero(self):
+        out = compute_top_third_density(self._BULLETS, {})
+        assert out["density"] == 0.0
+        assert out["bullets_with_essential"] == 0
+
+    def test_all_three_bullets_hit(self):
+        # All three top essentials appear in the bullets
+        out = compute_top_third_density(self._BULLETS, self._JD_KW)
+        assert out["top3_essentials"] == ["kubernetes", "cloud", "python"]
+        assert out["bullets_checked"] == 3
+        assert out["bullets_with_essential"] == 3
+        assert out["density"] == 1.0
+
+    def test_no_bullets_match_essential(self):
+        resume = "- Authored design docs\n- Reviewed pull requests\n- Attended stand-ups\n"
+        out = compute_top_third_density(resume, self._JD_KW)
+        assert out["bullets_with_essential"] == 0
+        assert out["density"] == 0.0
+
+    def test_experience_header_scopes_search(self):
+        # Skills section has kubernetes but experience section doesn't
+        resume = (
+            "## Skills\n- kubernetes, cloud\n\n"
+            "## Experience\n- Coordinated sprints\n- Wrote reports\n- Ran retrospectives\n"
+        )
+        out = compute_top_third_density(resume, self._JD_KW)
+        # Experience bullets don't contain top essentials
+        assert out["bullets_with_essential"] == 0
+
+    def test_partial_match_gives_fractional_density(self):
+        resume = "- Deployed kubernetes clusters\n- Wrote documentation\n- Attended meetings\n"
+        out = compute_top_third_density(resume, self._JD_KW)
+        assert out["bullets_with_essential"] == 1
+        assert abs(out["density"] - 0.333) < 0.001
+
+
+class TestComputeQuantificationRate:
+    def test_empty_resume_returns_zero(self):
+        out = compute_quantification_rate("")
+        assert out["rate"] == 0.0
+        assert out["total_bullets"] == 0
+
+    def test_no_bullets_returns_zero(self):
+        out = compute_quantification_rate("Just a paragraph without bullets.")
+        assert out["rate"] == 0.0
+
+    def test_all_bullets_quantified(self):
+        resume = "- Reduced latency by 40%\n- Saved $2M annually\n- Scaled to 10k users\n"
+        out = compute_quantification_rate(resume)
+        assert out["total_bullets"] == 3
+        assert out["bullets_with_quantity"] == 3
+        assert out["rate"] == 1.0
+
+    def test_no_bullets_quantified(self):
+        resume = "- Led the initiative\n- Collaborated with teams\n- Improved the process\n"
+        out = compute_quantification_rate(resume)
+        assert out["bullets_with_quantity"] == 0
+        assert out["rate"] == 0.0
+
+    def test_partial_quantification(self):
+        resume = "- Cut costs by 30%\n- Improved team culture\n- Delivered 5 projects\n"
+        out = compute_quantification_rate(resume)
+        assert out["bullets_with_quantity"] == 2
+        assert abs(out["rate"] - 0.667) < 0.001
+
+    def test_currency_and_scale_words_match(self):
+        resume = "- Managed $500k budget\n- Grew platform to 2 million users\n"
+        out = compute_quantification_rate(resume)
+        assert out["bullets_with_quantity"] == 2
+        assert out["rate"] == 1.0

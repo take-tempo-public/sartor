@@ -50,7 +50,9 @@ from hardening import (  # noqa: E402
     compute_call_cost,
     compute_grounding_overlap,
     compute_keyword_overlap,
+    compute_quantification_rate,
     compute_specificity_density,
+    compute_top_third_density,
     compute_verb_diversity,
     extract_keywords,
 )
@@ -65,6 +67,7 @@ FIXTURES_DIR = EVALS_DIR / "fixtures"
 RUBRICS_DIR = EVALS_DIR / "rubrics"
 RESULTS_DIR = EVALS_DIR / "results"
 ANCHOR_DIR = EVALS_DIR / "anchors" / "anchor-v1"
+WEIGHTS_PATH = EVALS_DIR / "callback_weights.json"
 
 MODEL_SNAPSHOTS = {
     "sonnet": "claude-sonnet-4-6",
@@ -156,20 +159,75 @@ def _post_generation_metrics(
     generated_resume: str,
     generated_cover_letter: str,
     sources: list[str],
+    jd_keywords: dict | None = None,
 ) -> dict:
-    """Compute the four post-generation deterministic metrics.
+    """Compute post-generation deterministic metrics.
 
     `sources` is the list of source texts the LLM was allowed to draw from
     (primary resume + supplementals). Verb diversity and specificity density
     are computed over the generated resume only; grounding overlap is computed
     over the resume + cover letter combined (both must trace to source).
+    `jd_keywords` is the hardening-extracted keyword dict used to compute
+    top_third_density; pass None to skip that metric.
     """
     combined = f"{generated_resume}\n\n{generated_cover_letter}"
     return {
         "verb_diversity": compute_verb_diversity(generated_resume),
         "specificity_density": compute_specificity_density(generated_resume),
         "grounding_overlap": compute_grounding_overlap(combined, sources, n=3),
+        "top_third_density": compute_top_third_density(generated_resume, jd_keywords or {}),
+        "quantification_rate": compute_quantification_rate(generated_resume),
     }
+
+
+def _score_distinctiveness(
+    client: anthropic.Anthropic,
+    generated_resume: str,
+    job_description: str,
+) -> dict:
+    """Lightweight Haiku call scoring how distinctive/memorable the résumé is.
+
+    Eval-time only — not called from the production pipeline. Returns
+    {"score": float | None, "summary": str}. On judge failure returns
+    {"score": None, "summary": "judge_error"} so the composite gracefully
+    skips it rather than crashing.
+
+    Score 1–5:
+      5 = immediately memorable; standout specific achievements
+      4 = clearly distinctive; strong specifics throughout
+      3 = average; some specifics but generic framing in places
+      2 = generic; could describe any candidate
+      1 = completely generic; no distinguishing details
+    """
+    prompt = (
+        "You are a recruiter who has reviewed 80 résumés today. Score this one on "
+        "distinctiveness: how memorable and specific it is compared to a generic "
+        "template résumé for the role described in the job description.\n\n"
+        f"## Job Description\n\n{job_description[:2000]}\n\n"
+        f"## Résumé\n\n{generated_resume[:3000]}\n\n"
+        "Output ONLY valid JSON with keys 'score' (float 1.0–5.0, one decimal) "
+        "and 'summary' (one sentence). No prose outside the JSON."
+    )
+    try:
+        msg = client.messages.create(
+            model=JUDGE_MODEL,
+            max_tokens=128,
+            system="You are a strict, terse grader. Output only valid JSON.",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = getattr(msg.content[0], "text", "").strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1]
+            if raw.endswith("```"):
+                raw = raw.rsplit("```", 1)[0]
+            raw = raw.strip()
+        result = json.loads(raw)
+        if result.get("score") is not None:
+            result["score"] = float(result["score"])
+        return result
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("_score_distinctiveness failed: %s", exc)
+        return {"score": None, "summary": "judge_error"}
 
 
 def _eval_cost_since(t0_iso: str, fixture_name: str) -> float:
@@ -722,6 +780,10 @@ def main(argv: list[str] | None = None) -> int:
 
     n_pass = n_fail = 0
 
+    weights: dict[str, float] = {}
+    if WEIGHTS_PATH.exists():
+        weights = json.loads(WEIGHTS_PATH.read_text(encoding="utf-8"))
+
     with out_path.open("a", encoding="utf-8") as out:
         for fdir in fixtures:
             try:
@@ -825,11 +887,10 @@ def main(argv: list[str] | None = None) -> int:
                     len(clarify_questions), exp_probes, len(clarify_questions) - exp_probes,
                 )
 
-            # Compute the four post-generation deterministic metrics. These
-            # ride along on every per-rubric record AND get passed to the
-            # judge as part of `deterministic_analysis` — the grounding
-            # rubric explicitly cites missing_samples as evidence of
-            # fabrication.
+            # Compute post-generation deterministic metrics. These ride along on
+            # every per-rubric record AND get passed to the judge as part of
+            # `deterministic_analysis` — the grounding rubric explicitly cites
+            # missing_samples as evidence of fabrication.
             sources = [context["resume"]["text"]]
             for sup in context.get("supplemental_resumes", []):
                 if sup.get("text"):
@@ -838,18 +899,29 @@ def main(argv: list[str] | None = None) -> int:
                 result.get("resume_content", ""),
                 result.get("cover_letter_content", ""),
                 sources,
+                jd_keywords=context["deterministic_analysis"]["jd_keywords"],
+            )
+            det_metrics["distinctiveness"] = _score_distinctiveness(
+                client,
+                result.get("resume_content", ""),
+                context["job_description"],
             )
             cost_usd = _eval_cost_since(t0_iso, fixture["name"])
             logger.info(
-                "  metrics: verb_diversity=%.2f density=%.2f grounding_overlap=%.2f cost=$%.4f",
+                "  metrics: verb_diversity=%.2f density=%.2f grounding_overlap=%.2f"
+                " top_third_density=%.2f quantification_rate=%.2f cost=$%.4f",
                 det_metrics["verb_diversity"]["diversity_ratio"],
                 det_metrics["specificity_density"]["density"],
                 det_metrics["grounding_overlap"]["overlap_ratio"],
+                det_metrics["top_third_density"]["density"],
+                det_metrics["quantification_rate"]["rate"],
                 cost_usd,
             )
 
             payload_det = dict(context["deterministic_analysis"])
             payload_det["post_generation"] = det_metrics
+
+            fixture_scores: dict[str, float] = {}
 
             for rubric_path in rubrics:
                 # Skip judge entirely when clarify failed AND this is the
@@ -971,6 +1043,8 @@ def main(argv: list[str] | None = None) -> int:
                     grade = {"score": None, "reasons": [str(exc)], "status": "judge_error"}
 
                 _score = grade.get("score")
+                if isinstance(_score, (int, float)) and grade.get("status") != "judge_error":
+                    fixture_scores[rubric_path.stem] = float(_score)
                 record = {
                     "schema_version": SCHEMA_VERSION,
                     "score_max": SCORE_MAX,
@@ -1030,6 +1104,49 @@ def main(argv: list[str] | None = None) -> int:
                             )
                         elif delta["is_improvement"]:
                             improvements.append(delta)
+
+            # Compute and write one eval_composite record per fixture.
+            # Weighted average of available (non-error) rubric scores using
+            # callback_weights.json. Uses only rubrics that were actually run
+            # and scored; missing rubrics (e.g. smoke skips all but grounding)
+            # are excluded from both numerator and denominator.
+            if weights and fixture_scores:
+                total_weight = sum(
+                    weights[r] for r in fixture_scores if r in weights
+                )
+                if total_weight > 0:
+                    weighted_sum = sum(
+                        fixture_scores[r] * weights[r]
+                        for r in fixture_scores if r in weights
+                    )
+                    eval_composite: float | None = round(weighted_sum / total_weight, 3)
+                else:
+                    eval_composite = None
+            else:
+                eval_composite = None
+            out.write(json.dumps({
+                "schema_version": SCHEMA_VERSION,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "source": "eval",
+                "fixture": fixture["name"],
+                "rubric": "eval_composite",
+                "score": eval_composite,
+                "run_id": run_id,
+                "prompt_version": PROMPT_VERSION,
+                "weights_used": weights,
+                "scores_used": fixture_scores,
+                "anchor_version": anchor_version,
+                "suite": args.suite,
+                "fixture_hash": fixture["hash"],
+                "model_snapshots": MODEL_SNAPSHOTS,
+                "phase_latencies_ms": phase_latencies_ms,
+            }) + "\n")
+            logger.info(
+                "  %s → eval_composite=%.3f (from %d rubrics)",
+                fixture["name"],
+                eval_composite if eval_composite is not None else 0.0,
+                len(fixture_scores),
+            )
 
     logger.info(
         "Eval complete: %d pass, %d fail. Results: %s",
