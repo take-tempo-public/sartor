@@ -97,22 +97,22 @@ Update `_load_baseline_scores` in `runner.py` to read schema_version 3. Run 5 ba
 
 ---
 
-#### `eval/anchor-exploration-split` ← after baseline
+#### `eval/anchor-and-pr-gate` ← after baseline _(consolidated from anchor-exploration-split + pr-gate)_
 
+**Anchor structure:**
 - `evals/anchors/anchor-v1/`: copy of 3 synthetic fixtures + rubrics + `manifest.json` (immutable, versioned)
-- `evals/exploration/`: initially empty; adversarial/real fixtures go here
+- `evals/exploration/`: initially empty; adversarial/real fixtures go here with `README.md` describing promotion rule
 - JSONL schema_version 3 additions per record: `anchor_version`, `suite` (anchor|exploration), `fixture_hash`, `rubric_version`, `model_snapshots`, `baseline_comparison`, `phase_latencies_ms`
-- `runner.py`: write schema_version 3; add `--suite anchor` (default) vs `--suite exploration`
+- `runner.py`: add `--suite anchor` (default) vs `--suite exploration`
 - Promotion rule in TUNING_LOG.md: 3 stable runs + discriminating across ≥2 PROMPT_VERSIONs + documented failure mode
 
----
-
-#### `eval/pr-gate` ← after anchor split
-
+**PR gate:**
 - `.github/pull_request_template.md`: require eval evidence on `analyzer.py`/`evals/` prompt PRs (n=3 runs; mean ± stdev table; regression > 0.5 = blocked; latency p50 regression > 20% = blocked; cost regression > 20% = blocked)
 - `promptfooconfig.yaml` at repo root: 3 anchor fixtures wrapped in Promptfoo YAML; CI Markdown diff table
 - `runner.py`: exit code 2 on regression (currently just a log line)
 - Dry-run the gate with a no-op test PR before moving on
+
+**Validation:** one `--suite anchor --subset smoke` run (~$0.10). Anchor and gate are tightly coupled — anchor structure is what the gate wraps; no benefit to separate sessions.
 
 ---
 
