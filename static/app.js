@@ -3362,9 +3362,10 @@ function _renderApplicationCard(app) {
   card.appendChild(header);
 
   const meta = _el('div', { className: 'application-card-meta' });
+  const chipStatus = app.status === 'submitted' ? 'no_response' : (app.status || 'draft');
   meta.appendChild(_el('span', {
-    className: `app-status-chip status-${app.status}`,
-    textContent: (app.status || 'draft').toUpperCase(),
+    className: `app-status-chip status-${chipStatus}`,
+    textContent: chipStatus.replace('_', ' ').toUpperCase(),
   }));
   const iterText = `${app.iteration_count} iter${app.iteration_count === 1 ? '' : 's'}`;
   meta.appendChild(_el('span', { className: 'application-card-iter', textContent: iterText }));
@@ -3376,12 +3377,12 @@ function _renderApplicationCard(app) {
     badge.title = 'Pending LLM-proposed bullets/titles awaiting your review';
     meta.appendChild(badge);
   }
-  const outcomeStatuses = new Set(['offer', 'accepted', 'rejected', 'no_response']);
-  const postSubmitStatuses = new Set(['submitted', 'interview', 'offer', 'accepted', 'rejected', 'no_response']);
+  const outcomeStatuses = new Set(['interview', 'rejected', 'withdrawn']);
+  const sentStatuses = new Set(['submitted', 'no_response']);
   let dateLabel;
   if (outcomeStatuses.has(app.status) && app.outcome_at) {
     dateLabel = 'Outcome · ' + _formatRelativeDate(app.outcome_at);
-  } else if (postSubmitStatuses.has(app.status) && app.sent_at) {
+  } else if (sentStatuses.has(app.status) && app.sent_at) {
     dateLabel = 'Sent · ' + _formatRelativeDate(app.sent_at);
   } else {
     dateLabel = _formatRelativeDate(app.updated_at);
