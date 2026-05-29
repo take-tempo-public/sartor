@@ -271,7 +271,7 @@ GitHub renders this; most local markdown viewers do too.
   highlighter, and save as a *separate* annotated version with
   `_annotated` suffix.
 - **Animated GIFs.** A demo GIF is listed in
-  [`docs/RELEASE_CHECKLIST.md`](../RELEASE_CHECKLIST.md) under
+  [`docs/dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md) under
   "Nice to have." Different artifact, different procedure.
 - **Re-capture cadence.** Screenshots will rot as the UI
   evolves. The audit-doc pattern (timestamped under

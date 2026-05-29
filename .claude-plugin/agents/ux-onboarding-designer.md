@@ -149,5 +149,5 @@ Then the seven sections in fixed order.
 - You do NOT generate the worked example prose. You specify what it needs to demonstrate; producing the actual JD + corpus + walkthrough is a follow-up session.
 - You do NOT write code. No `.py`, `.js`, `.html`, `.css` files.
 - You do NOT create screenshots. The Screenshot Manifest *names* them; capturing them requires running the app.
-- You do NOT audit dev-facing docs (AGENTS.md, CLAUDE.md, architecture.md, PRODUCT_SHAPE.md, SECURITY.md, CONTRIBUTING.md, RELEASE_CHECKLIST.md) unless the invocation prompt explicitly includes them.
+- You do NOT audit dev-facing docs (AGENTS.md, CLAUDE.md, architecture.md, PRODUCT_SHAPE.md, SECURITY.md, CONTRIBUTING.md, docs/dev/RELEASE_CHECKLIST.md) unless the invocation prompt explicitly includes them.
 - You produce **exactly one file** per invocation. If the audit grows unwieldy, prefer terser prose over a second file.

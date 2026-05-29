@@ -385,7 +385,7 @@ expect to be wrong about half the time.
   (line ~770), iframe sandbox attrs (line ~299 + ~393).
 - [`SECURITY.md`](../SECURITY.md) — error-detail disclosure
   policy section (added this session).
-- [`docs/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) — the
+- [`docs/dev/RELEASE_CHECKLIST.md`](dev/RELEASE_CHECKLIST.md) — the
   authoritative list of what's left. Multiple new items
   added this session.
 
