@@ -3396,9 +3396,9 @@ function _renderApplicationCard(app) {
   if (app.status === 'submitted') {
     const outcomeRow = _el('div', { className: 'outcome-action-row' });
     const outcomes = [
-      { label: 'Got callback', status: 'interview' },
-      { label: 'Got rejection', status: 'rejected' },
-      { label: 'No response', status: 'no_response' },
+      { label: 'Got Interview', status: 'interview' },
+      { label: 'Got Rejection', status: 'rejected' },
+      { label: 'Withdrew', status: 'withdrawn' },
     ];
     outcomes.forEach(({ label, status }) => {
       const btn = _el('button', { className: 'outcome-btn', textContent: label });

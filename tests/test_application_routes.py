@@ -289,6 +289,14 @@ class TestUpdateApplicationStatus:
         r = client.put(f"/api/applications/{aid}/status", json={"status": "closed"})
         assert r.status_code == 400
 
+    def test_sets_outcome_at_on_withdrawn(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        r = client.put(f"/api/applications/{aid}/status", json={"status": "withdrawn"})
+        assert r.status_code == 200
+        assert r.get_json()["outcome_at"] is not None
+
     def test_accepts_offer_and_accepted(self, app_app):
         cid = _seed_candidate()
         aid = _seed_application(cid)
