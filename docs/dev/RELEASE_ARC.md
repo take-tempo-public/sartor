@@ -137,6 +137,46 @@ Update `_load_baseline_scores` in `runner.py` to read schema_version 3. Run 5 ba
 
 ---
 
+#### `feat/tracker-notes-and-timestamps` ← after applications-tracker ✓ done
+
+- `PUT /api/applications/<id>/notes` endpoint; `GET /api/applications/<id>` returns `notes`, `sent_at`, `outcome_at`
+- Application detail modal replaces toast: title, status chip, timestamps, notes textarea (saves on blur)
+- Card timestamp display: `submitted`/`no_response` → "Sent · X ago"; `interview`/`rejected`/`withdrawn` → "Outcome · X ago"
+- `submitted` cards display chip as "NO RESPONSE"; outcome buttons: "Got Interview" / "Got Rejection" / "Withdrew"
+- `withdrawn` now stamps `outcome_at`
+
+**Status semantics agreed 2026-05-29** (canonical for all future tracker work):
+
+| DB status  | Card label  | Timestamp       |
+|------------|-------------|-----------------|
+| draft      | DRAFT       | updated_at      |
+| submitted  | NO RESPONSE | Sent · X ago    |
+| interview  | INTERVIEW   | Outcome · X ago |
+| rejected   | REJECTED    | Outcome · X ago |
+| withdrawn  | WITHDRAWN   | Outcome · X ago |
+
+`sent_at IS NOT NULL` = was ever submitted. `outcome_at IS NOT NULL` = has a resolved outcome.
+
+---
+
+#### `chore/tracker-status-schema-cleanup` ← after feat/tracker-notes-and-timestamps
+
+Schema correction to align the DB with the canonical status semantics above.
+`offer` and `accepted` were added in an early draft but are out of scope for this app.
+`no_response` is redundant — `submitted` IS the "no response" state.
+
+- **Migration 0007:**
+  - Backfill `no_response` → `submitted`; clear their `outcome_at` (wrongly stamped)
+  - Delete `offer` and `accepted` records (pre-release, no real data)
+  - Update `CHECK` constraint: `status IN ('draft','submitted','interview','rejected','withdrawn')`
+- **`app.py` `update_application_status`:**
+  - Valid set: `{draft, submitted, interview, rejected, withdrawn}`
+  - `outcome_at` stamps on: `interview`, `rejected`, `withdrawn` only
+- **Cleanup:** remove `status-no_response`, `status-offer`, `status-accepted` CSS classes;
+  remove those three values from all JS and Python references
+
+---
+
 #### `eval/grounding-signals` ← independent
 
 - DeBERTa-v3-base-mnli-fever-anli (Apache 2.0): NLI entailment per bullet vs (resume + clarifications) → `nli_entailment_score`, `nli_contradiction_flag`
