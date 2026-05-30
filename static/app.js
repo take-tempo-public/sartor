@@ -3362,10 +3362,10 @@ function _renderApplicationCard(app) {
   card.appendChild(header);
 
   const meta = _el('div', { className: 'application-card-meta' });
-  const chipStatus = app.status === 'submitted' ? 'no_response' : (app.status || 'draft');
+  const chipStatus = app.status || 'draft';
   meta.appendChild(_el('span', {
     className: `app-status-chip status-${chipStatus}`,
-    textContent: chipStatus.replace('_', ' ').toUpperCase(),
+    textContent: (chipStatus === 'submitted' ? 'NO RESPONSE' : chipStatus).replace('_', ' ').toUpperCase(),
   }));
   const iterText = `${app.iteration_count} iter${app.iteration_count === 1 ? '' : 's'}`;
   meta.appendChild(_el('span', { className: 'application-card-iter', textContent: iterText }));
@@ -3378,7 +3378,7 @@ function _renderApplicationCard(app) {
     meta.appendChild(badge);
   }
   const outcomeStatuses = new Set(['interview', 'rejected', 'withdrawn']);
-  const sentStatuses = new Set(['submitted', 'no_response']);
+  const sentStatuses = new Set(['submitted']);
   let dateLabel;
   if (outcomeStatuses.has(app.status) && app.outcome_at) {
     dateLabel = 'Outcome · ' + _formatRelativeDate(app.outcome_at);

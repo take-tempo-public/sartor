@@ -1587,32 +1587,12 @@ textarea:focus-visible {
     rgba(248,113,113,0.10) 100%);
   border-color: rgba(248,113,113,0.32);
 }
-.app-status-chip.status-offer {
-  color: var(--brand);
-  background: linear-gradient(180deg,
-    rgba(232,167,84,0.28) 0%,
-    rgba(232,167,84,0.14) 100%);
-  border-color: var(--brand-edge);
-  font-weight: 600;
-}
-.app-status-chip.status-accepted {
-  color: var(--success);
-  background: linear-gradient(180deg,
-    rgba(74,222,128,0.28) 0%,
-    rgba(74,222,128,0.14) 100%);
-  border-color: rgba(74,222,128,0.40);
-  font-weight: 600;
-}
 .app-status-chip.status-rejected {
   color: var(--danger);
   background: linear-gradient(180deg,
     rgba(248,113,113,0.18) 0%,
     rgba(248,113,113,0.10) 100%);
   border-color: rgba(248,113,113,0.32);
-}
-.app-status-chip.status-no_response {
-  color: var(--fg-2);
-  background: var(--grad-btn);
 }
 
 .outcome-action-row {
