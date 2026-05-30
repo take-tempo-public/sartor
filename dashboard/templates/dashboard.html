@@ -142,6 +142,64 @@
   <p class="empty">No eval results yet{% if not eval_dir_present %} (no <code class="short">evals/results/</code> directory){% endif %}. Run <code class="short">python evals/runner.py --suite synthetic --subset smoke</code>.</p>
 {% else %}
 
+<h3>Pareto frontier — quality vs latency</h3>
+{% if pareto.has_data %}
+{% if pareto.summary %}
+<div style="margin: 0.6rem 0 1rem;">
+  <span class="summary-card">
+    <div class="k">most recent change</div>
+    <div class="v" style="font-size:0.9rem">{{ pareto.summary.v_prev }} → {{ pareto.summary.v_new }}</div>
+  </span>
+  <span class="summary-card">
+    <div class="k">Δ composite</div>
+    <div class="v {% if pareto.summary.delta_composite > 0 %}ok{% elif pareto.summary.delta_composite < 0 %}err{% endif %}">
+      {{ "%+.3f" | format(pareto.summary.delta_composite) }}
+    </div>
+  </span>
+  <span class="summary-card">
+    <div class="k">Δ p50 latency</div>
+    <div class="v {% if pareto.summary.delta_latency_ms < 0 %}ok{% elif pareto.summary.delta_latency_ms > 0 %}err{% endif %}">
+      {{ "%+d" | format(pareto.summary.delta_latency_ms) }}ms
+    </div>
+  </span>
+  {% if pareto.summary.delta_cost is not none %}
+  <span class="summary-card">
+    <div class="k">Δ p50 cost</div>
+    <div class="v {% if pareto.summary.delta_cost < 0 %}ok{% elif pareto.summary.delta_cost > 0 %}err{% endif %}">
+      ${{ "%+.4f" | format(pareto.summary.delta_cost) }}
+    </div>
+  </span>
+  {% endif %}
+  <span class="summary-card">
+    <div class="k">verdict</div>
+    <div class="v {% if pareto.summary.classification == 'Pareto-improving' %}ok{% elif pareto.summary.classification == 'Dominated' %}err{% endif %}">
+      {{ pareto.summary.classification }}
+    </div>
+  </span>
+</div>
+{% endif %}
+<div class="charts-row">
+  <div class="chart-box">
+    <h3>Quality vs latency (log-scale X)</h3>
+    <canvas id="chart-pareto-scatter"></canvas>
+    <p class="legend">Each bubble = one fixture run. Color = prompt_version. Size ∝ cost. X axis is log-scale seconds.</p>
+  </div>
+  <div class="chart-box">
+    <h3>Latency trend — p50 / p90 by version</h3>
+    <canvas id="chart-latency-trend"></canvas>
+  </div>
+</div>
+<div class="charts-row" style="margin-top:1rem;">
+  <div class="chart-box">
+    <h3>Cost trend — p50 by version</h3>
+    <canvas id="chart-cost-trend"></canvas>
+  </div>
+  <div></div>
+</div>
+{% else %}
+<p class="empty">No <code class="short">eval_composite</code> records yet. Run <code class="short">python evals/runner.py --suite anchor</code> to populate.</p>
+{% endif %}
+
 <div class="charts-row">
   <div class="chart-box">
     <h3>Per-rubric pass rate (score &ge; 4.0)</h3>
@@ -286,6 +344,83 @@
           y: { min: 0, max: 5, ticks: { color: '#9aa' } },
           x: { type: 'category', ticks: { color: '#9aa', maxRotation: 0, autoSkip: true } }
         }
+      }
+    });
+  }
+
+  // --- Pareto frontier charts ---
+  const paretoScatter = {{ pareto.scatter_datasets | tojson }};
+  const paretoTimeline = {{ pareto.timeline_dataset | tojson }};
+  if (paretoScatter && paretoScatter.length) {
+    new Chart(document.getElementById('chart-pareto-scatter'), {
+      type: 'bubble',
+      data: { datasets: [...paretoScatter, paretoTimeline] },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            type: 'logarithmic',
+            title: { display: true, text: 'wall-clock latency (s, log scale)', color: '#9aa' },
+            ticks: { color: '#9aa' }
+          },
+          y: {
+            min: 0, max: 5,
+            title: { display: true, text: 'eval_composite', color: '#9aa' },
+            ticks: { color: '#9aa' }
+          }
+        },
+        plugins: {
+          legend: { labels: { color: '#9aa' } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                const d = ctx.raw;
+                if (!d.fixture) return ctx.dataset.label;
+                const scores = d.scores_used
+                  ? Object.entries(d.scores_used).map(([k, v]) => k + ':' + v).join(', ')
+                  : '';
+                return [
+                  ctx.dataset.label + ' — ' + d.fixture,
+                  'composite=' + d.y + '  latency=' + d.x + 's',
+                  'cost=$' + (d.cost_usd != null ? d.cost_usd : '—'),
+                  scores ? 'rubrics: ' + scores : ''
+                ].filter(Boolean);
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  const latencyTrend = {{ pareto.latency_trend | tojson }};
+  if (latencyTrend && latencyTrend.labels && latencyTrend.labels.length) {
+    new Chart(document.getElementById('chart-latency-trend'), {
+      type: 'line',
+      data: latencyTrend,
+      options: {
+        responsive: true,
+        scales: {
+          x: { ticks: { color: '#9aa' } },
+          y: { beginAtZero: true, title: { display: true, text: 'latency (s)', color: '#9aa' }, ticks: { color: '#9aa' } }
+        },
+        plugins: { legend: { labels: { color: '#9aa' } } }
+      }
+    });
+  }
+
+  const costTrend = {{ pareto.cost_trend | tojson }};
+  if (costTrend && costTrend.labels && costTrend.labels.length) {
+    new Chart(document.getElementById('chart-cost-trend'), {
+      type: 'line',
+      data: costTrend,
+      options: {
+        responsive: true,
+        scales: {
+          x: { ticks: { color: '#9aa' } },
+          y: { beginAtZero: true, title: { display: true, text: 'cost (USD)', color: '#9aa' }, ticks: { color: '#9aa' } }
+        },
+        plugins: { legend: { labels: { color: '#9aa' } } }
       }
     });
   }

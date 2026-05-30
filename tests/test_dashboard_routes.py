@@ -7,8 +7,11 @@ when no eval results exist (graceful degradation).
 
 from __future__ import annotations
 
+import pytest
+
 from dashboard.routes import (
     _failure_mode_frequency,
+    _pareto_data,
     _per_rubric_pass_rate,
     _percentile,
     _rubric_fixture_heatmap,
@@ -216,6 +219,130 @@ class TestSummarizeCalls:
         assert out["mean_latency_ms"] > 15000  # dragged by 90000
         assert 1000 <= out["p50_latency_ms"] <= 1500
         assert out["p95_latency_ms"] >= out["p50_latency_ms"]
+
+
+def _make_composite(
+    fixture: str = "pm-senior",
+    prompt_version: str = "v1",
+    timestamp: str = "2026-05-01T00:00:00Z",
+    score: float = 4.2,
+    run_id: str = "aabbcc112233",
+    phase_latencies_ms: dict | None = None,
+) -> dict:
+    """Build a minimal eval_composite record for testing."""
+    return {
+        "rubric": "eval_composite",
+        "fixture": fixture,
+        "prompt_version": prompt_version,
+        "timestamp": timestamp,
+        "score": score,
+        "run_id": run_id,
+        "phase_latencies_ms": phase_latencies_ms or {"analyze": 90000, "generate": 50000},
+        "scores_used": {"grounding": score},
+    }
+
+
+def _make_cost_record(run_id: str = "aabbcc112233", cost_usd: float = 0.13) -> dict:
+    """Build a minimal non-composite record carrying cost_usd."""
+    return {
+        "rubric": "grounding",
+        "fixture": "pm-senior",
+        "run_id": run_id,
+        "cost_usd": cost_usd,
+        "timestamp": "2026-05-01T00:00:00Z",
+    }
+
+
+class TestParetoData:
+    def test_empty_records(self):
+        out = _pareto_data([])
+        assert out["has_data"] is False
+        assert out["scatter_datasets"] == []
+        assert out["summary"] is None
+        assert out["latency_trend"]["labels"] == []
+        assert out["cost_trend"]["labels"] == []
+
+    def test_composite_with_none_score_skipped(self):
+        record = _make_composite(score=None)
+        record["score"] = None
+        out = _pareto_data([record])
+        assert out["has_data"] is False
+
+    def test_single_version_no_summary(self):
+        records = [
+            _make_composite(fixture="pm-senior", run_id="run1"),
+            _make_composite(fixture="sre-mid", run_id="run2", timestamp="2026-05-02T00:00:00Z"),
+            _make_cost_record(run_id="run1"),
+            _make_cost_record(run_id="run2"),
+        ]
+        out = _pareto_data(records)
+        assert out["has_data"] is True
+        assert out["summary"] is None  # only one prompt_version
+        assert len(out["scatter_datasets"]) == 1
+        assert len(out["scatter_datasets"][0]["data"]) == 2
+
+    def test_cost_join_by_run_id(self):
+        composite = _make_composite(run_id="known_run")
+        cost_record = _make_cost_record(run_id="known_run", cost_usd=0.14)
+        out = _pareto_data([composite, cost_record])
+        assert out["has_data"] is True
+        pt = out["scatter_datasets"][0]["data"][0]
+        assert pt["cost_usd"] == 0.14
+        assert pt["r"] == 20.0  # only point → max_cost == 0.14 → radius = 5 + 15*1 = 20
+
+    def test_missing_cost_defaults_radius(self):
+        composite = _make_composite(run_id="no_cost_run")
+        out = _pareto_data([composite])  # no cost record
+        pt = out["scatter_datasets"][0]["data"][0]
+        assert pt["cost_usd"] is None
+        assert pt["r"] == 8.0
+
+    def test_two_versions_delta_summary(self):
+        records = [
+            _make_composite(prompt_version="v1", timestamp="2026-05-01T00:00:00Z",
+                            score=4.0, run_id="r1",
+                            phase_latencies_ms={"analyze": 90000, "generate": 50000}),
+            _make_cost_record(run_id="r1", cost_usd=0.13),
+            _make_composite(prompt_version="v2", timestamp="2026-05-10T00:00:00Z",
+                            score=4.4, run_id="r2",
+                            phase_latencies_ms={"analyze": 95000, "generate": 55000}),
+            _make_cost_record(run_id="r2", cost_usd=0.14),
+        ]
+        out = _pareto_data(records)
+        assert out["summary"] is not None
+        s = out["summary"]
+        assert s["v_prev"] == "v1"
+        assert s["v_new"] == "v2"
+        assert s["delta_composite"] == pytest.approx(0.4, abs=0.001)
+        assert s["delta_latency_ms"] > 0  # v2 latency is higher
+
+    def test_pareto_improving_classification(self):
+        records = [
+            _make_composite(prompt_version="v1", timestamp="2026-05-01T00:00:00Z",
+                            score=4.0, run_id="r1",
+                            phase_latencies_ms={"analyze": 100000, "generate": 60000}),
+            _make_cost_record(run_id="r1", cost_usd=0.15),
+            _make_composite(prompt_version="v2", timestamp="2026-05-10T00:00:00Z",
+                            score=4.5, run_id="r2",
+                            phase_latencies_ms={"analyze": 80000, "generate": 40000}),
+            _make_cost_record(run_id="r2", cost_usd=0.12),
+        ]
+        out = _pareto_data(records)
+        assert out["summary"]["classification"] == "Pareto-improving"
+
+    def test_dominated_classification(self):
+        records = [
+            _make_composite(prompt_version="v1", timestamp="2026-05-01T00:00:00Z",
+                            score=4.5, run_id="r1",
+                            phase_latencies_ms={"analyze": 80000, "generate": 40000}),
+            _make_cost_record(run_id="r1", cost_usd=0.12),
+            _make_composite(prompt_version="v2", timestamp="2026-05-10T00:00:00Z",
+                            score=4.0, run_id="r2",
+                            phase_latencies_ms={"analyze": 100000, "generate": 60000}),
+            _make_cost_record(run_id="r2", cost_usd=0.15),
+        ]
+        out = _pareto_data(records)
+        assert out["summary"]["classification"] == "Dominated"
 
 
 class TestIndexRoute:
