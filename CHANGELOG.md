@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [1.0.2] — 2026-05-30
+
+Eval apparatus stream — internal tooling establishing the regression floor
+and callback-quality measurement layer before v1.0.3 R1 prompt engineering.
+No user-facing pipeline changes; `PROMPT_VERSION` unchanged at `2026-05-24.4`.
+
+Nine branches merged since v1.0.1 (newest first):
 
 ### Added — Offline grounding signal scorers (`eval/grounding-signals`)
 
@@ -28,7 +34,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CONTRIBUTING.md** — new "Grounding signal scorers" section documenting the
   install sequence, MiniCheck license, and model download size.
 
-### Added — Pydantic v2 response models (`eval/pydantic-response-models`)
+### Added — Pareto frontier dashboard panel (`eval/pareto-dashboard`)
+
+- **`dashboard/routes.py:_pareto_data()`** — aggregates `eval_composite` JSONL
+  records, joins `cost_usd` by `run_id`, computes per-version p50/p90 latency +
+  cost, builds Chart.js bubble-scatter + trend datasets and a most-recent-change
+  summary (Δ composite, Δ latency, Δ cost, Pareto verdict).
+- **`/_dashboard` Eval Quality section** gains a Pareto frontier panel at the
+  top: quality (Y, 0–5) vs wall-clock latency (X, log scale); dot size = cost;
+  dashed polyline connects successive baselines. Graceful empty-state when no
+  `eval_composite` records exist yet.
+- 8 new tests in `tests/test_dashboard_routes.py` cover empty input, None-score
+  skip, single-version, cost join, missing-cost fallback, two-version delta,
+  Pareto-improving, and Dominated classifications.
+
+### Changed — Canonical 5-status tracker schema (`chore/tracker-status-schema-cleanup`)
+
+- **Migration 0007** — backfills `no_response → submitted` (clears wrongly-stamped
+  `outcome_at`), deletes `offer` and `accepted` rows (pre-release, no real data),
+  tightens `CHECK` constraint to the canonical 5-value set:
+  `draft | submitted | interview | rejected | withdrawn`.
+- **`app.py`** — valid set reduced to 5 values; `outcome_at` stamps on
+  `{interview, rejected, withdrawn}` (adds `interview`, which the JS
+  `outcomeStatuses` already expected but the Python handler never wrote).
+- **`static/style.css`** — removes `.status-no_response`, `.status-offer`,
+  `.status-accepted` blocks.
+- **`static/app.js`** — decouples chip CSS class from chip label so `submitted`
+  cards show `status-submitted` styling + "NO RESPONSE" text; removes
+  `no_response` from `sentStatuses`.
+
+### Added — Application detail modal + card timestamps (`feat/tracker-notes-and-timestamps`)
+
+- **`PUT /api/applications/<id>/notes`** — saves freeform notes to the
+  `Application` row; `GET /api/applications/<id>` now returns `sent_at`,
+  `outcome_at`, `notes`.
+- **Card timestamp display** — `submitted`/`no_response` cards show
+  "Sent · X ago"; `interview`/`rejected`/`withdrawn` cards show
+  "Outcome · X ago" using the semantic timestamp rather than `updated_at`.
+- **Application detail modal** replaces the prior toast on card click: shows
+  title, company, status chip, timestamps, and a notes textarea that saves on
+  blur via the new endpoint.
+
+### Added — Application outcome tracking (`eval/applications-tracker`)
+
+- **Migration 0006** — adds `sent_at TEXT`, `outcome_at TEXT`, `notes TEXT`
+  to the `application` table; expands `status CHECK` to include
+  `offer | accepted | rejected | no_response`; backfills `closed → withdrawn`.
+- **`app.py`** — auto-stamps `sent_at` on `submitted` transition;
+  `outcome_at` on any outcome transition; summary dict exposes both timestamps.
+- **`static/app.js`** — `submitted` cards gain inline "Got callback /
+  Got rejection / No response" action buttons calling
+  `PUT /api/applications/<id>/status`.
+- 8 new tests covering timestamp stamping, new valid statuses, and rejection
+  of the removed `closed` value.
+
+### Added — Callback-likelihood rubric + post-generation metrics (`eval/callback-metrics`)
+
+- **`evals/rubrics/callback_likelihood.md`** — Haiku judge with a senior
+  in-house recruiter persona (200-person company, 80 résumés, 7-second skim,
+  1–5 scale). Sixth rubric in the anchor suite.
+- **`hardening.py`** — two new deterministic helpers (no LLM calls):
+  `compute_top_third_density(resume, jd_keywords)` and
+  `compute_quantification_rate(resume)`. Both ride on `_post_generation_metrics`.
+- **`evals/runner.py`** — `_score_distinctiveness()` (eval-time-only Haiku call
+  with graceful fallback); `_post_generation_metrics()` extended to accept
+  `jd_keywords`; `eval_composite` JSONL record written per fixture after all
+  rubrics grade, weighted by `evals/callback_weights.json`.
+- **`evals/callback_weights.json`** — recruiter-informed prior weights:
+  `keyword_coverage×2, callback_likelihood×3, ats_format×1, tone×1,
+  grounding×1, clarification_quality×0.5`.
+- 12 new tests for `compute_top_third_density` and `compute_quantification_rate`.
+
+### Added — Anchor fixture suite + PR gate + JSONL schema v3 (`eval/anchor-and-pr-gate`)
+
+- **`evals/anchors/anchor-v1/`** — immutable copy of the 3 synthetic fixtures
+  (`data-scientist-junior`, `pm-senior`, `sre-mid-level`) + rubrics +
+  `manifest.json`. Anchor/exploration split documented in `evals/exploration/README.md`.
+- **JSONL `schema_version 3`** — per-record additions:
+  `anchor_version`, `suite` (anchor|exploration), `fixture_hash`,
+  `rubric_version`, `model_snapshots`, `baseline_comparison`
+  (pre-computed `delta` + `within_1_stdev`), `phase_latencies_ms`.
+- **`.github/PULL_REQUEST_TEMPLATE.md`** — requires eval evidence (n=3 runs,
+  mean ± stdev table, Δ vs baseline, latency + cost Δ) on any `analyzer.py` /
+  `evals/` prompt PR. Regression > 0.5 = blocked; latency p50 regression > 20% =
+  blocked; cost regression > 20% = blocked.
+- **`evals/runner.py`** — `--suite anchor|exploration` flag; regression
+  alerter exits code 2 on regression (previously just a log line).
+- TUNING_LOG anchor-v1 promotion-rule entry.
+
+### Changed — Schema-version 3 baseline + 5-run aggregate (`eval/baseline-v1-0-2`)
+
+- **`evals/results/baseline_v1.json`** — upgraded schema_version 2 → 3; adds
+  per-rubric `mean / stdev / min / max / n` across 5 back-to-back synthetic runs
+  at `PROMPT_VERSION 2026-05-24.4`; adds `deterministic_metrics_baseline` and
+  `performance_baseline` blocks; adds `fixture_set_hash` and `model_snapshots`.
+- **`evals/runner.py`** — `_load_baseline_scores` now seeds from the stable
+  5-run aggregate mean (rather than the noisiest single prior run), halving
+  false-alarm rate from Haiku judge variance.
+- **`evals/TUNING_LOG.md`** — new `## BASELINE — v1.0.2 — 2026-05-28` entry
+  with full run metadata, raw scores, deterministic metrics, green-light criteria
+  status, and "known below-threshold (pre-existing)" exceptions.
+- Known below-threshold at this baseline (not new regressions; recovery targets
+  for v1.0.3 `r1/structural-context-probe`):
+  `data-scientist-junior × clarification_quality` (mean 3.92),
+  `sre-mid-level × iteration_quality` (mean 3.73, n=3 fixture fragility),
+  `data-scientist-junior grounding_overlap_ratio` 0.228 (< 0.25 threshold).
+- Zero judge_errors across 90 gradings; cost CV < 5% per fixture.
+
+### Changed — Pydantic v2 response models (`eval/pydantic-response-models`)
 
 - **`pydantic>=2.0,<3.0`** added to `pyproject.toml` dependencies.
 - **Pydantic response models** in [`analyzer.py`](analyzer.py) replace the
