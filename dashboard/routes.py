@@ -315,6 +315,223 @@ def _failure_mode_frequency(records: list[dict]) -> list[dict]:
     return [{"slug": slug, "count": count} for slug, count in top]
 
 
+def _pareto_data(eval_records: list[dict]) -> dict:
+    """Build Pareto frontier data for the quality-vs-latency scatter panel.
+
+    Pulls eval_composite records from the eval record list, joins cost_usd
+    from same-run_id non-composite records, and returns Chart.js-shaped data
+    for the bubble scatter, latency trend, and cost trend charts, plus a
+    plain-dict summary of the most-recent prompt-version change.
+
+    Returns a dict with keys:
+        has_data: bool
+        scatter_datasets: list[dict]  — one Chart.js dataset per prompt_version
+        timeline_dataset: dict        — dashed polyline connecting version centroids
+        summary: dict | None          — most-recent-change delta + Pareto verdict
+        latency_trend: dict           — Chart.js line-chart data (p50/p90 by version)
+        cost_trend: dict              — Chart.js line-chart data (p50 cost by version)
+        version_stats: dict           — per-version aggregates
+    """
+    _EMPTY: dict = {
+        "has_data": False,
+        "scatter_datasets": [],
+        "timeline_dataset": {"label": "baseline trajectory", "data": []},
+        "summary": None,
+        "latency_trend": {"labels": [], "datasets": []},
+        "cost_trend": {"labels": [], "datasets": []},
+        "version_stats": {},
+    }
+
+    composite_records = [r for r in eval_records if r.get("rubric") == "eval_composite"]
+
+    # Build cost lookup from the first non-composite record per run_id.
+    cost_by_run: dict[str, float] = {}
+    for r in eval_records:
+        run_id = r.get("run_id")
+        if run_id and "cost_usd" in r and run_id not in cost_by_run:
+            try:
+                cost_by_run[run_id] = float(r["cost_usd"])
+            except (TypeError, ValueError):
+                pass
+
+    points = []
+    for r in composite_records:
+        phase_lat = r.get("phase_latencies_ms") or {}
+        total_lat_ms = sum(v for v in phase_lat.values() if isinstance(v, (int, float)))
+        score = r.get("score")
+        if score is None or total_lat_ms == 0:
+            continue
+        run_id = r.get("run_id", "")
+        points.append({
+            "run_id": run_id,
+            "fixture": r.get("fixture", ""),
+            "prompt_version": r.get("prompt_version", ""),
+            "timestamp": r.get("timestamp", ""),
+            "score": float(score),
+            "total_latency_ms": int(total_lat_ms),
+            "cost_usd": cost_by_run.get(run_id),
+            "scores_used": r.get("scores_used", {}),
+        })
+
+    if not points:
+        return _EMPTY
+
+    by_version: dict[str, list[dict]] = defaultdict(list)
+    for pt in points:
+        by_version[pt["prompt_version"]].append(pt)
+
+    sorted_versions = sorted(
+        by_version.keys(),
+        key=lambda v: min(pt["timestamp"] for pt in by_version[v]),
+    )
+
+    # Per-version aggregates used for trend lines and summary.
+    version_stats: dict[str, dict] = {}
+    for version in sorted_versions:
+        pts = by_version[version]
+        latencies = sorted(pt["total_latency_ms"] for pt in pts)
+        costs = sorted(pt["cost_usd"] for pt in pts if pt["cost_usd"] is not None)
+        scores = [pt["score"] for pt in pts]
+        version_stats[version] = {
+            "mean_composite": round(sum(scores) / len(scores), 3),
+            "p50_latency_ms": int(_percentile(latencies, 50)),
+            "p90_latency_ms": int(_percentile(latencies, 90)),
+            "p50_cost_usd": round(_percentile(costs, 50), 4) if costs else None,
+        }
+
+    # Normalize cost to bubble radius in [5, 20].
+    all_costs = [pt["cost_usd"] for pt in points if pt["cost_usd"] is not None]
+    max_cost = max(all_costs) if all_costs else 1.0
+
+    palette = ["#ffb86b", "#82c8a4", "#94d4ff", "#d77a7a", "#c8a4ff"]
+    scatter_datasets: list[dict] = []
+    for i, version in enumerate(sorted_versions):
+        pts = sorted(by_version[version], key=lambda p: p["timestamp"])
+        data = []
+        for pt in pts:
+            lat_s = round(pt["total_latency_ms"] / 1000.0, 1)
+            cost = pt["cost_usd"]
+            radius = round(5.0 + 15.0 * (cost / max_cost), 1) if cost is not None else 8.0
+            data.append({
+                "x": lat_s,
+                "y": round(pt["score"], 3),
+                "r": radius,
+                "fixture": pt["fixture"],
+                "run_id": pt["run_id"],
+                "cost_usd": round(cost, 4) if cost is not None else None,
+                "scores_used": pt["scores_used"],
+            })
+        color = palette[i % len(palette)]
+        scatter_datasets.append({
+            "label": version,
+            "data": data,
+            "backgroundColor": color + "99",
+            "borderColor": color,
+        })
+
+    # Dashed polyline: version centroids in chronological order.
+    timeline_data = [
+        {
+            "x": round(version_stats[v]["p50_latency_ms"] / 1000.0, 1),
+            "y": round(version_stats[v]["mean_composite"], 3),
+            "version": v,
+        }
+        for v in sorted_versions
+    ]
+    timeline_dataset = {
+        "label": "baseline trajectory",
+        "data": timeline_data,
+        "type": "line",
+        "borderColor": "#6f7280",
+        "borderDash": [6, 4],
+        "pointRadius": 0,
+        "fill": False,
+        "tension": 0,
+        "order": 0,
+    }
+
+    # Most-recent-change summary (requires ≥2 distinct prompt_versions).
+    summary: dict | None = None
+    if len(sorted_versions) >= 2:
+        v_prev = sorted_versions[-2]
+        v_new = sorted_versions[-1]
+        prev = version_stats[v_prev]
+        new = version_stats[v_new]
+        delta_composite = round(new["mean_composite"] - prev["mean_composite"], 3)
+        delta_latency_ms = new["p50_latency_ms"] - prev["p50_latency_ms"]
+        delta_cost: float | None = None
+        if new["p50_cost_usd"] is not None and prev["p50_cost_usd"] is not None:
+            delta_cost = round(new["p50_cost_usd"] - prev["p50_cost_usd"], 4)
+
+        quality_up = delta_composite > 0
+        latency_down = delta_latency_ms < 0
+        cost_down = delta_cost is not None and delta_cost < 0
+        quality_down = delta_composite < 0
+        latency_up = delta_latency_ms > 0
+        cost_up = delta_cost is not None and delta_cost > 0
+
+        if quality_up and (latency_down or cost_down) and not (latency_up and cost_up):
+            classification = "Pareto-improving"
+        elif quality_down and (latency_up or cost_up):
+            classification = "Dominated"
+        else:
+            classification = "On frontier"
+
+        summary = {
+            "v_prev": v_prev,
+            "v_new": v_new,
+            "delta_composite": delta_composite,
+            "delta_latency_ms": delta_latency_ms,
+            "delta_cost": delta_cost,
+            "classification": classification,
+        }
+
+    # Latency and cost trend (line charts by prompt_version).
+    labels = sorted_versions
+    latency_trend = {
+        "labels": labels,
+        "datasets": [
+            {
+                "label": "p50 latency (s)",
+                "data": [round(version_stats[v]["p50_latency_ms"] / 1000.0, 1) for v in labels],
+                "borderColor": "#ffb86b",
+                "backgroundColor": "#ffb86b",
+                "tension": 0.2,
+            },
+            {
+                "label": "p90 latency (s)",
+                "data": [round(version_stats[v]["p90_latency_ms"] / 1000.0, 1) for v in labels],
+                "borderColor": "#d77a7a",
+                "backgroundColor": "#d77a7a",
+                "tension": 0.2,
+                "borderDash": [5, 5],
+            },
+        ],
+    }
+    cost_trend = {
+        "labels": labels,
+        "datasets": [
+            {
+                "label": "p50 cost (USD)",
+                "data": [version_stats[v]["p50_cost_usd"] or 0 for v in labels],
+                "borderColor": "#82c8a4",
+                "backgroundColor": "#82c8a4",
+                "tension": 0.2,
+            },
+        ],
+    }
+
+    return {
+        "has_data": True,
+        "scatter_datasets": scatter_datasets,
+        "timeline_dataset": timeline_dataset,
+        "summary": summary,
+        "latency_trend": latency_trend,
+        "cost_trend": cost_trend,
+        "version_stats": version_stats,
+    }
+
+
 @dashboard_bp.before_request
 def _localhost_guard():
     """Same posture as the rest of the app: localhost-only by host check."""
@@ -343,6 +560,7 @@ def index():
     score_trend = _score_over_time(eval_results)
     heatmap = _rubric_fixture_heatmap(eval_results)
     failure_modes = _failure_mode_frequency(eval_results)
+    pareto = _pareto_data(eval_results)
 
     # Distinct values for filter dropdowns
     users = sorted({r.get("username", "") for r in calls if r.get("username")})
@@ -362,4 +580,5 @@ def index():
         score_trend=score_trend,
         heatmap=heatmap,
         failure_modes=failure_modes,
+        pareto=pareto,
     )
