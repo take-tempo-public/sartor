@@ -892,9 +892,15 @@ def main(argv: list[str] | None = None) -> int:
                 exp_probes = sum(
                     1 for q in clarify_questions if q.get("kind") == "experience_probe"
                 )
+                ctx_probes = sum(
+                    1 for q in clarify_questions if q.get("kind") == "context_probe"
+                )
+                scope_probes = sum(
+                    1 for q in clarify_questions if q.get("kind") == "scope_probe"
+                )
                 logger.info(
-                    "  clarify produced %d questions (%d experience probes, %d scope probes)",
-                    len(clarify_questions), exp_probes, len(clarify_questions) - exp_probes,
+                    "  clarify produced %d questions (%d experience, %d context, %d scope probes)",
+                    len(clarify_questions), exp_probes, ctx_probes, scope_probes,
                 )
 
             # Compute post-generation deterministic metrics. These ride along on
