@@ -274,13 +274,21 @@ class TestUpdateApplicationStatus:
         body = r.get_json()
         assert body["outcome_at"] is not None
 
-    def test_accepts_no_response(self, app_app):
+    def test_interview_stamps_outcome_at(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        r = client.put(f"/api/applications/{aid}/status", json={"status": "interview"})
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["outcome_at"] is not None
+
+    def test_rejects_no_response(self, app_app):
         cid = _seed_candidate()
         aid = _seed_application(cid)
         client = app_app.app.test_client()
         r = client.put(f"/api/applications/{aid}/status", json={"status": "no_response"})
-        assert r.status_code == 200
-        assert r.get_json()["status"] == "no_response"
+        assert r.status_code == 400
 
     def test_rejects_closed(self, app_app):
         cid = _seed_candidate()
@@ -297,18 +305,50 @@ class TestUpdateApplicationStatus:
         assert r.status_code == 200
         assert r.get_json()["outcome_at"] is not None
 
-    def test_accepts_offer_and_accepted(self, app_app):
+    def test_rejects_offer_and_accepted(self, app_app):
         cid = _seed_candidate()
         aid = _seed_application(cid)
         client = app_app.app.test_client()
         r = client.put(f"/api/applications/{aid}/status", json={"status": "offer"})
-        assert r.status_code == 200
-        assert r.get_json()["outcome_at"] is not None
+        assert r.status_code == 400
 
         aid2 = _seed_application(cid)
         r2 = client.put(f"/api/applications/{aid2}/status", json={"status": "accepted"})
-        assert r2.status_code == 200
-        assert r2.get_json()["outcome_at"] is not None
+        assert r2.status_code == 400
+
+
+
+def test_no_response_backfill_migration(tmp_path):
+    """Migration 0007 DML: no_response → submitted, outcome_at cleared."""
+    import sqlite3
+
+    db = tmp_path / "backfill_test.sqlite"
+    with sqlite3.connect(db) as conn:
+        conn.execute(
+            "CREATE TABLE application ("
+            "  id INTEGER PRIMARY KEY, status TEXT NOT NULL, outcome_at TEXT, "
+            "  CHECK (status IN ('draft','submitted','interview','withdrawn',"
+            "    'offer','accepted','rejected','no_response'))"
+            ")"
+        )
+        conn.execute(
+            "INSERT INTO application (status, outcome_at) "
+            "VALUES ('no_response', '2026-05-29T10:00:00Z')"
+        )
+        conn.execute("INSERT INTO application (status, outcome_at) VALUES ('submitted', NULL)")
+        conn.commit()
+
+        conn.execute(
+            "UPDATE application SET status = 'submitted', outcome_at = NULL "
+            "WHERE status = 'no_response'"
+        )
+        conn.commit()
+
+        rows = conn.execute(
+            "SELECT status, outcome_at FROM application ORDER BY id"
+        ).fetchall()
+    assert rows[0] == ("submitted", None), "no_response row should become submitted with outcome_at cleared"
+    assert rows[1] == ("submitted", None), "already-submitted row should be unchanged"
 
 
 # ---------------------------------------------------------------------------

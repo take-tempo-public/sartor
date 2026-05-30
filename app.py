@@ -4377,8 +4377,7 @@ def update_application_status(application_id: int):
 
     data = request.json or {}
     status = (data.get("status") or "").strip().lower()
-    valid = {"draft", "submitted", "interview", "withdrawn",
-             "offer", "accepted", "rejected", "no_response"}
+    valid = {"draft", "submitted", "interview", "rejected", "withdrawn"}
     if status not in valid:
         return jsonify({"error": f"status must be one of {sorted(valid)}"}), 400
 
@@ -4395,7 +4394,7 @@ def update_application_status(application_id: int):
         now_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         if status == "submitted" and app_row.sent_at is None:
             app_row.sent_at = now_ts
-        if status in {"offer", "accepted", "rejected", "no_response", "withdrawn"} and app_row.outcome_at is None:
+        if status in {"interview", "rejected", "withdrawn"} and app_row.outcome_at is None:
             app_row.outcome_at = now_ts
         session.commit()
         return jsonify({

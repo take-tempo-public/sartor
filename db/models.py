@@ -513,8 +513,7 @@ class Application(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "status IN ('draft', 'submitted', 'interview', 'withdrawn', "
-            "'offer', 'accepted', 'rejected', 'no_response')",
+            "status IN ('draft', 'submitted', 'interview', 'rejected', 'withdrawn')",
             name="ck_application_status",
         ),
         Index("ix_application_candidate_status_updated", "candidate_id", "status", "updated_at"),
