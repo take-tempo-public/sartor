@@ -196,6 +196,130 @@ prevent re-running them.
 
 ---
 
+## 2026-05-30 — r1/structural-context-probe (`2026-05-24.4` → `2026-05-30.1`)
+
+### What changed
+
+Three coupled changes in `analyzer.py` plus eval-apparatus fixes:
+
+**A. `CLARIFY_SYSTEM_PROMPT` — 2-kind → 3-kind recruiter persona**
+Replaced the interview-coach framing (experience_probe + scope_probe only) with
+the recruiter persona from the r1-attempted-2026-05-26 branch. Added `context_probe`
+as a third question kind: translates JD operating-context / scope-of-ownership /
+stakeholder-gravity / resilience signals into PORTABLE experience questions that
+adjacent-background candidates can map onto. Load-bearing framing line added:
+"Tool-name probes are dead ends when the answer is 'no' — context probes surface
+transferable experience; the tool-name probe only confirms or denies a specific item."
+Composition rule lifted from ≥50% experience_probe alone to ≥60% combined
+experience_probe + context_probe.
+
+**B. `clarify()` prompt — `<context_signals>` block added**
+The prompt now passes `hidden_qualities` from analysis into a `<context_signals>`
+block so the model sees the operating-context signals it must translate into
+context_probes. `<instructions>` updated to enumerate all three kinds with the
+60% combined rule.
+
+**C. `ClarifyResponse` Pydantic validator — two parse-time enforcement rules**
+Both rules fire only when `validation_context` is explicitly passed (clarify()
+always passes it; clarify_iteration() does not — it has different question kinds).
+- Rule 1: when `hidden_qualities_non_empty=True`, at least one `context_probe`
+  required. Missing → `ValidationError` → `_parse_or_retry` appends error and retries.
+- Rule 2: ≥60% combined experience_probe + context_probe (`math.ceil(N × 0.6)`).
+  The composition that appeared before this branch (1 experience + 3–4 scope) failed
+  the old ≥50% rubric too — it was genuinely broken, not a rubric-calibration issue.
+  Missing → same retry path.
+
+**D. Eval-apparatus fixes (no PROMPT_VERSION impact)**
+- `clarification_quality.md` rubric: added context_probe as a valid kind; updated
+  composition rule to ≥60% combined; allowed context_probes to count toward
+  `experience_probes` theme coverage in the expected-themes check.
+- `runner.py`: anchor suite now loads from `evals/rubrics/` (single source of truth)
+  instead of frozen per-suite copies; deleted all 6 anchor rubric copies. This
+  eliminates the class of bug where updating one copy silently leaves the other stale.
+- `runner.py`: clarify log line now counts experience / context / scope probes
+  separately (previously context_probes were miscounted as scope_probes).
+
+`PROMPT_VERSION`: `2026-05-24.4` → `2026-05-30.1`
+
+### Why
+
+The v1.0.2 baseline showed `pm-senior × clarification_quality` at 4.00 ± 0.45
+— barely above the 4.0 gate and with wide variance, both the R1.2 attempt
+(on r1-attempted-2026-05-26) had degraded it to 2.1 by emitting tool-name probes
+("have you used Epic?") where the rubric expected portable context-probes
+("have you built products for regulated, workflow-heavy environments?"). The
+recruiter consultation in the 2026-05-26 TUNING_LOG entry established the
+diagnosis: tool-name probes are dead ends for adjacent-background candidates.
+
+The parse-time enforcement was added after run 3 showed sre-mid-level producing
+"1 experience, 1 context, 3 scope probes" (40% combined) — a composition that
+would have failed the old ≥50% experience-only rubric too. The enforcement forces
+a retry with a structured correction message, which consistently produces ≥60%
+combined on the retry.
+
+### Result
+
+**Valid runs:** 4, 5, 6 (all with correct rubric and parse-time enforcement).
+Runs 1–2 used a stale anchor rubric copy (context_probe graded as "invalid kind").
+Run 3 pre-dated the 60% enforcement.
+
+#### Per-(fixture × rubric) mean ± stdev (n=3, judge_errors excluded)
+
+| Fixture | ats_format | callback_likelihood | clarification_quality | grounding | keyword_coverage | tone | iteration_quality |
+|---|---|---|---|---|---|---|---|
+| data-scientist-junior | 4.40 ± 0.28 | 4.50 ± 0.14 | **4.20 ± 0.00** | 4.73 ± 0.09 | 4.20 ± 0.00 | 4.37 ± 0.24 | n/a |
+| pm-senior | 4.37 ± 0.24 | 4.17 ± 0.05 | **4.20 ± 0.00** | 4.80 ± 0.00 | 4.00 ± 0.20 (n=2) | 4.20 ± 0.00 | n/a |
+| sre-mid-level | 4.57 ± 0.25 | 4.43 ± 0.17 | **4.20 ± 0.00** | 4.67 ± 0.09 | 4.43 ± 0.17 | 4.20 ± 0.00 | 3.2 (n=1) |
+
+#### Raw scores per run
+
+| Fixture | Rubric | Run 4 | Run 5 | Run 6 |
+|---|---|---|---|---|
+| data-scientist-junior | ats_format | 4.2 | 4.8 | 4.2 |
+| data-scientist-junior | callback_likelihood | 4.3 | 4.6 | 4.6 |
+| data-scientist-junior | clarification_quality | 4.2 | 4.2 | 4.2 |
+| data-scientist-junior | grounding | 4.6 | 4.8 | 4.8 |
+| data-scientist-junior | keyword_coverage | 4.2 | 4.2 | 4.2 |
+| data-scientist-junior | tone | 4.2 | 4.2 | 4.7 |
+| pm-senior | ats_format | 4.7 | 4.2 | 4.2 |
+| pm-senior | callback_likelihood | 4.2 | 4.1 | 4.2 |
+| pm-senior | clarification_quality | 4.2 | 4.2 | 4.2 |
+| pm-senior | grounding | 4.8 | 4.8 | 4.8 |
+| pm-senior | keyword_coverage | JE | 3.8 | 4.2 |
+| pm-senior | tone | 4.2 | 4.2 | 4.2 |
+| sre-mid-level | ats_format | 4.7 | 4.2 | 4.8 |
+| sre-mid-level | callback_likelihood | 4.6 | 4.2 | 4.5 |
+| sre-mid-level | clarification_quality | 4.2 | 4.2 | 4.2 |
+| sre-mid-level | grounding | 4.8 | 4.6 | 4.6 |
+| sre-mid-level | iteration_quality | None | None | 3.2 |
+| sre-mid-level | keyword_coverage | 4.6 | 4.5 | 4.2 |
+| sre-mid-level | tone | 4.2 | 4.2 | 4.2 |
+
+`JE` = judge_error (Haiku returned invalid JSON, excluded from stats).
+`None` = scenario_misaligned (scripted edit substring not in generated output that run).
+
+#### Gate check vs v1.0.2 baseline
+
+| Criterion | Status |
+|---|---|
+| pm-senior × clarification_quality ≥ 4.0 | ✅ mean = 4.20 |
+| No (fixture × rubric) drop > 0.5 vs v1.0.2 baseline | ✅ max drop = −0.18 (ds-junior × ats_format) |
+| ruff + mypy + pytest (692→697 tests) | ✅ all green |
+
+### What we learned
+
+1. **Parse-time enforcement of composition rules changes model behavior reliably.** The 60% combined rule enforcement produces retries with clear structured error messages; Sonnet 4.6 consistently corrects composition on the retry (clarification_quality 4.2 ± 0.00 across all three fixtures in n=3 runs). This pattern is worth applying to other quality constraints that the prompt already states but the model doesn't always honor.
+
+2. **The anchor rubric duplication was a hidden operational risk.** Two of the first three eval runs used a stale rubric copy that graded context_probe questions as "invalid kind," producing misleading 2.1–3.2 scores. The fix (single source of truth at evals/rubrics/) is load-bearing: rubric definitions are the evaluation contract and must evolve with the product; only fixtures should be frozen per anchor version.
+
+3. **A composition that fails the new rubric also failed the old one.** The sre-mid-level pattern of "1 experience + 3 scope" would have failed ≥50% experience-probe by the old rubric (20%) and failed ≥60% combined by the new rubric. The enforcement isn't raising the bar artificially — it's making the model reliably hit a bar the rubric has always required.
+
+4. **context_probe requires rubric awareness, not just prompt awareness.** Adding a new question kind to the prompt without updating the eval rubric causes the judge to penalize the very behavior you want. Any future new question kind must ship with a rubric update in the same branch.
+
+5. **sre-mid-level × iteration_quality remains fragile (pre-existing).** The scenario fired once in 3 runs (run 6) and scored 3.2 — consistent with the known fixture fragility documented in the 2026-05-11.3 entry. Out of scope for this branch.
+
+---
+
 ## 2026-05-26 — Atomic extraction + context-probe clarify (R1 quality fix) (`2026-05-26.1` → `2026-05-26.2`)
 
 ### What changed
