@@ -459,7 +459,7 @@ def _select_fixtures(suite: str, single: str | None) -> list[Path]:
     return fixtures
 
 
-def _select_rubrics(subset: str, rubrics_dir: Path | None = None) -> list[Path]:
+def _select_rubrics(subset: str) -> list[Path]:
     """Smoke = grounding only; full = every rubric.
 
     iteration_quality is special: it only runs against fixtures that have
@@ -467,11 +467,12 @@ def _select_rubrics(subset: str, rubrics_dir: Path | None = None) -> list[Path]:
     iteration_quality grading silently for fixtures without a scenario rather
     than emitting score=None rows that would muddy the dashboard's heatmap.
 
-    `rubrics_dir` overrides the default RUBRICS_DIR; used by --suite anchor to
-    load rubrics from the frozen anchor copy rather than the live evals/rubrics/.
+    All suites (anchor, synthetic, exploration) use the shared evals/rubrics/
+    directory as the single source of truth. Rubric definitions evolve with the
+    product; only fixtures (jd.txt, resume.md, expected.json) are frozen per
+    anchor version.
     """
-    dir_ = rubrics_dir or RUBRICS_DIR
-    all_rubrics = sorted(dir_.glob("*.md"))
+    all_rubrics = sorted(RUBRICS_DIR.glob("*.md"))
     if subset == "smoke":
         return [r for r in all_rubrics if r.stem == "grounding"]
     return all_rubrics
@@ -761,8 +762,7 @@ def main(argv: list[str] | None = None) -> int:
         logger.warning("No fixtures matched the selection")
         return 0
 
-    rubrics_dir = ANCHOR_DIR / "rubrics" if args.suite == "anchor" else None
-    rubrics = _select_rubrics(args.subset, rubrics_dir=rubrics_dir)
+    rubrics = _select_rubrics(args.subset)
     rubric_versions = {rp: hashlib.sha256(rp.read_bytes()).hexdigest() for rp in rubrics}
     if not rubrics:
         logger.warning("No rubrics matched the selection")
@@ -892,9 +892,15 @@ def main(argv: list[str] | None = None) -> int:
                 exp_probes = sum(
                     1 for q in clarify_questions if q.get("kind") == "experience_probe"
                 )
+                ctx_probes = sum(
+                    1 for q in clarify_questions if q.get("kind") == "context_probe"
+                )
+                scope_probes = sum(
+                    1 for q in clarify_questions if q.get("kind") == "scope_probe"
+                )
                 logger.info(
-                    "  clarify produced %d questions (%d experience probes, %d scope probes)",
-                    len(clarify_questions), exp_probes, len(clarify_questions) - exp_probes,
+                    "  clarify produced %d questions (%d experience, %d context, %d scope probes)",
+                    len(clarify_questions), exp_probes, ctx_probes, scope_probes,
                 )
 
             # Compute post-generation deterministic metrics. These ride along on

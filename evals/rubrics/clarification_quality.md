@@ -8,28 +8,34 @@ The payload contains:
 - `analysis` — the analyzer's output, especially `essential_skills`, `preferred_skills`, `comparison.gaps`, `comparison.title_alignment`, and `keyword_placement`. These define the legitimate gap surface.
 - `original_resume` — the candidate's actual resume text. Use to verify that gaps the questions target are NOT already covered.
 - `deterministic_analysis.keyword_overlap.missing_from_resume` — JD keywords missing from the resume. A strong positive signal for experience probes.
-- `clarification_questions` — array the model produced. Each entry has `id`, `text`, `target_gap`, `kind`. `kind` is either `experience_probe` or `scope_probe`.
-- `expected.expected_clarification_themes` — per-fixture map with `experience_probes` and `scope_probes` lists of themes that good questions SHOULD cover for this fixture. Hitting a listed theme is positive signal. Missing every theme is a negative signal.
+- `clarification_questions` — array the model produced. Each entry has `id`, `text`, `target_gap`, `kind`. `kind` is `experience_probe`, `context_probe`, or `scope_probe`.
+- `expected.expected_clarification_themes` — per-fixture map with `experience_probes` and `scope_probes` lists of themes that good questions SHOULD cover for this fixture. Hitting a listed theme is positive signal. Missing every theme is a negative signal. Context probes count toward hitting `experience_probes` themes (see rule 2 below).
 
 ## What good looks like
 
 A strong clarification set:
 1. Contains 3–5 questions, no more, no fewer.
-2. Has at least half (≥50%) of `kind="experience_probe"` — questions that target a JD-required skill missing or weak in the resume, asking whether the candidate has real experience to surface.
+2. Has at least 60% combined `kind="experience_probe"` OR `kind="context_probe"`:
+   - `experience_probe`: asks whether the candidate has hands-on experience with a specific JD-required skill or an adjacent technology, including an escape hatch so a "no" still yields signal.
+   - `context_probe`: translates a JD operating-context / scope-of-ownership / stakeholder-gravity / resilience signal into a PORTABLE experience question that adjacent-background candidates can map onto (e.g. "Have you built products for users in regulated, workflow-heavy environments where errors have real-world consequences — healthcare, fintech, transportation, anything similar?"). Context probes surface the same underlying experience as experience_probes but via portable context framing; they count toward the 60% threshold and toward `experience_probes` theme coverage.
 3. The remainder are `kind="scope_probe"` — disambiguating role scope, shipped-vs-prototype, decision authority, audience, or team size where the analyzer flagged ambiguity.
-4. Each question's `target_gap` cites a SPECIFIC source — a name from `essential_skills`, a string from `comparison.gaps`, an item from `keyword_placement`, or a keyword from `keyword_overlap.missing_from_resume`. Generic gaps ("the candidate's background") do not count.
-5. Question text is ≤25 words, asks ONE thing (no compound "and/or" joining two distinct asks), and is not leading ("Don't you think...?", "Wouldn't you agree...?").
+4. Each question's `target_gap` cites a SPECIFIC source:
+   - `experience_probe`: a name from `essential_skills`, a string from `comparison.gaps`, a keyword from `keyword_overlap.missing_from_resume`, or an item from `keyword_placement`
+   - `context_probe`: a context signal from the JD's operating context, `hidden_qualities`, or `comparison.gaps` (e.g. "Context signal: regulated-industry workflows" or "JD implies 0→1 ownership")
+   - `scope_probe`: a string from `comparison.gaps` or `comparison.title_alignment`
+   Generic gaps ("the candidate's background") do not count.
+5. Question text is ≤25 words, asks ONE thing (no compound "and"/"or" joining two distinct asks), and is not leading ("Don't you think...?", "Wouldn't you agree...?").
 6. No question is a generic interview prompt ("Tell me about yourself", "What are your strengths?").
 7. No question fabricates a gap — every gap referenced must trace to the analyzer's actual output or the deterministic keyword diff.
-8. Coverage of `expected_clarification_themes`: at least one experience probe should hit one of the listed `experience_probes`, and at least one scope probe should hit one of the listed `scope_probes` (when those lists are non-empty).
+8. Coverage of `expected_clarification_themes`: at least one experience_probe OR context_probe should hit one of the listed `experience_probes` themes; at least one scope_probe should hit one of the listed `scope_probes` themes (when those lists are non-empty).
 
 ## Scoring (0.0–5.0, one-decimal precision)
 
 Anchor bands:
-- **5.0** — All composition rules met (3–5 questions, ≥50% experience probes, all gaps cited, all questions specific). Hits at least one `expected_clarification_theme` from each kind. Concise, well-targeted, no leading or compound questions.
+- **5.0** — All composition rules met (3–5 questions, ≥60% experience+context probes, all gaps cited, all questions specific). Hits at least one `expected_clarification_theme` from each kind. Concise, well-targeted, no leading or compound questions.
 - **4.0** — Composition rules met; minor weakness on theme coverage (e.g. hits only experience themes, not scope) OR one question's `target_gap` is paraphrased rather than directly cited.
-- **3.0** — One clear deficiency: either too few questions (1–2), too many (6+), under 50% experience probes, or one question is generic/fabricated.
-- **2.0** — Multiple deficiencies: e.g. only scope probes (no experience probes), or several questions are generic, or several have no cite.
+- **3.0** — One clear deficiency: either too few questions (1–2), too many (6+), under 60% combined experience+context probes, or one question is generic/fabricated.
+- **2.0** — Multiple deficiencies: e.g. only scope probes (no experience or context probes), or several questions are generic, or several have no cite.
 - **1.0** — Mostly generic questions; little or no connection to analyzer output; composition rule violations.
 - **0.0** — No usable clarifications; all questions are generic, redundant with the resume, or fabricated.
 
@@ -48,4 +54,4 @@ Respond with valid JSON only — no markdown fences, no commentary outside the J
 ```
 
 `failed_rules` should be machine-friendly slugs from this set (extend if needed):
-`wrong_count` (not 3-5), `too_few_experience_probes` (<50% experience), `generic_question`, `fabricated_gap` (cites a gap not in analyzer output), `compound_question`, `leading_question`, `over_word_limit` (>25 words), `missing_expected_theme` (no question hits any expected theme of its kind), `redundant_with_resume` (gap already covered in source).
+`wrong_count` (not 3-5), `too_few_experience_probes` (<60% combined experience+context), `generic_question`, `fabricated_gap` (cites a gap not in analyzer output), `compound_question`, `leading_question`, `over_word_limit` (>25 words), `missing_expected_theme` (no question hits any expected theme of its kind), `redundant_with_resume` (gap already covered in source).
