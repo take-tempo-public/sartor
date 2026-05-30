@@ -727,6 +727,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--subset", choices=["smoke", "full"], default="full")
     ap.add_argument("--fixture", help="Run a single named fixture (overrides --suite)")
     ap.add_argument("--out-dir", default=str(RESULTS_DIR))
+    ap.add_argument(
+        "--grounding-signals",
+        action="store_true",
+        default=False,
+        help=(
+            "Run DeBERTa NLI + MiniCheck-FT5 offline grounding scorers per bullet. "
+            "Requires: pip install -e '.[eval-grounding]' (see CONTRIBUTING.md). "
+            "First run downloads ~3.2 GB of model weights to the HuggingFace cache."
+        ),
+    )
     args = ap.parse_args(argv)
 
     # Load static baseline data once for baseline_comparison fields on JSONL records.
@@ -921,6 +931,23 @@ def main(argv: list[str] | None = None) -> int:
             payload_det = dict(context["deterministic_analysis"])
             payload_det["post_generation"] = det_metrics
 
+            grounding_signals_data: dict | None = None
+            if args.grounding_signals:
+                from evals.grounding_signals import run_grounding_signals  # noqa: PLC0415
+                grounding_signals_data = run_grounding_signals(
+                    result.get("resume_content", ""),
+                    sources,
+                )
+                logger.info(
+                    "  grounding_signals: %d bullets  nli_mean=%.3f contradictions=%d"
+                    "  minicheck_mean=%.3f low_scores=%d",
+                    grounding_signals_data["bullet_count"],
+                    grounding_signals_data["nli_summary"]["mean_entailment"],
+                    grounding_signals_data["nli_summary"]["contradiction_count"],
+                    grounding_signals_data["minicheck_summary"]["mean_score"],
+                    grounding_signals_data["minicheck_summary"]["low_score_count"],
+                )
+
             fixture_scores: dict[str, float] = {}
 
             for rubric_path in rubrics:
@@ -951,6 +978,7 @@ def main(argv: list[str] | None = None) -> int:
                         "model_snapshots": MODEL_SNAPSHOTS,
                         "baseline_comparison": None,
                         "phase_latencies_ms": phase_latencies_ms,
+                        "grounding_signals": grounding_signals_data,
                     }) + "\n")
                     n_fail += 1
                     logger.info(
@@ -996,6 +1024,7 @@ def main(argv: list[str] | None = None) -> int:
                             baseline_v1_data,
                         ),
                         "phase_latencies_ms": phase_latencies_ms,
+                        "grounding_signals": grounding_signals_data,
                     })
                     out.write(json.dumps(iter_record) + "\n")
                     if isinstance(iter_score, (int, float)) and iter_score >= PASS_THRESHOLD:
@@ -1072,6 +1101,7 @@ def main(argv: list[str] | None = None) -> int:
                         baseline_v1_data,
                     ),
                     "phase_latencies_ms": phase_latencies_ms,
+                    "grounding_signals": grounding_signals_data,
                 }
                 out.write(json.dumps(record) + "\n")
 

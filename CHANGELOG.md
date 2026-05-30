@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Offline grounding signal scorers (`eval/grounding-signals`)
+
+- **`evals/grounding_signals.py`** — new eval-only module with two offline
+  grounding scorers, gated behind `python evals/runner.py --grounding-signals`:
+  - `score_nli_bullets`: DeBERTa-v3-base-mnli-fever-anli (Apache 2.0, ~180 MB)
+    runs NLI entailment per bullet vs source material →
+    `nli_entailment_score` (0–1) + `nli_contradiction_flag` (bool).
+  - `score_minicheck_bullets`: MiniCheck flan-t5-large (~3 GB on first download)
+    runs factual grounding check per bullet → `minicheck_grounding_score` (0–1).
+  - Both models are lazy-loaded on first `--grounding-signals` run; model weights
+    are cached in the OS HuggingFace cache dir (never in the repo).
+- **`pyproject.toml`** — new `eval-grounding` optional-dependency group
+  (`transformers`, `minicheck`). torch must be installed separately (CPU or CUDA
+  variant); see CONTRIBUTING.md.
+- **`evals/runner.py`** — `--grounding-signals` flag; per-bullet results ride
+  along as `grounding_signals` key on every JSONL record (null when flag absent).
+- **CONTRIBUTING.md** — new "Grounding signal scorers" section documenting the
+  install sequence, MiniCheck license, and model download size.
+
 ### Added — Pydantic v2 response models (`eval/pydantic-response-models`)
 
 - **`pydantic>=2.0,<3.0`** added to `pyproject.toml` dependencies.
