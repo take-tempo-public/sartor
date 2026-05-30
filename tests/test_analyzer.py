@@ -346,7 +346,7 @@ def test_parse_or_retry_streaming_raises_after_exhausted_retries(monkeypatch):
 # ---------- clarify() ------------------------------------------------------
 
 def _minimal_clarify_response() -> str:
-    """Valid CLARIFY_REQUIRED_KEYS shape for clarify() to return."""
+    """Valid clarify() response shape: ≥60% combined experience+context probes."""
     return json.dumps({
         "questions": [
             {
@@ -357,12 +357,18 @@ def _minimal_clarify_response() -> str:
             },
             {
                 "id": "q2",
+                "text": "Have you operated in regulated or workflow-heavy environments?",
+                "target_gap": "Context signal: regulated-industry workflows",
+                "kind": "context_probe",
+            },
+            {
+                "id": "q3",
                 "text": "Did the K8s migration ship to production or remain a POC?",
                 "target_gap": "Analyzer flagged ambiguity in shipped status",
                 "kind": "scope_probe",
             },
         ],
-        "reasoning": "Mix of experience and scope probes targeting analyzer gaps.",
+        "reasoning": "Two experience/context probes plus one scope probe — 67% combined.",
     })
 
 
@@ -398,7 +404,7 @@ def test_clarify_returns_structured_questions(monkeypatch):
                               username="u", run_id="r")
 
     assert "questions" in result and "reasoning" in result
-    assert len(result["questions"]) == 2
+    assert len(result["questions"]) == 3
     assert result["questions"][0]["kind"] == "experience_probe"
     assert received_system_prompts == [analyzer.CLARIFY_SYSTEM_PROMPT]
 

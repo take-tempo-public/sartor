@@ -1,7 +1,8 @@
-"""Tests for the context_probe enforcement added in r1/structural-context-probe.
+"""Tests for the composition enforcement added in r1/structural-context-probe.
 
 Covers:
-  - ClarifyResponse Pydantic validator (4 branches)
+  - ClarifyResponse Pydantic validator: context_probe requirement (rule 1)
+  - ClarifyResponse Pydantic validator: ≥60% combined rule (rule 2)
   - _parse_or_retry validation_context threading (2 cases)
 
 No LLM calls — all tests mock at the _call_llm boundary.
@@ -40,12 +41,13 @@ def _valid_payload(kinds: list[str]) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# ClarifyResponse model validator — 4 branches
+# Rule 1: context_probe required when hidden_qualities non-empty
 # ---------------------------------------------------------------------------
 
-class TestClarifyResponseValidator:
+class TestContextProbeRequirement:
     def test_passes_when_context_probe_present_and_hq_non_empty(self):
-        """context_probe in output + hidden_qualities non-empty → OK."""
+        """context_probe + hq non-empty + ≥60% combined → OK."""
+        # 2/3 experience+context = 67% ✓
         data = _valid_payload(["experience_probe", "context_probe", "scope_probe"])
         result = ClarifyResponse.model_validate(
             data, context={"hidden_qualities_non_empty": True}
@@ -53,8 +55,9 @@ class TestClarifyResponseValidator:
         assert result.questions is not None
 
     def test_raises_when_no_context_probe_and_hq_non_empty(self):
-        """No context_probe + hidden_qualities non-empty → ValidationError."""
-        data = _valid_payload(["experience_probe", "scope_probe"])
+        """No context_probe + hq non-empty → ValidationError citing context_probe."""
+        # 3/3 experience = 100%, passes 60% rule but fails rule 1
+        data = _valid_payload(["experience_probe", "experience_probe", "scope_probe"])
         with pytest.raises(ValidationError) as exc_info:
             ClarifyResponse.model_validate(
                 data, context={"hidden_qualities_non_empty": True}
@@ -62,16 +65,69 @@ class TestClarifyResponseValidator:
         assert "context_probe" in str(exc_info.value)
 
     def test_passes_when_hq_empty_and_no_context_probe(self):
-        """hidden_qualities empty → context_probe not required."""
-        data = _valid_payload(["experience_probe", "scope_probe"])
+        """hidden_qualities empty → context_probe not required; 60% rule still applies."""
+        # 2/3 experience = 67% ✓, no context_probe (HQ empty so rule 1 waived)
+        data = _valid_payload(["experience_probe", "experience_probe", "scope_probe"])
         result = ClarifyResponse.model_validate(
             data, context={"hidden_qualities_non_empty": False}
         )
         assert result.questions is not None
 
     def test_passes_when_no_context_dict_at_all(self):
-        """No validation context passed (backward compat) → no enforcement."""
-        data = _valid_payload(["experience_probe", "scope_probe"])
+        """No validation context (backward compat) → no rule-1 enforcement; rule 2 still applies."""
+        # 2/3 experience = 67% ✓
+        data = _valid_payload(["experience_probe", "experience_probe", "scope_probe"])
+        result = ClarifyResponse.model_validate(data)
+        assert result.questions is not None
+
+
+# ---------------------------------------------------------------------------
+# Rule 2: ≥60% combined experience_probe + context_probe
+# ---------------------------------------------------------------------------
+
+class TestCombinedCompositionRule:
+    # All tests in this class pass validation_context (enforcement is opt-in —
+    # only fires when the caller explicitly provides context, so clarify_iteration
+    # with its different kind set isn't affected).
+    _ctx = {"hidden_qualities_non_empty": False}
+
+    def test_passes_at_60_percent_combined(self):
+        """Exactly 60% combined (3/5) → passes."""
+        data = _valid_payload(
+            ["experience_probe", "context_probe", "experience_probe",
+             "scope_probe", "scope_probe"]
+        )
+        result = ClarifyResponse.model_validate(data, context=self._ctx)
+        assert result.questions is not None
+
+    def test_raises_below_60_percent_combined(self):
+        """40% combined (2/5) → ValidationError citing 60% threshold."""
+        data = _valid_payload(
+            ["experience_probe", "context_probe",
+             "scope_probe", "scope_probe", "scope_probe"]
+        )
+        with pytest.raises(ValidationError) as exc_info:
+            ClarifyResponse.model_validate(data, context=self._ctx)
+        assert "60%" in str(exc_info.value)
+
+    def test_raises_when_all_scope_probes(self):
+        """All scope_probes (0% combined) → ValidationError."""
+        data = _valid_payload(["scope_probe", "scope_probe", "scope_probe"])
+        with pytest.raises(ValidationError):
+            ClarifyResponse.model_validate(data, context=self._ctx)
+
+    def test_passes_when_only_experience_probes(self):
+        """100% experience_probes → passes (no context_probe required when HQ empty)."""
+        data = _valid_payload(["experience_probe", "experience_probe", "experience_probe"])
+        result = ClarifyResponse.model_validate(
+            data, context={"hidden_qualities_non_empty": False}
+        )
+        assert result.questions is not None
+
+    def test_no_enforcement_without_context(self):
+        """Without validation_context (e.g. clarify_iteration), no 60% rule fires."""
+        # This would fail the 60% rule if enforcement were active (0/3 combined)
+        data = _valid_payload(["scope_probe", "scope_probe", "scope_probe"])
         result = ClarifyResponse.model_validate(data)
         assert result.questions is not None
 
@@ -81,17 +137,13 @@ class TestClarifyResponseValidator:
 # ---------------------------------------------------------------------------
 
 class TestParseOrRetryValidationContext:
-    """Verify that _parse_or_retry passes validation_context to model_validate
-    and that a ValidationError from the context check triggers a retry."""
-
-    def _make_client(self, *responses: str) -> MagicMock:
-        client = MagicMock()
-        return client
+    """Verify _parse_or_retry threads validation_context to model_validate and
+    that a ValidationError from the context check triggers the retry path."""
 
     def test_threads_context_and_succeeds_on_valid_response(self):
-        """When validation_context says hq_non_empty=True and response has
-        context_probe, _parse_or_retry returns the parsed dict on first try."""
-        payload = _valid_payload(["experience_probe", "context_probe"])
+        """hq_non_empty=True + context_probe present + ≥60% combined → passes first try."""
+        # 2/3 = 67% combined ✓, context_probe present ✓
+        payload = _valid_payload(["experience_probe", "context_probe", "scope_probe"])
         raw_json = json.dumps(payload)
 
         client = MagicMock()
@@ -108,10 +160,13 @@ class TestParseOrRetryValidationContext:
             )
         assert result["questions"][1]["kind"] == "context_probe"
 
-    def test_retries_when_context_probe_missing_with_hq_non_empty(self):
-        """When hq_non_empty=True but first response has no context_probe,
-        _parse_or_retry retries once.  If retry also fails, LLMResponseError is raised."""
-        bad_payload = _valid_payload(["experience_probe", "scope_probe"])
+    def test_retries_when_composition_invalid(self):
+        """Below 60% combined → validation fails → retry fires → LLMResponseError on exhaustion."""
+        # 1/5 = 20% combined — fails rule 2 (and has no context_probe — fails rule 1 too)
+        bad_payload = _valid_payload(
+            ["experience_probe", "scope_probe", "scope_probe",
+             "scope_probe", "scope_probe"]
+        )
         raw_bad = json.dumps(bad_payload)
 
         call_count = {"n": 0}
@@ -133,5 +188,5 @@ class TestParseOrRetryValidationContext:
                     run_id="abc",
                     validation_context={"hidden_qualities_non_empty": True},
                 )
-        # max_attempts=2: first call + one retry
+        # max_attempts=2: initial call + one retry
         assert call_count["n"] == 2

@@ -10,6 +10,7 @@ Single agent + deterministic tools = Level 1 architecture (P9).
 
 import json
 import logging
+import math
 import re
 import time
 from collections.abc import Iterator
@@ -129,10 +130,18 @@ class ClarifyResponse(_LLMResponse):
     reasoning: Any
 
     @model_validator(mode='after')
-    def enforce_context_probe_when_required(self, info: ValidationInfo) -> 'ClarifyResponse':
-        ctx = info.context or {}
+    def enforce_composition_rules(self, info: ValidationInfo) -> 'ClarifyResponse':
+        # Only enforce when the caller explicitly passes validation_context.
+        # clarify() always passes it; clarify_iteration() does not (it has
+        # different question kinds and composition rules).
+        if info.context is None:
+            return self
+
+        ctx = info.context
+        questions = self.questions if isinstance(self.questions, list) else []
+
+        # Rule 1: when hidden_qualities non-empty, at least one context_probe required.
         if ctx.get('hidden_qualities_non_empty'):
-            questions = self.questions if isinstance(self.questions, list) else []
             kinds = {q.get('kind') for q in questions if isinstance(q, dict)}
             if 'context_probe' not in kinds:
                 raise ValueError(
@@ -141,6 +150,23 @@ class ClarifyResponse(_LLMResponse):
                     "a <context_signals> item into a portable experience question "
                     "(e.g. regulated-industry exposure, 0→1 ownership, exec-facing scope)."
                 )
+
+        # Rule 2: ≥60% combined experience_probe + context_probe (prompt rule, enforced here).
+        if questions:
+            combined = sum(
+                1 for q in questions
+                if isinstance(q, dict)
+                and q.get('kind') in ('experience_probe', 'context_probe')
+            )
+            required = math.ceil(len(questions) * 0.6)
+            if combined < required:
+                raise ValueError(
+                    f"Only {combined}/{len(questions)} questions are experience_probe or "
+                    f"context_probe ({combined / len(questions):.0%} combined). "
+                    f"At least 60% combined is required — increase EXPERIENCE PROBES or "
+                    "CONTEXT PROBES and reduce scope_probes."
+                )
+
         return self
 
 
