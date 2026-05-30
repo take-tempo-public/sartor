@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 import anthropic
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, model_validator
 
 from hardening import ContextSet, CorpusExperience
 
@@ -128,6 +128,21 @@ class ClarifyResponse(_LLMResponse):
     questions: Any
     reasoning: Any
 
+    @model_validator(mode='after')
+    def enforce_context_probe_when_required(self, info: ValidationInfo) -> 'ClarifyResponse':
+        ctx = info.context or {}
+        if ctx.get('hidden_qualities_non_empty'):
+            questions = self.questions if isinstance(self.questions, list) else []
+            kinds = {q.get('kind') for q in questions if isinstance(q, dict)}
+            if 'context_probe' not in kinds:
+                raise ValueError(
+                    "hidden_qualities is non-empty but no context_probe question was generated. "
+                    "Add at least one CONTEXT PROBE (kind='context_probe') that translates "
+                    "a <context_signals> item into a portable experience question "
+                    "(e.g. regulated-industry exposure, 0→1 ownership, exec-facing scope)."
+                )
+        return self
+
 
 class RecommendResponse(_LLMResponse):
     recommendations: Any
@@ -168,7 +183,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-24.4"
+PROMPT_VERSION = "2026-05-30.1"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -263,28 +278,38 @@ WORKED EXAMPLES — iteration probe quality:
 # authoring) — narrower context yields tighter grounding and cheaper tokens
 # (P9). Composition rule (≥50% experience probes) is enumerated below and
 # graded by the clarification_quality eval rubric.
-CLARIFY_SYSTEM_PROMPT = """You are an experienced interview coach helping a candidate prepare a tailored resume.
+CLARIFY_SYSTEM_PROMPT = """You are an experienced technical recruiter helping a candidate prepare a tailored resume. You think like the recruiter who would interview this candidate next, not like a generic question generator.
 
-The candidate has just been analyzed against a job description. Your role is to surface 3-5 short, specific clarifying questions that, when answered, would let a resume writer produce a stronger, more truthful, more keyword-aligned document.
+The candidate has just been analyzed against a job description. Your role is to surface 3-5 short, specific clarifying questions that, when answered, would let a resume writer produce a stronger, more truthful, more interview-generating document.
 
-Two kinds of questions, in roughly this mix:
+The single most important property of a great clarifying question: when answered, it produces a bullet the candidate would not have written unprompted. Tool-name probes ("have you used Epic?") are dead ends when the answer is "no" — they create fatigue and don't surface adjacent experience. Context probes that translate JD requirements into PORTABLE experience asks let candidates from adjacent backgrounds map their experience onto the role. That's the recruiter move.
 
-1. EXPERIENCE PROBES (at least half of your questions, kind="experience_probe"):
-   For each job-description-required skill or technology that does NOT appear in the resume — or appears only weakly — ask whether the candidate has hands-on experience with it (or an adjacent/related technology that should be elevated). The goal is to source REAL experience the candidate has but didn't write down. Examples:
-   - "The JD requires Kubernetes; your resume mentions Docker. Have you used Kubernetes or another container orchestration platform in production, even briefly?"
+Three kinds of questions, in roughly this mix:
+
+1. EXPERIENCE PROBES (kind="experience_probe"):
+   For each job-description-required skill or technology that does NOT appear in the résumé — or appears only weakly — ask whether the candidate has hands-on experience with it OR with an adjacent/related technology that should be elevated. The goal is to source REAL experience the candidate has but didn't write down. Always offer an adjacent-experience escape hatch so a "no" still yields signal. Examples:
+   - "The JD requires Kubernetes; your résumé mentions Docker. Have you used Kubernetes or another container orchestration platform in production, even briefly?"
    - "The role emphasizes Terraform. Have you authored or maintained Terraform modules in any past engagement, even a side project?"
    - "The JD asks for cross-functional leadership. Can you point to a specific time you set technical direction across a team you didn't manage directly?"
 
-2. SCOPE PROBES (the remainder, kind="scope_probe"):
-   For ambiguities the analyzer flagged in the comparison — role scope, shipped-vs-prototype, decision authority, team size, audience — ask the candidate to disambiguate so the resume can use precise language. Examples:
+2. CONTEXT PROBES (kind="context_probe"):
+   For each `hidden_qualities` item from the analysis (operating-context fit, scope of ownership, stakeholder gravity, resilience signal), ask a PORTABLE experience question that translates the JD's implied context into something an adjacent-background candidate can map to. The goal is to surface relevant experience the tool-name probes would miss. Examples:
+   - JD context: regulated/healthcare workflows. Probe: "Have you built products for users in regulated, workflow-heavy environments where errors have real-world consequences — healthcare, fintech, transportation, anything similar?"
+   - JD context: 0→1 product ownership. Probe: "Have you owned a product or feature from concept to first customer, including the decision of what to build and what to cut?"
+   - JD context: exec-facing stakeholder gravity. Probe: "What's the most senior audience you've regularly presented direction to — and were you setting the agenda or responding to it?"
+   - JD context: cross-functional influence without authority. Probe: "Walk me through a time you got teams you didn't manage to commit to a deadline or trade-off."
+
+3. SCOPE PROBES (kind="scope_probe"):
+   For ambiguities the analyzer flagged in the comparison — role scope, shipped-vs-prototype, decision authority, team size, audience — ask the candidate to disambiguate so the résumé can use precise language. Examples:
    - "The project X engagement reads as senior IC work. Were you setting technical direction, or executing on a defined roadmap?"
    - "Did the K8s migration ship to production, or remain a proof of concept?"
 
 RULES:
 - Each question ≤ 25 words. One question per line, no compound questions (no "and"/"or" joining two distinct asks).
 - Do not ask leading questions ("Don't you agree that...?"). Do not ask generic prompts ("Tell me about yourself").
-- Each question must cite a SPECIFIC gap: name the JD-required skill that's missing, the analyzer-flagged ambiguity, or the under-emphasized item from the keyword strategy.
-- Bias toward EXPERIENCE PROBES — the goal is uncovering real experience the candidate didn't write down, not just clarifying what's already there.
+- Each question must cite a SPECIFIC source: name the JD-required skill that's missing (experience_probe), the hidden_qualities context signal (context_probe), or the analyzer-flagged ambiguity (scope_probe).
+- Bias toward EXPERIENCE PROBES + CONTEXT PROBES (≥60% combined) — these are the most likely to surface real experience the candidate didn't write down. Tool-name-only probes without an adjacent-experience escape hatch are dead ends; do not emit them.
+- When the JD strongly implies an operating-context or scope-of-ownership signal (regulated industry, 0→1, exec-facing, etc.), prefer a context_probe over a narrow tool-name experience_probe. The context_probe surfaces transferable experience; the tool-name probe only confirms or denies a specific item.
 - Output JSON only, no markdown fences, no preamble."""
 
 # Model selection rationale:
@@ -896,6 +921,7 @@ def _parse_or_retry(
     max_attempts: int = 2,
     system_prompt: str = "",
     model: str | None = None,
+    validation_context: dict | None = None,
 ) -> dict:
     """Parse an LLM JSON response, retrying once with the validation error
     appended on parse failure or missing required keys.
@@ -927,7 +953,7 @@ def _parse_or_retry(
             # comma) still fail and trigger the retry path; we are only
             # widening tolerance for the one quirky case we observe.
             data = json.loads(_strip_fences(raw), strict=False)
-            response_model.model_validate(data)
+            response_model.model_validate(data, context=validation_context)
             return data
         except (json.JSONDecodeError, ValidationError) as e:
             if attempt + 1 >= max_attempts:
@@ -1098,6 +1124,8 @@ def clarify(
     missing_jd_keywords = overlap.get("missing_from_resume", [])[:20]
     candidate_skills = context_set.get("candidate", {}).get("skills", [])
 
+    hidden_qualities = analysis.get('hidden_qualities', [])
+
     prompt = f"""<task>Generate 3-5 targeted clarifying questions for the candidate.</task>
 
 <analyzer_output>
@@ -1110,15 +1138,27 @@ Keyword placements suggested: {json.dumps(analysis.get('keyword_placement', []))
 Overall strategy: {analysis.get('overall_strategy', '')}
 </analyzer_output>
 
+<context_signals>
+Operating-context / scope / stakeholder / resilience signals implied by the JD (use
+these to drive CONTEXT PROBES — translate each into a portable experience question
+that lets an adjacent-background candidate map their work onto this role):
+{json.dumps(hidden_qualities)}
+</context_signals>
+
 <deterministic_gaps>
-JD keywords missing from resume: {json.dumps(missing_jd_keywords)}
+JD keywords missing from résumé: {json.dumps(missing_jd_keywords)}
 Candidate's self-listed skills: {json.dumps(candidate_skills)}
 </deterministic_gaps>
 
 <instructions>
-Compose 3-5 questions. At least half must be EXPERIENCE PROBES (kind="experience_probe") targeting a specific JD skill missing or weak in the resume. The remainder are SCOPE PROBES (kind="scope_probe") targeting a specific ambiguity in the comparison gaps or title alignment.
+Compose 3-5 questions across three kinds:
+- EXPERIENCE PROBES (kind="experience_probe") — JD-required skill missing or weak; always include an adjacent-experience escape hatch
+- CONTEXT PROBES (kind="context_probe") — translate a `<context_signals>` item into a portable experience question
+- SCOPE PROBES (kind="scope_probe") — analyzer-flagged ambiguity in comparison gaps or title alignment
 
-Each question's target_gap field must cite the specific source: name the missing JD skill, quote the analyzer's gap text, or name the keyword_placement item it targets. Do not invent gaps that aren't in the analyzer output.
+At least 60% combined must be EXPERIENCE PROBES + CONTEXT PROBES. When the JD strongly implies an operating-context / scope-of-ownership / stakeholder / resilience signal, prefer a context_probe over a narrow tool-name experience_probe — the context_probe surfaces transferable experience; the tool-name probe only confirms or denies a specific item.
+
+Each question's target_gap field must cite the specific source: the missing JD skill name (experience_probe), the `<context_signals>` item (context_probe), or the analyzer's gap text / keyword_placement item (scope_probe). Do not invent gaps that aren't in the analyzer output or context signals.
 
 Respond with valid JSON only. No markdown fences. Use this exact structure:
 {{
@@ -1126,7 +1166,7 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
     {{
       "id": "q1",
       "text": "The question text, <=25 words, no compound or leading questions.",
-      "target_gap": "Specific gap source — e.g. 'Essential skill Kubernetes is missing from resume' or 'Analyzer flagged ambiguity in title_alignment: ...'",
+      "target_gap": "Specific source — e.g. 'Essential skill Kubernetes missing from résumé', 'Context signal: regulated-industry workflows', or 'Analyzer flagged ambiguity in title_alignment: ...'",
       "kind": "experience_probe"
     }}
   ],
@@ -1145,6 +1185,7 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
         username=username,
         run_id=run_id,
         system_prompt=CLARIFY_SYSTEM_PROMPT,
+        validation_context={"hidden_qualities_non_empty": bool(hidden_qualities)},
     )
 
 
