@@ -52,6 +52,14 @@ dev = [
     "pyyaml>=6.0,<7.0",
     "types-requests>=2.31",
 ]
+# Offline grounding signal scorers for --grounding-signals eval runs.
+# torch is NOT listed here because it requires a platform-specific wheel
+# (CPU-only vs CUDA). Install torch FIRST, then this group.
+# See CONTRIBUTING.md "Grounding signal scorers" for full instructions.
+eval-grounding = [
+    "transformers>=4.40,<5.0",
+    "minicheck @ git+https://github.com/Liyan06/MiniCheck.git",
+]
 
 [project.urls]
 Homepage = "https://github.com/amodal1/callback"

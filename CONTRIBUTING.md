@@ -105,6 +105,70 @@ Hooks should remain deterministic shell. LLM-backed review is reserved for expli
 
 ---
 
+## Grounding signal scorers (optional, dev-only)
+
+The `--grounding-signals` flag in `evals/runner.py` runs two offline grounding
+scorers — DeBERTa NLI and MiniCheck-FT5 — per generated bullet. This is
+**dev tooling only**: it runs in the eval harness, never in the production app
+(`python app.py`). End users do not install these packages.
+
+### What the models do
+
+| Model | Size | License | Signal |
+|---|---|---|---|
+| `MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli` | ~180 MB | Apache 2.0 | NLI entailment: is the bullet *entailed by* the source résumé? |
+| MiniCheck `flan-t5-large` | ~3 GB (first download) | See note below | Factual grounding: is the claim *supported by* the source document? |
+
+Both model weights download automatically to the OS HuggingFace cache on first
+use (`~/.cache/huggingface/` on Linux/Mac;
+`%USERPROFILE%\.cache\huggingface\` on Windows). They are never stored in the
+repo.
+
+### MiniCheck license
+
+MiniCheck (Liyan06/MiniCheck) is published for **academic/research use**.
+This is not a permissive open-source license (not MIT, not Apache). Do **not**
+ship MiniCheck in a SaaS product or distribute it to end-users without
+verifying the current license permits your use case. In this project it is used
+solely as an offline eval scorer and never reaches production.
+
+### Install sequence
+
+**Step 1 — install torch for your hardware (do this first)**
+
+CPU-only (most laptops, ~200 MB):
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+```
+
+CUDA (if you have an NVIDIA GPU — pick the wheel matching your CUDA version):
+```bash
+# CUDA 12.1 example — check https://pytorch.org/get-started/locally/ for your version
+pip install torch --index-url https://download.pytorch.org/whl/cu121
+```
+
+**Step 2 — install the eval-grounding extras**
+
+```bash
+pip install -e ".[eval-grounding]"
+```
+
+**Step 3 — first run (triggers model downloads)**
+
+```bash
+# ~3.2 GB download on first run; cached permanently after that
+python evals/runner.py --suite anchor --subset smoke --grounding-signals
+```
+
+### CPU inference time
+
+On a CPU-only laptop: ~2–4 s per bullet. A typical résumé has 15–25 bullets,
+so `--grounding-signals` adds ~1–3 min per fixture on top of the normal LLM
+pipeline time. Acceptable for ad-hoc grounding analysis; not intended for every
+eval run.
+
+---
+
 ## Adding eval fixtures
 
 Two locations:
