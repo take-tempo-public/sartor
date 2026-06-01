@@ -12,11 +12,13 @@
 | Version | Theme | Publicly visible? | Notes |
 |---|---|---|---|
 | v1.0.1 | Solid app | No | **Tagged 2026-05-28 at commit `49f2ac9`** |
-| v1.0.2 | Eval apparatus | No | Internal tooling — no user-facing change |
-| v1.0.3 | R1 Phase 2 | No | Quality improvement to existing analyze step |
-| v1.1.0 | UI/UX redesign | **Yes** | First public release |
+| v1.0.2 | Eval apparatus | No | **Tagged 2026-05-30 at commit `2398f4e`** |
+| v1.0.3 | R1 Phase 2 | No | Quality improvement to existing analyze step (in progress) |
+| v1.0.4 | Eval tuning loop | No | Real-data, human-in-the-loop, model-assisted prompt improvement; internal/dev tooling |
+| v1.0.5 | UI/UX redesign | No (internal until v1.1.0) | Wizard redesign + WYSIWYG + diagnostics/tuning console & annotation tab; establishes the design system |
+| v1.1.0 | Public release | **Yes** | **Tag owned by the user** — applied when the product is judged showcase-ready; GitHub push is part of this event |
 
-Public release = v1.1.0. GitHub push is a release-process action on the v1.1.0 tag.
+Public release = the **v1.1.0 tag, applied by the user** when the product is judged complete and polished enough to showcase (portfolio + open-source + personal tool). GitHub push is part of that release event. There is no external deadline — completeness and polish gate the tag, not a clock.
 
 ---
 
@@ -29,6 +31,8 @@ Public release = v1.1.0. GitHub push is a release-process action on the v1.1.0 t
 5. **WYSIWYG Option 1.** Post-generate: run `md_to_json_resume()` on `last_generated_resume`, store as `last_generated_json_resume` in context; preview route serves this. No prompt change, no PROMPT_VERSION bump.
 6. **Applications tracker.** Extend `Application` table: add `sent_at`, `outcome_at`, `notes`; expand `status` CHECK to include `rejected | offer | accepted | no_response`; rename `closed` → `withdrawn`. No separate table.
 7. **Sequential streams.** One branch at a time per `docs/dev/AGENT_FAILURE_PATTERNS.md` discipline.
+8. **Eval tuning loop (v1.0.4).** Real-data, human-in-the-loop, model-assisted prompt improvement, gated by the Phase 1 grounding scorers + the eval suite. Engine + a headless annotation contract land in v1.0.4; the polished annotation UI lands in v1.0.5 on the new design system — **no throwaway**, because the annotation file format is the durable contract the UI later wraps. Approved 2026-06-01.
+9. **v1.1.0 tag is user-owned.** The public release is tagged by the user when the product is judged showcase-ready. No external deadline — completeness and polish gate the tag, not a clock.
 
 ---
 
@@ -208,7 +212,7 @@ New Pareto frontier panel at top of `/_dashboard`:
 
 **Blocked until v1.0.2 tagged.**
 
-**Start point:** `r1-attempted-2026-05-26` branch (R1.2 state — plumbing works, prompt engineering failed on `context_probe`). Do NOT start from main.
+**Start point:** branch each R1 sub-branch from **main** — the Pydantic migration and other work these branches need landed after `r1-attempted-2026-05-26` was cut. `r1-attempted-2026-05-26` is a **read-only reference** for prompt language only (`context_probe` wording, `hidden_qualities` redefinition in `EXTRACTION_SYSTEM_PROMPT`), preserved in `evals/TUNING_LOG.md` (2026-05-26 entries). *(Corrected 2026-05-30; was: "start from `r1-attempted-2026-05-26`, do NOT start from main" — that branch predates the Pydantic migration the R1 work extends.)*
 
 **Budget per hypothesis:** 3 prompt-tune iterations via `/prompt-tune`. After 3 without clearing the gate, document as "rejected for now" in TUNING_LOG.md.
 
@@ -241,11 +245,42 @@ New Pareto frontier panel at top of `/_dashboard`:
 
 ---
 
-## Phase 3 — UI/UX redesign (v1.1.0) + public release
+## Phase 3 — Eval tuning loop (v1.0.4)
 
-**Blocked until v1.0.3 tagged.**
+**Blocked until v1.0.3 tagged.** Internal/dev tooling — no user-facing pipeline change. Approved 2026-06-01.
+
+Real-data, human-in-the-loop, model-assisted prompt improvement, verified by the offline grounding scorers from Phase 1. The loop generates ground truth with the **actual product pipeline** (corpus-backed via `build_context_set_from_db`), the user annotates the produced bullets/skills, and the annotations become both a permanent regression fixture and the source material for prompt edits. The loop is fully functional **headless** in this phase (file-based annotation); its polished UI lands in Phase 4 on the new design system — **no throwaway**, because the `annotations.json` format is the durable contract the UI later wraps.
+
+### Branches (sequential)
+
+| Branch | Depends on | Key work |
+|---|---|---|
+| `eval/prompt-override-primitive` | main | `analyzer.py` reads optional prompt overrides; default path **byte-identical** (cache + PROMPT_VERSION discipline intact); candidate runs log a `candidate:<hash>` version so they never pollute score-over-time; runner `--prompt-overrides` flag. Retrofits `/prompt-tune`. |
+| `eval/corpus-seed-export` | independent | Tracked `scripts/export_corpus_seed.py` → gitignored `seed.json` under `evals/fixtures/real/`; write-path guard refuses to emit elsewhere |
+| `eval/corpus-backed-runner` | seed-export | Runner builds context via `build_context_set_from_db` from a seed (in-memory SQLite import); file-based path untouched |
+| `eval/bootstrap-engine` | corpus-backed-runner | seed + N JDs → analyze+clarify+generate per JD → dedup bullets/skills (Jaccard-0.75) → `run_grounding_signals` (2nd call site) → `bootstrap.json`; adds the `jd_pandering` slug to the rubric vocabulary |
+| `eval/annotation-contract` | bootstrap-engine | `annotations.json` schema (verdict enum; reused `failed_rules` slugs; verdict-aware note; "should-omit"; optional honest rewrite; clarification-question rating; inline MiniCheck/NLI pre-scores) + deterministic collation → `expected.json` + improvement brief |
+| `tuning/draft-and-gate-skill` | override-primitive + annotation-contract | `/tune-from-annotations`: agent reads brief → drafts candidate into overrides → candidate-vs-baseline eval → user promotes (writes `analyzer.py` + bumps `PROMPT_VERSION` + TUNING_LOG entry) |
+
+Per-branch docs land with each branch (not now): CHANGELOG; TUNING_LOG on each promotion; AGENTS.md "Eval observability" (override primitive); `evals/README.md` (`--prompt-overrides`, seed import, bootstrap); CONTRIBUTING.md (seed script + tune workflow).
+
+### v1.0.4 tag criteria
+
+- Loop runnable end-to-end on a real seed: export → bootstrap → annotate → collate → draft/eval/promote
+- Override primitive proven: a candidate prompt run produces a candidate-vs-baseline delta table; default path byte-identical (cache_read unchanged)
+- Grounding scorers run on real generated output (first real-data use of DeBERTa + MiniCheck)
+- Real fixtures form a permanent `--suite real` regression set; annotations validate the automated scorers
+- `ruff + mypy + pytest` green
+
+---
+
+## Phase 4 — UI/UX redesign (v1.0.5)
+
+**Blocked until v1.0.4 tagged.** Establishes the design system. Internal until the v1.1.0 public tag.
 
 **WYSIWYG:** Option 1 confirmed — post-generate `md_to_json_resume()` caching; no prompt change.
+
+This phase carries the product redesign **and** the polished home for the Phase 3 tuning loop: the diagnostics dashboard is redesigned into a tabbed diagnostics+tuning console, and the annotation surface becomes a rich browser tab (reading/writing the Phase 3 `annotations.json` contract). Both ride the new design system — built once.
 
 ### Branches
 
@@ -258,21 +293,42 @@ New Pareto frontier panel at top of `/_dashboard`:
 | `feat/bullet-drag-reorder` | independent | HTML5 drag on Compose bullets; `bullet_order` in `composition_overrides`; `_stable_user_prefix` honors it; reset button |
 | `feat/playwright-ux-suite` | independent | `tests/ux/conftest.py`; POM classes; ≥5 regression tests for 2026-05-26 bugs |
 | `feat/template-pagination` | wysiwyg | Modern/Spacious/Tech blank page fix |
-| `release/visual-assets` | UI stable | `docs/screenshots/*.png`; optional demo.gif |
-| `release/fresh-clone-v1-1-0` | visual assets | Clean clone → pip install → run → one application < 5 min |
-| `chore/release-v1.1.0` | fresh-clone | `version = "1.1.0"`; CHANGELOG; create GitHub repo; push + tag |
+| `feat/diagnostics-console-redesign` | design system | Tabbed read-only panels + tuning shell + cost meter on the new design system; localhost + PII guards (the dashboard's first read-write surface) |
+| `feat/annotation-tab` | diagnostics-console + Phase 3 `annotation-contract` | Browser bootstrap wrapper (reuses `/api/analyze/stream` SSE) + rich annotation surface writing the `annotations.json` contract |
 
-### v1.1.0 tag criteria
+*If this phase is too large for clean small-stepping, the natural cut is v1.0.5 = redesign + WYSIWYG + tuning UI; v1.0.6 = formats + prior-app + reorder + playwright + pagination. User's call.*
+
+### v1.0.5 tag criteria
 
 - WYSIWYG confirmed (preview = download)
 - Cover letters: .docx / .pdf / .md
 - Prior-app click resumes wizard
 - Playwright: ≥1 happy-path-stubbed + ≥5 regression tests
 - Pagination fixed for all 4 bundled templates
+- Diagnostics+tuning console redesigned; annotation tab live on the design system
+- `ruff + mypy + pytest + pytest -m ux` green
+
+---
+
+## Phase 5 — Public release (v1.1.0)
+
+**Blocked until v1.0.5 tagged. The v1.1.0 tag is owned by the user** — applied when the product is judged complete and polished enough to showcase (portfolio + open-source + personal tool). There is no external deadline; completeness and polish gate the tag, not a clock.
+
+### Branches
+
+| Branch | Depends on | Key work |
+|---|---|---|
+| `release/visual-assets` | UI stable | `docs/screenshots/*.png`; optional demo.gif |
+| `release/fresh-clone-v1-1-0` | visual assets | Clean clone → pip install → run → one application < 5 min |
+| `chore/release-v1.1.0` | fresh-clone | `version = "1.1.0"`; CHANGELOG; create GitHub repo; push + tag — **executed on the user's go** |
+
+### v1.1.0 tag criteria
+
+- Everything from the v1.0.5 criteria, holding green
 - Visual assets in `docs/screenshots/`
 - Fresh-clone < 5 min
 - GitHub URL live; all doc links resolve
-- `ruff + mypy + pytest + pytest -m ux` green
+- **User judges it showcase-ready**
 
 ---
 

@@ -489,10 +489,15 @@ before the version-bump commit.
       Added to `docs/architecture.md` module map as a release-cycle
       tool (p50/p90 latency snapshot before/after perf interventions).
       Branch `chore/pre-tag-cleanup-code`.
-- [ ] **`r1-attempted-2026-05-26` branch** — keep through v1.0.2;
-      it's the starting point for that release's R1 rework. After
-      v1.0.2 ships (R1 successful or formally abandoned), delete
-      this branch. Tracked here so it doesn't drift.
+- [ ] **`r1-attempted-2026-05-26` branch** — **keep through v1.0.3
+      R1 Phase 2** as the **read-only reference** for R1 prompt
+      language (`context_probe` wording, `hidden_qualities`
+      redefinition in `EXTRACTION_SYSTEM_PROMPT`). The remaining R1
+      branches (`r1/hidden-qualities-schema`, `r1/clarify-model-trial`)
+      branch from **main** but consult this branch for reference.
+      Delete only after v1.0.3 R1 completes (all R1 branches merged
+      or formally abandoned). *(Updated 2026-06-01; was "keep through
+      v1.0.2" — R1 moved to v1.0.3.)*
 - [x] **~~Retire `/api/users/<username>/import-legacy` route~~** —
       ✅ resolved 2026-05-28. (a) Confirmed only consumer was
       `scripts/capture_screenshots.py`, which already calls
