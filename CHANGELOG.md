@@ -22,12 +22,15 @@ v1.0.3 R1 Phase 2 stream (in progress).
     bare-string `hidden_qualities` item or out-of-enum category triggers a parse-time
     retry (the guardrail that prevents the original split's `clarification_quality`
     regression).
-  - **Pass 2 — synthesis (Sonnet 4.6, new `SYNTHESIS_SYSTEM_PROMPT`):** `comparison`,
-    `suggestions`, `overall_strategy`, grounded on Pass 1 via an `<extracted_signal>`
-    block (`AnalyzeSynthesisResponse`).
-  - `analyze()` merges both passes into the existing `AnalyzeResponse` contract; both
-    passes share one cached user prefix so the Sonnet synthesis pass writes the
-    prompt-cache block the later `generate()` call reads.
+  - **Pass 2 — synthesis (Sonnet 4.6, under the shared default `SYSTEM_PROMPT`):**
+    `comparison`, `suggestions`, `overall_strategy`, grounded on Pass 1 via an
+    `<extracted_signal>` block (`AnalyzeSynthesisResponse`). Synthesis runs under
+    `SYSTEM_PROMPT` (not a dedicated persona) so its cached prefix is byte-identical
+    to `generate()`'s — this **reclaims the analyze→generate prompt cache** (a
+    dedicated synthesis persona diverges at the system block and forces `generate`
+    to re-prefill the whole corpus). The synthesis-specific framing lives in the
+    user prompt, after the cached prefix.
+  - `analyze()` merges both passes into the existing `AnalyzeResponse` contract.
 - **`analyzer.py` `analyze_streaming()`** — re-introduces the
   `("phase", {"phase": "extraction"|"synthesis"})` SSE sentinel before each pass;
   emits a single merged `done`.
@@ -39,7 +42,8 @@ v1.0.3 R1 Phase 2 stream (in progress).
   `app.py`, `clarify()`, `generate()`, or any eval rubric). Actionable ATS guidance
   remains in `keyword_placement`, the deterministic `ats_warnings`, and
   `comparison.gaps` / `suggestions`.
-- **`PROMPT_VERSION`** `2026-06-01.1` → `2026-06-01.2`.
+- **`PROMPT_VERSION`** `2026-06-01.1` → `2026-06-01.3` (`.2` was the dedicated-persona
+  synthesis build; `.3` moves synthesis under the shared `SYSTEM_PROMPT` to reclaim the cache).
 
 ---
 

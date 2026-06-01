@@ -262,7 +262,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-06-01.2"
+PROMPT_VERSION = "2026-06-01.3"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -309,7 +309,7 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 # P6 Specialized Review — Pass 1 persona for the two-pass analyze pipeline
 # (r1/analyze-split-retry). An ATS-scanner specialist that extracts and
 # classifies JD keyword/vocabulary signals into structured lists. Pairs with
-# SYNTHESIS_SYSTEM_PROMPT (Pass 2). Runs on Haiku — classification, not
+# the Sonnet synthesis pass (Pass 2). Runs on Haiku — classification, not
 # multi-step reasoning. The hidden_qualities rule mirrors the typed
 # HiddenQualityItem contract enforced by AnalyzeExtractionResponse.
 EXTRACTION_SYSTEM_PROMPT = """You are an applicant tracking system (ATS) scanner trained on tens of thousands of job descriptions. Your job is to identify, classify, and prioritize the keyword and vocabulary signals in a job description so a downstream strategist can position a candidate against them.
@@ -334,27 +334,19 @@ ALWAYS/NEVER rules:
   - resilience — turnaround, ambiguity tolerance, self-directed with minimal oversight
   The "signal" is one portable sentence an adjacent-background candidate could map onto (e.g. "Builds for regulated, workflow-heavy environments where errors have real consequences"). One concept per signal."""
 
-# P6 Specialized Review — Pass 2 persona for the two-pass analyze pipeline.
-# The hiring-manager from SYSTEM_PROMPT narrowed to the synthesis task
-# (comparison / suggestions / overall_strategy). ATS vocabulary is omitted
-# (Pass 1's specialist owns it); the bullet-writing rules are omitted (those
-# belong to generate(), not the strategy phase that only describes WHAT to
-# change). Kept lean — synthesis is the latency bottleneck on the two-pass
-# path (the ≤72s-combined budget gates this branch).
-SYNTHESIS_SYSTEM_PROMPT = """You are a seasoned hiring manager with a decade of recruiting experience. The ATS scanner has already extracted the keyword and vocabulary signals from the job description; you receive its output as <extracted_signal>. Your job is to produce a strategic positioning analysis: where this candidate is strong, where they are weak, and what specific changes will lift them to a callback.
-
-Domain vocabulary you use naturally: candidate positioning, career narrative, STAR format, behavioral interview signals, title alignment, scope assessment, value proposition, screening gates, gap closure, transferable skills.
-
-Your north star: create the best opportunity for the candidate to be a leading candidate through human screeners, hiring managers, and on-site interviewers. Be ruthless in presenting them in the best possible light for this role and the role into which it will promote.
-
-ALWAYS/NEVER rules (P5 Institutional Memory):
-- Always ground every strength, gap, and suggestion in <extracted_signal>, the candidate's <resume>/<career_corpus>, or the deterministic keyword analysis — name the specific signal you cite
-- Never invent gaps that aren't in the source material BECAUSE manufactured weaknesses send the candidate chasing problems they don't have
-- Never invent strengths that aren't in the source material BECAUSE fabrication destroys candidacy if discovered in interview
-- Never recommend the candidate claim a more advanced technique than the source describes BECAUSE interview-verifiable claims must match the source ("built dashboards" → do not suggest claiming "time-series forecasting")
-- Never escalate scope adjectives (team → organization-wide, project → enterprise initiative, regional → global) BECAUSE scope inflation is verifiable in interviews
-- Never use generic positioning phrases like "results-driven professional" or "team player" BECAUSE they waste space and signal low effort to experienced reviewers
-- Always treat the Notes field in <candidate_profile> as explicit candidate directives — personal constraints or standing instructions that override default strategy"""
+# P6 Specialized Review — Pass 2 (synthesis) deliberately has NO dedicated system
+# prompt. It runs under the default SYSTEM_PROMPT (the hiring-manager persona) so
+# its cached prefix [SYSTEM_PROMPT][_stable_user_prefix] is byte-identical to
+# generate()'s — which reclaims the analyze→generate prompt cache the unified
+# analyze() had. Anthropic prefix caching matches from the system block, so a
+# distinct synthesis persona diverges there and forces generate() to re-prefill
+# the whole corpus prefix (measured: generate cache_read=0 on the dedicated-persona
+# build). SYSTEM_PROMPT already carries the hiring-manager persona, north star, and
+# grounding ALWAYS/NEVER rules synthesis needs; the synthesis-specific framing
+# (strategy-only; don't re-extract; ground in <extracted_signal>) lives in
+# _analyze_synthesis_prompt, after the cached prefix. This is also the proven
+# v1.0.2 shape — the unified analyze() produced these same three strategy keys
+# under SYSTEM_PROMPT. See evals/TUNING_LOG.md (r1/analyze-split-cache-reclaim).
 
 # Persona for clarify_iteration() — the post-generation interview that
 # probes the CURRENT iteration's specific weaknesses. Distinct from
@@ -1123,10 +1115,12 @@ def analyze(
     the typed hidden_qualities, professional_vocabulary, keyword_placement).
     Structurally Haiku-friendly — classification, not multi-step reasoning.
 
-    Pass 2 (Sonnet 4.6, SYNTHESIS_SYSTEM_PROMPT): produces comparison,
+    Pass 2 (Sonnet 4.6, the shared default SYSTEM_PROMPT): produces comparison,
     suggestions, overall_strategy. Receives Pass 1's output as
     <extracted_signal> so it grounds its synthesis on concrete extracted
-    signals rather than re-extracting in line.
+    signals rather than re-extracting in line. It runs under SYSTEM_PROMPT (NOT
+    a dedicated synthesis persona) on purpose — that keeps its cached prefix
+    byte-identical to generate()'s, reclaiming the analyze→generate prompt cache.
 
     Returns the merged dict — the same AnalyzeResponse shape every downstream
     consumer expects (frontend renderer, clarify(), generate(), eval rubrics,
@@ -1152,14 +1146,21 @@ def analyze(
         system_prompt=EXTRACTION_SYSTEM_PROMPT,
         model=HAIKU_MODEL,
     )
+    # Synthesis runs under the DEFAULT SYSTEM_PROMPT (no system_prompt override),
+    # NOT a dedicated synthesis persona, so its cached prefix
+    # [SYSTEM_PROMPT][prefix] is byte-identical to generate()'s — which reclaims
+    # the analyze→generate prompt cache. Anthropic prefix caching matches from the
+    # system block, so a distinct synthesis persona would diverge there and force
+    # generate to re-prefill the whole corpus. The synthesis-specific framing
+    # (strategy-only; ground in <extracted_signal>) lives in the user prompt,
+    # after the cached prefix.
     synthesis = _parse_or_retry(
         client, _analyze_synthesis_prompt(context_set, extraction),
         cached_user_prefix=prefix,
         response_model=AnalyzeSynthesisResponse,
         call_kind="analyze_synthesis",
         username=username, run_id=run_id,
-        system_prompt=SYNTHESIS_SYSTEM_PROMPT,
-        # model defaults to SONNET_MODEL inside _call_llm
+        # system_prompt + model default to SYSTEM_PROMPT + SONNET_MODEL in _call_llm
     )
     return {**extraction, **synthesis}
 
@@ -1229,7 +1230,7 @@ def _analyze_synthesis_prompt(context_set: ContextSet, extraction: dict) -> str:
             hq_lines.append(f"- {item}")
     hidden_qualities_block = "\n".join(hq_lines) if hq_lines else "(none)"
 
-    return f"""<task>Produce the strategic positioning analysis for this candidate against this job description. The ATS scanner has already extracted the keyword signals — use them as your reference frame and cite specific extracted items by name.</task>
+    return f"""<task>This is the STRATEGY pass of a two-pass analysis. An ATS scanner has already extracted the job description's keyword and vocabulary signals — they are given below as <extracted_signal>. Do NOT re-extract or re-list keywords. Produce ONLY the strategic positioning: where this candidate is strong, where they are weak, and what specific changes lift them to a callback. Ground every strength, gap, and suggestion in <extracted_signal>, the candidate's source material, or the deterministic analysis, and cite the specific signal by name.</task>
 
 <extracted_signal>
 Essential skills (from JD, required): {json.dumps(extraction.get('essential_skills', []))}
@@ -1311,13 +1312,14 @@ def analyze_streaming(
 
     yield ("phase", {"phase": "synthesis"})
     synthesis: dict | None = None
+    # Synthesis under the default SYSTEM_PROMPT (no override) so its cached prefix
+    # matches generate()'s and reclaims the analyze→generate cache (see analyze()).
     for event_name, payload in _parse_or_retry_streaming(
         client, _analyze_synthesis_prompt(context_set, extraction),
         cached_user_prefix=prefix,
         response_model=AnalyzeSynthesisResponse,
         call_kind="analyze_synthesis",
         username=username, run_id=run_id,
-        system_prompt=SYNTHESIS_SYSTEM_PROMPT,
     ):
         if event_name == "done" and isinstance(payload, dict):
             synthesis = payload

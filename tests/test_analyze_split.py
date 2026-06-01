@@ -18,7 +18,6 @@ from analyzer import (
     EXTRACTION_SYSTEM_PROMPT,
     HAIKU_MODEL,
     SONNET_MODEL,
-    SYNTHESIS_SYSTEM_PROMPT,
     _StreamDone,
 )
 
@@ -85,7 +84,9 @@ def test_analyze_runs_extraction_then_synthesis_and_merges(monkeypatch):
     assert [c["call_kind"] for c in calls] == ["analyze_extraction", "analyze_synthesis"]
     assert calls[0]["system_prompt"] == EXTRACTION_SYSTEM_PROMPT
     assert calls[0]["model"] == HAIKU_MODEL
-    assert calls[1]["system_prompt"] == SYNTHESIS_SYSTEM_PROMPT
+    # Synthesis does NOT override the system prompt — it runs under the default
+    # SYSTEM_PROMPT so its cached prefix matches generate()'s (cache reclaim).
+    assert calls[1]["system_prompt"] == ""
     assert calls[1]["model"] in (None, SONNET_MODEL)  # synthesis defaults to Sonnet
     # Both passes share one byte-identical cached prefix (cache chain into generate()).
     assert calls[0]["cached_user_prefix"] == calls[1]["cached_user_prefix"] == "PREFIX"
