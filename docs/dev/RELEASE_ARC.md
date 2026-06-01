@@ -212,7 +212,7 @@ New Pareto frontier panel at top of `/_dashboard`:
 
 **Blocked until v1.0.2 tagged.**
 
-**Start point:** `r1-attempted-2026-05-26` branch (R1.2 state — plumbing works, prompt engineering failed on `context_probe`). Do NOT start from main.
+**Start point:** branch each R1 sub-branch from **main** — the Pydantic migration and other work these branches need landed after `r1-attempted-2026-05-26` was cut. `r1-attempted-2026-05-26` is a **read-only reference** for prompt language only (`context_probe` wording, `hidden_qualities` redefinition in `EXTRACTION_SYSTEM_PROMPT`), preserved in `evals/TUNING_LOG.md` (2026-05-26 entries). *(Corrected 2026-05-30; was: "start from `r1-attempted-2026-05-26`, do NOT start from main" — that branch predates the Pydantic migration the R1 work extends.)*
 
 **Budget per hypothesis:** 3 prompt-tune iterations via `/prompt-tune`. After 3 without clearing the gate, document as "rejected for now" in TUNING_LOG.md.
 
