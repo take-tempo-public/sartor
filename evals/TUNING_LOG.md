@@ -196,6 +196,143 @@ prevent re-running them.
 
 ---
 
+## 2026-06-01 — r1/hidden-qualities-schema (`2026-05-30.1` → `2026-06-01.1`)
+
+### What changed
+
+Typed the `hidden_qualities` field: from free-form `list[str]` to
+`list[{"category": <enum>, "signal": str}]`, with `category` constrained to the four
+recruiter-validated shapes (`operating_context`, `scope_of_ownership`,
+`stakeholder_gravity`, `resilience`). Four coupled changes, in `analyzer.py` +
+`static/app.js`:
+
+**A. `HiddenQualityItem` Pydantic model + `AnalyzeResponse` wiring** (`analyzer.py`)
+New `HiddenQualityItem(BaseModel)` with `category: Literal[...]` (the four shapes) and
+`signal: str`. `AnalyzeResponse.hidden_qualities` retyped `Any` → `list[HiddenQualityItem]`.
+An invalid/missing category, or a bare-string item (the old shape), now fails
+`model_validate` → `_parse_or_retry` appends the structured `Literal` error and retries.
+Same parse-time-enforcement pattern proven in `r1/structural-context-probe`
+(2026-05-30 "What we learned" #1).
+
+**B. `_analyze_prompt` schema + category rule** (`analyzer.py`)
+The single-call `analyze()` prompt (shared with `analyze_streaming` via `_analyze_prompt`)
+now emits the structured example and an instruction naming the enum: "surface the
+operating-context signals the JD implies — NOT trait-words … one portable sentence …
+one concept per signal." *(NB: the handoff referenced `EXTRACTION_SYSTEM_PROMPT` /
+`_analyze_extraction_prompt`; those live only on the reverted `r1-attempted-2026-05-26`
+two-pass branch. On `main`, `analyze()` is a single Sonnet call and the schema lives in
+`_analyze_prompt` — per RELEASE_ARC §Phase 2's "branch from main" correction. The work
+mapped there.)*
+
+**C. `clarify()` `<context_signals>` render** (`analyzer.py`)
+Was `json.dumps(hidden_qualities)`. Now renders each item as `- [category] signal`,
+tolerant of legacy `list[str]` items (an iteration can reload a pre-change context file —
+must not `KeyError`). The `ClarifyResponse` validator is unchanged (it only reads
+`bool(hidden_qualities)`).
+
+**D. Frontend render** (`static/app.js`)
+The Step-1 analysis panel rendered each item as a string (`esc(q)`) — would print
+`[object Object]` once items are objects. Now renders a category tag + `q.signal`, with a
+plain-string fallback for older saved analyses.
+
+`PROMPT_VERSION`: `2026-05-30.1` → `2026-06-01.1`. Tests: +14 in
+`tests/test_analyze_hidden_qualities.py` (enum enforcement; bare-string rejection → retry
+trigger; clarify render for structured + legacy + empty). Suite 697 → 711, all green;
+ruff + mypy clean.
+
+### Why
+
+`hidden_qualities` is the load-bearing input to the `context_probe` machinery landed in
+`r1/structural-context-probe`. As free-form strings it carried no guarantee of *which kind*
+of signal each item was, so the clarify pass had to re-infer category from prose every
+call. Typing the category at the extraction boundary makes the four recruiter-validated
+shapes a parse-time contract (trait-words are the weakest hidden signal — 2026-05-26
+recruiter consultation), and gives downstream consumers (`clarify()`, the UI, future
+tuning) a structured field instead of prose to pattern-match. RELEASE_ARC §Phase 2
+`r1/hidden-qualities-schema`.
+
+### Result
+
+**n=3 anchor runs** at `2026-06-01.1` (`evals/results/20260601_160931Z.jsonl`,
+`evals/results/20260601_161906Z.jsonl`, `evals/results/20260601_162853Z.jsonl`).
+Cost ≈ $1.21 total (~$0.40/run). All 3 runs exited code 2 — the expected run-to-run
+Haiku-variance alert during n-run collection (documented in the v1.0.2 baseline "Note on
+exit codes"), not an aggregate regression.
+
+#### Per-(fixture × rubric) mean ± stdev (n=3, scenario_misaligned excluded)
+
+| Fixture | ats_format | callback_likelihood | clarification_quality | grounding | keyword_coverage | tone | iteration_quality |
+|---|---|---|---|---|---|---|---|
+| data-scientist-junior | 4.30 ± 0.17 | 4.40 ± 0.17 | 4.07 ± 0.23 | 4.77 ± 0.06 | 4.33 ± 0.23 | 4.20 ± 0.00 | n/a |
+| pm-senior | 4.50 ± 0.30 | 4.23 ± 0.06 | **4.20 ± 0.00** | 4.73 ± 0.12 | 4.20 ± 0.00 | 4.20 ± 0.00 | n/a |
+| sre-mid-level | 4.60 ± 0.35 | 4.37 ± 0.12 | 4.07 ± 0.23 | 4.80 ± 0.00 | 4.43 ± 0.21 | 4.20 ± 0.00 | 4.2 (n=1) |
+
+#### Raw scores per run
+
+| Fixture | Rubric | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|---|
+| data-scientist-junior | ats_format | 4.2 | 4.5 | 4.2 |
+| data-scientist-junior | callback_likelihood | 4.6 | 4.3 | 4.3 |
+| data-scientist-junior | clarification_quality | 4.2 | 4.2 | 3.8 |
+| data-scientist-junior | grounding | 4.8 | 4.8 | 4.7 |
+| data-scientist-junior | keyword_coverage | 4.2 | 4.6 | 4.2 |
+| data-scientist-junior | tone | 4.2 | 4.2 | 4.2 |
+| pm-senior | ats_format | 4.2 | 4.5 | 4.8 |
+| pm-senior | callback_likelihood | 4.2 | 4.3 | 4.2 |
+| pm-senior | clarification_quality | 4.2 | 4.2 | 4.2 |
+| pm-senior | grounding | 4.8 | 4.6 | 4.8 |
+| pm-senior | keyword_coverage | 4.2 | 4.2 | 4.2 |
+| pm-senior | tone | 4.2 | 4.2 | 4.2 |
+| sre-mid-level | ats_format | 4.2 | 4.8 | 4.8 |
+| sre-mid-level | callback_likelihood | 4.3 | 4.5 | 4.3 |
+| sre-mid-level | clarification_quality | 4.2 | 4.2 | 3.8 |
+| sre-mid-level | grounding | 4.8 | 4.8 | 4.8 |
+| sre-mid-level | iteration_quality | 4.2 | None | None |
+| sre-mid-level | keyword_coverage | 4.6 | 4.5 | 4.2 |
+| sre-mid-level | tone | 4.2 | 4.2 | 4.2 |
+
+`None` = scenario_misaligned (scripted edit substring not in generated output that run).
+
+#### Gate check vs `2026-05-30 — r1/structural-context-probe` baseline
+
+| Criterion | Status |
+|---|---|
+| No (fixture × rubric) mean drop > 0.5 vs 2026-05-30 baseline | ✅ max drop = **−0.17** (ds-junior × tone) |
+| pm-senior × clarification_quality ≥ 4.0 (v1.0.3 tag criterion) | ✅ 4.20 ± 0.00 |
+| tone canary (no hidden_qualities leak into generate) | ✅ held 4.20 / 4.20 / 4.20 |
+| grounding canary | ✅ 4.73–4.80, all fixtures |
+| ruff + mypy + pytest (697→711 tests) | ✅ all green |
+
+### What we learned
+
+1. **Typing the extraction boundary did not regress clarify.** The concern going in was
+   that constraining `hidden_qualities` to four categories might starve the clarify pass of
+   signals or distort `context_probe` composition. It didn't: every run produced ≥1
+   context_probe (1–3 per run), and `clarification_quality` held — pm-senior at exactly
+   4.20, ds-junior/sre at 4.07 mean (a single 3.8 outlier each in run 3, within Haiku noise
+   against the unusually tight 4.20 ± 0.00 baseline). The structured signal feeds the
+   context_probe machinery at least as well as the free-form string did.
+
+2. **The two canaries earned their place.** `tone` and `grounding` were the pre-registered
+   leak detectors (hidden_qualities must drive clarify, NOT generate prose — 2026-05-26
+   "Hidden qualities propagation beyond clarify"). Both held flat, confirming the schema
+   change stayed in the clarify lane and didn't bleed category vocabulary into generated
+   bullets.
+
+3. **The handoff's symbol names tracked the wrong branch — verify against `main`, not the
+   plan prose.** `EXTRACTION_SYSTEM_PROMPT` / `_analyze_extraction_prompt` exist only on the
+   reverted two-pass branch. Grepping `main` first (rather than trusting the handoff's file
+   pointers) surfaced that `analyze()` is single-call and the schema lives in
+   `_analyze_prompt`. RELEASE_ARC already carried the "branch from main" correction; the
+   code confirmed it.
+
+4. **`Literal` is the cheapest structured-retry enforcement.** No custom validator needed —
+   a `Literal[...]` field produces a parse-time error that already names the allowed values,
+   which `_parse_or_retry` forwards verbatim to the retry prompt. Same lever as the
+   ClarifyResponse composition rules, less code.
+
+---
+
 ## 2026-05-30 — r1/structural-context-probe (`2026-05-24.4` → `2026-05-30.1`)
 
 ### What changed

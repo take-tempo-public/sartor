@@ -16,7 +16,7 @@ import time
 from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import anthropic
 from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, model_validator
@@ -98,11 +98,28 @@ class _LLMResponse(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+class HiddenQualityItem(BaseModel):
+    """One operating-context signal the JD implies, in portable terms.
+
+    `category` is constrained to the four recruiter-validated shapes (trait-words
+    are the weakest hidden signal — see TUNING_LOG 2026-05-26). An invalid or
+    missing category makes `AnalyzeResponse` validation fail, which `_parse_or_retry`
+    surfaces as a structured retry message back to the model.
+    """
+
+    model_config = ConfigDict(extra="allow")
+    category: Literal[
+        "operating_context", "scope_of_ownership",
+        "stakeholder_gravity", "resilience",
+    ]
+    signal: str
+
+
 class AnalyzeResponse(_LLMResponse):
     essential_skills: Any
     preferred_skills: Any
     industry_keywords: Any
-    hidden_qualities: Any
+    hidden_qualities: list[HiddenQualityItem]
     professional_vocabulary: Any
     ideal_resume_profile: Any
     comparison: Any
@@ -209,7 +226,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-05-30.1"
+PROMPT_VERSION = "2026-06-01.1"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -1054,12 +1071,21 @@ ATS warnings: {json.dumps(context_set['deterministic_analysis']['ats_warnings'])
 </deterministic_analysis>
 
 <instructions>
+For "hidden_qualities", surface the operating-context signals the JD implies — NOT trait-words
+("collaborative", "autonomous"). Each item is an object with a "category" (one of exactly
+"operating_context", "scope_of_ownership", "stakeholder_gravity", "resilience") and a "signal":
+one portable sentence describing the context an adjacent-background candidate could map onto
+(e.g. "Builds for regulated, workflow-heavy environments where errors have real consequences").
+One concept per signal.
+
 Respond with valid JSON only. No markdown code fences. Use this exact structure:
 {{
   "essential_skills": ["skill1", "skill2"],
   "preferred_skills": ["skill1", "skill2"],
   "industry_keywords": ["keyword1", "keyword2"],
-  "hidden_qualities": ["quality1", "quality2"],
+  "hidden_qualities": [
+    {{"category": "operating_context", "signal": "portable context the JD implies, one concept"}}
+  ],
   "professional_vocabulary": ["term1", "term2"],
   "ideal_resume_profile": "A paragraph describing the ideal candidate for this role",
   "comparison": {{
@@ -1151,6 +1177,16 @@ def clarify(
     candidate_skills = context_set.get("candidate", {}).get("skills", [])
 
     hidden_qualities = analysis.get('hidden_qualities', [])
+    # Render each context signal as "- [category] signal". Tolerant of legacy
+    # list[str] items from analyses produced before the hidden_qualities schema
+    # change (an iteration can reload an older context file).
+    _signal_lines = []
+    for _hq in hidden_qualities:
+        if isinstance(_hq, dict):
+            _signal_lines.append(f"- [{_hq.get('category', 'context')}] {_hq.get('signal', '')}")
+        else:
+            _signal_lines.append(f"- {_hq}")
+    context_signals_block = "\n".join(_signal_lines) if _signal_lines else "(none)"
 
     prompt = f"""<task>Generate 3-5 targeted clarifying questions for the candidate.</task>
 
@@ -1168,7 +1204,7 @@ Overall strategy: {analysis.get('overall_strategy', '')}
 Operating-context / scope / stakeholder / resilience signals implied by the JD (use
 these to drive CONTEXT PROBES — translate each into a portable experience question
 that lets an adjacent-background candidate map their work onto this role):
-{json.dumps(hidden_qualities)}
+{context_signals_block}
 </context_signals>
 
 <deterministic_gaps>
