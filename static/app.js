@@ -523,10 +523,17 @@ function _renderAnalysis(data) {
     html += `</div></div>`;
   }
 
-  // Hidden Qualities
+  // Hidden Qualities — each item is {category, signal} (analyzer 2026-06-01.1+).
+  // Fall back to plain-string render for analyses saved before the schema change.
   if (a.hidden_qualities) {
     html += `<div class="analysis-section"><h3>Hidden Qualities Sought</h3><ul>`;
-    a.hidden_qualities.forEach(q => { html += `<li>${esc(q)}</li>`; });
+    a.hidden_qualities.forEach(q => {
+      if (q && typeof q === 'object') {
+        html += `<li><span class="tag tag-skill">${esc(q.category || 'context')}</span> ${esc(q.signal || '')}</li>`;
+      } else {
+        html += `<li>${esc(q)}</li>`;
+      }
+    });
     html += `</ul></div>`;
   }
 
