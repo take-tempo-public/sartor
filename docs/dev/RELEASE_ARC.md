@@ -13,7 +13,7 @@
 |---|---|---|---|
 | v1.0.1 | Solid app | No | **Tagged 2026-05-28 at commit `49f2ac9`** |
 | v1.0.2 | Eval apparatus | No | **Tagged 2026-05-30 at commit `2398f4e`** |
-| v1.0.3 | R1 Phase 2 | No | Quality improvement to existing analyze step (in progress) |
+| v1.0.3 | R1 Phase 2 | No | Analyze quality recovery (✓ context_probe + typed hidden_qualities) **then** the two-pass split for speed (≤72s) without giving quality back (in progress) |
 | v1.0.4 | Eval tuning loop | No | Real-data, human-in-the-loop, model-assisted prompt improvement; internal/dev tooling |
 | v1.0.5 | UI/UX redesign | No (internal until v1.1.0) | Wizard redesign + WYSIWYG + diagnostics/tuning console & annotation tab; establishes the design system |
 | v1.1.0 | Public release | **Yes** | **Tag owned by the user** — applied when the product is judged showcase-ready; GitHub push is part of this event |
@@ -220,26 +220,44 @@ New Pareto frontier panel at top of `/_dashboard`:
 
 ### Branches
 
-**`r1/structural-context-probe`** ← first
+> **R1 = quality first, then speed.** The two diagnosed root causes of the
+> original split's `clarification_quality` regression (2.1) were: context_probe
+> never emitted, and `hidden_qualities` shape mismatch (`docs/R1_BENCHMARK_2026-05-26.md`).
+> Both are now fixed on `main` (the two ✓ branches below). With those guardrails
+> in place, `r1/analyze-split-retry` re-introduces the two-pass split to land the
+> **speed** half — gated so it cannot give the recovered quality back. The
+> v1.0.3 "≤72s combined" perf criterion is **not** to be relaxed.
+
+**`r1/structural-context-probe`** ✓ DONE (merged `9386c33`, PROMPT_VERSION `2026-05-30.1`)
 - If `hidden_qualities` non-empty, at least one `context_probe` required in clarify output; enforced at parse time by `ClarifyResponse` Pydantic model (missing → retry)
 - PROMPT_VERSION bump in same commit
-- Target: `pm-senior / clarification_quality` ≥ 4.0 (was 2.1 on R1.2; 3.73 mean at v1.0.1 baseline)
+- Target: `pm-senior / clarification_quality` ≥ 4.0 (was 2.1 on R1.2; 3.73 mean at v1.0.1 baseline) — **achieved: 4.20 across all fixtures**
 - n=3 eval runs on branch before any merge request
 
-**`r1/hidden-qualities-schema`** ← after context_probe stable
+**`r1/hidden-qualities-schema`** ✓ DONE (merged `b216fd3`, PROMPT_VERSION `2026-06-01.1`)
 - Add `category` sub-field to each `hidden_qualities` item: `{"category": "operating_context"|"scope_of_ownership"|"stakeholder_gravity"|"resilience", "signal": "..."}`
 - `HiddenQualityItem` Pydantic model enforces category enum
-- PROMPT_VERSION bump
+- PROMPT_VERSION bump — **anchor n=3 PASS, max drop −0.17 vs the 2026-05-30 floor**
 
-**`r1/clarify-model-trial`** ← after context_probe stable
+**`r1/analyze-split-retry`** ← **NEXT** (the speed half of R1; runs before `r1/clarify-model-trial`)
+- Re-introduce the two-pass analyze **on `main`**: `analyze_extraction` (Haiku 4.5 — structured lists incl. the now-typed `hidden_qualities` `HiddenQualityItem` shape) + `analyze_synthesis` (Sonnet 4.6 — `comparison` / `suggestions` / `overall_strategy`). `analyze()` stays a thin orchestrator merging into the existing `AnalyzeResponse` contract; `analyze_streaming` keeps the `phase` sentinel.
+- **Rebuild on `main` — do NOT cherry-pick `r1-attempted-2026-05-26`** (it predates the Pydantic migration, the `context_probe` enforcement, and the typed `hidden_qualities`). The extraction pass MUST emit the typed `HiddenQualityItem`, and the parse-time `context_probe` enforcement MUST stay intact — those two merged branches are exactly the guardrails that prevent the original 2.1 regression.
+- Carry forward R1's two phantom-key deletions (`ats_improvements`, `ideal_resume_profile`) only after re-auditing they're still unconsumed.
+- PROMPT_VERSION bump in the same commit.
+- **Dual gate (n=3 `--suite anchor` before any merge request):**
+  - **Speed:** `analyze` p50 **≤ 72s combined** (extraction + synthesis). Tight — synthesis was 61s p50 on R1; keep the synthesis prompt lean.
+  - **Quality held:** `clarification_quality` no drop > 0.5 vs the `2026-06-01 — r1/hidden-qualities-schema` TUNING_LOG floor; `pm-senior / clarification_quality` ≥ 4.0; all other rubrics within 1 stdev of the v1.0.2 baseline; `tone` + `grounding` flat (no hidden_qualities leak into generate).
+  - 3-iteration `/prompt-tune` budget per hypothesis; `headhunter` agent between iterations. If 3 iterations don't clear the **dual** gate, document "rejected for now" in TUNING_LOG and **escalate to the user** — this branch delivers the v1.0.3 "≤72s combined" criterion, which is not to be relaxed.
+
+**`r1/clarify-model-trial`** ← after `r1/analyze-split-retry` (evaluated against the post-split pipeline)
 - Side-by-side eval: Sonnet vs Haiku for `clarify()` only
-- Haiku saves ~$0.03/application if quality holds
+- Haiku saves ~$0.03/application if quality holds (no `clarification_quality` drop > 0.5 vs the 2026-06-01 floor; Haiku must still satisfy the parse-time `context_probe` + ≥60%-combined rules — watch the `clarify_retry` rate)
 
 ### v1.0.3 tag criteria
 
-- `r1/structural-context-probe` merged and passes gate
-- `pm-senior / clarification_quality` ≥ 4.0 at new PROMPT_VERSION
-- Analyze p50 ≤ 72s combined
+- `r1/structural-context-probe` ✓, `r1/hidden-qualities-schema` ✓, and `r1/analyze-split-retry` all merged and passing their gates (`r1/clarify-model-trial` optional — non-tag-gating cost trial)
+- `pm-senior / clarification_quality` ≥ 4.0 at the final PROMPT_VERSION
+- **Analyze p50 ≤ 72s combined** — delivered by `r1/analyze-split-retry`; this perf bar is not relaxed
 - All other rubrics within 1 stdev of v1.0.2 baseline
 - `ruff + mypy + pytest` green
 
