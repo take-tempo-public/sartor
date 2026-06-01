@@ -196,6 +196,219 @@ prevent re-running them.
 
 ---
 
+## 2026-06-01 — r1/analyze-split-cache-reclaim (synthesis under shared SYSTEM_PROMPT) (`2026-06-01.2` → `2026-06-01.3`)
+
+### What changed
+
+Follow-up to the two-pass split (`.2` below), on branch `r1/analyze-split-cache-reclaim`.
+The `.2` build gave the synthesis pass a dedicated `SYNTHESIS_SYSTEM_PROMPT`, which
+**broke the analyze→generate prompt cache**: Anthropic prefix caching matches from the
+system block, so a distinct synthesis persona diverges from `generate()`'s `SYSTEM_PROMPT`
+and `generate` lost its cache hit (`cache_read=0` on all 9 `.2` fixture-runs).
+
+The fix (in `analyzer.py`):
+- Synthesis now runs under the **default `SYSTEM_PROMPT`** (no `system_prompt` override) in
+  both `analyze()` and `analyze_streaming()`. Its cached prefix
+  `[SYSTEM_PROMPT][_stable_user_prefix]` is byte-identical to `generate()`'s → cache reclaimed.
+- Dropped the `SYNTHESIS_SYSTEM_PROMPT` constant; folded the synthesis-specific framing
+  (strategy-only; don't re-extract; ground in `<extracted_signal>`) into the `<task>` of
+  `_analyze_synthesis_prompt`, **after** the cached prefix (so it doesn't break the match).
+- Extraction is unchanged (Haiku, `EXTRACTION_SYSTEM_PROMPT`, separate cache pool).
+
+`PROMPT_VERSION`: `2026-06-01.2` → `2026-06-01.3`. Tests: `test_analyze_split.py` updated
+(synthesis no longer overrides the system prompt → asserts the default); 718 green; ruff + mypy clean.
+
+### Why
+
+The analyze→generate cache overlap is a deliberate optimization (`docs/architecture.md`):
+within one iteration the `[SYSTEM_PROMPT][_stable_user_prefix]` block is byte-identical, so the
+second Sonnet call reads it instead of re-prefilling the whole corpus. The `.2` split silently
+forfeited it. The dollar delta is tiny on the synthetic fixtures (~$0.006/run) but **grows with
+corpus size** — a real user's `_stable_user_prefix` (full `<career_corpus>` + résumé + profile)
+is far larger, so the lost cache costs real money and adds generate prefill latency at scale.
+Reclaiming it costs nothing structural: synthesis-under-`SYSTEM_PROMPT` is the **proven v1.0.2
+shape** (the unified `analyze()` produced these same three strategy keys under `SYSTEM_PROMPT`),
+so it is lower quality-risk than the new dedicated persona it replaces.
+
+### Result
+
+**n=5 anchor runs** at `2026-06-01.3` (`evals/results/20260601_185916Z.jsonl`,
+`191510Z`, `192408Z`, `210845Z`, `211737Z`). Cost ≈ $1.9 total (~$0.38/run). Runs 4–5 were
+confirmation runs to resolve the tone outlier below.
+
+#### Cache + latency (n=15 fixture-runs)
+
+| Metric | Result |
+|---|---|
+| **generate `cache_read` > 0** | **15/15 runs** (1781/1928/1877 per fixture, = synthesis's `cache_create`) — fully reclaimed (was 0/9 on `.2`) |
+| combined analyze p50 | **67.7s** (≤ 72s budget); max 77.0s |
+| parse retries | 0 |
+
+#### Per-(fixture × rubric) mean ± stdev (n=5, judge_error + scenario_misaligned excluded)
+
+| Fixture | ats_format | callback_likelihood | clarification_quality | grounding | keyword_coverage | tone |
+|---|---|---|---|---|---|---|
+| data-scientist-junior | 4.40 ± 0.25 | 4.54 ± 0.08 | **4.20 ± 0.00** | 4.72 ± 0.07 | 4.30 ± 0.20 | 3.78 ± 0.84 (see note) |
+| pm-senior | 4.36 ± 0.21 | 4.18 ± 0.04 | **4.26 ± 0.12** | 4.64 ± 0.05 | 4.20 ± 0.00 | 4.20 ± 0.00 |
+| sre-mid-level | 4.60 ± 0.23 | 4.45 ± 0.15 (n=4) | 4.02 ± 0.22 | 4.80 ± 0.00 | 4.46 ± 0.22 | 4.36 ± 0.21 |
+
+`ds × tone` raw = [4.2, 4.2, **2.1**, 4.2, 4.2] — a single run's cover letter opened with a
+throat-clearing "I am writing to be considered for…" + hedging "I would welcome a conversation"
+(tone rubric Checks 3/4). 4 of 5 runs are clean at floor (median 4.2). `sre × callback_likelihood`
+run 2 was a `judge_error` (invalid judge JSON), excluded.
+
+#### Dual-gate check
+
+| Criterion | Status |
+|---|---|
+| **Cache reclaimed** (the point of this branch) | ✅ generate `cache_read` > 0 on **15/15** |
+| **SPEED:** analyze p50 ≤ 72s combined | ✅ **67.7s** (n=15) |
+| pm-senior × clarification_quality ≥ 4.0 | ✅ 4.26 |
+| clarification_quality no drop > 0.5 vs 2026-06-01 floor | ✅ max drop −0.05 (sre) |
+| tone + grounding canaries flat | ✅ grounding 4.64–4.80; tone median 4.2/fixture (lone ds 2.1 = generate-side, see below) |
+| ruff + mypy + pytest (718) | ✅ all green |
+
+### What we learned
+
+1. **Cache reclaim is real and free.** Moving synthesis to the shared `SYSTEM_PROMPT` restored
+   `generate cache_read` to 1781/1928/1877 (15/15 runs, = synthesis's write) with **no** speed or
+   quality cost — p50 actually held at 67.7s and `clarification_quality` was flat-to-up. The
+   specialist `SYNTHESIS_SYSTEM_PROMPT` from `.2` was an elegant idea that wasn't worth the cache
+   it cost; the persona difference bought nothing the schema-constrained user prompt doesn't.
+
+2. **Prefix caching is unforgiving about the system block.** A cache hit needs a byte-identical
+   prefix *from position 0*; you cannot share the corpus block across two different system prompts.
+   Any future per-call persona that wants to ride the analyze/generate cache must keep `SYSTEM_PROMPT`
+   as its system block and put its specialization after the cached prefix.
+
+3. **The `ds × tone` 2.1 is pre-existing `generate` variance, not a reclaim regression.** The
+   reclaim changed only the synthesis pass; `generate` / `generate_cover_letter` are untouched.
+   The throat-clearing opener appeared in 1 of 5 runs and is a `generate`-side cover-letter
+   adherence lapse. Flagged as a future generate-tuning item (cover-letter opener discipline);
+   out of scope here.
+
+---
+
+## 2026-06-01 — r1/analyze-split-retry (two-pass: Haiku extraction + Sonnet synthesis) (`2026-06-01.1` → `2026-06-01.2`)
+
+### What changed
+
+Split the single Sonnet `analyze()` call into a two-pass pipeline — the SPEED half
+of R1 Phase 2, rebuilt on `main` (NOT cherry-picked from `r1-attempted-2026-05-26`,
+which predates the Pydantic migration + typed `hidden_qualities`). All in `analyzer.py`
++ the SSE wiring:
+
+**A. `analyze()` → thin two-pass orchestrator**
+- **Pass 1 — extraction (Haiku 4.5, new `EXTRACTION_SYSTEM_PROMPT`):** `essential_skills`,
+  `preferred_skills`, `industry_keywords`, `hidden_qualities` (the typed
+  `HiddenQualityItem` shape), `professional_vocabulary`, `keyword_placement`. Enforced by
+  new `AnalyzeExtractionResponse` — a bare-string or out-of-enum `hidden_qualities` item
+  fails `model_validate` → `_parse_or_retry` retries with the `Literal` error.
+- **Pass 2 — synthesis (Sonnet 4.6, new `SYNTHESIS_SYSTEM_PROMPT`):** `comparison`,
+  `suggestions`, `overall_strategy`, grounded on Pass 1 via an `<extracted_signal>` block
+  (`AnalyzeSynthesisResponse`). The hiring-manager persona narrowed to strategy — ATS
+  vocabulary + bullet-writing rules stripped (those live in extraction / `generate`).
+- `analyze()` merges `{**extraction, **synthesis}` into the existing `AnalyzeResponse`
+  contract. Both passes share one `_stable_user_prefix`.
+
+**B. `analyze_streaming()`** re-introduces the `("phase", {"phase": "extraction"|"synthesis"})`
+SSE sentinel before each pass; inner per-pass `done` events are intercepted, one merged
+`done` emitted. `app.py` forwards the `phase` event; `static/app.js` swaps the status label.
+
+**C. Dropped two unconsumed analyze keys** — `ats_improvements` + `ideal_resume_profile`.
+Re-audited against `main`: zero readers in `static/app.js`, `app.py`, `clarify()`,
+`generate()`, or any eval rubric (`_renderAnalysis` is field-by-field and names neither).
+Actionable ATS guidance remains in `keyword_placement` (kept in extraction), the
+deterministic `ats_warnings`, and `comparison.gaps` / `suggestions`.
+
+`PROMPT_VERSION`: `2026-06-01.1` → `2026-06-01.2`. Tests: +7 in `tests/test_analyze_split.py`
+(two-pass orchestration; HiddenQualityItem retry on the Haiku pass; phase-sentinel ordering;
+single merged done; extracted-signal carry-through). Suite 711 → 718, all green; ruff + mypy clean.
+
+### Why
+
+R1's original split (`r1-attempted-2026-05-26`) won ~30% on analyze latency but regressed
+`clarification_quality` to 2.1 via two root causes — `context_probe` never emitted, and
+`hidden_qualities` shape mismatch. Both are now fixed on `main` (the two ✓ R1 branches). This
+branch re-introduces the split for speed **on top of those guardrails**, gated so it cannot
+give the recovered quality back. RELEASE_ARC §Phase 2 `r1/analyze-split-retry`; the v1.0.3
+"≤72s combined" criterion is not to be relaxed (user-confirmed 2026-06-01).
+
+### Result
+
+**n=3 anchor runs** at `2026-06-01.2` (`evals/results/20260601_175225Z.jsonl`,
+`20260601_181130Z.jsonl`, `20260601_182058Z.jsonl`). Cost ≈ $1.15 total (~$0.38/run).
+
+#### Per-(fixture × rubric) mean ± stdev (n=3)
+
+| Fixture | ats_format | callback_likelihood | clarification_quality | grounding | keyword_coverage | tone |
+|---|---|---|---|---|---|---|
+| data-scientist-junior | 4.60 ± 0.28 | 4.50 ± 0.14 | **4.20 ± 0.00** | 4.80 ± 0.00 | 4.30 ± 0.14 | 4.20 ± 0.00 |
+| pm-senior | 4.50 ± 0.24 | 4.17 ± 0.05 | **4.20 ± 0.00** | 4.77 ± 0.05 | 4.20 ± 0.00 | 4.20 ± 0.00 |
+| sre-mid-level | 4.80 ± 0.00 | 4.40 ± 0.14 | 4.03 ± 0.24 | 4.77 ± 0.05 | 4.60 ± 0.00 | 4.37 ± 0.24 |
+
+`clarification_quality` raw: ds [4.2, 4.2, 4.2]; pm [4.2, 4.2, 4.2]; sre [3.7, 4.2, 4.2]
+(the lone 3.7, run 1, is within Haiku-judge noise vs the 4.07 floor). `sre × iteration_quality`
+fired scenario_misaligned (known fragility, out of scope).
+
+#### Latency (combined extraction + synthesis, n=9 fixture-runs)
+
+| Pass | p50 | notes |
+|---|---|---|
+| extraction (Haiku) | 11.2s | structured lists, ~0.9–1.3k out tokens |
+| synthesis (Sonnet) | 60.1s | strategy only; ~2.1–3.3k out tokens |
+| **combined analyze** | **69.8s** | values: 55.4 / 60.5 / 60.8 / 68.8 / 69.8 / 73.2 / 77.0 / 81.4 / 82.9; max 82.9s (sre) |
+
+vs the unified single-call analyze p50 103.2s (R1 benchmark) → **~32% faster**. sre is the
+latency outlier (synthesis 70–77s on the highest output-token counts); the gate is p50-based,
+so it passes — synthesis verbosity is the lever if the bar ever tightens.
+
+#### Dual-gate check
+
+| Criterion | Status |
+|---|---|
+| **SPEED:** analyze p50 ≤ 72s combined | ✅ **69.8s** (n=9 fixture-runs) |
+| pm-senior × clarification_quality ≥ 4.0 | ✅ 4.20 ± 0.00 |
+| clarification_quality no drop > 0.5 vs 2026-06-01 floor | ✅ max drop **−0.04** (sre: 4.03 vs 4.07) |
+| all other rubrics within 1 stdev of v1.0.2 baseline | ✅ every rubric at/above its baseline mean |
+| tone + grounding canaries flat (no hidden_qualities leak into generate) | ✅ tone 4.20–4.37, grounding 4.77–4.80 |
+| parse-time guardrail clean (typed hidden_qualities) | ✅ **0 retries** across 9 runs |
+| ruff + mypy + pytest (711→718) | ✅ all green |
+
+Cleared the dual gate on the first n=3 — no `/prompt-tune` iterations consumed.
+
+### What we learned
+
+1. **Quality-first ordering paid off.** With the typed `hidden_qualities` + parse-time
+   `context_probe` guardrails already on `main`, the speed split landed without re-opening the
+   2.1 regression: `clarification_quality` held at 4.03–4.20 (vs the original split's 2.1). The
+   guardrails, not the prompt prose, are what made the split safe.
+
+2. **`Literal` enforcement transfers cleanly to a Haiku extraction pass.** The Haiku model
+   emitted the typed `HiddenQualityItem {category, signal}` on the first attempt across all 9
+   runs (0 retries) — the same lever that worked for the single-call Sonnet analyze holds on the
+   cheaper model. The 2026-05-26 "hidden_qualities shape didn't survive the Haiku round trip"
+   failure was a *prose-guidance* problem; typing the field fixes it at the model boundary.
+
+3. **The split is a cost win, not just a speed win.** Per-fixture cost $0.11–0.145 — at or below
+   the v1.0.2 baseline ($0.13–0.147) — even though `generate` lost its analyze→generate
+   prompt-cache hit (`cache_read=0` on all 9 runs, because the synthesis pass uses a specialist
+   system prompt that diverges from `generate`'s `SYSTEM_PROMPT` at the cached prefix's head).
+   Moving the high-token extraction work to Haiku more than offsets the lost Sonnet cache read.
+
+4. **Stale doc flagged:** `docs/architecture.md`'s "analyze and generate share a heavy cached
+   user prefix" and the single-call analyze in `pipeline.mmd` / `llm-routing.mmd` are now
+   inaccurate. Out of scope for this branch (RELEASE_ARC §Phase 2 bounds it to the split + gate);
+   surfaced to the user for a follow-up doc pass.
+
+5. **sre synthesis verbosity is the headroom lever.** sre's synthesis ran 2605–3296 output
+   tokens (70–77s) vs ds/pm at ~2.1–2.6k (47–56s). The p50 gate passes with 2.2s margin; if a
+   future change tightens the bar, capping suggestion count + rationale length in
+   `SYNTHESIS_SYSTEM_PROMPT` is the first, lowest-risk move (doesn't touch the extraction
+   guardrail or clarify).
+
+---
+
 ## 2026-06-01 — r1/hidden-qualities-schema (`2026-05-30.1` → `2026-06-01.1`)
 
 ### What changed

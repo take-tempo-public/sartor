@@ -43,9 +43,23 @@ class LLMResponseError(Exception):
 # Keep in sync with the JSON spec in analyze()/generate() prompts.
 ANALYZE_REQUIRED_KEYS = frozenset({
     "essential_skills", "preferred_skills", "industry_keywords",
-    "hidden_qualities", "professional_vocabulary", "ideal_resume_profile",
+    "hidden_qualities", "professional_vocabulary",
     "comparison", "suggestions", "keyword_placement",
-    "ats_improvements", "overall_strategy",
+    "overall_strategy",
+})
+# Two-pass analyze (r1/analyze-split-retry): analyze() splits into a Haiku
+# extraction pass + a Sonnet synthesis pass whose outputs merge back into the
+# ANALYZE_REQUIRED_KEYS shape. These frozensets document each pass's slice; the
+# Pydantic models below (AnalyzeExtractionResponse / AnalyzeSynthesisResponse)
+# are the parse-time enforcement. ats_improvements + ideal_resume_profile were
+# dropped here — unconsumed (verified across app.js / app.py / clarify /
+# generate / eval rubrics; they were produced but never read back).
+ANALYZE_EXTRACTION_REQUIRED_KEYS = frozenset({
+    "essential_skills", "preferred_skills", "industry_keywords",
+    "hidden_qualities", "professional_vocabulary", "keyword_placement",
+})
+ANALYZE_SYNTHESIS_REQUIRED_KEYS = frozenset({
+    "comparison", "suggestions", "overall_strategy",
 })
 
 GENERATE_REQUIRED_KEYS = frozenset({
@@ -121,11 +135,33 @@ class AnalyzeResponse(_LLMResponse):
     industry_keywords: Any
     hidden_qualities: list[HiddenQualityItem]
     professional_vocabulary: Any
-    ideal_resume_profile: Any
     comparison: Any
     suggestions: Any
     keyword_placement: Any
-    ats_improvements: Any
+    overall_strategy: Any
+
+
+class AnalyzeExtractionResponse(_LLMResponse):
+    """Pass 1 (Haiku extraction) shape — keyword/vocabulary signals only.
+
+    `hidden_qualities` is typed `list[HiddenQualityItem]` so a bare-string item
+    (the pre-2026-06-01 shape) or an out-of-enum category fails `model_validate`,
+    and `_parse_or_retry` appends the `Literal` error to the retry prompt. This
+    is the guardrail that keeps the two-pass split from regressing the
+    `context_probe` machinery `clarify()` depends on.
+    """
+    essential_skills: Any
+    preferred_skills: Any
+    industry_keywords: Any
+    hidden_qualities: list[HiddenQualityItem]
+    professional_vocabulary: Any
+    keyword_placement: Any
+
+
+class AnalyzeSynthesisResponse(_LLMResponse):
+    """Pass 2 (Sonnet synthesis) shape — strategy only, no keyword extraction."""
+    comparison: Any
+    suggestions: Any
     overall_strategy: Any
 
 
@@ -226,7 +262,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-06-01.1"
+PROMPT_VERSION = "2026-06-01.3"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -269,6 +305,48 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Never restate a candidate's responsibility using a more advanced technique than the source describes BECAUSE writing "time-series forecasting" when the source only says "built dashboards" invents a skill the candidate cannot demonstrate in interviews
 - Never upgrade a tool category into a specific vendor or framework BECAUSE "used a CI tool" must not become "authored Jenkins pipelines" if the source does not name Jenkins; vendor-specific claims are verifiable and disqualifying when wrong
 - Never escalate scope adjectives (team → organization-wide, project → enterprise initiative, regional → global) BECAUSE scope inflation is verifiable in interviews and triggers credibility loss across the rest of the resume"""
+
+# P6 Specialized Review — Pass 1 persona for the two-pass analyze pipeline
+# (r1/analyze-split-retry). An ATS-scanner specialist that extracts and
+# classifies JD keyword/vocabulary signals into structured lists. Pairs with
+# the Sonnet synthesis pass (Pass 2). Runs on Haiku — classification, not
+# multi-step reasoning. The hidden_qualities rule mirrors the typed
+# HiddenQualityItem contract enforced by AnalyzeExtractionResponse.
+EXTRACTION_SYSTEM_PROMPT = """You are an applicant tracking system (ATS) scanner trained on tens of thousands of job descriptions. Your job is to identify, classify, and prioritize the keyword and vocabulary signals in a job description so a downstream strategist can position a candidate against them.
+
+Domain vocabulary you use naturally: Boolean search terms, minimum qualifications, preferred qualifications, exact-match keywords, competency markers, screening criteria, industry vernacular, must-have vs. nice-to-have, keyword density, keyword placement.
+
+You output structured lists, not prose. You do NOT write candidate-positioning narrative, comparative analysis, or strategic recommendations — that is the strategist's job, not yours.
+
+ALWAYS/NEVER rules:
+- Always classify each extracted skill as essential (named in minimum quals / clearly required) or preferred (named in preferred quals / nice-to-have)
+- Always extract keywords verbatim from the source where possible BECAUSE exact-match keywords beat synonyms for ATS scoring
+- Always emit ONE concept per item in essential_skills, preferred_skills, and industry_keywords — split composite phrases into atomic tokens BECAUSE ATS tokenizers and downstream theme-matching both work on atomic concepts, and composite phrases like "EHR systems including Epic and Cerner" hide the individual tokens (Epic, Cerner, EHR) that would each match independently. Naturalistic phrasing is a rendering concern for the final résumé bullet; extraction output is a structured intermediate, not prose.
+  - OK: ["EHR", "Epic", "Cerner", "HL7", "FHIR"]
+  - NOT OK: ["EHR systems including Epic and Cerner", "HL7 and FHIR data models"]
+- Never invent keywords the job description does not contain
+- Never write strategic prose, candidate comparisons, or positioning recommendations — your output is data, not narrative
+- Always treat acronyms (k8s, CI/CD, SLO, ETL) as their own keywords AND alongside their expansions where both forms appear in the source
+- For `hidden_qualities`, do NOT emit single-trait adjectives ("autonomous", "collaborative", "results-driven") — those are the weakest hidden signal. Instead emit the operating-context signal the JD implies, as a typed object {"category": <one of operating_context | scope_of_ownership | stakeholder_gravity | resilience>, "signal": <one portable sentence>}:
+  - operating_context — regulated industry, B2B vs B2C, startup-pace vs enterprise, healthcare/finance/transportation, etc.
+  - scope_of_ownership — 0→1 vs scale, IC vs lead, direction-setting vs execution
+  - stakeholder_gravity — exec-facing, cross-functional influence without formal authority, customer-facing
+  - resilience — turnaround, ambiguity tolerance, self-directed with minimal oversight
+  The "signal" is one portable sentence an adjacent-background candidate could map onto (e.g. "Builds for regulated, workflow-heavy environments where errors have real consequences"). One concept per signal."""
+
+# P6 Specialized Review — Pass 2 (synthesis) deliberately has NO dedicated system
+# prompt. It runs under the default SYSTEM_PROMPT (the hiring-manager persona) so
+# its cached prefix [SYSTEM_PROMPT][_stable_user_prefix] is byte-identical to
+# generate()'s — which reclaims the analyze→generate prompt cache the unified
+# analyze() had. Anthropic prefix caching matches from the system block, so a
+# distinct synthesis persona diverges there and forces generate() to re-prefill
+# the whole corpus prefix (measured: generate cache_read=0 on the dedicated-persona
+# build). SYSTEM_PROMPT already carries the hiring-manager persona, north star, and
+# grounding ALWAYS/NEVER rules synthesis needs; the synthesis-specific framing
+# (strategy-only; don't re-extract; ground in <extracted_signal>) lives in
+# _analyze_synthesis_prompt, after the cached prefix. This is also the proven
+# v1.0.2 shape — the unified analyze() produced these same three strategy keys
+# under SYSTEM_PROMPT. See evals/TUNING_LOG.md (r1/analyze-split-cache-reclaim).
 
 # Persona for clarify_iteration() — the post-generation interview that
 # probes the CURRENT iteration's specific weaknesses. Distinct from
@@ -1030,44 +1108,78 @@ def analyze(
     username: str = "",
     run_id: str = "",
 ) -> dict:
-    """Call 1: Analysis & Strategy.
+    """Call 1: Analysis & Strategy — two-pass split (r1/analyze-split-retry).
 
-    Analyzes JD, generates ideal resume, compares, produces suggestions.
-    Returns structured analysis result. The username is threaded through to
-    JSONL telemetry only — no behavior depends on it. The run_id (when
-    provided) lets dashboard tooling correlate this call's telemetry with
-    its sibling generate() call and any eval result that consumed the output.
+    Pass 1 (Haiku 4.5, EXTRACTION_SYSTEM_PROMPT): extracts the JD keyword/
+    vocabulary signals (essential_skills, preferred_skills, industry_keywords,
+    the typed hidden_qualities, professional_vocabulary, keyword_placement).
+    Structurally Haiku-friendly — classification, not multi-step reasoning.
+
+    Pass 2 (Sonnet 4.6, the shared default SYSTEM_PROMPT): produces comparison,
+    suggestions, overall_strategy. Receives Pass 1's output as
+    <extracted_signal> so it grounds its synthesis on concrete extracted
+    signals rather than re-extracting in line. It runs under SYSTEM_PROMPT (NOT
+    a dedicated synthesis persona) on purpose — that keeps its cached prefix
+    byte-identical to generate()'s, reclaiming the analyze→generate prompt cache.
+
+    Returns the merged dict — the same AnalyzeResponse shape every downstream
+    consumer expects (frontend renderer, clarify(), generate(), eval rubrics,
+    the recommend_* Haiku calls). The username threads through to JSONL
+    telemetry; run_id correlates both passes with the sibling generate() call
+    and any eval result that consumed the output.
+
+    Rationale (P6 Specialized Review): two narrower personas with task-specific
+    vocabulary outperform one broad persona doing extraction AND strategy in one
+    pass. P9 Token Economy counterweight: the split is justified by the measured
+    single-call latency; the eval dual gate is the quality-floor enforcement.
     """
-    # P2 Context Hygiene: stable inputs (resume + JD + profile) live in the
-    # cached prefix; only task-specific variable content is in the per-call prompt.
-    # Prompt template shared with `analyze_streaming` via `_analyze_prompt`.
-    return _parse_or_retry(
-        client, _analyze_prompt(context_set),
-        cached_user_prefix=_stable_user_prefix(context_set),
-        response_model=AnalyzeResponse,
-        call_kind="analyze",
-        username=username,
-        run_id=run_id,
+    # P2 Context Hygiene: stable inputs (résumé + JD + profile) live in the
+    # cached prefix; both passes share it byte-identically so Pass 2 (Sonnet)
+    # writes the prompt-cache block that the later generate() call reads.
+    prefix = _stable_user_prefix(context_set)
+    extraction = _parse_or_retry(
+        client, _analyze_extraction_prompt(context_set),
+        cached_user_prefix=prefix,
+        response_model=AnalyzeExtractionResponse,
+        call_kind="analyze_extraction",
+        username=username, run_id=run_id,
+        system_prompt=EXTRACTION_SYSTEM_PROMPT,
+        model=HAIKU_MODEL,
     )
+    # Synthesis runs under the DEFAULT SYSTEM_PROMPT (no system_prompt override),
+    # NOT a dedicated synthesis persona, so its cached prefix
+    # [SYSTEM_PROMPT][prefix] is byte-identical to generate()'s — which reclaims
+    # the analyze→generate prompt cache. Anthropic prefix caching matches from the
+    # system block, so a distinct synthesis persona would diverge there and force
+    # generate to re-prefill the whole corpus. The synthesis-specific framing
+    # (strategy-only; ground in <extracted_signal>) lives in the user prompt,
+    # after the cached prefix.
+    synthesis = _parse_or_retry(
+        client, _analyze_synthesis_prompt(context_set, extraction),
+        cached_user_prefix=prefix,
+        response_model=AnalyzeSynthesisResponse,
+        call_kind="analyze_synthesis",
+        username=username, run_id=run_id,
+        # system_prompt + model default to SYSTEM_PROMPT + SONNET_MODEL in _call_llm
+    )
+    return {**extraction, **synthesis}
 
 
+def _analyze_extraction_prompt(context_set: ContextSet) -> str:
+    """Build the Pass 1 (extraction) user prompt — Haiku target.
 
-
-def _analyze_prompt(context_set: ContextSet) -> str:
-    """Build the analyze user prompt. Shared by `analyze` and
-    `analyze_streaming` so both call sites use the same prompt template.
-
-    Extracted as a function so `analyze_streaming` (added 2026-05-26 for
-    R2 SSE streaming) doesn't duplicate the schema embedded in `analyze()`
-    above.
+    Keyword/vocabulary extraction only — no strategy, comparison, or positioning
+    narrative (those are Pass 2's job). The deterministic keyword analysis is
+    included so the model can classify matched vs missing with full context. The
+    hidden_qualities schema matches the typed HiddenQualityItem contract that
+    AnalyzeExtractionResponse enforces at parse time.
     """
-    return f"""<task>Analyze the job description against the candidate's resume and profile. Produce a comprehensive strategic analysis.</task>
+    return f"""<task>Extract and classify the keyword and vocabulary signals in this job description. Output JSON only — no prose, no strategy, no positioning recommendations.</task>
 
 <deterministic_analysis>
 Keyword match score: {context_set['deterministic_analysis']['keyword_overlap']['match_score']}
-Keywords matched: {', '.join(context_set['deterministic_analysis']['keyword_overlap']['matched'][:20])}
-Keywords missing from resume: {', '.join(context_set['deterministic_analysis']['keyword_overlap']['missing_from_resume'][:20])}
-ATS warnings: {json.dumps(context_set['deterministic_analysis']['ats_warnings'])}
+Keywords already matched (present in candidate's source material): {', '.join(context_set['deterministic_analysis']['keyword_overlap']['matched'][:20])}
+Keywords missing from candidate's source material: {', '.join(context_set['deterministic_analysis']['keyword_overlap']['missing_from_resume'][:20])}
 </deterministic_analysis>
 
 <instructions>
@@ -1080,35 +1192,77 @@ One concept per signal.
 
 Respond with valid JSON only. No markdown code fences. Use this exact structure:
 {{
-  "essential_skills": ["skill1", "skill2"],
-  "preferred_skills": ["skill1", "skill2"],
-  "industry_keywords": ["keyword1", "keyword2"],
+  "essential_skills": ["atomic skill — ONE concept per item, named in minimum quals or clearly required"],
+  "preferred_skills": ["atomic skill — ONE concept per item, named in preferred quals or nice-to-have"],
+  "industry_keywords": ["atomic domain term, acronym, framework, or methodology — ONE concept per item"],
   "hidden_qualities": [
     {{"category": "operating_context", "signal": "portable context the JD implies, one concept"}}
   ],
-  "professional_vocabulary": ["term1", "term2"],
-  "ideal_resume_profile": "A paragraph describing the ideal candidate for this role",
+  "professional_vocabulary": ["specialized term the JD uses that résumés in this field should adopt"],
+  "keyword_placement": [
+    {{
+      "keyword": "missing keyword (atomic)",
+      "suggested_location": "Where in the résumé to add it (section / bullet area)",
+      "how": "How to incorporate naturally without keyword-stuffing"
+    }}
+  ]
+}}
+</instructions>"""
+
+
+def _analyze_synthesis_prompt(context_set: ContextSet, extraction: dict) -> str:
+    """Build the Pass 2 (synthesis) user prompt — Sonnet target.
+
+    Receives Pass 1's extraction output as <extracted_signal> so the strategist
+    grounds comparison + suggestions on concrete extracted signals rather than
+    re-extracting in line. Deterministic ATS warnings stay visible so structural
+    format issues fold into the suggestions narrative. Kept lean — this is the
+    latency bottleneck on the two-pass path.
+    """
+    # Render typed {category, signal} hidden_qualities as readable lines.
+    # Tolerant of a bare-string item defensively — extraction validates the
+    # typed shape, but the render must not KeyError if that ever changes.
+    hq_lines: list[str] = []
+    for item in extraction.get('hidden_qualities', []):
+        if isinstance(item, dict):
+            hq_lines.append(f"- [{item.get('category', 'context')}] {item.get('signal', '')}")
+        else:
+            hq_lines.append(f"- {item}")
+    hidden_qualities_block = "\n".join(hq_lines) if hq_lines else "(none)"
+
+    return f"""<task>This is the STRATEGY pass of a two-pass analysis. An ATS scanner has already extracted the job description's keyword and vocabulary signals — they are given below as <extracted_signal>. Do NOT re-extract or re-list keywords. Produce ONLY the strategic positioning: where this candidate is strong, where they are weak, and what specific changes lift them to a callback. Ground every strength, gap, and suggestion in <extracted_signal>, the candidate's source material, or the deterministic analysis, and cite the specific signal by name.</task>
+
+<extracted_signal>
+Essential skills (from JD, required): {json.dumps(extraction.get('essential_skills', []))}
+Preferred skills (from JD, nice-to-have): {json.dumps(extraction.get('preferred_skills', []))}
+Industry keywords: {json.dumps(extraction.get('industry_keywords', []))}
+Operating-context signals:
+{hidden_qualities_block}
+Professional vocabulary: {json.dumps(extraction.get('professional_vocabulary', []))}
+Keyword placement suggestions: {json.dumps(extraction.get('keyword_placement', []))}
+</extracted_signal>
+
+<deterministic_analysis>
+Keyword match score: {context_set['deterministic_analysis']['keyword_overlap']['match_score']}
+ATS warnings: {json.dumps(context_set['deterministic_analysis']['ats_warnings'])}
+</deterministic_analysis>
+
+<instructions>
+Respond with valid JSON only. No markdown code fences. Use this exact structure:
+{{
   "comparison": {{
-    "strengths": ["strength1", "strength2"],
-    "gaps": ["gap1", "gap2"],
-    "title_alignment": "Assessment of how well current titles align with target role"
+    "strengths": ["specific strength — cite an extracted skill or résumé item by name"],
+    "gaps": ["specific gap — cite an essential_skill that's missing or weak"],
+    "title_alignment": "Assessment of how well current titles align with the target role"
   }},
   "suggestions": [
     {{
-      "section": "Section name",
-      "action": "What to change",
-      "rationale": "Why this improves candidacy"
+      "section": "Section name in résumé",
+      "action": "Concrete change to make",
+      "rationale": "Why this improves candidacy — cite an extracted signal or gap"
     }}
   ],
-  "keyword_placement": [
-    {{
-      "keyword": "missing keyword",
-      "suggested_location": "Where to add it",
-      "how": "How to incorporate naturally"
-    }}
-  ],
-  "ats_improvements": ["improvement1", "improvement2"],
-  "overall_strategy": "2-3 sentence positioning strategy"
+  "overall_strategy": "2-3 sentence positioning narrative for this candidate against this role"
 }}
 </instructions>"""
 
@@ -1119,26 +1273,63 @@ def analyze_streaming(
     username: str = "",
     run_id: str = "",
 ) -> Iterator[tuple[str, object]]:
-    """Streaming generator counterpart to `analyze()`.
+    """Streaming counterpart to `analyze()` — the two-pass orchestrator.
 
-    Yields the same event shape as `_parse_or_retry_streaming`:
-        - `("chunk", str)` per text delta
-        - `("retry", str)` if a parse attempt fails and a retry begins
-        - `("done", dict)` on success with the parsed analysis
+    Yields:
+        - `("phase", {"phase": "extraction"})` once before Pass 1 starts
+        - `("chunk", str)` / `("retry", str)` events from Pass 1 (Haiku)
+        - `("phase", {"phase": "synthesis"})` once before Pass 2 starts
+        - `("chunk", str)` / `("retry", str)` events from Pass 2 (Sonnet)
+        - `("done", merged_dict)` once on success with the full merged analysis
 
-    Routes that want token-level SSE call this generator and forward
-    each event as a Server-Sent Event. Existing non-streaming callers
-    keep using `analyze()` (which still drains `_call_llm_streaming`
-    internally via `_call_llm`).
+    The per-pass `done` events from `_parse_or_retry_streaming` are intercepted
+    (captured, not forwarded); only the final merged `done` reaches the caller.
+    The `phase` events let the SSE route swap the frontend status label per pass.
+    Both passes share one cached_user_prefix so Pass 2 hits the prompt cache.
     """
-    yield from _parse_or_retry_streaming(
-        client, _analyze_prompt(context_set),
-        cached_user_prefix=_stable_user_prefix(context_set),
-        response_model=AnalyzeResponse,
-        call_kind="analyze",
-        username=username,
-        run_id=run_id,
-    )
+    prefix = _stable_user_prefix(context_set)
+
+    yield ("phase", {"phase": "extraction"})
+    extraction: dict | None = None
+    for event_name, payload in _parse_or_retry_streaming(
+        client, _analyze_extraction_prompt(context_set),
+        cached_user_prefix=prefix,
+        response_model=AnalyzeExtractionResponse,
+        call_kind="analyze_extraction",
+        username=username, run_id=run_id,
+        system_prompt=EXTRACTION_SYSTEM_PROMPT,
+        model=HAIKU_MODEL,
+    ):
+        if event_name == "done" and isinstance(payload, dict):
+            extraction = payload
+        else:
+            yield (event_name, payload)
+
+    if extraction is None:
+        # _parse_or_retry_streaming raises LLMResponseError on exhausted retries,
+        # so reaching here with extraction=None is a helper contract violation.
+        raise LLMResponseError("", "extraction phase ended without a parsed result")
+
+    yield ("phase", {"phase": "synthesis"})
+    synthesis: dict | None = None
+    # Synthesis under the default SYSTEM_PROMPT (no override) so its cached prefix
+    # matches generate()'s and reclaims the analyze→generate cache (see analyze()).
+    for event_name, payload in _parse_or_retry_streaming(
+        client, _analyze_synthesis_prompt(context_set, extraction),
+        cached_user_prefix=prefix,
+        response_model=AnalyzeSynthesisResponse,
+        call_kind="analyze_synthesis",
+        username=username, run_id=run_id,
+    ):
+        if event_name == "done" and isinstance(payload, dict):
+            synthesis = payload
+        else:
+            yield (event_name, payload)
+
+    if synthesis is None:
+        raise LLMResponseError("", "synthesis phase ended without a parsed result")
+
+    yield ("done", {**extraction, **synthesis})
 
 
 def clarify(

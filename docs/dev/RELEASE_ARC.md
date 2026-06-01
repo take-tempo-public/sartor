@@ -261,6 +261,30 @@ New Pareto frontier panel at top of `/_dashboard`:
 - All other rubrics within 1 stdev of v1.0.2 baseline
 - `ruff + mypy + pytest` green
 
+> **Note (2026-06-01):** the speed half landed via **`r1/analyze-split-cache-reclaim`**,
+> which supersedes `r1/analyze-split-retry` — it contains the full two-pass split AND a
+> follow-up that runs synthesis under the shared `SYSTEM_PROMPT` to reclaim the
+> analyze→generate prompt cache the dedicated-persona build had broken. Final
+> `PROMPT_VERSION 2026-06-01.3`. Results (speed/cost/eval before vs after) are recorded
+> in [`docs/R1_PHASE2_RESULTS.md`](../R1_PHASE2_RESULTS.md).
+
+### Documentation debt (from R1 Phase 2) — schedule a later doc pass
+
+These are tracked, NOT blockers for the v1.0.3 tag. Fold into the next docs-focused branch
+(or the v1.0.5 redesign's doc work):
+
+1. **`docs/architecture.md` + `docs/diagrams/pipeline.mmd` + `docs/diagrams/llm-routing.mmd`** —
+   `analyze` is now **two passes** (Haiku `analyze_extraction` → Sonnet `analyze_synthesis`),
+   not one Sonnet call. Update the sequence diagram, the LLM-routing diagram (add the Haiku
+   extraction node; mark synthesis as the cache writer), and the module/routing prose. *(The
+   "analyze and generate share a cached prefix" claim is accurate again post-reclaim — no change
+   needed there; only the single-call shape is stale.)*
+2. **`generate` cover-letter opener discipline** — the `tone` rubric caught a throat-clearing
+   opener ("I am writing to be considered for…") + hedging in 1 of 5 shipped-build runs. This is
+   a pre-existing `generate_cover_letter` adherence lapse (independent of the analyze change),
+   surfaced during R1 Phase 2 eval. Candidate for a `generate`-tuning pass — natural fit for the
+   v1.0.4 eval-tuning loop.
+
 ---
 
 ## Phase 3 — Eval tuning loop (v1.0.4)
