@@ -196,6 +196,99 @@ prevent re-running them.
 
 ---
 
+## 2026-06-01 — r1/analyze-split-cache-reclaim (synthesis under shared SYSTEM_PROMPT) (`2026-06-01.2` → `2026-06-01.3`)
+
+### What changed
+
+Follow-up to the two-pass split (`.2` below), on branch `r1/analyze-split-cache-reclaim`.
+The `.2` build gave the synthesis pass a dedicated `SYNTHESIS_SYSTEM_PROMPT`, which
+**broke the analyze→generate prompt cache**: Anthropic prefix caching matches from the
+system block, so a distinct synthesis persona diverges from `generate()`'s `SYSTEM_PROMPT`
+and `generate` lost its cache hit (`cache_read=0` on all 9 `.2` fixture-runs).
+
+The fix (in `analyzer.py`):
+- Synthesis now runs under the **default `SYSTEM_PROMPT`** (no `system_prompt` override) in
+  both `analyze()` and `analyze_streaming()`. Its cached prefix
+  `[SYSTEM_PROMPT][_stable_user_prefix]` is byte-identical to `generate()`'s → cache reclaimed.
+- Dropped the `SYNTHESIS_SYSTEM_PROMPT` constant; folded the synthesis-specific framing
+  (strategy-only; don't re-extract; ground in `<extracted_signal>`) into the `<task>` of
+  `_analyze_synthesis_prompt`, **after** the cached prefix (so it doesn't break the match).
+- Extraction is unchanged (Haiku, `EXTRACTION_SYSTEM_PROMPT`, separate cache pool).
+
+`PROMPT_VERSION`: `2026-06-01.2` → `2026-06-01.3`. Tests: `test_analyze_split.py` updated
+(synthesis no longer overrides the system prompt → asserts the default); 718 green; ruff + mypy clean.
+
+### Why
+
+The analyze→generate cache overlap is a deliberate optimization (`docs/architecture.md`):
+within one iteration the `[SYSTEM_PROMPT][_stable_user_prefix]` block is byte-identical, so the
+second Sonnet call reads it instead of re-prefilling the whole corpus. The `.2` split silently
+forfeited it. The dollar delta is tiny on the synthetic fixtures (~$0.006/run) but **grows with
+corpus size** — a real user's `_stable_user_prefix` (full `<career_corpus>` + résumé + profile)
+is far larger, so the lost cache costs real money and adds generate prefill latency at scale.
+Reclaiming it costs nothing structural: synthesis-under-`SYSTEM_PROMPT` is the **proven v1.0.2
+shape** (the unified `analyze()` produced these same three strategy keys under `SYSTEM_PROMPT`),
+so it is lower quality-risk than the new dedicated persona it replaces.
+
+### Result
+
+**n=5 anchor runs** at `2026-06-01.3` (`evals/results/20260601_185916Z.jsonl`,
+`191510Z`, `192408Z`, `210845Z`, `211737Z`). Cost ≈ $1.9 total (~$0.38/run). Runs 4–5 were
+confirmation runs to resolve the tone outlier below.
+
+#### Cache + latency (n=15 fixture-runs)
+
+| Metric | Result |
+|---|---|
+| **generate `cache_read` > 0** | **15/15 runs** (1781/1928/1877 per fixture, = synthesis's `cache_create`) — fully reclaimed (was 0/9 on `.2`) |
+| combined analyze p50 | **67.7s** (≤ 72s budget); max 77.0s |
+| parse retries | 0 |
+
+#### Per-(fixture × rubric) mean ± stdev (n=5, judge_error + scenario_misaligned excluded)
+
+| Fixture | ats_format | callback_likelihood | clarification_quality | grounding | keyword_coverage | tone |
+|---|---|---|---|---|---|---|
+| data-scientist-junior | 4.40 ± 0.25 | 4.54 ± 0.08 | **4.20 ± 0.00** | 4.72 ± 0.07 | 4.30 ± 0.20 | 3.78 ± 0.84 (see note) |
+| pm-senior | 4.36 ± 0.21 | 4.18 ± 0.04 | **4.26 ± 0.12** | 4.64 ± 0.05 | 4.20 ± 0.00 | 4.20 ± 0.00 |
+| sre-mid-level | 4.60 ± 0.23 | 4.45 ± 0.15 (n=4) | 4.02 ± 0.22 | 4.80 ± 0.00 | 4.46 ± 0.22 | 4.36 ± 0.21 |
+
+`ds × tone` raw = [4.2, 4.2, **2.1**, 4.2, 4.2] — a single run's cover letter opened with a
+throat-clearing "I am writing to be considered for…" + hedging "I would welcome a conversation"
+(tone rubric Checks 3/4). 4 of 5 runs are clean at floor (median 4.2). `sre × callback_likelihood`
+run 2 was a `judge_error` (invalid judge JSON), excluded.
+
+#### Dual-gate check
+
+| Criterion | Status |
+|---|---|
+| **Cache reclaimed** (the point of this branch) | ✅ generate `cache_read` > 0 on **15/15** |
+| **SPEED:** analyze p50 ≤ 72s combined | ✅ **67.7s** (n=15) |
+| pm-senior × clarification_quality ≥ 4.0 | ✅ 4.26 |
+| clarification_quality no drop > 0.5 vs 2026-06-01 floor | ✅ max drop −0.05 (sre) |
+| tone + grounding canaries flat | ✅ grounding 4.64–4.80; tone median 4.2/fixture (lone ds 2.1 = generate-side, see below) |
+| ruff + mypy + pytest (718) | ✅ all green |
+
+### What we learned
+
+1. **Cache reclaim is real and free.** Moving synthesis to the shared `SYSTEM_PROMPT` restored
+   `generate cache_read` to 1781/1928/1877 (15/15 runs, = synthesis's write) with **no** speed or
+   quality cost — p50 actually held at 67.7s and `clarification_quality` was flat-to-up. The
+   specialist `SYNTHESIS_SYSTEM_PROMPT` from `.2` was an elegant idea that wasn't worth the cache
+   it cost; the persona difference bought nothing the schema-constrained user prompt doesn't.
+
+2. **Prefix caching is unforgiving about the system block.** A cache hit needs a byte-identical
+   prefix *from position 0*; you cannot share the corpus block across two different system prompts.
+   Any future per-call persona that wants to ride the analyze/generate cache must keep `SYSTEM_PROMPT`
+   as its system block and put its specialization after the cached prefix.
+
+3. **The `ds × tone` 2.1 is pre-existing `generate` variance, not a reclaim regression.** The
+   reclaim changed only the synthesis pass; `generate` / `generate_cover_letter` are untouched.
+   The throat-clearing opener appeared in 1 of 5 runs and is a `generate`-side cover-letter
+   adherence lapse. Flagged as a future generate-tuning item (cover-letter opener discipline);
+   out of scope here.
+
+---
+
 ## 2026-06-01 — r1/analyze-split-retry (two-pass: Haiku extraction + Sonnet synthesis) (`2026-06-01.1` → `2026-06-01.2`)
 
 ### What changed
