@@ -423,6 +423,18 @@ async function runAnalysis() {
           if (status) status.textContent = `Analyzing… (retrying: ${payload.reason})`;
           const pre = document.getElementById('analysisStreamPre');
           if (pre) pre.textContent += `\n\n[retry: ${payload.reason}]\n\n`;
+        } else if (eventName === 'phase') {
+          // Two-pass analyze emits a phase sentinel before each pass; swap the
+          // status label so the user sees concrete progress (extraction is the
+          // fast Haiku pass, synthesis is the long Sonnet pass).
+          const status = document.getElementById('analysisStreamStatus');
+          if (status) {
+            const labels = {
+              extraction: 'Extracting JD signals… (~10s)',
+              synthesis: 'Analyzing positioning… (~50s)',
+            };
+            status.textContent = labels[payload && payload.phase] || 'Analyzing…';
+          }
         } else if (eventName === 'done') {
           finalData = payload;
         } else if (eventName === 'error') {

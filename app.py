@@ -476,6 +476,10 @@ def _run_analysis_corpus_backed_streaming(safe_user: str, jd_text: str, data: di
                     yield _sse("chunk", {"text": payload})
                 elif event_kind == "retry":
                     yield _sse("retry", {"reason": str(payload)})
+                elif event_kind == "phase":
+                    # Two-pass analyze: surface which pass is running so the
+                    # frontend can swap the status label (extraction → synthesis).
+                    yield _sse("phase", payload if isinstance(payload, dict) else {})
                 elif event_kind == "done":
                     analysis = payload if isinstance(payload, dict) else None
             if analysis is None:

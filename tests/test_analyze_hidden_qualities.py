@@ -40,11 +40,9 @@ def _analyze_payload(hidden_qualities) -> dict:
         "industry_keywords": ["fintech"],
         "hidden_qualities": hidden_qualities,
         "professional_vocabulary": ["SLA"],
-        "ideal_resume_profile": "An ideal candidate paragraph.",
         "comparison": {"strengths": [], "gaps": [], "title_alignment": ""},
         "suggestions": [],
         "keyword_placement": [],
-        "ats_improvements": [],
         "overall_strategy": "Position for the role.",
     }
 

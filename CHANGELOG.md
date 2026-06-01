@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+v1.0.3 R1 Phase 2 stream (in progress).
+
+### Changed — Two-pass analyze split, gated for speed without quality loss (`r1/analyze-split-retry`)
+
+- **`analyzer.py`** — `analyze()` is now a two-pass orchestrator instead of one
+  Sonnet call:
+  - **Pass 1 — extraction (Haiku 4.5, new `EXTRACTION_SYSTEM_PROMPT`):**
+    `essential_skills`, `preferred_skills`, `industry_keywords`,
+    `hidden_qualities` (the typed `HiddenQualityItem` shape), `professional_vocabulary`,
+    `keyword_placement`. Enforced by the new `AnalyzeExtractionResponse` model — a
+    bare-string `hidden_qualities` item or out-of-enum category triggers a parse-time
+    retry (the guardrail that prevents the original split's `clarification_quality`
+    regression).
+  - **Pass 2 — synthesis (Sonnet 4.6, new `SYNTHESIS_SYSTEM_PROMPT`):** `comparison`,
+    `suggestions`, `overall_strategy`, grounded on Pass 1 via an `<extracted_signal>`
+    block (`AnalyzeSynthesisResponse`).
+  - `analyze()` merges both passes into the existing `AnalyzeResponse` contract; both
+    passes share one cached user prefix so the Sonnet synthesis pass writes the
+    prompt-cache block the later `generate()` call reads.
+- **`analyzer.py` `analyze_streaming()`** — re-introduces the
+  `("phase", {"phase": "extraction"|"synthesis"})` SSE sentinel before each pass;
+  emits a single merged `done`.
+- **`app.py`** — `/api/analyze/stream` forwards the new `phase` event.
+- **`static/app.js`** — the analyze stream swaps its status label per phase
+  ("Extracting JD signals…" → "Analyzing positioning…").
+- **Removed two unconsumed analyze keys** — `ats_improvements` and
+  `ideal_resume_profile` were produced but never read (no consumer in `static/app.js`,
+  `app.py`, `clarify()`, `generate()`, or any eval rubric). Actionable ATS guidance
+  remains in `keyword_placement`, the deterministic `ats_warnings`, and
+  `comparison.gaps` / `suggestions`.
+- **`PROMPT_VERSION`** `2026-06-01.1` → `2026-06-01.2`.
+
+---
+
 ## [1.0.2] — 2026-05-30
 
 Eval apparatus stream — internal tooling establishing the regression floor
