@@ -8,12 +8,15 @@ Uses specialist hiring-manager persona with domain vocabulary (P6).
 Single agent + deterministic tools = Level 1 architecture (P9).
 """
 
+import hashlib
 import json
 import logging
 import math
 import re
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
@@ -263,6 +266,63 @@ class PromoteBulletResponse(_LLMResponse):
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
 PROMPT_VERSION = "2026-06-01.4"
+
+# --- Prompt-override primitive (eval tuning loop, v1.0.4) --------------------
+# Lets an eval run inject a CANDIDATE system prompt without editing the persona
+# constants below. The default (no-override) path is byte-identical: with no
+# active override the resolver returns the exact constant object and
+# effective_prompt_version() returns PROMPT_VERSION verbatim, so the production
+# prompt cache and the dashboard's score-over-time attribution are untouched.
+# When an override IS active, every LLM call in that context logs a stable
+# `candidate:<hash>` version so the candidate run is quarantined from the
+# baseline. The name->constant registry (_BASE_SYSTEM_PROMPTS) and the call-site
+# resolver (_resolve_system_prompt) live at the end of this module, after every
+# persona constant is defined; the public entry points live here, next to the
+# version they shadow. Only the eval harness / the /prompt-tune skill enter the
+# context manager — the production request path in app.py never does, so
+# analyze()/generate() stay on the default path.
+_prompt_overrides: ContextVar[Mapping[str, str] | None] = ContextVar(
+    "prompt_overrides", default=None
+)
+
+
+@contextmanager
+def prompt_overrides(overrides: Mapping[str, str] | None) -> Iterator[None]:
+    """Activate candidate prompt overrides for the duration of the `with` block.
+
+    `overrides` maps a persona-constant name (a key of `_BASE_SYSTEM_PROMPTS`) to
+    its replacement text. An unknown key raises `ValueError` — fail loud, because
+    a typo'd name silently no-op'ing would mislabel a baseline run as a candidate
+    (or vice versa). An empty / None mapping is a no-op (the default path).
+    """
+    clean = dict(overrides or {})
+    unknown = set(clean) - set(_BASE_SYSTEM_PROMPTS)
+    if unknown:
+        raise ValueError(
+            f"Unknown prompt override key(s): {sorted(unknown)}. "
+            f"Valid keys: {sorted(_BASE_SYSTEM_PROMPTS)}"
+        )
+    token = _prompt_overrides.set(clean)
+    try:
+        yield
+    finally:
+        _prompt_overrides.reset(token)
+
+
+def effective_prompt_version() -> str:
+    """prompt_version to stamp on telemetry + eval records for the active context.
+
+    `PROMPT_VERSION` on the default path (byte-identical); a stable
+    `candidate:<hash>` (sha256 over the canonical override mapping) when overrides
+    are active, so candidate runs never pollute the score-over-time chart.
+    """
+    overrides = _prompt_overrides.get()
+    if not overrides:
+        return PROMPT_VERSION
+    canonical = json.dumps(overrides, sort_keys=True, ensure_ascii=False)
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:12]
+    return f"candidate:{digest}"
+
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -840,7 +900,11 @@ def _call_llm_streaming(
         })
     user_content.append({"type": "text", "text": user_prompt})
 
-    effective_system = system_prompt or SYSTEM_PROMPT
+    # Calls that omit system_prompt fall back to SYSTEM_PROMPT — resolved through
+    # the override registry so a candidate SYSTEM_PROMPT reaches analyze_synthesis,
+    # generate, generate_cover_letter, etc. With no override active this returns
+    # the SYSTEM_PROMPT constant unchanged (default-path byte-identity).
+    effective_system = system_prompt or _resolve_system_prompt("SYSTEM_PROMPT")
 
     logger.info(
         "LLM call starting — call=%s cached_prefix=%d chars, prompt=%d chars",
@@ -880,7 +944,7 @@ def _call_llm_streaming(
             "run_id": run_id,
             "call": call_kind,
             "model": effective_model,
-            "prompt_version": PROMPT_VERSION,
+            "prompt_version": effective_prompt_version(),
             "input_tokens": getattr(usage, "input_tokens", 0),
             "output_tokens": getattr(usage, "output_tokens", 0),
             "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0),
@@ -1148,7 +1212,7 @@ def analyze(
         response_model=AnalyzeExtractionResponse,
         call_kind="analyze_extraction",
         username=username, run_id=run_id,
-        system_prompt=EXTRACTION_SYSTEM_PROMPT,
+        system_prompt=_resolve_system_prompt("EXTRACTION_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
     )
     # Synthesis runs under the DEFAULT SYSTEM_PROMPT (no system_prompt override),
@@ -1302,7 +1366,7 @@ def analyze_streaming(
         response_model=AnalyzeExtractionResponse,
         call_kind="analyze_extraction",
         username=username, run_id=run_id,
-        system_prompt=EXTRACTION_SYSTEM_PROMPT,
+        system_prompt=_resolve_system_prompt("EXTRACTION_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
     ):
         if event_name == "done" and isinstance(payload, dict):
@@ -1442,7 +1506,7 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
         call_kind="clarify",
         username=username,
         run_id=run_id,
-        system_prompt=CLARIFY_SYSTEM_PROMPT,
+        system_prompt=_resolve_system_prompt("CLARIFY_SYSTEM_PROMPT"),
         # Haiku 4.5 for clarify (r1/clarify-model-trial, 2026-06-01): short
         # structured output; clarification_quality cleared 4.0 stably after the
         # R1 two-pass split. Switch is eval-gated — see evals/TUNING_LOG.md.
@@ -1576,7 +1640,7 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
         call_kind="iterate_clarify",
         username=username,
         run_id=run_id,
-        system_prompt=CLARIFY_ITERATION_SYSTEM_PROMPT,
+        system_prompt=_resolve_system_prompt("CLARIFY_ITERATION_SYSTEM_PROMPT"),
     )
 
 
@@ -2324,7 +2388,7 @@ Existing canonical bullets for this experience:
         call_kind="critique_proposal",
         username=username,
         run_id=run_id,
-        system_prompt=PROPOSAL_CRITIQUE_SYSTEM_PROMPT,
+        system_prompt=_resolve_system_prompt("PROPOSAL_CRITIQUE_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
     )
 
@@ -2419,7 +2483,7 @@ Industry keywords: {keywords or '(none)'}
         call_kind="recommend",
         username=username,
         run_id=run_id,
-        system_prompt=RECOMMEND_SYSTEM_PROMPT,
+        system_prompt=_resolve_system_prompt("RECOMMEND_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
     )
     # Workstream B1.2 safety pass: even with the explicit prompt rule, the
@@ -2576,7 +2640,7 @@ Industry keywords: {keywords or '(none)'}
         call_kind="recommend_summary",
         username=username,
         run_id=run_id,
-        system_prompt=RECOMMEND_SUMMARIES_SYSTEM_PROMPT,
+        system_prompt=_resolve_system_prompt("RECOMMEND_SUMMARIES_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
     )
     # Ensure the alternates key exists even when the LLM omits it
@@ -2732,6 +2796,33 @@ Answer: {answer}
         call_kind="promote_clarification_to_bullet",
         username=username,
         run_id=run_id,
-        system_prompt=PROMOTE_CLARIFICATION_SYSTEM_PROMPT,
+        system_prompt=_resolve_system_prompt("PROMOTE_CLARIFICATION_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
     )
+
+
+# --- Prompt-override registry + resolver (see prompt_overrides() above) -------
+# Maps each overridable persona-constant name to its baseline value. Defined at
+# module end, after every constant exists. _resolve_system_prompt() is called at
+# each LLM call site (and in _call_llm_streaming's SYSTEM_PROMPT fallback); with
+# no active override it returns the identical constant object, so the bytes sent
+# to the API are unchanged. Keep this in sync if a new overridable persona
+# constant is added.
+_BASE_SYSTEM_PROMPTS: dict[str, str] = {
+    "SYSTEM_PROMPT": SYSTEM_PROMPT,
+    "EXTRACTION_SYSTEM_PROMPT": EXTRACTION_SYSTEM_PROMPT,
+    "CLARIFY_SYSTEM_PROMPT": CLARIFY_SYSTEM_PROMPT,
+    "CLARIFY_ITERATION_SYSTEM_PROMPT": CLARIFY_ITERATION_SYSTEM_PROMPT,
+    "PROPOSAL_CRITIQUE_SYSTEM_PROMPT": PROPOSAL_CRITIQUE_SYSTEM_PROMPT,
+    "RECOMMEND_SYSTEM_PROMPT": RECOMMEND_SYSTEM_PROMPT,
+    "RECOMMEND_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_SUMMARIES_SYSTEM_PROMPT,
+    "PROMOTE_CLARIFICATION_SYSTEM_PROMPT": PROMOTE_CLARIFICATION_SYSTEM_PROMPT,
+}
+
+
+def _resolve_system_prompt(name: str) -> str:
+    """Return the active text for a persona-constant `name`: the candidate
+    override when one is in scope, else the baseline constant (the identical
+    object -> default-path byte-identity). `name` must be a registry key.
+    """
+    return (_prompt_overrides.get() or {}).get(name, _BASE_SYSTEM_PROMPTS[name])

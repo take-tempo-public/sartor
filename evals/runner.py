@@ -37,11 +37,12 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from analyzer import (  # noqa: E402
-    PROMPT_VERSION,
     analyze,
     clarify,
     clarify_iteration,
+    effective_prompt_version,
     generate,
+    prompt_overrides,
 )
 from hardening import (  # noqa: E402
     ContextSet,
@@ -589,7 +590,7 @@ def _run_iteration_phase(
             ],
             "failed_rules": ["scenario_misaligned"],
             "status": "scenario_misaligned",
-            "prompt_version": PROMPT_VERSION,
+            "prompt_version": effective_prompt_version(),
             "run_id": run_id,
             "deterministic_metrics": det_metrics,
             "cost_usd": _eval_cost_since(t0_iso, fixture["name"]),
@@ -670,7 +671,7 @@ def _run_iteration_phase(
             "reasons": [f"clarify_iteration failed: {iter_error}"],
             "failed_rules": [],
             "status": iter_status,
-            "prompt_version": PROMPT_VERSION,
+            "prompt_version": effective_prompt_version(),
             "run_id": run_id,
             "deterministic_metrics": det_metrics,
             "cost_usd": _eval_cost_since(t0_iso, fixture["name"]),
@@ -703,7 +704,7 @@ def _run_iteration_phase(
         "reasons": grade.get("reasons", []),
         "failed_rules": grade.get("failed_rules", []),
         "status": grade.get("status", "ok"),
-        "prompt_version": PROMPT_VERSION,
+        "prompt_version": effective_prompt_version(),
         "run_id": run_id,
         "deterministic_metrics": det_metrics,
         "cost_usd": _eval_cost_since(t0_iso, fixture["name"]),
@@ -738,7 +739,52 @@ def main(argv: list[str] | None = None) -> int:
             "First run downloads ~3.2 GB of model weights to the HuggingFace cache."
         ),
     )
+    ap.add_argument(
+        "--prompt-overrides",
+        metavar="PATH",
+        help=(
+            "Path to a JSON file mapping a system-prompt constant name "
+            "(e.g. SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT) to candidate override "
+            "text. Injects the candidate prompt for THIS run only — analyzer.py is "
+            "never edited and the run is logged as prompt_version 'candidate:<hash>' "
+            "so it never pollutes score-over-time. Omit for the byte-identical "
+            "default path."
+        ),
+    )
     args = ap.parse_args(argv)
+
+    # --prompt-overrides: inject a candidate system prompt for this run only.
+    # Eager-validate here (bad JSON / wrong shape / unknown key all exit non-zero
+    # BEFORE any paid LLM call) and surface the candidate:<hash> tag the run is
+    # quarantined under. Absent flag → overrides={} → no-op (default path).
+    overrides: dict[str, str] = {}
+    if args.prompt_overrides:
+        ov_path = Path(args.prompt_overrides)
+        try:
+            loaded = json.loads(ov_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.error("Could not read --prompt-overrides %s: %s", ov_path, exc)
+            return 1
+        if not isinstance(loaded, dict) or not all(
+            isinstance(k, str) and isinstance(v, str) for k, v in loaded.items()
+        ):
+            logger.error(
+                "--prompt-overrides must be a JSON object mapping prompt-name "
+                "(string) -> override text (string): %s", ov_path,
+            )
+            return 1
+        overrides = loaded
+        try:
+            with prompt_overrides(overrides):
+                cand_version = effective_prompt_version()
+        except ValueError as exc:  # unknown prompt-constant name
+            logger.error("%s", exc)
+            return 1
+        logger.warning(
+            "PROMPT OVERRIDES ACTIVE — keys=%s; this run is logged as "
+            "prompt_version=%s (quarantined from score-over-time).",
+            sorted(overrides), cand_version,
+        )
 
     # Load static baseline data once for baseline_comparison fields on JSONL records.
     baseline_v1_data: dict = {}
@@ -794,7 +840,10 @@ def main(argv: list[str] | None = None) -> int:
     if WEIGHTS_PATH.exists():
         weights = json.loads(WEIGHTS_PATH.read_text(encoding="utf-8"))
 
-    with out_path.open("a", encoding="utf-8") as out:
+    # The override context spans the whole fixture loop so every analyze/clarify/
+    # generate call (and the iteration-cycle helper, via the ContextVar) sees the
+    # candidate prompt and stamps the candidate:<hash> version. No-op when empty.
+    with prompt_overrides(overrides), out_path.open("a", encoding="utf-8") as out:
         for fdir in fixtures:
             try:
                 fixture = _load_fixture(fdir)
@@ -869,7 +918,7 @@ def main(argv: list[str] | None = None) -> int:
                     "status": "pipeline_error",
                     "error": str(exc),
                     "run_id": run_id,
-                    "prompt_version": PROMPT_VERSION,
+                    "prompt_version": effective_prompt_version(),
                     "anchor_version": anchor_version,
                     "suite": args.suite,
                     "fixture_hash": fixture["hash"],
@@ -972,7 +1021,7 @@ def main(argv: list[str] | None = None) -> int:
                         "reasons": [f"clarify step failed: {clarify_error}"],
                         "failed_rules": [],
                         "status": "pipeline_error",
-                        "prompt_version": PROMPT_VERSION,
+                        "prompt_version": effective_prompt_version(),
                         "run_id": run_id,
                         "deterministic_metrics": det_metrics,
                         "cost_usd": cost_usd,
@@ -1091,7 +1140,7 @@ def main(argv: list[str] | None = None) -> int:
                     "reasons": grade.get("reasons", []),
                     "failed_rules": grade.get("failed_rules", []),
                     "status": grade.get("status", "ok"),
-                    "prompt_version": PROMPT_VERSION,
+                    "prompt_version": effective_prompt_version(),
                     "run_id": run_id,
                     "deterministic_metrics": det_metrics,
                     "cost_usd": cost_usd,
@@ -1168,7 +1217,7 @@ def main(argv: list[str] | None = None) -> int:
                 "rubric": "eval_composite",
                 "score": eval_composite,
                 "run_id": run_id,
-                "prompt_version": PROMPT_VERSION,
+                "prompt_version": effective_prompt_version(),
                 "weights_used": weights,
                 "scores_used": fixture_scores,
                 "anchor_version": anchor_version,

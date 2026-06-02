@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Eval prompt-override primitive (`eval/prompt-override-primitive`, v1.0.4)
+
+Internal/dev tooling for the eval tuning loop — **no user-facing pipeline
+change**, and `PROMPT_VERSION` is unchanged (no prompt-constant edit).
+
+- **`analyzer.py`** — a runtime prompt-override primitive. `prompt_overrides()`
+  (a context manager) injects a candidate system prompt **by name** without
+  editing the persona constants; `effective_prompt_version()` returns
+  `PROMPT_VERSION` on the default path but a stable `candidate:<hash>` while an
+  override is active, so candidate runs are quarantined from the dashboard's
+  score-over-time. The default (no-override) path is **byte-identical**: the
+  call-site resolver returns the *identical* constant object and the logged
+  version is unchanged, so the analyze→generate prompt cache and the
+  `PROMPT_VERSION` attribution discipline are untouched.
+- **`evals/runner.py`** — `--prompt-overrides PATH` threads a JSON
+  `{prompt-name: override-text}` file through a run; eval result records and
+  telemetry stamp the candidate version. Eager-validated — bad JSON, wrong shape,
+  or an unknown prompt name exits non-zero before any paid LLM call.
+- **`/prompt-tune`** — retrofitted onto the primitive: the A/B trial injects the
+  candidate via `--prompt-overrides` instead of editing `analyzer.py` in place
+  (removing the fragile clean-revert dependency); the constant is edited only if
+  you choose Keep.
+
 ## [1.0.3] — 2026-06-02
 
 R1 Phase 2 stream — two-pass analyze split (speed without quality loss) +
