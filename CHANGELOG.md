@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] — 2026-06-02
+
+The eval tuning loop: a real-data, human-in-the-loop, model-assisted
+prompt-improvement loop, gated by the offline grounding scorers and the eval
+suite. Internal/dev tooling — **no user-facing pipeline change** across the
+stream, and `PROMPT_VERSION` is unchanged (no persona-constant edit landed; the
+loop *promotes* edits under explicit user approval, which is when a bump occurs).
+Six sequential branches: the prompt-override primitive, corpus seed
+export/import, the corpus-backed runner, the bootstrap engine, the annotation
+contract, and the draft-and-gate tuning skill.
+
 ### Added — Eval prompt-override primitive (`eval/prompt-override-primitive`, v1.0.4)
 
 Internal/dev tooling for the eval tuning loop — **no user-facing pipeline
