@@ -1,13 +1,17 @@
 %% Pipeline of one full callback. apply-run.
 %%
-%% Shows the eight LLM calls that can fire across a single application,
-%% the Flask route that triggers each, and which model is used. Sonnet
-%% 4.6 handles the heavy reasoning calls (analyze, clarify, generate);
-%% Haiku 4.5 handles the structured-recommendation calls (recommend,
-%% recommend_summary, critique_proposal, promote_clarification_to_bullet).
+%% Shows the LLM calls that can fire across a single application,
+%% the Flask route that triggers each, and which model is used.
+%% analyze() is a TWO-PASS call: Haiku 4.5 extraction (JD signals) feeds
+%% a Sonnet 4.6 synthesis pass (the analyze→generate cache writer). Sonnet
+%% 4.6 also handles generate / iterate_clarify / generate_cover_letter;
+%% Haiku 4.5 handles clarify and the structured-recommendation calls
+%% (recommend, recommend_summary, critique_proposal,
+%% promote_clarification_to_bullet).
 %%
 %% Renders natively on GitHub Markdown and in any Mermaid live editor.
-%% Source: analyzer.py + app.py route map (verified 2026-05-25).
+%% Source: analyzer.py + app.py route map (verified 2026-05-25;
+%% two-pass analyze + clarify→Haiku updated 2026-06-02, R1 Phase 2 / v1.0.3).
 
 sequenceDiagram
     autonumber
@@ -24,8 +28,13 @@ sequenceDiagram
     U->>FE: paste JD, click ANALYZE
     FE->>APP: POST /api/analyze
     APP->>ANL: analyze(ctx, jd)
-    ANL->>SO: call_kind="analyze" (~90s, ~4.5k out)
-    SO-->>ANL: JSON {essential_skills, ideal_resume, ...}
+    Note over ANL: phase: extraction
+    ANL->>HK: call_kind="analyze_extraction" (~10s, ~1.1k out)
+    HK-->>ANL: JSON {essential_skills, hidden_qualities[typed], keyword_placement, ...}
+    Note over ANL: phase: synthesis — cache writer<br/>(shares SYSTEM_PROMPT + user prefix with generate)
+    ANL->>SO: call_kind="analyze_synthesis" (~58s, ~2.6k out)
+    SO-->>ANL: JSON {comparison, suggestions, overall_strategy}
+    Note over ANL: merge → AnalyzeResponse (combined p50 67.7s)
     ANL-->>APP: parsed result
     APP->>FS: save context_*.json (iter 0)
     APP-->>FE: 200 + context_path
@@ -35,8 +44,8 @@ sequenceDiagram
     U->>FE: click GET INTERVIEW QUESTIONS
     FE->>APP: POST /api/clarify
     APP->>ANL: clarify(ctx)
-    ANL->>SO: call_kind="clarify" (~13s)
-    SO-->>ANL: 3-5 questions
+    ANL->>HK: call_kind="clarify" (~7.5s)
+    HK-->>ANL: 3-5 questions
     ANL-->>APP: questions
     APP->>FS: write back to same context file
     APP-->>FE: questions

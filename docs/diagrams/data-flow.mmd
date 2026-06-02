@@ -26,13 +26,13 @@ flowchart TD
 
     Start([User picks JD]) --> R1
     R1[/POST /api/analyze/]:::route --> BCS[build_context_set<br/>candidate + experience + bullet snapshot]:::det
-    BCS --> LLM1{{analyze<br/>Sonnet 4.6}}:::llm
+    BCS --> LLM1{{analyze<br/>Haiku extract → Sonnet synth}}:::llm
     LLM1 --> SCS[save_context_set<br/>writes iter 0]:::det
     SCS --> CTX0[(output/&lt;u&gt;/context_TS.json<br/>iter=0)]:::onDisk
 
     CTX0 --> R2{Clarify?}:::route
     R2 -->|skip| R3
-    R2 -->|/api/clarify| LLM2{{clarify<br/>Sonnet 4.6}}:::llm
+    R2 -->|/api/clarify| LLM2{{clarify<br/>Haiku 4.5}}:::llm
     LLM2 --> M1[merge clarification_questions]:::det
     M1 --> CTX0
     CTX0 --> R2A[/POST /api/answer-clarifications/]:::route

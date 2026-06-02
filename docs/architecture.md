@@ -25,9 +25,10 @@ optional cover letters to specific job descriptions. The
 pipeline is **two-or-more LLM calls in sequence**, each gated by
 a human review or curation step:
 
-1. **Analyze** (Sonnet) — JD breakdown, ATS-keyword strategy,
-   ideal-résumé synthesis
-2. **Clarify** *(optional, Sonnet)* — surfaces real-but-undocumented
+1. **Analyze** *(two-pass)* — Haiku 4.5 extraction (JD signals,
+   keywords, typed hidden_qualities) → Sonnet 4.6 synthesis
+   (comparison, suggestions, overall strategy)
+2. **Clarify** *(optional, Haiku)* — surfaces real-but-undocumented
    candidate experience
 3. **Recommend** (Haiku) — selects best bullets + summary variants
    for the JD; runs in parallel
@@ -43,14 +44,18 @@ Full sequence diagram: [`docs/diagrams/pipeline.mmd`](diagrams/pipeline.mmd).
 ```mermaid
 %% Pipeline of one full callback. apply-run.
 %%
-%% Shows the eight LLM calls that can fire across a single application,
-%% the Flask route that triggers each, and which model is used. Sonnet
-%% 4.6 handles the heavy reasoning calls (analyze, clarify, generate);
-%% Haiku 4.5 handles the structured-recommendation calls (recommend,
-%% recommend_summary, critique_proposal, promote_clarification_to_bullet).
+%% Shows the LLM calls that can fire across a single application,
+%% the Flask route that triggers each, and which model is used.
+%% analyze() is a TWO-PASS call: Haiku 4.5 extraction (JD signals) feeds
+%% a Sonnet 4.6 synthesis pass (the analyze→generate cache writer). Sonnet
+%% 4.6 also handles generate / iterate_clarify / generate_cover_letter;
+%% Haiku 4.5 handles clarify and the structured-recommendation calls
+%% (recommend, recommend_summary, critique_proposal,
+%% promote_clarification_to_bullet).
 %%
 %% Renders natively on GitHub Markdown and in any Mermaid live editor.
-%% Source: analyzer.py + app.py route map (verified 2026-05-25).
+%% Source: analyzer.py + app.py route map (verified 2026-05-25;
+%% two-pass analyze + clarify→Haiku updated 2026-06-02, R1 Phase 2 / v1.0.3).
 
 sequenceDiagram
     autonumber
@@ -67,8 +72,13 @@ sequenceDiagram
     U->>FE: paste JD, click ANALYZE
     FE->>APP: POST /api/analyze
     APP->>ANL: analyze(ctx, jd)
-    ANL->>SO: call_kind="analyze" (~90s, ~4.5k out)
-    SO-->>ANL: JSON {essential_skills, ideal_resume, ...}
+    Note over ANL: phase: extraction
+    ANL->>HK: call_kind="analyze_extraction" (~10s, ~1.1k out)
+    HK-->>ANL: JSON {essential_skills, hidden_qualities[typed], keyword_placement, ...}
+    Note over ANL: phase: synthesis — cache writer<br/>(shares SYSTEM_PROMPT + user prefix with generate)
+    ANL->>SO: call_kind="analyze_synthesis" (~58s, ~2.6k out)
+    SO-->>ANL: JSON {comparison, suggestions, overall_strategy}
+    Note over ANL: merge → AnalyzeResponse (combined p50 67.7s)
     ANL-->>APP: parsed result
     APP->>FS: save context_*.json (iter 0)
     APP-->>FE: 200 + context_path
@@ -78,8 +88,8 @@ sequenceDiagram
     U->>FE: click GET INTERVIEW QUESTIONS
     FE->>APP: POST /api/clarify
     APP->>ANL: clarify(ctx)
-    ANL->>SO: call_kind="clarify" (~13s)
-    SO-->>ANL: 3-5 questions
+    ANL->>HK: call_kind="clarify" (~7.5s)
+    HK-->>ANL: 3-5 questions
     ANL-->>APP: questions
     APP->>FS: write back to same context file
     APP-->>FE: questions
@@ -424,7 +434,9 @@ Full picture: [`docs/diagrams/llm-routing.mmd`](diagrams/llm-routing.mmd).
 %%
 %% Source: analyzer.py `_call_llm(...)` invocations + the SONNET_MODEL
 %% / HAIKU_MODEL constants. Cost / latency numbers from
-%% docs/dev/perf/PERF_ANALYZE.md (real production data across 83+ runs).
+%% docs/dev/perf/PERF_ANALYZE.md (real production data across 83+ runs);
+%% two-pass analyze + clarify→Haiku figures from
+%% docs/dev/perf/R1_PHASE2_RESULTS.md (R1 Phase 2 / v1.0.3, 2026-06-02).
 %%
 %% Two model tiers:
 %%   - Sonnet 4.6: heavy reasoning, JSON-structured output, costlier
@@ -432,14 +444,17 @@ Full picture: [`docs/diagrams/llm-routing.mmd`](diagrams/llm-routing.mmd).
 %%
 %% A call uses the "cached_user_prefix" trick when it can re-use a long
 %% static user-message block across attempts within the same run (the
-%% retry path shares the cache). The clarify variants override the
-%% system prompt, so they pay one extra cache-miss on the system block.
+%% retry path shares the cache). analyze_synthesis runs under the shared
+%% SYSTEM_PROMPT and WRITES the [SYSTEM_PROMPT][corpus+resume] prefix that
+%% generate READS; the Haiku analyze_extraction pass has its own
+%% EXTRACTION_SYSTEM_PROMPT (separate cache pool). The clarify variants
+%% override the system prompt, so they pay one extra cache-miss on the
+%% system block.
 
 graph LR
     subgraph SO[Sonnet 4.6 — heavy reasoning]
         direction TB
-        A1[analyze<br/>p50 = 90 s<br/>median out: 4471 tok]
-        A2[clarify<br/>p50 = 13 s<br/>median out: 630 tok]
+        A1[analyze_synthesis<br/>p50 = 58 s<br/>median out: 2600 tok<br/>cache writer]
         A3[iterate_clarify<br/>p50 = 14 s<br/>median out: 665 tok]
         A4[generate<br/>p50 = 50 s<br/>median out: 2268 tok]
         A5[generate_cover_letter<br/>p50 = 17 s<br/>median out: 732 tok]
@@ -447,6 +462,8 @@ graph LR
 
     subgraph HK[Haiku 4.5 — structured selection]
         direction TB
+        A0[analyze_extraction<br/>p50 = 10 s<br/>median out: 1100 tok]
+        A2[clarify<br/>p50 = 7.5 s<br/>median out: 630 tok]
         H1[recommend bullets<br/>p50 = 5 s<br/>median out: 417 tok]
         H2[recommend_summary<br/>p50 = 3 s<br/>median out: 164 tok]
         H3[critique_proposal<br/>p50 = 5 s<br/>median out: 387 tok]
@@ -455,7 +472,8 @@ graph LR
     end
 
     %% Routes that fire each call
-    R_AN[/POST /api/analyze/] --> A1
+    R_AN[/POST /api/analyze/] --> A0
+    R_AN --> A1
     R_CL[/POST /api/clarify/] --> A2
     R_IT[/POST /api/iterate-clarify/] --> A3
     R_GE[/POST /api/generate/] --> A4
@@ -467,15 +485,17 @@ graph LR
     R_PR[/POST /api/clarifications/&lt;id&gt;/promote-to-bullet/] --> H4
     R_IM[/POST /api/users/&lt;u&gt;/corpus/ingest-resume/] --> H5
 
-    %% Cache-prefix usage. analyze + generate share the heavy cached
-    %% user prefix (corpus + resume blocks). clarify variants
-    %% override the system prompt, paying one extra cache-miss on
-    %% the system block but reusing the user prefix.
+    %% Cache-prefix usage. analyze_synthesis (A1) runs under the shared
+    %% SYSTEM_PROMPT, so its cached prefix [SYSTEM_PROMPT][corpus+resume]
+    %% is byte-identical to generate's — synthesis WRITES the prefix and
+    %% generate READS it. The Haiku analyze_extraction pass (A0) uses its
+    %% own EXTRACTION_SYSTEM_PROMPT (separate cache pool). clarify variants
+    %% override the system prompt, reusing the heavy user prefix.
     classDef cached fill:#0f172a,stroke:#10b981,color:#d1fae5
     classDef nocache fill:#0f172a,stroke:#ef4444,color:#fecaca
 
     class A1,A4 cached
-    class A2,A3,A5,H1,H2,H3,H4,H5 nocache
+    class A0,A2,A3,A5,H1,H2,H3,H4,H5 nocache
 
     %% Legend (rendered as a subgraph that visually clarifies the colors)
     subgraph Legend["legend"]
@@ -493,19 +513,23 @@ Latency data from real production usage in
 [`docs/dev/perf/PERF_ANALYZE.md`](dev/perf/PERF_ANALYZE.md).
 
 **Sonnet 4.6** (`claude-sonnet-4-6`) handles heavy reasoning:
-`analyze`, `clarify`, `iterate_clarify`, `generate`,
+`analyze_synthesis`, `iterate_clarify`, `generate`,
 `generate_cover_letter`. These calls produce large JSON
-responses; `analyze` is the slowest call on the critical path
-(p50 ~90 s).
+responses. `analyze` is now a **two-pass** call — a Haiku
+extraction pass feeds the Sonnet synthesis pass (combined
+p50 ~67.7 s, down from ~103 s as a single Sonnet call).
 
 **Haiku 4.5** (`claude-haiku-4-5-20251001`) handles structured
-selection / classification: `recommend` (bullets),
-`recommend_summary`, `critique_proposal`,
-`promote_clarification_to_bullet`, `extract_experiences`.
-~5-second median, ~$0.002 per call.
+selection / classification: `analyze_extraction` (JD signals),
+`clarify`, `recommend` (bullets), `recommend_summary`,
+`critique_proposal`, `promote_clarification_to_bullet`,
+`extract_experiences`. ~5-second median, ~$0.002 per call.
 
-**Cache prefix.** `analyze` and `generate` share a heavy
-cached user prefix (corpus + résumé blocks). The clarify
+**Cache prefix.** `analyze_synthesis` and `generate` share a heavy
+cached user prefix (corpus + résumé blocks): synthesis runs under
+the shared `SYSTEM_PROMPT` and WRITES the prefix that `generate`
+READS. The Haiku `analyze_extraction` pass uses its own
+`EXTRACTION_SYSTEM_PROMPT` (separate cache pool). The clarify
 variants (`clarify`, `clarify_iteration`) override the system
 prompt and pay one cache-miss on the system block, but the
 heavy user prefix is unaffected.
@@ -550,13 +574,13 @@ flowchart TD
 
     Start([User picks JD]) --> R1
     R1[/POST /api/analyze/]:::route --> BCS[build_context_set<br/>candidate + experience + bullet snapshot]:::det
-    BCS --> LLM1{{analyze<br/>Sonnet 4.6}}:::llm
+    BCS --> LLM1{{analyze<br/>Haiku extract → Sonnet synth}}:::llm
     LLM1 --> SCS[save_context_set<br/>writes iter 0]:::det
     SCS --> CTX0[(output/&lt;u&gt;/context_TS.json<br/>iter=0)]:::onDisk
 
     CTX0 --> R2{Clarify?}:::route
     R2 -->|skip| R3
-    R2 -->|/api/clarify| LLM2{{clarify<br/>Sonnet 4.6}}:::llm
+    R2 -->|/api/clarify| LLM2{{clarify<br/>Haiku 4.5}}:::llm
     LLM2 --> M1[merge clarification_questions]:::det
     M1 --> CTX0
     CTX0 --> R2A[/POST /api/answer-clarifications/]:::route

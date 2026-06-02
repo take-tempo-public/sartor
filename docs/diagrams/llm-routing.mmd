@@ -3,7 +3,9 @@
 %%
 %% Source: analyzer.py `_call_llm(...)` invocations + the SONNET_MODEL
 %% / HAIKU_MODEL constants. Cost / latency numbers from
-%% docs/dev/perf/PERF_ANALYZE.md (real production data across 83+ runs).
+%% docs/dev/perf/PERF_ANALYZE.md (real production data across 83+ runs);
+%% two-pass analyze + clarify→Haiku figures from
+%% docs/dev/perf/R1_PHASE2_RESULTS.md (R1 Phase 2 / v1.0.3, 2026-06-02).
 %%
 %% Two model tiers:
 %%   - Sonnet 4.6: heavy reasoning, JSON-structured output, costlier
@@ -11,14 +13,17 @@
 %%
 %% A call uses the "cached_user_prefix" trick when it can re-use a long
 %% static user-message block across attempts within the same run (the
-%% retry path shares the cache). The clarify variants override the
-%% system prompt, so they pay one extra cache-miss on the system block.
+%% retry path shares the cache). analyze_synthesis runs under the shared
+%% SYSTEM_PROMPT and WRITES the [SYSTEM_PROMPT][corpus+resume] prefix that
+%% generate READS; the Haiku analyze_extraction pass has its own
+%% EXTRACTION_SYSTEM_PROMPT (separate cache pool). The clarify variants
+%% override the system prompt, so they pay one extra cache-miss on the
+%% system block.
 
 graph LR
     subgraph SO[Sonnet 4.6 — heavy reasoning]
         direction TB
-        A1[analyze<br/>p50 = 90 s<br/>median out: 4471 tok]
-        A2[clarify<br/>p50 = 13 s<br/>median out: 630 tok]
+        A1[analyze_synthesis<br/>p50 = 58 s<br/>median out: 2600 tok<br/>cache writer]
         A3[iterate_clarify<br/>p50 = 14 s<br/>median out: 665 tok]
         A4[generate<br/>p50 = 50 s<br/>median out: 2268 tok]
         A5[generate_cover_letter<br/>p50 = 17 s<br/>median out: 732 tok]
@@ -26,6 +31,8 @@ graph LR
 
     subgraph HK[Haiku 4.5 — structured selection]
         direction TB
+        A0[analyze_extraction<br/>p50 = 10 s<br/>median out: 1100 tok]
+        A2[clarify<br/>p50 = 7.5 s<br/>median out: 630 tok]
         H1[recommend bullets<br/>p50 = 5 s<br/>median out: 417 tok]
         H2[recommend_summary<br/>p50 = 3 s<br/>median out: 164 tok]
         H3[critique_proposal<br/>p50 = 5 s<br/>median out: 387 tok]
@@ -34,7 +41,8 @@ graph LR
     end
 
     %% Routes that fire each call
-    R_AN[/POST /api/analyze/] --> A1
+    R_AN[/POST /api/analyze/] --> A0
+    R_AN --> A1
     R_CL[/POST /api/clarify/] --> A2
     R_IT[/POST /api/iterate-clarify/] --> A3
     R_GE[/POST /api/generate/] --> A4
@@ -46,15 +54,17 @@ graph LR
     R_PR[/POST /api/clarifications/&lt;id&gt;/promote-to-bullet/] --> H4
     R_IM[/POST /api/users/&lt;u&gt;/import-legacy/] --> H5
 
-    %% Cache-prefix usage. analyze + generate share the heavy cached
-    %% user prefix (corpus + resume blocks). clarify variants
-    %% override the system prompt, paying one extra cache-miss on
-    %% the system block but reusing the user prefix.
+    %% Cache-prefix usage. analyze_synthesis (A1) runs under the shared
+    %% SYSTEM_PROMPT, so its cached prefix [SYSTEM_PROMPT][corpus+resume]
+    %% is byte-identical to generate's — synthesis WRITES the prefix and
+    %% generate READS it. The Haiku analyze_extraction pass (A0) uses its
+    %% own EXTRACTION_SYSTEM_PROMPT (separate cache pool). clarify variants
+    %% override the system prompt, reusing the heavy user prefix.
     classDef cached fill:#0f172a,stroke:#10b981,color:#d1fae5
     classDef nocache fill:#0f172a,stroke:#ef4444,color:#fecaca
 
     class A1,A4 cached
-    class A2,A3,A5,H1,H2,H3,H4,H5 nocache
+    class A0,A2,A3,A5,H1,H2,H3,H4,H5 nocache
 
     %% Legend (rendered as a subgraph that visually clarifies the colors)
     subgraph Legend["legend"]
