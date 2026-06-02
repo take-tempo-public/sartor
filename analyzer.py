@@ -262,7 +262,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-06-01.3"
+PROMPT_VERSION = "2026-06-01.4"
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
@@ -439,11 +439,16 @@ RULES:
 #     (~3K tokens of resume_rules + cover_letter_rules + output_format).
 #     Same per-token price as older Sonnet versions; the newer revision has
 #     better structured-output adherence and grounding behavior.
-#   - clarify() and clarify_iteration() also use Sonnet today even though
-#     they're structurally Haiku-friendly (short structured outputs). They're
-#     under active quality tuning against the clarification_quality and
-#     iteration_quality rubrics — switching the model mid-tuning would muddy
-#     regression attribution. Revisit once those rubrics clear 4.0 stably.
+#   - clarify() uses Haiku 4.5 as of 2026-06-01 (r1/clarify-model-trial). The
+#     prior note parked it on Sonnet "until the rubrics clear 4.0 stably";
+#     post-R1-split they do (clarification_quality floor ds 4.20 / pm 4.26 /
+#     sre 4.02), so the cheaper model is in play. The switch is eval-gated: no
+#     clarification_quality drop > 0.5 vs the 2026-06-01 floor AND a healthy
+#     clarify_retry rate (Haiku must still satisfy the ClarifyResponse
+#     context_probe + ≥60%-combined parse rules). See evals/TUNING_LOG.md.
+#   - clarify_iteration() stays on Sonnet: iteration_quality is still
+#     fixture-fragile (fires ~1/5 runs) and not yet stably ≥ 4.0 — not a
+#     candidate for the cheaper model yet.
 #   - Haiku 4.5 for scope check (_check_refinement_scope), eval grading
 #     (evals/runner.py), and onboarding extraction (extract_experiences):
 #     binary classification, structured rubric application, and one-shot
@@ -1438,6 +1443,10 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
         username=username,
         run_id=run_id,
         system_prompt=CLARIFY_SYSTEM_PROMPT,
+        # Haiku 4.5 for clarify (r1/clarify-model-trial, 2026-06-01): short
+        # structured output; clarification_quality cleared 4.0 stably after the
+        # R1 two-pass split. Switch is eval-gated — see evals/TUNING_LOG.md.
+        model=HAIKU_MODEL,
         validation_context={"hidden_qualities_non_empty": bool(hidden_qualities)},
     )
 

@@ -45,6 +45,21 @@ v1.0.3 R1 Phase 2 stream (in progress).
 - **`PROMPT_VERSION`** `2026-06-01.1` → `2026-06-01.3` (`.2` was the dedicated-persona
   synthesis build; `.3` moves synthesis under the shared `SYSTEM_PROMPT` to reclaim the cache).
 
+### Changed — `clarify()` moved to Haiku 4.5 (`r1/clarify-model-trial`)
+
+- **`analyzer.py`** — `clarify()` now runs on Haiku 4.5 (was Sonnet 4.6); a one-keyword
+  change (`model=HAIKU_MODEL`), no prompt-text change. Interview-question generation is short
+  structured output (3–5 questions) that Haiku handles well; the post-R1-split
+  `clarification_quality` floor (ds 4.20 / pm 4.26 / sre 4.02) was the precondition the prior
+  model-selection note parked the switch behind. n=5 anchor eval: `clarification_quality` held
+  (medians 4.2 = the Sonnet floor; means ds 4.00 / pm 4.20 / sre 4.00, all inside the 0.5
+  drop-tolerance), `clarify_retry` rate 0/15, and the parse-time `ClarifyResponse` rules
+  (`context_probe` + ≥60%-combined) satisfied on every call. Per clarify call: **~57% cheaper**
+  ($0.0167 → $0.0072) and **~37% faster** (p50 11.9s → 7.5s). `clarify_iteration()` stays on
+  Sonnet (iteration_quality not yet stably ≥ 4.0).
+- **`PROMPT_VERSION`** `2026-06-01.3` → `2026-06-01.4` (model change recorded for telemetry
+  attribution).
+
 ---
 
 ## [1.0.2] — 2026-05-30

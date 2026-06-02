@@ -196,6 +196,85 @@ prevent re-running them.
 
 ---
 
+## 2026-06-02 — r1/clarify-model-trial (clarify() → Haiku 4.5) (`2026-06-01.3` → `2026-06-01.4`)
+
+### What changed
+
+`clarify()` switched from Sonnet 4.6 → Haiku 4.5 — a one-keyword change (`model=HAIKU_MODEL` on
+its `_parse_or_retry` call). **No prompt-text change**: `CLARIFY_SYSTEM_PROMPT` and the user prompt
+are byte-identical to `.3`. `PROMPT_VERSION 2026-06-01.3` → `2026-06-01.4` (model change recorded so
+telemetry attributes the Haiku build separately from the Sonnet floor). `clarify_iteration()`
+deliberately stays on Sonnet. Optional, non-tag-gating branch off `main` @ `b3185e2`.
+
+### Why
+
+The model-selection comment parked clarify on Sonnet "until [clarification_quality /
+iteration_quality] clear 4.0 stably." Post-R1-split they do (floor ds 4.20 / pm 4.26 / sre 4.02),
+which unblocked the trial. clarify is short structured output (3–5 questions, ~600–700 out tokens) —
+structurally a Haiku sweet spot. Hypothesis: Haiku holds `clarification_quality` for ~$0.01/call less.
+
+### Result
+
+**n=5 anchor runs** at `2026-06-01.4` (`evals/results/20260601_{232331,233212,234055}Z.jsonl`,
+`20260602_{002239,003107}Z.jsonl`). Started at n=3, extended to n=5 to disambiguate two isolated
+3.2 outliers (see learnings).
+
+#### Dual-gate check (n=5)
+
+| Criterion | Status |
+|---|---|
+| `clarification_quality` no drop > 0.5 vs 2026-06-01 floor | ✅ ds −0.20, pm −0.06, sre −0.02 |
+| `pm-senior / clarification_quality` ≥ 4.0 | ✅ 4.20 |
+| Haiku satisfies parse-time `context_probe` + ≥60%-combined (`ClarifyResponse`) | ✅ 0 retries |
+| `clarify_retry` rate low | ✅ **0/15 = 0%** |
+
+#### `clarification_quality` (Haiku `.4`, n=5) vs Sonnet `.3` floor
+
+| Fixture | raw | mean | median | floor (`.3`) |
+|---|---|---|---|---|
+| data-scientist-junior | [4.2, 4.2, **3.2**, 4.2, 4.2] | 4.00 | **4.2** | 4.20 |
+| pm-senior | [4.2, 4.2, 4.2, 4.2, 4.2] | 4.20 | **4.2** | 4.26 |
+| sre-mid-level | [**3.2**, 4.2, 4.2, 4.2, 4.2] | 4.00 | **4.2** | 4.02 |
+
+#### clarify call — cost / latency (Haiku `.4` vs Sonnet `.3` floor)
+
+| Metric | Sonnet `.3` | Haiku `.4` | Δ |
+|---|---|---|---|
+| p50 latency | 11.9 s | **7.5 s** | **−37 %** |
+| cost / call | $0.0167 | **$0.0072** | **−57 %** |
+| retry rate | 0 % | 0 % | flat |
+
+Canaries flat: grounding ds 4.70 / pm 4.70 / sre 4.74 (no hidden-quality leak into generate); tone
+medians unchanged (pm `tone` 4.00 is generate-side noise — clarify does **not** feed generate in the
+synthetic eval, so any tone/ats/keyword movement grades the unchanged `generate` path). Other rubrics
+(Haiku `.4` / Sonnet `.3`): ats ds 4.20/4.40, pm 4.30/4.36, sre 4.68/4.60; callback ds 4.42/4.54,
+pm 4.20/4.18, sre 4.42/4.45; keyword ds 4.20/4.30, pm 4.12/4.20, sre 4.44/4.46 — all within noise.
+
+### What we learned
+
+1. **The two 3.2s were judge noise, not a Haiku quality drop.** At n=3, ds and sre each showed one
+   3.2 (means 3.867, both < 4.0) — alarming against the exceptionally-clean post-split Sonnet floor
+   (ds 4.20 ± 0.00). Extending to n=5 (runs 4–5 both fully clean at 4.2) recovered both means to 4.00
+   and left all three medians at 4.2 = the Sonnet floor. **Rule of thumb:** against a tight floor, n=3
+   is too thin to separate a single-grading ±0.6 Haiku-judge wobble from a real regression — extend the
+   sample before deciding rather than rejecting on one outlier.
+2. **Haiku honored the parse-time composition rules perfectly (0/15 retries).** The flagged risk — a
+   weaker model retrying often to satisfy `ClarifyResponse`'s `context_probe` + ≥60%-combined rules,
+   eroding the saving and adding latency — did not materialize at all. The structured rules plus the
+   compact analyzer-digested prompt are well within Haiku's range.
+3. **The saving is real but modest (~$0.01/optional call).** The handoff's ~$0.03/application estimate
+   was high for the anchor fixtures (compact clarify input, ~600–700 out tokens); measured saving is
+   ~$0.0095/call (57 %), plus a 37 % latency win. Adopted because quality held *in expectation*
+   (medians identical to the Sonnet floor) — so the cheaper + faster call is free money on an optional step.
+
+### Decision: ADOPTED
+
+`clarify()` ships on Haiku 4.5 at `PROMPT_VERSION 2026-06-01.4`. v1.0.3 remains ready to tag (this
+branch was non-tag-gating). `clarify_iteration()` stays Sonnet — revisit when `iteration_quality`
+clears 4.0 stably (still fixture-fragile, fires ~1/5 runs).
+
+---
+
 ## 2026-06-01 — r1/analyze-split-cache-reclaim (synthesis under shared SYSTEM_PROMPT) (`2026-06-01.2` → `2026-06-01.3`)
 
 ### What changed
