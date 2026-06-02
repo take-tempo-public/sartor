@@ -178,6 +178,21 @@ Two locations:
 
 A fixture is a directory with `jd.txt`, `resume.docx` (or `.md`/`.pdf`), and `expected.json`. See `evals/fixtures/synthetic/sre-mid-level/` once it lands as the canonical example.
 
+### Exporting a corpus seed (real fixtures)
+
+If your corpus lives in the SQLite DB (the corpus tab), snapshot it to a
+portable `seed.json` with the deterministic, LLM-free exporter:
+
+```bash
+python -m scripts.export_corpus_seed --user <name>
+# → evals/fixtures/real/<name>/seed.json   (gitignored)
+```
+
+The exporter writes **only** under `evals/fixtures/real/` (a `_within`-style
+resolved-path guard refuses any other destination, even via `--out`), so the
+snapshot — which contains your real data — can't leak outside the gitignored
+tree. The `seed.json` is the input the corpus-backed eval runner consumes.
+
 ---
 
 ## Security

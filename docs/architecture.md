@@ -199,6 +199,7 @@ purpose. Code that belongs elsewhere goes elsewhere.
 | [`dashboard/`](../dashboard/) | Read-only Flask blueprint at `/_dashboard` for eval results, cost cards, failure-mode heatmap | `dashboard_bp` | LLM calls, mutation |
 | [`evals/runner.py`](../evals/runner.py) | LLM eval harness — synthetic + real fixtures, 0.0-5.0 rubric scoring | `run_suite()`, `_load_baseline_scores()` | Production paths |
 | [`scripts/perf_baseline.py`](../scripts/perf_baseline.py) | Release-cycle tool: print p50/p90 latency percentiles from `logs/llm_calls.jsonl` as a before/after snapshot for perf interventions (R2 streaming, R3 schema trim, R1 split). Not part of the runtime. | CLI only — `python -m scripts.perf_baseline [--since N] [--log path]` | Production import |
+| [`scripts/export_corpus_seed.py`](../scripts/export_corpus_seed.py) | Eval tooling: deterministic, LLM-free snapshot of one candidate's corpus (Candidate / Experience / Bullet / SummaryItem / Skill + tag registry) → `seed.json` under the gitignored `evals/fixtures/real/`. A `_within`-style guard refuses to write elsewhere. Consumed by the corpus-backed eval runner. Not part of the runtime. | CLI only — `python -m scripts.export_corpus_seed --user <name>` | LLM calls, production import |
 
 **Code that crosses modules.** When a route in `app.py` needs to
 call the LLM, it imports the analyzer function. When the analyzer
