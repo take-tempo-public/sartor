@@ -25,10 +25,12 @@ import os
 import sys
 import time
 import uuid
+from contextlib import ExitStack
 from datetime import datetime, timezone
 from pathlib import Path
 
 import anthropic
+from sqlalchemy.orm import Session
 
 # Make project root importable so this script works whether invoked as
 # `python evals/runner.py` or `python -m evals.runner`.
@@ -44,6 +46,7 @@ from analyzer import (  # noqa: E402
     generate,
     prompt_overrides,
 )
+from evals.seed_import import load_seed, seeded_session  # noqa: E402
 from hardening import (  # noqa: E402
     ContextSet,
     build_context_set,
@@ -106,23 +109,32 @@ def _get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=api_key)
 
 
-def _load_fixture(fixture_dir: Path) -> dict:
-    """Load a fixture: jd.txt + resume.{md|docx|pdf} + expected.json."""
+def _load_fixture(fixture_dir: Path, *, seed_mode: bool = False) -> dict:
+    """Load a fixture: jd.txt + resume.{md|docx|pdf} + expected.json.
+
+    In ``seed_mode`` the corpus comes from a ``--seed`` seed.json instead of a
+    resume file, so the resume file is ignored (``resume_path`` stays None) and
+    the fixture hash is computed over jd.txt + expected.json only. The default
+    (``seed_mode=False``) is byte-identical to the prior behavior — a resume file
+    is required.
+    """
     jd = (fixture_dir / "jd.txt").read_text(encoding="utf-8")
 
     resume_path = None
-    for ext in (".md", ".docx", ".pdf"):
-        candidate = fixture_dir / f"resume{ext}"
-        if candidate.exists():
-            resume_path = candidate
-            break
-    if resume_path is None:
-        raise FileNotFoundError(f"No resume file in fixture {fixture_dir.name}")
+    if not seed_mode:
+        for ext in (".md", ".docx", ".pdf"):
+            candidate = fixture_dir / f"resume{ext}"
+            if candidate.exists():
+                resume_path = candidate
+                break
+        if resume_path is None:
+            raise FileNotFoundError(f"No resume file in fixture {fixture_dir.name}")
 
     expected = json.loads((fixture_dir / "expected.json").read_text(encoding="utf-8"))
     h = hashlib.sha256()
     h.update((fixture_dir / "jd.txt").read_bytes())
-    h.update(resume_path.read_bytes())
+    if resume_path is not None:
+        h.update(resume_path.read_bytes())
     h.update((fixture_dir / "expected.json").read_bytes())
     return {
         "name": fixture_dir.name,
@@ -154,6 +166,33 @@ def _build_context(fixture: dict) -> ContextSet:
         ats_warnings=ats_warnings,
         original_resume_path=str(fixture["resume_path"]),
     )
+
+
+def _build_context_from_seed(
+    session: Session,
+    *,
+    candidate_username: str,
+    jd_text: str,
+    run_id: str,
+) -> ContextSet:
+    """Build a ContextSet from an imported corpus seed via the REAL product path.
+
+    Drives ``db.build_context.build_context_set_from_db`` — the same function the
+    Flask app uses for corpus-backed analyze — so eval traffic exercises the
+    production corpus→context path, not the file-parsed ``_build_context``. The
+    application/run rows it creates are not persisted by the eval (only the
+    ContextSet is used). The deferred import keeps the default file-based path's
+    import surface unchanged.
+    """
+    from db.build_context import build_context_set_from_db  # noqa: PLC0415
+
+    context, _application, _run = build_context_set_from_db(
+        session,
+        candidate_username=candidate_username,
+        jd_text=jd_text,
+        run_id=run_id,
+    )
+    return context
 
 
 def _post_generation_metrics(
@@ -751,6 +790,18 @@ def main(argv: list[str] | None = None) -> int:
             "default path."
         ),
     )
+    ap.add_argument(
+        "--seed",
+        metavar="PATH",
+        help=(
+            "Path to a corpus seed.json (from scripts.export_corpus_seed). Builds "
+            "each fixture's context via build_context_set_from_db over an in-memory "
+            "SQLite import of the seed — the REAL corpus→context product path — "
+            "instead of parsing the fixture's resume file. The fixture's jd.txt + "
+            "expected.json still drive grading. Omit for the byte-identical "
+            "file-based path."
+        ),
+    )
     args = ap.parse_args(argv)
 
     # --prompt-overrides: inject a candidate system prompt for this run only.
@@ -784,6 +835,25 @@ def main(argv: list[str] | None = None) -> int:
             "PROMPT OVERRIDES ACTIVE — keys=%s; this run is logged as "
             "prompt_version=%s (quarantined from score-over-time).",
             sorted(overrides), cand_version,
+        )
+
+    # --seed: build each fixture's context from a corpus seed.json via
+    # build_context_set_from_db instead of the file-based _build_context. Eager-
+    # load + validate here so a bad path / malformed JSON / unsupported schema
+    # version all exit non-zero BEFORE any paid LLM call. Absent flag → seed_data
+    # stays None and the file-based path is byte-identical.
+    seed_data: dict | None = None
+    if args.seed:
+        try:
+            seed_data = load_seed(args.seed)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            logger.error("Could not load --seed %s: %s", args.seed, exc)
+            return 1
+        logger.warning(
+            "SEED MODE ACTIVE — corpus from %s (candidate=%s, schema v%s); fixture "
+            "resume files are ignored, JD + expected.json still grade.",
+            args.seed, seed_data.get("candidate_username"),
+            seed_data.get("seed_schema_version"),
         )
 
     # Load static baseline data once for baseline_comparison fields on JSONL records.
@@ -843,10 +913,19 @@ def main(argv: list[str] | None = None) -> int:
     # The override context spans the whole fixture loop so every analyze/clarify/
     # generate call (and the iteration-cycle helper, via the ContextVar) sees the
     # candidate prompt and stamps the candidate:<hash> version. No-op when empty.
-    with prompt_overrides(overrides), out_path.open("a", encoding="utf-8") as out:
+    with ExitStack() as stack:
+        stack.enter_context(prompt_overrides(overrides))
+        out = stack.enter_context(out_path.open("a", encoding="utf-8"))
+        # Seed mode: one shared in-memory corpus DB for the entire fixture loop.
+        # build_context_set_from_db mints a fresh application/run per call (unique
+        # run_id), so the accumulation across fixtures is harmless (never read back).
+        session: Session | None = None
+        seed_username: str | None = None
+        if seed_data is not None:
+            session, seed_username = stack.enter_context(seeded_session(seed_data))
         for fdir in fixtures:
             try:
-                fixture = _load_fixture(fdir)
+                fixture = _load_fixture(fdir, seed_mode=seed_data is not None)
             except Exception as exc:
                 logger.error("Fixture load failed: %s — %s", fdir.name, exc)
                 continue
@@ -874,7 +953,14 @@ def main(argv: list[str] | None = None) -> int:
             _t_generate: float | None = None
             _t_generate_end: float | None = None
             try:
-                context = _build_context(fixture)
+                if seed_data is not None:
+                    assert session is not None and seed_username is not None
+                    context = _build_context_from_seed(
+                        session, candidate_username=seed_username,
+                        jd_text=fixture["jd"], run_id=run_id,
+                    )
+                else:
+                    context = _build_context(fixture)
                 _t_analyze = time.perf_counter()
                 analysis = analyze(
                     client, context,

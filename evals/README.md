@@ -171,7 +171,7 @@ Examples:
 ```
 python evals/runner.py [--suite synthetic|real|all] [--subset smoke|full]
                        [--fixture NAME] [--out-dir PATH]
-                       [--prompt-overrides PATH]
+                       [--prompt-overrides PATH] [--seed PATH]
 ```
 
 Per fixture:
@@ -204,6 +204,7 @@ Key implementation details:
 | `--fixture NAME` | Override `--suite` to run a single named fixture. Looks in `synthetic/` first, then `real/`. |
 | `--out-dir PATH` | Override the default `evals/results/` output location. |
 | `--prompt-overrides PATH` | Inject a candidate system prompt for this run only (A/B a prompt without editing `analyzer.py`). See [Candidate prompt overrides](#candidate-prompt-overrides---prompt-overrides) below. |
+| `--seed PATH` | Build each fixture's context from a corpus `seed.json` via `build_context_set_from_db` (in-memory SQLite import) instead of the fixture's resume file. The fixture's `jd.txt` + `expected.json` still drive grading. Omit for the byte-identical file-based path. See [Corpus-backed runs](#corpus-backed-runs---seed) below. |
 
 ### Exit codes
 
@@ -353,9 +354,39 @@ The exporter captures Candidate / Experience / Bullet / SummaryItem / Skill
 (plus the tag registry + tag links), preserving DB primary keys so foreign keys
 round-trip. A write-path guard refuses to emit anywhere except
 `evals/fixtures/real/`. The `seed.json` (`seed_schema_version: 1`) is the
-contract the **corpus-backed runner consumes by importing it into an in-memory
-SQLite and feeding `build_context_set_from_db` — that runner lands in the next
-branch (`eval/corpus-backed-runner`)**.
+contract the **corpus-backed runner consumes** by importing it into an in-memory
+SQLite and feeding `build_context_set_from_db` — see [Corpus-backed
+runs](#corpus-backed-runs---seed) below.
+
+### Corpus-backed runs (`--seed`)
+
+`--seed PATH` builds each fixture's context the way the live app does — through
+`db.build_context.build_context_set_from_db` over the candidate's real corpus —
+instead of parsing the fixture's `resume.{md,docx,pdf}`. The seed is imported
+into a fresh in-memory SQLite (`evals/seed_import.py`, deterministic and
+LLM-free); the importer is the faithful inverse of the exporter and preserves the
+original primary keys so the corpus is byte-for-byte the one the live pipeline
+sees.
+
+```bash
+python evals/runner.py --suite synthetic --subset smoke \
+    --seed evals/fixtures/real/<name>/seed.json
+```
+
+Semantics:
+
+- The corpus comes from the seed; the fixture's **`jd.txt` + `expected.json`
+  still drive grading**, so a fixture in seed mode needs only those two files (no
+  `resume.*`). Pair the seed with fixtures whose `expected.json`
+  (`must_keywords` / `forbidden_inventions`) describes YOUR corpus + the JD.
+- The seed is eager-validated before any paid LLM call: a bad path, malformed
+  JSON, or an unsupported `seed_schema_version` exits non-zero immediately.
+- Omitting `--seed` leaves the file-based path **byte-identical** — same
+  `_load_fixture`, same `_build_context`, same behavior.
+
+This is the runner half of the v1.0.4 corpus-backed eval loop; the multi-JD
+bootstrap that drives many JDs against one seed builds on top of it
+(`eval/bootstrap-engine`).
 
 ---
 

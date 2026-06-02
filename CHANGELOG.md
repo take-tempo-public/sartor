@@ -53,6 +53,31 @@ change**, `PROMPT_VERSION` unchanged, no new dependency, no LLM calls.
   `secure_filename` sanitizes the username directory component, so the snapshot
   (which carries real PII) can't escape the gitignored tree.
 
+### Added — Corpus-backed eval runner (`eval/corpus-backed-runner`, v1.0.4)
+
+Internal/dev tooling for the eval tuning loop — **no user-facing pipeline
+change**, `PROMPT_VERSION` unchanged, no new dependency, no LLM calls. The
+file-based eval path is **byte-for-byte untouched** when `--seed` is absent.
+
+- **`evals/seed_import.py`** — a deterministic, LLM-free importer: the faithful
+  inverse of `scripts/export_corpus_seed.py`. Reads a `seed.json`
+  (`seed_schema_version: 1`), validates the schema version against the versions
+  the importer itself supports (drift is rejected, not half-imported), and
+  reconstructs the candidate's corpus into a fresh in-memory SQLite —
+  **preserving the original primary keys** so the seed's tag links stay
+  FK-correct with no remap table. `seeded_session()` is the ergonomic
+  context-manager entry (builds the engine + schema, imports, yields
+  `(session, username)`, disposes on exit). The importer does NOT pre-filter —
+  inactive rows are reconstructed too; the active-only / JD-aware filtering stays
+  inside `build_context_set_from_db`.
+- **`evals/runner.py`** — `--seed PATH` builds each fixture's context via
+  `db.build_context.build_context_set_from_db` over the imported corpus (the REAL
+  corpus→context product path) instead of parsing the fixture's resume file; the
+  fixture's `jd.txt` + `expected.json` still drive grading. Eager-validated — a
+  bad path, malformed JSON, or unsupported schema version exits non-zero before
+  any paid LLM call. Absent flag → the resolver, `_load_fixture`, and the
+  context-build branch are all byte-identical to today.
+
 ## [1.0.3] — 2026-06-02
 
 R1 Phase 2 stream — two-pass analyze split (speed without quality loss) +
