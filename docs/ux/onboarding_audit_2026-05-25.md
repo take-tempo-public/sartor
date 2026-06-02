@@ -73,7 +73,7 @@ Fix: rewrite as direct second-person: "callback. runs on your machine. Every LLM
 
 **README.md:75–77** — cost-not-set
 > "Résumé only, no iteration, no clarify — ~$0.05 – $0.10 / Résumé + clarify + 1-2 refine iterations — ~$0.15 – $0.25 / Full loop with iterate-clarify + multiple refines + cover letter — ~$0.30 – $0.50"
-Fix: this is the canonical cost paragraph and it needs to be the canonical cost paragraph everywhere. Add an anchor `<a name="cost"></a>` here, then change `install.md:23–24` and `walkthrough.md` per-step cost numbers to link to it ("see [Cost guidance](../README.md#cost) for the per-call breakdown"). BECAUSE the install.md "first generation is ~$0.05–$0.30" framing doesn't match either of the three README bands; a first-time reader who compares the two pages will distrust both.
+Fix: this is the canonical cost paragraph and it needs to be the canonical cost paragraph everywhere. Add an anchor `<a name="cost"></a>` here, then change `install.md:23–24` and `walkthrough.md` per-step cost numbers to link to it ("see [Cost guidance](../../README.md#cost) for the per-call breakdown"). BECAUSE the install.md "first generation is ~$0.05–$0.30" framing doesn't match either of the three README bands; a first-time reader who compares the two pages will distrust both.
 
 **README.md:99** — jargon-first-use
 > "A single application moves through six steps. The first three are corpus + analysis (cheap or free)."
@@ -88,11 +88,11 @@ Fix: "JD" and "ATS" both first appear here, both undefined in README. Spell them
 Fix: pull this up as its own subsection heading ("### The two human review gates") above the ASCII wizard block. BECAUSE the gates are the most load-bearing UX claim in the whole product (callback. is the kind of tool that pauses for you to think) and burying them in a paragraph after the step diagram inverts the priority.
 
 **docs/install.md:23–24** — cost-not-set
-> "The first generation is ~$0.05–$0.30 in API spend; budget guards documented in [`SECURITY.md`](../SECURITY.md)."
+> "The first generation is ~$0.05–$0.30 in API spend; budget guards documented in [`SECURITY.md`](../../SECURITY.md)."
 Fix: replace the inline range with a link to the canonical README anchor (see the README:75 fix above). The "$0.05–$0.30" range here straddles three of README's four bands — it's not wrong, it's incomparable. BECAUSE one canonical answer is more trustworthy than three mostly-consistent ones.
 
 **docs/install.md:174–180** — reference-voice-where-teaching-voice-belongs
-> "For the full screen-by-screen guide — including user-flow and information-flow Mermaid diagrams ... see [`docs/walkthrough.md`](walkthrough.md). The summary below is just enough to get a first generation working."
+> "For the full screen-by-screen guide — including user-flow and information-flow Mermaid diagrams ... see [`docs/walkthrough.md`](../walkthrough.md). The summary below is just enough to get a first generation working."
 Fix: the install doc's "First-run walkthrough" subsection should be teaching-voiced ("By the end of these eight steps you'll have your first tailored résumé"), not reference-voiced ("For the full screen-by-screen guide ... see"). Lead with the outcome, link to walkthrough.md *after* the steps for "next, learn what each step is actually doing." BECAUSE the reader is in install-and-do mode at this exact point; they don't want a cross-reference before they've finished installing.
 
 **docs/install.md:220–224** — missing-rationale
@@ -108,7 +108,7 @@ Fix: under the H1, before the Purpose/Audience block, add a one-sentence orienti
 Fix: "deterministic (no LLM)" is the first place the reader is asked to internalize this distinction without any pre-context for why it matters. Add a sentence: "callback.'s design rule is *LLM only for fuzzy work*; everything else (parsing, rendering, file I/O) is plain Python you can trace line-by-line." BECAUSE deterministic-vs-fuzzy is the single most important conceptual frame in the whole product, and it deserves more than a legend gloss on first introduction.
 
 **docs/walkthrough.md:151** — jargon-first-use
-> "**Under the hood:** [`/api/upload`](../app.py) runs `parser.py` deterministically (no LLM) to extract text, then one Haiku 4.5 call to `extract_experiences()` parses the text into structured experiences ..."
+> "**Under the hood:** [`/api/upload`](../../app.py) runs `parser.py` deterministically (no LLM) to extract text, then one Haiku 4.5 call to `extract_experiences()` parses the text into structured experiences ..."
 Fix: "Haiku 4.5" first-use needs a parenthetical: "Haiku 4.5 (Anthropic's small + fast model — callback. uses it for selection and parsing; the larger Sonnet model handles writing)". Same for "Sonnet 4.6" at line 178. BECAUSE the model names are mentioned eight times across the walkthrough but the cost / latency / role distinction is never explicitly drawn until the reader has already seen both names multiple times.
 
 **docs/walkthrough.md:170** — paragraph-bloat
@@ -199,7 +199,7 @@ callback. would benefit from one synthetic worked example threaded through the w
 
 ### Recommended location
 
-A new file `docs/walkthrough_example.md` referenced from `docs/walkthrough.md`'s "How to read this doc" intro: *"For a single synthetic candidate + JD threading through all six steps, see [walkthrough_example.md](walkthrough_example.md)."*
+A new file `docs/walkthrough_example.md` referenced from `docs/walkthrough.md`'s "How to read this doc" intro: *"For a single synthetic candidate + JD threading through all six steps, see [walkthrough_example.md](../walkthrough_example.md)."*
 
 Reasons for a separate file over inline interleaving: keeps the canonical walkthrough abstract (suits any reader's situation); allows the worked example to evolve independently as the wizard changes; mirrors the architecture-doc pattern of *abstract diagrams in one file, concrete sequences in sibling files*.
 
