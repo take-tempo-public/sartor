@@ -151,6 +151,37 @@ hardening posture, like `evals/seed_import.py`).
   (mirroring `evals/bootstrap.py`) refuses to emit the PII-bearing artifacts
   anywhere except `evals/fixtures/real/`.
 
+### Added — Tune-from-annotations skill (`tuning/draft-and-gate-skill`, v1.0.4)
+
+Internal/dev tooling for the eval tuning loop — **no user-facing pipeline
+change**, no new dependency. `PROMPT_VERSION` is **unchanged by this branch**:
+only a user-approved *promote* edits a persona constant and bumps the version (in
+that promote commit), never the skill itself. Closes the v1.0.4 loop (export →
+bootstrap → annotate → collate → **draft / eval / promote**).
+
+- **`/tune-from-annotations`** (`.claude-plugin/commands/tune-from-annotations.md`)
+  — the annotations-driven sibling of `/prompt-tune`. It reads an
+  `improvement_brief.md`, drafts a candidate system-prompt edit, A/Bs it against
+  the annotation-produced `--suite real` fixture (via `--seed`) **plus an
+  `--suite anchor` canary**, and presents the delta tables. Built on the
+  prompt-override primitive, so `analyzer.py` is untouched during the trial and
+  the candidate run is logged as `prompt_version=candidate:<hash>` (quarantined
+  from score-over-time). Promotion — `Edit` the constant + bump `PROMPT_VERSION`
+  in one commit + a `TUNING_LOG.md` entry — happens only on an explicit "promote."
+- **`tune-drafter` subagent** (`.claude-plugin/agents/tune-drafter.md`) — drafts
+  the full candidate constant text from the brief + the current constant. It is
+  **read-only** (`Read`/`Grep`/`Glob`; no `Edit`/`Write`) by design: it cannot
+  edit `analyzer.py`, so the baseline it drafts against stays intact for an
+  honest A/B, and promotion stays a user-gated step in the command — not the
+  drafter's job.
+- **`evals/tune.py`** — a deterministic, LLM-free delta-table helper + CLI
+  (`python -m evals.tune --baseline A.jsonl --candidate B.jsonl [--json]`). Reads
+  eval result JSONL, groups `status == "ok"` scores by `(fixture, rubric)`, and
+  emits per-pair baseline-vs-candidate deltas (regression flag at the runner's
+  `REGRESSION_DELTA`). Standalone — it consumes result files only and imports
+  nothing from `runner.py`/`annotation.py`/`bootstrap.py`/`seed_import.py`, so
+  their paths are untouched. `tests/test_tune.py` covers it (LLM-free).
+
 ## [1.0.3] — 2026-06-02
 
 R1 Phase 2 stream — two-pass analyze split (speed without quality loss) +

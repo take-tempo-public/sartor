@@ -50,6 +50,8 @@ evals/fixtures/real/*
 !evals/fixtures/real/.gitkeep
 # /prompt-tune writes a transient candidate-override file here; never commit it.
 evals/_prompt_tune_candidate.json
+# /tune-from-annotations writes its transient candidate-override file here too.
+evals/_tune_candidate.json
 
 # ---- Python ----
 __pycache__/

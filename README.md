@@ -145,6 +145,7 @@ The project ships a Claude Code plugin under [.claude-plugin/](.claude-plugin/) 
 | [`/eval`](.claude-plugin/commands/eval.md) | Run the eval harness against synthetic or real fixtures |
 | [`/replay`](.claude-plugin/commands/replay.md) | Re-run `generate()` on a saved `context_*.json` |
 | [`/prompt-tune`](.claude-plugin/commands/prompt-tune.md) | A/B test a `SYSTEM_PROMPT` edit against the eval suite |
+| [`/tune-from-annotations`](.claude-plugin/commands/tune-from-annotations.md) | Draft a candidate prompt edit from an annotation `improvement_brief.md`, A/B it against the `--suite real` fixture + anchor canary, promote on approval |
 | [`/bench`](.claude-plugin/commands/bench.md) | Aggregate `logs/llm_calls.jsonl` for cache hit rate, latency, cost |
 | [`/inspect-context`](.claude-plugin/commands/inspect-context.md) | Pretty-print + schema-validate a saved `context_set` |
 
@@ -154,6 +155,7 @@ The project ships a Claude Code plugin under [.claude-plugin/](.claude-plugin/) 
 |---|---|
 | [`eval-judge`](.claude-plugin/agents/eval-judge.md) | Grade one (artifact × rubric) → JSON verdict |
 | [`prompt-archaeologist`](.claude-plugin/agents/prompt-archaeologist.md) | Trace an eval failure to a prompt rule and propose a unified-diff fix |
+| [`tune-drafter`](.claude-plugin/agents/tune-drafter.md) | Read-only: draft a full candidate system-prompt edit from an `improvement_brief.md` for the `/tune-from-annotations` A/B |
 | [`git-flow`](.claude-plugin/agents/git-flow.md) | Execute git workflow under the project's conventions |
 | [`ux-onboarding-designer`](.claude-plugin/agents/ux-onboarding-designer.md) | Audit user-facing docs from a first-time-user lens → structured rewrite ladder |
 
