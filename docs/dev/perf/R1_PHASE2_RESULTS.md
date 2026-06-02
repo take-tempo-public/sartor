@@ -4,7 +4,7 @@
 > (v1.0.3) — what the analyze stage cost in **speed, money, and eval quality**
 > before the change, and after. Companion to
 > [`R1_BENCHMARK_2026-05-26.md`](R1_BENCHMARK_2026-05-26.md) (the *failed* first
-> attempt + diagnosis) and to [`../evals/TUNING_LOG.md`](../evals/TUNING_LOG.md)
+> attempt + diagnosis) and to [`../evals/TUNING_LOG.md`](../../../evals/TUNING_LOG.md)
 > (the per-branch institutional record).
 > **Authoritative for:** the headline numbers below. Each is traceable to a
 > dated `TUNING_LOG.md` entry, a `PROMPT_VERSION`, and committed

@@ -5,9 +5,9 @@
 > recurred across sessions. Every agent should read this before writing
 > any code.
 >
-> **Source:** harvested from `docs/SESSION_HANDOFF_2026-05-27.md §5`,
-> which remains the original session record. This file is the undated,
-> canonical home for these rules.
+> **Source:** these five patterns were harvested from the 2026-05-27 v1.0.1
+> session retrospective (since retired once captured here); this file is the
+> undated, canonical home for them.
 >
 > **Companion:** `docs/dev/AGENT_HANDOFF_TEMPLATE.md` requires this file
 > be listed in every handoff prompt's "Documents to read" section.

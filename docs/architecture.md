@@ -13,7 +13,7 @@
 > Sibling docs:
 > [`CLAUDE.md`](../CLAUDE.md) (contributor contract),
 > [`docs/PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) (product intent),
-> [`docs/PERF_ANALYZE.md`](PERF_ANALYZE.md) (analyze latency audit),
+> [`docs/dev/perf/PERF_ANALYZE.md`](dev/perf/PERF_ANALYZE.md) (analyze latency audit),
 > [`vision.md`](../vision.md) (LLM persona rules).
 
 ---
@@ -158,7 +158,7 @@ sequenceDiagram
 | [Pipeline](diagrams/pipeline.mmd) | `analyzer.py` + `app.py` route map | One full apply-run, sequence-diagram view |
 | [Persistence](diagrams/persistence.mmd) | `db/models.py` | DB tables + FK relationships + cascade behavior |
 | [Data flow](diagrams/data-flow.mmd) | `hardening.py` + route handlers | `context_set` lifecycle across iterations |
-| [LLM routing](diagrams/llm-routing.mmd) | `analyzer.py` `_call_llm` sites + `PERF_ANALYZE.md` | Which route fires which model, with cost / latency |
+| [LLM routing](diagrams/llm-routing.mmd) | `analyzer.py` `_call_llm` sites + `docs/dev/perf/PERF_ANALYZE.md` | Which route fires which model, with cost / latency |
 
 All four render natively on GitHub when committed in a fenced
 `mermaid` block, and parse cleanly by every modern LLM. Use a
@@ -424,7 +424,7 @@ Full picture: [`docs/diagrams/llm-routing.mmd`](diagrams/llm-routing.mmd).
 %%
 %% Source: analyzer.py `_call_llm(...)` invocations + the SONNET_MODEL
 %% / HAIKU_MODEL constants. Cost / latency numbers from
-%% docs/PERF_ANALYZE.md (real production data across 83+ runs).
+%% docs/dev/perf/PERF_ANALYZE.md (real production data across 83+ runs).
 %%
 %% Two model tiers:
 %%   - Sonnet 4.6: heavy reasoning, JSON-structured output, costlier
@@ -490,7 +490,7 @@ graph LR
 
 *(Source: [`docs/diagrams/llm-routing.mmd`](diagrams/llm-routing.mmd). Embedded above so the diagram renders inline on GitHub; edit either copy and keep both in sync.)*
 Latency data from real production usage in
-[`docs/PERF_ANALYZE.md`](PERF_ANALYZE.md).
+[`docs/dev/perf/PERF_ANALYZE.md`](dev/perf/PERF_ANALYZE.md).
 
 **Sonnet 4.6** (`claude-sonnet-4-6`) handles heavy reasoning:
 `analyze`, `clarify`, `iterate_clarify`, `generate`,
@@ -683,5 +683,5 @@ The version string lives in [`analyzer.py`](../analyzer.py).
   `generator.generate_resume()` and a renderer module. The
   JSON Resume intermediate already exists; reuse it.
 - **Debugging a slow call?** Start with
-  [`docs/PERF_ANALYZE.md`](PERF_ANALYZE.md); reproduce the
+  [`docs/dev/perf/PERF_ANALYZE.md`](dev/perf/PERF_ANALYZE.md); reproduce the
   audit query against your own `logs/llm_calls.jsonl`.

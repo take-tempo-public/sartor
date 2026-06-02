@@ -268,7 +268,7 @@ release.
       v1.0.0 between the baseline source-run and tag. The
       baseline file's own `notes` field already calls this out
       ("a re-baseline is recommended early in v1.0.1 once the
-      streaming/split-analyze changes from PERF_ANALYZE.md
+      streaming/split-analyze changes from docs/dev/perf/PERF_ANALYZE.md
       land"). The smoke pass on 2026-05-26 showed the two
       successfully-graded fixtures essentially unchanged
       (`pm-senior`: 4.8 = 4.8; `sre-mid-level`: 4.8 vs 4.7,
@@ -458,7 +458,7 @@ release.
       page. PRODUCT_SHAPE §10 defers this to v1.0.1; if the
       planned UI redesign hasn't started, ship visual assets
       against the current UI rather than wait.
-- [ ] **R2 — stream `analyze()` output** (PERF_ANALYZE.md, $0,
+- [ ] **R2 — stream `analyze()` output** (docs/dev/perf/PERF_ANALYZE.md, $0,
       perceived latency 90s → 10-15s). Owns its own commit
       and eval cycle.
 

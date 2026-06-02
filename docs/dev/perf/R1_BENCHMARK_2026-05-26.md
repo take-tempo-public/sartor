@@ -3,7 +3,7 @@
 > **Purpose:** capture what R1 attempted, what it measured, why it
 > regressed, and exactly where v1.0.2 should pick up. Companion to
 > [`PERF_ANALYZE.md`](PERF_ANALYZE.md) (which named R1 as a candidate
-> optimization) and to [`evals/TUNING_LOG.md`](../evals/TUNING_LOG.md)
+> optimization) and to [`evals/TUNING_LOG.md`](../../../evals/TUNING_LOG.md)
 > entries `2026-05-24.4 → 2026-05-26.1` and `2026-05-26.1 → 2026-05-26.2`
 > (which document the prompt-design rationale per iteration).
 > **Audience:** the future engineer (or agent) picking R1 back up in
@@ -72,7 +72,7 @@ synthetic eval suite (~$1.50 per full run, ~30 min wall clock).
 
 After R1.1's regression measurement, a recruiting-specialist subagent
 (`general-purpose` with a domain-expert framing prompt; later codified
-as [`headhunter.md`](../.claude-plugin/agents/headhunter.md)) diagnosed
+as [`headhunter.md`](../../../.claude-plugin/agents/headhunter.md)) diagnosed
 the failure: the system was emitting tool-name probes (`"Have you used
 Epic?"`) when the JD's underlying signal was portable operating-context
 that adjacent-background candidates could map onto.
@@ -256,7 +256,7 @@ fresh data before building on it.
    that's a *legitimate* signal — strict matches are easier to
    ground — but it punishes wording drift that doesn't actually
    degrade candidate-facing quality.
-6. **Use the [`headhunter`](../.claude-plugin/agents/headhunter.md)
+6. **Use the [`headhunter`](../../../.claude-plugin/agents/headhunter.md)
    agent between iterations.** The R1.2 fix was informed by a single
    ad-hoc consultation; codifying the agent makes the consultation
    cheap to repeat. Spawn it after each failing eval to diagnose
@@ -296,7 +296,7 @@ python evals/runner.py --suite synthetic
   `verb_diversity` and `specificity_density` are today.
 - **Recruiter quote anchoring the design** (from the consultation that
   produced R1.2 and is preserved in
-  [`evals/TUNING_LOG.md`](../evals/TUNING_LOG.md)): *"Asking 'have you
+  [`evals/TUNING_LOG.md`](../../../evals/TUNING_LOG.md)): *"Asking 'have you
   used Epic' of someone who hasn't is dead-end. Asking 'have you built
   products for users in regulated, workflow-heavy environments where
   errors have real-world consequences' lets a logistics-PM or a
@@ -306,5 +306,5 @@ python evals/runner.py --suite synthetic
 - **Multi-window discipline.** This work surfaced that two Claude
   windows editing the same plan and `RELEASE_CHECKLIST.md` produces
   reconciliation overhead even when both windows are well-behaved.
-  See the future entry tracked in [`AGENTS.md`](../AGENTS.md) (TODO
+  See the future entry tracked in [`AGENTS.md`](../../../AGENTS.md) (TODO
   at time of writing) for the "one-window-owns-the-plan" rule.

@@ -265,7 +265,7 @@ on Sonnet 4.6 for ~4500 output tokens). Two v1.1 optimizations
 are queued: streaming the response so perceived latency drops
 to 10-15s, and splitting the call into a Haiku-fast first
 pass (structured JD fields) + Sonnet-deep second pass (prose
-analysis). See [`docs/PERF_ANALYZE.md`](docs/PERF_ANALYZE.md)
+analysis). See [`docs/dev/perf/PERF_ANALYZE.md`](docs/dev/perf/PERF_ANALYZE.md)
 (dev-facing) for the audit.
 
 ---

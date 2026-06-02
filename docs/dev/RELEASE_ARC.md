@@ -222,7 +222,7 @@ New Pareto frontier panel at top of `/_dashboard`:
 
 > **R1 = quality first, then speed.** The two diagnosed root causes of the
 > original split's `clarification_quality` regression (2.1) were: context_probe
-> never emitted, and `hidden_qualities` shape mismatch (`docs/R1_BENCHMARK_2026-05-26.md`).
+> never emitted, and `hidden_qualities` shape mismatch (`docs/dev/perf/R1_BENCHMARK_2026-05-26.md`).
 > Both are now fixed on `main` (the two ✓ branches below). With those guardrails
 > in place, `r1/analyze-split-retry` re-introduces the two-pass split to land the
 > **speed** half — gated so it cannot give the recovered quality back. The
@@ -266,7 +266,7 @@ New Pareto frontier panel at top of `/_dashboard`:
 > follow-up that runs synthesis under the shared `SYSTEM_PROMPT` to reclaim the
 > analyze→generate prompt cache the dedicated-persona build had broken. Final
 > `PROMPT_VERSION 2026-06-01.3`. Results (speed/cost/eval before vs after) are recorded
-> in [`docs/R1_PHASE2_RESULTS.md`](../R1_PHASE2_RESULTS.md).
+> in [`docs/dev/perf/R1_PHASE2_RESULTS.md`](perf/R1_PHASE2_RESULTS.md).
 
 ### Documentation debt (from R1 Phase 2) — schedule a later doc pass
 
@@ -394,5 +394,5 @@ This phase carries the product redesign **and** the polished home for the Phase 
 | `docs/dev/AGENT_FAILURE_PATTERNS.md` | Failure patterns to avoid |
 | `docs/architecture.md` | Module map, LLM routing |
 | `C:\Users\iam\.claude\research\resume-eval-2026-05\followup.md` | 25-item Phase 1 checklist |
-| `docs/R1_BENCHMARK_2026-05-26.md` | R1 diagnosis (Phase 2 start point) |
+| `docs/dev/perf/R1_BENCHMARK_2026-05-26.md` | R1 diagnosis (Phase 2 start point) |
 | `C:\Users\iam\.claude\research\resume-eval-2026-05\report.md` | Tool recs (Promptfoo, MiniCheck, DeBERTa) |

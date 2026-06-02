@@ -10,7 +10,7 @@
 > synthetic-vs-real-corpus analysis. Companions:
 > [`PERF_ANALYZE.md`](PERF_ANALYZE.md) (the original analyze audit that kicked
 > this off), [`R1_PHASE2_RESULTS.md`](R1_PHASE2_RESULTS.md) (the R1 before/after),
-> [`../evals/TUNING_LOG.md`](../evals/TUNING_LOG.md) (per-branch institutional record).
+> [`../evals/TUNING_LOG.md`](../../../evals/TUNING_LOG.md) (per-branch institutional record).
 > **Telemetry source:** `logs/llm_calls.jsonl` — **1,824 LLM calls tracked
 > 2026-05-06 → 2026-06-02.** Numbers below are p50 unless noted; reproduce with
 > the snippet in [Provenance](#provenance).
@@ -309,7 +309,7 @@ A perf story with three things that went sideways and were caught in telemetry i
 | Real segment | `username ∈ {robert, testuser, demo}` |
 | `analyze` 103 s / −34% headline | [`R1_PHASE2_RESULTS.md`](R1_PHASE2_RESULTS.md) (real-scale baseline) |
 | Streaming perceived-latency claim | `CHANGELOG.md` [1.0.1] "Added — Performance (R2 streaming)" |
-| Quality recovery + gate | [`../evals/TUNING_LOG.md`](../evals/TUNING_LOG.md) 2026-05-30 → 2026-06-02 |
+| Quality recovery + gate | [`../evals/TUNING_LOG.md`](../../../evals/TUNING_LOG.md) 2026-05-30 → 2026-06-02 |
 
 **Reproduce the per-call table:**
 

@@ -503,7 +503,7 @@ acceptance criteria / target version**.
 
 ### v1.1 (next minor release)
 
-**R2 — stream `analyze()` output.** ([docs/PERF_ANALYZE.md](PERF_ANALYZE.md))
+**R2 — stream `analyze()` output.** ([docs/dev/perf/PERF_ANALYZE.md](dev/perf/PERF_ANALYZE.md))
 - *Why deferred:* deserves its own commit + eval cycle; v1.0.0
   scope is "all initial documentation", not new pipeline behavior.
 - *Acceptance:* Anthropic SSE streaming wired through the
@@ -512,7 +512,7 @@ acceptance criteria / target version**.
 - *Cost:* zero; same call, different transport.
 
 **R1 — split `analyze()` into Haiku-fast + Sonnet-deep passes.**
-([docs/PERF_ANALYZE.md](PERF_ANALYZE.md))
+([docs/dev/perf/PERF_ANALYZE.md](dev/perf/PERF_ANALYZE.md))
 - *Why deferred:* touches the prompt, the response schema, and the
   frontend ordering — not a one-commit change. Needs an eval cycle
   before / after so we know we didn't regress analyze quality.
