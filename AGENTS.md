@@ -86,6 +86,7 @@ A `require-feature-branch` PreToolUse hook blocks `Edit`/`Write` while on `main`
 - Eval results carry `prompt_version` so the dashboard's score-over-time chart can attribute regressions to specific prompt revisions.
 - Deterministic post-generation metrics (`verb_diversity`, `specificity_density`, `grounding_overlap`, `cost_usd`) ride along on every result. `grounding_overlap.missing_samples` is the actionable fabrication signal.
 - Document tuning iterations in `evals/TUNING_LOG.md` (what changed, why, scores before/after, lessons). This is the institutional-memory artifact for future tuners.
+- **Prompt-override primitive** (`analyzer.prompt_overrides()` + `evals/runner.py --prompt-overrides`): A/B a candidate system prompt **without editing the persona constants**. Inside the context manager every LLM call sends the candidate prompt and stamps `prompt_version=candidate:<hash>` (telemetry + eval records), so candidate runs are quarantined from score-over-time. The default (no-override) path is byte-identical — the resolver returns the identical constant object and the logged version stays `PROMPT_VERSION`, so the analyze→generate cache is untouched. Override scope is the named system-prompt constants only (the `_BASE_SYSTEM_PROMPTS` registry), not the dynamic user-prompt builders. `/prompt-tune` and the v1.0.4 tuning loop build on this.
 
 ### Frontend config persistence
 

@@ -171,6 +171,7 @@ Examples:
 ```
 python evals/runner.py [--suite synthetic|real|all] [--subset smoke|full]
                        [--fixture NAME] [--out-dir PATH]
+                       [--prompt-overrides PATH]
 ```
 
 Per fixture:
@@ -202,6 +203,7 @@ Key implementation details:
 | `--subset smoke\|full` | `smoke` runs only the `grounding` rubric (cheapest, most important signal); `full` runs all four. Default `full`. |
 | `--fixture NAME` | Override `--suite` to run a single named fixture. Looks in `synthetic/` first, then `real/`. |
 | `--out-dir PATH` | Override the default `evals/results/` output location. |
+| `--prompt-overrides PATH` | Inject a candidate system prompt for this run only (A/B a prompt without editing `analyzer.py`). See [Candidate prompt overrides](#candidate-prompt-overrides---prompt-overrides) below. |
 
 ### Exit codes
 
@@ -227,6 +229,49 @@ WARNING: Found 1 regression(s) ≥0.5 points.
 ```
 
 Regressions are informational — they don't change the runner's exit code (rubric pass/fail is still the gating signal). The default delta of 0.5 is calibrated for Haiku judge variance: tighter and you'll see noise; looser and you'll miss real drops. Override with `REGRESSION_DELTA=0.3` for stricter tracking during prompt iteration.
+
+### Candidate prompt overrides (`--prompt-overrides`)
+
+A/B a candidate system prompt against the suite **without editing `analyzer.py`**.
+Point the flag at a JSON file mapping a system-prompt constant name to its full
+replacement text:
+
+```json
+{
+  "SYSTEM_PROMPT": "You are a seasoned hiring manager ... (full candidate text)"
+}
+```
+
+```bash
+python evals/runner.py --suite anchor --prompt-overrides candidate.json
+```
+
+Valid keys are the named persona constants in `analyzer._BASE_SYSTEM_PROMPTS`:
+`SYSTEM_PROMPT`, `EXTRACTION_SYSTEM_PROMPT`, `CLARIFY_SYSTEM_PROMPT`,
+`CLARIFY_ITERATION_SYSTEM_PROMPT`, `PROPOSAL_CRITIQUE_SYSTEM_PROMPT`,
+`RECOMMEND_SYSTEM_PROMPT`, `RECOMMEND_SUMMARIES_SYSTEM_PROMPT`,
+`PROMOTE_CLARIFICATION_SYSTEM_PROMPT`. Override values are **full prompt text**,
+not diffs. A bad JSON file, the wrong shape, or an unknown key exits non-zero
+*before* any paid LLM call.
+
+What it does:
+
+- Every `analyze` / `clarify` / `generate` call in the run sends the candidate
+  prompt instead of the constant; `analyzer.py` is never touched.
+- The whole run is stamped `prompt_version=candidate:<hash>` (a stable sha256 of
+  the override mapping) on both telemetry (`logs/llm_calls.jsonl`) and eval
+  result records — so a candidate run is **quarantined from the score-over-time
+  chart** and never mistaken for a baseline revision. The runner logs the
+  `candidate:<hash>` it chose at startup.
+- **The default path (no flag) is byte-identical:** the resolver returns the
+  identical constant object and records stamp the real `PROMPT_VERSION`, so the
+  analyze→generate prompt cache and version attribution are unchanged.
+
+To promote a winning candidate, copy its text into the constant in `analyzer.py`,
+bump `PROMPT_VERSION` in the same commit, and log the before/after in
+[`TUNING_LOG.md`](TUNING_LOG.md). The [`/prompt-tune`](../.claude-plugin/commands/prompt-tune.md)
+skill automates the whole baseline → candidate → diff → promote loop on top of
+this flag.
 
 ---
 
@@ -492,7 +537,7 @@ Several enhancements are scoped but not yet built:
 - **Trend tracking** — aggregate scores by `prompt_version` over time so prompt regressions are visible on the dashboard
 - **Auto-invocation of `eval-judge` from `/replay`** — for ad-hoc grading of a single regenerated output without a full eval run
 - **Structured failure analysis** — group `failed_rules` slugs across runs to identify systemic issues
-- **A/B prompt comparison** — wrapped by the [`/prompt-tune`](../.claude-plugin/commands/prompt-tune.md) skill (capture-baseline → apply-edit → re-run → diff workflow)
+- ~~**A/B prompt comparison**~~ — **shipped** (v1.0.4) as the [`--prompt-overrides`](#candidate-prompt-overrides---prompt-overrides) flag + `analyzer.prompt_overrides()`; the [`/prompt-tune`](../.claude-plugin/commands/prompt-tune.md) skill drives the capture-baseline → candidate → diff → promote loop on top of it
 - **Custom judge model** — `--judge-model` flag to override the default Haiku, useful for experimentation with Sonnet-as-judge
 
 ---
