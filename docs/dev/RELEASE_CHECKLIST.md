@@ -15,21 +15,28 @@
 
 ---
 
-## Active release — v1.0.1
+## Active release — v1.0.4 (eval tuning loop)
 
-The v1.0.0 release landed in commit `075d830` (with subsequent
-template curation, paged.js pagination, and docs reworks landing
-on the same branch before tag). v1.0.1 is the first follow-up
-release.
+**Tag history (all local-only — no public release until the user-owned
+v1.1.0 tag):** v1.0.1 tagged 2026-05-28, v1.0.2 tagged 2026-05-30,
+v1.0.3 tagged 2026-06-02. The active development target is now **v1.0.4**
+(eval tuning loop); see [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 3 for its
+branch sequence and tag criteria.
+
+The v1.0.1 item list below was **reconciled in place at the v1.0.3 tag
+(2026-06-02)**: completed items are checked; still-open items are flagged
+`→ OPEN` with their current owning release. The v1.0.0 release landed in
+commit `075d830` (with subsequent template curation, paged.js pagination,
+and docs reworks landing on the same branch before tag); v1.0.1 was the
+first follow-up release.
 
 ### Must do before tag (shipping blockers)
 
-- [ ] **Manual fresh-clone verification** *(deferred to v1.3 — no
-      public release until the UI and R1 work below lands)* — clone
-      in a clean directory; run `pip install -e .` +
-      `python -m playwright install chromium` + `python app.py`;
-      complete one application end-to-end. Time-to-first-generation
-      < 5 minutes (D.4 below).
+- [x] **~~Manual fresh-clone verification~~** — ✅ done (user-confirmed
+      2026-06-02): clean-directory clone → `pip install -e .` +
+      `python -m playwright install chromium` + `python app.py` → one
+      application completed end-to-end. Evergreen — re-run at the v1.1.0
+      public-release cut (risk register D.4 below).
 - [x] **~~Eval baseline check~~** — ✅ verified 2026-05-26.
       `python evals/runner.py --suite synthetic --subset smoke`
       run twice (cost ~$0.79 across both); second run clean with
@@ -52,10 +59,10 @@ release.
       correct; `[Unreleased]` placeholder is clean. "Resume Optimizer"
       name in line 3 fixed to "callback." in this branch.
 - [ ] **Push to GitHub + verify the `https://github.com/amodal1/callback`
-      URL resolves** *(deferred to v1.3 — no public release until
-      UI redesign and R1 work land)* — the repo is still local-only
-      (no `origin` remote configured). Action before first public
-      tag: create the GitHub repo (public, name `callback`, under
+      URL resolves** **→ OPEN, owner v1.1.0** — pushed **when the user is
+      ready to push the v1.1.0 public-release tag**; the repo stays
+      local-only until then (no `origin` remote configured). Action at the
+      v1.1.0 cut: create the GitHub repo (public, name `callback`, under
       `amodal1`), `git remote add origin
       git@github.com:amodal1/callback.git`, push `main` and the
       release tag, then verify that `pyproject.toml` Homepage /
@@ -64,8 +71,9 @@ release.
 
 ### Should do (v1.0.1 polish; document if skipped)
 
-- [ ] **Step 6 (Output) redesign** — surfaced during the v1.0.0
-      review: cut the obsolete tabs + raw/rendered toggle
+- [ ] **Step 6 (Output) redesign** **→ OPEN, migrated to v1.0.5**
+      (`feat/step6-redesign`, RELEASE_ARC §Phase 4) — surfaced during the
+      v1.0.0 review: cut the obsolete tabs + raw/rendered toggle
       (replaced by paged.js preview); preview at the top of
       the step; edit-raw via modal; Changes → info-icon modal;
       cover letter → single "+ Generate" button until generated.
@@ -152,8 +160,9 @@ release.
       still navigates forward via the in-flow Continue buttons;
       that's fine and matches the real-user happy path, but rail
       clicks would now work too.
-- [ ] **Playwright UX clickthrough regression suite** — surfaced
-      during the screenshot-capture pass (2026-05-26). The
+- [ ] **Playwright UX clickthrough regression suite** **→ OPEN, migrated
+      to v1.0.5** (`feat/playwright-ux-suite`, RELEASE_ARC §Phase 4) —
+      surfaced during the screenshot-capture pass (2026-05-26). The
       screenshot script at
       [`scripts/capture_screenshots.py`](../../scripts/capture_screenshots.py)
       drives the wizard end-to-end and incidentally exposed
@@ -258,7 +267,12 @@ release.
       (`data-scientist-junior × grounding`, -4.8 delta) won't
       recur — re-running the smoke pass should produce a clean
       result.
-- [ ] **Re-baseline eval scores for v1.0.1** —
+- [x] **~~Re-baseline eval scores for v1.0.1~~** — ✅ superseded 2026-06-02
+      by the **v1.0.2 schema-3 baseline** (`eval/baseline-v1-0-2`; TUNING_LOG
+      "BASELINE — v1.0.2 — 2026-05-28"): five back-to-back synthetic runs at
+      the shipping `PROMPT_VERSION 2026-05-24.4` replaced the stale
+      `2026-05-12.1`-sourced baseline, resolving the apples-to-apples concern
+      this item raised. Original detail retained below for the audit trail.
       [`evals/results/baseline_v1.json`](../../evals/results/baseline_v1.json)
       was sourced from
       [`evals/results/20260513_221926Z.jsonl`](../../evals/results/20260513_221926Z.jsonl)
@@ -415,7 +429,9 @@ release.
       attachment` redirect that avoids the per-page gesture requirement is
       tracked for v1.0.2. Branch `fix/chrome-multi-download-hint`.
 - [ ] **paged.js polyfill "Cannot read getBoundingClientRect of
-      null"** (surfaced 2026-05-27 round-9). The polyfill fires an
+      null"** **→ OPEN** (cosmetic console error; no owning branch yet —
+      revisit with the v1.0.5 preview/pagination work). Surfaced 2026-05-27
+      round-9. The polyfill fires an
       uncaught promise rejection when content is empty / missing
       certain DOM nodes (e.g., the preview iframe loads a sparse
       corpus). Cosmetic — preview iframe still renders, just emits
@@ -433,8 +449,9 @@ release.
       change — path (a), full format support, is v1.0.2 alongside
       B3 persona styling work).
 - [ ] **Prior-application click resumes the wizard at that
-      application's last state** (user-surfaced 2026-05-26 during
-      round-6 smoke). Today, clicking a card in the "Prior
+      application's last state** **→ OPEN, migrated to v1.0.5**
+      (`feat/prior-app-resume`, RELEASE_ARC §Phase 4) (user-surfaced
+      2026-05-26 during round-6 smoke). Today, clicking a card in the "Prior
       applications" panel of Step 1 shows a one-line toast with
       title/status/iter-count and nothing else — that's an
       acknowledged placeholder per the comment at
@@ -454,13 +471,17 @@ release.
 
 ### Nice to have (defer to v1.1 if time-bound)
 
-- [ ] **Visual assets** — screenshots, demo GIF, onboarding HTML
+- [ ] **Visual assets** **→ OPEN, owner v1.1.0** (`release/visual-assets`,
+      RELEASE_ARC §Phase 5) — screenshots, demo GIF, onboarding HTML
       page. PRODUCT_SHAPE §10 defers this to v1.0.1; if the
       planned UI redesign hasn't started, ship visual assets
       against the current UI rather than wait.
-- [ ] **R2 — stream `analyze()` output** (docs/dev/perf/PERF_ANALYZE.md, $0,
-      perceived latency 90s → 10-15s). Owns its own commit
-      and eval cycle.
+- [x] **~~R2 — stream `analyze()` output~~** — ✅ done in v1.0.1
+      (CHANGELOG [1.0.1] "Added — Performance (R2 streaming)"):
+      `/api/analyze/stream` + `/api/generate/stream` SSE routes shipped with
+      spinner-default UX; the v1.0.3 two-pass split later layered the `phase`
+      sentinel on top. (docs/dev/perf/PERF_ANALYZE.md, $0, perceived latency
+      90s → 10-15s.)
 
 ### Pre-tag cleanup + review stage (do last, before v1.0.1 tag)
 
@@ -489,15 +510,16 @@ before the version-bump commit.
       Added to `docs/architecture.md` module map as a release-cycle
       tool (p50/p90 latency snapshot before/after perf interventions).
       Branch `chore/pre-tag-cleanup-code`.
-- [ ] **`r1-attempted-2026-05-26` branch** — **keep through v1.0.3
-      R1 Phase 2** as the **read-only reference** for R1 prompt
-      language (`context_probe` wording, `hidden_qualities`
-      redefinition in `EXTRACTION_SYSTEM_PROMPT`). The remaining R1
-      branches (`r1/hidden-qualities-schema`, `r1/clarify-model-trial`)
-      branch from **main** but consult this branch for reference.
-      Delete only after v1.0.3 R1 completes (all R1 branches merged
-      or formally abandoned). *(Updated 2026-06-01; was "keep through
-      v1.0.2" — R1 moved to v1.0.3.)*
+- [ ] **`r1-attempted-2026-05-26` branch** **→ OPEN — READY TO DELETE**
+      (2026-06-02): v1.0.3 R1 Phase 2 is complete — all R1 branches
+      (`structural-context-probe`, `hidden-qualities-schema`,
+      `analyze-split-cache-reclaim`, `clarify-model-trial`) merged — so this
+      read-only reference for R1 prompt language (`context_probe` wording,
+      `hidden_qualities` redefinition in `EXTRACTION_SYSTEM_PROMPT`) has
+      served its purpose. **Awaiting user confirmation to
+      `git branch -d r1-attempted-2026-05-26`** (not auto-deleted, per the
+      branch-discipline rule). *(Kept-through note updated 2026-06-01; was
+      "keep through v1.0.2" — R1 moved to v1.0.3.)*
 - [x] **~~Retire `/api/users/<username>/import-legacy` route~~** —
       ✅ resolved 2026-05-28. (a) Confirmed only consumer was
       `scripts/capture_screenshots.py`, which already calls
