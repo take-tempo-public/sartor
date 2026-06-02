@@ -510,16 +510,19 @@ before the version-bump commit.
       Added to `docs/architecture.md` module map as a release-cycle
       tool (p50/p90 latency snapshot before/after perf interventions).
       Branch `chore/pre-tag-cleanup-code`.
-- [ ] **`r1-attempted-2026-05-26` branch** **→ OPEN — READY TO DELETE**
-      (2026-06-02): v1.0.3 R1 Phase 2 is complete — all R1 branches
-      (`structural-context-probe`, `hidden-qualities-schema`,
-      `analyze-split-cache-reclaim`, `clarify-model-trial`) merged — so this
-      read-only reference for R1 prompt language (`context_probe` wording,
-      `hidden_qualities` redefinition in `EXTRACTION_SYSTEM_PROMPT`) has
-      served its purpose. **Awaiting user confirmation to
-      `git branch -d r1-attempted-2026-05-26`** (not auto-deleted, per the
-      branch-discipline rule). *(Kept-through note updated 2026-06-01; was
-      "keep through v1.0.2" — R1 moved to v1.0.3.)*
+- [x] **~~`r1-attempted-2026-05-26` branch~~** — **KEPT as historical
+      reference** (user decision 2026-06-02). v1.0.3 R1 Phase 2 is complete;
+      all R1 branches (`structural-context-probe`, `hidden-qualities-schema`,
+      `analyze-split-cache-reclaim`, `clarify-model-trial`) merged, and
+      **all of its learnings are already incorporated on `main`** (verified
+      via `git log`/`git diff`): the two-pass split was rebuilt fresh (the
+      branch predates the Pydantic migration, so it was not cherry-picked),
+      the `context_probe` wording + typed `hidden_qualities` redefinition
+      landed in the two ✓ schema branches, and the failure diagnosis +
+      recruiting consultation are preserved in `evals/TUNING_LOG.md`
+      (2026-05-26 entries, on `main`). The branch is retained purely as a
+      museum snapshot of the first (reverted, pre-Pydantic) attempt — nothing
+      on it is still needed. Deliberately **not deleted**, by user choice.
 - [x] **~~Retire `/api/users/<username>/import-legacy` route~~** —
       ✅ resolved 2026-05-28. (a) Confirmed only consumer was
       `scripts/capture_screenshots.py`, which already calls
