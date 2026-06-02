@@ -37,4 +37,6 @@ Respond with valid JSON only — no markdown fences, no commentary outside the J
 ```
 
 `failed_rules` should be machine-friendly slugs from this set (extend if needed):
-`invented_metric`, `invented_role`, `invented_company`, `invented_credential`, `invented_timeframe`, `forbidden_pattern_match`, `scope_inflation`, `verb_overreach`.
+`invented_metric`, `invented_role`, `invented_company`, `invented_credential`, `invented_timeframe`, `forbidden_pattern_match`, `scope_inflation`, `verb_overreach`, `jd_pandering`.
+
+`jd_pandering` — a bullet that re-skins source experience with the JD's domain terms, tools, or claims that are not present in the original résumé, contorting the candidate's real work to flatter this specific posting. It is a fabrication subtype that is clearest when the same corpus experience is generated against several JDs and only this one's wording matches the JD (the corpus-bootstrap cross-JD comparison is its detector). Flag it when a claim's specificity tracks the JD rather than the source.

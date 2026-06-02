@@ -78,6 +78,37 @@ file-based eval path is **byte-for-byte untouched** when `--seed` is absent.
   any paid LLM call. Absent flag → the resolver, `_load_fixture`, and the
   context-build branch are all byte-identical to today.
 
+### Added — Corpus bootstrap engine (`eval/bootstrap-engine`, v1.0.4)
+
+Internal/dev tooling for the eval tuning loop — **no user-facing pipeline
+change**, `PROMPT_VERSION` unchanged, no new dependency. The bootstrap engine
+*orchestrates* LLM calls (it lives in `evals/`, off the P1 hardening boundary,
+like `evals/runner.py`), but every collation step is deterministic and LLM-free.
+The runner's file-based and `--seed` paths are **untouched** (zero edits to
+`evals/runner.py`).
+
+- **`evals/bootstrap.py`** — drives **one corpus seed against N JDs**
+  (`--jd-dir` of `*.txt`/`*.jd` files) through the REAL product pipeline
+  (`analyze` → `clarify` → `generate`, reusing the public primitives + an
+  in-memory `seeded_session` import + `build_context_set_from_db`), then
+  deterministically dedups the generated bullets and skills across JDs at a
+  Jaccard threshold (default 0.75). The cross-JD cluster span (`size` /
+  `len(jd_files)`) is the JD-invariance signal: a wide-span cluster is grounded
+  core; a `size: 1` cluster is JD-specific — a `jd_pandering` candidate the next
+  branch annotates. Output is a `bootstrap.json` (`bootstrap_schema_version: 1`)
+  written under the gitignored `evals/fixtures/real/<candidate>/`; a `_within`
+  write-path guard (mirroring `scripts/export_corpus_seed.py`) refuses to emit
+  the PII-bearing snapshot anywhere else. The seed + `--jd-dir` are
+  eager-validated before any paid LLM call.
+- **Second `run_grounding_signals` call site** — `--grounding-signals` scores the
+  deduplicated bullet cluster representatives against the corpus source text
+  (DeBERTa NLI + MiniCheck-FT5, eval-only), gated on the same opt-in as the
+  runner.
+- **`evals/rubrics/grounding.md`** — adds the `jd_pandering` slug to the
+  `failed_rules` vocabulary (a fabrication subtype: re-skinning source experience
+  with a JD's domain terms not present in source). Rubric-vocabulary edits are
+  eval-apparatus, **not** a prompt change — `PROMPT_VERSION` is not bumped.
+
 ## [1.0.3] — 2026-06-02
 
 R1 Phase 2 stream — two-pass analyze split (speed without quality loss) +
