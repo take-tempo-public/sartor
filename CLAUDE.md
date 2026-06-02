@@ -92,6 +92,9 @@ over reinventing the workflow inline:
   `context_*.json`.
 - `/prompt-tune` — A/B test a `SYSTEM_PROMPT` edit against the
   eval suite.
+- `/tune-from-annotations` — read an `improvement_brief.md`, draft
+  a candidate via the `tune-drafter` subagent, A/B it against the
+  `--suite real` fixture (+ anchor canary), promote on approval.
 - `/bench` — aggregate `logs/llm_calls.jsonl` for cache hit
   rate, latency, cost.
 - `/inspect-context` — pretty-print + schema-validate a saved

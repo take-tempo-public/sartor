@@ -96,7 +96,7 @@ The `.claude-plugin/` directory holds the project's commands, agents, and hook s
 The settings.json wiring covers:
 
 - **Hooks** — plan-mode workflow scripts; Step 5 adds secret-blocking, `ruff` on commit, route-security lint, context-set schema validation, and merge-to-main confirmation
-- **Skills** — `/eval`, `/replay`, `/prompt-tune`, `/bench`, `/inspect-context` (added in Step 9)
+- **Skills** — `/eval`, `/replay`, `/prompt-tune`, `/tune-from-annotations`, `/bench`, `/inspect-context` (added in Step 9)
 - **Subagents** — `eval-judge`, `prompt-archaeologist`, `git-flow` (added in Step 8)
 
 If you launch Claude Code from a terminal and want to load the manifest directly, `claude --plugin-dir ./.claude-plugin` works; the VSCode extension does not accept that flag. When `/plugin install` gains local-path support upstream, the project will republish a `hooks.json` so the manifest becomes self-wiring.
@@ -192,6 +192,20 @@ The exporter writes **only** under `evals/fixtures/real/` (a `_within`-style
 resolved-path guard refuses any other destination, even via `--out`), so the
 snapshot — which contains your real data — can't leak outside the gitignored
 tree. The `seed.json` is the input the corpus-backed eval runner consumes.
+
+### Tuning a prompt from real-data annotations
+
+Once you have a `seed.json`, the v1.0.4 eval tuning loop turns real output into a
+promoted prompt edit: `bootstrap` the seed against several JDs, annotate the
+generated bullets/skills, collate to a `--suite real` fixture + an
+`improvement_brief.md`, then run the **`/tune-from-annotations`** skill. It drafts
+a candidate system-prompt edit from the brief (via the read-only `tune-drafter`
+subagent), A/Bs it against your real fixture plus an `--suite anchor` canary using
+the prompt-override primitive (so `analyzer.py` is never touched during the
+trial), and shows a `python -m evals.tune` delta table. A change is **promoted**
+— constant edited, `PROMPT_VERSION` bumped in the same commit, `TUNING_LOG.md`
+entry written — only on your explicit approval. Full walkthrough in
+[`evals/README.md`](evals/README.md) ("Tune-from-annotations workflow").
 
 ---
 

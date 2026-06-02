@@ -594,6 +594,79 @@ invalid until you fill it in.
 
 ---
 
+## Tune-from-annotations workflow (`/tune-from-annotations`)
+
+The annotation contract produces an `improvement_brief.md` + a `--suite real`
+fixture; the `/tune-from-annotations` skill is what turns that brief into a
+**promoted prompt edit**. It is the annotations-driven sibling of
+[`/prompt-tune`](../.claude-plugin/commands/prompt-tune.md): same prompt-override
+primitive underneath, but it reads the brief (instead of asking the user for the
+wording) and A/Bs against your real-data fixture.
+
+The full loop, end to end:
+
+```bash
+# 1. Snapshot your corpus → seed.json (deterministic, LLM-free).
+python -m scripts.export_corpus_seed --user <name>
+
+# 2. Drive the seed against N JDs → bootstrap.json.
+python -m evals.bootstrap --seed evals/fixtures/real/<name>/seed.json --jd-dir <jds>/
+
+# 3. Emit a blank annotations.json, fill in verdicts, collate → fixture + brief.
+python -m evals.annotation --bootstrap evals/fixtures/real/<name>/bootstrap.json --emit-template
+#   …annotate annotations.json…
+python -m evals.annotation --bootstrap evals/fixtures/real/<name>/bootstrap.json \
+    --annotations evals/fixtures/real/<name>/annotations.json --collate --jd-dir <jds>/
+
+# 4. Tune: draft a candidate from the brief, A/B it, promote on approval.
+/tune-from-annotations --candidate <name>
+```
+
+What step 4 does (driven by the skill, not run by hand):
+
+1. **Baseline** — runs `--suite real --seed` (the target) and `--suite anchor`
+   (a regression canary), with **no** overrides.
+2. **Draft** — the read-only `tune-drafter` subagent reads `improvement_brief.md`
+   + the current target constant and returns the full candidate text; the skill
+   writes it to `evals/_tune_candidate.json` (gitignored).
+3. **Candidate** — re-runs both suites with
+   `--prompt-overrides evals/_tune_candidate.json`; the run is logged as
+   `prompt_version=candidate:<hash>`.
+4. **Delta** — `python -m evals.tune --baseline <a>.jsonl --candidate <b>.jsonl`
+   prints the per-`(fixture, rubric)` delta table for each suite (exit 2 if any
+   rubric regressed by ≥ `REGRESSION_DELTA`):
+
+   ```bash
+   python -m evals.tune --baseline evals/results/<base>.jsonl \
+       --candidate evals/results/<cand>.jsonl
+   ```
+
+5. **Promote** (only on explicit approval) — `Edit` the constant in `analyzer.py`,
+   bump `PROMPT_VERSION` in the same commit, and log the before/after in
+   [`TUNING_LOG.md`](TUNING_LOG.md).
+
+### What the override primitive can (and can't) A/B
+
+`--prompt-overrides` injects only the **system-prompt constants** in
+`analyzer._BASE_SYSTEM_PROMPTS` — not the user-prompt builders. So a fix that
+belongs in a user-prompt fragment (e.g. `_COVER_LETTER_RULES_BLOCK`, where the
+cover-letter throat-clearing rule lives) is A/B'd as a **`SYSTEM_PROMPT`** worked
+example instead — the AGENTS.md-prescribed way to teach a failure mode. If the
+durable home turns out to be the user-prompt block, the promote step can write
+there, but that exact constant is not measurable via the primitive — a documented
+limitation, not extended here.
+
+### `evals/tune.py`
+
+The delta table is computed by a standalone, LLM-free helper. It reads result
+JSONL only — it imports nothing from `runner.py` / `annotation.py` /
+`bootstrap.py` / `seed_import.py`, so it can never perturb their paths. Skips
+non-`ok` rows (drops `judge_error` / `pipeline_error`), means multiple rows per
+pair (n>1 in one file), and flags a regression at the same `REGRESSION_DELTA` the
+runner uses. `tests/test_tune.py` pins the behavior (no API calls).
+
+---
+
 ## Writing a custom rubric
 
 Add a new file at `evals/rubrics/{slug}.md`. The runner picks it up automatically (`--subset full` runs every `*.md` in `evals/rubrics/`).
