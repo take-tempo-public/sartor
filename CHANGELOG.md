@@ -109,6 +109,48 @@ The runner's file-based and `--seed` paths are **untouched** (zero edits to
   with a JD's domain terms not present in source). Rubric-vocabulary edits are
   eval-apparatus, **not** a prompt change — `PROMPT_VERSION` is not bumped.
 
+### Added — Eval annotation contract (`eval/annotation-contract`, v1.0.4)
+
+Internal/dev tooling for the eval tuning loop — **no user-facing pipeline
+change**, `PROMPT_VERSION` unchanged, no new dependency, no LLM calls. The
+file-based, `--seed`, and bootstrap paths are **untouched**. Deterministic
+collation only — it consumes `bootstrap.json`, it does not call models (P1
+hardening posture, like `evals/seed_import.py`).
+
+- **`evals/annotation.py`** — the headless, file-based annotation contract: the
+  human-in-the-loop seam between `bootstrap.json` and a `--suite real` regression
+  fixture. It declares `annotation_schema_version: 1` and a fail-closed
+  `validate_annotations` (mirroring `evals/seed_import.py`: an unsupported version,
+  missing collections, an unknown verdict, an unknown `failed_rules` slug, or a
+  verdict whose required payload is absent is rejected, not half-collated).
+- **Verdict enum** — `keep` / `fix` / `omit` / `fabricated`. Disposition verbs,
+  each mapping 1:1 to a collation action. **Verdict-aware** requirements: `fix`
+  must carry an `honest_rewrite`; `fabricated` must carry a compilable
+  `forbidden_pattern` regex. The grounding *subtype* of a finding
+  (`jd_pandering`, `invented_metric`, …) rides in `failed_rules`, which **reuses
+  the existing rubric vocabulary** in `evals/rubrics/` — that reuse is not a
+  prompt change and bumps no `PROMPT_VERSION`.
+- **Template emitter** (`build_annotation_template`) — `bootstrap.json` → a blank
+  `annotations.json` skeleton pre-filled with every bullet/skill cluster +
+  clarification question + the inline MiniCheck/NLI pre-scores (joined by index
+  from the bootstrap's `grounding_signals`), so a human annotates with the model
+  pre-scores in view. The headless stand-in for the v1.0.5 annotation UI, which
+  wraps this same file format — so the format is the durable contract.
+- **Deterministic collation** — a completed `annotations.json` (+ its
+  `bootstrap.json`) produces (a) an `expected.json` fixture matching the schema
+  `evals/runner.py:_load_fixture` reads (`must_keywords` from `keep`-verdict
+  skills; `forbidden_inventions` from `fabricated`-verdict patterns; `min_*_score`
+  defaults/overrides; `candidate_name`; provenance `notes`) and (b) an improvement
+  brief (fabrication patterns, `fix` rewrites as worked-example seeds, omissions,
+  clarification ratings, and a human-vs-scorer agreement section) — the source
+  material for the next branch's prompt edits.
+- **CLI** — `python -m evals.annotation --bootstrap PATH --emit-template` writes
+  the skeleton beside the bootstrap; `… --collate --annotations PATH --jd-dir PATH`
+  **auto-writes a runnable `--suite real` fixture directory** (`expected.json` +
+  the widest-span anchor `jd.txt`) plus the brief. A `_within` write-path guard
+  (mirroring `evals/bootstrap.py`) refuses to emit the PII-bearing artifacts
+  anywhere except `evals/fixtures/real/`.
+
 ## [1.0.3] — 2026-06-02
 
 R1 Phase 2 stream — two-pass analyze split (speed without quality loss) +

@@ -473,6 +473,127 @@ real PII); a `_within` write-path guard refuses to emit it anywhere else.
 
 ---
 
+## Annotation contract (`evals/annotation.py`)
+
+The annotation contract is the **human-in-the-loop seam** of the tuning loop. A
+`bootstrap.json` is raw material — generated bullets/skills deduped across JDs,
+with the model's MiniCheck/NLI pre-scores attached. A human reads those clusters
+and renders a verdict on each; this module turns those verdicts into (a) a
+permanent `--suite real` regression fixture and (b) an improvement brief for the
+next branch's prompt edits.
+
+It is **deterministic and LLM-free**: it consumes `bootstrap.json`, it never calls
+a model. The polished annotation **UI** is v1.0.5 (`feat/annotation-tab`) — it
+wraps this same `annotations.json` format, so the file format is the durable
+contract, not throwaway.
+
+### Workflow
+
+```bash
+# 1. Emit a blank annotations.json skeleton beside the bootstrap.json.
+python -m evals.annotation \
+    --bootstrap evals/fixtures/real/<name>/bootstrap.json --emit-template
+
+# 2. Open annotations.json and fill in a verdict (+ note / rewrite / pattern) on
+#    each bullet & skill cluster, and a 0-5 rating on each clarification question.
+#    The MiniCheck/NLI pre-scores are already inline, so you annotate with the
+#    model's view in front of you.
+
+# 3. Collate into a runnable fixture + the improvement brief.
+python -m evals.annotation \
+    --bootstrap evals/fixtures/real/<name>/bootstrap.json \
+    --annotations evals/fixtures/real/<name>/annotations.json \
+    --collate --jd-dir path/to/jds/
+
+# 4. The fixture runs immediately as a real-suite regression check.
+python evals/runner.py --suite real --seed evals/fixtures/real/<name>/seed.json
+```
+
+| Flag | Meaning |
+|---|---|
+| `--bootstrap PATH` | The `bootstrap.json` to annotate against. Schema version eager-validated. |
+| `--emit-template` | Write a blank `annotations.json` skeleton beside the bootstrap (or `--out PATH`). |
+| `--collate` | Collate a completed `annotations.json` into a fixture + brief. Needs `--annotations` + `--jd-dir`. |
+| `--annotations PATH` | The completed annotations file (collate mode). |
+| `--jd-dir PATH` | The JD directory used for the bootstrap — the anchor `jd.txt` is copied from here (the bootstrap stores JD *names*, not text). |
+| `--fixture-slug NAME` | Fixture directory name (default `<candidate>-bootstrap`). |
+| `--anchor-jd NAME` | Override the auto-picked anchor JD (default: the JD spanning the most bullet clusters — the most JD-invariant). |
+
+### Verdict enum
+
+Each bullet/skill cluster gets one disposition verdict; each maps 1:1 to a
+collation action. The grounding *subtype* of a finding rides in `failed_rules`,
+reusing the existing rubric vocabulary (`jd_pandering`, `invented_metric`,
+`scope_inflation`, …).
+
+| Verdict | Meaning | Collation effect |
+|---|---|---|
+| `keep` | Grounded core — the candidate's real, JD-independent value. | Skill reps → `must_keywords`. |
+| `fix` | Salvageable but flawed; requires a non-empty `honest_rewrite`. | Brief: `rep → honest_rewrite` (worked-example seed). |
+| `omit` | Real but should not appear (redundant/filler); implies `should_omit`. | Brief: omissions list. |
+| `fabricated` | Invented / JD-pandering; requires a compilable `forbidden_pattern` regex. | Pattern → `forbidden_inventions`. |
+
+### `annotations.json` schema (`annotation_schema_version: 1`)
+
+```jsonc
+{
+  "annotation_schema_version": 1,
+  "bootstrap_source": "<path to the bootstrap.json this annotates>",
+  "candidate_username": "<carried from bootstrap.json>",
+  "prompt_version": "<carried — what was annotated>",
+  "bullets": [
+    {
+      "cluster_index": 0,                  // index into dedup.bullets.clusters
+      "representative": "…",               // carried for readability + index join check
+      "jd_files": ["a.txt", "b.txt"],      // carried from the cluster
+      "size": 2,
+      "nli_entailment_score": 0.83,        // inline pre-scores (null if no --grounding-signals run)
+      "nli_contradiction_flag": false,
+      "minicheck_grounding_score": 0.91,
+      "verdict": "keep|fix|omit|fabricated",  // REQUIRED — blank in a fresh template
+      "failed_rules": ["jd_pandering"],        // reused rubric slugs ([] for keep)
+      "note": "…",
+      "should_omit": false,
+      "honest_rewrite": null,                  // REQUIRED non-empty when verdict=fix
+      "forbidden_pattern": null                // REQUIRED compilable regex when verdict=fabricated
+    }
+  ],
+  "skills": [ { /* same per-item shape; skills carry null pre-scores */ } ],
+  "clarification_ratings": [
+    { "jd_file": "a.txt", "question_id": "q1", "question_text": "…",
+      "kind": "experience_probe", "rating": 4, "failed_rules": [], "note": "…" }
+  ],
+  "min_scores": { "grounding": 4.0, "keyword_coverage": 4.0, "ats_format": 4.0,
+                  "tone": 3.0, "clarification_quality": 4.0 },
+  "notes": "free-form annotator summary"
+}
+```
+
+Validation is **fail-closed** (mirrors `seed_import.py`): an unsupported
+`annotation_schema_version`, missing top-level collections, an unknown verdict, an
+unknown `failed_rules` slug, a `fix` without an `honest_rewrite`, or a
+`fabricated` without a *compilable* `forbidden_pattern` is rejected, not
+half-collated. A freshly emitted template (blank verdicts) is intentionally
+invalid until you fill it in.
+
+### What collation produces
+
+- **`evals/fixtures/real/<slug>/expected.json`** — the exact field set
+  `_load_fixture` reads: `candidate_name`, `must_keywords` (lowercased
+  `keep`-skill reps), `forbidden_inventions` (the `fabricated` patterns, regex
+  case preserved), `min_*_score` (from `min_scores` or the README defaults), and a
+  provenance `notes` stamp. Plus the anchor `jd.txt`, so the fixture runs under
+  `--suite real --seed`.
+- **`evals/fixtures/real/<candidate>/improvement_brief.md`** — fabrication
+  patterns (widest-JD-span first), `fix` rewrites as `NOT OK → OK` worked-example
+  seeds, omissions, clarification ratings (weakest first), and a **scorer
+  agreement** section flagging where a human verdict disagrees with the inline
+  MiniCheck/NLI pre-scores (this is how annotations validate the automated
+  scorers). This is the source material the `tuning/draft-and-gate-skill` branch
+  reads.
+
+---
+
 ## Writing a custom rubric
 
 Add a new file at `evals/rubrics/{slug}.md`. The runner picks it up automatically (`--subset full` runs every `*.md` in `evals/rubrics/`).
