@@ -10,7 +10,7 @@
 > gates; which items are shipping-blockers vs nice-to-haves.
 >
 > **Companion:** see
-> [`docs/PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) §10 for the full
+> [`docs/PRODUCT_SHAPE.md`](../PRODUCT_SHAPE.md) §10 for the full
 > deferred-items table that drives the v1.0.1 / v1.1 / v2 ladder.
 
 ---
@@ -45,7 +45,7 @@ release.
       `mypy .` (81 files, no issues) + `pytest` (637 passed) all
       clean on branch `chore/quality-gate-version-bump-v1.0.1`.
 - [x] **~~`pyproject.toml` version bump~~** — ✅ done 2026-05-28.
-      `version = "1.0.1"` in [`pyproject.toml:7`](../pyproject.toml).
+      `version = "1.0.1"` in [`pyproject.toml:7`](../../pyproject.toml).
       Landed in `chore/quality-gate-version-bump-v1.0.1`.
 - [x] **~~`CHANGELOG.md` flip~~** — ✅ confirmed 2026-05-28. The
       `[1.0.1] — 2026-05-28` section was written ahead of time and is
@@ -91,12 +91,12 @@ release.
       and the `sysdm.cpl` shortcut for setting a permanent env var.
 - [x] **~~Accessibility scan of all user-facing documentation~~** —
       ✅ resolved 2026-05-28. Full audit of
-      [`README.md`](../README.md),
-      [`docs/install.md`](install.md),
-      [`docs/walkthrough.md`](walkthrough.md),
-      [`docs/walkthrough_example.md`](walkthrough_example.md),
-      [`vision.md`](../vision.md), and the 10 PNGs in
-      [`docs/screenshots/`](screenshots/).
+      [`README.md`](../../README.md),
+      [`docs/install.md`](../install.md),
+      [`docs/walkthrough.md`](../walkthrough.md),
+      [`docs/walkthrough_example.md`](../walkthrough_example.md),
+      [`vision.md`](../../vision.md), and the 10 PNGs in
+      [`docs/screenshots/`](../screenshots/).
       - **Alt text** — all 10 images have substantive, descriptive
         alt text. No "a screenshot" placeholders.
       - **Mermaid diagrams** — the second diagram already had
@@ -116,18 +116,18 @@ release.
       action verb than "Drop" which conflated drag-and-drop with
       the action itself; the parenthetical leaked the AI-extract
       implementation detail into a button label). Live docs
-      ([`docs/walkthrough.md`](walkthrough.md),
-      [`docs/install.md`](install.md),
-      [`docs/ux/screenshot_capture.md`](ux/screenshot_capture.md))
+      ([`docs/walkthrough.md`](../walkthrough.md),
+      [`docs/install.md`](../install.md),
+      [`docs/ux/screenshot_capture.md`](../ux/screenshot_capture.md))
       synced to the new label. The audit at
-      [`docs/ux/onboarding_audit_2026-05-25.md`](ux/onboarding_audit_2026-05-25.md)
+      [`docs/ux/onboarding_audit_2026-05-25.md`](../ux/onboarding_audit_2026-05-25.md)
       is left as the historical record (the audit accurately
       reports the doc/UI mismatch as it existed on 2026-05-25).
       The internal API route `/api/users/<user>/import-legacy`
       keeps its name — route rename is a separate cleanup, v1.1.
 - [x] **~~Bullet-dedup gap in corpus re-import~~** — ✅ resolved
       2026-05-26. Changed `_merge_into_existing_experience` in
-      [`onboarding/import_legacy.py`](../onboarding/import_legacy.py)
+      [`onboarding/import_legacy.py`](../../onboarding/import_legacy.py)
       to dedup on **normalized bullet text** instead of
       `(source, text)`. The old key missed same-file re-imports
       because the source flips from `primary:<file>` to
@@ -137,7 +137,7 @@ release.
       phrasings from different files still survive (they have
       different normalized text). Test
       `test_merge_dedupes_identical_bullet_text_across_sources`
-      in [`tests/test_onboarding_import_legacy.py`](../tests/test_onboarding_import_legacy.py)
+      in [`tests/test_onboarding_import_legacy.py`](../../tests/test_onboarding_import_legacy.py)
       pins the new behavior; all 24 tests in that file pass.
 - [x] **~~Wizard rail step buttons don't re-enable after prior step
       completes~~** — ✅ resolved 2026-05-26. Added a
@@ -148,14 +148,14 @@ release.
       a `_wizardRender`), so the step-6 side of the bug was
       already covered — the bug only existed on the analyze →
       step 2 transition.
-      [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py)
+      [`scripts/capture_screenshots.py`](../../scripts/capture_screenshots.py)
       still navigates forward via the in-flow Continue buttons;
       that's fine and matches the real-user happy path, but rail
       clicks would now work too.
 - [ ] **Playwright UX clickthrough regression suite** — surfaced
       during the screenshot-capture pass (2026-05-26). The
       screenshot script at
-      [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py)
+      [`scripts/capture_screenshots.py`](../../scripts/capture_screenshots.py)
       drives the wizard end-to-end and incidentally exposed
       several UI bugs above (rail re-enable, corpus render,
       bullet-dedup gap, label drift) that the existing `pytest`
@@ -175,7 +175,7 @@ release.
         (`user_picker.py`, `corpus.py`, `wizard_step1_job.py`
         through `wizard_step6_output.py`, `cover_letter.py`).
         Mechanical refactor of the navigation already in
-        [`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py).
+        [`scripts/capture_screenshots.py`](../../scripts/capture_screenshots.py).
       - **`tests/ux/fixtures/`** — `factories.py` (lift
         `write_priya_docx` + `PRIYA_JD` from the screenshot
         script); `api_stubs.py` (`page.route()` handlers
@@ -211,7 +211,7 @@ release.
         presence (skip if absent so forks don't fail).
       Wire `pytest -m ux` into `.git/hooks/pre-push` (or a
       `make pre-pr` target) and document in
-      [`CONTRIBUTING.md`](../CONTRIBUTING.md) as the standard
+      [`CONTRIBUTING.md`](../../CONTRIBUTING.md) as the standard
       pre-PR ritual. **Defer if time-bound:** land the harness
       + `conftest.py` + one happy-path-stubbed test in v1.0.1;
       backfill the `regression/` + `error_handling/` +
@@ -233,7 +233,7 @@ release.
       `16d7ad4` stays in place as a safety net for future regressions.
 - [x] **~~`/personas` 500 on first user-select after server restart~~** —
       ✅ resolved 2026-05-27. Added `threading.Lock()` around the
-      check-and-init block in [`db/session.py`](../db/session.py)
+      check-and-init block in [`db/session.py`](../../db/session.py)
       `init_db()` (three lines: `import threading`, `_init_lock =
       threading.Lock()` at module level, `with _init_lock:` wrapping
       the entire check-then-`_initialized_paths.add()` sequence). The
@@ -246,24 +246,24 @@ release.
       `fix/personas-500-thread-race`.
 - [x] **~~Judge JSON parse failures mis-categorized as `status=ok`~~** —
       ✅ resolved 2026-05-26.
-      [`evals/runner.py:289`](../evals/runner.py) now returns
+      [`evals/runner.py:289`](../../evals/runner.py) now returns
       `{"score": 0, "reasons": [...], "raw": raw, "status": "judge_error"}`
       so the existing `judge_error` path in `_detect_regression` /
       summary logic skips these records correctly. New test
       `test_unparseable_json_marks_status_judge_error` in
-      [`tests/test_eval_runner.py`](../tests/test_eval_runner.py)
+      [`tests/test_eval_runner.py`](../../tests/test_eval_runner.py)
       pins the behavior; all 25 tests in that file pass. The
       false-positive WARN observed in
-      [`evals/results/20260526_170400Z.jsonl`](../evals/results/20260526_170400Z.jsonl)
+      [`evals/results/20260526_170400Z.jsonl`](../../evals/results/20260526_170400Z.jsonl)
       (`data-scientist-junior × grounding`, -4.8 delta) won't
       recur — re-running the smoke pass should produce a clean
       result.
 - [ ] **Re-baseline eval scores for v1.0.1** —
-      [`evals/results/baseline_v1.json`](../evals/results/baseline_v1.json)
+      [`evals/results/baseline_v1.json`](../../evals/results/baseline_v1.json)
       was sourced from
-      [`evals/results/20260513_221926Z.jsonl`](../evals/results/20260513_221926Z.jsonl)
+      [`evals/results/20260513_221926Z.jsonl`](../../evals/results/20260513_221926Z.jsonl)
       on `prompt_version=2026-05-12.1` (recorded 2026-05-25), but
-      [`analyzer.py`](../analyzer.py)'s current `PROMPT_VERSION`
+      [`analyzer.py`](../../analyzer.py)'s current `PROMPT_VERSION`
       is `2026-05-24.4` — three prompt revisions shipped with
       v1.0.0 between the baseline source-run and tag. The
       baseline file's own `notes` field already calls this out
@@ -277,14 +277,14 @@ release.
       [`docs/RELEASE_CHECKLIST.md:32-35`](RELEASE_CHECKLIST.md)
       is comparing against scores no longer apples-to-apples
       with shipping code. Action: once the
-      [`evals/runner.py:289`](../evals/runner.py) judge-error
+      [`evals/runner.py:289`](../../evals/runner.py) judge-error
       fix lands AND the v1.0.1 prompt landscape is final (R2
       streaming work either in or explicitly deferred), run
       the full synthetic suite (`python evals/runner.py --suite
       synthetic`, ~$1.50, all five rubrics × three fixtures)
       and replace `baseline_v1.json` with a v1.0.1 baseline.
       Document the cut as a dated entry in
-      [`evals/TUNING_LOG.md`](../evals/TUNING_LOG.md) per its
+      [`evals/TUNING_LOG.md`](../../evals/TUNING_LOG.md) per its
       four-question structure. **Defer:** v1.0.1 CAN ship
       against `baseline_v1` (smoke noise from the judge-error
       bug aside, the underlying scores are stable); the
@@ -323,7 +323,7 @@ release.
       in the console. The sandbox fix (`allow-scripts
       allow-same-origin`) resolved it. The absence of a real
       `Content-Security-Policy` header is documented as an
-      accepted-risk entry in [`SECURITY.md`](../SECURITY.md)
+      accepted-risk entry in [`SECURITY.md`](../../SECURITY.md)
       (appropriate for localhost-only v1.0.1; add before any
       networked deployment).
 - [x] **~~Sandboxed iframe blocks script execution ×17~~** —
@@ -351,7 +351,7 @@ release.
       `<label for="…">` elements for the six new-user form fields
       (`newUsername`, `newName`, `newEmail`, `newPhone`,
       `newLinkedin`, `newWebsite`) and the `memoryKindFilter`
-      select in [`templates/index.html`](../templates/index.html).
+      select in [`templates/index.html`](../../templates/index.html).
       All seven Chrome-flagged "violating nodes" now have
       associated labels; browser-autofill and screen-reader
       association restored. No functional change.
@@ -426,7 +426,7 @@ release.
 - [x] **~~Cover-letter download honors the chosen output format~~** —
       ✅ resolved 2026-05-28 (path b, UI hint). Added a one-line hint
       paragraph below the download button row in
-      [`templates/index.html`](../templates/index.html):
+      [`templates/index.html`](../../templates/index.html):
       *"Cover letter downloads as .docx in v1.0.1. PDF and Markdown
       format support coming in v1.0.2."* The underlying
       `generator.generate_cover_letter` still hardcodes `.docx` (no
@@ -438,7 +438,7 @@ release.
       applications" panel of Step 1 shows a one-line toast with
       title/status/iter-count and nothing else — that's an
       acknowledged placeholder per the comment at
-      [`static/app.js:3404-3406`](../static/app.js#L3404):
+      [`static/app.js:3404-3406`](../../static/app.js#L3404):
       *"Lightweight info display in the toast for now — resuming an
       application into the live editing flow ships in D.3.1."*
       Expected behavior (user-confirmed): clicking should load the
@@ -521,9 +521,9 @@ before the version-bump commit.
       landed in commits `dc062e4` Phase 1 → `3a3f891` Phase 2; only
       class NAMES were leftover) and chose to close the rename out
       in v1.0.1. Mechanical `lcars-` → `cb-` substitution across
-      [`static/style.css`](../static/style.css) (73 refs →  0),
-      [`static/app.js`](../static/app.js) (19 → 0), and
-      [`templates/index.html`](../templates/index.html) (147 → 0).
+      [`static/style.css`](../../static/style.css) (73 refs →  0),
+      [`static/app.js`](../../static/app.js) (19 → 0), and
+      [`templates/index.html`](../../templates/index.html) (147 → 0).
       Zero behavior change; class shape preserved
       (`lcars-btn` → `cb-btn`, `lcars-bg-*` → `cb-bg-*`, etc.).
       Historical CHANGELOG entries still describe the original
@@ -535,7 +535,7 @@ before the version-bump commit.
 ## Forward-looking — v1.1 and v2
 
 v1.1 + v2 items are tracked in
-[`docs/PRODUCT_SHAPE.md §10`](PRODUCT_SHAPE.md). Don't duplicate
+[`docs/PRODUCT_SHAPE.md §10`](../PRODUCT_SHAPE.md). Don't duplicate
 the list here — the strategy doc is the single source of truth
 for the deferred table.
 
@@ -645,7 +645,7 @@ bottom. The user should be able to click-and-drag to reorder
 these. Functional change + documentation to support.
 
 **Current state.** Bullets are already sorted server-side in
-[`app.py:get_application_composition`](../app.py) by
+[`app.py:get_application_composition`](../../app.py) by
 `(not (pinned or recommended or added), -score, id)` —
 pinned / LLM-recommended / drawer-added bullets sink to the top,
 then by descending `score_corpus_bullet()` (deterministic fit
@@ -666,7 +666,7 @@ final document in two ways the user may not see directly:
    wasn't verifiable in our session. Treat the 6–8s as
    directionally true, not citation-quality.)
 2. **LLM prompt order shapes the generated bullets.** The
-   `_corpus_block` in [`analyzer.py`](../analyzer.py)
+   `_corpus_block` in [`analyzer.py`](../../analyzer.py)
    iterates experiences and bullets in the order they appear
    in the corpus payload. The Sonnet generate prompt
    processes bullets in that order — when it picks which
@@ -739,7 +739,7 @@ implementation):**
    silently re-sort, which would erase the user's other
    choices.
 9. **Documentation impact.** Update
-   [`docs/walkthrough.md`](walkthrough.md) Step 3 (Compose) to
+   [`docs/walkthrough.md`](../walkthrough.md) Step 3 (Compose) to
    teach the WHY of ordering (recruiter scan + LLM
    sequence-position bias), not just the HOW (drag to
    reorder). The educational depth is the differentiator vs.

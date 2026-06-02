@@ -28,7 +28,7 @@
    failure patterns to avoid. Read in full before writing any code.
 4. [docs/architecture.md](../architecture.md) — module map and LLM routing
    boundary. The deterministic / LLM split is load-bearing.
-5. [evals/TUNING_LOG.md](../evals/TUNING_LOG.md) — baseline floors and
+5. [evals/TUNING_LOG.md](../../evals/TUNING_LOG.md) — baseline floors and
    prompt change history.
 
 ---
