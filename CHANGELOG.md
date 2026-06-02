@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-v1.0.3 R1 Phase 2 stream (in progress).
+## [1.0.3] — 2026-06-02
+
+R1 Phase 2 stream — two-pass analyze split (speed without quality loss) +
+`clarify()` → Haiku 4.5. `analyze` p50 103.2s → 67.7s (−34%), per-run cost
+−12%, `clarification_quality` recovered to ≥4.20 (pm-senior) with all other
+rubrics held at or above the v1.0.2 baseline. No user-facing pipeline shape
+change. `PROMPT_VERSION` `2026-05-24.4` → `2026-06-01.4`.
 
 ### Changed — Two-pass analyze split, gated for speed without quality loss (`r1/analyze-split-retry`)
 
