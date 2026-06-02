@@ -159,7 +159,7 @@ Default pass threshold is `4.0` (set per-fixture in `expected.json`). The runner
 Each rubric defines a vocabulary of machine-friendly failure slugs. The judge tags each finding with one or more slugs. Slugs are stable across runs so you can grep your way to "every fixture × run that triggered `invented_metric` in the last month."
 
 Examples:
-- `grounding.md`: `invented_metric`, `invented_role`, `invented_company`, `invented_credential`, `forbidden_pattern_match`, `scope_inflation`, `verb_overreach`
+- `grounding.md`: `invented_metric`, `invented_role`, `invented_company`, `invented_credential`, `forbidden_pattern_match`, `scope_inflation`, `verb_overreach`, `jd_pandering` (a bullet re-skinned with a JD's domain terms not in source — clearest under the corpus-bootstrap cross-JD comparison)
 - `keyword_coverage.md`: `missing_must_keyword:$keyword`, `low_coverage`, `keyword_stuffing`, `forced_phrasing`
 - `ats_format.md`: `missing_heading:$name`, `length_overflow`, `table_layout`, `missing_contact`
 - `tone.md`: `throat_clearing_opener`, `banned_phrase:$word`, `hedging:$phrase`, `length_under`, `generic_hook`
@@ -387,6 +387,89 @@ Semantics:
 This is the runner half of the v1.0.4 corpus-backed eval loop; the multi-JD
 bootstrap that drives many JDs against one seed builds on top of it
 (`eval/bootstrap-engine`).
+
+---
+
+## Bootstrap engine (`evals/bootstrap.py`)
+
+The bootstrap engine generates **annotation material in bulk**: it drives one
+corpus `seed.json` against **N job descriptions** through the real product
+pipeline (`analyze` → `clarify` → `generate`), then deterministically collates
+the generated bullets/skills across JDs into a `bootstrap.json`. That file is the
+durable contract the annotation loop (`eval/annotation-contract`) turns into
+`expected.json` fixtures + an improvement brief.
+
+```bash
+python -m evals.bootstrap \
+    --seed evals/fixtures/real/<name>/seed.json \
+    --jd-dir path/to/jds/ \
+    [--out PATH] [--grounding-signals] [--jaccard 0.75]
+```
+
+| Flag | Meaning |
+|---|---|
+| `--seed PATH` | Corpus `seed.json` (from `scripts.export_corpus_seed`). Imported into one in-memory SQLite via `seeded_session`; shared across all JDs. Eager-validated before any paid call. |
+| `--jd-dir PATH` | Directory of JD files (`*.txt` / `*.jd`), one JD per file. Processed in sorted order. |
+| `--out PATH` | Output path; must resolve under `evals/fixtures/real/`. Default `evals/fixtures/real/<candidate>/bootstrap.json`. |
+| `--grounding-signals` | Score the deduplicated bullet representatives with DeBERTa NLI + MiniCheck-FT5 (eval-only; same opt-in as the runner). |
+| `--jaccard FLOAT` | Cross-JD dedup similarity threshold (default 0.75). |
+
+**What it does.** For each JD it builds context via
+`db.build_context.build_context_set_from_db` (the same corpus→context path the
+live app uses) and runs the public `analyze`/`clarify`/`generate` primitives —
+the LLM-call logic is reused from `analyzer.py`, not duplicated, and the runner's
+own paths are untouched. It then dedups every generated bullet and (separately)
+every skill across all JDs at the Jaccard threshold: each item joins the first
+cluster whose representative scores ≥ threshold, else opens a new cluster. The
+collation is deterministic and LLM-free.
+
+**Reading the dedup.** A cluster's `size` / `len(jd_files)` is the JD-invariance
+signal. A bullet that recurs near-identically across many JDs (`jd_files` spans
+several files) is **grounded core** — the candidate's real, JD-independent value.
+A `size: 1` cluster is **JD-specific**: the model produced it for exactly one
+posting. When that single-JD wording re-skins a source experience with the JD's
+domain terms, tools, or claims not present in the corpus, it is **JD-pandering**
+(the `jd_pandering` grounding slug) — the failure mode the cross-JD comparison
+exists to surface. The optional grounding-signals pass scores the cluster
+representatives against the corpus source as a second, model-based check.
+
+**`bootstrap.json` schema (`bootstrap_schema_version: 1`):**
+
+```json
+{
+  "bootstrap_schema_version": 1,
+  "generator": "evals/bootstrap.py",
+  "generated_at": "<utc iso>",
+  "candidate_username": "<name>",
+  "seed_path": "<path>",
+  "prompt_version": "<PROMPT_VERSION at run time>",
+  "jaccard_threshold": 0.75,
+  "jd_count": 3,
+  "per_jd": [
+    {
+      "jd_file": "kafka-backend.txt",
+      "run_id": "…",
+      "analysis": { },
+      "clarification_questions": [{"id": "", "text": "", "kind": ""}],
+      "clarification_reasoning": "",
+      "generated_resume": "…markdown…",
+      "generated_cover_letter": "…",
+      "bullets": ["…"],
+      "skills": ["…"]
+    }
+  ],
+  "dedup": {
+    "bullets": {"cluster_count": 0, "clusters": [
+      {"representative": "", "members": [], "jd_files": [], "size": 0}
+    ]},
+    "skills":  {"cluster_count": 0, "clusters": []}
+  },
+  "grounding_signals": null
+}
+```
+
+The output lives under the gitignored `evals/fixtures/real/` tree (it carries
+real PII); a `_within` write-path guard refuses to emit it anywhere else.
 
 ---
 
