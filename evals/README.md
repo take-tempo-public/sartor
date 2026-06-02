@@ -339,6 +339,24 @@ The directory structure is identical to synthetic. `expected.json` describes wha
 python evals/runner.py --suite real
 ```
 
+### Seeding a real fixture from your corpus DB
+
+If your corpus lives in the SQLite DB rather than as loose files, snapshot it to
+a portable `seed.json` with the deterministic, LLM-free exporter:
+
+```bash
+python -m scripts.export_corpus_seed --user <name>
+# → evals/fixtures/real/<name>/seed.json   (gitignored)
+```
+
+The exporter captures Candidate / Experience / Bullet / SummaryItem / Skill
+(plus the tag registry + tag links), preserving DB primary keys so foreign keys
+round-trip. A write-path guard refuses to emit anywhere except
+`evals/fixtures/real/`. The `seed.json` (`seed_schema_version: 1`) is the
+contract the **corpus-backed runner consumes by importing it into an in-memory
+SQLite and feeding `build_context_set_from_db` — that runner lands in the next
+branch (`eval/corpus-backed-runner`)**.
+
 ---
 
 ## Writing a custom rubric

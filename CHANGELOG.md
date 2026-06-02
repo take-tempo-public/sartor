@@ -32,6 +32,27 @@ change**, and `PROMPT_VERSION` is unchanged (no prompt-constant edit).
   (removing the fragile clean-revert dependency); the constant is edited only if
   you choose Keep.
 
+### Added — Corpus seed export (`eval/corpus-seed-export`, v1.0.4)
+
+Internal/dev tooling for the eval tuning loop — **no user-facing pipeline
+change**, `PROMPT_VERSION` unchanged, no new dependency, no LLM calls.
+
+- **`scripts/export_corpus_seed.py`** — a deterministic, LLM-free CLI
+  (`python -m scripts.export_corpus_seed --user <name>`) that snapshots one
+  candidate's corpus (Candidate / Experience / ExperienceTitle / Bullet /
+  SummaryItem / Skill / Education / Certification + the candidate-scoped Tag
+  registry and tag links) into a `seed.json` under the gitignored
+  `evals/fixtures/real/`. Original DB primary keys are preserved so foreign-key
+  relationships round-trip; the export is a faithful snapshot (active + inactive
+  rows) — the active-only / JD-aware filtering stays in
+  `build_context_set_from_db`. The `seed.json` shape (`seed_schema_version: 1`)
+  is the contract the upcoming corpus-backed eval runner imports into an
+  in-memory SQLite.
+- **Write-path guard** — a `_within`-style resolved-path check (mirroring
+  `app.py:_within`) refuses to emit anywhere except `evals/fixtures/real/`, and
+  `secure_filename` sanitizes the username directory component, so the snapshot
+  (which carries real PII) can't escape the gitignored tree.
+
 ## [1.0.3] — 2026-06-02
 
 R1 Phase 2 stream — two-pass analyze split (speed without quality loss) +
