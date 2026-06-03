@@ -14,7 +14,7 @@
 | v1.0.1 | Solid app | No | **Tagged 2026-05-28 at commit `49f2ac9`** |
 | v1.0.2 | Eval apparatus | No | **Tagged 2026-05-30 at commit `2398f4e`** |
 | v1.0.3 | R1 Phase 2 | No | Analyze quality recovery (✓ context_probe + typed hidden_qualities) **then** the two-pass split for speed (≤72s) without giving quality back. **Tagged 2026-06-02 at commit `59b6d9c`** |
-| v1.0.4 | Eval tuning loop | No | Real-data, human-in-the-loop, model-assisted prompt improvement; internal/dev tooling |
+| v1.0.4 | Eval tuning loop | No | Real-data, human-in-the-loop, model-assisted prompt improvement; internal/dev tooling. **Tagged 2026-06-02 at commit `072e290`** |
 | v1.0.5 | UI/UX redesign | No (internal until v1.1.0) | Wizard redesign + WYSIWYG + diagnostics/tuning console & annotation tab; establishes the design system |
 | v1.1.0 | Public release | **Yes** | **Tag owned by the user** — applied when the product is judged showcase-ready; GitHub push is part of this event |
 
@@ -370,6 +370,19 @@ This phase carries the product redesign **and** the polished home for the Phase 
 - Visual assets in `docs/screenshots/`
 - Fresh-clone < 5 min
 - GitHub URL live; all doc links resolve
+- **Type-annotation scan of all v1.0.5-stream changes** — before the public
+  tag, run a full `mypy` pass with `check_untyped_defs` enabled (or annotate the
+  affected signatures) over everything that landed across the v1.0.5 stream, so
+  no untyped function body slipped through unchecked during the redesign.
+  *Origin:* `feat/wysiwyg-option1` (2026-06-02) surfaced ~15 pre-existing
+  `annotation-unchecked` notes in `app.py` — Flask route handlers whose
+  *signatures* are unannotated, so mypy skips their bodies by default (these are
+  notes, not errors; the gate stayed green). The public-release cut is the right
+  point to clear them. **Lower-risk path:** annotate the route returns with
+  `flask.typing.ResponseReturnValue` (surgical, ~15 functions). **Broader path:**
+  flip `check_untyped_defs = true` in the mypy config globally — checks every
+  untyped body at once but will surface real new errors to fix first. Either way,
+  scope the scan to the v1.0.5 diff, not the whole pre-existing surface.
 - **User judges it showcase-ready**
 
 ---

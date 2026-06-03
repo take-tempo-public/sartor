@@ -163,3 +163,78 @@ def test_save_iteration_context_does_not_mutate_parent(tmp_path):
     )
     assert parent["iteration"] == parent_iteration_before
     assert "last_generated_resume" not in parent
+    # The derived JSON Resume cache must also stay off the parent.
+    assert "last_generated_json_resume" not in parent
+
+
+# ---------------------------------------------------------------------
+# WYSIWYG Option 1 (v1.0.5): cached JSON Resume of the generated markdown
+# ---------------------------------------------------------------------
+
+_GEN_MARKDOWN = """# Priya Nadar
+Senior Data Scientist
+priya@example.com · https://linkedin.com/in/priya
+
+## Summary
+
+Data scientist who ships models to production.
+
+## Experience
+
+### Acme Corp, Staff Data Scientist\t2021 – Present
+
+- Cut inference latency 40% by rewriting the feature store.
+- Led a team of four on the fraud-detection pipeline.
+
+## Skills
+
+- Python, PyTorch, SQL
+"""
+
+
+def test_save_iteration_context_caches_json_resume(tmp_path):
+    """WYSIWYG Option 1: the child context carries last_generated_json_resume,
+    the deterministic md_to_json_resume() of last_generated_resume — derived
+    from exactly that markdown so preview and download can't diverge."""
+    from json_resume import md_to_json_resume
+
+    parent, parent_path = _seed_parent(tmp_path, iteration=0)
+
+    new_path = save_iteration_context(
+        parent_context=parent, parent_path=parent_path,
+        last_generated_resume=_GEN_MARKDOWN,
+        last_generated_cover_letter="cover letter body",
+        username="alice", base_dir=str(tmp_path),
+    )
+    saved = json.loads(Path(new_path).read_text(encoding="utf-8"))
+
+    cached = saved["last_generated_json_resume"]
+    # Byte-identical to a fresh parse of the same markdown — the cache is a
+    # pure function of last_generated_resume.
+    assert cached == md_to_json_resume(_GEN_MARKDOWN)
+    # Spot-check the structured fields a renderer reads.
+    assert cached["basics"]["name"] == "Priya Nadar"
+    assert cached["work"][0]["name"] == "Acme Corp"
+    assert any(
+        "inference latency" in h
+        for h in cached["work"][0].get("highlights", [])
+    )
+
+
+def test_save_iteration_context_empty_resume_caches_empty_skeleton(tmp_path):
+    """A generate that produced no markdown still writes a well-formed (empty)
+    skeleton — never a crash, never a missing key. The preview route treats an
+    empty skeleton as "fall back to the corpus-direct render"."""
+    parent, parent_path = _seed_parent(tmp_path, iteration=0)
+
+    new_path = save_iteration_context(
+        parent_context=parent, parent_path=parent_path,
+        last_generated_resume="", last_generated_cover_letter="",
+        username="alice", base_dir=str(tmp_path),
+    )
+    saved = json.loads(Path(new_path).read_text(encoding="utf-8"))
+
+    cached = saved["last_generated_json_resume"]
+    assert cached["basics"] == {}
+    assert cached["work"] == []
+    assert cached["skills"] == []

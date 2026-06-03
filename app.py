@@ -2532,46 +2532,60 @@ def preview_application_html(application_id: int):
                 return jsonify({"error": "No HTML template available"}), 500
 
         # Optional context_path query param — the frontend passes the
-        # active context file so composition_overrides + LLM
-        # recommendations shape the preview. We validate containment
-        # under OUTPUT_DIR so a malicious caller can't read outside.
+        # active context file. Two render sources, in priority order:
+        #   1. WYSIWYG Option 1 (v1.0.5): once /api/generate has run, the
+        #      context carries `last_generated_json_resume` — the
+        #      deterministic md_to_json_resume() of the exact markdown the
+        #      user downloads. Serve THAT so the preview IS the future
+        #      document (preview == download). A generate having run means
+        #      curation already happened, so the recommendations gate below
+        #      does not apply on this path.
+        #   2. Pre-generate: build the JSON Resume directly from the corpus,
+        #      gated on llm_recommendations. Per user requirement
+        #      (2026-05-26): the preview must reflect the JD-specific curated
+        #      selection, never silently fall back to "all active bullets"
+        #      when recommendations are missing; missing → placeholder HTML
+        #      so the iframe surfaces an honest empty-state instead of an
+        #      inflated full-corpus render.
+        # We validate containment under OUTPUT_DIR so a malicious caller
+        # can't read outside.
         ctx_path_raw = request.args.get("context_path", "").strip()
         ctx_path_arg: str | None = None
+        cached_json_resume: dict | None = None
         ctx_has_recommendations = False
         if ctx_path_raw:
             cp = Path(ctx_path_raw)
             if _within(cp, OUTPUT_DIR) and cp.exists():
                 ctx_path_arg = str(cp)
-                # Probe the context for llm_recommendations BEFORE building
-                # the JSON Resume. Per user requirement (2026-05-26): the
-                # preview must reflect the JD-specific curated selection,
-                # never silently fall back to "all active bullets" when
-                # recommendations are missing. If they're missing, return
-                # a placeholder HTML so the iframe surfaces an honest
-                # empty-state instead of an inflated full-corpus render.
                 try:
                     ctx_data = json.loads(cp.read_text(encoding="utf-8"))
-                    recs = ctx_data.get("llm_recommendations") or {}
+                except (json.JSONDecodeError, OSError):
+                    ctx_data = {}
+                cached = ctx_data.get("last_generated_json_resume")
+                if isinstance(cached, dict) and _json_resume_has_content(cached):
+                    cached_json_resume = cached
+                else:
                     # Non-empty dict of recommendations counts as "curation
                     # has happened." Empty dict (or missing key) means
                     # recommend_bullets either hasn't run or failed.
-                    ctx_has_recommendations = bool(recs)
-                except (json.JSONDecodeError, OSError):
-                    ctx_has_recommendations = False
+                    ctx_has_recommendations = bool(ctx_data.get("llm_recommendations") or {})
 
-        if not ctx_has_recommendations:
-            return _preview_placeholder_html(html_path), 200, {
-                "Content-Type": "text/html; charset=utf-8",
-            }
-
-        # Build the JSON Resume directly from the candidate's corpus,
-        # applying composition_overrides + chosen-summary resolution
-        # scoped to THIS application.
-        json_doc = build_json_resume_from_corpus(
-            session, candidate.id,
-            application_id=application_id,
-            context_path=ctx_path_arg,
-        )
+        if cached_json_resume is not None:
+            # WYSIWYG path — serve the cached generate output verbatim.
+            json_doc = cached_json_resume
+        else:
+            if not ctx_has_recommendations:
+                return _preview_placeholder_html(html_path), 200, {
+                    "Content-Type": "text/html; charset=utf-8",
+                }
+            # Build the JSON Resume directly from the candidate's corpus,
+            # applying composition_overrides + chosen-summary resolution
+            # scoped to THIS application.
+            json_doc = build_json_resume_from_corpus(
+                session, candidate.id,
+                application_id=application_id,
+                context_path=ctx_path_arg,
+            )
     finally:
         session.close()
 
@@ -2642,6 +2656,22 @@ def _preview_placeholder_html(html_path: Path) -> str:
   </div>
 </body>
 </html>"""
+
+
+def _json_resume_has_content(doc: dict) -> bool:
+    """True when a JSON Resume doc carries renderable content.
+
+    `md_to_json_resume("")` (and any blank/whitespace markdown) returns an
+    empty skeleton — all sections empty, no basics.name. The application
+    preview uses this to decide whether a cached `last_generated_json_resume`
+    is worth serving (WYSIWYG Option 1) or whether to fall back to the
+    corpus-direct render. Guards the degenerate "generate produced nothing"
+    case so the preview never renders an empty document.
+    """
+    basics = doc.get("basics") or {}
+    if basics.get("name") or basics.get("summary"):
+        return True
+    return any(doc.get(key) for key in ("work", "skills", "education", "projects"))
 
 
 @app.route("/api/users/<string:username>/preview", methods=["GET"])

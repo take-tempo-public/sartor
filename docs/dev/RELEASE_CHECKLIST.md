@@ -15,13 +15,16 @@
 
 ---
 
-## Active release — v1.0.4 (eval tuning loop)
+## Active release — v1.0.5 (UI/UX redesign)
 
 **Tag history (all local-only — no public release until the user-owned
 v1.1.0 tag):** v1.0.1 tagged 2026-05-28, v1.0.2 tagged 2026-05-30,
-v1.0.3 tagged 2026-06-02. The active development target is now **v1.0.4**
-(eval tuning loop); see [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 3 for its
-branch sequence and tag criteria.
+v1.0.3 tagged 2026-06-02, v1.0.4 tagged 2026-06-02 (commit `072e290`, eval
+tuning loop — shipped). The active development target is now **v1.0.5**
+(UI/UX redesign — wizard redesign + WYSIWYG + diagnostics/tuning console &
+annotation tab; establishes the design system); see
+[`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4 for its branch sequence and tag
+criteria.
 
 The v1.0.1 item list below was **reconciled in place at the v1.0.3 tag
 (2026-06-02)**: completed items are checked; still-open items are flagged
@@ -510,19 +513,20 @@ before the version-bump commit.
       Added to `docs/architecture.md` module map as a release-cycle
       tool (p50/p90 latency snapshot before/after perf interventions).
       Branch `chore/pre-tag-cleanup-code`.
-- [x] **~~`r1-attempted-2026-05-26` branch~~** — **KEPT as historical
-      reference** (user decision 2026-06-02). v1.0.3 R1 Phase 2 is complete;
-      all R1 branches (`structural-context-probe`, `hidden-qualities-schema`,
+- [x] **~~`r1-attempted-2026-05-26` branch~~** — **DELETED 2026-06-02** (tip
+      `09815a1`; reflog-recoverable ~90 days). Supersedes the earlier "KEPT as
+      historical reference" decision. v1.0.3 R1 Phase 2 is complete; all R1
+      branches (`structural-context-probe`, `hidden-qualities-schema`,
       `analyze-split-cache-reclaim`, `clarify-model-trial`) merged, and
       **all of its learnings are already incorporated on `main`** (verified
       via `git log`/`git diff`): the two-pass split was rebuilt fresh (the
-      branch predates the Pydantic migration, so it was not cherry-picked),
+      branch predated the Pydantic migration, so it was never cherry-picked),
       the `context_probe` wording + typed `hidden_qualities` redefinition
       landed in the two ✓ schema branches, and the failure diagnosis +
       recruiting consultation are preserved in `evals/TUNING_LOG.md`
-      (2026-05-26 entries, on `main`). The branch is retained purely as a
-      museum snapshot of the first (reverted, pre-Pydantic) attempt — nothing
-      on it is still needed. Deliberately **not deleted**, by user choice.
+      (2026-05-26 entries, on `main`). With nothing on it still needed, the
+      museum snapshot was deleted at the v1.0.4 cut; the commit stays
+      reachable via reflog (~90 days) if ever required.
 - [x] **~~Retire `/api/users/<username>/import-legacy` route~~** —
       ✅ resolved 2026-05-28. (a) Confirmed only consumer was
       `scripts/capture_screenshots.py`, which already calls

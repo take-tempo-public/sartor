@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — WYSIWYG live preview (Option 1) (`feat/wysiwyg-option1`, v1.0.5)
+
+The application preview is now byte-for-byte the future downloaded résumé once a
+generate has run. A pure rendering/caching change per RELEASE_ARC Key decision 5 —
+**no prompt change, `PROMPT_VERSION` unchanged, no new dependency, no LLM call.**
+
+- **`hardening.py`** — `save_iteration_context()` caches `last_generated_json_resume`,
+  the deterministic `json_resume.md_to_json_resume()` of the markdown the LLM just
+  wrote, into every post-generate context. Derived from `last_generated_resume`, so
+  the preview source can never drift from the download. Added to the `ContextSet`
+  TypedDict.
+- **`app.py`** — `GET /api/applications/<id>/preview` serves
+  `last_generated_json_resume` directly when the context carries it (preview ==
+  download), bypassing the pre-generate curation gate. Pre-generate it still builds
+  the JSON Resume from the corpus and gates on `llm_recommendations`. A new
+  `_json_resume_has_content()` guard falls back to the corpus-direct render if the
+  cached doc is an empty skeleton.
+
 ## [1.0.4] — 2026-06-02
 
 The eval tuning loop: a real-data, human-in-the-loop, model-assisted

@@ -17,6 +17,8 @@ from pathlib import Path
 from typing import TypedDict
 from urllib.parse import urlparse
 
+from json_resume import md_to_json_resume
+
 logger = logging.getLogger(__name__)
 
 
@@ -132,6 +134,13 @@ class ContextSet(_ContextSetRequired, total=False):
     # diffs the live preview against this to detect user edits.
     last_generated_resume: str
     last_generated_cover_letter: str
+    # WYSIWYG Option 1 (v1.0.5): the deterministic md_to_json_resume() of
+    # last_generated_resume, cached at generate time so the preview route can
+    # serve EXACTLY the document the user downloads (preview == download). No
+    # LLM call — derived from the markdown above, so the two can never drift.
+    # Absent on pre-generate contexts; the preview falls back to the
+    # corpus-direct render in that case.
+    last_generated_json_resume: dict
     # Phase B.2: when populated by db.build_context.build_context_set_from_db,
     # the LLM prompt emits a structured <career_corpus> XML block instead of
     # the legacy <resume> block, and the generate output schema requires
@@ -800,6 +809,9 @@ def save_iteration_context(
       - Sets `last_generated_resume` / `last_generated_cover_letter` to the
         freshly generated text (used by the frontend to diff against the live
         preview for edit detection on the NEXT iteration).
+      - Sets `last_generated_json_resume` to the deterministic
+        `md_to_json_resume()` of `last_generated_resume` (WYSIWYG Option 1) so
+        the preview route can render the exact future download. No LLM call.
       - Clears `edited_resume_text` / `edited_cover_letter_text` — those were
         consumed by generate() to build the prompt; carrying them forward
         would cause double-application on the next iteration.
@@ -813,6 +825,12 @@ def save_iteration_context(
     child["parent_context_path"] = parent_path
     child["last_generated_resume"] = last_generated_resume
     child["last_generated_cover_letter"] = last_generated_cover_letter
+    # WYSIWYG Option 1: cache the deterministic JSON Resume of the markdown the
+    # LLM just wrote so the preview route can serve the exact future download.
+    # Derived from last_generated_resume above (no LLM, no drift); empty
+    # markdown yields an empty skeleton, which the preview treats as "fall back
+    # to the corpus-direct render".
+    child["last_generated_json_resume"] = md_to_json_resume(last_generated_resume)
     # Consume edits — they fed the prompt that produced this generation; they
     # must not re-apply on the next iteration's generate() call.
     child.pop("edited_resume_text", None)

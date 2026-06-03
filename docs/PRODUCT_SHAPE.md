@@ -559,6 +559,32 @@ acceptance criteria / target version**.
   enough rows for the recommend prompt to ground against; eval
   rubric for "template appropriateness" exists.
 
+### Post-v1.0.5 (deferred from the v1.0.5 UI/UX stream)
+
+**`generate_cover_letter` opener tuning — throat-clearing / hedging.**
+- *What:* a throat-clearing / hedging opener ("I am writing to be
+  considered for…") tripped the `tone` rubric in 1 of 5 shipped v1.0.3
+  runs — a pre-existing `generate_cover_letter` adherence lapse surfaced
+  during R1 Phase 2 eval (see [`RELEASE_ARC.md`](dev/RELEASE_ARC.md)
+  §Phase 2 "Documentation debt" item 2). The `/tune-from-annotations`
+  machinery to fix it shipped in v1.0.4, but the live run was never
+  executed — so this entry also stands in for the v1.0.4 "live shakedown"
+  that was tagged in machinery but never exercised end-to-end on real data.
+- *Why deferred:* it edits `analyzer.py` and **bumps `PROMPT_VERSION`**,
+  costs a paid eval (~$0.90), and needs an explicit "promote" — out of
+  scope for the rendering-only v1.0.5 stream. User intent: run it AFTER a
+  clean-corpus rebuild — a clean git **clone** (NOT a folder copy, which
+  drags the gitignored `db/resume.sqlite`) → regenerate the corpus from
+  real JDs → annotate → tune.
+- *Override-scope note:* the rule lives in the non-overridable
+  `_COVER_LETTER_RULES_BLOCK`, so the A/B candidate must be a
+  `SYSTEM_PROMPT` worked example (OK / NOT-OK pair), not a rules-block edit.
+- *Acceptance:* `tone` holds at or above its `evals/TUNING_LOG.md` floor
+  across n≥3 `--suite real` runs with the new opener discipline;
+  `PROMPT_VERSION` bumped in the same commit; a TUNING_LOG entry recorded;
+  user promotes.
+- *Target:* its own branch after the v1.0.5 tag.
+
 ---
 
 ## External references
