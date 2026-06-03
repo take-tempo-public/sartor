@@ -52,7 +52,7 @@ graph LR
     R_RS[/POST /api/applications/&lt;id&gt;/recommend-summary/] --> H2
     R_PC[/POST /api/proposals/&lt;id&gt;/critique/] --> H3
     R_PR[/POST /api/clarifications/&lt;id&gt;/promote-to-bullet/] --> H4
-    R_IM[/POST /api/users/&lt;u&gt;/import-legacy/] --> H5
+    R_IM[/POST /api/users/&lt;u&gt;/corpus/ingest-resume/] --> H5
 
     %% Cache-prefix usage. analyze_synthesis (A1) runs under the shared
     %% SYSTEM_PROMPT, so its cached prefix [SYSTEM_PROMPT][corpus+resume]

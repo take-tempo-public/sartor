@@ -290,6 +290,135 @@ class TestApplicationPreviewHappyPath:
 
 
 # -------------------------------------------------------------------
+# Per-application preview — WYSIWYG Option 1 (v1.0.5)
+# -------------------------------------------------------------------
+
+
+_WYSIWYG_MARKDOWN = """# Casey Rivera
+Senior Product Manager
+casey@example.com
+
+## Summary
+
+LLM-rewritten positioning for this exact job.
+
+## Experience
+
+### Orbital Dynamics, Principal PM\t2020 – Present
+
+- Drove a 3x revenue lift by repositioning the platform.
+
+## Skills
+
+- Roadmapping, Stakeholder alignment
+"""
+
+
+def _write_context_with_cached_json_resume(
+    out_dir: Path, application_id: int, markdown: str, *,
+    include_recommendations: bool = False, experience_id: int | None = None,
+    bullet_ids: list[int] | None = None, filename: str = "context_gen.json",
+) -> Path:
+    """Persist a post-generate context carrying last_generated_json_resume —
+    the deterministic md_to_json_resume() of `markdown`, exactly as
+    save_iteration_context() would write it.
+
+    By default no llm_recommendations are included, so a render proves the
+    WYSIWYG path bypasses the pre-generate curation gate.
+    """
+    import json as _json
+
+    from json_resume import md_to_json_resume
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    payload: dict = {
+        "application_id": application_id,
+        "last_generated_resume": markdown,
+        "last_generated_json_resume": md_to_json_resume(markdown),
+    }
+    if include_recommendations and experience_id is not None and bullet_ids is not None:
+        payload["llm_recommendations"] = {
+            str(experience_id): {
+                "bullet_ids": [int(b) for b in bullet_ids],
+                "rationale": "test fixture",
+            },
+        }
+    ctx_path = out_dir / filename
+    ctx_path.write_text(_json.dumps(payload), encoding="utf-8")
+    return ctx_path
+
+
+class TestApplicationPreviewWysiwyg:
+    def test_serves_cached_json_resume_over_corpus(self, preview_app):
+        """Once /api/generate has run, the context carries the cached
+        md_to_json_resume() of the LLM markdown. The preview must serve THAT
+        (preview == download), NOT a fresh corpus render — even though the
+        candidate's corpus has different, un-rewritten content."""
+        cid, aid = _seed_candidate_app(preview_app, username="casey")
+        # Corpus content that must NOT leak into the WYSIWYG render.
+        _seed_experience_with_bullets(cid)
+
+        ctx_file = _write_context_with_cached_json_resume(
+            preview_app.OUTPUT_DIR / "casey", aid, _WYSIWYG_MARKDOWN,
+        )
+
+        client = preview_app.app.test_client()
+        r = client.get(
+            f"/api/applications/{aid}/preview?context_path={ctx_file}",
+        )
+        assert r.status_code == 200
+        body = r.get_data(as_text=True)
+        # The cached generate output renders.
+        assert "Orbital Dynamics" in body
+        assert "Drove a 3x revenue lift by repositioning the platform." in body
+        # The corpus-direct content does NOT — proves we served the cache.
+        assert "Polaris" not in body
+        assert "Shipped the unified corpus." not in body
+
+    def test_cached_path_bypasses_recommendations_gate(self, preview_app):
+        """The cached JSON Resume serves even with NO llm_recommendations in
+        the context — a generate having run means curation already happened,
+        so the pre-generate placeholder gate must not fire on this path."""
+        cid, aid = _seed_candidate_app(preview_app, username="casey")
+        _seed_experience_with_bullets(cid)
+
+        # No recommendations on this context (include_recommendations=False).
+        ctx_file = _write_context_with_cached_json_resume(
+            preview_app.OUTPUT_DIR / "casey", aid, _WYSIWYG_MARKDOWN,
+            filename="context_no_recs.json",
+        )
+
+        client = preview_app.app.test_client()
+        body = client.get(
+            f"/api/applications/{aid}/preview?context_path={ctx_file}",
+        ).get_data(as_text=True)
+        assert "Preview is waiting on curation" not in body
+        assert "Orbital Dynamics" in body
+
+    def test_empty_cached_skeleton_falls_back_to_gate(self, preview_app):
+        """A degenerate cached skeleton (blank generate) has no renderable
+        content, so the route ignores it and falls back to the pre-generate
+        path — which, with no recommendations, returns the placeholder rather
+        than rendering an empty document."""
+        cid, aid = _seed_candidate_app(preview_app, username="casey")
+        _seed_experience_with_bullets(cid)
+
+        # Empty markdown → md_to_json_resume() emits an empty skeleton.
+        ctx_file = _write_context_with_cached_json_resume(
+            preview_app.OUTPUT_DIR / "casey", aid, "",
+            filename="context_empty.json",
+        )
+
+        client = preview_app.app.test_client()
+        r = client.get(
+            f"/api/applications/{aid}/preview?context_path={ctx_file}",
+        )
+        assert r.status_code == 200
+        body = r.get_data(as_text=True)
+        assert "Preview is waiting on curation" in body
+
+
+# -------------------------------------------------------------------
 # Per-application preview — failure paths
 # -------------------------------------------------------------------
 
