@@ -298,3 +298,56 @@ class TestCorpusEffectiveSetFilter:
         ctx["composition_overrides"] = {"pinned": [100], "excluded": [], "added": []}
         prefix = _stable_user_prefix(ctx)
         assert 'pinned="true"' in prefix
+
+
+class TestBulletOrderHonored:
+    """feat/bullet-drag-reorder — composition_overrides.bullet_order reorders
+    the <career_corpus> bullets that reach generate(). Present ⇒ authoritative;
+    absent/empty ⇒ default path byte-identical (the analyze→generate cache stays
+    warm). This reorders DATA, not the prompt template (no PROMPT_VERSION bump)."""
+
+    def _index_of(self, prefix: str, bullet_id: int) -> int:
+        idx = prefix.find(f'id="b{bullet_id}"')
+        assert idx != -1, f"b{bullet_id} not emitted"
+        return idx
+
+    def test_bullet_order_reorders_bullets(self):
+        ctx = _make_corpus_context()  # corpus order: 100 then 101
+        ctx["composition_overrides"] = {"bullet_order": {"1": [101, 100]}}
+        prefix = _stable_user_prefix(ctx)
+        assert self._index_of(prefix, 101) < self._index_of(prefix, 100)
+
+    def test_unlisted_bullets_go_to_end(self):
+        ctx = _make_corpus_context()
+        ctx["career_corpus"][0]["bullets"].append({
+            "id": 102, "text": "Shipped launch.", "tags": [],
+            "has_outcome": True, "source": "primary:r.md",
+        })
+        # Order names 102 then 100; 101 is unlisted → must land at the END,
+        # never silently re-sorted away (the drawer-added-later edge case).
+        ctx["composition_overrides"] = {"bullet_order": {"1": [102, 100]}}
+        prefix = _stable_user_prefix(ctx)
+        assert (self._index_of(prefix, 102)
+                < self._index_of(prefix, 100)
+                < self._index_of(prefix, 101))
+
+    def test_absent_bullet_order_is_default_corpus_order(self):
+        prefix = _stable_user_prefix(_make_corpus_context())
+        assert self._index_of(prefix, 100) < self._index_of(prefix, 101)
+
+    def test_empty_bullet_order_byte_identical(self):
+        """An empty bullet_order (full reset) must not perturb the cached
+        prefix — guards the analyze→generate prompt cache."""
+        baseline = _stable_user_prefix(_make_corpus_context())
+        ctx = _make_corpus_context()
+        ctx["composition_overrides"] = {
+            "pinned": [], "excluded": [], "added": [], "bullet_order": {},
+        }
+        assert _stable_user_prefix(ctx) == baseline
+
+    def test_string_and_int_experience_keys_both_accepted(self):
+        """JSON persists keys as strings; defensive int keys also resolve."""
+        ctx = _make_corpus_context()
+        ctx["composition_overrides"] = {"bullet_order": {1: [101, 100]}}
+        prefix = _stable_user_prefix(ctx)
+        assert self._index_of(prefix, 101) < self._index_of(prefix, 100)

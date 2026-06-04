@@ -548,6 +548,149 @@ class TestCompositionAddedField:
         assert flags[bids[1]] == (False, True)
 
 
+class TestCompositionBulletOrder:
+    """feat/bullet-drag-reorder — composition_overrides.bullet_order round-trips
+    through POST, drives the GET order + has_custom_order / in_custom_order
+    flags, and a reset (empty order) falls back to the AI ranking."""
+
+    def _bullet_ids(self, eid):
+        """[k8s_bullet_id, syncs_bullet_id] — by display_order (k8s is the
+        JD-relevant, higher-scoring bullet seeded first)."""
+        from db.models import Bullet
+        from db.session import get_session
+        s = get_session()
+        try:
+            rows = (s.query(Bullet).filter_by(experience_id=eid)
+                    .order_by(Bullet.display_order).all())
+            return [b.id for b in rows]
+        finally:
+            s.close()
+
+    def _ctx(self, tmp_path, aid, extra=None):
+        import json
+        out = tmp_path / "output" / "alice"
+        out.mkdir(parents=True, exist_ok=True)
+        ctx = out / "context_order.json"
+        body = {"application_id": aid}
+        if extra:
+            body.update(extra)
+        ctx.write_text(json.dumps(body), encoding="utf-8")
+        return ctx
+
+    def test_post_persists_bullet_order(self, app_app, tmp_path):
+        import json
+        cid = _seed_candidate()
+        eid = _seed_exp_with_bullets(cid)
+        aid = _seed_application(cid)
+        ctx = self._ctx(tmp_path, aid)
+        k8s, syncs = self._bullet_ids(eid)
+        client = app_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={"context_path": str(ctx), "pinned": [k8s], "excluded": [],
+                  "added": [], "bullet_order": {str(eid): [syncs, k8s]}},
+        )
+        assert r.status_code == 200, r.get_json()
+        saved = json.loads(ctx.read_text(encoding="utf-8"))["composition_overrides"]
+        # Persisted with string keys; survives alongside the pin.
+        assert saved["bullet_order"] == {str(eid): [syncs, k8s]}
+        assert saved["pinned"] == [k8s]
+        assert r.get_json()["bullet_order"] == {str(eid): [syncs, k8s]}
+
+    def test_get_returns_saved_order_and_flags(self, app_app, tmp_path):
+        cid = _seed_candidate()
+        eid = _seed_exp_with_bullets(cid)
+        aid = _seed_application(cid, jd_text="Kubernetes latency at scale")
+        k8s, syncs = self._bullet_ids(eid)
+        # Reverse the default (k8s-first) score ranking.
+        ctx = self._ctx(tmp_path, aid, {
+            "composition_overrides": {
+                "pinned": [], "excluded": [], "added": [],
+                "bullet_order": {str(eid): [syncs, k8s]},
+            },
+        })
+        client = app_app.app.test_client()
+        g = client.get(
+            f"/api/applications/{aid}/composition?context_path={ctx}",
+        ).get_json()
+        exp = g["experiences"][0]
+        assert exp["has_custom_order"] is True
+        assert [b["id"] for b in exp["bullets"]] == [syncs, k8s]
+        assert all(b["in_custom_order"] for b in exp["bullets"])
+
+    def test_get_default_order_when_absent(self, app_app, tmp_path):
+        cid = _seed_candidate()
+        eid = _seed_exp_with_bullets(cid)
+        aid = _seed_application(cid, jd_text="Kubernetes latency at scale")
+        k8s, syncs = self._bullet_ids(eid)
+        ctx = self._ctx(tmp_path, aid)  # no overrides
+        client = app_app.app.test_client()
+        g = client.get(
+            f"/api/applications/{aid}/composition?context_path={ctx}",
+        ).get_json()
+        exp = g["experiences"][0]
+        assert exp["has_custom_order"] is False
+        assert [b["id"] for b in exp["bullets"]] == [k8s, syncs]  # score order
+
+    def test_reset_omits_bullet_order_key(self, app_app, tmp_path):
+        import json
+        cid = _seed_candidate()
+        eid = _seed_exp_with_bullets(cid)
+        aid = _seed_application(cid)
+        k8s, syncs = self._bullet_ids(eid)
+        ctx = self._ctx(tmp_path, aid, {
+            "composition_overrides": {
+                "pinned": [], "excluded": [], "added": [],
+                "bullet_order": {str(eid): [syncs, k8s]},
+            },
+        })
+        client = app_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={"context_path": str(ctx), "pinned": [], "excluded": [],
+                  "added": [], "bullet_order": {}},
+        )
+        assert r.status_code == 200, r.get_json()
+        saved = json.loads(ctx.read_text(encoding="utf-8"))["composition_overrides"]
+        assert "bullet_order" not in saved  # empty → omitted → AI ranking
+
+    def test_added_after_order_slots_at_end(self, app_app, tmp_path):
+        cid = _seed_candidate()
+        eid = _seed_exp_with_bullets(cid)
+        aid = _seed_application(cid, jd_text="Kubernetes latency at scale")
+        k8s, syncs = self._bullet_ids(eid)
+        # Saved order names ONLY syncs; k8s post-dates the order.
+        ctx = self._ctx(tmp_path, aid, {
+            "composition_overrides": {
+                "pinned": [], "excluded": [], "added": [],
+                "bullet_order": {str(eid): [syncs]},
+            },
+        })
+        client = app_app.app.test_client()
+        g = client.get(
+            f"/api/applications/{aid}/composition?context_path={ctx}",
+        ).get_json()
+        bullets = g["experiences"][0]["bullets"]
+        assert [b["id"] for b in bullets] == [syncs, k8s]  # unlisted at end
+        flags = {b["id"]: b["in_custom_order"] for b in bullets}
+        assert flags[syncs] is True
+        assert flags[k8s] is False  # newly added → drag-to-reposition hint
+
+    def test_post_rejects_malformed_bullet_order(self, app_app, tmp_path):
+        cid = _seed_candidate()
+        _seed_exp_with_bullets(cid)
+        aid = _seed_application(cid)
+        ctx = self._ctx(tmp_path, aid)
+        client = app_app.app.test_client()
+        r1 = client.post(f"/api/applications/{aid}/composition",
+                         json={"context_path": str(ctx), "bullet_order": [1, 2]})
+        assert r1.status_code == 400
+        r2 = client.post(f"/api/applications/{aid}/composition",
+                         json={"context_path": str(ctx),
+                               "bullet_order": {"1": ["x"]}})
+        assert r2.status_code == 400
+
+
 # ---------------------------------------------------------------------------
 # Phase 2 tracker — PUT /api/applications/<id>/notes
 # ---------------------------------------------------------------------------

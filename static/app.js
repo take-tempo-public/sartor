@@ -4330,12 +4330,57 @@ function _renderComposeCard(exp) {
   card.appendChild(_el('div', {
     className: 'compose-exp-section-title', textContent: headerLabel,
   }));
+
+  // feat/bullet-drag-reorder — one-sentence instruction + an "(i)" depth
+  // affordance + a per-experience "Reset to AI ranking". Two load-bearing
+  // words in the hint: "AI" (the default order is already intentional) and
+  // "shapes" (order isn't cosmetic — it propagates into the generate prompt).
+  const orderBar = _el('div', { className: 'compose-order-bar' });
+  const hintWrap = _el('div', { className: 'compose-order-hint-wrap' });
+  hintWrap.appendChild(_el('span', {
+    className: 'compose-order-hint',
+    textContent: "Bullets are ranked by callback's AI by fit to this job. "
+      + 'Drag to reorder — your order shapes the final résumé.',
+  }));
+  const info = _el('button', { className: 'compose-order-info', textContent: 'i' });
+  info.type = 'button';
+  info.setAttribute('aria-label', 'Why ordering matters');
+  info.title = 'Why ordering matters: recruiters scan top-down in seconds, so '
+    + 'the first bullet under each role does the work of selling it. And the '
+    + 'résumé generator reads bullets in this order — earlier bullets carry '
+    + 'more weight when it decides what to keep in a length-limited résumé. '
+    + 'Your order is a real lever, not just display.';
+  info.onclick = () => _toast(info.title);
+  hintWrap.appendChild(info);
+  orderBar.appendChild(hintWrap);
+  const resetBtn = _el('button', {
+    className: 'compose-order-reset', textContent: 'Reset to AI ranking',
+  });
+  resetBtn.type = 'button';
+  orderBar.appendChild(resetBtn);
+  card.appendChild(orderBar);
+
   let initial = visible;
   if (!exp.has_recommendations && initial.length === 0) {
     initial = fallback;
     initial.forEach(b => b._fallback = true);
   }
-  initial.forEach(b => card.appendChild(_renderBulletRow_compose(b)));
+
+  // Visible (résumé-bound) bullets live in their own container so drag/keyboard
+  // reorder and order-serialization are scoped to this set — drawer rows are
+  // excluded. data-exp-id keys the saved order; data-custom-order drives Reset.
+  const bulletList = _el('div', { className: 'compose-bullet-list' });
+  bulletList.dataset.expId = String(exp.id);
+  bulletList.dataset.customOrder = exp.has_custom_order ? 'true' : 'false';
+  _wireBulletListDnD(bulletList);
+  initial.forEach(b => bulletList.appendChild(
+    _renderBulletRow_compose(
+      b, { draggable: true, expHasCustomOrder: !!exp.has_custom_order },
+    ),
+  ));
+  card.appendChild(bulletList);
+  resetBtn.disabled = bulletList.dataset.customOrder !== 'true';
+  resetBtn.onclick = () => _resetExperienceOrder(bulletList, resetBtn);
 
   // Drawer: remaining bullets, searchable. v1: client-side filter.
   if (hidden.length > 0) {
@@ -4401,12 +4446,32 @@ function _renderTitleRow_compose(t) {
   return row;
 }
 
-function _renderBulletRow_compose(b) {
+function _renderBulletRow_compose(b, opts = {}) {
   const row = _el('div', { className: 'compose-row' });
   if (b.recommended) row.classList.add('recommended');
   if (b.pinned)     row.classList.add('pinned');
   if (b.excluded)   row.classList.add('excluded');
   row._bulletState = b;
+
+  // feat/bullet-drag-reorder — drag affordance on visible (résumé-bound) rows
+  // only; drawer rows render without it. The grab handle is the discoverable
+  // cue (cursor: grab/grabbing via CSS); the whole row is the drag source.
+  if (opts.draggable) {
+    row.draggable = true;
+    row.classList.add('draggable');
+    const handle = _el('span', { className: 'drag-handle', textContent: '≡' });
+    handle.setAttribute('aria-hidden', 'true');
+    handle.title = 'Drag to reorder';
+    row.appendChild(handle);
+    row.addEventListener('dragstart', (e) => {
+      row.classList.add('dragging');
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', String(b.id)); } catch (_) {}
+      }
+    });
+    row.addEventListener('dragend', () => row.classList.remove('dragging'));
+  }
 
   row.appendChild(_el('div', { className: 'row-text', textContent: b.text }));
 
@@ -4427,24 +4492,46 @@ function _renderBulletRow_compose(b) {
     textContent: b.added ? 'ADDED' : '+ ADD',
   });
   if (b.recommended) addBtn.style.display = 'none';
+  // Pin/exclude/add now also fire the debounced autosave (the autosave sends
+  // the FULL composition state, so these persist alongside bullet_order).
   pin.onclick = () => {
     b.pinned = !b.pinned;
     if (b.pinned) b.excluded = false;
     _refreshComposeRow(row);
+    _scheduleCompositionSave();
   };
   exc.onclick = () => {
     b.excluded = !b.excluded;
     if (b.excluded) { b.pinned = false; b.added = false; }
     _refreshComposeRow(row);
+    _scheduleCompositionSave();
   };
   addBtn.onclick = () => {
     b.added = !b.added;
     if (b.added) b.excluded = false;
     _refreshComposeRow(row);
+    _scheduleCompositionSave();
   };
   actions.appendChild(pin);
   actions.appendChild(exc);
   if (!b.recommended) actions.appendChild(addBtn);
+  // feat/bullet-drag-reorder — keyboard reorder path (the a11y floor). Both
+  // pointer (drag) and keyboard (these buttons) write the same persistence.
+  // Deliberately NOT using deprecated aria-grabbed/aria-dropeffect.
+  if (opts.draggable) {
+    const reorder = _el('div', { className: 'reorder-controls' });
+    const up = _el('button', { className: 'reorder-btn', textContent: '↑' });
+    up.type = 'button';
+    up.setAttribute('aria-label', 'Move bullet up');
+    up.onclick = () => _moveBulletRow(row, -1);
+    const down = _el('button', { className: 'reorder-btn', textContent: '↓' });
+    down.type = 'button';
+    down.setAttribute('aria-label', 'Move bullet down');
+    down.onclick = () => _moveBulletRow(row, 1);
+    reorder.appendChild(up);
+    reorder.appendChild(down);
+    actions.appendChild(reorder);
+  }
   row.appendChild(actions);
 
   // Metadata line (score, outcome, tags)
@@ -4452,6 +4539,15 @@ function _renderBulletRow_compose(b) {
   meta.appendChild(_el('span', {
     className: 'score-chip', textContent: String(Math.round(b.score)),
   }));
+  // feat/bullet-drag-reorder — bullet that post-dates an explicit saved order
+  // (e.g. drawer-added later): slotted at the end by the server + flagged here.
+  if (opts.expHasCustomOrder && b.in_custom_order === false) {
+    row.classList.add('newly-added');
+    meta.appendChild(_el('span', {
+      className: 'corpus-row-flag newly-added-hint',
+      textContent: 'newly added — drag to reposition',
+    }));
+  }
   if (b.recommended) {
     meta.appendChild(_el('span', {
       className: 'corpus-row-flag', textContent: 'RECOMMENDED',
@@ -4503,8 +4599,21 @@ function _refreshComposeRow(row) {
   }
 }
 
-async function saveCompositionThenNext() {
-  if (_composeApplicationId == null) { wizardGoTo(4); return; }
+// ============================================================
+// feat/bullet-drag-reorder — Compose bullet ordering
+// ============================================================
+// Persistence shape: composition_overrides.bullet_order =
+//   { [experience_id]: [bullet_id, ...] }. Authoritative over the server's
+// score sort when present; absent ⇒ AI ranking. Order is collected from the
+// .compose-bullet-list DOM containers (drawer rows excluded) and written by a
+// debounced autosave that sends the FULL composition state, so it never
+// clobbers pins/excludes (the POST route rebuilds composition_overrides).
+
+let _composeSaveTimer = null;
+
+// Snapshot the full current composition state from the DOM: pin/exclude/add
+// (all rows) + bullet_order (only experiences flagged data-custom-order).
+function _collectCompositionState() {
   const pinned = [];
   const excluded = [];
   const added = [];
@@ -4515,22 +4624,144 @@ async function saveCompositionThenNext() {
     if (b.excluded) excluded.push(b.id);
     if (b.added) added.push(b.id);
   });
-  try {
-    const res = await fetch(
-      `/api/applications/${_composeApplicationId}/composition`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          context_path: lastContextPath, pinned, excluded, added,
-        }),
-      },
-    );
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `HTTP ${res.status}`);
+  const bullet_order = {};
+  document.querySelectorAll('#composeList .compose-bullet-list').forEach(list => {
+    if (list.dataset.customOrder !== 'true') return;
+    const expId = list.dataset.expId;
+    const ids = [];
+    list.querySelectorAll(':scope > .compose-row').forEach(row => {
+      const b = row._bulletState;
+      if (b && b.id != null) ids.push(b.id);
+    });
+    if (expId != null && ids.length) bullet_order[expId] = ids;
+  });
+  return { pinned, excluded, added, bullet_order };
+}
+
+async function _postComposition(state) {
+  if (_composeApplicationId == null || !lastContextPath) return false;
+  const res = await fetch(
+    `/api/applications/${_composeApplicationId}/composition`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ context_path: lastContextPath, ...state }),
+    },
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return true;
+}
+
+// Debounced (~300ms) optimistic autosave. The DOM is already updated by the
+// caller; on failure we toast and leave the optimistic state in place (the
+// next autosave or the Next save retries).
+function _scheduleCompositionSave() {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  if (_composeSaveTimer) clearTimeout(_composeSaveTimer);
+  _composeSaveTimer = setTimeout(async () => {
+    _composeSaveTimer = null;
+    try {
+      await _postComposition(_collectCompositionState());
+    } catch (e) {
+      _toast('Autosave failed: ' + e.message, true);
     }
-    _toast(`Composition saved (${pinned.length} pinned, ${added.length} added, ${excluded.length} excluded)`);
+  }, 300);
+}
+
+// Mark an experience's list as user-ordered: enable Reset, clear stale
+// "newly added" hints (the user has now placed everything explicitly).
+function _markCustomOrder(list) {
+  if (!list) return;
+  list.dataset.customOrder = 'true';
+  const card = list.closest('.compose-experience-card');
+  const reset = card && card.querySelector('.compose-order-reset');
+  if (reset) reset.disabled = false;
+  list.querySelectorAll('.newly-added-hint').forEach(h => h.remove());
+  list.querySelectorAll('.compose-row.newly-added').forEach(
+    r => r.classList.remove('newly-added'),
+  );
+}
+
+// Keyboard reorder path: move a row up (-1) or down (+1) within its list.
+function _moveBulletRow(row, dir) {
+  const list = row.parentElement;
+  if (!list || !list.classList.contains('compose-bullet-list')) return;
+  if (dir < 0 && row.previousElementSibling) {
+    list.insertBefore(row, row.previousElementSibling);
+  } else if (dir > 0 && row.nextElementSibling) {
+    list.insertBefore(row.nextElementSibling, row);
+  } else {
+    return;  // already at an edge — nothing changed
+  }
+  _markCustomOrder(list);
+  _scheduleCompositionSave();
+}
+
+// HTML5 drag: find the row the dragged element should sit before, by pointer Y.
+function _dragAfterElement(list, y) {
+  const els = [...list.querySelectorAll(':scope > .compose-row:not(.dragging)')];
+  let closest = { offset: -Infinity, element: null };
+  for (const child of els) {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) closest = { offset, element: child };
+  }
+  return closest.element;
+}
+
+// Wire a bullet-list container as a drop zone. Reorder is within-experience
+// only: a drag whose source row isn't in THIS list is ignored, so a row can't
+// jump experiences.
+function _wireBulletListDnD(list) {
+  list.addEventListener('dragover', (e) => {
+    const dragging = list.querySelector('.compose-row.dragging');
+    if (!dragging) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    const after = _dragAfterElement(list, e.clientY);
+    if (after == null) list.appendChild(dragging);
+    else if (after !== dragging) list.insertBefore(dragging, after);
+  });
+  list.addEventListener('drop', (e) => {
+    if (!list.querySelector('.compose-row.dragging')) return;
+    e.preventDefault();
+    _markCustomOrder(list);
+    _scheduleCompositionSave();
+  });
+}
+
+// "Reset to AI ranking" — restore the server's default order (pinned/
+// recommended/added first, then score desc, then id), clear the custom-order
+// flag, and persist (omitting this experience from bullet_order).
+function _resetExperienceOrder(list, resetBtn) {
+  const rows = [...list.querySelectorAll(':scope > .compose-row')];
+  rows.sort((a, c) => {
+    const ba = a._bulletState || {};
+    const bc = c._bulletState || {};
+    const ra = (ba.pinned || ba.recommended || ba.added) ? 0 : 1;
+    const rc = (bc.pinned || bc.recommended || bc.added) ? 0 : 1;
+    if (ra !== rc) return ra - rc;
+    const sa = ba.score || 0;
+    const sc = bc.score || 0;
+    if (sc !== sa) return sc - sa;
+    return (ba.id || 0) - (bc.id || 0);
+  });
+  rows.forEach(r => list.appendChild(r));
+  list.dataset.customOrder = 'false';
+  if (resetBtn) resetBtn.disabled = true;
+  _scheduleCompositionSave();
+}
+
+async function saveCompositionThenNext() {
+  if (_composeApplicationId == null) { wizardGoTo(4); return; }
+  if (_composeSaveTimer) { clearTimeout(_composeSaveTimer); _composeSaveTimer = null; }
+  const state = _collectCompositionState();
+  try {
+    await _postComposition(state);
+    _toast(`Composition saved (${state.pinned.length} pinned, ${state.added.length} added, ${state.excluded.length} excluded)`);
   } catch (e) {
     _toast('Save failed: ' + e.message, true);
     return;

@@ -4750,6 +4750,32 @@ def _read_composition_overrides(context_path: str) -> tuple[set[int], set[int]]:
     return set(ov.get("pinned", []) or []), set(ov.get("excluded", []) or [])
 
 
+def _read_bullet_order(context_path: str) -> dict[int, list[int]]:
+    """feat/bullet-drag-reorder — per-experience explicit bullet order from a
+    context file's `composition_overrides.bullet_order`, validated within
+    OUTPUT_DIR. Maps experience-id → ordered `[bullet_id, ...]`. Empty dict when
+    absent/invalid. Keys and ids are coerced to int (JSON persists keys as
+    strings); malformed entries are skipped, not fatal."""
+    if not context_path:
+        return {}
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR) or not cp.exists():
+        return {}
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    raw = (ctx.get("composition_overrides") or {}).get("bullet_order") or {}
+    out: dict[int, list[int]] = {}
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            try:
+                out[int(k)] = [int(x) for x in (v or [])]
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
 def _apply_chosen_summary(context_set: dict) -> None:
     """β.6d — patch context_set["candidate"]["profile_text"] in-place
     with the chosen SummaryItem variant's text.
@@ -4911,6 +4937,9 @@ def get_application_composition(application_id: int):
         essential = _latest_analysis_essentials(app_row)
         ctx_path = request.args.get("context_path", "")
         pinned, excluded = _read_composition_overrides(ctx_path)
+        # feat/bullet-drag-reorder — explicit per-experience order, authoritative
+        # over the score sort below when present for that experience.
+        bullet_order = _read_bullet_order(ctx_path)
         # Workstreams H + I: surface llm_recommendations + composition_overrides.added
         # so the Compose UI can default to the curated set and mark drawer-added
         # bullets as included.
@@ -4956,6 +4985,23 @@ def get_application_composition(application_id: int):
                     int(d["id"]),
                 ),
             )
+            # feat/bullet-drag-reorder — when the user has saved an explicit
+            # order for this experience, it is authoritative: listed bullets
+            # take ranks 0..n-1, and a stable re-sort leaves unlisted (e.g.
+            # newly drawer-added) bullets in the score order above, at the end.
+            exp_order = bullet_order.get(exp.id)
+            has_custom_order = bool(exp_order)
+            if exp_order:
+                rank = {bid: i for i, bid in enumerate(exp_order)}
+                scored_bullets.sort(
+                    key=lambda d: rank.get(int(d["id"]), len(rank)),
+                )
+                # Flag bullets that post-date the saved order (e.g. drawer-added
+                # later) so the UI can show a "newly added — drag to reposition"
+                # hint without silently re-sorting them in.
+                order_set = set(exp_order)
+                for d in scored_bullets:
+                    d["in_custom_order"] = int(d["id"]) in order_set
             titles: list[dict[str, Any]] = []
             for t in exp.titles:
                 if not (t.is_official or t.truthful_enough_to_use):
@@ -4982,6 +5028,9 @@ def get_application_composition(application_id: int):
                     "bullets": scored_bullets, "titles": titles,
                     "rationale": rec.get("rationale", ""),
                     "has_recommendations": bool(rec_ids),
+                    # feat/bullet-drag-reorder — drives Reset enable/disable and
+                    # the "newly added — drag to reposition" hint in the UI.
+                    "has_custom_order": has_custom_order,
                 })
         # β.6c — Positioning block. Variants come from the candidate's
         # active SummaryItem rows; the LLM recommendation (if any) flags
@@ -5065,6 +5114,24 @@ def save_application_composition(application_id: int):
     pinned = [int(x) for x in (data.get("pinned") or [])]
     excluded = [int(x) for x in (data.get("excluded") or [])]
     added = [int(x) for x in (data.get("added") or [])]
+    # feat/bullet-drag-reorder — optional explicit per-experience bullet order
+    # from the Compose drag/keyboard UI: {experience_id: [bullet_id, ...]}.
+    # Persisted with string keys (JSON-natural); omitted when empty so the
+    # default ordering (and the analyze→generate cache) is preserved. The
+    # debounced autosave sends the FULL composition state on each save because
+    # this route rebuilds composition_overrides wholesale.
+    bullet_order_raw = data.get("bullet_order")
+    bullet_order: dict[str, list[int]] = {}
+    if bullet_order_raw is not None:
+        if not isinstance(bullet_order_raw, dict):
+            return jsonify({"error": "bullet_order must be an object of {experience_id: [bullet_id, ...]}"}), 400
+        for k, v in bullet_order_raw.items():
+            if not isinstance(v, list):
+                return jsonify({"error": "bullet_order values must be arrays of bullet ids"}), 400
+            try:
+                bullet_order[str(int(k))] = [int(x) for x in v]
+            except (TypeError, ValueError):
+                return jsonify({"error": "bullet_order keys and ids must be integers"}), 400
     # β.6c — optional summary pin. The user explicitly chose this
     # variant for this application; it overrides the LLM
     # recommendation when generate() runs. None / 0 means "no pin"
@@ -5104,12 +5171,18 @@ def save_application_composition(application_id: int):
         }
         if pinned_summary_id is not None:
             overrides["pinned_summary_id"] = pinned_summary_id
+        # Only persist bullet_order when non-empty: a full reset (all
+        # experiences back to AI ranking) omits the key → absent → fall back to
+        # the score sort, keeping the default path byte-identical.
+        if bullet_order:
+            overrides["bullet_order"] = bullet_order
         ctx["composition_overrides"] = overrides
         cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
         return jsonify({
             "application_id": application_id,
             "pinned": pinned, "excluded": excluded, "added": added,
             "pinned_summary_id": pinned_summary_id,
+            "bullet_order": bullet_order,
         })
     finally:
         session.close()

@@ -196,6 +196,53 @@ prevent re-running them.
 
 ---
 
+## 2026-06-04 — feat/bullet-drag-reorder: user bullet order (behavior note, NO version bump)
+
+### What changed
+
+User-driven bullet ordering on the Compose step (v1.0.5). `_stable_user_prefix`
+in [`analyzer.py`](../analyzer.py) now honors
+`composition_overrides.bullet_order = {experience_id: [bullet_id, ...]}`,
+reordering each experience's bullets in the `<career_corpus>` block before it is
+emitted to `generate()`. `app.py` persists/serves the order; the Compose UI adds
+HTML5 drag + keyboard reorder.
+
+### Why this is a behavior note and **not** a `PROMPT_VERSION` bump
+
+The prompt **template** is byte-for-byte unchanged — `SYSTEM_PROMPT`, the
+corpus-mode guide, and every per-call builder are untouched. What changes is the
+**order of the data** inside `<career_corpus>` when (and only when) the user has
+set an explicit order. This is exactly the "data order, not template" carve-out
+called out in `RELEASE_CHECKLIST` point 10: a `PROMPT_VERSION` bump would
+mis-attribute eval telemetry, since two runs at the same version can now
+legitimately differ if the user reordered. The default (no `bullet_order`) path
+is **byte-identical** — guarded by
+`tests/test_corpus_mode_prompt.py::TestBulletOrderHonored::test_empty_bullet_order_byte_identical`
+— so the analyze→generate prompt cache is untouched and score-over-time is not
+polluted.
+
+### Result
+
+No automated eval run (no template change to score). Behavior is pinned by
+LLM-free tests: `TestBulletOrderHonored` (corpus payload honors the order;
+unlisted bullets land at the end; default byte-identical) and
+`tests/test_application_routes.py::TestCompositionBulletOrder` (persistence
+round-trip; GET order + `has_custom_order`/`in_custom_order`; reset fallback).
+
+### What we learned
+
+1. **Sequence position is a real generate-time lever.** The Sonnet generate
+   prompt weights earlier-listed corpus bullets when trimming to a length-limited
+   résumé — so letting the user set that order is a genuine quality knob, not
+   cosmetics. The manual validation a future tuner should run (per
+   RELEASE_CHECKLIST point 10): one reordered ⇄ one default-order condition on a
+   synthetic fixture, confirming the generated résumé honors the reorder.
+2. **"Data order, not template" is the right reason to skip a version bump** —
+   but only because the default path is provably byte-identical. If a future
+   change makes ordering affect the *default* output, that becomes a real bump.
+
+---
+
 ## 2026-06-02 — r1/clarify-model-trial (clarify() → Haiku 4.5) (`2026-06-01.3` → `2026-06-01.4`)
 
 ### What changed

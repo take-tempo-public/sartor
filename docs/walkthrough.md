@@ -296,6 +296,19 @@ variants picker; a tag-chip filter for bullets.
   for this JD's vocabulary).
 - Pick a **summary variant** (the LLM proposed 2–3; pick the one
   that fits or write your own).
+- **Reorder bullets** within an experience by dragging the `≡`
+  handle (or, for keyboard users, the Up/Down buttons). This is
+  *not* cosmetic, for two reasons: recruiters scan résumés
+  top-down in seconds, so the first bullet under each role does
+  the load-bearing work of selling that role; and the résumé
+  generator reads your bullets *in this order* — when it trims to
+  fit a length-limited résumé, earlier bullets carry more weight
+  than later ones. So the order you set here is a real lever on
+  the final document, not just the on-screen list. The default is
+  callback's AI fit-ranking; **"Reset to AI ranking"** restores it
+  per experience. A bullet you add from the drawer *after*
+  ordering lands at the end, flagged "newly added — drag to
+  reposition," so your existing order is never silently disturbed.
 
 **Under the hood:** Compose makes Haiku 4.5 calls — the cheap,
 fast model used for *picking* and *re-ranking*, not for writing

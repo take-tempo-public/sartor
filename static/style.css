@@ -2078,6 +2078,132 @@ textarea:focus-visible {
   margin: 10px 0 6px;
 }
 
+/* ----- feat/bullet-drag-reorder — Compose bullet ordering ----- */
+.compose-order-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 10px;
+}
+.compose-order-hint-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.compose-order-hint {
+  font-size: 12px;
+  color: var(--fg-2);
+  line-height: 1.4;
+}
+.compose-order-info {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border-2);
+  background: none;
+  color: var(--fg-1);
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--t-fast) var(--ease),
+              color var(--t-fast) var(--ease);
+}
+.compose-order-info:hover {
+  border-color: var(--brand-edge);
+  color: var(--brand);
+}
+.compose-order-reset {
+  flex: none;
+  background: none;
+  border: 1px solid var(--border-2);
+  color: var(--fg-1);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--t-fast) var(--ease),
+              color var(--t-fast) var(--ease);
+}
+.compose-order-reset:hover:not(:disabled) {
+  border-color: var(--brand-edge);
+  color: var(--brand);
+}
+.compose-order-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Draggable visible rows: grab handle on the left. The handle is absolutely
+   positioned so it doesn't disturb the row's 2-column grid; the row gets extra
+   left padding so the text clears both the handle and the pinned accent bar. */
+.compose-row.draggable {
+  padding-left: 30px;
+  cursor: grab;
+}
+.compose-row.draggable:active { cursor: grabbing; }
+.compose-row .drag-handle {
+  position: absolute;
+  left: 9px;
+  top: 14px;
+  color: var(--fg-2);
+  font-size: 14px;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+}
+.compose-row.draggable:hover .drag-handle { color: var(--fg-1); }
+.compose-row.dragging {
+  opacity: 0.55;
+  border-color: var(--brand-edge);
+  box-shadow: var(--edge-top), var(--shadow-2);
+}
+.compose-row.newly-added { border-color: rgba(232,167,84,0.35); }
+
+/* Up/Down keyboard reorder controls (the a11y floor) */
+.reorder-controls {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 2px;
+}
+.reorder-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--fg-1);
+  border-radius: 4px;
+  width: 20px;
+  height: 16px;
+  font-size: 10px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--t-fast) var(--ease),
+              color var(--t-fast) var(--ease);
+}
+.reorder-btn:hover {
+  border-color: var(--brand-edge);
+  color: var(--brand);
+}
+.newly-added-hint {
+  background: rgba(232,167,84,0.12);
+  color: var(--brand);
+  border: 1px solid var(--brand-edge);
+}
+
 /* ----- Per-experience drawer ("find more bullets") ----- */
 .compose-drawer-toggle {
   background: none;
