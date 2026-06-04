@@ -1006,9 +1006,11 @@ function _onGenerationComplete(data) {
   // first résumé generation and swaps for Download once a cover letter
   // exists.
   _updateCoverLetterButtons();
-  // β.6 post-review — refresh the inline output preview once content
-  // lands. Reads corpus + the freshly-saved context_path; the WYSIWYG
-  // styled view sits alongside the RAW / RENDERED editor tabs.
+  // Refresh the Step 6 résumé preview once content lands. Post-WYSIWYG the
+  // preview route serves the cached last_generated_json_resume from the
+  // freshly-saved child context_path, so the styled iframe shows the exact
+  // generated content (preview == download). The cover-letter preview
+  // refreshes lazily when its tab is shown (see showTab).
   _refreshOutputPreview();
 }
 
@@ -1065,6 +1067,8 @@ async function runGenerateCoverLetter() {
     // generated content without an extra click. Pre-fix behavior left
     // the user on the Résumé tab and required them to discover the
     // Cover letter tab themselves — bad ux during a wizard flow.
+    // showTab('coverLetter') also refreshes the styled CL preview iframe
+    // against the freshly-saved context_path.
     showTab('coverLetter');
     setStatus('COVER LETTER READY');
     _announce('Cover letter generated. Download it from Step 6.');
@@ -1826,28 +1830,62 @@ function showTab(name, clickedBtn) {
     activeBtn.classList.add('active');
     if (activeBtn.getAttribute('role') === 'tab') activeBtn.setAttribute('aria-selected', 'true');
   }
+  // Refresh the styled cover-letter preview whenever the Cover letter tab
+  // becomes active. The route returns a placeholder until a cover letter is
+  // generated, so this is safe pre-generation. (The résumé preview refreshes
+  // on generation via _onGenerationComplete; the CL preview can't piggyback
+  // there because the CL is generated separately, and the tab is hidden when
+  // not active so iframes shouldn't load eagerly.)
+  if (name === 'coverLetter') {
+    _refreshCoverPreview();
+  }
 }
 
-// B1 — "Edit before downloading" drawer for the Résumé tab. Hosts the
-// raw markdown editor (#resumePreview) so it doesn't compete with the
-// styled iframe for screen real estate. We MOVE the existing DOM node
-// in/out of the drawer host (rather than cloning) because:
-//   - downloadResume() and _renderOutput() both reference #resumePreview
-//     by id; moving (not cloning) keeps that contract intact.
+// "Edit before downloading" drawer for Step 6. Hosts EITHER the résumé
+// editor (#resumePreview) or the cover-letter editor (#coverLetterPreview)
+// so the raw markdown doesn't compete with the styled iframe for screen
+// real estate. We MOVE the existing DOM node in/out of the drawer host
+// (rather than cloning) because:
+//   - downloadResume()/downloadCoverLetter() + _renderOutput() reference
+//     the editors by id; moving (not cloning) keeps that contract intact.
 //   - moving preserves the contenteditable state, focus, selection,
-//     and any inline event listeners that may have been attached.
-// The original parent is captured on open so closeEditDrawer can return
-// the node home cleanly.
-let _editDrawerOriginalParent = null;
+//     and any inline event listeners attached.
+// Each editor's home parent is captured the first time it's hosted so
+// closeEditDrawer can return it cleanly (robust against double-open).
+const _EDIT_DRAWER_TARGETS = {
+  resume: {
+    editorId: 'resumePreview',
+    title: 'Edit résumé before downloading',
+    hint: 'This is the generated résumé that downloads — the exact content the AI produced for this job. Edit it here, then download. Your edits also become the baseline for the next refine / iterate round.',
+  },
+  cover: {
+    editorId: 'coverLetterPreview',
+    title: 'Edit cover letter before downloading',
+    hint: 'This is the generated cover letter that downloads — edit it here, then download. Your edits also become the baseline for the next refine / iterate round.',
+  },
+};
+const _editDrawerHome = {};        // editorId -> original parent node
+let _editDrawerActiveEditorId = null;
 
-function openEditDrawer() {
+function openEditDrawer(target = 'resume') {
+  const cfg = _EDIT_DRAWER_TARGETS[target] || _EDIT_DRAWER_TARGETS.resume;
   const drawer = document.getElementById('editDrawer');
   const host = document.getElementById('editDrawerHost');
-  const editor = document.getElementById('resumePreview');
+  const editor = document.getElementById(cfg.editorId);
   if (!drawer || !host || !editor) return;
-  if (_editDrawerOriginalParent == null) {
-    _editDrawerOriginalParent = editor.parentNode;
+  // If a different editor is currently in the drawer, send it home first.
+  if (_editDrawerActiveEditorId && _editDrawerActiveEditorId !== cfg.editorId) {
+    closeEditDrawer();
   }
+  // Capture the home parent once (while the node still lives in its tab body).
+  if (!_editDrawerHome[cfg.editorId]) {
+    _editDrawerHome[cfg.editorId] = editor.parentNode;
+  }
+  _editDrawerActiveEditorId = cfg.editorId;
+  const title = document.getElementById('editDrawerTitle');
+  const hint = document.getElementById('editDrawerHint');
+  if (title) title.textContent = cfg.title;
+  if (hint) hint.textContent = cfg.hint;
   // Unhide the editor — it lives hidden in the tab body until the drawer
   // opens. The aria-label and contenteditable attributes stay intact.
   editor.classList.remove('hidden');
@@ -1860,13 +1898,17 @@ function openEditDrawer() {
 
 function closeEditDrawer() {
   const drawer = document.getElementById('editDrawer');
-  const editor = document.getElementById('resumePreview');
-  if (!drawer || !editor) return;
+  if (!drawer) return;
   drawer.classList.add('hidden');
-  if (_editDrawerOriginalParent) {
-    _editDrawerOriginalParent.appendChild(editor);
+  const editor = _editDrawerActiveEditorId
+    ? document.getElementById(_editDrawerActiveEditorId)
+    : null;
+  const home = editor ? _editDrawerHome[_editDrawerActiveEditorId] : null;
+  if (editor && home) {
+    home.appendChild(editor);
     editor.classList.add('hidden');
   }
+  _editDrawerActiveEditorId = null;
 }
 
 // B1 — "What changed?" info-icon modal. Replaces the pre-B1 Changes tab.
@@ -3938,9 +3980,11 @@ async function loadComposition() {
   // Step 6 (Output) where it's clearly relevant.
 }
 
-// β.6 post-review — refresh the Step 6 (Output) inline preview iframe.
-// Shows the styled output the user is about to download, separate from
-// the RAW / RENDERED markdown editor tabs above it.
+// β.6 post-review — refresh the Step 6 (Output) résumé preview iframe.
+// Shows the styled document the user downloads (post-WYSIWYG: the route
+// serves the cached last_generated_json_resume, so preview == download
+// content). The raw markdown editor lives behind the "Edit before
+// downloading" drawer.
 async function _refreshOutputPreview() {
   const block = document.getElementById('outputPreviewBlock');
   const frame = document.getElementById('outputPreviewFrame');
@@ -3954,7 +3998,34 @@ async function _refreshOutputPreview() {
   if (sel != null) params.set('template_id', String(sel));
   if (lastContextPath) params.set('context_path', lastContextPath);
   block.classList.remove('hidden');
+  const pageInfo = document.getElementById('outputPreviewPageInfo');
+  if (pageInfo) pageInfo.textContent = 'Page — of —';
+  _wirePreviewPageCount(frame, 'outputPreviewPageInfo');
   frame.src = `/api/applications/${_composeApplicationId}/preview?${params.toString()}`;
+}
+
+// v1.0.5 (Step 6 redesign) — refresh the Step 6 cover-letter preview iframe.
+// Renders the generated cover letter through the shared business-letter shell
+// styled to the chosen persona's font. The route returns a placeholder until
+// a cover letter has been generated, so this is safe to call on tab show even
+// before "+ Generate cover letter" is clicked.
+async function _refreshCoverPreview() {
+  const block = document.getElementById('coverPreviewBlock');
+  const frame = document.getElementById('coverPreviewFrame');
+  if (!block || !frame) return;
+  if (_composeApplicationId == null) {
+    block.classList.add('hidden');
+    return;
+  }
+  const params = new URLSearchParams();
+  const sel = _readSelectedPersonaId();
+  if (sel != null) params.set('template_id', String(sel));
+  if (lastContextPath) params.set('context_path', lastContextPath);
+  block.classList.remove('hidden');
+  const pageInfo = document.getElementById('coverPreviewPageInfo');
+  if (pageInfo) pageInfo.textContent = 'Page — of —';
+  _wirePreviewPageCount(frame, 'coverPreviewPageInfo');
+  frame.src = `/api/applications/${_composeApplicationId}/cover-letter-preview?${params.toString()}`;
 }
 
 // β.6c — fire recommend-summary in the background. Idempotent on the
@@ -4716,24 +4787,31 @@ async function _refreshLivePreview(templateId) {
   if (empty) empty.classList.add('hidden');
   frame.classList.remove('hidden');
 
-  // The preview iframe runs paged.js (injected by the preview route)
-  // and posts the rendered page count back to us. Wire the listener
-  // ONCE — it persists across src swaps. We still have a fallback
-  // path that measures via the iframe's own DOM, in case paged.js
-  // ever fails to load (e.g., a corrupt vendor file).
-  if (!frame._pageCountHookInstalled) {
-    window.addEventListener('message', (ev) => {
-      if (!ev || !ev.data || ev.data.type !== 'pagedjs_rendered') return;
-      const pageInfo = document.getElementById('previewPageInfo');
-      if (!pageInfo) return;
-      const n = parseInt(ev.data.pages, 10);
-      if (!Number.isFinite(n) || n < 1) return;
-      pageInfo.textContent = n === 1 ? 'Page 1 of 1' : `Page 1 of ${n}`;
-    });
-    frame.addEventListener('load', () => _updatePreviewPageCount(frame));
-    frame._pageCountHookInstalled = true;
-  }
+  _wirePreviewPageCount(frame, 'previewPageInfo');
   frame.src = url;
+}
+
+// Wire a preview iframe's paged.js page-count → a "Page N of M" chip.
+// Reused by the Step 4 template preview, the Step 6 résumé output preview,
+// and the Step 6 cover-letter preview. The listener persists across src
+// swaps; it's installed ONCE per frame (sentinel flag). Messages are routed
+// by `ev.source === frame.contentWindow` so multiple preview frames don't
+// cross-talk (each iframe posts to window.parent without identifying itself).
+// A load-time fallback measures via the iframe's own DOM in case paged.js
+// fails to post (e.g., a corrupt vendor file).
+function _wirePreviewPageCount(frame, pageInfoId) {
+  if (!frame || frame._pageCountHookInstalled) return;
+  window.addEventListener('message', (ev) => {
+    if (!ev || ev.source !== frame.contentWindow) return;
+    if (!ev.data || ev.data.type !== 'pagedjs_rendered') return;
+    const pageInfo = document.getElementById(pageInfoId);
+    if (!pageInfo) return;
+    const n = parseInt(ev.data.pages, 10);
+    if (!Number.isFinite(n) || n < 1) return;
+    pageInfo.textContent = n === 1 ? 'Page 1 of 1' : `Page 1 of ${n}`;
+  });
+  frame.addEventListener('load', () => _updatePreviewPageCount(frame, pageInfoId));
+  frame._pageCountHookInstalled = true;
 }
 
 // Fallback page-count estimator when paged.js doesn't (yet) post a
@@ -4741,8 +4819,8 @@ async function _refreshLivePreview(templateId) {
 // layout pass. Estimates from the iframe's own scrollHeight against
 // an 11"×96-DPI Letter page. Paged.js's postMessage will overwrite
 // this with the real count usually within 500–1500 ms.
-function _updatePreviewPageCount(frame) {
-  const pageInfo = document.getElementById('previewPageInfo');
+function _updatePreviewPageCount(frame, pageInfoId = 'previewPageInfo') {
+  const pageInfo = document.getElementById(pageInfoId);
   if (!pageInfo) return;
   let pages = 1;
   try {

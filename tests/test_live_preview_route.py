@@ -62,6 +62,12 @@ def preview_app(tmp_path, monkeypatch):
     (tmp_path / "personas" / "bundled" / "classic.css").write_text(
         src_css.read_text(encoding="utf-8"), encoding="utf-8",
     )
+    # Materialize the shared cover-letter shell so the cover-letter preview
+    # route (BASE_DIR / personas / cover_letter.html) resolves in-temp.
+    (tmp_path / "personas" / "cover_letter.html").write_text(
+        (repo_root / "personas" / "cover_letter.html").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
     # Also drop a stub .docx so the bundled-template DB rows resolve.
     from docx import Document
     for filename in ("classic.docx", "modern.docx"):
@@ -416,6 +422,103 @@ class TestApplicationPreviewWysiwyg:
         assert r.status_code == 200
         body = r.get_data(as_text=True)
         assert "Preview is waiting on curation" in body
+
+
+# -------------------------------------------------------------------
+# Cover-letter preview — styled business-letter render (v1.0.5)
+# -------------------------------------------------------------------
+
+
+def _write_context_with_cover_letter(
+    out_dir: Path, application_id: int, cover_letter_md: str,
+    *, filename: str = "context_cl.json",
+) -> Path:
+    """Persist a context carrying last_generated_cover_letter — as
+    run_generate_cover_letter writes it in place after a CL generation."""
+    import json as _json
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ctx_path = out_dir / filename
+    ctx_path.write_text(_json.dumps({
+        "application_id": application_id,
+        "last_generated_cover_letter": cover_letter_md,
+    }), encoding="utf-8")
+    return ctx_path
+
+
+class TestCoverLetterPreview:
+    _CL = (
+        "June 4, 2026\n"
+        "Hiring Manager, Orbital Dynamics\n\n"
+        "Dear Hiring Manager,\n\n"
+        "I rebuilt three distributed systems after scaling to 4M users.\n\n"
+        "Sincerely,\nCasey Rivera"
+    )
+
+    def test_serves_styled_cover_letter(self, preview_app):
+        """A context carrying last_generated_cover_letter renders through the
+        business-letter shell as self-contained HTML."""
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        ctx = _write_context_with_cover_letter(
+            preview_app.OUTPUT_DIR / "casey", aid, self._CL,
+        )
+        client = preview_app.app.test_client()
+        r = client.get(
+            f"/api/applications/{aid}/cover-letter-preview?context_path={ctx}",
+        )
+        assert r.status_code == 200
+        assert r.content_type.startswith("text/html")
+        body = r.get_data(as_text=True)
+        assert "Hiring Manager, Orbital Dynamics" in body
+        assert "distributed systems" in body
+        # The shared business-letter shell wraps the body.
+        assert 'class="cover-letter"' in body
+        # Self-contained — paged.js injected, no remote stylesheet link.
+        assert "paged.polyfill.js" in body
+
+    def test_placeholder_when_no_cover_letter_yet(self, preview_app):
+        """No context (pre-generate) → honest empty-state placeholder."""
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        client = preview_app.app.test_client()
+        r = client.get(f"/api/applications/{aid}/cover-letter-preview")
+        assert r.status_code == 200
+        assert "No cover letter yet" in r.get_data(as_text=True)
+
+    def test_placeholder_when_context_has_empty_cover_letter(self, preview_app):
+        """A context that exists but carries no cover letter → placeholder,
+        not a blank styled page."""
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        ctx = _write_context_with_cover_letter(
+            preview_app.OUTPUT_DIR / "casey", aid, "",
+            filename="context_cl_empty.json",
+        )
+        client = preview_app.app.test_client()
+        body = client.get(
+            f"/api/applications/{aid}/cover-letter-preview?context_path={ctx}",
+        ).get_data(as_text=True)
+        assert "No cover letter yet" in body
+
+    def test_returns_404_for_unknown_application(self, preview_app):
+        client = preview_app.app.test_client()
+        r = client.get("/api/applications/9999/cover-letter-preview")
+        assert r.status_code == 404
+
+    def test_rejects_out_of_tree_context_path(self, preview_app, tmp_path):
+        """A context file OUTSIDE OUTPUT_DIR must not be read — the _within
+        guard refuses it, so its cover letter never renders (placeholder
+        shown). Proves path-traversal containment on the new route."""
+        import json as _json
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        outside = tmp_path / "evil_context.json"
+        outside.write_text(_json.dumps({
+            "application_id": aid,
+            "last_generated_cover_letter": "SENTINEL_LEAK_TEXT",
+        }), encoding="utf-8")
+        client = preview_app.app.test_client()
+        body = client.get(
+            f"/api/applications/{aid}/cover-letter-preview?context_path={outside}",
+        ).get_data(as_text=True)
+        assert "SENTINEL_LEAK_TEXT" not in body
+        assert "No cover letter yet" in body
 
 
 # -------------------------------------------------------------------

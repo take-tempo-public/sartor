@@ -27,6 +27,35 @@ generate has run. A pure rendering/caching change per RELEASE_ARC Key decision 5
   `_json_resume_has_content()` guard falls back to the corpus-direct render if the
   cached doc is an empty skeleton.
 
+### Added — Step 6 (Output) redesign + styled cover-letter preview (`feat/step6-redesign`, v1.0.5)
+
+Finishes the Step 6 output panel and gives the cover letter a styled live preview.
+A UI/rendering change — **no prompt change, `PROMPT_VERSION` unchanged, no new
+dependency** (`markdown` was already a dependency), no LLM call on the new path.
+
+- **`personas/cover_letter.html` (new)** — a shared, persona-agnostic
+  business-letter shell for the cover-letter preview: terser header (no name
+  banner), dense single-spaced body, addressee block inline with the body, and the
+  chosen persona's font (plainly) injected via a template variable. Honors
+  `@page { size: letter }` so paged.js paginates it like the résumé.
+- **`pdf_render.py`** — `render_cover_letter_html()` renders generated
+  cover-letter text into that shell (`markdown` + `nl2br`, so header lines keep
+  single-line breaks while blank-line-separated paragraphs become `<p>` blocks);
+  `persona_font_family()` extracts a persona CSS's base `font-family` (multi-line
+  values normalized) with a neutral fallback. Both deterministic — no LLM.
+- **`app.py`** — `GET /api/applications/<id>/cover-letter-preview` serves the
+  styled cover letter from a context's `last_generated_cover_letter`, returning an
+  honest placeholder until one is generated. Same guard pattern as the résumé
+  preview (`_safe_username` + `_within(OUTPUT_DIR)`).
+- **Frontend** — the Cover-letter tab gains a styled paged.js preview iframe with
+  a "Page N of M" chip; the Step 6 résumé preview gains the same chip (reusing
+  `_updatePreviewPageCount`, now source-keyed so multiple preview frames don't
+  cross-talk). The "Edit before downloading" drawer is parameterized to host either
+  the résumé or cover-letter editor; edits still flow through `/api/save-edits`.
+  Stale "WYSIWYG coming in v1.0.2" / "styled CL lands in B3" hint copy corrected.
+- The cover letter still downloads as **`.docx`**; PDF/Markdown cover-letter output
+  is the next branch.
+
 ## [1.0.4] — 2026-06-02
 
 The eval tuning loop: a real-data, human-in-the-loop, model-assisted
