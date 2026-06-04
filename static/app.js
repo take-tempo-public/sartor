@@ -3595,22 +3595,104 @@ async function _showApplicationDetail(applicationId) {
   // Open modal with Escape + close-button wiring
   const closeBtn = document.getElementById('btnCloseAppDetail');
   const backdrop = document.getElementById('appDetailModalBackdrop');
+  const resumeBtn = document.getElementById('btnResumeApp');
 
   const cleanup = () => {
     modal.classList.add('hidden');
     modal.removeEventListener('keydown', onKey);
     if (closeBtn) closeBtn.removeEventListener('click', cleanup);
     if (backdrop) backdrop.removeEventListener('click', cleanup);
+    if (resumeBtn) resumeBtn.removeEventListener('click', onResume);
   };
   const onKey = (e) => {
     if (e.key === 'Escape') { e.preventDefault(); cleanup(); }
   };
+  // D.3.1 — "Resume in wizard" rehydrates the wizard at Step 6 from this
+  // application's last generated state. Shown only when a run produced a
+  // résumé (resume_state.resumable) so analyzed-only applications don't offer
+  // a dead button. Close the modal first, then hand off to the wizard.
+  const onResume = () => {
+    cleanup();
+    resumeApplicationIntoWizard(detail);
+  };
+  if (resumeBtn) {
+    const resumable = !!(detail.resume_state && detail.resume_state.resumable);
+    resumeBtn.classList.toggle('hidden', !resumable);
+    if (resumable) resumeBtn.addEventListener('click', onResume);
+  }
 
   if (closeBtn) closeBtn.addEventListener('click', cleanup);
   if (backdrop) backdrop.addEventListener('click', cleanup);
   modal.addEventListener('keydown', onKey);
   modal.classList.remove('hidden');
   newNotesEl.focus();
+}
+
+// D.3.1 — Resume a prior application into the live wizard. Converges on the
+// exact state a fresh /api/generate produces by REUSING _onGenerationComplete +
+// _renderOutput (not forking them), mirroring the runGeneration success block.
+// `detail` is the GET /api/applications/<id> payload, which carries the
+// `resume_state` block (latest generated markdown + persona + rediscovered
+// context_path). The on-disk doc path isn't persisted on the run, but downloads
+// re-render from the editor content via /api/download-edited, so a truthy
+// lastResumePath sentinel is all the _wizardReachable(6) gate needs.
+function resumeApplicationIntoWizard(detail) {
+  const rs = (detail && detail.resume_state) || {};
+  if (!rs.resumable) {
+    _toast('Nothing to resume yet — generate a résumé first.', true);
+    return;
+  }
+  // Bind the compose/preview routes to this application.
+  _composeApplicationId = detail.id;
+
+  // Reselect the persona so the preview iframes + download honor the template.
+  const personaSel = document.getElementById('personaSelect');
+  if (personaSel && rs.persona_template_id != null) {
+    personaSel.value = String(rs.persona_template_id);
+  }
+  _selectedPersonaId = rs.persona_template_id ?? _readSelectedPersonaId();
+
+  // Resume-flow globals. lastResumePath isn't a real on-disk path here (see
+  // header) — a truthy value satisfies the Step-6 reachability gate; download
+  // reads the editor content, not this path.
+  lastContextPath = rs.context_path || '';
+  lastResumePath = lastContextPath || 'resumed';
+  lastCoverLetterPath = '';
+  lastResumeFormat = '.docx';
+
+  // Shape a synthetic generate-response so the shared completion handlers
+  // hydrate the editors, freeze the edit-detect baselines, toggle the CL
+  // buttons, and refresh the Step-6 preview iframe exactly as a fresh
+  // generation would.
+  const data = {
+    context_path: rs.context_path || '',
+    iteration: rs.iteration || 0,
+    resume_preview: rs.resume_md || '',
+    cover_letter_preview: rs.cover_letter_md || '',
+    persona_template_id: rs.persona_template_id ?? null,
+    changes_made: [],
+    proofread_notes: [],
+  };
+  _onGenerationComplete(data);
+  _renderOutput(data);
+
+  if (_wizardReachable(6)) {
+    _wizardAdvanceTo(6);
+  } else {
+    // Degraded mode — the on-disk context file was cleaned up, so there's no
+    // live context_path to gate on. The run WAS generated, so land on Step 6
+    // anyway to expose the editors + download; the rail stays gated because
+    // iteration + styled preview need a re-generate (toast below).
+    _wizardStep = 6;
+    _wizardRender();
+  }
+  setStatus('RESUMED FROM PRIOR APPLICATION');
+
+  if (!rs.context_path) {
+    _toast('Saved layout/context for this application is gone — re-generate to '
+      + 'restore the styled preview and continue iterating. Your text is intact.',
+      true);
+  }
 }
 
 // ===============================================================

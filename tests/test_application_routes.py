@@ -63,7 +63,9 @@ def _seed_application(candidate_id, title="Senior PM @ Foo", company="Foo Inc",
 
 
 def _seed_run(application_id, iteration=0, run_id="abc123def456",
-              generated_resume_md=None, ats_roundtrip_json=None):
+              generated_resume_md=None, ats_roundtrip_json=None,
+              generated_cover_letter_md=None, edited_resume_text=None,
+              edited_cover_letter_text=None, persona_template_id=None):
     from db.models import ApplicationRun
     from db.session import get_session
     s = get_session()
@@ -73,6 +75,10 @@ def _seed_run(application_id, iteration=0, run_id="abc123def456",
             run_id=run_id, prompt_version="2026-05-12.1",
             corpus_snapshot_json="{}",
             generated_resume_md=generated_resume_md,
+            generated_cover_letter_md=generated_cover_letter_md,
+            edited_resume_text=edited_resume_text,
+            edited_cover_letter_text=edited_cover_letter_text,
+            persona_template_id=persona_template_id,
             ats_roundtrip_json=ats_roundtrip_json,
         )
         s.add(r)
@@ -80,6 +86,35 @@ def _seed_run(application_id, iteration=0, run_id="abc123def456",
         return r.id
     finally:
         s.close()
+
+
+def _seed_persona(candidate_id=None, name="Classic", path="classic.docx",
+                  source="bundled"):
+    from db.models import PersonaTemplate
+    from db.session import get_session
+    s = get_session()
+    try:
+        p = PersonaTemplate(candidate_id=candidate_id, name=name, path=path,
+                            source=source)
+        s.add(p)
+        s.commit()
+        return p.id
+    finally:
+        s.close()
+
+
+def _write_context_file(app_module, username, filename, payload):
+    """Write a context_*.json under the (monkeypatched) OUTPUT_DIR/<user> dir.
+
+    Returns the absolute path written. Used to exercise the resume-state
+    context rediscovery (D.3.1)."""
+    import json
+
+    user_dir = app_module.OUTPUT_DIR / username
+    user_dir.mkdir(parents=True, exist_ok=True)
+    p = user_dir / filename
+    p.write_text(json.dumps(payload), encoding="utf-8")
+    return p
 
 
 def _seed_pending_proposal(application_run_id, bullet_id=None,
@@ -571,3 +606,114 @@ class TestGetApplicationDetail:
         assert body["notes"] == "Check LinkedIn"
         assert body["sent_at"] is not None
         assert body["outcome_at"] is not None
+
+
+# ---------------------------------------------------------------------------
+# D.3.1 — resume a prior application into the wizard
+# ---------------------------------------------------------------------------
+
+
+class TestFindContextPathForRun:
+    """Unit tests for the LLM-free helper that rediscovers a run's on-disk
+    context_*.json (ApplicationRun has no context_path column)."""
+
+    def test_returns_newest_matching_by_iteration(self, app_app):
+        _write_context_file(app_app, "alice", "context_a_iter1.json",
+                            {"application_run_id": 7, "iteration": 1})
+        newer = _write_context_file(app_app, "alice", "context_b_iter2.json",
+                                    {"application_run_id": 7, "iteration": 2})
+        got = app_app._find_context_path_for_run("alice", 7)
+        assert got == str(newer)
+
+    def test_ignores_files_for_other_runs(self, app_app):
+        _write_context_file(app_app, "alice", "context_x_iter1.json",
+                            {"application_run_id": 999, "iteration": 1})
+        assert app_app._find_context_path_for_run("alice", 7) is None
+
+    def test_none_when_user_dir_absent(self, app_app):
+        # The fixture creates OUTPUT_DIR but not OUTPUT_DIR/alice.
+        assert app_app._find_context_path_for_run("alice", 7) is None
+
+    def test_skips_unparseable_json_returns_valid_match(self, app_app):
+        bad = app_app.OUTPUT_DIR / "alice"
+        bad.mkdir(parents=True, exist_ok=True)
+        (bad / "context_broken_iter1.json").write_text("{not json",
+                                                       encoding="utf-8")
+        good = _write_context_file(app_app, "alice", "context_ok_iter1.json",
+                                   {"application_run_id": 7, "iteration": 1})
+        assert app_app._find_context_path_for_run("alice", 7) == str(good)
+
+    def test_none_when_only_unparseable(self, app_app):
+        bad = app_app.OUTPUT_DIR / "alice"
+        bad.mkdir(parents=True, exist_ok=True)
+        (bad / "context_broken_iter1.json").write_text("{not json",
+                                                       encoding="utf-8")
+        assert app_app._find_context_path_for_run("alice", 7) is None
+
+
+class TestResumeState:
+    """The `resume_state` block on GET /api/applications/<id> (D.3.1)."""
+
+    def test_full_payload_resume_and_cover(self, app_app):
+        cid = _seed_candidate()
+        pid = _seed_persona()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0, generated_resume_md="# Resume",
+                        generated_cover_letter_md="Dear Hiring Manager,",
+                        persona_template_id=pid)
+        ctx = _write_context_file(
+            app_app, "alice", "context_a_iter1.json",
+            {"application_run_id": rid, "iteration": 1,
+             "last_generated_json_resume": {"basics": {"name": "Alice"}}},
+        )
+
+        body = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()
+        rs = body["resume_state"]
+        assert rs["resumable"] is True
+        assert rs["resume_md"] == "# Resume"
+        assert rs["cover_letter_md"] == "Dear Hiring Manager,"
+        assert rs["persona_template_id"] == pid
+        assert rs["context_path"] == str(ctx)
+        assert rs["iteration"] == 1
+
+    def test_resume_only_run_has_empty_cover(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        _seed_run(aid, iteration=0, generated_resume_md="# Resume")
+        rs = app_app.app.test_client().get(
+            f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["resumable"] is True
+        assert rs["resume_md"] == "# Resume"
+        assert rs["cover_letter_md"] == ""
+
+    def test_not_resumable_when_never_generated(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        _seed_run(aid, iteration=0)  # analyzed-only: no generated_resume_md
+        rs = app_app.app.test_client().get(
+            f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs == {"resumable": False}
+
+    def test_degraded_when_context_file_missing(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        _seed_run(aid, iteration=0, generated_resume_md="# Resume")
+        # No context file written to disk.
+        rs = app_app.app.test_client().get(
+            f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["resumable"] is True
+        assert rs["resume_md"] == "# Resume"
+        assert rs["context_path"] is None
+        assert rs["iteration"] == 0
+
+    def test_prefers_edited_text_over_generated(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        _seed_run(aid, iteration=0, generated_resume_md="# Generated",
+                  generated_cover_letter_md="Generated CL",
+                  edited_resume_text="# Edited",
+                  edited_cover_letter_text="Edited CL")
+        rs = app_app.app.test_client().get(
+            f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["resume_md"] == "# Edited"
+        assert rs["cover_letter_md"] == "Edited CL"

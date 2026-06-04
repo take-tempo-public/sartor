@@ -4487,7 +4487,8 @@ def get_application(application_id: int):
         if app_row is None:
             return jsonify({"error": "Application not found"}), 404
         candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
-        if candidate is None or not _safe_username(candidate.username):
+        safe_user = _safe_username(candidate.username) if candidate else None
+        if candidate is None or safe_user is None:
             return jsonify({"error": "Candidate validation failed"}), 403
 
         runs_sorted = sorted(app_row.runs, key=lambda r: r.iteration)
@@ -4526,9 +4527,48 @@ def get_application(application_id: int):
             "outcome_at": app_row.outcome_at,
             "notes": app_row.notes,
             "runs": runs_dict,
+            "resume_state": _build_resume_state(safe_user, runs_sorted),
         })
     finally:
         session.close()
+
+
+def _build_resume_state(safe_user: str, runs_sorted: list) -> dict:
+    """Package the state the frontend needs to resume a prior application into
+    the wizard at Step 6 (D.3.1).
+
+    Picks the most-recent run carrying generated content (prefer the user's
+    edited text over the raw LLM markdown), pairs it with the on-disk context
+    file rediscovered via `_find_context_path_for_run`, and reads the iteration
+    count from that file when present. `resumable` is False when nothing has been
+    generated yet (analyzed-only applications). When the context file is gone
+    (output/ cleaned), `context_path` is None but the run still resumes in a
+    degraded mode — the editors hydrate from the DB markdown.
+    """
+    for r in reversed(runs_sorted):
+        resume_md = r.edited_resume_text or r.generated_resume_md or ""
+        if not resume_md:
+            continue
+        cover_md = r.edited_cover_letter_text or r.generated_cover_letter_md or ""
+        ctx_path = _find_context_path_for_run(safe_user, r.id)
+        iteration = 0
+        if ctx_path:
+            try:
+                ctx_data = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
+                raw_iter = ctx_data.get("iteration", 0)
+                iteration = raw_iter if isinstance(raw_iter, int) else 0
+            except (json.JSONDecodeError, OSError):
+                iteration = 0
+        return {
+            "application_run_id": r.id,
+            "persona_template_id": r.persona_template_id,
+            "resume_md": resume_md,
+            "cover_letter_md": cover_md,
+            "context_path": ctx_path,
+            "iteration": iteration,
+            "resumable": True,
+        }
+    return {"resumable": False}
 
 
 def _parse_ats_status(blob: str | None) -> str | None:
@@ -4539,6 +4579,46 @@ def _parse_ats_status(blob: str | None) -> str | None:
         return json.loads(blob).get("status")
     except (json.JSONDecodeError, AttributeError):
         return None
+
+
+def _find_context_path_for_run(safe_user: str, application_run_id: int) -> str | None:
+    """Rediscover the most-recent on-disk context_*.json for an application run.
+
+    ApplicationRun rows don't store a path to their context file — the file is
+    written by `save_iteration_context` AFTER the run row exists, and each
+    iteration writes a NEW file. But every context file embeds
+    `application_run_id`, so we glob the user's output dir and return the newest
+    file whose embedded id matches: newest by the `iteration` field, then by
+    mtime as a tiebreaker. LLM-free and deterministic.
+
+    Returns None when the user dir is absent, no file matches, or every match is
+    unreadable. Each candidate path is `_within`-guarded under OUTPUT_DIR before
+    it's read (defense-in-depth; the glob root already sits inside OUTPUT_DIR).
+    Used by the D.3.1 resume-a-prior-application flow.
+    """
+    user_dir = OUTPUT_DIR / safe_user
+    if not user_dir.is_dir():
+        return None
+    best: tuple[int, float, str] | None = None  # (iteration, mtime, path)
+    for cp in user_dir.glob("context_*.json"):
+        if not _within(cp, OUTPUT_DIR):
+            continue
+        try:
+            data = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if data.get("application_run_id") != application_run_id:
+            continue
+        raw_iter = data.get("iteration", 0)
+        iteration = raw_iter if isinstance(raw_iter, int) else 0
+        try:
+            mtime = cp.stat().st_mtime
+        except OSError:
+            mtime = 0.0
+        key = (iteration, mtime, str(cp))
+        if best is None or key > best:
+            best = key
+    return best[2] if best else None
 
 
 @app.route("/api/applications/<int:application_id>/status", methods=["PUT"])
