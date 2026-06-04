@@ -85,6 +85,31 @@ dependency, no LLM call** (the renderers are deterministic, P1 Hardening).
   different formats); `downloadCoverLetter()` sends the chosen format + persona id.
   The satisfied "PDF & Markdown coming next" hint copy was removed.
 
+### Added — Resume a prior application into the wizard (`feat/prior-app-resume`, v1.0.5)
+
+Clicking a prior application now offers **Resume in wizard**, which reloads that
+application's last generated state — context + persona + generated résumé/cover
+letter — into the live wizard and jumps to Step 6, closing the D.3.1 placeholder.
+A UI state-hydration change only — **no prompt change, `PROMPT_VERSION` unchanged,
+no new dependency, no LLM call, no schema migration.**
+
+- **`app.py`** — `GET /api/applications/<id>` gains a `resume_state` block (latest
+  run's generated/edited markdown, persona, rediscovered `context_path`, iteration,
+  `resumable` flag). A new deterministic, LLM-free helper
+  `_find_context_path_for_run()` rediscovers the run's on-disk `context_*.json`
+  (ApplicationRun has no `context_path` column) by matching the `application_run_id`
+  each context file embeds, newest by iteration then mtime; every candidate path is
+  `_within(OUTPUT_DIR)`-guarded. No new route — `get_application`'s existing
+  `_safe_username` guard covers it.
+- **Frontend** — a "Resume in wizard" button on the application-detail modal (shown
+  only when a run produced a résumé). `resumeApplicationIntoWizard()` reuses
+  `_onGenerationComplete` + `_renderOutput` (converging on the exact post-generate
+  state, not forking it): binds the preview routes to the application, reselects the
+  persona, hydrates the editors, and advances the rail to Step 6. When the on-disk
+  context file is gone it degrades gracefully — editors still hydrate from the DB
+  markdown and downloads work; a toast notes that the styled preview + further
+  iteration need a re-generate.
+
 ## [1.0.4] — 2026-06-02
 
 The eval tuning loop: a real-data, human-in-the-loop, model-assisted

@@ -867,8 +867,9 @@
 
   <!-- Application detail modal — opened when the user clicks a card in the
        Applications tab. Shows title, status, timestamps, and a notes field
-       that saves on blur. Resuming the full wizard from a prior application
-       (D.3.1) is deferred; this modal is the Phase 2 tracker surface. -->
+       that saves on blur. "Resume in wizard" (D.3.1) rehydrates the wizard at
+       Step 6 from this application's last generated state; it's enabled only
+       when a run has produced a résumé. -->
   <div id="appDetailModal" class="cb-modal hidden" role="dialog" aria-modal="true"
        aria-labelledby="appDetailModalTitle">
     <div class="cb-modal-backdrop" id="appDetailModalBackdrop"></div>
@@ -885,6 +886,7 @@
                   placeholder="Add notes (saved on blur)"></textarea>
       </div>
       <div class="modal-actions">
+        <button class="cb-btn cb-bg-orange hidden" id="btnResumeApp">Resume in wizard</button>
         <button class="cb-btn cb-bg-blue" id="btnCloseAppDetail">Close</button>
       </div>
     </div>
