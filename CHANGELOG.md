@@ -56,6 +56,35 @@ dependency** (`markdown` was already a dependency), no LLM call on the new path.
 - The cover letter still downloads as **`.docx`**; PDF/Markdown cover-letter output
   is the next branch.
 
+### Added — Cover-letter output formats (`feat/cover-letter-formats`, v1.0.5)
+
+The cover-letter download now honors a chosen output format — `.docx`, `.pdf`, or
+`.md` — closing the v1.0.1 placeholder (which shipped only a UI hint). An
+output-format change only — **no prompt change, `PROMPT_VERSION` unchanged, no new
+dependency, no LLM call** (the renderers are deterministic, P1 Hardening).
+
+- **`generator.py`** — `generate_cover_letter()` gains an `output_format` (+
+  `template_path`) param and branches like `generate_resume()`: `.md` writes the
+  normalized markdown; `.pdf` renders through the shared `personas/cover_letter.html`
+  business-letter shell via Playwright (`_render_cover_letter_pdf`), so the `.pdf` is
+  byte-faithful to the Step-6 preview (WYSIWYG); `.docx` uses a new
+  `_write_cover_letter_docx()` aligned to the 2026-05-26 business-letter decisions
+  (persona font matching the chosen résumé template, dense near-single spacing, no
+  name banner, inline addressee). The `.docx` and `.pdf` share one font source (the
+  persona CSS). The now-unused `is_cover_letter` param was removed from `_write_docx`
+  (résumé output unchanged).
+- **`pdf_render.py`** — `render_cover_letter_pdf()` mirrors `render_pdf`: renders the
+  shell HTML (via the existing `render_cover_letter_html`) to a temp file and prints
+  it through headless Chromium, letting the shell's `@page` rule govern page geometry
+  (`prefer_css_page_size`) so the PDF matches the paged.js preview. Deterministic.
+- **`app.py`** — `/api/download-edited` threads the chosen format and resolved persona
+  template into `generate_cover_letter` for cover-letter downloads (no new route; the
+  existing `_safe_username` / `_within` / `secure_filename` guards cover the path).
+- **Frontend** — a dedicated DOCX / PDF / Markdown picker in the Step-6 cover-letter
+  tab (independent of the résumé's Step-5 picker — résumé and cover letter can use
+  different formats); `downloadCoverLetter()` sends the chosen format + persona id.
+  The satisfied "PDF & Markdown coming next" hint copy was removed.
+
 ## [1.0.4] — 2026-06-02
 
 The eval tuning loop: a real-data, human-in-the-loop, model-assisted

@@ -439,12 +439,14 @@
                drawer at runtime by openEditDrawer('cover') — same pattern as
                the résumé tab. Until a cover letter is generated, the route
                returns a placeholder telling the user to click "+ Generate
-               cover letter". The cover letter still downloads as .docx; PDF
-               and Markdown formats land in the next branch. -->
+               cover letter". The cover letter downloads in the format chosen
+               via the picker below (feat/cover-letter-formats): .pdf renders
+               through this same business-letter shell (WYSIWYG with this
+               preview); .docx and .md are the editable / quick-paste options. -->
           <div id="coverPreviewBlock" class="live-preview-block hidden">
             <div class="output-preview-header">
               <div class="edit-hint" style="margin:0">
-                <strong>Cover letter preview</strong> · styled to match your chosen résumé template (business-letter format). Downloads as <strong>.docx</strong>; PDF &amp; Markdown formats are coming next. Use <strong>Edit before downloading</strong> to tweak the text.
+                <strong>Cover letter preview</strong> · styled to match your chosen résumé template (business-letter format). The <strong>.pdf</strong> download matches this preview. Use <strong>Edit before downloading</strong> to tweak the text.
               </div>
               <span style="display:flex;align-items:center;gap:10px;flex-shrink:0">
                 <span class="preview-pagination" aria-live="polite">
@@ -454,6 +456,16 @@
                   &#9998; Edit before downloading
                 </button>
               </span>
+            </div>
+            <!-- Dedicated cover-letter format picker (feat/cover-letter-formats).
+                 Independent of the Step-5 résumé picker so the user can pick
+                 résumé=PDF, cover letter=DOCX. Distinct `.cover-format-btn` class
+                 so setOutputFormat (which clears `.format-btn`) doesn't fight it. -->
+            <div class="form-row" style="align-items:center;gap:12px;margin:4px 0 8px;">
+              <span class="edit-hint" style="margin:0">Cover letter format:</span>
+              <button class="cb-btn cover-format-btn active" id="coverFmtDocx" onclick="setCoverFormat('.docx', this)">DOCX</button>
+              <button class="cb-btn cover-format-btn" id="coverFmtPdf" onclick="setCoverFormat('.pdf', this)">PDF</button>
+              <button class="cb-btn cover-format-btn" id="coverFmtMd" onclick="setCoverFormat('.md', this)">Markdown</button>
             </div>
             <iframe id="coverPreviewFrame"
                     title="Cover letter live preview"
@@ -492,9 +504,6 @@
           <strong>&#8595;</strong> icon in the browser address bar and choose
           <strong>Always allow downloads from this site</strong>.
           (A future release will switch to a server-side download to avoid this entirely.)
-        </p>
-        <p class="edit-hint" style="margin-top:4px;text-transform:none">
-          Cover letter downloads as .docx. PDF and Markdown format support is coming in the next release.
         </p>
         <!-- REFINEMENT: hidden until first generation -->
         <div id="refinementArea" class="hidden">

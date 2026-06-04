@@ -287,14 +287,16 @@ textarea {
   transform: none;
   filter: none;
 }
-.format-btn {
+.format-btn,
+.cover-format-btn {
   background: #1a1a2e;
   border: 1px solid #2a2a3e;
   color: var(--fg-1);
   padding: 5px 16px;
   font-size: 12px;
 }
-.format-btn.active {
+.format-btn.active,
+.cover-format-btn.active {
   border-color: var(--success);
   color: var(--success);
   background: rgba(102, 204, 204, 0.08);

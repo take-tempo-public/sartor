@@ -625,7 +625,7 @@ flowchart TD
 
     CTX2 --> R7{Cover letter?}:::route
     R7 -->|/api/generate-cover-letter| LLM7{{generate_cover_letter<br/>Sonnet 4.6}}:::llm
-    LLM7 --> AROUTCL[(output/&lt;u&gt;/cover_TS.docx)]:::onDisk
+    LLM7 --> AROUTCL[(output/&lt;u&gt;/cover_TS.docx /<br/>.pdf / .md)]:::onDisk
 
     R7 -->|done| Done([Download])
 ```
@@ -656,10 +656,18 @@ Key invariants:
 | **`.docx`** | `_normalize_markdown()` → `_write_docx()` with persona `.docx` as style template | `personas/bundled/<name>.docx` | Word-based ATS portals; recruiter inbox |
 | **`.pdf`** | `_normalize_markdown()` → `md_to_json_resume()` → Jinja2 `.html` → Playwright Chromium → PDF | `personas/bundled/<name>.html` + `.css` | Direct apply forms; user portfolios |
 
-Every output also writes a sidecar
+Every résumé output also writes a sidecar
 `resume_TS.jsonresume.json` (canonical JSON Resume v1.0
 intermediate) for downstream tooling and re-render. Best-effort
 write; failures don't block the primary output.
+
+**Cover letters share the same three formats** (`generate_cover_letter(content, ..., output_format)`):
+`.md` is normalized markdown; `.pdf` renders through the shared
+`personas/cover_letter.html` business-letter shell via Playwright
+(`pdf_render.render_cover_letter_pdf`), byte-faithful to the Step-6
+preview; `.docx` uses `_write_cover_letter_docx()` (persona font, dense
+single-spaced body, no name banner, inline addressee — the business-letter
+styling decisions). No JSON Resume sidecar — a cover letter is not a résumé.
 
 ---
 
