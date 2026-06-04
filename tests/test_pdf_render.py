@@ -175,6 +175,132 @@ class TestHtmlRender:
 
 
 # -------------------------------------------------------------------
+# Cover-letter render — fast, no browser (v1.0.5 Step 6 redesign)
+# -------------------------------------------------------------------
+
+
+@pytest.fixture
+def cover_letter_template_path():
+    """Resolve the shared business-letter cover-letter template path."""
+    from pathlib import Path
+    return Path(__file__).resolve().parents[1] / "personas" / "cover_letter.html"
+
+
+@pytest.fixture
+def bundled_css_dir():
+    from pathlib import Path
+    return Path(__file__).resolve().parents[1] / "personas" / "bundled"
+
+
+class TestPersonaFontFamily:
+    """`persona_font_family` extracts the base body font from a persona CSS so
+    the cover-letter preview can match the résumé (plainly)."""
+
+    def test_extracts_single_line_stack(self, bundled_css_dir):
+        from pdf_render import persona_font_family
+        value = persona_font_family(bundled_css_dir / "classic.css")
+        assert "Helvetica Neue" in value
+        assert value.endswith("sans-serif")
+        assert "\n" not in value
+
+    def test_collapses_multiline_value(self, bundled_css_dir):
+        # modern.css and spacious.css wrap the font-family value across lines.
+        from pdf_render import persona_font_family
+        modern = persona_font_family(bundled_css_dir / "modern.css")
+        assert "Roboto" in modern
+        assert "Liberation Sans" in modern
+        assert modern.endswith("sans-serif")
+        assert "\n" not in modern  # newline collapsed
+
+        spacious = persona_font_family(bundled_css_dir / "spacious.css")
+        assert "Georgia" in spacious
+        assert spacious.endswith("serif")
+        assert "\n" not in spacious
+
+    def test_falls_back_when_none(self):
+        from pdf_render import _DEFAULT_COVER_LETTER_FONT, persona_font_family
+        assert persona_font_family(None) == _DEFAULT_COVER_LETTER_FONT
+
+    def test_falls_back_when_missing_file(self, tmp_path):
+        from pdf_render import _DEFAULT_COVER_LETTER_FONT, persona_font_family
+        assert persona_font_family(tmp_path / "nope.css") == _DEFAULT_COVER_LETTER_FONT
+
+    def test_falls_back_when_no_rule(self, tmp_path):
+        from pdf_render import _DEFAULT_COVER_LETTER_FONT, persona_font_family
+        css = tmp_path / "blank.css"
+        css.write_text("body { color: #111; }", encoding="utf-8")
+        assert persona_font_family(css) == _DEFAULT_COVER_LETTER_FONT
+
+
+class TestCoverLetterRender:
+    """`render_cover_letter_html` renders generated cover-letter text into a
+    styled business-letter HTML string. Deterministic — no LLM, no browser."""
+
+    def test_renders_body_text(self, cover_letter_template_path):
+        from pdf_render import render_cover_letter_html
+        md = (
+            "June 4, 2026\n"
+            "Hiring Manager, Acme Corp\n\n"
+            "Dear Hiring Manager,\n\n"
+            "I rebuilt three distributed systems after scaling a platform to 4M users.\n\n"
+            "Sincerely,\nPriya Patel"
+        )
+        html = render_cover_letter_html(
+            md, font_family='"Helvetica Neue", Helvetica, sans-serif',
+            template_path=cover_letter_template_path,
+        )
+        assert "Hiring Manager, Acme Corp" in html
+        assert "distributed systems" in html
+        assert "Priya Patel" in html
+
+    def test_injects_font_family_unescaped(self, cover_letter_template_path):
+        # The font stack carries double-quotes; they must survive into the
+        # <style> block (autoescaping them to &#34; would break the CSS).
+        from pdf_render import render_cover_letter_html
+        html = render_cover_letter_html(
+            "Hello.", font_family='"Helvetica Neue", Helvetica, sans-serif',
+            template_path=cover_letter_template_path,
+        )
+        assert '"Helvetica Neue", Helvetica, sans-serif' in html
+        assert "&#34;Helvetica Neue&#34;" not in html
+        assert "&quot;Helvetica Neue&quot;" not in html
+
+    def test_addressee_lines_break_inline(self, cover_letter_template_path):
+        # Single newlines in the header block become <br> (nl2br) so the date /
+        # addressee / salutation flow inline with the body — not a styled block.
+        from pdf_render import render_cover_letter_html
+        md = "June 4, 2026\nHiring Manager\nAcme Corp\n\nDear Hiring Manager,"
+        html = render_cover_letter_html(
+            md, font_family="serif", template_path=cover_letter_template_path,
+        )
+        assert "<br" in html  # nl2br emitted line breaks within the block
+
+    def test_blank_lines_make_paragraphs(self, cover_letter_template_path):
+        from pdf_render import render_cover_letter_html
+        md = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph."
+        html = render_cover_letter_html(
+            md, font_family="serif", template_path=cover_letter_template_path,
+        )
+        assert html.count("<p>") >= 3
+
+    def test_empty_markdown_does_not_crash(self, cover_letter_template_path):
+        from pdf_render import render_cover_letter_html
+        html = render_cover_letter_html(
+            "", font_family="serif", template_path=cover_letter_template_path,
+        )
+        # Shell still renders; the cover-letter container is present.
+        assert "cover-letter" in html
+
+    def test_raises_when_template_missing(self, tmp_path):
+        from pdf_render import render_cover_letter_html
+        with pytest.raises(FileNotFoundError):
+            render_cover_letter_html(
+                "Hi.", font_family="serif",
+                template_path=tmp_path / "missing.html",
+            )
+
+
+# -------------------------------------------------------------------
 # End-to-end PDF render — slow, requires Chromium installed
 # -------------------------------------------------------------------
 

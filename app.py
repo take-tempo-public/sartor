@@ -2674,6 +2674,139 @@ def _json_resume_has_content(doc: dict) -> bool:
     return any(doc.get(key) for key in ("work", "skills", "education", "projects"))
 
 
+@app.route("/api/applications/<int:application_id>/cover-letter-preview", methods=["GET"])
+def preview_cover_letter_html(application_id: int):
+    """Render the application's generated cover letter as a styled,
+    self-contained business-letter HTML page (v1.0.5 — Step 6 redesign).
+
+    The cover-letter analogue of `preview_application_html`. Unlike the
+    résumé preview (which renders the candidate's corpus through a persona
+    template), the cover letter has no corpus: the generated markdown IS the
+    document. This route reads `last_generated_cover_letter` from the supplied
+    context file and renders it through the shared
+    `personas/cover_letter.html` business-letter shell, using the chosen
+    persona's font (plainly) per the 2026-05-26 styling decisions.
+
+    Query params:
+      template_id  — persona whose font the letter should match. Omitted →
+                     the β.1 default-resolution chain. The letter only borrows
+                     the font; its layout is the shared business-letter shell.
+      context_path — path to the post-generate context_*.json carrying
+                     `last_generated_cover_letter`. Must resolve under
+                     OUTPUT_DIR. Missing / no cover letter yet → placeholder.
+
+    No cover letter exists yet (pre-generate, or résumé-only generation) →
+    placeholder HTML so the iframe surfaces an honest empty-state.
+
+    Filesystem + ownership guards: `_safe_username` runs inside
+    `_load_application_owned` and is rechecked explicitly; `context_path` is
+    confirmed `_within(OUTPUT_DIR)`. No filesystem reads happen beyond the
+    context file, the cover-letter template, and the persona CSS (for the font).
+    """
+    from db.session import get_session, init_db
+    from pdf_render import persona_font_family, render_cover_letter_html
+
+    init_db()
+    session = get_session()
+    try:
+        # _load_application_owned runs _safe_username on the owning candidate;
+        # the explicit recheck just below keeps the route-security-lint hook
+        # happy when scanning this block.
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or candidate is None:
+            return jsonify({"error": "Application not found"}), 404
+        if not _safe_username(candidate.username):
+            return jsonify({"error": "Application not found"}), 404
+
+        # Resolve the persona only to borrow its font — explicit template_id
+        # wins, else the β.1 default chain. A missing/owned persona without a
+        # .css falls back to the neutral business stack inside
+        # persona_font_family, so font resolution never blocks the preview.
+        template_id_raw = request.args.get("template_id")
+        docx_template_path: str | None = None
+        if template_id_raw:
+            try:
+                template_id = int(template_id_raw)
+            except ValueError:
+                return jsonify({"error": "template_id must be an integer"}), 400
+            docx_template_path = _resolve_persona_template_path(template_id)
+            if docx_template_path is None:
+                return jsonify({"error": "Template not found"}), 404
+        else:
+            docx_template_path = _resolve_default_persona_template_path(
+                username=candidate.username, application_id=application_id,
+            )
+        css_path = (
+            Path(docx_template_path).with_suffix(".css")
+            if docx_template_path else None
+        )
+        font_family = persona_font_family(css_path)
+
+        # Read the generated cover letter from the supplied context file,
+        # validating containment under OUTPUT_DIR so a malicious caller can't
+        # read outside.
+        ctx_path_raw = request.args.get("context_path", "").strip()
+        cover_letter_md = ""
+        if ctx_path_raw:
+            cp = Path(ctx_path_raw)
+            if _within(cp, OUTPUT_DIR) and cp.exists():
+                try:
+                    ctx_data = json.loads(cp.read_text(encoding="utf-8"))
+                except (json.JSONDecodeError, OSError):
+                    ctx_data = {}
+                cover_letter_md = (ctx_data.get("last_generated_cover_letter") or "").strip()
+    finally:
+        session.close()
+
+    if not cover_letter_md:
+        return _cover_letter_placeholder_html(), 200, {
+            "Content-Type": "text/html; charset=utf-8",
+        }
+
+    cover_template = BASE_DIR / "personas" / "cover_letter.html"
+    html_str = render_cover_letter_html(
+        cover_letter_md, font_family=font_family, template_path=cover_template,
+    )
+    html_str = _inject_paged_polyfill(html_str)
+    return html_str, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+def _cover_letter_placeholder_html() -> str:
+    """Self-contained HTML for the Step 6 cover-letter iframe when no cover
+    letter has been generated yet (résumé-only generation, or pre-generate).
+
+    Mirrors `_preview_placeholder_html` — an honest empty-state instead of a
+    blank frame.
+    """
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>No cover letter yet</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 48px 32px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+      color: #444;
+      background: #fafafa;
+    }
+    .placeholder-wrap { max-width: 520px; margin: 0 auto; text-align: center; }
+    h1 { font-size: 18px; font-weight: 600; color: #222; margin: 0 0 12px; }
+    p { margin: 0 0 12px; }
+  </style>
+</head>
+<body>
+  <div class="placeholder-wrap">
+    <h1>No cover letter yet</h1>
+    <p>Click <strong>+ Generate cover letter</strong> to write one tailored to this job. It will preview here, styled to match your chosen résumé template.</p>
+  </div>
+</body>
+</html>"""
+
+
 @app.route("/api/users/<string:username>/preview", methods=["GET"])
 def preview_candidate_html(username: str):
     """Render the candidate's résumé corpus as a self-contained HTML page

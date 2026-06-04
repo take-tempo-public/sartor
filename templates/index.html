@@ -403,11 +403,16 @@
           <div id="outputPreviewBlock" class="live-preview-block hidden">
             <div class="output-preview-header">
               <div class="edit-hint" style="margin:0">
-                <strong>Live preview</strong> · your AI-recommended bullets + chosen titles rendered through this template. Close to the downloaded file but not yet byte-identical &mdash; the LLM rewrites individual bullet text during generate (sharpens verbs, reorders for JD relevance). True WYSIWYG is tracked for v1.0.2.
+                <strong>Live preview</strong> · this is the generated résumé you'll download &mdash; the exact content the AI produced for this job. The <strong>.pdf</strong> output matches this preview; a <strong>.docx</strong> may differ slightly in styling. Use <strong>Edit before downloading</strong> to tweak the text.
               </div>
-              <button class="cb-btn cb-bg-blue" id="btnOpenEditDrawer" onclick="openEditDrawer()" aria-label="Open editor to edit résumé markdown before downloading" style="font-size:12px;padding:4px 12px">
-                &#9998; Edit before downloading
-              </button>
+              <span style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+                <span class="preview-pagination" aria-live="polite">
+                  <span id="outputPreviewPageInfo">Page — of —</span>
+                </span>
+                <button class="cb-btn cb-bg-blue" id="btnOpenEditDrawer" onclick="openEditDrawer('resume')" aria-label="Open editor to edit résumé markdown before downloading" style="font-size:12px;padding:4px 12px">
+                  &#9998; Edit before downloading
+                </button>
+              </span>
             </div>
             <!-- sandbox: allow-scripts + allow-same-origin together
                  (see the explanation on #livePreviewFrame above). Same
@@ -427,17 +432,41 @@
                role="textbox" aria-multiline="true" aria-label="Generated résumé markdown, editable"></div>
         </div>
         <div id="tabCoverLetter" class="tab-content" role="tabpanel" aria-labelledby="tabBtnCoverLetter">
-          <!-- Cover letter has no corpus — the markdown IS the document.
-               Raw editor stays as the primary surface here. (B3 will add a
-               cover-letter live-preview iframe alongside with persona
-               styling, but in B1 we keep the editor as the surface.) -->
-          <div class="edit-hint" id="coverEditHint" style="margin-bottom:6px">
-            &#9998; This is the document — edit directly, then click <strong>Download cover letter</strong>.
-            (A styled live-preview matching the chosen résumé persona lands in v1.0.2 / B3.)
+          <!-- v1.0.5 (Step 6 redesign): the cover letter now gets a styled
+               live preview matching the chosen résumé persona's font, in a
+               terser business-letter format (per the 2026-05-26 styling
+               decisions). The raw markdown editor is relocated into the edit
+               drawer at runtime by openEditDrawer('cover') — same pattern as
+               the résumé tab. Until a cover letter is generated, the route
+               returns a placeholder telling the user to click "+ Generate
+               cover letter". The cover letter still downloads as .docx; PDF
+               and Markdown formats land in the next branch. -->
+          <div id="coverPreviewBlock" class="live-preview-block hidden">
+            <div class="output-preview-header">
+              <div class="edit-hint" style="margin:0">
+                <strong>Cover letter preview</strong> · styled to match your chosen résumé template (business-letter format). Downloads as <strong>.docx</strong>; PDF &amp; Markdown formats are coming next. Use <strong>Edit before downloading</strong> to tweak the text.
+              </div>
+              <span style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+                <span class="preview-pagination" aria-live="polite">
+                  <span id="coverPreviewPageInfo">Page — of —</span>
+                </span>
+                <button class="cb-btn cb-bg-blue" id="btnOpenCoverEditDrawer" onclick="openEditDrawer('cover')" aria-label="Open editor to edit cover letter text before downloading" style="font-size:12px;padding:4px 12px">
+                  &#9998; Edit before downloading
+                </button>
+              </span>
+            </div>
+            <iframe id="coverPreviewFrame"
+                    title="Cover letter live preview"
+                    class="live-preview-frame"
+                    sandbox="allow-scripts allow-same-origin"></iframe>
           </div>
-          <div id="coverLetterPreview" class="preview-editable" contenteditable="true" spellcheck="true"
-               role="textbox" aria-multiline="true" aria-label="Generated cover letter, editable"
-               aria-describedby="coverEditHint"></div>
+          <!-- The raw markdown editor is HIDDEN in the tab body — it's
+               relocated into the edit drawer by openEditDrawer('cover') at
+               runtime. Kept in the DOM because downloadCoverLetter() reads its
+               innerText and runGenerateCoverLetter() writes generated text into
+               it. -->
+          <div id="coverLetterPreview" class="preview-editable hidden" contenteditable="true" spellcheck="true"
+               role="textbox" aria-multiline="true" aria-label="Generated cover letter, editable"></div>
         </div>
 
         <div class="form-row">
@@ -462,10 +491,10 @@
           If a file doesn't appear in your Downloads folder, click the
           <strong>&#8595;</strong> icon in the browser address bar and choose
           <strong>Always allow downloads from this site</strong>.
-          (v1.0.2 will switch to a server-side download to avoid this entirely.)
+          (A future release will switch to a server-side download to avoid this entirely.)
         </p>
         <p class="edit-hint" style="margin-top:4px;text-transform:none">
-          Cover letter downloads as .docx in v1.0.1. PDF and Markdown format support coming in v1.0.2.
+          Cover letter downloads as .docx. PDF and Markdown format support is coming in the next release.
         </p>
         <!-- REFINEMENT: hidden until first generation -->
         <div id="refinementArea" class="hidden">
@@ -771,36 +800,29 @@
     </div>
   </div>
 
-  <!-- B1 (2026-05-26) — "Edit before downloading" drawer for Step 6.
-       Slides in from the right; the iframe stays visible behind the
-       drawer's backdrop so the user can see the styled preview while
-       editing the raw markdown. The actual #resumePreview editor is
-       relocated INTO this drawer at runtime by openEditDrawer() —
-       keeping it as a single DOM element means downloadResume()'s
-       innerText read continues to work without changes. In B2 we'll
-       wire a debounced save-edits + preview iframe refresh so edits
-       made here reflect in the iframe within ~1s of drop. -->
+  <!-- "Edit before downloading" drawer for Step 6. Slides in from the
+       right; the styled preview stays visible behind the backdrop so the
+       user can see the document while editing its text. The editor node
+       (#resumePreview OR #coverLetterPreview) is relocated INTO this drawer
+       at runtime by openEditDrawer(target) and returned home on close —
+       keeping each as a single DOM element means downloadResume() /
+       downloadCoverLetter()'s innerText reads continue to work unchanged.
+       Edits flow to the next iteration via /api/save-edits on Refine /
+       Iterate (see _gateEditsBeforeAction). The title + hint below are
+       defaults; openEditDrawer(target) rewrites them per editor. -->
   <aside id="editDrawer" class="settings-drawer hidden" role="dialog"
          aria-modal="true" aria-labelledby="editDrawerTitle">
     <div class="settings-drawer-backdrop" onclick="closeEditDrawer()"></div>
     <div class="settings-drawer-content">
       <header class="settings-drawer-header">
-        <h2 id="editDrawerTitle" class="cb-modal-title">Edit résumé before downloading</h2>
+        <h2 id="editDrawerTitle" class="cb-modal-title">Edit before downloading</h2>
         <button class="corpus-action-btn" onclick="closeEditDrawer()" aria-label="Close editor">Close</button>
       </header>
       <div class="settings-drawer-body">
-        <p class="edit-hint" style="margin-top:0">
-          This is the <strong>LLM-rewritten résumé</strong> &mdash; the
-          actual document that downloads when you click
-          <strong>Download résumé</strong>. It may read differently
-          from the live preview behind this drawer: the preview shows
-          your <strong>corpus</strong> (bullets as you wrote them) +
-          the chosen template, while this editor holds what the LLM
-          produced after rewriting for this JD (sharpened verbs,
-          reordered bullets, tailored summary). True WYSIWYG between
-          the two surfaces is tracked for v1.0.2; in v1.0.1 the
-          download always reflects what you see <em>here</em>, not
-          what's in the preview.
+        <p class="edit-hint" id="editDrawerHint" style="margin-top:0">
+          This is the document that downloads &mdash; edit it here, then
+          download. Your edits also become the baseline for the next
+          refine / iterate round.
         </p>
         <div id="editDrawerHost" class="edit-drawer-host"
              aria-label="Edit drawer editor host"></div>
@@ -823,12 +845,11 @@
       </header>
       <div class="cb-modal-body">
         <p class="edit-hint" style="margin-top:0">
-          These are the changes the LLM made between your corpus and
-          the rewritten résumé in the edit drawer. They will appear in
-          the downloaded file. The live preview at the top of Step 6
-          renders directly from your corpus and does <em>not</em>
-          reflect these LLM rewrites &mdash; that's a known gap
-          tracked for v1.0.2.
+          These are the changes the LLM made between your corpus and the
+          generated résumé — sharpened verbs, reordered bullets, a tailored
+          summary. The live preview at the top of Step 6 now shows this
+          generated résumé (the exact content you download), so these changes
+          are already reflected there.
         </p>
         <div id="changesContent"></div>
       </div>

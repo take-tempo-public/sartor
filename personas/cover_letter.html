@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cover letter</title>
+<style>
+/* Cover-letter preview — shared, persona-agnostic business-letter shell.
+ *
+ * Design intent (user-confirmed styling decisions, 2026-05-26):
+ *  - TERSER than the résumé. No big name banner / contact-bar repeat — the
+ *    letter text itself carries the date / addressee / salutation / signature.
+ *    This template renders ONLY the letter body, plainly.
+ *  - Fonts MATCH the chosen résumé persona (injected via the font_family
+ *    template variable) but stay plain — no accent rules, no uppercase
+ *    tracking, no banners.
+ *  - DENSE, single-spaced body (business-letter register), not the breathy
+ *    line-height a résumé summary uses.
+ *  - Addressee block (date / "Hiring Manager," / company) renders INLINE with
+ *    the body — no separately styled or boxed block. It is just the first few
+ *    lines of normal letter text; nl2br keeps its single-line breaks.
+ *
+ * Reused as the live preview source (mirrors the résumé β.4 pattern): the same
+ * HTML feeds the in-app paged.js preview. PDF/Markdown CL OUTPUT is a separate
+ * concern (next branch) — this template is preview-only here.
+ */
+
+@page {
+  size: letter;
+  margin: 1in;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  /* Persona font, plain. Falls back to a neutral business stack.
+     `| safe` so the quotes in the font stack survive autoescaping inside
+     this <style> block (the value is sourced from our own persona CSS). */
+  font-family: {{ font_family | safe }};
+  font-size: 11pt;
+  line-height: 1.25;   /* near single-spaced — business-letter dense */
+  color: #111;
+  background: #fff;
+}
+
+.cover-letter {
+  /* The letter body. Paragraphs are tight; the date/addressee/salutation
+     lines flow inline at the top via <br> line breaks (nl2br). */
+}
+
+.cover-letter p {
+  margin: 0 0 9pt;
+  line-height: 1.25;
+}
+
+/* Defensive: if the generated text ever carries an incidental markdown
+   heading, render it plainly (no banner) so the "terser" intent holds. */
+.cover-letter h1,
+.cover-letter h2,
+.cover-letter h3 {
+  font-size: 11pt;
+  font-weight: 600;
+  margin: 0 0 9pt;
+}
+
+.cover-letter ul,
+.cover-letter ol {
+  margin: 0 0 9pt 18pt;
+}
+
+.cover-letter li {
+  margin-bottom: 2pt;
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+</style>
+</head>
+<body>
+<div class="cover-letter">
+{{ body_html | safe }}
+</div>
+</body>
+</html>

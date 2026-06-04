@@ -37,11 +37,22 @@ personas/{candidate_id}/ for user uploads).
 from __future__ import annotations
 
 import logging
+import re
 import tempfile
 from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Neutral business-letter fallback when a persona CSS has no readable
+# font-family rule. Matches the Classic persona's stack.
+_DEFAULT_COVER_LETTER_FONT = (
+    '"Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif'
+)
+
+# First `font-family:` declaration in a CSS file, captured up to its `;`
+# (values may wrap across lines — see modern.css / spacious.css).
+_FONT_FAMILY_RE = re.compile(r"font-family\s*:\s*([^;{}]+)", re.IGNORECASE)
 
 
 def html_template_path_for(docx_template_path: str | Path) -> Path | None:
@@ -175,3 +186,73 @@ def render_html_string(
     )
     template = env.get_template(html_path.name)
     return template.render(**json_resume)
+
+
+def persona_font_family(css_path: str | Path | None) -> str:
+    """Extract the base `font-family` declaration from a persona's CSS.
+
+    The cover-letter preview matches the chosen résumé persona's font (plainly)
+    per the 2026-05-26 styling decisions. The first `font-family` rule in each
+    bundled persona CSS is its base body font (verified across classic / modern
+    / spacious / tech). Values that wrap across lines are normalized to a single
+    line. Falls back to a neutral business stack when the CSS is missing,
+    unreadable, or has no rule.
+
+    Deterministic — no LLM, no I/O beyond reading the given CSS.
+    """
+    if css_path is None:
+        return _DEFAULT_COVER_LETTER_FONT
+    p = Path(css_path)
+    if not p.exists():
+        return _DEFAULT_COVER_LETTER_FONT
+    try:
+        css = p.read_text(encoding="utf-8")
+    except OSError as exc:
+        logger.warning("Could not read persona CSS %s for font: %s", p, exc)
+        return _DEFAULT_COVER_LETTER_FONT
+    match = _FONT_FAMILY_RE.search(css)
+    if not match:
+        return _DEFAULT_COVER_LETTER_FONT
+    # Collapse internal whitespace (incl. the newlines of wrapped values) so
+    # the result is a single, valid `font-family` value.
+    value = " ".join(match.group(1).split())
+    return value or _DEFAULT_COVER_LETTER_FONT
+
+
+def render_cover_letter_html(
+    cover_letter_markdown: str,
+    *,
+    font_family: str,
+    template_path: str | Path,
+) -> str:
+    """Render cover-letter text into a styled business-letter HTML string.
+
+    The mirror of `render_html_string` for the cover letter: the shared
+    `personas/cover_letter.html` shell + the chosen persona's font, used by the
+    Step 6 cover-letter live preview. The generated cover letter is plain text
+    (date / addressee / salutation / paragraphs / close); it is converted to
+    HTML with the `nl2br` extension so the header lines keep their single-line
+    breaks and flow inline with the body, while blank-line-separated paragraphs
+    become `<p>` blocks.
+
+    Deterministic — no LLM. PDF/Markdown cover-letter OUTPUT is a separate
+    concern (the cover-letter-formats branch); this is preview-only.
+    """
+    import markdown as _markdown
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+    html_path = Path(template_path).resolve()
+    if not html_path.exists():
+        raise FileNotFoundError(
+            f"Cover-letter HTML template not found at {html_path}."
+        )
+
+    body_html = _markdown.markdown(cover_letter_markdown or "", extensions=["nl2br"])
+
+    env = Environment(
+        loader=FileSystemLoader(str(html_path.parent)),
+        autoescape=select_autoescape(["html", "xml"]),
+        keep_trailing_newline=True,
+    )
+    template = env.get_template(html_path.name)
+    return template.render(body_html=body_html, font_family=font_family)
