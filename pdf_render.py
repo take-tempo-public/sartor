@@ -256,3 +256,76 @@ def render_cover_letter_html(
     )
     template = env.get_template(html_path.name)
     return template.render(body_html=body_html, font_family=font_family)
+
+
+def render_cover_letter_pdf(
+    cover_letter_markdown: str,
+    *,
+    font_family: str,
+    template_path: str | Path,
+    output_pdf_path: str | Path,
+    chromium_args: list[str] | None = None,
+) -> Path:
+    """Render a cover letter to PDF via the shared business-letter shell + Playwright.
+
+    The mirror of `render_pdf` for the cover letter (the cover-letter-formats
+    branch's `.pdf` output). It renders the SAME HTML that feeds the Step-6 live
+    preview — `render_cover_letter_html()` → the `personas/cover_letter.html`
+    shell + the chosen persona's font — so the downloaded `.pdf` is byte-faithful
+    to the preview (WYSIWYG).
+
+    Unlike the résumé template, the cover-letter shell is fully self-contained
+    (CSS lives inline in a `<style>` block, no external `<link>`), so the rendered
+    HTML can live in a system temp file — no same-directory CSS resolution needed.
+
+    Page geometry comes from the shell's `@page { size: letter; margin: 1in }`
+    rule via `prefer_css_page_size=True`, which matches the paged.js preview
+    (both honor the same `@page`).
+
+    Deterministic — no LLM. Args mirror `render_pdf`.
+
+    Raises:
+        FileNotFoundError if the cover-letter HTML shell is missing.
+        RuntimeError if Playwright fails to launch (Chromium not installed →
+        `python -m playwright install chromium`).
+    """
+    from playwright.sync_api import sync_playwright
+
+    html_str = render_cover_letter_html(
+        cover_letter_markdown, font_family=font_family, template_path=template_path,
+    )
+
+    out_path = Path(output_pdf_path).resolve()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    tmp_html: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".html", delete=False, encoding="utf-8",
+        ) as tmp:
+            tmp.write(html_str)
+            tmp_html = Path(tmp.name)
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(args=chromium_args or [])
+            try:
+                page = browser.new_page()
+                page.goto(tmp_html.as_uri(), wait_until="load")
+                # prefer_css_page_size lets the shell's `@page` rule (letter, 1in
+                # margin) govern the printable area — the same rule paged.js reads
+                # for the preview, so the PDF and the preview agree.
+                page.pdf(
+                    path=str(out_path),
+                    prefer_css_page_size=True,
+                    print_background=True,
+                )
+            finally:
+                browser.close()
+    finally:
+        if tmp_html is not None and tmp_html.exists():
+            try:
+                tmp_html.unlink()
+            except OSError as exc:
+                logger.warning("Could not remove temp HTML %s: %s", tmp_html, exc)
+
+    return out_path

@@ -4216,7 +4216,14 @@ def download_edited():
             template_path=template_path or None,
         )
     else:
-        path = generate_cover_letter(content, safe_user, str(OUTPUT_DIR))
+        # Cover letter honors the chosen format too (feat/cover-letter-formats).
+        # The persona template (resolved above for .docx/.pdf) lends its font: the
+        # .pdf renders through personas/cover_letter.html, the .docx borrows the
+        # same CSS primary family — so the letter matches the chosen résumé persona.
+        path = generate_cover_letter(
+            content, safe_user, str(OUTPUT_DIR),
+            output_format=output_format, template_path=template_path or None,
+        )
 
     return send_file(str(path), as_attachment=True, download_name=Path(path).name)
 

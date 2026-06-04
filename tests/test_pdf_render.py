@@ -377,3 +377,64 @@ class TestPdfRenderEndToEnd:
 
         assert "Roundtrip Candidate" in full_text
         assert "Stamped this exact sentence into a PDF." in full_text
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(
+    not _chromium_available(),
+    reason="Chromium not installed — run `python -m playwright install chromium`",
+)
+class TestCoverLetterPdfRenderEndToEnd:
+    """The cover-letter `.pdf` output (feat/cover-letter-formats). Renders
+    through the SAME `personas/cover_letter.html` shell that feeds the Step-6
+    preview, so the download is byte-faithful to what the user previewed."""
+
+    def test_writes_real_pdf(self, cover_letter_template_path, tmp_path):
+        from pdf_render import render_cover_letter_pdf
+
+        md = (
+            "June 4, 2026\n"
+            "Hiring Manager, Acme Corp\n\n"
+            "Dear Hiring Manager,\n\n"
+            "I rebuilt three distributed systems after scaling a platform to 4M users.\n\n"
+            "Sincerely,\nPriya Patel"
+        )
+        output = tmp_path / "cover.pdf"
+        result = render_cover_letter_pdf(
+            md,
+            font_family='"Helvetica Neue", Helvetica, sans-serif',
+            template_path=cover_letter_template_path,
+            output_pdf_path=output,
+        )
+        assert result.exists()
+        assert result.stat().st_size > 1000
+        assert result.read_bytes()[:4] == b"%PDF"
+
+    def test_pdf_contains_cover_letter_text(self, cover_letter_template_path, tmp_path):
+        """Round-trip: render, re-extract via pdfplumber, verify the addressee
+        and a body sentence survived into the rendered PDF."""
+        import pdfplumber
+
+        from pdf_render import render_cover_letter_pdf
+
+        md = (
+            "June 4, 2026\n"
+            "Hiring Manager, Test Co\n\n"
+            "Dear Hiring Manager,\n\n"
+            "Stamped this exact cover-letter sentence into a PDF.\n\n"
+            "Sincerely,\nRoundtrip Candidate"
+        )
+        output = tmp_path / "cover_rt.pdf"
+        render_cover_letter_pdf(
+            md,
+            font_family="serif",
+            template_path=cover_letter_template_path,
+            output_pdf_path=output,
+        )
+
+        with pdfplumber.open(str(output)) as pdf:
+            full_text = "\n".join((page.extract_text() or "") for page in pdf.pages)
+
+        assert "Hiring Manager, Test Co" in full_text
+        assert "Stamped this exact cover-letter sentence into a PDF." in full_text
+        assert "Roundtrip Candidate" in full_text

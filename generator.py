@@ -191,14 +191,145 @@ def _render_pdf_from_json(
                output_pdf_path=output_pdf_path)
 
 
-def generate_cover_letter(content: str, username: str, base_dir: str = "output") -> str:
-    """Generate the cover letter as .docx (always — no template needed)."""
+def generate_cover_letter(
+    content: str,
+    username: str,
+    base_dir: str = "output",
+    output_format: str = ".docx",
+    template_path: str | None = None,
+) -> str:
+    """Generate the cover letter in the requested format.
+
+    Supported formats (mirrors `generate_resume`):
+      .md   — write the normalized markdown directly
+      .docx — business-letter `.docx` via `_write_cover_letter_docx` (persona
+              font from the chosen template, dense single-spaced body, no name
+              banner, inline addressee — the 2026-05-26 styling decisions)
+      .pdf  — render through the shared `personas/cover_letter.html` shell via
+              Playwright (`_render_cover_letter_pdf`), byte-faithful to the
+              Step-6 live preview
+
+    `template_path` is the chosen persona's `.docx` (optional); both the `.docx`
+    and `.pdf` paths borrow its font (the `.pdf` via its `.css` sibling, the
+    `.docx` via the same CSS primary family) so the letter matches the résumé
+    persona. Unknown formats fall back to `.docx` (the download route validates
+    the enum upstream). No JSON Resume sidecar — a cover letter is not a résumé.
+    """
     out_dir = Path(base_dir) / username
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = out_dir / f"cover_letter_{ts}.docx"
-    _write_docx(_normalize_markdown(content), path, is_cover_letter=True)
+    content = _normalize_markdown(content)
+
+    if output_format == ".md":
+        path = out_dir / f"cover_letter_{ts}.md"
+        path.write_text(content, encoding="utf-8")
+    elif output_format == ".pdf":
+        path = out_dir / f"cover_letter_{ts}.pdf"
+        _render_cover_letter_pdf(content, template_path, path)
+    else:
+        path = out_dir / f"cover_letter_{ts}.docx"
+        _write_cover_letter_docx(content, path, template_path=template_path)
+
     return str(path)
+
+
+def _cover_letter_font_name(template_path: str | None) -> str:
+    """Resolve the cover letter's body font NAME from the chosen persona.
+
+    Shares one source of truth with the `.pdf` path: `persona_font_family`
+    returns the persona CSS's full font stack (e.g. `"Helvetica Neue", Helvetica,
+    Arial, sans-serif`); the `.docx` needs a single Word font name, so we take the
+    primary family. With no persona / CSS, `persona_font_family` returns the
+    neutral business stack, whose primary family is the effective fallback;
+    Calibri is only the last-resort guard if that stack were ever empty.
+    Deterministic — no LLM.
+    """
+    from pdf_render import persona_font_family
+
+    css_path = Path(template_path).with_suffix(".css") if template_path else None
+    stack = persona_font_family(css_path)
+    primary = stack.split(",")[0].strip().strip('"').strip("'")
+    return primary or "Calibri"
+
+
+def _render_cover_letter_pdf(
+    content: str,
+    template_path: str | None,
+    output_pdf_path: Path,
+) -> None:
+    """Render the cover letter to PDF via the shared business-letter shell.
+
+    Mirrors `_render_pdf_from_json`: resolves the shared
+    `personas/cover_letter.html` shell relative to this file, borrows the chosen
+    persona's font (its `.css` sibling), and delegates the Chromium pass to
+    `pdf_render.render_cover_letter_pdf`. The shell is shared (persona-agnostic),
+    so there is no per-persona companion to fall back to.
+    """
+    from pdf_render import persona_font_family, render_cover_letter_pdf
+
+    repo_root = Path(__file__).resolve().parent
+    shell = repo_root / "personas" / "cover_letter.html"
+    css_path = Path(template_path).with_suffix(".css") if template_path else None
+    font_family = persona_font_family(css_path)
+    render_cover_letter_pdf(
+        content,
+        font_family=font_family,
+        template_path=shell,
+        output_pdf_path=output_pdf_path,
+    )
+
+
+def _write_cover_letter_docx(
+    content: str,
+    path: Path,
+    template_path: str | None = None,
+) -> None:
+    """Write the cover letter to a business-letter `.docx`.
+
+    The 2026-05-26 styling decisions (shared with the `.pdf`/preview shell):
+      - Persona font (matching the chosen résumé template), plain.
+      - Dense, near-single-spaced body — business-letter register, not the
+        breathy line-height a résumé uses.
+      - TERSER than the résumé: NO centered name banner, NO section styling.
+        Every line is a plain Normal paragraph; the date / addressee / salutation
+        flow inline as tight stacked paragraphs (no boxed block).
+
+    Distinct from `_write_docx` (the résumé's role-based writer) because the
+    cover letter has no name / heading / job-row roles to capture — it is plain
+    dense paragraphs. Incidental markdown markers (`#`, bullets) are stripped to
+    plain text so a stray heading never renders as a banner. Deterministic — no LLM.
+    """
+    doc = docx.Document()
+    normal = doc.styles["Normal"]
+    normal.font.name = _cover_letter_font_name(template_path)
+    normal.font.size = Pt(11)
+    pf = normal.paragraph_format
+    pf.line_spacing = 1.15          # near single-spaced — business-letter dense
+    pf.space_before = Pt(0)
+    pf.space_after = Pt(8)          # ≈ the shell's 9pt inter-paragraph gap
+    for section in doc.sections:
+        section.top_margin = Inches(1)
+        section.bottom_margin = Inches(1)
+        section.left_margin = Inches(1)
+        section.right_margin = Inches(1)
+
+    for line in content.split("\n"):
+        stripped = line.strip()
+        if not stripped:
+            # Blank lines separate paragraphs; the per-paragraph spacing above
+            # carries the rhythm. Emitting an empty paragraph would double gaps.
+            continue
+        # Strip any incidental heading / bullet marker → plain text (terser intent).
+        if stripped.startswith(("# ", "## ", "### ")):
+            text = stripped.lstrip("#").strip()
+        elif BULLET_RE.match(stripped):
+            text = BULLET_RE.sub("", stripped)
+        else:
+            text = stripped
+        p = doc.add_paragraph()
+        _add_inline_runs(p, text)   # honors **bold** / *italic*
+
+    doc.save(str(path))
 
 
 def _add_inline_runs(paragraph, text: str, base_bold: bool = False) -> None:
@@ -412,7 +543,6 @@ def _write_docx(
     content: str,
     path: Path,
     template_path: str | None = None,
-    is_cover_letter: bool = False,
 ) -> None:
     """Write LLM content to .docx, using the original file as a style template
     when it is a .docx. Falls back to clean built-in defaults otherwise.
@@ -472,9 +602,8 @@ def _write_docx(
                 _add_inline_runs(p, text, base_bold=True)
                 for run in p.runs:
                     run.font.size = Pt(16)
-                if not is_cover_letter:
-                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            in_header = not is_cover_letter
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            in_header = True
             header_subline = 0
             last_was_job_title = False
 

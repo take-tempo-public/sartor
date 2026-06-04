@@ -27,7 +27,8 @@ let lastResumePath = '';
 let lastCoverLetterPath = '';
 let lastResumeFormat = '.docx';
 let lastTemplatePath = '';   // path to original .docx for style template
-let outputFormat = '.docx';  // user-selected output format
+let outputFormat = '.docx';  // user-selected résumé output format
+let coverFormat = '.docx';   // user-selected cover-letter output format (Step 6, independent of the résumé)
 let primaryResume = '';      // currently selected primary resume filename
 let refinementHistory = [];  // accumulated refinement instructions, in order
 let lastClarifyQuestions = []; // questions returned by the most recent /api/clarify call
@@ -257,6 +258,15 @@ async function uploadFile(file) {
 function setOutputFormat(fmt, btn) {
   outputFormat = fmt;
   document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Cover-letter format picker (Step 6, feat/cover-letter-formats). Independent of
+// the résumé picker above — scoped to `.cover-format-btn` so the two don't clear
+// each other's active state.
+function setCoverFormat(fmt, btn) {
+  coverFormat = fmt;
+  document.querySelectorAll('.cover-format-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
 
@@ -1988,7 +1998,11 @@ async function downloadCoverLetter() {
       username: currentUser,
       content,
       type: 'cover_letter',
-      original_format: lastResumeFormat,
+      // Honors the dedicated Step-6 cover-letter format picker (independent of
+      // the résumé's). persona_template_id lends the persona font: .pdf renders
+      // through personas/cover_letter.html, .docx borrows the same CSS family.
+      original_format: coverFormat,
+      persona_template_id: _selectedPersonaId ?? _readSelectedPersonaId(),
     });
   });
 }
