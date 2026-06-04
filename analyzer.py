@@ -658,6 +658,43 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
                 new_exp: CorpusExperience = {**exp, "bullets": exp_bullets}
                 new_corpus.append(new_exp)
             corpus = new_corpus
+        # feat/bullet-drag-reorder — honor the user's explicit per-experience
+        # bullet order from the Compose drag/keyboard UI. Persisted as
+        # composition_overrides.bullet_order = {experience_id: [bullet_id, ...]}.
+        # Present for an experience ⇒ authoritative over the corpus's
+        # display_order; absent ⇒ untouched (default path stays byte-identical,
+        # so the analyze→generate cache keeps hitting). Bullets not named in the
+        # saved order keep their relative order at the END (covers a bullet added
+        # via the drawer AFTER ordering — never silently re-sorts). This reorders
+        # DATA, not the prompt template → no PROMPT_VERSION bump.
+        bullet_order_raw = ov.get("bullet_order") or {}
+        bullet_order: dict[int, list[int]] = {}
+        if isinstance(bullet_order_raw, dict):
+            for k, v in bullet_order_raw.items():
+                try:
+                    bullet_order[int(k)] = [int(x) for x in (v or [])]
+                except (TypeError, ValueError):
+                    continue
+        if bullet_order:
+            reordered: list[CorpusExperience] = []
+            for exp in corpus:
+                raw_eid = exp.get("id")
+                oid = int(raw_eid) if raw_eid is not None else None
+                order = bullet_order.get(oid) if oid is not None else None
+                if not order:
+                    reordered.append(exp)
+                    continue
+                rank = {bid: i for i, bid in enumerate(order)}
+                exp_bullets = exp.get("bullets") or []
+                # Stable sort: listed bullets take ranks 0..n-1; unlisted ones
+                # share rank len(rank) and keep their original relative order.
+                ordered_bullets = sorted(
+                    exp_bullets,
+                    key=lambda b: rank.get(int(b.get("id") or 0), len(rank)),
+                )
+                ordered_exp: CorpusExperience = {**exp, "bullets": ordered_bullets}
+                reordered.append(ordered_exp)
+            corpus = reordered
         parts.append(_corpus_block(
             corpus, iteration=iteration, pinned_ids=pinned_ids,
         ))

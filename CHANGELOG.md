@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — user-driven bullet ordering on Compose (`feat/bullet-drag-reorder`, v1.0.5)
+
+Drag-and-drop (and keyboard) reordering of bullets within each experience on
+the Compose step. The chosen order is **authoritative** — it propagates into
+the `<career_corpus>` block fed to `generate()`, so it shapes which bullets the
+LLM keeps in a length-limited résumé, not just the on-screen list. A data-order
+change, **not a prompt-template change → `PROMPT_VERSION` unchanged, no new
+dependency, no LLM call** (captured as a behavior note in
+[`evals/TUNING_LOG.md`](evals/TUNING_LOG.md) instead of a version bump).
+
+- **`analyzer.py`** — `_stable_user_prefix` honors
+  `composition_overrides.bullet_order = {experience_id: [bullet_id, ...]}`,
+  reordering each experience's bullets before the corpus block is emitted.
+  Bullets absent from a saved order keep their relative position at the end
+  (covers a bullet added via the drawer *after* ordering — never silently
+  re-sorted). Absent/empty order ⇒ output byte-identical, so the
+  analyze→generate prompt cache is untouched.
+- **`app.py`** — the existing `POST /api/applications/<id>/composition` threads
+  and validates an optional `bullet_order` into the persisted overrides; `GET`
+  returns bullets in the saved order with a per-experience `has_custom_order`
+  and per-bullet `in_custom_order` flag. Existing `_safe_username` + `_within`
+  guards unchanged; no new route.
+- **`static/app.js` + `static/style.css`** — native HTML5 drag with a grab
+  handle (`≡`, grab/grabbing cursors), an Up/Down keyboard path with
+  `aria-label`s (the a11y floor; no deprecated
+  `aria-grabbed`/`aria-dropeffect`), a one-sentence in-interface instruction
+  plus an "(i)" depth affordance, a per-experience "Reset to AI ranking"
+  button, and a "newly added — drag to reposition" hint. Reorders persist via a
+  debounced (~300 ms) optimistic autosave.
+- **Behavior change (consistency win):** pin / exclude / add now also persist on
+  the debounced autosave, not only when you click Next — the autosave sends the
+  full composition state, so it can't clobber those flags.
+
 ### Added — WYSIWYG live preview (Option 1) (`feat/wysiwyg-option1`, v1.0.5)
 
 The application preview is now byte-for-byte the future downloaded résumé once a
