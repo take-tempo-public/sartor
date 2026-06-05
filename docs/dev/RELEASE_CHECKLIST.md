@@ -26,6 +26,24 @@ annotation tab; establishes the design system); see
 [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4 for its branch sequence and tag
 criteria.
 
+### Discovered during the v1.0.5 stream (tracked, deferred)
+
+- [ ] **Compose custom bullet order visually reverts on reload when an
+      experience has no LLM recommendations** — surfaced 2026-06-04 while
+      building the `feat/playwright-ux-suite` bullet-drag regression test. The
+      saved `composition_overrides.bullet_order` round-trips correctly through
+      `POST`/`GET /api/applications/<id>/composition`, and `generate()` still
+      honors it (`_stable_user_prefix`), so the *persisted* order is intact.
+      But [`_renderComposeCard`](../../static/app.js) routes
+      no-recommendation experiences through `_dropoffPick`, which re-sorts the
+      fallback bullets by **score** — so the *on-screen* order reverts after a
+      Compose reload even though the data is correct. The common path
+      (recommendations present → bullets land in the `visible` set → the GET
+      array order is preserved) is unaffected, and the bullet-drag regression
+      test covers that path. Fix belongs in a future Compose-render branch:
+      honor the GET array order on the no-recommendations fallback path too,
+      instead of re-sorting by score.
+
 The v1.0.1 item list below was **reconciled in place at the v1.0.3 tag
 (2026-06-02)**: completed items are checked; still-open items are flagged
 `→ OPEN` with their current owning release. The v1.0.0 release landed in

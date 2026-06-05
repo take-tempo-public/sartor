@@ -1,0 +1,42 @@
+"""UserPickerPage — select or create a user on the landing panel."""
+
+from __future__ import annotations
+
+from ui_pages.base import DEFAULT_TIMEOUT_MS, BasePage
+from ui_pages.selectors import UserPicker
+
+
+class UserPickerPage(BasePage):
+    def options(self) -> list[str]:
+        return self.page.eval_on_selector_all(
+            f"{UserPicker.SELECT} option", "els => els.map(e => e.value)"
+        )
+
+    def select(self, username: str) -> None:
+        self.page.wait_for_selector(UserPicker.SELECT, timeout=DEFAULT_TIMEOUT_MS)
+        self.page.select_option(UserPicker.SELECT, username)
+        self.page.wait_for_function(
+            "(u) => document.getElementById('userSelect').value === u",
+            arg=username,
+            timeout=DEFAULT_TIMEOUT_MS,
+        )
+
+    def create(self, username: str, name: str, email: str = "") -> None:
+        self.page.click(UserPicker.NEW_USER_LINK)
+        self.page.wait_for_selector(UserPicker.NEW_USERNAME, state="visible")
+        self.page.fill(UserPicker.NEW_USERNAME, username)
+        self.page.fill(UserPicker.NEW_NAME, name)
+        if email:
+            self.page.fill(UserPicker.NEW_EMAIL, email)
+        self.page.click(UserPicker.CREATE_BUTTON)
+        self.page.wait_for_function(
+            "(u) => document.getElementById('userSelect').value === u",
+            arg=username,
+            timeout=DEFAULT_TIMEOUT_MS,
+        )
+
+    def select_or_create(self, username: str, name: str, email: str = "") -> None:
+        if username in self.options():
+            self.select(username)
+        else:
+            self.create(username, name, email)

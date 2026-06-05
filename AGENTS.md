@@ -106,6 +106,8 @@ mypy .
 pytest
 ```
 
+The Playwright **UX** tier (`pytest -m ux`) drives the wizard in a headless Chromium against a threaded live server (LLM-free — analyzer functions are stubbed, the real routes run). It skips when the Chromium binary is absent (`python -m playwright install chromium`), so the default `pytest` stays green everywhere. The shared navigation/selector driver lives in [`ui_pages/`](ui_pages/) — one registry, consumed by the suite **and** `scripts/capture_screenshots.py`.
+
 CI runs the same on PR. Eval harness (Anthropic API costs apply) runs locally and on label-gated CI:
 
 ```bash

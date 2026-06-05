@@ -34,7 +34,18 @@ from pathlib import Path
 
 from docx import Document
 from playwright.sync_api import Page, sync_playwright
-from playwright.sync_api import TimeoutError as PWTimeout
+
+from ui_pages import (
+    CorpusPage,
+    UserPickerPage,
+    WizardClarifyPage,
+    WizardComposePage,
+    WizardGeneratePage,
+    WizardJobPage,
+    WizardOutputPage,
+    WizardTemplatePage,
+)
+from ui_pages import selectors as S
 
 REPO = Path(__file__).resolve().parent.parent
 SHOTS = REPO / "docs" / "screenshots"
@@ -171,29 +182,14 @@ def wait_quiet(page: Page, ms: int = 600) -> None:
 
 
 def ensure_demo_user(page: Page) -> None:
-    """Create the demo user via the New User form if not already present."""
-    page.wait_for_selector("#userSelect", timeout=SHORT_TIMEOUT_MS)
-    options = page.eval_on_selector_all(
-        "#userSelect option", "els => els.map(e => e.value)"
-    )
-    if DEMO_USER in options:
+    """Create/select the demo user via the user-picker POM."""
+    picker = UserPickerPage(page, APP_URL)
+    if DEMO_USER in picker.options():
         print(f"  · {DEMO_USER!r} user already exists; selecting it")
-        page.select_option("#userSelect", DEMO_USER)
+        picker.select(DEMO_USER)
         return
-
     print(f"  · creating {DEMO_USER!r} user")
-    page.click("text=New user")
-    page.wait_for_selector("#newUsername", state="visible")
-    page.fill("#newUsername", DEMO_USER)
-    page.fill("#newName", "Priya Sharma")
-    page.fill("#newEmail", "priya.sharma@example.com")
-    # leave phone / linkedin / website blank — not load-bearing for capture
-    page.click("text=Create")
-    # Selection happens automatically post-create.
-    page.wait_for_function(
-        f"document.getElementById('userSelect').value === '{DEMO_USER}'",
-        timeout=SHORT_TIMEOUT_MS,
-    )
+    picker.create(DEMO_USER, "Priya Sharma", "priya.sharma@example.com")
 
 
 def ensure_corpus_imported(page: Page) -> None:
@@ -202,13 +198,12 @@ def ensure_corpus_imported(page: Page) -> None:
     Calls onboarding.import_legacy.run_import directly (bypassing HTTP)
     to seed the demo user's DB corpus from resumes/<user>/.
     """
-    page.click("#topTabCorpus")
-    page.wait_for_selector("#panelCorpus", state="visible")
+    corpus = CorpusPage(page, APP_URL).open()
     wait_quiet(page)
 
     # If the corpus is already populated (re-run with --keep-user),
     # skip the import entirely.
-    existing = page.locator("#corpusExperienceList .corpus-card").count()
+    existing = corpus.card_count()
     if existing > 0:
         print(f"  · corpus already has {existing} experiences; skipping import")
         cap(page, "walkthrough_setup_corpus-empty.png")
@@ -248,31 +243,21 @@ def ensure_corpus_imported(page: Page) -> None:
     # belt-and-braces so currentUser + corpus loaded state are clean.
     print("  · reloading page so corpus state is fresh in the UI")
     page.reload()
-    page.wait_for_selector("#userSelect", timeout=SHORT_TIMEOUT_MS)
-    page.select_option("#userSelect", DEMO_USER)
-    page.wait_for_function(
-        f"document.getElementById('userSelect').value === '{DEMO_USER}'",
-        timeout=SHORT_TIMEOUT_MS,
-    )
+    UserPickerPage(page, APP_URL).select(DEMO_USER)
     wait_quiet(page, 1500)
 
 
 def run_step1(page: Page) -> None:
     """Step 1 — paste JD, capture pre + post analyze."""
-    page.click("#topTabApplication")
-    page.click("button.wizard-step[data-wstep='1']")
-    page.wait_for_selector("#jdText", state="visible")
+    job = WizardJobPage(page, APP_URL).open()
     wait_quiet(page)
 
-    page.fill("#jdText", PRIYA_JD)
+    job.fill_jd(PRIYA_JD)
     wait_quiet(page)
     cap(page, "walkthrough_step1pre_jd-textarea.png")
 
     print("  · clicking Analyze; this is the ~30-60s Sonnet 4.6 call…")
-    page.click("#btnAnalyze")
-    page.wait_for_selector(
-        "#analysisContent > *", state="attached", timeout=LLM_TIMEOUT_MS
-    )
+    job.analyze()
     wait_quiet(page, 1200)
     page.evaluate("""
         const topbarH = document.querySelector('#cbTopbar').getBoundingClientRect().height;
@@ -295,24 +280,19 @@ def run_step2(page: Page) -> None:
     a no-op when the step isn't yet "reached." The in-flow button
     calls wizardGoTo(2), which then enables the rail.
     """
-    page.click("text=Continue to Clarify →")
-    page.wait_for_selector("#panelClarify", state="visible")
+    WizardJobPage(page, APP_URL).continue_to_clarify()
     wait_quiet(page)
 
+    clarify = WizardClarifyPage(page, APP_URL)
     print("  · requesting clarification questions (~30s Sonnet call)…")
-    page.click("#btnClarify")
-    page.wait_for_selector(
-        "#clarifyQuestions textarea", state="visible", timeout=LLM_TIMEOUT_MS
-    )
+    clarify.request_questions()
     wait_quiet(page, 1000)
 
     # Type a partial answer in the first question so the capture
     # shows realistic mid-typing state.
-    first_answer = page.locator("#clarifyQuestions textarea").first
-    first_answer.click()
-    first_answer.type(
-        "Lead implementer. Designed the topic + partition scheme — 12 topics, 60 partitions on the busiest one,",
-        delay=8,
+    clarify.answer_first(
+        "Lead implementer. Designed the topic + partition scheme — 12 topics, "
+        "60 partitions on the busiest one,",
     )
     wait_quiet(page)
     page.evaluate("""
@@ -326,93 +306,56 @@ def run_step2(page: Page) -> None:
 
 def run_step3(page: Page) -> None:
     """Step 3 — Compose. Wait for cards, capture; no manual pinning."""
-    # Submit minimal clarifications by filling all blanks and clicking submit.
-    # (Step 5 will use whatever answers are present.)
-    questions = page.locator("#clarifyQuestions textarea")
-    qcount = questions.count()
-    for i in range(qcount):
-        box = questions.nth(i)
-        if not (box.input_value() or "").strip():
-            box.click()
-            box.type("Yes — see prior answer for related context.", delay=4)
-    page.click("#btnSubmitClarifications")
-    page.wait_for_selector("#panelCompose", state="visible", timeout=LLM_TIMEOUT_MS)
+    # Submit minimal clarifications by filling all blanks, then continue.
+    clarify = WizardClarifyPage(page, APP_URL)
+    clarify.fill_blank_answers("Yes — see prior answer for related context.")
+    clarify.submit_to_compose()
     wait_quiet(page)
 
     print("  · waiting for compose recommendations (Haiku, multiple calls)…")
-    # The cards rendered by loadComposition() use class
-    # `compose-experience-card` (see static/app.js:2757), NOT the
-    # corpus tab's `.corpus-card`. Same shape of selector bug we
-    # hit earlier on the corpus list — they're separate render
-    # functions with different class names.
-    page.wait_for_selector(
-        "#composeList .compose-experience-card", timeout=LLM_TIMEOUT_MS
-    )
+    WizardComposePage(page, APP_URL).wait_cards()
     wait_quiet(page, 1500)
     cap(page, "walkthrough_step3_compose-experience-card.png")
 
 
 def run_step4(page: Page) -> None:
     """Step 4 — Template. Modern is the default; let live preview render."""
-    page.click("text=Save and continue to Template →")
-    page.wait_for_selector("#panelTemplate", state="visible")
+    WizardComposePage(page, APP_URL).continue_to_template()
     wait_quiet(page)
-    # Try to click the Modern card if not already selected. Templates render
-    # dynamically into #templatePickList — pick the second card by index as
-    # a stable proxy for "Modern" (Classic is usually first).
-    items = page.locator("#templatePickList [role='option']")
-    if items.count() >= 2:
-        items.nth(1).click()
-    # Wait for the live preview iframe to load content.
-    page.wait_for_selector("#livePreviewFrame", state="visible")
+    # Pick the second card by index as a stable proxy for "Modern"
+    # (Classic is usually first), then let the live preview render.
+    template = WizardTemplatePage(page, APP_URL)
+    template.pick_template(1)
+    template.wait_live_preview()
     wait_quiet(page, 2000)
     cap(page, "walkthrough_step4_template-modern-preview.png")
 
 
 def run_step5_and_6(page: Page) -> None:
     """Step 5 — Generate. Step 6 — Download. Capture Refine state."""
-    page.click("text=Continue to Generate →")
-    page.wait_for_selector("#panelGenerate", state="visible")
+    WizardTemplatePage(page, APP_URL).continue_to_generate()
     wait_quiet(page)
 
     print("  · generating résumé (~30-60s Sonnet 4.6 call)…")
-    page.click("#btnGenerate")
-    page.wait_for_selector(
-        "#outputPreviewBlock", state="visible", timeout=LLM_TIMEOUT_MS
-    )
+    gen = WizardGeneratePage(page, APP_URL)
+    gen.generate()
     wait_quiet(page, 2000)
 
-    # Type a sample refine note so the capture shows what refinement
-    # looks like in practice. #refinementInput lives inside
-    # #refinementArea, which is unhidden after the first generate.
-    try:
-        page.wait_for_selector("#refinementInput", state="visible", timeout=SHORT_TIMEOUT_MS)
-        page.locator("#refinementInput").click()
-        page.locator("#refinementInput").type(SAMPLE_REFINE_NOTE, delay=8)
+    # Type a sample refine note so the capture shows what refinement looks
+    # like in practice (no-op if the input isn't present yet).
+    if gen.refine(SAMPLE_REFINE_NOTE):
         wait_quiet(page)
-    except PWTimeout:
+    else:
         print("  · refinement input not visible; capturing without it")
     cap(page, "walkthrough_step6_download-with-refine.png")
 
 
 def run_cover_letter(page: Page) -> None:
     """Optional — generate cover letter, capture."""
-    cover_btn = page.locator("#btnGenerateCover")
-    if cover_btn.count() == 0:
+    print("  · generating cover letter (~30s Sonnet call)…")
+    if not WizardOutputPage(page, APP_URL).generate_cover_letter():
         print("  · cover-letter button not found; skipping S10")
         return
-    print("  · generating cover letter (~30s Sonnet call)…")
-    cover_btn.click()
-    # Switch to the cover-letter tab if not auto-switched.
-    try:
-        page.wait_for_selector("#tabCoverLetter.active", timeout=SHORT_TIMEOUT_MS)
-    except PWTimeout:
-        page.click("#tabBtnCoverLetter")
-    page.wait_for_selector(
-        "#coverLetterPreview, #tabCoverLetter [contenteditable]",
-        state="visible",
-        timeout=LLM_TIMEOUT_MS,
-    )
     wait_quiet(page, 1500)
     cap(page, "walkthrough_coverletter_first-generation.png")
 
@@ -425,10 +368,10 @@ def capture_user_picker(page: Page) -> None:
     informative substitute. Shows both the picker and the create affordance.
     """
     page.goto(APP_URL)
-    page.wait_for_selector("#panelUser", state="visible", timeout=SHORT_TIMEOUT_MS)
-    page.click("text=New user")
-    page.wait_for_selector("#newUserForm", state="visible")
-    page.fill("#newUsername", "your-username")
+    page.wait_for_selector(S.UserPicker.PANEL, state="visible", timeout=SHORT_TIMEOUT_MS)
+    page.click(S.UserPicker.NEW_USER_LINK)
+    page.wait_for_selector(S.UserPicker.NEW_USER_FORM, state="visible")
+    page.fill(S.UserPicker.NEW_USERNAME, "your-username")
     wait_quiet(page)
     cap(page, "install_setup_user-picker.png")
     # Restore a clean state for the rest of the run.

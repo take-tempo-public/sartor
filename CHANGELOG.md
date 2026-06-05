@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Playwright UX regression suite + shared `ui_pages` driver (`feat/playwright-ux-suite`, v1.0.5)
+
+Browser-level UI regression coverage so the 2026-05-26 punch-list bugs — which
+lived in JS render paths the `pytest` unit suite can't reach — can't return.
+**Test-only** change: no `analyzer.py`/prompt edits, no `PROMPT_VERSION` bump,
+no new dependency (Playwright was already a dependency).
+
+- **`ui_pages/`** (new package) — a shared, framework-free Page Object Model
+  over a single selector registry, consumed by *both* the new test suite and
+  `scripts/capture_screenshots.py` (converged onto it, so there is **one**
+  navigation source rather than two drifting copies). `base_url` is injected,
+  so the same POMs drive the ephemeral-port test server and the screenshot
+  script's `:5000`.
+- **`tests/ux/`** — a threaded live-server + headless-Chromium harness with a
+  console-error + HTTP-5xx **sentinel**; LLM-free (analyzer functions stubbed
+  at the public-streaming-fn seam, so the real Flask routes still run). One
+  stubbed happy-path walk (analyze → compose → template), one seeded Step-6
+  WYSIWYG walk (via the prior-app-resume path), and five regression tests
+  (`test_<YYYYMMDD>_<slug>.py`, never deleted): import-résumé label, rail
+  re-enable after analyze, corpus-tab render, the personas-500 → iframe →
+  paged.js cascade root (AGENT_FAILURE_PATTERNS §5b), and Compose bullet
+  drag/keyboard reorder persistence + reset.
+- **`pyproject.toml`** — new `ux` pytest marker (`pytest -m ux`); ux tests are
+  also `slow`/real-Chromium and skip when the browser binary is absent, so the
+  default `pytest` stays green everywhere. `tests/*` ruff ignore widened to
+  `tests/**` for the nested suite.
+
 ### Added — user-driven bullet ordering on Compose (`feat/bullet-drag-reorder`, v1.0.5)
 
 Drag-and-drop (and keyboard) reordering of bullets within each experience on

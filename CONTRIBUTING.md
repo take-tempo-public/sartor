@@ -80,6 +80,7 @@ Before opening a PR:
 - [ ] `ruff check .` — clean
 - [ ] `mypy .` — clean
 - [ ] `pytest` — green
+- [ ] `pytest -m ux` — green (Playwright UI suite; needs `python -m playwright install chromium`, see [Quick start](#quick-start))
 - [ ] `CHANGELOG.md` — entry under `[Unreleased]` describing the user-visible change
 - [ ] No real personal data committed (`evals/fixtures/real/` is gitignored — keep it that way)
 - [ ] If you touched a Flask route that reads or writes the filesystem, the route uses `_safe_username()` and `_within()` — see [`app.py`](app.py)
