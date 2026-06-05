@@ -2917,15 +2917,23 @@ _PAGED_PREVIEW_INJECTION = """
   }
 </style>
 <script>
-  // Suppress paged.js internal layout errors from polluting the parent
-  // dev console (added 2026-05-27 — see SESSION_HANDOFF doc). Paged.js
-  // throws Cannot-read-getBoundingClientRect-of-null and
-  // node.getAttribute-is-not-a-function during layout when content is
-  // sparse / unusual; both are noise that's been masking real errors
-  // across smoke rounds. We swallow ONLY paged.js's own throws so any
-  // real bug in our code (or in the corpus → JSON Resume pipeline)
-  // continues to surface normally. Listener registered BEFORE paged.js
-  // loads so it catches the initial layout pass.
+  // Turn OFF paged.js's built-in auto-run. The bundled polyfill's auto path
+  // does `await previewer.preview()` with NO `.catch()`
+  // (static/vendor/paged.polyfill.js ~L33239), so an edge-case layout throw
+  // — Cannot-read-getBoundingClientRect-of-null on sparse / unusual content —
+  // escapes as an uncaught promise rejection. That was the cosmetic console
+  // noise tracked at RELEASE_CHECKLIST.md "paged.js polyfill ... getBounding-
+  // ClientRect of null". We disable auto-run and drive the previewer
+  // ourselves below, inside try/catch + `.catch()`, so it can't leak. Must be
+  // set BEFORE the polyfill `<script>` executes (it reads PagedConfig on load).
+  window.PagedConfig = { auto: false };
+  // Belt-and-suspenders for the paged.js paths the awaited preview() promise
+  // below does NOT cover. paged.js can throw from an internal layout callback
+  // that isn't on the chain we `.catch()` — either as a stray async rejection
+  // or a synchronous throw inside a requestAnimationFrame / event handler. The
+  // two listeners swallow ONLY paged-origin throws (by message or by the
+  // paged.polyfill source file); real app errors — different message, different
+  // file — surface in the console normally.
   window.addEventListener('unhandledrejection', function (e) {
     var msg = (e.reason && (e.reason.message || e.reason.toString())) || '';
     if (msg.indexOf('getBoundingClientRect') !== -1 ||
@@ -2943,23 +2951,32 @@ _PAGED_PREVIEW_INJECTION = """
 </script>
 <script src="/static/vendor/paged.polyfill.js"></script>
 <script>
-  // Paged.js auto-polyfills on DOMContentLoaded. After it finishes
-  // laying out pages, postMessage the count to the parent frame so the
-  // wizard's "Page N of M" toolbar can update. paged.js exposes the
-  // 'rendered' event on the global PagedPolyfill instance; we also fall
-  // back to a 1.5s retry in case the event fires before our handler
-  // attaches.
+  // Drive paged.js manually now that auto-run is disabled. `preview()` with no
+  // args lays out the current document body — identical to the auto path's
+  // defaults. The try/catch guards a synchronous throw; the `.catch()` guards
+  // an async layout rejection. Either way we still postMessage the page count
+  // so the wizard's "Page N of M" toolbar updates (the pagedjs_rendered
+  // contract). A 1.5s fallback covers the rare case the promise never settles.
   (function () {
     function send() {
       var pages = document.querySelectorAll('.pagedjs_page').length;
       try { window.parent.postMessage({ type: 'pagedjs_rendered', pages: pages }, '*'); }
       catch (e) { /* same-origin only; safe to ignore */ }
     }
-    if (window.PagedPolyfill && typeof window.PagedPolyfill.on === 'function') {
-      window.PagedPolyfill.on('rendered', send);
+    function run() {
+      try {
+        new window.Paged.Previewer().preview()
+          .then(send)
+          .catch(function () { send(); });
+      } catch (e) {
+        send();
+      }
     }
-    // Defensive fallback — paged.js layout typically completes within
-    // 500–1500 ms; the count is correct once the page DOM stabilizes.
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      run();
+    } else {
+      document.addEventListener('DOMContentLoaded', run);
+    }
     setTimeout(send, 1500);
   })();
 </script>

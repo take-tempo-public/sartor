@@ -440,6 +440,16 @@ first follow-up release.
       original fix paths remain valid for future polish:
       (a) tighten template densities, (b) drop
       `page-break-inside: avoid`, (c) add a "compact" mode.
+      **Follow-up (2026-06-04, `feat/template-pagination`, v1.0.5):** path (b)
+      landed — Modern/Spacious/Tech carried `section { page-break-inside: avoid }`
+      (Classic did not), which forced paged.js to keep each whole section
+      together and shoved oversize Experience sections onto blank/short pages.
+      Dropped the section-level rule (kept the correct per-entry
+      `article { page-break-inside: avoid }`) and added Classic's
+      `h2 { page-break-after: avoid }`. Pinned by
+      `tests/ux/regression/test_20260604_template_pagination.py` (no blank page
+      across all four bundled templates). Closes the v1.0.5 tag criterion
+      "Pagination fixed for all 4 bundled templates."
 
 - [x] **~~Chrome "multiple downloads blocked" silently kills 2nd download~~** —
       ✅ resolved 2026-05-27 (UI hint). Added a one-line hint paragraph
@@ -449,17 +459,21 @@ first follow-up release.
       anchor click) is unchanged; a server-side `Content-Disposition:
       attachment` redirect that avoids the per-page gesture requirement is
       tracked for v1.0.2. Branch `fix/chrome-multi-download-hint`.
-- [ ] **paged.js polyfill "Cannot read getBoundingClientRect of
-      null"** **→ OPEN** (cosmetic console error; no owning branch yet —
-      revisit with the v1.0.5 preview/pagination work). Surfaced 2026-05-27
-      round-9. The polyfill fires an
-      uncaught promise rejection when content is empty / missing
-      certain DOM nodes (e.g., the preview iframe loads a sparse
-      corpus). Cosmetic — preview iframe still renders, just emits
-      a noisy console error. Three options: (a) wrap paged.js init
-      in try/catch inside `_inject_paged_polyfill`, (b) gate paged.js
-      injection on non-empty corpus, (c) replace paged.js with a
-      simpler pagination approach. Defer to v1.0.2.
+- [x] **~~paged.js polyfill "Cannot read getBoundingClientRect of
+      null"~~** — ✅ resolved 2026-06-04 (`feat/template-pagination`, v1.0.5),
+      option (a). Root cause: the bundled polyfill's auto-run
+      (`static/vendor/paged.polyfill.js` ~L33239) `await`s `previewer.preview()`
+      with **no `.catch()`**, so a sparse-content layout throw escaped as an
+      uncaught rejection. Fix: the injection in `app.py`
+      (`_PAGED_PREVIEW_INJECTION`) now disables auto-run
+      (`window.PagedConfig = { auto: false }`) and drives
+      `new Paged.Previewer().preview()` itself inside `try/catch` + `.catch()`,
+      so the throw can't leak; the sibling `node.getAttribute is not a function`
+      sync throw stays covered by the existing paged-origin `window.error`
+      swallow. The `tests/ux/conftest.py` `getBoundingClientRect` allowlist is
+      **removed** — the sentinel is now unconditional — and
+      `tests/ux/regression/test_20260604_template_pagination.py` asserts a clean
+      console across all four bundled templates.
 - [x] **~~Cover-letter download honors the chosen output format~~** —
       ✅ resolved 2026-05-28 (path b, UI hint). Added a one-line hint
       paragraph below the download button row in

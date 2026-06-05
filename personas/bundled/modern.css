@@ -85,7 +85,6 @@ body {
    ----------------------------------------------------------------- */
 section {
   padding: 14px 28px 4px;
-  page-break-inside: avoid;
 }
 section > h2 {
   margin: 0 0 8px 0;
@@ -97,6 +96,12 @@ section > h2 {
   padding-bottom: 4px;
   border-bottom: 1px solid var(--rule);
 }
+/* Keep a section heading with the content that follows it — never orphan an
+   <h2> at the foot of a page. Mirrors classic.css. Break-avoidance is scoped
+   to individual entries (article.job/.project/.degree), NOT whole sections:
+   a section taller than the remaining page must be allowed to break, or
+   paged.js shoves the whole thing to the next page and leaves a blank. */
+h2 { page-break-after: avoid; }
 p { margin: 0 0 6px 0; }
 p:last-child { margin-bottom: 0; }
 
@@ -161,7 +166,6 @@ ul.skill-groups li strong { color: var(--ink); }
 
 @media print {
   body { font-size: 10pt; }
-  section { page-break-inside: avoid; }
   .resume-header {
     /* Some print drivers strip backgrounds — force the accent band
        even when "print background graphics" is off. WebKit and Chromium

@@ -77,7 +77,13 @@ body {
 /* -----------------------------------------------------------------
    Section headers — small caps with thin rule
    ----------------------------------------------------------------- */
-section { margin-bottom: 26px; page-break-inside: avoid; }
+section { margin-bottom: 26px; }
+/* Keep a section heading with the content that follows it — never orphan an
+   <h2> at the foot of a page. Mirrors classic.css. Break-avoidance is scoped
+   to individual entries (article.job/.degree/.project), NOT whole sections:
+   a section taller than the remaining page must be allowed to break, or
+   paged.js shoves the whole thing to the next page and leaves a blank. */
+h2 { page-break-after: avoid; }
 section > h2 {
   margin: 0 0 12px 0;
   font-size: 10.5pt;
@@ -178,5 +184,4 @@ ul.skill-groups li strong {
 
 @media print {
   body { font-size: 10.5pt; padding-left: 0; padding-right: 0; }
-  section { page-break-inside: avoid; }
 }
