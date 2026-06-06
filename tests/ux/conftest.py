@@ -93,19 +93,12 @@ def _browser() -> Iterator[Browser]:
         pw.stop()
 
 
-# The one known-OPEN cosmetic console error we tolerate: paged.js fires an
-# uncaught `getBoundingClientRect of null` on sparse preview content
-# (RELEASE_CHECKLIST.md:434 — "→ OPEN ... cosmetic ... revisit with the
-# v1.0.5 preview/pagination work"). Allowlisting exactly this keeps the
-# sentinel meaningful without painting the suite red for a tracked
-# non-blocker. The 5b cascade test asserts on 5xx + render, not on this.
-_ALLOWED_CONSOLE = ("getBoundingClientRect",)
-
-
-def _is_allowed(text: str) -> bool:
-    return any(frag in text for frag in _ALLOWED_CONSOLE)
-
-
+# NB (2026-06-04, feat/template-pagination): the paged.js `getBoundingClientRect
+# of null` allowlist that used to live here is GONE. The preview routes now drive
+# paged.js manually (`PagedConfig.auto=false` + `Previewer().preview()` in
+# try/catch + `.catch()` in app.py `_PAGED_PREVIEW_INJECTION`), so that cosmetic
+# throw can no longer escape to the console. The sentinel is now unconditional —
+# any paged.js console regression fails the suite.
 @pytest.fixture
 def page(_browser: Browser, live_server: str) -> Iterator[Page]:
     """A fresh page with the failure sentinel attached. Fails the test on
@@ -141,8 +134,7 @@ def page(_browser: Browser, live_server: str) -> Iterator[Page]:
     finally:
         context.close()
 
-    leaked = [e for e in js_errors if not _is_allowed(e)]
-    assert not leaked, f"JS console errors during test: {leaked}"
+    assert not js_errors, f"JS console errors during test: {js_errors}"
     assert not server_errors, f"HTTP 5xx during test: {server_errors}"
 
 

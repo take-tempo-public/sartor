@@ -139,6 +139,25 @@ def bundled_persona_id() -> int:
         s.close()
 
 
+def bundled_persona_id_by_path(path: str) -> int:
+    """Id of a specific bundled persona, addressed by its `path` column
+    (e.g. ``personas/bundled/modern.docx``). Lets a test render each bundled
+    template by name rather than only the first one `bundled_persona_id`
+    returns. Asserts the row exists so a renamed/removed template fails loud."""
+    from db.models import PersonaTemplate
+    from db.session import get_session
+
+    s = get_session()
+    try:
+        p = (s.query(PersonaTemplate)
+             .filter(PersonaTemplate.candidate_id.is_(None),
+                     PersonaTemplate.path == path).first())
+        assert p is not None, f"no bundled persona seeded for path={path!r}"
+        return p.id
+    finally:
+        s.close()
+
+
 def write_context_file(ux_app: ModuleType, username: str, filename: str,
                        payload: dict) -> str:
     """Write a context_*.json under OUTPUT_DIR/<user>/; return the abs path."""

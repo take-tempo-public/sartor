@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — template pagination: blank pages + paged.js console error (`feat/template-pagination`, v1.0.5)
+
+Blank/short pages in the **Modern**, **Spacious**, and **Tech** bundled
+templates are gone, and the long-standing cosmetic paged.js console error is
+fixed at the source. **Rendering-only**: no `analyzer.py`/prompt edits, no
+`PROMPT_VERSION` bump, no new dependency.
+
+- **`personas/bundled/{modern,spacious,tech}.css`** — dropped
+  `section { page-break-inside: avoid; }` (present in both the base rule and the
+  `@media print` block), keeping the correct per-entry
+  `article { page-break-inside: avoid }`. Telling paged.js never to break inside
+  a *whole section* meant any Experience section taller than the space left on
+  the page got shoved wholesale onto the next page, leaving a blank/short page.
+  This matches **Classic**'s proven break model (which never had the section
+  rule); also added Classic's `h2 { page-break-after: avoid }` so a section
+  heading is never orphaned at the foot of a page.
+- **`app.py`** (`_PAGED_PREVIEW_INJECTION`) — the preview iframe now drives
+  paged.js **manually** (`window.PagedConfig = { auto: false }` +
+  `new Paged.Previewer().preview()` inside `try/catch` + `.catch()`). The
+  bundled polyfill's auto-run `await`s `preview()` with no `.catch()`, so a
+  sparse-content layout throw escaped as the uncaught
+  *"getBoundingClientRect of null"* console noise; driving it ourselves contains
+  it. The `pagedjs_rendered` page-count `postMessage` contract is preserved.
+- **`tests/ux/`** — new regression test
+  `regression/test_20260604_template_pagination.py` renders a deliberately
+  multi-page résumé through all four bundled templates via the real preview
+  route and asserts every `.pagedjs_page` carries content (no blank page) with a
+  clean console. The `getBoundingClientRect` **allowlist in
+  `tests/ux/conftest.py` is removed** — the sentinel is now unconditional, so any
+  paged.js console regression fails the suite.
+
 ### Added — Playwright UX regression suite + shared `ui_pages` driver (`feat/playwright-ux-suite`, v1.0.5)
 
 Browser-level UI regression coverage so the 2026-05-26 punch-list bugs — which
