@@ -335,8 +335,25 @@ This phase carries the product redesign **and** the polished home for the Phase 
 | `feat/bullet-drag-reorder` | independent | HTML5 drag on Compose bullets; `bullet_order` in `composition_overrides`; `_stable_user_prefix` honors it; reset button |
 | `feat/playwright-ux-suite` | independent | `tests/ux/conftest.py`; POM classes; ≥5 regression tests for 2026-05-26 bugs |
 | `feat/template-pagination` | wysiwyg | Modern/Spacious/Tech blank page fix |
-| `feat/diagnostics-console-redesign` | design system | Tabbed read-only panels + tuning shell + cost meter on the new design system; localhost + PII guards (the dashboard's first read-write surface) |
+| `eval/grounding-metric-l0` | independent | **Inserted 2026-06-05 — see note below.** Deterministic L0 fabricated-specifics rate (sharpen `missing_samples` → typed numeric/entity extractor with tolerance) + aggregate existing eval-time L1/L2 grounding signals into one reportable groundedness signal. Hot-path-safe; `hardening.py` + `evals/`; no LLM, no `PROMPT_VERSION` bump, no new dep. Design: [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md) |
+| `feat/diagnostics-console-redesign` | design system **+ `eval/grounding-metric-l0` (metric contract)** | Tabbed read-only panels + tuning shell + cost meter on the new design system; localhost + PII guards (the dashboard's first read-write surface). Surfaces the L0 groundedness signal — designed *around* the metric contract, not retrofitted |
 | `feat/annotation-tab` | diagnostics-console + Phase 3 `annotation-contract` | Browser bootstrap wrapper (reuses `/api/analyze/stream` SSE) + rich annotation surface writing the `annotations.json` contract |
+
+> **Re-sequence note (user-approved 2026-06-05).** `eval/grounding-metric-l0`
+> was inserted **before** `feat/diagnostics-console-redesign`. Rationale: don't
+> design the diagnostics panels around — or steer the grounding-gated tuning
+> loop by — a hallucination metric that isn't yet defined ("data model before
+> the view"). The binding constraint was found to be **missing labels**, not the
+> metric code: `evals/fixtures/real/` is empty and the v1.0.4 live loop was never
+> run, so the *calibrated* cross-class metric can't be built yet. We therefore
+> split the work: the **deterministic, label-free L0 slice ships now** (gives the
+> dashboard a real metric contract), and the **calibrated model-based layers +
+> the v1.0.4 live loop + the evals/tuning update are deferred to pre-v1.1.0** —
+> tracked in [`docs/PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md) "Grounding /
+> hallucination metric — calibrated layers (B)". Full design rationale, the
+> detector ladder, and the hard parts live in
+> [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md). This deviation pushes the v1.0.5
+> tag by one branch; it does not touch any prompt or `PROMPT_VERSION`.
 
 *If this phase is too large for clean small-stepping, the natural cut is v1.0.5 = redesign + WYSIWYG + tuning UI; v1.0.6 = formats + prior-app + reorder + playwright + pagination. User's call.*
 
