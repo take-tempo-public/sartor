@@ -196,6 +196,70 @@ prevent re-running them.
 
 ---
 
+## 2026-06-06 — eval/grounding-metric-l0: L0 fabricated-specifics + groundedness composite (metric ride-along, NO version bump)
+
+### What changed
+
+Eval records now carry two new deterministic fields under
+`deterministic_metrics` on **every** record:
+
+- `fabricated_specifics` — the L0 detail from new
+  `hardening.compute_fabricated_specifics(generated_text, source_texts)`: per
+  bullet it extracts verifiable specifics (numbers / % / $ / years / durations /
+  named-entity & tool tokens) and checks membership in the candidate's
+  ground-truth source union with tolerance (formatting variants `~30`/`30`/`30+`
+  and light rounding grounded; different magnitude flagged; `k8s ≡ kubernetes`
+  alias-normalized). Returns a severity-weighted `fabricated_specifics_rate` (a
+  fabricated number outweighs a fabricated entity) + `flagged_samples`.
+- `groundedness` — a single reportable composite. **L0-only by default**
+  (`layers: ["L0"]`, `score = 5·(1 − rate)` for the score-over-time chart);
+  enriches in place to `["L0","L1","L2"]` (NLI entailment + MiniCheck) only under
+  `--grounding-signals`.
+
+The source union is assembled by new `hardening.assemble_source_union`, factored
+out of `compute_iteration_signals` (behavior-preserving) so the iteration
+clarifier and the L0 check share one definition.
+
+### Why this is a metric note and **not** a `PROMPT_VERSION` bump
+
+No prompt **template** changed — `SYSTEM_PROMPT`, every per-call builder, and the
+model routing are byte-for-byte untouched. This is a **deterministic measurement
+added alongside** the existing post-generation metrics (`verb_diversity`,
+`grounding_overlap`, …); it observes output, it does not shape it. The existing
+`grounding_overlap` source set is deliberately left unchanged — L0 scores against
+a *separate* wider `source_union` (adds clarification answers) so the established
+`grounding_overlap` numbers and the v1.0.1/v1.0.2 baseline floors are **not**
+perturbed. L1/L2 (`evals/grounding_signals.py`) behavior is read, never re-tuned.
+
+### Result
+
+No automated eval run (no template change to score; the metric only adds
+columns). Pinned by LLM-free unit tests:
+`tests/test_hardening.py::TestFabricatedSpecifics` (exact match → 0; novel number
+→ flagged; within/out-of numeric tolerance; `k8s`≡`Kubernetes` aliasing;
+embedded-digit non-leak; severity weighting; per-bullet shape; samples cap) +
+`TestAssembleSourceUnion`, and
+`tests/test_eval_runner.py::TestGroundednessComposite` (L0-only default + L1/L2
+enrich-in-place + zero-bullet guard).
+
+### What we learned
+
+1. **L0 is uncalibrated by design — high precision, unproven recall.** A novel
+   number/entity absent from the source union is almost certainly fabricated, so
+   precision on the highest-severity class is high at zero model cost. But L0
+   **will false-positive on paraphrase / implication** (source "managed a small
+   team" → output "led a 4-person team" flags "4"). It is therefore a
+   **flag-for-review** signal, not a gate; tolerance bands are conservative.
+   Precision/recall stays unproven until calibration against `annotations.json`
+   (deferred-B, pre-v1.1.0) — there are **no labels yet** (`evals/fixtures/real/`
+   is empty), which is the binding constraint, not the metric code.
+2. **Score against the dynamic union, not the original résumé.** A metric scored
+   against only the primary over-reports, flagging legitimately-clarified facts
+   as fabrication. Reusing `assemble_source_union` keeps the L0 check honest and
+   consistent with what `generate()`'s widened grounding check already accepts.
+
+---
+
 ## 2026-06-04 — feat/bullet-drag-reorder: user bullet order (behavior note, NO version bump)
 
 ### What changed

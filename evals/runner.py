@@ -49,9 +49,11 @@ from analyzer import (  # noqa: E402
 from evals.seed_import import load_seed, seeded_session  # noqa: E402
 from hardening import (  # noqa: E402
     ContextSet,
+    assemble_source_union,
     build_context_set,
     check_ats_format,
     compute_call_cost,
+    compute_fabricated_specifics,
     compute_grounding_overlap,
     compute_keyword_overlap,
     compute_quantification_rate,
@@ -195,11 +197,50 @@ def _build_context_from_seed(
     return context
 
 
+def _groundedness_composite(fabricated_specifics: dict) -> dict:
+    """The single reportable groundedness signal, L0-only by default.
+
+    Folds the deterministic L0 fabricated-specifics rate into one block that
+    rides along on every eval record (nested in deterministic_metrics) and is
+    attributable by prompt_version on the dashboard's score-over-time chart.
+    `_enrich_groundedness` later layers in the eval-only L1/L2 signals when
+    `--grounding-signals` runs; absent that flag the composite stays honest
+    L0-only. `score` is a 0–5 projection (higher = better) so it plugs straight
+    into the existing 0–5 chart; `fabricated_specifics_rate` (0–1) is kept too.
+    """
+    rate = fabricated_specifics.get("fabricated_specifics_rate", 0.0)
+    return {
+        "layers": ["L0"],
+        "fabricated_specifics_rate": rate,
+        "flagged_count": fabricated_specifics.get("flagged", 0),
+        "score": round(5.0 * (1.0 - rate), 3),
+    }
+
+
+def _enrich_groundedness(block: dict, grounding_signals_data: dict) -> None:
+    """Layer the eval-only L1/L2 signals into the groundedness composite in
+    place. Pure dict mutation — called only when `--grounding-signals` produced
+    real scores, so default runs (no torch) keep the L0-only composite.
+    L1/L2 behavior itself is read, never re-tuned (calibration is deferred-B)."""
+    nli = grounding_signals_data.get("nli_summary", {})
+    minicheck = grounding_signals_data.get("minicheck_summary", {})
+    bullet_count = grounding_signals_data.get("bullet_count", 0) or 0
+    low_scores = minicheck.get("low_score_count", 0)
+    block["layers"] = ["L0", "L1", "L2"]
+    block["mean_entailment"] = nli.get("mean_entailment", 0.0)
+    block["contradiction_count"] = nli.get("contradiction_count", 0)
+    block["mean_minicheck"] = minicheck.get("mean_score", 0.0)
+    block["unsupported_claim_rate"] = (
+        round(low_scores / bullet_count, 3) if bullet_count else 0.0
+    )
+
+
 def _post_generation_metrics(
     generated_resume: str,
     generated_cover_letter: str,
     sources: list[str],
     jd_keywords: dict | None = None,
+    source_union: list[str] | None = None,
 ) -> dict:
     """Compute post-generation deterministic metrics.
 
@@ -209,14 +250,24 @@ def _post_generation_metrics(
     over the resume + cover letter combined (both must trace to source).
     `jd_keywords` is the hardening-extracted keyword dict used to compute
     top_third_density; pass None to skip that metric.
+
+    `source_union` is the dynamic ground-truth union (primary + supplementals +
+    clarification answers) the L0 fabricated-specifics check scores against;
+    when None it falls back to `sources`. It is kept separate so the existing
+    `grounding_overlap` source set (and its baseline numbers) are not perturbed.
     """
     combined = f"{generated_resume}\n\n{generated_cover_letter}"
+    fabricated_specifics = compute_fabricated_specifics(
+        combined, source_union if source_union is not None else sources
+    )
     return {
         "verb_diversity": compute_verb_diversity(generated_resume),
         "specificity_density": compute_specificity_density(generated_resume),
         "grounding_overlap": compute_grounding_overlap(combined, sources, n=3),
         "top_third_density": compute_top_third_density(generated_resume, jd_keywords or {}),
         "quantification_rate": compute_quantification_rate(generated_resume),
+        "fabricated_specifics": fabricated_specifics,
+        "groundedness": _groundedness_composite(fabricated_specifics),
     }
 
 
@@ -1046,11 +1097,16 @@ def main(argv: list[str] | None = None) -> int:
             for sup in context.get("supplemental_resumes", []):
                 if sup.get("text"):
                     sources.append(sup["text"])
+            # The L0 fabricated-specifics check scores against the dynamic union
+            # (primary + supplementals + clarification answers); the other
+            # metrics keep using `sources` so their baselines are unperturbed.
+            source_union = assemble_source_union(context)
             det_metrics = _post_generation_metrics(
                 result.get("resume_content", ""),
                 result.get("cover_letter_content", ""),
                 sources,
                 jd_keywords=context["deterministic_analysis"]["jd_keywords"],
+                source_union=source_union,
             )
             det_metrics["distinctiveness"] = _score_distinctiveness(
                 client,
@@ -1060,12 +1116,14 @@ def main(argv: list[str] | None = None) -> int:
             cost_usd = _eval_cost_since(t0_iso, fixture["name"])
             logger.info(
                 "  metrics: verb_diversity=%.2f density=%.2f grounding_overlap=%.2f"
-                " top_third_density=%.2f quantification_rate=%.2f cost=$%.4f",
+                " top_third_density=%.2f quantification_rate=%.2f"
+                " fabricated_specifics=%.2f cost=$%.4f",
                 det_metrics["verb_diversity"]["diversity_ratio"],
                 det_metrics["specificity_density"]["density"],
                 det_metrics["grounding_overlap"]["overlap_ratio"],
                 det_metrics["top_third_density"]["density"],
                 det_metrics["quantification_rate"]["rate"],
+                det_metrics["fabricated_specifics"]["fabricated_specifics_rate"],
                 cost_usd,
             )
 
@@ -1088,6 +1146,10 @@ def main(argv: list[str] | None = None) -> int:
                     grounding_signals_data["minicheck_summary"]["mean_score"],
                     grounding_signals_data["minicheck_summary"]["low_score_count"],
                 )
+                # Layer L1/L2 into the composite in place — det_metrics is
+                # embedded by reference in every record write, so this enriches
+                # all downstream records for this fixture at once.
+                _enrich_groundedness(det_metrics["groundedness"], grounding_signals_data)
 
             fixture_scores: dict[str, float] = {}
 
