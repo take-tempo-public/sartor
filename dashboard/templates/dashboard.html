@@ -2,426 +2,643 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>callback. — diagnostics</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Progressive-enhancement flag: set before paint so JS-on styling (hidden
+       panes / detail store) applies without a flash. JS-off → everything stacks. -->
+  <script>document.documentElement.className += ' js';</script>
+  <!-- Design system: the cb-* token set + base styles live in the app stylesheet. -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Chart.js from CDN (no Python charting dep); charts lazy-init on drawer-open.
+       Subresource Integrity pins the exact 4.4.0 bytes against CDN compromise;
+       crossorigin="anonymous" is required for SRI on cross-origin scripts. -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+          integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g"
+          crossorigin="anonymous"></script>
   <style>
-    body { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; margin: 1.5rem 2rem; background: #0a0a0c; color: #e8e8ea; }
-    h1, h2 { color: #ffb86b; font-weight: 500; letter-spacing: 0.02em; }
-    h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
-    h2 { font-size: 1.05rem; margin-top: 2rem; border-bottom: 1px solid #2a2a30; padding-bottom: 0.3rem; }
-    h3 { color: #9aa; font-weight: 500; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1.5rem; }
-    .meta { color: #6f7280; font-size: 0.85rem; }
-    form.filters { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1rem 0; align-items: end; }
-    form.filters label { display: flex; flex-direction: column; font-size: 0.8rem; color: #9aa; }
-    form.filters input, form.filters select {
-      background: #14141a; color: #e8e8ea; border: 1px solid #2a2a30;
-      padding: 0.3rem 0.5rem; font-family: inherit; font-size: 0.9rem;
+    /* Dashboard-specific layout, built on the cb-* tokens from style.css.
+       Everything is scoped under .cb-dash so it never fights wizard rules. */
+    .cb-dash { max-width: 1280px; margin: 0 auto; padding: 1.5rem 1.75rem 4rem; }
+    .cb-dash button { font: inherit; }
+    .cb-dash h1 { color: var(--brand); font-weight: 600; font-size: 1.4rem; letter-spacing: 0.01em; margin: 0; }
+    .cb-dash h1 .sub { color: var(--fg-1); font-weight: 400; }
+    .cb-dash .meta { color: var(--fg-2); font-size: 0.85rem; margin: 0.3rem 0 1.2rem; }
+    .cb-dash code.short { color: var(--info); font-size: 0.85em; }
+
+    /* Tabs */
+    .dash-tabs { display: flex; gap: 0.4rem; border-bottom: 1px solid var(--border); margin-bottom: 1.4rem; flex-wrap: wrap; }
+    .dash-tab {
+      background: transparent; border: 0; color: var(--fg-1); cursor: pointer;
+      padding: 0.6rem 1rem; border-radius: var(--radius-md) var(--radius-md) 0 0;
+      border-bottom: 2px solid transparent; transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+      font-weight: 500; letter-spacing: 0.01em;
     }
-    form.filters button {
-      background: #ffb86b; color: #0a0a0c; border: 0; padding: 0.4rem 1rem;
-      font-family: inherit; font-weight: 500; cursor: pointer;
+    .dash-tab:hover { color: var(--fg-0); background: var(--brand-soft); }
+    .dash-tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+
+    /* Bento grid of summary tiles */
+    .bento { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 0.9rem; }
+    .bento .span-2 { grid-column: span 2; }
+    .tile {
+      display: flex; flex-direction: column; gap: 0.35rem; text-align: left;
+      background: var(--grad-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      box-shadow: var(--edge-top), var(--shadow-1); padding: 0.95rem 1.05rem; cursor: pointer;
+      transition: transform var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+      min-height: 96px; color: var(--fg-0); position: relative;
     }
-    form.filters a.clear { color: #6f7280; text-decoration: none; padding: 0.4rem 0.5rem; font-size: 0.85rem; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    th, td { padding: 0.35rem 0.6rem; text-align: left; vertical-align: top; }
-    th { color: #ffb86b; border-bottom: 1px solid #2a2a30; font-weight: 500; }
-    tr:nth-child(even) { background: #0e0e12; }
-    tr:hover { background: #14141a; }
-    .num { text-align: right; font-variant-numeric: tabular-nums; }
-    .ok { color: #82c8a4; }
-    .err { color: #d77a7a; }
-    .pass { color: #82c8a4; }
-    .fail { color: #d77a7a; font-weight: 600; }
-    .summary-card { display: inline-block; margin-right: 1.2rem; padding: 0.6rem 0.9rem; background: #14141a; border: 1px solid #2a2a30; }
-    .summary-card .k { color: #9aa; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    .summary-card .v { font-size: 1.1rem; color: #ffb86b; }
-    .empty { color: #6f7280; font-style: italic; padding: 1rem 0; }
-    code.short { color: #94d4ff; }
-    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; }
-    .chart-box { background: #14141a; border: 1px solid #2a2a30; padding: 1rem; min-height: 300px; }
-    .chart-box canvas { max-height: 280px; }
+    .tile:hover { transform: translateY(-2px); border-color: var(--brand-edge); box-shadow: var(--edge-top), var(--shadow-2); }
+    .tile:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .tile[data-detail]::after { content: "▸"; position: absolute; top: 0.8rem; right: 0.9rem; color: var(--fg-2); font-size: 0.8rem; }
+    .tile .k { color: var(--fg-1); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .tile .v { color: var(--fg-0); font-size: 1.5rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .tile .v.brand { color: var(--brand); }
+    .tile .sub { color: var(--fg-2); font-size: 0.78rem; }
+    .tile .sub .num { font-variant-numeric: tabular-nums; }
+
+    /* Health / status badges */
+    .badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.5rem; border-radius: var(--radius-pill); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; width: fit-content; }
+    .badge.ok        { background: var(--success-soft); color: var(--success-hi); }
+    .badge.watch     { background: var(--warning-soft); color: var(--warning); }
+    .badge.regressed { background: var(--danger-soft);  color: var(--danger); }
+    .badge.unknown   { background: var(--bg-3);         color: var(--fg-2); }
+    .ok  { color: var(--success-hi); }
+    .err { color: var(--danger); }
+
+    /* Shared right-hand drawer */
+    .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: opacity var(--t-med) var(--ease); z-index: 40; }
+    .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+    .drawer {
+      position: fixed; top: 0; right: 0; height: 100vh; width: min(560px, 94vw);
+      background: var(--bg-1); border-left: 1px solid var(--border-2); box-shadow: var(--shadow-3);
+      transform: translateX(100%); transition: transform var(--t-med) var(--ease-out);
+      z-index: 41; display: flex; flex-direction: column;
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer > header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.2rem; border-bottom: 1px solid var(--border); }
+    .drawer > header h2 { color: var(--brand); font-size: 1.05rem; font-weight: 600; margin: 0; }
+    .drawer-close { background: var(--grad-btn); border: 1px solid var(--border-2); color: var(--fg-1); border-radius: var(--radius-sm); width: 2rem; height: 2rem; cursor: pointer; line-height: 1; }
+    .drawer-close:hover { color: var(--fg-0); background: var(--grad-btn-hi); }
+    .drawer-body { padding: 1.2rem; overflow-y: auto; }
+    .drawer-body .chart-box { height: 320px; margin-bottom: 1rem; }
+    .drawer-body .chart-box canvas { max-height: 300px; }
+
+    /* Tables (scoped) */
+    .cb-dash table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .cb-dash th, .cb-dash td { padding: 0.35rem 0.6rem; text-align: left; vertical-align: top; }
+    .cb-dash th { color: var(--brand); border-bottom: 1px solid var(--border); font-weight: 500; }
+    .cb-dash tbody tr:nth-child(even) { background: var(--bg-1); }
+    .cb-dash td.num, .cb-dash th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pass { color: var(--success-hi); }
+    .fail { color: var(--danger); font-weight: 600; }
+    details.fold { margin-top: 0.8rem; }
+    details.fold > summary { cursor: pointer; color: var(--fg-1); font-size: 0.85rem; padding: 0.3rem 0; }
+
+    /* Heatmap */
     table.heatmap { width: auto; }
-    table.heatmap th, table.heatmap td { padding: 0.5rem 0.7rem; text-align: center; border: 1px solid #0a0a0c; }
-    table.heatmap th { background: #14141a; color: #ffb86b; font-weight: 500; }
+    table.heatmap th, table.heatmap td { padding: 0.5rem 0.7rem; text-align: center; border: 1px solid var(--bg-0); }
+    table.heatmap th { background: var(--bg-2); color: var(--brand); font-weight: 500; }
     table.heatmap td.cell { color: #fff; font-variant-numeric: tabular-nums; min-width: 4.5rem; }
-    table.heatmap td.cell.empty { color: #6f7280; background: #1a1a20 !important; font-style: italic; }
-    .legend { color: #6f7280; font-size: 0.78rem; margin-top: 0.5rem; }
+    table.heatmap td.cell.empty { color: var(--fg-2); background: var(--bg-2) !important; font-style: italic; }
+
+    /* Trace waterfall */
+    .wf-row { display: grid; grid-template-columns: 9rem 1fr 5rem; align-items: center; gap: 0.6rem; padding: 0.2rem 0; font-size: 0.8rem; }
+    .wf-row .lbl { color: var(--fg-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wf-track { background: var(--bg-3); border-radius: var(--radius-pill); height: 0.7rem; overflow: hidden; }
+    .wf-bar { background: var(--grad-brand); height: 100%; border-radius: var(--radius-pill); }
+    .wf-row .ms { color: var(--fg-2); text-align: right; font-variant-numeric: tabular-nums; }
+
+    .legend { color: var(--fg-2); font-size: 0.78rem; margin-top: 0.5rem; }
+    .empty { color: var(--fg-2); font-style: italic; padding: 0.8rem 0; }
+    .filters { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0 0 1rem; align-items: end; }
+    .filters label { display: flex; flex-direction: column; font-size: 0.78rem; color: var(--fg-1); gap: 0.2rem; }
+    .filters input, .filters select { background: var(--bg-2); color: var(--fg-0); border: 1px solid var(--border-2); padding: 0.3rem 0.5rem; font: inherit; font-size: 0.85rem; border-radius: var(--radius-sm); }
+    .filters button { background: var(--grad-brand); color: var(--bg-0); border: 0; padding: 0.42rem 1rem; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); }
+    .filters a.clear { color: var(--fg-2); text-decoration: none; padding: 0.42rem 0.4rem; font-size: 0.82rem; }
+    .scaffold-banner { background: var(--info-soft); border: 1px solid var(--border-2); color: var(--fg-1); padding: 0.6rem 0.9rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 1rem; }
+
+    /* Progressive enhancement: with JS, hide inactive panes + the detail store.
+       Without JS (no .js class), panes stack and details render inline. */
+    .js .cb-dash .dash-pane { display: none; }
+    .js .cb-dash .dash-pane.active { display: block; }
+    .js #detailStore { display: none; }
   </style>
 </head>
-<body>
+<body class="cb-dash">
 
-<h1>callback. <span style="color:#9aa; font-weight:400">— diagnostics</span></h1>
-<p class="meta">Read-only observability for the LLM pipeline. JSONL telemetry from <code class="short">logs/llm_calls.jsonl</code> and <code class="short">evals/results/*.jsonl</code>.</p>
+<h1>callback. <span class="sub">— diagnostics console</span></h1>
+<p class="meta">Read-only observability for the LLM pipeline. Telemetry from
+  <code class="short">logs/llm_calls.jsonl</code> + <code class="short">evals/results/*.jsonl</code>.
+  Click any tile to expand its detail.</p>
 
-<form class="filters" method="get" action="">
-  <label>Since
-    <input type="date" name="since" value="{{ filters.since }}">
-  </label>
-  <label>User
-    <select name="user">
-      <option value=""></option>
+<nav class="dash-tabs" role="tablist" aria-label="Diagnostics sections">
+  <button class="dash-tab" data-tab="pipeline"     role="tab">Pipeline</button>
+  <button class="dash-tab" data-tab="quality"      role="tab">Quality</button>
+  <button class="dash-tab" data-tab="groundedness" role="tab">Groundedness</button>
+  <button class="dash-tab" data-tab="tuning"       role="tab">Tuning</button>
+</nav>
+
+<!-- ============================ PIPELINE ============================ -->
+<section class="dash-pane" data-pane="pipeline" role="tabpanel">
+  <form class="filters" method="get" action="">
+    <label>Since<input type="date" name="since" value="{{ filters.since }}"></label>
+    <label>User
+      <select name="user"><option value=""></option>
       {% for u in users %}<option value="{{ u }}" {% if u == filters.user %}selected{% endif %}>{{ u }}</option>{% endfor %}
-    </select>
-  </label>
-  <label>Model
-    <select name="model">
-      <option value=""></option>
+      </select>
+    </label>
+    <label>Model
+      <select name="model"><option value=""></option>
       {% for m in models %}<option value="{{ m }}" {% if m == filters.model %}selected{% endif %}>{{ m }}</option>{% endfor %}
-    </select>
-  </label>
-  <button type="submit">Apply</button>
-  <a class="clear" href="{{ url_for('dashboard.index') }}">clear</a>
-</form>
+      </select>
+    </label>
+    <button type="submit">Apply</button>
+    <a class="clear" href="{{ url_for('dashboard.index') }}">clear</a>
+  </form>
 
-<h2>LLM Calls — Summary</h2>
-{% if summary.count == 0 %}
-  <p class="empty">No calls match these filters{% if not log_path_present %} (no <code class="short">logs/llm_calls.jsonl</code> exists yet — run an analyze + generate to populate){% endif %}.</p>
-{% else %}
-<div>
-  <div class="summary-card"><div class="k">calls</div><div class="v">{{ summary.count }}</div></div>
-  <div class="summary-card"><div class="k">errors</div><div class="v {% if summary.error_count %}err{% else %}ok{% endif %}">{{ summary.error_count }}</div></div>
-  <div class="summary-card"><div class="k">mean latency</div><div class="v">{{ summary.mean_latency_ms }}ms</div></div>
-  <div class="summary-card"><div class="k">p50 latency</div><div class="v">{{ summary.p50_latency_ms }}ms</div></div>
-  <div class="summary-card"><div class="k">p95 latency</div><div class="v">{{ summary.p95_latency_ms }}ms</div></div>
-  <div class="summary-card"><div class="k">cache hit ratio</div><div class="v">{{ "%.1f"|format(summary.cache_hit_ratio * 100) }}%</div></div>
-  <div class="summary-card"><div class="k">in tokens</div><div class="v">{{ summary.total_input_tokens }}</div></div>
-  <div class="summary-card"><div class="k">out tokens</div><div class="v">{{ summary.total_output_tokens }}</div></div>
-  <div class="summary-card"><div class="k">cache create</div><div class="v">{{ summary.cache_creation_input_tokens }}</div></div>
-  <div class="summary-card"><div class="k">cache read</div><div class="v">{{ summary.cache_read_input_tokens }}</div></div>
-  <div class="summary-card"><div class="k">total cost</div><div class="v">${{ "%.4f"|format(summary.total_cost_usd) }}</div></div>
-  <div class="summary-card"><div class="k">mean / call</div><div class="v">${{ "%.6f"|format(summary.mean_cost_per_call) }}</div></div>
-  <div class="summary-card"><div class="k">p50 / call</div><div class="v">${{ "%.6f"|format(summary.p50_cost_usd) }}</div></div>
-  <div class="summary-card"><div class="k">p95 / call</div><div class="v">${{ "%.6f"|format(summary.p95_cost_usd) }}</div></div>
-</div>
-{% endif %}
-
-<h2>LLM Calls — Recent (last 200)</h2>
-{% if calls %}
-<table>
-  <thead>
-    <tr>
-      <th>Timestamp</th>
-      <th>User</th>
-      <th>Call</th>
-      <th>Model</th>
-      <th>Prompt v</th>
-      <th>Run</th>
-      <th class="num">in</th>
-      <th class="num">out</th>
-      <th class="num">cache create</th>
-      <th class="num">cache read</th>
-      <th class="num">latency</th>
-      <th>status</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for r in calls %}
-    <tr>
-      <td>{{ r.timestamp }}</td>
-      <td>{{ r.username }}</td>
-      <td>{{ r.call }}</td>
-      <td>{{ r.model }}</td>
-      <td>{{ r.prompt_version }}</td>
-      <td><code class="short">{{ r.run_id or "—" }}</code></td>
-      <td class="num">{{ r.input_tokens }}</td>
-      <td class="num">{{ r.output_tokens }}</td>
-      <td class="num">{{ r.cache_creation_input_tokens }}</td>
-      <td class="num">{{ r.cache_read_input_tokens }}</td>
-      <td class="num">{{ r.latency_ms }}ms</td>
-      <td class="{% if r.status == 'ok' %}ok{% else %}err{% endif %}">{{ r.status }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% else %}
-  <p class="empty">No call records.</p>
-{% endif %}
-
-<h2>Eval Quality — Aggregations</h2>
-{% if not eval_results %}
-  <p class="empty">No eval results yet{% if not eval_dir_present %} (no <code class="short">evals/results/</code> directory){% endif %}. Run <code class="short">python evals/runner.py --suite synthetic --subset smoke</code>.</p>
-{% else %}
-
-<h3>Pareto frontier — quality vs latency</h3>
-{% if pareto.has_data %}
-{% if pareto.summary %}
-<div style="margin: 0.6rem 0 1rem;">
-  <span class="summary-card">
-    <div class="k">most recent change</div>
-    <div class="v" style="font-size:0.9rem">{{ pareto.summary.v_prev }} → {{ pareto.summary.v_new }}</div>
-  </span>
-  <span class="summary-card">
-    <div class="k">Δ composite</div>
-    <div class="v {% if pareto.summary.delta_composite > 0 %}ok{% elif pareto.summary.delta_composite < 0 %}err{% endif %}">
-      {{ "%+.3f" | format(pareto.summary.delta_composite) }}
-    </div>
-  </span>
-  <span class="summary-card">
-    <div class="k">Δ p50 latency</div>
-    <div class="v {% if pareto.summary.delta_latency_ms < 0 %}ok{% elif pareto.summary.delta_latency_ms > 0 %}err{% endif %}">
-      {{ "%+d" | format(pareto.summary.delta_latency_ms) }}ms
-    </div>
-  </span>
-  {% if pareto.summary.delta_cost is not none %}
-  <span class="summary-card">
-    <div class="k">Δ p50 cost</div>
-    <div class="v {% if pareto.summary.delta_cost < 0 %}ok{% elif pareto.summary.delta_cost > 0 %}err{% endif %}">
-      ${{ "%+.4f" | format(pareto.summary.delta_cost) }}
-    </div>
-  </span>
+  {% if summary.count == 0 %}
+  <p class="empty">No calls match these filters{% if not log_path_present %} (no <code class="short">logs/llm_calls.jsonl</code> yet — run an analyze + generate to populate){% endif %}.</p>
+  {% else %}
+  <div class="bento">
+    <button class="tile" data-detail="cost" data-title="Cost — by call kind">
+      <span class="k">total cost</span>
+      <span class="v brand">${{ "%.4f"|format(summary.total_cost_usd) }}</span>
+      <span class="sub">p50 <span class="num">${{ "%.5f"|format(summary.p50_cost_usd) }}</span> · p95 <span class="num">${{ "%.5f"|format(summary.p95_cost_usd) }}</span></span>
+    </button>
+    <button class="tile" data-detail="throughput" data-title="Throughput — recent calls">
+      <span class="k">calls</span>
+      <span class="v">{{ summary.count }}</span>
+      <span class="sub">cache hit <span class="num">{{ "%.0f"|format(summary.cache_hit_ratio * 100) }}%</span> · {{ summary.total_input_tokens }} in / {{ summary.total_output_tokens }} out</span>
+    </button>
+    <button class="tile" data-detail="reliability" data-title="Reliability — errors & truncation">
+      <span class="k">reliability</span>
+      <span class="v {% if reliability.error_count or reliability.truncation_count %}err{% else %}ok{% endif %}">{{ "%.0f"|format(reliability.error_rate * 100) }}%</span>
+      <span class="sub">{{ reliability.error_count }} error · {{ reliability.truncation_count }} truncated (max_tokens)</span>
+    </button>
+    <button class="tile" data-detail="trace" data-title="Trace — latest run waterfall">
+      <span class="k">latest trace</span>
+      <span class="v">{% if run_trace.has_data %}{{ run_trace.latest.spans|length }} spans{% else %}—{% endif %}</span>
+      <span class="sub">{% if run_trace.has_data %}{{ "%.1f"|format(run_trace.latest.total_latency_ms / 1000) }}s total · <code class="short">{{ run_trace.latest.run_id }}</code>{% else %}no run_id in calls{% endif %}</span>
+    </button>
+    <button class="tile" data-detail="latency" data-title="Latency">
+      <span class="k">p50 / p95 latency</span>
+      <span class="v">{{ summary.p50_latency_ms }}<span style="font-size:0.7em"> / {{ summary.p95_latency_ms }}ms</span></span>
+      <span class="sub">mean <span class="num">{{ summary.mean_latency_ms }}ms</span></span>
+    </button>
+  </div>
   {% endif %}
-  <span class="summary-card">
-    <div class="k">verdict</div>
-    <div class="v {% if pareto.summary.classification == 'Pareto-improving' %}ok{% elif pareto.summary.classification == 'Dominated' %}err{% endif %}">
-      {{ pareto.summary.classification }}
-    </div>
-  </span>
-</div>
-{% endif %}
-<div class="charts-row">
-  <div class="chart-box">
-    <h3>Quality vs latency (log-scale X)</h3>
-    <canvas id="chart-pareto-scatter"></canvas>
-    <p class="legend">Each bubble = one fixture run. Color = prompt_version. Size ∝ cost. X axis is log-scale seconds.</p>
-  </div>
-  <div class="chart-box">
-    <h3>Latency trend — p50 / p90 by version</h3>
-    <canvas id="chart-latency-trend"></canvas>
-  </div>
-</div>
-<div class="charts-row" style="margin-top:1rem;">
-  <div class="chart-box">
-    <h3>Cost trend — p50 by version</h3>
-    <canvas id="chart-cost-trend"></canvas>
-  </div>
-  <div></div>
-</div>
-{% else %}
-<p class="empty">No <code class="short">eval_composite</code> records yet. Run <code class="short">python evals/runner.py --suite anchor</code> to populate.</p>
-{% endif %}
+</section>
 
-<div class="charts-row">
-  <div class="chart-box">
-    <h3>Per-rubric pass rate (score &ge; 4.0)</h3>
-    <canvas id="chart-rubric-passrate"></canvas>
-    <noscript>
-      <table>
-        <tr><th>Rubric</th><th class="num">Pass</th><th class="num">Total</th><th class="num">Rate</th></tr>
-        {% for r in rubric_pass_rate %}
-        <tr><td>{{ r.rubric }}</td><td class="num">{{ r.pass_count }}</td><td class="num">{{ r.total }}</td><td class="num">{{ "%.0f"|format(r.pass_rate * 100) }}%</td></tr>
-        {% endfor %}
-      </table>
-    </noscript>
+<!-- ============================ QUALITY ============================ -->
+<section class="dash-pane" data-pane="quality" role="tabpanel">
+  {% if not eval_results %}
+  <p class="empty">No eval results yet{% if not eval_dir_present %} (no <code class="short">evals/results/</code> directory){% endif %}. Run <code class="short">python evals/runner.py --suite anchor --subset smoke</code>.</p>
+  {% else %}
+  <div class="bento">
+    <button class="tile span-2" data-detail="health" data-title="Health vs baseline">
+      <span class="k">health vs baseline</span>
+      <span class="v"><span class="badge {{ baseline_health.overall }}">{{ baseline_health.overall }}</span></span>
+      <span class="sub">{% if baseline_health.has_baseline %}{{ baseline_health.counts.ok }} ok · {{ baseline_health.counts.watch }} watch · {{ baseline_health.counts.regressed }} regressed vs <code class="short">{{ baseline_health.baseline_id }}</code>{% else %}no baseline_v1.json{% endif %}</span>
+    </button>
+    <button class="tile" data-detail="passrate" data-title="Per-rubric pass rate">
+      <span class="k">rubrics tracked</span>
+      <span class="v">{{ rubric_pass_rate|length }}</span>
+      <span class="sub">pass = score ≥ 4.0</span>
+    </button>
+    <button class="tile" data-detail="scoretrend" data-title="Score over time by rubric">
+      <span class="k">score trend</span>
+      <span class="v">{{ score_trend.datasets|length }}</span>
+      <span class="sub">lines, by prompt_version{% if score_trend.filtered_records %} · {{ score_trend.filtered_records }} hidden{% endif %}</span>
+    </button>
+    <button class="tile" data-detail="heatmap" data-title="Rubric × fixture heatmap">
+      <span class="k">heatmap</span>
+      <span class="v">{{ heatmap.rubrics|length }}×{{ heatmap.fixtures|length }}</span>
+      <span class="sub">rubric × fixture, latest run</span>
+    </button>
+    <button class="tile" data-detail="failuremodes" data-title="Top failure modes">
+      <span class="k">top failure mode</span>
+      <span class="v" style="font-size:1rem">{% if failure_modes %}<code class="short">{{ failure_modes[0].slug }}</code>{% else %}none{% endif %}</span>
+      <span class="sub">{% if failure_modes %}{{ failure_modes[0].count }} record(s){% else %}no failed_rules{% endif %}</span>
+    </button>
+    <button class="tile" data-detail="pareto" data-title="Pareto — quality vs latency">
+      <span class="k">pareto verdict</span>
+      <span class="v" style="font-size:1rem">{% if pareto.summary %}<span class="badge {% if pareto.summary.classification == 'Pareto-improving' %}ok{% elif pareto.summary.classification == 'Dominated' %}regressed{% else %}unknown{% endif %}">{{ pareto.summary.classification }}</span>{% else %}—{% endif %}</span>
+      <span class="sub">{% if pareto.summary %}{{ pareto.summary.v_prev }} → {{ pareto.summary.v_new }}{% else %}needs ≥2 versions{% endif %}</span>
+    </button>
   </div>
-  <div class="chart-box">
-    <h3>Score over time by rubric</h3>
-    <canvas id="chart-score-over-time"></canvas>
-    <p class="legend">Each point labels its prompt_version on hover. {% if score_trend.filtered_records %}{{ score_trend.filtered_records }} record(s) hidden — pre-migration, no prompt_version.{% endif %}</p>
-  </div>
-</div>
+  {% endif %}
+</section>
 
-<h3>Rubric &times; fixture heatmap (most recent run per pair)</h3>
-{% if heatmap.fixtures %}
-<table class="heatmap">
-  <thead>
-    <tr>
-      <th>rubric \ fixture</th>
-      {% for f in heatmap.fixtures %}<th>{{ f }}</th>{% endfor %}
-    </tr>
-  </thead>
-  <tbody>
-    {% for row in heatmap.rows %}
-    <tr>
-      <th>{{ row.rubric }}</th>
-      {% for cell in row.cells %}
-      {% if cell.score is none %}
-        <td class="cell empty">—</td>
-      {% else %}
-        <td class="cell" style="background: {{ cell.color }};" title="prompt_version={{ cell.prompt_version }} @ {{ cell.timestamp }}">{{ "%.1f"|format(cell.score) }}</td>
-      {% endif %}
+<!-- ========================== GROUNDEDNESS ========================== -->
+<section class="dash-pane" data-pane="groundedness" role="tabpanel">
+  {% if not groundedness_detail.has_data %}
+  <p class="empty">No groundedness records yet. The L0 fabricated-specifics metric rides on
+    <code class="short">deterministic_metrics.groundedness</code> — run
+    <code class="short">python evals/runner.py --suite anchor --subset smoke</code> to populate.</p>
+  {% else %}
+  <div class="bento">
+    <button class="tile span-2" data-detail="groundedness" data-title="Groundedness (L0) — trend & evidence">
+      <span class="k">groundedness (L0)</span>
+      <span class="v brand">{{ "%.2f"|format(groundedness_detail.score) }}<span style="font-size:0.6em"> / 5</span></span>
+      <span class="sub">fabricated rate <span class="num">{{ "%.1f"|format(groundedness_detail.fabricated_specifics_rate * 100) }}%</span> · {{ groundedness_detail.flagged_count }} flagged · {{ groundedness_detail.layers|join("+") }} · <code class="short">{{ groundedness_detail.prompt_version }}</code></span>
+    </button>
+    <button class="tile" data-detail="groundedness" data-title="Groundedness (L0) — trend & evidence">
+      <span class="k">flagged specifics</span>
+      <span class="v {% if groundedness_detail.flagged_count %}err{% else %}ok{% endif %}">{{ groundedness_detail.flagged_count }}</span>
+      <span class="sub">of {{ groundedness_detail.total_specifics }} specifics in {{ groundedness_detail.total_bullets }} bullets</span>
+    </button>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ============================= TUNING ============================= -->
+<section class="dash-pane" data-pane="tuning" role="tabpanel">
+  <div class="scaffold-banner">
+    <strong>Read-only scaffold.</strong> Write affordances (kick off a candidate eval,
+    promote a prompt, write TUNING_LOG) land in a later branch — this console stays read-only.
+  </div>
+  <div class="bento">
+    <button class="tile" data-detail="tuning" data-title="Prompt-tuning loop">
+      <span class="k">tuning loop</span>
+      <span class="v" style="font-size:1rem">prompt-override</span>
+      <span class="sub">candidate-vs-baseline A/B (read-only here)</span>
+    </button>
+    <button class="tile" data-detail="tuning" data-title="Prompt-tuning loop">
+      <span class="k">baseline</span>
+      <span class="v" style="font-size:1rem">{% if baseline_health.has_baseline %}<code class="short">{{ baseline_health.baseline_prompt_version }}</code>{% else %}—{% endif %}</span>
+      <span class="sub">{% if baseline_health.has_baseline %}{{ baseline_health.baseline_id }}{% else %}no baseline_v1.json{% endif %}</span>
+    </button>
+  </div>
+</section>
+
+<!-- ===== Shared drawer ===== -->
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="drawerTitle">
+  <header>
+    <h2 id="drawerTitle">Detail</h2>
+    <button class="drawer-close" id="drawerClose" aria-label="Close detail">✕</button>
+  </header>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<!-- ===== Detail store: server-rendered detail blocks, moved into the drawer by
+         JS on tile click. Without JS this container is visible and stacks inline. ===== -->
+<div id="detailStore">
+
+  <div class="detail" data-detail="cost">
+    {% if cost_by_call_kind %}
+    <div class="chart-box"><canvas id="chart-cost-by-kind" data-chart="cost-by-kind"></canvas></div>
+    <table>
+      <thead><tr><th>call kind</th><th class="num">count</th><th class="num">total $</th><th class="num">mean $</th></tr></thead>
+      <tbody>
+      {% for c in cost_by_call_kind %}
+        <tr><td><code class="short">{{ c.call_kind }}</code></td><td class="num">{{ c.count }}</td><td class="num">${{ "%.5f"|format(c.total_cost_usd) }}</td><td class="num">${{ "%.6f"|format(c.mean_cost_usd) }}</td></tr>
       {% endfor %}
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-<p class="legend">Color: red (0.0) → green (5.0). Hover a cell for prompt_version + timestamp.</p>
-{% else %}
-<p class="empty">No fixture × rubric pairs to render yet.</p>
-{% endif %}
+      </tbody>
+    </table>
+    {% else %}<p class="empty">No call cost to break down.</p>{% endif %}
+  </div>
 
-<h3>Top failure modes (per-record dedup)</h3>
-{% if failure_modes %}
-<table>
-  <thead><tr><th>failed_rules slug</th><th class="num">records</th></tr></thead>
-  <tbody>
-    {% for f in failure_modes %}
-    <tr><td><code class="short">{{ f.slug }}</code></td><td class="num">{{ f.count }}</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p class="empty">No failure_rules recorded yet — every grading either passed or had no rule slugs attached.</p>
-{% endif %}
+  <div class="detail" data-detail="throughput">
+    <p class="legend">Most recent 200 calls. Filter by user <code class="short">eval:&lt;fixture&gt;</code> to isolate eval traffic.</p>
+    {% if calls %}
+    <table>
+      <thead><tr><th>timestamp</th><th>user</th><th>call</th><th>model</th><th>prompt v</th><th>run</th><th class="num">in</th><th class="num">out</th><th class="num">latency</th><th>status</th></tr></thead>
+      <tbody>
+      {% for r in calls %}
+        <tr>
+          <td>{{ r.timestamp }}</td><td>{{ r.username }}</td><td>{{ r.call }}</td><td>{{ r.model }}</td>
+          <td>{{ r.prompt_version }}</td><td><code class="short">{{ r.run_id or "—" }}</code></td>
+          <td class="num">{{ r.input_tokens }}</td><td class="num">{{ r.output_tokens }}</td><td class="num">{{ r.latency_ms }}ms</td>
+          <td class="{% if r.status == 'ok' %}ok{% else %}err{% endif %}">{{ r.status }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="empty">No call records.</p>{% endif %}
+  </div>
 
-{% endif %}
+  <div class="detail" data-detail="reliability">
+    <p class="sub">overall: <strong>{{ "%.1f"|format(reliability.error_rate * 100) }}%</strong> error ·
+      <strong>{{ "%.1f"|format(reliability.truncation_rate * 100) }}%</strong> truncated · {{ reliability.total }} calls</p>
+    {% if reliability.by_call_kind %}
+    <table>
+      <thead><tr><th>call kind</th><th class="num">calls</th><th class="num">errors</th><th class="num">err %</th><th class="num">truncated</th><th class="num">trunc %</th></tr></thead>
+      <tbody>
+      {% for k in reliability.by_call_kind %}
+        <tr><td><code class="short">{{ k.call_kind }}</code></td><td class="num">{{ k.total }}</td>
+          <td class="num {% if k.error_count %}fail{% endif %}">{{ k.error_count }}</td><td class="num">{{ "%.1f"|format(k.error_rate * 100) }}%</td>
+          <td class="num {% if k.truncation_count %}fail{% endif %}">{{ k.truncation_count }}</td><td class="num">{{ "%.1f"|format(k.truncation_rate * 100) }}%</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="empty">No calls to analyze.</p>{% endif %}
+  </div>
 
-<h2>Eval Results — Recent (last 200)</h2>
-{% if eval_results %}
-<table>
-  <thead>
-    <tr>
-      <th>Timestamp</th>
-      <th>Fixture</th>
-      <th>Rubric</th>
-      <th class="num">Score</th>
-      <th>Prompt v</th>
-      <th>Run</th>
-      <th>Status</th>
-      <th>Failed rules</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for r in eval_results %}
-    <tr>
-      <td>{{ r.timestamp }}</td>
-      <td>{{ r.fixture }}</td>
-      <td>{{ r.rubric }}</td>
-      <td class="num {% if r.score is not none and r.score >= 4.0 %}pass{% else %}fail{% endif %}">{{ "%.1f"|format(r.score) if r.score is not none else "—" }}</td>
-      <td>{{ r.prompt_version }}</td>
-      <td><code class="short">{{ r.run_id or "—" }}</code></td>
-      <td class="{% if r.status == 'ok' %}ok{% else %}err{% endif %}">{{ r.status }}</td>
-      <td>{{ r.failed_rules|join(", ") if r.failed_rules else "" }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% endif %}
+  <div class="detail" data-detail="trace">
+    {% if run_trace.has_data %}
+    <p class="sub">Latest run <code class="short">{{ run_trace.latest.run_id }}</code> — {{ "%.1f"|format(run_trace.latest.total_latency_ms / 1000) }}s total. Each bar is a span's share of wall-clock.</p>
+    <div class="waterfall">
+      {% for s in run_trace.latest.spans %}
+      <div class="wf-row">
+        <span class="lbl" title="{{ s.call_kind }} ({{ s.model }})">{{ s.call_kind }}</span>
+        <span class="wf-track"><span class="wf-bar" style="width: {{ s.pct }}%"></span></span>
+        <span class="ms">{{ s.latency_ms }}ms</span>
+      </div>
+      {% endfor %}
+    </div>
+    <details class="fold"><summary>Recent runs ({{ run_trace.runs|length }})</summary>
+      <table>
+        <thead><tr><th>run</th><th class="num">spans</th><th class="num">total</th><th>timestamp</th></tr></thead>
+        <tbody>
+        {% for run in run_trace.runs %}
+          <tr><td><code class="short">{{ run.run_id }}</code></td><td class="num">{{ run.span_count }}</td><td class="num">{{ "%.1f"|format(run.total_latency_ms / 1000) }}s</td><td>{{ run.timestamp }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </details>
+    {% else %}<p class="empty">No run_id on any call — nothing to trace.</p>{% endif %}
+  </div>
+
+  <div class="detail" data-detail="latency">
+    <p class="sub">p50 <strong>{{ summary.p50_latency_ms }}ms</strong> · p95 <strong>{{ summary.p95_latency_ms }}ms</strong> · mean {{ summary.mean_latency_ms }}ms across {{ summary.count }} calls.
+      A single slow analyze() hides inside a healthy mean — watch p95.</p>
+  </div>
+
+  <div class="detail" data-detail="health">
+    {% if baseline_health.has_baseline %}
+    <p class="sub">Latest score per (fixture × rubric) vs <code class="short">{{ baseline_health.baseline_id }}</code> floor.
+      Bands: regressed Δ&lt;−0.5 (merge-block gate) · watch Δ&lt;−0.3 · ok otherwise.</p>
+    <table>
+      <thead><tr><th>fixture</th><th>rubric</th><th class="num">score</th><th class="num">baseline</th><th class="num">Δ</th><th>status</th></tr></thead>
+      <tbody>
+      {% for row in baseline_health.rows %}
+        <tr><td>{{ row.fixture }}</td><td>{{ row.rubric }}</td><td class="num">{{ "%.2f"|format(row.score) }}</td>
+          <td class="num">{{ "%.2f"|format(row.baseline_mean) }}</td>
+          <td class="num {% if row.delta < 0 %}fail{% endif %}">{{ "%+.2f"|format(row.delta) }}</td>
+          <td><span class="badge {{ row.status }}">{{ row.status }}</span></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="empty">No <code class="short">evals/results/baseline_v1.json</code> to compare against.</p>{% endif %}
+  </div>
+
+  <div class="detail" data-detail="passrate">
+    <div class="chart-box"><canvas id="chart-rubric-passrate" data-chart="rubric-passrate"></canvas></div>
+    <table>
+      <thead><tr><th>rubric</th><th class="num">pass</th><th class="num">total</th><th class="num">rate</th></tr></thead>
+      <tbody>
+      {% for r in rubric_pass_rate %}
+        <tr><td>{{ r.rubric }}</td><td class="num">{{ r.pass_count }}</td><td class="num">{{ r.total }}</td><td class="num">{{ "%.0f"|format(r.pass_rate * 100) }}%</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="detail" data-detail="scoretrend">
+    <div class="chart-box"><canvas id="chart-score-over-time" data-chart="score-over-time"></canvas></div>
+    <p class="legend">Each point labels its prompt_version on hover.{% if score_trend.filtered_records %} {{ score_trend.filtered_records }} record(s) hidden — pre-migration, no prompt_version.{% endif %}</p>
+  </div>
+
+  <div class="detail" data-detail="heatmap">
+    {% if heatmap.fixtures %}
+    <table class="heatmap">
+      <thead><tr><th>rubric \ fixture</th>{% for f in heatmap.fixtures %}<th>{{ f }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in heatmap.rows %}
+        <tr><th>{{ row.rubric }}</th>
+        {% for cell in row.cells %}
+          {% if cell.score is none %}<td class="cell empty">—</td>
+          {% else %}<td class="cell" style="background: {{ cell.color }};" title="prompt_version={{ cell.prompt_version }} @ {{ cell.timestamp }}">{{ "%.1f"|format(cell.score) }}</td>{% endif %}
+        {% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="legend">Color: red (0.0) → green (5.0). Hover a cell for prompt_version + timestamp.</p>
+    {% else %}<p class="empty">No fixture × rubric pairs yet.</p>{% endif %}
+  </div>
+
+  <div class="detail" data-detail="failuremodes">
+    {% if failure_modes %}
+    <table>
+      <thead><tr><th>failed_rules slug</th><th class="num">records</th></tr></thead>
+      <tbody>
+      {% for f in failure_modes %}
+        <tr><td><code class="short">{{ f.slug }}</code></td><td class="num">{{ f.count }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="empty">No failed_rules recorded — every grading passed or had no rule slugs.</p>{% endif %}
+  </div>
+
+  <div class="detail" data-detail="pareto">
+    {% if pareto.has_data %}
+    {% if pareto.summary %}
+    <p class="sub">{{ pareto.summary.v_prev }} → {{ pareto.summary.v_new }}:
+      Δcomposite <strong class="{% if pareto.summary.delta_composite > 0 %}ok{% elif pareto.summary.delta_composite < 0 %}err{% endif %}">{{ "%+.3f"|format(pareto.summary.delta_composite) }}</strong> ·
+      Δp50 latency <strong>{{ "%+d"|format(pareto.summary.delta_latency_ms) }}ms</strong>{% if pareto.summary.delta_cost is not none %} ·
+      Δp50 cost <strong>${{ "%+.4f"|format(pareto.summary.delta_cost) }}</strong>{% endif %} —
+      <span class="badge {% if pareto.summary.classification == 'Pareto-improving' %}ok{% elif pareto.summary.classification == 'Dominated' %}regressed{% else %}unknown{% endif %}">{{ pareto.summary.classification }}</span></p>
+    {% endif %}
+    <div class="chart-box"><canvas id="chart-pareto-scatter" data-chart="pareto-scatter"></canvas></div>
+    <div class="chart-box"><canvas id="chart-latency-trend" data-chart="latency-trend"></canvas></div>
+    <div class="chart-box"><canvas id="chart-cost-trend" data-chart="cost-trend"></canvas></div>
+    {% else %}<p class="empty">No <code class="short">eval_composite</code> records yet. Run <code class="short">python evals/runner.py --suite anchor</code>.</p>{% endif %}
+  </div>
+
+  <div class="detail" data-detail="groundedness">
+    {% if groundedness_detail.has_data %}
+    {% if groundedness_trend.has_data %}
+    <div class="chart-box"><canvas id="chart-groundedness-trend" data-chart="groundedness-trend"></canvas></div>
+    <p class="legend">L0 fabricated-specifics groundedness score (0–5, higher = better), one point per run, by prompt_version. {{ groundedness_trend.points }} run(s).</p>
+    {% endif %}
+    <p class="sub">Latest: <strong>{{ "%.2f"|format(groundedness_detail.score) }}/5</strong> ·
+      fabricated rate {{ "%.1f"|format(groundedness_detail.fabricated_specifics_rate * 100) }}% ·
+      {{ groundedness_detail.flagged_count }} flagged of {{ groundedness_detail.total_specifics }} specifics ·
+      layers {{ groundedness_detail.layers|join("+") }} · <code class="short">{{ groundedness_detail.prompt_version }}</code></p>
+    {% if groundedness_detail.flagged_samples %}
+    <h3 style="color:var(--fg-1);font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em;margin:0.8rem 0 0.3rem;">Flagged samples (the actionable evidence)</h3>
+    <table>
+      <thead><tr><th>specific absent from source union</th></tr></thead>
+      <tbody>{% for s in groundedness_detail.flagged_samples %}<tr><td><code class="short">{{ s }}</code></td></tr>{% endfor %}</tbody>
+    </table>
+    {% endif %}
+    {% if groundedness_detail.per_bullet %}
+    <details class="fold"><summary>Per-bullet breakdown ({{ groundedness_detail.per_bullet|length }})</summary>
+      <table>
+        <thead><tr><th>bullet</th><th class="num">specifics</th><th>flagged</th></tr></thead>
+        <tbody>
+        {% for b in groundedness_detail.per_bullet %}
+          <tr><td>{{ b.bullet }}</td><td class="num">{{ b.n_specifics }}</td><td>{% if b.flagged %}<span class="fail">{{ b.flagged|join(", ") }}</span>{% else %}—{% endif %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </details>
+    {% endif %}
+    <p class="legend">L0 is a flag-for-review signal (high precision on novel specifics; will false-positive on paraphrase). Uncalibrated until labels exist — see <code class="short">docs/dev/GROUNDING_METRIC.md</code>.</p>
+    {% else %}<p class="empty">No groundedness records yet.</p>{% endif %}
+  </div>
+
+  <div class="detail" data-detail="tuning">
+    <p class="sub">The prompt-tuning loop A/Bs a candidate system prompt against the baseline
+      <em>without editing the persona constants</em> (the <code class="short">analyzer.prompt_overrides()</code>
+      primitive). Candidate runs log <code class="short">prompt_version=candidate:&lt;hash&gt;</code> so they never
+      pollute score-over-time.</p>
+    <p class="sub">This tab is a <strong>read-only scaffold</strong>. The interactive loop — drafting a
+      candidate, running candidate-vs-baseline, promoting on approval — runs today via the
+      <code class="short">/prompt-tune</code> and <code class="short">/tune-from-annotations</code> skills and
+      lands as an in-console surface in a later, sign-off-gated branch.</p>
+    <ul style="color:var(--fg-1);font-size:0.85rem;line-height:1.8;">
+      <li>Candidate A/B primitive: <code class="short">analyzer.prompt_overrides()</code> + <code class="short">evals/runner.py --prompt-overrides</code></li>
+      <li>Iteration history: <code class="short">evals/TUNING_LOG.md</code></li>
+      <li>Skills: <code class="short">/prompt-tune</code>, <code class="short">/tune-from-annotations</code></li>
+    </ul>
+  </div>
+
+</div>
 
 <script>
 (function () {
+  // ---- Tabs ----
+  var tabs = document.querySelectorAll('.dash-tab');
+  var panes = document.querySelectorAll('.dash-pane');
+  function activateTab(name) {
+    tabs.forEach(function (t) {
+      var on = t.dataset.tab === name;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    panes.forEach(function (p) { p.classList.toggle('active', p.dataset.pane === name); });
+  }
+  tabs.forEach(function (t) { t.addEventListener('click', function () { activateTab(t.dataset.tab); }); });
+  activateTab('pipeline');
+
+  // ---- Drawer ----
+  var drawer = document.getElementById('drawer');
+  var backdrop = document.getElementById('drawerBackdrop');
+  var body = document.getElementById('drawerBody');
+  var titleEl = document.getElementById('drawerTitle');
+  var store = document.getElementById('detailStore');
+  var closeBtn = document.getElementById('drawerClose');
+  var openNode = null;
+
+  function openDrawer(id, title) {
+    var node = store.querySelector('.detail[data-detail="' + id + '"]');
+    if (!node) return;
+    if (openNode) store.appendChild(openNode);
+    body.appendChild(node);
+    openNode = node;
+    titleEl.textContent = title || id;
+    drawer.classList.add('open');
+    backdrop.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    initCharts(node);
+    closeBtn.focus();
+  }
+  function closeDrawer() {
+    drawer.classList.remove('open');
+    backdrop.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+    if (openNode) { store.appendChild(openNode); openNode = null; }
+  }
+  document.querySelectorAll('.tile[data-detail]').forEach(function (t) {
+    t.addEventListener('click', function () { openDrawer(t.dataset.detail, t.dataset.title); });
+  });
+  closeBtn.addEventListener('click', closeDrawer);
+  backdrop.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
+
+  // ---- Charts: lazy-init once per canvas, when it's visible in the drawer ----
   if (typeof Chart === 'undefined') return;
+  var TICK = '#a8a8b4';      // --fg-1
+  var BRAND = '#e8a754', GREEN = '#4ade80', RED = '#f87171', GREY = '#6c6c7a';
+  var PALETTE = [BRAND, GREEN, '#60a5fa', RED, '#b08fc7'];
 
-  const passData = {{ rubric_pass_rate | tojson }};
-  if (passData && passData.length) {
-    new Chart(document.getElementById('chart-rubric-passrate'), {
-      type: 'bar',
-      data: {
-        labels: passData.map(d => d.rubric),
-        datasets: [{
-          label: 'pass rate',
-          data: passData.map(d => Math.round(d.pass_rate * 1000) / 10),
-          backgroundColor: passData.map(d => d.pass_rate >= 0.8 ? '#82c8a4' : d.pass_rate >= 0.5 ? '#ffb86b' : '#d77a7a')
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { min: 0, max: 100, ticks: { color: '#9aa', callback: v => v + '%' } },
-          x: { ticks: { color: '#9aa' } }
-        }
-      }
-    });
-  }
+  var DATA = {
+    passrate: {{ rubric_pass_rate | tojson }},
+    trend: {{ score_trend | tojson }},
+    pareto: {{ pareto | tojson }},
+    grounded: {{ groundedness_trend | tojson }},
+    costByKind: {{ cost_by_call_kind | tojson }}
+  };
 
-  const trend = {{ score_trend | tojson }};
-  if (trend && trend.datasets && trend.datasets.length) {
-    new Chart(document.getElementById('chart-score-over-time'), {
-      type: 'line',
-      data: { datasets: trend.datasets },
-      options: {
-        responsive: true,
-        parsing: { xAxisKey: 'x', yAxisKey: 'y' },
-        plugins: {
-          legend: { labels: { color: '#9aa' } },
-          tooltip: {
-            callbacks: {
-              afterLabel: ctx => 'prompt_version: ' + (ctx.raw.v || 'unknown')
-            }
-          }
-        },
-        scales: {
-          y: { min: 0, max: 5, ticks: { color: '#9aa' } },
-          x: { type: 'category', ticks: { color: '#9aa', maxRotation: 0, autoSkip: true } }
-        }
-      }
-    });
-  }
+  var INIT = {
+    'rubric-passrate': function (cv) {
+      var d = DATA.passrate; if (!d || !d.length) return;
+      new Chart(cv, {
+        type: 'bar',
+        data: { labels: d.map(function (x) { return x.rubric; }),
+          datasets: [{ label: 'pass rate', data: d.map(function (x) { return Math.round(x.pass_rate * 1000) / 10; }),
+            backgroundColor: d.map(function (x) { return x.pass_rate >= 0.8 ? GREEN : x.pass_rate >= 0.5 ? BRAND : RED; }) }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+          scales: { y: { min: 0, max: 100, ticks: { color: TICK, callback: function (v) { return v + '%'; } } }, x: { ticks: { color: TICK } } } }
+      });
+    },
+    'score-over-time': function (cv) {
+      var d = DATA.trend; if (!d || !d.datasets || !d.datasets.length) return;
+      new Chart(cv, {
+        type: 'line', data: { datasets: d.datasets },
+        options: { responsive: true, maintainAspectRatio: false, parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+          plugins: { legend: { labels: { color: TICK } },
+            tooltip: { callbacks: { afterLabel: function (ctx) { return 'prompt_version: ' + (ctx.raw.v || 'unknown'); } } } },
+          scales: { y: { min: 0, max: 5, ticks: { color: TICK } }, x: { type: 'category', ticks: { color: TICK, maxRotation: 0, autoSkip: true } } } }
+      });
+    },
+    'groundedness-trend': function (cv) {
+      var d = DATA.grounded; if (!d || !d.has_data) return;
+      new Chart(cv, {
+        type: 'line', data: { datasets: d.datasets },
+        options: { responsive: true, maintainAspectRatio: false, parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+          plugins: { legend: { labels: { color: TICK } },
+            tooltip: { callbacks: { afterLabel: function (ctx) {
+              return ['prompt_version: ' + (ctx.raw.v || 'unknown'), 'fabricated rate: ' + (ctx.raw.rate != null ? ctx.raw.rate : '—')]; } } } },
+          scales: { y: { min: 0, max: 5, title: { display: true, text: 'groundedness (0–5)', color: TICK }, ticks: { color: TICK } },
+            x: { type: 'category', ticks: { color: TICK, maxRotation: 0, autoSkip: true } } } }
+      });
+    },
+    'cost-by-kind': function (cv) {
+      var d = DATA.costByKind; if (!d || !d.length) return;
+      new Chart(cv, {
+        type: 'bar', data: { labels: d.map(function (x) { return x.call_kind; }),
+          datasets: [{ label: 'total $', data: d.map(function (x) { return x.total_cost_usd; }), backgroundColor: BRAND }] },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true, ticks: { color: TICK } }, y: { ticks: { color: TICK } } } }
+      });
+    },
+    'pareto-scatter': function (cv) {
+      var p = DATA.pareto; if (!p || !p.scatter_datasets || !p.scatter_datasets.length) return;
+      new Chart(cv, {
+        type: 'bubble', data: { datasets: p.scatter_datasets.concat([p.timeline_dataset]) },
+        options: { responsive: true, maintainAspectRatio: false,
+          scales: { x: { type: 'logarithmic', title: { display: true, text: 'latency (s, log)', color: TICK }, ticks: { color: TICK } },
+            y: { min: 0, max: 5, title: { display: true, text: 'eval_composite', color: TICK }, ticks: { color: TICK } } },
+          plugins: { legend: { labels: { color: TICK } },
+            tooltip: { callbacks: { label: function (ctx) {
+              var x = ctx.raw; if (!x.fixture) return ctx.dataset.label;
+              return [ctx.dataset.label + ' — ' + x.fixture, 'composite=' + x.y + ' latency=' + x.x + 's', 'cost=$' + (x.cost_usd != null ? x.cost_usd : '—')]; } } } } }
+      });
+    },
+    'latency-trend': function (cv) {
+      var p = DATA.pareto; if (!p || !p.latency_trend || !p.latency_trend.labels.length) return;
+      new Chart(cv, { type: 'line', data: p.latency_trend,
+        options: { responsive: true, maintainAspectRatio: false,
+          scales: { x: { ticks: { color: TICK } }, y: { beginAtZero: true, title: { display: true, text: 'latency (s)', color: TICK }, ticks: { color: TICK } } },
+          plugins: { legend: { labels: { color: TICK } } } } });
+    },
+    'cost-trend': function (cv) {
+      var p = DATA.pareto; if (!p || !p.cost_trend || !p.cost_trend.labels.length) return;
+      new Chart(cv, { type: 'line', data: p.cost_trend,
+        options: { responsive: true, maintainAspectRatio: false,
+          scales: { x: { ticks: { color: TICK } }, y: { beginAtZero: true, title: { display: true, text: 'cost (USD)', color: TICK }, ticks: { color: TICK } } },
+          plugins: { legend: { labels: { color: TICK } } } } });
+    }
+  };
 
-  // --- Pareto frontier charts ---
-  const paretoScatter = {{ pareto.scatter_datasets | tojson }};
-  const paretoTimeline = {{ pareto.timeline_dataset | tojson }};
-  if (paretoScatter && paretoScatter.length) {
-    new Chart(document.getElementById('chart-pareto-scatter'), {
-      type: 'bubble',
-      data: { datasets: [...paretoScatter, paretoTimeline] },
-      options: {
-        responsive: true,
-        scales: {
-          x: {
-            type: 'logarithmic',
-            title: { display: true, text: 'wall-clock latency (s, log scale)', color: '#9aa' },
-            ticks: { color: '#9aa' }
-          },
-          y: {
-            min: 0, max: 5,
-            title: { display: true, text: 'eval_composite', color: '#9aa' },
-            ticks: { color: '#9aa' }
-          }
-        },
-        plugins: {
-          legend: { labels: { color: '#9aa' } },
-          tooltip: {
-            callbacks: {
-              label: function(ctx) {
-                const d = ctx.raw;
-                if (!d.fixture) return ctx.dataset.label;
-                const scores = d.scores_used
-                  ? Object.entries(d.scores_used).map(([k, v]) => k + ':' + v).join(', ')
-                  : '';
-                return [
-                  ctx.dataset.label + ' — ' + d.fixture,
-                  'composite=' + d.y + '  latency=' + d.x + 's',
-                  'cost=$' + (d.cost_usd != null ? d.cost_usd : '—'),
-                  scores ? 'rubrics: ' + scores : ''
-                ].filter(Boolean);
-              }
-            }
-          }
-        }
-      }
-    });
-  }
-
-  const latencyTrend = {{ pareto.latency_trend | tojson }};
-  if (latencyTrend && latencyTrend.labels && latencyTrend.labels.length) {
-    new Chart(document.getElementById('chart-latency-trend'), {
-      type: 'line',
-      data: latencyTrend,
-      options: {
-        responsive: true,
-        scales: {
-          x: { ticks: { color: '#9aa' } },
-          y: { beginAtZero: true, title: { display: true, text: 'latency (s)', color: '#9aa' }, ticks: { color: '#9aa' } }
-        },
-        plugins: { legend: { labels: { color: '#9aa' } } }
-      }
-    });
-  }
-
-  const costTrend = {{ pareto.cost_trend | tojson }};
-  if (costTrend && costTrend.labels && costTrend.labels.length) {
-    new Chart(document.getElementById('chart-cost-trend'), {
-      type: 'line',
-      data: costTrend,
-      options: {
-        responsive: true,
-        scales: {
-          x: { ticks: { color: '#9aa' } },
-          y: { beginAtZero: true, title: { display: true, text: 'cost (USD)', color: '#9aa' }, ticks: { color: '#9aa' } }
-        },
-        plugins: { legend: { labels: { color: '#9aa' } } }
-      }
+  function initCharts(node) {
+    node.querySelectorAll('canvas[data-chart]').forEach(function (cv) {
+      if (cv.dataset.charted) return;
+      var fn = INIT[cv.dataset.chart];
+      if (fn) { fn(cv); cv.dataset.charted = '1'; }
     });
   }
 })();

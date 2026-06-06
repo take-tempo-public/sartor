@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — diagnostics console redesign: tabbed observability on the cb-* design system (`feat/diagnostics-console-redesign`, v1.0.5)
+
+`/_dashboard` moves from a single long-scroll page with its own hardcoded palette
+to a **tabbed diagnostics + tuning console on the cb-* design system**. Read-only
+throughout — **no new Flask route, no write affordances** (the localhost
+host-header guard is preserved verbatim); **no `PROMPT_VERSION` bump, no new
+dependency, no LLM call.** Chart.js still loads from CDN; tabs + drawer are vanilla
+JS.
+
+- **Four tabs, each a bento of summary tiles → shared right-hand drawer.**
+  Pipeline · Quality · Groundedness · Tuning. A tile shows a headline stat;
+  clicking it opens one shared drawer with the full chart/table + detail. Charts
+  **lazy-init on drawer-open** (never into a hidden/zero-size canvas). Every tile's
+  summary *and* detail are server-rendered, so the surface degrades gracefully
+  with JS off (panes stack, details show inline).
+- **Groundedness tab (the marquee surface)** — designed *around* the 2026-06-06
+  metric contract, not retrofitted. New `dashboard/routes.py` helpers
+  `_groundedness_trend` (L0 `groundedness.score` 0–5 over time by `prompt_version`,
+  **deduped by `run_id`** so a run's value isn't plotted once per rubric) and
+  `_latest_groundedness_detail` (the `fabricated_specifics` drill-down:
+  `flagged_samples` + `per_bullet` as the actionable evidence).
+- **Tier-0 observability over data we already log** (no new data emitted):
+  `_run_trace` (per-`run_id` span waterfall from `call` + `latency_ms`),
+  `_reliability` (error + `max_tokens`-truncation rates, split by call kind),
+  `_cost_by_call_kind` (per-stage cost rollup), and `_baseline_health` /
+  `_load_baseline` (health-vs-baseline drift badges: regressed Δ<−0.5 = the
+  merge-block gate, watch Δ<−0.3, else ok — read from the in-repo
+  `evals/results/baseline_v1.json`).
+- **Tuning tab is a read-only scaffold** — documents the `analyzer.prompt_overrides()`
+  A/B primitive + links to `/prompt-tune`, `/tune-from-annotations`, and
+  `evals/TUNING_LOG.md`. No forms that POST; a banner states write affordances land
+  in a later, sign-off-gated branch.
+- **Tests** — `tests/test_dashboard_routes.py` gains pure-helper unit coverage for
+  every new aggregator (dedup-by-run_id, empty/missing-block paths, verdict bands).
+  `tests/ux/flows/test_dashboard_console.py` drives the tabs + drawer in headless
+  Chromium against the unconditional console-error sentinel (seeds telemetry by
+  monkeypatching the blueprint's `EVAL_RESULTS_DIR` / `LLM_LOG`); a
+  `DashboardConsolePage` POM joins `ui_pages/`.
+
 ### Added — L0 grounding metric: deterministic fabricated-specifics rate + groundedness composite (`eval/grounding-metric-l0`, v1.0.5)
 
 The first slice of the grounding/hallucination metric, defined *before* the

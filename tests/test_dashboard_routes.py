@@ -10,11 +10,18 @@ from __future__ import annotations
 import pytest
 
 from dashboard.routes import (
+    _baseline_health,
+    _cost_by_call_kind,
+    _dedup_by_run,
     _failure_mode_frequency,
+    _groundedness_trend,
+    _latest_groundedness_detail,
     _pareto_data,
     _per_rubric_pass_rate,
     _percentile,
+    _reliability,
     _rubric_fixture_heatmap,
+    _run_trace,
     _score_over_time,
     _summarize_calls,
 )
@@ -369,3 +376,277 @@ class TestIndexRoute:
             assert "No eval results yet" in body
             # Chart.js script tag should still be in the head
             assert "chart.umd" in body
+
+
+def _make_grounded(
+    run_id: str,
+    score: float,
+    rate: float = 0.0,
+    timestamp: str = "2026-06-06T00:00:00Z",
+    prompt_version: str = "v1",
+    rubric: str = "grounding",
+    fixture: str = "pm-senior",
+    flagged_count: int = 0,
+    flagged_samples: list | None = None,
+    per_bullet: list | None = None,
+) -> dict:
+    """A per-rubric eval record carrying the 2026-06-06 groundedness block."""
+    return {
+        "rubric": rubric,
+        "fixture": fixture,
+        "run_id": run_id,
+        "prompt_version": prompt_version,
+        "timestamp": timestamp,
+        "score": 4.5,
+        "deterministic_metrics": {
+            "groundedness": {
+                "layers": ["L0"],
+                "fabricated_specifics_rate": rate,
+                "flagged_count": flagged_count,
+                "score": score,
+            },
+            "fabricated_specifics": {
+                "total_bullets": 10,
+                "total_specifics": 20,
+                "flagged": flagged_count,
+                "fabricated_specifics_rate": rate,
+                "per_bullet": per_bullet or [],
+                "flagged_samples": flagged_samples or [],
+            },
+        },
+    }
+
+
+class TestDedupByRun:
+    def test_keeps_first_per_run_id(self):
+        records = [
+            {"run_id": "r1", "n": 1},
+            {"run_id": "r1", "n": 2},
+            {"run_id": "r2", "n": 3},
+        ]
+        out = _dedup_by_run(records)
+        assert [r["n"] for r in out] == [1, 3]
+
+    def test_records_without_run_id_kept_individually(self):
+        records = [{"run_id": ""}, {"run_id": ""}, {"run_id": "r1"}]
+        assert len(_dedup_by_run(records)) == 3
+
+
+class TestGroundednessTrend:
+    def test_empty(self):
+        out = _groundedness_trend([])
+        assert out["has_data"] is False
+        assert out["datasets"] == []
+        assert out["points"] == 0
+
+    def test_dedups_by_run_id(self):
+        # Same run, two rubrics carrying the identical groundedness block → 1 point.
+        records = [
+            _make_grounded("r1", score=4.5, rubric="grounding"),
+            _make_grounded("r1", score=4.5, rubric="tone"),
+        ]
+        out = _groundedness_trend(records)
+        assert out["points"] == 1
+        assert out["datasets"][0]["data"][0]["y"] == 4.5
+
+    def test_sorted_by_timestamp_and_carries_version_and_rate(self):
+        records = [
+            _make_grounded("r2", score=4.0, rate=0.2, timestamp="2026-06-07T00:00:00Z",
+                           prompt_version="v2"),
+            _make_grounded("r1", score=5.0, rate=0.0, timestamp="2026-06-06T00:00:00Z",
+                           prompt_version="v1"),
+        ]
+        out = _groundedness_trend(records)
+        data = out["datasets"][0]["data"]
+        assert [d["x"] for d in data] == ["2026-06-06T00:00:00Z", "2026-06-07T00:00:00Z"]
+        assert data[0]["v"] == "v1" and data[1]["v"] == "v2"
+        assert data[1]["rate"] == 0.2
+
+    def test_skips_records_without_groundedness(self):
+        records = [
+            {"rubric": "grounding", "run_id": "r1", "timestamp": "2026-06-06T00:00:00Z",
+             "deterministic_metrics": {"verb_diversity": 1.0}},  # pre-2026-06-06 shape
+        ]
+        out = _groundedness_trend(records)
+        assert out["has_data"] is False
+
+
+class TestLatestGroundednessDetail:
+    def test_empty(self):
+        assert _latest_groundedness_detail([])["has_data"] is False
+
+    def test_picks_most_recent_and_surfaces_evidence(self):
+        records = [
+            _make_grounded("r1", score=5.0, timestamp="2026-06-06T00:00:00Z"),
+            _make_grounded("r2", score=3.5, rate=0.3, timestamp="2026-06-08T00:00:00Z",
+                           prompt_version="v2", flagged_count=2,
+                           flagged_samples=["$5M", "Kubernetes"],
+                           per_bullet=[{"bullet": "Led $5M migration", "n_specifics": 2,
+                                        "flagged": ["$5M"]}]),
+        ]
+        out = _latest_groundedness_detail(records)
+        assert out["has_data"] is True
+        assert out["prompt_version"] == "v2"
+        assert out["score"] == 3.5
+        assert out["flagged_count"] == 2
+        assert "$5M" in out["flagged_samples"]
+        assert out["per_bullet"][0]["flagged"] == ["$5M"]
+
+
+class TestCostByCallKind:
+    def _call(self, kind: str, out_tokens: int) -> dict:
+        return {
+            "call": kind,
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 1000,
+            "output_tokens": out_tokens,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+        }
+
+    def test_empty(self):
+        assert _cost_by_call_kind([]) == []
+
+    def test_groups_and_sorts_by_total_cost_desc(self):
+        records = [
+            self._call("generate", 2000),
+            self._call("generate", 2000),
+            self._call("clarify", 100),
+        ]
+        out = _cost_by_call_kind(records)
+        assert out[0]["call_kind"] == "generate"
+        assert out[0]["count"] == 2
+        assert out[0]["total_cost_usd"] >= out[1]["total_cost_usd"]
+
+    def test_missing_call_kind_labeled_unknown(self):
+        out = _cost_by_call_kind([{"model": "claude-sonnet-4-6", "output_tokens": 10,
+                                   "input_tokens": 10}])
+        assert out[0]["call_kind"] == "unknown"
+
+
+class TestReliability:
+    def test_empty(self):
+        out = _reliability([])
+        assert out["total"] == 0
+        assert out["error_rate"] == 0.0
+        assert out["truncation_rate"] == 0.0
+        assert out["by_call_kind"] == []
+
+    def test_error_and_truncation_rates(self):
+        records = [
+            {"call": "generate", "status": "ok", "stop_reason": "end_turn"},
+            {"call": "generate", "status": "error", "stop_reason": None},
+            {"call": "generate", "status": "ok", "stop_reason": "max_tokens"},
+            {"call": "analyze", "status": "ok", "stop_reason": "end_turn"},
+        ]
+        out = _reliability(records)
+        assert out["total"] == 4
+        assert out["error_count"] == 1
+        assert out["error_rate"] == 0.25
+        assert out["truncation_count"] == 1
+        assert out["truncation_rate"] == 0.25
+        gen = next(k for k in out["by_call_kind"] if k["call_kind"] == "generate")
+        assert gen["total"] == 3
+        assert gen["error_count"] == 1
+        assert gen["truncation_count"] == 1
+
+
+class TestRunTrace:
+    def test_no_run_id(self):
+        out = _run_trace([{"call": "generate", "latency_ms": 100}])
+        assert out["has_data"] is False
+        assert out["runs"] == []
+
+    def test_groups_orders_and_computes_pct(self):
+        records = [
+            {"run_id": "r1", "call": "generate", "latency_ms": 30000,
+             "timestamp": "2026-06-06T00:00:02Z", "model": "m", "status": "ok"},
+            {"run_id": "r1", "call": "analyze", "latency_ms": 90000,
+             "timestamp": "2026-06-06T00:00:01Z", "model": "m", "status": "ok"},
+        ]
+        out = _run_trace(records)
+        assert out["has_data"] is True
+        spans = out["latest"]["spans"]
+        # Ordered by timestamp ascending → analyze first
+        assert [s["call_kind"] for s in spans] == ["analyze", "generate"]
+        assert out["latest"]["total_latency_ms"] == 120000
+        assert spans[0]["pct"] == 75.0
+        assert spans[1]["pct"] == 25.0
+
+    def test_latest_run_is_most_recent(self):
+        records = [
+            {"run_id": "old", "call": "generate", "latency_ms": 1,
+             "timestamp": "2026-06-01T00:00:00Z", "model": "m", "status": "ok"},
+            {"run_id": "new", "call": "generate", "latency_ms": 1,
+             "timestamp": "2026-06-09T00:00:00Z", "model": "m", "status": "ok"},
+        ]
+        out = _run_trace(records)
+        assert out["latest"]["run_id"] == "new"
+        assert len(out["runs"]) == 2
+
+
+class TestBaselineHealth:
+    _BASELINE = {
+        "baseline_id": "v1.0.2_test",
+        "prompt_version": "2026-05-24.4",
+        "fixtures": {
+            "pm-senior": {
+                "grounding": {"mean": 4.6},
+                "tone": {"mean": 4.2},
+                "ats_format": {"mean": 4.5},
+            },
+        },
+    }
+
+    def test_no_baseline(self):
+        out = _baseline_health([{"fixture": "pm-senior", "rubric": "grounding",
+                                 "score": 4.0, "timestamp": "t"}], {})
+        assert out["has_baseline"] is False
+
+    def test_verdict_bands(self):
+        records = [
+            # delta -0.6 → regressed
+            {"fixture": "pm-senior", "rubric": "grounding", "score": 4.0,
+             "timestamp": "2026-06-06T00:00:00Z"},
+            # delta -0.35 → watch
+            {"fixture": "pm-senior", "rubric": "tone", "score": 3.85,
+             "timestamp": "2026-06-06T00:00:00Z"},
+            # delta -0.1 → ok
+            {"fixture": "pm-senior", "rubric": "ats_format", "score": 4.4,
+             "timestamp": "2026-06-06T00:00:00Z"},
+        ]
+        out = _baseline_health(records, self._BASELINE)
+        by_rubric = {r["rubric"]: r["status"] for r in out["rows"]}
+        assert by_rubric["grounding"] == "regressed"
+        assert by_rubric["tone"] == "watch"
+        assert by_rubric["ats_format"] == "ok"
+        # overall is the worst verdict present
+        assert out["overall"] == "regressed"
+        assert out["counts"] == {"ok": 1, "watch": 1, "regressed": 1}
+
+    def test_overall_ok_when_all_pass(self):
+        records = [
+            {"fixture": "pm-senior", "rubric": "grounding", "score": 4.7,
+             "timestamp": "2026-06-06T00:00:00Z"},
+        ]
+        out = _baseline_health(records, self._BASELINE)
+        assert out["overall"] == "ok"
+
+    def test_skips_rubric_absent_from_baseline(self):
+        records = [
+            {"fixture": "pm-senior", "rubric": "unknown_rubric", "score": 1.0,
+             "timestamp": "2026-06-06T00:00:00Z"},
+        ]
+        out = _baseline_health(records, self._BASELINE)
+        assert out["rows"] == []
+        assert out["overall"] == "unknown"
+
+    def test_takes_most_recent_score_per_pair(self):
+        records = [
+            {"fixture": "pm-senior", "rubric": "grounding", "score": 4.0,
+             "timestamp": "2026-06-06T00:00:00Z"},  # regressed, older
+            {"fixture": "pm-senior", "rubric": "grounding", "score": 4.6,
+             "timestamp": "2026-06-08T00:00:00Z"},  # ok, newer → wins
+        ]
+        out = _baseline_health(records, self._BASELINE)
+        assert out["rows"][0]["status"] == "ok"

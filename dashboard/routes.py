@@ -72,6 +72,10 @@ def _normalize_eval_record(r: dict) -> dict:
     r.setdefault("run_id", "")
     r.setdefault("failed_rules", [])
     r.setdefault("reasons", [])
+    # Records predating the 2026-06-06 grounding metric have no
+    # deterministic_metrics.groundedness; default to {} so the groundedness
+    # helpers never KeyError and instead fall through to their empty-state.
+    r.setdefault("deterministic_metrics", {})
     return r
 
 
@@ -532,6 +536,346 @@ def _pareto_data(eval_records: list[dict]) -> dict:
     }
 
 
+def _dedup_by_run(records: list[dict]) -> list[dict]:
+    """Keep the first record seen per run_id, preserving input order.
+
+    The groundedness / fabricated_specifics block is computed once per pipeline
+    run and copied onto *every* per-rubric record of that run (runner.py emits
+    the same det_metrics on each rubric row). Charting them undeduped would plot
+    one run's value 5×. Mirrors _pareto_data's "first record per run_id" join.
+    Records without a run_id are kept individually (can't be deduped safely).
+    """
+    seen: set[str] = set()
+    out: list[dict] = []
+    for r in records:
+        run_id = r.get("run_id") or ""
+        if run_id:
+            if run_id in seen:
+                continue
+            seen.add(run_id)
+        out.append(r)
+    return out
+
+
+def _groundedness_points(records: list[dict]) -> list[dict]:
+    """One groundedness point per run, sorted by timestamp.
+
+    Pulls deterministic_metrics.groundedness off each record, dedups by run_id,
+    and keeps only points with a numeric score. Shared by the trend chart and
+    the latest-detail panel so both agree on what counts as a groundedness run.
+    """
+    candidates = []
+    for r in records:
+        gnd = (r.get("deterministic_metrics") or {}).get("groundedness") or {}
+        score = gnd.get("score")
+        if not isinstance(score, (int, float)):
+            continue
+        candidates.append(r)
+    points = []
+    for r in _dedup_by_run(candidates):
+        gnd = r["deterministic_metrics"]["groundedness"]
+        points.append({
+            "timestamp": r.get("timestamp", ""),
+            "prompt_version": r.get("prompt_version", ""),
+            "run_id": r.get("run_id", ""),
+            "fixture": r.get("fixture", ""),
+            "score": float(gnd["score"]),
+            "fabricated_specifics_rate": gnd.get("fabricated_specifics_rate", 0.0),
+            "flagged_count": gnd.get("flagged_count", 0),
+            "layers": gnd.get("layers", ["L0"]),
+        })
+    points.sort(key=lambda p: p["timestamp"])
+    return points
+
+
+def _groundedness_trend(records: list[dict]) -> dict:
+    """Chart.js-shaped trend of the L0 groundedness score (0-5) over time.
+
+    One deduped point per run (see _dedup_by_run); each point carries its
+    prompt_version (tooltip) and fabricated_specifics_rate. The 0-5 score plugs
+    into the same chart machinery as _score_over_time, so a groundedness
+    regression is attributable to a specific prompt_version. Empty datasets when
+    no record carries a groundedness block (everything pre-2026-06-06).
+    """
+    points = _groundedness_points(records)
+    data = [
+        {
+            "x": p["timestamp"],
+            "y": round(p["score"], 3),
+            "v": p["prompt_version"],
+            "rate": p["fabricated_specifics_rate"],
+            "fixture": p["fixture"],
+        }
+        for p in points
+    ]
+    return {
+        "has_data": bool(data),
+        "labels": [p["timestamp"] for p in points],
+        "datasets": [{
+            "label": "groundedness (L0)",
+            "data": data,
+            "borderColor": "#4ade80",
+            "backgroundColor": "#4ade80",
+            "tension": 0.2,
+        }] if data else [],
+        "points": len(data),
+    }
+
+
+def _latest_groundedness_detail(records: list[dict]) -> dict:
+    """Most-recent run's fabricated_specifics evidence — the drill-down.
+
+    Returns the headline groundedness summary plus the fabricated_specifics
+    block (totals + flagged_samples + per_bullet) for the latest run that
+    carries one. {"has_data": False} when none exists yet.
+    """
+    points = _groundedness_points(records)
+    if not points:
+        return {"has_data": False}
+    latest_run = points[-1]["run_id"]
+    latest_ts = points[-1]["timestamp"]
+    detail: dict = {}
+    for r in records:
+        if r.get("run_id", "") != latest_run or r.get("timestamp", "") != latest_ts:
+            continue
+        dm = r.get("deterministic_metrics") or {}
+        if dm.get("groundedness") and dm.get("fabricated_specifics"):
+            detail = dm
+            break
+    fab = (detail.get("fabricated_specifics") or {}) if detail else {}
+    return {
+        "has_data": True,
+        "prompt_version": points[-1]["prompt_version"],
+        "timestamp": latest_ts,
+        "fixture": points[-1]["fixture"],
+        "score": round(points[-1]["score"], 3),
+        "fabricated_specifics_rate": points[-1]["fabricated_specifics_rate"],
+        "flagged_count": points[-1]["flagged_count"],
+        "layers": points[-1]["layers"],
+        "total_bullets": fab.get("total_bullets", 0),
+        "total_specifics": fab.get("total_specifics", 0),
+        "flagged_samples": fab.get("flagged_samples", []),
+        "per_bullet": fab.get("per_bullet", []),
+    }
+
+
+def _cost_by_call_kind(records: list[dict]) -> list[dict]:
+    """Per-call-kind cost rollup over the filtered call list.
+
+    Answers "which stage costs the most?" — analyze/generate dominate; clarify
+    is cheap. Uses the same compute_call_cost pricing table as _summarize_calls.
+    Sorted by total cost descending. Lazy import avoids a hardening<->dashboard
+    import cycle (matching _summarize_calls).
+    """
+    from hardening import compute_call_cost
+
+    by_kind: dict[str, list[float]] = defaultdict(list)
+    for r in records:
+        kind = r.get("call") or "unknown"
+        by_kind[kind].append(compute_call_cost(r))
+    # Sort typed (kind, count, total) tuples — sorting the heterogeneous result
+    # dicts would force a dict[str, object] value type that breaks `-cost`.
+    rows = sorted(
+        ((kind, len(costs), sum(costs)) for kind, costs in by_kind.items()),
+        key=lambda t: (-t[2], t[0]),
+    )
+    return [
+        {
+            "call_kind": kind,
+            "count": count,
+            "total_cost_usd": round(total, 6),
+            "mean_cost_usd": round(total / count, 6) if count else 0.0,
+        }
+        for kind, count, total in rows
+    ]
+
+
+def _reliability(records: list[dict]) -> dict:
+    """Error + truncation rates over the filtered call list, with per-kind split.
+
+    error = status == "error"; truncation = stop_reason == "max_tokens" (output
+    cut off — a silent quality hit the binary status doesn't capture). Both are
+    surfaced overall and per call_kind so a flaky stage is isolatable.
+    """
+    total = len(records)
+    by_kind: dict[str, dict] = defaultdict(lambda: {"total": 0, "error": 0, "truncation": 0})
+    error = 0
+    truncation = 0
+    for r in records:
+        kind = r.get("call") or "unknown"
+        by_kind[kind]["total"] += 1
+        is_err = r.get("status") == "error"
+        is_trunc = r.get("stop_reason") == "max_tokens"
+        if is_err:
+            error += 1
+            by_kind[kind]["error"] += 1
+        if is_trunc:
+            truncation += 1
+            by_kind[kind]["truncation"] += 1
+    rows = []
+    for kind, c in sorted(by_kind.items()):
+        rows.append({
+            "call_kind": kind,
+            "total": c["total"],
+            "error_count": c["error"],
+            "error_rate": round(c["error"] / c["total"], 3) if c["total"] else 0.0,
+            "truncation_count": c["truncation"],
+            "truncation_rate": round(c["truncation"] / c["total"], 3) if c["total"] else 0.0,
+        })
+    return {
+        "total": total,
+        "error_count": error,
+        "error_rate": round(error / total, 3) if total else 0.0,
+        "truncation_count": truncation,
+        "truncation_rate": round(truncation / total, 3) if total else 0.0,
+        "by_call_kind": rows,
+    }
+
+
+def _run_trace(records: list[dict]) -> dict:
+    """Per-run span waterfall assembled from already-logged call telemetry.
+
+    Each LLM call carries run_id + call (kind) + latency_ms; grouping by run_id
+    reconstructs a pipeline trace (analyze_extraction -> analyze_synthesis ->
+    clarify -> generate ...) with no new instrumentation. Returns the most-recent
+    run's ordered spans (with each span's % of total latency for bar widths) plus
+    a short list of recent runs. {"has_data": False} when nothing carries a run_id.
+    """
+    by_run: dict[str, list[dict]] = defaultdict(list)
+    for r in records:
+        run_id = r.get("run_id") or ""
+        if not run_id:
+            continue
+        by_run[run_id].append(r)
+    if not by_run:
+        return {"has_data": False, "latest": None, "runs": []}
+
+    def _run_ts(calls: list[dict]) -> str:
+        return max((c.get("timestamp", "") for c in calls), default="")
+
+    runs_sorted = sorted(by_run.items(), key=lambda kv: _run_ts(kv[1]), reverse=True)
+
+    runs = []
+    for run_id, calls in runs_sorted[:10]:
+        total_lat = sum(c.get("latency_ms", 0) or 0 for c in calls)
+        runs.append({
+            "run_id": run_id,
+            "span_count": len(calls),
+            "total_latency_ms": total_lat,
+            "timestamp": _run_ts(calls),
+        })
+
+    latest_run_id, latest_calls = runs_sorted[0]
+    latest_calls = sorted(latest_calls, key=lambda c: c.get("timestamp", ""))
+    total_lat = sum(c.get("latency_ms", 0) or 0 for c in latest_calls)
+    spans = [
+        {
+            "call_kind": c.get("call", "unknown"),
+            "model": c.get("model", ""),
+            "latency_ms": c.get("latency_ms", 0) or 0,
+            "status": c.get("status", ""),
+            "pct": round(100.0 * (c.get("latency_ms", 0) or 0) / total_lat, 1) if total_lat else 0.0,
+        }
+        for c in latest_calls
+    ]
+    return {
+        "has_data": True,
+        "latest": {
+            "run_id": latest_run_id,
+            "total_latency_ms": total_lat,
+            "spans": spans,
+        },
+        "runs": runs,
+    }
+
+
+def _load_baseline() -> dict:
+    """Read evals/results/baseline_v1.json (schema 3). {} if missing/malformed."""
+    path = EVAL_RESULTS_DIR / "baseline_v1.json"
+    if not path.exists():
+        return {}
+    try:
+        with path.open(encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+# Health bands vs the baseline floor. -0.5 is the RELEASE_ARC merge-block gate;
+# -0.3 is the risk-register "surface in CHANGELOG" threshold.
+_HEALTH_REGRESSED_DELTA = -0.5
+_HEALTH_WATCH_DELTA = -0.3
+
+
+def _baseline_health(records: list[dict], baseline: dict) -> dict:
+    """Compare the latest score per (fixture, rubric) to its baseline mean.
+
+    Verdict bands: regressed (delta < -0.5, the merge-block gate), watch
+    (-0.5 <= delta < -0.3), ok (>= -0.3). `overall` is the worst verdict seen,
+    so a single tile badge can summarize quality health at a glance.
+    {"has_baseline": False} when no baseline file exists.
+    """
+    fixtures = baseline.get("fixtures") or {}
+    if not fixtures:
+        return {"has_baseline": False, "overall": "unknown", "rows": [], "counts": {}}
+
+    # Latest score per (fixture, rubric) — same "most recent wins" rule as the heatmap.
+    latest: dict[tuple[str, str], dict] = {}
+    for r in records:
+        fixture = r.get("fixture")
+        rubric = r.get("rubric")
+        if not fixture or not rubric or not isinstance(r.get("score"), (int, float)):
+            continue
+        key = (fixture, rubric)
+        prev = latest.get(key)
+        if prev is None or r.get("timestamp", "") > prev.get("timestamp", ""):
+            latest[key] = r
+
+    rows = []
+    counts = {"ok": 0, "watch": 0, "regressed": 0}
+    for (fixture, rubric), r in latest.items():
+        base = (fixtures.get(fixture) or {}).get(rubric)
+        if not base or "mean" not in base:
+            continue
+        score = float(r["score"])
+        mean = float(base["mean"])
+        delta = round(score - mean, 3)
+        if delta < _HEALTH_REGRESSED_DELTA:
+            status = "regressed"
+        elif delta < _HEALTH_WATCH_DELTA:
+            status = "watch"
+        else:
+            status = "ok"
+        counts[status] += 1
+        rows.append({
+            "fixture": fixture,
+            "rubric": rubric,
+            "score": round(score, 2),
+            "baseline_mean": round(mean, 2),
+            "delta": delta,
+            "status": status,
+        })
+    rows.sort(key=lambda d: (d["fixture"], d["rubric"]))
+
+    if counts["regressed"]:
+        overall = "regressed"
+    elif counts["watch"]:
+        overall = "watch"
+    elif rows:
+        overall = "ok"
+    else:
+        overall = "unknown"
+
+    return {
+        "has_baseline": True,
+        "baseline_id": baseline.get("baseline_id", ""),
+        "baseline_prompt_version": baseline.get("prompt_version", ""),
+        "overall": overall,
+        "rows": rows,
+        "counts": counts,
+    }
+
+
 @dashboard_bp.before_request
 def _localhost_guard():
     """Same posture as the rest of the app: localhost-only by host check."""
@@ -562,6 +906,19 @@ def index():
     failure_modes = _failure_mode_frequency(eval_results)
     pareto = _pareto_data(eval_results)
 
+    # Groundedness (L0) — the marquee new surface, designed around the
+    # 2026-06-06 metric contract (deterministic_metrics.groundedness).
+    groundedness_trend = _groundedness_trend(eval_results)
+    groundedness_detail = _latest_groundedness_detail(eval_results)
+
+    # Tier-0 observability over data we already log — trace/reliability/cost-by-
+    # kind ride the filtered call list; health badges compare eval scores to the
+    # in-repo baseline floor. No new data is emitted by the dashboard.
+    cost_by_call_kind = _cost_by_call_kind(filtered_calls)
+    reliability = _reliability(filtered_calls)
+    run_trace = _run_trace(filtered_calls)
+    baseline_health = _baseline_health(eval_results, _load_baseline())
+
     # Distinct values for filter dropdowns
     users = sorted({r.get("username", "") for r in calls if r.get("username")})
     models = sorted({r.get("model", "") for r in calls if r.get("model")})
@@ -581,4 +938,10 @@ def index():
         heatmap=heatmap,
         failure_modes=failure_modes,
         pareto=pareto,
+        groundedness_trend=groundedness_trend,
+        groundedness_detail=groundedness_detail,
+        cost_by_call_kind=cost_by_call_kind,
+        reliability=reliability,
+        run_trace=run_trace,
+        baseline_health=baseline_health,
     )
