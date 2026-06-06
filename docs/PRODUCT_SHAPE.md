@@ -585,6 +585,36 @@ acceptance criteria / target version**.
   user promotes.
 - *Target:* its own branch after the v1.0.5 tag.
 
+**Grounding / hallucination metric — calibrated layers (B), pre-v1.1.0.**
+- *What:* the **calibrated** half of the grounding metric. The deterministic,
+  label-free L0 fabricated-specifics rate ships *during* v1.0.5
+  (`eval/grounding-metric-l0`, A — see [`RELEASE_ARC.md`](dev/RELEASE_ARC.md)
+  §Phase 4 + [`docs/dev/GROUNDING_METRIC.md`](dev/GROUNDING_METRIC.md)). This
+  entry is the follow-up: (1) run the v1.0.4 loop **end-to-end on the real
+  corpus** — the live shakedown that was tagged in machinery but never executed
+  (seed → bootstrap → annotate) — to produce `annotations.json` labels;
+  (2) **calibrate** the L0 tolerance bands + the eval-only L1/L2 NLI/MiniCheck
+  thresholds (`evals/grounding_signals.py`) against those labels
+  (precision/recall per detector); (3) **update the eval suite** to report the
+  calibrated cross-class groundedness score (`eval_composite` / score-over-time
+  by `PROMPT_VERSION`); (4) **update the tuning interface** to gate on the
+  calibrated metric.
+- *Why deferred:* the calibrated metric depends on human-labeled real bullets,
+  and as of 2026-06-05 there are **none** (`evals/fixtures/real/` empty; no
+  `bootstrap.json` / `annotations.json`). Producing them is the never-run v1.0.4
+  live loop — real LLM cost + annotation labor — so it is staged behind the
+  free, deterministic L0 slice rather than blocking v1.0.5 on it. Shares the
+  same prerequisite as the cover-letter opener-tuning entry above (a
+  clean-corpus rebuild from a real git **clone**, then regenerate the corpus).
+- *Hot-path discipline:* L1/L2 are model-based and stay **eval-only** (RELEASE_ARC
+  Key Decision #4). Only the deterministic L0 may ever touch the hot path.
+- *Acceptance:* each detector's precision/recall reported against the annotation
+  labels; the calibrated groundedness score is live on `--suite real` and on the
+  dashboard's score-over-time chart; the tuning loop consumes it; no model scorer
+  in the hot path.
+- *Target:* pre-v1.1.0, after the v1.0.5 UI stream — ideally alongside the
+  cover-letter opener-tuning live run (shared corpus-rebuild prerequisite).
+
 **paged.js preview-render fragility — contained, not eliminated.**
 - *What:* the vendored paged.js v0.4.3 polyfill (`static/vendor/paged.polyfill.js`,
   the in-browser preview pagination engine — NOT the PDF path, which uses

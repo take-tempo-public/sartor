@@ -28,6 +28,18 @@ criteria.
 
 ### Discovered during the v1.0.5 stream (tracked, deferred)
 
+- [ ] **Grounding/hallucination metric inserted into the v1.0.5 sequence**
+      (user-approved re-sequence 2026-06-05). `eval/grounding-metric-l0` (the
+      deterministic, label-free L0 fabricated-specifics rate) now lands **before**
+      `feat/diagnostics-console-redesign` so the dashboard is designed around a
+      real metric contract. The **calibrated** model-based layers + the never-run
+      v1.0.4 live loop + the evals/tuning update are deferred to **pre-v1.1.0**
+      (no labeled data exists yet — `evals/fixtures/real/` is empty). Authoritative
+      detail: [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4 re-sequence note +
+      [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md); deferred follow-up tracked in
+      [`docs/PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md) "Grounding / hallucination
+      metric — calibrated layers (B)".
+
 - [ ] **Compose custom bullet order visually reverts on reload when an
       experience has no LLM recommendations** — surfaced 2026-06-04 while
       building the `feat/playwright-ux-suite` bullet-drag regression test. The
