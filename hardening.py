@@ -579,6 +579,270 @@ def compute_grounding_overlap(
     }
 
 
+# --- L0 fabricated-specifics detector (deterministic, hot-path-safe) ----------
+# Severity weights: a fabricated number/date is more damaging — and more
+# verifiable in an interview — than a fabricated tool/entity name, so it counts
+# more toward the severity-weighted rate.
+_SPECIFIC_SEVERITY = {"numeric": 2.0, "entity": 1.0}
+
+# Conservative relative band for "approximately equal" numbers, so formatting
+# variants (~30 / 30 / 30+) and light rounding ($2.4M ≈ $2,400,000) read as
+# grounded while a genuinely different magnitude (~30 → 100+) is flagged.
+# UNCALIBRATED — tuned against human labels in deferred-B (annotations.json),
+# not against any ground truth yet. See CHANGELOG / evals/TUNING_LOG.md.
+_NUMERIC_REL_TOL = 0.05
+
+# Scale-word / suffix multipliers shared by the numeric parser.
+_SCALE = {"k": 1e3, "m": 1e6, "b": 1e9, "thousand": 1e3, "million": 1e6, "billion": 1e9}
+
+# Entity alias map so k8s ≡ kubernetes, js ≡ javascript don't false-positive.
+# Applied (after lowercasing + punctuation strip) to BOTH source and generated
+# tokens before membership testing. Kept to single-token, unambiguous tech
+# aliases — multi-word expansions (ML → machine learning) are avoided because
+# they create token-count mismatches.
+_ENTITY_ALIASES = {
+    "k8s": "kubernetes",
+    "k8": "kubernetes",
+    "js": "javascript",
+    "ts": "typescript",
+    "py": "python",
+    "postgres": "postgresql",
+    "psql": "postgresql",
+}
+
+# Generic tech acronyms that are NOT named-entity fabrications — never flagged.
+# These are common vocabulary, not proper nouns a candidate could invent.
+_GENERIC_TECH_TERMS = frozenset({
+    "api", "apis", "sql", "ml", "ai", "ci", "cd", "ui", "ux", "qa",
+    "kpi", "kpis", "roi", "sla", "slas", "sdk", "cli", "http", "https",
+    "rest", "json", "xml", "csv", "pdf", "html", "css", "url", "urls",
+    "id", "ids", "io", "os", "db", "etl", "saas", "paas", "crud",
+})
+
+# Numeric specifics: percentages, currency, plain ints/decimals with optional
+# `~`/`+` and a scale suffix or word. One pattern (no alternation groups) so a
+# value like "$2.4M" is a single match, never double-counted. Interpreted by
+# _parse_numeric, which assigns the kind (percent / currency / year / count).
+# The leading `(?<![A-Za-z])` stops a digit embedded in an entity token
+# (k8s, S3, EC2, log4j) from leaking a stray numeric specific — those are
+# matched by _ENTITY_CANDIDATE_RE instead.
+_NUMERIC_SPECIFIC_RE = re.compile(
+    r"(?<![A-Za-z])\$?~?\d[\d,]*(?:\.\d+)?\+?\s?(?:k|m|b|thousand|million|billion|%)?",
+    re.IGNORECASE,
+)
+
+# Entity / proper-noun candidates in GENERATED bullets: tokens with a strong
+# named-entity signal — an internal capital (CamelCase: PostgreSQL, GraphQL),
+# an embedded digit (S3, EC2, k8s, log4j), or an all-caps acronym (AWS, GCP).
+# Deliberately conservative: a plain Capitalized word (the leading bullet verb,
+# ordinary sentence-initial capitals) does NOT match, which is the main lever
+# against paraphrase false-positives.
+_ENTITY_CANDIDATE_RE = re.compile(
+    r"\b(?:"
+    r"[A-Za-z]+[A-Z][A-Za-z0-9.+#]*"            # internal capital: PostgreSQL, gRPC
+    r"|[A-Za-z][A-Za-z.+#]*\d[A-Za-z0-9.+#]*"   # contains a digit: S3, EC2, k8s
+    r"|[A-Z]{2,6}"                               # acronym: AWS, GCP, SQL
+    r")\b"
+)
+
+# Source-side token extractor: alphanumeric runs (keeping . + # so Node.js,
+# C++, C# survive into _normalize_entity).
+_SOURCE_TOKEN_RE = re.compile(r"[A-Za-z0-9.+#]+")
+
+
+def _parse_numeric(surface: str) -> tuple[str, float] | None:
+    """Parse a numeric specific surface form into (kind, value).
+
+    kind ∈ {"percent", "currency", "year", "count"}. Strips ~ / + / commas,
+    expands k/M/B and thousand/million/billion scale words. A bare 4-digit
+    integer in 1900–2099 is classified as a year. Returns None when the surface
+    can't be parsed as a number.
+    """
+    s = surface.strip().lower()
+    if not s:
+        return None
+    is_currency = "$" in s
+    is_percent = s.endswith("%")
+    s = s.strip("$%~+ ").replace(",", "").strip()
+    mult = 1.0
+    scale = re.search(r"(k|m|b|thousand|million|billion)$", s)
+    if scale:
+        mult = _SCALE[scale.group(1)]
+        s = s[: scale.start()].strip()
+    try:
+        val = float(s) * mult
+    except ValueError:
+        return None
+    if is_percent:
+        return ("percent", val)
+    if is_currency:
+        return ("currency", val)
+    if mult == 1.0 and val.is_integer() and 1900.0 <= val <= 2099.0:
+        return ("year", val)
+    return ("count", val)
+
+
+def _source_numeric_index(source_texts: list[str]) -> dict[str, list[float]]:
+    """Index every numeric specific found anywhere in the source union, by kind."""
+    index: dict[str, list[float]] = {}
+    for txt in source_texts:
+        for m in _NUMERIC_SPECIFIC_RE.finditer(txt or ""):
+            parsed = _parse_numeric(m.group(0).strip())
+            if parsed is None:
+                continue
+            kind, val = parsed
+            index.setdefault(kind, []).append(val)
+    return index
+
+
+def _numeric_grounded(kind: str, val: float, source_nums: dict[str, list[float]]) -> bool:
+    """Tolerant membership: is `val` (of `kind`) within the conservative band of
+    any same-kind source value? year/count are cross-checked so the same digit
+    string classified differently on each side doesn't false-flag."""
+    candidate_kinds = [kind]
+    if kind in ("year", "count"):
+        candidate_kinds = ["year", "count"]
+    for k in candidate_kinds:
+        for s in source_nums.get(k, ()):
+            if s == val:
+                return True
+            if abs(val - s) / max(abs(s), 1.0) <= _NUMERIC_REL_TOL:
+                return True
+    return False
+
+
+def _normalize_entity(token: str) -> str:
+    """Lowercase, strip punctuation, apply the alias map. '' for empty result."""
+    t = re.sub(r"[^a-z0-9]", "", token.lower())
+    return _ENTITY_ALIASES.get(t, t)
+
+
+def _source_entity_set(source_texts: list[str]) -> set[str]:
+    """Every alias-normalized token in the source union. Broad on purpose: an
+    entity is flagged only when absent from the ENTIRE source union, which keeps
+    precision high (few false fabrication flags)."""
+    tokens: set[str] = set()
+    for txt in source_texts:
+        for raw in _SOURCE_TOKEN_RE.findall(txt or ""):
+            norm = _normalize_entity(raw)
+            if norm:
+                tokens.add(norm)
+    return tokens
+
+
+def compute_fabricated_specifics(
+    generated_text: str,
+    source_texts: list[str],
+) -> dict:
+    """Deterministic L0 fabricated-specifics detector (hot-path-safe, no LLM).
+
+    The sharpened successor to compute_grounding_overlap's lossy
+    `missing_samples` n-gram heuristic. For each generated résumé bullet it
+    pulls the typed *specifics* a recruiter could verify in an interview —
+    numbers, %, $, dates/years, durations, and named-entity / tool tokens — and
+    checks each for membership in the candidate's ground-truth source union
+    (original résumé + supplementals + clarification answers; assemble via
+    `assemble_source_union`) with tolerance: numeric formatting variants
+    (~30 / 30 / 30+) and light rounding ($2.4M ≈ $2,400,000) read as grounded; a
+    different magnitude (~30 → 100+) is flagged. Entity tokens are
+    alias-normalized (k8s ≡ kubernetes) before membership.
+
+    Severity-weighted: a fabricated number/date counts more than a fabricated
+    tool name — fabricated specifics are the SYSTEM_PROMPT's "most damaging"
+    failure precisely because they are checkable.
+
+    Returns a per-bullet, severity-weighted `fabricated_specifics_rate` plus
+    `flagged_samples` (the actionable evidence, mirroring missing_samples).
+
+    Operational range (UNCALIBRATED — see CHANGELOG / evals/TUNING_LOG.md):
+      - rate == 0.0: no novel specifics — every number/entity traces to source
+      - rate > 0.0: inspect flagged_samples; each is a generated specific absent
+        from the source union
+
+    PRECISION CAVEAT: this layer is high-precision on genuinely-novel specifics
+    but WILL false-positive on paraphrase / implication (source "managed a small
+    team" → output "led a 4-person team" flags "4"). It is a FLAG-FOR-REVIEW
+    signal, NOT a hard gate; its precision/recall is unproven until calibrated
+    against annotations.json (deferred-B). Tolerance bands are conservative.
+    """
+    bullets = BULLET_LINE_RE.findall(generated_text or "")
+    if not bullets or not source_texts:
+        return {
+            "total_bullets": len(bullets),
+            "total_specifics": 0,
+            "flagged": 0,
+            "fabricated_specifics_rate": 0.0,
+            "per_bullet": [],
+            "flagged_samples": [],
+        }
+
+    source_nums = _source_numeric_index(source_texts)
+    source_entities = _source_entity_set(source_texts)
+
+    total_weight = 0.0
+    flagged_weight = 0.0
+    total_specifics = 0
+    flagged_count = 0
+    per_bullet: list[dict] = []
+    flagged_samples: list[str] = []
+
+    for body in bullets:
+        bullet_flags: list[str] = []
+        n_specifics = 0
+
+        # Numeric specifics (highest severity).
+        for m in _NUMERIC_SPECIFIC_RE.finditer(body):
+            parsed = _parse_numeric(m.group(0).strip())
+            if parsed is None:
+                continue
+            kind, val = parsed
+            n_specifics += 1
+            total_specifics += 1
+            total_weight += _SPECIFIC_SEVERITY["numeric"]
+            if not _numeric_grounded(kind, val, source_nums):
+                flagged_weight += _SPECIFIC_SEVERITY["numeric"]
+                flagged_count += 1
+                bullet_flags.append(m.group(0).strip())
+
+        # Entity / proper-noun specifics (lower severity). Dedup within a bullet.
+        seen_entities: set[str] = set()
+        for m in _ENTITY_CANDIDATE_RE.finditer(body):
+            surface = m.group(0)
+            norm = _normalize_entity(surface)
+            if not norm or norm in _GENERIC_TECH_TERMS or norm in STOP_WORDS:
+                continue
+            if norm in seen_entities:
+                continue
+            seen_entities.add(norm)
+            n_specifics += 1
+            total_specifics += 1
+            total_weight += _SPECIFIC_SEVERITY["entity"]
+            if norm not in source_entities:
+                flagged_weight += _SPECIFIC_SEVERITY["entity"]
+                flagged_count += 1
+                bullet_flags.append(surface)
+
+        if n_specifics:
+            per_bullet.append({
+                "bullet": body.strip()[:120],
+                "n_specifics": n_specifics,
+                "flagged": bullet_flags,
+            })
+        for s in bullet_flags:
+            if s not in flagged_samples and len(flagged_samples) < 10:
+                flagged_samples.append(s)
+
+    rate = round(flagged_weight / total_weight, 3) if total_weight else 0.0
+    return {
+        "total_bullets": len(bullets),
+        "total_specifics": total_specifics,
+        "flagged": flagged_count,
+        "fabricated_specifics_rate": rate,
+        "per_bullet": per_bullet,
+        "flagged_samples": flagged_samples,
+    }
+
+
 def compute_call_cost(record: dict) -> float:
     """Per-call USD cost given a telemetry record from logs/llm_calls.jsonl.
 
@@ -736,6 +1000,34 @@ def summarize_recent_edits(context_set: ContextSet) -> str:
     return "\n\n".join(parts)
 
 
+def assemble_source_union(context_set: ContextSet) -> list[str]:
+    """Assemble the dynamic ground-truth source union for grounding checks.
+
+    Mirrors exactly what generate() treats as legitimate source material when
+    its grounding check widens (AGENTS.md "LLM prompts"): the original primary
+    résumé, every supplemental résumé, and the candidate's clarification
+    answers. Returned as a list of raw text blocks (empty entries skipped).
+
+    This is the single source-union definition, shared by
+    compute_iteration_signals (the iteration clarifier) and the eval-time L0
+    fabricated-specifics check, so the two can never score against divergent
+    source sets. Recompute per iteration — the union grows as the candidate
+    answers clarifications. A metric scored against only the original primary
+    over-reports, flagging legitimately-clarified facts as fabrication.
+    """
+    source_texts: list[str] = []
+    primary_text = (context_set.get("resume", {}) or {}).get("text", "")
+    if primary_text:
+        source_texts.append(primary_text)
+    for s in context_set.get("supplemental_resumes", []) or []:
+        if s.get("text"):
+            source_texts.append(s["text"])
+    for ans in (context_set.get("clarifications") or {}).values():
+        if ans:
+            source_texts.append(ans)
+    return source_texts
+
+
 def compute_iteration_signals(
     context_set: ContextSet,
     current_resume_text: str,
@@ -761,16 +1053,7 @@ def compute_iteration_signals(
 
     # Sources for grounding overlap mirror what generate() considers ground
     # truth: original primary, supplementals, clarification answers.
-    source_texts: list[str] = []
-    primary_text = (context_set.get("resume", {}) or {}).get("text", "")
-    if primary_text:
-        source_texts.append(primary_text)
-    for s in context_set.get("supplemental_resumes", []) or []:
-        if s.get("text"):
-            source_texts.append(s["text"])
-    for ans in (context_set.get("clarifications") or {}).values():
-        if ans:
-            source_texts.append(ans)
+    source_texts = assemble_source_union(context_set)
 
     return {
         "verb_diversity": compute_verb_diversity(current_resume_text),

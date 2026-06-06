@@ -287,3 +287,57 @@ class TestLegacyResultCompatibility:
         assert out["score"] == 2.0
         assert out["schema_version"] == 1
         assert out["failed_rules"] == ["invented_metric"]
+
+
+class TestGroundednessComposite:
+    """The reportable groundedness signal is L0-only by default and gracefully
+    enriches to L0+L1+L2 only when --grounding-signals produced real scores."""
+
+    def test_l0_only_by_default(self):
+        from evals.runner import _groundedness_composite
+        block = _groundedness_composite(
+            {"fabricated_specifics_rate": 0.2, "flagged": 3}
+        )
+        assert block["layers"] == ["L0"]
+        assert block["fabricated_specifics_rate"] == 0.2
+        assert block["flagged_count"] == 3
+        # score is a 0–5 projection: 5 * (1 - 0.2) = 4.0
+        assert block["score"] == 4.0
+        # No L1/L2 keys until enriched.
+        assert "mean_entailment" not in block
+
+    def test_clean_l0_scores_five(self):
+        from evals.runner import _groundedness_composite
+        block = _groundedness_composite(
+            {"fabricated_specifics_rate": 0.0, "flagged": 0}
+        )
+        assert block["score"] == 5.0
+
+    def test_enrich_adds_l1_l2_in_place(self):
+        from evals.runner import _enrich_groundedness, _groundedness_composite
+        block = _groundedness_composite(
+            {"fabricated_specifics_rate": 0.0, "flagged": 0}
+        )
+        _enrich_groundedness(block, {
+            "bullet_count": 10,
+            "nli_summary": {"mean_entailment": 0.82, "contradiction_count": 1},
+            "minicheck_summary": {"mean_score": 0.74, "low_score_count": 2},
+        })
+        assert block["layers"] == ["L0", "L1", "L2"]
+        assert block["mean_entailment"] == 0.82
+        assert block["contradiction_count"] == 1
+        assert block["mean_minicheck"] == 0.74
+        # unsupported_claim_rate = low_score_count / bullet_count = 2 / 10
+        assert block["unsupported_claim_rate"] == 0.2
+
+    def test_enrich_handles_zero_bullets(self):
+        from evals.runner import _enrich_groundedness, _groundedness_composite
+        block = _groundedness_composite(
+            {"fabricated_specifics_rate": 0.0, "flagged": 0}
+        )
+        _enrich_groundedness(block, {
+            "bullet_count": 0,
+            "nli_summary": {"mean_entailment": 0.0, "contradiction_count": 0},
+            "minicheck_summary": {"mean_score": 0.0, "low_score_count": 0},
+        })
+        assert block["unsupported_claim_rate"] == 0.0

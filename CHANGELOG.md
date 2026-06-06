@@ -9,6 +9,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — L0 grounding metric: deterministic fabricated-specifics rate + groundedness composite (`eval/grounding-metric-l0`, v1.0.5)
+
+The first slice of the grounding/hallucination metric, defined *before* the
+diagnostics console is redesigned around it ("data model before the view"). This
+is the **deterministic, label-free, hot-path-safe** layer (L0); the calibrated
+model-based layers are deferred to pre-v1.1.0 because no labeled data exists yet
+(`evals/fixtures/real/` is empty). **Deterministic only**: no `analyzer.py`/prompt
+edits, no `PROMPT_VERSION` bump, no new dependency, no LLM call.
+
+- **`hardening.py`** — new `compute_fabricated_specifics(generated_text, source_texts)`:
+  a typed, severity-weighted successor to `compute_grounding_overlap`'s lossy
+  `missing_samples` n-gram heuristic. Per bullet it extracts the verifiable
+  *specifics* (numbers / % / $ / years / durations / named-entity & tool tokens)
+  and checks each for membership in the candidate's ground-truth source union
+  **with tolerance**: numeric formatting variants (`~30` / `30` / `30+`) and light
+  rounding (`$2.4M ≈ $2,400,000`) read as grounded; a different magnitude
+  (`~30 → 100+`) is flagged; entity tokens are alias-normalized (`k8s ≡ kubernetes`)
+  first. A fabricated number outweighs a fabricated entity in the rate.
+- **`hardening.py`** — new `assemble_source_union(context_set)` factored out of
+  `compute_iteration_signals` (behavior-preserving): the single definition of the
+  dynamic ground-truth union (primary résumé + supplementals + clarification
+  answers), now shared by the iteration clarifier and the L0 check so the two can
+  never score against divergent source sets.
+- **`evals/runner.py`** — `_post_generation_metrics` now rides `fabricated_specifics`
+  (L0 detail) and a single reportable `groundedness` composite along on **every**
+  eval record (nested in `deterministic_metrics`, so attributable by
+  `prompt_version` on the dashboard's score-over-time chart). The composite is
+  **L0-only by default**; it enriches in place to L0+L1+L2 (NLI entailment +
+  MiniCheck) only when `--grounding-signals` produced real scores. The existing
+  `grounding_overlap` source set is left untouched (L0 scores against the wider
+  union via a separate `source_union` arg), so existing baselines are unperturbed.
+  L1/L2 behavior is read, never re-tuned.
+- **Precision caveat (honest by design):** L0 is high-precision on genuinely-novel
+  specifics but **will false-positive on paraphrase / implication** (source
+  "managed a small team" → output "led a 4-person team" flags "4"). It is a
+  **flag-for-review** signal, **not a gate**; tolerance bands are deliberately
+  conservative and its precision/recall is **unproven until calibration against
+  `annotations.json`** (deferred-B). See `docs/dev/GROUNDING_METRIC.md` and the
+  `evals/TUNING_LOG.md` note.
+- **Tests** — `tests/test_hardening.py::TestFabricatedSpecifics` (exact match → 0;
+  novel number → flagged; within/out-of tolerance; `k8s`≡`Kubernetes` aliasing;
+  embedded-digit non-leak; severity weighting) + `TestAssembleSourceUnion`;
+  `tests/test_eval_runner.py::TestGroundednessComposite` (L0-only default +
+  graceful L1/L2 enrichment). Deterministic — default `pytest`, no LLM/Chromium.
+
 ### Fixed — template pagination: blank pages + paged.js console error (`feat/template-pagination`, v1.0.5)
 
 Blank/short pages in the **Modern**, **Spacious**, and **Tech** bundled

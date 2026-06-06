@@ -6,8 +6,10 @@ These functions must remain LLM-free and produce stable output for given input.
 import json
 
 from hardening import (
+    assemble_source_union,
     check_ats_format,
     compute_call_cost,
+    compute_fabricated_specifics,
     compute_grounding_overlap,
     compute_keyword_overlap,
     compute_quantification_rate,
@@ -250,6 +252,121 @@ class TestGroundingOverlap:
         generated = " ".join(f"word{i}" for i in range(40))
         out = compute_grounding_overlap(generated, [source], n=3)
         assert len(out["missing_samples"]) <= 10
+
+
+class TestFabricatedSpecifics:
+    """L0 deterministic fabricated-specifics detector. Mirrors the
+    TestGroundingOverlap pattern: exact match → 0; novel number → flagged;
+    within-tolerance → not flagged; out-of-tolerance → flagged; entity
+    aliasing → not flagged. No LLM, no model weights."""
+
+    def test_empty_inputs(self):
+        out = compute_fabricated_specifics("", [])
+        assert out["fabricated_specifics_rate"] == 0.0
+        assert out["total_specifics"] == 0
+        assert out["flagged_samples"] == []
+
+    def test_exact_source_match_zero_fabrication(self):
+        source = ["Built dashboards serving 30 teams using PostgreSQL."]
+        generated = "- Built dashboards serving 30 teams using PostgreSQL."
+        out = compute_fabricated_specifics(generated, source)
+        assert out["fabricated_specifics_rate"] == 0.0
+        assert out["flagged"] == 0
+
+    def test_novel_number_flagged(self):
+        source = ["Built customer dashboards for the analytics team."]
+        generated = "- Increased conversion by 250% across 14 markets."
+        out = compute_fabricated_specifics(generated, source)
+        assert out["fabricated_specifics_rate"] > 0.0
+        joined = " | ".join(out["flagged_samples"])
+        assert "250%" in joined
+        assert "14" in joined
+
+    def test_within_numeric_tolerance_not_flagged(self):
+        # ~30 → 30+  : same canonical value 30 → grounded.
+        source = ["Led a team of ~30 engineers."]
+        generated = "- Led a team of 30+ engineers."
+        out = compute_fabricated_specifics(generated, source)
+        assert out["fabricated_specifics_rate"] == 0.0
+        assert "30+" not in " | ".join(out["flagged_samples"])
+
+    def test_out_of_numeric_tolerance_flagged(self):
+        # ~30 → 100+ : different magnitude → flagged.
+        source = ["Led a team of ~30 engineers."]
+        generated = "- Led a team of 100+ engineers."
+        out = compute_fabricated_specifics(generated, source)
+        assert out["fabricated_specifics_rate"] > 0.0
+        assert "100+" in " | ".join(out["flagged_samples"])
+
+    def test_entity_aliasing_not_flagged(self):
+        # Source says "Kubernetes"; output says "k8s" → alias-normalized match.
+        source = ["Deployed services on Kubernetes in production."]
+        generated = "- Migrated workloads to k8s with zero downtime."
+        out = compute_fabricated_specifics(generated, source)
+        assert "k8s" not in " | ".join(out["flagged_samples"])
+        assert out["fabricated_specifics_rate"] == 0.0
+
+    def test_embedded_digit_not_leaked_as_number(self):
+        # The "8" inside "k8s" / "3" inside "S3" must NOT be matched as a
+        # numeric specific — they belong to the entity token.
+        source = ["Ran services on k8s and stored blobs in S3."]
+        generated = "- Ran services on k8s and stored blobs in S3."
+        out = compute_fabricated_specifics(generated, source)
+        assert out["fabricated_specifics_rate"] == 0.0
+
+    def test_severity_weighting_number_outweighs_entity(self):
+        # A fabricated NUMBER (weight 2) must move the rate more than a
+        # fabricated ENTITY (weight 1), holding the other grounded.
+        ent_fabricated = compute_fabricated_specifics(
+            "- Scaled to 50 servers on FakeCloudX.",
+            ["Provisioned 50 servers in the datacenter."],  # 50 grounded, entity novel
+        )
+        num_fabricated = compute_fabricated_specifics(
+            "- Ran 50 jobs on FakeCloudX.",
+            ["Ran nightly jobs on FakeCloudX platform."],   # entity grounded, 50 novel
+        )
+        assert num_fabricated["fabricated_specifics_rate"] > ent_fabricated["fabricated_specifics_rate"]
+
+    def test_per_bullet_shape(self):
+        source = ["Built things with many users and people."]
+        generated = "- Built X with 30 users.\n- Led 5 people."
+        out = compute_fabricated_specifics(generated, source)
+        assert out["total_bullets"] == 2
+        assert len(out["per_bullet"]) == 2
+        for entry in out["per_bullet"]:
+            assert {"bullet", "n_specifics", "flagged"} <= entry.keys()
+            assert entry["flagged"]  # both bullets carry a novel number
+
+    def test_flagged_samples_capped_at_ten(self):
+        source = ["No numeric content in this source text."]
+        generated = "- " + " ".join(f"{i}%" for i in range(20))
+        out = compute_fabricated_specifics(generated, source)
+        assert len(out["flagged_samples"]) <= 10
+
+
+class TestAssembleSourceUnion:
+    """assemble_source_union folds primary + supplementals + clarification
+    answers into one list, the single source-of-truth shared by the iteration
+    clarifier and the L0 metric."""
+
+    def test_union_includes_all_three_sources(self):
+        ctx: dict = {
+            "resume": {"text": "primary resume body"},
+            "supplemental_resumes": [{"text": "supplemental body"}],
+            "clarifications": {"q1": "clarified fact answer"},
+        }
+        union = assemble_source_union(ctx)
+        assert "primary resume body" in union
+        assert "supplemental body" in union
+        assert "clarified fact answer" in union
+
+    def test_skips_empty_and_missing_fields(self):
+        ctx: dict = {
+            "resume": {"text": ""},
+            "supplemental_resumes": [{"text": "only this"}],
+        }
+        union = assemble_source_union(ctx)
+        assert union == ["only this"]
 
 
 class TestCallCost:

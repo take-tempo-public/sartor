@@ -39,6 +39,13 @@ criteria.
       [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md); deferred follow-up tracked in
       [`docs/PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md) "Grounding / hallucination
       metric — calibrated layers (B)".
+      **Status (2026-06-06):** the **A / L0 slice shipped** via
+      `eval/grounding-metric-l0` — `hardening.compute_fabricated_specifics`
+      (typed, severity-weighted, tolerance + entity aliasing) +
+      `hardening.assemble_source_union`, with a single `groundedness` composite
+      (L0-only by default; L1/L2-enriched under `--grounding-signals`) riding
+      every eval record in `deterministic_metrics`. **Box stays unchecked** — the
+      calibrated layers (B) are still open, and this item only closes when B lands.
 
 - [ ] **Compose custom bullet order visually reverts on reload when an
       experience has no LLM recommendations** — surfaced 2026-06-04 while
