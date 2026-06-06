@@ -460,20 +460,27 @@ first follow-up release.
       attachment` redirect that avoids the per-page gesture requirement is
       tracked for v1.0.2. Branch `fix/chrome-multi-download-hint`.
 - [x] **~~paged.js polyfill "Cannot read getBoundingClientRect of
-      null"~~** — ✅ resolved 2026-06-04 (`feat/template-pagination`, v1.0.5),
-      option (a). Root cause: the bundled polyfill's auto-run
-      (`static/vendor/paged.polyfill.js` ~L33239) `await`s `previewer.preview()`
-      with **no `.catch()`**, so a sparse-content layout throw escaped as an
-      uncaught rejection. Fix: the injection in `app.py`
-      (`_PAGED_PREVIEW_INJECTION`) now disables auto-run
-      (`window.PagedConfig = { auto: false }`) and drives
-      `new Paged.Previewer().preview()` itself inside `try/catch` + `.catch()`,
-      so the throw can't leak; the sibling `node.getAttribute is not a function`
-      sync throw stays covered by the existing paged-origin `window.error`
+      null"~~** — ✅ **console symptom contained** 2026-06-04
+      (`feat/template-pagination`, v1.0.5), option (a). **Not** root-cause
+      elimination — read this carefully so a future agent doesn't over-read
+      "resolved": the throw still fires *inside* the vendored paged.js
+      (`static/vendor/paged.polyfill.js` v0.4.3); we catch-and-ignore it. The
+      polyfill's auto-run (~L33239) `await`s `previewer.preview()` with **no
+      `.catch()`**, so a sparse-content layout throw escaped as an uncaught
+      rejection. The injection in `app.py` (`_PAGED_PREVIEW_INJECTION`) now
+      disables auto-run (`window.PagedConfig = { auto: false }`) and drives
+      `new Paged.Previewer().preview()` itself inside `try/catch` + `.catch()`;
+      the sibling `node.getAttribute is not a function` *sync* throw (fired off
+      the awaited chain) stays covered by the paged-origin `window.error`
       swallow. The `tests/ux/conftest.py` `getBoundingClientRect` allowlist is
-      **removed** — the sentinel is now unconditional — and
+      **removed** — the sentinel is now unconditional, so a *new/different*
+      paged.js error is not swallowed and WILL fail the suite — and
       `tests/ux/regression/test_20260604_template_pagination.py` asserts a clean
-      console across all four bundled templates.
+      console across all four bundled templates. Safe **only** because the
+      render completes correctly despite the throws (that test also asserts no
+      blank pages). **Root-cause elimination** = leave paged.js (option (c));
+      tracked in [`docs/PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md) "paged.js
+      preview-render fragility — contained, not eliminated".
 - [x] **~~Cover-letter download honors the chosen output format~~** —
       ✅ resolved 2026-05-28 (path b, UI hint). Added a one-line hint
       paragraph below the download button row in

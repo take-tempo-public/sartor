@@ -585,6 +585,40 @@ acceptance criteria / target version**.
   user promotes.
 - *Target:* its own branch after the v1.0.5 tag.
 
+**paged.js preview-render fragility — contained, not eliminated.**
+- *What:* the vendored paged.js v0.4.3 polyfill (`static/vendor/paged.polyfill.js`,
+  the in-browser preview pagination engine — NOT the PDF path, which uses
+  Playwright's native `page.pdf()`) throws internally on certain content
+  shapes: `Cannot read getBoundingClientRect of null` (async, from its
+  un-`catch`-ed `await preview()`) and `node.getAttribute is not a function`
+  (sync, from an off-chain layout callback). `feat/template-pagination`
+  (v1.0.5) **contained** both — the injection in `app.py`
+  (`_PAGED_PREVIEW_INJECTION`) drives `preview()` itself with `try/catch` +
+  `.catch()` and narrowly swallows the two known paged-origin throws — so the
+  console is clean and the tests run with no allowlist. But the throws still
+  fire inside the library; we catch-and-ignore them. This is safe **only
+  because the render completes correctly despite the throws** (the v1.0.5
+  pagination regression test asserts every bundled template paginates with
+  content on every page, no blanks). The suppression is narrow + self-policing:
+  any *new/different* paged.js error is NOT swallowed and WILL fail the
+  unconditional UX sentinel.
+- *Why deferred:* root-cause elimination means leaving paged.js — option (c)
+  in the old `RELEASE_CHECKLIST.md` paged.js item: *"replace paged.js with a
+  simpler pagination approach"*. paged.js does real CSS Paged Media layout
+  (page boxes, break rules); replacing it is a substantial project,
+  disproportionate to a CSS-pagination bugfix branch, and v0.4.x is the end of
+  that library's line (effectively unmaintained). A lighter intermediate step
+  (host paged.js outside the iframe + message-pass) is already noted against
+  the v1.0.1 sandbox item.
+- *Acceptance (when picked up):* preview pagination renders with **zero**
+  internal paged.js throws (no suppression filter needed) across all four
+  bundled templates on sparse + dense content; the `app.py` paged-origin
+  `window.error` / `unhandledrejection` swallows are removed; the UX sentinel
+  stays green.
+- *Target:* a deliberate, separately-scoped render-engine decision — v2, or
+  whenever preview fidelity / maintenance cost justifies the swap. Not a
+  bugfix-branch drive-by.
+
 ---
 
 ## External references
