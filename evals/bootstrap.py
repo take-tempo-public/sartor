@@ -280,28 +280,65 @@ def build_bootstrap_document(
 # ---------------------------------------------------------------------------
 
 
+# A "progress function" lets a caller (e.g. the browser bootstrap SSE route) observe
+# each per-JD step without this module knowing anything about SSE: (event, payload).
+# Events: "jd_start" / "analyzing" / "clarifying" / "generating" / "jd_done".
+ProgressFn = Callable[[str, dict[str, Any]], None]
+
+
 def run_pipeline_over_jds(
     client: anthropic.Anthropic,
     session: Session,
     username: str,
     jd_paths: list[Path],
+    *,
+    progress: ProgressFn | None = None,
 ) -> tuple[list[dict[str, Any]], str]:
-    """Run analyze→clarify→generate for each JD over one shared corpus session.
+    """File-path entry point for the corpus pipeline — reads each JD then delegates.
 
-    Returns ``(per_jd_records, corpus_source_text)``. Each JD mints a fresh
-    ``run_id`` and a context via ``build_context_set_from_db`` (the REAL
-    corpus→context path), then runs the same public pipeline calls the runner
-    uses. A ``clarify`` failure is non-fatal — it degrades that JD's clarify block
-    only. ``corpus_source_text`` (identical across JDs since one seed) is captured
-    once for the grounding pass.
+    Behavior-preserving thin wrapper over ``run_pipeline_over_jd_texts``: reads
+    each ``jd_path`` into a ``(name, text)`` pair (preserving the CLI's filename
+    as ``jd_file``) and runs the shared in-memory pipeline. Kept so the CLI
+    (``evals/bootstrap.py``) path is unchanged.
     """
+    jds = [(p.name, p.read_text(encoding="utf-8")) for p in jd_paths]
+    return run_pipeline_over_jd_texts(
+        client, session, username, jds, progress=progress,
+    )
+
+
+def run_pipeline_over_jd_texts(
+    client: anthropic.Anthropic,
+    session: Session,
+    username: str,
+    jds: list[tuple[str, str]],
+    *,
+    progress: ProgressFn | None = None,
+) -> tuple[list[dict[str, Any]], str]:
+    """Run analyze→clarify→generate for each in-memory JD over one corpus session.
+
+    ``jds`` is a list of ``(jd_name, jd_text)`` — the in-memory form the browser
+    bootstrap wrapper uses (pasted JDs, no temp files). Returns
+    ``(per_jd_records, corpus_source_text)``. Each JD mints a fresh ``run_id`` and
+    a context via ``build_context_set_from_db`` (the REAL corpus→context path),
+    then runs the same public pipeline calls the runner uses. A ``clarify``
+    failure is non-fatal — it degrades that JD's clarify block only.
+    ``corpus_source_text`` (identical across JDs since one corpus) is captured once
+    for the grounding pass. ``progress`` (optional) is invoked at each step so a
+    caller can stream coarse per-JD progress; it never alters the result.
+    """
+    def _emit(event: str, **payload: Any) -> None:
+        if progress is not None:
+            progress(event, payload)
+
     per_jd: list[dict[str, Any]] = []
     corpus_source = ""
-    for jd_path in jd_paths:
-        jd_text = jd_path.read_text(encoding="utf-8")
+    total = len(jds)
+    for index, (jd_name, jd_text) in enumerate(jds):
         run_id = uuid.uuid4().hex[:12]
-        username_tag = f"bootstrap:{jd_path.stem}"
-        logger.info("JD %s: building context + running pipeline (run_id=%s)", jd_path.name, run_id)
+        username_tag = f"bootstrap:{Path(jd_name).stem}"
+        logger.info("JD %s: building context + running pipeline (run_id=%s)", jd_name, run_id)
+        _emit("jd_start", jd_file=jd_name, index=index, total=total, run_id=run_id)
 
         context, _application, _run = build_context_set_from_db(
             session, candidate_username=username, jd_text=jd_text, run_id=run_id,
@@ -309,22 +346,25 @@ def run_pipeline_over_jds(
         if not corpus_source:
             corpus_source = context["resume"]["text"]
 
+        _emit("analyzing", jd_file=jd_name, index=index, total=total)
         analysis = analyze(client, context, username=username_tag, run_id=run_id)
 
         clar_questions: list[dict[str, Any]] = []
         clar_reasoning = ""
         try:
+            _emit("clarifying", jd_file=jd_name, index=index, total=total)
             clar = clarify(client, context, analysis, username=username_tag, run_id=run_id)
             clar_questions = clar.get("questions", [])
             clar_reasoning = clar.get("reasoning", "")
         except Exception as exc:  # noqa: BLE001
-            logger.warning("Clarify failed for %s, continuing without it: %s", jd_path.name, exc)
+            logger.warning("Clarify failed for %s, continuing without it: %s", jd_name, exc)
 
+        _emit("generating", jd_file=jd_name, index=index, total=total)
         result = generate(client, context, analysis, username=username_tag, run_id=run_id)
         resume_md = result.get("resume_content", "")
 
         per_jd.append({
-            "jd_file": jd_path.name,
+            "jd_file": jd_name,
             "run_id": run_id,
             "analysis": analysis,
             "clarification_questions": clar_questions,
@@ -336,8 +376,13 @@ def run_pipeline_over_jds(
         })
         logger.info(
             "  %s → %d bullets, %d skills, %d clarify questions",
-            jd_path.name, len(per_jd[-1]["bullets"]),
+            jd_name, len(per_jd[-1]["bullets"]),
             len(per_jd[-1]["skills"]), len(clar_questions),
+        )
+        _emit(
+            "jd_done", jd_file=jd_name, index=index, total=total,
+            bullets=len(per_jd[-1]["bullets"]), skills=len(per_jd[-1]["skills"]),
+            questions=len(clar_questions),
         )
     return per_jd, corpus_source
 
@@ -487,8 +532,10 @@ def main(argv: list[str] | None = None) -> int:
 __all__ = [
     "BOOTSTRAP_SCHEMA_VERSION",
     "Cluster",
+    "ProgressFn",
     "build_bootstrap_document",
     "dedup_texts",
+    "run_pipeline_over_jd_texts",
     "run_pipeline_over_jds",
 ]
 

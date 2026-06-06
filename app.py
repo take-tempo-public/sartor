@@ -66,6 +66,13 @@ CONFIGS_DIR = BASE_DIR / "configs"
 RESUMES_DIR = BASE_DIR / "resumes"
 OUTPUT_DIR = BASE_DIR / "output"
 
+# The only directory the annotation/bootstrap write surface ever touches.
+# Equal to evals.annotation.ALLOWED_ROOT / evals.bootstrap.ALLOWED_ROOT
+# (PROJECT_ROOT/evals/fixtures/real) — gitignored (.gitignore:52), so the
+# PII-bearing bootstrap/annotation artifacts stay untracked. Module-level so
+# tests can monkeypatch it to a temp dir.
+ANNOTATION_ROOT = BASE_DIR / "evals" / "fixtures" / "real"
+
 ALLOWED_EXTENSIONS = {".docx", ".pdf", ".md"}
 
 # Ensure directories exist
@@ -117,6 +124,17 @@ def _within(path: Path, parent: Path) -> bool:
         return True
     except ValueError:
         return False
+
+
+def _is_localhost_request() -> bool:
+    """True only for loopback hosts. Same posture as dashboard_bp.before_request.
+
+    Gates the dev/eval-only annotation + bootstrap write surface so it is
+    unreachable except from the local machine (it touches PII-bearing artifacts
+    under evals/fixtures/real/).
+    """
+    host = (request.host or "").split(":")[0]
+    return host in {"localhost", "127.0.0.1", "::1", "[::1]"}
 
 
 # --- Routes ---
@@ -5488,6 +5506,367 @@ def list_clarifications(username: str):
         return jsonify(out)
     finally:
         session.close()
+
+
+# ---------------------------------------------------------------------------
+# Annotation + bootstrap write surface (the console's first READ-WRITE routes).
+#
+# Localhost-only, keyed by a real candidate username + a fixture slug, writing
+# ONLY under ANNOTATION_ROOT (evals/fixtures/real/). The annotation contract +
+# bootstrap collation are reused verbatim from evals.annotation / evals.bootstrap
+# (deterministic, LLM-free) — these routes are the thin Flask seam. The UI lives
+# in the /_dashboard "Annotate" tab; the dashboard blueprint itself stays
+# read-only. Security pattern per CLAUDE.md "Key Patterns — Security":
+# _safe_username() + secure_filename() + _within().
+# ---------------------------------------------------------------------------
+
+
+def _annotation_fixture_path(slug: str) -> Path | None:
+    """Sanitize a fixture slug into a dir path under ANNOTATION_ROOT.
+
+    Returns None when the slug sanitizes to empty. Does NOT check containment —
+    every caller MUST still apply `_within(path, ANNOTATION_ROOT)` (the gate is
+    kept visible in each route per the security pattern).
+    """
+    safe = secure_filename(slug or "")
+    if not safe:
+        return None
+    return ANNOTATION_ROOT / safe
+
+
+def _load_bootstrap_doc(fixture_dir: Path) -> dict | None:
+    """Read a fixture's bootstrap.json. None if absent or malformed."""
+    bootstrap_path = fixture_dir / "bootstrap.json"
+    if not bootstrap_path.exists():
+        return None
+    try:
+        return json.loads(bootstrap_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+@app.route("/api/annotation/fixtures", methods=["GET"])
+def annotation_fixtures():
+    """List bootstrap fixtures under ANNOTATION_ROOT (localhost-only, read-only).
+
+    Reads only the fixed ANNOTATION_ROOT tree (no user-supplied path), so there is
+    no traversal vector here; the localhost guard is the access control.
+    """
+    if not _is_localhost_request():
+        return jsonify({"error": "localhost only"}), 403
+    fixtures = []
+    if ANNOTATION_ROOT.exists():
+        for entry in sorted(ANNOTATION_ROOT.iterdir()):
+            if not entry.is_dir():
+                continue
+            doc = _load_bootstrap_doc(entry)
+            if doc is None:
+                continue
+            dedup = doc.get("dedup", {}) or {}
+            fixtures.append({
+                "slug": entry.name,
+                "candidate_username": doc.get("candidate_username", ""),
+                "prompt_version": doc.get("prompt_version", ""),
+                "jd_count": doc.get("jd_count", 0),
+                "bullet_clusters": (dedup.get("bullets", {}) or {}).get("cluster_count", 0),
+                "skill_clusters": (dedup.get("skills", {}) or {}).get("cluster_count", 0),
+                "has_annotations": (entry / "annotations.json").exists(),
+                "has_expected": (entry / "expected.json").exists(),
+            })
+    return jsonify({"fixtures": fixtures})
+
+
+@app.route("/api/annotation/fixture/<username>/<slug>", methods=["GET"])
+def annotation_load(username: str, slug: str):
+    """Return the working annotations doc for a fixture (localhost-only, read).
+
+    Existing annotations.json if present, else a blank template built from the
+    bootstrap (`build_annotation_template`). Also returns the verdict +
+    failed_rules vocabulary so the UI can render constrained controls.
+    """
+    if not _is_localhost_request():
+        return jsonify({"error": "localhost only"}), 403
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+    fixture_dir = _annotation_fixture_path(slug)
+    if fixture_dir is None or not _within(fixture_dir, ANNOTATION_ROOT):
+        return jsonify({"error": "Invalid fixture slug"}), 400
+    bootstrap = _load_bootstrap_doc(fixture_dir)
+    if bootstrap is None:
+        return jsonify({"error": "No bootstrap.json for this fixture"}), 404
+
+    from evals.annotation import (
+        ALLOWED_FAILED_RULES,
+        VERDICTS,
+        build_annotation_template,
+    )
+
+    ann_path = fixture_dir / "annotations.json"
+    if ann_path.exists():
+        doc = json.loads(ann_path.read_text(encoding="utf-8"))
+    else:
+        doc = build_annotation_template(
+            bootstrap, bootstrap_source=str(fixture_dir / "bootstrap.json"),
+        )
+    return jsonify({
+        "annotations": doc,
+        "has_annotations": ann_path.exists(),
+        "vocab": {
+            "verdicts": sorted(VERDICTS),
+            "failed_rules": sorted(ALLOWED_FAILED_RULES),
+        },
+    })
+
+
+@app.route("/api/annotation/fixture/<username>/<slug>", methods=["POST"])
+def annotation_save(username: str, slug: str):
+    """Write a completed annotations.json (localhost-only, fail-closed).
+
+    Validation is `evals.annotation.validate_annotations` — the SAME fail-closed
+    contract the CLI uses, so the on-disk file is always collation-ready (every
+    bullet/skill has a verdict; fix→honest_rewrite; fabricated→compilable
+    forbidden_pattern). An incomplete doc is rejected with the validator message.
+    """
+    if not _is_localhost_request():
+        return jsonify({"error": "localhost only"}), 403
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+    fixture_dir = _annotation_fixture_path(slug)
+    if fixture_dir is None or not _within(fixture_dir, ANNOTATION_ROOT):
+        return jsonify({"error": "Invalid fixture slug"}), 400
+    if not (fixture_dir / "bootstrap.json").exists():
+        return jsonify({"error": "No bootstrap.json for this fixture"}), 404
+    doc = request.get_json(silent=True)
+    if not isinstance(doc, dict):
+        return jsonify({"error": "Request body must be a JSON annotations object"}), 400
+
+    from evals.annotation import validate_annotations
+
+    try:
+        validate_annotations(doc)
+    except ValueError as exc:
+        return jsonify({"error": "Annotations failed validation", "detail": str(exc)}), 400
+
+    fixture_dir.mkdir(parents=True, exist_ok=True)
+    out_path = fixture_dir / "annotations.json"
+    out_path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    logger.info("Saved annotations for fixture %s (%d bullets, %d skills)",
+                slug, len(doc.get("bullets", [])), len(doc.get("skills", [])))
+    return jsonify({
+        "ok": True,
+        "path": str(out_path),
+        "bullets": len(doc.get("bullets", [])),
+        "skills": len(doc.get("skills", [])),
+    })
+
+
+@app.route("/api/annotation/fixture/<username>/<slug>/collate", methods=["POST"])
+def annotation_collate(username: str, slug: str):
+    """Collate a saved annotations.json → expected.json + improvement_brief.md.
+
+    Deterministic, LLM-free: reuses `collate_expected` + `build_improvement_brief`
+    + `pick_anchor_jd`. Writes the fixture artifacts beside the bootstrap, plus a
+    `jd.txt` copied from the saved `jds/<anchor>` (the wrapper stores pasted JDs
+    there) so the produced fixture is runnable by `runner.py --suite real`.
+    """
+    if not _is_localhost_request():
+        return jsonify({"error": "localhost only"}), 403
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+    fixture_dir = _annotation_fixture_path(slug)
+    if fixture_dir is None or not _within(fixture_dir, ANNOTATION_ROOT):
+        return jsonify({"error": "Invalid fixture slug"}), 400
+    bootstrap = _load_bootstrap_doc(fixture_dir)
+    if bootstrap is None:
+        return jsonify({"error": "No bootstrap.json for this fixture"}), 404
+    ann_path = fixture_dir / "annotations.json"
+    if not ann_path.exists():
+        return jsonify({"error": "Save annotations before collating"}), 400
+
+    from evals.annotation import (
+        build_improvement_brief,
+        collate_expected,
+        pick_anchor_jd,
+        validate_annotations,
+    )
+
+    annotations = json.loads(ann_path.read_text(encoding="utf-8"))
+    try:
+        validate_annotations(annotations)
+    except ValueError as exc:
+        return jsonify({"error": "Annotations failed validation", "detail": str(exc)}), 400
+
+    expected = collate_expected(annotations, bootstrap)
+    brief = build_improvement_brief(annotations, bootstrap)
+
+    # Anchor JD text → jd.txt (best-effort; the wrapper saves pasted JDs in jds/).
+    anchor_name = pick_anchor_jd(bootstrap)
+    anchor_src = (fixture_dir / "jds" / secure_filename(anchor_name)) if anchor_name else None
+    jd_written = False
+    if (anchor_src is not None and _within(anchor_src, ANNOTATION_ROOT)
+            and anchor_src.exists()):
+        (fixture_dir / "jd.txt").write_text(
+            anchor_src.read_text(encoding="utf-8"), encoding="utf-8",
+        )
+        jd_written = True
+
+    expected_path = fixture_dir / "expected.json"
+    brief_path = fixture_dir / "improvement_brief.md"
+    expected_path.write_text(json.dumps(expected, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    brief_path.write_text(brief, encoding="utf-8")
+    logger.info("Collated fixture %s: %d must_keywords, %d forbidden_inventions",
+                slug, len(expected.get("must_keywords", [])),
+                len(expected.get("forbidden_inventions", [])))
+    return jsonify({
+        "ok": True,
+        "expected_path": str(expected_path),
+        "brief_path": str(brief_path),
+        "jd_written": jd_written,
+        "anchor_jd": anchor_name,
+        "must_keywords": len(expected.get("must_keywords", [])),
+        "forbidden_inventions": len(expected.get("forbidden_inventions", [])),
+        "run_command": (
+            f"python evals/runner.py --suite real --seed "
+            f"evals/fixtures/real/{secure_filename(slug)}/seed.json"
+        ),
+    })
+
+
+@app.route("/api/annotation/bootstrap", methods=["POST"])
+def annotation_bootstrap_stream():
+    """Browser bootstrap wrapper — run the live pipeline over N pasted JDs (SSE).
+
+    Reuses the streaming pattern of /api/analyze/stream and the analyzer
+    primitives (via evals.bootstrap.run_pipeline_over_jd_texts — analyze → clarify
+    → generate per JD against the LIVE corpus), then the deterministic
+    `build_bootstrap_document` dedup, writing bootstrap.json + the pasted JDs under
+    ANNOTATION_ROOT/<slug>/. PAID (Sonnet/Haiku) + slow (~70s/JD). Progress streams
+    as `start` / per-JD `jd_start`/`analyzing`/`clarifying`/`generating`/`jd_done`
+    / `done` / `error` events.
+    """
+    if not _is_localhost_request():
+        return jsonify({"error": "localhost only"}), 403
+    data = request.get_json(silent=True) or {}
+    username = data.get("username", "")
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    raw_jds = data.get("jds", [])
+    jds: list[tuple[str, str]] = []
+    for item in raw_jds if isinstance(raw_jds, list) else []:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name", "")).strip()
+        text = str(item.get("text", "")).strip()
+        if name and text:
+            jds.append((name, text))
+    if not jds:
+        return jsonify({"error": "Provide at least one JD as {name, text}"}), 400
+
+    slug = secure_filename(data.get("slug") or f"{safe_user}-bootstrap")
+    if not slug:
+        return jsonify({"error": "Invalid fixture slug"}), 400
+    fixture_dir = ANNOTATION_ROOT / slug
+    if not _within(fixture_dir, ANNOTATION_ROOT):
+        return jsonify({"error": "Invalid fixture slug"}), 400
+
+    from evals.bootstrap import (
+        DEFAULT_JACCARD,
+        build_bootstrap_document,
+        run_pipeline_over_jd_texts,
+    )
+
+    client = _get_client()
+
+    def stream():
+        import queue as _queue
+        import threading
+
+        from db.session import get_session, init_db
+
+        events: _queue.Queue = _queue.Queue()
+        sentinel = object()
+        result: dict = {}
+
+        def worker():
+            try:
+                init_db()
+                session = get_session()
+                try:
+                    per_jd, corpus = run_pipeline_over_jd_texts(
+                        client, session, safe_user, jds,
+                        progress=lambda ev, payload: events.put(("progress", ev, payload)),
+                    )
+                    result["per_jd"] = per_jd
+                    result["corpus"] = corpus
+                finally:
+                    session.close()
+            except Exception as exc:  # noqa: BLE001
+                result["error"] = exc
+            finally:
+                events.put(sentinel)
+
+        threading.Thread(target=worker, daemon=True).start()
+        yield _sse("start", {"total": len(jds), "slug": slug, "candidate": safe_user})
+
+        while True:
+            item = events.get()
+            if item is sentinel:
+                break
+            _, event_kind, payload = item
+            yield _sse(event_kind, payload)
+
+        if "error" in result:
+            logger.error("Bootstrap wrapper failed: %s", result["error"], exc_info=result["error"])
+            yield _sse("error", {
+                "error": "Bootstrap pipeline failed.",
+                "detail": str(result["error"]),
+                "http_status": 500,
+            })
+            return
+
+        # Deterministic collation + write (LLM-free), after the worker finishes.
+        doc = build_bootstrap_document(
+            result["per_jd"],
+            username=safe_user,
+            seed_path="(browser bootstrap wrapper)",
+            threshold=DEFAULT_JACCARD,
+            corpus_source=result.get("corpus", ""),
+            grounding_fn=None,
+        )
+        fixture_dir.mkdir(parents=True, exist_ok=True)
+        (fixture_dir / "bootstrap.json").write_text(
+            json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8",
+        )
+        # Persist the pasted JDs so collate can later produce the fixture jd.txt.
+        jds_dir = fixture_dir / "jds"
+        jds_dir.mkdir(parents=True, exist_ok=True)
+        for name, text in jds:
+            safe_name = secure_filename(name) or "jd"
+            if not safe_name.endswith(".txt"):
+                safe_name = f"{safe_name}.txt"
+            jd_file = jds_dir / safe_name
+            if _within(jd_file, ANNOTATION_ROOT):
+                jd_file.write_text(text, encoding="utf-8")
+        logger.info("Bootstrap wrapper wrote %s (%d JDs, %d bullet clusters)",
+                    slug, doc["jd_count"], doc["dedup"]["bullets"]["cluster_count"])
+        yield _sse("done", {
+            "slug": slug,
+            "candidate": safe_user,
+            "jd_count": doc["jd_count"],
+            "bullet_clusters": doc["dedup"]["bullets"]["cluster_count"],
+            "skill_clusters": doc["dedup"]["skills"]["cluster_count"],
+        })
+
+    return Response(
+        stream(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 def main() -> None:
