@@ -53,3 +53,32 @@ class DashboardConsolePage(BasePage):
 
     def close_drawer(self) -> None:
         self.page.locator(Dashboard.DRAWER_CLOSE).click()
+
+    # --- annotate tab (read-write surface) ----------------------------------
+    def fixture_select(self) -> Locator:
+        return self.page.locator(Dashboard.ANN_FIXTURE_SELECT)
+
+    def select_fixture(self, slug: str) -> None:
+        """Pick a bootstrap by slug; loads its annotations into the editor."""
+        self.fixture_select().select_option(slug)
+
+    def editor(self) -> Locator:
+        return self.page.locator(Dashboard.ANN_EDITOR)
+
+    def bullet_items(self) -> Locator:
+        return self.page.locator(f"{Dashboard.ANN_BULLETS} {Dashboard.ANN_ITEM}")
+
+    def first_bullet_verdict(self) -> Locator:
+        return self.bullet_items().first.locator("select")
+
+    def set_first_bullet_verdict(self, verdict: str) -> None:
+        self.first_bullet_verdict().select_option(verdict)
+
+    def save(self) -> None:
+        self.page.locator(Dashboard.ANN_SAVE).click()
+
+    def collate(self) -> None:
+        self.page.locator(Dashboard.ANN_COLLATE).click()
+
+    def status(self) -> Locator:
+        return self.page.locator(Dashboard.ANN_STATUS)

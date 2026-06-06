@@ -9,6 +9,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — annotation tab + browser bootstrap wrapper: the console's first read-write surface (`feat/annotation-tab`, v1.0.5)
+
+The last branch of the v1.0.5 stream puts the v1.0.4 eval tuning loop on the
+design system: a fifth `/_dashboard` tab — **Annotate** — that produces and
+labels real annotation material in-browser, ending the need to hand-edit JSON.
+It reads/writes the durable Phase 3 `annotations.json` contract **verbatim**
+(reusing `evals.annotation` — schema not forked), so the labels it produces are
+exactly what the deferred grounding calibration needs. **No prompt /
+`PROMPT_VERSION` change, no new dependency, no new LLM-call shape** (the wrapper
+reuses the existing `analyze`/`clarify`/`generate` primitives unchanged).
+
+- **The console's first READ-WRITE routes** — added to `app.py` (not the
+  read-only dashboard blueprint, which stays read-only). Every route is
+  **localhost-only** and gated by the security pattern: `_safe_username()` (real
+  candidate) + `secure_filename(slug)` + `_within(path, ANNOTATION_ROOT)`, writing
+  ONLY under `evals/fixtures/real/` (gitignored, PII-bearing):
+  - `GET /api/annotation/fixtures` — list bootstrap fixtures.
+  - `GET`·`POST /api/annotation/fixture/<user>/<slug>` — load the working doc
+    (existing `annotations.json` or a fresh `build_annotation_template`) / save it.
+    Save runs the **fail-closed `validate_annotations`** (same contract the CLI
+    uses), so the on-disk file is always collation-ready.
+  - `POST /api/annotation/fixture/<user>/<slug>/collate` — deterministic
+    `collate_expected` + `build_improvement_brief` → `expected.json` +
+    `improvement_brief.md` + an anchor `jd.txt` (runnable by `runner.py --suite real`).
+  - `POST /api/annotation/bootstrap` — **browser bootstrap wrapper (SSE)**: drives
+    `analyze → clarify → generate` over N pasted JDs against the live corpus
+    (reusing the `/api/analyze/stream` streaming pattern + the deterministic
+    `build_bootstrap_document` dedup), streaming per-JD progress, then writes
+    `bootstrap.json` + the pasted JDs. Paid (Sonnet/Haiku) + slow (~70s/JD).
+- **`evals/bootstrap.py`** — `run_pipeline_over_jds` refactored to delegate to a
+  new `run_pipeline_over_jd_texts` (in-memory `(name, text)` JD pairs + an optional
+  `progress` callback), so the browser wrapper needs no JD temp files. CLI path is
+  behavior-preserving.
+- **Annotate tab UI** (`dashboard/templates/dashboard.html`) on the cb-* tokens:
+  bootstrap wrapper sub-panel → fixture picker → per-cluster verdict editor
+  (`keep`/`fix`/`omit`/`fabricated`, `failed_rules` constrained to the rubric
+  vocabulary, `should_omit`, conditional `honest_rewrite`/`forbidden_pattern`) +
+  clarification ratings; Save + Collate. Vanilla JS; fetch-streamed SSE for the
+  wrapper; validation errors surfaced inline (no `console.error`).
+- **Tests** — `tests/test_annotation_routes.py` (fail-closed save, traversal-slug
+  containment, localhost guard, collate shape, bootstrap SSE with the LLM pipeline
+  stubbed). `tests/ux/flows/test_annotation_tab.py` drives the tab in headless
+  Chromium against the unconditional console-error sentinel (seed bootstrap → pick
+  → fill verdicts → Save → Collate). `Dashboard` selectors + `DashboardConsolePage`
+  POM extended.
+
 ### Changed — diagnostics console redesign: tabbed observability on the cb-* design system (`feat/diagnostics-console-redesign`, v1.0.5)
 
 `/_dashboard` moves from a single long-scroll page with its own hardcoded palette

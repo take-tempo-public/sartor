@@ -123,6 +123,29 @@ class Dashboard:
     def tile(detail: str) -> str:
         return f".tile[data-detail='{detail}']"
 
+    # --- Annotate tab (the console's read-write surface) ---
+    # Stable ids the annotate IIFE binds to (load/save/collate + bootstrap wrapper).
+    ANN_FIXTURE_SELECT = "#fixtureSelect"
+    ANN_FIXTURE_RELOAD = "#fixtureReload"
+    ANN_FIXTURE_EMPTY = "#fixtureEmpty"
+    ANN_EDITOR = "#annEditor"
+    ANN_META = "#annMeta"
+    ANN_ERROR = "#annError"
+    ANN_BULLETS = "#annBullets"
+    ANN_SKILLS = "#annSkills"
+    ANN_CLAR = "#annClar"
+    ANN_ITEM = ".ann-item"
+    ANN_SAVE = "#annSave"
+    ANN_COLLATE = "#annCollate"
+    ANN_STATUS = "#annStatus"
+    # Bootstrap-wrapper sub-panel.
+    ANN_BOOTSTRAP_SECTION = "#bootstrapSection"
+    ANN_BS_USER = "#bsUser"
+    ANN_BS_SLUG = "#bsSlug"
+    ANN_BS_ADD_JD = "#bsAddJd"
+    ANN_BS_RUN = "#bsRun"
+    ANN_BS_PROGRESS = "#bsProgress"
+
 
 class Compose:
     LIST = "#composeList"

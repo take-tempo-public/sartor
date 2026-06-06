@@ -23,8 +23,11 @@ clicking it opens one shared **right-hand drawer** with the full chart/table +
 detail. Charts lazy-init when their drawer first opens. The console is built on
 the cb-* design system (links `static/style.css`); layout is scoped under
 `.cb-dash`. Everything is server-rendered — with JS off, panes stack and details
-render inline (graceful degradation). The console is **read-only** (no write
-routes, no POST forms).
+render inline (graceful degradation). The **blueprint itself is read-only** — its
+only route is the index, and it never writes. The one write surface is the
+**Annotate** tab, whose read/write routes live in `app.py` (not this blueprint)
+and are localhost-gated + slug-contained under `evals/fixtures/real/` — see the
+Annotate section below.
 
 ### Pipeline
 
@@ -73,6 +76,34 @@ A **read-only scaffold**. Documents the `analyzer.prompt_overrides()`
 candidate-vs-baseline A/B primitive and links to `/prompt-tune`,
 `/tune-from-annotations`, and `evals/TUNING_LOG.md`. No write affordances — those
 land in a later, sign-off-gated branch.
+
+### Annotate (the read-write surface)
+
+The console's **only write surface** (`feat/annotation-tab`, v1.0.5) — it runs the
+v1.0.4 eval tuning loop in-browser instead of via raw JSON + CLI. Three steps:
+
+1. **Produce a bootstrap** — the browser bootstrap wrapper drives
+   `analyze → clarify → generate` over N pasted JDs against the live corpus
+   (reusing the `/api/analyze/stream` SSE pattern + `evals.bootstrap`'s
+   deterministic dedup) and writes a `bootstrap.json`. **Paid (Sonnet/Haiku) +
+   slow (~70s/JD).**
+2. **Annotate** — per bullet/skill cluster: a verdict
+   (`keep`/`fix`/`omit`/`fabricated`), `failed_rules` from the rubric vocabulary,
+   `should_omit`, and a conditional `honest_rewrite` (fix) / `forbidden_pattern`
+   (fabricated); plus clarification-question ratings. Save runs the **fail-closed
+   `evals.annotation.validate_annotations`**, so the written `annotations.json` is
+   always collation-ready.
+3. **Collate** — deterministic `collate_expected` + `build_improvement_brief` →
+   `expected.json` + `improvement_brief.md` + an anchor `jd.txt`, runnable by
+   `runner.py --suite real`.
+
+The routes live in **`app.py`** (`/api/annotation/...`), not this blueprint, so
+the blueprint stays read-only. They reuse `evals.annotation` / `evals.bootstrap`
+verbatim (the `annotations.json` schema is **not forked**), are **localhost-only**,
+and write ONLY under `ANNOTATION_ROOT` = `evals/fixtures/real/` (gitignored) via
+`_safe_username()` + `secure_filename(slug)` + `_within(...)`. The labels it
+produces are the corpus the deferred grounding calibration (B) needs — see
+`docs/dev/GROUNDING_METRIC.md` §calibration.
 
 ---
 

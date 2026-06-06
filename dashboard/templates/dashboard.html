@@ -115,6 +115,30 @@
     .filters button { background: var(--grad-brand); color: var(--bg-0); border: 0; padding: 0.42rem 1rem; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); }
     .filters a.clear { color: var(--fg-2); text-decoration: none; padding: 0.42rem 0.4rem; font-size: 0.82rem; }
     .scaffold-banner { background: var(--info-soft); border: 1px solid var(--border-2); color: var(--fg-1); padding: 0.6rem 0.9rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 1rem; }
+    .scaffold-banner.write { background: var(--warning-soft); }
+
+    /* Annotate tab — the console's only read-write surface */
+    .annotate-section { margin-bottom: 1.4rem; }
+    details.annotate-section > summary { cursor: pointer; color: var(--brand); font-weight: 600; padding: 0.5rem 0; }
+    .annotate-section > label.sub { display: block; color: var(--fg-1); font-size: 0.82rem; margin-bottom: 0.4rem; }
+    .ann-btn { background: var(--grad-btn); color: var(--fg-0); border: 1px solid var(--border-2); padding: 0.42rem 0.9rem; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); }
+    .ann-btn:hover { background: var(--grad-btn-hi); color: var(--fg-0); }
+    .ann-btn.primary { background: var(--grad-brand); color: var(--bg-0); border: 0; }
+    .ann-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .ann-item { background: var(--grad-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.8rem 0.95rem; margin-bottom: 0.7rem; }
+    .ann-item .rep { color: var(--fg-0); font-size: 0.9rem; margin-bottom: 0.3rem; }
+    .ann-item .meta { color: var(--fg-2); font-size: 0.74rem; margin-bottom: 0.5rem; }
+    .ann-item .controls { display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: end; }
+    .ann-item label { display: flex; flex-direction: column; font-size: 0.7rem; color: var(--fg-1); gap: 0.15rem; }
+    .ann-item select, .ann-item input { background: var(--bg-2); color: var(--fg-0); border: 1px solid var(--border-2); padding: 0.28rem 0.45rem; font: inherit; font-size: 0.82rem; border-radius: var(--radius-sm); }
+    .ann-item input.grow { min-width: 15rem; }
+    .ann-error { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger); border-radius: var(--radius-md); padding: 0.6rem 0.9rem; font-size: 0.82rem; margin-bottom: 0.8rem; white-space: pre-wrap; }
+    .annotate-actions { display: flex; gap: 0.6rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
+    .annotate-progress { margin-top: 0.7rem; font-size: 0.82rem; color: var(--fg-1); white-space: pre-wrap; }
+    .ann-jd-row { display: grid; grid-template-columns: 11rem 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem; align-items: start; }
+    .ann-jd-row input, .ann-jd-row textarea { background: var(--bg-2); color: var(--fg-0); border: 1px solid var(--border-2); border-radius: var(--radius-sm); font: inherit; font-size: 0.82rem; padding: 0.4rem; }
+    .ann-jd-row textarea { min-height: 3rem; resize: vertical; }
+    .ann-h3 { color: var(--fg-1); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; margin: 1.1rem 0 0.4rem; }
 
     /* Progressive enhancement: with JS, hide inactive panes + the detail store.
        Without JS (no .js class), panes stack and details render inline. */
@@ -135,6 +159,7 @@
   <button class="dash-tab" data-tab="quality"      role="tab">Quality</button>
   <button class="dash-tab" data-tab="groundedness" role="tab">Groundedness</button>
   <button class="dash-tab" data-tab="tuning"       role="tab">Tuning</button>
+  <button class="dash-tab" data-tab="annotate"     role="tab">Annotate</button>
 </nav>
 
 <!-- ============================ PIPELINE ============================ -->
@@ -268,6 +293,72 @@
       <span class="sub">{% if baseline_health.has_baseline %}{{ baseline_health.baseline_id }}{% else %}no baseline_v1.json{% endif %}</span>
     </button>
   </div>
+</section>
+
+<!-- ============================ ANNOTATE ============================ -->
+<section class="dash-pane" data-pane="annotate" role="tabpanel">
+  <div class="scaffold-banner write">
+    <strong>Read-write — localhost only.</strong> The console's only write surface. It reads/writes
+    the Phase 3 <code class="short">annotations.json</code> contract under
+    <code class="short">evals/fixtures/real/</code> (gitignored, PII-bearing) — the label corpus the
+    deferred grounding calibration needs. Same format the
+    <code class="short">evals.annotation</code> CLI produces.
+  </div>
+
+  <!-- ① Bootstrap wrapper (paid live pipeline over pasted JDs) -->
+  <details class="annotate-section" id="bootstrapSection">
+    <summary>① Produce a bootstrap — runs the live pipeline (paid + slow)</summary>
+    <div>
+      <p class="sub">Drives analyze → clarify → generate over the job descriptions below for a real
+        candidate's corpus, then dedups across JDs into a <code class="short">bootstrap.json</code>.
+        <strong>Makes paid Sonnet/Haiku calls (~70s per JD)</strong> and reuses the same streaming
+        engine as the wizard's analyze.</p>
+      <div class="filters">
+        <label>Candidate username<input type="text" id="bsUser" placeholder="e.g. alex"></label>
+        <label>Fixture slug (optional)<input type="text" id="bsSlug" placeholder="&lt;candidate&gt;-bootstrap"></label>
+      </div>
+      <div id="bsJds"></div>
+      <div class="annotate-actions">
+        <button class="ann-btn" id="bsAddJd" type="button">+ Add JD</button>
+        <button class="ann-btn primary" id="bsRun" type="button">Run bootstrap</button>
+      </div>
+      <div id="bsProgress" class="annotate-progress" role="status" aria-live="polite"></div>
+    </div>
+  </details>
+
+  <!-- ② Fixture picker -->
+  <div class="annotate-section">
+    <label class="sub" for="fixtureSelect">② Pick a bootstrap to annotate</label>
+    <div class="filters">
+      <select id="fixtureSelect"><option value="">—</option></select>
+      <button class="ann-btn" id="fixtureReload" type="button">Reload</button>
+    </div>
+    <p class="empty" id="fixtureEmpty">No bootstraps yet. Produce one above, or run
+      <code class="short">python -m evals.bootstrap</code> from the CLI.</p>
+  </div>
+
+  <!-- ③ Annotation editor -->
+  <div class="annotate-section" id="annEditor" hidden>
+    <p class="sub" id="annMeta"></p>
+    <div class="ann-error" id="annError" hidden></div>
+    <p class="legend">Verdicts: <code class="short">keep</code> · <code class="short">fix</code>
+      (needs honest_rewrite) · <code class="short">omit</code> · <code class="short">fabricated</code>
+      (needs a forbidden_pattern regex). Every bullet &amp; skill needs a verdict before Save
+      (fail-closed, same as the CLI).</p>
+    <h3 class="ann-h3">Bullets</h3>
+    <div id="annBullets"></div>
+    <h3 class="ann-h3">Skills</h3>
+    <div id="annSkills"></div>
+    <h3 class="ann-h3">Clarification questions</h3>
+    <div id="annClar"></div>
+    <div class="annotate-actions">
+      <button class="ann-btn primary" id="annSave" type="button">Save annotations.json</button>
+      <button class="ann-btn" id="annCollate" type="button">Collate → fixture + brief</button>
+      <span id="annStatus" class="sub" role="status" aria-live="polite"></span>
+    </div>
+  </div>
+
+  <datalist id="annFailedRulesList"></datalist>
 </section>
 
 <!-- ===== Shared drawer ===== -->
@@ -641,6 +732,220 @@
       if (fn) { fn(cv); cv.dataset.charted = '1'; }
     });
   }
+})();
+</script>
+
+<!-- ===== Annotate tab: read-write surface (separate IIFE; runs regardless of Chart.js) ===== -->
+<script>
+(function () {
+  if (!document.querySelector('.dash-pane[data-pane="annotate"]')) return;
+  var API = '/api/annotation';
+  var state = { slug: null, candidate: null, doc: null, vocab: { verdicts: [], failed_rules: [] } };
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function setStatus(msg, isErr) { var s = $('annStatus'); if (!s) return; s.textContent = msg || ''; s.style.color = isErr ? 'var(--danger)' : 'var(--fg-2)'; }
+  function showError(detail) { var box = $('annError'); if (!box) return; if (detail) { box.textContent = detail; box.hidden = false; } else { box.textContent = ''; box.hidden = true; } }
+  function jsonRes(r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }, function () { return { ok: r.ok, d: {} }; }); }
+
+  // ---- fixtures ----
+  function loadFixtures() {
+    return fetch(API + '/fixtures').then(jsonRes).then(function (res) {
+      var sel = $('fixtureSelect'); var cur = sel.value;
+      sel.innerHTML = '<option value="">—</option>';
+      var list = (res.d && res.d.fixtures) || [];
+      list.forEach(function (f) {
+        var o = el('option'); o.value = f.slug; o.dataset.candidate = f.candidate_username || '';
+        o.textContent = f.slug + ' (' + f.bullet_clusters + 'b / ' + f.skill_clusters + 's' + (f.has_annotations ? ' · annotated' : '') + ')';
+        sel.appendChild(o);
+      });
+      $('fixtureEmpty').hidden = list.length > 0;
+      if (cur) sel.value = cur;
+    }).catch(function () { $('fixtureEmpty').hidden = false; });
+  }
+
+  function loadFixture(slug, candidate) {
+    showError(null); setStatus('Loading…');
+    fetch(API + '/fixture/' + encodeURIComponent(candidate) + '/' + encodeURIComponent(slug)).then(jsonRes).then(function (res) {
+      if (!res.ok) { setStatus((res.d && res.d.error) || 'Load failed', true); $('annEditor').hidden = true; return; }
+      state.slug = slug; state.candidate = candidate; state.doc = res.d.annotations; state.vocab = res.d.vocab || state.vocab;
+      renderEditor();
+      setStatus(res.d.has_annotations ? 'Loaded existing annotations.' : 'New template — fill every verdict, then Save.');
+    }).catch(function () { setStatus('Load failed', true); });
+  }
+
+  // ---- rendering ----
+  function verdictSelect(item) {
+    var sel = el('select');
+    sel.appendChild(el('option', null, '— verdict —'));
+    state.vocab.verdicts.forEach(function (v) { var o = el('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+    sel.value = item.verdict || '';
+    return sel;
+  }
+  function textControl(labelText, value, grow) {
+    var lab = el('label'); lab.appendChild(el('span', null, labelText));
+    var inp = el('input'); if (grow) inp.className = 'grow'; inp.value = value || ''; lab.appendChild(inp);
+    return { lab: lab, inp: inp };
+  }
+
+  function renderItem(item) {
+    var card = el('div', 'ann-item');
+    card.appendChild(el('div', 'rep', item.representative || '(empty)'));
+    var bits = [];
+    if (item.jd_files && item.jd_files.length) bits.push('span ' + item.jd_files.length + ' JD(s)');
+    if (item.size != null) bits.push('size ' + item.size);
+    if (item.minicheck_grounding_score != null) bits.push('MiniCheck ' + item.minicheck_grounding_score);
+    if (item.nli_entailment_score != null) bits.push('NLI ' + item.nli_entailment_score);
+    if (item.nli_contradiction_flag) bits.push('NLI-contradiction');
+    card.appendChild(el('div', 'meta', bits.join(' · ')));
+
+    var controls = el('div', 'controls');
+    var vlab = el('label'); vlab.appendChild(el('span', null, 'verdict'));
+    var vsel = verdictSelect(item); vlab.appendChild(vsel); controls.appendChild(vlab);
+    var fr = textControl('failed_rules (comma-sep)', (item.failed_rules || []).join(', '), true);
+    fr.inp.setAttribute('list', 'annFailedRulesList'); controls.appendChild(fr.lab);
+    var nt = textControl('note', item.note, true); controls.appendChild(nt.lab);
+    var olab = el('label'); olab.appendChild(el('span', null, 'should_omit'));
+    var ocheck = el('input'); ocheck.type = 'checkbox'; ocheck.checked = !!item.should_omit; olab.appendChild(ocheck); controls.appendChild(olab);
+    var rw = textControl('honest_rewrite (fix)', item.honest_rewrite, true); controls.appendChild(rw.lab);
+    var fp = textControl('forbidden_pattern (fabricated)', item.forbidden_pattern, true); controls.appendChild(fp.lab);
+
+    function syncCond() { rw.lab.style.display = (vsel.value === 'fix') ? '' : 'none'; fp.lab.style.display = (vsel.value === 'fabricated') ? '' : 'none'; }
+    syncCond();
+    vsel.addEventListener('change', function () { item.verdict = vsel.value || null; syncCond(); });
+    fr.inp.addEventListener('input', function () { item.failed_rules = fr.inp.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean); });
+    nt.inp.addEventListener('input', function () { item.note = nt.inp.value; });
+    ocheck.addEventListener('change', function () { item.should_omit = ocheck.checked; });
+    rw.inp.addEventListener('input', function () { item.honest_rewrite = rw.inp.value || null; });
+    fp.inp.addEventListener('input', function () { item.forbidden_pattern = fp.inp.value || null; });
+    card.appendChild(controls);
+    return card;
+  }
+
+  function renderRating(r) {
+    var card = el('div', 'ann-item');
+    card.appendChild(el('div', 'rep', r.question_text || '(question)'));
+    card.appendChild(el('div', 'meta', [r.jd_file, r.kind].filter(Boolean).join(' · ')));
+    var controls = el('div', 'controls');
+    var slab = el('label'); slab.appendChild(el('span', null, 'rating 0–5'));
+    var sinp = el('input'); sinp.type = 'number'; sinp.min = '0'; sinp.max = '5'; sinp.step = '0.1';
+    sinp.value = (r.rating == null ? '' : r.rating); slab.appendChild(sinp); controls.appendChild(slab);
+    var fr = textControl('failed_rules (comma-sep)', (r.failed_rules || []).join(', '), true);
+    fr.inp.setAttribute('list', 'annFailedRulesList'); controls.appendChild(fr.lab);
+    var nt = textControl('note', r.note, true); controls.appendChild(nt.lab);
+    sinp.addEventListener('input', function () { r.rating = sinp.value === '' ? null : parseFloat(sinp.value); });
+    fr.inp.addEventListener('input', function () { r.failed_rules = fr.inp.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean); });
+    nt.inp.addEventListener('input', function () { r.note = nt.inp.value; });
+    card.appendChild(controls);
+    return card;
+  }
+
+  function renderEditor() {
+    var doc = state.doc; $('annEditor').hidden = false;
+    $('annMeta').textContent = 'candidate ' + (doc.candidate_username || state.candidate) + ' · prompt_version ' + (doc.prompt_version || '—') + ' · '
+      + (doc.bullets || []).length + ' bullets · ' + (doc.skills || []).length + ' skills · ' + (doc.clarification_ratings || []).length + ' questions';
+    var dl = $('annFailedRulesList'); dl.innerHTML = '';
+    state.vocab.failed_rules.forEach(function (s) { var o = el('option'); o.value = s; dl.appendChild(o); });
+    var b = $('annBullets'); b.innerHTML = ''; (doc.bullets || []).forEach(function (it) { b.appendChild(renderItem(it)); });
+    var s = $('annSkills'); s.innerHTML = ''; (doc.skills || []).forEach(function (it) { s.appendChild(renderItem(it)); });
+    var c = $('annClar'); c.innerHTML = ''; (doc.clarification_ratings || []).forEach(function (r) { c.appendChild(renderRating(r)); });
+  }
+
+  // ---- save / collate ----
+  function save(cb) {
+    if (!state.doc) return; showError(null); setStatus('Saving…');
+    fetch(API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug),
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state.doc) }).then(jsonRes).then(function (res) {
+        if (!res.ok) { setStatus((res.d && res.d.error) || 'Save failed', true); showError(res.d && res.d.detail); return; }
+        setStatus('Saved annotations.json (' + res.d.bullets + 'b / ' + res.d.skills + 's).'); loadFixtures(); if (cb) cb();
+      }).catch(function () { setStatus('Save failed', true); });
+  }
+
+  function collate() {
+    if (!state.doc) return;
+    save(function () {
+      setStatus('Collating…');
+      fetch(API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug) + '/collate', { method: 'POST' }).then(jsonRes).then(function (res) {
+        if (!res.ok) { setStatus((res.d && res.d.error) || 'Collate failed', true); showError(res.d && res.d.detail); return; }
+        setStatus('Collated → ' + res.d.must_keywords + ' must_keywords, ' + res.d.forbidden_inventions + ' forbidden_inventions. ' + (res.d.jd_written ? 'jd.txt written.' : 'jd.txt not written (no anchor JD saved).'));
+        loadFixtures();
+      }).catch(function () { setStatus('Collate failed', true); });
+    });
+  }
+
+  // ---- bootstrap wrapper (POST + SSE via fetch streaming) ----
+  function addJdRow(name, text) {
+    var row = el('div', 'ann-jd-row');
+    var n = el('input', 'bs-jd-name'); n.placeholder = 'JD name'; n.value = name || '';
+    var t = el('textarea', 'bs-jd-text'); t.placeholder = 'Paste JD text…'; t.value = text || '';
+    var rm = el('button', 'ann-btn'); rm.type = 'button'; rm.textContent = '✕'; rm.setAttribute('aria-label', 'Remove JD');
+    rm.addEventListener('click', function () { row.remove(); });
+    row.appendChild(n); row.appendChild(t); row.appendChild(rm); $('bsJds').appendChild(row);
+  }
+  function collectJds() {
+    var out = [];
+    $('bsJds').querySelectorAll('.ann-jd-row').forEach(function (row) {
+      var name = row.querySelector('.bs-jd-name').value.trim(); var text = row.querySelector('.bs-jd-text').value.trim();
+      if (name && text) out.push({ name: name, text: text });
+    });
+    return out;
+  }
+  function parseSse(buffer, onEvent) {
+    var parts = buffer.split('\n\n'); var tail = parts.pop();
+    parts.forEach(function (block) {
+      var ev = 'message', data = '';
+      block.split('\n').forEach(function (line) {
+        if (line.indexOf('event:') === 0) ev = line.slice(6).trim();
+        else if (line.indexOf('data:') === 0) data += line.slice(5).trim();
+      });
+      var payload = {}; try { payload = data ? JSON.parse(data) : {}; } catch (e) { payload = {}; }
+      onEvent(ev, payload);
+    });
+    return tail;
+  }
+  function runBootstrap() {
+    var user = $('bsUser').value.trim(); var slug = $('bsSlug').value.trim(); var jds = collectJds(); var prog = $('bsProgress');
+    if (!user) { prog.textContent = 'Enter a candidate username.'; return; }
+    if (!jds.length) { prog.textContent = 'Add at least one JD (name + text).'; return; }
+    $('bsRun').disabled = true;
+    prog.textContent = 'Starting… (paid Sonnet/Haiku calls, ~70s per JD)';
+    fetch(API + '/bootstrap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, slug: slug || undefined, jds: jds }) }).then(function (resp) {
+      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status); $('bsRun').disabled = false; }); }
+      var reader = resp.body.getReader(); var dec = new TextDecoder(); var buf = '';
+      function pump() {
+        return reader.read().then(function (chunk) {
+          if (chunk.done) { $('bsRun').disabled = false; return; }
+          buf += dec.decode(chunk.value, { stream: true });
+          buf = parseSse(buf, function (ev, p) {
+            if (ev === 'start') prog.textContent = 'Running ' + p.total + ' JD(s)…';
+            else if (ev === 'jd_start') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ' (' + p.jd_file + '): starting…';
+            else if (ev === 'analyzing') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': analyzing…';
+            else if (ev === 'clarifying') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': clarifying…';
+            else if (ev === 'generating') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': generating…';
+            else if (ev === 'jd_done') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ' done (' + p.bullets + 'b/' + p.skills + 's).';
+            else if (ev === 'done') { prog.textContent = 'Bootstrap written: ' + p.slug + ' (' + p.bullet_clusters + ' bullet clusters, ' + p.skill_clusters + ' skill clusters).'; loadFixtures().then(function () { $('fixtureSelect').value = p.slug; }); }
+            else if (ev === 'error') prog.textContent = 'Error: ' + (p.error || 'bootstrap failed') + (p.detail ? ' — ' + p.detail : '');
+          });
+          return pump();
+        });
+      }
+      return pump();
+    }).catch(function () { prog.textContent = 'Bootstrap request failed.'; $('bsRun').disabled = false; });
+  }
+
+  // ---- wire up ----
+  $('fixtureReload').addEventListener('click', function () { loadFixtures(); });
+  $('fixtureSelect').addEventListener('change', function () {
+    var opt = this.options[this.selectedIndex];
+    if (!this.value) { $('annEditor').hidden = true; return; }
+    loadFixture(this.value, (opt && opt.dataset.candidate) || '');
+  });
+  $('annSave').addEventListener('click', function () { save(); });
+  $('annCollate').addEventListener('click', collate);
+  $('bsAddJd').addEventListener('click', function () { addJdRow('', ''); });
+  $('bsRun').addEventListener('click', runBootstrap);
+  addJdRow('', '');
+  loadFixtures();
 })();
 </script>
 
