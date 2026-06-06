@@ -1,0 +1,55 @@
+"""DashboardConsolePage — drives the /_dashboard diagnostics console.
+
+The console is a four-tab bento of summary tiles; clicking a tile opens one
+shared right-hand drawer with that tile's detail. Selectors live in
+`ui_pages.selectors.Dashboard` (one-file edit on a reskin).
+"""
+
+from __future__ import annotations
+
+from playwright.sync_api import Locator
+
+from ui_pages.base import DEFAULT_TIMEOUT_MS, BasePage
+from ui_pages.selectors import Dashboard
+
+
+class DashboardConsolePage(BasePage):
+    def load(self) -> DashboardConsolePage:
+        """Navigate to /_dashboard/ and wait for the tab bar."""
+        self.page.goto(f"{self.base_url}/_dashboard/")
+        self.page.wait_for_selector(Dashboard.TABS, timeout=DEFAULT_TIMEOUT_MS)
+        return self
+
+    # --- tabs --------------------------------------------------------------
+    def tab(self, name: str) -> Locator:
+        return self.page.locator(Dashboard.tab(name))
+
+    def activate_tab(self, name: str) -> None:
+        self.tab(name).click()
+
+    def active_pane(self, name: str) -> Locator:
+        return self.page.locator(Dashboard.pane_active(name))
+
+    # --- tiles + drawer ----------------------------------------------------
+    def tile(self, detail: str) -> Locator:
+        """First tile bound to a given detail block (a detail may back >1 tile)."""
+        return self.page.locator(Dashboard.tile(detail)).first
+
+    def open_tile(self, detail: str) -> None:
+        self.tile(detail).click()
+
+    def drawer(self) -> Locator:
+        return self.page.locator(Dashboard.DRAWER)
+
+    def drawer_open(self) -> Locator:
+        """Matches only while the drawer is open (the `.open` class)."""
+        return self.page.locator(Dashboard.DRAWER_OPEN)
+
+    def drawer_title(self) -> Locator:
+        return self.page.locator(Dashboard.DRAWER_TITLE)
+
+    def drawer_body(self) -> Locator:
+        return self.page.locator(Dashboard.DRAWER_BODY)
+
+    def close_drawer(self) -> None:
+        self.page.locator(Dashboard.DRAWER_CLOSE).click()

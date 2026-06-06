@@ -94,6 +94,36 @@ class Output:
     COVER_PREVIEW = "#coverLetterPreview, #tabCoverLetter [contenteditable]"
 
 
+class Dashboard:
+    """The /_dashboard diagnostics console. data-tab / data-pane / data-detail
+    are structural attributes the console JS depends on (tab routing + drawer
+    population) — stable handles, not styling aliases."""
+
+    ROOT = ".cb-dash"
+    TABS = ".dash-tab"
+    DRAWER = "#drawer"
+    DRAWER_OPEN = "#drawer.open"
+    DRAWER_CLOSE = "#drawerClose"
+    DRAWER_BODY = "#drawerBody"
+    DRAWER_TITLE = "#drawerTitle"
+
+    @staticmethod
+    def tab(name: str) -> str:
+        return f".dash-tab[data-tab='{name}']"
+
+    @staticmethod
+    def pane(name: str) -> str:
+        return f".dash-pane[data-pane='{name}']"
+
+    @staticmethod
+    def pane_active(name: str) -> str:
+        return f".dash-pane[data-pane='{name}'].active"
+
+    @staticmethod
+    def tile(detail: str) -> str:
+        return f".tile[data-detail='{detail}']"
+
+
 class Compose:
     LIST = "#composeList"
     EXPERIENCE_CARD = "#composeList .compose-experience-card"
