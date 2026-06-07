@@ -8,8 +8,8 @@ from ui_pages.selectors import TopTabs, Wizard
 
 class WizardJobPage(BasePage):
     def open(self) -> WizardJobPage:
-        """Switch to the Application tab and select wizard Step 1."""
-        self.page.click(TopTabs.APPLICATION)
+        """Switch to the Tailor tab and select wizard Step 1."""
+        self.page.click(TopTabs.TAILOR)
         self.page.click(Wizard.step_button(1))
         self.page.wait_for_selector(
             Wizard.JD_TEXT, state="visible", timeout=DEFAULT_TIMEOUT_MS

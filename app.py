@@ -126,6 +126,24 @@ def _within(path: Path, parent: Path) -> bool:
         return False
 
 
+def _get_or_provision_candidate(session, safe_user: str):
+    """Return the candidate row for safe_user, creating it from config if absent.
+
+    Replaces the old "no candidate row yet → needs_onboarding" gate. Every user
+    starts config-only (create_user writes a config, not a DB row); the first
+    corpus write provisions the row on demand. Reuses the idempotent,
+    non-destructive import_candidate_from_config (identity + skills + certs +
+    education from configs/{user}.config). The caller owns the commit.
+    """
+    from db.models import Candidate
+    candidate = session.query(Candidate).filter_by(username=safe_user).first()
+    if candidate is None:
+        from onboarding.corpus_import import import_candidate_from_config
+        import_candidate_from_config(safe_user, session)  # add + flush, no commit
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+    return candidate
+
+
 def _is_localhost_request() -> bool:
     """True only for loopback hosts. Same posture as dashboard_bp.before_request.
 
@@ -455,6 +473,7 @@ def _run_analysis_corpus_backed_streaming(safe_user: str, jd_text: str, data: di
     run_id = uuid.uuid4().hex[:12]
     try:
         try:
+            _get_or_provision_candidate(setup_session, safe_user)
             context_set, application, application_run = build_context_set_from_db(
                 setup_session,
                 candidate_username=safe_user,
@@ -605,6 +624,7 @@ def _run_analysis_corpus_backed(safe_user: str, jd_text: str, data: dict):
     run_id = uuid.uuid4().hex[:12]
     try:
         try:
+            _get_or_provision_candidate(session, safe_user)
             context_set, application, application_run = build_context_set_from_db(
                 session,
                 candidate_username=safe_user,
@@ -2213,7 +2233,7 @@ def upload_user_persona(username: str):
     `personas/{user}/` and a persona_template row is created with
     candidate_id=<this user> and source='user_upload'.
     """
-    from db.models import Candidate, PersonaTemplate
+    from db.models import PersonaTemplate
     from db.session import get_session, init_db
 
     safe_user = _safe_username(username)
@@ -2229,12 +2249,7 @@ def upload_user_persona(username: str):
     init_db()
     session = get_session()
     try:
-        candidate = session.query(Candidate).filter_by(username=safe_user).first()
-        if candidate is None:
-            return jsonify({
-                "error": "Candidate not in corpus yet",
-                "needs_onboarding": True,
-            }), 409
+        candidate = _get_or_provision_candidate(session, safe_user)
 
         safe_name = secure_filename(file.filename)
         user_persona_dir = PERSONAS_DIR / safe_user
@@ -2421,7 +2436,7 @@ def preview_persona_with_resume(persona_id: int):
     Body: {username}. Touches the filesystem (writes + streams a .docx),
     so both _safe_username and _within guards apply.
     """
-    from db.models import Candidate, PersonaTemplate
+    from db.models import PersonaTemplate
     from db.session import get_session, init_db
 
     data = request.json or {}
@@ -2439,12 +2454,7 @@ def preview_persona_with_resume(persona_id: int):
         disk_path = (BASE_DIR / row.path).resolve()
         if not disk_path.exists() or not _within(disk_path, PERSONAS_DIR):
             return jsonify({"error": "Invalid persona path"}), 403
-        candidate = session.query(Candidate).filter_by(username=safe_user).first()
-        if candidate is None:
-            return jsonify({
-                "error": "Candidate not in corpus yet",
-                "needs_onboarding": True,
-            }), 409
+        candidate = _get_or_provision_candidate(session, safe_user)
         resume_md = _latest_generated_resume_md(candidate.id)
         if not resume_md:
             return jsonify({
@@ -3161,7 +3171,7 @@ def create_experience(username: str):
     Body: {company, start_date (YYYY-MM), end_date?, location?, summary?}.
     Returns the full detail payload so the UI can expand it immediately.
     """
-    from db.models import Candidate, Experience
+    from db.models import Experience
     from db.session import get_session, init_db
 
     safe_user = _safe_username(username)
@@ -3182,12 +3192,7 @@ def create_experience(username: str):
     init_db()
     session = get_session()
     try:
-        candidate = session.query(Candidate).filter_by(username=safe_user).first()
-        if candidate is None:
-            return jsonify({
-                "error": "Candidate not in corpus yet",
-                "needs_onboarding": True,
-            }), 409
+        candidate = _get_or_provision_candidate(session, safe_user)
 
         existing = session.query(Experience).filter_by(
             candidate_id=candidate.id,
@@ -3551,7 +3556,7 @@ def create_summary_item(username: str):
     user-typed variants default to source='manual',
     is_pending_review=0 (the user wrote it themselves).
     """
-    from db.models import Candidate, SummaryItem
+    from db.models import SummaryItem
     from db.session import get_session, init_db
 
     safe_user = _safe_username(username)
@@ -3570,9 +3575,7 @@ def create_summary_item(username: str):
     init_db()
     session = get_session()
     try:
-        candidate = session.query(Candidate).filter_by(username=safe_user).first()
-        if candidate is None:
-            return jsonify({"error": "Candidate not found"}), 404
+        candidate = _get_or_provision_candidate(session, safe_user)
 
         next_order = session.query(SummaryItem).filter_by(candidate_id=candidate.id).count()
         si = SummaryItem(
@@ -4148,15 +4151,14 @@ def ingest_resume_to_corpus(username: str):
     into the candidate's corpus as is_pending_review=1 (the Career Corpus
     pending banner then surfaces them for review).
 
-    Reuses onboarding.import_legacy.ingest_one_resume so the
+    Reuses onboarding.corpus_import.ingest_one_resume so the
     merge-as-alternate-title behavior is identical to the CLI importer.
     One Haiku call per upload (~$0.01-0.03, costs API credit).
 
     Touches the filesystem (saves the upload) → _safe_username + _within.
     """
-    from db.models import Candidate
     from db.session import get_session, init_db
-    from onboarding.import_legacy import ImportReport, ingest_one_resume
+    from onboarding.corpus_import import ImportReport, ingest_one_resume
 
     safe_user = _safe_username(username)
     if not safe_user:
@@ -4180,12 +4182,7 @@ def ingest_resume_to_corpus(username: str):
     init_db()
     session = get_session()
     try:
-        candidate = session.query(Candidate).filter_by(username=safe_user).first()
-        if candidate is None:
-            return jsonify({
-                "error": "Candidate not in corpus yet",
-                "needs_onboarding": True,
-            }), 409
+        candidate = _get_or_provision_candidate(session, safe_user)
         report = ImportReport()
         ingest_one_resume(
             save_path, candidate.id, session,

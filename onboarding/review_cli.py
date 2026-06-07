@@ -378,7 +378,7 @@ def main(argv: list[str] | None = None) -> int:
             print(
                 f"{Color.ERROR}No candidate found with username {args.user!r}.{Color.RESET}\n"
                 f"{Color.META}Run the importer first: "
-                f"python -m onboarding.import_legacy --user {args.user} --with-llm{Color.RESET}",
+                f"python -m onboarding.corpus_import --user {args.user} --with-llm{Color.RESET}",
                 file=sys.stderr,
             )
             return 2

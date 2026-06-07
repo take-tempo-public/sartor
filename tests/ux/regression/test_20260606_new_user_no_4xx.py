@@ -36,7 +36,7 @@ from playwright.sync_api import Page, Response
 from tests.ux.seeding import write_user_config
 from ui_pages import BasePage, UserPickerPage
 from ui_pages.base import DEFAULT_TIMEOUT_MS
-from ui_pages.selectors import Corpus, Memory, Onboarding, Personas, PriorApps, TopTabs
+from ui_pages.selectors import Corpus, Memory, Personas, PriorApps, TopTabs
 
 
 @pytest.mark.ux
@@ -65,7 +65,7 @@ def test_new_user_tab_sweep_has_no_4xx(page: Page, live_server: str,
         (TopTabs.CORPUS, Corpus.PANEL),          # GET /experiences (+ /duplicates)
         (TopTabs.PERSONAS, Personas.PANEL),      # GET /personas (owned + picker)
         (TopTabs.MEMORY, Memory.PANEL),          # GET /clarifications
-        (TopTabs.APPLICATION, PriorApps.PANEL),  # GET /applications
+        (TopTabs.TAILOR, PriorApps.PANEL),  # GET /applications
     ):
         page.click(tab)
         page.wait_for_selector(panel, state="visible", timeout=DEFAULT_TIMEOUT_MS)
@@ -74,9 +74,11 @@ def test_new_user_tab_sweep_has_no_4xx(page: Page, live_server: str,
     assert read_4xx == [], f"new-user 4xx across the tab sweep: {read_4xx}"
 
     # The graceful path is positively present, not merely silent: the Corpus
-    # tab shows the shared import CTA (was "Failed to load…" before the fix).
+    # tab shows the working "+ Import résumé" affordance (was "Failed to load…"
+    # before the fix), and the toolbar is always available so the user can also
+    # add experiences by hand — both onboarding paths are open immediately.
     page.click(TopTabs.CORPUS)
     page.wait_for_selector(Corpus.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
-    page.get_by_role("button", name=Onboarding.CTA_NAME).first.wait_for(
+    page.get_by_role("button", name=Corpus.IMPORT_BUTTON_NAME).first.wait_for(
         state="visible", timeout=DEFAULT_TIMEOUT_MS
     )

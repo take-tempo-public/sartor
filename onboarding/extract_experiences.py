@@ -1,7 +1,7 @@
 """LLM-assisted experience + bullet extraction from a parsed resume.
 
 One Haiku call per resume. Returns structured experiences ready for user
-review and DB insertion. Used by `import_legacy.py --with-llm` and (later)
+review and DB insertion. Used by `corpus_import.py --with-llm` and (later)
 by the `/onboard` wizard.
 
 Per the plan §Onboarding step 3:

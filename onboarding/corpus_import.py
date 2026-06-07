@@ -11,10 +11,10 @@ Clarifications dedupe on (normalized_question, normalized_answer).
 Experiences match on `(company, start_date)`.
 
 CLI:
-    python -m onboarding.import_legacy --user robert
-    python -m onboarding.import_legacy --user robert --dry-run
-    python -m onboarding.import_legacy --user robert --with-llm     # Haiku call, ~$0.02
-    python -m onboarding.import_legacy --user robert --db /tmp/test.sqlite
+    python -m onboarding.corpus_import --user robert
+    python -m onboarding.corpus_import --user robert --dry-run
+    python -m onboarding.corpus_import --user robert --with-llm     # Haiku call, ~$0.02
+    python -m onboarding.corpus_import --user robert --db /tmp/test.sqlite
 """
 
 from __future__ import annotations

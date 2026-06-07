@@ -31,6 +31,11 @@ def corpus_app(tmp_path, monkeypatch):
     (tmp_path / "output").mkdir()
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
 
+    # Provisioning (corpus_import.import_candidate_from_config) reads its own
+    # module-level CONFIGS_DIR — point it at the temp config dir too.
+    import onboarding.corpus_import as corpus_import_mod
+    monkeypatch.setattr(corpus_import_mod, "CONFIGS_DIR", tmp_path / "configs")
+
     from db.session import init_db
     init_db(db_file)
     return app_module
@@ -132,8 +137,9 @@ class TestListExperiences:
     def test_missing_candidate_returns_200_needs_onboarding(self, corpus_app):
         # Config exists, but no candidate row seeded. A read precondition is
         # NOT a conflict: 200 + needs_onboarding (empty list) so the Career
-        # Corpus tab offers the legacy-import flow without a console error.
-        # (The POST create-experience route keeps 409 — see TestCreateExperience.)
+        # Corpus tab renders its (empty) editor without a console error.
+        # (The POST create-experience route now auto-provisions — see
+        # TestCreateExperience.)
         client = corpus_app.app.test_client()
         r = client.get("/api/users/alice/experiences")
         assert r.status_code == 200
@@ -205,14 +211,22 @@ class TestCreateExperience:
         )
         assert r.status_code == 400
 
-    def test_missing_candidate_returns_409_needs_onboarding(self, corpus_app):
+    def test_missing_candidate_is_auto_provisioned(self, corpus_app):
+        # A config-only user (no Candidate row) is provisioned on the first
+        # write — adding an experience by hand works without any import step.
         client = corpus_app.app.test_client()
         r = client.post(
             "/api/users/alice/experiences",
             json={"company": "X", "start_date": "2023-01"},
         )
-        assert r.status_code == 409
-        assert r.get_json()["needs_onboarding"] is True
+        assert r.status_code == 201, r.get_data(as_text=True)
+        from db.models import Candidate
+        from db.session import get_session
+        s = get_session()
+        try:
+            assert s.query(Candidate).filter_by(username="alice").first() is not None
+        finally:
+            s.close()
 
 
 # ---------------------------------------------------------------------------

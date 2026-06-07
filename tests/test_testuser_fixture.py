@@ -77,7 +77,7 @@ class TestImporterAgainstFixture:
     """
 
     def test_dry_run_produces_expected_deterministic_counts(self, tmp_path):
-        from onboarding.import_legacy import run_import
+        from onboarding.corpus_import import run_import
 
         db_path = tmp_path / "fixture_smoke.sqlite"
         report = run_import("testuser", dry_run=True, with_llm=False, db_path=db_path)
@@ -94,7 +94,7 @@ class TestImporterAgainstFixture:
 
     def test_dry_run_detects_both_resume_files(self, tmp_path):
         """--with-llm in dry-run mode counts resume files but does NOT call LLM."""
-        from onboarding.import_legacy import run_import
+        from onboarding.corpus_import import run_import
 
         db_path = tmp_path / "fixture_resumes.sqlite"
         report = run_import("testuser", dry_run=True, with_llm=True, db_path=db_path)
@@ -103,7 +103,7 @@ class TestImporterAgainstFixture:
     def test_real_import_then_reimport_is_idempotent(self, tmp_path):
         """Running the deterministic importer twice should yield zero new rows
         on the second run. Validates the dedupe path for the fixture user."""
-        from onboarding.import_legacy import run_import
+        from onboarding.corpus_import import run_import
 
         db_path = tmp_path / "fixture_idempotent.sqlite"
 
