@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — run an eval from the console; `run_suite()` core extracted (`feat/run-eval-from-console`)
+
+Step 2 of the "finish the diagnostics faceplate" arc closes the mandatory CLI hop
+in the tuning loop: you can now run an eval **from the browser** instead of
+dropping to a terminal, and the collate step's paste-this `run_command` dead-end
+becomes a real button. No `PROMPT_VERSION` bump (no prompt template changed) and
+no new dependency.
+
+- **`evals.runner.run_suite(...)`** — the eval orchestration is extracted from
+  `runner.main()` into an importable core taking structured args (`suite`,
+  `subset`, `fixture_name`, `seed_data`, `prompt_overrides_map`,
+  `grounding_signals`, `out_dir`, `client`) plus an optional `progress` callback,
+  returning an `EvalRunResult`. `main()` is now a thin argparse wrapper. The
+  no-flag default path is **byte-identical** (empty overrides are a no-op,
+  `progress=None` makes every emit a no-op, the analyze→generate cache and the
+  result-record bytes are unchanged) — mirrors how `evals/bootstrap.py` already
+  splits `main()` from `run_pipeline_over_jd_texts`.
+- **`POST /api/eval/run`** (`app.py`, localhost-only, SSE) — drives `run_suite`
+  in a worker thread (the `annotation_bootstrap_stream` threading/queue/`_sse`
+  pattern) and streams `start` / `fixture_start` / `analyzing` / `clarifying` /
+  `generating` / `rubric_done` / `fixture_done` / `done` / `error`. Two modes: the
+  Quality-tab run (synthetic/anchor, no seed) and the Annotate-tab "Run this
+  fixture" run (`--suite real --seed <slug>/seed.json`, the in-browser collate
+  command). Guarded by `_is_localhost_request()` + `secure_filename` +
+  `_within(seed, ANNOTATION_ROOT)` + `_safe_username`; all validation returns a
+  JSON 4xx before any paid call.
+- **Console UI** (`dashboard/templates/dashboard.html`) — a "Run eval" control on
+  the **Quality** tab (suite/subset/grounding, a cost-band caption, a `confirm()`
+  consent gate showing the ~$0.10 smoke / ~$0.30 full estimate, reload on done);
+  on the **Annotate** tab the collate result now shows the CLI command **and** a
+  "Run this fixture" button. Promote stays the agent's job — no route edits
+  `analyzer.py`.
+
 ### Added — run the grounding scorers from the console; bootstraps capture a seed (`feat/grounding-scorers-in-console`)
 
 Found during a v1.0.5 walkthrough: a dev-user installed the offline grounding

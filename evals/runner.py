@@ -25,9 +25,12 @@ import os
 import sys
 import time
 import uuid
+from collections.abc import Callable
 from contextlib import ExitStack
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import anthropic
 from sqlalchemy.orm import Session
@@ -96,6 +99,32 @@ SCHEMA_VERSION = 3
 REGRESSION_DELTA = float(os.environ.get("REGRESSION_DELTA", "0.5"))
 
 logger = logging.getLogger(__name__)
+
+# A coarse progress callback: (event_name, payload) → None. Optional everywhere;
+# the default `run_suite` path passes None and every emit is a no-op, so the
+# written JSONL bytes are unchanged. The console SSE route passes one to stream
+# per-fixture/per-rubric progress to the browser.
+ProgressFn = Callable[[str, dict[str, Any]], None]
+
+
+@dataclass
+class EvalRunResult:
+    """Structured outcome of one ``run_suite`` invocation.
+
+    ``exit_code`` preserves the historical CLI contract (0 = every rubric passed
+    and no regressions fired; 2 = at least one fail/regression). ``out_path`` is
+    the JSONL results file written this run, or None when no fixtures/rubrics
+    matched and nothing ran. The remaining fields let a caller (the console route)
+    report the run without re-reading the file.
+    """
+
+    exit_code: int
+    out_path: Path | None
+    n_pass: int
+    n_fail: int
+    regressions: list[dict]
+    improvements: list[dict]
+    candidate_version: str | None = None
 
 
 def _get_client() -> anthropic.Anthropic:
@@ -804,107 +833,58 @@ def _run_iteration_phase(
     }
 
 
-def main(argv: list[str] | None = None) -> int:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-    )
+def run_suite(
+    *,
+    suite: str = "synthetic",
+    subset: str = "full",
+    fixture_name: str | None = None,
+    seed_data: dict | None = None,
+    prompt_overrides_map: dict[str, str] | None = None,
+    grounding_signals: bool = False,
+    out_dir: str | Path = RESULTS_DIR,
+    client: anthropic.Anthropic | None = None,
+    progress: ProgressFn | None = None,
+) -> EvalRunResult:
+    """Run one eval suite — the importable core extracted from ``main()``.
 
-    ap = argparse.ArgumentParser(description="callback. eval harness")
-    ap.add_argument(
-        "--suite",
-        choices=["synthetic", "real", "all", "anchor", "exploration"],
-        default="synthetic",
-    )
-    ap.add_argument("--subset", choices=["smoke", "full"], default="full")
-    ap.add_argument("--fixture", help="Run a single named fixture (overrides --suite)")
-    ap.add_argument("--out-dir", default=str(RESULTS_DIR))
-    ap.add_argument(
-        "--grounding-signals",
-        action="store_true",
-        default=False,
-        help=(
-            "Run DeBERTa NLI + MiniCheck-FT5 offline grounding scorers per bullet. "
-            "Requires: pip install -e '.[eval-grounding]' (see CONTRIBUTING.md). "
-            "First run downloads ~3.2 GB of model weights to the HuggingFace cache."
-        ),
-    )
-    ap.add_argument(
-        "--prompt-overrides",
-        metavar="PATH",
-        help=(
-            "Path to a JSON file mapping a system-prompt constant name "
-            "(e.g. SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT) to candidate override "
-            "text. Injects the candidate prompt for THIS run only — analyzer.py is "
-            "never edited and the run is logged as prompt_version 'candidate:<hash>' "
-            "so it never pollutes score-over-time. Omit for the byte-identical "
-            "default path."
-        ),
-    )
-    ap.add_argument(
-        "--seed",
-        metavar="PATH",
-        help=(
-            "Path to a corpus seed.json (from scripts.export_corpus_seed). Builds "
-            "each fixture's context via build_context_set_from_db over an in-memory "
-            "SQLite import of the seed — the REAL corpus→context product path — "
-            "instead of parsing the fixture's resume file. The fixture's jd.txt + "
-            "expected.json still drive grading. Omit for the byte-identical "
-            "file-based path."
-        ),
-    )
-    args = ap.parse_args(argv)
+    Takes structured args (no argparse) so both the CLI wrapper ``main()`` and the
+    localhost ``POST /api/eval/run`` console route share one implementation, and
+    writes per-grading JSONL records to ``out_dir/{timestamp}.jsonl`` exactly as
+    before.
 
-    # --prompt-overrides: inject a candidate system prompt for this run only.
-    # Eager-validate here (bad JSON / wrong shape / unknown key all exit non-zero
-    # BEFORE any paid LLM call) and surface the candidate:<hash> tag the run is
-    # quarantined under. Absent flag → overrides={} → no-op (default path).
-    overrides: dict[str, str] = {}
-    if args.prompt_overrides:
-        ov_path = Path(args.prompt_overrides)
-        try:
-            loaded = json.loads(ov_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            logger.error("Could not read --prompt-overrides %s: %s", ov_path, exc)
-            return 1
-        if not isinstance(loaded, dict) or not all(
-            isinstance(k, str) and isinstance(v, str) for k, v in loaded.items()
-        ):
-            logger.error(
-                "--prompt-overrides must be a JSON object mapping prompt-name "
-                "(string) -> override text (string): %s", ov_path,
-            )
-            return 1
-        overrides = loaded
-        try:
-            with prompt_overrides(overrides):
-                cand_version = effective_prompt_version()
-        except ValueError as exc:  # unknown prompt-constant name
-            logger.error("%s", exc)
-            return 1
+    The default invocation (no seed, no overrides, ``progress=None``) is
+    **byte-identical** to the historical ``main()`` path: ``prompt_overrides({})``
+    is a no-op, ``effective_prompt_version()`` returns the real ``PROMPT_VERSION``,
+    and every ``_emit`` below is a no-op — so the analyze→generate prompt cache and
+    the result-record bytes are unchanged.
+
+    ``seed_data`` is an already-loaded + validated corpus seed (the caller owns the
+    file I/O, so a bad path fails before any paid call). ``prompt_overrides_map`` is
+    the already-parsed name→text mapping; an unknown prompt-constant name raises
+    ``ValueError`` here, before the fixture loop. An unknown ``--fixture`` raises
+    ``FileNotFoundError``. ``progress`` (optional) is invoked with
+    ``(event, payload)`` at coarse milestones so a caller can stream progress; it
+    never alters the result.
+    """
+    def _emit(event: str, **payload: Any) -> None:
+        if progress is not None:
+            progress(event, payload)
+
+    # Candidate prompt overrides: the caller (CLI ``main`` / console route) has
+    # already read + shape-validated the mapping; here we validate the prompt-NAMES
+    # once (an unknown constant raises ValueError) and surface the candidate:<hash>
+    # tag the run is quarantined under — all before any paid LLM call. An empty map
+    # is a no-op, so the default path stays byte-identical. ``seed_data`` arrives
+    # pre-loaded from the caller (file I/O + schema validation already done).
+    overrides: dict[str, str] = dict(prompt_overrides_map or {})
+    candidate_version: str | None = None
+    if overrides:
+        with prompt_overrides(overrides):
+            candidate_version = effective_prompt_version()
         logger.warning(
             "PROMPT OVERRIDES ACTIVE — keys=%s; this run is logged as "
             "prompt_version=%s (quarantined from score-over-time).",
-            sorted(overrides), cand_version,
-        )
-
-    # --seed: build each fixture's context from a corpus seed.json via
-    # build_context_set_from_db instead of the file-based _build_context. Eager-
-    # load + validate here so a bad path / malformed JSON / unsupported schema
-    # version all exit non-zero BEFORE any paid LLM call. Absent flag → seed_data
-    # stays None and the file-based path is byte-identical.
-    seed_data: dict | None = None
-    if args.seed:
-        try:
-            seed_data = load_seed(args.seed)
-        except (OSError, json.JSONDecodeError, ValueError) as exc:
-            logger.error("Could not load --seed %s: %s", args.seed, exc)
-            return 1
-        logger.warning(
-            "SEED MODE ACTIVE — corpus from %s (candidate=%s, schema v%s); fixture "
-            "resume files are ignored, JD + expected.json still grade.",
-            args.seed, seed_data.get("candidate_username"),
-            seed_data.get("seed_schema_version"),
+            sorted(overrides), candidate_version,
         )
 
     # Load static baseline data once for baseline_comparison fields on JSONL records.
@@ -917,31 +897,27 @@ def main(argv: list[str] | None = None) -> int:
         except (OSError, json.JSONDecodeError):
             pass
 
-    anchor_version: str | None = "v1" if args.suite == "anchor" else None
+    anchor_version: str | None = "v1" if suite == "anchor" else None
 
-    try:
-        fixtures = _select_fixtures(args.suite, args.fixture)
-    except FileNotFoundError as exc:
-        logger.error("%s", exc)
-        return 1
+    fixtures = _select_fixtures(suite, fixture_name)
 
     if not fixtures:
         logger.warning("No fixtures matched the selection")
-        return 0
+        return EvalRunResult(0, None, 0, 0, [], [], candidate_version)
 
-    rubrics = _select_rubrics(args.subset)
+    rubrics = _select_rubrics(subset)
     rubric_versions = {rp: hashlib.sha256(rp.read_bytes()).hexdigest() for rp in rubrics}
     if not rubrics:
         logger.warning("No rubrics matched the selection")
-        return 0
+        return EvalRunResult(0, None, 0, 0, [], [], candidate_version)
 
     logger.info(
         "Eval run: %d fixtures × %d rubrics = %d gradings (judge model: %s)",
         len(fixtures), len(rubrics), len(fixtures) * len(rubrics), JUDGE_MODEL,
     )
 
-    client = _get_client()
-    out_dir = Path(args.out_dir)
+    client = client or _get_client()
+    out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%SZ")
     out_path_for_baseline = out_dir / f"{timestamp}.jsonl"
@@ -974,12 +950,17 @@ def main(argv: list[str] | None = None) -> int:
         seed_username: str | None = None
         if seed_data is not None:
             session, seed_username = stack.enter_context(seeded_session(seed_data))
-        for fdir in fixtures:
+        total_fixtures = len(fixtures)
+        for index, fdir in enumerate(fixtures):
             try:
                 fixture = _load_fixture(fdir, seed_mode=seed_data is not None)
             except Exception as exc:
                 logger.error("Fixture load failed: %s — %s", fdir.name, exc)
                 continue
+            _emit(
+                "fixture_start",
+                fixture=fixture["name"], index=index, total=total_fixtures,
+            )
 
             # One run_id per fixture pipeline so the analyze + generate calls
             # share an ID. Lands in logs/llm_calls.jsonl AND on every per-rubric
@@ -1013,12 +994,14 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     context = _build_context(fixture)
                 _t_analyze = time.perf_counter()
+                _emit("analyzing", fixture=fixture["name"], index=index, total=total_fixtures)
                 analysis = analyze(
                     client, context,
                     username=f"eval:{fixture['name']}",
                     run_id=run_id,
                 )
                 _t_clarify = time.perf_counter()
+                _emit("clarifying", fixture=fixture["name"], index=index, total=total_fixtures)
                 try:
                     clarify_result = clarify(
                         client, context, analysis,
@@ -1036,6 +1019,7 @@ def main(argv: list[str] | None = None) -> int:
                         fixture["name"], exc,
                     )
                 _t_generate = time.perf_counter()
+                _emit("generating", fixture=fixture["name"], index=index, total=total_fixtures)
                 result = generate(
                     client, context, analysis,
                     username=f"eval:{fixture['name']}",
@@ -1057,7 +1041,7 @@ def main(argv: list[str] | None = None) -> int:
                     "run_id": run_id,
                     "prompt_version": effective_prompt_version(),
                     "anchor_version": anchor_version,
-                    "suite": args.suite,
+                    "suite": suite,
                     "fixture_hash": fixture["hash"],
                     "rubric_version": None,
                     "model_snapshots": MODEL_SNAPSHOTS,
@@ -1131,7 +1115,7 @@ def main(argv: list[str] | None = None) -> int:
             payload_det["post_generation"] = det_metrics
 
             grounding_signals_data: dict | None = None
-            if args.grounding_signals:
+            if grounding_signals:
                 from evals.grounding_signals import run_grounding_signals  # noqa: PLC0415
                 grounding_signals_data = run_grounding_signals(
                     result.get("resume_content", ""),
@@ -1175,7 +1159,7 @@ def main(argv: list[str] | None = None) -> int:
                         "cost_usd": cost_usd,
                         "pipeline_latency_ms": elapsed_ms,
                         "anchor_version": anchor_version,
-                        "suite": args.suite,
+                        "suite": suite,
                         "fixture_hash": fixture["hash"],
                         "rubric_version": rubric_versions.get(rubric_path),
                         "model_snapshots": MODEL_SNAPSHOTS,
@@ -1217,7 +1201,7 @@ def main(argv: list[str] | None = None) -> int:
                     iter_score = iter_record.get("score")
                     iter_record.update({
                         "anchor_version": anchor_version,
-                        "suite": args.suite,
+                        "suite": suite,
                         "fixture_hash": fixture["hash"],
                         "rubric_version": rubric_versions.get(rubric_path),
                         "model_snapshots": MODEL_SNAPSHOTS,
@@ -1294,7 +1278,7 @@ def main(argv: list[str] | None = None) -> int:
                     "cost_usd": cost_usd,
                     "pipeline_latency_ms": elapsed_ms,
                     "anchor_version": anchor_version,
-                    "suite": args.suite,
+                    "suite": suite,
                     "fixture_hash": fixture["hash"],
                     "rubric_version": rubric_versions.get(rubric_path),
                     "model_snapshots": MODEL_SNAPSHOTS,
@@ -1318,6 +1302,11 @@ def main(argv: list[str] | None = None) -> int:
                 logger.info(
                     "  %s × %s → score=%s (%s)",
                     fixture["name"], rubric_path.stem, score, verdict,
+                )
+                _emit(
+                    "rubric_done",
+                    fixture=fixture["name"], rubric=rubric_path.stem,
+                    score=score, status=record.get("status"), verdict=verdict,
                 )
 
                 if isinstance(score, (int, float)) and record.get("status") != "judge_error":
@@ -1369,7 +1358,7 @@ def main(argv: list[str] | None = None) -> int:
                 "weights_used": weights,
                 "scores_used": fixture_scores,
                 "anchor_version": anchor_version,
-                "suite": args.suite,
+                "suite": suite,
                 "fixture_hash": fixture["hash"],
                 "model_snapshots": MODEL_SNAPSHOTS,
                 "phase_latencies_ms": phase_latencies_ms,
@@ -1379,6 +1368,11 @@ def main(argv: list[str] | None = None) -> int:
                 fixture["name"],
                 eval_composite if eval_composite is not None else 0.0,
                 len(fixture_scores),
+            )
+            _emit(
+                "fixture_done",
+                fixture=fixture["name"], index=index, total=total_fixtures,
+                eval_composite=eval_composite,
             )
 
     logger.info(
@@ -1406,7 +1400,130 @@ def main(argv: list[str] | None = None) -> int:
                 len(regressions), REGRESSION_DELTA,
             )
 
-    return 0 if (n_fail == 0 and not regressions) else 2
+    exit_code = 0 if (n_fail == 0 and not regressions) else 2
+    return EvalRunResult(
+        exit_code=exit_code,
+        out_path=out_path,
+        n_pass=n_pass,
+        n_fail=n_fail,
+        regressions=regressions,
+        improvements=improvements,
+        candidate_version=candidate_version,
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Thin argparse wrapper over ``run_suite`` — preserves the CLI contract.
+
+    Parses flags, performs the CLI-only file I/O (read + shape-validate the
+    ``--prompt-overrides`` JSON; eager-load + validate the ``--seed`` corpus), then
+    delegates to ``run_suite`` and returns its exit code. The no-flag invocation is
+    byte-identical to the historical behavior.
+    """
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+    )
+
+    ap = argparse.ArgumentParser(description="callback. eval harness")
+    ap.add_argument(
+        "--suite",
+        choices=["synthetic", "real", "all", "anchor", "exploration"],
+        default="synthetic",
+    )
+    ap.add_argument("--subset", choices=["smoke", "full"], default="full")
+    ap.add_argument("--fixture", help="Run a single named fixture (overrides --suite)")
+    ap.add_argument("--out-dir", default=str(RESULTS_DIR))
+    ap.add_argument(
+        "--grounding-signals",
+        action="store_true",
+        default=False,
+        help=(
+            "Run DeBERTa NLI + MiniCheck-FT5 offline grounding scorers per bullet. "
+            "Requires: pip install -e '.[eval-grounding]' (see CONTRIBUTING.md). "
+            "First run downloads ~3.2 GB of model weights to the HuggingFace cache."
+        ),
+    )
+    ap.add_argument(
+        "--prompt-overrides",
+        metavar="PATH",
+        help=(
+            "Path to a JSON file mapping a system-prompt constant name "
+            "(e.g. SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT) to candidate override "
+            "text. Injects the candidate prompt for THIS run only — analyzer.py is "
+            "never edited and the run is logged as prompt_version 'candidate:<hash>' "
+            "so it never pollutes score-over-time. Omit for the byte-identical "
+            "default path."
+        ),
+    )
+    ap.add_argument(
+        "--seed",
+        metavar="PATH",
+        help=(
+            "Path to a corpus seed.json (from scripts.export_corpus_seed). Builds "
+            "each fixture's context via build_context_set_from_db over an in-memory "
+            "SQLite import of the seed — the REAL corpus→context product path — "
+            "instead of parsing the fixture's resume file. The fixture's jd.txt + "
+            "expected.json still drive grading. Omit for the byte-identical "
+            "file-based path."
+        ),
+    )
+    args = ap.parse_args(argv)
+
+    # --prompt-overrides: read + shape-validate the file here (a CLI-file concern);
+    # the prompt-NAME validation happens once inside run_suite, before any paid call.
+    overrides: dict[str, str] = {}
+    if args.prompt_overrides:
+        ov_path = Path(args.prompt_overrides)
+        try:
+            loaded = json.loads(ov_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.error("Could not read --prompt-overrides %s: %s", ov_path, exc)
+            return 1
+        if not isinstance(loaded, dict) or not all(
+            isinstance(k, str) and isinstance(v, str) for k, v in loaded.items()
+        ):
+            logger.error(
+                "--prompt-overrides must be a JSON object mapping prompt-name "
+                "(string) -> override text (string): %s", ov_path,
+            )
+            return 1
+        overrides = loaded
+
+    # --seed: eager-load + validate the corpus seed (bad path / JSON / schema → 1)
+    # before any paid LLM call. Absent → seed_data=None and the file-based path is
+    # byte-identical.
+    seed_data: dict | None = None
+    if args.seed:
+        try:
+            seed_data = load_seed(args.seed)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            logger.error("Could not load --seed %s: %s", args.seed, exc)
+            return 1
+        logger.warning(
+            "SEED MODE ACTIVE — corpus from %s (candidate=%s, schema v%s); fixture "
+            "resume files are ignored, JD + expected.json still grade.",
+            args.seed, seed_data.get("candidate_username"),
+            seed_data.get("seed_schema_version"),
+        )
+
+    try:
+        result = run_suite(
+            suite=args.suite,
+            subset=args.subset,
+            fixture_name=args.fixture,
+            seed_data=seed_data,
+            prompt_overrides_map=overrides,
+            grounding_signals=args.grounding_signals,
+            out_dir=args.out_dir,
+        )
+    except FileNotFoundError as exc:  # unknown --fixture
+        logger.error("%s", exc)
+        return 1
+    except ValueError as exc:  # unknown prompt-override constant name
+        logger.error("%s", exc)
+        return 1
+    return result.exit_code
 
 
 if __name__ == "__main__":
