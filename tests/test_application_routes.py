@@ -203,11 +203,15 @@ class TestListApplications:
         body = client.get("/api/users/alice/applications").get_json()
         assert body[0]["pending_proposals"] == 2
 
-    def test_missing_candidate_returns_409_needs_onboarding(self, app_app):
+    def test_missing_candidate_returns_200_needs_onboarding(self, app_app):
+        # Read precondition unmet → 200 + needs_onboarding (empty list), not a
+        # 409 conflict, so the UI shows the import CTA without a console error.
         client = app_app.app.test_client()
         r = client.get("/api/users/alice/applications")
-        assert r.status_code == 409
-        assert r.get_json()["needs_onboarding"] is True
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["needs_onboarding"] is True
+        assert body["applications"] == []
 
     def test_400_when_user_unknown(self, app_app):
         client = app_app.app.test_client()

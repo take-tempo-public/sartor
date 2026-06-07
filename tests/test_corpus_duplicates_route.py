@@ -110,11 +110,16 @@ class TestDuplicatesRoute:
         # token overlap — but the parameter must round-trip and clamp.
         assert 0.5 <= b_loose["threshold"] <= 1.0
 
-    def test_409_when_candidate_missing(self, dup_app):
+    def test_200_needs_onboarding_when_candidate_missing(self, dup_app):
+        # Read precondition unmet → 200 + needs_onboarding (empty clusters),
+        # not a 409 conflict.
         client = dup_app.app.test_client()
         r = client.get("/api/users/alice/duplicates")
-        assert r.status_code == 409
-        assert r.get_json()["needs_onboarding"] is True
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["needs_onboarding"] is True
+        assert body["experiences"] == []
+        assert body["cluster_count"] == 0
 
     def test_400_when_user_unknown(self, dup_app):
         client = dup_app.app.test_client()

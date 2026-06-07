@@ -154,13 +154,18 @@ class TestListUserPersonas:
         r = client.get("/api/users/ghost/personas")
         assert r.status_code == 400
 
-    def test_known_user_without_candidate_returns_409(self, persona_app):
-        # config exists, but no candidate row in DB → needs_onboarding so the
-        # UI can offer the legacy-import flow.
+    def test_known_user_without_candidate_returns_200_needs_onboarding(self, persona_app):
+        # config exists, but no candidate row in DB. A read precondition is
+        # NOT a conflict: the route returns 200 + needs_onboarding (empty
+        # lists) so the UI offers the legacy-import flow without a red console
+        # error. (POST writes keep 409.)
         client = persona_app.app.test_client()
         r = client.get("/api/users/alice/personas")
-        assert r.status_code == 409
-        assert r.get_json()["needs_onboarding"] is True
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["needs_onboarding"] is True
+        assert body["bundled"] == []
+        assert body["owned"] == []
 
 
 # ---------------------------------------------------------------------------

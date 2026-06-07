@@ -150,8 +150,12 @@ class TestListClarifications:
         r = client.get("/api/users/alice/clarifications?kind=bogus")
         assert r.status_code == 400
 
-    def test_missing_candidate_returns_409_needs_onboarding(self, memory_app):
+    def test_missing_candidate_returns_200_needs_onboarding(self, memory_app):
+        # Read precondition unmet → 200 + needs_onboarding (empty list), not a
+        # 409 conflict, so the Memory tab shows the import CTA cleanly.
         client = memory_app.app.test_client()
         r = client.get("/api/users/alice/clarifications")
-        assert r.status_code == 409
-        assert r.get_json()["needs_onboarding"] is True
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["needs_onboarding"] is True
+        assert body["clarifications"] == []

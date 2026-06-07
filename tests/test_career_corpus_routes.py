@@ -129,15 +129,17 @@ class TestListExperiences:
         assert body[0]["bullet_count_pending"] == 0
         assert body[1]["id"] == e2
 
-    def test_missing_candidate_returns_409_needs_onboarding(self, corpus_app):
-        # Config exists, but no candidate row seeded — the route signals
-        # needs_onboarding so the UI offers the legacy-import flow.
+    def test_missing_candidate_returns_200_needs_onboarding(self, corpus_app):
+        # Config exists, but no candidate row seeded. A read precondition is
+        # NOT a conflict: 200 + needs_onboarding (empty list) so the Career
+        # Corpus tab offers the legacy-import flow without a console error.
+        # (The POST create-experience route keeps 409 — see TestCreateExperience.)
         client = corpus_app.app.test_client()
         r = client.get("/api/users/alice/experiences")
-        assert r.status_code == 409
+        assert r.status_code == 200
         body = r.get_json()
-        assert "corpus" in body["error"].lower()
         assert body["needs_onboarding"] is True
+        assert body["experiences"] == []
 
     def test_400_when_user_unknown(self, corpus_app):
         client = corpus_app.app.test_client()

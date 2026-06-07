@@ -27,6 +27,8 @@ class UserPicker:
 class TopTabs:
     CORPUS = "#topTabCorpus"
     APPLICATION = "#topTabApplication"
+    PERSONAS = "#topTabPersonas"
+    MEMORY = "#topTabMemory"
 
 
 class Corpus:
@@ -80,6 +82,22 @@ class PriorApps:
     @staticmethod
     def card(app_id: int) -> str:
         return f"#app-card-{app_id}"
+
+
+class Personas:
+    PANEL = "#panelPersonas"
+
+
+class Memory:
+    PANEL = "#panelMemory"
+
+
+class Onboarding:
+    """The shared needs-onboarding CTA (`_renderNeedsOnboarding`) rendered into
+    any passive tab (Corpus / Memory / Personas / Applications) when the
+    selected user has a config but no corpus Candidate row yet."""
+
+    CTA_NAME = "IMPORT INTO CORPUS"
 
 
 class Output:

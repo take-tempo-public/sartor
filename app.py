@@ -2178,10 +2178,16 @@ def list_user_personas(username: str):
         try:
             candidate = session.query(Candidate).filter_by(username=safe_user).first()
             if candidate is None:
+                # Read precondition unmet (no corpus row yet) is NOT a conflict —
+                # return 200 with an empty, success-shaped body + the flag. The
+                # frontend keys off `needs_onboarding` to show the import CTA; a
+                # naive consumer just sees empty lists. (POST writes keep 409 —
+                # see AGENTS-noted contract.)
                 return jsonify({
-                    "error": "Candidate not in corpus yet",
+                    "bundled": [],
+                    "owned": [],
                     "needs_onboarding": True,
-                }), 409
+                })
             bundled = session.query(PersonaTemplate).filter_by(source="bundled").all()
             owned = session.query(PersonaTemplate).filter_by(candidate_id=candidate.id).all()
             return jsonify({
@@ -3130,10 +3136,10 @@ def list_experiences(username: str):
         try:
             candidate = session.query(Candidate).filter_by(username=safe_user).first()
             if candidate is None:
-                return jsonify({
-                    "error": "Candidate not in corpus yet",
-                    "needs_onboarding": True,
-                }), 409
+                # Read precondition unmet → 200 + flag, not 409 (see
+                # list_user_personas). Success shape is a bare array; the
+                # needs-onboarding case is the discriminated object.
+                return jsonify({"experiences": [], "needs_onboarding": True})
             rows = session.query(Experience).filter_by(
                 candidate_id=candidate.id,
             ).order_by(Experience.start_date.desc(), Experience.id.desc()).all()
@@ -4057,10 +4063,14 @@ def list_corpus_duplicates(username: str):
     try:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
+            # Read precondition unmet → 200 + flag, not 409 (see
+            # list_user_personas). Mirror the success shape, empty.
             return jsonify({
-                "error": "Candidate not in corpus yet",
+                "threshold": threshold,
+                "experiences": [],
+                "cluster_count": 0,
                 "needs_onboarding": True,
-            }), 409
+            })
 
         out_experiences = []
         for exp in session.query(Experience).filter_by(
@@ -4476,10 +4486,10 @@ def list_applications(username: str):
         try:
             candidate = session.query(Candidate).filter_by(username=safe_user).first()
             if candidate is None:
-                return jsonify({
-                    "error": "Candidate not in corpus yet",
-                    "needs_onboarding": True,
-                }), 409
+                # Read precondition unmet → 200 + flag, not 409. Success shape is
+                # a bare array; the needs-onboarding case is the discriminated
+                # object the frontend branches on before treating it as a list.
+                return jsonify({"applications": [], "needs_onboarding": True})
             rows = session.query(Application).filter_by(
                 candidate_id=candidate.id,
             ).order_by(Application.updated_at.desc()).all()
@@ -5460,10 +5470,9 @@ def list_clarifications(username: str):
     try:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
-            return jsonify({
-                "error": "Candidate not in corpus yet",
-                "needs_onboarding": True,
-            }), 409
+            # Read precondition unmet → 200 + flag, not 409 (see
+            # list_user_personas). Success shape is a bare array.
+            return jsonify({"clarifications": [], "needs_onboarding": True})
 
         query = session.query(Clarification).filter_by(candidate_id=candidate.id)
         if not include_promoted:

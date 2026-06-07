@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — needs-onboarding GET reads return `200`, not `409` (`refactor/needs-onboarding-200-on-reads`, v1.0.5)
+
+Found during v1.0.5 verification: creating the first user and clicking across
+the tabs logged a cascade of `409 (CONFLICT)` console errors — one per passive
+tab load (`GET …/personas`, `…/applications`, `…/clarifications`,
+`…/experiences`). The read endpoints were signalling "no corpus row yet" with a
+`409`, which the browser logs red regardless of how the JS handled it (every
+handler already rendered the import CTA — except the persona template picker,
+which showed a misleading "Failed to load templates").
+
+A `409 Conflict` on a **read** is a misuse: asking for a not-yet-onboarded
+user's list is an unmet precondition, not a state conflict. The contract now
+splits by method — **reads → `200`, writes → `409`**:
+
+- **`GET` read endpoints** (`…/personas`, `…/applications`, `…/clarifications`,
+  `…/experiences`, `…/duplicates`) return `200` with an empty, success-shaped
+  body plus `needs_onboarding: true`. The console stays clean and the import CTA
+  still renders; a naive consumer just sees empty lists. (Mirrors the
+  pre-existing `pending-counts` / `summaries` `200`-empty precedent.)
+- **`POST` write endpoints** (analyze, corpus ingest, experience/persona
+  create, persona preview) keep `409 + needs_onboarding` — a write precondition
+  failure reasonably *is* a conflict, and they never fire on a passive load. The
+  live-preview `GET` also keeps `409` (it serves an HTML iframe, not a list, and
+  isn't fired pre-onboarding).
+- **Frontend** (`static/app.js`): `_needsOnboarding()` is now status-agnostic
+  (keys off the body flag), so the one helper covers both the `200` reads and
+  the `409` writes; the six read handlers branch on the flag before treating the
+  body as a collection, and two secondary `/experiences` consumers are
+  `Array.isArray`-guarded against the discriminated shape.
+- **Tests**: the five GET-read route tests flip `409 → 200`; a new dated UX
+  regression (`tests/ux/regression/test_20260606_new_user_no_4xx.py`) seeds a
+  config-only user, sweeps all four tabs, and asserts **zero** `4xx` on any
+  `/api/users/<u>/…` call plus a visible import CTA. Two tab selectors
+  (`TopTabs.PERSONAS` / `TopTabs.MEMORY`) + the shared CTA name were added to the
+  `ui_pages` registry.
+
+No prompt / `PROMPT_VERSION` change, no new dependency.
+
 ### Added — annotation tab + browser bootstrap wrapper: the console's first read-write surface (`feat/annotation-tab`, v1.0.5)
 
 The last branch of the v1.0.5 stream puts the v1.0.4 eval tuning loop on the
