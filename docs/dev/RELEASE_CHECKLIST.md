@@ -47,6 +47,21 @@ criteria.
       every eval record in `deterministic_metrics`. **Box stays unchecked** — the
       calibrated layers (B) are still open, and this item only closes when B lands.
 
+- [ ] **Diagnostics console → interactive self-tuning loop (the "finish the
+      faceplate" arc)** — sourced 2026-06-06 from a walkthrough finding
+      (user-approved). The `feat/diagnostics-console-redesign` + `feat/annotation-tab`
+      surfaces shipped but stop at CLI hand-offs (grounding only via the
+      `--grounding-signals` flag, Tuning tab a stub, `collate` returns a paste-this
+      `run_command`). This arc completes them into a browser-driven loop (produce →
+      annotate → grounding-score → run eval → A/B → see deltas); the irreversible
+      **promote** stays the agent's job. Authoritative sequence + acceptance:
+      [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4 "Diagnostics console — interactive
+      completion". **Status (2026-06-06):** Step 1 `feat/grounding-scorers-in-console`
+      **shipped** (merged `bc29a07`) — scorers reachable from the Annotate tab (opt-in
+      bootstrap + "Score grounding" backfill) and browser bootstraps now capture a
+      `seed.json`. Remaining: `feat/run-eval-from-console` (next), `feat/tuning-tab-ab`,
+      `docs/tuning-loop-discoverability`. **Box stays unchecked** until the arc completes.
+
 - [ ] **Compose custom bullet order visually reverts on reload when an
       experience has no LLM recommendations** — surfaced 2026-06-04 while
       building the `feat/playwright-ux-suite` bullet-drag regression test. The

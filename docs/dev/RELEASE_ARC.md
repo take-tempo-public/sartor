@@ -355,6 +355,35 @@ This phase carries the product redesign **and** the polished home for the Phase 
 > [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md). This deviation pushes the v1.0.5
 > tag by one branch; it does not touch any prompt or `PROMPT_VERSION`.
 
+#### Diagnostics console — interactive completion (the "finish the faceplate" arc)
+
+> **Sourced 2026-06-06** (walkthrough finding, user-approved). `feat/diagnostics-console-redesign`
+> + `feat/annotation-tab` above shipped the console's *surfaces*, but several are
+> read-only or stop at a CLI hand-off: the grounding scorers were reachable only via
+> the `--grounding-signals` CLI flag (the browser bootstrap hard-coded
+> `grounding_fn=None`), the Tuning tab is a labeled stub, and `collate` returns a
+> `run_command` string to paste into a terminal. This arc completes the console into
+> a **browser-driven self-tuning loop** — produce → annotate → grounding-score → run
+> eval → A/B a prompt candidate → see deltas — leaving only the irreversible
+> **promote** (edit `analyzer.py` + bump `PROMPT_VERSION` + TUNING_LOG entry) as the
+> agent's job. The heavy L1/L2 scorers stay **eval-time** (Key Decision #4 +
+> [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md) hot-path discipline unchanged).
+
+| Branch | Depends on | Key work |
+|---|---|---|
+| `feat/grounding-scorers-in-console` ✓ DONE (merged `bc29a07`, 2026-06-06) | annotation-tab | Opt-in grounding on the browser bootstrap + a "Score grounding" backfill route (`POST /api/annotation/fixture/<u>/<slug>/score`); browser bootstraps now snapshot a `seed.json` via `scripts.export_corpus_seed.export_seed` (the source the backfill scores against via `seeded_session`, and the file collate's `--seed` run-command already assumed but never produced). Missing `[eval-grounding]` extras or any scoring failure degrades to un-scored + a streamed `warning` — never a 500. No `PROMPT_VERSION` bump. |
+| `feat/run-eval-from-console` ← **NEXT** | grounding-scorers | Extract a `run_suite(...)` core from `runner.main()` (optional `progress` callback; default path byte-identical) + a localhost SSE `POST /api/eval/run`. "Run eval" affordance on the Quality tab; replace collate's copy-the-command dead-end with a real "Run this fixture" button. Closes the mandatory CLI hop in the loop. |
+| `feat/tuning-tab-ab` | run-eval-from-console | Replace the Tuning stub with a real in-browser A/B: pick a `analyzer._BASE_SYSTEM_PROMPTS` constant, draft/paste a candidate, run baseline+candidate evals (reuse `analyzer.prompt_overrides()` + `evals/tune.py` delta table). **Promote stays the agent's job** — no route edits `analyzer.py`. |
+| `docs/tuning-loop-discoverability` | tuning-tab-ab | Diagnostics-modal copy advertises the interactive loop; `walkthrough.md` / `evals/README.md` / `GROUNDING_METRIC.md` "B (deferred)" note updated. Docs only. |
+
+**Sequencing:** strictly sequential, one branch per session. Each is independently
+shippable; `feat/run-eval-from-console`'s `run_suite` extraction is the precondition
+for `feat/tuning-tab-ab` — do not start a later branch in an earlier one's session.
+This arc rides within the v1.0.5 stream (or a v1.0.6 cut per the size note below —
+user's call). It also advances the deferred grounding calibration ("B"): the
+in-browser annotation loop is what *produces the labels* `GROUNDING_METRIC.md` /
+[`PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md) need.
+
 *If this phase is too large for clean small-stepping, the natural cut is v1.0.5 = redesign + WYSIWYG + tuning UI; v1.0.6 = formats + prior-app + reorder + playwright + pagination. User's call.*
 
 ### v1.0.5 tag criteria
