@@ -63,8 +63,13 @@ criteria.
       `evals.runner.run_suite` (the importable core `main()` is now a thin wrapper over)
       and added the localhost SSE `POST /api/eval/run`, a Quality-tab "Run eval" control,
       and an Annotate-tab "Run this fixture" button — the eval is now runnable from the
-      browser. Remaining: `feat/tuning-tab-ab` (next), `docs/tuning-loop-discoverability`.
-      **Box stays unchecked** until the arc completes.
+      browser; Step 3 `feat/tuning-tab-ab` (2026-06-07) replaced the Tuning stub with a
+      real in-browser candidate-vs-baseline A/B — a dedicated localhost SSE
+      `POST /api/tune/run` drives `run_suite` twice (baseline + candidate via
+      `analyzer.prompt_overrides()`) and renders the `evals.tune` delta table; the
+      irreversible **promote** stays the agent's job (no route edits `analyzer.py`).
+      Remaining: `docs/tuning-loop-discoverability` (docs only). **Box stays unchecked**
+      until the arc completes.
 
 - [ ] **Compose custom bullet order visually reverts on reload when an
       experience has no LLM recommendations** — surfaced 2026-06-04 while

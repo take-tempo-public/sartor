@@ -614,3 +614,111 @@ class TestEvalRunRoute:
         assert captured["seed_data"] is not None
         assert captured["seed_data"]["candidate_username"] == "alice"
         assert captured["fixture_name"] == "alice-bootstrap"
+
+
+# --- console tune A/B (run_suite stubbed; no paid calls) -------------------
+
+class TestTuneRunRoute:
+    """POST /api/tune/run — the localhost SSE route that A/Bs a candidate prompt against
+    baseline. run_suite is stubbed so no paid calls happen, but the stub writes tiny REAL
+    result JSONLs so the route's evals.tune delta computation runs for real (LLM-free)."""
+
+    def _stub_run_suite(self, monkeypatch, tmp_path, calls):
+        import evals.runner as runner
+        from evals.runner import EvalRunResult
+
+        def fake_run_suite(**kwargs):
+            calls.append(kwargs)
+            phase = "candidate" if kwargs.get("prompt_overrides_map") else "baseline"
+            progress = kwargs.get("progress")
+            if progress is not None:
+                progress("fixture_start", {"fixture": "sre-mid-level", "index": 0, "total": 1})
+                progress("rubric_done", {"fixture": "sre-mid-level", "rubric": "grounding",
+                                         "score": 4.7, "status": "ok", "verdict": "pass"})
+            # A real result line so load_scores/build_delta_table/format_delta_table run.
+            out = tmp_path / f"{phase}_{len(calls)}.jsonl"
+            score = 4.7 if phase == "baseline" else 4.0  # candidate moves → non-zero delta
+            out.write_text(
+                json.dumps({"status": "ok", "fixture": "sre-mid-level",
+                            "rubric": "grounding", "score": score}) + "\n",
+                encoding="utf-8",
+            )
+            cv = "candidate:deadbeef0000" if phase == "candidate" else None
+            return EvalRunResult(exit_code=0, out_path=out, n_pass=1, n_fail=0,
+                                 regressions=[], improvements=[], candidate_version=cv)
+
+        monkeypatch.setattr(runner, "run_suite", fake_run_suite)
+
+    def test_ab_streams_delta(self, ann_app, monkeypatch, tmp_path):
+        calls: list = []
+        self._stub_run_suite(monkeypatch, tmp_path, calls)
+        client = ann_app.app.test_client()
+        resp = client.post("/api/tune/run", json={
+            "prompt_overrides": {"SYSTEM_PROMPT": "candidate text"},
+            "suite": "synthetic", "subset": "smoke",
+        })
+        assert resp.status_code == 200
+        body = resp.get_data(as_text=True)
+        assert "event: start" in body
+        assert "event: delta" in body
+        assert "event: error" not in body
+        # Two runs: baseline (no overrides) then candidate (with the override map).
+        assert len(calls) == 2
+        assert calls[0]["prompt_overrides_map"] is None
+        assert calls[1]["prompt_overrides_map"] == {"SYSTEM_PROMPT": "candidate text"}
+        assert calls[0]["seed_data"] is None
+
+    def test_localhost_guard_blocks_remote_host(self, ann_app):
+        client = ann_app.app.test_client()
+        resp = client.post("/api/tune/run", json={
+            "prompt_overrides": {"SYSTEM_PROMPT": "x"},
+        }, headers={"Host": "evil.example"})
+        assert resp.status_code == 403
+
+    def test_invalid_suite_rejected(self, ann_app):
+        client = ann_app.app.test_client()
+        resp = client.post("/api/tune/run", json={
+            "prompt_overrides": {"SYSTEM_PROMPT": "x"}, "suite": "bogus",
+        })
+        assert resp.status_code == 400
+
+    def test_missing_overrides_400(self, ann_app):
+        client = ann_app.app.test_client()
+        resp = client.post("/api/tune/run", json={"suite": "synthetic"})
+        assert resp.status_code == 400
+
+    def test_empty_candidate_text_400(self, ann_app):
+        client = ann_app.app.test_client()
+        resp = client.post("/api/tune/run", json={
+            "prompt_overrides": {"SYSTEM_PROMPT": "   "},
+        })
+        assert resp.status_code == 400
+
+    def test_unknown_constant_400_and_no_run(self, ann_app, monkeypatch, tmp_path):
+        calls: list = []
+        self._stub_run_suite(monkeypatch, tmp_path, calls)
+        client = ann_app.app.test_client()
+        resp = client.post("/api/tune/run", json={
+            "prompt_overrides": {"NOT_A_CONSTANT": "x"}, "suite": "synthetic",
+        })
+        assert resp.status_code == 400
+        # Eager key validation must fire BEFORE the baseline run — no paid spend.
+        assert calls == []
+
+    def test_seed_mode_missing_seed_409(self, ann_app):
+        _seed_bootstrap(ann_app.ANNOTATION_ROOT)
+        client = ann_app.app.test_client()
+        resp = client.post("/api/tune/run", json={
+            "prompt_overrides": {"SYSTEM_PROMPT": "x"},
+            "suite": "real", "slug": "alice-bootstrap", "username": "alice",
+        })
+        assert resp.status_code == 409
+
+    def test_seed_mode_unknown_user_400(self, ann_app):
+        _seed_bootstrap(ann_app.ANNOTATION_ROOT)
+        client = ann_app.app.test_client()
+        resp = client.post("/api/tune/run", json={
+            "prompt_overrides": {"SYSTEM_PROMPT": "x"},
+            "suite": "real", "slug": "alice-bootstrap", "username": "nobody",
+        })
+        assert resp.status_code == 400

@@ -125,7 +125,12 @@ def test_dashboard_console_tabs_and_drawer(
     page.keyboard.press("Escape")
     expect(dash.drawer_open()).to_have_count(0)
 
-    # Tuning tab renders the read-only scaffold banner.
+    # Tuning tab is now an interactive read-write A/B surface (feat/tuning-tab-ab):
+    # the candidate-prompt control renders and its constant picker is populated from
+    # analyzer._BASE_SYSTEM_PROMPTS (proves the embed + IIFE ran, with the unconditional
+    # console-error sentinel asserting no JS threw).
     dash.activate_tab("tuning")
     expect(dash.active_pane("tuning")).to_be_visible()
-    expect(dash.active_pane("tuning")).to_contain_text("Read-only scaffold")
+    expect(dash.active_pane("tuning")).to_contain_text("A/B a candidate prompt")
+    expect(page.locator("#tuneRunBtn")).to_be_visible()
+    expect(page.locator("#tuneConstant")).to_contain_text("SYSTEM_PROMPT")

@@ -31,6 +31,7 @@ from analyzer import (
     clarify_iteration,
     generate,
     generate_streaming,
+    prompt_overrides,
 )
 from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
@@ -6240,6 +6241,170 @@ def eval_run_stream():
             "n_fail": res.n_fail,
             "regressions": len(res.regressions),
             "exit_code": res.exit_code,
+        })
+
+    return Response(
+        stream(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.route("/api/tune/run", methods=["POST"])
+def tune_run_stream():
+    """Run a candidate-vs-baseline prompt A/B from the console (localhost-only, SSE).
+
+    The browser face of the prompt-override tuning loop: drives `run_suite` TWICE in
+    one worker — baseline (no overrides) then candidate (the pasted override map) — and
+    streams a per-(fixture, rubric) delta computed by the LLM-free `evals.tune` helpers.
+    The candidate run self-stamps `prompt_version=candidate:<hash>` via the override
+    primitive, so it never pollutes score-over-time. **Promote stays manual** — this
+    route never edits `analyzer.py`; it only surfaces the delta + candidate text.
+
+    Input JSON: `prompt_overrides` ({CONSTANT_NAME: candidate_text}, required, one of
+    the eight `analyzer._BASE_SYSTEM_PROMPTS` keys) + the same `suite`/`subset`/
+    `grounding_signals` (and optional `slug`+`username` seed mode) as `/api/eval/run`.
+
+    PAID (Sonnet + Haiku) — ~2× a single run (the UI confirm() surfaces the band). All
+    eager validation (bad suite / empty or unknown override / unknown user / missing
+    seed) returns a JSON 4xx BEFORE the worker spends anything — load-bearing because
+    the baseline runs first, so a doomed candidate key must be caught here. Streams
+    `start` / phased progress (`phase`=baseline|candidate) / `delta` / `error`.
+    """
+    if not _is_localhost_request():
+        return jsonify({"error": "localhost only"}), 403
+    data = request.get_json(silent=True) or {}
+
+    suite = str(data.get("suite", "synthetic"))
+    if suite not in {"synthetic", "real", "all", "anchor", "exploration"}:
+        return jsonify({"error": f"Invalid suite: {suite}"}), 400
+    subset = "smoke" if str(data.get("subset", "full")) == "smoke" else "full"
+    grounding_signals = bool(data.get("grounding_signals"))
+
+    # Candidate override map: {CONSTANT_NAME: text}. Required + shape-checked here, then
+    # the prompt-NAMES validated via analyzer's canonical validator (raises ValueError on
+    # an unknown key) — all before any paid call, so a typo never spends the baseline run.
+    raw_overrides = data.get("prompt_overrides")
+    if not isinstance(raw_overrides, dict) or not raw_overrides:
+        return jsonify({"error": "prompt_overrides must be a non-empty object "
+                                 "{CONSTANT_NAME: candidate_text}"}), 400
+    overrides: dict[str, str] = {}
+    for key, value in raw_overrides.items():
+        if not isinstance(value, str) or not value.strip():
+            return jsonify({"error": f"Candidate text for {key} is empty"}), 400
+        overrides[str(key)] = value
+    try:
+        with prompt_overrides(overrides):
+            pass
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    # Optional single-fixture scope (e.g. the collated <slug>). Sanitized like eval/run.
+    raw_fixture = str(data.get("fixture", "")).strip()
+    fixture_name = secure_filename(raw_fixture) if raw_fixture else None
+
+    # Optional corpus-seed mode — identical contract to /api/eval/run. The seed lives
+    # under ANNOTATION_ROOT/<slug>/seed.json (gitignored, PII-bearing); resolve + contain
+    # it and confirm the candidate user exists, all before any paid call.
+    seed_data: dict | None = None
+    raw_slug = str(data.get("slug", "")).strip()
+    if raw_slug:
+        safe_user = _safe_username(str(data.get("username", "")))
+        if not safe_user:
+            return jsonify({"error": "Invalid or unknown user"}), 400
+        fixture_dir = _annotation_fixture_path(raw_slug)
+        if fixture_dir is None or not _within(fixture_dir, ANNOTATION_ROOT):
+            return jsonify({"error": "Invalid fixture slug"}), 400
+        seed_path = fixture_dir / "seed.json"
+        if not _within(seed_path, ANNOTATION_ROOT) or not seed_path.exists():
+            return jsonify({
+                "error": "No seed.json for this fixture — re-run the bootstrap to "
+                         "capture the corpus snapshot, then run the A/B.",
+            }), 409
+        from evals.seed_import import load_seed
+        try:
+            seed_data = load_seed(str(seed_path))
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            return jsonify({"error": "Could not load seed.json", "detail": str(exc)}), 400
+
+    from evals.runner import run_suite
+    from evals.tune import build_delta_table, format_delta_table, load_scores
+
+    def stream():
+        import queue as _queue
+        import threading
+        from dataclasses import asdict
+
+        events: _queue.Queue = _queue.Queue()
+        sentinel = object()
+        result: dict = {}
+
+        def _run(phase: str, overrides_map: dict[str, str] | None):
+            return run_suite(
+                suite=suite,
+                subset=subset,
+                fixture_name=fixture_name,
+                seed_data=seed_data,
+                grounding_signals=grounding_signals,
+                prompt_overrides_map=overrides_map,
+                progress=lambda ev, payload: events.put(
+                    ("progress", ev, {**payload, "phase": phase})
+                ),
+            )
+
+        def worker():
+            try:
+                result["baseline"] = _run("baseline", None)
+                result["candidate"] = _run("candidate", overrides)
+            except Exception as exc:  # noqa: BLE001
+                result["error"] = exc
+            finally:
+                events.put(sentinel)
+
+        threading.Thread(target=worker, daemon=True).start()
+        yield _sse("start", {
+            "mode": "tune", "runs": 2, "suite": suite, "subset": subset,
+            "fixture": fixture_name, "grounding": grounding_signals,
+            "seeded": seed_data is not None, "overrides": sorted(overrides),
+        })
+
+        while True:
+            item = events.get()
+            if item is sentinel:
+                break
+            _, event_kind, payload = item
+            yield _sse(event_kind, payload)
+
+        if "error" in result:
+            logger.error("Console tune A/B failed: %s", result["error"], exc_info=result["error"])
+            yield _sse("error", {
+                "error": "Tune A/B failed.",
+                "detail": str(result["error"]),
+                "http_status": 500,
+            })
+            return
+
+        base = result["baseline"]
+        cand = result["candidate"]
+        if base.out_path is None or cand.out_path is None:
+            yield _sse("error", {"error": "No fixtures matched — nothing to compare."})
+            return
+
+        rows = build_delta_table(load_scores(base.out_path), load_scores(cand.out_path))
+        logger.info(
+            "Console tune A/B complete: baseline %d/%d, candidate %d/%d (%s) → %d row(s)",
+            base.n_pass, base.n_fail, cand.n_pass, cand.n_fail,
+            cand.candidate_version, len(rows),
+        )
+        yield _sse("delta", {
+            "table": format_delta_table(rows),
+            "rows": [asdict(r) for r in rows],
+            "candidate_version": cand.candidate_version,
+            "baseline_file": base.out_path.name,
+            "candidate_file": cand.out_path.name,
+            "regressed": sum(1 for r in rows if r.regressed),
+            "baseline": {"n_pass": base.n_pass, "n_fail": base.n_fail},
+            "candidate": {"n_pass": cand.n_pass, "n_fail": cand.n_fail},
         })
 
     return Response(

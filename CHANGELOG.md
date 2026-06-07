@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — in-browser prompt A/B on the Tuning tab (`feat/tuning-tab-ab`)
+
+Step 3 of the "finish the diagnostics faceplate" arc replaces the Tuning tab's
+read-only stub with a real candidate-vs-baseline A/B: pick an
+`analyzer._BASE_SYSTEM_PROMPTS` constant, edit its text, and run baseline +
+candidate evals in the browser, then read the per-(fixture, rubric) delta. The
+irreversible **promote** (edit the constant + bump `PROMPT_VERSION` + log
+`TUNING_LOG.md`) stays a human/agent step — **no route edits `analyzer.py`**. No
+`PROMPT_VERSION` bump (no prompt template changed) and no new dependency.
+
+- **`POST /api/tune/run`** (`app.py`, localhost-only, SSE) — drives
+  `evals.runner.run_suite` **twice** in one worker (baseline with no overrides,
+  then candidate with the pasted override map), then computes the delta with the
+  LLM-free `evals.tune` helpers (`load_scores` + `build_delta_table` +
+  `format_delta_table`) and streams it. The candidate run self-stamps
+  `prompt_version=candidate:<hash>` via `analyzer.prompt_overrides()`, so it never
+  pollutes score-over-time. Mirrors `/api/eval/run`'s input contract, including the
+  optional corpus-seed mode (`slug` + `username` → `evals/fixtures/real/<slug>/seed.json`,
+  reusing `_safe_username` + `_within(seed, ANNOTATION_ROOT)` + `secure_filename`).
+  All eager validation — bad suite, empty/missing override, an unknown prompt-constant
+  name (via the canonical `prompt_overrides()` validator), unknown user, missing seed —
+  returns a JSON 4xx **before any paid call** (load-bearing: baseline runs first, so a
+  doomed candidate key must be caught up front).
+- **Tuning-tab UI** (`dashboard/templates/dashboard.html`) — a constant picker
+  (with "Load current text" to prefill the baseline), a candidate textarea,
+  suite/subset/grounding controls + an optional real-seed disclosure, a 2×-cost
+  `confirm()` gate (~$0.20 smoke / ~$0.60 full), phased progress, and the rendered
+  delta table + a manual-promote reminder. The shared SSE streamer is generalized to
+  `window.callbackEval.stream(url, params, onEvent)` (the eval-run control now rides
+  it too). The `dashboard/routes.py` index passes `tune_prompts` (read-only use of
+  `analyzer._BASE_SYSTEM_PROMPTS`) for the picker + prefill.
+
 ### Added — run an eval from the console; `run_suite()` core extracted (`feat/run-eval-from-console`)
 
 Step 2 of the "finish the diagnostics faceplate" arc closes the mandatory CLI hop

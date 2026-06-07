@@ -122,6 +122,12 @@
     .eval-run > strong { color: var(--brand); }
     .eval-run .filters { margin: 0.6rem 0 0; }
     .eval-cost { color: var(--fg-2); font-size: 0.8rem; font-style: italic; margin: 0.5rem 0 0; }
+    /* Tuning tab — candidate-vs-baseline A/B (read-write) */
+    .tune-editor { margin: 0.7rem 0 0; }
+    .tune-editor-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
+    #tuneCandidate { width: 100%; box-sizing: border-box; background: var(--bg-2); color: var(--fg-0); border: 1px solid var(--border-2); border-radius: var(--radius-sm); font-family: var(--mono, monospace); font-size: 0.78rem; padding: 0.5rem; resize: vertical; min-height: 8rem; }
+    .tune-delta { margin-top: 0.8rem; padding: 0.7rem 0.85rem; background: var(--bg-2); border: 1px solid var(--border-2); border-radius: var(--radius-sm); color: var(--fg-0); font-family: var(--mono, monospace); font-size: 0.78rem; overflow-x: auto; white-space: pre; }
+    #tunePromote { color: var(--fg-1); font-size: 0.82rem; margin: 0.5rem 0 0; }
     #annCollateResult { margin-top: 0.7rem; }
     #annCollateResult code.short { display: block; white-space: pre-wrap; margin: 0.3rem 0 0.6rem; padding: 0.4rem 0.55rem; background: var(--bg-2); border-radius: var(--radius-sm); }
 
@@ -309,15 +315,69 @@
 
 <!-- ============================= TUNING ============================= -->
 <section class="dash-pane" data-pane="tuning" role="tabpanel">
-  <div class="scaffold-banner">
-    <strong>Read-only scaffold.</strong> Write affordances (kick off a candidate eval,
-    promote a prompt, write TUNING_LOG) land in a later branch — this console stays read-only.
+  <div class="scaffold-banner write">
+    <strong>Read-write — localhost only.</strong> Runs <strong>two</strong> paid eval suites
+    (baseline + candidate) and shows the per-(fixture, rubric) delta. The candidate run logs
+    <code class="short">prompt_version=candidate:&lt;hash&gt;</code> so it never pollutes
+    score-over-time. <strong>Promote stays manual</strong> — copy a winner into the
+    <code class="short">analyzer.py</code> constant, bump <code class="short">PROMPT_VERSION</code>,
+    log <code class="short">TUNING_LOG.md</code> by hand.
   </div>
+
+  <div class="eval-run" id="tuneRun">
+    <strong>A/B a candidate prompt</strong>
+    <span class="sub">Pick a persona constant, edit its text, run candidate-vs-baseline via
+      <code class="short">analyzer.prompt_overrides()</code> + <code class="short">run_suite</code> —
+      the same primitive <code class="short">--prompt-overrides</code> drives.</span>
+    <div class="filters">
+      <label>Constant
+        <select id="tuneConstant"></select>
+      </label>
+      <label>Suite
+        <select id="tuneSuite">
+          <option value="synthetic">synthetic</option>
+          <option value="anchor">anchor</option>
+        </select>
+      </label>
+      <label>Subset
+        <select id="tuneSubset">
+          <option value="smoke">smoke</option>
+          <option value="full">full</option>
+        </select>
+      </label>
+      <label class="bs-grounding" style="margin:0;align-self:end"><input type="checkbox" id="tuneGrounding"> grounding signals</label>
+    </div>
+    <div class="tune-editor">
+      <div class="tune-editor-head">
+        <button class="ann-btn" id="tuneLoadBtn" type="button">Load current text</button>
+        <span class="sub">Loads the baseline constant so you edit it — don't paste a full prompt from scratch.</span>
+      </div>
+      <textarea id="tuneCandidate" rows="10" spellcheck="false"
+        placeholder="Candidate text — the FULL replacement for the chosen constant (not a diff)."></textarea>
+    </div>
+    <details class="annotate-section">
+      <summary>Real-corpus seed (optional) — A/B against your corpus instead of committed fixtures</summary>
+      <div class="filters">
+        <label>Candidate username<input type="text" id="tuneUser" placeholder="e.g. alex"></label>
+        <label>Fixture slug<input type="text" id="tuneSlug" placeholder="&lt;name&gt;"></label>
+      </div>
+      <p class="sub">Sets <code class="short">--suite real --seed</code>: the corpus comes from
+        <code class="short">evals/fixtures/real/&lt;slug&gt;/seed.json</code> (capture it with
+        <code class="short">python -m scripts.export_corpus_seed --user &lt;name&gt;</code>); that fixture's
+        <code class="short">jd.txt</code> + <code class="short">expected.json</code> drive grading.</p>
+    </details>
+    <p class="eval-cost" id="tuneCost"></p>
+    <button class="ann-btn primary" id="tuneRunBtn" type="button">Run A/B</button>
+    <div id="tuneProgress" class="annotate-progress" role="status" aria-live="polite"></div>
+    <pre id="tuneDelta" class="tune-delta" hidden></pre>
+    <p id="tunePromote" hidden></p>
+  </div>
+
   <div class="bento">
     <button class="tile" data-detail="tuning" data-title="Prompt-tuning loop">
       <span class="k">tuning loop</span>
       <span class="v" style="font-size:1rem">prompt-override</span>
-      <span class="sub">candidate-vs-baseline A/B (read-only here)</span>
+      <span class="sub">candidate-vs-baseline A/B (interactive)</span>
     </button>
     <button class="tile" data-detail="tuning" data-title="Prompt-tuning loop">
       <span class="k">baseline</span>
@@ -615,12 +675,15 @@
       <em>without editing the persona constants</em> (the <code class="short">analyzer.prompt_overrides()</code>
       primitive). Candidate runs log <code class="short">prompt_version=candidate:&lt;hash&gt;</code> so they never
       pollute score-over-time.</p>
-    <p class="sub">This tab is a <strong>read-only scaffold</strong>. The interactive loop — drafting a
-      candidate, running candidate-vs-baseline, promoting on approval — runs today via the
-      <code class="short">/prompt-tune</code> and <code class="short">/tune-from-annotations</code> skills and
-      lands as an in-console surface in a later, sign-off-gated branch.</p>
+    <p class="sub">The A/B is now <strong>interactive on this tab</strong>: pick a constant, edit its text,
+      and run candidate-vs-baseline in the browser. The irreversible <strong>promote</strong> (edit the
+      <code class="short">analyzer.py</code> constant, bump <code class="short">PROMPT_VERSION</code>, log
+      <code class="short">TUNING_LOG.md</code>) stays a human/agent step — the
+      <code class="short">/prompt-tune</code> and <code class="short">/tune-from-annotations</code> skills automate
+      drafting + promotion end to end.</p>
     <ul style="color:var(--fg-1);font-size:0.85rem;line-height:1.8;">
       <li>Candidate A/B primitive: <code class="short">analyzer.prompt_overrides()</code> + <code class="short">evals/runner.py --prompt-overrides</code></li>
+      <li>Delta table: <code class="short">python -m evals.tune --baseline A.jsonl --candidate B.jsonl</code></li>
       <li>Iteration history: <code class="short">evals/TUNING_LOG.md</code></li>
       <li>Skills: <code class="short">/prompt-tune</code>, <code class="short">/tune-from-annotations</code></li>
     </ul>
@@ -802,40 +865,47 @@
     if (ev === 'fixture_done') return 'Fixture ' + (p.fixture || '') + ' done' + (p.eval_composite != null ? ' (composite ' + p.eval_composite + ')' : '') + '.';
     return '';
   }
-  // Stream POST /api/eval/run; update progEl, toggle btnEl, call onDone(payload) on success.
-  function run(params, progEl, btnEl, onDone) {
-    if (btnEl) btnEl.disabled = true;
-    if (progEl) progEl.textContent = 'Starting… (paid Sonnet/Haiku calls)';
-    fetch('/api/eval/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) }).then(function (resp) {
+  // Generic SSE POST streamer: calls onEvent(ev, payload) for EVERY server event, plus a
+  // synthetic 'error' on a non-OK pre-stream response and '_closed' when the body ends.
+  // The eval-run wrapper below and the Tuning-tab A/B both ride this one fetch/pump loop.
+  function stream(url, params, onEvent) {
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) }).then(function (resp) {
       if (!resp.ok) {
         return resp.json().then(function (d) { return d; }, function () { return {}; }).then(function (d) {
-          if (progEl) progEl.textContent = 'Error: ' + (d.error || resp.status) + (d.detail ? ' — ' + d.detail : '');
-          if (btnEl) btnEl.disabled = false;
+          onEvent('error', { error: d.error || resp.status, detail: d.detail, http_status: resp.status });
         });
       }
       var reader = resp.body.getReader(); var dec = new TextDecoder(); var buf = '';
       function pump() {
         return reader.read().then(function (chunk) {
-          if (chunk.done) { if (btnEl) btnEl.disabled = false; return; }
+          if (chunk.done) { onEvent('_closed', {}); return; }
           buf += dec.decode(chunk.value, { stream: true });
-          buf = parseSse(buf, function (ev, p) {
-            if (ev === 'done') {
-              if (progEl) progEl.textContent = 'Done — ' + p.n_pass + ' pass / ' + p.n_fail + ' fail'
-                + (p.regressions ? ', ' + p.regressions + ' regression(s)' : '') + ' → ' + (p.out_file || 'results') + '.';
-              if (onDone) onDone(p);
-            } else if (ev === 'error') {
-              if (progEl) progEl.textContent = 'Error: ' + (p.error || 'eval failed') + (p.detail ? ' — ' + p.detail : '');
-            } else {
-              var msg = describe(ev, p); if (msg && progEl) progEl.textContent = msg;
-            }
-          });
+          buf = parseSse(buf, onEvent);
           return pump();
         });
       }
       return pump();
-    }).catch(function () { if (progEl) progEl.textContent = 'Eval request failed.'; if (btnEl) btnEl.disabled = false; });
+    }).catch(function () { onEvent('error', { error: 'request failed' }); });
   }
-  window.callbackEval = { run: run };
+  // Stream POST /api/eval/run; update progEl, toggle btnEl, call onDone(payload) on 'done'.
+  function run(params, progEl, btnEl, onDone) {
+    if (btnEl) btnEl.disabled = true;
+    if (progEl) progEl.textContent = 'Starting… (paid Sonnet/Haiku calls)';
+    stream('/api/eval/run', params, function (ev, p) {
+      if (ev === '_closed') { if (btnEl) btnEl.disabled = false; return; }
+      if (ev === 'done') {
+        if (progEl) progEl.textContent = 'Done — ' + p.n_pass + ' pass / ' + p.n_fail + ' fail'
+          + (p.regressions ? ', ' + p.regressions + ' regression(s)' : '') + ' → ' + (p.out_file || 'results') + '.';
+        if (onDone) onDone(p);
+      } else if (ev === 'error') {
+        if (progEl) progEl.textContent = 'Error: ' + (p.error || 'eval failed') + (p.detail ? ' — ' + p.detail : '');
+        if (btnEl) btnEl.disabled = false;
+      } else {
+        var msg = describe(ev, p); if (msg && progEl) progEl.textContent = msg;
+      }
+    });
+  }
+  window.callbackEval = { run: run, stream: stream, parseSse: parseSse };
 
   // ---- Quality-tab "Run eval" control ----
   var btn = document.getElementById('evalRunBtn');
@@ -858,6 +928,86 @@
     run({ suite: suite, subset: subset, grounding_signals: grounding.checked }, prog, btn, function () {
       prog.textContent += ' Reloading…';
       setTimeout(function () { location.reload(); }, 1400);
+    });
+  });
+})();
+</script>
+
+<!-- ===== Tuning tab: candidate-vs-baseline A/B (reuses window.callbackEval.stream) ===== -->
+<script>
+(function () {
+  var btn = document.getElementById('tuneRunBtn');
+  if (!btn || !window.callbackEval) return;
+  var PROMPTS = {{ tune_prompts | tojson }};
+  var byName = {};
+  var sel = document.getElementById('tuneConstant');
+  PROMPTS.forEach(function (p) {
+    byName[p.name] = p.text;
+    var o = document.createElement('option'); o.value = p.name; o.textContent = p.name; sel.appendChild(o);
+  });
+  var ta = document.getElementById('tuneCandidate');
+  var subsetSel = document.getElementById('tuneSubset');
+  var suiteSel = document.getElementById('tuneSuite');
+  var grounding = document.getElementById('tuneGrounding');
+  var slugEl = document.getElementById('tuneSlug');
+  var userEl = document.getElementById('tuneUser');
+  var cost = document.getElementById('tuneCost');
+  var prog = document.getElementById('tuneProgress');
+  var deltaEl = document.getElementById('tuneDelta');
+  var promote = document.getElementById('tunePromote');
+
+  document.getElementById('tuneLoadBtn').addEventListener('click', function () {
+    ta.value = byName[sel.value] || '';
+  });
+  function updateCost() {
+    cost.textContent = subsetSel.value === 'smoke'
+      ? '≈ $0.20 — two runs (baseline + candidate) × 3 fixtures × grounding (paid, ~2–4 min).'
+      : '≈ $0.60 — two runs (baseline + candidate) × 3 fixtures × 4 rubrics (paid, ~8–12 min).';
+  }
+  subsetSel.addEventListener('change', updateCost); updateCost();
+
+  function describeTune(ev, p) {
+    var ph = p.phase ? '[' + p.phase + '] ' : '';
+    var at = ((p.index || 0) + 1) + '/' + (p.total || '?');
+    if (ev === 'fixture_start') return ph + 'fixture ' + at + ' (' + (p.fixture || '') + ')…';
+    if (ev === 'analyzing') return ph + 'fixture ' + at + ' (' + (p.fixture || '') + '): analyzing…';
+    if (ev === 'clarifying') return ph + 'fixture ' + at + ' (' + (p.fixture || '') + '): clarifying…';
+    if (ev === 'generating') return ph + 'fixture ' + at + ' (' + (p.fixture || '') + '): generating…';
+    if (ev === 'rubric_done') return ph + (p.fixture || '') + ' × ' + (p.rubric || '') + ' → ' + (p.score == null ? '—' : p.score);
+    if (ev === 'fixture_done') return ph + 'fixture ' + (p.fixture || '') + ' done.';
+    return '';
+  }
+
+  btn.addEventListener('click', function () {
+    if (!ta.value.trim()) { prog.textContent = 'Paste or load candidate text first.'; return; }
+    var ovr = {}; ovr[sel.value] = ta.value;
+    var params = { prompt_overrides: ovr, subset: subsetSel.value, grounding_signals: grounding.checked };
+    var slug = (slugEl.value || '').trim();
+    if (slug) { params.suite = 'real'; params.fixture = slug; params.slug = slug; params.username = (userEl.value || '').trim(); }
+    else { params.suite = suiteSel.value; }
+    var est = subsetSel.value === 'smoke' ? '~$0.20' : '~$0.60';
+    var scope = slug ? 'real / seed:' + slug : params.suite + ' / ' + params.subset;
+    if (!window.confirm('Run a candidate-vs-baseline A/B on ' + scope + ' now?\n\nThis runs TWO eval suites (baseline + candidate) — paid Sonnet + Haiku (' + est + ') and takes several minutes.')) return;
+    btn.disabled = true;
+    deltaEl.hidden = true; promote.hidden = true;
+    prog.textContent = 'Starting A/B — baseline then candidate… (paid Sonnet/Haiku)';
+    window.callbackEval.stream('/api/tune/run', params, function (ev, p) {
+      if (ev === '_closed') { btn.disabled = false; return; }
+      if (ev === 'delta') {
+        deltaEl.hidden = false; deltaEl.textContent = p.table || '(no delta)';
+        promote.hidden = false;
+        promote.textContent = 'Candidate ' + (p.candidate_version || '') + ' · baseline '
+          + (p.baseline ? p.baseline.n_pass + '✓/' + p.baseline.n_fail + '✗' : '?') + ' · candidate '
+          + (p.candidate ? p.candidate.n_pass + '✓/' + p.candidate.n_fail + '✗' : '?') + ' · '
+          + (p.regressed ? p.regressed + ' regression(s).' : 'no regressions.')
+          + ' Promote a winner by hand: copy the text into the analyzer.py constant, bump PROMPT_VERSION, log TUNING_LOG.md.';
+        prog.textContent = 'A/B complete (' + (p.baseline_file || '') + ' vs ' + (p.candidate_file || '') + ').';
+      } else if (ev === 'error') {
+        prog.textContent = 'Error: ' + (p.error || 'A/B failed') + (p.detail ? ' — ' + p.detail : '');
+        btn.disabled = false;
+      } else {
+        var msg = describeTune(ev, p); if (msg) prog.textContent = msg;
+      }
     });
   });
 })();
