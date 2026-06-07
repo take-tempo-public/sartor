@@ -1335,10 +1335,16 @@ function openErrorModal() {
 // ===============================================================
 
 // True when a DB-backed route reports the selected user has no candidate
-// row yet (HTTP 409 + needs_onboarding). Pre-existing config-only users
-// (e.g. imported before the DB migration) hit this until imported.
+// row yet. Pre-existing config-only users (e.g. imported before the DB
+// migration) hit this until imported.
+//
+// Status-agnostic by design: GET *read* endpoints now signal this via
+// `200 + {needs_onboarding:true}` (a read precondition isn't a conflict),
+// while POST *write* endpoints still use `409 + {needs_onboarding:true}`
+// (a write precondition reasonably is). Keying off the body flag alone
+// covers both. `res` is retained for call-site symmetry / future use.
 function _needsOnboarding(res, data) {
-  return res && res.status === 409 && data && data.needs_onboarding === true;
+  return !!(data && data.needs_onboarding === true);
 }
 
 // Opens the onboarding modal. On successful import it closes and calls
@@ -2283,14 +2289,6 @@ async function refreshCorpus() {
     _setLoadingPlaceholder(list, 'Network error.');
     return;
   }
-  if (res.status === 409) {
-    const data = await res.json().catch(() => ({}));
-    if (_needsOnboarding(res, data)) {
-      document.getElementById('corpusToolbar').style.display = 'none';
-      _renderNeedsOnboarding(list, refreshCorpus);
-      return;
-    }
-  }
   if (res.status === 404) {
     _clearChildren(list);
     document.getElementById('corpusEmptyHint').textContent =
@@ -2308,7 +2306,12 @@ async function refreshCorpus() {
     _setLoadingPlaceholder(list, `Failed to load corpus: ${detail}`);
     return;
   }
-  const data = await res.json();
+  const data = await res.json().catch(() => []);
+  if (_needsOnboarding(res, data)) {
+    document.getElementById('corpusToolbar').style.display = 'none';
+    _renderNeedsOnboarding(list, refreshCorpus);
+    return;
+  }
   _corpusExperiences = data;
   _corpusLoadedForUser = currentUser;
   _renderCorpusList();
@@ -2895,7 +2898,11 @@ async function _reloadCorpusCard(expId) {
 async function refreshCorpusSummaryFor(expId) {
   const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
   if (!res.ok) return;
-  _corpusExperiences = await res.json();
+  const body = await res.json().catch(() => []);
+  // `/experiences` returns a bare array on success but a needs_onboarding
+  // object for un-onboarded users — only treat an array as the list.
+  if (!Array.isArray(body)) return;
+  _corpusExperiences = body;
   const exp = _corpusExperiences.find(e => e.id === expId);
   if (!exp) return;
   const card = document.getElementById(`corpus-exp-${expId}`);
@@ -3100,14 +3107,6 @@ async function refreshMemory() {
     _setLoadingPlaceholder(list, 'Network error.');
     return;
   }
-  if (res.status === 409) {
-    const data = await res.json().catch(() => ({}));
-    if (_needsOnboarding(res, data)) {
-      countEl.textContent = '0 entries';
-      _renderNeedsOnboarding(list, refreshMemory);
-      return;
-    }
-  }
   if (res.status === 404) {
     _setLoadingPlaceholder(list, 'Candidate not in corpus yet.');
     countEl.textContent = '0 entries';
@@ -3117,7 +3116,12 @@ async function refreshMemory() {
     _setLoadingPlaceholder(list, 'Failed to load.');
     return;
   }
-  const rows = await res.json();
+  const rows = await res.json().catch(() => []);
+  if (_needsOnboarding(res, rows)) {
+    countEl.textContent = '0 entries';
+    _renderNeedsOnboarding(list, refreshMemory);
+    return;
+  }
   _memoryLoaded = true;
   countEl.textContent = `${rows.length} entr${rows.length === 1 ? 'y' : 'ies'}`;
   _clearChildren(list);
@@ -3175,7 +3179,10 @@ async function _promoteMemoryRow(r) {
   if (!_corpusExperiences || _corpusExperiences.length === 0) {
     try {
       const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
-      if (res.ok) _corpusExperiences = await res.json();
+      if (res.ok) {
+        const body = await res.json().catch(() => []);
+        if (Array.isArray(body)) _corpusExperiences = body;
+      }
     } catch {}
   }
   if (!_corpusExperiences || _corpusExperiences.length === 0) {
@@ -3287,15 +3294,15 @@ async function loadCorpusDuplicates() {
     _setLoadingPlaceholder(list, 'Network error.');
     return;
   }
-  if (res.status === 409) {
-    _setLoadingPlaceholder(list, 'Candidate not onboarded yet.');
-    return;
-  }
   if (!res.ok) {
     _setLoadingPlaceholder(list, 'Failed to load duplicates.');
     return;
   }
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
+  if (_needsOnboarding(res, body)) {
+    _setLoadingPlaceholder(list, 'Candidate not onboarded yet.');
+    return;
+  }
   _clearChildren(list);
   if (body.cluster_count === 0) {
     _setLoadingPlaceholder(list, 'No near-duplicate clusters found (threshold ' + body.threshold + ').');
@@ -3394,14 +3401,6 @@ async function refreshApplications() {
     _setLoadingPlaceholder(list, 'Network error.');
     return;
   }
-  if (res.status === 409) {
-    const data = await res.json().catch(() => ({}));
-    if (_needsOnboarding(res, data)) {
-      if (countEl) countEl.textContent = '0 applications';
-      _renderNeedsOnboarding(list, refreshApplications);
-      return;
-    }
-  }
   if (res.status === 404) {
     _setLoadingPlaceholder(list, `No applications yet for ${currentUser}. Analyze a JD below to start one.`);
     if (countEl) countEl.textContent = '0 applications';
@@ -3411,7 +3410,12 @@ async function refreshApplications() {
     _setLoadingPlaceholder(list, 'Failed to load applications.');
     return;
   }
-  const apps = await res.json();
+  const apps = await res.json().catch(() => []);
+  if (_needsOnboarding(res, apps)) {
+    if (countEl) countEl.textContent = '0 applications';
+    _renderNeedsOnboarding(list, refreshApplications);
+    return;
+  }
   _renderApplicationsList(apps);
 }
 
@@ -3753,13 +3757,6 @@ async function _loadOwnedPersonas() {
     _setLoadingPlaceholder(grid, 'Network error.');
     return;
   }
-  if (res.status === 409) {
-    const data = await res.json().catch(() => ({}));
-    if (_needsOnboarding(res, data)) {
-      _renderNeedsOnboarding(grid, _loadOwnedPersonas);
-      return;
-    }
-  }
   if (res.status === 404) {
     _setLoadingPlaceholder(grid, 'No DB record for this user yet. Onboarding creates one on first import.');
     return;
@@ -3775,7 +3772,11 @@ async function _loadOwnedPersonas() {
     _setLoadingPlaceholder(grid, `Failed to load: ${detail}`);
     return;
   }
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
+  if (_needsOnboarding(res, body)) {
+    _renderNeedsOnboarding(grid, _loadOwnedPersonas);
+    return;
+  }
   _clearChildren(grid);
   const owned = body.owned || [];
   if (owned.length === 0) {
@@ -4841,7 +4842,17 @@ async function _loadTemplatePicker() {
     if (list) _setLoadingPlaceholder(list, `Failed to load templates: ${detail}`);
     return;
   }
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
+  // Brand-new user: config exists but no Candidate row yet (the read
+  // endpoint now signals this via 200 + needs_onboarding). Mirror
+  // _loadOwnedPersonas / refreshApplications and surface the onboarding CTA
+  // instead of a misleading "Failed to load templates" error. Return early —
+  // the <select> hydration + live-preview kickoff below both assume a
+  // populated body.
+  if (_needsOnboarding(res, body)) {
+    if (list) _renderNeedsOnboarding(list, _loadTemplatePicker);
+    return;
+  }
   // Populate the hidden <select> so _readSelectedPersonaId keeps working.
   while (sel.options.length > 1) sel.remove(1);
   const addOpt = (p, group) => {
