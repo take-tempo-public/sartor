@@ -117,6 +117,14 @@
     .scaffold-banner { background: var(--info-soft); border: 1px solid var(--border-2); color: var(--fg-1); padding: 0.6rem 0.9rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 1rem; }
     .scaffold-banner.write { background: var(--warning-soft); }
 
+    /* Run-eval control (Quality tab) + collate run-this-fixture result (Annotate tab) */
+    .eval-run { background: var(--info-soft); border: 1px solid var(--border-2); border-radius: var(--radius-md); padding: 0.8rem 1rem; margin-bottom: 1.2rem; }
+    .eval-run > strong { color: var(--brand); }
+    .eval-run .filters { margin: 0.6rem 0 0; }
+    .eval-cost { color: var(--fg-2); font-size: 0.8rem; font-style: italic; margin: 0.5rem 0 0; }
+    #annCollateResult { margin-top: 0.7rem; }
+    #annCollateResult code.short { display: block; white-space: pre-wrap; margin: 0.3rem 0 0.6rem; padding: 0.4rem 0.55rem; background: var(--bg-2); border-radius: var(--radius-sm); }
+
     /* Annotate tab — the console's only read-write surface */
     .annotate-section { margin-bottom: 1.4rem; }
     details.annotate-section > summary { cursor: pointer; color: var(--brand); font-weight: 600; padding: 0.5rem 0; }
@@ -217,6 +225,28 @@
 
 <!-- ============================ QUALITY ============================ -->
 <section class="dash-pane" data-pane="quality" role="tabpanel">
+  <div class="eval-run" id="evalRun">
+    <strong>Run eval</strong>
+    <span class="sub">In-browser <code class="short">run_suite</code> — the same core <code class="short">python evals/runner.py</code> drives. Paid Sonnet + Haiku.</span>
+    <div class="filters">
+      <label>Suite
+        <select id="evalSuite">
+          <option value="synthetic">synthetic</option>
+          <option value="anchor">anchor</option>
+        </select>
+      </label>
+      <label>Subset
+        <select id="evalSubset">
+          <option value="smoke">smoke</option>
+          <option value="full">full</option>
+        </select>
+      </label>
+      <label class="bs-grounding" style="margin:0;align-self:end"><input type="checkbox" id="evalGrounding"> grounding signals</label>
+      <button class="ann-btn primary" id="evalRunBtn" type="button">Run eval</button>
+    </div>
+    <p class="eval-cost" id="evalCost"></p>
+    <div id="evalProgress" class="annotate-progress" role="status" aria-live="polite"></div>
+  </div>
   {% if not eval_results %}
   <p class="empty">No eval results yet{% if not eval_dir_present %} (no <code class="short">evals/results/</code> directory){% endif %}. Run <code class="short">python evals/runner.py --suite anchor --subset smoke</code>.</p>
   {% else %}
@@ -365,6 +395,7 @@
       <span id="annStatus" class="sub" role="status" aria-live="polite"></span>
     </div>
     <div id="annScoreProgress" class="annotate-progress" role="status" aria-live="polite"></div>
+    <div id="annCollateResult" hidden></div>
   </div>
 
   <datalist id="annFailedRulesList"></datalist>
@@ -744,6 +775,94 @@
 })();
 </script>
 
+<!-- ===== Eval runner: shared SSE streamer (window.callbackEval.run) + Quality-tab control ===== -->
+<script>
+(function () {
+  function parseSse(buffer, onEvent) {
+    var parts = buffer.split('\n\n'); var tail = parts.pop();
+    parts.forEach(function (block) {
+      var ev = 'message', data = '';
+      block.split('\n').forEach(function (line) {
+        if (line.indexOf('event:') === 0) ev = line.slice(6).trim();
+        else if (line.indexOf('data:') === 0) data += line.slice(5).trim();
+      });
+      var payload = {}; try { payload = data ? JSON.parse(data) : {}; } catch (e) { payload = {}; }
+      onEvent(ev, payload);
+    });
+    return tail;
+  }
+  function pos(p) { return ((p.index || 0) + 1) + '/' + (p.total || '?'); }
+  function describe(ev, p) {
+    if (ev === 'start') return 'Starting ' + (p.suite || '') + ' / ' + (p.subset || '') + (p.seeded ? ' (seeded)' : '') + '… (paid Sonnet/Haiku)';
+    if (ev === 'fixture_start') return 'Fixture ' + pos(p) + ' (' + (p.fixture || '') + '): starting…';
+    if (ev === 'analyzing') return 'Fixture ' + pos(p) + ' (' + (p.fixture || '') + '): analyzing…';
+    if (ev === 'clarifying') return 'Fixture ' + pos(p) + ' (' + (p.fixture || '') + '): clarifying…';
+    if (ev === 'generating') return 'Fixture ' + pos(p) + ' (' + (p.fixture || '') + '): generating…';
+    if (ev === 'rubric_done') return (p.fixture || '') + ' × ' + (p.rubric || '') + ' → ' + (p.score == null ? '—' : p.score) + ' (' + (p.verdict || p.status || '') + ')';
+    if (ev === 'fixture_done') return 'Fixture ' + (p.fixture || '') + ' done' + (p.eval_composite != null ? ' (composite ' + p.eval_composite + ')' : '') + '.';
+    return '';
+  }
+  // Stream POST /api/eval/run; update progEl, toggle btnEl, call onDone(payload) on success.
+  function run(params, progEl, btnEl, onDone) {
+    if (btnEl) btnEl.disabled = true;
+    if (progEl) progEl.textContent = 'Starting… (paid Sonnet/Haiku calls)';
+    fetch('/api/eval/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) }).then(function (resp) {
+      if (!resp.ok) {
+        return resp.json().then(function (d) { return d; }, function () { return {}; }).then(function (d) {
+          if (progEl) progEl.textContent = 'Error: ' + (d.error || resp.status) + (d.detail ? ' — ' + d.detail : '');
+          if (btnEl) btnEl.disabled = false;
+        });
+      }
+      var reader = resp.body.getReader(); var dec = new TextDecoder(); var buf = '';
+      function pump() {
+        return reader.read().then(function (chunk) {
+          if (chunk.done) { if (btnEl) btnEl.disabled = false; return; }
+          buf += dec.decode(chunk.value, { stream: true });
+          buf = parseSse(buf, function (ev, p) {
+            if (ev === 'done') {
+              if (progEl) progEl.textContent = 'Done — ' + p.n_pass + ' pass / ' + p.n_fail + ' fail'
+                + (p.regressions ? ', ' + p.regressions + ' regression(s)' : '') + ' → ' + (p.out_file || 'results') + '.';
+              if (onDone) onDone(p);
+            } else if (ev === 'error') {
+              if (progEl) progEl.textContent = 'Error: ' + (p.error || 'eval failed') + (p.detail ? ' — ' + p.detail : '');
+            } else {
+              var msg = describe(ev, p); if (msg && progEl) progEl.textContent = msg;
+            }
+          });
+          return pump();
+        });
+      }
+      return pump();
+    }).catch(function () { if (progEl) progEl.textContent = 'Eval request failed.'; if (btnEl) btnEl.disabled = false; });
+  }
+  window.callbackEval = { run: run };
+
+  // ---- Quality-tab "Run eval" control ----
+  var btn = document.getElementById('evalRunBtn');
+  if (!btn) return;
+  var suiteSel = document.getElementById('evalSuite');
+  var subsetSel = document.getElementById('evalSubset');
+  var grounding = document.getElementById('evalGrounding');
+  var cost = document.getElementById('evalCost');
+  var prog = document.getElementById('evalProgress');
+  function updateCost() {
+    cost.textContent = subsetSel.value === 'smoke'
+      ? '≈ $0.10 — 3 fixtures × grounding (paid Sonnet + Haiku, ~1–2 min).'
+      : '≈ $0.30 — 3 fixtures × 4 rubrics (paid Sonnet + Haiku, ~4–6 min).';
+  }
+  subsetSel.addEventListener('change', updateCost); updateCost();
+  btn.addEventListener('click', function () {
+    var suite = suiteSel.value, subset = subsetSel.value;
+    var estimate = subset === 'smoke' ? '~$0.10' : '~$0.30';
+    if (!window.confirm('Run the ' + suite + ' / ' + subset + ' eval now?\n\nThis makes paid Sonnet + Haiku API calls (' + estimate + ') and takes a few minutes.')) return;
+    run({ suite: suite, subset: subset, grounding_signals: grounding.checked }, prog, btn, function () {
+      prog.textContent += ' Reloading…';
+      setTimeout(function () { location.reload(); }, 1400);
+    });
+  });
+})();
+</script>
+
 <!-- ===== Annotate tab: read-write surface (separate IIFE; runs regardless of Chart.js) ===== -->
 <script>
 (function () {
@@ -877,9 +996,35 @@
       fetch(API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug) + '/collate', { method: 'POST' }).then(jsonRes).then(function (res) {
         if (!res.ok) { setStatus((res.d && res.d.error) || 'Collate failed', true); showError(res.d && res.d.detail); return; }
         setStatus('Collated → ' + res.d.must_keywords + ' must_keywords, ' + res.d.forbidden_inventions + ' forbidden_inventions. ' + (res.d.jd_written ? 'jd.txt written.' : 'jd.txt not written (no anchor JD saved).'));
+        renderCollateResult(res.d);
         loadFixtures();
       }).catch(function () { setStatus('Collate failed', true); });
     });
+  }
+
+  // After collate: keep the CLI command visible AND offer an in-browser run of the
+  // freshly collated fixture (real --seed) via the shared eval streamer.
+  function renderCollateResult(d) {
+    var box = $('annCollateResult'); if (!box) return;
+    box.hidden = false; box.innerHTML = '';
+    if (d.run_command) {
+      box.appendChild(el('div', 'sub', 'Run from a terminal:'));
+      var cmd = el('code', 'short'); cmd.textContent = d.run_command; box.appendChild(cmd);
+    }
+    var actions = el('div', 'annotate-actions');
+    var runBtn = el('button', 'ann-btn primary'); runBtn.type = 'button';
+    runBtn.textContent = 'Run this fixture (real --seed)';
+    var prog = el('div', 'annotate-progress'); prog.setAttribute('role', 'status'); prog.setAttribute('aria-live', 'polite');
+    runBtn.addEventListener('click', function () {
+      if (!window.callbackEval) { prog.textContent = 'Eval runner unavailable.'; return; }
+      if (!window.confirm('Run the eval for fixture "' + state.slug + '" now?\n\nThis makes paid Sonnet + Haiku API calls (~$0.30) against this fixture\'s corpus and takes a few minutes.')) return;
+      window.callbackEval.run(
+        { suite: 'real', subset: 'full', fixture: state.slug, slug: state.slug, username: state.candidate, grounding_signals: false },
+        prog, runBtn,
+        function () { prog.textContent += ' Reload the Quality tab to see the scored run.'; },
+      );
+    });
+    actions.appendChild(runBtn); box.appendChild(actions); box.appendChild(prog);
   }
 
   // ---- bootstrap wrapper (POST + SSE via fetch streaming) ----

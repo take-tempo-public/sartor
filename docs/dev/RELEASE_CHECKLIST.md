@@ -56,11 +56,15 @@ criteria.
       annotate → grounding-score → run eval → A/B → see deltas); the irreversible
       **promote** stays the agent's job. Authoritative sequence + acceptance:
       [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4 "Diagnostics console — interactive
-      completion". **Status (2026-06-06):** Step 1 `feat/grounding-scorers-in-console`
-      **shipped** (merged `bc29a07`) — scorers reachable from the Annotate tab (opt-in
-      bootstrap + "Score grounding" backfill) and browser bootstraps now capture a
-      `seed.json`. Remaining: `feat/run-eval-from-console` (next), `feat/tuning-tab-ab`,
-      `docs/tuning-loop-discoverability`. **Box stays unchecked** until the arc completes.
+      completion". **Status (2026-06-07):** Steps 1–2 shipped. Step 1
+      `feat/grounding-scorers-in-console` (merged `bc29a07`) made the scorers reachable
+      from the Annotate tab (opt-in bootstrap + "Score grounding" backfill) and browser
+      bootstraps now capture a `seed.json`; Step 2 `feat/run-eval-from-console` extracted
+      `evals.runner.run_suite` (the importable core `main()` is now a thin wrapper over)
+      and added the localhost SSE `POST /api/eval/run`, a Quality-tab "Run eval" control,
+      and an Annotate-tab "Run this fixture" button — the eval is now runnable from the
+      browser. Remaining: `feat/tuning-tab-ab` (next), `docs/tuning-loop-discoverability`.
+      **Box stays unchecked** until the arc completes.
 
 - [ ] **Compose custom bullet order visually reverts on reload when an
       experience has no LLM recommendations** — surfaced 2026-06-04 while

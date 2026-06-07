@@ -341,3 +341,130 @@ class TestGroundednessComposite:
             "minicheck_summary": {"mean_score": 0.0, "low_score_count": 0},
         })
         assert block["unsupported_claim_rate"] == 0.0
+
+
+class TestRunSuite:
+    """The importable core extracted from main(): structured args + an optional
+    progress callback + an EvalRunResult return. main() is now a thin wrapper, and
+    the no-flag default path forwards nothing extra (the byte-identical guarantee)."""
+
+    def test_main_delegates_to_run_suite(self, monkeypatch):
+        """main() parses flags and forwards them to run_suite, returning its
+        exit_code — the thin-wrapper contract."""
+        import evals.runner as runner
+        from evals.runner import EvalRunResult
+
+        captured: dict = {}
+
+        def fake_run_suite(**kwargs):
+            captured.update(kwargs)
+            return EvalRunResult(
+                exit_code=2, out_path=None, n_pass=1, n_fail=1,
+                regressions=[], improvements=[],
+            )
+
+        monkeypatch.setattr(runner, "run_suite", fake_run_suite)
+        rc = runner.main(["--suite", "anchor", "--subset", "smoke"])
+        assert rc == 2
+        assert captured["suite"] == "anchor"
+        assert captured["subset"] == "smoke"
+        assert captured["fixture_name"] is None
+        assert captured["grounding_signals"] is False
+
+    def test_main_default_path_forwards_no_overrides(self, monkeypatch):
+        """The no-flag default path injects nothing — the byte-identical guarantee
+        at the wrapper boundary (run_suite's default path is itself unchanged)."""
+        import evals.runner as runner
+        from evals.runner import EvalRunResult
+
+        captured: dict = {}
+
+        def fake_run_suite(**kwargs):
+            captured.update(kwargs)
+            return EvalRunResult(0, None, 0, 0, [], [])
+
+        monkeypatch.setattr(runner, "run_suite", fake_run_suite)
+        rc = runner.main([])
+        assert rc == 0
+        assert captured["suite"] == "synthetic"
+        assert captured["subset"] == "full"
+        assert captured["seed_data"] is None
+        assert captured["prompt_overrides_map"] == {}
+        assert captured["grounding_signals"] is False
+
+    def _stub_pipeline(self, runner, monkeypatch, tmp_path):
+        """Stub every paid call + isolate baseline lookup to tmp_path. The real
+        deterministic pipeline (parse/keywords/metrics) still runs on the committed
+        synthetic fixtures, so no API calls and no real baseline interference."""
+        monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path)
+        monkeypatch.setattr(runner, "BASELINE_JSON", tmp_path / "baseline_v1.json")
+        monkeypatch.setattr(runner, "analyze", lambda *a, **k: {"overall_strategy": "ok"})
+        monkeypatch.setattr(runner, "clarify", lambda *a, **k: {"questions": [], "reasoning": ""})
+        monkeypatch.setattr(
+            runner, "generate",
+            lambda *a, **k: {"resume_content": "- Led a project\n- Built a system",
+                             "cover_letter_content": "Dear team,"},
+        )
+        monkeypatch.setattr(
+            runner, "_grade",
+            lambda *a, **k: {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"},
+        )
+        monkeypatch.setattr(
+            runner, "_score_distinctiveness",
+            lambda *a, **k: {"score": 4.0, "summary": "ok"},
+        )
+
+    def test_run_suite_writes_records_with_stubbed_llm(self, tmp_path, monkeypatch):
+        """run_suite writes the same JSONL records and returns a populated
+        EvalRunResult. No paid calls (every LLM hop stubbed)."""
+        import evals.runner as runner
+        from evals.runner import EvalRunResult, run_suite
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+        result = run_suite(
+            suite="synthetic", subset="smoke", out_dir=tmp_path, client=MagicMock(),
+        )
+        assert isinstance(result, EvalRunResult)
+        assert result.out_path is not None and result.out_path.exists()
+        assert result.candidate_version is None
+        # 3 committed synthetic fixtures, grounding rubric each, all stub-passing.
+        assert result.n_pass == 3
+        assert result.n_fail == 0
+        assert result.exit_code == 0
+
+        lines = [
+            json.loads(ln)
+            for ln in result.out_path.read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ]
+        grounding = [r for r in lines if r.get("rubric") == "grounding"]
+        assert len(grounding) == 3
+        assert all(r["status"] == "ok" and r["score"] == 4.5 for r in grounding)
+        # Default (no-override) path stamps the real PROMPT_VERSION, not candidate:<hash>.
+        assert all(not str(r["prompt_version"]).startswith("candidate:") for r in grounding)
+
+    def test_run_suite_progress_callback_fires(self, tmp_path, monkeypatch):
+        """The optional progress callback is invoked with (event, payload) at the
+        documented milestones; the default (None) path stays a no-op."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+        events: list[str] = []
+        run_suite(
+            suite="synthetic", subset="smoke", fixture_name="sre-mid-level",
+            out_dir=tmp_path, client=MagicMock(),
+            progress=lambda ev, payload: events.append(ev),
+        )
+        for milestone in ("fixture_start", "analyzing", "generating", "rubric_done", "fixture_done"):
+            assert milestone in events, f"missing progress event: {milestone}"
+
+    def test_run_suite_unknown_fixture_raises(self, tmp_path, monkeypatch):
+        """An unknown --fixture surfaces as FileNotFoundError for the caller to map
+        (main → exit 1; the route → 4xx) rather than a half-written run."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+        with pytest.raises(FileNotFoundError):
+            run_suite(fixture_name="does-not-exist", out_dir=tmp_path, client=MagicMock())

@@ -520,3 +520,97 @@ class TestBootstrapGrounding:
             (ann_app.ANNOTATION_ROOT / "alice-bootstrap" / "bootstrap.json").read_text(encoding="utf-8"),
         )
         assert doc["grounding_signals"] is None
+
+
+# --- console eval run (run_suite stubbed; no paid calls) -------------------
+
+class TestEvalRunRoute:
+    """POST /api/eval/run — the localhost SSE route that drives run_suite from the
+    console. run_suite is stubbed so the suite makes no paid calls; consuming the
+    response stream drives the worker thread to completion."""
+
+    def _stub_run_suite(self, monkeypatch, captured):
+        from pathlib import Path
+
+        import evals.runner as runner
+        from evals.runner import EvalRunResult
+
+        def fake_run_suite(**kwargs):
+            captured.update(kwargs)
+            progress = kwargs.get("progress")
+            if progress is not None:
+                progress("fixture_start", {"fixture": "sre-mid-level", "index": 0, "total": 1})
+                progress("rubric_done", {"fixture": "sre-mid-level", "rubric": "grounding",
+                                         "score": 4.7, "status": "ok", "verdict": "pass"})
+            return EvalRunResult(
+                exit_code=0, out_path=Path("20260607_000000Z.jsonl"),
+                n_pass=1, n_fail=0, regressions=[], improvements=[],
+            )
+
+        monkeypatch.setattr(runner, "run_suite", fake_run_suite)
+
+    def test_synthetic_run_streams_progress_and_done(self, ann_app, monkeypatch):
+        captured: dict = {}
+        self._stub_run_suite(monkeypatch, captured)
+        client = ann_app.app.test_client()
+        resp = client.post("/api/eval/run", json={"suite": "synthetic", "subset": "smoke"})
+        assert resp.status_code == 200
+        body = resp.get_data(as_text=True)
+        assert "event: start" in body
+        assert "event: fixture_start" in body
+        assert "event: rubric_done" in body
+        assert "event: done" in body
+        assert "event: error" not in body
+        # The route forwarded the request fields to run_suite (no seed in this mode).
+        assert captured["suite"] == "synthetic"
+        assert captured["subset"] == "smoke"
+        assert captured["seed_data"] is None
+        assert captured["fixture_name"] is None
+
+    def test_localhost_guard_blocks_remote_host(self, ann_app):
+        client = ann_app.app.test_client()
+        resp = client.post("/api/eval/run", json={"suite": "synthetic"},
+                           headers={"Host": "evil.example"})
+        assert resp.status_code == 403
+
+    def test_invalid_suite_rejected(self, ann_app):
+        client = ann_app.app.test_client()
+        resp = client.post("/api/eval/run", json={"suite": "bogus"})
+        assert resp.status_code == 400
+
+    def test_seed_mode_missing_seed_409(self, ann_app):
+        # A bootstrap fixture exists but no seed.json was ever captured.
+        _seed_bootstrap(ann_app.ANNOTATION_ROOT)
+        client = ann_app.app.test_client()
+        resp = client.post("/api/eval/run", json={
+            "suite": "real", "fixture": "alice-bootstrap",
+            "slug": "alice-bootstrap", "username": "alice",
+        })
+        assert resp.status_code == 409
+
+    def test_seed_mode_unknown_user_400(self, ann_app):
+        _seed_bootstrap(ann_app.ANNOTATION_ROOT)
+        client = ann_app.app.test_client()
+        resp = client.post("/api/eval/run", json={
+            "suite": "real", "slug": "alice-bootstrap", "username": "nobody",
+        })
+        assert resp.status_code == 400
+
+    def test_seed_mode_runs_when_seed_present(self, ann_app, monkeypatch):
+        captured: dict = {}
+        self._stub_run_suite(monkeypatch, captured)
+        fixture_dir, _ = _seed_bootstrap(ann_app.ANNOTATION_ROOT)
+        (fixture_dir / "seed.json").write_text(json.dumps(_SEED), encoding="utf-8")
+        client = ann_app.app.test_client()
+        resp = client.post("/api/eval/run", json={
+            "suite": "real", "fixture": "alice-bootstrap",
+            "slug": "alice-bootstrap", "username": "alice",
+        })
+        assert resp.status_code == 200
+        body = resp.get_data(as_text=True)
+        assert "event: done" in body
+        assert "event: error" not in body
+        # The route resolved + loaded the seed and forwarded it to run_suite.
+        assert captured["seed_data"] is not None
+        assert captured["seed_data"]["candidate_username"] == "alice"
+        assert captured["fixture_name"] == "alice-bootstrap"

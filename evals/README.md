@@ -174,6 +174,14 @@ python evals/runner.py [--suite synthetic|real|all] [--subset smoke|full]
                        [--prompt-overrides PATH] [--seed PATH]
 ```
 
+The same orchestration is importable as `evals.runner.run_suite(...)` (returning an
+`EvalRunResult`) — `main()` above is a thin argparse wrapper over it, and the
+console's localhost `POST /api/eval/run` route (the **Run eval** button on the
+`/_dashboard` Quality tab, plus the Annotate tab's **Run this fixture** button)
+calls the same core with a `progress` callback so the browser can stream
+per-fixture/per-rubric progress. The no-flag default path is byte-identical whether
+reached via the CLI or the route.
+
 Per fixture:
 
 ```

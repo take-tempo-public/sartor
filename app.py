@@ -6123,6 +6123,132 @@ def annotation_bootstrap_stream():
     )
 
 
+@app.route("/api/eval/run", methods=["POST"])
+def eval_run_stream():
+    """Run an eval suite from the console (localhost-only, SSE).
+
+    The browser counterpart to `python evals/runner.py …`: drives the extracted
+    `evals.runner.run_suite` in a worker thread and streams coarse progress so the
+    paid wait reads as alive. Two modes:
+      • Quality "Run eval": {suite, subset, grounding_signals} → the committed
+        synthetic/anchor fixtures (no corpus seed).
+      • Annotate "Run this fixture": {suite:"real", fixture:<slug>, slug:<slug>,
+        username:<candidate>} → resolve evals/fixtures/real/<slug>/seed.json and run
+        that one fixture against its corpus — the collate `--seed` command, in-browser.
+
+    PAID (Sonnet + Haiku): ~$0.10 smoke / ~$0.30 full per the runner's cost table;
+    the UI shows a cost-band confirm() before POSTing. Streams `start` /
+    `fixture_start` / `analyzing` / `clarifying` / `generating` / `rubric_done` /
+    `fixture_done` / `done` / `error`. All eager validation (bad suite / unknown
+    user / missing seed) returns a JSON 4xx BEFORE the worker spends anything.
+    """
+    if not _is_localhost_request():
+        return jsonify({"error": "localhost only"}), 403
+    data = request.get_json(silent=True) or {}
+
+    suite = str(data.get("suite", "synthetic"))
+    if suite not in {"synthetic", "real", "all", "anchor", "exploration"}:
+        return jsonify({"error": f"Invalid suite: {suite}"}), 400
+    subset = "smoke" if str(data.get("subset", "full")) == "smoke" else "full"
+    grounding_signals = bool(data.get("grounding_signals"))
+
+    # Optional single-fixture scope (e.g. the collated <slug>). Sanitize with
+    # secure_filename: it feeds FIXTURES_DIR/<suite>/<fixture> in run_suite, a
+    # traversal-sensitive path join.
+    raw_fixture = str(data.get("fixture", "")).strip()
+    fixture_name = secure_filename(raw_fixture) if raw_fixture else None
+
+    # Optional corpus-seed mode (the Annotate "Run this fixture" button). The seed
+    # lives under ANNOTATION_ROOT/<slug>/seed.json (gitignored, PII-bearing). Resolve
+    # + contain it and confirm the candidate user exists, all before any paid call.
+    seed_data: dict | None = None
+    raw_slug = str(data.get("slug", "")).strip()
+    if raw_slug:
+        safe_user = _safe_username(str(data.get("username", "")))
+        if not safe_user:
+            return jsonify({"error": "Invalid or unknown user"}), 400
+        fixture_dir = _annotation_fixture_path(raw_slug)
+        if fixture_dir is None or not _within(fixture_dir, ANNOTATION_ROOT):
+            return jsonify({"error": "Invalid fixture slug"}), 400
+        seed_path = fixture_dir / "seed.json"
+        if not _within(seed_path, ANNOTATION_ROOT) or not seed_path.exists():
+            return jsonify({
+                "error": "No seed.json for this fixture — re-run the bootstrap to "
+                         "capture the corpus snapshot, then run the eval.",
+            }), 409
+        from evals.seed_import import load_seed
+        try:
+            seed_data = load_seed(str(seed_path))
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            return jsonify({"error": "Could not load seed.json", "detail": str(exc)}), 400
+
+    from evals.runner import run_suite
+
+    def stream():
+        import queue as _queue
+        import threading
+
+        events: _queue.Queue = _queue.Queue()
+        sentinel = object()
+        result: dict = {}
+
+        def worker():
+            try:
+                result["res"] = run_suite(
+                    suite=suite,
+                    subset=subset,
+                    fixture_name=fixture_name,
+                    seed_data=seed_data,
+                    grounding_signals=grounding_signals,
+                    progress=lambda ev, payload: events.put(("progress", ev, payload)),
+                )
+            except Exception as exc:  # noqa: BLE001
+                result["error"] = exc
+            finally:
+                events.put(sentinel)
+
+        threading.Thread(target=worker, daemon=True).start()
+        yield _sse("start", {
+            "suite": suite, "subset": subset, "fixture": fixture_name,
+            "grounding": grounding_signals, "seeded": seed_data is not None,
+        })
+
+        while True:
+            item = events.get()
+            if item is sentinel:
+                break
+            _, event_kind, payload = item
+            yield _sse(event_kind, payload)
+
+        if "error" in result:
+            logger.error("Console eval run failed: %s", result["error"], exc_info=result["error"])
+            yield _sse("error", {
+                "error": "Eval run failed.",
+                "detail": str(result["error"]),
+                "http_status": 500,
+            })
+            return
+
+        res = result["res"]
+        logger.info("Console eval run complete: %d pass, %d fail → %s",
+                    res.n_pass, res.n_fail, res.out_path)
+        yield _sse("done", {
+            "suite": suite,
+            "subset": subset,
+            "out_file": res.out_path.name if res.out_path else None,
+            "n_pass": res.n_pass,
+            "n_fail": res.n_fail,
+            "regressions": len(res.regressions),
+            "exit_code": res.exit_code,
+        })
+
+    return Response(
+        stream(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 def main() -> None:
     """Launch the Flask app on http://localhost:5000.
 
