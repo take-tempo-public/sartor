@@ -135,6 +135,8 @@
     .ann-error { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger); border-radius: var(--radius-md); padding: 0.6rem 0.9rem; font-size: 0.82rem; margin-bottom: 0.8rem; white-space: pre-wrap; }
     .annotate-actions { display: flex; gap: 0.6rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
     .annotate-progress { margin-top: 0.7rem; font-size: 0.82rem; color: var(--fg-1); white-space: pre-wrap; }
+    .bs-grounding { display: block; color: var(--fg-1); font-size: 0.82rem; margin: 0.7rem 0 0.2rem; }
+    .bs-grounding input { margin-right: 0.45rem; vertical-align: middle; }
     .ann-jd-row { display: grid; grid-template-columns: 11rem 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem; align-items: start; }
     .ann-jd-row input, .ann-jd-row textarea { background: var(--bg-2); color: var(--fg-0); border: 1px solid var(--border-2); border-radius: var(--radius-sm); font: inherit; font-size: 0.82rem; padding: 0.4rem; }
     .ann-jd-row textarea { min-height: 3rem; resize: vertical; }
@@ -318,6 +320,10 @@
         <label>Fixture slug (optional)<input type="text" id="bsSlug" placeholder="&lt;candidate&gt;-bootstrap"></label>
       </div>
       <div id="bsJds"></div>
+      <label class="bs-grounding"><input type="checkbox" id="bsGrounding"> Run grounding scorers
+        (DeBERTa NLI + MiniCheck) over the deduped bullets — needs the
+        <code class="short">[eval-grounding]</code> extras; CPU-bound (~2-4s/bullet). Missing
+        extras just save an un-scored bootstrap.</label>
       <div class="annotate-actions">
         <button class="ann-btn" id="bsAddJd" type="button">+ Add JD</button>
         <button class="ann-btn primary" id="bsRun" type="button">Run bootstrap</button>
@@ -354,8 +360,11 @@
     <div class="annotate-actions">
       <button class="ann-btn primary" id="annSave" type="button">Save annotations.json</button>
       <button class="ann-btn" id="annCollate" type="button">Collate → fixture + brief</button>
+      <button class="ann-btn" id="annScore" type="button"
+              title="Run the offline grounding scorers over this fixture's bullets (CPU, no paid LLM calls). Requires a seed.json + the [eval-grounding] extras.">Score grounding</button>
       <span id="annStatus" class="sub" role="status" aria-live="polite"></span>
     </div>
+    <div id="annScoreProgress" class="annotate-progress" role="status" aria-live="polite"></div>
   </div>
 
   <datalist id="annFailedRulesList"></datalist>
@@ -909,7 +918,7 @@
     if (!jds.length) { prog.textContent = 'Add at least one JD (name + text).'; return; }
     $('bsRun').disabled = true;
     prog.textContent = 'Starting… (paid Sonnet/Haiku calls, ~70s per JD)';
-    fetch(API + '/bootstrap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, slug: slug || undefined, jds: jds }) }).then(function (resp) {
+    fetch(API + '/bootstrap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, slug: slug || undefined, jds: jds, grounding_signals: $('bsGrounding').checked }) }).then(function (resp) {
       if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status); $('bsRun').disabled = false; }); }
       var reader = resp.body.getReader(); var dec = new TextDecoder(); var buf = '';
       function pump() {
@@ -923,7 +932,9 @@
             else if (ev === 'clarifying') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': clarifying…';
             else if (ev === 'generating') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': generating…';
             else if (ev === 'jd_done') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ' done (' + p.bullets + 'b/' + p.skills + 's).';
-            else if (ev === 'done') { prog.textContent = 'Bootstrap written: ' + p.slug + ' (' + p.bullet_clusters + ' bullet clusters, ' + p.skill_clusters + ' skill clusters).'; loadFixtures().then(function () { $('fixtureSelect').value = p.slug; }); }
+            else if (ev === 'scoring') prog.textContent = p.message || 'Scoring grounding…';
+            else if (ev === 'warning') prog.textContent = '⚠ ' + (p.message || 'warning');
+            else if (ev === 'done') { prog.textContent = 'Bootstrap written: ' + p.slug + ' (' + p.bullet_clusters + ' bullet clusters, ' + p.skill_clusters + ' skill clusters' + (p.grounded ? ', grounded' : '') + ').'; loadFixtures().then(function () { $('fixtureSelect').value = p.slug; }); }
             else if (ev === 'error') prog.textContent = 'Error: ' + (p.error || 'bootstrap failed') + (p.detail ? ' — ' + p.detail : '');
           });
           return pump();
@@ -931,6 +942,38 @@
       }
       return pump();
     }).catch(function () { prog.textContent = 'Bootstrap request failed.'; $('bsRun').disabled = false; });
+  }
+
+  // ---- grounding backfill (score an existing fixture; CPU, no paid calls) ----
+  function scoreGrounding() {
+    if (!state.slug || !state.candidate) { return; }
+    var prog = $('annScoreProgress');
+    $('annScore').disabled = true;
+    prog.textContent = 'Starting grounding scorers… (CPU-bound; no paid LLM calls)';
+    fetch(API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug) + '/score', { method: 'POST' }).then(function (resp) {
+      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status) + ((res.d && res.d.detail) ? ' — ' + res.d.detail : ''); $('annScore').disabled = false; }); }
+      var reader = resp.body.getReader(); var dec = new TextDecoder(); var buf = '';
+      function pump() {
+        return reader.read().then(function (chunk) {
+          if (chunk.done) { $('annScore').disabled = false; return; }
+          buf += dec.decode(chunk.value, { stream: true });
+          buf = parseSse(buf, function (ev, p) {
+            if (ev === 'start') prog.textContent = 'Scoring ' + p.bullet_clusters + ' bullet clusters…';
+            else if (ev === 'scoring') prog.textContent = p.message || 'Scoring…';
+            else if (ev === 'done') {
+              var nli = (p.mean_entailment != null) ? p.mean_entailment.toFixed(2) : '–';
+              var mc = (p.mean_minicheck != null) ? p.mean_minicheck.toFixed(2) : '–';
+              prog.textContent = 'Scored ' + p.bullet_count + ' bullets (mean NLI ' + nli + ', mean MiniCheck ' + mc + ')'
+                + (p.annotations_patched ? ', patched ' + p.annotations_patched + ' annotation(s)' : '') + '. Reloading…';
+              loadFixture(state.slug, state.candidate);
+            }
+            else if (ev === 'error') prog.textContent = 'Error: ' + (p.error || 'scoring failed') + (p.detail ? ' — ' + p.detail : '');
+          });
+          return pump();
+        });
+      }
+      return pump();
+    }).catch(function () { prog.textContent = 'Score request failed.'; $('annScore').disabled = false; });
   }
 
   // ---- wire up ----
@@ -942,6 +985,7 @@
   });
   $('annSave').addEventListener('click', function () { save(); });
   $('annCollate').addEventListener('click', collate);
+  $('annScore').addEventListener('click', scoreGrounding);
   $('bsAddJd').addEventListener('click', function () { addJdRow('', ''); });
   $('bsRun').addEventListener('click', runBootstrap);
   addJdRow('', '');

@@ -5553,6 +5553,46 @@ def _load_bootstrap_doc(fixture_dir: Path) -> dict | None:
         return None
 
 
+def _patch_annotation_scores(ann_path: Path, grounding_signals: dict) -> int:
+    """Patch ONLY the inline grounding score fields onto an existing annotations.json.
+
+    Joins the freshly-computed nli/minicheck lists to each bullet by cluster_index
+    (the same index alignment ``build_annotation_template`` uses) and overwrites the
+    three score fields, leaving every human-entered verdict / note / rewrite intact.
+    Returns the number of bullet items patched. Best-effort: a malformed file is left
+    untouched (returns 0). Does NOT re-validate — an in-progress annotations.json is
+    intentionally incomplete and must not be rejected by a score backfill.
+    """
+    try:
+        doc = json.loads(ann_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 0
+    if not isinstance(doc, dict):
+        return 0
+    nli_list = grounding_signals.get("nli", []) or []
+    mc_list = grounding_signals.get("minicheck", []) or []
+    patched = 0
+    for item in doc.get("bullets", []) or []:
+        if not isinstance(item, dict):
+            continue
+        idx = item.get("cluster_index")
+        if not isinstance(idx, int):
+            continue
+        changed = False
+        if 0 <= idx < len(nli_list):
+            item["nli_entailment_score"] = nli_list[idx].get("nli_entailment_score")
+            item["nli_contradiction_flag"] = nli_list[idx].get("nli_contradiction_flag")
+            changed = True
+        if 0 <= idx < len(mc_list):
+            item["minicheck_grounding_score"] = mc_list[idx].get("minicheck_grounding_score")
+            changed = True
+        if changed:
+            patched += 1
+    if patched:
+        ann_path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return patched
+
+
 @app.route("/api/annotation/fixtures", methods=["GET"])
 def annotation_fixtures():
     """List bootstrap fixtures under ANNOTATION_ROOT (localhost-only, read-only).
@@ -5743,6 +5783,145 @@ def annotation_collate(username: str, slug: str):
     })
 
 
+@app.route("/api/annotation/fixture/<username>/<slug>/score", methods=["POST"])
+def annotation_score_grounding(username: str, slug: str):
+    """Backfill grounding pre-scores onto an existing bootstrap.json (localhost, SSE).
+
+    Runs the offline grounding scorers (DeBERTa NLI + MiniCheck-FT5) over the deduped
+    bullet-cluster representatives, scoring against the corpus the bootstrap was built
+    from — recovered by importing the fixture's `seed.json` into a throwaway in-memory
+    SQLite (no live-DB writes) and synthesizing the same résumé text the pipeline saw.
+    Writes the result back under `grounding_signals` and patches any existing
+    annotations.json score fields. NO paid LLM calls — pure CPU work on already-generated
+    bullets — so a user who bootstrapped *before* installing the `[eval-grounding]` extras
+    can light up the annotation editor without re-running the (paid) pipeline. Streams
+    `start` / `scoring` / `done` / `error`.
+    """
+    if not _is_localhost_request():
+        return jsonify({"error": "localhost only"}), 403
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+    fixture_dir = _annotation_fixture_path(slug)
+    if fixture_dir is None or not _within(fixture_dir, ANNOTATION_ROOT):
+        return jsonify({"error": "Invalid fixture slug"}), 400
+    bootstrap = _load_bootstrap_doc(fixture_dir)
+    if bootstrap is None:
+        return jsonify({"error": "No bootstrap.json for this fixture"}), 404
+
+    seed_path = fixture_dir / "seed.json"
+    if not seed_path.exists():
+        return jsonify({
+            "error": "No seed.json for this fixture — re-run the bootstrap to capture the "
+                     "corpus snapshot, then score.",
+        }), 409
+
+    clusters = ((bootstrap.get("dedup", {}) or {}).get("bullets", {}) or {}).get("clusters", []) or []
+    if not clusters:
+        return jsonify({"error": "Bootstrap has no bullet clusters to score"}), 400
+
+    # grounding_signals is pure-Python (heavy deps import lazily inside the scorer),
+    # so this import always succeeds; a missing `[eval-grounding]` extra surfaces as
+    # an ImportError when the scorer runs (handled in the worker below).
+    from evals.grounding_signals import run_grounding_signals
+
+    # Score against the corpus this bootstrap was built from: import its seed.json
+    # into a throwaway in-memory SQLite (no live-DB writes, no Application anchor on
+    # the real DB) and synthesize the same résumé text the pipeline saw. This stays
+    # faithful even if the live corpus was edited since the bootstrap ran.
+    try:
+        from db.build_context import build_context_set_from_db
+        from evals.seed_import import seeded_session
+        with seeded_session(seed_path) as (seed_session, seed_user):
+            ctx, _app, _run = build_context_set_from_db(
+                seed_session, candidate_username=seed_user,
+                jd_text="(grounding backfill)", run_id="grounding-backfill",
+            )
+            corpus_source = (ctx["resume"]["text"] or "").strip()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Grounding backfill: could not read corpus from seed for %s: %s", slug, exc)
+        return jsonify({"error": "Could not read corpus from seed.json", "detail": str(exc)}), 500
+    if not corpus_source:
+        return jsonify({"error": "Corpus snapshot is empty — nothing to score against"}), 400
+
+    # Render representatives exactly as build_bootstrap_document does, so the
+    # returned nli/minicheck lists stay index-aligned with dedup.bullets.clusters.
+    reps_md = "\n".join(f"- {c.get('representative', '')}" for c in clusters)
+    bootstrap_path = fixture_dir / "bootstrap.json"
+    ann_path = fixture_dir / "annotations.json"
+
+    def stream():
+        import queue as _queue
+        import threading
+
+        events: _queue.Queue = _queue.Queue()
+        sentinel = object()
+        result: dict = {}
+
+        def worker():
+            try:
+                result["gs"] = run_grounding_signals(reps_md, [corpus_source])
+            except ImportError as exc:
+                result["import_error"] = exc
+            except Exception as exc:  # noqa: BLE001
+                result["error"] = exc
+            finally:
+                events.put(sentinel)
+
+        threading.Thread(target=worker, daemon=True).start()
+        yield _sse("start", {"slug": slug, "bullet_clusters": len(clusters)})
+        yield _sse("scoring", {
+            "message": f"Scoring {len(clusters)} bullet clusters (DeBERTa NLI + MiniCheck, "
+                       "~2-4s each)…",
+        })
+
+        # Single scorer call (no incremental progress) — block until the worker is done.
+        while events.get() is not sentinel:
+            pass
+
+        if "import_error" in result:
+            logger.warning("Grounding backfill: extras not installed for %s: %s",
+                           slug, result["import_error"])
+            yield _sse("error", {
+                "error": "Grounding extras not installed.",
+                "detail": "Install with: pip install -e '.[eval-grounding]' (see CONTRIBUTING.md).",
+                "http_status": 400,
+            })
+            return
+        if "error" in result:
+            logger.error("Grounding backfill failed for %s: %s", slug, result["error"],
+                         exc_info=result["error"])
+            yield _sse("error", {
+                "error": "Grounding scoring failed.",
+                "detail": str(result["error"]),
+                "http_status": 500,
+            })
+            return
+
+        gs = result["gs"]
+        bootstrap["grounding_signals"] = gs
+        bootstrap_path.write_text(
+            json.dumps(bootstrap, indent=2, ensure_ascii=False) + "\n", encoding="utf-8",
+        )
+        patched = _patch_annotation_scores(ann_path, gs) if ann_path.exists() else 0
+        bullet_count = gs.get("bullet_count", 0)
+        logger.info("Grounding backfill wrote %s (%d bullets scored, %d annotations patched)",
+                    slug, bullet_count, patched)
+        yield _sse("done", {
+            "slug": slug,
+            "bullet_count": bullet_count,
+            "mean_entailment": (gs.get("nli_summary", {}) or {}).get("mean_entailment", 0.0),
+            "mean_minicheck": (gs.get("minicheck_summary", {}) or {}).get("mean_score", 0.0),
+            "annotations_patched": patched,
+        })
+
+    return Response(
+        stream(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 @app.route("/api/annotation/bootstrap", methods=["POST"])
 def annotation_bootstrap_stream():
     """Browser bootstrap wrapper — run the live pipeline over N pasted JDs (SSE).
@@ -5750,10 +5929,13 @@ def annotation_bootstrap_stream():
     Reuses the streaming pattern of /api/analyze/stream and the analyzer
     primitives (via evals.bootstrap.run_pipeline_over_jd_texts — analyze → clarify
     → generate per JD against the LIVE corpus), then the deterministic
-    `build_bootstrap_document` dedup, writing bootstrap.json + the pasted JDs under
-    ANNOTATION_ROOT/<slug>/. PAID (Sonnet/Haiku) + slow (~70s/JD). Progress streams
-    as `start` / per-JD `jd_start`/`analyzing`/`clarifying`/`generating`/`jd_done`
-    / `done` / `error` events.
+    `build_bootstrap_document` dedup, writing bootstrap.json + a seed.json corpus
+    snapshot + the pasted JDs under ANNOTATION_ROOT/<slug>/. PAID (Sonnet/Haiku) +
+    slow (~70s/JD). With `grounding_signals: true` it also runs the offline grounding
+    scorers over the deduped bullets (eval-only models; degrades to an un-scored
+    bootstrap + `warning` if the `[eval-grounding]` extras are missing). Progress
+    streams as `start` / per-JD `jd_start`/`analyzing`/`clarifying`/`generating`/
+    `jd_done` / optional `scoring` / optional `warning` / `done` / `error` events.
     """
     if not _is_localhost_request():
         return jsonify({"error": "localhost only"}), 403
@@ -5762,6 +5944,13 @@ def annotation_bootstrap_stream():
     safe_user = _safe_username(username)
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
+
+    # Opt-in: run the offline grounding scorers (DeBERTa NLI + MiniCheck-FT5) over
+    # the deduped bullet representatives. Eval-only models (~3.2 GB, ~2-4 s/bullet),
+    # gated by the same `[eval-grounding]` extras the CLI `--grounding-signals` uses.
+    # Missing extras or a runtime scoring failure degrades to an un-scored bootstrap
+    # with a warning event — never a 500 (the paid pipeline output is preserved).
+    grounding_requested = bool(data.get("grounding_signals"))
 
     raw_jds = data.get("jds", [])
     jds: list[tuple[str, str]] = []
@@ -5787,6 +5976,7 @@ def annotation_bootstrap_stream():
         build_bootstrap_document,
         run_pipeline_over_jd_texts,
     )
+    from scripts.export_corpus_seed import export_seed
 
     client = _get_client()
 
@@ -5811,6 +6001,17 @@ def annotation_bootstrap_stream():
                     )
                     result["per_jd"] = per_jd
                     result["corpus"] = corpus
+                    # Snapshot the entire approved corpus to a seed.json (read-only,
+                    # LLM-free) while the live session is open. This is the durable
+                    # source of truth the downstream eval (`runner.py --seed`) and the
+                    # grounding backfill score against — and the file collate's
+                    # `--seed` run-command already references. Non-fatal: a snapshot
+                    # failure must never discard the (paid) pipeline output.
+                    try:
+                        result["seed"] = export_seed(session, candidate_username=safe_user)
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("Could not export seed.json for %s: %s", safe_user, exc)
+                        result["seed"] = None
                 finally:
                     session.close()
             except Exception as exc:  # noqa: BLE001
@@ -5837,19 +6038,60 @@ def annotation_bootstrap_stream():
             })
             return
 
-        # Deterministic collation + write (LLM-free), after the worker finishes.
-        doc = build_bootstrap_document(
-            result["per_jd"],
-            username=safe_user,
-            seed_path="(browser bootstrap wrapper)",
-            threshold=DEFAULT_JACCARD,
-            corpus_source=result.get("corpus", ""),
-            grounding_fn=None,
-        )
+        # Optional grounding scorers (eval-only models), resolved AFTER the paid
+        # pipeline so a missing dep never wastes the LLM spend. The grounding_signals
+        # module is pure-Python (the heavy deps import lazily inside the scorer), so
+        # the import here always succeeds; a missing `[eval-grounding]` extra surfaces
+        # as an ImportError at build time below — caught and degraded to an un-scored
+        # bootstrap + warning, never a 500 (the paid pipeline output is preserved).
+        grounding_fn = None
+        grounding_note = None
+        if grounding_requested:
+            from evals.grounding_signals import run_grounding_signals
+            grounding_fn = run_grounding_signals
+            yield _sse("scoring", {
+                "message": "Running grounding scorers (DeBERTa NLI + MiniCheck) over "
+                           "deduped bullets — this is CPU-bound (~2-4s/bullet)…",
+            })
+
+        def _collate(gf):
+            return build_bootstrap_document(
+                result["per_jd"],
+                username=safe_user,
+                seed_path="(browser bootstrap wrapper)",
+                threshold=DEFAULT_JACCARD,
+                corpus_source=result.get("corpus", ""),
+                grounding_fn=gf,
+            )
+
+        # Deterministic collation + write (LLM-free apart from the optional scorers).
+        try:
+            doc = _collate(grounding_fn)
+        except ImportError as exc:
+            logger.warning("Grounding extras missing; saving bootstrap without scores: %s", exc)
+            grounding_note = (
+                "Grounding extras not installed — bootstrap saved without scores. "
+                "Install with: pip install -e '.[eval-grounding]' (see CONTRIBUTING.md)."
+            )
+            doc = _collate(None)
+        except Exception as exc:  # noqa: BLE001
+            # Scoring blew up (e.g. model download failed) — re-collate without it
+            # so the expensive pipeline output is never lost.
+            logger.warning("Grounding scoring failed; saving bootstrap without scores: %s", exc)
+            grounding_note = f"Grounding scoring failed ({exc}); bootstrap saved without scores."
+            doc = _collate(None)
         fixture_dir.mkdir(parents=True, exist_ok=True)
         (fixture_dir / "bootstrap.json").write_text(
             json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8",
         )
+        # Persist the corpus snapshot so the fixture is runnable by
+        # `runner.py --suite real --seed …/seed.json` and so the grounding backfill
+        # can score against the exact corpus this bootstrap was built from.
+        seed = result.get("seed")
+        if seed is not None:
+            (fixture_dir / "seed.json").write_text(
+                json.dumps(seed, indent=2, ensure_ascii=False) + "\n", encoding="utf-8",
+            )
         # Persist the pasted JDs so collate can later produce the fixture jd.txt.
         jds_dir = fixture_dir / "jds"
         jds_dir.mkdir(parents=True, exist_ok=True)
@@ -5860,14 +6102,18 @@ def annotation_bootstrap_stream():
             jd_file = jds_dir / safe_name
             if _within(jd_file, ANNOTATION_ROOT):
                 jd_file.write_text(text, encoding="utf-8")
-        logger.info("Bootstrap wrapper wrote %s (%d JDs, %d bullet clusters)",
-                    slug, doc["jd_count"], doc["dedup"]["bullets"]["cluster_count"])
+        grounded = doc.get("grounding_signals") is not None
+        logger.info("Bootstrap wrapper wrote %s (%d JDs, %d bullet clusters, grounded=%s)",
+                    slug, doc["jd_count"], doc["dedup"]["bullets"]["cluster_count"], grounded)
+        if grounding_note:
+            yield _sse("warning", {"message": grounding_note})
         yield _sse("done", {
             "slug": slug,
             "candidate": safe_user,
             "jd_count": doc["jd_count"],
             "bullet_clusters": doc["dedup"]["bullets"]["cluster_count"],
             "skill_clusters": doc["dedup"]["skills"]["cluster_count"],
+            "grounded": grounded,
         })
 
     return Response(
