@@ -39,6 +39,10 @@ def summary_app(tmp_path, monkeypatch):
     (tmp_path / "configs" / "casey.config").write_text("{}", encoding="utf-8")
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
 
+    # Provisioning reads corpus_import's own module-level CONFIGS_DIR.
+    import onboarding.corpus_import as corpus_import_mod
+    monkeypatch.setattr(corpus_import_mod, "CONFIGS_DIR", tmp_path / "configs")
+
     from db.session import init_db
     init_db(db_file)
     return app_module
@@ -196,11 +200,19 @@ class TestCreate:
         })
         assert r.status_code == 400
 
-    def test_create_unknown_user_returns_404(self, summary_app):
+    def test_create_config_only_user_is_auto_provisioned(self, summary_app):
+        # casey has a .config but no Candidate row — adding a summary variant
+        # provisions the row on the first write (no separate import step).
         client = summary_app.app.test_client()
         r = client.post("/api/users/casey/summaries", json={"text": "Some text"})
-        # casey has a .config but no Candidate row
-        assert r.status_code == 404
+        assert r.status_code == 201, r.get_data(as_text=True)
+        from db.models import Candidate
+        from db.session import get_session
+        s = get_session()
+        try:
+            assert s.query(Candidate).filter_by(username="casey").first() is not None
+        finally:
+            s.close()
 
 
 # -------------------------------------------------------------------

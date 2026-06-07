@@ -233,11 +233,6 @@ async function uploadFile(file) {
     return reportError('Corpus ingest', 'Upload request failed', e.message);
   }
   const data = await res.json().catch(() => ({}));
-  if (res.status === 409 && data.needs_onboarding) {
-    setStatus('READY');
-    if (out) out.textContent = '';
-    return openOnboardingModal(() => uploadFile(file));
-  }
   if (!res.ok) {
     if (out) out.textContent = '';
     return reportError('Corpus ingest', data.error || 'Ingest failed', data.detail);
@@ -457,10 +452,6 @@ async function runAnalysis() {
 
     if (httpError) {
       const { status, body } = httpError;
-      if (_needsOnboarding({ status }, body)) {
-        document.getElementById('btnAnalyze').disabled = false;
-        return openOnboardingModal(runAnalysis);
-      }
       return reportError('Analyze', body.error || 'Analysis failed', body.detail);
     }
     if (streamErr) {
@@ -1331,115 +1322,33 @@ function openErrorModal() {
 }
 
 // ===============================================================
-// Legacy-user onboarding bridge (needs_onboarding → import → retry)
+// Empty-corpus detection + CTA
 // ===============================================================
 
-// True when a DB-backed route reports the selected user has no candidate
-// row yet. Pre-existing config-only users (e.g. imported before the DB
-// migration) hit this until imported.
-//
-// Status-agnostic by design: GET *read* endpoints now signal this via
-// `200 + {needs_onboarding:true}` (a read precondition isn't a conflict),
-// while POST *write* endpoints still use `409 + {needs_onboarding:true}`
-// (a write precondition reasonably is). Keying off the body flag alone
-// covers both. `res` is retained for call-site symmetry / future use.
+// True when a DB-backed read reports the selected user has no candidate row
+// yet (a brand-new user). Reads signal this via
+// `200 + {needs_onboarding:true, <empty>}`. The row self-provisions on the
+// first corpus write (résumé upload / add experience), so this is purely an
+// empty-state signal — there is no separate import step.
 function _needsOnboarding(res, data) {
   return !!(data && data.needs_onboarding === true);
 }
 
-// Opens the onboarding modal. On successful import it closes and calls
-// retryFn() so the action the user originally attempted just proceeds.
-function openOnboardingModal(retryFn) {
-  const modal = document.getElementById('onboardingModal');
-  if (!modal) return;
-  const nameEl = document.getElementById('onboardingUserName');
-  if (nameEl) nameEl.textContent = currentUser || '(no user)';
-  const withLlm = document.getElementById('onboardingWithLlm');
-  if (withLlm) withLlm.checked = false;
-  const statusEl = document.getElementById('onboardingStatus');
-  if (statusEl) statusEl.textContent = '';
-  const importBtn = document.getElementById('btnRunImport');
-  const focusable = modal.querySelectorAll('button, input');
-
-  const cleanup = () => {
-    modal.classList.add('hidden');
-    modal.removeEventListener('keydown', onKey);
-    dismissers.forEach(b => b.removeEventListener('click', cleanup));
-    if (importBtn) importBtn.removeEventListener('click', onImport);
-  };
-  const onKey = (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
-    if (e.key !== 'Tab' || focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-  };
-  const onImport = async () => {
-    if (!currentUser) return;
-    importBtn.disabled = true;
-    if (statusEl) statusEl.textContent = 'Importing… (this can take a moment)';
-    try {
-      const res = await fetch(
-        `/api/users/${encodeURIComponent(currentUser)}/import-legacy`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ with_llm: !!(withLlm && withLlm.checked) }),
-        },
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        if (statusEl) statusEl.textContent = '';
-        cleanup();
-        reportError('Legacy import', data.error || `HTTP ${res.status}`,
-          JSON.stringify(data, null, 2));
-        return;
-      }
-      const exp = data.experiences_created || 0;
-      const bul = data.bullets_created || 0;
-      const clar = data.clarifications_created || 0;
-      if (statusEl) {
-        statusEl.textContent =
-          `Imported: ${exp} experience(s), ${bul} bullet(s), ${clar} clarification(s).`;
-      }
-      cleanup();
-      _toast(`${currentUser} imported into the corpus`);
-      if (typeof retryFn === 'function') retryFn();
-    } catch (e) {
-      if (statusEl) statusEl.textContent = '';
-      cleanup();
-      reportError('Legacy import', e.message);
-    } finally {
-      importBtn.disabled = false;
-    }
-  };
-
-  const dismissers = Array.from(modal.querySelectorAll('[data-onboard-dismiss]'));
-  dismissers.forEach(b => b.addEventListener('click', cleanup));
-  if (importBtn) importBtn.addEventListener('click', onImport);
-  modal.addEventListener('keydown', onKey);
-  modal.classList.remove('hidden');
-  if (importBtn) importBtn.focus();
-}
-
-// Inline placeholder for passive tab refreshes (Corpus / Applications /
-// Memory / Personas) when the user isn't onboarded yet. Renders a short
-// message + a button that opens the onboarding modal and re-runs the
-// tab refresh on success.
-function _renderNeedsOnboarding(container, retryFn) {
+// Empty-state CTA for read-only tabs (Memory / Applications / Templates) when
+// the user has no corpus material yet. Points them at the Career corpus tab,
+// where uploading a résumé / adding an experience both populates the corpus
+// and provisions the candidate row.
+function _renderCorpusEmptyCTA(container, message) {
   if (!container) return;
   _clearChildren(container);
   const wrap = _el('div', { className: 'corpus-empty-experience' });
-  wrap.appendChild(_el('div', {
-    textContent: `${currentUser} isn't in the career corpus yet.`,
-  }));
+  wrap.appendChild(_el('div', { textContent: message || 'Nothing here yet.' }));
   const btn = _el('button', {
     className: 'cb-btn cb-bg-teal',
-    textContent: 'IMPORT INTO CORPUS',
+    textContent: 'Go to Career corpus',
   });
   btn.style.marginTop = '10px';
-  btn.onclick = () => openOnboardingModal(retryFn);
+  btn.onclick = () => switchTopTab('corpus', document.getElementById('topTabCorpus'));
   wrap.appendChild(btn);
   container.appendChild(wrap);
 }
@@ -2264,7 +2173,7 @@ function switchTopTab(name, btn) {
 async function loadCorpusIfReady() {
   if (!currentUser) {
     document.getElementById('corpusEmptyHint').textContent =
-      'Select a user above to load their experiences.';
+      'Select a user in the Tailor tab to load their corpus.';
     document.getElementById('corpusToolbar').style.display = 'none';
     _clearChildren(document.getElementById('corpusExperienceList'));
     _corpusLoadedForUser = '';
@@ -2290,13 +2199,9 @@ async function refreshCorpus() {
     return;
   }
   if (res.status === 404) {
-    _clearChildren(list);
-    document.getElementById('corpusEmptyHint').textContent =
-      'No experiences in the corpus yet for ' + currentUser +
-      '. Onboarding extraction populates this on first import.';
-    document.getElementById('corpusToolbar').style.display = '';
-    _corpusLoadedForUser = currentUser;
     _corpusExperiences = [];
+    _corpusLoadedForUser = currentUser;
+    _renderCorpusList();
     return;
   }
   if (!res.ok) {
@@ -2307,12 +2212,11 @@ async function refreshCorpus() {
     return;
   }
   const data = await res.json().catch(() => []);
-  if (_needsOnboarding(res, data)) {
-    document.getElementById('corpusToolbar').style.display = 'none';
-    _renderNeedsOnboarding(list, refreshCorpus);
-    return;
-  }
-  _corpusExperiences = data;
+  // Bare array on success; {experiences:[], needs_onboarding:true} for a
+  // brand-new user with no candidate row yet. Treat both as the editable
+  // (possibly empty) corpus — the row self-provisions on the first write
+  // (résumé import or + ADD EXPERIENCE), so both paths are open immediately.
+  _corpusExperiences = Array.isArray(data) ? data : (data.experiences || []);
   _corpusLoadedForUser = currentUser;
   _renderCorpusList();
 }
@@ -2344,8 +2248,8 @@ async function refreshSummaryVariants() {
   _clearChildren(listEl);
   if (variants.length === 0) {
     hint.textContent = 'No summary variants yet. Click + Add variant to '
-      + 'create your first positioning summary. If you imported a résumé, '
-      + 'the migration backfilled one from the Summary section.';
+      + 'create your first positioning summary. Importing a résumé also '
+      + 'adds one from its Summary section.';
     return;
   }
   hint.textContent = 'Multiple positioning summaries you can pick from '
@@ -2555,7 +2459,8 @@ function _renderCorpusList() {
       `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
     _clearChildren(list);
     if (_corpusExperiences.length === 0) {
-      hint.textContent = 'No experiences yet. Click + ADD EXPERIENCE to start, or run onboarding.';
+      hint.textContent = 'No experiences yet. Click + Import résumé to build '
+        + 'your corpus automatically, or + ADD EXPERIENCE to add one by hand.';
       return;
     }
     hint.textContent = 'Click a card to expand and edit titles + bullets. Saves are inline.';
@@ -3119,7 +3024,8 @@ async function refreshMemory() {
   const rows = await res.json().catch(() => []);
   if (_needsOnboarding(res, rows)) {
     countEl.textContent = '0 entries';
-    _renderNeedsOnboarding(list, refreshMemory);
+    _renderCorpusEmptyCTA(list, 'No saved memory yet. Add your résumé in the '
+      + 'Career corpus tab to get started.');
     return;
   }
   _memoryLoaded = true;
@@ -3300,7 +3206,7 @@ async function loadCorpusDuplicates() {
   }
   const body = await res.json().catch(() => ({}));
   if (_needsOnboarding(res, body)) {
-    _setLoadingPlaceholder(list, 'Candidate not onboarded yet.');
+    _setLoadingPlaceholder(list, 'Your corpus is empty — import a résumé or add experiences first.');
     return;
   }
   _clearChildren(list);
@@ -3413,7 +3319,8 @@ async function refreshApplications() {
   const apps = await res.json().catch(() => []);
   if (_needsOnboarding(res, apps)) {
     if (countEl) countEl.textContent = '0 applications';
-    _renderNeedsOnboarding(list, refreshApplications);
+    _renderCorpusEmptyCTA(list, 'No applications yet. Add your résumé in the '
+      + 'Career corpus tab, then analyze a job description.');
     return;
   }
   _renderApplicationsList(apps);
@@ -3774,7 +3681,8 @@ async function _loadOwnedPersonas() {
   }
   const body = await res.json().catch(() => ({}));
   if (_needsOnboarding(res, body)) {
-    _renderNeedsOnboarding(grid, _loadOwnedPersonas);
+    _renderCorpusEmptyCTA(grid, 'Add your résumé in the Career corpus tab to '
+      + 'manage your own templates.');
     return;
   }
   _clearChildren(grid);
@@ -4850,7 +4758,8 @@ async function _loadTemplatePicker() {
   // the <select> hydration + live-preview kickoff below both assume a
   // populated body.
   if (_needsOnboarding(res, body)) {
-    if (list) _renderNeedsOnboarding(list, _loadTemplatePicker);
+    if (list) _renderCorpusEmptyCTA(list, 'Add your résumé in the Career '
+      + 'corpus tab to choose a template.');
     return;
   }
   // Populate the hidden <select> so _readSelectedPersonaId keeps working.

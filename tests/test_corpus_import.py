@@ -1,4 +1,4 @@
-"""Tests for the file→DB legacy importer.
+"""Tests for the file→DB corpus importer (onboarding/corpus_import.py).
 
 Uses a temp configs/ and output/ directory tree per test so we don't depend
 on the real user's data. The importer's CONFIGS_DIR/OUTPUT_DIR are patched
@@ -20,8 +20,8 @@ from db.models import (
     Experience,
     Skill,
 )
-from onboarding import import_legacy
-from onboarding.import_legacy import (
+from onboarding import corpus_import
+from onboarding.corpus_import import (
     ImportReport,
     _insert_or_merge_experience,
     _iter_resume_files,
@@ -41,8 +41,8 @@ def legacy_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     output = tmp_path / "output"
     configs.mkdir()
     output.mkdir()
-    monkeypatch.setattr(import_legacy, "CONFIGS_DIR", configs)
-    monkeypatch.setattr(import_legacy, "OUTPUT_DIR", output)
+    monkeypatch.setattr(corpus_import, "CONFIGS_DIR", configs)
+    monkeypatch.setattr(corpus_import, "OUTPUT_DIR", output)
     return tmp_path
 
 
@@ -250,8 +250,8 @@ def resumes_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     resumes = tmp_path / "resumes"
     configs.mkdir()
     resumes.mkdir()
-    monkeypatch.setattr(import_legacy, "CONFIGS_DIR", configs)
-    monkeypatch.setattr(import_legacy, "RESUMES_DIR", resumes)
+    monkeypatch.setattr(corpus_import, "CONFIGS_DIR", configs)
+    monkeypatch.setattr(corpus_import, "RESUMES_DIR", resumes)
     return tmp_path
 
 

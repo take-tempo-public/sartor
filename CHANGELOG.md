@@ -9,6 +9,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — retire the broken "legacy import" onboarding; the corpus self-provisions (`fix/retire-legacy-import-onboarding`)
+
+Found during the v1.0.1 → v1.0.5 walkthrough: the **Import into corpus** modal
+read like pre-migration cruft, its button `POST`ed to a route that no longer
+exists (`/api/users/<u>/import-legacy` → HTTP 404), and there was **no working
+way to populate the corpus**. Root cause: `create_user` writes a config but
+never a `Candidate` DB row, so *every* user — not just pre-migration ones — landed
+in the `needs_onboarding` state whose only UI exit was that broken modal.
+
+The onboarding gate is removed; the candidate row is now provisioned on demand:
+
+- **Self-provisioning** — a new `_get_or_provision_candidate()` helper (`app.py`)
+  creates the `Candidate` row from the user's config on the first corpus *write*
+  (résumé ingest, add-experience, add-summary, persona upload, analyze), reusing
+  the idempotent `import_candidate_from_config`. Both onboarding paths are open to
+  a brand-new user immediately: **import a résumé** (AI extraction) **or** add
+  experiences/bullets by hand — and you can mix them. The five write routes that
+  returned `409 + needs_onboarding` (and summaries' `404`) now just succeed.
+- **Frontend** (`static/app.js`, `templates/index.html`) — the onboarding modal,
+  the `import-legacy` fetch, `openOnboardingModal` / `_renderNeedsOnboarding`, and
+  the "Legacy import" error labels are deleted. The Career corpus tab always shows
+  its toolbar (import **and** add-experience) with a unified empty-state hint; the
+  read-only tabs (Memory / Applications / Templates) show a non-modal "Go to
+  Career corpus" CTA via `_renderCorpusEmptyCTA`. All "database migration" /
+  "run onboarding" / "Select a user above" copy is rewritten.
+- **Tab rename** — the first tab **Application → Tailor** everywhere (label, ids
+  `topTabApplication`/`tab-application` → `topTabTailor`/`tab-tailor`, the
+  `switchTopTab('tailor')` handler, and `ui_pages/selectors.py` `TopTabs.TAILOR`).
+- **Module rename** — `onboarding/import_legacy.py` → `onboarding/corpus_import.py`
+  (and its test file) so no "legacy" name remains in the runtime path; the CLI is
+  now `python -m onboarding.corpus_import`. Behavior unchanged.
+- **Tests** — the four write-route "missing candidate → 4xx" tests now assert
+  auto-provision success and that the row was created; their fixtures patch
+  `corpus_import.CONFIGS_DIR`. The new-user UX regression asserts the working
+  "+ Import résumé" affordance instead of the removed CTA.
+
+No prompt / `PROMPT_VERSION` change, no new dependency. (Shipped CHANGELOG /
+architecture / benchmark mentions of the old file-based "legacy" pipeline are
+left as accurate history.)
+
 ### Changed — needs-onboarding GET reads return `200`, not `409` (`refactor/needs-onboarding-200-on-reads`, v1.0.5)
 
 Found during v1.0.5 verification: creating the first user and clicking across

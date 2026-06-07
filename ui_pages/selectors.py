@@ -26,7 +26,7 @@ class UserPicker:
 
 class TopTabs:
     CORPUS = "#topTabCorpus"
-    APPLICATION = "#topTabApplication"
+    TAILOR = "#topTabTailor"
     PERSONAS = "#topTabPersonas"
     MEMORY = "#topTabMemory"
 
@@ -93,11 +93,12 @@ class Memory:
 
 
 class Onboarding:
-    """The shared needs-onboarding CTA (`_renderNeedsOnboarding`) rendered into
-    any passive tab (Corpus / Memory / Personas / Applications) when the
-    selected user has a config but no corpus Candidate row yet."""
+    """The shared empty-corpus CTA (`_renderCorpusEmptyCTA`) rendered into a
+    read-only tab (Memory / Personas / Applications) when the selected user has
+    no corpus material yet. The Corpus tab itself shows its toolbar instead
+    (see Corpus.IMPORT_BUTTON_NAME), so both import and manual CRUD are open."""
 
-    CTA_NAME = "IMPORT INTO CORPUS"
+    CTA_NAME = "Go to Career corpus"
 
 
 class Output:

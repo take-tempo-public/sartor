@@ -97,8 +97,8 @@ def write_priya_docx(path: Path) -> None:
     Generates a minimal but parser-friendly .docx with three
     experiences, ~8 bullets each, one Kafka-passing-mention bullet
     on the Helix card, no team-size claim anywhere. Also drops a
-    copy into resumes/<DEMO_USER>/ so the import-legacy route
-    finds it during onboarding.
+    copy into resumes/<DEMO_USER>/ so corpus_import.run_import
+    finds it during the corpus seed.
     """
     doc = Document()
     doc.add_heading("Priya Sharma", level=0)
@@ -159,14 +159,14 @@ def write_priya_docx(path: Path) -> None:
     doc.save(str(path))
     print(f"  ✓ wrote {path.relative_to(REPO)}")
 
-    # Also drop a copy into resumes/<DEMO_USER>/ so the
-    # /api/users/<user>/import-legacy route (which reads from that
-    # directory under with_llm=true) finds it during onboarding.
-    legacy_dir = REPO / "resumes" / DEMO_USER
-    legacy_dir.mkdir(parents=True, exist_ok=True)
-    legacy_path = legacy_dir / "priya_master.docx"
-    shutil.copyfile(str(path), str(legacy_path))
-    print(f"  ✓ wrote {legacy_path.relative_to(REPO)}")
+    # Also drop a copy into resumes/<DEMO_USER>/ so
+    # corpus_import.run_import (which reads from that directory under
+    # with_llm=true) finds it during the corpus seed.
+    seed_dir = REPO / "resumes" / DEMO_USER
+    seed_dir.mkdir(parents=True, exist_ok=True)
+    seed_path = seed_dir / "priya_master.docx"
+    shutil.copyfile(str(path), str(seed_path))
+    print(f"  ✓ wrote {seed_path.relative_to(REPO)}")
 
 
 def cap(page: Page, filename: str) -> None:
@@ -195,7 +195,7 @@ def ensure_demo_user(page: Page) -> None:
 def ensure_corpus_imported(page: Page) -> None:
     """Import the synthetic .docx into the demo user's corpus.
 
-    Calls onboarding.import_legacy.run_import directly (bypassing HTTP)
+    Calls onboarding.corpus_import.run_import directly (bypassing HTTP)
     to seed the demo user's DB corpus from resumes/<user>/.
     """
     corpus = CorpusPage(page, APP_URL).open()
@@ -212,7 +212,7 @@ def ensure_corpus_imported(page: Page) -> None:
     # Capture S03 — empty corpus state — BEFORE the import.
     cap(page, "walkthrough_setup_corpus-empty.png")
 
-    print("  · running import_legacy.run_import(demo, with_llm=True)…")
+    print("  · running corpus_import.run_import(demo, with_llm=True)…")
     # ~$0.02 Haiku call for extraction; ~10-20s.
     # We call run_import directly (same path the Flask route wraps)
     # rather than going through HTTP, because the HTTP path was
@@ -220,11 +220,11 @@ def ensure_corpus_imported(page: Page) -> None:
     # via curl or a REPL — bypassing it removes Playwright's request
     # encoding, the Flask route, and Flask debug-mode's auto-reload
     # window from the dependency chain.
-    from onboarding.import_legacy import run_import
+    from onboarding.corpus_import import run_import
     report = run_import(DEMO_USER, with_llm=True)
     if report.errors:
         raise RuntimeError(
-            f"import_legacy reported errors: {report.errors}"
+            f"corpus_import reported errors: {report.errors}"
         )
     print(
         f"  · imported: {report.experiences_created} experiences "

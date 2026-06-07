@@ -41,6 +41,10 @@ def db_app(tmp_path, monkeypatch):
     (tmp_path / "configs" / "casey.config").write_text("{}", encoding="utf-8")
     (tmp_path / "output").mkdir(exist_ok=True)
 
+    # Provisioning reads corpus_import's own module-level CONFIGS_DIR.
+    import onboarding.corpus_import as corpus_import_mod
+    monkeypatch.setattr(corpus_import_mod, "CONFIGS_DIR", tmp_path / "configs")
+
     return app
 
 
@@ -134,25 +138,36 @@ class TestAnalyzeRoute:
             )
         assert response.status_code == 200
 
-    def test_unknown_user_returns_409_needs_onboarding(self, db_app, tmp_path):
+    def test_config_only_user_is_auto_provisioned(self, db_app, tmp_path):
         _seed_db_candidate(tmp_path / "test.sqlite")
-        # Set up a config for 'ghost' so _safe_username passes, but DON'T seed
-        # a candidate row — build_context_set_from_db raises ValueError, which
-        # the route now maps to 409 + needs_onboarding so the frontend can
-        # offer the legacy-import flow instead of a dead error.
-        (tmp_path / "configs" / "ghost.config").write_text("{}", encoding="utf-8")
-
-        with patch.object(db_app, "_get_client", return_value=object()):
+        # A user with a config but no candidate row is auto-provisioned on
+        # analyze (the row is created from the config), then the analysis runs
+        # against the now-present corpus. No separate import step.
+        (tmp_path / "configs" / "ghost.config").write_text(
+            '{"name": "Ghost"}', encoding="utf-8")
+        fake_analysis = {
+            "essential_skills": [], "preferred_skills": [],
+            "industry_keywords": [], "hidden_qualities": [],
+            "professional_vocabulary": [], "ideal_resume_profile": "x",
+            "comparison": {}, "suggestions": [], "keyword_placement": [],
+            "ats_improvements": [], "overall_strategy": "x",
+        }
+        with patch.object(db_app, "analyze", return_value=fake_analysis), \
+             patch.object(db_app, "_get_client", return_value=object()):
             client = db_app.app.test_client()
             response = client.post(
                 "/api/analyze",
                 json={"username": "ghost", "job_description": "Some JD"},
             )
 
-        assert response.status_code == 409
-        body = response.get_json()
-        assert "No candidate" in body["error"]
-        assert body["needs_onboarding"] is True
+        assert response.status_code == 200, response.get_json()
+        from db.models import Candidate
+        from db.session import get_session
+        s = get_session()
+        try:
+            assert s.query(Candidate).filter_by(username="ghost").first() is not None
+        finally:
+            s.close()
 
     def test_creates_application_row_in_db(self, db_app, tmp_path):
         _seed_db_candidate(tmp_path / "test.sqlite")

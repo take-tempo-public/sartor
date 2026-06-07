@@ -32,6 +32,9 @@ def ingest_app(tmp_path, monkeypatch):
     monkeypatch.setattr(app_module, "RESUMES_DIR", tmp_path / "resumes")
     monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
+    # Provisioning reads corpus_import's own module-level CONFIGS_DIR.
+    import onboarding.corpus_import as corpus_import_mod
+    monkeypatch.setattr(corpus_import_mod, "CONFIGS_DIR", tmp_path / "configs")
     from db.session import init_db
     init_db(db_file)
     return app_module
@@ -104,15 +107,28 @@ class TestIngestResume:
         )
         assert r.status_code == 400
 
-    def test_missing_candidate_returns_409_needs_onboarding(self, ingest_app):
+    def test_missing_candidate_is_auto_provisioned(self, ingest_app):
+        # A config-only user (no Candidate row) is provisioned on ingest —
+        # importing a résumé IS the onboarding step, no separate import.
         client = ingest_app.app.test_client()
-        r = client.post(
-            "/api/users/alice/corpus/ingest-resume",
-            data={"file": (io.BytesIO(b"# x"), "r.md")},
-            content_type="multipart/form-data",
-        )
-        assert r.status_code == 409
-        assert r.get_json()["needs_onboarding"] is True
+        with patch("onboarding.extract_experiences.extract_experiences",
+                   return_value=_FAKE_EXTRACT), \
+             patch.object(ingest_app, "_get_client", return_value=object()):
+            r = client.post(
+                "/api/users/alice/corpus/ingest-resume",
+                data={"file": (io.BytesIO(b"# Resume\n\n## Experience\n\n"
+                                          b"- Did things at Polaris"),
+                               "r.md")},
+                content_type="multipart/form-data",
+            )
+        assert r.status_code == 201, r.get_json()
+        from db.models import Candidate
+        from db.session import get_session
+        s = get_session()
+        try:
+            assert s.query(Candidate).filter_by(username="alice").first() is not None
+        finally:
+            s.close()
 
     def test_unknown_user_400(self, ingest_app):
         client = ingest_app.app.test_client()
