@@ -8,8 +8,10 @@ import json
 import logging
 import os
 import re
+import threading
 import traceback
 import uuid
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -5885,9 +5887,30 @@ def main() -> None:
 
     Set `FLASK_DEBUG=0` in the environment to disable Flask's
     reloader + verbose error pages (see SECURITY.md for rationale).
+    Set `CALLBACK_NO_BROWSER=1` to skip the auto-open (headless / remote
+    / CI runs where launching a browser is unwanted).
     """
     print("\n  callback. — http://localhost:5000\n")
     debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"
+
+    # Auto-open the user's default browser so `python app.py` lands them
+    # straight on the app. Under Flask's reloader (debug=True) main() runs in
+    # BOTH the supervisor and the serving child; only the child sets
+    # WERKZEUG_RUN_MAIN, so we open there to avoid a second tab. A short Timer
+    # delays the open until the server is listening; it runs as a daemon so it
+    # never holds the interpreter open on shutdown.
+    serving = (not debug_mode) or os.environ.get("WERKZEUG_RUN_MAIN") == "true"
+    if serving and os.environ.get("CALLBACK_NO_BROWSER") != "1":
+        def _open_browser() -> None:
+            try:
+                webbrowser.open("http://localhost:5000")
+            except Exception as exc:  # best-effort; the URL is already printed
+                logger.debug("Could not auto-open browser: %s", exc)
+
+        opener = threading.Timer(1.0, _open_browser)
+        opener.daemon = True
+        opener.start()
+
     app.run(debug=debug_mode, port=5000)
 
 

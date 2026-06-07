@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — auto-open the default browser on launch (`feat/auto-open-browser`)
+
+`python app.py` (and the `callback` console script) now opens
+`http://localhost:5000` in the user's default browser once the server is
+listening, so they land straight on the app instead of copying the URL by hand.
+A short daemon `Timer` defers the open until the socket is up; under Flask's
+reloader (`FLASK_DEBUG=1`, the default) the open fires only in the serving child
+(`WERKZEUG_RUN_MAIN=true`) so there's no double tab; and the call is wrapped so a
+missing browser can never crash startup. Set `CALLBACK_NO_BROWSER=1` to skip it
+on headless / remote / CI runs.
+
 ### Changed — retire the broken "legacy import" onboarding; the corpus self-provisions (`fix/retire-legacy-import-onboarding`)
 
 Found during the v1.0.1 → v1.0.5 walkthrough: the **Import into corpus** modal
