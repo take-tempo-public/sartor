@@ -884,6 +884,20 @@ def _localhost_guard():
         abort(403)
 
 
+def _tune_prompt_choices() -> list[dict]:
+    """The overridable system-prompt constants for the Tuning-tab A/B dropdown.
+
+    Read-only use of analyzer's `_BASE_SYSTEM_PROMPTS` registry (no edit, no LLM call):
+    each `{name, text}` feeds the constant picker and the "Load current text" prefill so
+    a tuner edits the baseline rather than pasting a full prompt from memory. Lazy import
+    keeps this read-only blueprint's import surface light; analyzer is already loaded by
+    app.py before any request reaches here.
+    """
+    import analyzer  # noqa: PLC0415
+
+    return [{"name": name, "text": text} for name, text in analyzer._BASE_SYSTEM_PROMPTS.items()]
+
+
 @dashboard_bp.route("/", methods=["GET"])
 def index():
     """Render the dashboard with optional filters from query string."""
@@ -944,4 +958,5 @@ def index():
         reliability=reliability,
         run_trace=run_trace,
         baseline_health=baseline_health,
+        tune_prompts=_tune_prompt_choices(),
     )
