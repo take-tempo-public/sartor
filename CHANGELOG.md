@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — run the grounding scorers from the console; bootstraps capture a seed (`feat/grounding-scorers-in-console`)
+
+Found during a v1.0.5 walkthrough: a dev-user installed the offline grounding
+scorers (`pip install -e '.[eval-grounding]'`, DeBERTa NLI + MiniCheck-FT5) and
+had **no interface to use them** — the only trigger was the CLI
+`--grounding-signals` flag, and the browser bootstrap hard-coded `grounding_fn=None`.
+Step 1 of the "finish the diagnostics faceplate" arc makes the scorers reachable
+from the `/_dashboard` **Annotate** tab, keeping them eval-time (the L1/L2
+hot-path discipline in `docs/dev/GROUNDING_METRIC.md` is unchanged):
+
+- **Opt-in on the browser bootstrap** (`app.py`, `/api/annotation/bootstrap`) — a
+  "Run grounding scorers" checkbox passes `grounding_signals: true`, which wires
+  `evals.grounding_signals.run_grounding_signals` into `build_bootstrap_document`.
+  The scorers are pure-Python to import but lazy-load heavy deps, so a missing
+  `[eval-grounding]` extra (or any scoring failure) **degrades to an un-scored
+  bootstrap + a streamed `warning`**, never a 500 — the paid pipeline output is
+  always preserved.
+- **"Score grounding" backfill** (`/api/annotation/fixture/<user>/<slug>/score`,
+  SSE) — scores an existing bootstrap's deduped bullet representatives **without
+  re-running the paid pipeline**, writes them under `grounding_signals`, and
+  patches any in-progress `annotations.json` score fields **by `cluster_index`
+  without touching human verdicts/notes**. The annotation editor's MiniCheck/NLI
+  pre-scores now light up.
+- **Bootstraps capture a `seed.json`** — the browser bootstrap now snapshots the
+  entire approved corpus via `scripts.export_corpus_seed.export_seed` (non-fatal
+  if it can't). This is the durable source the backfill scores against (imported
+  via `evals.seed_import.seeded_session`, faithful even if the live corpus is
+  later edited) and the file the collate step's `--seed` run-command already
+  assumed but the in-browser path never produced.
+
+No new dependency; no `PROMPT_VERSION` bump (deterministic, no prompt change).
+
 ### Added — auto-open the default browser on launch (`feat/auto-open-browser`)
 
 `python app.py` (and the `callback` console script) now opens
