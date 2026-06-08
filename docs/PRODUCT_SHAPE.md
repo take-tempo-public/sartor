@@ -407,6 +407,15 @@ Proposed final shape:
 
 ## 7. v1.0 → v1.x → v2 sequencing ladder
 
+> **Version labels superseded (2026-06-08).** The "v1.0 / v1.1 / v1.2 / v2" stage
+> labels below predate the **epic/tag versioning model** (patch digit = epic; minor
+> digit = the public tag marker — see [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md)).
+> Read them as *data-model stages*, not release versions. Current dispositions: the
+> **v1.0 stage shipped** (SummaryItem, JSON Resume, PDF, live preview, CL detachment,
+> the `is_default` resolver — all done); **ExperienceSummaryItem + SkillGroupItem**
+> are scheduled for **v1.0.6** (corpus completion); the rest are dispositioned in §10
+> and [`dev/nursery.md`](dev/nursery.md).
+
 Build the unified pattern in stages, no schema breaks between stages.
 
 ### v1.0 (next branch after `feat/release-visual-ia`)
@@ -470,6 +479,15 @@ with the rest of the master-résumé surfacing in §5.2.
 ---
 
 ## 10. Deferred during v1.0.0 release cut
+
+> **Reconciled 2026-06-08 (backlog grooming).** Several items below shifted on status
+> verification or were dispositioned into the epic ladder / nursery / cut: the
+> **Post-v1.0.5** items (cover-letter opener tuning, grounding calibration B) are now
+> scheduled as **v1.0.7** pre-public hardening (PV-3 / PV-2); **R2 stream analyze
+> shipped** (v1.0.3); **paged.js elimination → post-public 1.1.x** (design-spike);
+> **master-résumés + field-filter chips → [`dev/nursery.md`](dev/nursery.md)**;
+> **Dockerfile → cut.** See [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) for the
+> authoritative schedule; entries below are kept for their rationale/context.
 
 Items that surfaced during the v1.0.0 release work and were
 explicitly deferred to keep the v1.0.0 scope honest. Captured here
@@ -648,6 +666,78 @@ acceptance criteria / target version**.
 - *Target:* a deliberate, separately-scoped render-engine decision — v2, or
   whenever preview fidelity / maintenance cost justifies the swap. Not a
   bugfix-branch drive-by.
+
+---
+
+## 11. System self-model + engineering workstreams (the excellence walk)
+
+> Added 2026-06-08 from the "excellence walk" — a codebase self-assessment +
+> engineering-excellence design pass. §1–9 describe the shape of the **product
+> data model** (the Corpus Item). This section names the shape of the **whole
+> system** and the structural levers that move it toward a polished production
+> codebase. Sequencing is authoritative in [`RELEASE_ARC.md`](dev/RELEASE_ARC.md)
+> §Phase 4.5 / §Phase 4.7 / "Post-v1.1.0 workstreams"; this section is the *shape
+> intent*, not the schedule.
+
+### 11.1 The seven-functions self-model → `docs/system-model.md` (scheduled)
+
+The system is described by **seven functions + one law**, split across two
+subjects (the Corpus-Item pattern is a piece of the first):
+
+- **The Product** — **Production** (the pipeline: read JD → clarify → recommend →
+  generate → iterate; all LLM calls isolated in `analyzer.py`, the deterministic
+  core kept LLM-free) over its **Substrate** (`configs/`, `resumes/`, `output/`,
+  `db/`, `context_*.json`).
+- **The Work** that evolves it — **Evaluation** (`tests/`, `evals/`, `dashboard/`),
+  **Operation** (`.claude-plugin/` commands + agents; humans + AI agents),
+  **Memory** (`docs/`, the planned wiki, `CHANGELOG`), **Regulation** (hooks, the
+  quality gate, branch/release discipline).
+- **Governance** — the prescriptive north-star (`vision.md`, the 10 Principles)
+  the Work answers to.
+
+**The one law:** every dependency points inward toward **Production**; Production
+answers only upward to **Governance** — the codebase's own one-way dependency rule
+(P1 deterministic/LLM boundary; production ↛ `evals/`) scaled up to the whole
+system. The canonical write-up is **scheduled** as `docs/system-model.md` (the
+WS-4 wiki `overview.md` seed); this branch only names the home.
+
+### 11.2 The four workstreams (structural intent)
+
+| WS | Shape lever | What | Sequenced |
+|---|---|---|---|
+| **WS-1** | split the monolith | decompose the 6,290-LOC / 75-route `app.py` into Flask blueprints, preserving the `_safe_username`/`_within` gate + its lint hook | **v1.0.8** — a dedicated *pre-public* epic (so v1.1.0 ships clean); absorbs PV-4; **never interleaved with a sprint stream** |
+| **WS-2** | model the contracts as types | strict-typing ratchet + a typed `context_set` (TypedDict/dataclass/Pydantic) — the contract becomes a *type*, not prose + JSON-schema | increment 1 = PV-4 in **v1.0.8** (rides WS-1); WS-2-full in the post-public 1.1.x series |
+| **WS-3** | keep the test suite lean | recurring engineering-design pass over the ~955-test suite (redundancy, slow tests, fixture dup) | recurring, post-public (1.1.x) |
+| **WS-4** | a knowledge substrate | committed `docs/wiki/` (git-as-engine) + `llms.txt` + `/wiki-*` skills + a canonical **Governance** extraction | substrate (WS-4a/b) in **v1.0.6**; the self-documenting loop + the doc-grounded assistant in **v1.0.7** |
+
+### 11.3 Consistency tracks enforcement (the Q2 finding → why WS-1 + WS-2)
+
+The consistency audit found the codebase is uniform *exactly where a hook or the
+linter guards a pattern* (security gate, import order, `call_kind` taxonomy, LLM
+instrumentation) and inconsistent only where convention is left to discipline —
+and both real gaps are already named here: **return-type annotations + the
+`dict`-typed payloads/`context_set`** (→ WS-2) and the **75-route monolith**
+(→ WS-1). The fix is not "be more disciplined" — it is **extend the enforcement
+surface**: model the contracts (WS-2) and split the monolith (WS-1) so the
+machinery, not vigilance, keeps them consistent.
+
+### 11.4 Capabilities the substrate enables
+
+- **The doc-grounded assistant (v1.0.7; ships in v1.1.0).** *"A product that knows
+  itself."* A chat — for **both users and devs** — that answers "how do I…" questions
+  from the committed `docs/wiki/` **with citations** (the LLM-wiki `query` op as a
+  chat). A **Haiku** model reusing the user's **existing Anthropic key**; the
+  self-documenting loop keeps the wiki it reads current. A public UX/DX value prop.
+- **Local + alternative LLM providers (post-public, 1.1.x).** A provider abstraction
+  at the single LLM boundary (`analyzer.py`) so users pick **local** (Ollama /
+  llama.cpp) or **alternative** (OpenAI / Gemini / …) models — strong local-first /
+  privacy fit. Architectural → a design-spike first; generalizes every call,
+  including the assistant.
+
+> **Disposition pointers.** Scheduled work lives in
+> [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) (the epic/tag ladder); deferred-but-alive
+> ideas live in [`dev/nursery.md`](dev/nursery.md); the raw reasoning behind all of
+> this is preserved in [`dev/excellence-walk/`](dev/excellence-walk/).
 
 ---
 
