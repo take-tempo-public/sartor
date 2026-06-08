@@ -722,3 +722,91 @@ class TestTuneRunRoute:
             "suite": "real", "slug": "alice-bootstrap", "username": "nobody",
         })
         assert resp.status_code == 400
+
+
+# --- standalone seed export (deterministic, LLM-free; reads the LIVE DB) ----
+
+def _provision_live_candidate(ann_app, username="alice", name="Alice Lee"):
+    """Insert a Candidate row into the live app DB the export route reads from.
+
+    Unlike the score route (which imports a throwaway seed.json into in-memory SQLite),
+    /api/annotation/seed/export reads the LIVE DB via export_seed, so the candidate must
+    actually exist there. The ann_app fixture already bound get_session() to the temp DB.
+    """
+    from db.models import Candidate
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        session.add(Candidate(username=username, name=name))
+        session.commit()
+    finally:
+        session.close()
+
+
+class TestSeedExport:
+    """POST /api/annotation/seed/export — the no-cost, synchronous corpus-seed export.
+    No paid calls (no LLM at all) and no SSE; mirrors the score route's guard structure."""
+
+    def test_success_writes_seed_json(self, ann_app):
+        _provision_live_candidate(ann_app)
+        client = ann_app.app.test_client()
+        resp = client.post("/api/annotation/seed/export", json={"username": "alice"})
+        assert resp.status_code == 200
+        body = resp.get_json()
+        assert body["ok"] is True
+        assert body["slug"] == "alice-bootstrap"          # default slug
+        assert body["candidate"] == "alice"
+        seed_file = ann_app.ANNOTATION_ROOT / "alice-bootstrap" / "seed.json"
+        assert seed_file.exists()
+        seed = json.loads(seed_file.read_text(encoding="utf-8"))
+        assert seed["seed_schema_version"] == 1
+        assert seed["candidate_username"] == "alice"
+
+    def test_custom_slug(self, ann_app):
+        _provision_live_candidate(ann_app)
+        client = ann_app.app.test_client()
+        resp = client.post(
+            "/api/annotation/seed/export", json={"username": "alice", "slug": "my-seed"},
+        )
+        assert resp.status_code == 200
+        assert resp.get_json()["slug"] == "my-seed"
+        assert (ann_app.ANNOTATION_ROOT / "my-seed" / "seed.json").exists()
+
+    def test_unknown_user_rejected(self, ann_app):
+        client = ann_app.app.test_client()
+        resp = client.post("/api/annotation/seed/export", json={"username": "nobody"})
+        assert resp.status_code == 400
+
+    def test_localhost_guard_blocks_remote_host(self, ann_app):
+        _provision_live_candidate(ann_app)
+        client = ann_app.app.test_client()
+        resp = client.post(
+            "/api/annotation/seed/export", json={"username": "alice"},
+            headers={"Host": "evil.example"},
+        )
+        assert resp.status_code == 403
+
+    def test_no_corpus_returns_409(self, ann_app):
+        # alice.config exists (fixture) so _safe_username passes, but no Candidate row
+        # was provisioned → export_seed raises ValueError → needs-onboarding 409.
+        client = ann_app.app.test_client()
+        resp = client.post("/api/annotation/seed/export", json={"username": "alice"})
+        assert resp.status_code == 409
+        assert "corpus" in resp.get_json()["error"].lower()
+        assert not (ann_app.ANNOTATION_ROOT / "alice-bootstrap").exists()
+
+    def test_traversal_slug_stays_contained(self, ann_app):
+        _provision_live_candidate(ann_app)
+        client = ann_app.app.test_client()
+        resp = client.post(
+            "/api/annotation/seed/export", json={"username": "alice", "slug": "../../etc"},
+        )
+        # secure_filename collapses "../../etc" → "etc"; the write stays contained.
+        assert resp.status_code == 200
+        written = list(ann_app.ANNOTATION_ROOT.rglob("seed.json"))
+        assert written, "seed.json should have been written under ANNOTATION_ROOT"
+        for p in written:
+            assert ann_app._within(p, ann_app.ANNOTATION_ROOT)
+        # Nothing escaped to a sibling of ANNOTATION_ROOT.
+        assert not (ann_app.ANNOTATION_ROOT.parent / "etc" / "seed.json").exists()

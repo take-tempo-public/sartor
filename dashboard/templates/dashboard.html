@@ -416,6 +416,8 @@
         extras just save an un-scored bootstrap.</label>
       <div class="annotate-actions">
         <button class="ann-btn" id="bsAddJd" type="button">+ Add JD</button>
+        <button class="ann-btn" id="bsExportSeed" type="button"
+                title="Snapshot this candidate's corpus to seed.json — deterministic, no paid LLM calls. Needs only the candidate username (JDs are ignored).">Export seed (no LLM)</button>
         <button class="ann-btn primary" id="bsRun" type="button">Run bootstrap</button>
       </div>
       <div id="bsProgress" class="annotate-progress" role="status" aria-live="polite"></div>
@@ -1239,6 +1241,22 @@
     }).catch(function () { prog.textContent = 'Bootstrap request failed.'; $('bsRun').disabled = false; });
   }
 
+  // ---- standalone seed export (deterministic, no paid LLM calls) ----
+  function exportSeed() {
+    var user = $('bsUser').value.trim(); var slug = $('bsSlug').value.trim(); var prog = $('bsProgress');
+    if (!user) { prog.textContent = 'Enter a candidate username.'; return; }
+    $('bsExportSeed').disabled = true;
+    prog.textContent = 'Exporting corpus seed… (deterministic, no paid LLM calls)';
+    fetch(API + '/seed/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, slug: slug || undefined }) }).then(function (resp) {
+      return jsonRes(resp).then(function (res) {
+        var d = res.d || {};
+        if (!res.ok) { prog.textContent = 'Error: ' + (d.error || resp.status) + (d.detail ? ' — ' + d.detail : ''); return; }
+        prog.textContent = 'Seed written: ' + d.path + ' (' + d.experiences + ' experiences, ' + d.bullets + ' bullets, ' + d.summary_items + ' summary items, ' + d.skills + ' skills).';
+        loadFixtures().then(function () { if (d.slug) $('fixtureSelect').value = d.slug; });
+      });
+    }).catch(function () { prog.textContent = 'Seed export request failed.'; }).then(function () { $('bsExportSeed').disabled = false; });
+  }
+
   // ---- grounding backfill (score an existing fixture; CPU, no paid calls) ----
   function scoreGrounding() {
     if (!state.slug || !state.candidate) { return; }
@@ -1282,6 +1300,7 @@
   $('annCollate').addEventListener('click', collate);
   $('annScore').addEventListener('click', scoreGrounding);
   $('bsAddJd').addEventListener('click', function () { addJdRow('', ''); });
+  $('bsExportSeed').addEventListener('click', exportSeed);
   $('bsRun').addEventListener('click', runBootstrap);
   addJdRow('', '');
   loadFixtures();

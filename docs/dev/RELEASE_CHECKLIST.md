@@ -76,7 +76,7 @@ criteria.
       the label-producing loop is now browser-driven. **All four steps shipped — arc
       complete.**
 
-- [ ] **Standalone one-click corpus-seed export (`feat/seed-export-button`)** —
+- [x] **Standalone one-click corpus-seed export (`feat/seed-export-button`)** —
       flagged 2026-06-07 during the `docs/tuning-loop-discoverability` close-out.
       Generating a corpus `seed.json` should be a one-click, **LLM-free** unit, but
       today the only in-browser trigger is bundled inside the **paid** Annotate-tab
@@ -88,6 +88,13 @@ criteria.
       ANNOTATION_ROOT)` + `secure_filename`, the same guard the bootstrap/score routes
       use). Separate functional unit from the docs arc; **next small `feat/` branch**
       after this docs branch (user-approved sequencing 2026-06-07).
+      **Status (2026-06-07): shipped** via `feat/seed-export-button` (commit
+      `3aa6a45`). Added the synchronous, localhost-only `POST /api/annotation/seed/export`
+      (reads the live DB via `export_seed`, no model calls, no SSE) + an Annotate-tab
+      "Export seed (no LLM)" button distinct from the paid "Run bootstrap"; factored a
+      shared `_write_seed_json` writer out of the bootstrap route (bootstrap behavior
+      byte-identical). Security trio enforced; unknown user → 400, config-only user with
+      no corpus → 409. Tests in `TestSeedExport`; no `PROMPT_VERSION` bump, no new dep.
 
 - [ ] **Compose custom bullet order visually reverts on reload when an
       experience has no LLM recommendations** — surfaced 2026-06-04 while
