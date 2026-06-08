@@ -22,12 +22,51 @@ v1.1.0 tag):** v1.0.1 tagged 2026-05-28, v1.0.2 tagged 2026-05-30,
 v1.0.3 tagged 2026-06-02, v1.0.4 tagged 2026-06-02 (commit `072e290`, eval
 tuning loop), v1.0.5 tagged 2026-06-07 (UI/UX redesign + diagnostics/tuning
 console — **shipped**; all seven §Phase 4 tag criteria met, gate green incl.
-`pytest -m ux`). The active target is now **v1.1.0** — the public release,
-whose tag is **owned by the user** and applied when the product is judged
-showcase-ready (GitHub push is part of that event); see
-[`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 5 for its branch sequence and tag
-criteria. The v1.0.5 items below are reconciled in place (shipped → `[x]`);
-items still open are deferred to v1.1.0 or later as noted.
+`pytest -m ux`). Two internal releases now sit between v1.0.5 and the public
+v1.1.0 tag — **v1.0.6** (walkthrough polish + the WS-4 knowledge substrate) and
+**v1.0.7** (pre-public hardening) — folded into the arc on 2026-06-08 from the
+v1.0.5 walk-through sprint plan + the excellence-walk workstreams; see
+[`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.5 / §Phase 4.7. The immediate next
+phase is **v1.0.6**, which **opens with a fresh end-to-end walkthrough**. The
+public **v1.1.0** tag remains **owned by the user**, applied when the product is
+judged showcase-ready (RELEASE_ARC §Phase 5). The v1.0.5 items below are
+reconciled in place (shipped → `[x]`); items still open are carried into v1.0.6 /
+v1.0.7 / v1.1.0 as noted.
+
+### v1.0.6 — Walkthrough polish + knowledge substrate (NEXT)
+
+Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
+§Phase 4.5. Gates for the v1.0.6 tag:
+
+- [ ] **E2E walkthrough kickoff (Sprint 6.0)** — user drives the whole product
+      (app + evals + tuning) on a real corpus to collect findings; decompose into
+      the 6.x buckets (the v1.0.5 method). Also the signing / re-confirmation pass
+      for the **unsigned** `V1_0_5_VERIFICATION.md` and the named-but-unlanded V5-B
+      parity fixes (#9 download ≠ preview, #10 step-6 edit not reflected).
+- [ ] **Sprints 6.1–6.5 merged** — 6.1 wizard-flow · 6.2 diagnostics-console ·
+      6.3 forms + a11y (**the axe a11y gate lands first** and guards every later
+      branch) · 6.4 IA + onboarding (corpus-first) · 6.5 in-app education sweep.
+- [ ] **WS-4 substrate landed BEFORE the 6.5 education sweep** (the binding gate):
+      `docs/system-model.md` (← seven-functions language) + the committed
+      `docs/wiki/` skeleton + the `/wiki-*` skills exist; the code architecture is
+      cold-ingested (`path:line`-grounded); a **user-facing wiki section is
+      reserved so 6.5 authors INTO the wiki**, not into throwaway prose.
+- [ ] **Governance extraction** (its own gated branch, after the wiki proves out) —
+      ⚠ **preserve agent rule-access**: `AGENTS.md`/`CLAUDE.md` are harness-auto-
+      loaded; extraction must keep the rules reachable via `@import`/pointer or every
+      future agent loses its guardrails. 3 open sub-decisions resolved first
+      (Governance home name; per-doc extraction boundaries; AGENTS.md
+      shell-vs-inline). *(May spill to a later release — not a hard v1.0.6 gate.)*
+- [ ] **`docs/eval-stack-install-guide` (#17)** — the user-facing install/prepare
+      guide authored from the excellence walk's Q3 deliverable
+      (`output/_dev-notes/Q3_downloads_draft.md`) + a README/`install.md` "what gets
+      downloaded & why" section.
+- [ ] `ruff + mypy + pytest + pytest -m ux` green; `chore/version-bump-v1.0.6`.
+
+> **Source-survival note.** The WS-4 / Q3 / system-model source drafts live in the
+> gitignored `output/_dev-notes/` on the **working clone only** — re-author from
+> them in their v1.0.6 sprints before any fresh-clone step (v1.1.0 REL). They are
+> intentionally not committed.
 
 ### Discovered during the v1.0.5 stream (tracked, deferred)
 
@@ -49,6 +88,8 @@ items still open are deferred to v1.1.0 or later as noted.
       (L0-only by default; L1/L2-enriched under `--grounding-signals`) riding
       every eval record in `deterministic_metrics`. **Box stays unchecked** — the
       calibrated layers (B) are still open, and this item only closes when B lands.
+      **Now scheduled as v1.0.7 Sprint PV / PV-2** (`eval/grounding-calibration`;
+      [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.7).
 
 - [x] **Diagnostics console → interactive self-tuning loop (the "finish the
       faceplate" arc)** — sourced 2026-06-06 from a walkthrough finding
@@ -113,7 +154,9 @@ items still open are deferred to v1.1.0 or later as noted.
       array order is preserved) is unaffected, and the bullet-drag regression
       test covers that path. Fix belongs in a future Compose-render branch:
       honor the GET array order on the no-recommendations fallback path too,
-      instead of re-sorting by score.
+      instead of re-sorting by score. **Now scheduled as v1.0.6 Sprint 6.1**
+      (`fix/compose-order-no-recommendations`; [`RELEASE_ARC.md`](RELEASE_ARC.md)
+      §Phase 4.5).
 
 The v1.0.1 item list below was **reconciled in place at the v1.0.3 tag
 (2026-06-02)**: completed items are checked; still-open items are flagged

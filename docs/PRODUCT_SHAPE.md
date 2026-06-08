@@ -651,6 +651,60 @@ acceptance criteria / target version**.
 
 ---
 
+## 11. System self-model + engineering workstreams (the excellence walk)
+
+> Added 2026-06-08 from the "excellence walk" — a codebase self-assessment +
+> engineering-excellence design pass. §1–9 describe the shape of the **product
+> data model** (the Corpus Item). This section names the shape of the **whole
+> system** and the structural levers that move it toward a polished production
+> codebase. Sequencing is authoritative in [`RELEASE_ARC.md`](dev/RELEASE_ARC.md)
+> §Phase 4.5 / §Phase 4.7 / "Post-v1.1.0 workstreams"; this section is the *shape
+> intent*, not the schedule.
+
+### 11.1 The seven-functions self-model → `docs/system-model.md` (scheduled)
+
+The system is described by **seven functions + one law**, split across two
+subjects (the Corpus-Item pattern is a piece of the first):
+
+- **The Product** — **Production** (the pipeline: read JD → clarify → recommend →
+  generate → iterate; all LLM calls isolated in `analyzer.py`, the deterministic
+  core kept LLM-free) over its **Substrate** (`configs/`, `resumes/`, `output/`,
+  `db/`, `context_*.json`).
+- **The Work** that evolves it — **Evaluation** (`tests/`, `evals/`, `dashboard/`),
+  **Operation** (`.claude-plugin/` commands + agents; humans + AI agents),
+  **Memory** (`docs/`, the planned wiki, `CHANGELOG`), **Regulation** (hooks, the
+  quality gate, branch/release discipline).
+- **Governance** — the prescriptive north-star (`vision.md`, the 10 Principles)
+  the Work answers to.
+
+**The one law:** every dependency points inward toward **Production**; Production
+answers only upward to **Governance** — the codebase's own one-way dependency rule
+(P1 deterministic/LLM boundary; production ↛ `evals/`) scaled up to the whole
+system. The canonical write-up is **scheduled** as `docs/system-model.md` (the
+WS-4 wiki `overview.md` seed); this branch only names the home.
+
+### 11.2 The four workstreams (structural intent)
+
+| WS | Shape lever | What | Sequenced |
+|---|---|---|---|
+| **WS-1** | split the monolith | decompose the 6,290-LOC / 75-route `app.py` into Flask blueprints, preserving the `_safe_username`/`_within` gate + its lint hook | post-v1.1.0; **own design session; never interleaved with a sprint stream** |
+| **WS-2** | model the contracts as types | strict-typing ratchet + a typed `context_set` (TypedDict/dataclass/Pydantic) — the contract becomes a *type*, not prose + JSON-schema | increment 1 = PV-4 in **v1.0.7**; WS-2-full post-v1.1.0 |
+| **WS-3** | keep the test suite lean | recurring engineering-design pass over the ~955-test suite (redundancy, slow tests, fixture dup) | recurring, post-v1.1.0 |
+| **WS-4** | a knowledge substrate | committed `docs/wiki/` (git-as-engine) + `llms.txt` + `/wiki-*` skills + a canonical **Governance** extraction; the substrate for the post-v1.1.0 Q&A assistant | substrate in **v1.0.6** before the 6.5 education sweep |
+
+### 11.3 Consistency tracks enforcement (the Q2 finding → why WS-1 + WS-2)
+
+The consistency audit found the codebase is uniform *exactly where a hook or the
+linter guards a pattern* (security gate, import order, `call_kind` taxonomy, LLM
+instrumentation) and inconsistent only where convention is left to discipline —
+and both real gaps are already named here: **return-type annotations + the
+`dict`-typed payloads/`context_set`** (→ WS-2) and the **75-route monolith**
+(→ WS-1). The fix is not "be more disciplined" — it is **extend the enforcement
+surface**: model the contracts (WS-2) and split the monolith (WS-1) so the
+machinery, not vigilance, keeps them consistent.
+
+---
+
 ## External references
 
 - [JSON Resume v1.0 schema](https://jsonresume.org/schema/) — canonical
