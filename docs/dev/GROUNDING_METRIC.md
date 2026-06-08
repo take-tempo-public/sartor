@@ -95,7 +95,11 @@ precision/recall against those labels (this is literally a v1.0.4 tag criterion:
 `annotations.json` / seed anywhere. The v1.0.4 loop shipped the *machinery*
 (`evals/annotation.py`, `evals/bootstrap.py`, `evals/seed_import.py`,
 `evals/grounding_signals.py`) but its **live run was never executed** (see
-[`PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md) cover-letter-tuning entry). So:
+[`PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md) cover-letter-tuning entry). *(As of
+2026-06-07 that machinery is also driveable from the browser — the `/_dashboard`
+console's bootstrap → annotate → "Score grounding" loop — so producing the labels
+is now a click-through, not a CLI chore; but until someone actually runs it the
+labels still don't exist.)* So:
 
 - **L0 needs no labels to be useful** — a novel number/entity absent from the
   source union is almost certainly fabricated; high precision on the highest-
@@ -116,12 +120,19 @@ tuning loop by — a metric you haven't defined. But the binding constraint is t
   groundedness signal. This gives the dashboard a **real metric contract** to be
   designed around. Deterministic → lives in `hardening.py` + `evals/`; **no LLM,
   no `PROMPT_VERSION` bump, no new dependency.**
-- **B (deferred, pre-v1.1.0 — tracked in PRODUCT_SHAPE §10):** run the v1.0.4
-  loop end-to-end on the real corpus (seed → bootstrap → annotate) to produce
-  labels, **calibrate** the L0 tolerances + L1/L2 thresholds against them, then
-  update the eval suite + the tuning interface to consume the calibrated metric.
-  This is the trustworthy cross-class rate. It carries LLM cost + annotation
-  labor, which is why it is staged, not done inline.
+- **B (deferred, pre-v1.1.0 — tracked in PRODUCT_SHAPE §10):** run the loop
+  end-to-end on the real corpus (seed → bootstrap → annotate → grounding-score) to
+  produce labels, **calibrate** the L0 tolerances + L1/L2 thresholds against them,
+  then update the eval suite + the tuning interface to consume the calibrated metric.
+  This is the trustworthy cross-class rate. It carries LLM cost + annotation labor,
+  which is why it is staged, not done inline. **Note (2026-06-07):** the
+  label-*producing* path is no longer CLI-only — the v1.0.5 diagnostics-console
+  interactive-completion arc made the whole loop **browser-driven** (`/_dashboard`:
+  bootstrap → annotate → "Score grounding" backfill → run eval → A/B; see
+  [`evals/README.md`](../../evals/README.md) "The in-browser tuning console"). That
+  lowers the friction to *generating* the annotation labels; it does **not** itself
+  perform the calibration — measuring each detector's precision/recall against the
+  labels is still the open B work.
 
 ## The hard parts (don't relitigate these from scratch)
 

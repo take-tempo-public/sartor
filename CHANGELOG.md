@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs — tuning-loop discoverability (`docs/tuning-loop-discoverability`)
+
+Step 4 (docs only) closes the "finish the diagnostics faceplate" arc: every durable
+doc and the in-app entry points now point at the now-interactive `/_dashboard`
+console instead of the pre-arc read-only world. No code, no `PROMPT_VERSION` bump,
+no new dependency.
+
+- **`evals/README.md`** — new "The in-browser tuning console (`/_dashboard`)" section
+  walks the four shipped surfaces as one browser-driven loop (produce → annotate →
+  grounding-score → run eval → A/B → read deltas), ending at the irreversible manual
+  **promote**; it is the dev-doc home for the console walkthrough.
+- **`docs/walkthrough.md`** — a short "See also" flag + link telling
+  users/maintainers the local diagnostics & tuning console exists and that the LLM
+  prompts can be tuned there (content lives in `evals/README.md`, not embedded here).
+- **`docs/dev/GROUNDING_METRIC.md`** — the deferred-calibration ("B") note now records
+  that the label-*producing* loop is browser-driven (no longer CLI-only); the
+  calibration itself stays the open B work.
+- **`docs/dev/RELEASE_ARC.md` / `RELEASE_CHECKLIST.md`** — merge hashes backfilled
+  (`feat/run-eval-from-console` `3a91bea`, `feat/tuning-tab-ab` `812e6bb`/`5f708f7`);
+  the arc's checklist item is checked complete; the standalone one-click corpus-seed
+  export (`feat/seed-export-button`) is tracked as the next small `feat/` branch.
+- **`templates/index.html`** — the Diagnostics modal, the Diagnostics-pill tooltip,
+  and the Settings-drawer line are refreshed from "Read-only telemetry" to advertise
+  the interactive eval/tuning console (copy only — no behavior/layout/route change).
+
 ### Added — in-browser prompt A/B on the Tuning tab (`feat/tuning-tab-ab`)
 
 Step 3 of the "finish the diagnostics faceplate" arc replaces the Tuning tab's

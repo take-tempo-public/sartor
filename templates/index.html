@@ -31,7 +31,7 @@
            aria-label="Current iteration" title="Current iteration of the resume loop">iter 0</div>
       <button class="cb-pill cb-pill-ghost" id="diagnosticsPill"
               onclick="openDiagnosticsModal()"
-              title="Open the read-only telemetry + eval dashboard">Diagnostics</button>
+              title="Open the telemetry + eval/tuning console">Diagnostics</button>
       <button class="cb-pill cb-pill-ghost" id="settingsPill"
               onclick="openSettingsDrawer()"
               title="Profile, templates, diagnostics">⚙ Settings</button>
@@ -726,11 +726,12 @@
        aria-labelledby="diagModalTitle" aria-describedby="diagModalBody">
     <div class="cb-modal-backdrop" data-diag-dismiss></div>
     <div class="cb-modal-content" role="document">
-      <h2 id="diagModalTitle" class="cb-modal-title">Diagnostics dashboard</h2>
+      <h2 id="diagModalTitle" class="cb-modal-title">Diagnostics &amp; tuning console</h2>
       <p id="diagModalBody" class="cb-modal-body">
-        Read-only telemetry from the LLM pipeline and eval harness: score
-        trend, rubric &times; fixture heatmap, failure-mode clustering, and
-        per-call cost. Served by this app at <code>/_dashboard</code>;
+        Telemetry from the LLM pipeline and eval harness — score trend, rubric
+        &times; fixture heatmap, failure-mode clustering, per-call cost — plus an
+        interactive loop to run evals, A/B a candidate prompt against the baseline,
+        and annotate generated bullets. Served by this app at <code>/_dashboard</code>;
         reachable only over localhost.
       </p>
       <div class="modal-actions">
@@ -928,7 +929,7 @@
         </section>
         <section class="settings-section">
           <h3 class="settings-section-title">Diagnostics</h3>
-          <p class="edit-hint">Read-only telemetry + eval dashboard.</p>
+          <p class="edit-hint">Telemetry + interactive eval/tuning console.</p>
           <a class="cb-btn cb-bg-teal" href="/_dashboard" target="_blank" rel="noopener">Open dashboard ↗</a>
         </section>
       </div>

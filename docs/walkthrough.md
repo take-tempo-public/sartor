@@ -536,3 +536,8 @@ generated document came to exist. Re-run any iteration with the
 - [`SECURITY.md`](../SECURITY.md) — what stays on your machine
   vs. what goes over the wire.
 - [`vision.md`](../vision.md) — the "why this exists" page.
+- [`evals/README.md`](../evals/README.md) — **for maintainers:** callback. ships a
+  local **diagnostics & tuning console** at `/_dashboard` (localhost-only) where you
+  can **tune the system's own LLM prompts** — run evals, A/B a candidate prompt
+  against the baseline, and annotate generated bullets, all in the browser. The
+  console section there walks the full loop end to end.
