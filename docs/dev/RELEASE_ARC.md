@@ -16,9 +16,18 @@
 | v1.0.3 | R1 Phase 2 | No | Analyze quality recovery (✓ context_probe + typed hidden_qualities) **then** the two-pass split for speed (≤72s) without giving quality back. **Tagged 2026-06-02 at commit `59b6d9c`** |
 | v1.0.4 | Eval tuning loop | No | Real-data, human-in-the-loop, model-assisted prompt improvement; internal/dev tooling. **Tagged 2026-06-02 at commit `072e290`** |
 | v1.0.5 | UI/UX redesign | No (internal until v1.1.0) | Wizard redesign + WYSIWYG + diagnostics/tuning console & annotation tab; establishes the design system. **Tagged 2026-06-07** — all seven §Phase 4 tag criteria met; gate green incl. `pytest -m ux` |
-| v1.0.6 | Walkthrough polish + knowledge substrate | No (internal until v1.1.0) | E2E-walkthrough-driven UX polish (Sprints 6.1–6.5) + the **WS-4 LLM-wiki substrate** (lands before the 6.5 education sweep). **Not yet tagged** — opens with a fresh end-to-end walkthrough. See **Phase 4.5**. |
-| v1.0.7 | Pre-public hardening | No (internal until v1.1.0) | Sprint PV: live grounding shakedown → calibration → cover-letter opener tuning → type-annotation scan (= **WS-2 increment 1**). **Not yet tagged.** See **Phase 4.7**. |
-| v1.1.0 | Public release | **Yes** | **Tag owned by the user** — applied when the product is judged showcase-ready; GitHub push is part of this event |
+| v1.0.6 | Walkthrough polish + knowledge substrate + corpus completion | No (internal until v1.1.0) | E2E-walkthrough-driven UX polish (Sprints 6.1–6.5) + the **WS-4 LLM-wiki substrate** (front-loaded; before the 6.5 sweep) + corpus-item completers (**B.4** ExperienceSummaryItem, **B.5** SkillGroupItem) + **B.8 Part 1** (outcome capture). **Not yet tagged** — opens with a fresh end-to-end walkthrough. See **Phase 4.5**. |
+| v1.0.7 | The app knows itself | No (internal until v1.1.0) | The autonomous self-documenting/self-tuning wiki loop + the doc-grounded **assistant** (Haiku, reuses the user's key) + pre-public hardening (grounding-calibration B · cover-letter tuning). **Not yet tagged.** See **Phase 4.7**. |
+| v1.0.8 | Monolith → blueprints (WS-1) | No (internal until v1.1.0) | Decompose the 6,290-LOC / 75-route `app.py` into Flask blueprints (dedicated structural epic); **absorbs the type-annotation scan** (WS-2 increment 1). Public ships on clean blueprints. **Not yet tagged.** See **Phase 4.8**. |
+| v1.1.0 | Public release | **Yes** | **Tag owned by the user** — the public cut of the complete product (assistant + self-documenting wiki + clean blueprints). GitHub push is part of this event |
+
+**Versioning model (2026-06-08).** The **patch digit is an epic** — a bounded set of
+one-branch-per-session sprints (1.0.6, 1.0.7, 1.0.8 …; ≤10 before a bump). The
+**minor digit is a tag marker** for a *significant / public* version — **1.1.0 is the
+public release.** Pre-public work is the **1.0.x** epic series; post-public work is
+the **1.1.x** epic series (1.1.1, 1.1.2 …) until **1.2.0** is the next marker. Pack
+sprints into existing epics; spawn a new epic only when the work justifies it; items
+may flow forward/back across epics as circumstances change.
 
 Public release = the **v1.1.0 tag, applied by the user** when the product is judged complete and polished enough to showcase (portfolio + open-source + personal tool). GitHub push is part of that release event. There is no external deadline — completeness and polish gate the tag, not a clock.
 
@@ -419,6 +428,18 @@ have **no matching fix branch in git history** and `V1_0_5_VERIFICATION.md` is
 **unsigned**, so the kickoff walkthrough is also the signing / re-confirmation pass
 for them — anything still broken re-enters the buckets here.
 
+**The walkthrough is also a real-data capture.** Running it by really applying to
+jobs produces, in one pass: the **UX findings**, the **real corpus + annotation
+labels** the v1.0.7 grounding calibration (PV-1/PV-2) depends on, and the **first
+outcome data** (B.8). The existing tracker already captures submit → interview /
+rejection, so that data starts accruing immediately — verify it end-to-end as the
+first act.
+
+**This epic also lands** (beyond the polish sprints): the **WS-4 wiki substrate**
+(front-loaded — see below), the **corpus-item completers** **B.4**
+(ExperienceSummaryItem) and **B.5** (SkillGroupItem), and **B.8 Part 1** (outcome
+capture, riding Sprint 6.1).
+
 ### Cut-line decisions (carried from the walk-through reconciliation)
 1. Education (#18/#22) is a **full sweep in one release** — every tab + panel +
    diagnostics gets plain-language, a11y-safe summaries (Sprint 6.5).
@@ -439,6 +460,7 @@ buckets. Mirrors the v1.0.5 walk-through that produced 24 findings.
 |---|---|---|
 | `fix/clarify-double-question` | #6 | Collapse the duplicate clarify/skip; "Continue to clarify" initiates clarification directly. |
 | `feat/prior-app-resume-robustness` | #4 + #24 | Resume from the most-advanced state even when generation never ran; add JD title/company to prior-app cards; relabel the opaque "N pending" pill. |
+| `feat/outcome-capture-complete` (**B.8 Part 1**) | outcome tracking | Complete the outcome-capture surface (rides the same prior-app surface): make submit → interview / rejection / withdrawn solid + queryable. The capture UI already exists ([app.py:4669](../../app.py), [app.js:3383](../../static/app.js)); this *completes* it so it's not partial and **unblocks the learning layer** (B.8 Part 2 + nursery #1/#3). Data-model call — lean single-status vs an `ApplicationOutcome` event table — made at sprint design. |
 | `feat/compose-add-title` | #7 | Add an alternative title in Step 3 **written into the corpus** (sourced, not a context-only override). |
 | `fix/compose-order-no-recommendations` | v1.0.5 deferred | Honor the GET array order on the no-recommendations fallback in `_renderComposeCard` instead of re-sorting by score; add a regression test. |
 | `fix/step4-template-copy` | #8 | Verify the four bundled templates actually differ; correct the Step-4 copy. |
@@ -461,32 +483,51 @@ buckets. Mirrors the v1.0.5 walk-through that produced 24 findings.
 | `fix/logo-home-route` | #23 | Logo click routes to the main page with no user selected. |
 | `feat/corpus-first-tab-onboarding` | #16 + #1 | Reorder tabs to Career corpus (1) → Tailor (2) → …; smart landing (empty → Corpus, non-empty → Tailor); "Start tailoring →" hand-off CTA replaces the dead-end. Lands **before** the 6.5 education sweep so per-tab summaries are written against the final tab order. |
 
-### WS-4 substrate — LLM-wiki knowledge architecture (NEW; lands in the 6.4 → 6.5 window)
-> From the excellence walk (WS-4). The wiki's only deadline is **Sprint 6.5**: the
-> education sweep must author **into** the wiki, not into throwaway prose. Build
-> after 6.4 so most route churn has settled. Runs parallel to the sprint stream and
-> does not gate or threaten the earlier sprints. **Source drafts live in the
-> gitignored `output/_dev-notes/` on the working clone — re-author from them, do not
-> expect them in a fresh clone.**
+### Sprint 6.6 — Corpus-item completion (finishes the unified Corpus-Item vision)
+> From the excellence-walk backlog (B.4/B.5). Both follow the existing `SummaryItem`
+> pattern (model + `recommend_*` Haiku call + Compose card), so they're **low-risk
+> extensions** — land them **before Sprint 6.5** so the education sweep documents the
+> new Compose cards. Together they make the Corpus-Item vision *visibly complete* for
+> the public cut.
 
-**Build sequence (each its own branch/session):**
-1. `docs/system-model` — author **`docs/system-model.md`** from the excellence
-   walk's seven-functions language: **Substrate · Production · Evaluation ·
-   Operation · Memory · Regulation · Governance**, the one-way dependency law (every
-   dependency points inward toward Production; Production answers only upward to
-   Governance), and the **Product / Work** split. The canonical system self-model +
-   the WS-4 wiki `overview.md` seed. *(Source: the "SETTLED" box in
-   `excellence-walk.md` + `Q1_overview_draft.md`.)*
-2. `docs/wiki-skeleton` — stand up a committed `docs/wiki/` (`SCHEMA.md`,
-   `index.md`, `overview.md` ← the Q1 draft + its 4 open revision points, `log.md`,
-   `.last_ingest_sha`, `pages/`) + a root `llms.txt`. Codebase variant: **git HEAD
-   is the source**, diff-driven ingest, no code copies. `SCHEMA.md` **references**
-   AGENTS.md / CLAUDE.md / vision; it does not duplicate them.
+| Branch | Item | Key work |
+|---|---|---|
+| `feat/experience-summary-item` | **B.4** | Per-role intro paragraph as a multi-variant Corpus Item (the asymmetry-matrix #1 pain — the line a recruiter reads first). Mirrors `SummaryItem`; maps to JSON Resume `work[].summary`. |
+| `feat/skill-group-item` | **B.5** | Curated skill clusters per JD ("surface these 10, in this order") as a Corpus Item; a `recommend_skills` Haiku call; maps to JSON Resume `skills[]`. |
+
+### WS-4 substrate — LLM-wiki knowledge architecture (split: WS-4a front-loaded, WS-4b after 6.4)
+> From the excellence walk (WS-4). **Split** because the doc/whys content needs a home
+> **early** — the preserved excellence-walk source (now tracked at
+> [`../excellence-walk/`](../excellence-walk/)) must move into the wiki **very soon** —
+> while the **code** cold-ingest wants route-churn settled (after 6.4). The wiki's hard
+> deadline is **Sprint 6.5**: the education sweep authors **into** the wiki, not into
+> throwaway prose.
+
+**WS-4a — front-loaded (start of the epic, right after the walkthrough; depends on no churn):**
+1. `docs/system-model` — author **`docs/system-model.md`** from the seven-functions
+   language: **Substrate · Production · Evaluation · Operation · Memory · Regulation ·
+   Governance**, the one-way dependency law (every dependency points inward toward
+   Production; Production answers only upward to Governance), and the **Product / Work**
+   split. The canonical self-model + the wiki `overview.md` seed. *(Source:
+   [`../excellence-walk/excellence-walk.md`](../excellence-walk/excellence-walk.md) +
+   [`../excellence-walk/q1-overview.md`](../excellence-walk/q1-overview.md).)*
+2. `docs/wiki-skeleton` — committed `docs/wiki/` (`SCHEMA.md`, `index.md`, `overview.md`
+   ← `q1-overview.md` + its 4 revision points, `log.md`, `.last_ingest_sha`, `pages/`)
+   + a root `llms.txt`. **Git HEAD is the source**, diff-driven ingest. `SCHEMA.md`
+   **references** AGENTS.md / CLAUDE.md / vision; it does not duplicate them.
 3. `feat/wiki-skills` — adapt `kfchou/wiki-skills` ops into `.claude-plugin/` skills
    (`/wiki-ingest`, `/wiki-query`, `/wiki-lint`, `/wiki-audit`); manual trigger + a
    lightweight commit-time freshness **reminder** hook (NOT auto-ingest — per-commit
    LLM cost); `wiki-lint` as a periodic + pre-release gate.
-4. `wiki/cold-ingest-code` — cold-ingest the code architecture (module map, the P1
+4. `wiki/ingest-excellence-walk` — **ingest the preserved
+   [`../excellence-walk/`](../excellence-walk/) raw source** into synthesized wiki
+   pages (system-model · the five-question deliverables · the WS-4/Governance design).
+   This makes "minimally operational" real and lets the raw folder retire into the
+   wiki's `raw/` constitutional layer. **The temp source is now safe in git — but
+   ingest it early so the wiki, not a flat folder, becomes its home.**
+
+**WS-4b — after Sprint 6.4 (route-churn settled):**
+5. `wiki/cold-ingest-code` — cold-ingest the code architecture (module map, the P1
    deterministic/LLM boundary, the `context_set` contract, pipeline flows, routes,
    the eval harness), `path:line`-grounded. **Reserve a user-facing section** that
    Sprint 6.5 authors into.
@@ -532,52 +573,98 @@ Then: `chore/version-bump-v1.0.6` (pyproject, CHANGELOG, tag) + re-check the
 RELEASE_CHECKLIST risk register.
 
 ### v1.0.6 tag criteria
-- The E2E-walkthrough findings are triaged; tag-blocking ones fixed (the rest spill
-  to v1.0.7).
-- Sprints 6.1–6.5 merged; the a11y axe gate is live and green.
-- **WS-4 substrate landed before the 6.5 education sweep** — `docs/system-model.md`
-  + the `docs/wiki/` skeleton + the wiki skills exist; the code architecture is
-  cold-ingested; 6.5's education content is authored into the wiki's reserved
-  user-facing section.
+- The E2E-walkthrough findings are triaged; tag-blocking ones fixed (overflow spills
+  to a later 1.0.x epic — not a new pre-commitment).
+- Sprints 6.1–6.6 merged; the a11y axe gate is live and green.
+- **Corpus-item completers B.4/B.5 merged** (before the 6.5 sweep so they're
+  documented); **B.8 Part 1** outcome capture complete + verified end-to-end.
+- **WS-4a landed early + WS-4b before the 6.5 sweep** — `docs/system-model.md` + the
+  `docs/wiki/` skeleton + the wiki skills exist; the **preserved excellence-walk
+  source is ingested into the wiki** (and may then retire into its `raw/` layer); the
+  code architecture is cold-ingested; 6.5 authors into the wiki's reserved section.
 - `ruff + mypy + pytest + pytest -m ux` green.
 
 ---
 
-## Phase 4.7 — Pre-public hardening (v1.0.7)
+## Phase 4.7 — The app knows itself (v1.0.7)
 
-> **Sprint PV** from the walk-through plan: the pre-public obligations from
-> [`PRODUCT_SHAPE.md`](../PRODUCT_SHAPE.md) §10 "Post-v1.0.5" + the v1.1.0 tag
-> criteria, scheduled as real branches. **Blocked by:** v1.0.6 tag. **Blocks:**
-> v1.1.0 (Phase 5).
+> The epic where the product becomes **self-documenting** and gains a **doc-grounded
+> assistant** — both built on the v1.0.6 wiki substrate — plus the pre-public quality
+> hardening (the old "Sprint PV", minus the type scan, which moves to Phase 4.8 with
+> the blueprint split). **Blocked by:** v1.0.6 tag (the wiki must exist). **Blocks:**
+> v1.0.8.
 
-**Shared prerequisite (human, not a branch):** a clean-corpus rebuild from a real
-git **clone** — NOT a folder copy, which drags the gitignored `db/resume.sqlite` —
-then regenerate the corpus from real JDs. Required by PV-1/PV-2/PV-3. The v1.0.5
-faceplate arc made the loop browser-driven, so most of this runs from the
-Annotate / Quality / Tuning tabs rather than the CLI.
+### The self-aware capability (built on the WS-4 wiki)
+| Branch | Design-first? | Key work |
+|---|---|---|
+| `design/self-documenting-loop` → `feat/self-documenting-wiki` | **yes** | The **autonomous** self-documenting / self-tuning docs loop — the wiki ingests + lints itself on change so the docs track the code without a human author. Autonomy is the goal, **but designed performant + not overdone** (per the steer): a **Haiku-class** model, **bounded triggers** (not per-commit), cost-aware. The design pass settles trigger / cost / scope before any build. |
+| `feat/doc-assistant` | (design rides the loop) | The **doc-grounded chat assistant** — *"a product that knows itself."* Both users and devs ask "how do I…" questions; it answers from the committed `docs/wiki/` **with citations** (the LLM-wiki **query** op as a chat). **Haiku model, reuses the user's existing Anthropic key** (no new credential). A public UX/DX feature → **ships in v1.1.0.** |
+
+### Pre-public hardening (grounding + tone; the old Sprint PV, minus the type scan)
+**Shared prerequisite (human, not a branch):** a clean-corpus rebuild from a real git
+**clone** (NOT a folder copy — it drags the gitignored `db/resume.sqlite`), then
+regenerate the corpus from real JDs. The v1.0.6 walkthrough already starts producing
+the real labels these consume.
 
 | Branch | Depends on | Key work |
 |---|---|---|
-| `eval/live-shakedown-labels` (PV-1) | corpus rebuild | Run the v1.0.4 loop **end-to-end on the real corpus** (tagged-in-machinery-but-never-executed): Annotate-tab bootstrap with grounding scorers → annotate verdicts → collate → `expected.json`. Deliverable: real `bootstrap.json` + `annotations.json` under `evals/fixtures/real/` (gitignored, PII) + a `TUNING_LOG.md` entry. Mostly an operation, not new code. **Unblocks PV-2.** |
-| `eval/grounding-calibration` (PV-2) | PV-1 | The **calibrated layers (B)**: calibrate the L0 tolerance bands (`hardening.py`) + the eval-only L1/L2 NLI/MiniCheck thresholds (`evals/grounding_signals.py`) against the PV-1 labels; report precision/recall per detector; wire the calibrated groundedness score into `eval_composite` / score-over-time and have the tuning gate consume it; close the [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md) "B (deferred)" note. **L0 stays hot-path-safe; L1/L2 stay eval-only** (Key Decision #4). |
-| `tune/cover-letter-opener` (PV-3) | corpus rebuild + tuning loop | Fix the throat-clearing/hedging opener (tripped `tone` in 1/5 v1.0.3 runs). A worked-example `SYSTEM_PROMPT` candidate (the rule lives in the **non-overridable** `_COVER_LETTER_RULES_BLOCK`, so it must be a worked example, not a rules-block edit) via the in-browser A/B; A/B against `--suite real` (n≥3); **user promotes** → edit `analyzer.py` SYSTEM_PROMPT + **bump `PROMPT_VERSION` in the same commit** + TUNING_LOG entry. Run after PV-2 so groundedness is calibrated when judging. |
-| `chore/type-annotation-scan` (PV-4 = **WS-2 increment 1**) | independent | The explicit v1.1.0 tag criterion (see Phase 5). Annotate Flask route returns with `flask.typing.ResponseReturnValue` (~15+ functions, surgical) **or** flip `check_untyped_defs = true` (broader — surfaces real new errors first). **Scope to the whole post-v1.0.4 diff** (v1.0.5 **and** v1.0.6 routes); slot last so it covers every new route. **This is the first, modest increment of the excellence walk's WS-2 (strict typing)** — it absorbs the original PV-4 type scan. The full `mypy --strict` ratchet + a typed `context_set` spine is the post-v1.1.0 **WS-2-full** workstream, not this branch. |
+| `eval/live-shakedown-labels` (PV-1) | corpus rebuild + v1.0.6 capture | Run the v1.0.4 loop end-to-end on the real corpus: Annotate-tab bootstrap with grounding scorers → annotate → collate → `expected.json`. Deliverable: real `bootstrap.json` + `annotations.json` under `evals/fixtures/real/` (gitignored, PII) + a `TUNING_LOG.md` entry. **Unblocks PV-2.** |
+| `eval/grounding-calibration` (PV-2) | PV-1 | The **calibrated layers (B)**: calibrate the L0 tolerance bands (`hardening.py`) + the eval-only L1/L2 NLI/MiniCheck thresholds (`evals/grounding_signals.py`) against the PV-1 labels; report precision/recall per detector; wire the calibrated groundedness score into `eval_composite` / score-over-time + the tuning gate; close the [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md) "B (deferred)" note. **L0 stays hot-path-safe; L1/L2 stay eval-only** (Key Decision #4). |
+| `tune/cover-letter-opener` (PV-3) | corpus rebuild + tuning loop | Fix the throat-clearing/hedging opener (tripped `tone` 1/5 in v1.0.3). A worked-example `SYSTEM_PROMPT` candidate (the rule lives in the **non-overridable** `_COVER_LETTER_RULES_BLOCK`) via the in-browser A/B; A/B `--suite real` (n≥3); **user promotes** → edit `analyzer.py` + **bump `PROMPT_VERSION`** + TUNING_LOG entry. After PV-2 so groundedness is calibrated. |
 
-Then: `chore/version-bump-v1.0.7` (pyproject, CHANGELOG, tag).
+> If this epic overflows, the hardening sprints (PV-1…PV-3) are the clean cut to a
+> later 1.0.x epic — don't pre-create one until needed.
+
+Then: `chore/version-bump-v1.0.7`.
 
 ### v1.0.7 tag criteria
-- PV-1 real labels exist under `evals/fixtures/real/`; PV-2 calibrated groundedness
-  is live on `--suite real` + the dashboard and consumed by the tuning gate.
-- PV-3 cover-letter `tone` holds at/above its TUNING_LOG floor with the new opener
-  discipline; `PROMPT_VERSION` bumped in the same commit; user promoted.
-- PV-4 type scan complete across the post-v1.0.4 surface.
+- The self-documenting loop runs (autonomous, bounded, cost-aware), and the
+  **doc-grounded assistant answers from the wiki with citations** (Haiku, user's key).
+- PV-1 real labels exist; PV-2 calibrated groundedness live on `--suite real` + the
+  dashboard + consumed by the tuning gate; PV-3 `tone` holds with `PROMPT_VERSION` bumped.
 - `ruff + mypy + pytest` green.
+
+---
+
+## Phase 4.8 — Monolith → blueprints (v1.0.8)
+
+> The dedicated structural epic: decompose the 6,290-LOC / 75-route `app.py` into
+> Flask blueprints. Placed here — **after the product is feature-complete and before
+> the public cut** — so v1.1.0 ships on clean architecture (the showcase goal) while
+> the risky refactor stays out of the public-release packaging. **A new epic is
+> justified** because WS-1 must be a dedicated, low-churn window — it **MUST NOT
+> interleave** with any feature sprint (it rewrites routes nearly every branch
+> touches; 67 test files import from `app`). **Blocked by:** v1.0.7 tag. **Blocks:**
+> v1.1.0.
+
+- `design/app-blueprints` — **design session first** (free; can run earlier): blueprint
+  seams (analysis · generation/cover-letter · corpus · dashboard · user/config ·
+  templates) & naming; shared-helpers home (`_sse`, `_error_detail_payload`,
+  `_safe_username`, `_within`); app-factory vs. module-global `app`; SSE routes; the
+  67 test-file imports; `route-security-lint` hook compatibility (it currently targets
+  `app.py`).
+- `refactor/app-blueprints-*` — the decomposition itself, one seam per branch where
+  feasible. Preserve the `_safe_username`/`_within` gate + its lint hook on every
+  moved route.
+- **Absorbs the type-annotation scan (PV-4 = WS-2 increment 1):** annotate route
+  returns with `flask.typing.ResponseReturnValue` **as the routes move** (or flip
+  `check_untyped_defs = true`), scoped to the whole post-v1.0.4 surface. Doing it here
+  avoids annotating the monolith and then re-doing it post-split. The full
+  `mypy --strict` ratchet + a typed `context_set` is the post-public **WS-2-full**.
+
+Then: `chore/version-bump-v1.0.8`.
+
+### v1.0.8 tag criteria
+- `app.py` decomposed into blueprints; the `_safe_username`/`_within` gate + its lint
+  hook hold on every moved route; all 67 test files import cleanly.
+- Route returns annotated (PV-4) — `check_untyped_defs`-clean over the post-v1.0.4 surface.
+- `ruff + mypy + pytest + pytest -m ux` green; **no behavior change** (pure refactor).
 
 ---
 
 ## Phase 5 — Public release (v1.1.0)
 
-**Blocked until v1.0.7 tagged. The v1.1.0 tag is owned by the user** — applied when the product is judged complete and polished enough to showcase (portfolio + open-source + personal tool). There is no external deadline; completeness and polish gate the tag, not a clock.
+**Blocked until v1.0.8 tagged. The v1.1.0 tag is owned by the user** — the public cut of the **complete** product: the assistant + self-documenting wiki (v1.0.7) on **clean blueprints** (v1.0.8). There is no external deadline; completeness and polish gate the tag, not a clock.
 
 ### Branches
 
@@ -593,13 +680,12 @@ Then: `chore/version-bump-v1.0.7` (pyproject, CHANGELOG, tag).
 - Visual assets in `docs/screenshots/`
 - Fresh-clone < 5 min
 - GitHub URL live; all doc links resolve
-- **Type-annotation scan of all v1.0.5-stream changes** — **delivered by Phase 4.7
-  `chore/type-annotation-scan` (PV-4 = WS-2 increment 1)** during v1.0.7, scoped to
-  the whole post-v1.0.4 diff (v1.0.5 **and** v1.0.6 routes). At the v1.1.0 cut this
-  is a *verify-it-held* check, not fresh work: confirm a full `mypy` pass with
-  `check_untyped_defs` enabled (or the annotated signatures) stays clean over
-  everything that landed across the v1.0.5 + v1.0.6 streams, so no untyped function
-  body slipped through unchecked during the redesign.
+- **Type-annotation scan of all post-v1.0.4 changes** — **delivered by Phase 4.8
+  (WS-1, PV-4 = WS-2 increment 1)**, where route returns are annotated as the monolith
+  splits into blueprints. At the v1.1.0 cut this is a *verify-it-held* check, not fresh
+  work: confirm a full `mypy` pass with `check_untyped_defs` enabled (or the annotated
+  signatures) stays clean over everything that landed across the post-v1.0.4 stream
+  (through the blueprint split), so no untyped function body slipped through unchecked.
   *Origin:* `feat/wysiwyg-option1` (2026-06-02) surfaced ~15 pre-existing
   `annotation-unchecked` notes in `app.py` — Flask route handlers whose
   *signatures* are unannotated, so mypy skips their bodies by default (these are
@@ -613,37 +699,39 @@ Then: `chore/version-bump-v1.0.7` (pyproject, CHANGELOG, tag).
 
 ---
 
-## Post-v1.1.0 workstreams (the heavy structural levers — parked off the release stream)
+## Post-public — the 1.1.x epic series
 
-> From the excellence walk. These are the biggest *code* and *capability* levers,
-> deliberately sequenced **after** the public release so they don't churn the
-> release stream. None gate v1.1.0. Each gets its own design pass before code.
+> After the v1.1.0 public tag, work resumes as the **1.1.x epic series** (1.1.1,
+> 1.1.2 …; the patch digit is the epic, exactly as pre-public). These are
+> **scheduled** — distinct from the [`nursery.md`](nursery.md) deferred-idea bed.
+> Each heavy lever gets its own **design-spike** before code. Ordering across 1.1.x is
+> decided when we arrive; items may pull earlier if circumstances change.
 
-- **WS-1 — decompose the `app.py` monolith into Flask blueprints.** The 6,290-LOC /
-  75-route file is the clearest structural smell (Q1/Q2 finding). Split into domain
-  blueprints (candidate seams: analysis, generation/cover-letter, corpus, dashboard,
-  user/config, templates), preserving the `_safe_username`/`_within` gate + the
-  `route-security-lint` hook that lints it. **Needs its own design session + Q&A**
-  (blueprint seams & naming; shared-helpers home; app-factory vs. module-global
-  `app`; SSE routes; the 67 test files that import from `app`; hook compatibility).
-  **MUST NOT interleave with an active sprint stream** — it rewrites routes nearly
-  every other branch touches. Run it in a dedicated low-churn window.
-- **WS-2-full — strict typing ratchet.** The continuation of PV-4 (v1.0.7): move
-  mypy toward `strict = true` incrementally (per-module overrides as a ratchet) and
-  model the `context_set` contract + the `dict`-typed request/response payloads as
-  TypedDict/dataclass/Pydantic — turning runtime-only guarantees into edit-time
-  ones. Likely sequenced **with/after WS-1** (the blueprint split changes route
-  signatures). Decide the ratchet order and whether a single `ContextSet` Pydantic
-  model becomes the spine.
-- **WS-3 — recurring test-suite engineering-design pass.** A periodic design review
-  of the ~955-test suite for efficiencies, redundancies, slow tests, coverage gaps,
-  fixture duplication — to keep the suite from accreting cost as it grows. Define
-  the cadence and what "good" looks like.
-- **Codebase / docs Q&A assistant.** The post-v1.1.0 capability the WS-4 wiki
-  substrate is built for: LLM-queryable answers over the repo + docs ("how do I
-  rename a job-experience title" ↔ "how does the grounding suite work, set it up"),
-  i.e. the LLM-wiki **query** op over the committed `docs/wiki/`. Built on WS-4, not
-  before it.
+**1.1.1 (first post-public epic) — candidates:**
+- **paged.js engine replacement (B.13)** — replace the end-of-life in-browser
+  paged.js v0.4.x pagination engine (the v1.0.5 fix only *contained* its throws; PDF
+  uses Playwright natively and is unaffected). A real render-engine project →
+  **design-spike first** (fidelity + constraints + replacement choice).
+- **Local + alternative LLM providers** — a **provider abstraction** so users pick
+  **local** (Ollama / llama.cpp) or **alternative** (OpenAI / Gemini / …) models, not
+  just Anthropic. Strong local-first/privacy fit (local = nothing leaves the machine).
+  Architectural — touches `analyzer.py` (the single LLM boundary) → **design-spike
+  first**. Generalizes every call, including the v1.0.7 assistant.
+- **B.8 Part 2 — outcome-weighted recommend** — boost bullets / summaries / templates
+  that came from applications that actually got interviews (closes the loop). Data-gated
+  on the outcomes accruing from v1.0.6 onward; **nominally 1.1.1, but may pull earlier
+  into a late 1.0.x sprint if enough real feedback lands first.**
+
+**Recurring / continuing workstreams:**
+- **WS-2-full — strict typing ratchet.** Continue PV-4 (delivered in v1.0.8): mypy
+  toward `strict = true` (per-module ratchet) + model the `context_set` contract as a
+  typed spine. Builds on the v1.0.8 blueprint split.
+- **WS-3 — recurring test-suite engineering-design pass.** Periodic review of the
+  ~955-test suite (redundancy, slow tests, coverage gaps, fixture dup). Define cadence
+  + what "good" looks like.
+
+*(WS-1 (the monolith split) and the doc-grounded assistant are **not** here — they
+moved **pre-public** into v1.0.8 and v1.0.7 respectively, so v1.1.0 ships with both.)*
 
 ---
 
@@ -663,6 +751,9 @@ Then: `chore/version-bump-v1.0.7` (pyproject, CHANGELOG, tag).
 | Document | What it's authoritative for |
 |---|---|
 | `docs/dev/RELEASE_CHECKLIST.md` | Open items per release |
+| `docs/dev/nursery.md` | Deferred-but-alive feature ideas (value/effort/risk-tagged) |
+| `docs/dev/excellence-walk/` | Preserved raw source from the 2026-06-07 excellence walk (→ WS-4 wiki) |
+| `docs/PRODUCT_SHAPE.md` §11 | The seven-functions system self-model + the WS-1…WS-4 workstreams |
 | `evals/TUNING_LOG.md` | Baseline floors; prompt change history |
 | `docs/dev/AGENT_FAILURE_PATTERNS.md` | Failure patterns to avoid |
 | `docs/architecture.md` | Module map, LLM routing |

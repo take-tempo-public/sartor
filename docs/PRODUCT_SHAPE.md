@@ -407,6 +407,15 @@ Proposed final shape:
 
 ## 7. v1.0 → v1.x → v2 sequencing ladder
 
+> **Version labels superseded (2026-06-08).** The "v1.0 / v1.1 / v1.2 / v2" stage
+> labels below predate the **epic/tag versioning model** (patch digit = epic; minor
+> digit = the public tag marker — see [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md)).
+> Read them as *data-model stages*, not release versions. Current dispositions: the
+> **v1.0 stage shipped** (SummaryItem, JSON Resume, PDF, live preview, CL detachment,
+> the `is_default` resolver — all done); **ExperienceSummaryItem + SkillGroupItem**
+> are scheduled for **v1.0.6** (corpus completion); the rest are dispositioned in §10
+> and [`dev/nursery.md`](dev/nursery.md).
+
 Build the unified pattern in stages, no schema breaks between stages.
 
 ### v1.0 (next branch after `feat/release-visual-ia`)
@@ -470,6 +479,15 @@ with the rest of the master-résumé surfacing in §5.2.
 ---
 
 ## 10. Deferred during v1.0.0 release cut
+
+> **Reconciled 2026-06-08 (backlog grooming).** Several items below shifted on status
+> verification or were dispositioned into the epic ladder / nursery / cut: the
+> **Post-v1.0.5** items (cover-letter opener tuning, grounding calibration B) are now
+> scheduled as **v1.0.7** pre-public hardening (PV-3 / PV-2); **R2 stream analyze
+> shipped** (v1.0.3); **paged.js elimination → post-public 1.1.x** (design-spike);
+> **master-résumés + field-filter chips → [`dev/nursery.md`](dev/nursery.md)**;
+> **Dockerfile → cut.** See [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) for the
+> authoritative schedule; entries below are kept for their rationale/context.
 
 Items that surfaced during the v1.0.0 release work and were
 explicitly deferred to keep the v1.0.0 scope honest. Captured here
@@ -687,10 +705,10 @@ WS-4 wiki `overview.md` seed); this branch only names the home.
 
 | WS | Shape lever | What | Sequenced |
 |---|---|---|---|
-| **WS-1** | split the monolith | decompose the 6,290-LOC / 75-route `app.py` into Flask blueprints, preserving the `_safe_username`/`_within` gate + its lint hook | post-v1.1.0; **own design session; never interleaved with a sprint stream** |
-| **WS-2** | model the contracts as types | strict-typing ratchet + a typed `context_set` (TypedDict/dataclass/Pydantic) — the contract becomes a *type*, not prose + JSON-schema | increment 1 = PV-4 in **v1.0.7**; WS-2-full post-v1.1.0 |
-| **WS-3** | keep the test suite lean | recurring engineering-design pass over the ~955-test suite (redundancy, slow tests, fixture dup) | recurring, post-v1.1.0 |
-| **WS-4** | a knowledge substrate | committed `docs/wiki/` (git-as-engine) + `llms.txt` + `/wiki-*` skills + a canonical **Governance** extraction; the substrate for the post-v1.1.0 Q&A assistant | substrate in **v1.0.6** before the 6.5 education sweep |
+| **WS-1** | split the monolith | decompose the 6,290-LOC / 75-route `app.py` into Flask blueprints, preserving the `_safe_username`/`_within` gate + its lint hook | **v1.0.8** — a dedicated *pre-public* epic (so v1.1.0 ships clean); absorbs PV-4; **never interleaved with a sprint stream** |
+| **WS-2** | model the contracts as types | strict-typing ratchet + a typed `context_set` (TypedDict/dataclass/Pydantic) — the contract becomes a *type*, not prose + JSON-schema | increment 1 = PV-4 in **v1.0.8** (rides WS-1); WS-2-full in the post-public 1.1.x series |
+| **WS-3** | keep the test suite lean | recurring engineering-design pass over the ~955-test suite (redundancy, slow tests, fixture dup) | recurring, post-public (1.1.x) |
+| **WS-4** | a knowledge substrate | committed `docs/wiki/` (git-as-engine) + `llms.txt` + `/wiki-*` skills + a canonical **Governance** extraction | substrate (WS-4a/b) in **v1.0.6**; the self-documenting loop + the doc-grounded assistant in **v1.0.7** |
 
 ### 11.3 Consistency tracks enforcement (the Q2 finding → why WS-1 + WS-2)
 
@@ -702,6 +720,24 @@ and both real gaps are already named here: **return-type annotations + the
 (→ WS-1). The fix is not "be more disciplined" — it is **extend the enforcement
 surface**: model the contracts (WS-2) and split the monolith (WS-1) so the
 machinery, not vigilance, keeps them consistent.
+
+### 11.4 Capabilities the substrate enables
+
+- **The doc-grounded assistant (v1.0.7; ships in v1.1.0).** *"A product that knows
+  itself."* A chat — for **both users and devs** — that answers "how do I…" questions
+  from the committed `docs/wiki/` **with citations** (the LLM-wiki `query` op as a
+  chat). A **Haiku** model reusing the user's **existing Anthropic key**; the
+  self-documenting loop keeps the wiki it reads current. A public UX/DX value prop.
+- **Local + alternative LLM providers (post-public, 1.1.x).** A provider abstraction
+  at the single LLM boundary (`analyzer.py`) so users pick **local** (Ollama /
+  llama.cpp) or **alternative** (OpenAI / Gemini / …) models — strong local-first /
+  privacy fit. Architectural → a design-spike first; generalizes every call,
+  including the assistant.
+
+> **Disposition pointers.** Scheduled work lives in
+> [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) (the epic/tag ladder); deferred-but-alive
+> ideas live in [`dev/nursery.md`](dev/nursery.md); the raw reasoning behind all of
+> this is preserved in [`dev/excellence-walk/`](dev/excellence-walk/).
 
 ---
 
