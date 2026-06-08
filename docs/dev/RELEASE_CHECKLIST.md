@@ -15,16 +15,19 @@
 
 ---
 
-## Active release — v1.0.5 (UI/UX redesign)
+## Active release — v1.1.0 (public release — user-owned tag)
 
 **Tag history (all local-only — no public release until the user-owned
 v1.1.0 tag):** v1.0.1 tagged 2026-05-28, v1.0.2 tagged 2026-05-30,
 v1.0.3 tagged 2026-06-02, v1.0.4 tagged 2026-06-02 (commit `072e290`, eval
-tuning loop — shipped). The active development target is now **v1.0.5**
-(UI/UX redesign — wizard redesign + WYSIWYG + diagnostics/tuning console &
-annotation tab; establishes the design system); see
-[`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4 for its branch sequence and tag
-criteria.
+tuning loop), v1.0.5 tagged 2026-06-07 (UI/UX redesign + diagnostics/tuning
+console — **shipped**; all seven §Phase 4 tag criteria met, gate green incl.
+`pytest -m ux`). The active target is now **v1.1.0** — the public release,
+whose tag is **owned by the user** and applied when the product is judged
+showcase-ready (GitHub push is part of that event); see
+[`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 5 for its branch sequence and tag
+criteria. The v1.0.5 items below are reconciled in place (shipped → `[x]`);
+items still open are deferred to v1.1.0 or later as noted.
 
 ### Discovered during the v1.0.5 stream (tracked, deferred)
 
@@ -160,7 +163,9 @@ first follow-up release.
 
 ### Should do (v1.0.1 polish; document if skipped)
 
-- [ ] **Step 6 (Output) redesign** **→ OPEN, migrated to v1.0.5**
+- [x] **Step 6 (Output) redesign** **✓ SHIPPED v1.0.5** (`feat/step6-redesign`,
+      merged `43a60dc`; cover-letter styling landed with `feat/cover-letter-formats`
+      `5fa186b`)
       (`feat/step6-redesign`, RELEASE_ARC §Phase 4) — surfaced during the
       v1.0.0 review: cut the obsolete tabs + raw/rendered toggle
       (replaced by paged.js preview); preview at the top of
@@ -249,8 +254,11 @@ first follow-up release.
       still navigates forward via the in-flow Continue buttons;
       that's fine and matches the real-user happy path, but rail
       clicks would now work too.
-- [ ] **Playwright UX clickthrough regression suite** **→ OPEN, migrated
-      to v1.0.5** (`feat/playwright-ux-suite`, RELEASE_ARC §Phase 4) —
+- [x] **Playwright UX clickthrough regression suite** **✓ SHIPPED v1.0.5**
+      (`feat/playwright-ux-suite`, merged `aeb3e51`; `pytest -m ux` = 12 tests:
+      happy-path-stubbed flows + the backfilled 2026-05-26/2026-06-04/2026-06-06
+      regression tests, shared `ui_pages/` driver)
+      (`feat/playwright-ux-suite`, RELEASE_ARC §Phase 4) —
       surfaced during the screenshot-capture pass (2026-05-26). The
       screenshot script at
       [`scripts/capture_screenshots.py`](../../scripts/capture_screenshots.py)
@@ -558,8 +566,9 @@ first follow-up release.
       `generator.generate_cover_letter` still hardcodes `.docx` (no
       change — path (a), full format support, is v1.0.2 alongside
       B3 persona styling work).
-- [ ] **Prior-application click resumes the wizard at that
-      application's last state** **→ OPEN, migrated to v1.0.5**
+- [x] **Prior-application click resumes the wizard at that
+      application's last state** **✓ SHIPPED v1.0.5** (`feat/prior-app-resume`,
+      merged `cc74f90`)
       (`feat/prior-app-resume`, RELEASE_ARC §Phase 4) (user-surfaced
       2026-05-26 during round-6 smoke). Today, clicking a card in the "Prior
       applications" panel of Step 1 shows a one-line toast with

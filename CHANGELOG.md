@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] — 2026-06-07
+
+The UI/UX redesign + the diagnostics/tuning console — establishes the design
+system. **Local tag** (the project stays local-only until the user-owned v1.1.0
+public release). Highlights: WYSIWYG (live preview = downloaded résumé), the
+Step 6 (Output) redesign, cover letters in `.docx` / `.pdf` / `.md`,
+prior-application click-to-resume, user-driven Compose bullet ordering, a
+Playwright UX regression suite, the template-pagination fix across all four
+bundled templates, the deterministic L0 grounding metric, and the tabbed
+diagnostics + tuning + annotation console — including the browser-driven
+"finish the faceplate" interactive tuning loop and the standalone, LLM-free
+corpus-seed export. **No `PROMPT_VERSION` change across the stream** (no
+persona-constant edit landed) and **no new runtime dependency**. Deferred to
+later releases by design: the calibrated grounding layers (B, pre-v1.1.0), the
+no-recommendations Compose-render order edge case, and the R1-Phase-2
+architecture-doc debt.
+
 ### Added — standalone one-click corpus-seed export (`feat/seed-export-button`)
 
 Producing a corpus `seed.json` is now a one-click, **LLM-free** action in the browser.
