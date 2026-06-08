@@ -24,7 +24,6 @@
 | [`q2-consistency.md`](q2-consistency.md) | Q2 deliverable — the consistency audit ("consistency tracks enforcement") + per-area grade table. |
 | [`q3-downloads.md`](q3-downloads.md) | Q3 deliverable — the verified "what gets downloaded & why" provenance table (sizes, licenses, cache paths). |
 | [`walkthrough-sprint-plan.md`](walkthrough-sprint-plan.md) | The v1.0.5 walk-through → sprint plan (24 findings → topical sprints). Its content is fully folded into `RELEASE_ARC.md`; kept here for provenance. |
-| [`excellence-walk-handoff.md`](excellence-walk-handoff.md) | The agent handoff that launched the integration session. Superseded; kept for provenance. |
 
 ## Where it landed (decisions — already durable)
 
