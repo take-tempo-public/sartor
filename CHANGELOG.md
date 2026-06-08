@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — standalone one-click corpus-seed export (`feat/seed-export-button`)
+
+Producing a corpus `seed.json` is now a one-click, **LLM-free** action in the browser.
+Previously the only in-browser trigger was bundled inside the **paid** Annotate-tab
+bootstrap (`POST /api/annotation/bootstrap`, ~70s/JD of Sonnet/Haiku spend); the only
+no-cost path was the `python -m scripts.export_corpus_seed --user <name>` CLI. This adds
+a dedicated no-cost surface. No `PROMPT_VERSION` bump (no prompt touched) and no new
+dependency.
+
+- **`POST /api/annotation/seed/export`** (`app.py`, localhost-only, synchronous JSON —
+  no SSE) — reads the live DB via `scripts.export_corpus_seed.export_seed` (read-only, no
+  model calls) and writes `evals/fixtures/real/<slug>/seed.json` (the source the eval
+  runner's `--seed` path and the grounding backfill score against). Mirrors the score
+  route's guard structure: `_is_localhost_request()` + the security trio
+  (`_safe_username()` + `secure_filename()` + `_within(seed_path, ANNOTATION_ROOT)`).
+  Unknown user → 400; a config-only user with no provisioned corpus → 409 (same
+  needs-onboarding shape as `/api/analyze`). Default slug `<user>-bootstrap` so an
+  exported seed lands where a later bootstrap / `runner.py --seed` already looks.
+- **Annotate-tab "Export seed (no LLM)" button** (`dashboard/templates/dashboard.html`) —
+  sits in the bootstrap section's actions row next to the paid "Run bootstrap"; reuses the
+  same candidate-username / fixture-slug inputs and reports the written path + corpus
+  counts. A plain fetch + status line (no SSE) since the export is fast and synchronous.
+- **`_write_seed_json(fixture_dir, seed)`** (`app.py`) — factored the seed.json dump out
+  of the bootstrap route so the bootstrap and standalone export share one canonical writer
+  (no duplicated `json.dumps` shape). Bootstrap behavior is byte-identical.
+
 ### Docs — tuning-loop discoverability (`docs/tuning-loop-discoverability`)
 
 Step 4 (docs only) closes the "finish the diagnostics faceplate" arc: every durable

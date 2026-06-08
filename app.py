@@ -5554,6 +5554,20 @@ def _load_bootstrap_doc(fixture_dir: Path) -> dict | None:
         return None
 
 
+def _write_seed_json(fixture_dir: Path, seed: dict) -> Path:
+    """Canonical writer for a fixture's seed.json corpus snapshot.
+
+    The single source of the dump format, shared by the paid bootstrap route (which
+    captures the seed as a side effect of the run) and the standalone export route.
+    The caller owns the `_within` containment check + `fixture_dir.mkdir`.
+    """
+    seed_path = fixture_dir / "seed.json"
+    seed_path.write_text(
+        json.dumps(seed, indent=2, ensure_ascii=False) + "\n", encoding="utf-8",
+    )
+    return seed_path
+
+
 def _patch_annotation_scores(ann_path: Path, grounding_signals: dict) -> int:
     """Patch ONLY the inline grounding score fields onto an existing annotations.json.
 
@@ -5923,6 +5937,71 @@ def annotation_score_grounding(username: str, slug: str):
     )
 
 
+@app.route("/api/annotation/seed/export", methods=["POST"])
+def annotation_seed_export():
+    """Export one candidate's corpus to seed.json — deterministic, LLM-free (localhost).
+
+    The no-cost counterpart to the paid bootstrap's seed snapshot: reads the LIVE DB
+    via `scripts.export_corpus_seed.export_seed` (read-only, no model calls) and writes
+    `<ANNOTATION_ROOT>/<slug>/seed.json` through the shared `_write_seed_json` helper.
+    Lets a user capture a corpus seed for the eval runner (`--seed`) / grounding backfill
+    without paying for a bootstrap. Fast + synchronous, so a plain JSON response (no SSE).
+    Security per CLAUDE.md "Key Patterns — Security": _safe_username() + secure_filename()
+    + _within(seed_path, ANNOTATION_ROOT).
+    """
+    if not _is_localhost_request():
+        return jsonify({"error": "localhost only"}), 403
+    data = request.get_json(silent=True) or {}
+    safe_user = _safe_username(data.get("username", ""))
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+    slug = secure_filename(data.get("slug") or f"{safe_user}-bootstrap")
+    if not slug:
+        return jsonify({"error": "Invalid fixture slug"}), 400
+    fixture_dir = _annotation_fixture_path(slug)
+    if fixture_dir is None or not _within(fixture_dir, ANNOTATION_ROOT):
+        return jsonify({"error": "Invalid fixture slug"}), 400
+    seed_path = fixture_dir / "seed.json"
+    if not _within(seed_path, ANNOTATION_ROOT):
+        return jsonify({"error": "Invalid fixture slug"}), 400
+
+    from db.session import get_session, init_db
+    from scripts.export_corpus_seed import export_seed
+
+    init_db()
+    session = get_session()
+    try:
+        seed = export_seed(session, candidate_username=safe_user)
+    except ValueError as exc:
+        # Config exists (passed _safe_username) but no Candidate corpus row yet —
+        # same needs-onboarding shape as /api/analyze. Distinct from the 400 above.
+        return jsonify({
+            "error": "No corpus for this user yet — import a résumé / build the corpus first.",
+            "detail": str(exc),
+        }), 409
+    finally:
+        session.close()
+
+    fixture_dir.mkdir(parents=True, exist_ok=True)
+    _write_seed_json(fixture_dir, seed)
+
+    n_bullets = sum(len(e["bullets"]) for e in seed["experiences"])
+    logger.info(
+        "Seed export wrote %s/seed.json (%d experiences, %d bullets)",
+        slug, len(seed["experiences"]), n_bullets,
+    )
+    return jsonify({
+        "ok": True,
+        "slug": slug,
+        "candidate": safe_user,
+        "experiences": len(seed["experiences"]),
+        "bullets": n_bullets,
+        "summary_items": len(seed["summary_items"]),
+        "skills": len(seed["skills"]),
+        "path": f"evals/fixtures/real/{slug}/seed.json",
+    })
+
+
 @app.route("/api/annotation/bootstrap", methods=["POST"])
 def annotation_bootstrap_stream():
     """Browser bootstrap wrapper — run the live pipeline over N pasted JDs (SSE).
@@ -6090,9 +6169,7 @@ def annotation_bootstrap_stream():
         # can score against the exact corpus this bootstrap was built from.
         seed = result.get("seed")
         if seed is not None:
-            (fixture_dir / "seed.json").write_text(
-                json.dumps(seed, indent=2, ensure_ascii=False) + "\n", encoding="utf-8",
-            )
+            _write_seed_json(fixture_dir, seed)
         # Persist the pasted JDs so collate can later produce the fixture jd.txt.
         jds_dir = fixture_dir / "jds"
         jds_dir.mkdir(parents=True, exist_ok=True)
