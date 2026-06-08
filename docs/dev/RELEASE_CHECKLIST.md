@@ -47,7 +47,7 @@ criteria.
       every eval record in `deterministic_metrics`. **Box stays unchecked** — the
       calibrated layers (B) are still open, and this item only closes when B lands.
 
-- [ ] **Diagnostics console → interactive self-tuning loop (the "finish the
+- [x] **Diagnostics console → interactive self-tuning loop (the "finish the
       faceplate" arc)** — sourced 2026-06-06 from a walkthrough finding
       (user-approved). The `feat/diagnostics-console-redesign` + `feat/annotation-tab`
       surfaces shipped but stop at CLI hand-offs (grounding only via the
@@ -68,8 +68,26 @@ criteria.
       `POST /api/tune/run` drives `run_suite` twice (baseline + candidate via
       `analyzer.prompt_overrides()`) and renders the `evals.tune` delta table; the
       irreversible **promote** stays the agent's job (no route edits `analyzer.py`).
-      Remaining: `docs/tuning-loop-discoverability` (docs only). **Box stays unchecked**
-      until the arc completes.
+      Step 4 `docs/tuning-loop-discoverability` (2026-06-07, docs only) closed the arc:
+      the in-app diagnostics-modal/pill/settings copy now advertises the interactive
+      loop, the end-to-end console walkthrough landed in [`evals/README.md`](../../evals/README.md)
+      (the dev-doc home) with [`walkthrough.md`](../walkthrough.md) carrying a flag +
+      link to it, and [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md) was updated to note
+      the label-producing loop is now browser-driven. **All four steps shipped — arc
+      complete.**
+
+- [ ] **Standalone one-click corpus-seed export (`feat/seed-export-button`)** —
+      flagged 2026-06-07 during the `docs/tuning-loop-discoverability` close-out.
+      Generating a corpus `seed.json` should be a one-click, **LLM-free** unit, but
+      today the only in-browser trigger is bundled inside the **paid** Annotate-tab
+      bootstrap (`POST /api/annotation/bootstrap`); the deterministic
+      `python -m scripts.export_corpus_seed --user <name>` CLI exists but is the only
+      no-cost path. Proposed: a small **localhost** route + an Annotate-tab button
+      calling `scripts.export_corpus_seed.export_seed` directly — deterministic, no
+      paid call, reusing the existing write-guard (`_safe_username` + `_within(seed,
+      ANNOTATION_ROOT)` + `secure_filename`, the same guard the bootstrap/score routes
+      use). Separate functional unit from the docs arc; **next small `feat/` branch**
+      after this docs branch (user-approved sequencing 2026-06-07).
 
 - [ ] **Compose custom bullet order visually reverts on reload when an
       experience has no LLM recommendations** — surfaced 2026-06-04 while

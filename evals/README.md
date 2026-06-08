@@ -675,6 +675,69 @@ runner uses. `tests/test_tune.py` pins the behavior (no API calls).
 
 ---
 
+## The in-browser tuning console (`/_dashboard`)
+
+Everything above runs from the CLI. The same loop is now also driveable from the
+browser: the diagnostics console at `http://localhost:5000/_dashboard` (served by
+the running app, **localhost-only** by its own host-header guard) wraps the eval +
+annotation + tuning machinery into a tabbed, click-through self-tuning loop. This
+is the dev-doc home for that console; the user-facing
+[`docs/walkthrough.md`](../docs/walkthrough.md) only flags that it exists.
+
+The four shipped surfaces form one browser-driven loop — **produce → annotate →
+grounding-score → run eval → A/B → read deltas** — ending at the single
+irreversible step that stays a human/agent's job:
+
+1. **Produce** *(Annotate tab → "① Produce a bootstrap")* — runs the live
+   `analyze → clarify → generate` pipeline over pasted JDs for a candidate's corpus
+   and dedups across JDs into a `bootstrap.json` (the same engine as
+   [`evals/bootstrap.py`](#bootstrap-engine-evalsbootstrappy)). **Paid** Sonnet/Haiku
+   (~70s/JD). Each browser bootstrap also snapshots the corpus `seed.json` that the
+   grounding backfill + corpus-seeded runs need.
+2. **Annotate** *(Annotate tab editor)* — render a `keep`/`fix`/`omit`/`fabricated`
+   verdict on each bullet & skill cluster and rate each clarification question,
+   writing the same [`annotations.json` contract](#annotation-contract-evalsannotationpy)
+   the CLI produces (fail-closed, same validation). **Collate** emits the
+   `expected.json` fixture + `improvement_brief.md`, and now also shows the run
+   command **and** a "Run this fixture" button instead of dead-ending at a paste.
+3. **Grounding-score** *("Score grounding" backfill)* — runs the offline DeBERTa
+   NLI + MiniCheck scorers (L1/L2) over the fixture's bullets against its `seed.json`.
+   **CPU-bound, no paid LLM call**; needs the `[eval-grounding]` extras (missing
+   extras degrade to un-scored, never a 500). These heavy scorers stay **eval-time**
+   only — never the hot path (RELEASE_ARC Key Decision #4).
+4. **Run eval** *(Quality tab → "Run eval"; also the Annotate "Run this fixture"
+   button)* — a localhost SSE `POST /api/eval/run` calls the importable
+   `evals.runner.run_suite` core (see [How the runner works](#how-the-runner-works))
+   with a `progress` callback so the browser streams per-fixture/per-rubric progress.
+   Suite/subset/grounding controls + a cost-band `confirm()` consent gate. **Paid.**
+5. **A/B a candidate** *(Tuning tab)* — pick an `analyzer._BASE_SYSTEM_PROMPTS`
+   constant ("Load current text" prefills the baseline), edit/paste a candidate, and
+   run candidate-vs-baseline in the browser. A dedicated localhost SSE
+   `POST /api/tune/run` drives `run_suite` **twice** — baseline (no overrides) then
+   candidate (via [`analyzer.prompt_overrides()`](#candidate-prompt-overrides---prompt-overrides))
+   — then renders the per-`(fixture, rubric)` delta with the LLM-free
+   [`evals/tune.py`](#evalstunepy) helpers. The candidate run self-stamps
+   `prompt_version=candidate:<hash>`, so it is quarantined from score-over-time
+   exactly like the `--prompt-overrides` CLI path. A 2×-cost `confirm()` gate (≈$0.20
+   smoke / ≈$0.60 full) guards the two paid runs. It mirrors `/api/eval/run`'s input
+   contract, including the optional corpus-seed mode (`slug` + `username` →
+   `evals/fixtures/real/<slug>/seed.json`).
+6. **Promote** — **not** a console affordance, by design. Promoting a winning
+   candidate stays the irreversible human/agent step: copy the candidate text into
+   the constant in `analyzer.py`, bump `PROMPT_VERSION` in the same commit, and log
+   the before/after in [`TUNING_LOG.md`](TUNING_LOG.md). No route ever edits
+   `analyzer.py`.
+
+The console is the click-through equivalent of the CLI loop documented above — same
+`run_suite`, same `prompt_overrides()` primitive, same `evals/tune.py` delta, same
+`annotations.json` contract. Reach for the CLI (`--prompt-overrides`,
+[`/prompt-tune`](../.claude-plugin/commands/prompt-tune.md),
+[`/tune-from-annotations`](#tune-from-annotations-workflow-tune-from-annotations))
+when you want scripted/repeatable runs; reach for the console when you want to drive
+the loop interactively and read the deltas inline.
+
+---
+
 ## Writing a custom rubric
 
 Add a new file at `evals/rubrics/{slug}.md`. The runner picks it up automatically (`--subset full` runs every `*.md` in `evals/rubrics/`).
