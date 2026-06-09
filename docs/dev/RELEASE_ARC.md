@@ -616,6 +616,13 @@ RELEASE_CHECKLIST risk register.
 > cross-cutting planes, the staged/eval-gated build, and the **reuse/extraction
 > contract** live in [`memory-architecture.md`](memory-architecture.md) — read it
 > before designing either branch.
+>
+> **Scope (2026-06-09 re-cut):** the previously post-v1.1.0 **vector tier (Stage 2)** and
+> **S4 structure index** are pulled into v1.0.7 as **eval-gated in-epic** steps — build the
+> Stage-1 assistant, measure on real questions, add them *only if* the misses justify it,
+> before the v1.1.0 cut — so the **complete** memory system can ship at the public tag.
+> Deeper interaction memory (**S5 P2–P4**) stays **held** pending its retention/forgetting
+> policy. Details in [`memory-architecture.md`](memory-architecture.md) "Staged build".
 
 ### Pre-public hardening (grounding + tone; the old Sprint PV, minus the type scan)
 **Shared prerequisite (human, not a branch):** a clean-corpus rebuild from a real git

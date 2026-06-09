@@ -156,7 +156,7 @@ offer → (later) `session.observe(turn)` ingests the exchange, no LLM.
 | 2 | **Author the `audience:` tag once, where the boundary is already being drawn** — add the convention to the wiki SCHEMA **before** the 6.5 education sweep; blanket path-rules for code/`docs/dev`/`evals` (dev) | The tag the access plane needs is the same boundary **governance-extraction** and the 6.5 user/dev split already draw. Author once → three beneficiaries. The memory system gives the doc-restructuring a *consumer* that says *where* to draw the line (where the avatar must refuse). |
 | 3 | **Fold structure metadata into the chunker first**; stand up a separate **S4** symbol-index tier only if call-graph navigation is demanded | ~70% of the value (structure-aware chunks improve S3 + let the avatar say *where* code is) at a fraction of the cost; eval-gated. |
 | 4 | **Model-detected** progressive disclosure, **gated by the access plane** | The avatar guides (proposes depth) without becoming an over-disclosure backdoor (the plane authorizes). |
-| 5 | **Interaction memory (S5) pre-1.1.0, progressively** (staircase below) | A local guide remembers you. Each step is the same `Source` interface, so it enters the existing fusion without re-architecting. |
+| 5 | **Interaction memory (S5) progressively** — P1 (session buffer) in v1.0.7 Stage 1; **P2–P4 gated on the retention/forgetting policy** (open) | A local guide remembers you. Each step is the same `Source` interface, so it enters the existing fusion without re-architecting. |
 | 6 | **Modular `recall/` in-repo from day one + a documented extraction contract**; physical extraction deferred to second-use | Don't pre-abstract; *do* hold a clean seam and make it a contract future agents build against (see below). |
 
 ### S5 staircase (the progressive build for interaction memory)
@@ -177,14 +177,21 @@ offer → (later) `session.observe(turn)` ingests the exchange, no LLM.
   + assemble + the avatar with the user/dev toggle + model-detected disclosure
   + S5 P1 (session buffer). **Zero new deps.** → v1.0.7 `feat/doc-assistant`;
   WS-4b code-ingest feeds S1.
-- **Stage 2 — eval-gated semantics.** S3 vector via **`model2vec` static
-  embeddings + a rebuildable BLOB/numpy sidecar** (the lightest path: numpy +
+- **Stage 2 — eval-gated semantics (v1.0.7, in-epic).** S3 vector via **`model2vec`
+  static embeddings + a rebuildable BLOB/numpy sidecar** (the lightest path: numpy +
   tokenizers + a ~10–30 MB static table — no onnxruntime, no torch; escalate to
-  `fastembed`/bge only if eval shows static isn't enough). Add **only when
-  Stage-1 misses justify it**, validated on real questions. Index build rides
-  the `.last_ingest_sha` diff (incremental, $0). → post-v1.1.0.
-- **Stage 3 — depth.** S4 structure index ("what calls X"); S5 P2→P4. Deferred;
-  the interfaces already hold their slots.
+  `fastembed`/bge only if eval shows static isn't enough). **Pulled into v1.0.7 (2026-06-09
+  re-cut) so the complete system ships at the v1.1.0 public cut — but still eval-gated,
+  NOT unconditional:** build Stage 1, measure on real questions, add the vector tier
+  *only if* the code-vocabulary misses justify it, before the tag. Index build rides
+  the `.last_ingest_sha` diff (incremental, $0). The light embedder keeps the
+  public-release dependency footprint acceptable.
+- **Stage 3 — depth.** S4 structure index ("what calls X") — **same eval-gated, in-epic
+  treatment as Stage 2** (pull into v1.0.7 if dev call-graph questions justify it). S5
+  **P2–P4** (durable cross-session memory → forgetting → provenance tags) is **HELD** —
+  eligible to pull into v1.0.7 *only once its retention / forgetting / "clear my data"
+  policy is resolved* (the open question below); until then it stays post-v1.1.0. The
+  interfaces already hold its slot. (S5 **P1** session buffer ships in Stage 1.)
 
 > **Storage note.** The vector index is *derived + rebuildable* → it belongs in
 > a **sidecar**, NOT in `db/resume.sqlite` (which carries the user's real corpus
@@ -220,7 +227,8 @@ agents build against (the way [`../../AGENTS.md`](../../AGENTS.md) governs):
 - Exactly where the `audience:` tag is *authored* in the mixed wiki today (ties
   to **governance-extraction**'s open sub-decisions).
 - The `recall/` package name (placeholder).
-- S5 retention / forgetting / clear-my-data policy (privacy-sensitive).
+- S5 retention / forgetting / "clear my data" policy (privacy-sensitive) — **this is the
+  gate on pulling S5 P2–P4 into v1.0.7**; until it's resolved, P2–P4 stays post-v1.1.0.
 
 ## Related
 
