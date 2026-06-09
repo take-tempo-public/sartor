@@ -679,7 +679,7 @@ acceptance criteria / target version**.
 > §Phase 4.5 / §Phase 4.7 / "Post-v1.1.0 workstreams"; this section is the *shape
 > intent*, not the schedule.
 
-### 11.1 The seven-functions self-model → `docs/system-model.md` (scheduled)
+### 11.1 The seven-functions self-model → [`docs/system-model.md`](system-model.md)
 
 The system is described by **seven functions + one law**, split across two
 subjects (the Corpus-Item pattern is a piece of the first):
@@ -698,8 +698,9 @@ subjects (the Corpus-Item pattern is a piece of the first):
 **The one law:** every dependency points inward toward **Production**; Production
 answers only upward to **Governance** — the codebase's own one-way dependency rule
 (P1 deterministic/LLM boundary; production ↛ `evals/`) scaled up to the whole
-system. The canonical write-up is **scheduled** as `docs/system-model.md` (the
-WS-4 wiki `overview.md` seed); this branch only names the home.
+system. The canonical write-up lives in [`docs/system-model.md`](system-model.md)
+(the WS-4 wiki `overview.md` seed); §11 here is the one-paragraph summary that
+defers to it.
 
 ### 11.2 The four workstreams (structural intent)
 
