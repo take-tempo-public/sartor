@@ -148,6 +148,10 @@ The project ships a Claude Code plugin under [.claude-plugin/](.claude-plugin/) 
 | [`/tune-from-annotations`](.claude-plugin/commands/tune-from-annotations.md) | Draft a candidate prompt edit from an annotation `improvement_brief.md`, A/B it against the `--suite real` fixture + anchor canary, promote on approval |
 | [`/bench`](.claude-plugin/commands/bench.md) | Aggregate `logs/llm_calls.jsonl` for cache hit rate, latency, cost |
 | [`/inspect-context`](.claude-plugin/commands/inspect-context.md) | Pretty-print + schema-validate a saved `context_set` |
+| [`/wiki-ingest`](.claude-plugin/commands/wiki-ingest.md) | Compile changed sources into `docs/wiki/` pages (diff-driven off `.last_ingest_sha`; sentinel/`--full` = cold pass) |
+| [`/wiki-query`](.claude-plugin/commands/wiki-query.md) | Answer a question from the wiki with `[[citations]]`; offer to file the answer back |
+| [`/wiki-lint`](.claude-plugin/commands/wiki-lint.md) | Severity-tiered drift/coverage report on the wiki (periodic + pre-release gate) |
+| [`/wiki-audit`](.claude-plugin/commands/wiki-audit.md) | Fact-check one wiki page against its cited sources |
 
 ### Subagents
 
@@ -168,6 +172,7 @@ Deterministic gates that fire automatically on tool use. See [.claude-plugin/hoo
 - `block-merge-to-main` — blocks merge/push to main without explicit `CLAUDE_CONFIRM_MERGE=1`
 - `validate-context` — JSON-syntax + schema check on `output/**/context_*.json` writes
 - `route-security-lint` — requires `_safe_username` + `_within` on new Flask routes
+- `wiki-freshness-reminder` — non-blocking nudge after `git commit` when `docs/wiki/` may be stale (silent until the first ingest sets a baseline)
 - `check-plan-approved` / `mark-plan-approved` / `cleanup-plan-on-merge` — plan-mode workflow
 
 ### Dashboard

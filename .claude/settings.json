@@ -83,6 +83,11 @@
             "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/cleanup-plan-on-merge.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/wiki-freshness-reminder.sh",
+            "timeout": 5
           }
         ]
       }
