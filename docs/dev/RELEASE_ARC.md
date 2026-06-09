@@ -533,7 +533,11 @@ buckets. Mirrors the v1.0.5 walk-through that produced 24 findings.
 5. `wiki/cold-ingest-code` — cold-ingest the code architecture (module map, the P1
    deterministic/LLM boundary, the `context_set` contract, pipeline flows, routes,
    the eval harness), `path:line`-grounded. **Reserve a user-facing section** that
-   Sprint 6.5 authors into.
+   Sprint 6.5 authors into. This tier is the **vocabulary-bridge / map** layer the
+   doc-grounded assistant retrieves over (S1); as it ingests, it also **stamps each
+   page's `audience:` tag** (user|dev) — the boundary the assistant's access plane
+   gates on, authored once here + by governance-extraction. Design:
+   [`memory-architecture.md`](memory-architecture.md).
 
 **Then — Governance extraction** (its own carefully-gated branch, after the wiki
 proves out; the 3 open sub-decisions below resolved in a short WS-4 design session
@@ -602,6 +606,16 @@ RELEASE_CHECKLIST risk register.
 |---|---|---|
 | `design/self-documenting-loop` → `feat/self-documenting-wiki` | **yes** | The **autonomous** self-documenting / self-tuning docs loop — the wiki ingests + lints itself on change so the docs track the code without a human author. Autonomy is the goal, **but designed performant + not overdone** (per the steer): a **Haiku-class** model, **bounded triggers** (not per-commit), cost-aware. The design pass settles trigger / cost / scope before any build. |
 | `feat/doc-assistant` | (design rides the loop) | The **doc-grounded chat assistant** — *"a product that knows itself."* Both users and devs ask "how do I…" questions; it answers from the committed `docs/wiki/` **with citations** (the LLM-wiki **query** op as a chat). **Haiku model, reuses the user's existing Anthropic key** (no new credential). A public UX/DX feature → **ships in v1.1.0.** |
+
+> **Both rows above build on a shared substrate — the project's *Memory* function,
+> form-found as a modular `recall/` package.** Retrieval is **hybrid** (prebuilt
+> wiki-map + `git grep` base, agentic drill-down) and *feeds* the Haiku context with
+> cited source units; a **user/dev audience toggle** + **model-detected progressive
+> disclosure** gate scope; the self-documenting loop reuses the same **$0, no-LLM
+> embedding/index refresh** (rides `.last_ingest_sha`). The tier model, the two
+> cross-cutting planes, the staged/eval-gated build, and the **reuse/extraction
+> contract** live in [`memory-architecture.md`](memory-architecture.md) — read it
+> before designing either branch.
 
 ### Pre-public hardening (grounding + tone; the old Sprint PV, minus the type scan)
 **Shared prerequisite (human, not a branch):** a clean-corpus rebuild from a real git
