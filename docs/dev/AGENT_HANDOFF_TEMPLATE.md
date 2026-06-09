@@ -109,10 +109,19 @@ code. **Do not code first.**
 
 ## Branch close-out checklist (do in this order before closing the window)
 
+0. **Pre-close sweep — BEFORE the gate, ON THE BRANCH (never post-merge).**
+   Enumerate ALL close-out obligations and resolve each (or explicitly defer
+   with the user) so the session closes ONCE: working changes consistent (no
+   dangling refs); **session memory learnings written now** (post-merge
+   memory/cleanup on `main` gets hook-blocked, forcing a repeat ceremony that
+   steps on the next branch); loose ends resolved or deferred; branches to
+   prune identified. "Done" is the output of this sweep, not a declaration.
 1. Quality gate green: `ruff check .` + `mypy .` + `pytest`
 2. Commit — message records what was done and why (or "no code change —
    verified" if the branch closed clean)
 3. Ask user to confirm merge to `main`; execute merge after confirmation
-4. Generate the next-agent handoff prompt using this template
-   ([docs/dev/AGENT_HANDOFF_TEMPLATE.md](AGENT_HANDOFF_TEMPLATE.md)) and give
-   it to the user as the **last act** before closing the window
+4. Prune merged branch(es) with the user's OK, then generate the next-agent
+   handoff prompt using this template
+   ([docs/dev/AGENT_HANDOFF_TEMPLATE.md](AGENT_HANDOFF_TEMPLATE.md)) **as
+   copyable chat text (never a file in `output/`)** and give it to the user as
+   the **last act** before closing the window

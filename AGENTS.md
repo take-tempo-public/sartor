@@ -61,10 +61,16 @@ A `route-security-lint` hook enforces this on `app.py` edits — see [`.claude-p
 A `require-feature-branch` PreToolUse hook blocks `Edit`/`Write` while on `main`/`master`. Create a feature branch when moving from plan to execute (`git checkout -b <type>/<short-desc>`). Intentional main edits: `export CLAUDE_ALLOW_MAIN_EDITS=1`.
 
 **Branch close-out checklist (closing agent, in order):**
+0. **Pre-close sweep — run this BEFORE the gate, ON THE BRANCH (never post-merge).** Enumerate the COMPLETE set of close-out obligations and resolve each (or explicitly defer *with the user*) so the session closes **once**, not three times:
+   - working changes staged + internally consistent (no dangling refs / links);
+   - **memory learnings** from the session written now — doing memory or cleanup *after* the merge (on `main`) gets blocked by `require-feature-branch` + the merge-wiped `~/.claude/plans/.approved` marker, forcing a repeat flag-clear-and-ceremony that steps on the next branch's work; the cheap window is here, pre-merge;
+   - every **loose end flagged this session** resolved or explicitly deferred;
+   - **branches to prune** identified.
+   "Done" is the *output* of this sweep, not a declaration — do not announce completion until it is empty. Declaring progress over verifying completeness manufactures tech debt, repeat close-outs, and eroded trust.
 1. Quality gate green (`python -m ruff check .` + `python -m mypy .` + `python -m pytest`).
 2. Commit — message records what was done and why (or "no code change — verified" if the branch closed clean).
 3. Ask user to confirm merge to `main`; execute merge after confirmation.
-4. Generate the next-agent handoff prompt using [`docs/dev/AGENT_HANDOFF_TEMPLATE.md`](docs/dev/AGENT_HANDOFF_TEMPLATE.md) and give it to the user as the **last act** before closing the window.
+4. Prune the merged branch(es) with the user's OK, then generate the next-agent handoff prompt using [`docs/dev/AGENT_HANDOFF_TEMPLATE.md`](docs/dev/AGENT_HANDOFF_TEMPLATE.md) **as copyable chat text (never a file written into `output/`)** and give it to the user as the **last act** before closing the window.
 
 ### Document generation
 
