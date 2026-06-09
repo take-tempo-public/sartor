@@ -511,10 +511,13 @@ buckets. Mirrors the v1.0.5 walk-through that produced 24 findings.
    split. The canonical self-model + the wiki `overview.md` seed. *(Source:
    [`../excellence-walk/excellence-walk.md`](../excellence-walk/excellence-walk.md) +
    [`../excellence-walk/q1-overview.md`](../excellence-walk/q1-overview.md).)*
-2. `docs/wiki-skeleton` — committed `docs/wiki/` (`SCHEMA.md`, `index.md`, `overview.md`
-   ← `q1-overview.md` + its 4 revision points, `log.md`, `.last_ingest_sha`, `pages/`)
-   + a root `llms.txt`. **Git HEAD is the source**, diff-driven ingest. `SCHEMA.md`
-   **references** AGENTS.md / CLAUDE.md / vision; it does not duplicate them.
+2. `docs/wiki-skeleton` ✓ **DONE (this branch)** — committed the `docs/wiki/` skeleton
+   (`SCHEMA.md`, `index.md`, `overview.md` ← seeded from + deferring to
+   `docs/system-model.md` as canonical, carrying its 4 revision points; `log.md`;
+   `.last_ingest_sha` sentinel; empty `pages/`) + a root `llms.txt`. **Git HEAD is the
+   source**, diff-driven ingest. `SCHEMA.md` **references** AGENTS.md / CLAUDE.md /
+   vision; it does not duplicate them. `raw/` starts at zero (introduced later by
+   Governance extraction).
 3. `feat/wiki-skills` — adapt `kfchou/wiki-skills` ops into `.claude-plugin/` skills
    (`/wiki-ingest`, `/wiki-query`, `/wiki-lint`, `/wiki-audit`); manual trigger + a
    lightweight commit-time freshness **reminder** hook (NOT auto-ingest — per-commit
