@@ -64,7 +64,9 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       excellence-walk source ([`excellence-walk/`](excellence-walk/)) is ingested
       into the wiki** (then may retire into its `raw/` layer); the code architecture
       is cold-ingested (`path:line`-grounded); a **user-facing wiki section is
-      reserved so 6.5 authors INTO the wiki**.
+      reserved so 6.5 authors INTO the wiki**. The code-ingest also **stamps
+      `audience:` tags** + feeds the v1.0.7 doc-grounded assistant's memory
+      substrate — design in [`memory-architecture.md`](memory-architecture.md).
 - [ ] **Governance extraction** (its own gated branch, after the wiki proves out) —
       ⚠ **preserve agent rule-access**: `AGENTS.md`/`CLAUDE.md` are harness-auto-
       loaded; extraction must keep the rules reachable via `@import`/pointer or every
