@@ -80,6 +80,9 @@ Important hooks for any agent writing code here:
   `output/**/context_*.json` writes.
 - `block-merge-to-main` — blocks merge/push to main without
   explicit `CLAUDE_CONFIRM_MERGE=1`.
+- `wiki-freshness-reminder` — non-blocking nudge after
+  `git commit` when `docs/wiki/` may be stale (silent until the
+  first `/wiki-ingest` sets a baseline; never auto-ingests).
 
 ### Skill catalog
 
@@ -99,6 +102,16 @@ over reinventing the workflow inline:
   rate, latency, cost.
 - `/inspect-context` — pretty-print + schema-validate a saved
   `context_set`.
+- `/wiki-ingest` — compile changed sources into `docs/wiki/`
+  pages (diff-driven off `.last_ingest_sha`; sentinel or `--full`
+  = a full cold pass); advances the checkpoint, appends to
+  `log.md`.
+- `/wiki-query` — answer a question from the wiki with
+  `[[citations]]`; offer to file the answer back as a page.
+- `/wiki-lint` — severity-tiered drift/coverage report on the
+  wiki (periodic + pre-release gate).
+- `/wiki-audit` — fact-check one wiki page against its cited
+  sources.
 
 See [`.claude-plugin/commands/`](.claude-plugin/commands/) for
 each command's full definition.
