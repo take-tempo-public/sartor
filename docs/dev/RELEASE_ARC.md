@@ -504,7 +504,7 @@ buckets. Mirrors the v1.0.5 walk-through that produced 24 findings.
 > throwaway prose.
 
 **WS-4a — front-loaded (start of the epic, right after the walkthrough; depends on no churn):**
-1. `docs/system-model` — author **`docs/system-model.md`** from the seven-functions
+1. `docs/system-model` ✓ **DONE (this branch)** — authored **[`docs/system-model.md`](../system-model.md)** from the seven-functions
    language: **Substrate · Production · Evaluation · Operation · Memory · Regulation ·
    Governance**, the one-way dependency law (every dependency points inward toward
    Production; Production answers only upward to Governance), and the **Product / Work**
