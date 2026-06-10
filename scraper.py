@@ -5,6 +5,7 @@ Used to pull portfolio/LinkedIn content for LLM context.
 """
 
 import logging
+import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -18,9 +19,29 @@ HEADERS = {
 TIMEOUT = 15
 MAX_PROFILE_CHARS = 3_000  # per-URL cap — keeps total profile context manageable
 
+# Matches a leading URL scheme (e.g. "https://", "http://", "ftp://").
+_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://")
+
+
+def _ensure_scheme(url: str) -> str:
+    """Normalize a user-supplied URL so requests.get() will accept it.
+
+    Users paste site addresses with or without a scheme. requests raises
+    MissingSchema on a bare host (e.g. "github.com/you"), which we'd otherwise
+    swallow as a silent fetch failure. Prepend https:// when no scheme is
+    present; leave an explicit scheme (http://, https://, …) untouched.
+    """
+    url = url.strip()
+    if not url or _SCHEME_RE.match(url):
+        return url
+    return f"https://{url}"
+
 
 def fetch_url_content(url: str) -> str:
     """Fetch a URL and extract meaningful text content."""
+    url = _ensure_scheme(url)
+    if not url:
+        return ""
     try:
         resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
         resp.raise_for_status()

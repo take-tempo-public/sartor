@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — profile URLs without a scheme no longer silently fail to fetch (`fix/normalize-url-scheme`)
+
+A site address pasted without `http://`/`https://` (e.g. `github.com/you`) made
+`requests.get` raise `MissingSchema`, which `scraper.fetch_url_content` caught
+and swallowed as an empty result — the URL was silently dropped from the LLM
+profile context with no user-visible error. The LinkedIn/Website fields are
+`type="url"` (browser-enforced scheme), but the Portfolio URLs textarea has no
+such guard, so bare hosts slipped through. `scraper._ensure_scheme()` now
+normalizes at the fetch boundary: a bare host gets `https://` prepended; an
+explicit scheme (`http://`, `https://`, …) is left untouched. One fix covers
+all three URL sources since they all flow through `fetch_url_content`. No
+`PROMPT_VERSION` change and no new dependency.
+
 ## [1.0.5] — 2026-06-07
 
 The UI/UX redesign + the diagnostics/tuning console — establishes the design
