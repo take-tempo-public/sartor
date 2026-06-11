@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — Compose custom bullet order no longer reverts on reload for a no-recommendations experience (`fix/compose-order-no-recommendations`)
+
+A saved custom Compose bullet order *visually reverted* after a Compose reload —
+but only for an experience that had **no LLM recommendations**. The persisted
+order was always intact (`composition_overrides.bullet_order` round-trips through
+POST/GET `/composition`, and `generate()` honors it via `_stable_user_prefix`);
+only the on-screen render regressed.
+
+- **Root cause (render-only).** `_renderComposeCard` (`static/app.js`) routed a
+  no-recommendations experience through `_dropoffPick`, which re-sorted the
+  fallback bullets by **score** — discarding the saved order the GET had already
+  applied (`get_application_composition` ranks bullets by `bullet_order` and
+  stamps `in_custom_order`). The common path (recommendations present → bullets
+  land in the `visible` set, preserving GET order) was unaffected.
+- **Fix.** On the no-recommendations fallback path, when the experience has a
+  saved order (`has_custom_order`) honor the GET-returned order (the
+  `in_custom_order` bullets, already in saved sequence) instead of re-deriving a
+  score sort. No backend change, no `PROMPT_VERSION` bump, no new dependency.
+- Covered by a UX regression
+  (`tests/ux/regression/test_20260611_compose_order_no_recommendations.py`) on a
+  seeded no-recommendations experience; the companion
+  `test_20260604_bullet_drag_reorder.py` continues to guard the common path.
+
 ### Added — add an alternative job title in Compose + pin it per-JD (`feat/compose-add-title`, #7)
 
 In Step 3 (Compose) a user often realizes a *different framing* of a role fits

@@ -4601,7 +4601,15 @@ function _renderComposeCard(exp) {
 
   let initial = visible;
   if (!exp.has_recommendations && initial.length === 0) {
-    initial = fallback;
+    // fix/compose-order-no-recommendations — when the user saved an explicit
+    // order, the GET already returned this experience's bullets in that order
+    // (in_custom_order rows first, in the saved sequence). Honor it instead of
+    // re-deriving a score sort via _dropoffPick, which silently reverted the
+    // on-screen order on reload (the persisted order was always intact; only
+    // the render regressed).
+    initial = exp.has_custom_order
+      ? (exp.bullets || []).filter(b => b.in_custom_order === true)
+      : fallback;
     initial.forEach(b => b._fallback = true);
   }
 
