@@ -50,6 +50,14 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       first outcome data (B.8). Also the signing / re-confirmation pass for the
       **unsigned** `V1_0_5_VERIFICATION.md` and the named-but-unlanded V5-B parity
       fixes (#9 download ≠ preview, #10 step-6 edit not reflected).
+      **Progress (2026-06-10):** first pass completed end-to-end after the sprint-1
+      blocker fixes (`fix/onboarding-e2e-blockers`); **11 findings (KW1–KW13)
+      harvested + triaged into the 6.x buckets** — see RELEASE_ARC §Sprint 6.0
+      "Kickoff-walk harvest". Still open before this gate checks: the lightweight
+      eval/tuning pass on the re-walk, the `V1_0_5_VERIFICATION.md` signing run
+      (#9/#10 re-confirmation), and the B.8 outcome-data verification (blocked on
+      KW7 — the applications block / candidate memory didn't update on the first
+      pass).
 - [ ] **Sprints 6.1–6.6 merged** — 6.1 wizard-flow (incl. **B.8 Part 1** outcome
       capture) · 6.2 diagnostics-console · 6.3 forms + a11y (**the axe a11y gate
       lands first**) · 6.4 IA + onboarding (corpus-first) · 6.6 corpus-item completers
