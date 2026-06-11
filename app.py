@@ -5123,6 +5123,32 @@ def _read_bullet_order(context_path: str) -> dict[int, list[int]]:
     return out
 
 
+def _read_title_overrides(context_path: str) -> dict[int, int]:
+    """feat/compose-add-title — per-experience pinned title from a context
+    file's `composition_overrides.pinned_title_ids`, validated within OUTPUT_DIR.
+    Maps experience-id → chosen ExperienceTitle id. Empty dict when absent/invalid.
+    Keys and ids are coerced to int (JSON persists keys as strings); malformed
+    entries are skipped, not fatal."""
+    if not context_path:
+        return {}
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR) or not cp.exists():
+        return {}
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    raw = (ctx.get("composition_overrides") or {}).get("pinned_title_ids") or {}
+    out: dict[int, int] = {}
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            try:
+                out[int(k)] = int(v)
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
 def _apply_chosen_summary(context_set: dict) -> None:
     """β.6d — patch context_set["candidate"]["profile_text"] in-place
     with the chosen SummaryItem variant's text.
@@ -5296,6 +5322,10 @@ def get_application_composition(application_id: int):
         # card at the top with the LLM's pick flagged + any user pin
         # overriding it.
         summary_recommendation, pinned_summary_id = _read_summary_overrides(ctx_path)
+        # feat/compose-add-title — per-experience title pin (experience_id →
+        # ExperienceTitle id). Drives the title radio's selected state and the
+        # per-experience chosen_title_id below.
+        pinned_title_ids = _read_title_overrides(ctx_path)
 
         experiences = session.query(Experience).filter_by(
             candidate_id=candidate.id,
@@ -5349,6 +5379,7 @@ def get_application_composition(application_id: int):
                 order_set = set(exp_order)
                 for d in scored_bullets:
                     d["in_custom_order"] = int(d["id"]) in order_set
+            pinned_tid = pinned_title_ids.get(exp.id)
             titles: list[dict[str, Any]] = []
             for t in exp.titles:
                 if not (t.is_official or t.truthful_enough_to_use):
@@ -5364,10 +5395,23 @@ def get_application_composition(application_id: int):
                         float(len(t_toks & (jd_kw | essential))), 2,
                     ),
                     "tags": _tag_list(t.tag_links),
+                    # feat/compose-add-title — the user's per-JD pick for this JD.
+                    "pinned": t.id == pinned_tid,
                 })
             titles.sort(
                 key=lambda d: (not d["is_official"], -float(d["score"]), int(d["id"])),
             )
+            # feat/compose-add-title — what the résumé will actually use for this
+            # experience: the user's pin (when still eligible) → official → the
+            # top eligible title. Mirrors the preview/generate resolution so the
+            # radio's default selection matches the rendered output.
+            eligible_ids = {d["id"] for d in titles}
+            if pinned_tid in eligible_ids:
+                chosen_title_id: int | None = pinned_tid
+            elif titles:
+                chosen_title_id = titles[0]["id"]
+            else:
+                chosen_title_id = None
             if scored_bullets or titles:
                 out.append({
                     "id": exp.id, "company": exp.company,
@@ -5378,6 +5422,9 @@ def get_application_composition(application_id: int):
                     # feat/bullet-drag-reorder — drives Reset enable/disable and
                     # the "newly added — drag to reposition" hint in the UI.
                     "has_custom_order": has_custom_order,
+                    # feat/compose-add-title — the effective title for the radio's
+                    # default selected state (pin → official → top eligible).
+                    "chosen_title_id": chosen_title_id,
                 })
         # β.6c — Positioning block. Variants come from the candidate's
         # active SummaryItem rows; the LLM recommendation (if any) flags
@@ -5493,6 +5540,22 @@ def save_application_composition(application_id: int):
         except (TypeError, ValueError):
             return jsonify({"error": "pinned_summary_id must be a positive integer or null"}), 400
 
+    # feat/compose-add-title — optional per-experience title pin:
+    # {experience_id: title_id}. Persisted with string keys (JSON-natural,
+    # like bullet_order); omitted when empty so the default path (and the
+    # analyze→generate cache) is preserved. Eligibility + ownership are
+    # validated against the DB inside the session block below.
+    pinned_title_raw = data.get("pinned_title_ids")
+    pinned_title_ids: dict[str, int] = {}
+    if pinned_title_raw is not None:
+        if not isinstance(pinned_title_raw, dict):
+            return jsonify({"error": "pinned_title_ids must be an object of {experience_id: title_id}"}), 400
+        for k, v in pinned_title_raw.items():
+            try:
+                pinned_title_ids[str(int(k))] = int(v)
+            except (TypeError, ValueError):
+                return jsonify({"error": "pinned_title_ids keys and ids must be integers"}), 400
+
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
 
@@ -5513,6 +5576,26 @@ def save_application_composition(application_id: int):
         if ctx.get("application_id") not in (None, application_id):
             return jsonify({"error": "context_path does not match application"}), 400
 
+        # feat/compose-add-title — validate each pinned title is an eligible
+        # (is_official OR truthful_enough_to_use) title of the named experience,
+        # and that the experience belongs to this application's candidate. A bad
+        # id is a 400, not a silent drop, so the UI can't pin a stale/foreign id.
+        # `resynced_titles` caches the per-experience eligible set for the
+        # snapshot re-sync further down (avoids a second DB pass).
+        from db.build_context import eligible_titles_for
+        from db.models import Experience
+        resynced_titles: dict[str, Any] = {}
+        for eid_str, tid in pinned_title_ids.items():
+            exp = session.query(Experience).filter_by(
+                id=int(eid_str), candidate_id=candidate.id,
+            ).first()
+            if exp is None:
+                return jsonify({"error": f"experience {eid_str} not found for this candidate"}), 400
+            eligible = eligible_titles_for(exp)
+            if tid not in {t["id"] for t in eligible}:
+                return jsonify({"error": f"title {tid} is not an eligible title of experience {eid_str}"}), 400
+            resynced_titles[eid_str] = eligible
+
         overrides: dict[str, Any] = {
             "pinned": pinned, "excluded": excluded, "added": added,
         }
@@ -5523,13 +5606,30 @@ def save_application_composition(application_id: int):
         # the score sort, keeping the default path byte-identical.
         if bullet_order:
             overrides["bullet_order"] = bullet_order
+        if pinned_title_ids:
+            overrides["pinned_title_ids"] = pinned_title_ids
         ctx["composition_overrides"] = overrides
+
+        # feat/compose-add-title — generate reads the FROZEN career_corpus
+        # snapshot (built at analyze), so a title added in Compose after analyze
+        # isn't in it. Re-sync eligible_titles from the DB for exactly the pinned
+        # experiences so the pin reaches generate. The preview is unaffected (it
+        # reads the DB live). Guarded: corpus-mode contexts only.
+        corpus = ctx.get("career_corpus")
+        if pinned_title_ids and isinstance(corpus, list):
+            for exp_entry in corpus:
+                eid = exp_entry.get("id")
+                key = str(eid) if eid is not None else None
+                if key is not None and key in resynced_titles:
+                    exp_entry["eligible_titles"] = resynced_titles[key]
+
         cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
         return jsonify({
             "application_id": application_id,
             "pinned": pinned, "excluded": excluded, "added": added,
             "pinned_summary_id": pinned_summary_id,
             "bullet_order": bullet_order,
+            "pinned_title_ids": pinned_title_ids,
         })
     finally:
         session.close()

@@ -452,6 +452,41 @@ class TestCreateExperienceTitle:
         assert body["is_official"] is False
         assert body["source"] == "user_added"
 
+    def test_compose_add_creates_eligible_alt_title(self, corpus_app):
+        """feat/compose-add-title — the Compose '+ Add title' contract: an
+        alternative title written with truthful_enough_to_use=true is a SOURCED,
+        immediately-eligible corpus row (user_added, eligible WITHOUT being
+        Official, not pending review), so it's selectable for this JD's résumé."""
+        cid = _seed_candidate()
+        eid = _seed_experience(cid)
+        _seed_title(eid, title="Senior PM", is_official=1)  # existing official
+        client = corpus_app.app.test_client()
+        r = client.post(
+            f"/api/experiences/{eid}/titles",
+            json={"title": "Director, AI Research", "truthful_enough_to_use": True},
+        )
+        assert r.status_code == 201, r.get_json()
+        body = r.get_json()
+        assert body["title"] == "Director, AI Research"
+        assert body["source"] == "user_added"
+        assert body["is_official"] is False
+        assert body["truthful_enough_to_use"] is True
+        assert body["is_pending_review"] is False
+
+        # Eligible (is_official OR truthful_enough_to_use) → present in the
+        # generate snapshot's title set, without disturbing the official one.
+        from db.build_context import eligible_titles_for
+        from db.models import Experience
+        from db.session import get_session
+        s = get_session()
+        try:
+            exp = s.query(Experience).filter_by(id=eid).first()
+            titles = {t["title"] for t in eligible_titles_for(exp)}
+            assert "Director, AI Research" in titles
+            assert "Senior PM" in titles
+        finally:
+            s.close()
+
     def test_setting_is_official_clears_sibling(self, corpus_app):
         cid = _seed_candidate()
         eid = _seed_experience(cid)

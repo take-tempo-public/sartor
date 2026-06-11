@@ -185,6 +185,24 @@ def build_context_set_from_db(
     return context_set, application, application_run
 
 
+def eligible_titles_for(exp: Experience) -> list[CorpusEligibleTitle]:
+    """Eligible titles for one experience, in snapshot order.
+
+    Eligible = ``is_official=1 OR truthful_enough_to_use=1`` (the same filter the
+    Compose GET and the generate snapshot use). Ordered official-first then by id.
+    The single source of truth for the corpus snapshot's title set: reused by the
+    analyze-time payload build (`_build_career_corpus_payload`) and the
+    composition-save re-sync in `app.py`, so the two can never drift.
+    """
+    eligible: list[CorpusEligibleTitle] = [
+        {"id": t.id, "title": t.title, "is_official": bool(t.is_official)}
+        for t in exp.titles
+        if t.is_official or t.truthful_enough_to_use
+    ]
+    eligible.sort(key=lambda t: (not t["is_official"], t["id"]))
+    return eligible
+
+
 def _build_career_corpus_payload(experiences: list[Experience]) -> list[CorpusExperience]:
     """Build the structured corpus the LLM consumes in the new prompt shape.
 
@@ -200,17 +218,7 @@ def _build_career_corpus_payload(experiences: list[Experience]) -> list[CorpusEx
     """
     payload: list[CorpusExperience] = []
     for exp in experiences:
-        eligible_titles: list[CorpusEligibleTitle] = [
-            {
-                "id": t.id,
-                "title": t.title,
-                "is_official": bool(t.is_official),
-            }
-            for t in exp.titles
-            if t.is_official or t.truthful_enough_to_use
-        ]
-        # Order titles: official first, then by id
-        eligible_titles.sort(key=lambda t: (not t["is_official"], t["id"]))
+        eligible_titles = eligible_titles_for(exp)
 
         bullets: list[CorpusBullet] = []
         for b in sorted(exp.bullets, key=lambda x: x.display_order):
@@ -441,4 +449,4 @@ def _infer_application_title(jd_text: str) -> str:
     return "Untitled application"
 
 
-__all__ = ["build_context_set_from_db"]
+__all__ = ["build_context_set_from_db", "eligible_titles_for"]

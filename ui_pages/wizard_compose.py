@@ -68,6 +68,41 @@ class WizardComposePage(BasePage):
     def experience_card_count(self) -> int:
         return self.page.locator(Compose.EXPERIENCE_CARD).count()
 
+    # --- titles (feat/compose-add-title) -----------------------------------
+    def _first_card(self) -> Locator:
+        return self.page.locator(Compose.EXPERIENCE_CARD).first
+
+    def title_texts(self) -> list[str]:
+        """Eligible title texts on the first experience card."""
+        return self._first_card().locator(
+            f"{Compose.TITLE_LIST} {Compose.ROW} {Compose.ROW_TEXT}"
+        ).all_inner_texts()
+
+    def add_title(self, title: str) -> None:
+        """Open the '+ Add title' modal on the first card, submit `title`, and
+        wait for the reloaded composition to render it (writes a sourced,
+        eligible corpus row via POST /api/experiences/<id>/titles)."""
+        self._first_card().locator(Compose.ADD_TITLE_BTN).click()
+        self.page.fill(Compose.FORM_MODAL_TITLE_INPUT, title)
+        self.page.click(Compose.FORM_MODAL_SUBMIT)
+        # loadComposition() re-renders; wait for the new title row to appear.
+        self._first_card().locator(
+            f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=title
+        ).wait_for(state="visible", timeout=DEFAULT_TIMEOUT_MS)
+        self.page.wait_for_load_state("networkidle")
+
+    def select_title(self, text: str) -> None:
+        """Check the radio of the title row matching `text` (first card)."""
+        self._first_card().locator(
+            f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=text
+        ).locator(Compose.TITLE_RADIO).check()
+
+    def title_is_selected(self, text: str) -> bool:
+        """Whether the title row matching `text` (first card) is the chosen one."""
+        return self._first_card().locator(
+            f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=text
+        ).locator(Compose.TITLE_RADIO).is_checked()
+
     # --- first experience's visible bullet list ----------------------------
     def _bullet_list(self) -> Locator:
         return self.page.locator(Compose.BULLET_LIST).first

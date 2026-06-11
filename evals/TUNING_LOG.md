@@ -196,6 +196,67 @@ prevent re-running them.
 
 ---
 
+## 2026-06-11 — feat/compose-add-title (#7): per-JD pinned title rule in `<corpus_mode>` (`2026-06-10.1` → `2026-06-11.1`)
+
+### What changed
+
+One prompt-template edit, in `analyzer.py`, in the same commit as the version bump:
+
+- **`<corpus_mode>` contract** (`generate`'s prompt) — the `<eligible_title>`
+  description gains a pin rule: *"If an `<eligible_title>` is marked
+  `pinned="true"`, the candidate has CHOSEN it for this application: you MUST set
+  that title's id as the experience's `chosen_title_id` and reproduce its exact
+  text as the heading title (still honoring the immutable `dates`) — do not
+  substitute, reword, or propose an alternative for that experience."* This is the
+  generate half of the per-JD title pin (the user picks a title in Compose; the
+  pin must drive the downloaded résumé, not just the preview).
+- **`_corpus_block` / `_stable_user_prefix`** (data, not template) — emit
+  `pinned="true"` on the chosen `<eligible_title>` from
+  `composition_overrides.pinned_title_ids`. Added only when a pin exists, so the
+  cached prefix stays byte-identical for non-pinners (exactly like bullet pins).
+
+### Why
+
+Sprint 6.1 #7 (user-approved per-JD pin extension). Titles had no per-application
+selection — the model picked `chosen_title_id` by fit and the preview showed
+official-or-first. The pin closes that gap; the prompt rule is what makes the
+user's choice authoritative in the generated download (the preview honors it
+deterministically in `build_json_resume_from_corpus`).
+
+### Result
+
+**Smoke eval deliberately not run** — it would be uninformative here. The edit is
+**corpus-mode only** (`in_corpus_mode = bool(context_set.get("career_corpus"))`;
+the rule text is empty string in legacy mode, and the `pinned="true"` attr is
+gated behind the `if corpus:` branch). The synthetic eval fixtures are
+**legacy-mode** (no `career_corpus`, same as the KW6 note), so the LLM prompt they
+produce is **byte-identical** to `2026-06-10.1`. `PROMPT_VERSION` is telemetry-only
+(`effective_prompt_version()` returns it for the JSONL label; it is never injected
+into the prompt sent to the model), so the bump alone changes no model input. The
+green test suite already proves the byte-identical legacy path
+(`tests/test_corpus_mode_prompt.py::TestStableUserPrefixDispatch::test_legacy_path_emits_resume_block`
++ `TestTitlePinEmission::test_empty_pinned_title_ids_byte_identical`). User
+confirmed skipping the paid run (2026-06-11).
+
+Coverage for the actual change is unit + UX, not this suite:
+- `tests/test_corpus_mode_prompt.py::TestTitlePinEmission` — the `pinned="true"`
+  attr is emitted for the chosen title, absent otherwise, byte-identical when empty;
+  `TestGenerateDispatch::test_corpus_mode_block_documents_title_pin_rule` — the rule
+  text is present in the corpus-mode prompt.
+- `tests/ux/regression/test_20260611_compose_add_title.py` — add a title in
+  Compose, pin it, persist across a Compose reload (end-to-end through the real
+  routes).
+
+### What we learned
+
+- Bump `PROMPT_VERSION` for attribution discipline even when the change is provably
+  inert on the eval suite's path — but say so in the log, and verify "byte-identical
+  on the exercised path" with a unit test rather than spending a paid run that
+  re-measures an identical prompt. The synthetic suite only exercises legacy mode;
+  corpus-mode prompt changes need unit/UX coverage, not `--suite synthetic`.
+
+---
+
 ## 2026-06-10 — fix/generate-date-grounding (KW6): date-immutability rules + deterministic heading-date guard (`2026-06-01.4` → `2026-06-10.1`)
 
 ### What changed

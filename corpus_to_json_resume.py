@@ -100,6 +100,8 @@ def build_json_resume_from_corpus(
     # ---- Read bullet pin/exclude/added overrides ----
     pin_bullets, ex_bullets, add_bullets = _read_bullet_overrides(ctx)
     rec_by_exp = _read_recommendations_by_experience(ctx)
+    # feat/compose-add-title — per-experience title pin (experience_id → title_id)
+    title_choices = _read_title_choices(ctx)
 
     # ---- Assemble basics ----
     basics: dict[str, Any] = {}
@@ -142,8 +144,13 @@ def build_json_resume_from_corpus(
             entry["name"] = exp.company
         if exp.location:
             entry["location"] = exp.location
-        # Official title preferred; fall back to first eligible.
-        title_text = _official_title_text(exp) or _first_title_text(exp)
+        # feat/compose-add-title — the user's per-JD pin wins (when still
+        # eligible); otherwise official preferred, then first eligible.
+        title_text = (
+            _pinned_title_text(exp, title_choices.get(exp.id))
+            or _official_title_text(exp)
+            or _first_title_text(exp)
+        )
         if title_text:
             entry["position"] = title_text
         if exp.start_date:
@@ -272,6 +279,22 @@ def _read_summary_choices(ctx: dict[str, Any]) -> tuple[int | None, int | None]:
     return pinned, recommended
 
 
+def _read_title_choices(ctx: dict[str, Any]) -> dict[int, int]:
+    """feat/compose-add-title — return {experience_id: pinned_title_id} from a
+    loaded context dict's `composition_overrides.pinned_title_ids`. Empty when
+    absent/invalid; keys and ids coerced to int (JSON persists keys as strings)."""
+    overrides = ctx.get("composition_overrides") or {}
+    raw = overrides.get("pinned_title_ids") if isinstance(overrides, dict) else None
+    out: dict[int, int] = {}
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            try:
+                out[int(k)] = int(v)
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
 def _resolve_chosen_summary_text(
     session,
     candidate_id: int,
@@ -366,6 +389,19 @@ def _official_title_text(exp: Any) -> str | None:
 def _first_title_text(exp: Any) -> str | None:
     for t in (exp.titles or []):
         if t.title:
+            return t.title
+    return None
+
+
+def _pinned_title_text(exp: Any, pinned_id: int | None) -> str | None:
+    """feat/compose-add-title — the user's per-JD title pick for this experience,
+    when it's still an eligible (is_official OR truthful_enough_to_use) title of
+    this experience. Returns None when unset / stale / ineligible so the caller
+    falls through to the official-or-first default (non-pinned output unchanged)."""
+    if pinned_id is None:
+        return None
+    for t in exp.titles or []:
+        if t.id == pinned_id and (t.is_official or t.truthful_enough_to_use):
             return t.title
     return None
 

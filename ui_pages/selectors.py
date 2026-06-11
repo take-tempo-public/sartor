@@ -197,3 +197,10 @@ class Compose:
     RESET_ORDER = ".compose-order-reset"
     MOVE_UP_LABEL = "Move bullet up"
     MOVE_DOWN_LABEL = "Move bullet down"
+    # feat/compose-add-title — per-JD title selection + the add affordance.
+    TITLE_LIST = ".compose-title-list"
+    TITLE_RADIO = ".compose-title-radio"
+    ADD_TITLE_BTN = ".compose-add-title-btn"
+    # openFormModal field input + submit (shared add-title / add-bullet modal).
+    FORM_MODAL_TITLE_INPUT = "#formModal_title"
+    FORM_MODAL_SUBMIT = "#formModalSubmit"
