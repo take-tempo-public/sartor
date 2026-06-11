@@ -122,17 +122,21 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       analyze-round answers vanish from the new context file and generate (iter≥1)
       loses them as ground truth. The JS comment at the iterate call site claims
       "merges by id — prior answers stay intact", which the route does not do.
-      **Likely load-bearing evidence for KW4** (`fix/clarify-generates-bullets`,
-      Sprint 6.1) — investigate there, not as a drive-by. The candidate-memory
-      mirror is unaffected (additive: DB rows persist even when the context map
-      loses entries).
+      The candidate-memory mirror is unaffected (additive: DB rows persist even
+      when the context map loses entries). **Scheduled** as load-bearing evidence
+      on the `fix/clarify-generates-bullets` (KW4) row,
+      [`RELEASE_ARC.md`](RELEASE_ARC.md) §Sprint 6.1 — investigate there, not as a
+      drive-by.
 - [ ] **`application_run.generated_cover_letter_md` never populated** — observed
       2026-06-10 in the e2e walkthrough DB (run row has resume md + bullets +
       titles + ATS json, but cover-letter md is empty despite a generated +
       downloaded cover letter). Small run-persistence gap in the
       `persist_corpus_generation` write-back path; matters once the learning
-      layer (B.8 Part 2) wants to correlate outcomes with cover letters. Unassigned;
-      candidate rider for a future 6.1/6.2 branch.
+      layer (B.8 Part 2) wants to correlate outcomes with cover letters.
+      **Scheduled** as `fix/run-cover-letter-persistence` in
+      [`RELEASE_ARC.md`](RELEASE_ARC.md) §Sprint 6.1 — land within v1.0.6 so the
+      signal is captured while real outcome data accrues this epic (rows generated
+      now without it can't be backfilled).
 
 - [ ] **Grounding/hallucination metric inserted into the v1.0.5 sequence**
       (user-approved re-sequence 2026-06-05). `eval/grounding-metric-l0` (the
