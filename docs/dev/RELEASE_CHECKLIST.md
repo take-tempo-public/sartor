@@ -55,9 +55,10 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       harvested + triaged into the 6.x buckets** — see RELEASE_ARC §Sprint 6.0
       "Kickoff-walk harvest". Still open before this gate checks: the lightweight
       eval/tuning pass on the re-walk, the `V1_0_5_VERIFICATION.md` signing run
-      (#9/#10 re-confirmation), and the B.8 outcome-data verification (blocked on
-      KW7 — the applications block / candidate memory didn't update on the first
-      pass).
+      (#9/#10 re-confirmation), and the B.8 outcome-data verification (~~blocked on
+      KW7~~ — **unblocked 2026-06-10** by `feat/outcome-capture-complete`: the
+      re-walk should confirm the applications block updates live, the
+      submit→outcome funnel works, and memory populates after clarify/interview).
 - [ ] **Sprints 6.1–6.6 merged** — 6.1 wizard-flow (incl. **B.8 Part 1** outcome
       capture) · 6.2 diagnostics-console · 6.3 forms + a11y (**the axe a11y gate
       lands first**) · 6.4 IA + onboarding (corpus-first) · 6.6 corpus-item completers
@@ -65,11 +66,22 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       **Progress (2026-06-10):** first 6.1 branch `fix/generate-date-grounding` (KW6)
       landed — date-immutability prompt rules (PROMPT_VERSION `2026-06-10.1`) + a
       deterministic warn-only heading-date guard in both generate routes; smoke eval
-      clean (see TUNING_LOG 2026-06-10 entry).
+      clean (see TUNING_LOG 2026-06-10 entry). Second 6.1 branch
+      `feat/outcome-capture-complete` (B.8 Part 1 + KW7) landed — applications
+      block syncs with the wizard, draft→submitted affordances (card button +
+      Step-6 post-download nudge) open the previously unreachable outcome funnel,
+      `?status=` query filter, and the candidate-memory write path goes live
+      (answered clarifications → `clarification` rows; promote-to-bullet now
+      reachable for wizard answers). Data model: lean single-status, `interview`
+      terminal (user-approved 2026-06-10); no schema change, no prompt change.
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +
       nursery learning layer).
+      **Progress (2026-06-10):** the B.8 Part 1 half shipped via
+      `feat/outcome-capture-complete` (see the Sprint 6.1 progress note above);
+      end-to-end verification rides the Sprint 6.0 re-walk. B.4/B.5 still open
+      (Sprint 6.6).
 - [ ] **WS-4a landed early; WS-4b before the 6.5 sweep** (the binding gate):
       `docs/system-model.md` (← seven-functions language) + the committed
       `docs/wiki/` skeleton + the `/wiki-*` skills exist; **the preserved
@@ -99,6 +111,28 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 > into the wiki's `raw/` layer.
 
 ### Discovered during the v1.0.5 stream (tracked, deferred)
+
+- [ ] **`/api/answer-clarifications` overwrites the whole answers map — iterate
+      submit drops analyze-round answers from the iterated context** — surfaced
+      2026-06-10 while building `feat/outcome-capture-complete` (KW7 memory write
+      path). `_collectIterateClarifyAnswers` ([app.js](../../static/app.js))
+      collects **only** `#iterateClarifyQuestions` textareas, but the route does
+      `context_set["clarifications"] = cleaned` (full replace, [app.py](../../app.py)
+      `submit_clarifications`) — so after an iterate-round submit, the
+      analyze-round answers vanish from the new context file and generate (iter≥1)
+      loses them as ground truth. The JS comment at the iterate call site claims
+      "merges by id — prior answers stay intact", which the route does not do.
+      **Likely load-bearing evidence for KW4** (`fix/clarify-generates-bullets`,
+      Sprint 6.1) — investigate there, not as a drive-by. The candidate-memory
+      mirror is unaffected (additive: DB rows persist even when the context map
+      loses entries).
+- [ ] **`application_run.generated_cover_letter_md` never populated** — observed
+      2026-06-10 in the e2e walkthrough DB (run row has resume md + bullets +
+      titles + ATS json, but cover-letter md is empty despite a generated +
+      downloaded cover letter). Small run-persistence gap in the
+      `persist_corpus_generation` write-back path; matters once the learning
+      layer (B.8 Part 2) wants to correlate outcomes with cover letters. Unassigned;
+      candidate rider for a future 6.1/6.2 branch.
 
 - [ ] **Grounding/hallucination metric inserted into the v1.0.5 sequence**
       (user-approved re-sequence 2026-06-05). `eval/grounding-metric-l0` (the

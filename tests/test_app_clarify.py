@@ -180,7 +180,9 @@ class TestAnswerClarificationsRoute:
         })
         assert resp.status_code == 200
         body = resp.get_json()
-        assert body == {"ok": True, "answered": 2, "total": 2}
+        # memory_rows == 0: this context is legacy/file-only (no
+        # application_run_id), so the candidate-memory mirror is a no-op.
+        assert body == {"ok": True, "answered": 2, "total": 2, "memory_rows": 0}
 
         saved = json.loads(context_path.read_text(encoding="utf-8"))
         assert saved["clarifications"] == {
@@ -229,3 +231,175 @@ class TestAnswerClarificationsRoute:
         assert saved["clarifications"] == {
             "q1": "revised answer", "q2": "added later",
         }
+
+
+# ---------------------------------------------------------------------------
+# Candidate-memory mirror (KW7 / B.8 Part 1): answered clarifications on a
+# corpus-backed context land as `clarification` DB rows.
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def memory_client(tmp_path, monkeypatch):
+    """app_client variant with a real temp DB so the memory write path can
+    resolve context.application_run_id → run → application → candidate."""
+    db_file = tmp_path / "memory.sqlite"
+    import db.session as db_session_mod
+    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
+    db_session_mod._engine = None
+    db_session_mod._SessionLocal = None
+
+    import app as _app
+
+    output_dir = tmp_path / "output"
+    configs_dir = tmp_path / "configs"
+    output_dir.mkdir()
+    configs_dir.mkdir()
+    (configs_dir / "alice.config").write_text("{}", encoding="utf-8")
+    (output_dir / "alice").mkdir()
+    monkeypatch.setattr(_app, "OUTPUT_DIR", output_dir)
+    monkeypatch.setattr(_app, "CONFIGS_DIR", configs_dir)
+    _app.app.config["TESTING"] = True
+
+    from db.session import init_db
+    init_db(db_file)
+
+    from db.models import Application, ApplicationRun, Candidate
+    from db.session import get_session
+    s = get_session()
+    try:
+        cand = Candidate(username="alice", name="Alice")
+        s.add(cand)
+        s.flush()
+        app_row = Application(
+            candidate_id=cand.id, title="SRE @ Foo", jd_text="K8s SRE role.",
+            jd_fingerprint="f" * 16, status="draft",
+        )
+        s.add(app_row)
+        s.flush()
+        run = ApplicationRun(
+            application_id=app_row.id, iteration=0, run_id="run123run123",
+            prompt_version="2026-06-10.1", corpus_snapshot_json="{}",
+        )
+        s.add(run)
+        s.commit()
+        ids = {"candidate": cand.id, "application": app_row.id, "run": run.id}
+    finally:
+        s.close()
+
+    context_path = output_dir / "alice" / "context_20260610_120000.json"
+    context_path.write_text(json.dumps({
+        "timestamp": "2026-06-10T12:00:00",
+        "candidate": {"name": "Alice"},
+        "job_description": "K8s SRE role.",
+        "run_id": "run123run123",
+        "application_run_id": ids["run"],
+        "clarification_questions": [
+            {"id": "q1", "text": "Used Kubernetes in production?",
+             "kind": "experience_probe", "target_gap": "k8s missing"},
+            {"id": "q2", "text": "Worked in a regulated environment?",
+             "kind": "context_probe",
+             "target_gap": "Context signal: regulated industry"},
+        ],
+    }, indent=2), encoding="utf-8")
+
+    return _app.app.test_client(), context_path, ids
+
+
+def _memory_rows(candidate_id):
+    from db.models import Clarification
+    from db.session import get_session
+    s = get_session()
+    try:
+        return s.query(Clarification).filter_by(candidate_id=candidate_id).all()
+    finally:
+        s.close()
+
+
+class TestClarificationMemoryWrite:
+    def test_answers_create_memory_rows(self, memory_client):
+        client, context_path, ids = memory_client
+        resp = client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"q1": "Yes, two years on EKS.", "q2": "HIPAA workflows."},
+        })
+        assert resp.status_code == 200
+        assert resp.get_json()["memory_rows"] == 2
+
+        rows = {r.question: r for r in _memory_rows(ids["candidate"])}
+        assert len(rows) == 2
+        k8s = rows["Used Kubernetes in production?"]
+        assert k8s.answer == "Yes, two years on EKS."
+        assert k8s.kind == "experience_probe"
+        assert k8s.target_gap == "k8s missing"
+        assert k8s.origin_application_id == ids["application"]
+        assert k8s.origin_run_id == ids["run"]
+        # context_probe is not in the DB kind enum — files as experience_probe,
+        # target_gap keeps the "Context signal: …" provenance.
+        reg = rows["Worked in a regulated environment?"]
+        assert reg.kind == "experience_probe"
+        assert reg.target_gap == "Context signal: regulated industry"
+
+    def test_resubmit_updates_answer_without_duplicating(self, memory_client):
+        client, context_path, ids = memory_client
+        client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"q1": "first answer"},
+        })
+        resp = client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"q1": "revised answer"},
+        })
+        assert resp.get_json()["memory_rows"] == 1
+        rows = _memory_rows(ids["candidate"])
+        assert len(rows) == 1
+        assert rows[0].answer == "revised answer"
+
+    def test_unchanged_resubmit_writes_nothing(self, memory_client):
+        client, context_path, ids = memory_client
+        client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"q1": "same answer"},
+        })
+        resp = client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"q1": "same answer"},
+        })
+        assert resp.get_json()["memory_rows"] == 0
+        assert len(_memory_rows(ids["candidate"])) == 1
+
+    def test_promoted_row_is_never_clobbered(self, memory_client):
+        client, context_path, ids = memory_client
+        client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"q1": "original answer"},
+        })
+        from db.session import get_session
+        s = get_session()
+        try:
+            row = _memory_rows(ids["candidate"])[0]
+            s.query(type(row)).filter_by(id=row.id).update(
+                {"is_promoted_to_bullet": 1},
+            )
+            s.commit()
+        finally:
+            s.close()
+
+        resp = client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"q1": "attempted rewrite"},
+        })
+        assert resp.get_json()["memory_rows"] == 0
+        rows = _memory_rows(ids["candidate"])
+        assert len(rows) == 1
+        assert rows[0].answer == "original answer"
+
+    def test_skip_writes_nothing(self, memory_client):
+        client, context_path, ids = memory_client
+        resp = client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {},
+        })
+        assert resp.status_code == 200
+        assert resp.get_json()["memory_rows"] == 0
+        assert _memory_rows(ids["candidate"]) == []

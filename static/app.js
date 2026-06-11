@@ -584,6 +584,9 @@ async function runAnalysis() {
     // refresh the rail — see the wizard-rail regression note in
     // docs/RELEASE_CHECKLIST.md.
     _wizardRender();
+    // KW7: /api/analyze just created the Application row — re-render the
+    // applications block so it stops showing the stale pre-analyze state.
+    refreshApplications();
     setStatus('ANALYSIS COMPLETE');
     _announce('Analysis complete. Review it, then continue to clarify or skip to compose.');
     // Workstream B1 reorder: recommend no longer fires here. It fires
@@ -876,6 +879,9 @@ async function submitClarifications() {
     if (btnSubmit) btnSubmit.disabled = false;
     return reportError('Save answers', 'Saving answers request failed', e.message);
   }
+  // KW7 / B.8: the route mirrored these answers into candidate memory —
+  // sync the panel so the Q&A shows up without a manual refresh.
+  refreshMemory();
   await _fireRecommendThenCompose();
   if (btnSubmit) btnSubmit.disabled = false;
 }
@@ -1120,6 +1126,9 @@ function _onGenerationComplete(data) {
   // generated content (preview == download). The cover-letter preview
   // refreshes lazily when its tab is shown (see showTab).
   _refreshOutputPreview();
+  // KW7: generation updated the application's run data (iteration count,
+  // updated_at) — keep the applications block in sync.
+  refreshApplications();
 }
 
 // β.5 — show "+ Generate cover letter" when no cover letter exists yet,
@@ -1762,6 +1771,9 @@ async function submitIterateClarificationsAndGenerate() {
     return reportError('Save answers', 'Saving answers request failed', e.message);
   }
 
+  // KW7 / B.8: the route mirrored these answers into candidate memory —
+  // sync the panel so the interview Q&A shows up without a manual refresh.
+  refreshMemory();
   // Run a fresh generation against the now-augmented context. The new
   // iteration's <resume> block sees the typed edits AND the new clarifications.
   _resetIterateClarifyUI();
@@ -2094,6 +2106,32 @@ async function _downloadEdited(url, payload) {
     // for a successful read but cheap (one blob URL); the GC will
     // reclaim the blob once revoked.
     setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+  }
+  // B.8 Part 1: the user just took a document to go apply with — surface
+  // the "Mark submitted" nudge so the outcome funnel starts here, not in a
+  // tracker panel they may never revisit.
+  _showMarkSubmittedNudge();
+}
+
+// Reveal the Step-6 outcome-capture nudge (only when the wizard is bound to
+// an application — legacy file-only flows have no row to update).
+function _showMarkSubmittedNudge() {
+  if (_composeApplicationId == null) return;
+  document.getElementById('markSubmittedNudge')?.classList.remove('hidden');
+}
+
+// Step-6 nudge click: PUT submitted on the wizard's application, confirm,
+// and sync the applications block. Idempotent server-side — sent_at stamps
+// only on the first transition.
+async function markCurrentApplicationSubmitted() {
+  if (_composeApplicationId == null) {
+    _toast('No application bound to this wizard run', true);
+    return;
+  }
+  if (await _putApplicationStatus(_composeApplicationId, 'submitted')) {
+    document.getElementById('markSubmittedNudge')?.classList.add('hidden');
+    _toast('Marked submitted — report the outcome from its Applications card');
+    refreshApplications();
   }
 }
 
@@ -3409,10 +3447,14 @@ async function refreshApplications() {
     if (countEl) countEl.textContent = '0 applications';
     return;
   }
+  // B.8 Part 1: lifecycle filter — server-side via the route's ?status= param
+  // (the same query surface the outcome-learning layer uses).
+  const statusFilter = document.getElementById('applicationsStatusFilter')?.value || '';
   _setLoadingPlaceholder(list, 'Loading…');
   let res;
   try {
-    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/applications`);
+    const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : '';
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/applications${qs}`);
   } catch (e) {
     _setLoadingPlaceholder(list, 'Network error.');
     return;
@@ -3431,6 +3473,13 @@ async function refreshApplications() {
     if (countEl) countEl.textContent = '0 applications';
     _renderCorpusEmptyCTA(list, 'No applications yet. Add your résumé in the '
       + 'Career corpus tab, then analyze a job description.');
+    return;
+  }
+  if (apps.length === 0 && statusFilter) {
+    // Distinguish "filtered everything out" from "no applications yet" so
+    // the empty-state copy doesn't mislead.
+    if (countEl) countEl.textContent = '0 applications';
+    _setLoadingPlaceholder(list, 'No applications with this status.');
     return;
   }
   _renderApplicationsList(apps);
@@ -3489,40 +3538,60 @@ function _renderApplicationCard(app) {
   }));
   card.appendChild(meta);
 
-  if (app.status === 'submitted') {
-    const outcomeRow = _el('div', { className: 'outcome-action-row' });
-    const outcomes = [
+  // B.8 Part 1 — the status funnel: draft cards offer "Mark submitted"
+  // (previously the funnel entry was unreachable — outcome buttons render
+  // only on submitted cards, and nothing in the UI ever set submitted).
+  // `interview` is terminal: the callback signal this product optimizes for
+  // (data-model decision 2026-06-10), so interview/rejected/withdrawn cards
+  // get no further actions.
+  if (app.status === 'draft') {
+    card.appendChild(_statusActionRow(app.id, [
+      { label: 'Mark submitted', status: 'submitted' },
+    ]));
+  } else if (app.status === 'submitted') {
+    card.appendChild(_statusActionRow(app.id, [
       { label: 'Got Interview', status: 'interview' },
       { label: 'Got Rejection', status: 'rejected' },
       { label: 'Withdrew', status: 'withdrawn' },
-    ];
-    outcomes.forEach(({ label, status }) => {
-      const btn = _el('button', { className: 'outcome-btn', textContent: label });
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        try {
-          const res = await fetch(`/api/applications/${app.id}/status`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status }),
-          });
-          if (res.ok) {
-            refreshApplications();
-          } else {
-            const err = await res.json().catch(() => ({}));
-            _toast(err.error || 'Failed to update status', true);
-          }
-        } catch (e) {
-          _toast('Failed to update status: ' + e.message, true);
-        }
-      });
-      outcomeRow.appendChild(btn);
-    });
-    card.appendChild(outcomeRow);
+    ]));
   }
 
   card.onclick = () => _showApplicationDetail(app.id);
   return card;
+}
+
+// PUT a lifecycle status for an application; toasts on failure. Shared by
+// the card action rows and the Step-6 "mark submitted" nudge (B.8 Part 1).
+async function _putApplicationStatus(appId, status) {
+  try {
+    const res = await fetch(`/api/applications/${appId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      _toast(err.error || 'Failed to update status', true);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    _toast('Failed to update status: ' + e.message, true);
+    return false;
+  }
+}
+
+function _statusActionRow(appId, actions) {
+  const row = _el('div', { className: 'outcome-action-row' });
+  actions.forEach(({ label, status }) => {
+    const btn = _el('button', { className: 'outcome-btn', textContent: label });
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (await _putApplicationStatus(appId, status)) refreshApplications();
+    });
+    row.appendChild(btn);
+  });
+  return row;
 }
 
 function _formatRelativeDate(iso) {

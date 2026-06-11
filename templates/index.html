@@ -111,6 +111,21 @@
           Past applications stored in the DB. Click a card to view its
           iteration history. Pending proposals are flagged in violet.
         </div>
+        <!-- B.8 Part 1: lifecycle-status filter (server-side via ?status=).
+             Card labels follow the canonical semantics table — a submitted
+             application reads NO RESPONSE until an outcome is reported. -->
+        <div class="form-row" style="margin-bottom:8px">
+          <label for="applicationsStatusFilter" class="sr-only">Filter applications by status</label>
+          <select id="applicationsStatusFilter" onchange="refreshApplications()"
+                  aria-label="Filter applications by status">
+            <option value="">All statuses</option>
+            <option value="draft">Draft</option>
+            <option value="submitted">No response yet</option>
+            <option value="interview">Got interview</option>
+            <option value="rejected">Rejected</option>
+            <option value="withdrawn">Withdrawn</option>
+          </select>
+        </div>
         <div id="applicationsList" class="application-list">
           <div class="corpus-empty-experience">Loading…</div>
         </div>
@@ -512,6 +527,16 @@
           <strong>Always allow downloads from this site</strong>.
           (A future release will switch to a server-side download to avoid this entirely.)
         </p>
+        <!-- B.8 Part 1: outcome-capture nudge. Revealed after a successful
+             download (the moment the user takes the file to go apply).
+             "Mark submitted" sets the application's lifecycle status so the
+             outcome buttons (interview / rejection / withdrew) become
+             reachable on its Applications card. -->
+        <div id="markSubmittedNudge" class="hidden" style="margin-top:10px">
+          <span style="margin-right:8px">Submitted this application?</span>
+          <button class="cb-btn cb-bg-amber" id="btnMarkSubmitted"
+                  onclick="markCurrentApplicationSubmitted()">Mark submitted</button>
+        </div>
         <!-- REFINEMENT: hidden until first generation -->
         <div id="refinementArea" class="hidden">
           <div class="refinement-divider">
