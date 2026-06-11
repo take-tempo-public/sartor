@@ -265,7 +265,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-06-01.4"
+PROMPT_VERSION = "2026-06-10.1"
 
 # --- Prompt-override primitive (eval tuning loop, v1.0.4) --------------------
 # Lets an eval run inject a CANDIDATE system prompt without editing the persona
@@ -364,7 +364,8 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Always treat the Notes field as explicit candidate directives — personal constraints or standing instructions (e.g. "remote only", "do not mention gap in 2020", "always emphasize architecture over management") BECAUSE ignoring them produces documents the candidate cannot use
 - Never restate a candidate's responsibility using a more advanced technique than the source describes BECAUSE writing "time-series forecasting" when the source only says "built dashboards" invents a skill the candidate cannot demonstrate in interviews
 - Never upgrade a tool category into a specific vendor or framework BECAUSE "used a CI tool" must not become "authored Jenkins pipelines" if the source does not name Jenkins; vendor-specific claims are verifiable and disqualifying when wrong
-- Never escalate scope adjectives (team → organization-wide, project → enterprise initiative, regional → global) BECAUSE scope inflation is verifiable in interviews and triggers credibility loss across the rest of the resume"""
+- Never escalate scope adjectives (team → organization-wide, project → enterprise initiative, regional → global) BECAUSE scope inflation is verifiable in interviews and triggers credibility loss across the rest of the resume
+- Never alter, swap, or "reconcile" employment date ranges BECAUSE dates are immutable facts: every experience keeps exactly the date range its source states, reordering experiences for relevance NEVER changes their dates, two roles may legitimately overlap or sit adjacent in time, and a shifted or duplicated range is instantly verifiable fabrication that disqualifies the candidate at the first background check"""
 
 # P6 Specialized Review — Pass 1 persona for the two-pass analyze pipeline
 # (r1/analyze-split-retry). An ATS-scanner specialist that extracts and
@@ -1838,6 +1839,7 @@ def _build_generate_prompt(
     if in_corpus_mode:
         corpus_mode_block = """<corpus_mode>
 The candidate's experience pool is the <career_corpus> block above (not a free-text <resume>). Each <experience> carries:
+- A `dates` attribute — IMMUTABLE ground truth. Whichever title you use for an experience (an <eligible_title> or one you propose), its heading MUST reproduce that experience's exact date range. Never merge, shift, or harmonize ranges across experiences — even when their titles look similar, even when you reorder experiences for relevance, and even on a regeneration pass.
 - One or more <eligible_title> elements — the candidate has approved these framings. Pick the one that best matches THIS JD's positioning.
 - One or more <bullet id="bN" ...> elements — VERBATIM text from the candidate's resumes. Treat each bullet as immutable ground truth: select, reorder, and reframe SURROUNDING context, but the bullet text itself MUST appear verbatim in your resume_content.
 
@@ -1968,6 +1970,11 @@ GROUNDING CHECK — apply this before writing every bullet:
     OK to write:   "Shipped V2 to enterprise customers."
     NOT OK:        "Led V2 launch to 50 enterprise customers."
                    ← invents headcount the candidate did not type. First-person edits ARE ground truth, but never extend them with specifics the candidate did not state.
+
+    Source experiences: Acme "Design Lead" 2012-01 → 2016-12 and Acme "Product Lead" 2016-01 → 2018-12.
+    OK to write:   "### Acme, Product Lead\t2016 – 2018" then "### Acme, Design Lead\t2012 – 2016" (reordered for relevance; each keeps its own range).
+    NOT OK:        "### Acme, Design Lead\t2016 – 2018" alongside "### Acme, Product Lead\t2016 – 2018"
+                   ← "reconciled" the dates while re-sequencing: two roles now share one range and 2012–2016 vanished. Dates are immutable; reordering never rewrites them.
 
 1. Include a targeted summary sentence answering: what title you seek, what makes you special, what you bring to the team. If it cannot fit in one sentence, use a sentence with a very short bullet list.
 2. Do NOT invent experience. Every bullet must trace directly to the original resume. Reframe language; never invent facts.

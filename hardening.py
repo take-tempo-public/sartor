@@ -843,6 +843,128 @@ def compute_fabricated_specifics(
     }
 
 
+# --- KW6 date-grounding guard (deterministic, hot-path-safe) ------------------
+# generate() headings carry the date range after a literal tab:
+#   `### Company, Title\tStart – End`
+# (the renderer right-aligns the date via the template's tab stop). The
+# fabricated-specifics detector above scans BULLET lines only, so a heading
+# whose range the LLM altered or duplicated sails past every other check —
+# that is exactly the KW6 failure (iteration regenerate "reconciled" one
+# experience's range onto another while re-sequencing for relevance).
+
+_HEADING_DATE_RE = re.compile(r"^###[^\t\n]*\t(.+)$", re.MULTILINE)
+_SECTION_HEADING_RE = re.compile(r"^##\s+(?!#)(.+)$", re.MULTILINE)
+_EXPERIENCE_SECTION_RE = re.compile(r"experience|employment|history", re.IGNORECASE)
+_RANGE_YEAR_RE = re.compile(r"\b(?:19|20)\d{2}\b")
+_RANGE_PRESENT_RE = re.compile(r"\b(?:present|current|now|ongoing)\b", re.IGNORECASE)
+_PRESENT = "present"
+
+
+def _heading_year_range(date_segment: str) -> tuple[str, str] | None:
+    """Parse a heading's date segment into (start_year, end_year).
+
+    Years only — month names and separator variants (– / - / to) are
+    tolerated by ignoring them. An open range ("2024 – Present") maps the
+    end to the _PRESENT sentinel. A single bare year reads as (y, y).
+    Returns None when no year is present (heading has a tab but no date).
+    """
+    years = _RANGE_YEAR_RE.findall(date_segment)
+    if not years:
+        return None
+    if len(years) >= 2:
+        return (years[0], years[-1])
+    if _RANGE_PRESENT_RE.search(date_segment):
+        return (years[0], _PRESENT)
+    return (years[0], years[0])
+
+
+def _experience_year_range(exp: CorpusExperience) -> tuple[str, str] | None:
+    """Corpus-side (start_year, end_year) for one experience.
+
+    `start_date`/`end_date` are DB-normalized "YYYY-MM" strings; a missing
+    end_date means the role is current (_PRESENT). Returns None when the
+    start year can't be parsed — that experience is unverifiable and is
+    left out of the expected multiset rather than guessed at.
+    """
+    start_match = _RANGE_YEAR_RE.search(exp.get("start_date") or "")
+    if not start_match:
+        return None
+    end_raw = exp.get("end_date") or ""
+    end_match = _RANGE_YEAR_RE.search(end_raw)
+    end = end_match.group(0) if end_match else _PRESENT
+    return (start_match.group(0), end)
+
+
+def _experience_section_text(generated_resume: str) -> str:
+    """Slice out the `## Experience`-like section (heading dates live there).
+
+    Education/certification sections may legitimately carry years the corpus
+    knows nothing about, so the scan is scoped to the experience section when
+    one is recognizable. Falls back to the whole document when no experience
+    section heading is found (corpus-derived output follows the template, so
+    this fallback is rare; precision trade-off documented for that case).
+    """
+    sections = list(_SECTION_HEADING_RE.finditer(generated_resume))
+    for i, m in enumerate(sections):
+        if _EXPERIENCE_SECTION_RE.search(m.group(1)):
+            start = m.end()
+            end = sections[i + 1].start() if i + 1 < len(sections) else len(generated_resume)
+            return generated_resume[start:end]
+    return generated_resume
+
+
+def compute_date_grounding(
+    generated_resume: str,
+    experiences: list[CorpusExperience],
+) -> dict:
+    """Deterministic KW6 guard: heading date ranges must trace to the corpus.
+
+    Compares the multiset of (start_year, end_year) ranges in the generated
+    experience-section headings against the multiset of true corpus ranges.
+    Multiset containment catches BOTH failure shapes without fuzzy title
+    matching:
+      - alteration  — a heading range that exists in no corpus experience;
+      - duplication — one true range stamped on two headings when the corpus
+        holds it once (the second consumption finds the count exhausted).
+
+    Warn-only by design: the caller surfaces `flagged` to the user and never
+    mutates the LLM output. Benign pass when the resume is empty, no corpus
+    is present (legacy mode), or no corpus range is parseable.
+    """
+    expected: Counter[tuple[str, str]] = Counter()
+    for exp in experiences or []:
+        rng = _experience_year_range(exp)
+        if rng is not None:
+            expected[rng] += 1
+
+    result: dict = {
+        "checked": 0,
+        "corpus_ranges": sorted(f"{s} – {e}" for s, e in expected.elements()),
+        "flagged": [],
+        "status": "pass",
+    }
+    if not generated_resume or not expected:
+        return result
+
+    remaining = expected.copy()
+    section = _experience_section_text(generated_resume)
+    for m in _HEADING_DATE_RE.finditer(section):
+        rng = _heading_year_range(m.group(1))
+        if rng is None:
+            continue
+        result["checked"] += 1
+        if remaining[rng] > 0:
+            remaining[rng] -= 1
+        else:
+            result["flagged"].append({
+                "heading": m.group(0).replace("\t", "  ").strip()[:120],
+                "found": f"{rng[0]} – {rng[1]}",
+            })
+    if result["flagged"]:
+        result["status"] = "flag"
+    return result
+
+
 def compute_call_cost(record: dict) -> float:
     """Per-call USD cost given a telemetry record from logs/llm_calls.jsonl.
 

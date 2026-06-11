@@ -435,3 +435,82 @@ class TestIterateClarifyRoute:
         assert len(priors) == 1
         assert priors[0]["answer"] == "Yes prod 2023."
         assert priors[0]["question"] == "K8s?"
+
+
+# ---------- /api/generate date-grounding guard (KW6) ------------------------
+
+class TestGenerateDateGrounding:
+    """KW6: corpus-mode generates run the deterministic date check; flagged
+    headings surface as proofread_notes warnings + a date_grounding field.
+    Warn-only — the route still returns 200 and the resume is untouched."""
+
+    CORPUS = [
+        {"id": 1, "company": "Acme", "start_date": "2016-01", "end_date": "2018-12",
+         "eligible_titles": [{"id": 1, "title": "Product Lead", "is_official": True}],
+         "bullets": [{"id": 1, "text": "Did a thing.", "tags": [], "has_outcome": False}]},
+        {"id": 2, "company": "Acme", "start_date": "2012-01", "end_date": "2016-12",
+         "eligible_titles": [{"id": 2, "title": "Design Lead", "is_official": True}],
+         "bullets": [{"id": 2, "text": "Did another thing.", "tags": [], "has_outcome": False}]},
+    ]
+
+    def _make_corpus_context(self, context_path):
+        ctx = json.loads(context_path.read_text(encoding="utf-8"))
+        ctx["career_corpus"] = self.CORPUS
+        context_path.write_text(json.dumps(ctx), encoding="utf-8")
+
+    def _stub_generate_returning(self, monkeypatch, resume_content):
+        import app as _app
+
+        def _stub(client, context_set, analysis, refinement_notes="",
+                  username="", run_id="", with_cover_letter=True):
+            return {
+                "resume_content": resume_content,
+                "cover_letter_content": "Letter.",
+                "changes_made": [],
+                "proofread_notes": ["model note"],
+            }
+        monkeypatch.setattr(_app, "generate", _stub)
+
+    def test_corrupted_date_flags_and_warns(self, app_client, monkeypatch):
+        client, context_path, _ = app_client
+        self._make_corpus_context(context_path)
+        # The KW6 shape: 2012-2016 role re-stamped with the adjacent 2016-2018.
+        self._stub_generate_returning(monkeypatch, (
+            "# Alice\n\n## Experience\n\n"
+            "### Acme, Product Lead\t2016 – 2018\n- Did a thing.\n\n"
+            "### Acme, Design Lead\t2016 – 2018\n- Did another thing.\n"
+        ))
+        resp = client.post("/api/generate", json={
+            "username": "alice", "context_path": str(context_path),
+        })
+        assert resp.status_code == 200
+        body = resp.get_json()
+        assert body["date_grounding"]["status"] == "flag"
+        assert len(body["date_grounding"]["flagged"]) == 1
+        # Warning rides the already-rendered proofread_notes list, after the
+        # model's own notes; the resume preview itself is never mutated.
+        assert body["proofread_notes"][0] == "model note"
+        assert any("Date check:" in n for n in body["proofread_notes"])
+        assert "2016 – 2018" in body["resume_preview"]
+
+    def test_correct_dates_pass_without_warning(self, app_client, monkeypatch):
+        client, context_path, _ = app_client
+        self._make_corpus_context(context_path)
+        self._stub_generate_returning(monkeypatch, (
+            "# Alice\n\n## Experience\n\n"
+            "### Acme, Product Lead\t2016 – 2018\n- Did a thing.\n\n"
+            "### Acme, Design Lead\t2012 – 2016\n- Did another thing.\n"
+        ))
+        body = client.post("/api/generate", json={
+            "username": "alice", "context_path": str(context_path),
+        }).get_json()
+        assert body["date_grounding"]["status"] == "pass"
+        assert body["proofread_notes"] == ["model note"]
+
+    def test_legacy_mode_skips_check(self, app_client):
+        # Seeded context has no career_corpus -> no date ground truth.
+        client, context_path, _ = app_client
+        body = client.post("/api/generate", json={
+            "username": "alice", "context_path": str(context_path),
+        }).get_json()
+        assert body["date_grounding"] is None
