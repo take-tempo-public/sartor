@@ -74,6 +74,14 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       (answered clarifications → `clarification` rows; promote-to-bullet now
       reachable for wizard answers). Data model: lean single-status, `interview`
       terminal (user-approved 2026-06-10); no schema change, no prompt change.
+      Third 6.1 branch `fix/clarify-generates-bullets` (KW4) landed 2026-06-11 —
+      `/api/answer-clarifications` merges by id (default `merge:true`; skip path
+      `merge:false`); two-round regression test. Fourth 6.1 branch
+      `fix/clarify-double-question` (#6) landed 2026-06-11 — the "Continue to
+      Clarify →" CTA now initiates clarification directly (one action) instead of
+      re-showing the `#clarifyStartRow` "Get clarifying questions / Skip" prompt;
+      rail-direct nav keeps that row; KW4 merge semantics untouched; UX-tier
+      regression added. No prompt change, no new dep.
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +

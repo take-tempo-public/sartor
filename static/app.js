@@ -738,11 +738,41 @@ function _resetClarifyUI() {
   if (btn) btn.disabled = false;
 }
 
+// Finding #6: the analysis gate already presents the clarify-vs-skip choice
+// ("Continue to Clarify →" / "Skip to Compose →"), so re-showing the
+// "Get clarifying questions / Skip" row asked the same thing twice. The
+// "Continue to Clarify →" CTA now initiates clarification in one action.
+// Idempotency guard: if this analysis already produced questions, just show
+// them — don't re-spend the /api/clarify LLM call on re-entry (back-nav,
+// re-click). _resetClarifyUI() clears lastClarifyQuestions on every fresh
+// analysis, so this signal is scoped to the current analysis. The manual
+// #clarifyStartRow row still serves a direct rail click into Step 2.
+function continueToClarify() {
+  wizardGoTo(2);
+  if (_wizardStep !== 2) return;            // reachability gate blocked nav
+  if (lastClarifyQuestions.length) return;  // already fetched this analysis
+  runClarify();
+}
+
 async function runClarify() {
   if (!lastContextPath) return alert('Run analysis first');
   setStatus('GENERATING QUESTIONS');
+  // Hide the "Get clarifying questions / Skip" row for the duration of the
+  // fetch: when runClarify is reached via the "Continue to Clarify →" CTA the
+  // row is redundant (finding #6) and would otherwise flash; the pending
+  // indicator fills the panel while the LLM call runs. _restore() puts the row
+  // back on failure so the user can retry.
+  const start = document.getElementById('clarifyStartRow');
+  const pending = document.getElementById('clarifyPending');
+  if (start) start.classList.add('hidden');
+  if (pending) pending.classList.remove('hidden');
   const btn = document.getElementById('btnClarify');
   if (btn) btn.disabled = true;
+  const _restore = () => {
+    if (pending) pending.classList.add('hidden');
+    if (start) start.classList.remove('hidden');
+    if (btn) btn.disabled = false;
+  };
 
   try {
     const res = await fetch('/api/clarify', {
@@ -755,15 +785,16 @@ async function runClarify() {
     });
     const data = await res.json();
     if (!res.ok) {
-      if (btn) btn.disabled = false;
+      _restore();
       return reportError('Clarify', data.error || 'Clarification failed', data.detail);
     }
+    if (pending) pending.classList.add('hidden');
     lastClarifyQuestions = data.questions || [];
     _renderClarifyQuestions(lastClarifyQuestions, data.reasoning || '');
     setStatus('QUESTIONS READY');
     _announce(`${lastClarifyQuestions.length} clarifying question${lastClarifyQuestions.length === 1 ? '' : 's'} ready for review.`);
   } catch (e) {
-    if (btn) btn.disabled = false;
+    _restore();
     reportError('Clarify', 'Clarification request failed', e.message);
   }
 }

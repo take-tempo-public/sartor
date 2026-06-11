@@ -200,7 +200,7 @@
              since clicking them mid-flight previously fired the
              "Run ANALYZE first" toast (wizardGoTo gate on lastContextPath). -->
         <div class="form-row hidden" id="analysisActions" style="margin-top:12px">
-          <button class="cb-btn cb-bg-teal" onclick="wizardGoTo(2)">Continue to Clarify →</button>
+          <button class="cb-btn cb-bg-teal" onclick="continueToClarify()">Continue to Clarify →</button>
           <button class="cb-btn cb-bg-amber" onclick="wizardGoTo(3); skipClarifications()" id="btnSkipFromAnalysis">Skip to Compose →</button>
         </div>
       </div>
@@ -223,6 +223,12 @@
           <div class="form-row" id="clarifyStartRow">
             <button class="cb-btn cb-bg-violet" id="btnClarify" onclick="runClarify()">Get clarifying questions</button>
             <button class="cb-btn cb-bg-amber" onclick="skipClarifications()">Skip</button>
+          </div>
+          <!-- In-flight placeholder shown while /api/clarify runs (esp. when
+               reached via "Continue to Clarify →", which fetches directly). -->
+          <div class="analysis-pending hidden" id="clarifyPending" aria-live="polite">
+            <span class="analysis-pending-dot" aria-hidden="true"></span>
+            Generating clarifying questions…
           </div>
           <div id="clarifyQuestions" class="hidden"></div>
           <div id="clarifyActions" class="hidden form-row">

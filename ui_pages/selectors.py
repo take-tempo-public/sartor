@@ -49,6 +49,10 @@ class Wizard:
     # the only handle. Centralized here so a copy edit is a one-file change.
     CONTINUE_TO_CLARIFY = "text=Continue to Clarify →"
     PANEL_CLARIFY = "#panelClarify"
+    # The "Get clarifying questions / Skip" row — the manual entry kept for a
+    # direct rail click into Step 2. "Continue to Clarify →" bypasses it
+    # (finding #6), so it must be hidden on that path.
+    CLARIFY_START_ROW = "#clarifyStartRow"
     CLARIFY_BUTTON = "#btnClarify"
     CLARIFY_QUESTIONS = "#clarifyQuestions"
     CLARIFY_QUESTION_TEXTAREA = "#clarifyQuestions textarea"

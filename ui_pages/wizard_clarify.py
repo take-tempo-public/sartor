@@ -13,6 +13,14 @@ class WizardClarifyPage(BasePage):
             Wizard.CLARIFY_QUESTION_TEXTAREA, state="visible", timeout=LLM_TIMEOUT_MS
         )
 
+    def wait_for_questions(self) -> None:
+        """Wait for the clarifying-question textareas WITHOUT clicking — the
+        "Continue to Clarify →" CTA fetches them directly (finding #6), so the
+        manual #btnClarify is bypassed on that path."""
+        self.page.wait_for_selector(
+            Wizard.CLARIFY_QUESTION_TEXTAREA, state="visible", timeout=LLM_TIMEOUT_MS
+        )
+
     def answer_first(self, text: str, delay: int = 8) -> None:
         first = self.page.locator(Wizard.CLARIFY_QUESTION_TEXTAREA).first
         first.click()
