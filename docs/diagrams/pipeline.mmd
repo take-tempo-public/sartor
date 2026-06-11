@@ -27,6 +27,7 @@ sequenceDiagram
     Note over U,FS: Step 1 — Analyze
     U->>FE: paste JD, click ANALYZE
     FE->>APP: POST /api/analyze
+    APP->>DB: insert Application (status=draft) + ApplicationRun (iter 0)
     APP->>ANL: analyze(ctx, jd)
     Note over ANL: phase: extraction
     ANL->>HK: call_kind="analyze_extraction" (~10s, ~1.1k out)
@@ -88,7 +89,7 @@ sequenceDiagram
     ANL-->>APP: parsed
     APP->>FS: save_iteration_context() → context_*_iter1.json
     APP->>FS: write resume_*.docx / .pdf / .md
-    APP->>DB: insert ApplicationRun
+    APP->>DB: write generated output back onto the iter-0 ApplicationRun
     APP-->>FE: paths + previews
     FE-->>U: Step 6 panel with downloads
 

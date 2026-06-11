@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — outcome capture completed + candidate memory goes live (`feat/outcome-capture-complete`, B.8 Part 1 + KW7)
+
+The Sprint 6.0 kickoff walk found the Applications block showing "no
+applications" after a completed tailor+download, and candidate memory empty
+after clarify+interview (KW7). Diagnosis against the walkthrough evidence:
+the `Application` row **was** created (at analyze) but the UI never
+re-rendered the block after user-select; worse, nothing in the UI could ever
+set `status='submitted'`, and the outcome buttons render only on submitted
+cards — so the whole outcome funnel was unreachable. Candidate memory was
+designed-but-unwired: the table, read route, panel, and promote path all
+existed, but no code wrote `clarification` rows from the wizard.
+
+- **KW7 fix (UI sync):** `refreshApplications()` now fires when analyze
+  creates the row and when generation updates it — the block tracks the
+  wizard instead of its pre-analyze snapshot.
+- **Outcome funnel entry (B.8 Part 1):** draft cards gain a **Mark
+  submitted** action, and Step 6 surfaces a "Submitted this application?"
+  nudge after a successful download — the moment the user takes the file to
+  go apply. Outcome buttons (interview / rejection / withdrew) are unchanged
+  and now reachable. **Data-model decision (user-approved 2026-06-10): lean
+  single-status, `interview` is terminal** — the product's signal is "this
+  résumé got a callback", not job-hunt bookkeeping past that point. No
+  schema change; the v2 `ApplicationOutcome` event table remains open.
+- **Queryable:** `GET /api/users/<u>/applications` accepts a validated
+  `?status=` filter (single or comma-separated) — the programmatic query
+  surface for the B.8 Part 2 learning layer — and the Prior-applications
+  panel gains a status filter select driving it.
+- **Candidate memory write path:** `/api/answer-clarifications` now mirrors
+  answered Q&A into the `clarification` table (additive upsert keyed on
+  candidate + application + normalized question; promoted rows never
+  clobbered; legacy file-only contexts unaffected; best-effort — a memory
+  failure never fails the submit). The memory panel populates live after
+  clarify/interview answers, and the existing promote-to-bullet path is now
+  reachable for wizard-sourced answers. LLM `context_probe` questions file
+  under `experience_probe` (the DB kind enum predates them); `target_gap`
+  keeps the provenance.
+
+No new dependency. No prompt change (`PROMPT_VERSION` unchanged).
+
 ### Fixed — generate() can no longer silently alter or duplicate job dates (`fix/generate-date-grounding`, KW6)
 
 The Sprint 6.0 kickoff walk caught the iteration regenerate "reconciling"

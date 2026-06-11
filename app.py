@@ -814,6 +814,98 @@ def run_clarify():
     })
 
 
+def _persist_clarifications_to_memory(context_set: ContextSet, answered: dict[str, str]) -> int:
+    """Mirror answered clarifications into the cross-application candidate-memory
+    table (`clarification`) — the live write path the memory panel reads
+    (`/api/users/<u>/clarifications`) and promote-to-bullet consumes (KW7 / B.8).
+
+    Additive upsert scoped to this application, keyed on
+    (candidate_id, origin_application_id, normalized question). Re-submitting
+    updates the stored answer; rows are never deleted here — memory is the
+    durable record of every Q&A the candidate has answered (a later "skip"
+    clears the context map, not memory). Rows already promoted to a bullet are
+    left untouched so promoted history can't be silently rewritten.
+
+    Only corpus-backed contexts participate: the identity chain is
+    context.application_run_id → ApplicationRun → Application → Candidate, with
+    belt-and-suspenders `_safe_username` on the resolved owner. Legacy
+    file-only contexts (no run id) are a no-op. Returns rows written/updated.
+    """
+    run_pk = context_set.get("application_run_id")
+    if not isinstance(run_pk, int) or not answered:
+        return 0
+    questions = context_set.get("clarification_questions") or []
+    if not questions:
+        return 0
+
+    from db.models import Application, ApplicationRun, Candidate, Clarification
+    from db.session import get_session, init_db
+    from onboarding.corpus_import import _normalize as _norm_qa
+
+    # Kinds outside the DB CHECK enum (migration 0001) need mapping: a
+    # context_probe surfaces transferable *experience* (CLARIFY_SYSTEM_PROMPT),
+    # so it files as experience_probe — target_gap keeps the "Context signal: …"
+    # provenance. Anything else unknown follows the corpus-import precedent
+    # (onboarding/corpus_import.py `_VALID_KINDS` → "manual").
+    db_kinds = {"experience_probe", "scope_probe", "iteration_probe", "outcome_probe", "manual"}
+
+    init_db()
+    session = get_session()
+    try:
+        run = session.query(ApplicationRun).filter_by(id=run_pk).first()
+        if run is None:
+            return 0
+        app_row = session.query(Application).filter_by(id=run.application_id).first()
+        if app_row is None:
+            return 0
+        candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return 0
+
+        existing: dict[str, Clarification] = {}
+        for row in session.query(Clarification).filter_by(
+            candidate_id=candidate.id, origin_application_id=app_row.id,
+        ):
+            existing[_norm_qa(row.question)] = row
+
+        written = 0
+        for q in questions:
+            qid = q.get("id")
+            qtext = (q.get("text") or "").strip()
+            if not qid or not qtext or qid not in answered:
+                continue
+            answer = answered[qid]
+            existing_row = existing.get(_norm_qa(qtext))
+            if existing_row is not None:
+                if existing_row.is_promoted_to_bullet or existing_row.answer == answer:
+                    continue
+                existing_row.answer = answer
+                written += 1
+                continue
+            kind = (q.get("kind") or "").strip()
+            if kind not in db_kinds:
+                kind = "experience_probe" if kind == "context_probe" else "manual"
+            new_row = Clarification(
+                candidate_id=candidate.id,
+                origin_application_id=app_row.id,
+                origin_run_id=run.id,
+                question=qtext,
+                answer=answer,
+                kind=kind,
+                target_gap=(q.get("target_gap") or "").strip() or None,
+            )
+            session.add(new_row)
+            existing[_norm_qa(qtext)] = new_row
+            written += 1
+        session.commit()
+        return written
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 @app.route("/api/answer-clarifications", methods=["POST"])
 def submit_clarifications():
     """Persist the candidate's free-form answers to the clarifying questions.
@@ -821,7 +913,8 @@ def submit_clarifications():
     Answers are merged into context_set["clarifications"] (question_id -> text).
     Unanswered ids are simply absent — generate() omits the matching question
     from the prompt. This route is idempotent: re-submitting overwrites the
-    existing answers map.
+    existing answers map. Answered pairs are additionally mirrored into the
+    candidate-memory table via `_persist_clarifications_to_memory` (best-effort).
     """
     data = request.json
     context_path = data.get("context_path", "")
@@ -866,11 +959,28 @@ def submit_clarifications():
     context_set["clarifications"] = cleaned
     cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
 
+    # KW7 / B.8: mirror answered pairs into candidate memory. Best-effort —
+    # the context file is generation's source of truth; a memory-write failure
+    # must never fail the submit (it is logged loudly instead).
+    memory_rows = 0
+    try:
+        memory_rows = _persist_clarifications_to_memory(context_set, cleaned)
+    except Exception:
+        logger.exception(
+            "Candidate-memory persist failed for %s (answers are saved in context)",
+            safe_user,
+        )
+
     logger.info(
-        "Stored %d clarification answers (out of %d questions) for %s",
-        len(cleaned), len(valid_ids), safe_user,
+        "Stored %d clarification answers (out of %d questions) for %s; %d memory rows",
+        len(cleaned), len(valid_ids), safe_user, memory_rows,
     )
-    return jsonify({"ok": True, "answered": len(cleaned), "total": len(valid_ids)})
+    return jsonify({
+        "ok": True,
+        "answered": len(cleaned),
+        "total": len(valid_ids),
+        "memory_rows": memory_rows,
+    })
 
 
 @app.route("/api/iterate-clarify", methods=["POST"])
@@ -4512,6 +4622,12 @@ def pending_counts(username: str):
 # Phase D.3: Applications list routes
 # ---------------------------------------------------------------------------
 
+# Canonical lifecycle statuses (migration 0007; semantics table in
+# docs/dev/RELEASE_ARC.md, agreed 2026-05-29). `interview` is terminal —
+# the product's signal is "this résumé got a callback", not job-hunt
+# bookkeeping past that point (B.8 Part 1 decision, 2026-06-10).
+_VALID_APP_STATUSES = frozenset({"draft", "submitted", "interview", "rejected", "withdrawn"})
+
 
 def _application_summary_dict(app_row, runs, pending_proposal_count: int) -> dict:
     """Compact application row for the Applications tab list view."""
@@ -4536,13 +4652,30 @@ def _application_summary_dict(app_row, runs, pending_proposal_count: int) -> dic
 
 @app.route("/api/users/<username>/applications", methods=["GET"])
 def list_applications(username: str):
-    """Return all applications for this candidate, newest-first by updated_at."""
+    """Return all applications for this candidate, newest-first by updated_at.
+
+    Optional `?status=` filter (single value or comma-separated, e.g.
+    `?status=interview` or `?status=interview,rejected`) narrows to those
+    lifecycle statuses — the programmatic query surface for the B.8
+    outcome-learning layer. Unknown statuses → 400.
+    """
     from db.models import Application, Candidate, ProposalReview
     from db.session import get_session, init_db
 
     safe_user = _safe_username(username)
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
+
+    raw_status = (request.args.get("status") or "").strip().lower()
+    wanted_statuses: set[str] = set()
+    if raw_status:
+        wanted_statuses = {s.strip() for s in raw_status.split(",") if s.strip()}
+        invalid = wanted_statuses - _VALID_APP_STATUSES
+        if invalid:
+            return jsonify({
+                "error": f"status must be among {sorted(_VALID_APP_STATUSES)}; "
+                         f"got {sorted(invalid)}",
+            }), 400
 
     # Wrapped with logger.exception (2026-05-26) — see list_bundled_personas.
     try:
@@ -4555,9 +4688,10 @@ def list_applications(username: str):
                 # a bare array; the needs-onboarding case is the discriminated
                 # object the frontend branches on before treating it as a list.
                 return jsonify({"applications": [], "needs_onboarding": True})
-            rows = session.query(Application).filter_by(
-                candidate_id=candidate.id,
-            ).order_by(Application.updated_at.desc()).all()
+            query = session.query(Application).filter_by(candidate_id=candidate.id)
+            if wanted_statuses:
+                query = query.filter(Application.status.in_(wanted_statuses))
+            rows = query.order_by(Application.updated_at.desc()).all()
             out = []
             for app_row in rows:
                 runs = sorted(app_row.runs, key=lambda r: r.iteration)
@@ -4741,9 +4875,8 @@ def update_application_status(application_id: int):
 
     data = request.json or {}
     status = (data.get("status") or "").strip().lower()
-    valid = {"draft", "submitted", "interview", "rejected", "withdrawn"}
-    if status not in valid:
-        return jsonify({"error": f"status must be one of {sorted(valid)}"}), 400
+    if status not in _VALID_APP_STATUSES:
+        return jsonify({"error": f"status must be one of {sorted(_VALID_APP_STATUSES)}"}), 400
 
     init_db()
     session = get_session()

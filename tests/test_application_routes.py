@@ -218,6 +218,31 @@ class TestListApplications:
         r = client.get("/api/users/ghost/applications")
         assert r.status_code == 400
 
+    def test_status_filter_returns_subset(self, app_app):
+        # ?status= is the programmatic query surface for the B.8 learning layer.
+        cid = _seed_candidate()
+        _seed_application(cid, title="Draft app")
+        sub = _seed_application(cid, title="Sub app", jd_text="JD two",
+                                status="submitted")
+        iv = _seed_application(cid, title="Int app", jd_text="JD three",
+                               status="interview")
+
+        client = app_app.app.test_client()
+        body = client.get("/api/users/alice/applications?status=interview").get_json()
+        assert [a["id"] for a in body] == [iv]
+
+        body = client.get(
+            "/api/users/alice/applications?status=interview,submitted"
+        ).get_json()
+        assert {a["id"] for a in body} == {sub, iv}
+
+    def test_status_filter_unknown_value_400(self, app_app):
+        _seed_candidate()
+        client = app_app.app.test_client()
+        r = client.get("/api/users/alice/applications?status=offer")
+        assert r.status_code == 400
+        assert "offer" in r.get_json()["error"]
+
 
 # ---------------------------------------------------------------------------
 # GET /api/applications/<id>
