@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — "Continue to Clarify" no longer asks clarify/skip twice (`fix/clarify-double-question`, #6)
+
+The analyze→clarify gate presented the clarify-vs-skip choice **twice**. The
+analysis panel already shows it ("Continue to Clarify →" / "Skip to Compose →"),
+but "Continue to Clarify" only navigated to Step 2 and showed the
+`#clarifyStartRow` row — a second "Get clarifying questions / Skip" prompt for a
+user who had already chosen to clarify. The onboarding walk (finding #6) flagged
+this as feeling broken.
+
+- **One action:** "Continue to Clarify →" now navigates to Step 2 **and** fetches
+  the questions directly (new `continueToClarify()` wrapper). A pending indicator
+  fills the panel while `/api/clarify` runs; the row is restored on failure so
+  the user can retry. An idempotency guard skips re-fetching when the current
+  analysis already produced questions (back-nav / re-click never re-spends the
+  LLM call).
+- **Untouched paths:** a direct rail click / back-nav into Step 2 still shows the
+  `#clarifyStartRow` row as its single, legitimate prompt; the post-question
+  `Skip` and `Submit answers, continue →` controls are unchanged. The KW4
+  `merge:true` / `merge:false` answer semantics are preserved byte-for-byte
+  (this fix only changes how clarify is *entered*).
+- Regression-tested in the UX tier
+  (`tests/ux/regression/test_20260611_clarify_no_double_prompt.py`): the CTA
+  renders questions with no second click and `#clarifyStartRow` is hidden.
+
+No new dependency. No prompt change (`PROMPT_VERSION` unchanged — front-end flow
+only; no LLM route or template touched).
+
 ### Fixed — iterate-round clarify answers no longer drop analyze-round answers (`fix/clarify-generates-bullets`, KW4)
 
 `/api/answer-clarifications` (`submit_clarifications`) did a whole-map replace

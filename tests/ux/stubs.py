@@ -103,6 +103,25 @@ def fake_recommend_summaries(client: Any, ctx: Any, username: str = "",
     return {"recommended_item_id": None, "rationale": ""}
 
 
+def fake_clarify(client: Any, context_set: Any, analysis: Any,
+                 username: str = "", run_id: str = "") -> dict[str, Any]:
+    """Mirror `analyzer.clarify`'s return shape ({questions, reasoning}) so the
+    /api/clarify route runs for real (persists questions onto the context) while
+    staying deterministic + offline. Two questions, each with the id/text/kind/
+    target_gap keys `_renderClarifyQuestions` (static/app.js) reads."""
+    return {
+        "questions": [
+            {"id": "q1", "kind": "experience_probe",
+             "text": "Have you run Kubernetes in production?",
+             "target_gap": "Essential skill not evidenced in the resume"},
+            {"id": "q2", "kind": "scope_probe",
+             "text": "How large was the team you led on the Kafka migration?",
+             "target_gap": "Leadership scope flagged as ambiguous"},
+        ],
+        "reasoning": "Two probes: one missing essential skill, one scope ambiguity.",
+    }
+
+
 def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
     """Make every analyzer entry point the wizard can hit deterministic +
     offline. Apply before navigating."""
@@ -112,3 +131,6 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(ux_app, "_get_client", lambda: None)
     monkeypatch.setattr(analyzer, "recommend_bullets", fake_recommend_bullets)
     monkeypatch.setattr(analyzer, "recommend_summaries", fake_recommend_summaries)
+    # `clarify` is a top-level import in app.py (called bare at app.py:790) →
+    # patch on the app module, like analyze_streaming.
+    monkeypatch.setattr(ux_app, "clarify", fake_clarify)
