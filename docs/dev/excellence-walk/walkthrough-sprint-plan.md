@@ -1,19 +1,20 @@
 <!--
-  TEMPORARY / STANDALONE ARTIFACT — not project doc state.
-  Location: output/ (gitignored via `output/*`), so it will NOT be picked up by
-  the in-flight `feat/run-eval-from-console` sprint or any commit.
-  Intent (user, 2026-06-07): a downloadable copy of the curated walk-through
-  sprint plan, to survive until it is folded into docs/dev/RELEASE_ARC.md +
-  docs/dev/RELEASE_CHECKLIST.md AFTER the currently-running sprint closes.
-  Source of truth until then: this file + the plan file at
-  ~/.claude/plans/my-first-walk-through-surfaced-curried-rabin.md
+  SUPERSEDED HISTORICAL ARTIFACT — the fold-in promised below happened on
+  2026-06-08: RELEASE_ARC.md §Phase 4.5 now carries the sprint decomposition
+  (6.0–6.6 + WS-4) and is the single source of truth. This copy is preserved
+  in excellence-walk/ as raw walkthrough source for the WS-4a wiki ingest;
+  it may retire into the wiki's raw/ layer afterwards. Do not plan from it.
+  (The original header claimed a gitignored output/ location — it was
+  promoted into git with the rest of excellence-walk/ on 2026-06-08.)
 -->
 
 # callback. — v1.0.5 walk-through → sprint plan (working copy)
 
-> **Status:** TEMPORARY working copy. Fold into `RELEASE_ARC.md` +
-> `RELEASE_CHECKLIST.md` after the current sprint (`feat/run-eval-from-console`)
-> closes. Captured 2026-06-07.
+> **Status:** SUPERSEDED (2026-06-10). Folded into `RELEASE_ARC.md` §Phase 4.5 +
+> `RELEASE_CHECKLIST.md` on 2026-06-08 — **plan from those, not this file.**
+> Kept as preserved excellence-walk raw source (per the WS-4a ingest plan);
+> the §2 24-item findings table remains the v1.0.5-walk numbering (#1–#24)
+> that RELEASE_ARC references. Captured 2026-06-07.
 > **Source:** the 24-item walk-through + RELEASE_ARC / RELEASE_CHECKLIST /
 > V1_0_5_VERIFICATION reconciliation done this session.
 

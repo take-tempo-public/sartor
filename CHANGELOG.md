@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs — Sprint 6.0 kickoff-walk harvest recorded (`docs/sprint6-walkthrough-findings`)
+
+The first v1.0.6 kickoff walkthrough completed end-to-end (sprint-1 blockers
+cleared the hard stops) and produced **11 findings (KW1–KW13)**, now recorded in
+`docs/dev/RELEASE_ARC.md` §Phase 4.5 under Sprint 6.0 and triaged into the
+existing 6.x buckets: three correctness defects (KW6 generate-date integrity,
+KW7 applications/memory not updating → B.8 gate, KW4 clarify-no-bullets) join
+Sprint 6.1 as new branches; KW2 bulk accept-all-pending joins 6.3; KW1 confirms
+the 6.4 smart-landing; KW3/KW9/KW10 fully spec the 6.5 help primitive
+(first-view modal + persistent (i)-circle) and the new-user first-run modal
+sequence; KW13 panel redesign joins 6.2. Docs only — no code change.
+
 ### Fixed — onboarding E2E-walkthrough blockers, sprint 1 (`fix/onboarding-e2e-blockers`)
 
 Five first-run onboarding issues surfaced by the end-to-end walkthrough:
