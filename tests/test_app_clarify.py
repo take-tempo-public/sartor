@@ -140,13 +140,24 @@ class TestClarifyRoute:
 
 
 class TestAnswerClarificationsRoute:
-    def _seed_questions(self, context_path: Path):
-        """Pre-populate clarification_questions on the saved context."""
+    def _seed_questions(self, context_path: Path, include_iter: bool = False):
+        """Pre-populate clarification_questions on the saved context.
+
+        With include_iter=True, also append an iteration-round question
+        (iter1_q1) so the two-round merge behavior can be exercised — the
+        iterate interview appends its own questions to the same list.
+        """
         ctx = json.loads(context_path.read_text(encoding="utf-8"))
-        ctx["clarification_questions"] = [
+        questions = [
             {"id": "q1", "text": "Q1?", "kind": "experience_probe", "target_gap": "k8s"},
             {"id": "q2", "text": "Q2?", "kind": "scope_probe", "target_gap": "scope"},
         ]
+        if include_iter:
+            questions.append(
+                {"id": "iter1_q1", "text": "Iter Q1?", "kind": "iteration_probe",
+                 "target_gap": "draft weakness"},
+            )
+        ctx["clarification_questions"] = questions
         context_path.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
 
     def test_missing_context_path_returns_400(self, app_client):
@@ -231,6 +242,79 @@ class TestAnswerClarificationsRoute:
         assert saved["clarifications"] == {
             "q1": "revised answer", "q2": "added later",
         }
+
+    def test_merge_preserves_prior_round_answers(self, app_client):
+        """KW4 regression: the iteration interview submits ONLY its own
+        textareas (`_collectIterateClarifyAnswers`). With merge:true the route
+        must keep the analyze-round answers already on the context, so
+        generate() at iter>=1 reads the union as first-person ground truth.
+
+        Pre-fix the route did a whole-map replace, so the 2nd-round submit
+        dropped q1/q2 — this test fails on the pre-fix tree and guards the fix.
+        """
+        client, context_path, _ = app_client
+        self._seed_questions(context_path, include_iter=True)
+
+        # Round 1 — analyze-time answers.
+        client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"q1": "Lead implementer.", "q2": "Shipped to prod."},
+            "merge": True,
+        })
+        # Round 2 — iteration interview submits only its own answer.
+        resp = client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"iter1_q1": "Reduced p99 latency by 40%."},
+            "merge": True,
+        })
+        assert resp.status_code == 200
+        # `answered` reports this-submit count, not the cumulative total.
+        assert resp.get_json()["answered"] == 1
+
+        saved = json.loads(context_path.read_text(encoding="utf-8"))
+        assert saved["clarifications"] == {
+            "q1": "Lead implementer.",
+            "q2": "Shipped to prod.",
+            "iter1_q1": "Reduced p99 latency by 40%.",
+        }
+
+    def test_merge_false_replaces_and_clears(self, app_client):
+        """The skip path posts answers={} merge=false to deliberately clear
+        previously-saved answers (replace semantics)."""
+        client, context_path, _ = app_client
+        self._seed_questions(context_path)
+
+        client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"q1": "saved", "q2": "saved"},
+            "merge": True,
+        })
+        resp = client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {},
+            "merge": False,
+        })
+        assert resp.status_code == 200
+        saved = json.loads(context_path.read_text(encoding="utf-8"))
+        assert saved["clarifications"] == {}
+
+    def test_default_merges_when_flag_absent(self, app_client):
+        """Omitting `merge` defaults to merge (the safe behavior): two single
+        posts of different ids accumulate rather than the 2nd replacing the
+        1st. Fails on the pre-fix tree (replace default)."""
+        client, context_path, _ = app_client
+        self._seed_questions(context_path)
+
+        client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"q1": "first id"},
+        })
+        client.post("/api/answer-clarifications", json={
+            "context_path": str(context_path),
+            "answers": {"q2": "second id"},
+        })
+        saved = json.loads(context_path.read_text(encoding="utf-8"))
+        assert saved["clarifications"] == {"q1": "first id", "q2": "second id"}
 
 
 # ---------------------------------------------------------------------------

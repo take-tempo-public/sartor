@@ -910,16 +910,24 @@ def _persist_clarifications_to_memory(context_set: ContextSet, answered: dict[st
 def submit_clarifications():
     """Persist the candidate's free-form answers to the clarifying questions.
 
-    Answers are merged into context_set["clarifications"] (question_id -> text).
-    Unanswered ids are simply absent — generate() omits the matching question
-    from the prompt. This route is idempotent: re-submitting overwrites the
-    existing answers map. Answered pairs are additionally mirrored into the
+    Answers are merged by id into context_set["clarifications"]
+    (question_id -> text) by default, so a later round (e.g. the iteration
+    interview, which submits only its own textareas) preserves the analyze-round
+    answers already on the context. Pass merge=false to replace the whole map
+    instead — the deliberate "skip clears prior answers" path. Unanswered ids
+    are simply absent — generate() omits the matching question from the prompt.
+    Whitespace-only answers are dropped and cannot un-answer a prior key; use
+    merge=false to clear. Answered pairs are additionally mirrored into the
     candidate-memory table via `_persist_clarifications_to_memory` (best-effort).
     """
     data = request.json
     context_path = data.get("context_path", "")
     username = data.get("username", "")
     answers = data.get("answers", {}) or {}
+    # Default merge=True so the safe behavior (accumulate by id) is the default:
+    # a caller that omits the flag can't silently drop prior-round answers. The
+    # skip path opts out with merge=false to clear the map.
+    merge = bool(data.get("merge", True))
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
     if not isinstance(answers, dict):
@@ -956,7 +964,15 @@ def submit_clarifications():
         if trimmed:
             cleaned[qid] = trimmed
 
-    context_set["clarifications"] = cleaned
+    if merge:
+        # Merge by id: a later round (the iteration interview submits only its
+        # own textareas) must not wipe the analyze-round answers already saved
+        # on the context — generate() at iter>=1 reads the union as ground truth.
+        existing = context_set.get("clarifications") or {}
+        context_set["clarifications"] = {**existing, **cleaned}
+    else:
+        # Deliberate replace/clear — the skip path posts answers={} merge=false.
+        context_set["clarifications"] = cleaned
     cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
 
     # KW7 / B.8: mirror answered pairs into candidate memory. Best-effort —

@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — iterate-round clarify answers no longer drop analyze-round answers (`fix/clarify-generates-bullets`, KW4)
+
+`/api/answer-clarifications` (`submit_clarifications`) did a whole-map replace
+of `context["clarifications"]`. The iteration interview submits **only** its own
+textareas (`_collectIterateClarifyAnswers`), so a 2nd-round submit wiped the
+analyze-round answers from the new context file — and `generate()` at iter≥1
+lost them as first-person ground truth (the JS comment claimed "merges by id";
+the route did not). Surfaced 2026-06-10 while building
+`feat/outcome-capture-complete`; this is the mechanism behind the KW4 report
+that "a later clarify round adds nothing".
+
+- **Merge by id (default):** the route now merges answers into the existing map
+  (`merge` defaults to `True`), so a later round preserves earlier answers. The
+  deliberate skip-clear path passes `merge:false` to replace/clear, and the
+  three JS call sites (`submitClarifications`,
+  `submitIterateClarificationsAndGenerate`, `skipClarifications`) declare their
+  merge intent explicitly. Whitespace-only answers are dropped and cannot
+  un-answer a prior key — use `merge:false` to clear.
+- **Candidate-memory mirror unaffected** — the additive DB upsert is keyed by
+  question and persisted independently of the context-map merge.
+- Regression-tested across two clarify rounds (`tests/test_app_clarify.py`).
+
+No new dependency. No prompt change (`PROMPT_VERSION` unchanged — only the data
+`generate()` reads is corrected, not the prompt template).
+
 ### Added — outcome capture completed + candidate memory goes live (`feat/outcome-capture-complete`, B.8 Part 1 + KW7)
 
 The Sprint 6.0 kickoff walk found the Applications block showing "no
