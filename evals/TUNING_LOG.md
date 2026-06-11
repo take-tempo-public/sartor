@@ -196,6 +196,92 @@ prevent re-running them.
 
 ---
 
+## 2026-06-10 — fix/generate-date-grounding (KW6): date-immutability rules + deterministic heading-date guard (`2026-06-01.4` → `2026-06-10.1`)
+
+### What changed
+
+Prompt side (`analyzer.py`, all in one commit with the version bump):
+
+- **SYSTEM_PROMPT** — new ALWAYS/NEVER rule: never alter, swap, or "reconcile"
+  employment date ranges; reordering experiences for relevance never changes
+  their dates; a shifted or duplicated range is instantly verifiable fabrication.
+- **`<corpus_mode>` contract** (`_build_generate_prompt`) — the `<experience>`
+  `dates` attribute is now named IMMUTABLE ground truth: whichever title is
+  used, the heading must reproduce that experience's exact range; never merge
+  or harmonize ranges across experiences, even on a regeneration pass.
+- **GROUNDING CHECK worked example** — new OK / NOT-OK date pair (two adjacent
+  roles at one company; OK keeps each range verbatim when reordered; NOT-OK
+  stamps both with one range), per the AGENTS.md "new failure mode ⇒ worked
+  example" rule.
+
+Guard side (deterministic, warn-only — no LLM output is ever mutated):
+
+- New `hardening.compute_date_grounding(generated_resume, experiences)` —
+  parses `### …\t<range>` headings in the experience section and requires the
+  multiset of (start_year, end_year) ranges to be contained in the corpus's
+  true-range multiset. Catches both alteration (range in no experience) and
+  duplication (one range stamped on two headings) without fuzzy title matching.
+- Both generate routes (`/api/generate` + streaming) run it in corpus mode via
+  `app._check_date_grounding`: flags append a plain-language warning to
+  `proofread_notes` (already rendered by the preview UI) and ride a new
+  `date_grounding` response field. Best-effort, mirrors the ATS round-trip
+  pattern; legacy (non-corpus) contexts skip it (`None`).
+
+### Why
+
+KW6 (Sprint 6.0 kickoff walk, HIGH · output integrity — the core no-invention
+value prop). Reproduced from the e2e instance's saved chain
+(`callback-e2e/output/cooksey/`): corpus dates correct; **fresh generation
+correct**; the **iteration-1 regenerate** reordered experiences by JD relevance
+and rewrote one Intel role's range 2012–2016 → 2016–2018, duplicating the
+adjacent role's range while 2012–2016 vanished — unprompted by any
+clarification or refinement note. Nothing forbade it: the corpus-mode contract
+made bullets immutable but never mentioned dates, and every deterministic
+check scanned bullet lines only (heading dates were invisible).
+`compute_date_grounding` run against that real chain: corrupted iter-1 draft →
+`flag` (the duplicated `2016 – 2018`); clean fresh draft → `pass`.
+
+### Result
+
+Smoke (`--suite synthetic --subset smoke`, grounding rubric only):
+
+| fixture | `2026-06-01.4` (20260602_002239Z / 20260602_003107Z) | `2026-06-10.1` (20260611_033353Z) |
+|---|---|---|
+| data-scientist-junior | 4.8 / 4.2 | **4.8** (pass) |
+| pm-senior | 4.8 / 4.8 | **4.6** (pass) |
+| sre-mid-level | 4.5 / 4.8 | **4.7** (pass) |
+| mean | 4.70 / 4.60 | **4.70** |
+
+No regression — new mean matches the better of the two baseline runs; all
+fixtures ≥ the 4.5 grounding floor. Synthetic fixtures are legacy-mode (no
+`career_corpus`), so the date guard itself is exercised by unit tests
+(`tests/test_hardening.py::TestComputeDateGrounding`, incl. the KW6 regression
+shape) and route tests
+(`tests/test_app_iteration.py::TestGenerateDateGrounding`), not by this suite.
+
+### What we learned
+
+- The model treats heading metadata (dates) as editorial surface unless told
+  otherwise — "bullets are immutable" does NOT generalize; each immutable fact
+  class must be named explicitly in the contract.
+- Iteration regenerates are the risk window: corpus mode regenerates from
+  scratch each pass, so a relevance re-ordering can tempt the model into
+  "harmonizing" dates to keep the sequence looking chronological.
+- Deterministic guards must cover every output surface class; the
+  fabricated-specifics detector scanning only bullet lines left headings
+  ungoverned.
+
+### Open questions / future tuning targets
+
+- A corpus-mode eval fixture would let the smoke suite exercise date grounding
+  end-to-end (today: unit/route tests only). Candidate for the eval-apparatus
+  backlog.
+- The duplication flag lands on the *second* heading consuming a range in
+  document order — fine for a warning, but a per-experience title match would
+  pinpoint the altered heading if this ever needs to gate.
+
+---
+
 ## 2026-06-06 — eval/grounding-metric-l0: L0 fabricated-specifics + groundedness composite (metric ride-along, NO version bump)
 
 ### What changed

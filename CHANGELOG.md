@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — generate() can no longer silently alter or duplicate job dates (`fix/generate-date-grounding`, KW6)
+
+The Sprint 6.0 kickoff walk caught the iteration regenerate "reconciling"
+employment dates: it reordered experiences by JD relevance and rewrote one
+role's range onto its neighbor (two titles sharing `2016 – 2018` while
+`2012 – 2016` vanished), though the corpus was correct. Root cause: the
+corpus-mode prompt contract made *bullets* immutable but never mentioned
+*dates*, and every deterministic check scanned bullet lines only — heading
+date ranges were ungoverned on both sides.
+
+- **Prompt** (`analyzer.py`): new SYSTEM_PROMPT ALWAYS/NEVER rule (dates are
+  immutable facts; reordering never rewrites them), the `<corpus_mode>`
+  contract now names the `dates` attribute immutable ground truth, and the
+  GROUNDING CHECK gains an OK / NOT-OK worked date pair.
+  **`PROMPT_VERSION` `2026-06-01.4` → `2026-06-10.1`** (same commit). Smoke
+  eval: no grounding regression (mean 4.70, all fixtures pass; see
+  `evals/TUNING_LOG.md` 2026-06-10 entry).
+- **Guard** (`hardening.compute_date_grounding`, deterministic, warn-only):
+  heading date ranges in the generated experience section must be a
+  sub-multiset of the corpus's true ranges — catches both alteration and
+  duplication. Both generate routes surface flags as plain-language
+  `proofread_notes` warnings (no frontend change needed) plus a structured
+  `date_grounding` response field; the LLM output itself is never mutated and
+  generation is never blocked. Validated against the real walkthrough chain:
+  the corrupted iteration draft flags, the clean fresh draft passes.
+
+No new dependency.
+
 ### Docs — Sprint 6.0 kickoff-walk harvest recorded (`docs/sprint6-walkthrough-findings`)
 
 The first v1.0.6 kickoff walkthrough completed end-to-end (sprint-1 blockers

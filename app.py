@@ -37,6 +37,7 @@ from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
 from hardening import (
     ContextSet,
+    compute_date_grounding,
     compute_iteration_signals,
     save_context_set,
     save_iteration_context,
@@ -446,6 +447,48 @@ def _persist_corpus_generation_to_db(
         raise
     finally:
         session.close()
+
+
+def _check_date_grounding(context_set: ContextSet, result: dict) -> dict | None:
+    """KW6 guard: flag generated heading date ranges that don't trace to the
+    corpus (altered or duplicated — the iteration regenerate has been observed
+    "reconciling" one experience's range onto another while re-sequencing).
+
+    Warn-only by design: appends a plain-language note per flagged heading to
+    `result["proofread_notes"]` (already rendered by the preview UI) and returns
+    the structured findings for the response's `date_grounding` field. NEVER
+    mutates resume content and never blocks the generate flow — best-effort,
+    mirroring the ATS round-trip check. Returns None in legacy (non-corpus)
+    mode, where there is no structured date ground truth to compare against.
+    """
+    corpus = context_set.get("career_corpus")
+    if not corpus:
+        return None
+    try:
+        findings = compute_date_grounding(result.get("resume_content", ""), corpus)
+    except Exception as exc:
+        logger.warning("Date-grounding check failed to run: %s", exc)
+        return {"status": "not_run", "checked": 0, "flagged": [],
+                "corpus_ranges": [], "notes": [f"check raised: {exc}"]}
+    if findings["status"] == "flag":
+        logger.warning(
+            "Date-grounding flag on generated resume: %s (corpus ranges: %s)",
+            findings["flagged"], findings["corpus_ranges"],
+        )
+        notes = result.setdefault("proofread_notes", [])
+        for f in findings["flagged"]:
+            # A duplicated range flags the SECOND heading consuming it in
+            # document order — the wording stays neutral about which heading
+            # the model actually altered.
+            notes.append(
+                f'Date check: "{f["heading"]}" shows {f["found"]}, which is '
+                f"altered or duplicated — it does not match a remaining date "
+                f"range in your career corpus "
+                f"({', '.join(findings['corpus_ranges'])}). Your corpus dates "
+                f"were NOT changed; please verify this document's dates before "
+                f"sending."
+            )
+    return findings
 
 
 def _run_analysis_corpus_backed_streaming(safe_user: str, jd_text: str, data: dict):
@@ -1194,6 +1237,10 @@ def run_generation():
             logger.warning("ATS round-trip check failed to run: %s", exc)
             ats_findings = {"status": "not_run", "notes": [f"check raised: {exc}"]}
 
+    # KW6 guard: deterministic date-grounding check (corpus mode only).
+    # Warn-only — appends to result["proofread_notes"]; never blocks.
+    date_findings = _check_date_grounding(context_set, result)
+
     # Phase B.3: when the context carries an application_run_id (set by the
     # corpus-backed /api/analyze path), persist the LLM's structured output
     # to the DB audit chain — application_bullet rows, proposal_review rows
@@ -1250,6 +1297,7 @@ def run_generation():
         "iteration": new_iteration,
         "parent_context_path": str(cp),
         "ats_roundtrip": ats_findings,
+        "date_grounding": date_findings,
         # Workstream C: echo the persona used so the frontend can thread it
         # to /api/download-edited (so DOWNLOAD honors the chosen template).
         "persona_template_id": resolved_persona_id,
@@ -1384,6 +1432,9 @@ def run_generation_stream():
                     logger.warning("ATS round-trip check failed to run: %s", exc)
                     ats_findings = {"status": "not_run", "notes": [f"check raised: {exc}"]}
 
+            # KW6 guard — mirror the non-streaming route (warn-only).
+            date_findings = _check_date_grounding(context_set, result)
+
             app_run_id = context_set.get("application_run_id")
             if app_run_id is not None:
                 try:
@@ -1433,6 +1484,7 @@ def run_generation_stream():
                 "iteration": new_iteration,
                 "parent_context_path": str(cp),
                 "ats_roundtrip": ats_findings,
+                "date_grounding": date_findings,
                 "persona_template_id": resolved_persona_id,
             })
         except anthropic.APIConnectionError as exc:

@@ -9,6 +9,7 @@ from hardening import (
     assemble_source_union,
     check_ats_format,
     compute_call_cost,
+    compute_date_grounding,
     compute_fabricated_specifics,
     compute_grounding_overlap,
     compute_keyword_overlap,
@@ -556,3 +557,107 @@ class TestComputeQuantificationRate:
         out = compute_quantification_rate(resume)
         assert out["bullets_with_quantity"] == 2
         assert out["rate"] == 1.0
+
+
+class TestComputeDateGrounding:
+    """KW6 guard: heading date ranges must trace to the corpus (warn-only)."""
+
+    CORPUS = [
+        {"id": 1, "company": "Acme", "start_date": "2024-01", "end_date": None},
+        {"id": 2, "company": "Acme", "start_date": "2016-01", "end_date": "2018-12"},
+        {"id": 3, "company": "Acme", "start_date": "2012-01", "end_date": "2016-12"},
+    ]
+
+    def test_all_headings_correct_passes(self):
+        resume = (
+            "# Jane Doe\n\n## Experience\n\n"
+            "### Acme, Product Lead\t2024 – Present\n- Did a thing.\n\n"
+            "### Acme, Design Lead\t2016 – 2018\n- Did a thing.\n\n"
+            "### Acme, Junior Designer\t2012 – 2016\n- Did a thing.\n"
+        )
+        out = compute_date_grounding(resume, self.CORPUS)
+        assert out["status"] == "pass"
+        assert out["checked"] == 3
+        assert out["flagged"] == []
+
+    def test_kw6_duplicated_range_flags(self):
+        # The KW6 shape: the model "reconciled" the 2012–2016 role onto the
+        # adjacent role's 2016–2018 range while reordering; 2012–2016 vanished.
+        resume = (
+            "# Jane Doe\n\n## Experience\n\n"
+            "### Acme, Product Lead\t2024 – Present\n- Did a thing.\n\n"
+            "### Acme, Design Lead\t2016 – 2018\n- Did a thing.\n\n"
+            "### Acme, Junior Designer\t2016 – 2018\n- Did a thing.\n"
+        )
+        out = compute_date_grounding(resume, self.CORPUS)
+        assert out["status"] == "flag"
+        assert len(out["flagged"]) == 1
+        assert out["flagged"][0]["found"] == "2016 – 2018"
+        assert "Junior Designer" in out["flagged"][0]["heading"]
+
+    def test_altered_range_flags(self):
+        resume = (
+            "## Experience\n\n"
+            "### Acme, Design Lead\t2017 – 2019\n- Did a thing.\n"
+        )
+        out = compute_date_grounding(resume, self.CORPUS)
+        assert out["status"] == "flag"
+        assert out["flagged"][0]["found"] == "2017 – 2019"
+
+    def test_month_names_and_present_variants_tolerated(self):
+        resume = (
+            "## Experience\n\n"
+            "### Acme, Product Lead\tJanuary 2024 – present\n- Did a thing.\n\n"
+            "### Acme, Design Lead\tJan 2016 – Dec 2018\n- Did a thing.\n"
+        )
+        out = compute_date_grounding(resume, self.CORPUS)
+        assert out["status"] == "pass"
+        assert out["checked"] == 2
+
+    def test_no_corpus_is_benign_pass(self):
+        resume = "## Experience\n\n### Acme, Lead\t2016 – 2018\n"
+        assert compute_date_grounding(resume, [])["status"] == "pass"
+
+    def test_empty_resume_is_benign_pass(self):
+        assert compute_date_grounding("", self.CORPUS)["status"] == "pass"
+
+    def test_headings_without_date_tab_ignored(self):
+        resume = "## Experience\n\n### Acme, Product Lead\n- Did a thing.\n"
+        out = compute_date_grounding(resume, self.CORPUS)
+        assert out["checked"] == 0
+        assert out["status"] == "pass"
+
+    def test_education_section_years_not_scanned(self):
+        # Degree years live outside the corpus; the scan is scoped to the
+        # experience section so they never false-flag.
+        resume = (
+            "## Experience\n\n"
+            "### Acme, Design Lead\t2016 – 2018\n- Did a thing.\n\n"
+            "## Education\n\n"
+            "### State University, BFA\t2008 – 2012\n"
+        )
+        out = compute_date_grounding(resume, self.CORPUS)
+        assert out["status"] == "pass"
+        assert out["checked"] == 1
+
+    def test_corpus_with_unparseable_start_skipped(self):
+        corpus = [{"id": 9, "company": "X", "start_date": "unknown", "end_date": None}]
+        resume = "## Experience\n\n### X, Lead\t2020 – Present\n"
+        out = compute_date_grounding(resume, corpus)
+        # No parseable corpus range -> unverifiable -> benign pass, not a flag.
+        assert out["status"] == "pass"
+        assert out["checked"] == 0
+
+    def test_duplicate_range_legitimately_in_corpus_passes(self):
+        corpus = [
+            {"id": 1, "company": "A", "start_date": "2016-01", "end_date": "2018-12"},
+            {"id": 2, "company": "B", "start_date": "2016-03", "end_date": "2018-06"},
+        ]
+        resume = (
+            "## Experience\n\n"
+            "### A, Lead\t2016 – 2018\n\n"
+            "### B, Advisor\t2016 – 2018\n"
+        )
+        out = compute_date_grounding(resume, corpus)
+        assert out["status"] == "pass"
+        assert out["checked"] == 2

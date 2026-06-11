@@ -62,6 +62,10 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       capture) · 6.2 diagnostics-console · 6.3 forms + a11y (**the axe a11y gate
       lands first**) · 6.4 IA + onboarding (corpus-first) · 6.6 corpus-item completers
       (**B.4** ExperienceSummaryItem, **B.5** SkillGroupItem) · 6.5 in-app education sweep.
+      **Progress (2026-06-10):** first 6.1 branch `fix/generate-date-grounding` (KW6)
+      landed — date-immutability prompt rules (PROMPT_VERSION `2026-06-10.1`) + a
+      deterministic warn-only heading-date guard in both generate routes; smoke eval
+      clean (see TUNING_LOG 2026-06-10 entry).
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +
