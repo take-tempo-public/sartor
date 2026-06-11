@@ -823,8 +823,25 @@ class TestFindContextPathForRun:
         assert app_app._find_context_path_for_run("alice", 7) is None
 
 
+def _analyze_ctx(run_id, **extra):
+    """Minimal post-analyze context_set payload for the #4 resume-state tests
+    (the keys `_build_resume_state` reads to classify a pre-generate step)."""
+    ctx = {
+        "application_run_id": run_id,
+        "iteration": 0,
+        "llm_analysis": {"essential_skills": ["Python"]},
+        "deterministic_analysis": {
+            "keyword_overlap": {"match_score": 0.5, "matched": [],
+                                "missing_from_resume": []},
+            "ats_warnings": [],
+        },
+    }
+    ctx.update(extra)
+    return ctx
+
+
 class TestResumeState:
-    """The `resume_state` block on GET /api/applications/<id> (D.3.1)."""
+    """The `resume_state` block on GET /api/applications/<id> (D.3.1 + #4)."""
 
     def test_full_payload_resume_and_cover(self, app_app):
         cid = _seed_candidate()
@@ -889,3 +906,111 @@ class TestResumeState:
             f"/api/applications/{aid}").get_json()["resume_state"]
         assert rs["resume_md"] == "# Edited"
         assert rs["cover_letter_md"] == "Edited CL"
+
+    # --- #4: resume from the furthest pre-generate step (target_step) ---
+
+    def test_step_6_payload_carries_target_step(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        _seed_run(aid, iteration=0, generated_resume_md="# Resume")
+        rs = app_app.app.test_client().get(
+            f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["target_step"] == 6
+
+    def test_resumable_at_step_1_when_only_analyzed(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0)  # analyzed-only: no generated résumé
+        _write_context_file(app_app, "alice", "context_an_iter0.json",
+                            _analyze_ctx(rid))
+        rs = app_app.app.test_client().get(
+            f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["resumable"] is True
+        assert rs["target_step"] == 1
+        assert rs["analysis"] == {"essential_skills": ["Python"]}
+        assert rs["deterministic"]["ats_warnings"] == []
+        assert "resume_md" not in rs  # pre-generate: no résumé payload
+
+    def test_resumable_at_step_2_when_clarified(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0)
+        _write_context_file(
+            app_app, "alice", "context_cl_iter0.json",
+            _analyze_ctx(rid,
+                         clarification_questions=[{"id": "q1", "text": "Ran k8s?"}],
+                         clarifications={"q1": "Yes, in prod."}),
+        )
+        rs = app_app.app.test_client().get(
+            f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["target_step"] == 2
+        assert rs["clarification_questions"][0]["id"] == "q1"
+        assert rs["clarifications"] == {"q1": "Yes, in prod."}
+
+    def test_recommendations_resume_at_step_3_over_clarify(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0)
+        _write_context_file(
+            app_app, "alice", "context_co_iter0.json",
+            _analyze_ctx(rid, clarifications={"q1": "Yes"},
+                         llm_recommendations={"1": ["b1"]}),
+        )
+        rs = app_app.app.test_client().get(
+            f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["target_step"] == 3  # compose beats clarify
+
+    def test_composition_overrides_resume_at_step_3(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0)
+        _write_context_file(
+            app_app, "alice", "context_cv_iter0.json",
+            _analyze_ctx(rid, composition_overrides={"pinned": [1]}),
+        )
+        rs = app_app.app.test_client().get(
+            f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["target_step"] == 3
+
+
+class TestUpdateMeta:
+    """PUT /api/applications/<id>/meta — editable title + company (#24)."""
+
+    def test_sets_title_and_company(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid, title="Old", company=None)
+        r = app_app.app.test_client().put(
+            f"/api/applications/{aid}/meta",
+            json={"title": "Staff PM", "company": "Acme Robotics"})
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["title"] == "Staff PM"
+        assert body["company"] == "Acme Robotics"
+
+    def test_clears_company_when_blank(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid, company="Acme")
+        body = app_app.app.test_client().put(
+            f"/api/applications/{aid}/meta", json={"company": "  "}).get_json()
+        assert body["company"] is None
+
+    def test_company_only_leaves_title_intact(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid, title="Keep me")
+        body = app_app.app.test_client().put(
+            f"/api/applications/{aid}/meta", json={"company": "Acme"}).get_json()
+        assert body["title"] == "Keep me"
+        assert body["company"] == "Acme"
+
+    def test_rejects_empty_title(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        r = app_app.app.test_client().put(
+            f"/api/applications/{aid}/meta", json={"title": "   "})
+        assert r.status_code == 400
+
+    def test_404_for_unknown_id(self, app_app):
+        _seed_candidate()
+        r = app_app.app.test_client().put(
+            "/api/applications/99999/meta", json={"company": "X"})
+        assert r.status_code == 404

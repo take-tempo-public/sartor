@@ -81,7 +81,15 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       Clarify →" CTA now initiates clarification directly (one action) instead of
       re-showing the `#clarifyStartRow` "Get clarifying questions / Skip" prompt;
       rail-direct nav keeps that row; KW4 merge semantics untouched; UX-tier
-      regression added. No prompt change, no new dep.
+      regression added. No prompt change, no new dep. Fifth 6.1 branch
+      `feat/prior-app-resume-robustness` (#4 + #24) landed 2026-06-11 — prior
+      applications now resume into the wizard at their **furthest** step
+      (`_build_resume_state` classifies a `target_step` 1/2/3/6 from the iter-0
+      context file; Steps 1–3 rehydrate with no `/api/clarify`/`/api/generate`
+      re-spend), so analyze-/clarify-/compose-only apps are resumable (were dead
+      cards). Card title + company are user-editable in the detail modal (new
+      DB-only `PUT /api/applications/<id>/meta`; company was never captured) and
+      the proposal pill reads "N to review". No prompt change, no new dep.
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +

@@ -3555,9 +3555,9 @@ function _renderApplicationCard(app) {
   if (app.pending_proposals > 0) {
     const badge = _el('span', {
       className: 'application-card-pending',
-      textContent: `${app.pending_proposals} pending`,
+      textContent: `${app.pending_proposals} to review`,
     });
-    badge.title = 'Pending LLM-proposed bullets/titles awaiting your review';
+    badge.title = 'AI-proposed bullets/titles for this application awaiting your review';
     meta.appendChild(badge);
   }
   const outcomeStatuses = new Set(['interview', 'rejected', 'withdrawn']);
@@ -3720,6 +3720,47 @@ async function _showApplicationDetail(applicationId) {
     }
   });
 
+  // #24 — editable job title + company. Save-on-blur → PUT /meta, then refresh
+  // the applications list so the edited card reflects it. clone-the-node first
+  // (like notes) so re-opening the modal doesn't stack blur listeners.
+  const _freshInput = (id) => {
+    const el = document.getElementById(id);
+    const clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
+    return clone;
+  };
+  const titleInput = _freshInput('appDetailTitle');
+  const companyInput = _freshInput('appDetailCompany');
+  titleInput.value = detail.title || '';
+  companyInput.value = detail.company || '';
+  const _saveMeta = async (payload, okMsg) => {
+    try {
+      const r = await fetch(`/api/applications/${applicationId}/meta`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (r.ok) { _toast(okMsg); refreshApplications(); return true; }
+      const err = await r.json().catch(() => ({}));
+      _toast(err.error || 'Failed to save', true);
+      return false;
+    } catch (e) {
+      _toast('Failed to save: ' + e.message, true);
+      return false;
+    }
+  };
+  titleInput.addEventListener('blur', async () => {
+    const v = (titleInput.value || '').trim();
+    if (!v) { titleInput.value = detail.title || ''; return; }  // title is required
+    if (v === (detail.title || '')) return;
+    if (await _saveMeta({ title: v }, 'Title saved')) detail.title = v;
+  });
+  companyInput.addEventListener('blur', async () => {
+    const v = (companyInput.value || '').trim();
+    if (v === (detail.company || '')) return;
+    if (await _saveMeta({ company: v }, 'Company saved')) detail.company = v || null;
+  });
+
   // Open modal with Escape + close-button wiring
   const closeBtn = document.getElementById('btnCloseAppDetail');
   const backdrop = document.getElementById('appDetailModalBackdrop');
@@ -3756,34 +3797,43 @@ async function _showApplicationDetail(applicationId) {
   newNotesEl.focus();
 }
 
-// D.3.1 — Resume a prior application into the live wizard. Converges on the
-// exact state a fresh /api/generate produces by REUSING _onGenerationComplete +
-// _renderOutput (not forking them), mirroring the runGeneration success block.
-// `detail` is the GET /api/applications/<id> payload, which carries the
-// `resume_state` block (latest generated markdown + persona + rediscovered
-// context_path). The on-disk doc path isn't persisted on the run, but downloads
-// re-render from the editor content via /api/download-edited, so a truthy
-// lastResumePath sentinel is all the _wizardReachable(6) gate needs.
+// D.3.1 + #4 — Resume a prior application into the live wizard at its FURTHEST
+// step with data. `detail` is the GET /api/applications/<id> payload; its
+// `resume_state` block carries a `target_step` (1/2/3/6) the backend classified
+// from the rediscovered context file, plus the per-step payload to rehydrate
+// it. Step 6 converges on the exact state a fresh /api/generate produces by
+// REUSING _onGenerationComplete + _renderOutput; Steps 1–3 rehydrate the
+// analysis panel (+ saved clarify Q&A) from the context file — no LLM re-spend.
 function resumeApplicationIntoWizard(detail) {
   const rs = (detail && detail.resume_state) || {};
   if (!rs.resumable) {
-    _toast('Nothing to resume yet — generate a résumé first.', true);
+    _toast('Nothing to resume yet — analyze a job description first.', true);
     return;
   }
-  // Bind the compose/preview routes to this application.
-  _composeApplicationId = detail.id;
+  const targetStep = rs.target_step || 6;
 
-  // Reselect the persona so the preview iframes + download honor the template.
+  // Bind the compose/preview routes to this application + reselect the persona
+  // so preview iframes + downloads honor the template. lastContextPath enables
+  // the Step 2/3 reachability gate (_wizardReachable).
+  _composeApplicationId = detail.id;
   const personaSel = document.getElementById('personaSelect');
   if (personaSel && rs.persona_template_id != null) {
     personaSel.value = String(rs.persona_template_id);
   }
   _selectedPersonaId = rs.persona_template_id ?? _readSelectedPersonaId();
-
-  // Resume-flow globals. lastResumePath isn't a real on-disk path here (see
-  // header) — a truthy value satisfies the Step-6 reachability gate; download
-  // reads the editor content, not this path.
   lastContextPath = rs.context_path || '';
+
+  if (targetStep === 6) {
+    _resumeIntoStep6(rs);
+  } else {
+    _resumeIntoPreGenerateStep(rs, targetStep);
+  }
+}
+
+// Step 6 — a résumé was generated. lastResumePath isn't a real on-disk path
+// here — a truthy value satisfies the Step-6 reachability gate; download reads
+// the editor content, not this path.
+function _resumeIntoStep6(rs) {
   lastResumePath = lastContextPath || 'resumed';
   lastCoverLetterPath = '';
   lastResumeFormat = '.docx';
@@ -3821,6 +3871,45 @@ function resumeApplicationIntoWizard(detail) {
       + 'restore the styled preview and continue iterating. Your text is intact.',
       true);
   }
+}
+
+// Steps 1–3 — no résumé generated yet. Rehydrate Step 1's analysis panel from
+// the saved analysis + deterministic blocks (so back-nav has content), then
+// land on the furthest step with data. We deliberately DON'T set lastResumePath
+// so Step 6 stays gated until the user actually generates.
+function _resumeIntoPreGenerateStep(rs, targetStep) {
+  // No résumé for this application — clear any generated-output sentinels left
+  // by a prior resume/generation so Step 6 stays correctly gated (a stale
+  // lastResumePath would otherwise leak another app's output into the rail).
+  lastResumePath = '';
+  lastCoverLetterPath = '';
+
+  if (rs.analysis) {
+    _renderAnalysis({ analysis: rs.analysis, deterministic: rs.deterministic || {} });
+    document.getElementById('analysisPending')?.classList.add('hidden');
+    document.getElementById('analysisActions')?.classList.remove('hidden');
+  }
+
+  if (targetStep === 2) {
+    // Render the saved clarify questions WITHOUT re-spending /api/clarify, then
+    // pre-fill each textarea from the saved answers (clarifications: {id: text}).
+    lastClarifyQuestions = rs.clarification_questions || [];
+    _renderClarifyQuestions(lastClarifyQuestions, '');
+    const answers = rs.clarifications || {};
+    document.querySelectorAll('#clarifyQuestions .clarify-question').forEach(el => {
+      const qid = el.getAttribute('data-qid');
+      const ta = el.querySelector('.clarify-answer');
+      if (qid && ta && answers[qid]) ta.value = answers[qid];
+    });
+  }
+
+  // Set the step directly (not _wizardAdvanceTo, which only moves forward) so
+  // we can land on a lower step than the rail's current position. lastContextPath
+  // is set, so steps 2–3 pass _wizardReachable.
+  _wizardStep = targetStep;
+  _wizardRender();
+  if (targetStep === 3) loadComposition();
+  setStatus('RESUMED FROM PRIOR APPLICATION');
 }
 
 // ===============================================================
