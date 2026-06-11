@@ -60,6 +60,18 @@ A `route-security-lint` hook enforces this on `app.py` edits — see [`.claude-p
 
 A `require-feature-branch` PreToolUse hook blocks `Edit`/`Write` while on `main`/`master`. Create a feature branch when moving from plan to execute (`git checkout -b <type>/<short-desc>`). Intentional main edits: `export CLAUDE_ALLOW_MAIN_EDITS=1`.
 
+**Mandatory steps have no escape hatch — your judgment does not decide
+whether they apply.** Some hooks ship an env-var escape hatch
+(`CLAUDE_CONFIRM_MERGE=1`, `CLAUDE_ALLOW_MAIN_EDITS=1`) and the plan gate has
+its `.approved` marker — those are legitimate **only when the user explicitly
+directs their use**, never on your own initiative, and you NEVER hand-create
+the file a hook checks for to unblock yourself. The close-out steps below — the
+pre-close sweep, the quality gate, and the handoff-template step — have **no
+hatch at all**: there is no authorized way to skip them. Follow each as
+written, or STOP and surface that you can't. "Good enough" / "approved enough"
+is not a call you get to make — quietly downgrading a binding rule to advisory
+is the failure mode this section exists to prevent.
+
 **Branch close-out checklist (closing agent, in order):**
 0. **Pre-close sweep — run this BEFORE the gate, ON THE BRANCH (never post-merge).** Enumerate the COMPLETE set of close-out obligations and resolve each (or explicitly defer *with the user*) so the session closes **once**, not three times:
    - working changes staged + internally consistent (no dangling refs / links);
@@ -70,7 +82,7 @@ A `require-feature-branch` PreToolUse hook blocks `Edit`/`Write` while on `main`
 1. Quality gate green (`python -m ruff check .` + `python -m mypy .` + `python -m pytest`).
 2. Commit — message records what was done and why (or "no code change — verified" if the branch closed clean).
 3. Ask user to confirm merge to `main`; execute merge after confirmation.
-4. Prune the merged branch(es) with the user's OK, then generate the next-agent handoff prompt using [`docs/dev/AGENT_HANDOFF_TEMPLATE.md`](docs/dev/AGENT_HANDOFF_TEMPLATE.md) **as copyable chat text (never a file written into `output/`)** and give it to the user as the **last act** before closing the window.
+4. Prune the merged branch(es) with the user's OK, then generate the next-agent handoff prompt — **READ [`docs/dev/AGENT_HANDOFF_TEMPLATE.md`](docs/dev/AGENT_HANDOFF_TEMPLATE.md) FIRST and reproduce every fixed section (Documents to read, Hard constraints, Close-out checklist) verbatim, dropping none; a handoff written from memory is non-compliant** — **as copyable chat text (never a file written into `output/`)** and give it to the user as the **last act** before closing the window.
 
 ### Document generation
 
