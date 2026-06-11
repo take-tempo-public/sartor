@@ -893,6 +893,18 @@
         <div id="appDetailMeta" style="margin-bottom:8px"></div>
         <div id="appDetailTimestamps"
              style="font-size:12px;color:var(--fg-2);margin-bottom:12px"></div>
+        <!-- #24: user-editable job title + company (saved on blur via
+             PUT /api/applications/<id>/meta), mirroring the notes pattern. -->
+        <label for="appDetailTitle"
+               style="font-size:12px;color:var(--fg-1);display:block;margin-bottom:4px">Job title</label>
+        <input id="appDetailTitle" type="text"
+               style="width:100%;box-sizing:border-box;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--fg-0);font-size:13px;margin-bottom:10px;font-family:inherit"
+               placeholder="Job title (saved on blur)">
+        <label for="appDetailCompany"
+               style="font-size:12px;color:var(--fg-1);display:block;margin-bottom:4px">Company</label>
+        <input id="appDetailCompany" type="text"
+               style="width:100%;box-sizing:border-box;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--fg-0);font-size:13px;margin-bottom:12px;font-family:inherit"
+               placeholder="Company (saved on blur)">
         <label for="appDetailNotes"
                style="font-size:12px;color:var(--fg-1);display:block;margin-bottom:4px">Notes</label>
         <textarea id="appDetailNotes" rows="4"

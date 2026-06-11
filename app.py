@@ -4795,39 +4795,87 @@ def get_application(application_id: int):
 
 def _build_resume_state(safe_user: str, runs_sorted: list) -> dict:
     """Package the state the frontend needs to resume a prior application into
-    the wizard at Step 6 (D.3.1).
+    the wizard at its FURTHEST step with data (#4 robustness).
 
-    Picks the most-recent run carrying generated content (prefer the user's
-    edited text over the raw LLM markdown), pairs it with the on-disk context
-    file rediscovered via `_find_context_path_for_run`, and reads the iteration
-    count from that file when present. `resumable` is False when nothing has been
-    generated yet (analyzed-only applications). When the context file is gone
-    (output/ cleaned), `context_path` is None but the run still resumes in a
-    degraded mode — the editors hydrate from the DB markdown.
+    Picks the most-recent run carrying resumable state (a generated résumé in
+    the DB, or a discoverable on-disk context file), pairs it with the context
+    file rediscovered via `_find_context_path_for_run`, and classifies a
+    `target_step` from which context keys are present (most-advanced wins):
+
+      - generated/edited résumé present .................... Step 6 (download)
+      - composition_overrides / llm_recommendations ....... Step 3 (compose)
+      - clarifications / clarification_questions .......... Step 2 (clarify)
+      - llm_analysis (analyze ran) ........................ Step 1 (analyze)
+
+    For Steps 1–3 the analysis panel rehydrates from the context file's
+    `llm_analysis` + `deterministic_analysis`; Step 2 also ships the saved
+    clarify questions + answers so the frontend renders them WITHOUT re-calling
+    `/api/clarify`. `resumable` is False only when nothing can be rehydrated
+    (no generated résumé AND no readable context file — e.g. output/ cleaned on
+    an analyze-only application). When a résumé was generated but the context
+    file is gone, Step 6 still resumes in a degraded mode (editors hydrate from
+    the DB markdown).
     """
     for r in reversed(runs_sorted):
         resume_md = r.edited_resume_text or r.generated_resume_md or ""
-        if not resume_md:
-            continue
-        cover_md = r.edited_cover_letter_text or r.generated_cover_letter_md or ""
         ctx_path = _find_context_path_for_run(safe_user, r.id)
-        iteration = 0
+        ctx_data: dict | None = None
         if ctx_path:
             try:
                 ctx_data = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
-                raw_iter = ctx_data.get("iteration", 0)
-                iteration = raw_iter if isinstance(raw_iter, int) else 0
             except (json.JSONDecodeError, OSError):
-                iteration = 0
-        return {
+                ctx_data = None
+        # Nothing to resume from this run — an older run may still carry state.
+        if not resume_md and not isinstance(ctx_data, dict):
+            continue
+
+        iteration = 0
+        if isinstance(ctx_data, dict):
+            raw_iter = ctx_data.get("iteration", 0)
+            iteration = raw_iter if isinstance(raw_iter, int) else 0
+
+        base = {
             "application_run_id": r.id,
             "persona_template_id": r.persona_template_id,
-            "resume_md": resume_md,
-            "cover_letter_md": cover_md,
             "context_path": ctx_path,
             "iteration": iteration,
             "resumable": True,
         }
+
+        # Step 6 — a résumé was generated (existing behavior; degraded when the
+        # context file is gone — the editors still hydrate from the DB markdown).
+        if resume_md:
+            cover_md = r.edited_cover_letter_text or r.generated_cover_letter_md or ""
+            return {**base, "target_step": 6,
+                    "resume_md": resume_md, "cover_letter_md": cover_md}
+
+        # No generated résumé — restore the furthest pre-generate step from the
+        # context file. ctx_data is a dict here (guarded by the continue above).
+        if not isinstance(ctx_data, dict):  # pragma: no cover - mypy narrowing
+            continue
+        analysis = ctx_data.get("llm_analysis")
+        if not analysis:
+            # Context file predates analysis (shouldn't normally happen) — can't
+            # rehydrate the analysis panel; fall through to an older run.
+            continue
+        det = ctx_data.get("deterministic_analysis") or {}
+        deterministic = {
+            "keyword_overlap": det.get("keyword_overlap", {}),
+            "ats_warnings": det.get("ats_warnings", []),
+        }
+        if ctx_data.get("composition_overrides") or ctx_data.get("llm_recommendations"):
+            target_step = 3
+        elif ctx_data.get("clarifications") or ctx_data.get("clarification_questions"):
+            target_step = 2
+        else:
+            target_step = 1
+
+        state = {**base, "target_step": target_step,
+                 "analysis": analysis, "deterministic": deterministic}
+        if target_step == 2:
+            state["clarification_questions"] = ctx_data.get("clarification_questions") or []
+            state["clarifications"] = ctx_data.get("clarifications") or {}
+        return state
     return {"resumable": False}
 
 
@@ -4942,6 +4990,46 @@ def update_application_notes(application_id: int):
         app_row.notes = notes.strip() or None
         session.commit()
         return jsonify({"id": app_row.id, "notes": app_row.notes})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/applications/<int:application_id>/meta", methods=["PUT"])
+def update_application_meta(application_id: int):
+    """Set the user-editable title / company for an application (#24).
+
+    DB-only (no filesystem path from the request), ownership-validated via
+    `_load_application_owned` — the same pattern as `update_application_notes`.
+    `title` is the model's NOT-NULL column: when provided it must be a non-empty
+    string. `company` is optional; blank/whitespace clears it to NULL. Either
+    field may be sent independently (save-on-blur).
+    """
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    if "title" in data and (not isinstance(data["title"], str) or not data["title"].strip()):
+        return jsonify({"error": "title must be a non-empty string"}), 400
+    if "company" in data and data["company"] is not None and not isinstance(data["company"], str):
+        return jsonify({"error": "company must be a string or null"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, _candidate = _load_application_owned(session, application_id)
+        if app_row is None:
+            return jsonify({"error": "Application not found"}), 404
+        if "title" in data:
+            app_row.title = data["title"].strip()
+        if "company" in data:
+            company = data["company"]
+            app_row.company = (company.strip() or None) if isinstance(company, str) else None
+        session.commit()
+        return jsonify({
+            "id": app_row.id, "title": app_row.title, "company": app_row.company,
+        })
     except Exception:
         session.rollback()
         raise

@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — prior applications resume from their furthest step + editable cards (`feat/prior-app-resume-robustness`, #4 + #24)
+
+The v1.0.5 click-to-resume only offered "Resume in wizard" when a résumé had
+been generated, so an application abandoned at analyze / clarify / compose was a
+dead card. And prior-app cards never showed which job they were for — the
+company was never captured and the proposal pill read an opaque "N pending"
+(walk findings #4 + #24).
+
+- **#4 — resume from the furthest step with data.** `_build_resume_state`
+  (`app.py`) now classifies a `target_step` (1 analyze · 2 clarify · 3 compose ·
+  6 download) from the rediscovered iter-0 context file — `llm_analysis`,
+  `clarification_questions`/`clarifications`,
+  `llm_recommendations`/`composition_overrides`, generated résumé — and ships the
+  per-step payload. `resumeApplicationIntoWizard` (`static/app.js`) dispatches on
+  it: Steps 1–3 rehydrate the analysis panel (and, for Step 2, the saved clarify
+  Q&A) **without re-spending** `/api/clarify` or `/api/generate`; Step 6 is the
+  unchanged generated-résumé path. The Resume button is now offered for every
+  analyzed application, not only generated ones.
+- **#24 — editable cards + legible pill.** Job title and company are now
+  user-editable in the app-detail modal (save-on-blur via the new DB-only
+  `PUT /api/applications/<id>/meta`, mirroring `/notes`), so a card can finally
+  carry the job it's for (`Application.company` was never populated). The
+  proposal pill reads **"N to review"** (was the opaque "N pending").
+- Covered by route tests (`tests/test_application_routes.py` — `target_step`
+  classification + `/meta`) and a UX regression
+  (`tests/ux/regression/test_20260611_prior_app_resume_robustness.py` —
+  analyze-only resume to Step 1; editable company + relabeled pill).
+
+No new dependency. No prompt change (`PROMPT_VERSION` unchanged — UI + a
+deterministic DB-only route; no LLM call added).
+
 ### Fixed — "Continue to Clarify" no longer asks clarify/skip twice (`fix/clarify-double-question`, #6)
 
 The analyze→clarify gate presented the clarify-vs-skip choice **twice**. The

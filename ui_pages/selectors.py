@@ -82,10 +82,19 @@ class PriorApps:
     LIST = "#applicationsList"
     MODAL = "#appDetailModal"
     RESUME_BUTTON = "#btnResumeApp"
+    # #24 — editable job-title / company inputs in the detail modal.
+    TITLE_INPUT = "#appDetailTitle"
+    COMPANY_INPUT = "#appDetailCompany"
+    # #24 — the relabeled (was "N pending") proposal pill on a card.
+    PENDING_PILL = ".application-card-pending"
 
     @staticmethod
     def card(app_id: int) -> str:
         return f"#app-card-{app_id}"
+
+    @staticmethod
+    def card_company(app_id: int) -> str:
+        return f"#app-card-{app_id} .application-card-company"
 
 
 class Personas:
