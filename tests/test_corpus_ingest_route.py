@@ -97,6 +97,43 @@ class TestIngestResume:
         finally:
             s.close()
 
+    def test_unreadable_resume_does_not_masquerade_as_success(self, ingest_app):
+        # A file that parses to empty text records an error and creates nothing.
+        # The route must surface that as a 4xx — not a 201 the client reads as a
+        # successful import (the "status says ready over an empty corpus" bug).
+        _seed_candidate()
+        client = ingest_app.app.test_client()
+        with patch.object(ingest_app, "_get_client", return_value=object()):
+            r = client.post(
+                "/api/users/alice/corpus/ingest-resume",
+                data={"file": (io.BytesIO(b"   \n   "), "blank.md")},
+                content_type="multipart/form-data",
+            )
+        assert r.status_code == 422, r.get_json()
+        body = r.get_json()
+        assert body["experiences_created"] == 0
+        assert body["errors"]
+
+    def test_no_dated_roles_stays_201_without_error(self, ingest_app):
+        # A readable résumé that simply has no extractable dated roles is a
+        # warning, not a failure — 201 with a zero count (the client warns,
+        # doesn't error). Guards the 422-only-on-error carve-out.
+        _seed_candidate()
+        client = ingest_app.app.test_client()
+        with patch("onboarding.extract_experiences.extract_experiences",
+                   return_value=[]), \
+             patch.object(ingest_app, "_get_client", return_value=object()):
+            r = client.post(
+                "/api/users/alice/corpus/ingest-resume",
+                data={"file": (io.BytesIO(b"# Resume\n\nSummary only, no roles"),
+                               "r.md")},
+                content_type="multipart/form-data",
+            )
+        assert r.status_code == 201, r.get_json()
+        body = r.get_json()
+        assert body["experiences_created"] == 0
+        assert not body["errors"]
+
     def test_rejects_unsupported_extension(self, ingest_app):
         _seed_candidate()
         client = ingest_app.app.test_client()

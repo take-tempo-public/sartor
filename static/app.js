@@ -43,6 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
   loadUsers();
   setupDropZone();
   document.getElementById('userSelect').addEventListener('change', onUserSelect);
+  // Format-check the URL boxes (new-user form + Settings drawer).
+  ['newLinkedin', 'newWebsite', 'cfgLinkedin', 'cfgWebsite'].forEach(
+    id => _wireUrlField(document.getElementById(id)),
+  );
   document.getElementById('refinementInput').addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitRefinement(); }
   });
@@ -74,8 +78,27 @@ async function loadUsers() {
   });
 }
 
+// Reveal the new-user form (don't toggle): hide the "New user" button so the
+// only affordance left is the form itself, and focus the username box so the
+// user can start typing immediately. Cancel (hideNewUserForm) restores it.
 function showNewUserForm() {
-  document.getElementById('newUserForm').classList.toggle('hidden');
+  document.getElementById('newUserForm').classList.remove('hidden');
+  const btn = document.getElementById('btnNewUser');
+  if (btn) btn.classList.add('hidden');
+  const u = document.getElementById('newUsername');
+  if (u) u.focus();
+}
+
+const _NEW_USER_FIELDS = ['newUsername', 'newName', 'newEmail', 'newPhone', 'newLinkedin', 'newWebsite'];
+
+function hideNewUserForm() {
+  document.getElementById('newUserForm').classList.add('hidden');
+  const btn = document.getElementById('btnNewUser');
+  if (btn) btn.classList.remove('hidden');
+  _NEW_USER_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.classList.remove('field-invalid'); el.removeAttribute('aria-invalid'); }
+  });
 }
 
 async function createUser() {
@@ -88,6 +111,16 @@ async function createUser() {
     website_url: document.getElementById('newWebsite').value.trim(),
   };
   if (!data.username) return alert('Username required');
+  for (const [id, label] of [['newLinkedin', 'LinkedIn URL'], ['newWebsite', 'Website URL']]) {
+    const el = document.getElementById(id);
+    if (!_isPlausibleUrl(el.value)) {
+      el.classList.add('field-invalid');
+      el.focus();
+      return alert(`That ${label} doesn’t look right. Use e.g. linkedin.com/in/you (https:// optional), or leave it blank.`);
+    }
+  }
+  data.linkedin_url = _normalizeUrl(data.linkedin_url);
+  data.website_url = _normalizeUrl(data.website_url);
 
   const res = await fetch('/api/users', {
     method: 'POST',
@@ -98,7 +131,7 @@ async function createUser() {
     const err = await res.json();
     return alert(err.error || 'Failed to create user');
   }
-  document.getElementById('newUserForm').classList.add('hidden');
+  hideNewUserForm();  // hide form, clear inputs, restore the "New user" button
   await loadUsers();
   document.getElementById('userSelect').value = data.username;
   onUserSelect();
@@ -106,12 +139,18 @@ async function createUser() {
 
 async function onUserSelect() {
   const username = document.getElementById('userSelect').value;
+  const userPanel = document.getElementById('panelUser');
   if (!username) {
     currentUser = '';
+    // Selection cleared → re-lock the box open so it can't be collapsed shut
+    // with no user picked.
+    if (userPanel) { userPanel.classList.remove('collapsed'); userPanel.classList.add('not-collapsible'); }
     hideAllPanels();
     _resetIterationState();
     return;
   }
+  // A user is selected → the box now holds data, so allow it to be tucked away.
+  if (userPanel) userPanel.classList.remove('not-collapsible');
   currentUser = username;
   await loadConfig();
   show('panelApplications');
@@ -161,9 +200,9 @@ async function saveConfig() {
     name: document.getElementById('cfgName').value,
     email: document.getElementById('cfgEmail').value,
     phone: document.getElementById('cfgPhone').value,
-    linkedin_url: document.getElementById('cfgLinkedin').value,
-    website_url: document.getElementById('cfgWebsite').value,
-    portfolio_urls: document.getElementById('cfgPortfolioUrls').value.split('\n').map(s => s.trim()).filter(Boolean),
+    linkedin_url: _normalizeUrl(document.getElementById('cfgLinkedin').value),
+    website_url: _normalizeUrl(document.getElementById('cfgWebsite').value),
+    portfolio_urls: document.getElementById('cfgPortfolioUrls').value.split('\n').map(s => _normalizeUrl(s)).filter(Boolean),
     ...(currentConfig.included_resumes !== undefined
       ? { included_resumes: currentConfig.included_resumes }
       : {}),
@@ -184,6 +223,49 @@ async function saveConfig() {
     const err = await res.json();
     alert((err.errors || []).join('\n') || 'Failed to save config');
   }
+}
+
+// ---- URL field format checking (onboarding + settings) ----
+// Tolerant by design: a bare host like "linkedin.com/in/you" is valid — the
+// server prepends https:// at fetch time (scraper._ensure_scheme). We only
+// flag input that can't be a URL at all, and normalize before we store it so
+// the value round-trips through validate_config without a "missing scheme"
+// rejection.
+const _URL_SCHEME_RE = /^[a-z][a-z0-9+.\-]*:\/\//i;
+
+function _normalizeUrl(value) {
+  const v = (value || '').trim();
+  if (!v) return '';
+  return _URL_SCHEME_RE.test(v) ? v : `https://${v}`;
+}
+
+function _isPlausibleUrl(value) {
+  const v = (value || '').trim();
+  if (!v) return true;  // empty is allowed — these fields are optional
+  if (/\s/.test(v)) return false;
+  try {
+    const u = new URL(_normalizeUrl(v));
+    // Require a dotted host — rules out "https://localhost"-style typos while
+    // still accepting any real domain the user pastes.
+    return !!u.hostname && u.hostname.includes('.');
+  } catch {
+    return false;
+  }
+}
+
+// Live validation on a single URL input: red ring + aria-invalid on blur,
+// cleared as soon as the user edits. Idempotent + null-safe.
+function _wireUrlField(input) {
+  if (!input) return;
+  input.addEventListener('blur', () => {
+    const ok = _isPlausibleUrl(input.value);
+    input.classList.toggle('field-invalid', !ok);
+    input.setAttribute('aria-invalid', ok ? 'false' : 'true');
+  });
+  input.addEventListener('input', () => {
+    input.classList.remove('field-invalid');
+    input.removeAttribute('aria-invalid');
+  });
 }
 
 // ---- Resume Upload ----
@@ -233,21 +315,46 @@ async function uploadFile(file) {
     return reportError('Corpus ingest', 'Upload request failed', e.message);
   }
   const data = await res.json().catch(() => ({}));
+  const errs = data.errors || [];
   if (!res.ok) {
     if (out) out.textContent = '';
-    return reportError('Corpus ingest', data.error || 'Ingest failed', data.detail);
+    return reportError(
+      'Corpus ingest', data.error || 'Ingest failed', errs.join('; ') || data.detail,
+    );
   }
-  setStatus('READY');
   const made = data.experiences_created || 0;
   const merged = data.experiences_merged || 0;
   const bullets = data.bullets_created || 0;
+
+  // Honesty: a 2xx with nothing extracted is NOT a success. Tell the user
+  // plainly and don't fire the green toast — otherwise the status pill reads
+  // "ready" over an empty corpus (the exact "did it do anything?" confusion).
+  if (made + merged === 0) {
+    setStatus('NO EXPERIENCES FOUND');
+    if (out) {
+      out.textContent =
+        `No experiences could be read from ${file.name}. ` +
+        (errs.length
+          ? errs.join('; ')
+          : 'Make sure it’s a text résumé (not a scanned image) with ' +
+            'month/year dates on each role.');
+    }
+    _toast('No experiences found in résumé', true);
+    return;
+  }
+
+  setStatus('READY');
   if (out) {
     out.textContent =
       `Added ${made} experience(s), ${merged} merged, ${bullets} bullet(s) — ` +
-      `now pending review in the CAREER CORPUS tab.`;
+      `now pending review below.`;
   }
   _toast('Resume ingested into corpus');
-  _corpusLoadedForUser = '';  // force corpus tab refetch next visit
+  // Render the new cards in place — the user is already on the Career Corpus
+  // tab, so a "refetch next visit" flag isn't enough (the old bug: status said
+  // ready but the list never updated). refreshCorpus() always refetches and
+  // resets _corpusLoadedForUser itself.
+  await refreshCorpus();
 }
 
 function setOutputFormat(fmt, btn) {
@@ -2138,6 +2245,9 @@ function esc(str) {
 function _togglePanel(panelId) {
   const panel = document.getElementById(panelId);
   if (!panel || panel.classList.contains('hidden')) return;
+  // A panel marked .not-collapsible ignores header clicks (e.g. the User
+  // selection box before a user is picked — see onUserSelect).
+  if (panel.classList.contains('not-collapsible')) return;
   const isCollapsed = panel.classList.toggle('collapsed');
   const block = document.querySelector(`[data-panel="${panelId}"]`);
   if (block) block.classList.toggle('collapsed', isCollapsed);

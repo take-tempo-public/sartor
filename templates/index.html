@@ -63,7 +63,10 @@
   <div class="cb-main" id="main">
 
     <!-- USER -->
-    <section class="cb-panel" id="panelUser">
+    <!-- not-collapsible until a user is selected (onUserSelect removes it):
+         the box is a small target and an accidental header-click collapse
+         strands first-time users with the dropdown hidden. -->
+    <section class="cb-panel not-collapsible" id="panelUser">
       <div class="panel-header cb-bg-blue">User selection</div>
       <div class="panel-body">
         <div class="form-row">
@@ -71,7 +74,7 @@
           <select id="userSelect" aria-label="Select user">
             <option value="">-- Select User --</option>
           </select>
-          <button class="cb-btn cb-bg-amber" onclick="showNewUserForm()">New user</button>
+          <button class="cb-btn cb-bg-amber" id="btnNewUser" onclick="showNewUserForm()">New user</button>
         </div>
         <div id="newUserForm" class="hidden">
           <div class="form-row">
@@ -88,11 +91,14 @@
           </div>
           <div class="form-row">
             <label for="newLinkedin" class="sr-only">LinkedIn URL</label>
-            <input type="url" id="newLinkedin" placeholder="LinkedIn URL" aria-label="New user LinkedIn URL">
+            <input type="url" id="newLinkedin" placeholder="linkedin.com/in/you (https:// optional)" aria-label="New user LinkedIn URL">
             <label for="newWebsite" class="sr-only">Website URL</label>
-            <input type="url" id="newWebsite" placeholder="Website URL" aria-label="New user website URL">
+            <input type="url" id="newWebsite" placeholder="yoursite.com (https:// optional)" aria-label="New user website URL">
           </div>
-          <button class="cb-btn cb-bg-teal" onclick="createUser()">Create</button>
+          <div class="form-row">
+            <button class="cb-btn cb-bg-teal" onclick="createUser()">Create</button>
+            <button class="cb-btn" onclick="hideNewUserForm()">Cancel</button>
+          </div>
         </div>
       </div>
     </section>
@@ -122,7 +128,9 @@
     <!-- Wizard step rail — sentence-case labels, connector ink-trail
          between steps (filled green for done, amber-gradient sheen for
          the edge leading into the active step), ✓ glyph on done numbers,
-         labels hidden on upcoming steps. -->
+         labels hidden on upcoming steps.
+         DEFERRED: no per-step "← Back" affordance yet — to be added when the
+         wizard seam moves in the blueprint split (RELEASE_ARC.md Phase 4.8). -->
     <nav class="wizard-rail hidden" id="wizardRail" aria-label="Application steps">
       <button class="wizard-step" data-wstep="1" onclick="wizardGoTo(1)"><span class="wizard-num">1</span><span class="wizard-label">Job + Analyze</span></button>
       <span class="wizard-connector" data-conn="1" aria-hidden="true"></span>

@@ -120,6 +120,16 @@ class TestValidateConfig:
         errors = validate_config({"name": "Jane", "portfolio_urls": ["not-a-url"]})
         assert any("portfolio" in e.lower() for e in errors)
 
+    def test_scheme_less_dotted_host_is_tolerated(self):
+        # A bare host the fetch layer already accepts must not be rejected here.
+        errors = validate_config({
+            "name": "Jane",
+            "linkedin_url": "linkedin.com/in/jane",
+            "website_url": "jane.dev",
+            "portfolio_urls": ["github.com/jane"],
+        })
+        assert errors == []
+
 
 class TestVerbDiversity:
     def test_empty_resume(self):
