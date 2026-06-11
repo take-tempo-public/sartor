@@ -868,6 +868,7 @@ async function submitClarifications() {
         context_path: lastContextPath,
         username: currentUser,
         answers,
+        merge: true,  // accumulate by id — never drop a prior round's answers
       }),
     });
     const data = await res.json();
@@ -889,6 +890,8 @@ async function submitClarifications() {
 async function skipClarifications() {
   // No answers submitted — clear any previously saved clarifications so
   // recommend + generate don't pick up stale answers from a prior run.
+  // merge:false makes this an explicit whole-map replace (the deliberate
+  // "clear" path); submit paths use merge:true to accumulate by id instead.
   if (lastContextPath) {
     try {
       await fetch('/api/answer-clarifications', {
@@ -898,6 +901,7 @@ async function skipClarifications() {
           context_path: lastContextPath,
           username: currentUser,
           answers: {},
+          merge: false,
         }),
       });
     } catch (e) {
@@ -1750,8 +1754,10 @@ async function submitIterateClarificationsAndGenerate() {
   setStatus('SAVING ANSWERS');
 
   try {
-    // The /api/answer-clarifications route merges these into context.clarifications
-    // by id — prior answers (including from the analyze-time clarify) stay intact.
+    // merge:true so the route accumulates these by id into context.clarifications
+    // — prior answers (including from the analyze-time clarify) stay intact.
+    // This collects ONLY the iterate-round textareas, so a whole-map replace
+    // would silently drop the analyze-round answers (KW4).
     const res = await fetch('/api/answer-clarifications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1759,6 +1765,7 @@ async function submitIterateClarificationsAndGenerate() {
         context_path: lastContextPath,
         username: currentUser,
         answers,
+        merge: true,
       }),
     });
     const data = await res.json();

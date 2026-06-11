@@ -112,7 +112,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 ### Discovered during the v1.0.5 stream (tracked, deferred)
 
-- [ ] **`/api/answer-clarifications` overwrites the whole answers map — iterate
+- [x] **`/api/answer-clarifications` overwrites the whole answers map — iterate
       submit drops analyze-round answers from the iterated context** — surfaced
       2026-06-10 while building `feat/outcome-capture-complete` (KW7 memory write
       path). `_collectIterateClarifyAnswers` ([app.js](../../static/app.js))
@@ -126,7 +126,10 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       when the context map loses entries). **Scheduled** as load-bearing evidence
       on the `fix/clarify-generates-bullets` (KW4) row,
       [`RELEASE_ARC.md`](RELEASE_ARC.md) §Sprint 6.1 — investigate there, not as a
-      drive-by.
+      drive-by. **Resolved 2026-06-11** on `fix/clarify-generates-bullets` (KW4):
+      the route now merges by id (default `merge:true`), the skip path passes
+      `merge:false`, and a two-round regression test guards it. See CHANGELOG
+      [Unreleased].
 - [ ] **`application_run.generated_cover_letter_md` never populated** — observed
       2026-06-10 in the e2e walkthrough DB (run row has resume md + bullets +
       titles + ATS json, but cover-letter md is empty despite a generated +
