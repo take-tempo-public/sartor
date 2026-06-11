@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — onboarding E2E-walkthrough blockers, sprint 1 (`fix/onboarding-e2e-blockers`)
+
+Five first-run onboarding issues surfaced by the end-to-end walkthrough:
+
+- **Résumé ingest silently did nothing (the critical one).** A table/column-laid-out
+  `.docx` parsed to empty text because `parser._parse_docx` read only body
+  paragraphs, never table cells — so extraction got nothing and zero experiences
+  landed. The ingest route nonetheless returned `201` with the error buried in the
+  body, and the uploader showed a green "ready" toast over an empty corpus and never
+  refreshed the list in place. Now: the parser walks the document in order and reads
+  table cells (recursing into nested tables, deduping merged cells); the route
+  returns `422` when a parse/extract failure lands nothing; and the uploader
+  refreshes the corpus in place on success and shows an honest "No experiences found"
+  warning (not a success toast) on a zero result.
+- **User-selection box collapsed on an accidental header click**, stranding
+  first-time users with the dropdown hidden. It is now locked open
+  (`.not-collapsible`, no chevron/pointer) until a user is selected.
+- **"New user" button was a confusing toggle.** It now reveals the form (not
+  toggles), hides itself, and focuses the username field; a **Cancel** button
+  restores it.
+- **Website/LinkedIn URL boxes were ambiguous and intolerant of format.** Added a
+  tolerant client-side format checker (normalizes a bare `linkedin.com/in/you` to
+  `https://`, flags genuine non-URLs), clearer placeholders, and a matching tolerant
+  `validate_config` server-side (accepts bare dotted hosts; still rejects `not-a-url`).
+- **Wizard back-navigation** is acknowledged as missing but **deferred** to the
+  monolith→blueprints split (RELEASE_ARC Phase 4.8); no behavior change this branch.
+
+No `PROMPT_VERSION` change and no new dependency.
+
 ### Fixed — profile URLs without a scheme no longer silently fail to fetch (`fix/normalize-url-scheme`)
 
 A site address pasted without `http://`/`https://` (e.g. `github.com/you`) made

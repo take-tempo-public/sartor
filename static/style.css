@@ -200,6 +200,10 @@ body::before {
 .cb-panel.collapsed .panel-header::after {
   transform: rotate(-90deg);
 }
+/* A locked panel (e.g. User selection before a user is picked) shows no
+   collapse affordance — no chevron, no pointer cursor. */
+.cb-panel.not-collapsible > .panel-header { cursor: default; }
+.cb-panel.not-collapsible > .panel-header::after { display: none; }
 
 .panel-body {
   padding: 16px 24px;
@@ -239,6 +243,11 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--brand);
+}
+/* Format-check feedback for the URL boxes (see _wireUrlField in app.js). */
+input.field-invalid {
+  border-color: var(--danger);
+  background: var(--danger-soft);
 }
 select {
   cursor: pointer;

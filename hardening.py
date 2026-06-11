@@ -876,25 +876,54 @@ def compute_call_cost(record: dict) -> float:
     return round(cost, 6)
 
 
+_URL_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://")
+
+
+def _normalize_url_scheme(url: str) -> str:
+    """Prepend https:// when a user-supplied URL omits a scheme.
+
+    Mirrors scraper._ensure_scheme so validation is tolerant of the same bare
+    hosts the fetch layer already accepts (e.g. "linkedin.com/in/you"). Keeps
+    an explicit scheme untouched.
+    """
+    url = url.strip()
+    if not url or _URL_SCHEME_RE.match(url):
+        return url
+    return f"https://{url}"
+
+
 def validate_config(config: dict) -> list[str]:
-    """Validate a user config for required fields and well-formed URLs."""
+    """Validate a user config for required fields and well-formed URLs.
+
+    URLs are normalized (https:// prepended when scheme-less) before the
+    scheme/netloc check, so a bare host the fetch layer would accept is not
+    rejected here.
+    """
     errors = []
     if not config.get("name"):
         errors.append("Missing required field: name")
 
     for url_field in ("linkedin_url", "website_url"):
         url = config.get(url_field, "")
-        if url:
-            parsed = urlparse(url)
-            if not parsed.scheme or not parsed.netloc:
-                errors.append(f"Invalid URL in {url_field}: {url}")
+        if url and not _is_valid_url(url):
+            errors.append(f"Invalid URL in {url_field}: {url}")
 
     for url in config.get("portfolio_urls", []):
-        parsed = urlparse(url)
-        if not parsed.scheme or not parsed.netloc:
+        if not _is_valid_url(url):
             errors.append(f"Invalid portfolio URL: {url}")
 
     return errors
+
+
+def _is_valid_url(url: str) -> bool:
+    """A URL is acceptable if, after scheme-normalization, it has a dotted host.
+
+    The dotted-host requirement keeps genuine non-URLs ("not-a-url") invalid
+    while accepting the bare hosts the fetch layer already tolerates
+    ("linkedin.com/in/you"). Mirrors the client-side _isPlausibleUrl check.
+    """
+    parsed = urlparse(_normalize_url_scheme(url))
+    return bool(parsed.scheme) and "." in parsed.netloc
 
 
 def build_context_set(

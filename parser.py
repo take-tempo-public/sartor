@@ -5,10 +5,15 @@ Returns structured data for LLM context assembly.
 """
 
 import re
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import docx
 import pdfplumber
+from docx.oxml.ns import qn
+from docx.table import Table, _Cell
+from docx.text.paragraph import Paragraph
 
 
 def parse_resume(filepath: str) -> dict:
@@ -33,24 +38,61 @@ def parse_resume(filepath: str) -> dict:
     }
 
 
+def _iter_block_items(parent: Any) -> Iterator[Any]:
+    """Yield Paragraph and Table children of `parent` in document order.
+
+    `Document.paragraphs` skips anything inside a table, so a résumé laid out
+    as a table (very common — single-table or sidebar layouts) parses to empty
+    text. Walking the body's child elements in order — and recursing into table
+    cells in `_parse_docx` — recovers that text. `parent` is a Document or a
+    table `_Cell`. Mirrors the canonical python-docx block-iterator recipe.
+    """
+    parent_elm = parent._tc if isinstance(parent, _Cell) else parent.element.body
+    for child in parent_elm.iterchildren():
+        if child.tag == qn("w:p"):
+            yield Paragraph(child, parent)
+        elif child.tag == qn("w:tbl"):
+            yield Table(child, parent)
+
+
 def _parse_docx(path: Path) -> tuple[str, list]:
-    """Extract text and sections from a Word document."""
+    """Extract text and sections from a Word document, including table cells."""
     doc = docx.Document(str(path))
     sections: list[dict] = []
     current_section: dict = {"heading": "Header", "content": []}
-    full_text = []
+    full_text: list[str] = []
+    seen_cells: set[int] = set()
 
-    for para in doc.paragraphs:
+    def _handle_paragraph(para: Paragraph) -> None:
+        nonlocal current_section
         text = para.text.strip()
         if not text:
-            continue
+            return
         full_text.append(text)
-        if para.style and para.style.name.startswith("Heading"):
+        style_name = para.style.name if para.style else None
+        if style_name and style_name.startswith("Heading"):
             if current_section["content"]:
                 sections.append(current_section)
             current_section = {"heading": text, "content": []}
         else:
             current_section["content"].append(text)
+
+    def _walk(parent: Any) -> None:
+        for block in _iter_block_items(parent):
+            if isinstance(block, Paragraph):
+                _handle_paragraph(block)
+            elif isinstance(block, Table):
+                for row in block.rows:
+                    for cell in row.cells:
+                        # Merged cells repeat the same underlying <w:tc>; dedupe
+                        # so we don't emit their text more than once.
+                        key = id(cell._tc)
+                        if key in seen_cells:
+                            continue
+                        seen_cells.add(key)
+                        _walk(cell)
+
+    _walk(doc)
 
     if current_section["content"]:
         sections.append(current_section)

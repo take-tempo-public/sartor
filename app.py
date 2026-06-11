@@ -4193,14 +4193,27 @@ def ingest_resume_to_corpus(username: str):
             is_primary=False, dry_run=False, report=report,
         )
         session.commit()
-        return jsonify({
+        payload = {
             "filename": safe_name,
             "experiences_created": report.experiences_created,
             "experiences_merged": report.experiences_merged,
             "bullets_created": report.bullets_created,
             "alternate_titles_created": report.alternate_titles_created,
             "errors": report.errors,
-        }), 201
+        }
+        # Honesty: a parse/extract failure that yields nothing must NOT look
+        # like a successful import. When no experience landed AND the importer
+        # recorded an error (e.g. unreadable file, empty text), surface it as a
+        # 422 so the client takes its error path instead of a green toast. A
+        # genuine 0-but-no-error result (a résumé with no dated roles) stays
+        # 201 — the client warns without claiming success.
+        nothing_landed = (
+            report.experiences_created + report.experiences_merged == 0
+        )
+        if nothing_landed and report.errors:
+            payload["error"] = "Could not extract any experiences from the résumé"
+            return jsonify(payload), 422
+        return jsonify(payload), 201
     except Exception:
         session.rollback()
         raise

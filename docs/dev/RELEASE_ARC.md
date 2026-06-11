@@ -675,6 +675,13 @@ Then: `chore/version-bump-v1.0.7`.
   `check_untyped_defs = true`), scoped to the whole post-v1.0.4 surface. Doing it here
   avoids annotating the monolith and then re-doing it post-split. The full
   `mypy --strict` ratchet + a typed `context_set` is the post-public **WS-2-full**.
+- **Deferred UX: wizard back-navigation.** The wizard rail (`wizardGoTo`, the
+  `.wizard-step` buttons in `templates/index.html`) advances forward but offers no
+  per-step **back** affordance — a first-time user who misclicks a step has no way to
+  step back. Deferred here (decided 2026-06-10, during the onboarding E2E-blocker
+  sprint) because back-nav is cleanest to add once the wizard's route/state handling
+  is reorganized in the blueprint split, rather than bolted onto the monolith. Add a
+  visible "← Back" control wired to the existing step model when the wizard seam moves.
 
 Then: `chore/version-bump-v1.0.8`.
 
