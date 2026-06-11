@@ -4520,13 +4520,37 @@ function _renderComposeCard(exp) {
     }));
   }
 
-  // Titles section
-  if ((exp.titles || []).length) {
-    card.appendChild(_el('div', {
-      className: 'compose-exp-section-title', textContent: 'Titles (by fit)',
+  // Titles section — feat/compose-add-title: per-JD selectable title (radio)
+  // + a "+ Add title" affordance that writes a sourced, eligible corpus row.
+  const titleHeader = _el('div', { className: 'compose-exp-section-title' });
+  titleHeader.appendChild(_el('span', { textContent: 'Title for this résumé' }));
+  const addTitleBtn = _el('button', {
+    className: 'corpus-action-btn compose-add-title-btn',
+    textContent: '+ Add title',
+  });
+  addTitleBtn.type = 'button';
+  addTitleBtn.dataset.expId = String(exp.id);
+  addTitleBtn.onclick = () => _addComposeTitlePrompt(exp.id);
+  titleHeader.appendChild(addTitleBtn);
+  card.appendChild(titleHeader);
+
+  // data-user-pinned tracks whether the selection is an EXPLICIT pin (context
+  // already had one, or the user clicked a radio) vs. the default selected
+  // state — only explicit pins are sent to the server (mirrors bullet_order's
+  // data-custom-order), so an untouched default never persists a pin or busts
+  // the analyze→generate cache.
+  const titleList = _el('div', { className: 'compose-title-list' });
+  titleList.dataset.expId = String(exp.id);
+  titleList.dataset.userPinned = (exp.titles || []).some(t => t.pinned) ? 'true' : 'false';
+  (exp.titles || []).forEach(t =>
+    titleList.appendChild(_renderTitleRow_compose(t, exp.id, exp.chosen_title_id)));
+  if (!(exp.titles || []).length) {
+    titleList.appendChild(_el('div', {
+      className: 'compose-empty-experience',
+      textContent: 'No titles yet — add one to use for this résumé.',
     }));
-    exp.titles.forEach(t => card.appendChild(_renderTitleRow_compose(t)));
   }
+  card.appendChild(titleList);
 
   // Bullets split into visible (recommended/pinned/added) + drawer (rest).
   const visible = (exp.bullets || []).filter(
@@ -4642,8 +4666,23 @@ function _renderComposeCard(exp) {
   return card;
 }
 
-function _renderTitleRow_compose(t) {
+function _renderTitleRow_compose(t, expId, chosenTitleId) {
   const row = _el('div', { className: 'compose-row' });
+  // feat/compose-add-title — radio selects which eligible title this JD's
+  // résumé uses. Checked = the effective title (pin → official → top eligible).
+  const radio = _el('input', { className: 'compose-title-radio', type: 'radio' });
+  radio.name = `compose-title-${expId}`;
+  radio.value = String(t.id);
+  radio.dataset.expId = String(expId);
+  radio.checked = (t.id === chosenTitleId);
+  radio.setAttribute('aria-label', `Use "${t.title}" for this résumé`);
+  radio.addEventListener('change', () => {
+    if (!radio.checked) return;
+    const list = radio.closest('.compose-title-list');
+    if (list) list.dataset.userPinned = 'true';
+    _scheduleCompositionSave();
+  });
+  row.appendChild(radio);
   row.appendChild(_el('span', { className: 'row-text', textContent: t.title }));
   const meta = _el('div', { className: 'row-meta' });
   meta.appendChild(_el('span', {
@@ -4659,6 +4698,32 @@ function _renderTitleRow_compose(t) {
   meta.appendChild(tagWrap);
   row.appendChild(meta);
   return row;
+}
+
+// feat/compose-add-title — add an alternative title from the Compose step.
+// Writes a SOURCED, immediately-eligible corpus row via the existing title
+// route (truthful_enough_to_use=true → eligible without being Official), then
+// reloads composition so it appears as a selectable option for this résumé.
+async function _addComposeTitlePrompt(expId) {
+  const result = await openFormModal({
+    title: 'ADD TITLE',
+    subtitle: 'Add an alternative title for this experience. It joins your '
+      + 'career corpus and becomes selectable for this résumé.',
+    submitLabel: 'ADD TITLE',
+    fields: [
+      { name: 'title', label: 'Title', type: 'text', required: true,
+        placeholder: 'e.g. Director, AI Research' },
+    ],
+    onSubmit: async (v) => {
+      await _postJson(`/api/experiences/${expId}/titles`, {
+        title: v.title.trim(),
+        truthful_enough_to_use: true,
+      });
+    },
+  });
+  if (!result) return;
+  await loadComposition();
+  _toast('Title added to corpus');
 }
 
 function _renderBulletRow_compose(b, opts = {}) {
@@ -4850,7 +4915,20 @@ function _collectCompositionState() {
     });
     if (expId != null && ids.length) bullet_order[expId] = ids;
   });
-  return { pinned, excluded, added, bullet_order };
+  // feat/compose-add-title — per-experience title pin. Only collected for cards
+  // the user explicitly pinned (data-user-pinned), so an untouched default
+  // selection never persists a pin (keeps the default path + generate cache
+  // byte-identical, mirroring bullet_order's data-custom-order gate).
+  const pinned_title_ids = {};
+  document.querySelectorAll('#composeList .compose-title-list').forEach(list => {
+    if (list.dataset.userPinned !== 'true') return;
+    const expId = list.dataset.expId;
+    const checked = list.querySelector('input.compose-title-radio:checked');
+    if (expId != null && checked && checked.value) {
+      pinned_title_ids[expId] = Number(checked.value);
+    }
+  });
+  return { pinned, excluded, added, bullet_order, pinned_title_ids };
 }
 
 async function _postComposition(state) {

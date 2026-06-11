@@ -90,6 +90,17 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       cards). Card title + company are user-editable in the detail modal (new
       DB-only `PUT /api/applications/<id>/meta`; company was never captured) and
       the proposal pill reads "N to review". No prompt change, no new dep.
+      Sixth 6.1 branch `feat/compose-add-title` (#7) landed 2026-06-11 — a
+      Compose "+ Add title" affordance writes a sourced, immediately-eligible
+      `ExperienceTitle` (`truthful_enough_to_use=1`, via the existing title
+      route), and titles became a **per-JD radio** persisting
+      `composition_overrides.pinned_title_ids`, honored in **both** the preview
+      (`build_json_resume_from_corpus`: pin→official→first) and the generated
+      download (chosen `<eligible_title pinned="true">` + new `<corpus_mode>`
+      rule; `PROMPT_VERSION 2026-06-11.1`). The composition save re-syncs the
+      frozen `career_corpus` eligible_titles for pinned experiences so a
+      post-analyze title reaches generate. Per-JD pin was a user-approved scope
+      extension of the #7 row; smoke eval clean (TUNING_LOG 2026-06-11). No new dep.
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +

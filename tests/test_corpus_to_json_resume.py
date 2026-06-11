@@ -363,3 +363,55 @@ class TestMetaCallback:
         )
         # Identity still emits — no exception
         assert doc["basics"]["name"] == "Casey Rivera"
+
+
+class TestTitlePin:
+    """feat/compose-add-title — composition_overrides.pinned_title_ids drives
+    work[].position in the preview (pin → official → first); a stale/ineligible
+    pin falls through so non-pinned output is unchanged."""
+
+    def _seed_alt(self, session, exp_id, *, title="Director, AI", eligible=True):
+        from db.models import ExperienceTitle
+        t = ExperienceTitle(
+            experience_id=exp_id, title=title, is_official=0,
+            truthful_enough_to_use=1 if eligible else 0,
+            is_pending_review=0, source="user_added",
+        )
+        session.add(t)
+        session.flush()
+        session.commit()
+        return t.id
+
+    def test_pinned_title_overrides_official(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, position="Lead PM")
+        alt = self._seed_alt(session, eid, title="Director, AI")
+        ctx = _ctx_file(
+            tmp_path,
+            composition_overrides={"pinned_title_ids": {str(eid): alt}},
+        )
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert doc["work"][0]["position"] == "Director, AI"
+
+    def test_unpinned_keeps_official(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, position="Lead PM")
+        self._seed_alt(session, eid, title="Director, AI")
+        doc = build_json_resume_from_corpus(session, cid)
+        assert doc["work"][0]["position"] == "Lead PM"
+
+    def test_ineligible_pin_falls_back_to_official(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, position="Lead PM")
+        # truthful_enough_to_use=0 → not an eligible pick; the resolution must
+        # ignore the stale pin and fall through to the official title.
+        stale = self._seed_alt(session, eid, title="Ghost Title", eligible=False)
+        ctx = _ctx_file(
+            tmp_path,
+            composition_overrides={"pinned_title_ids": {str(eid): stale}},
+        )
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert doc["work"][0]["position"] == "Lead PM"

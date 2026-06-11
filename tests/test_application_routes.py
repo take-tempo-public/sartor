@@ -577,6 +577,138 @@ class TestCompositionAddedField:
         assert flags[bids[1]] == (False, True)
 
 
+def _seed_exp_with_two_titles(candidate_id, company="Acme"):
+    """Experience with an official title + an eligible (truthful_enough_to_use)
+    alternative. Returns (eid, official_tid, alt_tid)."""
+    from db.models import Experience, ExperienceTitle
+    from db.session import get_session
+    s = get_session()
+    try:
+        e = Experience(candidate_id=candidate_id, company=company,
+                       start_date="2021-01", display_order=0)
+        s.add(e)
+        s.flush()
+        off = ExperienceTitle(experience_id=e.id, title="Staff Engineer",
+                              is_official=1, is_pending_review=0, source="official")
+        alt = ExperienceTitle(experience_id=e.id, title="Principal Engineer",
+                              is_official=0, truthful_enough_to_use=1,
+                              is_pending_review=0, source="user_added")
+        s.add(off)
+        s.add(alt)
+        s.commit()
+        return e.id, off.id, alt.id
+    finally:
+        s.close()
+
+
+class TestCompositionTitlePin:
+    """feat/compose-add-title — per-JD title pin round-trips through the
+    composition POST/GET, validates eligibility, and re-syncs the FROZEN
+    career_corpus snapshot so a title added in Compose reaches generate."""
+
+    def _ctx(self, tmp_path, aid, extra=None):
+        import json
+        out = tmp_path / "output" / "alice"
+        out.mkdir(parents=True, exist_ok=True)
+        ctx = out / "context_title.json"
+        payload = {"application_id": aid}
+        if extra:
+            payload.update(extra)
+        ctx.write_text(json.dumps(payload), encoding="utf-8")
+        return ctx
+
+    def test_post_persists_pinned_title_ids(self, app_app, tmp_path):
+        import json
+        cid = _seed_candidate()
+        eid, _off, alt = _seed_exp_with_two_titles(cid)
+        aid = _seed_application(cid)
+        ctx = self._ctx(tmp_path, aid)
+        client = app_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={"context_path": str(ctx), "pinned": [], "excluded": [],
+                  "pinned_title_ids": {str(eid): alt}},
+        )
+        assert r.status_code == 200, r.get_json()
+        saved = json.loads(ctx.read_text(encoding="utf-8"))
+        assert saved["composition_overrides"]["pinned_title_ids"] == {str(eid): alt}
+        assert r.get_json()["pinned_title_ids"] == {str(eid): alt}
+
+    def test_get_surfaces_pinned_and_chosen_title_id(self, app_app, tmp_path):
+        cid = _seed_candidate()
+        eid, off, alt = _seed_exp_with_two_titles(cid)
+        aid = _seed_application(cid)
+        ctx = self._ctx(tmp_path, aid, extra={
+            "composition_overrides": {"pinned_title_ids": {str(eid): alt}},
+        })
+        client = app_app.app.test_client()
+        g = client.get(
+            f"/api/applications/{aid}/composition?context_path={ctx}",
+        ).get_json()
+        exp = next(e for e in g["experiences"] if e["id"] == eid)
+        # chosen_title_id reflects the pin; the pinned title flags pinned=True.
+        assert exp["chosen_title_id"] == alt
+        pinned_map = {t["id"]: t["pinned"] for t in exp["titles"]}
+        assert pinned_map[alt] is True
+        assert pinned_map[off] is False
+
+    def test_get_chosen_defaults_to_official_without_pin(self, app_app, tmp_path):
+        cid = _seed_candidate()
+        eid, off, _alt = _seed_exp_with_two_titles(cid)
+        aid = _seed_application(cid)
+        ctx = self._ctx(tmp_path, aid)
+        client = app_app.app.test_client()
+        g = client.get(
+            f"/api/applications/{aid}/composition?context_path={ctx}",
+        ).get_json()
+        exp = next(e for e in g["experiences"] if e["id"] == eid)
+        assert exp["chosen_title_id"] == off
+        assert all(t["pinned"] is False for t in exp["titles"])
+
+    def test_post_rejects_non_eligible_title(self, app_app, tmp_path):
+        cid = _seed_candidate()
+        eid, _off, _alt = _seed_exp_with_two_titles(cid)
+        aid = _seed_application(cid)
+        ctx = self._ctx(tmp_path, aid)
+        client = app_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={"context_path": str(ctx), "pinned": [], "excluded": [],
+                  "pinned_title_ids": {str(eid): 999999}},
+        )
+        assert r.status_code == 400
+        assert "eligible" in r.get_json()["error"]
+
+    def test_resync_brings_added_title_into_frozen_snapshot(self, app_app, tmp_path):
+        """The generate snapshot is frozen at analyze; pinning a title re-syncs
+        eligible_titles from the DB so a post-analyze title reaches generate."""
+        import json
+        cid = _seed_candidate()
+        eid, off, alt = _seed_exp_with_two_titles(cid)
+        aid = _seed_application(cid)
+        # Analyze-time snapshot that predates the alt title: only the official
+        # title is in career_corpus[exp].eligible_titles.
+        ctx = self._ctx(tmp_path, aid, extra={
+            "career_corpus": [
+                {"id": eid, "company": "Acme", "eligible_titles": [
+                    {"id": off, "title": "Staff Engineer", "is_official": True},
+                ], "bullets": []},
+            ],
+        })
+        client = app_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={"context_path": str(ctx), "pinned": [], "excluded": [],
+                  "pinned_title_ids": {str(eid): alt}},
+        )
+        assert r.status_code == 200, r.get_json()
+        saved = json.loads(ctx.read_text(encoding="utf-8"))
+        exp_entry = next(e for e in saved["career_corpus"] if e["id"] == eid)
+        title_ids = {t["id"] for t in exp_entry["eligible_titles"]}
+        assert alt in title_ids   # re-synced into the frozen snapshot
+        assert off in title_ids   # official still present
+
+
 class TestCompositionBulletOrder:
     """feat/bullet-drag-reorder — composition_overrides.bullet_order round-trips
     through POST, drives the GET order + has_custom_order / in_custom_order

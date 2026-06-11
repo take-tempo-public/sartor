@@ -265,7 +265,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-06-10.1"
+PROMPT_VERSION = "2026-06-11.1"
 
 # --- Prompt-override primitive (eval tuning loop, v1.0.4) --------------------
 # Lets an eval run inject a CANDIDATE system prompt without editing the persona
@@ -607,6 +607,19 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
         excluded_ids = {int(x) for x in (ov.get("excluded") or [])}
         pinned_ids = {int(x) for x in (ov.get("pinned") or [])}
         added_ids = {int(x) for x in (ov.get("added") or [])}
+        # feat/compose-add-title — per-experience title pin
+        # ({experience_id: title_id}). Flattened to the set of pinned title ids
+        # (ids are globally unique) so _corpus_block can mark the chosen
+        # <eligible_title pinned="true">. Empty ⇒ no attr added ⇒ the cached
+        # prefix stays byte-identical for users who didn't pin a title.
+        pinned_title_raw = ov.get("pinned_title_ids") or {}
+        pinned_title_ids: set[int] = set()
+        if isinstance(pinned_title_raw, dict):
+            for v in pinned_title_raw.values():
+                try:
+                    pinned_title_ids.add(int(v))
+                except (TypeError, ValueError):
+                    continue
         recommendations = context_set.get("llm_recommendations") or {}
         # `recommendations` is keyed by experience-id string when persisted
         # from JSON; coerce both shapes (dict or list) into per-exp sets.
@@ -698,6 +711,7 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
             corpus = reordered
         parts.append(_corpus_block(
             corpus, iteration=iteration, pinned_ids=pinned_ids,
+            pinned_title_ids=pinned_title_ids,
         ))
     else:
         resume_text, _ = _current_draft_text(context_set)
@@ -738,6 +752,7 @@ def _corpus_block(
     experiences: list[CorpusExperience],
     iteration: int,
     pinned_ids: frozenset[int] | set[int] = frozenset(),
+    pinned_title_ids: frozenset[int] | set[int] = frozenset(),
 ) -> str:
     """Emit the `<career_corpus>` XML block when DB-backed mode is active.
 
@@ -763,8 +778,11 @@ def _corpus_block(
         parts.append(f"  <experience {attrs}>")
         for t in exp.get("eligible_titles", []) or []:
             official = "true" if t.get("is_official") else "false"
+            # feat/compose-add-title — the user pinned this title for this JD;
+            # the corpus_mode rule below makes it the required chosen_title_id.
+            title_pinned = ' pinned="true"' if t.get("id") in pinned_title_ids else ""
             parts.append(
-                f'    <eligible_title id="t{t["id"]}" official="{official}">'
+                f'    <eligible_title id="t{t["id"]}" official="{official}"{title_pinned}>'
                 f'{_attr_escape(t.get("title", ""))}</eligible_title>'
             )
         for b in exp.get("bullets", []) or []:
@@ -1840,7 +1858,7 @@ def _build_generate_prompt(
         corpus_mode_block = """<corpus_mode>
 The candidate's experience pool is the <career_corpus> block above (not a free-text <resume>). Each <experience> carries:
 - A `dates` attribute — IMMUTABLE ground truth. Whichever title you use for an experience (an <eligible_title> or one you propose), its heading MUST reproduce that experience's exact date range. Never merge, shift, or harmonize ranges across experiences — even when their titles look similar, even when you reorder experiences for relevance, and even on a regeneration pass.
-- One or more <eligible_title> elements — the candidate has approved these framings. Pick the one that best matches THIS JD's positioning.
+- One or more <eligible_title> elements — the candidate has approved these framings. Pick the one that best matches THIS JD's positioning. If an <eligible_title> is marked `pinned="true"`, the candidate has CHOSEN it for this application: you MUST set that title's id as the experience's `chosen_title_id` and reproduce its exact text as the experience's heading title (still honoring the immutable `dates`) — do not substitute, reword, or propose an alternative for that experience.
 - One or more <bullet id="bN" ...> elements — VERBATIM text from the candidate's resumes. Treat each bullet as immutable ground truth: select, reorder, and reframe SURROUNDING context, but the bullet text itself MUST appear verbatim in your resume_content.
 
 When an essential JD requirement is not covered by any existing bullet, you MAY propose a new bullet in `proposed_new_bullets` (see output schema below). The user reviews proposals before they join the canonical corpus.

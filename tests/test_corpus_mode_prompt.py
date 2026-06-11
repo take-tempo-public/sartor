@@ -208,6 +208,27 @@ class TestGenerateDispatch:
         # Response passes through with all extended fields
         assert result["selected_bullets"][0]["chosen_title_id"] == "t10"
 
+    def test_corpus_mode_block_documents_title_pin_rule(self, monkeypatch):
+        """feat/compose-add-title — the corpus_mode instructions tell the model
+        that a pinned <eligible_title> MUST be used (the generate half of the
+        per-JD title pin). This is the PROMPT_VERSION-bumping change."""
+        ctx = _make_corpus_context()
+        analysis = {
+            "essential_skills": [], "keyword_placement": [],
+            "suggestions": [], "overall_strategy": "",
+            "professional_vocabulary": [],
+        }
+        captured: dict = {}
+        fake_response = {
+            "resume_content": "x", "cover_letter_content": "y",
+            "changes_made": [], "proofread_notes": [],
+            "selected_bullets": [], "proposed_new_bullets": [],
+            "proposed_experience_titles": [],
+        }
+        with patch("analyzer._call_llm", _mock_llm_call(captured, fake_response)):
+            generate(None, ctx, analysis, username="u", run_id="r")
+        assert "the candidate has CHOSEN it for this application" in captured["prompt"]
+
     def test_corpus_response_missing_selected_bullets_raises(self, monkeypatch):
         """When career_corpus is set, the response MUST include selected_bullets
         + proposed_new_bullets + proposed_experience_titles. Missing any of these
@@ -351,3 +372,41 @@ class TestBulletOrderHonored:
         ctx["composition_overrides"] = {"bullet_order": {1: [101, 100]}}
         prefix = _stable_user_prefix(ctx)
         assert self._index_of(prefix, 101) < self._index_of(prefix, 100)
+
+
+class TestTitlePinEmission:
+    """feat/compose-add-title — composition_overrides.pinned_title_ids marks the
+    chosen <eligible_title pinned="true"> in the cached prefix. Absent/empty ⇒
+    byte-identical (the title pin never busts the analyze→generate cache for
+    users who didn't pin a title — exactly like bullet pins)."""
+
+    def test_pinned_title_emits_pinned_attr(self):
+        ctx = _make_corpus_context()
+        ctx["composition_overrides"] = {"pinned_title_ids": {"1": 11}}
+        prefix = _stable_user_prefix(ctx)
+        assert ('<eligible_title id="t11" official="false" pinned="true">'
+                'AI Product Lead</eligible_title>') in prefix
+        # The non-pinned sibling title carries no pin attr.
+        assert ('<eligible_title id="t10" official="true">Senior PM'
+                '</eligible_title>') in prefix
+
+    def test_no_pin_no_attr(self):
+        prefix = _stable_user_prefix(_make_corpus_context())
+        assert 'pinned="true"' not in prefix
+
+    def test_empty_pinned_title_ids_byte_identical(self):
+        baseline = _stable_user_prefix(_make_corpus_context())
+        ctx = _make_corpus_context()
+        ctx["composition_overrides"] = {
+            "pinned": [], "excluded": [], "added": [], "pinned_title_ids": {},
+        }
+        assert _stable_user_prefix(ctx) == baseline
+
+    def test_pin_matched_by_title_id_regardless_of_key_shape(self):
+        """The pin is flattened to its title-id values, so the experience-key
+        shape (str vs int) is immaterial — both resolve the same."""
+        for key in ("1", 1):
+            ctx = _make_corpus_context()
+            ctx["composition_overrides"] = {"pinned_title_ids": {key: 11}}
+            prefix = _stable_user_prefix(ctx)
+            assert 'id="t11" official="false" pinned="true"' in prefix

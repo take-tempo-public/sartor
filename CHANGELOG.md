@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — add an alternative job title in Compose + pin it per-JD (`feat/compose-add-title`, #7)
+
+In Step 3 (Compose) a user often realizes a *different framing* of a role fits
+this JD. Until now they couldn't act on it in the wizard: the Compose titles
+list was read-only, the only way to add a title was the separate Career-corpus
+tab (which added it as a *non-eligible* alternate), and titles had **no** per-JD
+selection at all — the generate LLM picked one by fit and the preview showed
+official-or-first (walk finding #7).
+
+- **Add a title, written into the corpus.** A "+ Add title" affordance on each
+  Compose experience card writes a **sourced, immediately-eligible**
+  `ExperienceTitle` (`source=user_added`, `truthful_enough_to_use=1`,
+  `is_pending_review=0`) via the existing `POST /api/experiences/<id>/titles` —
+  a first-class corpus item, **not** a context-only override. It appears at once
+  as a selectable option for this résumé.
+- **Pin which title this JD uses.** Each card's titles are now a radio group; the
+  pick persists as `composition_overrides.pinned_title_ids`
+  (`{experience_id: title_id}`), collected by the existing debounced composition
+  autosave. Only an explicit pin is sent (mirrors `bullet_order`'s
+  `data-custom-order`), so an untouched default never persists a pin or busts the
+  analyze→generate cache.
+- **Honored in both the preview and the generated download.** The live preview /
+  corpus render (`build_json_resume_from_corpus`) resolves the title as
+  **pin → official → first**; generate marks the chosen `<eligible_title
+  pinned="true">` in the corpus block and a new `<corpus_mode>` rule requires the
+  model to use it as that experience's `chosen_title_id` and heading (dates stay
+  immutable). Because generate reads a **frozen** corpus snapshot, the
+  composition save **re-syncs** `career_corpus[exp].eligible_titles` from the DB
+  for pinned experiences, so a title added after analyze still reaches generate.
+- `PROMPT_VERSION` → `2026-06-11.1` (the `<corpus_mode>` rule changed). Per-JD
+  pin scope was a user-approved extension of the #7 row.
+- Covered by route/unit tests (`tests/test_career_corpus_routes.py` add contract;
+  `tests/test_application_routes.py` `TestCompositionTitlePin` persist/validate/
+  re-sync; `tests/test_corpus_to_json_resume.py` `TestTitlePin`;
+  `tests/test_corpus_mode_prompt.py` `TestTitlePinEmission` + the rule) and a UX
+  regression (`tests/ux/regression/test_20260611_compose_add_title.py` — add a
+  title, pin it, persist across a Compose reload). No new dependency.
+
 ### Added — prior applications resume from their furthest step + editable cards (`feat/prior-app-resume-robustness`, #4 + #24)
 
 The v1.0.5 click-to-resume only offered "Resume in wizard" when a résumé had
