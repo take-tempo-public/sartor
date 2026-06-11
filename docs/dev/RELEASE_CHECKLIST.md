@@ -238,7 +238,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       byte-identical). Security trio enforced; unknown user → 400, config-only user with
       no corpus → 409. Tests in `TestSeedExport`; no `PROMPT_VERSION` bump, no new dep.
 
-- [ ] **Compose custom bullet order visually reverts on reload when an
+- [x] **Compose custom bullet order visually reverts on reload when an
       experience has no LLM recommendations** — surfaced 2026-06-04 while
       building the `feat/playwright-ux-suite` bullet-drag regression test. The
       saved `composition_overrides.bullet_order` round-trips correctly through
@@ -254,7 +254,15 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       honor the GET array order on the no-recommendations fallback path too,
       instead of re-sorting by score. **Now scheduled as v1.0.6 Sprint 6.1**
       (`fix/compose-order-no-recommendations`; [`RELEASE_ARC.md`](RELEASE_ARC.md)
-      §Phase 4.5).
+      §Phase 4.5). **Resolved 2026-06-11** on
+      `fix/compose-order-no-recommendations`: `_renderComposeCard` now honors the
+      GET-returned order on the no-recommendations fallback (the `in_custom_order`
+      bullets, already in saved sequence) when `has_custom_order`, instead of
+      re-deriving a score sort via `_dropoffPick`. Render-only fix — no backend
+      change, no `PROMPT_VERSION` bump, no new dep. UX regression
+      `tests/ux/regression/test_20260611_compose_order_no_recommendations.py`; the
+      common path stays guarded by `test_20260604_bullet_drag_reorder.py`. See
+      CHANGELOG [Unreleased].
 
 The v1.0.1 item list below was **reconciled in place at the v1.0.3 tag
 (2026-06-02)**: completed items are checked; still-open items are flagged
