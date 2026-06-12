@@ -1685,6 +1685,12 @@ async function runIterateClarify() {
     }
     lastIterateClarifyQuestions = data.questions || [];
     _renderIterateClarifyQuestions(lastIterateClarifyQuestions, data.reasoning || '');
+    // KW5: the section renders below the fold — bring it into view so it's clear
+    // something happened (mirrors the wizard-nav / corpus scroll idiom). Fires
+    // only after the synchronous render above, covering both the questions and
+    // the "no follow-up questions surfaced" branches.
+    const iterArea = document.getElementById('iterateClarifyArea');
+    if (iterArea) iterArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setStatus('QUESTIONS READY');
     _announce(`${lastIterateClarifyQuestions.length} iteration question${lastIterateClarifyQuestions.length === 1 ? '' : 's'} ready for review.`);
   } catch (e) {

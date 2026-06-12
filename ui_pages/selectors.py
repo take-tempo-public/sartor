@@ -71,6 +71,14 @@ class Wizard:
     REFINEMENT_INPUT = "#refinementInput"
     OUTPUT_PREVIEW_BLOCK = "#outputPreviewBlock"
     OUTPUT_PREVIEW_FRAME = "#outputPreviewFrame"
+    # Post-generation "Follow-up clarification" controls (the iteration interview
+    # the user triggers from the Output panel via #btnIterateClarify). The id is
+    # stable across the KW8 copy rename — only the visible label changed.
+    ITERATE_CLARIFY_BUTTON = "#btnIterateClarify"
+    ITERATE_CLARIFY_AREA = "#iterateClarifyArea"
+    ITERATE_CLARIFY_QUESTIONS = "#iterateClarifyQuestions"
+    ITERATE_CLARIFY_QUESTION_TEXTAREA = "#iterateClarifyQuestions textarea"
+    ITERATE_CLARIFY_DIVIDER_LABEL = "#iterateClarifyArea .clarify-divider-label"
 
     @staticmethod
     def step_button(step: int) -> str:

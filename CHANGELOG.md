@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — wizard-flow polish: follow-up-question auto-scroll + copy alignment (`fix/wizard-flow-polish`)
+
+Two small Output-panel polish fixes from the v1.0.5 walkthrough harvest
+(Sprint 6.1, final row; findings KW5 + KW8):
+
+- **KW5 — auto-scroll.** Clicking the post-generation **"Get follow-up
+  questions"** button rendered the iteration questions *below the fold*, so it
+  looked like nothing happened. `runIterateClarify()` now scrolls the revealed
+  `#iterateClarifyArea` section into view in its success path (reusing the
+  existing `scrollIntoView({behavior:'smooth',block:'start'})` idiom), covering
+  both the questions and the "no follow-up questions surfaced" branches.
+- **KW8 — copy alignment.** The button label and section divider used
+  "interview" wording inconsistent with the clarify vocabulary (the button's own
+  tooltip already said "clarifying questions"). They now read **"Get follow-up
+  questions"** and **"Follow-up clarification"**. The `#btnIterateClarify` id is
+  unchanged, so selectors / page objects are unaffected. The tracker "Got
+  interview" outcome status is a different concept and was left untouched.
+- Front-end only — no LLM call, no `PROMPT_VERSION` bump, no new route, no new
+  dependency, no migration. Covered by a UX-tier regression
+  (`tests/ux/regression/test_20260611_wizard_flow_polish.py`): a cheap static
+  copy guard plus a full analyze→generate→follow-up drive that verifies the
+  scroll deterministically by spying on `scrollIntoView`. That drive needed two
+  new UX stubs (`fake_generate_streaming` + `fake_clarify_iteration` in
+  `tests/ux/stubs.py`) — the first UX test to exercise the generate route.
+
 ### Fixed — a detached cover letter is now persisted to its run row (`fix/run-cover-letter-persistence`)
 
 Generating a cover letter via the Step-6 "+ Generate cover letter" button left
