@@ -150,8 +150,21 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       deterministic aggregation only — no prompt change, no new route, no new dep;
       `bar_pct` unit test + UX regression
       `test_20260611_diagnostics_chart_corrections.py`; dashboard POM/selectors
-      moved from `drawer` to `detail-panel` handles. Sprint 6.3
-      (`fix/form-field-labels-a11y`, **where the axe a11y gate lands first**) is next.
+      moved from `drawer` to `detail-panel` handles. **Sprint 6.3** opened
+      2026-06-12 with `fix/form-field-labels-a11y` — **the never-shipped axe
+      a11y gate landed** (`tests/ux/a11y/test_axe_smoke.py`; **vendored**
+      axe-core 4.10.2, no pip dep; `a11y` marker, runs inside `pytest -m ux`),
+      now guarding every later 6.x branch. Defect-vs-expected: the current
+      markup had **zero** label/name serious/critical violations (the "~150"
+      predated the redesign), so #3's labeling was already done — completed
+      belt-and-suspenders (sr-only labels on the 3 hidden file inputs +
+      `name`/`autocomplete` on the new-user & Settings personal fields). The
+      gate's only serious finding was **pre-existing color-contrast** (muted
+      text sub-AA on dark), fixed at the token level (user-approved scope add):
+      `--fg-2`/`--fg-3` lightened to AA + `.edit-hint` drops `opacity:0.7`.
+      Front-end + one test tier only — no prompt/route/dep/migration change;
+      ruff/mypy ✓, pytest 1072/1072. Next 6.3 row:
+      `feat/required-field-and-dropdown-pattern`.
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +

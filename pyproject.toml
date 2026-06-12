@@ -126,4 +126,5 @@ addopts = "-v --tb=short"
 markers = [
     "slow: tests that launch a real headless Chromium (β.3 PDF end-to-end)",
     "ux: Playwright browser-driven UI regression tests (also marked slow; need `python -m playwright install chromium`). Run with `pytest -m ux`.",
+    "a11y: axe-core accessibility smoke gate (also marked `ux` + `slow`, so it runs inside `pytest -m ux`; address it alone with `pytest -m a11y`). axe-core is vendored at `tests/ux/a11y/vendor/axe.min.js` — no pip dependency.",
 ]

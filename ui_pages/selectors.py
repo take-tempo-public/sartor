@@ -113,6 +113,14 @@ class Memory:
     PANEL = "#panelMemory"
 
 
+class Settings:
+    """The right-slide Settings drawer (Workstream B1.3) — opened from the
+    header pill; profile/config fields live inside (`#cfgName` … `#cfgNotes`)."""
+
+    OPEN_PILL = "#settingsPill"
+    DRAWER = "#settingsDrawer"
+
+
 class Onboarding:
     """The shared empty-corpus CTA (`_renderCorpusEmptyCTA`) rendered into a
     read-only tab (Memory / Personas / Applications) when the selected user has
