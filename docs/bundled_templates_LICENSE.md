@@ -34,16 +34,19 @@ SOFTWARE.
 |---|---|---|
 | `classic.docx` | Classic Single-Column | Arial 11pt, conservative spacing, uppercase section headings |
 | `modern.docx` | Modern Single-Column | Calibri 11pt, small-caps section headings, tighter line spacing |
-| `compact.docx` | Compact (Senior) | Calibri 10pt, very tight spacing, 0.6in margins, uppercase headings |
 | `spacious.docx` | Spacious (Career Changer / Junior) | Arial 11pt, generous spacing, uppercase headings |
-| `hybrid_tech.docx` | Hybrid Tech | Helvetica 11pt, underlined section headings |
+| `tech.docx` | Tech (ATS-optimized) | Georgia 11pt, centered name, underlined section headings |
+
+*(Compact and Hybrid Tech were retired in the v1.0.0 curation — Compact's
+sidebar layout was ATS-unsafe; Hybrid Tech was rebuilt as `tech.docx`. See
+`db/migrations/versions/0005_curate_bundled_templates.py`.)*
 
 Each `.docx`'s core properties (visible in Word's File → Info pane) carry
 the title, description, and an MIT license notice.
 
 ## Provenance
 
-All five templates are **originally authored** for this project. None copy
+All four templates are **originally authored** for this project. None copy
 content, structure, or styling directly from any third-party template.
 
 Design conventions that informed the structure (single-column, standard
@@ -54,7 +57,8 @@ project's understanding of those conventions but were NOT copied:
 - **Jake's Resume** (Overleaf, MIT license, LaTeX) — informed the
   single-column + right-tabbed-date convention used in `classic.docx`.
 - **Anubhav's single-column resume** (Overleaf, MIT license, LaTeX) —
-  reinforced the value of typographic restraint in `compact.docx`.
+  reinforced the value of typographic restraint (originally for the
+  since-retired `compact.docx`).
 - **Jobscan's ATS template guidance** (commercial, non-copying) — informed
   the rule set in `docs/template_authoring.md`.
 
