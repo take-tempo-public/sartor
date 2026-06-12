@@ -5527,7 +5527,14 @@ function openFormModal(opts) {
     const inputs = {};
     (opts.fields || []).forEach(f => {
       const id = `formModal_${f.name}`;
-      body.appendChild(_el('label', { htmlFor: id, textContent: f.label }));
+      const label = _el('label', { htmlFor: id, textContent: f.label });
+      if (f.required) {
+        // Reusable required-field marker (static/style.css .required-marker):
+        // decorative asterisk on the label; aria-required (below) is the real
+        // signal assistive tech announces.
+        label.appendChild(_el('span', { className: 'required-marker', textContent: '*' }, [], { 'aria-hidden': 'true' }));
+      }
+      body.appendChild(label);
       let input;
       if (f.type === 'textarea') {
         input = _el('textarea', { id });
@@ -5545,7 +5552,7 @@ function openFormModal(opts) {
         if (f.defaultValue) input.value = f.defaultValue;
       }
       if (f.placeholder) input.placeholder = f.placeholder;
-      if (f.required) input.required = true;
+      if (f.required) { input.required = true; input.setAttribute('aria-required', 'true'); }
       if (f.pattern) input.pattern = f.pattern;
       body.appendChild(input);
       inputs[f.name] = input;

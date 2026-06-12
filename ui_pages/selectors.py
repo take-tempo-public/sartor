@@ -24,6 +24,15 @@ class UserPicker:
     CREATE_BUTTON = "text=Create"
 
 
+class Forms:
+    """Cross-surface form conventions (Sprint 6.3 #21). The required-field
+    marker is a reusable class shared by the new-user form, the openFormModal
+    modals, and the diagnostics dropdowns — one handle for all of them."""
+
+    REQUIRED_MARKER = ".required-marker"
+    REQUIRED_LEGEND = ".form-required-legend"
+
+
 class TopTabs:
     CORPUS = "#topTabCorpus"
     TAILOR = "#topTabTailor"
@@ -195,6 +204,12 @@ class Dashboard:
     ANN_BS_ADD_JD = "#bsAddJd"
     ANN_BS_RUN = "#bsRun"
     ANN_BS_PROGRESS = "#bsProgress"
+    # Tuning tab — "Real-corpus seed (optional)" sub-panel. #bsUser + #tuneUser
+    # are <select data-user-source> auto-populated from /api/users (Sprint 6.3
+    # #20-dropdown); both opt in via the data attribute.
+    USER_SOURCE_SELECT = "select[data-user-source]"
+    TUNE_USER = "#tuneUser"
+    TUNE_SLUG = "#tuneSlug"
 
 
 class Compose:

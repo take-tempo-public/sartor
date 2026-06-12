@@ -163,8 +163,22 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       text sub-AA on dark), fixed at the token level (user-approved scope add):
       `--fg-2`/`--fg-3` lightened to AA + `.edit-hint` drops `opacity:0.7`.
       Front-end + one test tier only — no prompt/route/dep/migration change;
-      ruff/mypy ✓, pytest 1072/1072. Next 6.3 row:
-      `feat/required-field-and-dropdown-pattern`.
+      ruff/mypy ✓, pytest 1072/1072. Second 6.3 row
+      `feat/required-field-and-dropdown-pattern` (#21 + #20-dropdown) landed
+      2026-06-12 — two reusable conventions built on the new gate. **#21:** a
+      `.required-marker` + `.form-required-legend` in `static/style.css`
+      (shared) + the convention `required`/`aria-required` on the input,
+      decorative `aria-hidden` asterisk on the label, applied across three
+      render paths (new-user form, the `openFormModal` modals, and the console
+      dropdown label). **#20:** `#bsUser`/`#tuneUser` converted from free-text
+      inputs to `<select data-user-source>` auto-filled on load from the
+      existing `GET /api/users` (reusable `populateUserSelects()`; no new route;
+      `.value` reads unchanged) — `#bsUser` carries the required marker,
+      `#tuneUser` (optional section) does not. Front-end + tests only — no
+      prompt/route/dep/migration change; new regression
+      `test_20260612_required_field_and_dropdown.py` + the dashboard axe scan
+      now seeds a candidate so the populated dropdowns are scanned. Next 6.3
+      row: `fix/corpus-affordance-polish`.
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +
