@@ -32,8 +32,16 @@ if [ "${CLAUDE_ALLOW_MAIN_EDITS:-}" = "1" ]; then
   exit 0
 fi
 
-# Current branch; pass on any git edge case
-BR=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+# Branch of the repo containing the TARGET FILE (worktree-aware); pass on
+# any git edge case. Resolving HEAD in the hook's cwd misreads the launch
+# clone's branch when the target lives in another worktree/clone. Walk up
+# to the nearest existing dir (Write may create new parent dirs); the drive
+# root always exists, so the loop terminates.
+DIR=$(dirname "$NORM_PATH")
+while [ -n "$DIR" ] && [ ! -d "$DIR" ] && [ "$DIR" != "/" ] && [ "$DIR" != "." ]; do
+  DIR=$(dirname "$DIR")
+done
+BR=$(git -C "${DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null)
 if [ -z "$BR" ] || [ "$BR" = "HEAD" ]; then
   exit 0
 fi
