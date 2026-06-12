@@ -194,7 +194,14 @@ def test_axe_compose_and_template_stubbed(
 def test_axe_dashboard_console(
     page: Page, live_server: str, ux_app: ModuleType
 ) -> None:
-    """Each /_dashboard tab (Tuning holds the `#tuneCandidate` textarea)."""
+    """Each /_dashboard tab (Tuning holds the `#tuneCandidate` textarea).
+
+    Seeds a candidate so the auto-populated `#bsUser` / `#tuneUser`
+    `<select data-user-source>` dropdowns (Sprint 6.3 #20-dropdown) are scanned
+    in their *revealed + populated* state — the real control with its label,
+    asterisk, and options — not just an empty placeholder."""
+    seed_user(ux_app, "alice")  # GET /api/users → ["alice"] populates the dropdowns
+
     dash = DashboardConsolePage(page, live_server).load()
 
     found: dict[str, list[dict[str, Any]]] = {}
@@ -203,6 +210,20 @@ def test_axe_dashboard_console(
         page.wait_for_selector(
             Dashboard.pane_active(tab), state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
+        # Open the collapsed sub-panel that holds each username dropdown and wait
+        # for the fetched option, so axe scans the populated control.
+        # <option> elements are never "visible" to Playwright, so wait on
+        # `attached` to confirm the fetch-populated option landed.
+        if tab == "annotate":
+            dash.reveal_details_for(Dashboard.ANN_BS_USER)
+            page.wait_for_selector(
+                f"{Dashboard.ANN_BS_USER} option[value='alice']", state="attached"
+            )
+        elif tab == "tuning":
+            dash.reveal_details_for(Dashboard.TUNE_USER)
+            page.wait_for_selector(
+                f"{Dashboard.TUNE_USER} option[value='alice']", state="attached"
+            )
         found[f"dashboard:{tab}"] = _axe_serious(page)
 
     _assert_clean(found)

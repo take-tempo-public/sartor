@@ -363,7 +363,14 @@
     <details class="annotate-section">
       <summary>Real-corpus seed (optional) — A/B against your corpus instead of committed fixtures</summary>
       <div class="filters">
-        <label>Candidate username<input type="text" id="tuneUser" placeholder="e.g. alex"></label>
+        <!-- data-user-source: auto-populated from GET /api/users on load
+             (populateUserSelects). No required marker — this whole section is
+             optional, so the username is only conditionally needed. -->
+        <label>Candidate username
+          <select id="tuneUser" data-user-source>
+            <option value="">— Select candidate —</option>
+          </select>
+        </label>
         <label>Fixture slug<input type="text" id="tuneSlug" placeholder="&lt;name&gt;"></label>
       </div>
       <p class="sub">Sets <code class="short">--suite real --seed</code>: the corpus comes from
@@ -411,7 +418,14 @@
         <strong>Makes paid Sonnet/Haiku calls (~70s per JD)</strong> and reuses the same streaming
         engine as the wizard's analyze.</p>
       <div class="filters">
-        <label>Candidate username<input type="text" id="bsUser" placeholder="e.g. alex"></label>
+        <!-- data-user-source: auto-populated from GET /api/users on load
+             (populateUserSelects). Required marker: a username is needed to
+             run a bootstrap or export a seed. -->
+        <label>Candidate username <span class="required-marker" aria-hidden="true">*</span>
+          <select id="bsUser" data-user-source aria-required="true">
+            <option value="">— Select candidate —</option>
+          </select>
+        </label>
         <label>Fixture slug (optional)<input type="text" id="bsSlug" placeholder="&lt;candidate&gt;-bootstrap"></label>
       </div>
       <div id="bsJds"></div>
@@ -717,6 +731,30 @@
   }
   tabs.forEach(function (t) { t.addEventListener('click', function () { activateTab(t.dataset.tab); }); });
   activateTab('pipeline');
+
+  // ---- Reusable: auto-populate any <select data-user-source> with the
+  // candidate usernames from GET /api/users (mirrors loadUsers() in app.js).
+  // The console's #bsUser / #tuneUser opt in via the data attribute; the
+  // placeholder <option value=""> is preserved as the empty state so the
+  // existing `.value` reads + "provide a username" guards still work. ----
+  function populateUserSelects() {
+    var selects = document.querySelectorAll('select[data-user-source]');
+    if (!selects.length) return;
+    fetch('/api/users').then(function (r) { return r.json(); }).then(function (users) {
+      selects.forEach(function (sel) {
+        var placeholder = sel.querySelector('option[value=""]');
+        sel.innerHTML = '';
+        if (placeholder) sel.appendChild(placeholder);
+        (users || []).forEach(function (u) {
+          var opt = document.createElement('option');
+          opt.value = u;
+          opt.textContent = u;
+          sel.appendChild(opt);
+        });
+      });
+    }).catch(function () { /* leave the placeholder-only select; non-fatal */ });
+  }
+  populateUserSelects();
 
   // ---- Detail panel (inline, full-width — replaces the side drawer) ----
   var panel = document.getElementById('detailPanel');

@@ -270,6 +270,32 @@ textarea {
   line-height: 1.6;
 }
 
+/* ---- Required-field marker (reusable; Sprint 6.3 #21) ----
+   The convention for marking a required form field, used across static HTML
+   (index.html), the JS-rendered modals (app.js openFormModal), and the
+   diagnostics dropdowns (dashboard.html). Apply ALL three parts:
+     1. the input carries `required` + `aria-required="true"` (the real,
+        programmatic semantics — what assistive tech announces);
+     2. its visible label carries a trailing decorative asterisk:
+        <span class="required-marker" aria-hidden="true">*</span>
+        (aria-hidden so a screen reader doesn't read a stray "star" —
+        aria-required already conveys requiredness);
+     3. a field cluster gets one legend line:
+        <p class="form-required-legend"><span class="required-marker"
+           aria-hidden="true">*</span> Required</p>. */
+.required-marker {
+  color: var(--danger);
+  margin-left: 2px;
+  font-weight: 700;
+}
+.form-required-legend {
+  color: var(--fg-2);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 6px 0 0;
+}
+
 /* ---- Buttons ---- */
 .cb-btn {
   padding: 8px 24px;

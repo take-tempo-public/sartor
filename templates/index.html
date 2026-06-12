@@ -77,15 +77,22 @@
           <button class="cb-btn cb-bg-amber" id="btnNewUser" onclick="showNewUserForm()">New user</button>
         </div>
         <div id="newUserForm" class="hidden">
+          <!-- Required fields carry `required` + `aria-required="true"`; the
+               visible cue is the inline .required-marker asterisk (labels here
+               are sr-only, so the asterisk rides next to the input). See the
+               reusable convention in static/style.css (.required-marker). -->
           <div class="form-row">
-            <label for="newUsername" class="sr-only">Username</label>
-            <input type="text" id="newUsername" name="newUsername" autocomplete="username" placeholder="Username" aria-label="New user username">
-            <label for="newName" class="sr-only">Full name</label>
-            <input type="text" id="newName" name="newName" autocomplete="name" placeholder="Full Name" aria-label="New user full name">
+            <label for="newUsername" class="sr-only">Username (required)</label>
+            <input type="text" id="newUsername" name="newUsername" autocomplete="username" placeholder="Username" aria-label="New user username" required aria-required="true">
+            <span class="required-marker" aria-hidden="true">*</span>
+            <label for="newName" class="sr-only">Full name (required)</label>
+            <input type="text" id="newName" name="newName" autocomplete="name" placeholder="Full Name" aria-label="New user full name" required aria-required="true">
+            <span class="required-marker" aria-hidden="true">*</span>
           </div>
           <div class="form-row">
-            <label for="newEmail" class="sr-only">Email</label>
-            <input type="email" id="newEmail" name="newEmail" autocomplete="email" placeholder="Email" aria-label="New user email">
+            <label for="newEmail" class="sr-only">Email (required)</label>
+            <input type="email" id="newEmail" name="newEmail" autocomplete="email" placeholder="Email" aria-label="New user email" required aria-required="true">
+            <span class="required-marker" aria-hidden="true">*</span>
             <label for="newPhone" class="sr-only">Phone</label>
             <input type="tel" id="newPhone" name="newPhone" autocomplete="tel" placeholder="Phone" aria-label="New user phone">
           </div>
@@ -95,6 +102,7 @@
             <label for="newWebsite" class="sr-only">Website URL</label>
             <input type="url" id="newWebsite" name="newWebsite" autocomplete="url" placeholder="yoursite.com (https:// optional)" aria-label="New user website URL">
           </div>
+          <p class="form-required-legend"><span class="required-marker" aria-hidden="true">*</span> Required</p>
           <div class="form-row">
             <button class="cb-btn cb-bg-teal" onclick="createUser()">Create</button>
             <button class="cb-btn" onclick="hideNewUserForm()">Cancel</button>

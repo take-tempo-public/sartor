@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — reusable required-field marker + auto-populatable username dropdown (`feat/required-field-and-dropdown-pattern`)
+
+Two reusable front-end conventions (Sprint 6.3, findings #21 + #20-dropdown),
+built on the axe a11y gate that the prior branch landed. Front-end + tests only —
+no LLM call, no `PROMPT_VERSION` bump, no new route (reuses `GET /api/users`),
+no new dependency, no migration.
+
+- **#21 — reusable required-field marker.** A new convention: a required input
+  carries `required` + `aria-required="true"`; its visible label carries a
+  decorative `<span class="required-marker" aria-hidden="true">*</span>`; a field
+  cluster gets one `<p class="form-required-legend">` line. The two classes live
+  in `static/style.css` (shared — the dashboard loads it too), documented by a
+  load-bearing comment. `aria-required` is the real signal assistive tech
+  announces; the asterisk is purely visual (`aria-hidden`). Proven across **three
+  render paths**: the static new-user form (`templates/index.html` —
+  username/name/email; the optional contact fields stay unmarked), the
+  JS-rendered `openFormModal` modals (`static/app.js` — every `required:true`
+  field gets the marker + `aria-required` for free, covering add-title /
+  add-bullet / add-experience), and the console dropdown label (below).
+- **#20 (dropdown) — auto-populatable input → `<select>`.** The diagnostics
+  console's candidate-username fields (`#bsUser` on the Annotate tab, `#tuneUser`
+  on the Tuning tab) were free-text `<input>`s that should pick from the known
+  set of candidates. They are now `<select data-user-source>` auto-filled on load
+  by a small reusable `populateUserSelects()` helper that fetches the existing
+  `GET /api/users` (mirrors `loadUsers()` in `app.js`) — any select opting in via
+  `data-user-source` is filled, with the placeholder `<option value="">`
+  preserved so the existing `.value` reads + "provide a username" guards still
+  work. `#bsUser` (genuinely required) carries the required marker; `#tuneUser`
+  does not — its "Real-corpus seed (optional)" section is optional.
+- **Tests.** New regression
+  `tests/ux/regression/test_20260612_required_field_and_dropdown.py` (the marker
+  across all three render paths + dropdown populate/select round-trip); the
+  dashboard axe scan now seeds a candidate and opens the collapsed sub-panels so
+  the **populated** dropdowns are scanned, not just empty placeholders. Selector
+  registry gains a shared `Forms` class + the Tuning username handles.
+
 ### Added — axe-core accessibility smoke gate + a11y fixes (`fix/form-field-labels-a11y`)
 
 The never-shipped a11y gate (Sprint 6.3, finding #3) — the arbiter that guards

@@ -62,6 +62,28 @@ class DashboardConsolePage(BasePage):
         """Pick a bootstrap by slug; loads its annotations into the editor."""
         self.fixture_select().select_option(slug)
 
+    # --- candidate-username dropdowns (Sprint 6.3 #20-dropdown) --------------
+    def reveal_details_for(self, selector: str) -> None:
+        """Open the <details> ancestor of a control so it renders + is
+        interactable (#bsUser / #tuneUser live inside collapsed sections)."""
+        self.page.locator(selector).evaluate(
+            "el => { const d = el.closest('details'); if (d) d.open = true; }"
+        )
+
+    def bs_user_select(self) -> Locator:
+        return self.page.locator(Dashboard.ANN_BS_USER)
+
+    def select_bs_user(self, username: str) -> None:
+        self.reveal_details_for(Dashboard.ANN_BS_USER)
+        self.bs_user_select().select_option(username)
+
+    def tune_user_select(self) -> Locator:
+        return self.page.locator(Dashboard.TUNE_USER)
+
+    def select_tune_user(self, username: str) -> None:
+        self.reveal_details_for(Dashboard.TUNE_USER)
+        self.tune_user_select().select_option(username)
+
     def editor(self) -> Locator:
         return self.page.locator(Dashboard.ANN_EDITOR)
 
