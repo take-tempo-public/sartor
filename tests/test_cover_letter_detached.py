@@ -194,6 +194,64 @@ class TestGenerateCoverLetterRoute:
         updated = json.loads(ctx_path.read_text(encoding="utf-8"))
         assert updated["last_generated_cover_letter"].startswith("Focused cover letter for ")
 
+    def test_persists_cover_letter_md_to_run_row(self, app_with_stubs):
+        # Corpus-backed mode: the context carries application_run_id, so the
+        # detached cover-letter route must write generated_cover_letter_md onto
+        # that existing run row (the signal B.8 Part 2 will consume) WITHOUT
+        # clobbering the already-persisted résumé md.
+        _app, ctx_path = app_with_stubs
+
+        from db.models import Application, ApplicationRun, Base, Candidate
+        from db.session import get_engine, get_session
+
+        # Materialize the schema in the harness DB (mirrors the db_session
+        # conftest fixture; the route's persist path opens this same engine).
+        Base.metadata.create_all(get_engine())
+        session = get_session()
+        try:
+            cand = Candidate(username="alice", name="Alice")
+            session.add(cand)
+            session.flush()
+            app_row = Application(
+                candidate_id=cand.id, title="x", jd_text="...", jd_fingerprint="abcd",
+            )
+            session.add(app_row)
+            session.flush()
+            run = ApplicationRun(
+                application_id=app_row.id, iteration=0, run_id="run123",
+                prompt_version="test", corpus_snapshot_json="{}",
+                generated_resume_md="# Generated résumé v1",  # résumé already persisted
+            )
+            session.add(run)
+            session.commit()
+            run_pk = run.id
+        finally:
+            session.close()
+
+        # Mark the context corpus-backed by stamping the run id (as /api/analyze does).
+        ctx = json.loads(ctx_path.read_text(encoding="utf-8"))
+        ctx["application_run_id"] = run_pk
+        ctx_path.write_text(json.dumps(ctx), encoding="utf-8")
+
+        client = _app.app.test_client()
+        r = client.post("/api/generate-cover-letter", json={
+            "username": "alice",
+            "context_path": str(ctx_path),
+        })
+        assert r.status_code == 200, r.get_data(as_text=True)
+
+        # The cover-letter md landed on the run row; the résumé md is untouched.
+        session = get_session()
+        try:
+            refreshed = session.query(ApplicationRun).filter_by(id=run_pk).first()
+            assert refreshed is not None
+            assert (refreshed.generated_cover_letter_md or "").startswith(
+                "Focused cover letter for "
+            )
+            assert refreshed.generated_resume_md == "# Generated résumé v1"
+        finally:
+            session.close()
+
     def test_returns_409_when_no_resume_in_context(self, app_with_stubs):
         _app, ctx_path = app_with_stubs
         # Strip the résumé content from the seeded context

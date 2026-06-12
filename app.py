@@ -392,6 +392,48 @@ def _persist_run_persona(application_run_id: int, persona_template_id: int) -> N
         session.close()
 
 
+def _persist_cover_letter_to_db(
+    application_run_id: int,
+    cover_letter_md: str,
+) -> None:
+    """Write-back: persist a detached cover-letter's md onto its run row.
+
+    Mirrors `_persist_corpus_generation_to_db`'s session/lookup/validate/commit
+    pattern, but writes ONLY `generated_cover_letter_md` via
+    `persist_cover_letter_md`. The detached cover-letter route runs after the
+    résumé is already persisted, so routing through the full corpus-persist path
+    would clobber the saved résumé md. Used by `/api/generate-cover-letter` only
+    when the context carries `application_run_id` (corpus-backed mode); the
+    caller wraps this best-effort so a DB hiccup never fails the response.
+    """
+    from db.models import Application, ApplicationRun
+    from db.persist_run import persist_cover_letter_md
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        run = session.query(ApplicationRun).filter_by(id=application_run_id).first()
+        if run is None:
+            logger.warning("Application_run not found for cover-letter persist (id=%s)", application_run_id)
+            return
+        app_row = session.query(Application).filter_by(id=run.application_id).first()
+        if app_row is None:
+            logger.warning("Parent application not found for cover-letter persist (run id=%s)", application_run_id)
+            return
+
+        persist_cover_letter_md(session, run, cover_letter_md)
+        session.commit()
+        logger.info(
+            "Persisted cover-letter md: app_run=%d (%d chars)",
+            application_run_id, len(cover_letter_md),
+        )
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 def _persist_corpus_generation_to_db(
     application_run_id: int,
     generate_result: dict,
@@ -1753,6 +1795,22 @@ def run_generate_cover_letter():
     if "edited_cover_letter_text" in context_set:
         context_set.pop("edited_cover_letter_text", None)
     cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+
+    # Capture the cover-letter signal B.8 Part 2 will consume: persist the
+    # cover-letter md onto the same run row the résumé generation wrote to, so
+    # outcome-weighted recommend (B.8 Part 2) can correlate interviews with the
+    # cover letters that earned them. Corpus-backed mode only (context carries
+    # application_run_id); best-effort so a DB hiccup never fails the
+    # generated-and-downloaded cover letter.
+    app_run_id = context_set.get("application_run_id")
+    if app_run_id is not None:
+        try:
+            _persist_cover_letter_to_db(int(app_run_id), cl_content)
+        except Exception as exc:
+            logger.error(
+                "Cover-letter persist failed (run_id=%s): %s",
+                app_run_id, exc, exc_info=True,
+            )
 
     return jsonify({
         "cover_letter_path":    cover_letter_path,

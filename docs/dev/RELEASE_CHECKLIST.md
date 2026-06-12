@@ -114,7 +114,17 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       (which listed the nonexistent `compact.docx`/`hybrid_tech.docx`) was
       corrected to the curated four. Copy/doc only — no prompt change, no route,
       no new dep; canonical count of 4 pinned by `tests/test_bundled_templates.py`,
-      copy↔rendered-set consistency guarded by a new UX regression.
+      copy↔rendered-set consistency guarded by a new UX regression. Ninth 6.1
+      branch `fix/run-cover-letter-persistence` landed 2026-06-11 — the detached
+      `POST /api/generate-cover-letter` route now persists
+      `generated_cover_letter_md` onto the same run row the résumé wrote to
+      (corpus-backed mode; best-effort), via a new surgical single-column
+      write-back (`persist_cover_letter_md` + `_persist_cover_letter_to_db`) that
+      deliberately avoids `persist_corpus_generation` (which would have nulled the
+      saved résumé md). Captures the cover-letter signal B.8 Part 2 needs while
+      real outcome data accrues. No prompt change, no route, no new dep, no
+      migration; unit + route tests; pipeline/data-flow diagrams synced (detail in
+      the "Discovered during the v1.0.5 stream" item below).
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +
@@ -171,7 +181,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       the route now merges by id (default `merge:true`), the skip path passes
       `merge:false`, and a two-round regression test guards it. See CHANGELOG
       [Unreleased].
-- [ ] **`application_run.generated_cover_letter_md` never populated** — observed
+- [x] **`application_run.generated_cover_letter_md` never populated** — observed
       2026-06-10 in the e2e walkthrough DB (run row has resume md + bullets +
       titles + ATS json, but cover-letter md is empty despite a generated +
       downloaded cover letter). Small run-persistence gap in the
@@ -180,7 +190,19 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       **Scheduled** as `fix/run-cover-letter-persistence` in
       [`RELEASE_ARC.md`](RELEASE_ARC.md) §Sprint 6.1 — land within v1.0.6 so the
       signal is captured while real outcome data accrues this epic (rows generated
-      now without it can't be backfilled).
+      now without it can't be backfilled). **Resolved 2026-06-11** on
+      `fix/run-cover-letter-persistence`: the gap was exclusively the detached
+      `POST /api/generate-cover-letter` route (wrote the letter to disk + context
+      but did **no** DB write; `/api/generate` with `with_cover_letter=True`
+      already persisted). The route now writes `generated_cover_letter_md` onto
+      the same run row the résumé wrote to (`context_set["application_run_id"]`)
+      via a new surgical single-column write-back
+      (`db.persist_run.persist_cover_letter_md` + `app._persist_cover_letter_to_db`)
+      — deliberately **not** `persist_corpus_generation`, which would have nulled
+      the already-saved résumé md. Best-effort, corpus-backed mode only; no prompt
+      change, no route, no new dep, no migration. Unit no-clobber + route
+      end-to-end tests; pipeline/data-flow diagrams synced. See CHANGELOG
+      [Unreleased].
 
 - [ ] **Grounding/hallucination metric inserted into the v1.0.5 sequence**
       (user-approved re-sequence 2026-06-05). `eval/grounding-metric-l0` (the

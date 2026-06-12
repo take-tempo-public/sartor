@@ -27,6 +27,7 @@ from db.models import (
 from db.persist_run import (
     _strip_id_prefix,
     persist_corpus_generation,
+    persist_cover_letter_md,
 )
 
 
@@ -374,3 +375,15 @@ class TestMalformedInput:
         db_session.refresh(run)
         assert run.generated_resume_md == "# Resume"
         assert run.generated_cover_letter_md == "Dear..."
+
+    def test_persist_cover_letter_md_does_not_clobber_resume(self, db_session):
+        # Surgical single-column write-back used by the detached cover-letter
+        # route: it runs AFTER the résumé is persisted, so it must set only
+        # generated_cover_letter_md and leave generated_resume_md intact.
+        c, _e, _b, _t, run = _seed_minimal_candidate_with_run(db_session)
+        run.generated_resume_md = "# Resume"  # résumé already persisted
+        db_session.flush()
+        persist_cover_letter_md(db_session, run, "Dear Hiring Manager,")
+        db_session.refresh(run)
+        assert run.generated_cover_letter_md == "Dear Hiring Manager,"
+        assert run.generated_resume_md == "# Resume"  # NOT clobbered

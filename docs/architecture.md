@@ -157,6 +157,7 @@ sequenceDiagram
     ANL->>SO: call_kind="generate_cover_letter" (~17s)
     SO-->>ANL: {cover_letter_content}
     APP->>FS: write cover_*.docx / .pdf / .md
+    APP->>DB: write generated_cover_letter_md onto the run row
     APP-->>FE: preview
 ```
 
@@ -609,6 +610,7 @@ flowchart TD
     R5 --> ACS[_apply_chosen_summary<br/>resolve pin > rec > default]:::det
     ACS --> LLM4{{generate<br/>Sonnet 4.6}}:::llm
     LLM4 --> SIC[save_iteration_context<br/>writes NEW child file]:::det
+    LLM4 --> RUNDB[persist_corpus_generation<br/>resume md + bullets/titles → run row]:::det
     SIC --> CTX1[(output/&lt;u&gt;/context_TS_iter1.json<br/>parent_context_path → iter 0)]:::onDisk
     SIC --> ARTOUT[(output/&lt;u&gt;/resume_TS.docx /<br/>.pdf / .md / .jsonresume.json)]:::onDisk
 
@@ -627,6 +629,7 @@ flowchart TD
     CTX2 --> R7{Cover letter?}:::route
     R7 -->|/api/generate-cover-letter| LLM7{{generate_cover_letter<br/>Sonnet 4.6}}:::llm
     LLM7 --> AROUTCL[(output/&lt;u&gt;/cover_TS.docx /<br/>.pdf / .md)]:::onDisk
+    LLM7 --> CLDB[persist_cover_letter_md<br/>cover-letter md → same run row]:::det
 
     R7 -->|done| Done([Download])
 ```
