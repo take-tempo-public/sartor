@@ -216,6 +216,31 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       end-to-end tests; pipeline/data-flow diagrams synced. See CHANGELOG
       [Unreleased].
 
+- [ ] **Architecture Mermaid-diagram drift (two spots) — defer to a docs/diagram
+      reconciliation pass** — surfaced 2026-06-11 during `fix/wizard-flow-polish`
+      (KW8) review. Both are pre-existing **doc-only** inaccuracies (no code/behavior
+      bug), so deliberately **not** fixed on a feature branch:
+      1. **Step-2 clarify action mislabeled** — `docs/diagrams/pipeline.mmd` (~L45)
+         and the embedded copy in `docs/architecture.md` (~L89) read
+         `U->>FE: click GET INTERVIEW QUESTIONS` under "Step 2 — Clarify"
+         (`POST /api/clarify`), but the real Step-2 button (`#btnClarify`) is
+         **"Get clarifying questions"** and always was — "interview" never matched
+         it. Correct to `GET CLARIFYING QUESTIONS`. (The Step-6 iterate flow is
+         labeled "ITERATE CLARIFY" + "follow-up questions" and is already accurate;
+         KW8 renamed `#btnIterateClarify` to "Get follow-up questions" and needed no
+         diagram change — which is *why* this Step-2 line is unrelated drift, not a
+         KW8 leftover.)
+      2. **Cover-letter artifact node out of sync between the two data-flow copies**
+         — flagged in the 2026-06-10 `fix/run-cover-letter-persistence` handoff (was
+         chat-only until now): the embedded data-flow diagram in
+         `docs/architecture.md` lists `cover_TS.docx / .pdf / .md` for the
+         cover-letter artifact while `docs/diagrams/data-flow.mmd` lists only
+         `cover_TS.docx`. Harmless, pre-dates recent work.
+      **Not tied to a specific feature branch** — pick up in the next docs/diagram
+      reconciliation (the WS-4b wiki cold-ingest-code pass or a dedicated docs
+      sweep). Tracked here so it survives the handoff rather than living only in
+      chat.
+
 - [ ] **Grounding/hallucination metric inserted into the v1.0.5 sequence**
       (user-approved re-sequence 2026-06-05). `eval/grounding-metric-l0` (the
       deterministic, label-free L0 fabricated-specifics rate) now lands **before**
