@@ -3,8 +3,8 @@
 Seeds eval + call telemetry by monkeypatching the dashboard blueprint's
 module-level data paths (it reads EVAL_RESULTS_DIR / LLM_LOG as globals at
 request time, so a patch is visible to the live server thread), then drives the
-tabbed console: every tab activates, tiles open the shared drawer, the
-groundedness evidence + trace waterfall render, Esc/close works — and the
+tabbed console: every tab activates, tiles open the shared inline detail panel,
+the groundedness evidence + trace waterfall render, Esc/close works — and the
 unconditional console-error sentinel (conftest `page`) proves it renders clean.
 """
 
@@ -102,28 +102,28 @@ def test_dashboard_console_tabs_and_drawer(
 
     # Pipeline → open the trace tile; the waterfall + run_id render in the drawer.
     dash.open_tile("trace")
-    expect(dash.drawer_open()).to_be_visible()
-    expect(dash.drawer_body()).to_contain_text("uxrun01")
-    dash.close_drawer()
-    expect(dash.drawer_open()).to_have_count(0)
+    expect(dash.detail_panel_open()).to_be_visible()
+    expect(dash.detail_body()).to_contain_text("uxrun01")
+    dash.close_detail()
+    expect(dash.detail_panel_open()).to_have_count(0)
 
     # Quality → health tile drawer shows the baseline comparison row.
     dash.activate_tab("quality")
     expect(dash.active_pane("quality")).to_be_visible()
     dash.open_tile("health")
-    expect(dash.drawer_open()).to_be_visible()
-    expect(dash.drawer_body()).to_contain_text("grounding")
-    dash.close_drawer()
+    expect(dash.detail_panel_open()).to_be_visible()
+    expect(dash.detail_body()).to_contain_text("grounding")
+    dash.close_detail()
 
     # Groundedness → the marquee surface: flagged-samples evidence in the drawer.
     dash.activate_tab("groundedness")
     expect(dash.active_pane("groundedness")).to_be_visible()
     dash.open_tile("groundedness")
-    expect(dash.drawer_open()).to_be_visible()
-    expect(dash.drawer_body()).to_contain_text("$5M")
-    # Esc closes the drawer.
+    expect(dash.detail_panel_open()).to_be_visible()
+    expect(dash.detail_body()).to_contain_text("$5M")
+    # Esc closes the detail panel.
     page.keyboard.press("Escape")
-    expect(dash.drawer_open()).to_have_count(0)
+    expect(dash.detail_panel_open()).to_have_count(0)
 
     # Tuning tab is now an interactive read-write A/B surface (feat/tuning-tab-ab):
     # the candidate-prompt control renders and its constant picker is populated from

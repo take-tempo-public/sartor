@@ -9,6 +9,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — diagnostics-console chart + layout corrections (`fix/diagnostics-chart-corrections`)
+
+Three `/_dashboard` defects from the v1.0.6 kickoff walkthrough harvest (Sprint
+6.2; findings #11 + #12 + #13), plus the KW13 space-usage restructure. Front-end
++ deterministic-aggregation only — no LLM call, no `PROMPT_VERSION` bump, no new
+route, no new dependency, no migration.
+
+- **KW13 + #12 — panels now use the page width; the Calls table no longer
+  horizontal-scrolls.** The detail surface was a cramped 560px right-hand side
+  drawer, so the 10-column **Calls** (throughput) table overflowed with a
+  horizontal scrollbar (#12). The drawer is replaced by a **full-width inline
+  detail panel** rendered in the page flow beneath the tabs: the selected tile's
+  detail block is moved into it from `#detailStore` (reusing the existing
+  move-the-node + lazy-`initCharts` machinery — only the destination changed) and
+  scrolled into view. Every detail (Calls, heatmap, health, reliability, pareto,
+  trace, all charts) now renders at full width (KW13), and the Calls table fits
+  with no scroll (a defensive `word-break` on its cells guards narrow viewports).
+- **#13 — latest-trace bars now render and scale to the longest span.** Two
+  problems compounded into "bars look empty": the `.wf-bar` was a `<span>` left
+  at `display:inline`, so its `width` never applied and **every bar rendered at
+  0px**; and the width was each span's share of the run *total*, so even once
+  visible a short span (e.g. a 4s `clarify` beside a 60s `analyze_synthesis`) was
+  a sliver. Fix: `.wf-bar` is now `display:block` with a 2px `min-width` floor,
+  and `dashboard/routes._run_trace` emits `bar_pct` scaled to the **longest
+  span** (max → 100%); the template binds bar width to `bar_pct`, keeps the
+  share-of-total `pct` on hover, and keeps `latency_ms` as the absolute truth.
+- **#11 — cost-by-kind chart tooltip is now unambiguous.** The walkthrough read
+  the cost chart's tooltip as "Total" but plotting the mean. It always plotted
+  the **total** (`total_cost_usd = sum`, unchanged since the console was built);
+  the confusion was an unlabeled default tooltip beside a `mean $` table column.
+  The chart now carries an explicit tooltip naming the value as the total with
+  count + mean for context (e.g. `generate — total $0.02340 · 12 calls · mean
+  $0.00195`). Data unchanged.
+- Covered by a deterministic unit test for `bar_pct`
+  (`tests/test_dashboard_routes.py::TestRunTrace`) and a UX-tier regression
+  (`tests/ux/regression/test_20260611_diagnostics_chart_corrections.py`): the
+  detail panel uses the page width with no horizontal overflow on Calls, the
+  trace bars scale to the longest span, and the cost tooltip names total + mean.
+  The dashboard POM + selectors moved from `drawer` to `detail-panel` handles.
+
 ### Fixed — wizard-flow polish: follow-up-question auto-scroll + copy alignment (`fix/wizard-flow-polish`)
 
 Two small Output-panel polish fixes from the v1.0.5 walkthrough harvest

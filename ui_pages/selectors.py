@@ -136,16 +136,18 @@ class Output:
 
 class Dashboard:
     """The /_dashboard diagnostics console. data-tab / data-pane / data-detail
-    are structural attributes the console JS depends on (tab routing + drawer
-    population) — stable handles, not styling aliases."""
+    are structural attributes the console JS depends on (tab routing +
+    detail-panel population) — stable handles, not styling aliases."""
 
     ROOT = ".cb-dash"
     TABS = ".dash-tab"
-    DRAWER = "#drawer"
-    DRAWER_OPEN = "#drawer.open"
-    DRAWER_CLOSE = "#drawerClose"
-    DRAWER_BODY = "#drawerBody"
-    DRAWER_TITLE = "#drawerTitle"
+    # The detail surface is a full-width inline panel (was a side drawer); it's
+    # closed via the `hidden` attribute, so "open" = `:not([hidden])`.
+    DETAIL_PANEL = "#detailPanel"
+    DETAIL_PANEL_OPEN = "#detailPanel:not([hidden])"
+    DETAIL_CLOSE = "#detailClose"
+    DETAIL_BODY = "#detailBody"
+    DETAIL_TITLE = "#detailTitle"
 
     @staticmethod
     def tab(name: str) -> str:
