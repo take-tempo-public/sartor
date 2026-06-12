@@ -124,7 +124,19 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       saved résumé md). Captures the cover-letter signal B.8 Part 2 needs while
       real outcome data accrues. No prompt change, no route, no new dep, no
       migration; unit + route tests; pipeline/data-flow diagrams synced (detail in
-      the "Discovered during the v1.0.5 stream" item below).
+      the "Discovered during the v1.0.5 stream" item below). Tenth 6.1 branch
+      `fix/wizard-flow-polish` (KW5 + KW8) landed 2026-06-11 — **the final 6.1
+      row, so Sprint 6.1 is complete.** KW5: `runIterateClarify()` now scrolls the
+      rendered follow-up section (`#iterateClarifyArea`) into view in its success
+      path, so the questions no longer generate below the fold. KW8: the button +
+      divider were standardized on the clarify vocabulary (user-chosen "follow-up"
+      framing) — "Get interview questions" → "Get follow-up questions", "Iteration
+      interview" → "Follow-up clarification"; the `#btnIterateClarify` id and the
+      tracker "Got interview" outcome status are untouched. Front-end only — no
+      prompt change, no route, no new dep, no migration. UX regression
+      (`test_20260611_wizard_flow_polish.py`) adds the first UX drive through the
+      generate route, via two new offline stubs (`fake_generate_streaming` +
+      `fake_clarify_iteration`).
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +

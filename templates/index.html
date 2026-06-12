@@ -560,16 +560,16 @@
               aria-label="Refinement instruction"
             ></textarea>
             <button class="cb-btn cb-bg-orange" id="btnRefinement" onclick="submitRefinement()">Refine</button>
-            <button class="cb-btn cb-bg-violet" id="btnIterateClarify" onclick="runIterateClarify()" title="Probe the current draft's specific weaknesses with new clarifying questions">Get interview questions</button>
+            <button class="cb-btn cb-bg-violet" id="btnIterateClarify" onclick="runIterateClarify()" title="Probe the current draft's specific weaknesses with new clarifying questions">Get follow-up questions</button>
           </div>
           <div class="edit-hint" style="color:var(--brand);opacity:0.5;margin-bottom:0">
             Scope: document content only — tone, emphasis, keyword placement, structure.
           </div>
 
-          <!-- Iteration interview output — appended below refine controls when user clicks INTERVIEW QUESTIONS -->
+          <!-- Follow-up clarification output — appended below refine controls when user clicks GET FOLLOW-UP QUESTIONS -->
           <div id="iterateClarifyArea" class="clarify-area iterate-clarify-area hidden">
             <div class="clarify-divider">
-              <span class="clarify-divider-label">Iteration interview</span>
+              <span class="clarify-divider-label">Follow-up clarification</span>
             </div>
             <div class="edit-hint">
               Targets weaknesses in the current draft using deterministic signals and your recent edits. Build on prior clarifications rather than re-answer them.

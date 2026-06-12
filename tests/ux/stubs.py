@@ -122,6 +122,75 @@ def fake_clarify(client: Any, context_set: Any, analysis: Any,
     }
 
 
+# Canned résumé markdown for `fake_generate_streaming`. The generate route runs
+# the REAL deterministic `generate_resume()` on this, so it must be well-formed
+# in the shape the parser/`_write_docx` expect: `# Name` header (+ contact lines
+# before the first `##`), `## Section`, `### Title` (with the company/date
+# subtitle on the next line), and `-` bullets. This renders for both `.md` and
+# `.docx` (the bundled persona template resolves via the real BASE_DIR).
+CANNED_RESUME_MD = """# Alice Candidate
+alice@example.com · 555-0100 · Seattle, WA
+
+## Summary
+Senior platform engineer who led a Kafka migration and owns an event-driven
+logistics platform end-to-end.
+
+## Experience
+
+### Senior Backend Engineer
+Acme Logistics · 2020 – 2024
+- Led a Kafka migration that cut consumer lag by 40% across 12 services.
+- Owned partition strategy and the event-driven platform end-to-end.
+
+### Backend Engineer
+Globex · 2017 – 2020
+- Built Postgres-backed services handling 5k requests per second.
+- Reduced p99 latency 30% by reworking the consumer pool.
+"""
+
+
+def fake_generate_streaming(client: Any, context_set: Any, analysis: Any,
+                            refinement_notes: str = "", username: str = "",
+                            run_id: str = "", with_cover_letter: bool = True,
+                            ) -> Iterator[tuple[str, object]]:
+    """Mirror `analyzer.generate_streaming`'s event protocol (`("chunk"|"retry"|
+    "done", payload)`). The route forwards these as SSE and, on `done`, runs the
+    real deterministic `generate_resume()` + persists the iteration context — so
+    the wizard reaches a genuine post-generation state (`iteration>=1`, a new
+    context path) that the iteration-interview flow needs."""
+    yield ("chunk", "Drafting résumé…")
+    done: dict[str, Any] = {"resume_content": CANNED_RESUME_MD}
+    # Mirror generate()'s contract: callers always read cover_letter_content.
+    done["cover_letter_content"] = CANNED_RESUME_MD if with_cover_letter else ""
+    yield ("done", done)
+
+
+def fake_clarify_iteration(client: Any, context_set: Any, analysis: Any,
+                           current_resume_text: str = "",
+                           current_cover_letter_text: str = "",
+                           recent_edits_summary: str = "",
+                           deterministic_signals: Any = None,
+                           prior_clarifications: Any = None,
+                           username: str = "", run_id: str = "",
+                           ) -> dict[str, Any]:
+    """Mirror `analyzer.clarify_iteration`'s return shape ({questions, reasoning})
+    so the /api/iterate-clarify route runs for real (re-keys ids, appends to the
+    context) while staying deterministic + offline. The route renames the ids to
+    `iterN_qM`, so the ids here are placeholders; the renderer reads
+    id/text/kind/target_gap."""
+    return {
+        "questions": [
+            {"id": "p1", "kind": "iteration_probe",
+             "text": "Which Kafka metrics improved after the migration?",
+             "target_gap": "Quantify the platform impact in the current draft"},
+            {"id": "p2", "kind": "scope_probe",
+             "text": "How many engineers did you coordinate on the cutover?",
+             "target_gap": "Leadership scope still ambiguous after iteration 1"},
+        ],
+        "reasoning": "Two iteration probes targeting the draft's weakest claims.",
+    }
+
+
 def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
     """Make every analyzer entry point the wizard can hit deterministic +
     offline. Apply before navigating."""
@@ -134,3 +203,9 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     # `clarify` is a top-level import in app.py (called bare at app.py:790) →
     # patch on the app module, like analyze_streaming.
     monkeypatch.setattr(ux_app, "clarify", fake_clarify)
+    # `generate_streaming` + `clarify_iteration` are also top-level imports in
+    # app.py → patch on the app module. Additive: existing flow tests never reach
+    # generate/iterate-clarify, so stubbing these is a no-op for them and unlocks
+    # the full analyze→generate→iteration-interview drive for the polish test.
+    monkeypatch.setattr(ux_app, "generate_streaming", fake_generate_streaming)
+    monkeypatch.setattr(ux_app, "clarify_iteration", fake_clarify_iteration)
