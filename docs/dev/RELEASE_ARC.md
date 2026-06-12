@@ -553,13 +553,14 @@ once on first view and is re-openable via its (i)-circle (KW10):
 | `feat/experience-summary-item` | **B.4** | Per-role intro paragraph as a multi-variant Corpus Item (the asymmetry-matrix #1 pain — the line a recruiter reads first). Mirrors `SummaryItem`; maps to JSON Resume `work[].summary`. |
 | `feat/skill-group-item` | **B.5** | Curated skill clusters per JD ("surface these 10, in this order") as a Corpus Item; a `recommend_skills` Haiku call; maps to JSON Resume `skills[]`. |
 
-### WS-4 substrate — LLM-wiki knowledge architecture (split: WS-4a front-loaded, WS-4b after 6.4)
+### WS-4 substrate — LLM-wiki knowledge architecture (split: WS-4a front-loaded, WS-4b after 6.6)
 > From the excellence walk (WS-4). **Split** because the doc/whys content needs a home
 > **early** — the preserved excellence-walk source (now tracked at
 > [`../excellence-walk/`](../excellence-walk/)) must move into the wiki **very soon** —
-> while the **code** cold-ingest wants route-churn settled (after 6.4). The wiki's hard
-> deadline is **Sprint 6.5**: the education sweep authors **into** the wiki, not into
-> throwaway prose.
+> while the **code** cold-ingest wants route-churn settled (**after 6.6** — re-sequenced
+> 2026-06-12 so the cold pass also captures the B.4/B.5 corpus-completer Compose cards).
+> The wiki's hard deadline is **Sprint 6.5**: the education sweep authors **into** the
+> wiki, not into throwaway prose.
 
 **WS-4a — front-loaded (start of the epic, right after the walkthrough; depends on no churn):**
 1. `docs/system-model` ✓ **DONE (this branch)** — authored **[`docs/system-model.md`](../system-model.md)** from the seven-functions
@@ -587,7 +588,8 @@ once on first view and is re-openable via its (i)-circle (KW10):
    wiki's `raw/` constitutional layer. **The temp source is now safe in git — but
    ingest it early so the wiki, not a flat folder, becomes its home.**
 
-**WS-4b — after Sprint 6.4 (route-churn settled):**
+**WS-4b — after Sprint 6.6** (route-churn settled **+ the B.4/B.5 corpus-completer cards
+landed**, so the cold pass ingests them too; re-sequenced 2026-06-12)**:**
 5. `wiki/cold-ingest-code` — cold-ingest the code architecture (module map, the P1
    deterministic/LLM boundary, the `context_set` contract, pipeline flows, routes,
    the eval harness), `path:line`-grounded. **Reserve a user-facing section** that
@@ -595,36 +597,20 @@ once on first view and is re-openable via its (i)-circle (KW10):
    doc-grounded assistant retrieves over (S1); as it ingests, it also **stamps each
    page's `audience:` tag** (user|dev) — the boundary the assistant's access plane
    gates on, authored once here + by governance-extraction. Design:
-   [`memory-architecture.md`](memory-architecture.md).
+   [`memory-architecture.md`](memory-architecture.md). **Also folds in the two tracked
+   architecture-diagram drifts** (the `pipeline.mmd` / `architecture.md` Step-2
+   "GET INTERVIEW QUESTIONS" → "GET CLARIFYING QUESTIONS" mislabel + the data-flow
+   cover-letter artifact-node mismatch), per [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md)
+   — this pass re-reads the architecture anyway.
 
-**Then — Governance extraction** (its own carefully-gated branch, after the wiki
-proves out; the 3 open sub-decisions below resolved in a short WS-4 design session
-first):
-
-> ⚠ **HARD CONSTRAINT.** `AGENTS.md` / `CLAUDE.md` are **harness-auto-loaded** — the
-> agent's operating instructions at session start. Lifting the prescriptive
-> **Governance** rules into one canonical home MUST preserve agent rule-access via
-> `@import` / pointer (CLAUDE.md already does `@AGENTS.md`) — or **every future agent
-> loses its guardrails.** `AGENTS.md` stays the entry point; it imports/links
-> Governance, it does not lose the rules.
-
-- **What extracts:** the `vision.md` core; the 10 Principles (frozen in Governance);
-  and the hard RULES scattered across `AGENTS.md` (security gate, `PROMPT_VERSION`-
-  bump, deterministic/LLM boundary, what-NOT-to-do, branch conventions),
-  `CONTRIBUTING.md` (the ruff+mypy+pytest bar, commit/branch conventions),
-  `SECURITY.md` (API-key rules, `_safe_username`/`_within` mandate),
-  `PRODUCT_SHAPE.md` (the prescriptive v1→v2 ladder + Corpus-Item rules), and **this
-  arc** (the "Hard constraints (all phases)" + the "Do not edit without sign-off"
-  gate). Each rule is stated **once** in Governance; the others **reference** it.
-  Mixed docs keep their descriptive content + a pointer.
-- **Open implementation sub-decisions (NOT resolved here — for the WS-4 design
-  session):** (i) Governance home name/location — `raw/` vs `docs/governance/` vs
-  root `GOVERNANCE.md` (lean: `docs/governance/`); (ii) per-doc extraction
-  boundaries (exact spans); (iii) `AGENTS.md` = critical-rules-inline-with-pointer
-  vs pure-shell-import.
-- **Payoff:** vision-alignment auditing reads ONE canonical constitution; the
-  pre-release `wiki-lint` gate can guard it directly; "consistency tracks
-  enforcement" (the Q2 finding) extends to the vision itself.
+**Then — Governance extraction → moved to v1.0.7** (Phase 4.7; decided 2026-06-12).
+It depends on the wiki proving out (which completes at the v1.0.6 tag), pairs with "the
+app knows itself," and is off v1.0.6's critical path. **v1.0.6 retains only the
+`audience:` tag convention** — authored in WS-4b + the wiki `SCHEMA.md` before the 6.5
+sweep, because the assistant's access plane and the 6.5 user/dev split need it within
+this epic. The full extraction detail (the ⚠ `@import` rule-access hard constraint, what
+extracts, the 3 open sub-decisions, the payoff) now lives in **§Phase 4.7 → Governance
+extraction**.
 
 ### Sprint 6.5 — In-app education (full sweep) + install docs
 | Branch | Findings | Key work |
@@ -659,10 +645,43 @@ RELEASE_CHECKLIST risk register.
 > the blueprint split). **Blocked by:** v1.0.6 tag (the wiki must exist). **Blocks:**
 > v1.0.8.
 
+### Governance extraction (moved from v1.0.6 — lands early)
+
+> **Moved here 2026-06-12** from v1.0.6 §Phase 4.5. Lands **early in v1.0.7**,
+> before/alongside `feat/self-documenting-wiki`, so the self-documenting loop has **one
+> canonical constitution to lint against**. Depends on the wiki proving out (the v1.0.6
+> tag). The `audience:` tag convention it shares with the access plane already landed in
+> v1.0.6 (WS-4b + `SCHEMA.md`); this is the rule-extraction half.
+
+> ⚠ **HARD CONSTRAINT.** `AGENTS.md` / `CLAUDE.md` are **harness-auto-loaded** — the
+> agent's operating instructions at session start. Lifting the prescriptive
+> **Governance** rules into one canonical home MUST preserve agent rule-access via
+> `@import` / pointer (CLAUDE.md already does `@AGENTS.md`) — or **every future agent
+> loses its guardrails.** `AGENTS.md` stays the entry point; it imports/links
+> Governance, it does not lose the rules.
+
+- **What extracts:** the `vision.md` core; the 10 Principles (frozen in Governance);
+  and the hard RULES scattered across `AGENTS.md` (security gate, `PROMPT_VERSION`-
+  bump, deterministic/LLM boundary, what-NOT-to-do, branch conventions),
+  `CONTRIBUTING.md` (the ruff+mypy+pytest bar, commit/branch conventions),
+  `SECURITY.md` (API-key rules, `_safe_username`/`_within` mandate),
+  `PRODUCT_SHAPE.md` (the prescriptive v1→v2 ladder + Corpus-Item rules), and **this
+  arc** (the "Hard constraints (all phases)" + the "Do not edit without sign-off"
+  gate). Each rule is stated **once** in Governance; the others **reference** it.
+  Mixed docs keep their descriptive content + a pointer.
+- **Open implementation sub-decisions (resolved in the WS-4 design session at the top
+  of v1.0.7):** (i) Governance home name/location — `raw/` vs `docs/governance/` vs
+  root `GOVERNANCE.md` (lean: `docs/governance/`); (ii) per-doc extraction
+  boundaries (exact spans); (iii) `AGENTS.md` = critical-rules-inline-with-pointer
+  vs pure-shell-import.
+- **Payoff:** vision-alignment auditing reads ONE canonical constitution; the
+  pre-release `wiki-lint` gate can guard it directly; "consistency tracks
+  enforcement" (the Q2 finding) extends to the vision itself.
+
 ### The self-aware capability (built on the WS-4 wiki)
 | Branch | Design-first? | Key work |
 |---|---|---|
-| `design/self-documenting-loop` → `feat/self-documenting-wiki` | **yes** | The **autonomous** self-documenting / self-tuning docs loop — the wiki ingests + lints itself on change so the docs track the code without a human author. Autonomy is the goal, **but designed performant + not overdone** (per the steer): a **Haiku-class** model, **bounded triggers** (not per-commit), cost-aware. The design pass settles trigger / cost / scope before any build. |
+| `design/self-documenting-loop` → `feat/self-documenting-wiki` | **yes** | The **autonomous** self-documenting / self-tuning docs loop — the wiki ingests + lints itself on change so the docs track the code without a human author. Autonomy is the goal, **but designed performant + not overdone** (per the steer): a **Haiku-class** model, **bounded triggers** (not per-commit), cost-aware. The design pass settles trigger / cost / scope before any build. **Model strategy (recorded 2026-06-12 — design input, not a hard lock):** *warm-start* — the capable session model runs the WS-4b cold-ingest + a short calibration window, and its produced pages are harvested as **baked-in few-shot exemplars**; **Haiku then runs steady-state diff-passes** against `SCHEMA.md` + those exemplars + the deterministic `/wiki-lint` + `/wiki-audit` backstop. Haiku at steady-state is what makes "bounded, cost-aware autonomy" real; the from-scratch taxonomy / synthesis-boundary calls stay on the capable cold pass, which the loop never repeats. |
 | `feat/doc-assistant` | (design rides the loop) | The **doc-grounded chat assistant** — *"a product that knows itself."* Both users and devs ask "how do I…" questions; it answers from the committed `docs/wiki/` **with citations** (the LLM-wiki **query** op as a chat). **Haiku model, reuses the user's existing Anthropic key** (no new credential). A public UX/DX feature → **ships in v1.1.0.** |
 
 > **Both rows above build on a shared substrate — the project's *Memory* function,
@@ -694,14 +713,22 @@ the real labels these consume.
 | `eval/grounding-calibration` (PV-2) | PV-1 | The **calibrated layers (B)**: calibrate the L0 tolerance bands (`hardening.py`) + the eval-only L1/L2 NLI/MiniCheck thresholds (`evals/grounding_signals.py`) against the PV-1 labels; report precision/recall per detector; wire the calibrated groundedness score into `eval_composite` / score-over-time + the tuning gate; close the [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md) "B (deferred)" note. **L0 stays hot-path-safe; L1/L2 stay eval-only** (Key Decision #4). |
 | `tune/cover-letter-opener` (PV-3) | corpus rebuild + tuning loop | Fix the throat-clearing/hedging opener (tripped `tone` 1/5 in v1.0.3). A worked-example `SYSTEM_PROMPT` candidate (the rule lives in the **non-overridable** `_COVER_LETTER_RULES_BLOCK`) via the in-browser A/B; A/B `--suite real` (n≥3); **user promotes** → edit `analyzer.py` + **bump `PROMPT_VERSION`** + TUNING_LOG entry. After PV-2 so groundedness is calibrated. |
 
-> If this epic overflows, the hardening sprints (PV-1…PV-3) are the clean cut to a
-> later 1.0.x epic — don't pre-create one until needed.
+> **Sequence decision (2026-06-12): hardening stays in v1.0.7, *before* the v1.0.8
+> blueprint split.** Freeze behavior → do the no-behavior-change refactor → ship; the
+> surfaces barely overlap (hardening lives in `evals/` · `analyzer.py` · `hardening.py`
+> · a thin dashboard slice, while blueprints decomposes `app.py` routes). If this epic
+> overflows, the hardening sprints (PV-1…PV-3) are the clean cut to a later 1.0.x epic
+> **after v1.0.8** — safe precisely *because* the overlap is low (calibration lands
+> cleanly on the new structure). Don't pre-create that epic until needed.
 
 Then: `chore/version-bump-v1.0.7`.
 
 ### v1.0.7 tag criteria
 - The self-documenting loop runs (autonomous, bounded, cost-aware), and the
   **doc-grounded assistant answers from the wiki with citations** (Haiku, user's key).
+- **Governance extraction landed** (moved from v1.0.6, 2026-06-12): the canonical
+  rules live in one home with agent rule-access preserved via `@import`/pointer, and
+  the 3 open sub-decisions were resolved in the WS-4 design session.
 - PV-1 real labels exist; PV-2 calibrated groundedness live on `--suite real` + the
   dashboard + consumed by the tuning gate; PV-3 `tone` holds with `PROMPT_VERSION` bumped.
 - `ruff + mypy + pytest` green.

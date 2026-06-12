@@ -27,7 +27,7 @@ console — **shipped**; all seven §Phase 4 tag criteria met, gate green incl.
 public version (**1.1.0 = the public release**). Three internal epics now sit
 between v1.0.5 and the public tag — **v1.0.6** (walkthrough polish + WS-4 wiki
 substrate + corpus completion), **v1.0.7** (the app knows itself: self-documenting
-wiki + doc-grounded assistant + pre-public hardening), and **v1.0.8** (monolith →
+wiki + doc-grounded assistant + governance extraction + pre-public hardening), and **v1.0.8** (monolith →
 blueprints; absorbs the type scan) — folded into the arc on 2026-06-08 from the
 v1.0.5 walk-through sprint plan + the excellence-walk workstreams + a backlog
 grooming; see [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.5 / §4.7 / §4.8. Deferred
@@ -187,7 +187,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       `feat/outcome-capture-complete` (see the Sprint 6.1 progress note above);
       end-to-end verification rides the Sprint 6.0 re-walk. B.4/B.5 still open
       (Sprint 6.6).
-- [ ] **WS-4a landed early; WS-4b before the 6.5 sweep** (the binding gate):
+- [ ] **WS-4a landed early; WS-4b (after Sprint 6.6) before the 6.5 sweep** (the binding gate):
       `docs/system-model.md` (← seven-functions language) + the committed
       `docs/wiki/` skeleton + the `/wiki-*` skills exist; **the preserved
       excellence-walk source ([`excellence-walk/`](excellence-walk/)) is ingested
@@ -196,12 +196,15 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       reserved so 6.5 authors INTO the wiki**. The code-ingest also **stamps
       `audience:` tags** + feeds the v1.0.7 doc-grounded assistant's memory
       substrate — design in [`memory-architecture.md`](memory-architecture.md).
-- [ ] **Governance extraction** (its own gated branch, after the wiki proves out) —
-      ⚠ **preserve agent rule-access**: `AGENTS.md`/`CLAUDE.md` are harness-auto-
-      loaded; extraction must keep the rules reachable via `@import`/pointer or every
-      future agent loses its guardrails. 3 open sub-decisions resolved first
-      (Governance home name; per-doc extraction boundaries; AGENTS.md
-      shell-vs-inline). *(May spill to a later epic — not a hard v1.0.6 gate.)*
+- [ ] **`audience:` tag convention authored** (the v1.0.6-retained slice of governance
+      work) — the path→audience (`user`|`dev`) rules added to the wiki `SCHEMA.md` +
+      stamped in WS-4b's cold-ingest, **before the 6.5 sweep**, since the assistant's
+      access plane and the 6.5 user/dev split need it within this epic. *(Full
+      **governance extraction** — lifting the scattered canonical rules into one home —
+      **moved to v1.0.7**, 2026-06-12: it depends on the wiki proving out, pairs with
+      "the app knows itself," and is off v1.0.6's critical path. The ⚠ `@import`
+      rule-access hard constraint + the 3 open sub-decisions move with it; see
+      [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.7.)*
 - [ ] **`docs/eval-stack-install-guide` (#17)** — the user-facing install/prepare
       guide authored from the excellence walk's **Q3** deliverable (now preserved at
       [`excellence-walk/q3-downloads.md`](excellence-walk/q3-downloads.md)) + a
@@ -278,9 +281,10 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
          `docs/architecture.md` lists `cover_TS.docx / .pdf / .md` for the
          cover-letter artifact while `docs/diagrams/data-flow.mmd` lists only
          `cover_TS.docx`. Harmless, pre-dates recent work.
-      **Not tied to a specific feature branch** — pick up in the next docs/diagram
-      reconciliation (the WS-4b wiki cold-ingest-code pass or a dedicated docs
-      sweep). Tracked here so it survives the handoff rather than living only in
+      **Scheduled into `wiki/cold-ingest-code` (WS-4b, v1.0.6)** — pinned there
+      2026-06-12 (was "next docs/diagram reconciliation or a dedicated sweep"): that
+      pass re-reads the architecture to cold-ingest it, so it reconciles both drifts in
+      the same read. Tracked here so it survives the handoff rather than living only in
       chat.
 
 - [ ] **Grounding/hallucination metric inserted into the v1.0.5 sequence**
