@@ -190,3 +190,51 @@ class TestPendingCounts:
         client = pr_app.app.test_client()
         r = client.get("/api/users/ghost/pending-counts")
         assert r.status_code == 400
+
+
+class TestAcceptAllPendingCorpus:
+    """KW2 — corpus-wide accept-all across every experience for a candidate."""
+
+    def test_clears_pending_across_all_experiences(self, pr_app):
+        cid = _seed_candidate()
+        e1 = _seed_exp_with_pending(cid, n_pending_bullets=3, n_pending_titles=2,
+                                    n_accepted_bullets=1)
+        e2 = _seed_exp_with_pending(cid, n_pending_bullets=1, n_pending_titles=0)
+        client = pr_app.app.test_client()
+        r = client.post("/api/users/alice/accept-all-pending")
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["bullets_accepted"] == 4
+        assert body["titles_accepted"] == 2
+        # confirm nothing pending remains under either experience
+        from db.models import Bullet, ExperienceTitle
+        from db.session import get_session
+        s = get_session()
+        try:
+            for eid in (e1, e2):
+                assert s.query(Bullet).filter_by(
+                    experience_id=eid, is_pending_review=1, is_active=1,
+                ).count() == 0
+                assert s.query(ExperienceTitle).filter_by(
+                    experience_id=eid, is_pending_review=1,
+                ).count() == 0
+        finally:
+            s.close()
+
+    def test_zero_when_nothing_pending(self, pr_app):
+        _seed_candidate()
+        client = pr_app.app.test_client()
+        body = client.post("/api/users/alice/accept-all-pending").get_json()
+        assert body == {"titles_accepted": 0, "bullets_accepted": 0}
+
+    def test_missing_candidate_returns_zeros(self, pr_app):
+        # config exists, no candidate row → no-op, not an error
+        client = pr_app.app.test_client()
+        r = client.post("/api/users/alice/accept-all-pending")
+        assert r.status_code == 200
+        assert r.get_json() == {"titles_accepted": 0, "bullets_accepted": 0}
+
+    def test_400_for_unknown_user(self, pr_app):
+        client = pr_app.app.test_client()
+        r = client.post("/api/users/ghost/accept-all-pending")
+        assert r.status_code == 400

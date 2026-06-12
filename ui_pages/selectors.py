@@ -46,6 +46,12 @@ class Corpus:
     CARD = "#corpusExperienceList .corpus-card"
     # Accessible-name (substring) match for the `+ Import résumé` button.
     IMPORT_BUTTON_NAME = "Import résumé"
+    # β.6e summary-variants editor (#2 — the Add-variant affordance).
+    SUMMARY_VARIANTS_SECTION = "#summaryVariantsSection"
+    ADD_VARIANT_BUTTON_NAME = "Add variant"
+    # KW2 — onboarding banner + corpus-wide accept-all control.
+    ONBOARDING_BANNER = "#onboardingBanner"
+    ACCEPT_ALL_BUTTON_NAME = "Accept all pending"
 
 
 class Wizard:

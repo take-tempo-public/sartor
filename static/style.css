@@ -2857,8 +2857,11 @@ textarea:focus-visible {
 .cb-panel:not(.collapsed) > .panel-header {
   border-bottom-color: var(--border);
 }
+/* This redesign rule overrides the legacy `.panel-header::after` size above
+   (same specificity, later in the cascade). Size the collapse chevron HERE.
+   #5 — enlarged 10px → 18px; the old chevron was near-imperceptible. */
 .panel-header::after {
-  font-size: 10px;
+  font-size: 18px;
   opacity: 0.6;
 }
 .panel-body {
