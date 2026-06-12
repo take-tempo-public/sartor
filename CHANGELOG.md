@@ -9,6 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — a detached cover letter is now persisted to its run row (`fix/run-cover-letter-persistence`)
+
+Generating a cover letter via the Step-6 "+ Generate cover letter" button left
+**no DB trace**: `ApplicationRun.generated_cover_letter_md` stayed empty even
+after the letter was generated and downloaded (confirmed against the e2e
+walkthrough run row, which had résumé md + bullets + titles + ATS json but no
+cover-letter md). The detached route `POST /api/generate-cover-letter` wrote the
+letter to disk and into the context file but never touched the database. (The
+*other* path — `/api/generate` with `with_cover_letter=True` — already persisted
+it; the gap was exclusively the detached, common-case route.)
+
+- **Fix.** After writing the letter, the route now persists
+  `generated_cover_letter_md` onto the **same** run row the résumé generation
+  wrote to (identified by `context_set["application_run_id"]`), via a new
+  surgical single-column write-back (`db.persist_run.persist_cover_letter_md` +
+  the `app._persist_cover_letter_to_db` wrapper, mirroring
+  `_persist_corpus_generation_to_db`). Corpus-backed mode only (legacy contexts
+  without a run id skip it, as `/api/generate` does), and best-effort — a DB
+  hiccup logs but never fails a letter the user already downloaded.
+- **Why a dedicated helper, not `persist_corpus_generation`.** That function
+  unconditionally writes `generated_resume_md = result.get("resume_content")`;
+  a cover-letter result carries no résumé content, so reusing it would have
+  *nulled out the already-saved résumé md*. The new helper writes one column and
+  leaves the résumé md untouched.
+- **Why now.** B.8 Part 2 (post-public, outcome-weighted recommend) will
+  correlate interviews with the cover letters that earned them; rows generated
+  now without the write-back can't be backfilled, so the signal is captured
+  during v1.0.6 while real outcome data accrues.
+- No LLM call (the persist module stays deterministic), no `PROMPT_VERSION` bump,
+  no new route, no new dependency, no migration (the column already exists).
+  Covered by a unit test (no-clobber surgical write,
+  `tests/test_persist_run.py`) and a route test (run-row populated end-to-end,
+  `tests/test_cover_letter_detached.py`). The architecture pipeline + data-flow
+  diagrams were synced to show the new write-back.
+
 ### Fixed — Step-4 / Résumé-templates copy now matches the real bundled set (`fix/step4-template-copy`, #8)
 
 Walk finding #8 asked whether the Step-4 template-chooser copy ("Same content,

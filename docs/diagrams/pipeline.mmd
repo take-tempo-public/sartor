@@ -113,4 +113,5 @@ sequenceDiagram
     ANL->>SO: call_kind="generate_cover_letter" (~17s)
     SO-->>ANL: {cover_letter_content}
     APP->>FS: write cover_*.docx / .pdf / .md
+    APP->>DB: write generated_cover_letter_md onto the run row
     APP-->>FE: preview

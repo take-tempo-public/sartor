@@ -125,6 +125,24 @@ def persist_corpus_generation(
     return report
 
 
+def persist_cover_letter_md(
+    session: Session,
+    application_run: ApplicationRun,
+    cover_letter_md: str,
+) -> None:
+    """Write ONLY `generated_cover_letter_md` onto an existing run row.
+
+    For the detached cover-letter route (`POST /api/generate-cover-letter`),
+    which runs *after* the résumé generation has already persisted the run row.
+    Unlike `persist_corpus_generation`, this deliberately does NOT touch
+    `generated_resume_md` or the bullet/title audit tables — the cover-letter
+    result carries no résumé content, so routing it through the full persist
+    path would null out the already-saved résumé md. Caller commits.
+    """
+    application_run.generated_cover_letter_md = cover_letter_md
+    session.flush()
+
+
 # ---------------------------------------------------------------------------
 # selected_bullets → application_bullet + application_run_title
 # ---------------------------------------------------------------------------
@@ -360,4 +378,4 @@ def _strip_id_prefix(raw: Any, expected_prefix: str) -> int | None:
     return None
 
 
-__all__ = ["PersistReport", "persist_corpus_generation"]
+__all__ = ["PersistReport", "persist_corpus_generation", "persist_cover_letter_md"]
