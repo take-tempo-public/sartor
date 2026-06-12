@@ -2651,8 +2651,9 @@ function _renderCorpusList() {
       `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
     _clearChildren(list);
     if (_corpusExperiences.length === 0) {
-      hint.textContent = 'No experiences yet. Click + Import résumé to build '
-        + 'your corpus automatically, or + ADD EXPERIENCE to add one by hand.';
+      hint.textContent = 'No experiences yet. Click + Import résumé to extract '
+        + 'your experience from an existing résumé — you review and accept what '
+        + 'it finds — or + ADD EXPERIENCE to add one by hand.';
       return;
     }
     hint.textContent = 'Click a card to expand and edit titles + bullets. Saves are inline.';
@@ -3373,6 +3374,30 @@ function scrollToFirstPending() {
   if (!card) return;
   if (!card.classList.contains('expanded')) toggleCorpusCard(firstPending.id);
   card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// KW2 — corpus-wide "accept all pending". Clears is_pending_review across
+// every role in one click (the per-card ACCEPT ALL PENDING covers by-role).
+// Sweeping + high-stakes: accepted items become the source the system scores
+// for fit, generates new bullets from, and builds résumés on — so it guards
+// behind a sharp confirm even though clearing the flag isn't itself
+// destructive.
+async function acceptAllPendingCorpus() {
+  if (!currentUser) return;
+  if (!confirm('Accept every pending item across all roles?\n\n'
+      + 'Accepted items become source-of-truth — the system analyzes them for '
+      + 'fit, writes new bullets from them, and builds your résumés on them. '
+      + 'One bad seed poisons everything downstream. Only accept what you\'ve '
+      + 'reviewed and trust.')) return;
+  try {
+    const r = await _postJson(
+      `/api/users/${encodeURIComponent(currentUser)}/accept-all-pending`, {});
+    _toast(`Accepted ${r.bullets_accepted} bullet(s) + ${r.titles_accepted} title(s)`);
+    await refreshCorpus();            // re-render cards (drops PENDING flags)
+    await _refreshOnboardingBanner(); // self-hides at 0 pending
+  } catch (e) {
+    _toast('Failed: ' + e.message, true);
+  }
 }
 
 // ===============================================================

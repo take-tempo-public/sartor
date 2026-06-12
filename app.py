@@ -4625,6 +4625,54 @@ def accept_experience_all(experience_id: int):
         session.close()
 
 
+@app.route("/api/users/<username>/accept-all-pending", methods=["POST"])
+def accept_all_pending(username: str):
+    """Corpus-wide bulk-accept: clears is_pending_review on every title +
+    active bullet across all of the candidate's experiences. Drives the
+    "Accept all pending" button in the onboarding banner (KW2) — senior
+    résumés have many roles, and accepting role-by-role is tedious. The
+    per-experience accept-all route still covers the by-role case."""
+    from db.models import Bullet, Candidate, Experience, ExperienceTitle
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({"titles_accepted": 0, "bullets_accepted": 0})
+        exp_ids = [row[0] for row in session.query(Experience.id).filter_by(
+            candidate_id=candidate.id,
+        ).all()]
+        if not exp_ids:
+            return jsonify({"titles_accepted": 0, "bullets_accepted": 0})
+        # Bulk updates over exp_ids; synchronize_session=False because we
+        # commit + close immediately and never reuse the session objects.
+        titles_cleared = session.query(ExperienceTitle).filter(
+            ExperienceTitle.experience_id.in_(exp_ids),
+            ExperienceTitle.is_pending_review == 1,
+        ).update({"is_pending_review": 0}, synchronize_session=False)
+        bullets_cleared = session.query(Bullet).filter(
+            Bullet.experience_id.in_(exp_ids),
+            Bullet.is_pending_review == 1,
+            Bullet.is_active == 1,
+        ).update({"is_pending_review": 0}, synchronize_session=False)
+        session.commit()
+        return jsonify({
+            "titles_accepted": titles_cleared,
+            "bullets_accepted": bullets_cleared,
+        })
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 @app.route("/api/users/<username>/pending-counts", methods=["GET"])
 def pending_counts(username: str):
     """Counts of pending-review titles + bullets for the candidate.

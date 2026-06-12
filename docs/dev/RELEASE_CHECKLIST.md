@@ -177,8 +177,22 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       `#tuneUser` (optional section) does not. Front-end + tests only — no
       prompt/route/dep/migration change; new regression
       `test_20260612_required_field_and_dropdown.py` + the dashboard axe scan
-      now seeds a candidate so the populated dropdowns are scanned. Next 6.3
-      row: `fix/corpus-affordance-polish`.
+      now seeds a candidate so the populated dropdowns are scanned. Third 6.3
+      row `fix/corpus-affordance-polish` (#2 + #5 + KW2) landed 2026-06-12.
+      Defect-vs-expected: **#2** ("Add variant referenced in copy but no
+      affordance") was **already resolved** by the β.6e summary-variants editor —
+      regression-locked with a UX test rather than rebuilt; **#5** "tick arrows"
+      resolved to the panel collapse chevron (`.panel-header::after`; a later
+      redesign rule pinned the effective size to 10px → enlarged to 18px on the
+      live rule, app-wide). Plus the misleading empty-state copy (dropped "automatically" —
+      imports land pending review) and **KW2** corpus-wide "Accept all pending"
+      (new banner button + DB-only `POST /api/users/<u>/accept-all-pending`,
+      `_safe_username`, mirrors `accept_experience_all`; behind a sharp confirm
+      since accepted items seed fit-analysis/bullet-generation/résumé-build).
+      Front-end + one DB-only route + tests — no prompt/dep/migration change;
+      new backend `TestAcceptAllPendingCorpus` + UX regression
+      `test_20260612_corpus_affordance_polish.py`. Next row: Sprint 6.4
+      `fix/logo-home-route` (#23).
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +

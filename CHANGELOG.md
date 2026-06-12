@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added / Changed — corpus affordance polish (`fix/corpus-affordance-polish`, Sprint 6.3 #2 + #5 + KW2)
+
+Front-end polish + one DB-only route on the Career Corpus tab. No LLM call, no
+`PROMPT_VERSION` bump, no new dependency, no migration.
+
+- **KW2 — corpus-wide "Accept all pending."** A new `Accept all pending` button
+  in the onboarding banner clears `is_pending_review` across **every** role in
+  one click (senior résumés have many roles, previously accepted one-by-one). New
+  DB-only route `POST /api/users/<username>/accept-all-pending` (`_safe_username`
+  guard; mirrors `accept_experience_all` candidate-scoped, reusing the `exp_ids`
+  query from `pending-counts`). The existing per-experience `ACCEPT ALL PENDING`
+  still covers the by-role case. The control guards behind a **sharp confirm**:
+  accepted items become source-of-truth the system scores for fit, generates new
+  bullets from, and builds résumés on — one bad seed poisons everything
+  downstream.
+- **Empty-state copy — dropped the "automatically" overpromise.** Imported
+  résumé items land *pending review*, so the empty-corpus copy (`static/app.js`)
+  and the static corpus hint (`templates/index.html`) now say the import is
+  extracted "for you to review" rather than built "automatically."
+- **#5 — enlarged the panel collapse chevron.** `.panel-header::after` (`▾`)
+  10px → 18px; it was near-imperceptible. (A later redesign rule had pinned the
+  *effective* size to 10px, overriding the legacy 12px rule — sized on the live
+  rule, with a comment so the next editor doesn't hit the same trap.)
+- **#2 — regression-locked the "Add variant" affordance.** The finding ("Add
+  variant referenced in copy but no affordance") was already resolved by the
+  β.6e summary-variants editor; a new UX test now asserts the `+ Add variant`
+  control is present so it can't regress.
+- **Tests.** New backend `TestAcceptAllPendingCorpus`
+  (`tests/test_pending_review_routes.py`) + new UX regression
+  `tests/ux/regression/test_20260612_corpus_affordance_polish.py` (affordance
+  present · review-honest empty copy · accept-all clears + hides the banner ·
+  chevron size). New `Corpus` selectors in `ui_pages/selectors.py` +
+  `CorpusPage` helpers. Axe a11y gate stays green.
+
 ### Added — reusable required-field marker + auto-populatable username dropdown (`feat/required-field-and-dropdown-pattern`)
 
 Two reusable front-end conventions (Sprint 6.3, findings #21 + #20-dropdown),

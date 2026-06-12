@@ -30,3 +30,21 @@ class CorpusPage(BasePage):
         return self.page.locator(Corpus.PANEL).get_by_role(
             "button", name=Corpus.IMPORT_BUTTON_NAME
         )
+
+    # β.6e summary-variants editor (#2 — the Add-variant affordance).
+    def summary_variants_section(self) -> Locator:
+        return self.page.locator(Corpus.SUMMARY_VARIANTS_SECTION)
+
+    def add_variant_button(self) -> Locator:
+        return self.page.locator(Corpus.SUMMARY_VARIANTS_SECTION).get_by_role(
+            "button", name=Corpus.ADD_VARIANT_BUTTON_NAME
+        )
+
+    # KW2 — onboarding banner + corpus-wide accept-all control.
+    def onboarding_banner(self) -> Locator:
+        return self.page.locator(Corpus.ONBOARDING_BANNER)
+
+    def accept_all_button(self) -> Locator:
+        return self.page.locator(Corpus.ONBOARDING_BANNER).get_by_role(
+            "button", name=Corpus.ACCEPT_ALL_BUTTON_NAME
+        )
