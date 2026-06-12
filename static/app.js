@@ -178,6 +178,20 @@ function _resetIterationState() {
   if (rh) { rh.classList.add('hidden'); rh.textContent = ''; }
 }
 
+// Wordmark / logo click → route home: clear the selected user (onUserSelect's
+// no-user branch hides the flow panels, re-locks the picker open, resets
+// iteration state) and snap back to the default Tailor tab so "home" is the
+// same landing view a first-time user sees. The smart-landing branch
+// (feat/corpus-first-tab-onboarding) owns which tab is "home" going forward.
+function goHome() {
+  const sel = document.getElementById('userSelect');
+  if (sel) sel.value = '';
+  onUserSelect();                       // no-user branch = deselect + landing reset (sync)
+  const tailorBtn = document.getElementById('topTabTailor');
+  if (tailorBtn) switchTopTab('tailor', tailorBtn);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // ---- Config ----
 async function loadConfig() {
   const res = await fetch(`/api/users/${currentUser}/config`);

@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — logo routes home (`fix/logo-home-route`, Sprint 6.4 #23)
+
+Front-end only — no LLM call, no `PROMPT_VERSION` bump, no new dependency, no
+route (pure client-side SPA navigation), no migration.
+
+- **The `callback.` wordmark now routes home.** It was an inert `<a href="#">`
+  with no handler — once a user was selected (and the wizard or another tab
+  engaged) there was no way back to the landing state. A new public `goHome()`
+  clears the selected user via `onUserSelect()`'s no-user branch (hides the flow
+  panels, re-locks the user picker open, resets iteration state) and restores the
+  default **Tailor** landing tab via `switchTopTab('tailor', …)`. The wordmark
+  anchor gains `onclick="goHome(); return false;"` (cancels the bare `#`
+  navigation) plus a clearer `aria-label`/`title`. Which tab counts as "home"
+  stays the current default — the smart-landing reorder is the separate next
+  6.4 branch (`feat/corpus-first-tab-onboarding`).
+- **Tests.** New UX regression
+  `tests/ux/regression/test_20260612_logo_home_route.py` (select user → off-tab →
+  wordmark click → asserts the Tailor tab restored, user deselected, picker
+  re-locked open, flow panel hidden). New `Header` selector in
+  `ui_pages/selectors.py`. Axe a11y gate stays green.
+
 ### Fixed — internal tooling (`fix/require-feature-branch-worktree-aware`)
 
 - **`require-feature-branch` hook is now worktree-aware.** It resolves the

@@ -33,6 +33,14 @@ class Forms:
     REQUIRED_LEGEND = ".form-required-legend"
 
 
+class Header:
+    """Top-bar wordmark (`.cb-wordmark`) — clicking it routes home (#23):
+    deselects the user and returns to the default Tailor landing tab."""
+
+    TOPBAR = "#cbTopbar"
+    WORDMARK = ".cb-wordmark"
+
+
 class TopTabs:
     CORPUS = "#topTabCorpus"
     TAILOR = "#topTabTailor"
