@@ -153,10 +153,15 @@ async function onUserSelect() {
   if (userPanel) userPanel.classList.remove('not-collapsible');
   currentUser = username;
   await loadConfig();
-  show('panelApplications');
+  show('panelApplications');           // prep the Tailor tab's landing panel
   // panelConfig moved to the Settings drawer (Workstream B1.3); no longer
   // a flow panel. loadConfig() still populates the same #cfgX inputs
   // because the drawer hosts them via the same ids.
+  // Smart landing (Sprint 6.4 #16/#1 + KW1): empty corpus → onboard on Career
+  // corpus; populated corpus → straight to Tailor. switchTopTab('corpus', …)
+  // lazy-loads the corpus; switchTopTab('tailor', …) is a no-op when already
+  // active but keeps the routing explicit.
+  _activateTab(await _landingTab());
   _resetIterationState();
   setStatus('READY');
   refreshApplications();
@@ -180,16 +185,19 @@ function _resetIterationState() {
 
 // Wordmark / logo click → route home: clear the selected user (onUserSelect's
 // no-user branch hides the flow panels, re-locks the picker open, resets
-// iteration state) and snap back to the default Tailor tab so "home" is the
-// same landing view a first-time user sees. The smart-landing branch
-// (feat/corpus-first-tab-onboarding) owns which tab is "home" going forward.
+// iteration state) and snap back to the landing tab so "home" is the same view
+// a first-time user sees. Routed through _landingTab() — the single source of
+// truth for "which tab is home." Because goHome deselects first, _landingTab()
+// resolves to 'tailor' (the picker's home, in #tab-tailor), preserving the
+// deselected landing view.
 function goHome() {
   const sel = document.getElementById('userSelect');
   if (sel) sel.value = '';
   onUserSelect();                       // no-user branch = deselect + landing reset (sync)
-  const tailorBtn = document.getElementById('topTabTailor');
-  if (tailorBtn) switchTopTab('tailor', tailorBtn);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  _landingTab().then(name => {
+    _activateTab(name);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 }
 
 // ---- Config ----
@@ -1518,6 +1526,41 @@ function _renderCorpusEmptyCTA(container, message) {
   container.appendChild(wrap);
 }
 
+// Smart landing (Sprint 6.4 #16/#1 + KW1): which top tab to show for the
+// selected user. An empty corpus → 'corpus' (onboard: import a résumé / add an
+// experience); a populated corpus → 'tailor' (straight to the application
+// workflow). With no user selected (goHome's deselect, initial load) → 'tailor',
+// the home of the user picker (#panelUser lives in #tab-tailor).
+//
+// Side-effect-free on purpose: it must NOT seed `_corpusLoadedForUser` /
+// `_corpusExperiences`, or loadCorpusIfReady()'s "already loaded" guard would
+// skip the corpus render when we land on the Corpus tab.
+async function _landingTab() {
+  if (!currentUser) return 'tailor';
+  let data;
+  try {
+    const res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/experiences`);
+    data = await res.json().catch(() => []);
+  } catch {
+    return 'tailor';  // network hiccup → safe default (don't strand mid-onboard)
+  }
+  // Same shape read as refreshCorpus(): bare array on success, or
+  // {experiences:[], needs_onboarding:true} for a brand-new user. Both empty
+  // forms collapse to length 0.
+  const exps = Array.isArray(data) ? data : (data.experiences || []);
+  return exps.length === 0 ? 'corpus' : 'tailor';
+}
+
+// Activate a top tab by name, looking up its button. Mirrors the inline
+// `switchTopTab('x', document.getElementById('topTabX'))` callsites so the
+// smart-landing routing reads cleanly.
+function _activateTab(name) {
+  const ids = { tailor: 'topTabTailor', corpus: 'topTabCorpus',
+                personas: 'topTabPersonas', memory: 'topTabMemory' };
+  switchTopTab(name, document.getElementById(ids[name] || 'topTabTailor'));
+}
+
 // Persist the live preview text as the next iteration's baseline.
 // Returns true on success, false on failure (caller should abort the chain).
 async function _saveEdits(edits) {
@@ -2392,7 +2435,10 @@ async function loadCorpusIfReady() {
 async function refreshCorpus() {
   const list = document.getElementById('corpusExperienceList');
   _setLoadingPlaceholder(list, 'Loading…');
-  _refreshOnboardingBanner();  // fire-and-forget; doesn't block list load
+  // The onboarding banner refresh fires AFTER _renderCorpusList() (below), not
+  // here: its ready/empty decision (Sprint 6.4) reads `_corpusExperiences`,
+  // which is still the previous user's value at this point. Both are
+  // fire-and-forget — they never block the list load.
   // β.6e — load summary variants alongside experiences. Independent
   // route, independent failure mode — a 5xx on summaries doesn't
   // block the experience list.
@@ -2408,6 +2454,7 @@ async function refreshCorpus() {
     _corpusExperiences = [];
     _corpusLoadedForUser = currentUser;
     _renderCorpusList();
+    _refreshOnboardingBanner();  // fire-and-forget; fresh emptiness (empty → hides)
     return;
   }
   if (!res.ok) {
@@ -2425,6 +2472,7 @@ async function refreshCorpus() {
   _corpusExperiences = Array.isArray(data) ? data : (data.experiences || []);
   _corpusLoadedForUser = currentUser;
   _renderCorpusList();
+  _refreshOnboardingBanner();  // fire-and-forget; reads fresh _corpusExperiences
 }
 
 // β.6e — Summary variants editor. Lives at the top of the Career
@@ -3360,11 +3408,30 @@ async function _refreshOnboardingBanner() {
   }
   const data = await res.json();
   const total = (data.pending_bullets || 0) + (data.pending_titles || 0);
+  const reviewBtn = document.getElementById('btnReviewNow');
+  const acceptBtn = document.getElementById('btnAcceptAllPending');
+  const tailorBtn = document.getElementById('btnStartTailoring');
   if (total === 0) {
-    banner.classList.add('hidden');
+    // Review finished. Hand the user forward into Tailor only if the corpus
+    // actually has material to tailor from (Sprint 6.4); an empty corpus has
+    // nothing yet → hide. `_corpusExperiences` is fresh here because callers
+    // run this after _renderCorpusList() / a corpus mutation.
+    if (_corpusExperiences.length === 0) {
+      banner.classList.add('hidden');
+      return;
+    }
+    banner.classList.remove('hidden');
+    banner.classList.add('is-ready');
+    text.textContent = '✓ Your career corpus is ready.';
+    if (reviewBtn) reviewBtn.classList.add('hidden');
+    if (acceptBtn) acceptBtn.classList.add('hidden');
+    if (tailorBtn) tailorBtn.classList.remove('hidden');
     return;
   }
-  banner.classList.remove('hidden');
+  banner.classList.remove('hidden', 'is-ready');
+  if (reviewBtn) reviewBtn.classList.remove('hidden');
+  if (acceptBtn) acceptBtn.classList.remove('hidden');
+  if (tailorBtn) tailorBtn.classList.add('hidden');
   const parts = [];
   if (data.pending_bullets) parts.push(`${data.pending_bullets} bullet${data.pending_bullets === 1 ? '' : 's'}`);
   if (data.pending_titles) parts.push(`${data.pending_titles} title${data.pending_titles === 1 ? '' : 's'}`);

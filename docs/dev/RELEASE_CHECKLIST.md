@@ -200,10 +200,21 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       gains `onclick="goHome(); return false;"` + a clearer `aria-label`/`title`.
       Front-end only — no prompt/route/dep/migration change (pure SPA nav, so
       `route-security-lint` is N/A); new `Header` selector + UX regression
-      `test_20260612_logo_home_route.py`; ruff/mypy ✓, pytest 1084/1084. Next
-      row: Sprint 6.4 second branch `feat/corpus-first-tab-onboarding` (#16 + #1) —
-      corpus-first tab reorder + smart landing (the IA work; **not** part of #23,
-      and it will own any future change to which tab `goHome()` lands on).
+      `test_20260612_logo_home_route.py`; ruff/mypy ✓, pytest 1084/1084. Sprint
+      6.4 second branch `feat/corpus-first-tab-onboarding` (#16 + #1 + KW1)
+      **landed 2026-06-12** — tabs reordered to **Career corpus → Tailor →
+      Résumé templates → Candidate memory** (button order only; Tailor keeps the
+      default active state since the user picker lives in `#tab-tailor`); a new
+      side-effect-free `_landingTab()` drives **smart landing** from
+      `onUserSelect()` (empty corpus → Career corpus to onboard, fixing KW1;
+      populated → Tailor) and `goHome()` (now routed through the same helper,
+      single source of truth); a **"Start tailoring →"** hand-off CTA appears in
+      the onboarding banner's ready state (non-empty corpus + 0 pending),
+      replacing the dead-end. Front-end only — no prompt/route/dep/migration
+      change. New UX regression `test_20260612_corpus_first_landing.py`;
+      `test_20260612_logo_home_route.py` reseeded non-empty to match smart
+      landing; new `Corpus.START_TAILORING_BUTTON` selector +
+      `CorpusPage.start_tailoring_button()`.
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +

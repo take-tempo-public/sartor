@@ -12,7 +12,14 @@ default tab restored, user deselected, picker re-locked, flow panel hidden. The
 `page` fixture's sentinel additionally proves ``goHome()`` raises no JS error and
 fires no 5xx.
 
-LLM-free: seeds a user directly; no analyzer entry points are hit.
+Sprint 6.4 smart landing: ``goHome()`` now routes through ``_landingTab()``.
+Since it deselects the user first, that resolves to the picker's home — the
+Tailor tab — so the "lands on Tailor" assertion below still holds. alice is now
+seeded **non-empty** so selecting her lands on Tailor/applications (an empty
+corpus would smart-land on the Career corpus tab instead).
+
+LLM-free: seeds a user + one experience directly; no analyzer entry points are
+hit.
 """
 
 from __future__ import annotations
@@ -22,7 +29,7 @@ from types import ModuleType
 import pytest
 from playwright.sync_api import Page
 
-from tests.ux.seeding import seed_user
+from tests.ux.seeding import seed_exp_with_bullets, seed_user
 from ui_pages import BasePage, UserPickerPage
 from ui_pages.base import DEFAULT_TIMEOUT_MS
 from ui_pages.selectors import Header, PriorApps, TopTabs, UserPicker
@@ -32,7 +39,10 @@ from ui_pages.selectors import Header, PriorApps, TopTabs, UserPicker
 @pytest.mark.slow
 def test_wordmark_routes_home(page: Page, live_server: str,
                               ux_app: ModuleType) -> None:
-    seed_user(ux_app, "alice")
+    # Non-empty corpus so smart landing puts alice on Tailor/applications
+    # (an empty corpus would land on Career corpus — see test_20260612_corpus_first_landing).
+    cid = seed_user(ux_app, "alice")
+    seed_exp_with_bullets(cid)
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")

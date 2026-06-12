@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added / Changed — corpus-first IA + smart landing (`feat/corpus-first-tab-onboarding`, Sprint 6.4 #16 + #1 + KW1)
+
+Front-end only — SPA tab routing over one existing read endpoint
+(`GET /api/users/<u>/experiences`). No new route, no LLM call, no
+`PROMPT_VERSION` bump, no new dependency, no migration.
+
+- **Tabs reordered to corpus-first.** The top tabs now read **Career corpus →
+  Tailor → Résumé templates → Candidate memory**. Only the `<nav>` button order
+  changes; **Tailor keeps the default active state** because the user picker
+  (`#panelUser`) lives in the Tailor tab and the no-user landing must show it.
+- **Smart landing on user select (KW1).** `onUserSelect()` now routes through a
+  new side-effect-free `_landingTab()` helper instead of unconditionally showing
+  the applications panel: an **empty corpus lands on Career corpus** (onboard —
+  import a résumé), a **populated corpus lands on Tailor** (straight to the
+  workflow). Fixes the dead-end where a brand-new user landed on JD entry with
+  nothing to tailor from.
+- **`goHome()` honors smart landing.** The wordmark route now goes through the
+  same `_landingTab()` (single source of truth for "which tab is home") rather
+  than a hardcoded `'tailor'`. Because it deselects the user first, it still
+  resolves to the picker's home (Tailor).
+- **"Start tailoring →" hand-off CTA.** When corpus review is finished — a
+  non-empty corpus with **0 items pending** — the onboarding banner flips to a
+  success (`is-ready`) state offering **Start tailoring →**, which switches to
+  the Tailor tab. Replaces the old dead-end (the banner used to just disappear).
+  The banner refresh in `refreshCorpus()` was relocated to fire after the list
+  renders so its ready/empty decision reads fresh `_corpusExperiences`.
+- **Tests.** New UX regression
+  `tests/ux/regression/test_20260612_corpus_first_landing.py` (empty→Corpus,
+  populated→Tailor, ready→CTA→Tailor). `test_20260612_logo_home_route.py` now
+  seeds a non-empty user so its select-then-home flow still lands on Tailor under
+  smart landing. New `Corpus.START_TAILORING_BUTTON` selector +
+  `CorpusPage.start_tailoring_button()` POM accessor.
+
 ### Fixed — logo routes home (`fix/logo-home-route`, Sprint 6.4 #23)
 
 Front-end only — no LLM call, no `PROMPT_VERSION` bump, no new dependency, no

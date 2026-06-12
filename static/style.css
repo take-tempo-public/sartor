@@ -1910,6 +1910,15 @@ textarea:focus-visible {
   flex: 1;
 }
 
+/* Ready / review-finished hand-off state (Sprint 6.4): corpus is non-empty
+   with nothing left pending → success tint + the "Start tailoring →" CTA,
+   replacing the violet pending-review chrome. */
+.onboarding-banner.is-ready {
+  background: var(--success-soft);
+  border-color: var(--success);
+  border-left-color: var(--success);
+}
+
 /* =============================================================== */
 /* Diagnostics pill (a <button> wearing .cb-pill) + modal code  */
 /* =============================================================== */
