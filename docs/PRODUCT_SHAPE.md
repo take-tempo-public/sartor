@@ -542,7 +542,7 @@ acceptance criteria / target version**.
 
 **Field-filter chips above source chips on the Step 4 Template chooser.**
 - *Why deferred:* `PersonaTemplate.primary_role_tag_id` already
-  exists in the schema, but the bundled set of 5 templates doesn't
+  exists in the schema, but the bundled set of 4 templates doesn't
   have meaningful role-tag coverage yet. Filter chips with one
   template each per chip is worse UX than no chips.
 - *Acceptance:* user has uploaded ≥ 3 owned templates spanning

@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — Step-4 / Résumé-templates copy now matches the real bundled set (`fix/step4-template-copy`, #8)
+
+Walk finding #8 asked whether the Step-4 template-chooser copy ("Same content,
+different typography and layout") still describes the bundled templates
+accurately. **Verified: yes** — the four bundled templates genuinely differ in
+typography *and* layout (Classic/Modern are sans-serif, Spacious/Tech serif;
+Modern carries a blue header band; Tech uses float-based two-column item rows;
+margins, line-heights, heading treatments and accents all vary), so that Step-4
+line is left unchanged.
+
+The verification surfaced a stale **count**, fixed here. Migration 0005 curated
+the bundled set from 5 → 4 at v1.0.0 (dropped Compact, renamed Hybrid Tech →
+Tech), but the Résumé-templates settings copy still claimed "Five bundled
+ATS-safe templates ship with the app." → corrected to "Four". The
+`docs/bundled_templates_LICENSE.md` inventory (which still listed the
+nonexistent `compact.docx` / `hybrid_tech.docx` and omitted `tech.docx`) was
+corrected to the curated four.
+
+- Copy/doc only — no LLM call, no `PROMPT_VERSION` bump, no new route, no new
+  dependency, no DB change. The canonical count of 4 is already pinned at the
+  data layer by `tests/test_bundled_templates.py`; the new UX regression
+  `tests/ux/regression/test_20260611_step4_template_copy.py` guards the *copy*
+  against drifting from the rendered bundled set.
+
 ### Fixed — Compose custom bullet order no longer reverts on reload for a no-recommendations experience (`fix/compose-order-no-recommendations`)
 
 A saved custom Compose bullet order *visually reverted* after a Compose reload —

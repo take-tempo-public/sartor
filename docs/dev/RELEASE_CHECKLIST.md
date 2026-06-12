@@ -101,6 +101,20 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       frozen `career_corpus` eligible_titles for pinned experiences so a
       post-analyze title reaches generate. Per-JD pin was a user-approved scope
       extension of the #7 row; smoke eval clean (TUNING_LOG 2026-06-11). No new dep.
+      Seventh 6.1 branch `fix/compose-order-no-recommendations` landed
+      2026-06-11 (merge `c8b80e7`) — the no-recommendations Compose fallback now
+      honors the saved GET order instead of re-sorting by score (render-only;
+      detail in the "Discovered during the v1.0.5 stream" item below). Eighth
+      6.1 branch `fix/step4-template-copy` (#8) landed 2026-06-11 — verified the
+      four bundled templates **genuinely differ** in typography/layout (so the
+      Step-4 "different typography and layout" line is accurate and unchanged)
+      and corrected a stale **count**: migration 0005 curated the bundled set
+      5 → 4 at v1.0.0, but the Résumé-templates settings copy still said "Five
+      bundled" → "Four", and `docs/bundled_templates_LICENSE.md` inventory
+      (which listed the nonexistent `compact.docx`/`hybrid_tech.docx`) was
+      corrected to the curated four. Copy/doc only — no prompt change, no route,
+      no new dep; canonical count of 4 pinned by `tests/test_bundled_templates.py`,
+      copy↔rendered-set consistency guarded by a new UX regression.
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +
