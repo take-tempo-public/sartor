@@ -15,11 +15,13 @@
   --bg-2: #1e2030;
   --bg-3: #262838;
 
-  /* Foreground */
+  /* Foreground. fg-2/fg-3 lightened to clear WCAG-AA 4.5:1 on the darkest
+     surfaces (bg-0 + the warm selected template-row bg) — enforced by the axe
+     a11y gate (tests/ux/a11y/). Were #6c6c7a / #4a4a56 (sub-AA on dark). */
   --fg-0: #f6f6fa;
   --fg-1: #a8a8b4;
-  --fg-2: #6c6c7a;
-  --fg-3: #4a4a56;
+  --fg-2: #9b9ba7;
+  --fg-3: #8f8f9b;
 
   --border:   #2a2c3a;
   --border-2: #36384a;
@@ -442,10 +444,11 @@ textarea {
 .edit-hint {
   font-size: 11px;
   letter-spacing: 1px;
-  color: var(--fg-1);
+  color: var(--fg-2);
   text-transform: uppercase;
   margin-bottom: 4px;
-  opacity: 0.7;
+  /* No opacity dim: fg-1 @ 0.7 composited to ~#7c7d88 (sub-AA, 4.36:1). Solid
+     fg-2 keeps the hint subordinate while clearing WCAG-AA (axe a11y gate). */
 }
 
 .preview-editable {

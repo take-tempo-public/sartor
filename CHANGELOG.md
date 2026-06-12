@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — axe-core accessibility smoke gate + a11y fixes (`fix/form-field-labels-a11y`)
+
+The never-shipped a11y gate (Sprint 6.3, finding #3) — the arbiter that guards
+every later v1.0.6 branch — plus the violations it surfaced. Front-end + one new
+test tier only; no LLM call, no `PROMPT_VERSION` bump, no route, no migration,
+**no new pip dependency** (axe-core is vendored, not installed).
+
+- **New a11y gate — `tests/ux/a11y/test_axe_smoke.py`.** Injects the **vendored**
+  axe-core engine (`tests/ux/a11y/vendor/axe.min.js`, axe-core `4.10.2`, MPL-2.0)
+  into each reachable panel — landing, new-user form, the four top tabs, the
+  Settings drawer, a stubbed Compose/Template drive, and every `/_dashboard` tab
+  — and asserts **no `serious`/`critical` violations**. Vendored (not a pip dep)
+  so it runs wherever the UX-tier Chromium runs and can never silently skip from
+  a missing extra; rides the existing `tests/ux/conftest.py` harness (Chromium
+  graceful-skip + console/5xx sentinel). New `a11y` pytest marker — the tests are
+  also `ux`, so they run inside `pytest -m ux`; `pytest -m a11y` runs them alone.
+- **Form-field labels were already clean** (defect-vs-expected: the "~150 flagged
+  fields" predated the v1.0.5/v1.0.6 redesign). The gate found **zero** label/name
+  `serious`/`critical` violations. Belt-and-suspenders completion of #3 anyway:
+  `sr-only` labels on the three hidden file inputs (`templateUploadInput`,
+  `corpusIngestFile`, `personaUploadInput`) and `name` + `autocomplete` on the
+  new-user form + Settings-drawer personal fields (the "missing autofill" half).
+- **Fixed — color-contrast (the only `serious` violations the gate found).** The
+  muted-text tokens were sub-WCAG-AA on the dark surfaces: `--fg-2` (`#6c6c7a`,
+  down to 3.19:1) and `--fg-3` (`#4a4a56`, down to 1.72:1) are lightened to
+  `#9b9ba7` / `#8f8f9b` (≥4.5:1 on the darkest surface, including the warm
+  selected template-row bg), and `.edit-hint` drops its `opacity: 0.7` (which
+  composited `--fg-1` to a sub-AA `#7c7d88`) for a solid `--fg-2`. Token-level fix
+  in `static/style.css`, so it clears the Settings hints, the Step-4 template
+  chips/sub-labels, and the `/_dashboard` meta/cost/link text in one place
+  (user-approved scope addition — design-system color change).
+
 ### Fixed — diagnostics-console chart + layout corrections (`fix/diagnostics-chart-corrections`)
 
 Three `/_dashboard` defects from the v1.0.6 kickoff walkthrough harvest (Sprint

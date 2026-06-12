@@ -79,21 +79,21 @@
         <div id="newUserForm" class="hidden">
           <div class="form-row">
             <label for="newUsername" class="sr-only">Username</label>
-            <input type="text" id="newUsername" placeholder="Username" aria-label="New user username">
+            <input type="text" id="newUsername" name="newUsername" autocomplete="username" placeholder="Username" aria-label="New user username">
             <label for="newName" class="sr-only">Full name</label>
-            <input type="text" id="newName" placeholder="Full Name" aria-label="New user full name">
+            <input type="text" id="newName" name="newName" autocomplete="name" placeholder="Full Name" aria-label="New user full name">
           </div>
           <div class="form-row">
             <label for="newEmail" class="sr-only">Email</label>
-            <input type="email" id="newEmail" placeholder="Email" aria-label="New user email">
+            <input type="email" id="newEmail" name="newEmail" autocomplete="email" placeholder="Email" aria-label="New user email">
             <label for="newPhone" class="sr-only">Phone</label>
-            <input type="tel" id="newPhone" placeholder="Phone" aria-label="New user phone">
+            <input type="tel" id="newPhone" name="newPhone" autocomplete="tel" placeholder="Phone" aria-label="New user phone">
           </div>
           <div class="form-row">
             <label for="newLinkedin" class="sr-only">LinkedIn URL</label>
-            <input type="url" id="newLinkedin" placeholder="linkedin.com/in/you (https:// optional)" aria-label="New user LinkedIn URL">
+            <input type="url" id="newLinkedin" name="newLinkedin" autocomplete="url" placeholder="linkedin.com/in/you (https:// optional)" aria-label="New user LinkedIn URL">
             <label for="newWebsite" class="sr-only">Website URL</label>
-            <input type="url" id="newWebsite" placeholder="yoursite.com (https:// optional)" aria-label="New user website URL">
+            <input type="url" id="newWebsite" name="newWebsite" autocomplete="url" placeholder="yoursite.com (https:// optional)" aria-label="New user website URL">
           </div>
           <div class="form-row">
             <button class="cb-btn cb-bg-teal" onclick="createUser()">Create</button>
@@ -301,6 +301,7 @@
             <div id="templatePickList" class="template-mini-list" role="listbox"
                  aria-label="Available templates"></div>
             <div class="template-upload-row">
+              <label for="templateUploadInput" class="sr-only">Upload résumé template (.docx)</label>
               <input type="file" id="templateUploadInput" accept=".docx"
                      style="display:none"
                      onchange="uploadTemplateFromTemplateStep(this)">
@@ -615,6 +616,7 @@
           <div class="form-row" id="corpusToolbar" style="display:none">
             <button class="cb-btn cb-bg-teal" onclick="openCorpusAddExperience()">+ ADD EXPERIENCE</button>
             <button class="cb-btn cb-bg-violet" onclick="document.getElementById('corpusIngestFile').click()">+ Import résumé</button>
+            <label for="corpusIngestFile" class="sr-only">Import résumé file (.docx, .pdf, or .md)</label>
             <input type="file" id="corpusIngestFile" accept=".docx,.pdf,.md" class="hidden" onchange="uploadFile(this.files[0])">
             <button class="cb-btn cb-bg-orange" onclick="loadCorpusDuplicates()">Find duplicates</button>
             <span class="edit-hint" id="corpusCount">0 experiences</span>
@@ -677,6 +679,7 @@
               <div class="corpus-empty-experience">Select a user to view uploads.</div>
             </div>
             <div class="form-row" style="margin-top:12px">
+              <label for="personaUploadInput" class="sr-only">Upload .docx résumé template file</label>
               <input type="file" id="personaUploadInput" accept=".docx" style="display:none"
                      onchange="uploadPersonaFromInput(this)">
               <button class="cb-btn cb-bg-teal" id="btnUploadPersona"
@@ -937,23 +940,23 @@
           <div id="panelConfig">
             <div class="form-row">
               <label for="cfgName">Name</label>
-              <input type="text" id="cfgName">
+              <input type="text" id="cfgName" name="cfgName" autocomplete="name">
             </div>
             <div class="form-row">
               <label for="cfgEmail">Email</label>
-              <input type="email" id="cfgEmail">
+              <input type="email" id="cfgEmail" name="cfgEmail" autocomplete="email">
             </div>
             <div class="form-row">
               <label for="cfgPhone">Phone</label>
-              <input type="tel" id="cfgPhone">
+              <input type="tel" id="cfgPhone" name="cfgPhone" autocomplete="tel">
             </div>
             <div class="form-row">
               <label for="cfgLinkedin">LinkedIn</label>
-              <input type="url" id="cfgLinkedin">
+              <input type="url" id="cfgLinkedin" name="cfgLinkedin" autocomplete="url">
             </div>
             <div class="form-row">
               <label for="cfgWebsite">Website</label>
-              <input type="url" id="cfgWebsite">
+              <input type="url" id="cfgWebsite" name="cfgWebsite" autocomplete="url">
             </div>
             <div class="form-row">
               <label for="cfgSkills">Skills</label>
