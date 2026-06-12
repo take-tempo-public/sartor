@@ -9,7 +9,7 @@
   <script>document.documentElement.className += ' js';</script>
   <!-- Design system: the cb-* token set + base styles live in the app stylesheet. -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <!-- Chart.js from CDN (no Python charting dep); charts lazy-init on drawer-open.
+  <!-- Chart.js from CDN (no Python charting dep); charts lazy-init on detail-open.
        Subresource Integrity pins the exact 4.4.0 bytes against CDN compromise;
        crossorigin="anonymous" is required for SRI on cross-origin scripts. -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
@@ -64,23 +64,25 @@
     .ok  { color: var(--success-hi); }
     .err { color: var(--danger); }
 
-    /* Shared right-hand drawer */
-    .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: opacity var(--t-med) var(--ease); z-index: 40; }
-    .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
-    .drawer {
-      position: fixed; top: 0; right: 0; height: 100vh; width: min(560px, 94vw);
-      background: var(--bg-1); border-left: 1px solid var(--border-2); box-shadow: var(--shadow-3);
-      transform: translateX(100%); transition: transform var(--t-med) var(--ease-out);
-      z-index: 41; display: flex; flex-direction: column;
+    /* Inline full-width detail panel (replaces the old 560px side drawer). The
+       selected tile's detail block is moved in from #detailStore so its tables
+       and charts use the full page width instead of a cramped overlay. */
+    .detail-panel {
+      margin-top: 1.4rem;
+      background: var(--bg-1); border: 1px solid var(--border-2); border-radius: var(--radius-lg);
+      box-shadow: var(--edge-top), var(--shadow-1);
     }
-    .drawer.open { transform: translateX(0); }
-    .drawer > header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.2rem; border-bottom: 1px solid var(--border); }
-    .drawer > header h2 { color: var(--brand); font-size: 1.05rem; font-weight: 600; margin: 0; }
-    .drawer-close { background: var(--grad-btn); border: 1px solid var(--border-2); color: var(--fg-1); border-radius: var(--radius-sm); width: 2rem; height: 2rem; cursor: pointer; line-height: 1; }
-    .drawer-close:hover { color: var(--fg-0); background: var(--grad-btn-hi); }
-    .drawer-body { padding: 1.2rem; overflow-y: auto; }
-    .drawer-body .chart-box { height: 320px; margin-bottom: 1rem; }
-    .drawer-body .chart-box canvas { max-height: 300px; }
+    .detail-panel[hidden] { display: none; }
+    .detail-panel > header { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border); }
+    .detail-panel > header h2 { color: var(--brand); font-size: 1.05rem; font-weight: 600; margin: 0; }
+    .detail-close { background: var(--grad-btn); border: 1px solid var(--border-2); color: var(--fg-1); border-radius: var(--radius-sm); width: 2rem; height: 2rem; cursor: pointer; line-height: 1; }
+    .detail-close:hover { color: var(--fg-0); background: var(--grad-btn-hi); }
+    .detail-body { padding: 1.2rem; }
+    .detail-body .chart-box { height: 320px; margin-bottom: 1rem; }
+    .detail-body .chart-box canvas { max-height: 300px; }
+    /* The Calls (throughput) detail is the widest table; wrap its cells so it
+       can never reintroduce a horizontal scrollbar on a narrow viewport. */
+    .detail[data-detail="throughput"] td { word-break: break-word; }
 
     /* Tables (scoped) */
     .cb-dash table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
@@ -104,7 +106,10 @@
     .wf-row { display: grid; grid-template-columns: 9rem 1fr 5rem; align-items: center; gap: 0.6rem; padding: 0.2rem 0; font-size: 0.8rem; }
     .wf-row .lbl { color: var(--fg-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .wf-track { background: var(--bg-3); border-radius: var(--radius-pill); height: 0.7rem; overflow: hidden; }
-    .wf-bar { background: var(--grad-brand); height: 100%; border-radius: var(--radius-pill); }
+    /* display:block is load-bearing: the bar is a <span>, and width/height/
+       min-width do not apply to an inline box — without this the bar rendered at
+       0px ("bars look empty", finding #13) regardless of its width %. */
+    .wf-bar { display: block; background: var(--grad-brand); height: 100%; border-radius: var(--radius-pill); min-width: 2px; }
     .wf-row .ms { color: var(--fg-2); text-align: right; font-variant-numeric: tabular-nums; }
 
     .legend { color: var(--fg-2); font-size: 0.78rem; margin-top: 0.5rem; }
@@ -463,18 +468,21 @@
   <datalist id="annFailedRulesList"></datalist>
 </section>
 
-<!-- ===== Shared drawer ===== -->
-<div class="drawer-backdrop" id="drawerBackdrop"></div>
-<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="drawerTitle">
+<!-- ===== Inline detail panel: full-width, in the page flow (replaces the side
+         drawer). JS moves the selected tile's detail block here from
+         #detailStore so tables + charts use the available width. Hidden until a
+         tile is opened. ===== -->
+<section class="detail-panel" id="detailPanel" hidden aria-labelledby="detailTitle">
   <header>
-    <h2 id="drawerTitle">Detail</h2>
-    <button class="drawer-close" id="drawerClose" aria-label="Close detail">✕</button>
+    <h2 id="detailTitle">Detail</h2>
+    <button class="detail-close" id="detailClose" aria-label="Close detail">✕</button>
   </header>
-  <div class="drawer-body" id="drawerBody"></div>
-</aside>
+  <div class="detail-body" id="detailBody"></div>
+</section>
 
-<!-- ===== Detail store: server-rendered detail blocks, moved into the drawer by
-         JS on tile click. Without JS this container is visible and stacks inline. ===== -->
+<!-- ===== Detail store: server-rendered detail blocks, moved into the inline
+         detail panel by JS on tile click. Without JS this container is visible and
+         stacks inline. ===== -->
 <div id="detailStore">
 
   <div class="detail" data-detail="cost">
@@ -534,7 +542,7 @@
       {% for s in run_trace.latest.spans %}
       <div class="wf-row">
         <span class="lbl" title="{{ s.call_kind }} ({{ s.model }})">{{ s.call_kind }}</span>
-        <span class="wf-track"><span class="wf-bar" style="width: {{ s.pct }}%"></span></span>
+        <span class="wf-track"><span class="wf-bar" style="width: {{ s.bar_pct }}%" title="{{ s.pct }}% of run"></span></span>
         <span class="ms">{{ s.latency_ms }}ms</span>
       </div>
       {% endfor %}
@@ -705,46 +713,44 @@
       t.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     panes.forEach(function (p) { p.classList.toggle('active', p.dataset.pane === name); });
+    closeDetail();  // a detail from another tab shouldn't linger after a switch
   }
   tabs.forEach(function (t) { t.addEventListener('click', function () { activateTab(t.dataset.tab); }); });
   activateTab('pipeline');
 
-  // ---- Drawer ----
-  var drawer = document.getElementById('drawer');
-  var backdrop = document.getElementById('drawerBackdrop');
-  var body = document.getElementById('drawerBody');
-  var titleEl = document.getElementById('drawerTitle');
+  // ---- Detail panel (inline, full-width — replaces the side drawer) ----
+  var panel = document.getElementById('detailPanel');
+  var body = document.getElementById('detailBody');
+  var titleEl = document.getElementById('detailTitle');
   var store = document.getElementById('detailStore');
-  var closeBtn = document.getElementById('drawerClose');
+  var closeBtn = document.getElementById('detailClose');
   var openNode = null;
 
-  function openDrawer(id, title) {
+  function openDetail(id, title) {
     var node = store.querySelector('.detail[data-detail="' + id + '"]');
     if (!node) return;
     if (openNode) store.appendChild(openNode);
     body.appendChild(node);
     openNode = node;
     titleEl.textContent = title || id;
-    drawer.classList.add('open');
-    backdrop.classList.add('open');
-    drawer.setAttribute('aria-hidden', 'false');
+    panel.hidden = false;
     initCharts(node);
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     closeBtn.focus();
   }
-  function closeDrawer() {
-    drawer.classList.remove('open');
-    backdrop.classList.remove('open');
-    drawer.setAttribute('aria-hidden', 'true');
+  // Defensive `if (panel)`: activateTab('pipeline') calls closeDetail on first
+  // paint, before `var panel` is assigned (hoisted function, not-yet-run var).
+  function closeDetail() {
+    if (panel) panel.hidden = true;
     if (openNode) { store.appendChild(openNode); openNode = null; }
   }
   document.querySelectorAll('.tile[data-detail]').forEach(function (t) {
-    t.addEventListener('click', function () { openDrawer(t.dataset.detail, t.dataset.title); });
+    t.addEventListener('click', function () { openDetail(t.dataset.detail, t.dataset.title); });
   });
-  closeBtn.addEventListener('click', closeDrawer);
-  backdrop.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
+  closeBtn.addEventListener('click', closeDetail);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDetail(); });
 
-  // ---- Charts: lazy-init once per canvas, when it's visible in the drawer ----
+  // ---- Charts: lazy-init once per canvas, when it's visible in the detail panel ----
   if (typeof Chart === 'undefined') return;
   var TICK = '#a8a8b4';      // --fg-1
   var BRAND = '#e8a754', GREEN = '#4ade80', RED = '#f87171', GREY = '#6c6c7a';
@@ -797,7 +803,16 @@
       new Chart(cv, {
         type: 'bar', data: { labels: d.map(function (x) { return x.call_kind; }),
           datasets: [{ label: 'total $', data: d.map(function (x) { return x.total_cost_usd; }), backgroundColor: BRAND }] },
-        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } },
+        // Explicit tooltip names the bar as the TOTAL (sum over N calls) and shows
+        // the mean alongside, so it can't be misread as a per-call mean.
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+          plugins: { legend: { display: false },
+            tooltip: { callbacks: { label: function (ctx) {
+              var x = d[ctx.dataIndex] || {};
+              return x.call_kind + ' — total $' + (x.total_cost_usd != null ? x.total_cost_usd.toFixed(5) : '—')
+                + ' · ' + x.count + ' call' + (x.count === 1 ? '' : 's')
+                + ' · mean $' + (x.mean_cost_usd != null ? x.mean_cost_usd.toFixed(6) : '—');
+            } } } },
           scales: { x: { beginAtZero: true, ticks: { color: TICK } }, y: { ticks: { color: TICK } } } }
       });
     },

@@ -572,6 +572,11 @@ class TestRunTrace:
         assert out["latest"]["total_latency_ms"] == 120000
         assert spans[0]["pct"] == 75.0
         assert spans[1]["pct"] == 25.0
+        # bar_pct scales each bar to the LONGEST span (max → 100%), not the total,
+        # so a short span stays visible: analyze (90000) is the max → 100.0;
+        # generate (30000) → 30000/90000 = 33.3.
+        assert spans[0]["bar_pct"] == 100.0
+        assert spans[1]["bar_pct"] == 33.3
 
     def test_latest_run_is_most_recent(self):
         records = [

@@ -768,6 +768,12 @@ def _run_trace(records: list[dict]) -> dict:
     latest_run_id, latest_calls = runs_sorted[0]
     latest_calls = sorted(latest_calls, key=lambda c: c.get("timestamp", ""))
     total_lat = sum(c.get("latency_ms", 0) or 0 for c in latest_calls)
+    # bar_pct scales each bar to the LONGEST span (max → 100%), not to the total.
+    # Sharing the bar width with `pct` (share of total) made every span but the
+    # dominant one render as an invisible sliver; scaling to the max keeps the
+    # relative comparison while making short spans visible (`pct` still rides in
+    # the row title, `latency_ms` stays the absolute truth).
+    max_lat = max((c.get("latency_ms", 0) or 0) for c in latest_calls) if latest_calls else 0
     spans = [
         {
             "call_kind": c.get("call", "unknown"),
@@ -775,6 +781,7 @@ def _run_trace(records: list[dict]) -> dict:
             "latency_ms": c.get("latency_ms", 0) or 0,
             "status": c.get("status", ""),
             "pct": round(100.0 * (c.get("latency_ms", 0) or 0) / total_lat, 1) if total_lat else 0.0,
+            "bar_pct": round(100.0 * (c.get("latency_ms", 0) or 0) / max_lat, 1) if max_lat else 0.0,
         }
         for c in latest_calls
     ]

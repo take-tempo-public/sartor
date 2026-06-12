@@ -137,6 +137,21 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       (`test_20260611_wizard_flow_polish.py`) adds the first UX drive through the
       generate route, via two new offline stubs (`fake_generate_streaming` +
       `fake_clarify_iteration`).
+      **Sprint 6.2** (`fix/diagnostics-chart-corrections`, #11 + #12 + #13 + KW13)
+      landed 2026-06-11 — #11 verified **not a bug** (the cost-by-kind chart has
+      always plotted the total; the fix is an explicit, unambiguous tooltip naming
+      total + count + mean); the cramped 560px side drawer became a **full-width
+      inline detail panel** (KW13, larger restructure, user-approved), which also
+      fixes the #12 Calls horizontal scroll; and the latest-trace bars (a `<span>`
+      left at `display:inline`, so their width never applied and they rendered at
+      0px — fixed with `display:block` + a 2px min-width) now scale to the longest
+      span (`dashboard/routes._run_trace.bar_pct`, max → 100%) so they render and
+      short spans stay visible (#13). Front-end +
+      deterministic aggregation only — no prompt change, no new route, no new dep;
+      `bar_pct` unit test + UX regression
+      `test_20260611_diagnostics_chart_corrections.py`; dashboard POM/selectors
+      moved from `drawer` to `detail-panel` handles. Sprint 6.3
+      (`fix/form-field-labels-a11y`, **where the axe a11y gate lands first**) is next.
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +

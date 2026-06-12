@@ -30,7 +30,7 @@ class DashboardConsolePage(BasePage):
     def active_pane(self, name: str) -> Locator:
         return self.page.locator(Dashboard.pane_active(name))
 
-    # --- tiles + drawer ----------------------------------------------------
+    # --- tiles + detail panel ----------------------------------------------
     def tile(self, detail: str) -> Locator:
         """First tile bound to a given detail block (a detail may back >1 tile)."""
         return self.page.locator(Dashboard.tile(detail)).first
@@ -38,21 +38,21 @@ class DashboardConsolePage(BasePage):
     def open_tile(self, detail: str) -> None:
         self.tile(detail).click()
 
-    def drawer(self) -> Locator:
-        return self.page.locator(Dashboard.DRAWER)
+    def detail_panel(self) -> Locator:
+        return self.page.locator(Dashboard.DETAIL_PANEL)
 
-    def drawer_open(self) -> Locator:
-        """Matches only while the drawer is open (the `.open` class)."""
-        return self.page.locator(Dashboard.DRAWER_OPEN)
+    def detail_panel_open(self) -> Locator:
+        """Matches only while the inline detail panel is open (not `[hidden]`)."""
+        return self.page.locator(Dashboard.DETAIL_PANEL_OPEN)
 
-    def drawer_title(self) -> Locator:
-        return self.page.locator(Dashboard.DRAWER_TITLE)
+    def detail_title(self) -> Locator:
+        return self.page.locator(Dashboard.DETAIL_TITLE)
 
-    def drawer_body(self) -> Locator:
-        return self.page.locator(Dashboard.DRAWER_BODY)
+    def detail_body(self) -> Locator:
+        return self.page.locator(Dashboard.DETAIL_BODY)
 
-    def close_drawer(self) -> None:
-        self.page.locator(Dashboard.DRAWER_CLOSE).click()
+    def close_detail(self) -> None:
+        self.page.locator(Dashboard.DETAIL_CLOSE).click()
 
     # --- annotate tab (read-write surface) ----------------------------------
     def fixture_select(self) -> Locator:
