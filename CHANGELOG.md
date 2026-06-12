@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — internal tooling (`fix/require-feature-branch-worktree-aware`)
+
+- **`require-feature-branch` hook is now worktree-aware.** It resolves the
+  branch of the repo containing the *target file* (`git -C`) instead of the
+  hook's cwd, so edits to a feature branch in a separate worktree/clone are no
+  longer falsely blocked by the launch clone being on `main`. Hook-only change;
+  no LLM call, no `PROMPT_VERSION` bump, no new dependency, no route, no migration.
+
 ### Added / Changed — corpus affordance polish (`fix/corpus-affordance-polish`, Sprint 6.3 #2 + #5 + KW2)
 
 Front-end polish + one DB-only route on the Career Corpus tab. No LLM call, no
