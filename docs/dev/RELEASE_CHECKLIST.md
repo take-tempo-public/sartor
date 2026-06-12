@@ -191,8 +191,19 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       since accepted items seed fit-analysis/bullet-generation/résumé-build).
       Front-end + one DB-only route + tests — no prompt/dep/migration change;
       new backend `TestAcceptAllPendingCorpus` + UX regression
-      `test_20260612_corpus_affordance_polish.py`. Next row: Sprint 6.4
-      `fix/logo-home-route` (#23).
+      `test_20260612_corpus_affordance_polish.py`. **Sprint 6.4** opened
+      2026-06-12 with `fix/logo-home-route` (#23) — the inert `.cb-wordmark`
+      logo (`<a href="#">`, no handler) now routes home via a new public
+      `goHome()` that reuses `onUserSelect()`'s no-user branch (deselect +
+      `hideAllPanels()` + re-lock the picker open + `_resetIterationState()`) and
+      `switchTopTab('tailor', …)` to restore the default landing tab; the anchor
+      gains `onclick="goHome(); return false;"` + a clearer `aria-label`/`title`.
+      Front-end only — no prompt/route/dep/migration change (pure SPA nav, so
+      `route-security-lint` is N/A); new `Header` selector + UX regression
+      `test_20260612_logo_home_route.py`; ruff/mypy ✓, pytest 1084/1084. Next
+      row: Sprint 6.4 second branch `feat/corpus-first-tab-onboarding` (#16 + #1) —
+      corpus-first tab reorder + smart landing (the IA work; **not** part of #23,
+      and it will own any future change to which tab `goHome()` lands on).
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +
