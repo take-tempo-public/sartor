@@ -43,15 +43,19 @@
     </div>
   </header>
 
-  <!-- Top-level tabs (Phase D). Tailor is the application/wizard workflow;
-       Career corpus is the DB-backed editor. -->
+  <!-- Top-level tabs (Phase D). Career corpus is the DB-backed editor and the
+       onboarding entry (tab 1, Sprint 6.4 IA); Tailor is the application/wizard
+       workflow. Button order is corpus-first, but Tailor keeps the default
+       active/aria-selected state because the user picker lives in #tab-tailor —
+       the no-user landing must show it. Smart landing (onUserSelect →
+       _landingTab) switches tabs once a user is selected. -->
   <nav class="top-tabs" role="tablist" aria-label="Application sections">
-    <button class="top-tab-btn active" id="topTabTailor"
-            role="tab" aria-controls="tab-tailor" aria-selected="true"
-            onclick="switchTopTab('tailor', this)">Tailor</button>
     <button class="top-tab-btn" id="topTabCorpus"
             role="tab" aria-controls="tab-corpus" aria-selected="false"
             onclick="switchTopTab('corpus', this)">Career corpus</button>
+    <button class="top-tab-btn active" id="topTabTailor"
+            role="tab" aria-controls="tab-tailor" aria-selected="true"
+            onclick="switchTopTab('tailor', this)">Tailor</button>
     <button class="top-tab-btn" id="topTabPersonas"
             role="tab" aria-controls="tab-personas" aria-selected="false"
             onclick="switchTopTab('personas', this)">Résumé templates</button>
@@ -609,10 +613,15 @@
       <section class="cb-panel" id="panelCorpus">
         <div class="panel-header cb-bg-blue">Career corpus</div>
         <div class="panel-body">
+          <!-- Two states, one element (Sprint 6.4). Pending review →
+               Review now / Accept all pending. Review finished (0 pending) on a
+               non-empty corpus → the is-ready hand-off CTA. _refreshOnboardingBanner
+               toggles the button set + the is-ready class. -->
           <div id="onboardingBanner" class="onboarding-banner hidden" role="status">
             <span id="onboardingBannerText"></span>
-            <button class="cb-btn cb-bg-amber" onclick="scrollToFirstPending()">Review now</button>
-            <button class="cb-btn cb-bg-teal" onclick="acceptAllPendingCorpus()">Accept all pending</button>
+            <button class="cb-btn cb-bg-amber" id="btnReviewNow" onclick="scrollToFirstPending()">Review now</button>
+            <button class="cb-btn cb-bg-teal" id="btnAcceptAllPending" onclick="acceptAllPendingCorpus()">Accept all pending</button>
+            <button class="cb-btn cb-bg-teal hidden" id="btnStartTailoring" onclick="switchTopTab('tailor', document.getElementById('topTabTailor'))">Start tailoring →</button>
           </div>
           <div class="edit-hint" id="corpusEmptyHint">
             Your career corpus is the pool of experiences the LLM draws from

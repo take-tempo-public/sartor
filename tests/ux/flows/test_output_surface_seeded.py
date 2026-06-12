@@ -22,6 +22,7 @@ from playwright.sync_api import Page, expect
 from tests.ux.seeding import (
     bundled_persona_id,
     seed_application,
+    seed_exp_with_bullets,
     seed_run,
     seed_user,
     write_context_file,
@@ -44,6 +45,7 @@ _RESUME_JSON = {
 def test_resume_prior_application_renders_step6(page: Page, live_server: str,
                                                 ux_app: ModuleType) -> None:
     cid = seed_user(ux_app, "alice")
+    seed_exp_with_bullets(cid)  # non-empty corpus → smart landing keeps us on Tailor
     pid = bundled_persona_id()
     aid = seed_application(cid, title="Senior Backend @ Acme")
     rid = seed_run(aid, iteration=0, generated_resume_md="# Alice\n- Led migration",

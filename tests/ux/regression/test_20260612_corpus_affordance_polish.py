@@ -91,8 +91,10 @@ def test_empty_state_copy_is_review_honest(page: Page, live_server: str,
 @pytest.mark.slow
 def test_accept_all_pending_clears_banner(page: Page, live_server: str,
                                           ux_app: ModuleType) -> None:
-    """KW2 — the banner's 'Accept all pending' clears every pending flag and
-    the banner self-hides once nothing is pending."""
+    """KW2 — the banner's 'Accept all pending' clears every pending flag. On a
+    non-empty corpus the pending prompt then flips to the Sprint 6.4 ready
+    hand-off ('Start tailoring →'), not a bare hide (an EMPTY corpus is what
+    hides it — see test_20260612_corpus_first_landing)."""
     cid = seed_user(ux_app, "alice")
     _seed_pending_experience(cid)
 
@@ -105,8 +107,10 @@ def test_accept_all_pending_clears_banner(page: Page, live_server: str,
 
     expect(corpus.onboarding_banner()).to_be_visible()
     corpus.accept_all_button().click()
-    # Banner hides only after the POST clears the flags and counts refresh.
-    expect(corpus.onboarding_banner()).to_be_hidden()
+    # After the POST clears the flags + counts refresh, the pending controls are
+    # gone and the ready CTA appears (banner stays visible, now is-ready).
+    expect(corpus.start_tailoring_button()).to_be_visible()
+    expect(corpus.accept_all_button()).to_be_hidden()
 
 
 @pytest.mark.ux

@@ -82,6 +82,7 @@ def test_analyze_only_application_resumes_to_step_1(
     page: Page, live_server: str, ux_app: ModuleType,
 ) -> None:
     cid = seed_user(ux_app, "alice")
+    seed_exp_with_bullets(cid)  # non-empty corpus → smart landing keeps us on Tailor
     aid = _seed_analyze_only_app(ux_app, cid)
 
     BasePage(page, live_server).load()

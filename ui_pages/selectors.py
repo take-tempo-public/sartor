@@ -60,6 +60,9 @@ class Corpus:
     # KW2 — onboarding banner + corpus-wide accept-all control.
     ONBOARDING_BANNER = "#onboardingBanner"
     ACCEPT_ALL_BUTTON_NAME = "Accept all pending"
+    # Sprint 6.4 (#16/#1) — review-finished hand-off CTA into the Tailor tab,
+    # shown in the banner's ready state (non-empty corpus + 0 pending).
+    START_TAILORING_BUTTON = "#btnStartTailoring"
 
 
 class Wizard:

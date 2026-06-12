@@ -48,3 +48,7 @@ class CorpusPage(BasePage):
         return self.page.locator(Corpus.ONBOARDING_BANNER).get_by_role(
             "button", name=Corpus.ACCEPT_ALL_BUTTON_NAME
         )
+
+    # Sprint 6.4 (#16/#1) — review-finished "Start tailoring →" hand-off CTA.
+    def start_tailoring_button(self) -> Locator:
+        return self.page.locator(Corpus.START_TAILORING_BUTTON)
