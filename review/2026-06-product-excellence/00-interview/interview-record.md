@@ -14,12 +14,12 @@ graduation: none
 - **Interviewee:** owner (amodal1)
 - **Format:** live, two rounds, cluster batches
 - **Round 1 batch 1 (clusters 1–4):** asked + answered 2026-06-12/13
-- **Round 1 batch 2 (clusters 5–8):** asked + answered 2026-06-13
-- **Round 2 (tensions + follow-ups):** asked + answered 2026-06-13 (R2-12
+- **Round 1 batch 2 (clusters 5–8):** asked + answered 2026-06-12
+- **Round 2 (tensions + follow-ups):** asked + answered 2026-06-12 (R2-12
   continued as live discussion); informed by the
   [round-2 verification brief](round2-verification-brief.md)
 
-> **Redaction note (2026-06-13):** at the owner's direction, references to
+> **Redaction note (2026-06-12):** at the owner's direction, references to
 > out-of-scope external work that surfaced conversationally during the
 > interview were removed from this record and all review artifacts; affected
 > passages were cut or generalized and the review branch history rewritten to
@@ -365,7 +365,7 @@ frozen copy?**
 
 ---
 
-## Round 2 — Questions (asked 2026-06-13; answers pending)
+## Round 2 — Questions (asked 2026-06-12; answers pending)
 
 Derived from tensions T1–T9 plus the verification fan-out (contradictions
 C1–C11, arc misalignments A1–A7, absences M1–M8, badge research — see
@@ -440,7 +440,7 @@ C1–C11, arc misalignments A1–A7, absences M1–M8, badge research — see
 
 ---
 
-## Round 2 — Answers (2026-06-13)
+## Round 2 — Answers (2026-06-12)
 
 **R2-1 — Egress clause: Q9 RECANTED; the docs stand.**
 
@@ -481,15 +481,16 @@ is the product" and the retirement rule stand as written. T4/C4 **closed**.
 > No. revisit given the answers in this batch. Give me the guidelines you
 > see enforced in vision so that I can be grounded
 
-**OPEN** — grounded enumeration of vision.md's goals + constraints and a
-revised tier proposal delivered in chat 2026-06-13; owner decision pending.
+Grounded enumeration delivered in chat; owner's final answers below in
+*Round 2 — Continued*. **Resolved there.**
 
 **R2-5 — Written tag evidence: ACCEPTED; N open.**
 
 > perfect. that N number? 10, 20? what makes sense
 
-**OPEN** — reviewer recommendation (N=10 with a composition matrix)
-delivered in chat 2026-06-13; owner decision pending.
+Reviewer recommended N=10 with a composition matrix (≥3 clarify-inclusive,
+≥2 iteration chains, ≥2 cover letters, ≥2 templates, both formats, ≥1
+prior-app reuse). Owner: **"yes"** (Round 2 — Continued). **Closed.**
 
 **R2-6 — Two first-run bars: AGREED.**
 
@@ -559,5 +560,203 @@ ownership, branch ownership). T7/C7 **closed** → feeds prescriptions.
 
 > we need to go back and forth on this one for a second i think
 
-**OPEN** — reviewer posture options + recommendation delivered in chat
-2026-06-13; live discussion in progress.
+Reviewer posture options + recommendation delivered in chat; owner's
+partial answers and the governing posture directive below in *Round 2 —
+Continued*; right-sized soft proposal pending.
+
+---
+
+## Round 2 — Continued (2026-06-12)
+
+**R2-4.1 — Identity sentence REJECTED; "single-tenant" demoted.**
+
+> Do we need one person, one machine, one job at a time? I don't think so.
+> This seems to paint us into a corner without actually saying anything
+> about what we care about. **Local and yours** is much closer to what we
+> provide, though I suspect, if we stayed very close to what we actually do
+> without marketing language, it would be better. single-tenant isn't
+> necessary. my partner and i can use the same installation on a shared
+> computer. it's about trust and giving you control and capability.
+
+Resolution: identity language = **"local and yours"** — plain, factual,
+no marketing. Single-tenancy is NOT a value: household sharing of one
+installation is normal and fine (the user picker already supports multiple
+local profiles). The values underneath are **trust, user control, user
+capability**. The docs' terminal "single-tenant by design / we won't"
+language is overstated → charter + prescription. (Interplay with R2-2
+preserved: the commercial multi-client scenario stays out of scope — the
+trust model is people who share a machine trust each other; nothing is
+built for managing third parties' data.)
+
+**R2-4.2 — "LLM cannot invent" is a bold claim; describe the mechanism,
+not an absolute.**
+
+> "LLM cannot invent" is a bold claim. We do our best to keep the llm
+> grounded in real experience, we use questions to assist with grounding
+> in undocumented areas, and we use human review for each step and the
+> corpus approvals for llm generated bullets. And these help the llm
+> hallucinate less as it learns more about your experience as documented
+> in your career corpus and candidate memory
+
+Resolution: grounding clauses describe mechanisms and effort (defense
+layers, clarifying questions, per-step human review, corpus approvals,
+candidate memory) — never absolutes about LLM behavior.
+
+**R2-4.3 — Egress: categorical, in the owner's words.**
+
+> no no diagnostics or telemetry, no d or t that LEAVE YOUR MACHINE. the
+> only traffic is to the llm provider, which can be you or whichever one
+> you pick (in the near future)
+
+Resolution: categorical no-egress of diagnostics/telemetry; primary
+traffic = the LLM provider the user configures ("which can be you" — local
+models). NOTE: the owner's enumeration again omits the two opt-in fetch
+classes (profile scrape; pasted-JD URL fetch) that exist in code and
+SECURITY.md — flagged for explicit confirmation in the charter.
+
+**R2-4.4 — "No invention, ever" is overstated; usability over purity.**
+
+> i think no invention ever is over-stated and may actually prevent our
+> llm from generating useful bullet points abstracted from the user
+> clarification steps combined with existing corpus towards a specific JD.
+> i've already noticed a significant reduction in suggested bullets, which
+> is one of the main features of clarification (IMHO). we have to be
+> careful not to give up usability in pursuit of perfection and purity
+
+Resolution: **grounded synthesis is the feature** — abstracting useful
+bullets from (corpus + clarifications) toward a specific JD is exactly
+what clarification exists for; the violation is asserting beyond that
+ground, not synthesizing within it. The constitution must protect
+usability from purity.
+
+**→ Assessment lead AL-1 (Phase 3, domain 5):** owner reports a
+*significant reduction in suggested bullets* — a suspected
+over-suppression regression from grounding tightening. Investigate
+against recent prompt changes (PROMPT_VERSION history) and eval data.
+
+**R2-5 (continued):** N=10 + composition matrix — **"yes."**
+
+**R2-12.2 — Scope: the power-user continuum.**
+
+> think power-user more than professional dev for this. it isn't that
+> users and devs are separate. some users are also devs. devs may want to
+> alter code and tune and annotate. some power users will learn to tune
+> and annotate and such for themselves but never write code.
+
+Resolution: diagnostics/tuning surfaces are power-user surfaces, in scope
+for the a11y bar; audience is a continuum (user → power-user → dev), not
+separate populations.
+
+**R2-12 cost challenge:**
+
+> 4-6 days of agent work for an accessibility scan?!?!?!?!
+
+Reviewer clarified: the scan itself is hours (axe widening + CI fix); the
+estimate covered new test-suite construction + evaluation ceremony;
+remediation unknown until the widened scan runs.
+
+**R2-12 — screen-reader consideration (owner push):**
+
+> is this considerate of screen readers. i am very aware of their failures
+
+Reviewer conceded the trimmed package leaned on automation, which is
+near-blind to SR experience. Code check found the app already has a
+deliberate SR architecture (hidden aria-live region + `_announce()` at
+every async completion — index.html:18, app.js:591/795/1124/1226/1632/
+1695@c6e0437) — and three likely gaps: no keyboard alternative to bullet
+drag-reorder; follow-up-question arrival auto-scrolls but may not move
+focus; preview-iframe navigability unknown.
+
+**R2-12 — check-class completeness (owner push):**
+
+> but checks for things like back arrow functionality, all elements being
+> appropriately named, labeled, etc. tab ordering proper...
+
+Reviewer mapped the classes: naming/labeling = widened axe + a strict
+non-placeholder accessible-name assertion (axe alone under-tests names);
+tab ordering = NOT checkable by axe — registry-driven keyboard traversal
+asserting focus order per panel (ui_pages/ carries expected order); back
+arrow = behavioral: code check confirmed ZERO History API usage in app.js
+@c6e0437 (browser Back exits the SPA and discards wizard state; arc defers
+wizard back-nav to v1.0.8 as polish — severity re-rated by this review).
+
+**R2-12 — RESOLUTION: owner answered "agreed."**
+
+The locked package (soft-commitments posture): machine-checked taxonomy in
+CI, free forever — names/labels (axe + strict assertion), tab order
+(registry-driven traversal), keyboard completeness (every action reachable
+incl. a reorder alternative, no traps, Escape/focus-return), focus on
+dynamic content, live-region announcements at every async completion,
+back/history behavior, reflow/zoom, contrast — plus ONE bounded deep NVDA
+walkthrough pre-public (one-time, v1.0.7 hardening; opportunistic passes
+after major UI changes); ACCESSIBILITY.md as an honest status page (SR
+feedback privileged; no conformance claim, no tag gate, no recurring
+manual-audit promise); badge set filtered to machine-run measures
+(Scorecard, REUSE lint, Dependabot + lockfile, egress test) + one-time PVR
+setup with SECURITY.md's 5-day promise softened to best-effort; OpenSSF
+Best Practices optional/later. Estimated one-time cost ~2–3 days of agent
+work; zero recurring owner obligation. Diagnostics in scope (power-user
+surface, R2-12.2).
+
+## Assessment leads (carried to Phase 3)
+
+- **AL-1 (domain 5):** owner-reported significant reduction in suggested
+  bullets — suspected over-suppression from grounding tightening (R2-4.4).
+- **AL-2 (domain 3):** bullet drag-reorder appears keyboard-inaccessible —
+  drag affordances in style.css:2188 with no reorder keydown path found in
+  app.js @c6e0437 (WCAG 2.1.1 candidate on a core feature).
+- **AL-3 (domain 3):** zero History API usage in app.js — browser Back
+  exits the app and discards expensive wizard state; cheap interim =
+  beforeunload guard; real fix = arc's v1.0.8 back-nav item, severity
+  re-rated (a11y + data loss, not polish).
+- **AL-4 (domain 6):** CONFIRMED violation of the no-CDN promise
+  (vision.md L89-93, SECURITY.md): dashboard/templates/dashboard.html:15
+  loads Chart.js 4.4.0 from cdn.jsdelivr.net at runtime on every
+  /_dashboard open (SRI-pinned, but real third-party egress). Fix: vendor
+  into static/vendor/ like paged.polyfill.js.
+- **AL-5 (domains 2/6):** scraper egress class is DEAD CODE @c6e0437 —
+  scraper.py:46 has no runtime caller (tests only); SECURITY.md/vision
+  document egress the app cannot produce. Decide: rewire or remove; fix
+  docs. Related: jd_url is stored metadata, NEVER fetched — the
+  SECURITY.md "pasted-JD URL fetch" class does not exist in code.
+- **AL-6 (domain 6):** eval-grounding scorers download ~3.2GB from
+  huggingface.co on first use, triggerable from localhost app routes
+  (app.py:6261/6465/~6671 @c6e0437); opt-in extras, degrades gracefully —
+  but fits no documented egress class; needs an explicit opt-in carve-out
+  or offline-mode + pre-seeded cache.
+- **AL-7 (domain 7):** egress documentation drift — owner's spoken
+  enumeration ("only traffic is to the llm provider") is closer to code
+  truth than SECURITY.md's three-class list; vision/README/SECURITY
+  disagree with each other AND with code. One canonical enumeration
+  needed (charter C-2 carries the draft).
+
+**Posture directive (governs the whole charter and all prescriptions):**
+
+> let's step back now from hard commits. this is a single dev project and
+> only one of many. reflect on all of this and make soft commits and best
+> efforts. and what we do to try to do that. and be transparent about it.
+> this is a personal project that i hope helps others, but i don't want it
+> to become my life due to over-zealous commitments. Do our best, willing
+> to accept feedback and help.
+
+Resolution: **best effort + transparency, not contractual commitments.**
+No SLAs, no per-release human-labor promises, no claims that create
+obligations. Machine-enforced gates (CI) are fine — they cost nothing
+recurring; human-promise measures get "best effort" wording. Existing doc
+promises that violate this (e.g., SECURITY.md's 5-business-day response)
+get softened → prescription.
+
+## Signals — Round 2 continued additions
+
+- S21: **Soft-commitments posture** — personal project, one of many; best
+  effort + transparency; accepts feedback and help; must not become the
+  owner's life. Governs all external measures and doc promises.
+- S22: **Power-user continuum** — user → power-user → dev is one audience
+  spectrum; tuning/annotation are power-user capabilities, not dev-only.
+- S23: **"Local and yours"** replaces person-count identity language; the
+  values are trust, user control, user capability; household sharing is
+  in-model.
+- S24 *(interviewer synthesis, pending owner confirmation in charter)*:
+  **falsifiable-absolutes principle** — categorical claims only where a
+  test can enforce them by construction (egress, module boundary);
+  effort-language wherever a claim depends on LLM behavior.
