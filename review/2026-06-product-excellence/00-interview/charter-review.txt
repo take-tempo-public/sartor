@@ -1,0 +1,27 @@
+**P-3.** Posture: a personal project, one of many, that the owner hopes
+helps others. It makes **soft commitments and best efforts, transparently
+documented** — never obligations that could make the project the owner's
+life. Feedback and help are welcome. *(posture directive)* 
+- this is close, but needs wording massage. This isn't a personal project and "you know i'll like get around to it when i'm not busy and stuff"
+- this is an open source project executed with the best of intentions including significant effort in diligence, but no guarantees. if issues are raised, i'll try to get to them as soon as possible. if you're a dev or savvy with a coding agent, the app includes a support agent who can help you understand whatver it knows about itself (including how it works, what it's been, what it hopes to be, and how it tries to respect the user). it's more than just transparent, it's had effort put into sourcing and describing any part of itself.
+
+**C-1. Local and yours.** callback. runs locally on the user's machine;
+all user artifacts stay on the user's disk, under the user's control,
+never uploaded; there is no hosted service. Sharing one installation
+among the people who share a machine (a partner, a household) is
+in-model — the trust boundary is the machine and the people who share
+it. Nothing is built for managing third parties' career data as a
+service. *(R2-4.1, R2-2, Q1, Q11)* 📄 *Implementation detail enforced in
+code: the server binds to 127.0.0.1 only.*
+- sharing one installation for... i still don;t like the over-fitting what this can be used for and we'll build to it. We're building a tool that is local, under the control of a single unauthenticated user. if i ever decide to market it as a tool for headhunters/resume coaches, i'll add authentication. we will be compliant in not leaking anything outside the program, it is up to them not to leak the machine and interface. w don't need to say that and add it to guiding documents. leave it open and unmentioned.
+- we don;t need to talk about the headhunter case. it doesn;t exist until it exists. why suggest it? it's local. it's yours. 
+
+**A-5.** Explicitly not served: direct structured-data integration into
+ATS back-ends (industry gaps; clean implied structure is the deliberate
+compromise); multi-client service use per C-1. *(Q6, R2-2)*
+- this is what we want and can't do. previous industry research demonstrated that this is an industry breakage. no job application system that i ssue facing, accept structured formats, even if they digest to them (and they almost all day. this is why we use our standardized json format and had planned work to integrate industry stadard descriptors for resume data in the json format.
+
+**T-A.** Success is measured by interviews, but C-2 makes outcomes
+invisible to the project. The owner knows what he's leaving on the
+table. *(R2-1)*
+-- but we do get these for a single user and this allows for strong training on one person's personal corpus which more aluable than being pretty good one everyone's. 
