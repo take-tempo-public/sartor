@@ -265,6 +265,12 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       guide authored from the excellence walk's **Q3** deliverable (now preserved at
       [`excellence-walk/q3-downloads.md`](excellence-walk/q3-downloads.md)) + a
       README/`install.md` "what gets downloaded & why" section.
+- [x] **PX-08 — network-egress falsifiability gate landed** (`test/egress-falsifiability`,
+      now-v1.0.6 PX band; `F-qe-rel-02` P0 + `F-sec-01`). `tests/test_egress_allowlist.py`
+      + the `pytest-socket` dev dep make charter **C-2** machine-falsifiable (gate **G-2**
+      begins here — becomes a required CI check at v1.0.7) and keep **PX-01**'s Chart.js
+      vendoring honest by construction. See CHANGELOG [Unreleased]; remaining band items per
+      the review's `03-prescriptions/prescriptions.md` now-v1.0.6 list.
 - [ ] `ruff + mypy + pytest + pytest -m ux` green; `chore/version-bump-v1.0.6`.
 
 > **Source preserved (no longer at-risk).** The excellence-walk drafts — the system-

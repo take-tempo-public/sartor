@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — network-egress falsifiability gate (`test/egress-falsifiability`, PX-08 / G-2)
+
+A committed test (`tests/test_egress_allowlist.py`) now makes charter claim **C-2**
+machine-falsifiable instead of a one-time hand audit (2026-06 product-excellence review:
+`F-qe-rel-02` P0 + `F-sec-01`; gate **G-2**, release-pass-plan.md §2). It fails if anything
+opens an outbound socket outside the **two** sanctioned destination classes — the configured
+LLM provider (`api.anthropic.com` via the `anthropic` SDK) and the opt-in profile/website
+scrape of arbitrary user URLs (`requests` in `scraper.py`) — or if any Jinja template loads an
+off-box CDN resource. This is the construction that keeps **PX-01**'s Chart.js vendoring honest:
+it would have caught the prior `cdn.jsdelivr.net` `<script>` by construction.
+
+- **Static egress allowlist** (the core gate) — an AST scan asserts the set of production
+  modules importing a network-egress library is *exactly* the sanctioned eight (anthropic in
+  `analyzer.py` / `app.py` / `evals/runner.py` / `evals/bootstrap.py` /
+  `onboarding/extract_experiences.py` / `onboarding/corpus_import.py` / `scripts/smoke_phase_b1.py`;
+  `requests` in `scraper.py`). A new egress site anywhere — or allowlist rot — fails. Walks the
+  whole AST so lazy / `TYPE_CHECKING` imports are caught; `urllib.parse` (string parsing) is not
+  flagged.
+- **Runtime checks** (pytest-socket) — the provider `base_url` is pinned to `api.anthropic.com`;
+  the seven deterministic modules open no socket at call time; and the scrape path is proven a
+  real, blockable egress (IP-literal so the block fires before DNS, not swallowed to `""`).
+- **Template scan** — generalizes the rendered-output assertion at
+  `tests/test_dashboard_routes.py:377-379` to a static scan of every template source
+  (`templates/`, `dashboard/templates/`, `personas/`), flagging any off-box `<script>`/`<link>`/
+  media/`url()` resource load or known CDN host.
+
+New dev dependency `pytest-socket` (`[dev]` extras only; inert until invoked — no global
+`--disable-socket`, so the default suite and the `-m ux` live-server tier are untouched). G-2
+becomes a required CI check at **v1.0.7**; this lands the committed test + dependency it enforces.
+
 ### Changed — vendored Chart.js; declared vendored-asset licenses (`fix/vendor-chartjs`, PX-01 + PX-06)
 
 Chart.js 4.4.0 (MIT) is now **vendored** at `static/vendor/chart.umd.min.js` instead of
