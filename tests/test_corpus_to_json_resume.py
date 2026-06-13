@@ -533,3 +533,89 @@ class TestTitlePin:
         )
         doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
         assert doc["work"][0]["position"] == "Lead PM"
+
+
+# -------------------------------------------------------------------
+# B.5 (Sprint 6.6) — skill curation: skills[] reflects recommend_skills +
+# pin/drop/reorder; pending/inactive excluded; default path is all-active
+# in display order (the byte-identical-ish fallback).
+# -------------------------------------------------------------------
+
+
+def _seed_skill(session, candidate_id, name, *, display_order=0,
+                is_active=1, is_pending_review=0):
+    from db.models import Skill
+    sk = Skill(
+        candidate_id=candidate_id, name=name, display_order=display_order,
+        is_active=is_active, is_pending_review=is_pending_review, source="imported",
+    )
+    session.add(sk)
+    session.flush()
+    session.commit()
+    return sk.id
+
+
+class TestSkills:
+    def test_all_active_in_display_order_no_overrides(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        _seed_skill(session, cid, "Python", display_order=0)
+        _seed_skill(session, cid, "Go", display_order=1)
+        doc = build_json_resume_from_corpus(session, cid)
+        assert [s["name"] for s in doc["skills"]] == ["Python", "Go"]
+
+    def test_pending_and_inactive_excluded(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        _seed_skill(session, cid, "Python", display_order=0)
+        _seed_skill(session, cid, "Rust", display_order=1, is_pending_review=1)
+        _seed_skill(session, cid, "Perl", display_order=2, is_active=0)
+        doc = build_json_resume_from_corpus(session, cid)
+        assert [s["name"] for s in doc["skills"]] == ["Python"]
+
+    def test_recommendation_curates_and_orders(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        py = _seed_skill(session, cid, "Python", display_order=0)
+        _seed_skill(session, cid, "Go", display_order=1)
+        k8s = _seed_skill(session, cid, "Kubernetes", display_order=2)
+        ctx = _ctx_file(tmp_path, llm_skill_recommendations={
+            "recommendation": {"skill_ids": [k8s, py]},
+        })
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        # Recommended subset, in recommended order (Go dropped — not recommended).
+        assert [s["name"] for s in doc["skills"]] == ["Kubernetes", "Python"]
+
+    def test_exclude_and_reorder_without_recommendation(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        py = _seed_skill(session, cid, "Python", display_order=0)
+        go = _seed_skill(session, cid, "Go", display_order=1)
+        k8s = _seed_skill(session, cid, "Kubernetes", display_order=2)
+        ctx = _ctx_file(tmp_path, composition_overrides={
+            "excluded_skill_ids": [go],
+            "skill_order": [k8s, py],
+        })
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        # No recommendation → all-active (Py, Go, K8s) minus excluded Go,
+        # then reordered by skill_order [K8s, Py].
+        assert [s["name"] for s in doc["skills"]] == ["Kubernetes", "Python"]
+
+    def test_meta_records_curation_state(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        py = _seed_skill(session, cid, "Python", display_order=0)
+        ctx = _ctx_file(tmp_path, llm_skill_recommendations={
+            "recommendation": {"skill_ids": [py]},
+        })
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        cb = doc["meta"]["callback"]
+        assert cb["skill_curation_active"] is True
+        assert cb["recommended_skill_ids"] == [py]
+
+    def test_meta_curation_inactive_by_default(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        _seed_skill(session, cid, "Python", display_order=0)
+        doc = build_json_resume_from_corpus(session, cid)
+        assert doc["meta"]["callback"]["skill_curation_active"] is False

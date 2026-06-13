@@ -2443,6 +2443,9 @@ async function refreshCorpus() {
   // route, independent failure mode — a 5xx on summaries doesn't
   // block the experience list.
   refreshSummaryVariants();
+  // B.5 — load the candidate's skills editor alongside; independent route
+  // and failure mode (a 5xx on skills doesn't block the experience list).
+  refreshSkillsEditor();
   let res;
   try {
     res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
@@ -2687,6 +2690,193 @@ async function openSummaryVariantAdd() {
   } catch {
     _toast('Network error.', true);
   }
+}
+
+
+// ============================================================
+// B.5 (Sprint 6.6) — Skills editor (Career corpus)
+// ============================================================
+// Candidate-level skill Corpus Items. Add / retire / tag the canonical
+// skills, and review (approve / deny) skills the AI proposed from a JD.
+// Per-application ordering + pin/drop + recommend/suggest live in Compose.
+async function refreshSkillsEditor() {
+  if (!currentUser) return;
+  const section = document.getElementById('skillsEditorSection');
+  const listEl = document.getElementById('skillsEditorList');
+  const pendingEl = document.getElementById('skillsEditorPending');
+  const hint = document.getElementById('skillsEditorEmptyHint');
+  if (!section || !listEl) return;
+  let res;
+  try {
+    res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/skills?include_pending=1`);
+  } catch { section.style.display = 'none'; return; }
+  if (!res.ok) { section.style.display = 'none'; return; }
+  const body = await res.json();
+  const all = body.skills || [];
+  const pending = all.filter(s => s.is_pending_review);
+  const approved = all.filter(s => !s.is_pending_review);
+  section.style.display = '';
+  _clearChildren(listEl);
+  if (pendingEl) _clearChildren(pendingEl);
+  if (pendingEl && pending.length) {
+    pendingEl.appendChild(_el('div', {
+      className: 'edit-hint',
+      textContent: `${pending.length} AI-suggested skill${pending.length === 1 ? '' : 's'} to review:`,
+    }));
+    pending.forEach(s => pendingEl.appendChild(_renderSkillEditorRow(s, true)));
+  }
+  if (approved.length === 0 && pending.length === 0) {
+    hint.textContent = 'No skills yet. Click + Add skill, or import a résumé. '
+      + 'The Compose step can also suggest skills your experience shows.';
+    return;
+  }
+  hint.textContent = 'The skills the résumé can surface. The Compose step '
+    + 'orders and curates them per job; tailor + AI suggestions live there too.';
+  approved.forEach(s => listEl.appendChild(_renderSkillEditorRow(s, false)));
+}
+
+function _renderSkillEditorRow(s, isPending) {
+  const row = _el('div', { className: 'summary-variant-row skill-editor-row' });
+  if (isPending) row.classList.add('skill-pending');
+  const head = _el('div', { className: 'skill-editor-head' });
+  head.appendChild(_el('span', { className: 'skill-name', textContent: s.name }));
+  if (s.category) {
+    head.appendChild(_el('span', {
+      className: 'skill-category', textContent: ' · ' + s.category,
+      style: 'color:var(--fg-2);font-size:0.85em;',
+    }));
+  }
+  row.appendChild(head);
+
+  if (!isPending) {
+    const tagWrap = _el('div', {
+      className: 'skill-tags', style: 'display:flex;gap:4px;flex-wrap:wrap;margin:4px 0;',
+    });
+    (s.tags || []).forEach(t => {
+      const chip = _el('span', {
+        className: 'corpus-row-flag', textContent: t.display_value || t.value,
+      });
+      const x = _el('button', {
+        className: 'tag-remove', textContent: ' ×', title: 'Remove tag',
+        style: 'background:none;border:none;cursor:pointer;color:inherit;',
+      });
+      x.onclick = () => _unlinkSkillTag(s.id, t.id);
+      chip.appendChild(x);
+      tagWrap.appendChild(chip);
+    });
+    row.appendChild(tagWrap);
+  }
+
+  const actions = _el('div', { className: 'summary-variant-actions' });
+  if (isPending) {
+    const approve = _el('button', { className: 'corpus-action-btn', textContent: 'Approve' });
+    approve.onclick = () => _approveSkill(s.id);
+    actions.appendChild(approve);
+    const deny = _el('button', { className: 'corpus-action-btn delete', textContent: 'Deny' });
+    deny.onclick = () => _denySkill(s.id);
+    actions.appendChild(deny);
+  } else {
+    const tagBtn = _el('button', { className: 'corpus-action-btn', textContent: '+ Tag' });
+    tagBtn.onclick = () => _addSkillTag(s.id);
+    actions.appendChild(tagBtn);
+    const del = _el('button', {
+      className: 'corpus-action-btn delete', textContent: 'Retire',
+      title: 'Soft-retire this skill. Future Compose steps will skip it.',
+    });
+    del.onclick = () => _deleteSkillEditor(s.id);
+    actions.appendChild(del);
+  }
+  row.appendChild(actions);
+  return row;
+}
+
+async function openSkillAdd() {
+  if (!currentUser) return;
+  const values = await openFormModal({
+    title: 'Add skill',
+    subtitle: 'A canonical skill the résumé can surface. The Compose step orders + curates per job.',
+    submitLabel: 'Add skill',
+    fields: [
+      { name: 'name', label: 'Skill', type: 'text', required: true, placeholder: 'e.g. Kubernetes' },
+      {
+        name: 'category', label: 'Category (optional)', type: 'text',
+        placeholder: 'language | framework | platform | methodology | domain',
+      },
+    ],
+  });
+  if (!values) return;
+  const name = (values.name || '').trim();
+  if (!name) { _toast('Skill name cannot be empty.', true); return; }
+  try {
+    const res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/skills`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category: (values.category || '').trim() || null }) },
+    );
+    if (res.ok) refreshSkillsEditor();
+    else {
+      const d = await res.json().catch(() => ({}));
+      _toast(d.error || 'Could not add skill.', true);
+    }
+  } catch { _toast('Network error.', true); }
+}
+
+async function _deleteSkillEditor(id) {
+  if (!confirm('Retire this skill?\n\nFuture Compose steps will skip it. '
+               + 'Past applications that pinned it still reference it.')) return;
+  try {
+    const res = await fetch(`/api/skills/${id}`, { method: 'DELETE' });
+    if (res.ok) refreshSkillsEditor();
+    else _toast('Could not retire skill.', true);
+  } catch { _toast('Network error.', true); }
+}
+
+async function _approveSkill(id) {
+  try {
+    const res = await fetch(`/api/skills/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_pending_review: false }),
+    });
+    if (res.ok) refreshSkillsEditor();
+    else _toast('Could not approve skill.', true);
+  } catch { _toast('Network error.', true); }
+}
+
+async function _denySkill(id) {
+  try {
+    const res = await fetch(`/api/skills/${id}`, { method: 'DELETE' });
+    if (res.ok) refreshSkillsEditor();
+    else _toast('Could not deny skill.', true);
+  } catch { _toast('Network error.', true); }
+}
+
+async function _addSkillTag(skillId) {
+  const values = await openFormModal({
+    title: 'Tag skill',
+    subtitle: 'Tags help the matcher reason about this skill.',
+    submitLabel: 'Add tag',
+    fields: [{ name: 'value', label: 'Tag', type: 'text', required: true, placeholder: 'e.g. cloud, backend' }],
+  });
+  if (!values) return;
+  const value = (values.value || '').trim();
+  if (!value) return;
+  try {
+    const res = await fetch(`/api/skills/${skillId}/tags`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value, kind: 'domain' }),
+    });
+    if (res.ok) refreshSkillsEditor();
+    else _toast('Could not tag skill.', true);
+  } catch { _toast('Network error.', true); }
+}
+
+async function _unlinkSkillTag(skillId, tagId) {
+  try {
+    const res = await fetch(`/api/skills/${skillId}/tags/${tagId}`, { method: 'DELETE' });
+    if (res.ok) refreshSkillsEditor();
+    else _toast('Could not remove tag.', true);
+  } catch { _toast('Network error.', true); }
 }
 
 
@@ -4589,6 +4779,17 @@ async function loadComposition() {
       _fireRecommendSummary();
     }
   }
+  // B.5 — Skills card. Candidate-level (like Positioning), rendered above the
+  // experience cards. Surfaces the curated/ordered skills with pin/drop +
+  // "Tailor"/"Suggest" actions and a pending-review lane. Auto-fires
+  // recommend-skills once when there's no ordering yet and 2+ skills exist.
+  const skills = data.skills || {};
+  if ((skills.items || []).length > 0 || (skills.pending || []).length > 0) {
+    list.appendChild(_renderSkillsCard(skills));
+    if (!skills.has_recommendation && (skills.items || []).length > 1) {
+      _fireRecommendSkills();
+    }
+  }
   if (!data.experiences || data.experiences.length === 0) {
     _setLoadingPlaceholder(list, 'No corpus experiences to rank.');
     return;
@@ -4778,6 +4979,260 @@ async function _togglePositioningPin(summaryId, alreadyPinned) {
     if (res.ok) loadComposition();
   } catch {
     // Non-blocking
+  }
+}
+
+// ============================================================
+// B.5 (Sprint 6.6) — skill curation card (Compose step)
+// ============================================================
+
+// Candidate-level Skills card. Shows the curated/ordered skills for this JD
+// with pin (force-include) / drop (exclude) / reorder, a "Tailor skills to
+// this JD" action (recommend_skills) and a "Suggest skills" action
+// (suggest_skills, grounded). Pending suggestions land in a review lane with
+// Approve / Deny. State rides along on every composition save via
+// _collectSkillState() so a bullet/title save never clobbers it.
+function _renderSkillsCard(skills) {
+  const card = _el('div', { className: 'compose-experience-card skills-card' });
+  const header = _el('div', { className: 'compose-exp-header' });
+  header.appendChild(_el('div', {
+    className: 'compose-exp-company', textContent: 'Skills',
+  }));
+  card.appendChild(header);
+  card.appendChild(_el('div', {
+    className: 'edit-hint', style: 'margin-top:4px',
+    textContent: 'Which skills to surface for this JD, in order. '
+      + '“Tailor” orders them by relevance; pin to force-keep, drop to hide. '
+      + '“Suggest” proposes skills your experience shows that you haven’t added yet.',
+  }));
+
+  // Action buttons
+  const actions = _el('div', { className: 'skills-actions', style: 'margin:6px 0;display:flex;gap:8px;flex-wrap:wrap;' });
+  const tailorBtn = _el('button', {
+    className: 'btn-secondary btn-sm', textContent: 'Tailor skills to this JD',
+  });
+  tailorBtn.onclick = () => _fireRecommendSkills(true);
+  actions.appendChild(tailorBtn);
+  const suggestBtn = _el('button', {
+    className: 'btn-secondary btn-sm', textContent: 'Suggest skills from this JD',
+  });
+  suggestBtn.onclick = () => _fireSuggestSkills(suggestBtn);
+  actions.appendChild(suggestBtn);
+  card.appendChild(actions);
+
+  // Ordered list: chosen ids first (effective order), then dropped/unchosen ones.
+  const items = skills.items || [];
+  const byId = {};
+  items.forEach(it => { byId[it.id] = it; });
+  const chosen = (skills.chosen_ids || []).filter(id => byId[id]);
+  const chosenSet = new Set(chosen);
+  const rest = items.filter(it => !chosenSet.has(it.id)).map(it => it.id);
+  const orderedIds = chosen.concat(rest);
+
+  const skillList = _el('div', { className: 'compose-skill-list' });
+  skillList.dataset.customOrder = 'false';
+  orderedIds.forEach(id => skillList.appendChild(_renderSkillRow(byId[id])));
+  card.appendChild(skillList);
+
+  // Pending review lane (llm_proposed suggestions awaiting approve/deny).
+  const pending = skills.pending || [];
+  if (pending.length) {
+    const lane = _el('div', { className: 'skills-pending-lane', style: 'margin-top:10px;' });
+    lane.appendChild(_el('div', {
+      className: 'edit-hint',
+      textContent: `${pending.length} suggested skill${pending.length === 1 ? '' : 's'} to review`,
+    }));
+    pending.forEach(p => lane.appendChild(_renderPendingSkillRow(p)));
+    card.appendChild(lane);
+  }
+  return card;
+}
+
+function _renderSkillRow(it) {
+  const row = _el('div', { className: 'compose-row compose-skill-row' });
+  row._skillState = { id: it.id, pinned: !!it.pinned, excluded: !!it.excluded };
+  if (it.excluded) row.classList.add('skill-excluded');
+
+  const text = _el('div', { className: 'row-text' });
+  text.appendChild(_el('span', { className: 'skill-name', textContent: it.name }));
+  if (it.category) {
+    text.appendChild(_el('span', {
+      className: 'skill-category', textContent: ' · ' + it.category,
+      style: 'color:var(--fg-2);font-size:0.85em;',
+    }));
+  }
+  row.appendChild(text);
+
+  const meta = _el('div', { className: 'row-meta' });
+  if (it.recommended) {
+    meta.appendChild(_el('span', {
+      className: 'corpus-row-flag', textContent: 'Recommended',
+      style: 'background:var(--brand);color:var(--bg-0);',
+    }));
+  }
+  // Pin toggle
+  const pinBtn = _el('button', {
+    className: 'btn-icon skill-pin', title: 'Pin (always include)',
+    textContent: it.pinned ? '📌' : '📍',
+  });
+  pinBtn.onclick = () => _toggleSkillPin(row);
+  meta.appendChild(pinBtn);
+  // Drop toggle
+  const dropBtn = _el('button', {
+    className: 'btn-icon skill-drop', title: it.excluded ? 'Restore' : 'Drop (hide)',
+    textContent: it.excluded ? '↩' : '✕',
+  });
+  dropBtn.onclick = () => _toggleSkillDrop(row);
+  meta.appendChild(dropBtn);
+  // Reorder up/down
+  const upBtn = _el('button', { className: 'btn-icon skill-up', title: 'Move up', textContent: '↑' });
+  upBtn.onclick = () => _moveSkillRow(row, -1);
+  meta.appendChild(upBtn);
+  const downBtn = _el('button', { className: 'btn-icon skill-down', title: 'Move down', textContent: '↓' });
+  downBtn.onclick = () => _moveSkillRow(row, 1);
+  meta.appendChild(downBtn);
+
+  row.appendChild(meta);
+  return row;
+}
+
+function _toggleSkillPin(row) {
+  const s = row._skillState; if (!s) return;
+  s.pinned = !s.pinned;
+  if (s.pinned) { s.excluded = false; row.classList.remove('skill-excluded'); }
+  const btn = row.querySelector('.skill-pin');
+  if (btn) btn.textContent = s.pinned ? '📌' : '📍';
+  _scheduleCompositionSave();
+}
+
+function _toggleSkillDrop(row) {
+  const s = row._skillState; if (!s) return;
+  s.excluded = !s.excluded;
+  if (s.excluded) { s.pinned = false; }
+  row.classList.toggle('skill-excluded', s.excluded);
+  const pin = row.querySelector('.skill-pin');
+  if (pin) pin.textContent = s.pinned ? '📌' : '📍';
+  const drop = row.querySelector('.skill-drop');
+  if (drop) { drop.textContent = s.excluded ? '↩' : '✕'; drop.title = s.excluded ? 'Restore' : 'Drop (hide)'; }
+  _scheduleCompositionSave();
+}
+
+function _moveSkillRow(row, dir) {
+  const list = row.closest('.compose-skill-list');
+  if (!list) return;
+  if (dir < 0 && row.previousElementSibling) {
+    list.insertBefore(row, row.previousElementSibling);
+  } else if (dir > 0 && row.nextElementSibling) {
+    list.insertBefore(row.nextElementSibling, row);
+  } else {
+    return;
+  }
+  list.dataset.customOrder = 'true';
+  _scheduleCompositionSave();
+}
+
+// B.5 — snapshot the skill curation state from the DOM for the composition
+// save. pinned/excluded come from each row's _skillState; skill_order is sent
+// only when the user explicitly reordered (data-custom-order), mirroring
+// bullet_order — so an untouched card keeps the default path byte-identical.
+function _collectSkillState() {
+  const pinned_skill_ids = [];
+  const excluded_skill_ids = [];
+  document.querySelectorAll('#composeList .compose-skill-row').forEach(row => {
+    const s = row._skillState; if (!s) return;
+    if (s.pinned) pinned_skill_ids.push(s.id);
+    if (s.excluded) excluded_skill_ids.push(s.id);
+  });
+  let skill_order = [];
+  const list = document.querySelector('#composeList .compose-skill-list');
+  if (list && list.dataset.customOrder === 'true') {
+    list.querySelectorAll('.compose-skill-row').forEach(row => {
+      const s = row._skillState;
+      if (s && s.id != null && !s.excluded) skill_order.push(s.id);
+    });
+  }
+  return { pinned_skill_ids, excluded_skill_ids, skill_order };
+}
+
+// Fire recommend-skills (Haiku ordering). Idempotent server-side. Reloads
+// composition after so the new order + chips render. `explicit` distinguishes a
+// user click (always run) from the auto-fire on first load.
+async function _fireRecommendSkills(explicit) {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/recommend-skills`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context_path: lastContextPath }) },
+    );
+    if (res.ok) loadComposition();
+    else if (explicit) _toast('Could not tailor skills.', true);
+  } catch {
+    if (explicit) _toast('Network error tailoring skills.', true);
+  }
+}
+
+// Fire suggest-skills (grounded generator). Proposals land as pending rows;
+// reload composition to surface the review lane.
+async function _fireSuggestSkills(btn) {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Suggesting…'; }
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/suggest-skills`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context_path: lastContextPath }) },
+    );
+    if (res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const n = (body.proposals || []).length;
+      _toast(n ? `${n} skill suggestion${n === 1 ? '' : 's'} to review.` : 'No new grounded skills found.');
+      loadComposition();
+    } else {
+      _toast('Could not suggest skills.', true);
+    }
+  } catch {
+    _toast('Network error suggesting skills.', true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Suggest skills from this JD'; }
+  }
+}
+
+function _renderPendingSkillRow(p) {
+  const row = _el('div', { className: 'compose-row pending-skill-row' });
+  const text = _el('div', { className: 'row-text' });
+  text.appendChild(_el('span', { className: 'skill-name', textContent: p.name }));
+  if (p.category) {
+    text.appendChild(_el('span', {
+      className: 'skill-category', textContent: ' · ' + p.category,
+      style: 'color:var(--fg-2);font-size:0.85em;',
+    }));
+  }
+  row.appendChild(text);
+  const meta = _el('div', { className: 'row-meta' });
+  const approve = _el('button', { className: 'btn-secondary btn-sm', textContent: 'Approve' });
+  approve.onclick = () => _reviewPendingSkill(p.id, true);
+  meta.appendChild(approve);
+  const deny = _el('button', { className: 'btn-secondary btn-sm', textContent: 'Deny' });
+  deny.onclick = () => _reviewPendingSkill(p.id, false);
+  meta.appendChild(deny);
+  row.appendChild(meta);
+  return row;
+}
+
+// Approve (PUT is_pending_review=false → joins the canonical set) or deny
+// (DELETE → hard-removes the never-approved suggestion). Reloads composition.
+async function _reviewPendingSkill(skillId, approve) {
+  try {
+    const res = approve
+      ? await fetch(`/api/skills/${skillId}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_pending_review: false }) })
+      : await fetch(`/api/skills/${skillId}`, { method: 'DELETE' });
+    if (res.ok) loadComposition();
+    else _toast('Could not update the suggested skill.', true);
+  } catch {
+    _toast('Network error updating the suggested skill.', true);
   }
 }
 
@@ -5476,6 +5931,9 @@ function _collectCompositionState() {
     // B.4 — per-role intro toggle + picks ride along on every save so a bullet/
     // title save never clobbers them (the POST rebuilds overrides wholesale).
     ..._collectExperienceSummaryState(),
+    // B.5 — skill curation (pin/drop/reorder) likewise rides along on every
+    // save so it survives a bullet/title/summary save.
+    ..._collectSkillState(),
   };
 }
 

@@ -9,6 +9,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — individual skills as a Corpus Item (`feat/skill-group-item`, Sprint 6.6 B.5)
+
+The flat `Skill` row is promoted to a full Corpus Item — the same lifecycle every
+other corpus type already has (mirrors **Bullet**): taggable, recommend-curated,
+pin/drop/reorder per JD, with a suggested → approved/denied review flow. Maps to
+JSON Resume `skills[]`. New migration `0009` (ALTER `skill` + new `skill_tag` join
++ backfill) and **two** new Haiku calls; **`PROMPT_VERSION` bumped to `2026-06-12.2`**
+(two new system prompts registered). No new dependency. (Settled interactively with
+the owner: this replaces the original "skill clusters" framing — individual skills,
+no grouping — and the grounded-suggestion generator is a **user-authorized** scope
+addition beyond the literal RELEASE_ARC row.)
+
+- **`Skill` promoted to a Corpus Item.** Gains `is_active` / `is_pending_review` /
+  `source` / `display_order` / timestamps + a `SkillTag` join (mirrors `BulletTag`).
+  Migration `0009` backfills every legacy row as `source='imported'`, active,
+  approved, with `display_order` preserving the prior name-sorted order — so the
+  no-curation output is unchanged.
+- **`recommend_skills` (Haiku) — order + curate.** Given the candidate's active,
+  approved skills (+ tags) and the JD, returns the relevance-ordered set the Compose
+  card seeds as the default. Selects only from the approved set, so it can never
+  invent a skill. Auto-applied like bullets; the user pins / drops / reorders on top.
+- **`suggest_skills` (Haiku) — grounded generator.** Proposes skills the JD wants
+  **and** the candidate's corpus evidences (evidence-or-nothing; never JD-only).
+  Proposals land as **pending** (`source='llm_proposed'`) for the user to approve or
+  deny — the human gate is the grounding backstop: a pending skill never reaches the
+  recommend set, the preview `skills[]`, or the generate prompt until approved.
+- **Per-application curation.** `composition_overrides` gains `pinned_skill_ids` /
+  `excluded_skill_ids` / `skill_order` (each persisted only when non-empty, so the
+  default path stays byte-identical). The recommend output rides on
+  `llm_skill_recommendations`. All save paths route through the canonical
+  `_collectCompositionState()`, so a skill save never clobbers sibling overrides.
+- **Reach: download + preview.** `_collect_skills` (deterministic) applies the
+  recommend ∪ pinned − excluded selection (ordered) to the preview `skills[]`; at
+  generate time `_apply_recommended_skills` patches the candidate's skills list so
+  the **LLM-authored download** surfaces the same curated/ordered set. No-op (and
+  byte-identical) when there's no recommendation and no overrides.
+- **Surfaces.** Compose gets a candidate-level **Skills** card (Tailor / Suggest +
+  pin/drop/reorder + a pending review lane); the Career-corpus tab gets a **Skills**
+  editor (add / retire / tag + approve/deny suggestions).
+- **5 route families** — skill CRUD (`GET`/`POST /api/users/<u>/skills`,
+  `PUT`/`DELETE /api/skills/<id>`), skill tag link/unlink, and per-application
+  `POST .../recommend-skills` + `POST .../suggest-skills`, plus the `/composition`
+  extension. Eval: corpus-mode-only; the legacy generate path is byte-identical, so
+  the paid smoke is skipped (covered by unit + UX); see `evals/TUNING_LOG.md`.
+
 ### Added — per-role intro as a multi-variant Corpus Item (`feat/experience-summary-item`, Sprint 6.6 B.4)
 
 The per-role intro paragraph — the line a recruiter reads first under each job —

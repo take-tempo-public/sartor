@@ -108,6 +108,12 @@ def build_json_resume_from_corpus(
     use_experience_summaries, chosen_experience_summary_ids = (
         _read_experience_summary_choices(ctx)
     )
+    # B.5 (Sprint 6.6) — per-JD skill curation: recommend_skills ordering +
+    # pin/drop/reorder overrides. Pending/retired skills are excluded by
+    # _collect_skills; with no recommendation + no overrides this is every
+    # active, approved skill in display order.
+    skill_pinned, skill_excluded, skill_order = _read_skill_overrides(ctx)
+    skill_rec_ids = _read_skill_recommendations(ctx)
 
     # ---- Assemble basics ----
     basics: dict[str, Any] = {}
@@ -203,7 +209,11 @@ def build_json_resume_from_corpus(
             work.append(entry)
 
     # ---- Assemble skills[] ----
-    skills = _collect_skills(session, candidate.id)
+    skills = _collect_skills(
+        session, candidate.id,
+        pinned=skill_pinned, excluded=skill_excluded,
+        skill_order=skill_order, rec_ids=skill_rec_ids,
+    )
 
     # ---- Final document ----
     doc: dict[str, Any] = {
@@ -234,6 +244,13 @@ def build_json_resume_from_corpus(
                 "bullet_overrides_active": bool(
                     pin_bullets or ex_bullets or add_bullets
                 ),
+                # B.5 — whether per-JD skill curation was applied + the
+                # recommend_skills ordering it was seeded from.
+                "skill_curation_active": bool(
+                    skill_rec_ids is not None or skill_pinned
+                    or skill_excluded or skill_order
+                ),
+                "recommended_skill_ids": skill_rec_ids or [],
             },
             "language": "en-US",
         },
@@ -469,21 +486,130 @@ def _pinned_title_text(exp: Any, pinned_id: int | None) -> str | None:
     return None
 
 
-def _collect_skills(session: Any, candidate_id: int) -> list[dict[str, Any]]:
-    """Return JSON Resume skills[] from the candidate's Skill rows.
-    Currently flat — one row per name. Grouping via SkillGroupItem
-    is v1.1+ work.
-    Skill rows are not soft-retired (no is_active column yet), so we
-    return all of them ordered by id."""
+def _read_skill_overrides(
+    ctx: dict[str, Any],
+) -> tuple[set[int], set[int], list[int]]:
+    """B.5 — (pinned, excluded, skill_order) skill-id curation from a loaded
+    context's composition_overrides. Empty sets / list when absent."""
+    ov = ctx.get("composition_overrides") or {}
+    if not isinstance(ov, dict):
+        return set(), set(), []
+
+    def _id_set(key: str) -> set[int]:
+        out: set[int] = set()
+        for x in (ov.get(key) or []):
+            try:
+                out.add(int(x))
+            except (TypeError, ValueError):
+                continue
+        return out
+
+    order: list[int] = []
+    for x in (ov.get("skill_order") or []):
+        try:
+            order.append(int(x))
+        except (TypeError, ValueError):
+            continue
+    return _id_set("pinned_skill_ids"), _id_set("excluded_skill_ids"), order
+
+
+def _read_skill_recommendations(ctx: dict[str, Any]) -> list[int] | None:
+    """B.5 — ordered recommended skill ids from ctx["llm_skill_recommendations"]
+    .recommendation.skill_ids. None when no recommendation has been run (caller
+    falls back to all active+approved skills); an empty recommendation also maps
+    to None so a degenerate run never blanks the skills section."""
+    block = ctx.get("llm_skill_recommendations")
+    if not isinstance(block, dict):
+        return None
+    rec = block.get("recommendation")
+    if not isinstance(rec, dict):
+        return None
+    raw = rec.get("skill_ids")
+    if not isinstance(raw, list):
+        return None
+    out: list[int] = []
+    for x in raw:
+        try:
+            out.append(int(x))
+        except (TypeError, ValueError):
+            continue
+    return out or None
+
+
+def resolve_skill_selection(
+    *,
+    all_active_ids: list[int],
+    rec_ids: list[int] | None,
+    pinned: set[int],
+    excluded: set[int],
+    skill_order: list[int],
+) -> list[int]:
+    """B.5 — the effective ordered skill-id list for one application.
+
+    Pure curation logic shared by the preview (_collect_skills) and the
+    generate prompt (app._apply_recommended_skills) so both agree exactly.
+
+    - No recommendation (rec_ids is None): start from all active+approved
+      skills in display order.
+    - With a recommendation: start from the recommended ids (in their order),
+      then append any pinned id not already present (display order).
+
+    Then drop excluded ids, and apply the user's explicit skill_order as a
+    stable ranking (listed ids first, in that order; the rest keep their
+    relative order). Mirrors the bullet reorder in analyzer._stable_user_prefix.
+    """
+    universe = set(all_active_ids)
+    if rec_ids is None:
+        base = list(all_active_ids)
+    else:
+        base = [sid for sid in rec_ids if sid in universe]
+        seen = set(base)
+        for sid in all_active_ids:
+            if sid in pinned and sid in universe and sid not in seen:
+                base.append(sid)
+                seen.add(sid)
+    base = [sid for sid in base if sid not in excluded]
+    if skill_order:
+        rank = {sid: i for i, sid in enumerate(skill_order)}
+        base = sorted(base, key=lambda s: rank.get(s, len(rank)))
+    return base
+
+
+def _collect_skills(
+    session: Any,
+    candidate_id: int,
+    *,
+    pinned: set[int] | None = None,
+    excluded: set[int] | None = None,
+    skill_order: list[int] | tuple[int, ...] | None = None,
+    rec_ids: list[int] | None = None,
+) -> list[dict[str, Any]]:
+    """Return JSON Resume skills[] for the candidate, curated + ordered for
+    this application (B.5).
+
+    The universe is the candidate's active, approved Skill rows in
+    display_order; pending (is_pending_review=1) and retired (is_active=0)
+    skills never appear. recommend_skills ordering + pin/drop/reorder overrides
+    are applied via resolve_skill_selection. With no recommendation and no
+    overrides this is simply every active, approved skill in display order."""
     from db.models import Skill
 
     rows = (
         session.query(Skill)
-        .filter_by(candidate_id=candidate_id)
-        .order_by(Skill.id)
+        .filter_by(candidate_id=candidate_id, is_active=1, is_pending_review=0)
+        .order_by(Skill.display_order, Skill.id)
         .all()
     )
-    return [{"name": r.name} for r in rows if (r.name or "").strip()]
+    name_by_id = {r.id: r.name for r in rows if (r.name or "").strip()}
+    all_active_ids = [r.id for r in rows if r.id in name_by_id]
+    ordered = resolve_skill_selection(
+        all_active_ids=all_active_ids,
+        rec_ids=rec_ids,
+        pinned=set(pinned or ()),
+        excluded=set(excluded or ()),
+        skill_order=list(skill_order or ()),
+    )
+    return [{"name": name_by_id[sid]} for sid in ordered if sid in name_by_id]
 
 
 def _username_from_linkedin(url: str) -> str:

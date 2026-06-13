@@ -62,7 +62,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 - [ ] **Sprints 6.1–6.6 merged** — 6.1 wizard-flow (incl. **B.8 Part 1** outcome
       capture) · 6.2 diagnostics-console · 6.3 forms + a11y (**the axe a11y gate
       lands first**) · 6.4 IA + onboarding (corpus-first) · 6.6 corpus-item completers
-      (**B.4** ExperienceSummaryItem, **B.5** SkillGroupItem) · 6.5 in-app education sweep.
+      (**B.4** ExperienceSummaryItem, **B.5** Skill-as-Corpus-Item) · 6.5 in-app education sweep.
       **Progress (2026-06-10):** first 6.1 branch `fix/generate-date-grounding` (KW6)
       landed — date-immutability prompt rules (PROMPT_VERSION `2026-06-10.1`) + a
       deterministic warn-only heading-date guard in both generate routes; smoke eval
@@ -230,7 +230,19 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       in-scope Compose-save clobber (`_togglePositioningPin` → canonical
       `_collectCompositionState()`). ruff/mypy ✓, pytest **1127/1127**. See
       RELEASE_ARC §Sprint 6.6 B.4 for the resolution note.
-      **B.5** (`feat/skill-group-item`) still open — the next Sprint 6.6 branch.
+      **Progress (2026-06-13):** **B.5 landed** (`feat/skill-group-item`) —
+      individual **`Skill` promoted to a Corpus Item** (the "skill clusters" framing
+      dropped in an interactive clarification: no grouping). Migration `0009` (ALTER
+      `skill` + `skill_tag` + backfill); **two** Haiku calls — `recommend_skills`
+      (order/curate the approved set; auto-applied like bullets) + a user-authorized
+      `suggest_skills` **grounded generator** (proposes corpus-evidenced JD skills as
+      pending → approve/deny, human gate = grounding backstop); `composition_overrides`
+      gains `pinned_skill_ids`/`excluded_skill_ids`/`skill_order`; reach **download +
+      preview** via `_collect_skills` + `_apply_recommended_skills`;
+      `PROMPT_VERSION → 2026-06-12.2`. Compose **Skills** card + Career-corpus **Skills**
+      editor. Corpus-mode-only → unit + UX + byte-identity, no paid smoke. ruff/mypy ✓,
+      pytest **1169/1169** incl. `-m ux`. **Closes Sprint 6.6.** See RELEASE_ARC
+      §Sprint 6.6 B.5 for the resolution note. (Next: WS-4b, then Sprint 6.5.)
 - [ ] **WS-4a landed early; WS-4b (after Sprint 6.6) before the 6.5 sweep** (the binding gate):
       `docs/system-model.md` (← seven-functions language) + the committed
       `docs/wiki/` skeleton + the `/wiki-*` skills exist; **the preserved

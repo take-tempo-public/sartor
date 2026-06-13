@@ -435,6 +435,23 @@ class ExperienceSummaryItemTag(Base):
 
 
 class Skill(Base):
+    """A single skill — promoted to a full Corpus Item (Sprint 6.6 B.5).
+
+    Mirrors Bullet's lifecycle (is_active + is_pending_review + source +
+    display_order + tags) so a skill participates in the same recommend /
+    pin / drop / curate / tag machinery as every other corpus item.
+    recommend_skills selects + orders the active, approved skills per JD;
+    suggest_skills proposes corpus-grounded new skills as pending
+    (is_pending_review=1, source='llm_proposed') for the user to approve or
+    deny. Pending/inactive skills never reach the recommend set, the preview
+    skills[], or the generate prompt — the approve/deny gate is the
+    grounding backstop.
+
+    Backfill semantics (alembic 0009): every pre-existing Skill row becomes
+    source='imported', is_active=1, is_pending_review=0, with display_order
+    set to preserve the prior name-sorted order.
+    """
+
     __tablename__ = "skill"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -445,10 +462,53 @@ class Skill(Base):
     category: Mapped[str | None] = mapped_column(String)  # language|framework|platform|methodology|domain
     proficiency: Mapped[str | None] = mapped_column(String)  # expert|proficient|familiar
     years: Mapped[float | None] = mapped_column(nullable=True)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    is_pending_review: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    source: Mapped[str] = mapped_column(String, nullable=False, default="manual")  # 'manual' | 'imported' | 'llm_proposed'
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
 
     candidate: Mapped[Candidate] = relationship(back_populates="skills")
+    tag_links: Mapped[list[SkillTag]] = relationship(
+        back_populates="skill", cascade="all, delete-orphan"
+    )
 
-    __table_args__ = (UniqueConstraint("candidate_id", "name", name="uq_skill_candidate_name"),)
+    __table_args__ = (
+        UniqueConstraint("candidate_id", "name", name="uq_skill_candidate_name"),
+        CheckConstraint(
+            "source IN ('manual', 'imported', 'llm_proposed')",
+            name="ck_skill_source",
+        ),
+        Index(
+            "ix_skill_candidate_active_pending_order",
+            "candidate_id", "is_active", "is_pending_review", "display_order",
+        ),
+    )
+
+
+class SkillTag(Base):
+    """Tag join table for Skill. Mirrors BulletTag exactly so corpus-tag
+    operations treat skills like every other taggable corpus item.
+
+    Distinct from a Tag of kind='skill' (which tags bullets/titles with a
+    skill keyword): this links a Skill ROW to any-kind tags so the matcher
+    can reason about the skill itself."""
+
+    __tablename__ = "skill_tag"
+
+    skill_id: Mapped[int] = mapped_column(
+        ForeignKey("skill.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_id: Mapped[int] = mapped_column(
+        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    )
+    confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
+
+    skill: Mapped[Skill] = relationship(back_populates="tag_links")
+    tag: Mapped[Tag] = relationship()
+
+    __table_args__ = (Index("ix_skill_tag_tag", "tag_id"),)
 
 
 class Education(Base):
@@ -848,7 +908,7 @@ __all__ = [
     "Candidate", "Experience", "ExperienceTitle", "Bullet",
     "Tag", "BulletTag", "ExperienceTitleTag", "BulletMetric",
     # Career assets
-    "Skill", "Education", "Certification", "Project", "Publication",
+    "Skill", "SkillTag", "Education", "Certification", "Project", "Publication",
     # Templates
     "PersonaTemplate", "PersonaTemplateTag",
     # Applications
