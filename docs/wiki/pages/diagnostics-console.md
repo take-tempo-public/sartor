@@ -65,7 +65,9 @@ Schema drift is absorbed at read time, not on disk:
 The aggregation helpers are **pure** (record list in, dict out, no I/O except
 [`_load_baseline`](../../../dashboard/routes.py)) so they unit-test without a live
 app `[synthesis]`. They populate four tabbed bento grids of tiles, each opening a
-shared right-hand drawer (Chart.js from CDN, lazy-init on open):
+shared right-hand drawer (Chart.js — vendored at
+[`static/vendor/chart.umd.min.js`](../../../static/vendor/chart.umd.min.js), no
+runtime CDN; lazy-init on open):
 
 - **Pipeline** — cost ([`_summarize_calls`](../../../dashboard/routes.py) +
   [`_cost_by_call_kind`](../../../dashboard/routes.py)), reliability
