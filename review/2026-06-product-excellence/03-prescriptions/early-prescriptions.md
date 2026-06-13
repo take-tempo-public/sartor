@@ -113,3 +113,46 @@ threads (review PX-04 part 1)."*
 v1.0.6 tag criteria addition: *"no runtime third-party egress beyond the
 two sanctioned classes (Chart.js vendored; scrape re-wired or
 consciously deferred)."*
+
+---
+
+## v1.0.6 cheap-batch addendum (owner-surfaced 2026-06-13, from Phase 3)
+
+Three docs-only, trivial corrections the owner approved surfacing to the
+production agent now — batch them with the PX-01..03 v1.0.6 doc pass.
+Each is a CONFIRMED Phase-3 finding. (Phase 4 will absorb these into the
+master prescription set; this addendum is the immediate-action copy.)
+
+### PX-05 — Fix the disclosure channel pointing at the WRONG repo
+- **Finding:** F-sec-11 (CONFIRMED, P1) — `CODE_OF_CONDUCT.md:13` routes
+  conduct/vulnerability reports to a stale `Cooksey/resume` channel while
+  every other doc uses `amodal1/callback`; `.github/ISSUE_TEMPLATE/
+  config.yml` likely carries the same stale target. This is an S-1
+  (PII/security) item: a real report could go to a dead or wrong inbox.
+- **Fix:** correct the repo/owner reference in CODE_OF_CONDUCT.md and the
+  issue-template config to the canonical `amodal1/callback`; confirm the
+  GitHub Private Vulnerability Reporting target once the repo is public.
+- **Size:** trivial docs. **Landing:** v1.0.6 doc batch.
+
+### PX-06 — Declare the vendored axe-core license (MPL-2.0)
+- **Finding:** F-sec-08 (CONFIRMED, P2) — `LICENSE` is MIT-only, but
+  `tests/ux/a11y/vendor/axe.min.js` carries an MPL-2.0 header; the mixed
+  license is declared nowhere machine-readable.
+- **Fix:** note axe-core's MPL-2.0 in the bundled-assets/credits section
+  (and, when REUSE lands per E-2, a `LICENSES/` + SPDX header). Do this in
+  the SAME pass that vendors Chart.js (PX-01) — declare both vendored
+  assets' licenses together.
+- **Size:** trivial docs. **Landing:** v1.0.6, with PX-01.
+
+### PX-07 — Soften the two hard human SLAs to best-effort (D-4)
+- **Finding:** F-qe-rel-08 / F-sec-07 (CONFIRMED, P1) — `SECURITY.md:134-135`
+  promises a 5-business-day / 30-day response, and `CODE_OF_CONDUCT.md:15`
+  a 5-day response. Charter D-4 (commitments hygiene) + P-3 (no guarantees)
+  require these softened: a solo project must not ship contractual SLAs.
+- **Fix:** reword to best-effort intent ("I aim to respond as soon as I
+  can; no guaranteed timeline") while keeping the channel clear. Machine
+  gates stay; only the human-time promises soften.
+- **Size:** trivial docs. **Landing:** v1.0.6 doc batch.
+
+These three + PX-03 (egress-doc correction) are one coherent docs-only
+commit; PX-01 (+PX-06 license note) and PX-02 are the code changes.
