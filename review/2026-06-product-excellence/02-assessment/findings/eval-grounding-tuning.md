@@ -6,305 +6,302 @@ graduation: none
 
 # Findings — Eval / grounding / tuning as product
 
-> Severity anchor: the signed Product Charter. Claims follow C-0 (mechanisms +
-> effort, no absolutes about LLM behavior). Evidence is `path:line@c6e0437`
-> read via `git show c6e0437:<path>` in the read-only worktree
-> `C:\Dev\callback-review` (HEAD `269ac27`; the five review commits touch only
-> `review/`, so every non-review file is byte-identical to the pin — verified
-> by `git diff --name-only c6e0437 HEAD`).
+> Severity anchor: the signed Product Charter. A gap matters only insofar as it
+> blocks a charter clause. Claims here follow C-0 — mechanisms-and-effort
+> language, no absolutes about LLM behavior. All evidence is at the pinned SHA
+> `c6e0437` (the worktree HEAD `b85be08` carries only `review/` commits on top of
+> the pin; the product files read are byte-identical to `c6e0437`). Dynamic
+> checks (214 eval-domain unit tests + direct L0/override probes) were run in the
+> read-only worktree with no writes inside the repo and no paid/LLM calls.
 
 ## Domain verdict
 
-This is a genuinely strong domain and the owner's named exhibit #1 — the
-three-tier attribution reframe, the dynamic-source-union scoring, the
-candidate-quarantine A/B primitive, the fail-closed LLM-free annotation
-contract, the manual-promote human gate, and the cost/consent gating on paid
-browser routes are all real at the pin and back the "whoa, this is robust"
-reaction (A-4). The load-bearing gaps are exactly the two the charter predicts:
-the real loop has **never been exercised end-to-end** (`evals/fixtures/real/`
-is `.gitkeep`-only, so L1/L2 are uncalibrated — M-2/T-D), and the surface is
-**dev-register, not lay-legible** (no plain-language metrics legend; no
-user-facing "how it grounds/clarifies/tunes" page — S-3/M-2-v1.0.7). One
-sharper gap the guide flagged is confirmed: **AL-1 has no instrument** — the
-`recommend` call that produces suggested bullets is not exercised by the eval
-suite and no metric counts recommended-bullet output over PROMPT_VERSION, so
-the owner's reported suppression is unfalsifiable from data.
+This domain is the strongest-engineered surface in the review and earns the A-4
+"whoa, this is robust" reaction it is named for: a sharp attribution reframe, a
+deterministic hot-path-safe L0 detector with an honest precision caveat, a
+fail-closed LLM-free annotation contract, non-polluting candidate A/B via
+`prompt_overrides`, manual-by-design promotion, and cost/consent-gated paid
+routes — 214 eval-domain unit tests pass locally and the C-0 claims discipline
+is honored throughout the design notes. The load-bearing gaps are all
+**evidence-of-exercise**, not design defects: `evals/fixtures/real/` is empty so
+L1/L2 are uncalibrated and the loop has never produced labels (blocks M-2/T-D);
+the over-suppression suspicion (AL-1) has no instrument and is unfalsifiable from
+data; the groundedness/tuning panes speak dev-register with no lay legend
+(blocks S-3 and the M-2 v1.0.7 criterion); and the committed synthetic suite
+exercises only the legacy generate path, leaving corpus-mode by-construction
+grounding unexercised by CI. Crucially, the calibration gap is **tracked** as
+named release tasks (PV-1/PV-2), not hidden — the right C-0 posture.
 
 ---
 
 ## Register findings (highest leverage first)
 
-### F-eval-01 — The real loop was never run; L1/L2 stay uncalibrated (blocks M-2 + T-D)
-- **disposition:** FIX
-- **leverage:** P1
-- **charter-trace:** M-2, T-D, C-3, A-4
-- **question-refs:** QB-eval-02, QB-eval-08
-- **coordinate:** v1.0.7 (PV-1 live-shakedown labels, PV-2 grounding calibration)
-- **evidence:** `evals/fixtures/real/` contains only `.gitkeep@c6e0437`
-  (`git ls-tree`); no `bootstrap.json`/`annotations.json`/`seed.json` anywhere.
-  `docs/dev/GROUNDING_METRIC.md:93` "**Blocker (verified 2026-06-05):** there
-  are no labels yet … the v1.0.4 loop shipped the machinery but its live run was
-  never executed." Calibration ("measure each detector's precision/recall
-  against those labels") is the explicit v1.0.4 tag criterion and is unmet.
-- **finding:** The annotate→tune→verify machinery is built and unit-tested, but
-  no human labels exist, so L1/L2 (NLI + MiniCheck) precision/recall against
-  human verdicts is unmeasured. This directly blocks the M-2 tag evidence ("loop
-  exercised end-to-end with metrics readable at a glance") and is the numeric
-  form of T-D ("machinery never yet exercised on real data"). The mitigating
-  facts: the label-producing path is browser-driven now (one click-through, not
-  a CLI chore), and L0 is correctly designed to ship uncalibrated (a novel
-  specific absent from the source union is high-precision on the highest-severity
-  class). The gap is the calibration run, not the code. This is exhibit #2
-  (grounding performance) being currently unevidenced — the charter's own
-  T-D/M-2 are the gate that exists precisely to close it before the public tag.
-
-### F-eval-02 — AL-1 has no instrument: `recommend` output count is untracked and uneval'd
-- **disposition:** FIX
+### F-eval-01 — AL-1 over-suppression is uninstrumented and unfalsifiable from data
+- **disposition:** FIX (instrument it) — also the domain's named BOOST opportunity
 - **leverage:** P1
 - **charter-trace:** AL-1, C-3, T-B, S-2, M-2
-- **question-refs:** QB-eval-01
-- **coordinate:** v1.0.7 (PV-2 advances C-3/AL-1)
-- **evidence:** The eval runner imports `analyze, clarify, clarify_iteration,
-  generate` but **not** `recommend_bullets` (`evals/runner.py:44-49@c6e0437`);
-  suggested bullets come from `analyzer.recommend_bullets` (`analyzer.py:2488`)
-  and are then cut client-side by `_dropoffPick` (`static/app.js:4495`,
-  `minKeep:3,maxKeep:7,ratio:0.65`). The per-record `deterministic_metrics`
-  block (`evals/runner.py:293-300`) carries `verb_diversity`,
-  `specificity_density`, `grounding_overlap`, `top_third_density`,
-  `quantification_rate`, `fabricated_specifics`, `groundedness` — no
-  recommended-bullet *count*. `_groundedness_trend` plots only the L0 score over
-  PROMPT_VERSION (`dashboard/routes.py:591`); `total_bullets` is captured
-  per-run in `_latest_groundedness_detail` but is the *generated-resume* bullet
-  count, not the *recommend* output, and is not trended. `TUNING_LOG.md:1054`
-  only says to "watch the eval suite's grounding + keyword_coverage rubrics" for
-  `recommend_bullets` quality — neither measures count.
-- **finding:** The owner reported "a significant reduction in suggested
-  bullets … one of the main features of clarification" (R2-4.4 → AL-1). Across
-  PROMPT_VERSION's ~dozen moves since 2026-05-09, nothing in the instrumented
-  data measures how many bullets `recommend` proposes per analyze, so the
-  suspected over-suppression is currently decidable only by anecdote. The cheap
-  fix is a deterministic per-analyze recommended-bullet count (and pre-`_dropoffPick`
-  candidate count) stamped with PROMPT_VERSION and trended on the existing
-  by-version chart — turning the suspicion into a falsifiable signal. Until then
-  C-3's "synthesis within ground is the feature, suppressing it is a regression"
-  has no enforcement against the very regression the owner flagged.
+- **question_refs:** QB-eval-01
+- **coordinate:** v1.0.7 (PV-2 advances AL-1)
+- **evidence:** suggested-bullet count is jointly shaped by (a) the client-side
+  `_dropoffPick` cut (`static/app.js:4495`, `minKeep=3, maxKeep=7, ratio=0.65`)
+  and (b) the prompt-side "quality over quantity / return fewer questions
+  (minimum 3)" rule (`analyzer.py:439`); `PROMPT_VERSION` is now `2026-06-11.1`
+  (`analyzer.py:268`) after many moves. The per-generation deterministic metrics
+  riding along on every eval result are `verb_diversity`, `specificity_density`,
+  `grounding_overlap`, `top_third_density`, `quantification_rate`,
+  `fabricated_specifics`, `groundedness` (`evals/runner.py:292-300`) — **none
+  counts suggested or selected bullets**.
+- **finding:** The owner's recorded report (R2-4.4 / AL-1) of a significant
+  reduction in suggested bullets after grounding tightening currently cannot be
+  confirmed or refuted from data — no metric tracks bullet count over
+  PROMPT_VERSION history. The runner already extracts bullets per generation
+  (`evals/grounding_signals.py:extract_bullets`; `BULLET_LINE_RE`, `hardening.py`),
+  so adding a `suggested_bullet_count` to the ride-along set and charting it on the
+  existing score-over-time-by-prompt-version surface is a small, label-free add.
+  Until it exists, the C-3 usability-vs-purity balance is steered by anecdote, and
+  any future grounding tightening risks re-opening the regression invisibly.
 
-### F-eval-03 — No lay metrics legend; the groundedness/diagnostics surface is dev-register
+### F-eval-02 — The real loop has never been exercised; L1/L2 uncalibrated (M-2/T-D)
 - **disposition:** FIX
 - **leverage:** P1
-- **charter-trace:** S-3, M-2 (v1.0.7 lay-legend criterion), A-2
-- **question-refs:** QB-eval-04
-- **coordinate:** Sprint 6.5 (in-app education sweep) / v1.0.7
-- **evidence:** The groundedness pane surfaces raw labels with no plain-language
-  translation: "groundedness (L0) … / 5", "fabricated rate {{…}}%",
-  "{{flagged_count}} flagged", "{{layers|join('+')}}", `prompt_version`
-  (`dashboard/templates/dashboard.html:300-318, :671@c6e0437`). The one `.legend`
-  line present (`:693`) is an honest *developer* caveat ("L0 is a flag-for-review
-  signal … will false-positive on paraphrase … Uncalibrated until labels exist —
-  see `docs/dev/GROUNDING_METRIC.md`"), not a lay translation. No "what this
-  means" / glossary text exists in the template (grep for legend/plain-language/
-  glossary returns only the CSS rule). The user-facing "how callback. grounds,
-  clarifies, and tunes" wiki page is absent — `docs/wiki/pages/@c6e0437` has no
-  such page (the eight pages are dev/system docs).
-- **finding:** S-3 is the owner's self-named furthest-below-bar area
-  (explainability of grounding/tuning/clarify through the UI + diagnostics), and
-  R2-9 made a lay metrics legend + the user-facing page explicit v1.0.7 tag
-  criteria. At the pin a non-coding power user (A-2) reading the groundedness
-  pane meets "fabricated rate", "L0", `candidate:<hash>` with no in-surface
-  explanation of what a number means or what to do about it. The technical
-  caveat at :693 is a strength to preserve (see F-eval-08) — the gap is the lay
-  layer on top of it.
+- **charter-trace:** M-2, T-D, C-3
+- **question_refs:** QB-eval-02, QB-eval-08 (relates)
+- **coordinate:** v1.0.7 (PV-1 `eval/live-shakedown-labels`, PV-2 `eval/grounding-calibration`); gates v1.1.0
+- **evidence:** `evals/fixtures/real/` contains only `.gitkeep`
+  (`git ls-files evals/fixtures/real/` → one entry); no `bootstrap.json` /
+  `annotations.json` / `seed.json` anywhere. `GROUNDING_METRIC.md:93-98`
+  ("Blocker, verified 2026-06-05 … the live run was never executed"). The numeric
+  tolerance is stamped `UNCALIBRATED` (`hardening.py:591-593`,
+  `_NUMERIC_REL_TOL = 0.05`). Tracked as PV-1/PV-2 in `RELEASE_ARC.md:712-713`.
+- **finding:** The v1.0.4 machinery shipped but its live run was never executed,
+  so L1/L2 precision/recall against human labels is unmeasured and L0 tolerance
+  bands are untuned. This blocks M-2 ("the tuning/annotation loop exercised
+  end-to-end by the owner with metrics readable at a glance") and is the concrete
+  form of T-D. The gap is **honestly tracked and sequenced** (PV-1 produces labels,
+  PV-2 calibrates and reports per-detector precision/recall) rather than hidden —
+  that scheduling is the correct response. Act-on point: PV-1/PV-2 sit in v1.0.7
+  while the M-2 exercise is a v1.1.0 tag criterion, so this is on the critical path
+  to the public tag, not optional.
 
-### F-eval-04 — Three-tier attribution reframe + dynamic source-union scoring (exhibit #1 core)
-- **disposition:** KEEP
+### F-eval-03 — No lay metrics legend on the groundedness / tuning panes (S-3)
+- **disposition:** FIX
 - **leverage:** P1
-- **charter-trace:** C-3, A-4, S-2
-- **question-refs:** QB-eval-03
-- **coordinate:** (none)
-- **evidence:** `compute_fabricated_specifics` (`hardening.py:733@c6e0437`)
-  scores generated specifics against `assemble_source_union` (`hardening.py:1154`
-  = primary résumé + supplementals + clarification answers), with numeric
-  tolerance (`~30/30/30+` grounded; `~30→100+` flagged) and entity aliasing
-  (`k8s ≡ kubernetes`); severity-weighted (number/date > tool). The docstring is
-  explicit that it distinguishes "asserted beyond ground" from "synthesized
-  within ground" and carries a PRECISION CAVEAT naming paraphrase false
-  positives as a flag-for-review, not a hard gate. The detector ladder
-  (`GROUNDING_METRIC.md §detector-ladder`) splits L0 (deterministic, hot-path-
-  safe) from L1/L2 (eval-only behind `--grounding-signals`,
-  `evals/grounding_signals.py` "Never imported by the production pipeline").
-- **finding:** The reframe of hallucination as *attribution against a closed
-  source union* is the sharp move the guide names, and it is faithfully
-  implemented: scored against the dynamic union (not the original résumé alone,
-  which would over-report clarified facts), severity-split, and honest about its
-  precision killer. This is the technical spine of charter exhibit #1 and #2 —
-  affirm it so it is not churned in the v1.0.7 calibration work.
+- **charter-trace:** S-3, M-2 (v1.0.7 "lay metrics legend"), A-2
+- **question_refs:** QB-eval-04
+- **coordinate:** Sprint 6.5 (in-app education sweep — targets exactly S-3)
+- **evidence:** the groundedness pane surfaces raw technical labels with no
+  plain-language gloss — "groundedness (L0)", "fabricated rate", "N flagged", the
+  layer string (`L0`), a bare `prompt_version` code
+  (`dashboard/templates/dashboard.html:300-318`); the tuning banner is dev-register
+  ("copy a winner into the `analyzer.py` constant, bump `PROMPT_VERSION`, log
+  `TUNING_LOG.md` by hand", `dashboard.html:322-330`).
+- **finding:** These are power-user surfaces in the explainability scope (R2-12.2,
+  E-2), and S-3 (the owner's furthest-below-bar area) is precisely legibility of
+  grounding/tuning through the UI + diagnostics. A non-coding power user (A-2)
+  reading "fabricated rate 12.3% · L0 · candidate:9f3a…" gets no anchor for what
+  the number means, that L0 is an uncalibrated flag-for-review signal (not a
+  verdict), or what action it implies. The M-2 v1.0.7 criterion names a "lay
+  metrics legend in diagnostics" as shipped tag evidence; absent at the pin.
+  Sprint 6.5 is the natural home.
 
-### F-eval-05 — Candidate A/B quarantine is non-polluting and the default path is byte-identical
+### F-eval-04 — Dynamic source-union scoring distinguishes "asserted beyond" from "synthesized within" (C-3)
 - **disposition:** KEEP
-- **leverage:** P1
-- **charter-trace:** A-2, C-4, C-0
-- **question-refs:** QB-eval-05
+- **leverage:** P1 (affirm so it is not churned)
+- **charter-trace:** C-3, R2-4.4
+- **question_refs:** QB-eval-03
 - **coordinate:** (none)
-- **evidence:** `analyzer.prompt_overrides()` (`analyzer.py:290@c6e0437`) sets a
-  ContextVar over `_BASE_SYSTEM_PROMPTS` (registry `:2873`), resolved per-call by
-  `_resolve_system_prompt` (`:2885`). `effective_prompt_version` (`:312`) returns
-  `PROMPT_VERSION` verbatim on the default path and `candidate:<sha256[:12]>`
-  when overrides are active, stamped on telemetry + eval records (`:1003`). An
-  unknown override key raises `ValueError` (fail-loud, so a typo can't mislabel a
-  baseline as a candidate). `evals/README.md:275` "The default path (no flag) is
-  byte-identical: the resolver returns the identical constant object."
-- **finding:** Candidate runs are quarantined from the score-over-time chart by
-  construction, and the no-override path is byte-identical (the analyze→generate
-  cache is untouched). This lets a power user A/B a prompt edit from the browser
-  without writing code (A-2) and without corrupting baseline telemetry — a clean
-  primitive that honors C-0's "categorical only where enforced by construction."
+- **evidence:** `assemble_source_union` assembles primary + supplementals +
+  clarification answers as one shared union (`hardening.py:1154-1179`), reused by
+  the iteration clarifier and the L0 check so they never diverge. The generate-time
+  GROUNDING CHECK widens to accept clarification answers AND first-person typed
+  edits as ground truth (`analyzer.py:1966-1969`), with worked OK/NOT-OK examples
+  teaching synthesis-within-ground vs invention-beyond-ground
+  (`analyzer.py:1971-1995`). Corpus mode is grounded by construction: every emitted
+  bullet must be a verbatim `<bullet>` id OR a reviewable `proposed_new_bullets`
+  entry (`analyzer.py:1870-1871`).
+- **finding:** Metric and prompt both score against the dynamic union, not the
+  original résumé alone — the C-3 resolution of R2-4.4 ("the violation is asserting
+  beyond that ground, not synthesizing within it"). Scoring against the original
+  primary only would over-report, flagging legitimately-clarified facts as
+  fabrication; the code avoids that and documents why
+  (`GROUNDING_METRIC.md:24-31`). This is the load-bearing correctness of the
+  domain — affirm it so a future "tighten grounding" pass does not narrow it back
+  to the original-résumé-only frame.
 
-### F-eval-06 — Cost/consent gating on paid browser routes (local-and-yours, eager 4xx before spend)
-- **disposition:** KEEP
-- **leverage:** P1
-- **charter-trace:** C-1, D-6, C-4
-- **question-refs:** QB-eval-07
-- **coordinate:** (none)
-- **evidence:** `/api/eval/run` (`app.py:6664`) and `/api/tune/run`
-  (`app.py:6790`) return `403 "localhost only"` unless `_is_localhost_request()`
-  (`app.py:151`, host-header loopback check); all suite/user/seed validation
-  returns JSON 4xx "BEFORE the worker spends anything" (docstring + body).
-  The UI gates every paid POST behind `window.confirm()` with an explicit dollar
-  band — "≈ $0.10 … paid Sonnet + Haiku" / "≈ $0.30 …"
-  (`dashboard/templates/dashboard.html:982`) and the A/B "≈ $0.20 / ≈ $0.60 …
-  TWO eval suites" (`:1045`). LLM-free actions are labelled as such ("Export seed
-  (no LLM)" `:439`; "Score grounding … no paid LLM calls" `:475`).
-- **finding:** Paid surfaces are localhost-gated server-side, cost-banded with an
-  explicit confirm client-side, and eagerly validated before any spend, with
-  paid-vs-free clearly disclosed. This respects the local-and-yours posture and
-  the D-6 power-user opt-in framing — a strength to keep through the v1.0.8
-  blueprint split (verify the host-header guard moves intact with the routes).
-
-### F-eval-07 — Fail-closed, LLM-free annotation contract operationalizes the M-2 "annotations validate scorers" criterion
+### F-eval-05 — Candidate A/B is non-polluting; default path byte-identical (KEEP-verified)
 - **disposition:** KEEP
 - **leverage:** P2
-- **charter-trace:** C-4, C-6, M-2
-- **question-refs:** QB-eval-06
+- **charter-trace:** A-2, C-4
+- **question_refs:** QB-eval-05
 - **coordinate:** (none)
-- **evidence:** `validate_annotations` (`evals/annotation.py:203@c6e0437`) is
-  fail-closed (unsupported version / unknown verdict / a `fix` without an
-  `honest_rewrite` / a `fabricated` without a compilable `forbidden_pattern` is
-  rejected, not half-collated). The module imports no `anthropic`/`analyzer`
-  (`annotation.py:49-67`) and is documented "deterministic and LLM-free (P1
-  hardening posture)". `_scorer_disagreements` (`:487`) emits the lines where a
-  human verdict disagrees with MiniCheck/NLI — "the v1.0.4 tag criterion
-  'annotations validate the automated scorers' lives here." Promote is manual by
-  design (`evals/README.md:725` "Promote — not a console affordance, by design").
-- **finding:** The annotation contract is the calibration substrate done right —
-  deterministic, fail-closed, and it already encodes the exact human-vs-scorer
-  disagreement signal M-2 needs. Promote staying a manual `Edit`-the-constant
-  step is a deliberate human gate consistent with C-4. (98 eval/annotation/
-  grounding unit tests pass locally — see dynamic checks.) The latent value is
-  unrealized only because F-eval-01's labels don't exist yet.
+- **evidence:** `prompt_overrides()` + `_BASE_SYSTEM_PROMPTS` registry
+  (`analyzer.py:289-309, 2873`) scoped to exactly the 8 named system-prompt
+  constants; `effective_prompt_version()` returns `PROMPT_VERSION` verbatim on the
+  default path and `candidate:<sha256[:12]>` only under override
+  (`analyzer.py:312-324`). Dynamically verified: `effective_prompt_version()` ==
+  `PROMPT_VERSION` ("2026-06-11.1") with no override; registry keys =
+  {`SYSTEM_PROMPT`, `EXTRACTION_`, `CLARIFY_`, `CLARIFY_ITERATION_`, `RECOMMEND_`,
+  `RECOMMEND_SUMMARIES_`, `PROMOTE_CLARIFICATION_`, `PROPOSAL_CRITIQUE_`}. The loop
+  is browser-driveable (`/_dashboard` Tuning tab, `dashboard.html:991+`).
+- **finding:** Candidate runs are quarantined from score-over-time and the
+  analyze→generate cache is untouched on the default path (the resolver returns the
+  identical constant object). A power user can A/B a prompt edit from the browser
+  without editing persona constants. Verified as the charter/guide describe — a
+  strength to preserve under any analyzer refactor.
 
-### F-eval-08 — The uncalibrated state is surfaced honestly (no silent overclaim) — C-0 in practice
+### F-eval-06 — Manual promote + fail-closed, LLM-free annotation contract (KEEP-verified)
+- **disposition:** KEEP
+- **leverage:** P2
+- **charter-trace:** C-4
+- **question_refs:** QB-eval-06
+- **coordinate:** (none)
+- **evidence:** promotion is manual — no auto-write of a winning candidate into
+  `analyzer.py` exists; banner says "Promote stays manual"
+  (`dashboard.html:327-329`; `evals/README.md:279`). The annotation contract
+  validates fail-closed (`validate_annotations`, `annotation.py:203-235`):
+  unsupported schema version, unknown verdict/slug, or a verdict missing its
+  required payload (`fix` without `honest_rewrite`, `fabricated` without a
+  compilable `forbidden_pattern`) is rejected, not half-collated; LLM-free by
+  design (`annotation.py:16`). `_scorer_disagreements` (`annotation.py:487-509`)
+  operationalizes "annotations validate the automated scorers". 43 annotation
+  tests pass.
+- **finding:** Promotion is a deliberate human gate consistent with C-4, and the
+  annotation seam fails closed rather than emitting a silently-degraded fixture.
+  Both correct; should not be "automated for convenience" later.
+
+### F-eval-07 — Paid eval/tune routes are cost- and consent-gated (BOOST-verified)
+- **disposition:** BOOST
+- **leverage:** P2
+- **charter-trace:** C-1, D-6
+- **question_refs:** QB-eval-07
+- **coordinate:** (none)
+- **evidence:** `/api/eval/run` and `/api/tune/run` 403 on non-localhost
+  (`_is_localhost_request()`, `app.py:6683-6684, 6790+`); all eager validation
+  (bad suite, unknown user, missing seed) returns JSON 4xx **before** the worker
+  spends (`app.py:6687-6721`); the seed path is contained under `ANNOTATION_ROOT`
+  with `secure_filename` + `_within` (`app.py:6697, 6708-6712`). The UI shows a
+  cost-band `confirm()` before POSTing ("≈ $0.10 smoke / ≈ $0.30 full … paid
+  Sonnet + Haiku", live-updating, `dashboard.html:973-987`).
+- **finding:** Confirms product-map BOOST-9 in this domain: the paid surfaces are
+  localhost-only, eager-4xx-before-spend, gated by an explicit cost-band
+  confirmation — respecting C-1 (local-and-yours) and the D-6 progressive-
+  disclosure intent (spend opt-in and disclosed). A model for fencing paid actions
+  on a power-user surface.
+
+### F-eval-08 — Uncalibrated L1/L2 state is surfaced and tracked, not silently trusted (DEBUFF averted)
 - **disposition:** KEEP
 - **leverage:** P2
 - **charter-trace:** C-0, M-2
-- **question-refs:** QB-eval-08
-- **coordinate:** (none)
-- **evidence:** The L0 docstring carries "Operational range (UNCALIBRATED — see
-  CHANGELOG / evals/TUNING_LOG.md)" and a PRECISION CAVEAT
-  (`hardening.py:760-770@c6e0437`). The dashboard legend states "L0 is a
-  flag-for-review signal … Uncalibrated until labels exist"
-  (`dashboard/templates/dashboard.html:693`). `_enrich_groundedness` notes "L1/L2
-  behavior itself is read, never re-tuned (calibration is deferred-B)"
-  (`evals/runner.py`). The empty groundedness pane points the user at the exact
-  command to populate it (`dashboard.html:303`).
-- **finding:** Nowhere does the surface treat L1/L2 numbers as trustworthy, or
-  L0 as a hard verdict — the uncalibrated status is stamped in code, in the
-  metric docstring, and on the dashboard, with the precision killer named. This
-  is C-0 ("mechanisms and effort, never absolutes") honored in the riskiest
-  place. Keep this discipline; the only thing missing is the *lay* register of
-  the same honesty (F-eval-03).
+- **question_refs:** QB-eval-08
+- **coordinate:** v1.0.7 (PV-2 closes it)
+- **evidence:** L1/L2 stay eval-only behind `--grounding-signals`
+  (`evals/grounding_signals.py` docstring "Never imported by the production
+  pipeline"; flag-gated in `evals/runner.py`); the L0 tolerance is stamped
+  `UNCALIBRATED` in code (`hardening.py:591-593`); the precision caveat is spelled
+  out "honest by design" in the docstring (`hardening.py:762-766`), CHANGELOG
+  (`CHANGELOG.md:840-846`), and `GROUNDING_METRIC.md:104-108`. PV-2
+  (`RELEASE_ARC.md:713`) reports per-detector precision/recall.
+- **finding:** The guide's DEBUFF ("treating L1/L2 numbers as trustworthy before
+  calibration") is **not** committed: the uncalibrated state is disclosed in code,
+  docs, and CHANGELOG, L0 is presented as flag-for-review (not a gate), and
+  calibration is a tracked obligation. Correct C-0 posture (mechanism + effort, no
+  false trust). Keep it — do not let a dashboard polish pass present the L1/L2
+  numbers as verdicts before PV-2 lands.
 
-### F-eval-09 — Sharpened L0 does not yet run per-generate in production (design intent ahead of code)
-- **disposition:** WATCH
+### F-eval-09 — The sharpened L0 detector is eval/display-only; the hot path still uses the lossy proto-L0
+- **disposition:** WATCH (claims-precision in the design doc)
 - **leverage:** P2
-- **charter-trace:** C-3, S-3, C-6
-- **question-refs:** QB-eval-03 (boundary), QB-eval-04 (surfacing)
-- **coordinate:** v1.0.7 (explainability) / v1.0.8 (blueprint split — keep hot path L0-only)
-- **evidence:** `compute_fabricated_specifics` (the sharpened L0) is called only
-  from `evals/runner.py:289@c6e0437` — no `app.py` caller (`git grep`). The
-  production iteration path calls `compute_iteration_signals` (`app.py:1097`),
-  which still uses the older lossy-n-gram `compute_grounding_overlap`
-  (`hardening.py:511`), not the typed extractor. `GROUNDING_METRIC.md:53` frames
-  L0 as "safe to run in the hot path and to log per generate call" and "can
-  become a per-call production signal" — i.e. aspirational.
-- **finding:** The deterministic L0 metric is hot-path-*safe* but is currently
-  eval-only; the per-generate production grounding signal the design note
-  envisions is not wired. This is not a defect (C-6's discipline of keeping the
-  hot path cheap is honored, and shipping it eval-first is the staged plan), but
-  it is a gap between the design narrative and the running product that bears on
-  S-3 (a per-generation grounding readout would be the most legible
-  explainability surface for the candidate). Watch: if v1.0.7 surfaces grounding
-  to users per-generate, route it through the sharpened L0, and keep it L0-only
-  on the hot path through the v1.0.8 split.
+- **charter-trace:** C-0, C-3
+- **question_refs:** QB-eval-03 (relates), QB-eval-08 (relates)
+- **coordinate:** v1.0.7 (PV-2 / explainability)
+- **evidence:** `compute_fabricated_specifics` (the sharpened typed L0) is called
+  only from `evals/runner.py:289` and surfaced read-only in `dashboard/routes.py`;
+  it has **no caller in `app.py`** (grep of `app.py` for the name is empty). The
+  iteration path uses `compute_iteration_signals` (`app.py:1097`), which carries
+  the **older lossy n-gram** `compute_grounding_overlap` (`hardening.py:1212`), not
+  the typed detector. Yet `GROUNDING_METRIC.md:70-73` describes L0 as "safe to run
+  in the hot path and to log per generate call" and "a *per-call* production
+  signal".
+- **finding:** The capability is real and hot-path-safe (deterministic, no
+  weights), but at the pin it is not wired into the generation request path — it is
+  eval-time + dashboard-display only. The design doc's "per-call production signal"
+  reads present-tense when it is a not-yet-wired option. Low severity (no
+  user-facing false claim; it is an internal design note), but worth a one-line
+  precision edit so a follow-up agent does not assume `/api/generate` already logs
+  the typed L0. If per-call production logging is wanted for S-3, it is a small
+  wiring task.
 
-### F-eval-10 — Diagnostics is the loop's only home; its a11y/lay-legibility bar is in scope and not yet met
-- **disposition:** WATCH
+### F-eval-10 — The committed synthetic suite exercises only the legacy generate path; corpus-mode grounding is uncovered by CI fixtures
+- **disposition:** FIX (coverage gap)
 - **leverage:** P2
-- **charter-trace:** E-2 (diagnostics in scope, R2-12.2), S-3, A-2
-- **question-refs:** QB-eval-04 (legend), cross-ref QB-exp-a11y-07
-- **coordinate:** Sprint 6.5 / v1.0.7
-- **evidence:** The entire annotate→tune→verify loop is driveable only from
-  `/_dashboard` (`evals/README.md:678` "The in-browser tuning console"); the
-  charter puts diagnostics explicitly in the a11y scope as a power-user surface
-  (E-2 final bullet; R2-12.2). The pane labels are dev-register (F-eval-03), and
-  the dashboard loads Chart.js from a CDN (`dashboard.html:15@c6e0437`) — the
-  C-2(i)/PX-01 violation already ruled (fix v1.0.6); confirmed still-present at
-  the pin, noted because this is the surface that hosts this domain.
-- **finding:** The tuning loop's product surface and the diagnostics a11y/legend
-  obligations are the same screen. Two charter-traced gaps converge here: the
-  lay-legend (F-eval-03) and the ruled-but-unlanded CDN Chart.js (handed to the
-  `sec` domain for verify-landed under QB-sec-04). Cross-coordinate with
-  `exp-a11y` (QB-exp-a11y-07) so the legend + the axe scope over `/_dashboard`
-  land together rather than as two passes over the same template.
+- **charter-trace:** C-3, M-2, A-4
+- **question_refs:** QB-eval-02 (relates), QB-eval-03
+- **coordinate:** v1.0.7 (PV-1 produces the first corpus-backed real fixtures)
+- **evidence:** the three committed synthetic fixtures
+  (`evals/fixtures/synthetic/{data-scientist-junior,pm-senior,sre-mid-level}`) run
+  through the file-parsed `_build_context` (`evals/runner.py:179-199`), which builds
+  a context_set with **no corpus DB** — the legacy generate path. Corpus mode (the
+  strongest grounding mechanism, verbatim-bullet-or-proposed by construction,
+  `analyzer.py:1870-1871`) is reached only via `_build_context_from_seed`
+  (`evals/runner.py:202`) under `--seed`, which needs a real `seed.json` — none
+  committed (F-eval-02).
+- **finding:** The committed/CI-runnable suite validates legacy-mode grounding; the
+  by-construction corpus-mode path the live app actually uses is unexercised by
+  committed fixtures and depends entirely on the not-yet-created real seeds. For the
+  A-4 grounding-performance exhibit (#2) and the M-2 end-to-end exercise, at least
+  one corpus-backed fixture (the PV-1 output) needs to exist so the corpus-mode
+  grounding contract is regression-guarded, not just unit-tested in isolation. This
+  sharpens F-eval-02: even after labels exist, a committed corpus-backed regression
+  fixture is what closes the coverage gap.
 
 ---
 
 ## Appendix (beyond the register cap)
 
-### A1 — `recommend`-only behavior is structurally outside the synthetic eval suite (coverage note)
-- **disposition:** WATCH · **leverage:** P3 · **charter-trace:** C-3, M-2 · **question-refs:** QB-eval-01 (supports)
-- **evidence:** `--suite synthetic` runs `analyze→clarify→generate`
-  (`evals/runner.py:44-49@c6e0437`); `recommend_bullets`/`recommend_summaries`
-  (`analyzer.py:2488,2633`) are corpus/UI-flow calls never invoked by the runner.
-  This matches the memory note that corpus-mode-only prompt changes aren't
-  exercised by `--suite synthetic`.
-- **finding:** Beyond F-eval-02's missing count metric, the `recommend` call kind
-  has no eval coverage at all — any future tuning of bullet selection is
-  invisible to the score-over-time chart. A targeted unit/UX cover (not a paid
-  smoke run) is the proportionate response, consistent with the corpus-mode
-  coverage pattern already in memory.
+### A-eval-01 — Residual "no invention ever" register in legacy resume_rules #2 (minor C-3 tension)
+- **disposition:** WATCH · **leverage:** P3 · **charter-trace:** C-3, R2-4.4 · **question_refs:** QB-eval-03
+- **evidence:** `analyzer.py:1998` (legacy `<resume_rules>` #2): "Do NOT invent
+  experience. **Every bullet must trace directly to the original resume.** Reframe
+  language; never invent facts." — sits directly below the widened GROUNDING CHECK
+  (`analyzer.py:1966-1969`) that accepts clarification answers + typed edits as
+  ground truth beyond the original résumé.
+- **finding:** The #2 wording is narrower than (and in mild tension with) the
+  widened check above it — a residual of the "no invention ever" register the owner
+  flagged in R2-4.4. Bounded to the legacy (non-corpus) path and the worked examples
+  teach the synthesis distinction, so unlikely to dominate; but if F-eval-01's
+  instrument later confirms over-suppression, this line is a first place to look. A
+  surgical rewording to "trace to the source union (original résumé, supplementals,
+  clarifications, or typed edits)" would align it without loosening grounding.
+  Flagged for the PV-2 tuner.
 
-### A2 — `seed_import.py` / `bootstrap.py` machinery is built but unexercised on real data (T-D residue)
-- **disposition:** WATCH · **leverage:** P3 · **charter-trace:** T-D, M-2 · **question-refs:** QB-eval-02 (supports)
-- **evidence:** `GROUNDING_METRIC.md:96` names `evals/annotation.py`,
-  `evals/bootstrap.py`, `evals/seed_import.py`, `evals/grounding_signals.py` as
-  shipped machinery whose "live run was never executed." Unit-tested (98 tests
-  pass) but no `seed.json` exists under `evals/fixtures/real/`.
-- **finding:** Same root cause as F-eval-01 (no real run), tracked separately
-  because it is the *bootstrap/seed* half of the loop (label *production*) vs the
-  *calibration* half (label *consumption*). Surfacing the empty-real-fixtures
-  state as a tracked v1.0.7 release task (PV-1) rather than a silent gap is the
-  guide's FIX prescription; confirm it appears on the arc, not only in the design
-  note.
+### A-eval-02 — TUNING_LOG.md is genuine institutional memory (BOOST, supports product-map BOOST-3)
+- **disposition:** BOOST · **leverage:** P3 · **charter-trace:** A-4, E-1 · **question_refs:** QB-eval-01 (relates)
+- **evidence:** `evals/TUNING_LOG.md` (2,152 lines): dated entries with
+  what-changed / why / before-after scores / lessons (the
+  `2026-06-06 eval/grounding-metric-l0` ride-along entry at L346; the
+  `2026-06-10 fix/generate-date-grounding` entry at L260; v1.0.1/v1.0.2 baselines
+  with run metadata and per-(fixture×rubric) mean±stdev).
+- **finding:** PROMPT_VERSION discipline (every prompt change bumps the version and
+  logs the rationale; metric-only branches state "no PROMPT_VERSION bump") is
+  practiced and durably recorded — the artifact the A-4 exhibit #1 rests on.
+  Confirms product-map BOOST-3.
 
-### A3 — TUNING_LOG is a deep institutional artifact but never recorded an AL-1 investigation
-- **disposition:** WATCH · **leverage:** P3 · **charter-trace:** AL-1, A-4 · **question-refs:** QB-eval-01 (supports)
-- **evidence:** `evals/TUNING_LOG.md@c6e0437` is ~2,136 lines with
-  per-PROMPT_VERSION entries; PROMPT_VERSION discipline is real
-  (`analyzer.py:268` = `2026-06-11.1`, bumped in-commit per map-BOOST-3). No
-  entry investigates the owner-reported suggested-bullet reduction with data;
-  `:1054` defers it to "watch the eval suite" rubrics that don't measure count.
-- **finding:** The tuning log is a genuine exhibit-#1 strength (BOOST-adjacent),
-  but the one regression the owner explicitly named (AL-1) was never closed in
-  it — reinforcing F-eval-02. When the F-eval-02 instrument lands, the closing
-  TUNING_LOG entry is the natural home for the before/after evidence (per the
-  performance-metrics-provenance memory).
+### A-eval-03 — Test depth on the eval domain (supports product-map BOOST-7)
+- **disposition:** KEEP · **leverage:** P3 · **charter-trace:** A-4 · **question_refs:** QB-eval-03/06 (relate)
+- **evidence:** dynamic run — 214 eval-domain tests pass locally in ~12s
+  (`tests/test_hardening.py`, `test_hardening_iteration.py`, `test_annotation.py`,
+  `test_bootstrap.py`, `test_seed_import.py`, `test_grounding_signals.py`,
+  `test_eval_runner.py`), all LLM-free and Chromium-free (grounding_signals tests
+  inject mocked pipelines → no model download). Dynamically confirmed documented L0
+  behaviors: paraphrase false-positive ("4-person" from "small team" → rate 0.667,
+  "4" flagged), `k8s`≡`Kubernetes` alias grounded (rate 0.0).
+- **finding:** The deterministic eval substrate is well-tested and the documented
+  caveats are observable, not aspirational — the depth that earns the A-4 reaction.
+
+### A-eval-04 — Chart.js CDN still loaded on the diagnostics surface at the pin (already-ruled, verify-landed)
+- **disposition:** FIX (already ruled PX-01 / C-2(i)) · **leverage:** P1 · **charter-trace:** C-2(i) · **question_refs:** (verify-landed, x-ref QB-sec-04)
+- **evidence:** `dashboard/templates/dashboard.html:15` loads
+  `https://cdn.jsdelivr.net/npm/chart.js@4.4.0/...` at runtime (SRI-pinned).
+- **finding:** Noted only because the diagnostics surface is in this domain's
+  scope. The fix is ruled (vendor, v1.0.6) and owned by the security/OSS domain
+  (QB-sec-04) — recorded here as **not yet landed at `c6e0437`**, not re-litigated.
