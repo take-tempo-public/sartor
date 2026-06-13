@@ -14,6 +14,7 @@ Tailor surface — a non-empty corpus is seeded so the corpus tab renders cards.
 
 from __future__ import annotations
 
+import re
 from types import ModuleType
 
 import pytest
@@ -133,3 +134,58 @@ def test_compose_role_intros_toggle_defaults_and_persists(
     compose.reload()
     expect(compose.role_intros_toggle()).to_be_checked()
     assert "Platform-scale framing." in compose.chosen_intro_texts()
+
+
+def _seed_two_candidate_summaries(candidate_id: int) -> None:
+    """Two candidate-level SummaryItem variants so the Compose positioning card
+    renders (its pin path is the one that used to clobber title/order pins)."""
+    from db.models import SummaryItem
+    from db.session import get_session
+
+    s = get_session()
+    try:
+        for i, text in enumerate(["Platform IC positioning.", "People-leader positioning."]):
+            s.add(SummaryItem(candidate_id=candidate_id, text=text,
+                              display_order=i, is_active=1, source="manual"))
+        s.commit()
+    finally:
+        s.close()
+
+
+@pytest.mark.ux
+@pytest.mark.slow
+def test_positioning_pin_preserves_title_pin(
+    page: Page, live_server: str, ux_app: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression for the pre-existing clobber (fixed this branch): pinning a
+    candidate positioning variant must NOT wipe a per-JD title pin. The
+    positioning-pin save now routes through _collectCompositionState(), so the
+    title pin (and bullet_order, role intros) survive the same POST."""
+    cid = seed_user(ux_app, "alice")
+    seed_exp_with_bullets(cid)              # official "Staff Engineer"
+    _seed_two_candidate_summaries(cid)      # positioning card renders
+    install_llm_stubs(ux_app, monkeypatch)
+    BasePage(page, live_server).load()
+    UserPickerPage(page, live_server).select("alice")
+    WizardJobPage(page, live_server).open().analyze(_JD)
+    compose = WizardComposePage(page, live_server).open()
+
+    # Add + pin an alternative title for this JD.
+    with page.expect_response(lambda r: "/titles" in r.url and r.request.method == "POST"):
+        compose.add_title("Principal Engineer")
+    with page.expect_response(_is_composition_post):
+        compose.select_title("Principal Engineer")
+    assert compose.title_is_selected("Principal Engineer")
+
+    # Pin a candidate positioning variant — the save path that used to clobber
+    # the title pin. Click the 2nd (non-chosen) positioning row.
+    with page.expect_response(_is_composition_post):
+        page.locator(".positioning-variant").nth(1).click()
+
+    # Away + back: the title pin survives (and the summary pin persisted too).
+    WizardTemplatePage(page, live_server).open()
+    compose.reload()
+    assert compose.title_is_selected("Principal Engineer"), "title pin was clobbered"
+    expect(page.locator(".positioning-variant").nth(1)).to_have_class(
+        re.compile(r"positioning-chosen"))

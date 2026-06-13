@@ -4760,34 +4760,20 @@ function _renderPositioningVariant(v, chosenId) {
 // re-render.
 async function _togglePositioningPin(summaryId, alreadyPinned) {
   if (_composeApplicationId == null || !lastContextPath) return;
-  // Gather the existing pinned/excluded/added bullet state so we
-  // don't clobber it when writing this pin. The server merges with
-  // the full body it receives, so we must round-trip whatever's
-  // already on the row.
-  const list = document.getElementById('composeList');
-  const pinnedBullets = [], excludedBullets = [], addedBullets = [];
-  list.querySelectorAll('.compose-row[data-bullet-id]').forEach(row => {
-    const id = parseInt(row.dataset.bulletId, 10);
-    if (row.classList.contains('pinned'))   pinnedBullets.push(id);
-    if (row.classList.contains('excluded')) excludedBullets.push(id);
-    if (row.dataset.added === '1')          addedBullets.push(id);
-  });
-
-  const body = {
-    context_path: lastContextPath,
-    pinned: pinnedBullets,
-    excluded: excludedBullets,
-    added: addedBullets,
-    pinned_summary_id: alreadyPinned ? null : summaryId,
-    // B.4 — preserve the per-role intro toggle + picks so pinning a candidate
-    // positioning variant doesn't clobber them.
-    ..._collectExperienceSummaryState(),
-  };
+  // Collect the FULL composition state (bullets + bullet_order + title pins +
+  // role intros) via the canonical gatherer, then set the summary pin. The
+  // POST route rebuilds composition_overrides WHOLESALE, so a partial body
+  // silently drops every field it omits — this path used to hand-gather only
+  // bullets, which clobbered bullet_order + pinned_title_ids on every summary
+  // pin. Routing through _collectCompositionState() fixes that and keeps all
+  // override families (incl. B.4 role intros) intact on one save.
+  const state = _collectCompositionState();
+  state.pinned_summary_id = alreadyPinned ? null : summaryId;
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/composition`,
       { method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body) },
+        body: JSON.stringify({ context_path: lastContextPath, ...state }) },
     );
     if (res.ok) loadComposition();
   } catch {

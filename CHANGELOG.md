@@ -52,7 +52,17 @@ element + guide). No new dependency.
   prompt), an opt-in mapping suite in `tests/test_corpus_to_json_resume.py`, and a UX
   regression `tests/ux/regression/test_20260612_experience_summary_item.py`. New
   `ui_pages` selectors + Corpus/Compose page-object methods; the UX stub gains
-  `fake_recommend_experience_summaries`. ruff ✓ · mypy ✓ (149 files) · pytest 1126/1126.
+  `fake_recommend_experience_summaries`.
+- **Fixed (in-scope, user-authorized): Compose save no longer clobbers sibling
+  overrides.** `_togglePositioningPin` (the candidate positioning-summary pin) used
+  to hand-gather only bullets, so pinning a summary silently wiped `bullet_order` +
+  `pinned_title_ids` (and the bullet autosave wiped `pinned_summary_id`). All save
+  paths now route through the canonical `_collectCompositionState()`, so every
+  override family — bullets, order, title pins, **and** the new role intros —
+  survives any single save. Regression-locked (`test_positioning_pin_preserves_title_pin`).
+  Also fixed the `fake_recommend_summaries` UX stub's shape (it never set
+  `has_recommendation`, looping the positioning card's auto-fire once 2+ candidate
+  variants existed). ruff ✓ · mypy ✓ (149 files) · pytest **1127/1127** incl. `-m ux`.
 
 ### Added / Changed — corpus-first IA + smart landing (`feat/corpus-first-tab-onboarding`, Sprint 6.4 #16 + #1 + KW1)
 

@@ -70,7 +70,11 @@ class WizardComposePage(BasePage):
 
     # --- titles (feat/compose-add-title) -----------------------------------
     def _first_card(self) -> Locator:
-        return self.page.locator(Compose.EXPERIENCE_CARD).first
+        # The β.6c positioning card also carries `.compose-experience-card`, so
+        # exclude it — `_first_card` is only ever about a real experience card.
+        return self.page.locator(
+            f"{Compose.EXPERIENCE_CARD}:not(.positioning-card)"
+        ).first
 
     def title_texts(self) -> list[str]:
         """Eligible title texts on the first experience card."""

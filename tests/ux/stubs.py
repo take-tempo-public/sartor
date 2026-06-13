@@ -98,9 +98,32 @@ def fake_recommend_bullets(client: Any, ctx: Any, username: str = "",
 
 def fake_recommend_summaries(client: Any, ctx: Any, username: str = "",
                              run_id: str = "") -> dict[str, Any]:
-    """Only invoked when 2+ summary variants exist; the flow tests seed none,
-    so this is purely defensive against an unexpected real call."""
-    return {"recommended_item_id": None, "rationale": ""}
+    """Recommend the candidate's first active summary variant (deterministic,
+    DB-only). Returns the REAL `{recommendation, alternates}` shape — the old
+    placeholder (`{recommended_item_id}`) never set `has_recommendation`, so the
+    positioning card's auto-fire re-fired on every reload (an infinite loop) once
+    2+ candidate variants existed. Most flow tests seed none, so this is a no-op
+    for them; it only matters when the positioning card actually renders."""
+    from db.models import Candidate, SummaryItem
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        cand = session.query(Candidate).filter_by(username=username).first()
+        if cand is None:
+            return {"recommendation": None, "alternates": []}
+        first = (session.query(SummaryItem)
+                 .filter_by(candidate_id=cand.id, is_active=1)
+                 .order_by(SummaryItem.display_order, SummaryItem.id).first())
+        if first is None:
+            return {"recommendation": None, "alternates": []}
+        return {
+            "recommendation": {"summary_item_id": first.id,
+                               "rationale": "stubbed: first variant"},
+            "alternates": [],
+        }
+    finally:
+        session.close()
 
 
 def fake_recommend_experience_summaries(client: Any, ctx: Any, username: str = "",

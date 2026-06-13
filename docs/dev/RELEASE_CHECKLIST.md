@@ -226,8 +226,10 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       per-role intro as a multi-variant `ExperienceSummaryItem` (migration `0008` +
       backfill), batched Haiku `recommend_experience_summaries`, Compose **opt-in
       "Add role intros"** toggle + per-role picker, full WYSIWYG into the generated
-      résumé + JSON-resume preview, `PROMPT_VERSION → 2026-06-12.1`. ruff/mypy ✓,
-      pytest **1126/1126**. See RELEASE_ARC §Sprint 6.6 B.4 for the resolution note.
+      résumé + JSON-resume preview, `PROMPT_VERSION → 2026-06-12.1`; also fixed an
+      in-scope Compose-save clobber (`_togglePositioningPin` → canonical
+      `_collectCompositionState()`). ruff/mypy ✓, pytest **1127/1127**. See
+      RELEASE_ARC §Sprint 6.6 B.4 for the resolution note.
       **B.5** (`feat/skill-group-item`) still open — the next Sprint 6.6 branch.
 - [ ] **WS-4a landed early; WS-4b (after Sprint 6.6) before the 6.5 sweep** (the binding gate):
       `docs/system-model.md` (← seven-functions language) + the committed
