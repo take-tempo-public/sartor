@@ -10,7 +10,8 @@ Provides observability for the analyze + generate pipeline:
 
 The aggregations feed both server-rendered tables (graceful degradation
 without JS) and Chart.js-rendered charts in the template. No external
-Python deps; Chart.js is loaded from a CDN client-side.
+Python deps; Chart.js is vendored locally (static/vendor/chart.umd.min.js),
+not fetched from a CDN.
 """
 
 from __future__ import annotations

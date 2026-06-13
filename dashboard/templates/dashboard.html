@@ -9,12 +9,9 @@
   <script>document.documentElement.className += ' js';</script>
   <!-- Design system: the cb-* token set + base styles live in the app stylesheet. -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <!-- Chart.js from CDN (no Python charting dep); charts lazy-init on detail-open.
-       Subresource Integrity pins the exact 4.4.0 bytes against CDN compromise;
-       crossorigin="anonymous" is required for SRI on cross-origin scripts. -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
-          integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g"
-          crossorigin="anonymous"></script>
+  <!-- Chart.js 4.4.0 (MIT), vendored locally (no runtime CDN; see SECURITY.md
+       bundled-assets). No Python charting dep; charts lazy-init on detail-open. -->
+  <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
   <style>
     /* Dashboard-specific layout, built on the cb-* tokens from style.css.
        Everything is scoped under .cb-dash so it never fights wizard rules. */

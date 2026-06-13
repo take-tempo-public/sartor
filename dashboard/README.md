@@ -128,7 +128,7 @@ The `score_over_time` chart filters out v1 records (no `prompt_version`); the he
 dashboard/
 ├── routes.py          ← Flask blueprint, aggregations, route handler
 ├── templates/
-│   └── dashboard.html ← Single template; tabs + bento + drawer; Chart.js from CDN
+│   └── dashboard.html ← Single template; tabs + bento + drawer; Chart.js vendored locally
 └── README.md          ← this file
 ```
 
@@ -160,7 +160,7 @@ except `_load_baseline`, which reads the in-repo baseline file):
 
 ### No new Python deps
 
-The dashboard uses **Chart.js loaded from a CDN** (jsdelivr). No Python charting library, no pandas. Graceful degradation: tables and the trace waterfall render server-side; charts require JS and lazy-init on drawer-open. With JS off, the `.js`-gated CSS leaves all panes + detail blocks visible (stacked inline), and the `<noscript>` bar-chart fallback table remains.
+The dashboard uses **Chart.js vendored locally** at `static/vendor/chart.umd.min.js` (no runtime CDN fetch; see [`SECURITY.md`](../SECURITY.md) bundled-assets). No Python charting library, no pandas. Graceful degradation: tables and the trace waterfall render server-side; charts require JS and lazy-init on drawer-open. With JS off, the `.js`-gated CSS leaves all panes + detail blocks visible (stacked inline), and the `<noscript>` bar-chart fallback table remains.
 
 ---
 
@@ -180,7 +180,7 @@ Keep aggregation functions pure — that's what lets `tests/test_dashboard_route
 | File | Role |
 |---|---|
 | [`routes.py`](routes.py) | Flask blueprint + aggregation helpers |
-| [`templates/dashboard.html`](templates/dashboard.html) | Tabbed console template (bento tiles + shared drawer), cb-* tokens via `static/style.css`, Chart.js via CDN |
+| [`templates/dashboard.html`](templates/dashboard.html) | Tabbed console template (bento tiles + shared drawer), cb-* tokens via `static/style.css`, Chart.js vendored at `static/vendor/chart.umd.min.js` |
 | [`../ui_pages/dashboard_console.py`](../ui_pages/dashboard_console.py) | Page Object for the console (used by `tests/ux/`) |
 | [`../analyzer.py`](../analyzer.py) | Source of `logs/llm_calls.jsonl` telemetry (`_emit_call_log`) |
 | [`../hardening.py`](../hardening.py) | Source of `compute_call_cost` and `MODEL_PRICING` |
