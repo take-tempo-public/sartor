@@ -1015,6 +1015,11 @@
               <textarea id="cfgPortfolioUrls" rows="3" placeholder="One URL per line&#10;https://github.com/you&#10;https://yoursite.com"></textarea>
             </div>
             <button class="cb-btn cb-bg-violet" onclick="saveConfig()">Save config</button>
+            <div class="form-row" id="profileFetchRow">
+              <p class="edit-hint">Optionally fetch text from your LinkedIn / website / portfolio URLs so the LLM can use it as extra context. Saves your config first, then fetches.</p>
+              <button id="btnFetchProfile" class="cb-btn cb-bg-teal" onclick="fetchProfileContent()">Fetch profile content</button>
+              <span id="profileFetchStatus" class="edit-hint" aria-live="polite"></span>
+            </div>
           </div>
         </section>
         <section class="settings-section">

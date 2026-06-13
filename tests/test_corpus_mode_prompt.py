@@ -138,6 +138,52 @@ class TestStableUserPrefixDispatch:
         assert "Name: Casey" in prefix
 
 
+class TestWebPresenceBlock:
+    """PX-02 — the opt-in profile/website/portfolio scrape rides a DEDICATED
+    <candidate_web_presence> block, separate from profile_text (the β.6
+    positioning summary, carried by the vestigially-named
+    <candidate_online_profile> block). Conditional ⇒ the empty path is
+    byte-identical to the pre-PX-02 prefix (the analyze→generate cache + eval
+    invariance both depend on this)."""
+
+    def test_block_emitted_when_present(self):
+        ctx = _make_legacy_context()
+        ctx["candidate"]["online_profile_text"] = "Scraped LinkedIn headline + bio."
+        prefix = _stable_user_prefix(ctx)
+        assert "<candidate_web_presence>" in prefix
+        assert "Scraped LinkedIn headline + bio." in prefix
+        assert "</candidate_web_presence>" in prefix
+
+    def test_absent_when_empty_byte_identical(self):
+        """Empty online_profile_text must not perturb the cached prefix."""
+        baseline = _stable_user_prefix(_make_legacy_context())
+        ctx = _make_legacy_context()
+        ctx["candidate"]["online_profile_text"] = ""
+        assert _stable_user_prefix(ctx) == baseline
+        assert "<candidate_web_presence>" not in _stable_user_prefix(ctx)
+
+    def test_missing_key_byte_identical(self):
+        """A pre-PX-02 saved context (no online_profile_text key at all) must
+        still produce the baseline prefix — the analyzer reads via .get()."""
+        baseline_ctx = _make_legacy_context()
+        baseline = _stable_user_prefix(baseline_ctx)
+        ctx = _make_legacy_context()
+        ctx["candidate"].pop("online_profile_text", None)
+        assert _stable_user_prefix(ctx) == baseline
+
+    def test_distinct_from_positioning_summary_block(self):
+        """Scrape (web_presence) and profile_text (positioning summary) are
+        independent: both can be present, in their own blocks."""
+        ctx = _make_legacy_context()
+        ctx["candidate"]["profile_text"] = "Senior PM positioning summary."
+        ctx["candidate"]["online_profile_text"] = "Scraped portfolio text."
+        prefix = _stable_user_prefix(ctx)
+        assert "<candidate_online_profile>" in prefix
+        assert "Senior PM positioning summary." in prefix
+        assert "<candidate_web_presence>" in prefix
+        assert "Scraped portfolio text." in prefix
+
+
 # ---------------------------------------------------------------------------
 # generate() — required key dispatch
 # ---------------------------------------------------------------------------

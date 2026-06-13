@@ -265,6 +265,16 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       guide authored from the excellence walk's **Q3** deliverable (now preserved at
       [`excellence-walk/q3-downloads.md`](excellence-walk/q3-downloads.md)) + a
       README/`install.md` "what gets downloaded & why" section.
+- [x] **PX-02 — profile/website scrape re-wired** (`fix/profile-scrape-rewire`, now-v1.0.6
+      PX band; `F-docs-04` / `AL-5`). The dead `scraper.fetch_profile_content` is wired to an
+      explicit opt-in **"Fetch profile content"** action (`POST /api/users/<u>/profile/fetch`),
+      caching to a **new** `Candidate.online_profile_text` column (alembic `0010`) surfaced via a
+      `<candidate_web_presence>` prompt block (`PROMPT_VERSION 2026-06-13.1`). Kept **distinct**
+      from the β.6 `profile_text` positioning summary so the résumé `basics.summary` can't be
+      polluted (the prescription's literal `profile_text` cache target was already taken by β.6 —
+      surfaced + re-scoped with the owner). Wiring pinned by a regression test
+      (`tests/test_profile_fetch_route.py`). No new dep; `PROMPT_VERSION` bump. PX-03 egress-doc
+      alignment stays for the later PX-03/05/07 doc batch. See CHANGELOG [Unreleased].
 - [x] **PX-08 — network-egress falsifiability gate landed** (`test/egress-falsifiability`,
       now-v1.0.6 PX band; `F-qe-rel-02` P0 + `F-sec-01`). `tests/test_egress_allowlist.py`
       + the `pytest-socket` dev dep make charter **C-2** machine-falsifiable (gate **G-2**

@@ -163,6 +163,10 @@ def build_context_set_from_db(
             "education_summary": education_summary,
             "notes": candidate.notes or "",
             "profile_text": profile_text,
+            # PX-02: cached opt-in profile/website/portfolio scrape. Rides the
+            # saved context_set and is NOT mutated by _apply_chosen_summary, so
+            # the analyze↔generate prefix stays byte-identical within an iteration.
+            "online_profile_text": candidate.online_profile_text or "",
         },
         "resume": {
             "format": "md",

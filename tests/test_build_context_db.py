@@ -256,6 +256,31 @@ class TestBuildContextSetFromDb:
         assert ctx["resume"]["format"] == "md"
         assert "Casey Tester" in ctx["resume"]["text"]
 
+    def test_online_profile_text_flows_into_candidate_block(self, db_session):
+        """PX-02: the cached scrape (Candidate.online_profile_text) reaches the
+        ContextSet candidate block — a DISTINCT channel from profile_text (the
+        β.6 positioning summary)."""
+        c = _seed_full_candidate(db_session)
+        c.online_profile_text = "--- Linkedin ---\nScraped bio text."
+        db_session.commit()
+        ctx, _app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text="Senior PM role",
+            run_id="run_opt",
+        )
+        assert ctx["candidate"]["online_profile_text"] == "--- Linkedin ---\nScraped bio text."
+
+    def test_online_profile_text_defaults_empty_when_unset(self, db_session):
+        """No scrape cached → empty string (not None), so the analyzer's
+        conditional <candidate_web_presence> block stays absent."""
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        ctx, _app, _run = build_context_set_from_db(
+            db_session, candidate_username="casey", jd_text="x", run_id="run_empty",
+        )
+        assert ctx["candidate"]["online_profile_text"] == ""
+
     def test_creates_application_and_run_rows(self, db_session):
         _seed_full_candidate(db_session)
         db_session.commit()

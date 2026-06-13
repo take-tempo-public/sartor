@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — profile/website scrape re-wired into the runtime path (`fix/profile-scrape-rewire`, PX-02)
+
+The opt-in LinkedIn / website / portfolio scrape (`scraper.fetch_profile_content`) had been
+**dead code** — no runtime caller since the corpus/DB refactor — so the docs' "live profile
+scrape" claim was false (2026-06 product-excellence review: `F-docs-04` / `AL-5`). It is now
+wired to an explicit, opt-in user action so the claim is honest.
+
+- **New route** `POST /api/users/<u>/profile/fetch` — reads the saved config's `linkedin_url` /
+  `website_url` / `portfolio_urls`, runs the deterministic best-effort scraper, and caches the
+  combined text. Triggered by a **"Fetch profile content"** button in the Settings drawer (saves
+  config first, then fetches). Guarded by `_safe_username` + `_within`; the network egress stays
+  inside the already-sanctioned `scraper.py` (PX-08 allowlist unchanged — no new egress site).
+- **Dedicated storage** — cached in a new `Candidate.online_profile_text` column (alembic `0010`)
+  and surfaced to the LLM via a new `<candidate_web_presence>` prompt block (`PROMPT_VERSION` →
+  `2026-06-13.1`). Deliberately **distinct** from `profile_text`, which β.6 repurposed as the
+  positioning summary (résumé `basics.summary` fallback) — so the scrape can never clobber a
+  candidate's summary.
+- Opt-in + graceful: nothing fetches until the user clicks; unreachable URLs are swallowed to
+  empty; a config with no URLs is a valid opt-out. No new dependency (`requests` + `beautifulsoup4`
+  already shipped for `scraper.py`). The runtime wiring is pinned by a regression test so it can't
+  silently die again. (PX-03 egress-doc alignment is a separate later branch.)
+
 ### Added — network-egress falsifiability gate (`test/egress-falsifiability`, PX-08 / G-2)
 
 A committed test (`tests/test_egress_allowlist.py`) now makes charter claim **C-2**

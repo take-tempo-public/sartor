@@ -51,7 +51,13 @@ class Candidate(Base):
     linkedin_url: Mapped[str | None] = mapped_column(String)
     website_url: Mapped[str | None] = mapped_column(String)
     notes: Mapped[str | None] = mapped_column(Text)
+    # The candidate's go-to positioning summary (résumé basics.summary fallback;
+    # β.6 backfilled it into SummaryItem rows). NOT a scraped online profile.
     profile_text: Mapped[str | None] = mapped_column(Text)
+    # PX-02: cached text from the opt-in LinkedIn/website/portfolio scrape
+    # (scraper.fetch_profile_content). A distinct channel from profile_text so
+    # the scrape can never clobber the positioning summary / basics.summary.
+    online_profile_text: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
     updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
 

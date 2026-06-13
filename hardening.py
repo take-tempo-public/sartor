@@ -33,6 +33,10 @@ class CandidateInfo(TypedDict):
     education_summary: str
     notes: str
     profile_text: str
+    # PX-02: cached opt-in profile/website/portfolio scrape — a DISTINCT channel
+    # from profile_text (the β.6 positioning summary). Always set at construction
+    # (""=no scrape); readers use .get() so pre-PX-02 saved contexts stay valid.
+    online_profile_text: str
 
 
 class ResumeInfo(TypedDict):
@@ -1084,6 +1088,8 @@ def build_context_set(
             "education_summary": config.get("education_summary", ""),
             "notes": config.get("notes", ""),
             "profile_text": profile_text,
+            # Legacy file-based path has no scrape wiring (DB-mode only feature).
+            "online_profile_text": "",
         },
         "resume": {
             "format": parsed_resume.get("format", ""),

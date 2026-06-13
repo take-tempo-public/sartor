@@ -277,7 +277,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-06-12.2"
+PROMPT_VERSION = "2026-06-13.1"  # PX-02: + <candidate_web_presence> block
 
 # --- Prompt-override primitive (eval tuning loop, v1.0.4) --------------------
 # Lets an eval run inject a CANDIDATE system prompt without editing the persona
@@ -597,6 +597,10 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
     """
     candidate = context_set["candidate"]
     online_profile = candidate.get("profile_text", "").strip()
+    # PX-02: cached text from the opt-in profile/website/portfolio scrape. A
+    # SEPARATE source + block from `online_profile` above (which carries the β.6
+    # positioning summary, despite its vestigial <candidate_online_profile> tag).
+    web_presence = candidate.get("online_profile_text", "").strip()
     iteration = int(context_set.get("iteration", 0) or 0)
 
     parts = [
@@ -755,6 +759,18 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
             "<candidate_online_profile>",
             online_profile,
             "</candidate_online_profile>",
+        ])
+
+    # PX-02: scraped LinkedIn / website / portfolio text (opt-in). Conditional,
+    # so the empty path stays byte-identical to the pre-PX-02 prefix (eval
+    # invariance). Tag + inclusion-condition are load-bearing for cache
+    # stability — change them only alongside a PROMPT_VERSION bump.
+    if web_presence:
+        parts.extend([
+            "",
+            "<candidate_web_presence>",
+            web_presence,
+            "</candidate_web_presence>",
         ])
 
     return "\n".join(parts)
