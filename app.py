@@ -229,6 +229,60 @@ def update_config(username):
     return jsonify({"ok": True})
 
 
+@app.route("/api/users/<username>/profile/fetch", methods=["POST"])
+def fetch_profile(username):
+    """PX-02: opt-in scrape of the user's saved profile URLs into the corpus.
+
+    User-triggered by the Settings "Fetch profile content" button — that click
+    IS the opt-in act. Reads the SAVED config (linkedin_url / website_url /
+    portfolio_urls), runs the deterministic, best-effort
+    `scraper.fetch_profile_content` (per-URL cap; `RequestException` swallowed →
+    ""), and caches the combined text in `Candidate.online_profile_text`. From
+    there `build_context_set_from_db` surfaces it to the LLM via the
+    `<candidate_web_presence>` block.
+
+    The network egress happens inside `scraper.py` (already on the PX-08 egress
+    allowlist); this route imports no network library. Stored as a DISTINCT
+    column from `profile_text` (the β.6 positioning summary) so the scrape can
+    never clobber the résumé `basics.summary`.
+    """
+    from db.session import get_session, init_db
+    from scraper import fetch_profile_content
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+    # Defensive containment: the config we read must resolve within CONFIGS_DIR.
+    config_path = CONFIGS_DIR / f"{safe_user}.config"
+    if not _within(config_path, CONFIGS_DIR):
+        return jsonify({"error": "Invalid config path"}), 403
+
+    config = _load_config(safe_user)
+    url_count = sum(
+        1 for u in (
+            config.get("linkedin_url", ""),
+            config.get("website_url", ""),
+            *config.get("portfolio_urls", []),
+        ) if u
+    )
+    scraped = fetch_profile_content(config)
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = _get_or_provision_candidate(session, safe_user)
+        candidate.online_profile_text = scraped or None
+        session.commit()
+    finally:
+        session.close()
+
+    logger.info(
+        "PX-02 profile fetch for %s: %d chars from %d configured URL(s)",
+        safe_user, len(scraped), url_count,
+    )
+    return jsonify({"ok": True, "chars": len(scraped), "urls": url_count})
+
+
 @app.route("/api/upload", methods=["POST"])
 def upload_resume():
     username = request.form.get("username", "")

@@ -247,12 +247,41 @@ async function saveConfig() {
   }
 }
 
+// PX-02: opt-in fetch of the saved LinkedIn / website / portfolio URLs. Saves
+// the config first (the server route reads the SAVED config), then POSTs to the
+// scrape route, which caches the text into Candidate.online_profile_text for the
+// LLM to use as context. Best-effort + graceful — never blocks anything.
+async function fetchProfileContent() {
+  const statusEl = document.getElementById('profileFetchStatus');
+  const setMsg = (m) => { if (statusEl) statusEl.textContent = m; };
+  setMsg('Saving config…');
+  await saveConfig();
+  setMsg('Fetching profile content…');
+  try {
+    const res = await fetch(`/api/users/${currentUser}/profile/fetch`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) {
+      setMsg(data.error || 'Fetch failed.');
+      return;
+    }
+    if (data.urls === 0) {
+      setMsg('No profile URLs to fetch — add LinkedIn / website / portfolio URLs above.');
+    } else if (data.chars === 0) {
+      setMsg(`Fetched nothing from ${data.urls} URL(s) — they may be unreachable or blocked.`);
+    } else {
+      setMsg(`Fetched ${data.chars} characters from ${data.urls} URL(s); the LLM will use it as context.`);
+    }
+  } catch {
+    setMsg('Fetch failed (network error).');
+  }
+}
+
 // ---- URL field format checking (onboarding + settings) ----
-// Tolerant by design: a bare host like "linkedin.com/in/you" is valid — the
-// server prepends https:// at fetch time (scraper._ensure_scheme). We only
-// flag input that can't be a URL at all, and normalize before we store it so
-// the value round-trips through validate_config without a "missing scheme"
-// rejection.
+// Tolerant by design: a bare host like "linkedin.com/in/you" is valid. We
+// normalize it (prepend https://) on the CLIENT before storing, so the value
+// round-trips through validate_config without a "missing scheme" rejection; the
+// server's scraper._ensure_scheme re-normalizes defensively at scrape time. We
+// only flag input that can't be a URL at all.
 const _URL_SCHEME_RE = /^[a-z][a-z0-9+.\-]*:\/\//i;
 
 function _normalizeUrl(value) {

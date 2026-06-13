@@ -149,6 +149,10 @@ class Settings:
 
     OPEN_PILL = "#settingsPill"
     DRAWER = "#settingsDrawer"
+    LINKEDIN_INPUT = "#cfgLinkedin"
+    # PX-02 — opt-in profile/website/portfolio scrape trigger + its status line.
+    FETCH_PROFILE_BTN = "#btnFetchProfile"
+    FETCH_PROFILE_STATUS = "#profileFetchStatus"
 
 
 class Onboarding:

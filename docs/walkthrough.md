@@ -211,9 +211,11 @@ nice-to-haves). Click **Analyze**.
 - **Cost:** ~$0.04 per call (most of the user prefix is cache-hit
   on the second analysis in a session).
 - **Latency:** ~30–60s — the slowest call in the pipeline. It
-  re-reads the JD + your full master résumé + any LinkedIn /
-  portfolio scrape on every analyze call, which is why the wait
-  is real. A spinner that long is normal here; it's not stuck.
+  re-reads the JD + your full master résumé (plus any LinkedIn /
+  website / portfolio text you fetched via **Settings → Fetch
+  profile content**, which is cached into your corpus, not
+  re-scraped each analyze), which is why the wait is real. A
+  spinner that long is normal here; it's not stuck.
 - **What it returns:** a structured analysis with skill matches,
   potential gaps, ATS warnings (e.g., "the JD mentions Kafka 6
   times — make sure your résumé reflects that if it's true"), and
