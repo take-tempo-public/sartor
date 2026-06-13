@@ -701,6 +701,33 @@ RELEASE_CHECKLIST risk register.
 > Deeper interaction memory (**S5 P2–P4**) stays **held** pending its retention/forgetting
 > policy. Details in [`memory-architecture.md`](memory-architecture.md) "Staged build".
 
+### Plugin activation — make the dev-tool commands + agents invocable (prerequisite)
+
+> **Flagged 2026-06-13** (owner-directed: "we need to get to this in 1.0.7 at the
+> latest"). The `.claude-plugin/` plugin ships **10 commands** (`/wiki-*`, `/eval`,
+> `/bench`, `/replay`, `/prompt-tune`, `/inspect-context`, `/tune-from-annotations`)
+> and **6 subagents**, but **only its hooks are loaded** — hand-wired into
+> `.claude/settings.json`. The commands + agents are **dormant**: never registered
+> (no `marketplace.json`, no plugin install), so none surface as slash commands
+> (verified 2026-06-13 — none appear in the agent's available-skill list). The "v1.0
+> plugin migration" moved the hooks; command/agent activation was never done.
+
+- **Why v1.0.7:** the **self-documenting loop** runs the `/wiki-*` ops, and the
+  manifest-proposed **`feat/compliance-agent-pilot`** ships a new `/compliance-witness`
+  command + subagent whose design assumes it composes "**existing** plugin primitives,
+  both verified present at c6e0437" (`docs/dev/reviews/2026-06-product-excellence/`
+  `03-prescriptions/compliance-agent-design.md:196-201`) — but "present" = the files
+  exist, not that they load. So v1.0.7 is where the gap bites; activation must land
+  **before** the compliance pilot (and ideally before the self-documenting loop, to
+  drop the manual command-execution workaround used in v1.0.6).
+- **Fix (decide at design time):** register the plugin properly (`marketplace.json` +
+  install → commands **and** agents load, and the hooks migrate off the hand-wired
+  `settings.json`) — **or** the low-ceremony path (symlink/copy commands into
+  `.claude/commands/`, agents into `.claude/agents/`). Either way, correct the
+  `CLAUDE.md` "Skill catalog" section, which advertises these as available today.
+- **Scope:** dev-harness only, **no product code**. A small `chore/` branch, or folded
+  into the compliance-pilot branch as its first step.
+
 ### Pre-public hardening (grounding + tone; the old Sprint PV, minus the type scan)
 **Shared prerequisite (human, not a branch):** a clean-corpus rebuild from a real git
 **clone** (NOT a folder copy — it drags the gitignored `db/resume.sqlite`), then
@@ -731,6 +758,10 @@ Then: `chore/version-bump-v1.0.7`.
   the 3 open sub-decisions were resolved in the WS-4 design session.
 - PV-1 real labels exist; PV-2 calibrated groundedness live on `--suite real` + the
   dashboard + consumed by the tuning gate; PV-3 `tone` holds with `PROMPT_VERSION` bumped.
+- **Plugin commands + agents invocable** — the `.claude-plugin/` commands (`/wiki-*`,
+  `/eval`, …) and subagents load (registered, not just hooks), so the self-documenting
+  loop + compliance pilot run off real slash commands and `CLAUDE.md` "Skill catalog"
+  matches reality. (See §"Plugin activation" above.)
 - `ruff + mypy + pytest` green.
 
 ---
