@@ -47,6 +47,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0,<9.0",
+    "pytest-socket>=0.7,<1.0",  # PX-08 / G-2 network-egress falsifiability gate
     "ruff>=0.6,<1.0",
     "mypy>=1.10,<2.0",
     "pyyaml>=6.0,<7.0",
