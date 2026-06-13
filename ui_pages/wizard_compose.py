@@ -70,7 +70,11 @@ class WizardComposePage(BasePage):
 
     # --- titles (feat/compose-add-title) -----------------------------------
     def _first_card(self) -> Locator:
-        return self.page.locator(Compose.EXPERIENCE_CARD).first
+        # The β.6c positioning card also carries `.compose-experience-card`, so
+        # exclude it — `_first_card` is only ever about a real experience card.
+        return self.page.locator(
+            f"{Compose.EXPERIENCE_CARD}:not(.positioning-card)"
+        ).first
 
     def title_texts(self) -> list[str]:
         """Eligible title texts on the first experience card."""
@@ -102,6 +106,25 @@ class WizardComposePage(BasePage):
         return self._first_card().locator(
             f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=text
         ).locator(Compose.TITLE_RADIO).is_checked()
+
+    # --- per-role intros (B.4, Sprint 6.6) ---------------------------------
+    def role_intros_toggle(self) -> Locator:
+        return self.page.locator(Compose.ROLE_INTROS_TOGGLE)
+
+    def enable_role_intros(self) -> None:
+        """Turn on the application-level 'Add role intros' toggle and wait for
+        the per-role picker to surface + a role to default to its (stubbed)
+        recommendation — the deterministic 'applied' signal."""
+        self.role_intros_toggle().check()
+        self.page.wait_for_selector(
+            Compose.ROLE_INTRO_CHOSEN, state="visible", timeout=DEFAULT_TIMEOUT_MS
+        )
+
+    def chosen_intro_texts(self) -> list[str]:
+        """Text of every chosen role-intro variant (visual order)."""
+        return self.page.locator(
+            f"{Compose.ROLE_INTRO_CHOSEN} {Compose.ROW_TEXT}"
+        ).all_inner_texts()
 
     # --- first experience's visible bullet list ----------------------------
     def _bullet_list(self) -> Locator:

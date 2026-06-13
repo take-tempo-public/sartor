@@ -100,6 +100,14 @@ class Experience(Base):
     bullets: Mapped[list[Bullet]] = relationship(
         back_populates="experience", cascade="all, delete-orphan"
     )
+    # B.4 (Sprint 6.6) — per-role intro variants. An Experience has 0..N;
+    # recommend_experience_summaries picks one per JD; composition_overrides
+    # opts a role in (use_experience_summaries) + pins a variant per app.
+    # The single `summary` column above is now the legacy denormalized
+    # cache — alembic 0008 backfills it into one ExperienceSummaryItem row.
+    summary_items: Mapped[list[ExperienceSummaryItem]] = relationship(
+        back_populates="experience", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (Index("ix_experience_candidate_order", "candidate_id", "display_order"),)
 
@@ -337,6 +345,88 @@ class SummaryItemTag(Base):
     tag: Mapped[Tag] = relationship()
 
     __table_args__ = (Index("ix_summary_item_tag_tag", "tag_id"),)
+
+
+# ---------------------------------------------------------------------------
+# B.4 (Sprint 6.6) — Experience summary items (Corpus Item pattern for the
+# per-role intro paragraph). Parallel to SummaryItem but parented by
+# Experience instead of Candidate: the line a recruiter reads first under a
+# single job. Maps to JSON Resume work[].summary.
+#
+# Unlike SummaryItem (which auto-applies the recommendation), per-role intros
+# are OPT-IN: a role shows an intro only when the user turns on the Tailor-time
+# "Add role intros" toggle (composition_overrides.use_experience_summaries) and
+# a variant is chosen (composition_overrides.chosen_experience_summary_ids).
+# ---------------------------------------------------------------------------
+
+
+class ExperienceSummaryItem(Base):
+    """One variant of a single role's intro paragraph.
+
+    Mirrors SummaryItem's shape (text + has_outcome + is_active +
+    is_pending_review + tags) but parented by Experience instead of
+    Candidate. An Experience has 0..N variants;
+    recommend_experience_summaries picks one per JD (batch, keyed by
+    experience_id); composition_overrides opts the role in + pins a
+    variant per application.
+
+    Backfill semantics (alembic 0008): every Experience.summary that's
+    non-empty becomes one ExperienceSummaryItem row (source='imported')
+    at migration time. Experience.summary stays on the schema as a
+    denormalized cache for back-compat; new code queries these rows.
+    """
+
+    __tablename__ = "experience_summary_item"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    experience_id: Mapped[int] = mapped_column(
+        ForeignKey("experience.id", ondelete="CASCADE"), nullable=False
+    )
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    label: Mapped[str | None] = mapped_column(String)  # optional name like "platform-scale framing"
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    is_pending_review: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    source: Mapped[str] = mapped_column(String, nullable=False, default="manual")  # 'manual' | 'imported' | 'llm_proposed'
+    has_outcome: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+
+    experience: Mapped[Experience] = relationship(back_populates="summary_items")
+    tag_links: Mapped[list[ExperienceSummaryItemTag]] = relationship(
+        back_populates="summary_item", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "source IN ('manual', 'imported', 'llm_proposed')",
+            name="ck_experience_summary_item_source",
+        ),
+        Index(
+            "ix_experience_summary_item_active_pending_order",
+            "experience_id", "is_active", "is_pending_review", "display_order",
+        ),
+    )
+
+
+class ExperienceSummaryItemTag(Base):
+    """Tag join table for ExperienceSummaryItem. Mirrors SummaryItemTag
+    exactly so corpus-tag operations treat all corpus items identically."""
+
+    __tablename__ = "experience_summary_item_tag"
+
+    experience_summary_item_id: Mapped[int] = mapped_column(
+        ForeignKey("experience_summary_item.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_id: Mapped[int] = mapped_column(
+        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    )
+    confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
+
+    summary_item: Mapped[ExperienceSummaryItem] = relationship(back_populates="tag_links")
+    tag: Mapped[Tag] = relationship()
+
+    __table_args__ = (Index("ix_experience_summary_item_tag_tag", "tag_id"),)
 
 
 # ---------------------------------------------------------------------------

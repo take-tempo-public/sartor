@@ -9,6 +9,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — per-role intro as a multi-variant Corpus Item (`feat/experience-summary-item`, Sprint 6.6 B.4)
+
+The per-role intro paragraph — the line a recruiter reads first under each job —
+becomes a first-class, multi-variant Corpus Item, mirroring the candidate-level
+`SummaryItem` but scoped per-`Experience`. Maps to JSON Resume `work[].summary`.
+New migration `0008` + a new Haiku `recommend_experience_summaries`; **`PROMPT_VERSION`
+bumped to `2026-06-12.1`** (the generate prompt gained a conditional `<summary>`
+element + guide). No new dependency.
+
+- **Opt-in, not auto-applied.** Unlike `SummaryItem` (which auto-lands on the
+  recommendation → first-active → profile_text), a role intro appears **only when
+  the user turns on the Compose-step "Add role intros" toggle for that application
+  AND a variant is chosen** (`composition_overrides.use_experience_summaries` +
+  `chosen_experience_summary_ids`). Toggle off (the default) is a full no-op — the
+  generate prompt is **byte-identical**, so the analyze→generate cache is untouched
+  for anyone who doesn't opt in. The sentinel `0` records an explicitly-cleared role.
+- **WYSIWYG into the real résumé.** A chosen intro is injected into the frozen
+  `career_corpus` snapshot at generate time by `_apply_chosen_experience_summaries`
+  (mirroring `_apply_chosen_summary`), so it reaches **both** the LLM-tailored output
+  **and** the deterministic JSON-resume/PDF preview (`work[].summary`). The legacy
+  single `Experience.summary` column is now a denormalized cache — migration `0008`
+  backfills it into one `imported` variant; it is no longer auto-emitted.
+- **Model + migration.** New `ExperienceSummaryItem` (+ `ExperienceSummaryItemTag`)
+  tables (FK → `experience.id`, CASCADE), mirroring `SummaryItem`. Idempotent Alembic
+  `0008` with a backfill from non-empty `Experience.summary`.
+- **Routes.** Experience-scoped CRUD (`GET`/`POST /api/experiences/<id>/summaries`,
+  `PUT`/`DELETE /api/experience-summaries/<id>`) with the bullet routes' ownership
+  pattern (experience → candidate → `_safe_username`); a batched
+  `POST /api/applications/<id>/recommend-experience-summaries` (one Haiku call keyed
+  by `experience_id`, mirroring `recommend_application_summary`).
+- **UI.** A per-role intro picker inside each Compose experience card (sits between
+  the title and the bullets); the application-level **Add role intros** toggle (seeds
+  each role from the AI recommendation on enable); a per-experience intro-variants
+  editor in the Career-corpus tab (add / rename / retire). Composition GET surfaces a
+  per-experience `summary` block + the toggle state; the per-role picks ride the
+  canonical composition autosave so bullet/title saves never clobber them.
+- **Tests.** New `tests/test_experience_summary_item_routes.py` (CRUD + ownership +
+  soft-delete + real migration backfill), `tests/test_recommend_experience_summaries.py`
+  (batch short-circuit + dedup + route), `tests/test_experience_summary_composition.py`
+  (GET/POST + generate-path injection + a **byte-identity** guard on the default
+  prompt), an opt-in mapping suite in `tests/test_corpus_to_json_resume.py`, and a UX
+  regression `tests/ux/regression/test_20260612_experience_summary_item.py`. New
+  `ui_pages` selectors + Corpus/Compose page-object methods; the UX stub gains
+  `fake_recommend_experience_summaries`.
+- **Fixed (in-scope, user-authorized): Compose save no longer clobbers sibling
+  overrides.** `_togglePositioningPin` (the candidate positioning-summary pin) used
+  to hand-gather only bullets, so pinning a summary silently wiped `bullet_order` +
+  `pinned_title_ids` (and the bullet autosave wiped `pinned_summary_id`). All save
+  paths now route through the canonical `_collectCompositionState()`, so every
+  override family — bullets, order, title pins, **and** the new role intros —
+  survives any single save. Regression-locked (`test_positioning_pin_preserves_title_pin`).
+  Also fixed the `fake_recommend_summaries` UX stub's shape (it never set
+  `has_recommendation`, looping the positioning card's auto-fire once 2+ candidate
+  variants existed). ruff ✓ · mypy ✓ (149 files) · pytest **1127/1127** incl. `-m ux`.
+
 ### Added / Changed — corpus-first IA + smart landing (`feat/corpus-first-tab-onboarding`, Sprint 6.4 #16 + #1 + KW1)
 
 Front-end only — SPA tab routing over one existing read endpoint

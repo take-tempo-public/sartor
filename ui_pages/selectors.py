@@ -63,6 +63,10 @@ class Corpus:
     # Sprint 6.4 (#16/#1) — review-finished hand-off CTA into the Tailor tab,
     # shown in the banner's ready state (non-empty corpus + 0 pending).
     START_TAILORING_BUTTON = "#btnStartTailoring"
+    # B.4 (Sprint 6.6) — per-role intro variants editor inside an expanded
+    # experience card (injected by _renderExperienceSummarySection).
+    EXP_SUMMARY_SECTION = ".exp-summary-variants-section"
+    ADD_INTRO_BUTTON_NAME = "Add intro"
 
 
 class Wizard:
@@ -254,3 +258,11 @@ class Compose:
     # openFormModal field input + submit (shared add-title / add-bullet modal).
     FORM_MODAL_TITLE_INPUT = "#formModal_title"
     FORM_MODAL_SUBMIT = "#formModalSubmit"
+    # B.4 (Sprint 6.6) — "Add role intros" opt-in toggle + the per-role intro
+    # picker rendered inside each compose card.
+    ROLE_INTROS_TOGGLE = "#composeRoleIntrosToggle"
+    ROLE_INTRO = ".compose-role-intro"
+    ROLE_INTRO_VARIANT = ".role-intro-variant"
+    ROLE_INTRO_CHOSEN = ".role-intro-variant.role-intro-chosen"
+    # add-intro modal text field (openFormModal id = #formModal_<fieldname>).
+    FORM_MODAL_TEXT_INPUT = "#formModal_text"

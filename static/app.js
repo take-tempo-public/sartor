@@ -2690,6 +2690,198 @@ async function openSummaryVariantAdd() {
 }
 
 
+// ============================================================
+// B.4 (Sprint 6.6) — per-role intro variants editor (Career corpus)
+// ============================================================
+// Mirrors the candidate summary-variant editor above, scoped to one
+// Experience. Variants are managed against /api/experiences/<id>/summaries
+// (GET/POST) + /api/experience-summaries/<id> (PUT/DELETE). In Tailor →
+// Compose, turning on "Add role intros" lets the user pick one per JD.
+
+function _renderExperienceSummarySection(expId) {
+  const section = _el('div', { className: 'exp-summary-variants-section' });
+  section.dataset.expId = String(expId);
+  const header = _el('div', { className: 'corpus-section-header' });
+  header.appendChild(_el('div', {
+    className: 'corpus-section-title', textContent: 'Role intro variants',
+  }));
+  const addBtn = _el('button', {
+    className: 'corpus-action-btn', textContent: '+ Add intro',
+  });
+  addBtn.type = 'button';
+  addBtn.onclick = () => openExperienceSummaryAdd(expId);
+  header.appendChild(addBtn);
+  section.appendChild(header);
+  section.appendChild(_el('div', {
+    className: 'edit-hint', id: `expSummaryHint-${expId}`, style: 'margin-bottom:8px',
+  }));
+  section.appendChild(_el('div', {
+    className: 'exp-summary-variants-list', id: `expSummaryList-${expId}`,
+  }));
+  refreshExperienceSummaries(expId);  // async populate
+  return section;
+}
+
+async function refreshExperienceSummaries(expId) {
+  const listEl = document.getElementById(`expSummaryList-${expId}`);
+  const hint = document.getElementById(`expSummaryHint-${expId}`);
+  if (!listEl) return;
+  let res;
+  try {
+    res = await fetch(`/api/experiences/${expId}/summaries`);
+  } catch {
+    return;
+  }
+  if (!res.ok) return;
+  const body = await res.json();
+  const variants = body.summaries || [];
+  _clearChildren(listEl);
+  if (hint) {
+    hint.textContent = variants.length === 0
+      ? 'No role intros yet. Click + Add intro to create a per-role summary '
+        + 'line. In Tailor → Compose, turn on “Add role intros” to use one.'
+      : 'Per-role intro lines. The Compose step recommends the strongest fit '
+        + 'per JD when you turn on “Add role intros”.';
+  }
+  variants.forEach(v => listEl.appendChild(_renderExperienceSummaryRow(expId, v)));
+}
+
+function _renderExperienceSummaryRow(expId, v) {
+  const row = _el('div', { className: 'summary-variant-row' });
+  if (v.label) {
+    const labelEl = _el('div', {
+      className: 'positioning-label', textContent: v.label,
+      title: 'Click to rename this variant',
+    });
+    labelEl.style.cursor = 'pointer';
+    labelEl.setAttribute('role', 'button');
+    labelEl.setAttribute('tabindex', '0');
+    labelEl.setAttribute('aria-label', `Rename intro ${v.label}`);
+    labelEl.onclick = () => _editExperienceSummaryLabel(expId, v.id, v.label);
+    labelEl.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        _editExperienceSummaryLabel(expId, v.id, v.label);
+      }
+    };
+    row.appendChild(labelEl);
+  }
+  const ta = _el('textarea', { className: 'summary-variant-text' });
+  ta.value = v.text;
+  ta.rows = 3;
+  ta.onblur = () => _saveExperienceSummaryText(expId, v.id, ta.value, v.text);
+  row.appendChild(ta);
+
+  const actions = _el('div', { className: 'summary-variant-actions' });
+  const labelBtn = _el('button', {
+    className: 'corpus-action-btn', textContent: v.label ? 'Rename' : '+ Label',
+  });
+  labelBtn.onclick = () => _editExperienceSummaryLabel(expId, v.id, v.label);
+  actions.appendChild(labelBtn);
+  const delBtn = _el('button', {
+    className: 'corpus-action-btn delete', textContent: 'Retire',
+    title: 'Soft-retire this intro. Past applications that used it still '
+      + 'reference it; future Compose steps will skip it.',
+  });
+  delBtn.onclick = () => _deleteExperienceSummary(expId, v.id);
+  actions.appendChild(delBtn);
+  row.appendChild(actions);
+  return row;
+}
+
+async function _saveExperienceSummaryText(expId, id, newText, oldText) {
+  const trimmed = (newText || '').trim();
+  if (!trimmed) {
+    _toast('Intro text cannot be empty.', true);
+    refreshExperienceSummaries(expId);
+    return;
+  }
+  if (trimmed === (oldText || '').trim()) return;
+  try {
+    const res = await fetch(`/api/experience-summaries/${id}`, {
+      method: 'PUT', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text: trimmed }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      _toast(data.error || 'Could not save intro.', true);
+      refreshExperienceSummaries(expId);
+    }
+  } catch {
+    _toast('Network error saving intro.', true);
+    refreshExperienceSummaries(expId);
+  }
+}
+
+async function _editExperienceSummaryLabel(expId, id, currentLabel) {
+  const values = await openFormModal({
+    title: 'Label role intro',
+    subtitle: 'A short tag so you can tell intros apart in the picker.',
+    submitLabel: 'Save label',
+    fields: [{
+      name: 'label', label: 'Label', type: 'text',
+      defaultValue: currentLabel || '',
+      placeholder: 'e.g. "platform-scale framing"',
+    }],
+  });
+  if (!values) return;
+  const trimmed = (values.label || '').trim();
+  try {
+    const res = await fetch(`/api/experience-summaries/${id}`, {
+      method: 'PUT', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ label: trimmed || null }),
+    });
+    if (res.ok) refreshExperienceSummaries(expId);
+    else _toast('Could not save label.', true);
+  } catch {
+    _toast('Network error.', true);
+  }
+}
+
+async function _deleteExperienceSummary(expId, id) {
+  if (!confirm('Retire this role intro?\n\nPast applications that used it '
+               + 'still reference it; future Compose steps will skip it. '
+               + 'You can\'t undo from here.')) return;
+  try {
+    const res = await fetch(`/api/experience-summaries/${id}`, { method: 'DELETE' });
+    if (res.ok) refreshExperienceSummaries(expId);
+    else _toast('Could not retire intro.', true);
+  } catch {
+    _toast('Network error.', true);
+  }
+}
+
+async function openExperienceSummaryAdd(expId) {
+  const values = await openFormModal({
+    title: 'Add role intro',
+    subtitle: 'A reusable one-line intro for this role the Compose step can pick from.',
+    submitLabel: 'Add intro',
+    fields: [
+      { name: 'text', label: 'Intro text', type: 'textarea', required: true,
+        placeholder: 'One or two sentences framing this role — e.g. what you owned and the scale.' },
+      { name: 'label', label: 'Label (optional)', type: 'text',
+        placeholder: 'e.g. "platform-scale framing"' },
+    ],
+  });
+  if (!values) return;
+  const trimmed = (values.text || '').trim();
+  if (!trimmed) { _toast('Intro text cannot be empty.', true); return; }
+  try {
+    const res = await fetch(`/api/experiences/${expId}/summaries`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text: trimmed, label: (values.label || '').trim() || null }),
+    });
+    if (res.ok) refreshExperienceSummaries(expId);
+    else {
+      const data = await res.json().catch(() => ({}));
+      _toast(data.error || 'Could not add intro.', true);
+    }
+  } catch {
+    _toast('Network error.', true);
+  }
+}
+
+
 function _renderCorpusList() {
   // Wrapped in try/catch with explicit element guards: an earlier
   // screenshot-pass observed _corpusExperiences populated (length 3)
@@ -2802,6 +2994,9 @@ function _renderCorpusDetail(body, exp) {
   body.appendChild(btnRow);
   body.appendChild(_renderTitleSection(expId, exp.titles || []));
   body.appendChild(_renderBulletSection(expId, exp.bullets || []));
+  // B.4 — per-role intro variants editor (mirrors the candidate summary-variant
+  // editor, scoped to this experience). Loads asynchronously into its list.
+  body.appendChild(_renderExperienceSummarySection(expId));
 }
 
 function _renderExperienceFieldGroup(expId, exp) {
@@ -4355,6 +4550,8 @@ function _wizardAdvanceTo(step) {
 // ===============================================================
 
 let _composeApplicationId = null;
+// B.4 — whether the "Add role intros" toggle is on for the loaded application.
+let _composeUseRoleIntros = false;
 
 async function loadComposition() {
   const list = document.getElementById('composeList');
@@ -4396,7 +4593,21 @@ async function loadComposition() {
     _setLoadingPlaceholder(list, 'No corpus experiences to rank.');
     return;
   }
+  // B.4 — "Add role intros" application-level toggle + per-role pickers inside
+  // each experience card. The toggle is the explicit opt-in: when off (default)
+  // no role intro reaches the résumé and the generate prompt is byte-identical.
+  _composeUseRoleIntros = !!data.use_experience_summaries;
+  const anyRoleVariants = (data.experiences || []).some(
+    e => ((e.summary || {}).variants || []).length > 0);
+  if (anyRoleVariants) list.appendChild(_renderRoleIntrosToggle(_composeUseRoleIntros));
   data.experiences.forEach(exp => list.appendChild(_renderComposeCard(exp)));
+  if (anyRoleVariants) {
+    // Show/hide the per-role pickers + default each opted-in role to the AI's
+    // recommendation. Then opportunistically fire the per-role recommend (one
+    // Haiku call) only when opted in and a role still lacks one.
+    _applyRoleIntros(_composeUseRoleIntros);
+    if (_composeUseRoleIntros) _maybeFireRecommendExperienceSummaries();
+  }
   // Compose-step inline preview was removed in the 2026-05-25 punch list
   // — it competed for attention with the bullet-curation work and didn't
   // pay for its real estate. The preview lives in Step 4 (Template) and
@@ -4549,35 +4760,242 @@ function _renderPositioningVariant(v, chosenId) {
 // re-render.
 async function _togglePositioningPin(summaryId, alreadyPinned) {
   if (_composeApplicationId == null || !lastContextPath) return;
-  // Gather the existing pinned/excluded/added bullet state so we
-  // don't clobber it when writing this pin. The server merges with
-  // the full body it receives, so we must round-trip whatever's
-  // already on the row.
-  const list = document.getElementById('composeList');
-  const pinnedBullets = [], excludedBullets = [], addedBullets = [];
-  list.querySelectorAll('.compose-row[data-bullet-id]').forEach(row => {
-    const id = parseInt(row.dataset.bulletId, 10);
-    if (row.classList.contains('pinned'))   pinnedBullets.push(id);
-    if (row.classList.contains('excluded')) excludedBullets.push(id);
-    if (row.dataset.added === '1')          addedBullets.push(id);
-  });
-
-  const body = {
-    context_path: lastContextPath,
-    pinned: pinnedBullets,
-    excluded: excludedBullets,
-    added: addedBullets,
-    pinned_summary_id: alreadyPinned ? null : summaryId,
-  };
+  // Collect the FULL composition state (bullets + bullet_order + title pins +
+  // role intros) via the canonical gatherer, then set the summary pin. The
+  // POST route rebuilds composition_overrides WHOLESALE, so a partial body
+  // silently drops every field it omits — this path used to hand-gather only
+  // bullets, which clobbered bullet_order + pinned_title_ids on every summary
+  // pin. Routing through _collectCompositionState() fixes that and keeps all
+  // override families (incl. B.4 role intros) intact on one save.
+  const state = _collectCompositionState();
+  state.pinned_summary_id = alreadyPinned ? null : summaryId;
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/composition`,
       { method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body) },
+        body: JSON.stringify({ context_path: lastContextPath, ...state }) },
     );
     if (res.ok) loadComposition();
   } catch {
     // Non-blocking
+  }
+}
+
+// ============================================================
+// B.4 (Sprint 6.6) — per-role intro picker (Compose step)
+// ============================================================
+
+// "Add role intros" application-level toggle. Off by default (opt-in): nothing
+// reaches the résumé until the user turns it on. On enable, each role defaults
+// to the AI's recommended intro; the user can change or clear per role.
+function _renderRoleIntrosToggle(checked) {
+  const wrap = _el('div', { className: 'compose-role-intros-toggle' });
+  const label = _el('label', { className: 'compose-role-intros-label' });
+  const cb = _el('input', { type: 'checkbox', id: 'composeRoleIntrosToggle' });
+  cb.checked = !!checked;
+  cb.onchange = () => _onRoleIntrosToggle(cb.checked);
+  label.appendChild(cb);
+  label.appendChild(_el('span', {
+    textContent: ' Add role intros — a per-role summary line tailored to this job',
+  }));
+  wrap.appendChild(label);
+  wrap.appendChild(_el('div', {
+    className: 'edit-hint',
+    textContent: 'Off by default. When on, each role gets the AI’s suggested '
+      + 'intro; click another variant to change it, or the chosen one to clear it.',
+  }));
+  return wrap;
+}
+
+async function _onRoleIntrosToggle(checked) {
+  _composeUseRoleIntros = checked;
+  _applyRoleIntros(checked);
+  // Persist immediately so a subsequent recommend reload reads the toggle.
+  try {
+    await _postComposition(_collectCompositionState());
+  } catch (e) {
+    _toast('Autosave failed: ' + e.message, true);
+  }
+  if (checked) _maybeFireRecommendExperienceSummaries();
+}
+
+// Show/hide each role's picker for the current toggle state. When on, default
+// any undecided role to its recommendation; then re-mark the chosen row.
+function _applyRoleIntros(checked) {
+  document.querySelectorAll('#composeList .compose-role-intro[data-exp-id]').forEach(sec => {
+    sec.classList.toggle('hidden', !checked);
+    if (checked
+        && (sec.dataset.chosenSummaryId === '' || sec.dataset.chosenSummaryId == null)
+        && sec.dataset.recommendedId) {
+      sec.dataset.chosenSummaryId = sec.dataset.recommendedId;
+    }
+    _markRoleIntroChosen(sec);
+  });
+}
+
+function _markRoleIntroChosen(sec) {
+  const raw = sec.dataset.chosenSummaryId;
+  const chosen = (raw !== '' && raw != null) ? Number(raw) : null;
+  sec.querySelectorAll('.role-intro-variant').forEach(row => {
+    const isChosen = chosen != null && chosen > 0 && Number(row.dataset.summaryId) === chosen;
+    row.classList.toggle('role-intro-chosen', isChosen);
+    _setChosenChip(row, isChosen);
+  });
+}
+
+function _setChosenChip(row, isChosen) {
+  const meta = row.querySelector('.row-meta');
+  if (!meta) return;
+  const existing = [...meta.querySelectorAll('.corpus-row-flag')]
+    .find(c => c.textContent === 'Chosen');
+  if (isChosen && !existing) {
+    meta.appendChild(_el('span', {
+      className: 'corpus-row-flag', textContent: 'Chosen',
+      style: 'background:var(--brand-hi);color:var(--bg-0);',
+    }));
+  } else if (!isChosen && existing) {
+    existing.remove();
+  }
+}
+
+// Per-role intro picker rendered inside each compose card (hidden unless the
+// toggle is on). dataset.recommendedId / chosenSummaryId drive defaulting +
+// persistence; show/hide + chosen-marking happen in _applyRoleIntros.
+function _renderComposeRoleIntro(exp) {
+  const summary = exp.summary || {};
+  const variants = summary.variants || [];
+  const section = _el('div', { className: 'compose-role-intro hidden' });
+  section.dataset.expId = String(exp.id);
+  if (summary.recommended_id != null) {
+    section.dataset.recommendedId = String(summary.recommended_id);
+  }
+  section.dataset.chosenSummaryId =
+    (summary.chosen_id != null) ? String(summary.chosen_id) : '';
+
+  const header = _el('div', { className: 'compose-exp-section-title' });
+  header.appendChild(_el('span', { textContent: 'Role intro' }));
+  const addBtn = _el('button', {
+    className: 'corpus-action-btn', textContent: '+ Add intro',
+  });
+  addBtn.type = 'button';
+  addBtn.dataset.expId = String(exp.id);
+  addBtn.onclick = () => _addComposeRoleIntro(exp.id);
+  header.appendChild(addBtn);
+  section.appendChild(header);
+
+  if (!variants.length) {
+    section.appendChild(_el('div', {
+      className: 'compose-empty-experience',
+      textContent: 'No intro variants yet — add one to use a per-role summary line.',
+    }));
+    return section;
+  }
+
+  const variantsWrap = _el('div', { className: 'compose-role-intro-variants' });
+  variants.forEach(v => variantsWrap.appendChild(_renderRoleIntroVariant(v, exp.id)));
+  section.appendChild(variantsWrap);
+  return section;
+}
+
+function _renderRoleIntroVariant(v, expId) {
+  const row = _el('div', { className: 'compose-row role-intro-variant' });
+  row.dataset.summaryId = String(v.id);
+  const text = _el('div', { className: 'row-text' });
+  if (v.label) {
+    text.appendChild(_el('div', { className: 'positioning-label', textContent: v.label }));
+  }
+  text.appendChild(_el('div', { className: 'positioning-text', textContent: v.text }));
+  row.appendChild(text);
+
+  const meta = _el('div', { className: 'row-meta' });
+  if (v.recommended) {
+    const chip = _el('span', {
+      className: 'corpus-row-flag', textContent: 'Recommended',
+      style: 'background:var(--brand);color:var(--bg-0);',
+    });
+    if (v.rationale) chip.title = v.rationale;
+    meta.appendChild(chip);
+  }
+  if (v.has_outcome) {
+    meta.appendChild(_el('span', {
+      className: 'corpus-row-flag outcome', textContent: 'Outcome',
+    }));
+  }
+  row.appendChild(meta);
+
+  row.style.cursor = 'pointer';
+  row.onclick = () => _toggleRoleIntroChoice(expId, v.id);
+  return row;
+}
+
+// Choose this variant for the role, or clear it (a second click on the chosen
+// one) — clearing persists as the sentinel 0 so it isn't re-defaulted on reload.
+function _toggleRoleIntroChoice(expId, summaryId) {
+  const sec = document.querySelector(
+    `#composeList .compose-role-intro[data-exp-id="${expId}"]`);
+  if (!sec) return;
+  const raw = sec.dataset.chosenSummaryId;
+  const cur = (raw !== '' && raw != null) ? Number(raw) : null;
+  sec.dataset.chosenSummaryId = (cur === summaryId) ? '0' : String(summaryId);
+  _markRoleIntroChosen(sec);
+  _scheduleCompositionSave();
+}
+
+// Fire the per-role recommend (one batched Haiku call) only when opted in and a
+// role with 2+ variants still lacks a recommendation. Reloads composition on
+// success so the recommendation chips + defaults surface.
+function _maybeFireRecommendExperienceSummaries() {
+  let needs = false;
+  document.querySelectorAll('#composeList .compose-role-intro[data-exp-id]').forEach(sec => {
+    const n = sec.querySelectorAll('.role-intro-variant').length;
+    if (n > 1 && !sec.dataset.recommendedId) needs = true;
+  });
+  if (needs) _fireRecommendExperienceSummaries();
+}
+
+async function _fireRecommendExperienceSummaries() {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/recommend-experience-summaries`,
+      { method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ context_path: lastContextPath }) },
+    );
+    if (res.ok) loadComposition();
+  } catch {
+    // Non-blocking — Compose still works without the recommendation.
+  }
+}
+
+// Compose-side "+ Add intro": add a variant to this role then reload so it
+// appears in the picker. Full variant management lives in the Career corpus.
+async function _addComposeRoleIntro(expId) {
+  const values = await openFormModal({
+    title: 'Add role intro',
+    subtitle: 'A one-line intro for this role you can use on a tailored résumé.',
+    submitLabel: 'Add intro',
+    fields: [
+      { name: 'text', label: 'Intro text', type: 'textarea', required: true,
+        placeholder: 'One or two sentences framing this role for the target job.' },
+      { name: 'label', label: 'Label (optional)', type: 'text',
+        placeholder: 'e.g. "platform-scale framing"' },
+    ],
+  });
+  if (!values) return;
+  const trimmed = (values.text || '').trim();
+  if (!trimmed) { _toast('Intro text cannot be empty.', true); return; }
+  try {
+    const res = await fetch(`/api/experiences/${expId}/summaries`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text: trimmed, label: (values.label || '').trim() || null }),
+    });
+    if (res.ok) loadComposition();
+    else {
+      const data = await res.json().catch(() => ({}));
+      _toast(data.error || 'Could not add intro.', true);
+    }
+  } catch {
+    _toast('Network error.', true);
   }
 }
 
@@ -4663,6 +5081,11 @@ function _renderComposeCard(exp) {
     }));
   }
   card.appendChild(titleList);
+
+  // B.4 — per-role intro picker. Hidden unless the "Add role intros" toggle is
+  // on. Sits between the title and the bullets (résumé order: heading → intro
+  // → bullets).
+  card.appendChild(_renderComposeRoleIntro(exp));
 
   // Bullets split into visible (recommended/pinned/added) + drawer (rest).
   const visible = (exp.bullets || []).filter(
@@ -5048,7 +5471,30 @@ function _collectCompositionState() {
       pinned_title_ids[expId] = Number(checked.value);
     }
   });
-  return { pinned, excluded, added, bullet_order, pinned_title_ids };
+  return {
+    pinned, excluded, added, bullet_order, pinned_title_ids,
+    // B.4 — per-role intro toggle + picks ride along on every save so a bullet/
+    // title save never clobbers them (the POST rebuilds overrides wholesale).
+    ..._collectExperienceSummaryState(),
+  };
+}
+
+// B.4 — snapshot the "Add role intros" toggle + each role's chosen intro from
+// the DOM. data-chosenSummaryId holds a positive id (use that variant), '0'
+// (explicitly cleared — no intro for this role), or '' (undecided). Only a
+// non-empty value is sent, so an undecided role stays out of the overrides.
+function _collectExperienceSummaryState() {
+  const toggle = document.getElementById('composeRoleIntrosToggle');
+  const use_experience_summaries = !!(toggle && toggle.checked);
+  const chosen_experience_summary_ids = {};
+  document.querySelectorAll('#composeList .compose-role-intro[data-exp-id]').forEach(sec => {
+    const expId = sec.dataset.expId;
+    const raw = sec.dataset.chosenSummaryId;
+    if (expId != null && raw !== '' && raw != null) {
+      chosen_experience_summary_ids[expId] = Number(raw);
+    }
+  });
+  return { use_experience_summaries, chosen_experience_summary_ids };
 }
 
 async function _postComposition(state) {

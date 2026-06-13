@@ -320,6 +320,124 @@ class TestWorkHistory:
 
 
 # -------------------------------------------------------------------
+# B.4 (Sprint 6.6) — per-role intro (ExperienceSummaryItem) → work[].summary.
+# OPT-IN: emitted only when composition_overrides.use_experience_summaries is on
+# AND the role has an explicit chosen_experience_summary_ids pick. No fallback
+# to the legacy Experience.summary column.
+# -------------------------------------------------------------------
+
+
+def _seed_experience_summary(session, experience_id: int, *, text: str,
+                             display_order: int = 0, is_active: int = 1) -> int:
+    from db.models import ExperienceSummaryItem
+    si = ExperienceSummaryItem(
+        experience_id=experience_id, text=text,
+        display_order=display_order, is_active=is_active,
+    )
+    session.add(si)
+    session.flush()
+    session.commit()
+    return si.id
+
+
+def _set_legacy_summary(session, experience_id: int, text: str) -> None:
+    from db.models import Experience
+    exp = session.query(Experience).filter_by(id=experience_id).first()
+    exp.summary = text
+    session.commit()
+
+
+class TestExperienceSummary:
+    def test_toggle_off_emits_no_summary(self, session, tmp_path):
+        """Toggle off (default) → no work[].summary even with a chosen pick AND
+        a legacy Experience.summary set (the legacy field is never auto-emitted)."""
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, bullets=("Shipped X.",))
+        sid = _seed_experience_summary(session, eid, text="Owned platform scale.")
+        _set_legacy_summary(session, eid, "Legacy intro that must not leak.")
+        # Picks present but toggle absent → opt-in gate closed.
+        ctx = _ctx_file(tmp_path, composition_overrides={
+            "chosen_experience_summary_ids": {str(eid): sid},
+        })
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert "summary" not in doc["work"][0]
+
+    def test_toggle_on_with_pick_emits_chosen_text(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, bullets=("Shipped X.",))
+        _seed_experience_summary(session, eid, text="First framing.", display_order=0)
+        sid2 = _seed_experience_summary(session, eid, text="Chosen framing.", display_order=1)
+        ctx = _ctx_file(tmp_path, composition_overrides={
+            "use_experience_summaries": True,
+            "chosen_experience_summary_ids": {str(eid): sid2},
+        })
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert doc["work"][0]["summary"] == "Chosen framing."
+
+    def test_toggle_on_no_pick_for_role_emits_nothing(self, session, tmp_path):
+        """Opt-in is per-role: toggle on but no pick for this role → no summary
+        (no auto-apply of a recommendation or first-active variant)."""
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, bullets=("Shipped X.",))
+        _seed_experience_summary(session, eid, text="A variant.")
+        ctx = _ctx_file(tmp_path, composition_overrides={
+            "use_experience_summaries": True,
+            "chosen_experience_summary_ids": {},
+        })
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert "summary" not in doc["work"][0]
+
+    def test_cleared_sentinel_zero_emits_nothing(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, bullets=("Shipped X.",))
+        _seed_experience_summary(session, eid, text="A variant.")
+        ctx = _ctx_file(tmp_path, composition_overrides={
+            "use_experience_summaries": True,
+            "chosen_experience_summary_ids": {str(eid): 0},  # explicitly cleared
+        })
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert "summary" not in doc["work"][0]
+
+    def test_inactive_or_foreign_pick_skipped(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, bullets=("Shipped X.",))
+        other_eid, _ = _seed_experience(session, cid, company="Other",
+                                        start_date="2019-01", end_date="2020-01",
+                                        bullets=("Y.",))
+        retired = _seed_experience_summary(session, eid, text="Retired.", is_active=0)
+        # A variant that belongs to eid, mis-assigned as other_eid's pick.
+        foreign = _seed_experience_summary(session, eid, text="Belongs to eid.")
+        # eid's pick is a retired (own) variant; other_eid's pick is a variant
+        # that belongs to a DIFFERENT role — both must resolve to nothing.
+        ctx = _ctx_file(tmp_path, composition_overrides={
+            "use_experience_summaries": True,
+            "chosen_experience_summary_ids": {str(eid): retired, str(other_eid): foreign},
+        })
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        for w in doc["work"]:
+            assert "summary" not in w
+
+    def test_meta_callback_records_opt_in_state(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, bullets=("Shipped X.",))
+        sid = _seed_experience_summary(session, eid, text="Chosen framing.")
+        ctx = _ctx_file(tmp_path, composition_overrides={
+            "use_experience_summaries": True,
+            "chosen_experience_summary_ids": {str(eid): sid},
+        })
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        cb = doc["meta"]["callback"]
+        assert cb["use_experience_summaries"] is True
+        assert cb["chosen_experience_summary_ids"] == {str(eid): sid}
+
+
+# -------------------------------------------------------------------
 # Meta / callback envelope
 # -------------------------------------------------------------------
 

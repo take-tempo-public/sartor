@@ -234,6 +234,10 @@ class RecommendSummariesResponse(_LLMResponse):
     recommendation: Any
 
 
+class RecommendExperienceSummariesResponse(_LLMResponse):
+    recommendations: Any
+
+
 class GenerateCorpusResponse(GenerateResponse):
     selected_bullets: Any
     proposed_new_bullets: Any
@@ -265,7 +269,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-06-11.1"
+PROMPT_VERSION = "2026-06-12.1"
 
 # --- Prompt-override primitive (eval tuning loop, v1.0.4) --------------------
 # Lets an eval run inject a CANDIDATE system prompt without editing the persona
@@ -776,6 +780,14 @@ def _corpus_block(
         if exp.get("location"):
             attrs += f' location="{_attr_escape(exp["location"])}"'
         parts.append(f"  <experience {attrs}>")
+        # B.4 (Sprint 6.6) — the user's chosen per-role intro for THIS
+        # application, injected by _apply_chosen_experience_summaries before
+        # generate. Absent on the frozen analyze-time snapshot and for roles the
+        # user didn't opt in (the "Add role intros" toggle off), so the default
+        # generate prompt stays byte-identical → analyze→generate cache preserved.
+        role_summary = (exp.get("summary") or "").strip()
+        if role_summary:
+            parts.append(f"    <summary>{_attr_escape(role_summary)}</summary>")
         for t in exp.get("eligible_titles", []) or []:
             official = "true" if t.get("is_official") else "false"
             # feat/compose-add-title — the user pinned this title for this JD;
@@ -1855,11 +1867,31 @@ def _build_generate_prompt(
     corpus_mode_block = ""
     extra_output_fields = ""
     if in_corpus_mode:
-        corpus_mode_block = """<corpus_mode>
+        # B.4 (Sprint 6.6) — describe the optional per-role <summary> element
+        # ONLY when a role actually carries a chosen intro (injected by
+        # _apply_chosen_experience_summaries). Conditional so a corpus with no
+        # opted-in role intros yields a byte-identical generate prompt → the
+        # analyze→generate cache is never disturbed for non-users.
+        _has_role_summary = any(
+            (e.get("summary") or "").strip()
+            for e in (context_set.get("career_corpus") or [])
+        )
+        summary_clause = (
+            "\n- An optional <summary> element — the candidate's CHOSEN intro line "
+            "for THIS role, verbatim ground truth. When present, open the role with it "
+            "as a one-line intro directly under the role heading (before its bullets), "
+            "reproducing the text faithfully. A role without a <summary> has no intro "
+            "line — do NOT invent one."
+        ) if _has_role_summary else ""
+        summary_grounding = (
+            " A <summary> element's text is verbatim ground truth like a <bullet> — "
+            "reproduce it faithfully as the role's intro; never reword or invent it."
+        ) if _has_role_summary else ""
+        corpus_mode_block = f"""<corpus_mode>
 The candidate's experience pool is the <career_corpus> block above (not a free-text <resume>). Each <experience> carries:
 - A `dates` attribute — IMMUTABLE ground truth. Whichever title you use for an experience (an <eligible_title> or one you propose), its heading MUST reproduce that experience's exact date range. Never merge, shift, or harmonize ranges across experiences — even when their titles look similar, even when you reorder experiences for relevance, and even on a regeneration pass.
 - One or more <eligible_title> elements — the candidate has approved these framings. Pick the one that best matches THIS JD's positioning. If an <eligible_title> is marked `pinned="true"`, the candidate has CHOSEN it for this application: you MUST set that title's id as the experience's `chosen_title_id` and reproduce its exact text as the experience's heading title (still honoring the immutable `dates`) — do not substitute, reword, or propose an alternative for that experience.
-- One or more <bullet id="bN" ...> elements — VERBATIM text from the candidate's resumes. Treat each bullet as immutable ground truth: select, reorder, and reframe SURROUNDING context, but the bullet text itself MUST appear verbatim in your resume_content.
+- One or more <bullet id="bN" ...> elements — VERBATIM text from the candidate's resumes. Treat each bullet as immutable ground truth: select, reorder, and reframe SURROUNDING context, but the bullet text itself MUST appear verbatim in your resume_content.{summary_clause}
 
 When an essential JD requirement is not covered by any existing bullet, you MAY propose a new bullet in `proposed_new_bullets` (see output schema below). The user reviews proposals before they join the canonical corpus.
 
@@ -1868,7 +1900,7 @@ When none of an experience's <eligible_title> elements fits the JD's framing, yo
 A <bullet> marked `pinned="true"` was explicitly pinned by the user for this application. You MUST include every pinned bullet's id in `selected_bullets` (the user has decided it belongs). Bullets the user excluded are already removed from the corpus above.
 
 GROUNDING for corpus mode:
-  Every bullet you emit in resume_content must EITHER (a) reproduce a <bullet> text verbatim from the corpus (just record its `id` in selected_bullets), OR (b) be listed in proposed_new_bullets so the user knows it's a new claim. No other bullets are permitted. The legacy GROUNDING CHECK below still governs cover_letter_content and any reframing language between bullets.
+  Every bullet you emit in resume_content must EITHER (a) reproduce a <bullet> text verbatim from the corpus (just record its `id` in selected_bullets), OR (b) be listed in proposed_new_bullets so the user knows it's a new claim. No other bullets are permitted.{summary_grounding} The legacy GROUNDING CHECK below still governs cover_letter_content and any reframing language between bullets.
 </corpus_mode>
 
 """
@@ -2790,6 +2822,257 @@ def _dedup_summary_recommendations(result: dict, items: list[dict]) -> None:
 
 
 # ---------------------------------------------------------------------------
+# B.4 (Sprint 6.6) — recommend the best per-role intro variant per JD, batched.
+# Mirrors recommend_bullets's batch shape (keyed by experience_id) + reuses
+# recommend_summaries's per-target select/dedup. Each role has 0..N intro
+# variants; this picks one per role + optional alternates. The pick only
+# SUGGESTS — per-role intros are opt-in, so nothing is auto-applied.
+# ---------------------------------------------------------------------------
+
+
+RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT = """You are helping a candidate pick the strongest one-line intro for EACH role on their résumé, tailored to ONE specific job. Each role's available intro variants are given inside an <experience> element in the <experience_summaries> XML; the job is given as <jd>; you see the analyst's JD breakdown in <analysis> when present.
+
+Your task: for EACH <experience>, pick the SINGLE best-fit intro variant id for THIS JD, and (optionally) name 1-2 alternates worth surfacing to the user. Optimize each pick for: relevance to the JD's requirements, framing alignment with the JD's primary domain language, measurable outcomes when a variant includes them, and tone match to the JD's seniority + industry register.
+
+Treat each role independently — the best intro for one role says nothing about another. Return one entry per <experience> you were given.
+
+**No near-duplicates.** A role's variant set sometimes contains near-restatements of the same intro. NEVER surface two near-restatements for one role (the primary recommendation + an alternate that is essentially the same text). When two variants read alike, pick the single strongest phrasing and skip the rest. A safety pass downstream removes leaked duplicates, but you should not produce them.
+
+**Quality over quantity.** Only name alternates that are genuinely different framings the user might prefer. If the chosen recommendation is the obvious fit, return that role's alternates as []. Do not pad.
+
+NEVER invent intros. NEVER reword variants — return only ids present in the <experience_summaries> block.
+
+Output JSON only, this exact shape:
+{
+  "recommendations": [
+    {
+      "experience_id": <int>,
+      "summary_item_id": <int>,
+      "rationale": "one-sentence reason this intro fits this JD for this role",
+      "alternates": [
+        {"summary_item_id": <int>, "rationale": "one-sentence reason this variant is also worth considering"},
+        ...
+      ]
+    },
+    ...
+  ]
+}
+
+Omit any role you have no good pick for (do not emit an entry with a null id). Use the numeric ids only — do NOT prefix with "e" or "s"."""
+
+
+def recommend_experience_summaries(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    *,
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """B.4 — pick the best per-role intro variant for this JD, batched.
+
+    One Haiku call covering every role that has a real choice (mirrors
+    recommend_bullets's batch shape, keyed by experience_id; reuses
+    recommend_summaries's per-target select + dedup). The caller stages the
+    active ExperienceSummaryItem variants on
+    `context_set["experience_summary_items"]` as a list of
+    {experience_id, company, items: [{id, text, label, has_outcome}]}.
+    Returns:
+
+        {"recommendations": [
+            {"experience_id": int, "summary_item_id": int,
+             "rationale": str, "alternates": [...]},
+            ...
+        ]}
+
+    A role with exactly one variant is auto-picked deterministically (no LLM
+    token spent on it); a role with zero variants is omitted. The LLM fires
+    once iff at least one role has 2+ variants. NOTE: the recommendation only
+    SUGGESTS — per-role intros are opt-in, so the frontend seeds the per-role
+    picks from this and the user accepts/clears them; nothing is auto-applied.
+    """
+    raw = context_set.get("experience_summary_items") or []
+    groups_in = list(raw) if isinstance(raw, list) else []
+
+    groups: list[dict] = []
+    for g in groups_in:
+        if not isinstance(g, dict):
+            continue
+        try:
+            eid = int(g.get("experience_id"))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        items = [
+            it for it in (g.get("items") or [])
+            if isinstance(it, dict) and (it.get("text") or "").strip()
+        ]
+        if items:
+            groups.append({"experience_id": eid, "company": g.get("company", ""), "items": items})
+
+    # Deterministic auto-pick for single-variant roles (no LLM); collect
+    # multi-variant roles for the one batched call.
+    auto: list[dict] = []
+    multi: list[dict] = []
+    for g in groups:
+        if len(g["items"]) == 1:
+            auto.append({
+                "experience_id": g["experience_id"],
+                "summary_item_id": int(g["items"][0].get("id", 0)),
+                "rationale": "Only variant available — no alternates to weigh.",
+                "alternates": [],
+            })
+        else:
+            multi.append(g)
+
+    if not multi:
+        return {"recommendations": auto}
+
+    items_block = _experience_summary_items_block(multi)
+    jd_value = context_set.get("jd_text", "")
+    jd_str = (str(jd_value) if jd_value else "").strip() or "(JD text unavailable in context)"
+    analysis = context_set.get("llm_analysis") or {}
+    essential = ", ".join(analysis.get("essential_skills", []) or [])
+    preferred = ", ".join(analysis.get("preferred_skills", []) or [])
+    keywords = ", ".join(analysis.get("industry_keywords", []) or [])
+
+    user_prompt = f"""<task>For each experience, pick the single best-fit intro variant id for this JD (with optional alternates). Output JSON only.</task>
+
+{items_block}
+
+<jd>
+{jd_str}
+</jd>
+
+<analysis>
+Essential skills the JD names: {essential or '(none surfaced)'}
+Preferred skills: {preferred or '(none)'}
+Industry keywords: {keywords or '(none)'}
+</analysis>"""
+
+    result = _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot per application
+        response_model=RecommendExperienceSummariesResponse,
+        call_kind="recommend_experience_summary",
+        username=username,
+        run_id=run_id,
+        system_prompt=_resolve_system_prompt("RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT"),
+        model=HAIKU_MODEL,
+    )
+    # Normalize the LLM's recs: coerce ids, ensure alternates exists, drop
+    # entries without a usable pick, then dedup alternates per experience.
+    llm_recs: list[dict] = []
+    for rec in (result.get("recommendations") or []):
+        if not isinstance(rec, dict):
+            continue
+        try:
+            eid = int(rec.get("experience_id"))  # type: ignore[arg-type]
+            sid = int(rec.get("summary_item_id"))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        rec["experience_id"] = eid
+        rec["summary_item_id"] = sid
+        rec.setdefault("alternates", [])
+        llm_recs.append(rec)
+    result["recommendations"] = llm_recs
+    _dedup_experience_summary_recommendations(result, multi)
+
+    # Merge: auto-picked single-variant roles + the LLM's multi-variant picks.
+    return {"recommendations": auto + result["recommendations"]}
+
+
+def _experience_summary_items_block(groups: list[dict]) -> str:
+    """XML-format the per-role ExperienceSummaryItem variants for the prompt.
+    Groups variants under one <experience> each — mirrors _summary_items_block
+    + _corpus_block conventions (numeric ids only, escaped text)."""
+    from xml.sax.saxutils import escape
+
+    lines = ["<experience_summaries>"]
+    for g in groups:
+        try:
+            eid = int(g.get("experience_id"))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        company = (g.get("company") or "").strip()
+        attrs = f'id="{eid}"'
+        if company:
+            attrs += f' company="{escape(company)}"'
+        lines.append(f"  <experience {attrs}>")
+        for it in (g.get("items") or []):
+            try:
+                sid = int(it.get("id", 0))
+            except (TypeError, ValueError):
+                continue
+            text = (it.get("text") or "").strip()
+            if not text:
+                continue
+            label = (it.get("label") or "").strip()
+            has_outcome = bool(it.get("has_outcome"))
+            iattrs = f'id="{sid}"'
+            if label:
+                iattrs += f' label="{escape(label)}"'
+            if has_outcome:
+                iattrs += ' has_outcome="true"'
+            lines.append(f"    <summary_item {iattrs}>{escape(text)}</summary_item>")
+        lines.append("  </experience>")
+    lines.append("</experience_summaries>")
+    return "\n".join(lines)
+
+
+def _dedup_experience_summary_recommendations(result: dict, groups: list[dict]) -> None:
+    """Mutate each recommendation's 'alternates' in place to drop entries that
+    are near-restatements of that role's recommendation (or of each other).
+    Jaccard ≥ 0.75 on variant text, per-experience scope — same threshold as
+    bullets/summaries. The recommendation itself is preserved."""
+    from hardening import bullet_jaccard
+
+    text_by_exp_id: dict[int, dict[int, str]] = {}
+    for g in groups or []:
+        try:
+            eid = int(g.get("experience_id"))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        m: dict[int, str] = {}
+        for it in (g.get("items") or []):
+            try:
+                sid = int(it.get("id", 0))
+            except (TypeError, ValueError):
+                continue
+            m[sid] = (it.get("text") or "").strip()
+        text_by_exp_id[eid] = m
+
+    for rec in (result.get("recommendations") or []):
+        try:
+            eid = int(rec.get("experience_id"))
+        except (TypeError, ValueError):
+            continue
+        text_by_id = text_by_exp_id.get(eid, {})
+        try:
+            rec_id: int | None = int(rec.get("summary_item_id"))
+        except (TypeError, ValueError):
+            rec_id = None
+        rec_text = text_by_id.get(rec_id, "") if rec_id is not None else ""
+
+        kept: list[dict] = []
+        kept_texts: list[str] = [rec_text] if rec_text else []
+        for alt in (rec.get("alternates") or []):
+            try:
+                sid = int(alt.get("summary_item_id", 0))
+            except (TypeError, ValueError):
+                continue
+            if sid == rec_id:
+                continue  # never surface the primary pick as its own alternate
+            text = text_by_id.get(sid, "")
+            if not text:
+                continue
+            if any(bullet_jaccard(text, k) >= 0.75 for k in kept_texts):
+                continue
+            kept.append(alt)
+            kept_texts.append(text)
+        rec["alternates"] = kept
+
+
+# ---------------------------------------------------------------------------
 # Phase B.4: promote a clarification Q&A into a bullet candidate
 # ---------------------------------------------------------------------------
 
@@ -2878,6 +3161,7 @@ _BASE_SYSTEM_PROMPTS: dict[str, str] = {
     "PROPOSAL_CRITIQUE_SYSTEM_PROMPT": PROPOSAL_CRITIQUE_SYSTEM_PROMPT,
     "RECOMMEND_SYSTEM_PROMPT": RECOMMEND_SYSTEM_PROMPT,
     "RECOMMEND_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_SUMMARIES_SYSTEM_PROMPT,
+    "RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT,
     "PROMOTE_CLARIFICATION_SYSTEM_PROMPT": PROMOTE_CLARIFICATION_SYSTEM_PROMPT,
 }
 
