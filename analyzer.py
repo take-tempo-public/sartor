@@ -238,6 +238,14 @@ class RecommendExperienceSummariesResponse(_LLMResponse):
     recommendations: Any
 
 
+class RecommendSkillsResponse(_LLMResponse):
+    recommendation: Any
+
+
+class SuggestSkillsResponse(_LLMResponse):
+    proposals: Any
+
+
 class GenerateCorpusResponse(GenerateResponse):
     selected_bullets: Any
     proposed_new_bullets: Any
@@ -269,7 +277,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-06-12.1"
+PROMPT_VERSION = "2026-06-12.2"
 
 # --- Prompt-override primitive (eval tuning loop, v1.0.4) --------------------
 # Lets an eval run inject a CANDIDATE system prompt without editing the persona
@@ -3073,6 +3081,261 @@ def _dedup_experience_summary_recommendations(result: dict, groups: list[dict]) 
 
 
 # ---------------------------------------------------------------------------
+# B.5 (Sprint 6.6) — skill Corpus Item: order the canonical skills per JD
+# (recommend_skills) + propose corpus-grounded new skills (suggest_skills).
+# recommend_skills mirrors recommend_summaries (Haiku, select+order, id-only,
+# short-circuit on 0/1). suggest_skills is a grounded generator: it proposes
+# only skills the corpus evidences, never JD-only, and its output lands as
+# pending rows the user must approve — the human gate is the grounding backstop.
+# ---------------------------------------------------------------------------
+
+
+RECOMMEND_SKILLS_SYSTEM_PROMPT = """You are helping a candidate decide which of their skills to surface on a résumé for ONE specific job, and in what order. The candidate's canonical skills are given as <skills> XML (each with a numeric id, the skill name, an optional category, and any tags); the job is given as <jd>; you see the analyst's JD breakdown in <analysis> when present.
+
+Your task: return the candidate's skill ids ORDERED by relevance to THIS JD — most-relevant first. Put the skills the JD explicitly names (or clearly implies) at the top, in the order a recruiter scanning for this role would want to see them. You MAY drop a skill only when it is clearly irrelevant to this role; when in doubt, KEEP it (the user can remove it themselves). Do not pad and do not editorialize.
+
+NEVER invent skills. NEVER reword them. Return only numeric ids present in the <skills> block.
+
+Output JSON only, this exact shape:
+{
+  "recommendation": {
+    "skill_ids": [<int>, <int>, ...],
+    "rationale": "one-sentence reason for the ordering / any drops"
+  }
+}
+
+If the candidate has zero skills in <skills>, return:
+{"recommendation": {"skill_ids": [], "rationale": "No skills to order."}}
+
+Use the numeric ids only — do NOT prefix with "s"."""
+
+
+def recommend_skills(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    *,
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """B.5 — order (and lightly curate) the candidate's skills for this JD.
+
+    Haiku call, mirroring recommend_summaries. The caller stages the active,
+    approved Skill rows on `context_set["skill_items"]` as a list of
+    {id, name, category, tags} dicts before calling. Returns:
+
+        {"recommendation": {"skill_ids": [int, ...ordered...], "rationale": str}}
+
+    `skill_ids` is the relevance-ordered set the Compose UI seeds as the
+    default; the user pins/drops/reorders on top of it. Selects only from the
+    staged (active, approved) set, so a pending/inactive skill can never be
+    recommended. Short-circuits without an LLM call for 0 or 1 skills.
+    """
+    raw = context_set.get("skill_items") or []
+    items = [
+        it for it in (list(raw) if isinstance(raw, list) else [])
+        if isinstance(it, dict) and (it.get("name") or "").strip()
+    ]
+
+    # Short-circuit — no LLM needed when there's nothing to weigh.
+    if len(items) == 0:
+        return {"recommendation": {"skill_ids": [], "rationale": "No skills to order."}}
+    if len(items) == 1:
+        return {"recommendation": {
+            "skill_ids": [int(items[0].get("id", 0))],
+            "rationale": "Only skill available — nothing to weigh.",
+        }}
+
+    items_block = _skills_block(items)
+    jd_value = context_set.get("jd_text", "")
+    jd_str = (str(jd_value) if jd_value else "").strip() or "(JD text unavailable in context)"
+    analysis = context_set.get("llm_analysis") or {}
+    essential = ", ".join(analysis.get("essential_skills", []) or [])
+    preferred = ", ".join(analysis.get("preferred_skills", []) or [])
+    keywords = ", ".join(analysis.get("industry_keywords", []) or [])
+
+    user_prompt = f"""<task>Order the candidate's skill ids by relevance to this JD (drop only the clearly irrelevant). Output JSON only.</task>
+
+{items_block}
+
+<jd>
+{jd_str}
+</jd>
+
+<analysis>
+Essential skills the JD names: {essential or '(none surfaced)'}
+Preferred skills: {preferred or '(none)'}
+Industry keywords: {keywords or '(none)'}
+</analysis>"""
+
+    result = _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot per application
+        response_model=RecommendSkillsResponse,
+        call_kind="recommend_skill",
+        username=username,
+        run_id=run_id,
+        system_prompt=_resolve_system_prompt("RECOMMEND_SKILLS_SYSTEM_PROMPT"),
+        model=HAIKU_MODEL,
+    )
+    # Normalize: coerce ids, keep only ids that exist in the staged set, drop
+    # dupes (preserving order). Belt-and-suspenders against hallucinated ids.
+    valid_ids = {int(it.get("id", 0)) for it in items}
+    rec = result.get("recommendation")
+    if not isinstance(rec, dict):
+        rec = {}
+    seen: set[int] = set()
+    ordered: list[int] = []
+    for x in (rec.get("skill_ids") or []):
+        try:
+            sid = int(x)
+        except (TypeError, ValueError):
+            continue
+        if sid in valid_ids and sid not in seen:
+            seen.add(sid)
+            ordered.append(sid)
+    rec["skill_ids"] = ordered
+    rec.setdefault("rationale", "")
+    return {"recommendation": rec}
+
+
+def _skills_block(items: list[dict]) -> str:
+    """XML-format the candidate's canonical skills for the prompt. Numeric ids
+    only; name as the element body, optional category + tags as attributes —
+    mirrors _summary_items_block's conventions."""
+    from xml.sax.saxutils import escape
+
+    lines = ["<skills>"]
+    for it in items:
+        try:
+            sid = int(it.get("id", 0))
+        except (TypeError, ValueError):
+            continue
+        name = (it.get("name") or "").strip()
+        if not name:
+            continue
+        category = (it.get("category") or "").strip()
+        tags = [t for t in (it.get("tags") or []) if isinstance(t, str) and t.strip()]
+        attrs = f'id="{sid}"'
+        if category:
+            attrs += f' category="{escape(category)}"'
+        if tags:
+            attrs += f' tags="{escape(", ".join(tags))}"'
+        lines.append(f"  <skill {attrs}>{escape(name)}</skill>")
+    lines.append("</skills>")
+    return "\n".join(lines)
+
+
+SUGGEST_SKILLS_SYSTEM_PROMPT = """You help a candidate discover skills they genuinely have but have NOT yet added to their canonical skill list, for ONE specific job. You see: the job's required/preferred skills in <analysis>, the candidate's actual experience (roles + bullets, with numeric ids) in <career_corpus>, and their existing canonical skills in <existing_skills> (NEVER re-propose any of these).
+
+Your task: propose skills that BOTH (a) the JD wants AND (b) the candidate's <career_corpus> demonstrably evidences. Every proposal MUST be backed by a specific bullet or role in the corpus.
+
+GROUNDING — this is the rule that matters most:
+- ONLY propose a skill when a specific bullet or role in <career_corpus> shows the candidate actually did it. Cite that evidence (the bullet/experience id + the exact quote).
+- NEVER propose a skill just because the JD asks for it. A JD requirement with no corpus evidence is NOT a proposal — skip it.
+- NEVER infer a skill the candidate "probably" has from adjacency or job title alone. Evidence or nothing.
+- The candidate reviews every proposal before it becomes canonical, so precision beats recall: when in doubt, do not propose.
+
+Worked examples:
+- OK: JD wants "Kubernetes"; a bullet reads "Migrated 40 services to Kubernetes, cutting deploy time 60%." → propose {"name":"Kubernetes", "evidence":{"bullet_id":12, "quote":"Migrated 40 services to Kubernetes, cutting deploy time 60%."}}.
+- NOT OK: JD wants "Kubernetes"; no bullet mentions containers or orchestration. → do NOT propose (no evidence).
+- NOT OK: JD wants "Leadership"; a bullet says "Worked on the payments team." → do NOT propose (being on a team is not evidence of leadership).
+
+Output JSON only, this exact shape:
+{
+  "proposals": [
+    {
+      "name": "the skill name, as it should appear on a résumé",
+      "category": "language" | "framework" | "platform" | "methodology" | "domain" | null,
+      "evidence": {"experience_id": <int> | null, "bullet_id": <int> | null, "quote": "the exact corpus text that evidences this skill"},
+      "rationale": "one sentence tying the evidence to the JD requirement"
+    },
+    ...
+  ]
+}
+
+Return {"proposals": []} when nothing in the corpus evidences a JD-wanted skill the candidate doesn't already have. Use numeric ids only."""
+
+
+def suggest_skills(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    *,
+    username: str = "",
+    run_id: str = "",
+) -> dict:
+    """B.5 — propose NEW canonical skills the JD wants AND the corpus evidences.
+
+    Haiku, grounded generator. The caller stages `context_set["career_corpus"]`
+    (experiences + bullets), `context_set["llm_analysis"]` (JD essential /
+    preferred skills), and `context_set["existing_skill_names"]` (names to
+    skip). Returns:
+
+        {"proposals": [{name, category, evidence, rationale}, ...]}
+
+    Grounding is enforced by the prompt (evidence-or-nothing) AND by the human
+    approve/deny gate downstream: each proposal lands as a pending Skill row
+    (is_pending_review=1, source='llm_proposed') and never reaches the
+    recommend set, the preview skills[], or the generate prompt until the user
+    approves it. Returns no proposals when the corpus is empty.
+    """
+    corpus = context_set.get("career_corpus") or []
+    if not corpus:
+        return {"proposals": []}
+
+    corpus_block = _corpus_block(list(corpus), iteration=0)
+    analysis = context_set.get("llm_analysis") or {}
+    essential = ", ".join(analysis.get("essential_skills", []) or [])
+    preferred = ", ".join(analysis.get("preferred_skills", []) or [])
+    existing_raw = context_set.get("existing_skill_names") or []
+    existing_list = [s for s in existing_raw if isinstance(s, str) and s.strip()] \
+        if isinstance(existing_raw, list) else []
+    existing = ", ".join(existing_list)
+
+    user_prompt = f"""<task>Propose skills the JD wants AND the corpus evidences (grounded — evidence or nothing). Output JSON only.</task>
+
+{corpus_block}
+
+<existing_skills>
+{existing or '(none)'}
+</existing_skills>
+
+<analysis>
+Essential skills the JD names: {essential or '(none surfaced)'}
+Preferred skills: {preferred or '(none)'}
+</analysis>"""
+
+    result = _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot per application
+        response_model=SuggestSkillsResponse,
+        call_kind="suggest_skill",
+        username=username,
+        run_id=run_id,
+        system_prompt=_resolve_system_prompt("SUGGEST_SKILLS_SYSTEM_PROMPT"),
+        model=HAIKU_MODEL,
+    )
+    # Normalize + dedup against existing canonical names (case-insensitive) and
+    # against each other. Belt-and-suspenders: the route also enforces the
+    # (candidate, name) unique constraint before inserting.
+    existing_lower = {s.strip().lower() for s in existing_list}
+    proposals: list[dict] = []
+    seen: set[str] = set()
+    for p in (result.get("proposals") or []):
+        if not isinstance(p, dict):
+            continue
+        name = (p.get("name") or "").strip()
+        key = name.lower()
+        if not name or key in existing_lower or key in seen:
+            continue
+        seen.add(key)
+        p["name"] = name
+        proposals.append(p)
+    return {"proposals": proposals}
+
+
+# ---------------------------------------------------------------------------
 # Phase B.4: promote a clarification Q&A into a bullet candidate
 # ---------------------------------------------------------------------------
 
@@ -3162,6 +3425,8 @@ _BASE_SYSTEM_PROMPTS: dict[str, str] = {
     "RECOMMEND_SYSTEM_PROMPT": RECOMMEND_SYSTEM_PROMPT,
     "RECOMMEND_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_SUMMARIES_SYSTEM_PROMPT,
     "RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT,
+    "RECOMMEND_SKILLS_SYSTEM_PROMPT": RECOMMEND_SKILLS_SYSTEM_PROMPT,
+    "SUGGEST_SKILLS_SYSTEM_PROMPT": SUGGEST_SKILLS_SYSTEM_PROMPT,
     "PROMOTE_CLARIFICATION_SYSTEM_PROMPT": PROMOTE_CLARIFICATION_SYSTEM_PROMPT,
 }
 

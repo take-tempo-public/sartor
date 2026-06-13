@@ -158,6 +158,41 @@ def fake_recommend_experience_summaries(client: Any, ctx: Any, username: str = "
         session.close()
 
 
+def fake_recommend_skills(client: Any, ctx: Any, username: str = "",
+                          run_id: str = "") -> dict[str, Any]:
+    """B.5 — recommend all the candidate's active+approved skills in display
+    order (deterministic, DB-only). Returns the real
+    {recommendation:{skill_ids, rationale}} shape so the Compose skills card's
+    auto-fire stops re-firing (has_recommendation becomes true)."""
+    from db.models import Candidate, Skill
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        cand = session.query(Candidate).filter_by(username=username).first()
+        if cand is None:
+            return {"recommendation": {"skill_ids": [], "rationale": "stub: no candidate"}}
+        ids = [
+            s.id for s in session.query(Skill)
+            .filter_by(candidate_id=cand.id, is_active=1, is_pending_review=0)
+            .order_by(Skill.display_order, Skill.id).all()
+        ]
+        return {"recommendation": {"skill_ids": ids, "rationale": "stubbed: all active skills"}}
+    finally:
+        session.close()
+
+
+def fake_suggest_skills(client: Any, ctx: Any, username: str = "",
+                        run_id: str = "") -> dict[str, Any]:
+    """B.5 — propose one grounded skill (deterministic, DB-only). Returns the
+    real {proposals:[...]} shape; the route inserts it as a pending row."""
+    return {"proposals": [
+        {"name": "Stubbed Skill", "category": "domain",
+         "evidence": {"experience_id": None, "bullet_id": None, "quote": "stub"},
+         "rationale": "stubbed proposal"},
+    ]}
+
+
 def fake_clarify(client: Any, context_set: Any, analysis: Any,
                  username: str = "", run_id: str = "") -> dict[str, Any]:
     """Mirror `analyzer.clarify`'s return shape ({questions, reasoning}) so the
@@ -257,6 +292,10 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(analyzer, "recommend_summaries", fake_recommend_summaries)
     monkeypatch.setattr(analyzer, "recommend_experience_summaries",
                         fake_recommend_experience_summaries)
+    # B.5 — skill matcher + grounded generator (imported locally in their
+    # routes → patch on the analyzer module, like recommend_bullets).
+    monkeypatch.setattr(analyzer, "recommend_skills", fake_recommend_skills)
+    monkeypatch.setattr(analyzer, "suggest_skills", fake_suggest_skills)
     # `clarify` is a top-level import in app.py (called bare at app.py:790) →
     # patch on the app module, like analyze_streaming.
     monkeypatch.setattr(ux_app, "clarify", fake_clarify)

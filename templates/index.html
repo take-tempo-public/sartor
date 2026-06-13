@@ -666,6 +666,23 @@
             <div id="summaryVariantsList"></div>
           </section>
 
+          <!-- B.5 (Sprint 6.6) — Skills editor. Candidate-level skill Corpus
+               Items: add / retire / tag the canonical skills, and review
+               (approve / deny) skills the AI proposed from a JD. Per-application
+               ordering + pin/drop + recommend/suggest live in the Compose step. -->
+          <section class="skills-editor-section" id="skillsEditorSection" style="display:none">
+            <div class="corpus-section-header">
+              <div class="corpus-section-title">Skills</div>
+              <button class="corpus-action-btn" onclick="openSkillAdd()">+ Add skill</button>
+            </div>
+            <div class="edit-hint" id="skillsEditorEmptyHint" style="margin-bottom:8px">
+              The skills the résumé can surface. The Compose step orders and
+              curates them per job; tailor + AI suggestions live there too.
+            </div>
+            <div id="skillsEditorPending"></div>
+            <div id="skillsEditorList"></div>
+          </section>
+
           <div id="corpusExperienceList" class="corpus-experience-list"></div>
         </div>
       </section>

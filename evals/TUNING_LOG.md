@@ -196,6 +196,44 @@ prevent re-running them.
 
 ---
 
+## 2026-06-13 — feat/skill-group-item (B.5): Skill as a Corpus Item — two new Haiku prompts (`2026-06-12.1` → `2026-06-12.2`)
+
+**What changed?** B.5 promotes the flat `Skill` row to a Corpus Item and adds
+**two** new `_BASE_SYSTEM_PROMPTS` constants in [`analyzer.py`](../analyzer.py):
+`RECOMMEND_SKILLS_SYSTEM_PROMPT` (order + lightly curate the candidate's approved
+skills for a JD — mirrors `recommend_summaries`; id-only; short-circuits 0/1) and
+`SUGGEST_SKILLS_SYSTEM_PROMPT` (a **grounded generator**: propose only skills the
+JD wants AND the `<career_corpus>` evidences, evidence-or-nothing, with a worked
+OK / NOT-OK example block). `PROMPT_VERSION` `2026-06-12.1` → `2026-06-12.2`. The
+generate (`SYSTEM_PROMPT`) template is **unchanged** — only the *data* in the
+existing cached `Skills:` line changes, and only in corpus mode when a
+recommendation/override exists.
+
+**Why?** Skills were the last corpus type still dumped wholesale, untailored. B.5
+makes them recommend-curated per JD (reaching the LLM-authored download via
+`_apply_recommended_skills`) and adds a corpus-evidenced suggestion path so the
+canonical set grows safely over time.
+
+**What was the result?** **No paid smoke run** — and that's the correct call, not
+a skipped step. The synthetic suite is **legacy-mode** (skills come from
+`config.get("skills")` in `hardening.py`, which this branch does not touch), so the
+exercised generate path is **byte-identical**; the two new prompts only fire on
+corpus-mode routes the suite never hits. Proven by unit tests (the
+`_apply_recommended_skills` no-op path; `_collect_skills` all-active fallback) +
+the UX regression. ruff/mypy ✓, pytest **1169/1169** incl. `-m ux`. No new dep.
+
+**What did we learn?** The grounding risk for a *generator* (vs. a selector that
+can only pick from an approved set) is real, and the right control is **a human
+approve/deny gate, not an eval threshold**: `suggest_skills` output lands as
+**pending** and is excluded from the recommend set, the preview `skills[]`, AND the
+prompt until the user approves it — so even an over-eager proposal can never reach
+the résumé. A dedicated live grounding eval for `suggest_skills` is a reasonable
+**follow-up**, but it is not a merge gate given the gate. (Pattern continued from
+B.4: corpus-mode-only prompt changes → bump `PROMPT_VERSION` for attribution, prove
+legacy byte-identity, cover with unit + UX, skip the paid smoke.)
+
+---
+
 ## 2026-06-11 — feat/compose-add-title (#7): per-JD pinned title rule in `<corpus_mode>` (`2026-06-10.1` → `2026-06-11.1`)
 
 ### What changed

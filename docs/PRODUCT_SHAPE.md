@@ -93,7 +93,7 @@ Specializations:
 | `BulletItem` | Experience | ✓ exists as `Bullet` | The reference implementation |
 | `SummaryItem` | Candidate | New (v1.0) | Multiple positioning variants per candidate |
 | `ExperienceSummaryItem` | Experience | New (v1.1) | Per-role intro paragraph, multi-variant |
-| `SkillGroupItem` | Candidate | New (v1.1) | Curated skill clusters per JD |
+| `Skill` (Corpus Item) | Candidate | ✓ exists (B.5, v1.0.6) | Individual skill as a Corpus Item — taggable, recommend-curated + pin/drop/reorder per JD, suggested→approved/denied. (The earlier "`SkillGroupItem` / curated clusters" framing was dropped: no grouping — each skill is its own item, mirroring `Bullet`.) |
 | `CoverLetterChunkItem` | Candidate | New (v1.2) | intro / why-them / why-me / close |
 | `TitleVariantItem` | Experience | ✓ exists as `ExperienceTitle` | |
 
@@ -282,7 +282,7 @@ specific shape.
 | `work[].name`, `position`, `startDate`, `endDate` | `Experience` + active `ExperienceTitle` |
 | `work[].summary` | `ExperienceSummaryItem` (v1.1) |
 | `work[].highlights[]` | active `Bullet` rows respecting `composition_overrides` |
-| `skills[]` | `Skill` rows (grouped via `SkillGroupItem`, v1.1) |
+| `skills[]` | `Skill` rows as Corpus Items — recommend-curated + pin/drop/reorder per JD (B.5, v1.0.6); no grouping |
 | `education[]`, `projects[]`, `certificates[]`, `languages[]` | future |
 
 **Extension namespace.** Our corpus-only fields (tags, scores,
@@ -412,8 +412,9 @@ Proposed final shape:
 > digit = the public tag marker — see [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md)).
 > Read them as *data-model stages*, not release versions. Current dispositions: the
 > **v1.0 stage shipped** (SummaryItem, JSON Resume, PDF, live preview, CL detachment,
-> the `is_default` resolver — all done); **ExperienceSummaryItem + SkillGroupItem**
-> are scheduled for **v1.0.6** (corpus completion); the rest are dispositioned in §10
+> the `is_default` resolver — all done); **ExperienceSummaryItem (B.4) + Skill-as-Corpus-Item
+> (B.5)** shipped in **v1.0.6** (corpus completion; B.5 dropped the "SkillGroupItem /
+> clusters" framing for individual skills); the rest are dispositioned in §10
 > and [`dev/nursery.md`](dev/nursery.md).
 
 Build the unified pattern in stages, no schema breaks between stages.
@@ -436,7 +437,8 @@ Build the unified pattern in stages, no schema breaks between stages.
 
 - `ExperienceSummaryItem` (parent = Experience) — same shape, same
   recommend call pattern
-- `SkillGroupItem` — curated skill clusters per JD
+- `Skill` as a Corpus Item — individual skills, recommend-curated + pin/drop/
+  reorder per JD + grounded suggestion (shipped B.5, v1.0.6; the "clusters" idea was dropped)
 - Master résumé surfacing — new "Masters" Library sub-tab; new-
   application pre-seed flow from the role's master
 

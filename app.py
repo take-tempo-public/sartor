@@ -1317,6 +1317,9 @@ def run_generation():
     # B.4 — inject the user's chosen per-role intros into the corpus snapshot
     # (opt-in; no-op when the "Add role intros" toggle is off).
     _apply_chosen_experience_summaries(context_set)
+    # B.5 — reorder/filter the candidate's skills to the curated set so the
+    # download reflects recommend_skills + pin/drop/reorder (no-op when none).
+    _apply_recommended_skills(context_set)
 
     client = _get_client()
     # Re-use the run_id minted in /api/analyze when present so both calls
@@ -1521,6 +1524,9 @@ def run_generation_stream():
     # B.4 — inject the user's chosen per-role intros into the corpus snapshot
     # (opt-in; no-op when the "Add role intros" toggle is off).
     _apply_chosen_experience_summaries(context_set)
+    # B.5 — reorder/filter the candidate's skills to the curated set so the
+    # download reflects recommend_skills + pin/drop/reorder (no-op when none).
+    _apply_recommended_skills(context_set)
 
     safe_user = _safe_username(username) if username else None
     if not safe_user:
@@ -3921,6 +3927,236 @@ def delete_summary_item(summary_id: int):
 
 
 # ---------------------------------------------------------------------------
+# B.5 (Sprint 6.6) — Skill Corpus Item CRUD. Skills are candidate-level (no
+# Experience hop) and carry the same lifecycle as bullets/summaries: active /
+# pending-review / source / display_order / tags. DB-only routes — no
+# filesystem path, so _within() does not apply; _safe_username gates the
+# owning candidate.
+# ---------------------------------------------------------------------------
+
+
+def _skill_to_dict(s, tags: list | None = None) -> dict:
+    """Shared response shape for Skill routes."""
+    return {
+        "id": s.id,
+        "candidate_id": s.candidate_id,
+        "name": s.name,
+        "category": s.category,
+        "proficiency": s.proficiency,
+        "years": s.years,
+        "display_order": s.display_order,
+        "is_active": bool(s.is_active),
+        "is_pending_review": bool(s.is_pending_review),
+        "source": s.source,
+        "tags": tags if tags is not None else [],
+        "created_at": s.created_at,
+        "updated_at": s.updated_at,
+    }
+
+
+@app.route("/api/users/<username>/skills", methods=["GET"])
+def list_skills(username: str):
+    """List the candidate's skills in display order.
+
+    Active + approved by default. ?include_pending=1 adds llm_proposed
+    skills awaiting review; ?include_inactive=1 adds soft-retired ones.
+    """
+    from db.models import Candidate, Skill
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    include_pending = request.args.get("include_pending") in ("1", "true", "yes")
+    include_inactive = request.args.get("include_inactive") in ("1", "true", "yes")
+
+    try:
+        init_db()
+        session = get_session()
+        try:
+            candidate = session.query(Candidate).filter_by(username=safe_user).first()
+            if candidate is None:
+                return jsonify({"skills": []})
+            q = session.query(Skill).filter_by(candidate_id=candidate.id)
+            if not include_inactive:
+                q = q.filter(Skill.is_active == 1)
+            if not include_pending:
+                q = q.filter(Skill.is_pending_review == 0)
+            rows = q.order_by(Skill.display_order, Skill.id).all()
+            return jsonify({"skills": [
+                _skill_to_dict(s, _tag_list(s.tag_links)) for s in rows
+            ]})
+        finally:
+            session.close()
+    except Exception as exc:
+        logger.exception("list_skills failed for user=%s", safe_user)
+        return jsonify({
+            "error": "Failed to load skills",
+            **_error_detail_payload(exc),
+        }), 500
+
+
+@app.route("/api/users/<username>/skills", methods=["POST"])
+def create_skill(username: str):
+    """Add a new skill for the candidate.
+
+    Body: {name (required), category?, proficiency?, years?}. User-typed
+    skills default to source='manual', is_pending_review=0, is_active=1.
+    """
+    from db.models import Skill
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    data = request.json or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "name is required"}), 400
+
+    years = data.get("years")
+    if years is not None:
+        try:
+            years = float(years)
+        except (TypeError, ValueError):
+            return jsonify({"error": "years must be a number or null"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = _get_or_provision_candidate(session, safe_user)
+        existing = session.query(Skill).filter_by(
+            candidate_id=candidate.id, name=name,
+        ).first()
+        if existing is not None:
+            return jsonify({
+                "error": "skill already exists", "id": existing.id,
+            }), 409
+
+        next_order = session.query(Skill).filter_by(candidate_id=candidate.id).count()
+        sk = Skill(
+            candidate_id=candidate.id,
+            name=name,
+            category=(data.get("category") or None),
+            proficiency=(data.get("proficiency") or None),
+            years=years,
+            display_order=next_order,
+            is_active=1,
+            is_pending_review=0,
+            source="manual",
+        )
+        session.add(sk)
+        session.commit()
+        session.refresh(sk)
+        return jsonify(_skill_to_dict(sk, [])), 201
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/skills/<int:skill_id>", methods=["PUT"])
+def update_skill(skill_id: int):
+    """Update a Skill. Body accepts: name, category, proficiency, years,
+    display_order, is_pending_review (set false to approve an llm_proposed
+    skill). Ownership check via _safe_username on the owning candidate."""
+    from db.models import Candidate, Skill
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+
+    init_db()
+    session = get_session()
+    try:
+        sk = session.query(Skill).filter_by(id=skill_id).first()
+        if sk is None:
+            return jsonify({"error": "Skill not found"}), 404
+        candidate = session.query(Candidate).filter_by(id=sk.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+
+        if "name" in data:
+            name = (data.get("name") or "").strip()
+            if not name:
+                return jsonify({"error": "name cannot be empty"}), 400
+            dup = session.query(Skill).filter(
+                Skill.candidate_id == sk.candidate_id,
+                Skill.name == name,
+                Skill.id != sk.id,
+            ).first()
+            if dup is not None:
+                return jsonify({"error": "another skill already has that name", "id": dup.id}), 409
+            sk.name = name
+        if "category" in data:
+            sk.category = data.get("category") or None
+        if "proficiency" in data:
+            sk.proficiency = data.get("proficiency") or None
+        if "years" in data:
+            yrs = data.get("years")
+            if yrs is None:
+                sk.years = None
+            else:
+                try:
+                    sk.years = float(yrs)
+                except (TypeError, ValueError):
+                    return jsonify({"error": "years must be a number or null"}), 400
+        if "display_order" in data:
+            try:
+                sk.display_order = int(data["display_order"])
+            except (TypeError, ValueError):
+                return jsonify({"error": "display_order must be int"}), 400
+        if "is_pending_review" in data:
+            sk.is_pending_review = 1 if data["is_pending_review"] else 0
+
+        session.commit()
+        session.refresh(sk)
+        return jsonify(_skill_to_dict(sk, _tag_list(sk.tag_links)))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/skills/<int:skill_id>", methods=["DELETE"])
+def delete_skill(skill_id: int):
+    """Remove a skill. A never-approved suggestion (pending + source
+    'llm_proposed') is hard-deleted so its name frees the unique slot for
+    future re-evaluation. An approved skill is soft-retired (is_active=0) —
+    composition_overrides from past applications may reference its id."""
+    from db.models import Candidate, Skill
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        sk = session.query(Skill).filter_by(id=skill_id).first()
+        if sk is None:
+            return jsonify({"error": "Skill not found"}), 404
+        candidate = session.query(Candidate).filter_by(id=sk.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+
+        if sk.is_pending_review and sk.source == "llm_proposed":
+            session.delete(sk)
+            session.commit()
+            return jsonify({"id": skill_id, "deleted": True})
+
+        sk.is_active = 0
+        sk.is_pending_review = 0
+        session.commit()
+        return jsonify({"id": sk.id, "is_active": False})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+# ---------------------------------------------------------------------------
 # B.4 (Sprint 6.6) — ExperienceSummaryItem CRUD (per-role intro variants).
 # Experience-scoped, mirroring the bullet routes: ownership flows
 # experience → candidate → _safe_username. No filesystem access, so the
@@ -4364,8 +4600,17 @@ def _tag_link_target(session, kind: str, subject_id: int):
         Experience,
         ExperienceTitle,
         ExperienceTitleTag,
+        Skill,
+        SkillTag,
     )
     link_model: type
+    # Skills are candidate-level — no Experience hop, candidate resolved directly.
+    if kind == "skill":
+        subject = session.query(Skill).filter_by(id=subject_id).first()
+        if subject is None:
+            return None, None, None, None
+        candidate = session.query(Candidate).filter_by(id=subject.candidate_id).first()
+        return subject, candidate, SkillTag, "skill_id"
     if kind == "bullet":
         subject = session.query(Bullet).filter_by(id=subject_id).first()
         link_model, fk = BulletTag, "bullet_id"
@@ -4482,6 +4727,18 @@ def link_title_tag(title_id: int):
 def unlink_title_tag(title_id: int, tag_id: int):
     """Detach a tag from an experience title."""
     return _unlink_tag_route("title", title_id, tag_id)
+
+
+@app.route("/api/skills/<int:skill_id>/tags", methods=["POST"])
+def link_skill_tag(skill_id: int):
+    """Attach a tag (find-or-create) to a skill. Body: {value, kind}."""
+    return _link_tag_route("skill", skill_id)
+
+
+@app.route("/api/skills/<int:skill_id>/tags/<int:tag_id>", methods=["DELETE"])
+def unlink_skill_tag(skill_id: int, tag_id: int):
+    """Detach a tag from a skill."""
+    return _unlink_tag_route("skill", skill_id, tag_id)
 
 
 @app.route("/api/users/<username>/duplicates", methods=["GET"])
@@ -5510,6 +5767,31 @@ def _read_experience_summary_overrides(
     return recs_by_exp, chosen_by_exp, use_flag
 
 
+def _read_skill_composition(
+    context_path: str,
+) -> tuple[set[int], set[int], list[int], list[int] | None]:
+    """B.5 (Sprint 6.6) — skill curation state from a context file:
+        (pinned_skill_ids, excluded_skill_ids, skill_order, recommended_ids)
+    Reuses the deterministic corpus readers. _within-gated by OUTPUT_DIR;
+    returns empties / None on read/parse failure so the Compose UI degrades to
+    the default (all active+approved skills) rather than 500ing."""
+    from corpus_to_json_resume import _read_skill_overrides, _read_skill_recommendations
+
+    empty: tuple[set[int], set[int], list[int], list[int] | None] = (set(), set(), [], None)
+    if not context_path:
+        return empty
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR) or not cp.exists():
+        return empty
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return empty
+    pinned, excluded, order = _read_skill_overrides(ctx)
+    rec_ids = _read_skill_recommendations(ctx)
+    return pinned, excluded, order, rec_ids
+
+
 def _apply_chosen_summary(context_set: dict) -> None:
     """β.6d — patch context_set["candidate"]["profile_text"] in-place
     with the chosen SummaryItem variant's text.
@@ -5646,6 +5928,70 @@ def _apply_chosen_experience_summaries(context_set: dict) -> None:
         session.close()
 
 
+def _apply_recommended_skills(context_set: dict) -> None:
+    """B.5 (Sprint 6.6) — reorder / filter context_set["candidate"]["skills"]
+    to the curated set for this application, so the LLM-authored download
+    surfaces the recommend_skills ordering + the user's pin/drop/reorder.
+    Mirrors _apply_chosen_experience_summaries: an in-memory patch before the
+    LLM sees the context.
+
+    The effective ordered set is computed by resolve_skill_selection from
+    ctx["llm_skill_recommendations"] + composition_overrides
+    (pinned_skill_ids / excluded_skill_ids / skill_order), over the candidate's
+    active, approved Skill rows. Pending/retired skills can never appear.
+
+    No-op when there's no recommendation AND no skill overrides → the
+    candidate's skills list (and the generate prompt's Skills line) stays
+    byte-identical. Only meaningful in corpus mode (needs an application_id
+    whose candidate owns the Skill rows)."""
+    candidate_block = context_set.get("candidate") or {}
+    app_id = context_set.get("application_id")
+    if app_id is None:
+        return
+
+    from corpus_to_json_resume import (
+        _read_skill_overrides,
+        _read_skill_recommendations,
+        resolve_skill_selection,
+    )
+
+    pinned, excluded, skill_order = _read_skill_overrides(context_set)
+    rec_ids = _read_skill_recommendations(context_set)
+    if rec_ids is None and not pinned and not excluded and not skill_order:
+        return  # nothing to apply → byte-identical Skills line
+
+    from db.models import Application, Skill
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        app_row = session.query(Application).filter_by(id=int(app_id)).first()
+        if app_row is None:
+            return
+        rows = session.query(Skill).filter_by(
+            candidate_id=app_row.candidate_id, is_active=1, is_pending_review=0,
+        ).order_by(Skill.display_order, Skill.id).all()
+        name_by_id = {r.id: r.name for r in rows if (r.name or "").strip()}
+        all_active_ids = [r.id for r in rows if r.id in name_by_id]
+        ordered = resolve_skill_selection(
+            all_active_ids=all_active_ids,
+            rec_ids=rec_ids,
+            pinned=pinned,
+            excluded=excluded,
+            skill_order=skill_order,
+        )
+        candidate_block["skills"] = [
+            name_by_id[sid] for sid in ordered if sid in name_by_id
+        ]
+        context_set["candidate"] = candidate_block
+        logger.info(
+            "B.5 — applied curated skill set (%d skills) to context for app=%s",
+            len(candidate_block["skills"]), app_id,
+        )
+    finally:
+        session.close()
+
+
 def _read_summary_overrides(
     context_path: str,
 ) -> tuple[dict | None, int | None]:
@@ -5726,7 +6072,7 @@ def get_application_composition(application_id: int):
     `context_path`, validated within OUTPUT_DIR).
     """
     from db.build_context import _bullet_tag_values, score_corpus_bullet
-    from db.models import Experience, ExperienceSummaryItem, SummaryItem
+    from db.models import Experience, ExperienceSummaryItem, Skill, SummaryItem
     from db.session import get_session, init_db
     from hardening import extract_keywords
 
@@ -5765,6 +6111,14 @@ def get_application_composition(application_id: int):
             exp_summary_chosen,
             use_experience_summaries,
         ) = _read_experience_summary_overrides(ctx_path)
+        # B.5 — per-JD skill curation: recommend_skills ordering + pin/drop/
+        # reorder overrides. Drives the Compose skill-curation card.
+        (
+            skill_pinned,
+            skill_excluded,
+            skill_order,
+            skill_rec_ids,
+        ) = _read_skill_composition(ctx_path)
 
         experiences = session.query(Experience).filter_by(
             candidate_id=candidate.id,
@@ -5961,6 +6315,43 @@ def get_application_composition(application_id: int):
             pinned_summary_id if pinned_summary_id is not None else rec_id
         )
 
+        # B.5 — Skills block. The universe is the candidate's active, approved
+        # skills in display order; recommend_skills (if run) flags + orders the
+        # recommended ones; pin/drop overrides ride along. `chosen_ids` is the
+        # effective ordered set the résumé will surface (resolve_skill_selection,
+        # the same logic the preview + generate prompt use). `pending` is the
+        # llm_proposed suggestions awaiting approve/deny.
+        from corpus_to_json_resume import resolve_skill_selection
+        skill_rows = session.query(Skill).filter_by(
+            candidate_id=candidate.id, is_active=1, is_pending_review=0,
+        ).order_by(Skill.display_order, Skill.id).all()
+        rec_rank = {sid: i for i, sid in enumerate(skill_rec_ids or [])}
+        skill_items_out = [
+            {
+                "id": s.id, "name": s.name, "category": s.category,
+                "tags": _tag_list(s.tag_links),
+                "recommended": s.id in rec_rank,
+                "recommended_rank": rec_rank.get(s.id),
+                "pinned": s.id in skill_pinned,
+                "excluded": s.id in skill_excluded,
+            }
+            for s in skill_rows
+        ]
+        chosen_skill_ids = resolve_skill_selection(
+            all_active_ids=[s.id for s in skill_rows],
+            rec_ids=skill_rec_ids,
+            pinned=skill_pinned,
+            excluded=skill_excluded,
+            skill_order=skill_order,
+        )
+        pending_skill_rows = session.query(Skill).filter_by(
+            candidate_id=candidate.id, is_active=1, is_pending_review=1,
+        ).order_by(Skill.display_order, Skill.id).all()
+        pending_skills_out = [
+            {"id": s.id, "name": s.name, "category": s.category, "source": s.source}
+            for s in pending_skill_rows
+        ]
+
         return jsonify({
             "application_id": application_id,
             "experiences": out,
@@ -5974,6 +6365,14 @@ def get_application_composition(application_id: int):
             },
             # B.4 — the "Add role intros" toggle state for this application.
             "use_experience_summaries": use_experience_summaries,
+            # B.5 — skill curation payload for the Compose skill card.
+            "skills": {
+                "items": skill_items_out,
+                "chosen_ids": chosen_skill_ids,
+                "skill_order": skill_order,
+                "has_recommendation": skill_rec_ids is not None,
+                "pending": pending_skills_out,
+            },
         })
     finally:
         session.close()
@@ -6064,6 +6463,25 @@ def save_application_composition(application_id: int):
             except (TypeError, ValueError):
                 return jsonify({"error": "chosen_experience_summary_ids keys and ids must be integers"}), 400
 
+    # B.5 (Sprint 6.6) — skill curation overrides: pinned/excluded skill ids +
+    # an explicit display order (skill_order). Each persisted only when
+    # non-empty so the default path (and the analyze→generate cache) stays
+    # byte-identical. Ownership/activeness validated against the DB below.
+    try:
+        skill_pinned_in = [int(x) for x in (data.get("pinned_skill_ids") or [])]
+        skill_excluded_in = [int(x) for x in (data.get("excluded_skill_ids") or [])]
+    except (TypeError, ValueError):
+        return jsonify({"error": "pinned_skill_ids / excluded_skill_ids must be integer ids"}), 400
+    skill_order_raw = data.get("skill_order")
+    skill_order_in: list[int] = []
+    if skill_order_raw is not None:
+        if not isinstance(skill_order_raw, list):
+            return jsonify({"error": "skill_order must be an array of skill ids"}), 400
+        try:
+            skill_order_in = [int(x) for x in skill_order_raw]
+        except (TypeError, ValueError):
+            return jsonify({"error": "skill_order ids must be integers"}), 400
+
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
 
@@ -6091,7 +6509,7 @@ def save_application_composition(application_id: int):
         # `resynced_titles` caches the per-experience eligible set for the
         # snapshot re-sync further down (avoids a second DB pass).
         from db.build_context import eligible_titles_for
-        from db.models import Experience, ExperienceSummaryItem
+        from db.models import Experience, ExperienceSummaryItem, Skill
         resynced_titles: dict[str, Any] = {}
         for eid_str, tid in pinned_title_ids.items():
             exp = session.query(Experience).filter_by(
@@ -6123,6 +6541,23 @@ def save_application_composition(application_id: int):
             if row is None:
                 return jsonify({"error": f"summary variant {item_id} is not an active intro of experience {eid_str}"}), 400
 
+        # B.5 — validate pinned + ordered skill ids belong to this candidate's
+        # active, approved skills. A foreign/stale id is a 400, not a silent
+        # drop. Excluded is lenient (a stale exclusion is harmless — it just
+        # excludes nothing).
+        skill_ref_ids = set(skill_pinned_in) | set(skill_order_in)
+        if skill_ref_ids:
+            owned_skill_ids = {
+                s.id for s in session.query(Skill).filter_by(
+                    candidate_id=candidate.id, is_active=1, is_pending_review=0,
+                ).all()
+            }
+            bad_skill_ids = skill_ref_ids - owned_skill_ids
+            if bad_skill_ids:
+                return jsonify({
+                    "error": f"skill ids not owned/active: {sorted(bad_skill_ids)}",
+                }), 400
+
         overrides: dict[str, Any] = {
             "pinned": pinned, "excluded": excluded, "added": added,
         }
@@ -6142,6 +6577,14 @@ def save_application_composition(application_id: int):
             overrides["bullet_order"] = bullet_order
         if pinned_title_ids:
             overrides["pinned_title_ids"] = pinned_title_ids
+        # B.5 — skill curation: each omitted when empty so the default skills
+        # output (and the generate prompt's Skills line) stays byte-identical.
+        if skill_pinned_in:
+            overrides["pinned_skill_ids"] = skill_pinned_in
+        if skill_excluded_in:
+            overrides["excluded_skill_ids"] = skill_excluded_in
+        if skill_order_in:
+            overrides["skill_order"] = skill_order_in
         ctx["composition_overrides"] = overrides
 
         # feat/compose-add-title — generate reads the FROZEN career_corpus
@@ -6166,6 +6609,9 @@ def save_application_composition(application_id: int):
             "pinned_title_ids": pinned_title_ids,
             "use_experience_summaries": use_experience_summaries,
             "chosen_experience_summary_ids": chosen_experience_summary_ids,
+            "pinned_skill_ids": skill_pinned_in,
+            "excluded_skill_ids": skill_excluded_in,
+            "skill_order": skill_order_in,
         })
     finally:
         session.close()
@@ -6459,6 +6905,189 @@ def recommend_application_experience_summaries(application_id: int):
             "application_id": application_id,
             **result,
         })
+    finally:
+        session.close()
+
+
+@app.route("/api/applications/<int:application_id>/recommend-skills", methods=["POST"])
+def recommend_application_skills(application_id: int):
+    """B.5 (Sprint 6.6) — order (and lightly curate) the candidate's skills for
+    this JD via Haiku (analyzer.recommend_skills); persist to
+    context["llm_skill_recommendations"]. Fired from the Compose step;
+    re-runnable (overwrites the field). Selects only from the candidate's
+    active, approved skills, so a pending/inactive skill can never be
+    recommended. Short-circuits without an LLM call for 0 or 1 skills.
+
+    Body: {context_path}. Filesystem + ownership: _safe_username via
+    _load_application_owned; _within gates context_path.
+    """
+    from analyzer import LLMResponseError, recommend_skills
+    from db.models import Skill
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, OUTPUT_DIR) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        # Stage active, approved skills (+ tag display values) for the matcher.
+        rows = session.query(Skill).filter_by(
+            candidate_id=candidate.id, is_active=1, is_pending_review=0,
+        ).order_by(Skill.display_order, Skill.id).all()
+        ctx["skill_items"] = [
+            {
+                "id": s.id, "name": s.name, "category": s.category,
+                "tags": [
+                    lnk.tag.display_value for lnk in s.tag_links
+                    if lnk.tag and (lnk.tag.display_value or "").strip()
+                ],
+            }
+            for s in rows
+        ]
+        ctx["jd_text"] = app_row.jd_text
+        run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
+        try:
+            result = recommend_skills(
+                _get_client(), ctx,
+                username=candidate.username, run_id=run_id,
+            )
+        except anthropic.APIConnectionError as exc:
+            logger.error("Recommend-skills: Anthropic connection error: %s", exc)
+            return jsonify({"error": "AI service connection failed"}), 503
+        except LLMResponseError as exc:
+            logger.error("Recommend-skills: malformed LLM response: %s", exc.validation_error)
+            return jsonify({
+                "error": "AI skill recommendation was malformed",
+                "detail": str(exc.validation_error),
+            }), 502
+
+        ctx["llm_skill_recommendations"] = result
+        ctx.pop("skill_items", None)
+        ctx.pop("jd_text", None)
+        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        return jsonify({
+            "application_id": application_id,
+            **result,
+        })
+    finally:
+        session.close()
+
+
+@app.route("/api/applications/<int:application_id>/suggest-skills", methods=["POST"])
+def suggest_application_skills(application_id: int):
+    """B.5 (Sprint 6.6) — propose NEW canonical skills the JD wants AND the
+    candidate's corpus evidences (analyzer.suggest_skills, grounded). Each
+    proposal is inserted as a PENDING Skill (source='llm_proposed',
+    is_pending_review=1) for the user to approve/deny; pending skills never
+    reach the recommend set, the preview, or the generate prompt until
+    approved — the human gate is the grounding backstop. Re-runnable; existing
+    names (any state) are skipped so re-runs don't duplicate.
+
+    Body: {context_path}. Filesystem + ownership: _safe_username via
+    _load_application_owned; _within gates context_path.
+    """
+    from analyzer import LLMResponseError, suggest_skills
+    from db.models import Skill
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, OUTPUT_DIR) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        # Existing skill names (any state) — for dedup + to tell the LLM what
+        # the candidate already has so it doesn't re-propose them.
+        all_rows = session.query(Skill).filter_by(candidate_id=candidate.id).all()
+        existing_lower = {(s.name or "").strip().lower() for s in all_rows if (s.name or "").strip()}
+        ctx["existing_skill_names"] = [s.name for s in all_rows if (s.name or "").strip()]
+        run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
+        try:
+            result = suggest_skills(
+                _get_client(), ctx,
+                username=candidate.username, run_id=run_id,
+            )
+        except anthropic.APIConnectionError as exc:
+            logger.error("Suggest-skills: Anthropic connection error: %s", exc)
+            return jsonify({"error": "AI service connection failed"}), 503
+        except LLMResponseError as exc:
+            logger.error("Suggest-skills: malformed LLM response: %s", exc.validation_error)
+            return jsonify({
+                "error": "AI skill suggestion was malformed",
+                "detail": str(exc.validation_error),
+            }), 502
+
+        # Insert each grounded proposal as a pending skill. Dedup against
+        # existing names (any state) AND within this batch; the unique
+        # constraint is the final backstop.
+        next_order = session.query(Skill).filter_by(candidate_id=candidate.id).count()
+        created: list[dict[str, Any]] = []
+        for p in (result.get("proposals") or []):
+            if not isinstance(p, dict):
+                continue
+            name = (p.get("name") or "").strip()
+            if not name or name.lower() in existing_lower:
+                continue
+            existing_lower.add(name.lower())
+            category = p.get("category")
+            sk = Skill(
+                candidate_id=candidate.id,
+                name=name,
+                category=category if isinstance(category, str) and category.strip() else None,
+                display_order=next_order,
+                is_active=1,
+                is_pending_review=1,
+                source="llm_proposed",
+            )
+            session.add(sk)
+            session.flush()
+            created.append({
+                **_skill_to_dict(sk, []),
+                "evidence": p.get("evidence"),
+                "rationale": p.get("rationale"),
+            })
+            next_order += 1
+        session.commit()
+        return jsonify({
+            "application_id": application_id,
+            "proposals": created,
+        })
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 

@@ -60,9 +60,10 @@ class TestInitDb:
                 n = conn.execute(
                     text("SELECT count(*) FROM sqlite_master WHERE type='table'")
                 ).scalar()
-                # 28 model tables + 1 alembic_version tracking table.
+                # 29 model tables + 1 alembic_version tracking table.
                 # β.6a added summary_item + summary_item_tag; B.4 (Sprint 6.6)
-                # added experience_summary_item + experience_summary_item_tag.
-                assert n == 29
+                # added experience_summary_item + experience_summary_item_tag;
+                # B.5 (Sprint 6.6) added skill_tag.
+                assert n == 30
         finally:
             engine.dispose()
