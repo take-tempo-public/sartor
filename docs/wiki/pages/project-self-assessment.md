@@ -1,5 +1,6 @@
 # Project self-assessment (state of the work)
 
+> **Audience:** `dev`
 > **Concept:** the descriptive "state of the work" the walk produced (Q5 / PART A) —
 > what is genuinely strong, what is worth watching, and what needs a decision. **★**
 > marks items worth drawing attention to when presenting.
@@ -72,3 +73,4 @@ That gap is exactly what the [[engineering-workstreams]] backlog targets.
 - [[excellence-walk]] — the walk this assessment belongs to.
 - [[consistency-tracks-enforcement]] — Q2; the consistency view of the same gaps.
 - [[engineering-workstreams]] — WS-1/WS-2 close the structural + typing gaps named here.
+- [[deterministic-llm-boundary]] — the P1-boundary strength named here, in code.

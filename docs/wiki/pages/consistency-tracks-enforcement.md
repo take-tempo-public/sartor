@@ -1,5 +1,6 @@
 # Consistency tracks enforcement
 
+> **Audience:** `dev`
 > **Concept:** the Q2 finding — the code is consistent **exactly where a hook or the
 > linter enforces it**, and the only real inconsistencies are the two unenforced ones
 > already on the backlog. The consistency map *is* the enforcement map.
@@ -80,3 +81,5 @@ produce mechanical consistency `[synthesis]`.
 - [[engineering-workstreams]] — WS-1 (monolith) + WS-2 (typing) are the two unenforced gaps.
 - [[project-self-assessment]] — the same gaps, from the state-of-the-work view.
 - [[governance-extraction]] — extends "consistency tracks enforcement" to the vision itself.
+- [[route-surface]] — the hook-guarded security gate (the headline "enforced" example), at HEAD.
+- [[deterministic-llm-boundary]] — the LLM-instrumentation consistency win, in code.

@@ -1,5 +1,6 @@
 # Why the wiki is shaped this way (WS-4 design)
 
+> **Audience:** `dev`
 > **Concept:** the design rationale behind this wiki — the pattern it adapts, the
 > source-model decision, why a `raw/` layer exists at all, and why the ops are manual
 > skills + a reminder hook rather than auto-ingest. The *why* behind the conventions.

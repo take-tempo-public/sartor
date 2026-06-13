@@ -1,5 +1,6 @@
 # Engineering workstreams (WS-1…WS-4)
 
+> **Audience:** `dev`
 > **Concept:** the engineering-excellence backlog the walk produced — four workstreams
 > toward "a polished production codebase," with what / why / status and where each lands
 > in the release arc.
@@ -62,3 +63,5 @@
 - [[consistency-tracks-enforcement]] · [[project-self-assessment]] — where WS-1/WS-2 are
   diagnosed.
 - [[llm-wiki-design]] — the WS-4 design in depth.
+- [[code-module-map]] — the single-file `app.py` monolith + module inventory WS-1 would
+  decompose; the code cold-ingest is WS-4 realized.

@@ -74,7 +74,7 @@ flowchart TD
 
     CTX2 --> R7{Cover letter?}:::route
     R7 -->|/api/generate-cover-letter| LLM7{{generate_cover_letter<br/>Sonnet 4.6}}:::llm
-    LLM7 --> AROUTCL[(output/&lt;u&gt;/cover_TS.docx)]:::onDisk
+    LLM7 --> AROUTCL[(output/&lt;u&gt;/cover_TS.docx /<br/>.pdf / .md)]:::onDisk
     LLM7 --> CLDB[persist_cover_letter_md<br/>cover-letter md → same run row]:::det
 
     R7 -->|done| Done([Download])

@@ -5,8 +5,8 @@
 > seven functions, the one law, the Product/Work split, the full "Where it lives" file
 > map) is [`../system-model.md`](../system-model.md); this page presents it at the
 > wiki's altitude and **defers to it** for the authoritative vocabulary.
-> **Audience:** anyone meeting the project — a human reader, or an LLM agent orienting
-> before a change.
+> **Audience:** `user` — anyone meeting the project; a human reader, or an LLM agent
+> orienting before a change.
 > **Grounding:** synthesized from [`../system-model.md`](../system-model.md) (the
 > canonical self-model) per [`SCHEMA.md`](SCHEMA.md)'s one grounding rule. Where this
 > page and the canonical doc differ, the canonical doc is right.

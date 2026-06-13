@@ -1,5 +1,6 @@
 # Non-dependency downloads
 
+> **Audience:** `dev`
 > **Concept:** everything you must obtain that `pip install`-ing the *declared*
 > dependencies does **not** hand you — the interpreter, the repo, browser binaries, model
 > weights, a credential — split by what you are trying to run. (Q3.)
@@ -83,3 +84,4 @@ On-disk caches: Chromium → `%LOCALAPPDATA%\ms-playwright` · `~/.cache/ms-play
 ## Related
 
 - [[excellence-walk]] — the walk this provenance belongs to.
+- [[eval-harness]] — the eval system the grounding-scorer downloads (items 7–10) feed.

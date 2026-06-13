@@ -1,5 +1,6 @@
 # The excellence walk
 
+> **Audience:** `dev`
 > **Concept:** what the 2026-06-07 "excellence walk" was, and a map to the pages
 > synthesized from it. This is the provenance hub for the excellence-walk ingest.
 > **Sources:** [`excellence-walk.md`](../../dev/excellence-walk/excellence-walk.md)
