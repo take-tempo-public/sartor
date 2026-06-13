@@ -221,8 +221,14 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       nursery learning layer).
       **Progress (2026-06-10):** the B.8 Part 1 half shipped via
       `feat/outcome-capture-complete` (see the Sprint 6.1 progress note above);
-      end-to-end verification rides the Sprint 6.0 re-walk. B.4/B.5 still open
-      (Sprint 6.6).
+      end-to-end verification rides the Sprint 6.0 re-walk.
+      **Progress (2026-06-12):** **B.4 landed** (`feat/experience-summary-item`) —
+      per-role intro as a multi-variant `ExperienceSummaryItem` (migration `0008` +
+      backfill), batched Haiku `recommend_experience_summaries`, Compose **opt-in
+      "Add role intros"** toggle + per-role picker, full WYSIWYG into the generated
+      résumé + JSON-resume preview, `PROMPT_VERSION → 2026-06-12.1`. ruff/mypy ✓,
+      pytest **1126/1126**. See RELEASE_ARC §Sprint 6.6 B.4 for the resolution note.
+      **B.5** (`feat/skill-group-item`) still open — the next Sprint 6.6 branch.
 - [ ] **WS-4a landed early; WS-4b (after Sprint 6.6) before the 6.5 sweep** (the binding gate):
       `docs/system-model.md` (← seven-functions language) + the committed
       `docs/wiki/` skeleton + the `/wiki-*` skills exist; **the preserved

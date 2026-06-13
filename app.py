@@ -1314,6 +1314,9 @@ def run_generation():
     # value into the next iteration's context, which is what we want:
     # the user's chosen positioning carries forward into refinement.
     _apply_chosen_summary(context_set)
+    # B.4 — inject the user's chosen per-role intros into the corpus snapshot
+    # (opt-in; no-op when the "Add role intros" toggle is off).
+    _apply_chosen_experience_summaries(context_set)
 
     client = _get_client()
     # Re-use the run_id minted in /api/analyze when present so both calls
@@ -1515,6 +1518,9 @@ def run_generation_stream():
         username, context_set.get("iteration", 0),
     )
     _apply_chosen_summary(context_set)
+    # B.4 — inject the user's chosen per-role intros into the corpus snapshot
+    # (opt-in; no-op when the "Add role intros" toggle is off).
+    _apply_chosen_experience_summaries(context_set)
 
     safe_user = _safe_username(username) if username else None
     if not safe_user:
@@ -3914,6 +3920,207 @@ def delete_summary_item(summary_id: int):
         session.close()
 
 
+# ---------------------------------------------------------------------------
+# B.4 (Sprint 6.6) — ExperienceSummaryItem CRUD (per-role intro variants).
+# Experience-scoped, mirroring the bullet routes: ownership flows
+# experience → candidate → _safe_username. No filesystem access, so the
+# route-security-lint hook (filesystem-route guard) does not apply.
+# ---------------------------------------------------------------------------
+
+
+def _experience_summary_item_to_dict(s) -> dict:
+    """Shared response shape for ExperienceSummaryItem routes."""
+    return {
+        "id": s.id,
+        "experience_id": s.experience_id,
+        "text": s.text,
+        "label": s.label,
+        "display_order": s.display_order,
+        "is_active": bool(s.is_active),
+        "is_pending_review": bool(s.is_pending_review),
+        "has_outcome": bool(s.has_outcome),
+        "source": s.source,
+        "created_at": s.created_at,
+        "updated_at": s.updated_at,
+    }
+
+
+@app.route("/api/experiences/<int:experience_id>/summaries", methods=["GET"])
+def list_experience_summaries(experience_id: int):
+    """List a role's ExperienceSummaryItem intro variants in display order.
+
+    Returns active rows by default; pass ?include_inactive=1 to include
+    soft-retired ones (the Corpus editor uses this to surface retired
+    variants). Ownership: experience → candidate → _safe_username.
+    """
+    from db.models import Candidate, Experience, ExperienceSummaryItem
+    from db.session import get_session, init_db
+
+    include_inactive = request.args.get("include_inactive") in ("1", "true", "yes")
+
+    try:
+        init_db()
+        session = get_session()
+        try:
+            exp = session.query(Experience).filter_by(id=experience_id).first()
+            if exp is None:
+                return jsonify({"error": "Experience not found"}), 404
+            candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
+            if candidate is None or not _safe_username(candidate.username):
+                return jsonify({"error": "Candidate validation failed"}), 403
+            q = session.query(ExperienceSummaryItem).filter_by(experience_id=exp.id)
+            if not include_inactive:
+                q = q.filter(ExperienceSummaryItem.is_active == 1)
+            rows = q.order_by(
+                ExperienceSummaryItem.display_order, ExperienceSummaryItem.id,
+            ).all()
+            return jsonify({"summaries": [_experience_summary_item_to_dict(s) for s in rows]})
+        finally:
+            session.close()
+    except Exception as exc:
+        logger.exception("list_experience_summaries failed for exp=%s", experience_id)
+        return jsonify({
+            "error": "Failed to load role summaries",
+            **_error_detail_payload(exc),
+        }), 500
+
+
+@app.route("/api/experiences/<int:experience_id>/summaries", methods=["POST"])
+def create_experience_summary(experience_id: int):
+    """Add a new ExperienceSummaryItem variant under a role.
+
+    Body: {text (required), label?, has_outcome?, source?}. New user-typed
+    variants default to source='manual', is_pending_review=0.
+    """
+    from db.models import Candidate, Experience, ExperienceSummaryItem
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+
+    source = data.get("source", "manual")
+    if source not in ("manual", "imported", "llm_proposed"):
+        return jsonify({"error": "source must be manual|imported|llm_proposed"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        exp = session.query(Experience).filter_by(id=experience_id).first()
+        if exp is None:
+            return jsonify({"error": "Experience not found"}), 404
+        candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+
+        next_order = session.query(ExperienceSummaryItem).filter_by(
+            experience_id=exp.id,
+        ).count()
+        si = ExperienceSummaryItem(
+            experience_id=exp.id,
+            text=text,
+            label=(data.get("label") or None),
+            display_order=next_order,
+            is_active=1,
+            is_pending_review=0,
+            source=source,
+            has_outcome=1 if data.get("has_outcome") else 0,
+        )
+        session.add(si)
+        session.commit()
+        session.refresh(si)
+        return jsonify(_experience_summary_item_to_dict(si)), 201
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/experience-summaries/<int:item_id>", methods=["PUT"])
+def update_experience_summary(item_id: int):
+    """Update an ExperienceSummaryItem. Body accepts: text, label,
+    has_outcome, is_pending_review, display_order. Ownership:
+    item → experience → candidate → _safe_username."""
+    from db.models import Candidate, Experience, ExperienceSummaryItem
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+
+    init_db()
+    session = get_session()
+    try:
+        si = session.query(ExperienceSummaryItem).filter_by(id=item_id).first()
+        if si is None:
+            return jsonify({"error": "ExperienceSummaryItem not found"}), 404
+        exp = session.query(Experience).filter_by(id=si.experience_id).first()
+        if exp is None:
+            return jsonify({"error": "Variant's experience missing"}), 404
+        candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+
+        if "text" in data:
+            text = (data.get("text") or "").strip()
+            if not text:
+                return jsonify({"error": "text cannot be empty"}), 400
+            si.text = text
+        if "label" in data:
+            label = data.get("label")
+            si.label = (label or None) if label is None or isinstance(label, str) else None
+        if "has_outcome" in data:
+            si.has_outcome = 1 if data["has_outcome"] else 0
+        if "is_pending_review" in data:
+            si.is_pending_review = 1 if data["is_pending_review"] else 0
+        if "display_order" in data:
+            try:
+                si.display_order = int(data["display_order"])
+            except (TypeError, ValueError):
+                return jsonify({"error": "display_order must be int"}), 400
+
+        session.commit()
+        session.refresh(si)
+        return jsonify(_experience_summary_item_to_dict(si))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@app.route("/api/experience-summaries/<int:item_id>", methods=["DELETE"])
+def delete_experience_summary(item_id: int):
+    """Soft-retire an ExperienceSummaryItem (is_active=0). Mirrors bullet
+    delete semantics — composition_overrides may reference this id from past
+    applications so a hard-delete would orphan them."""
+    from db.models import Candidate, Experience, ExperienceSummaryItem
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        si = session.query(ExperienceSummaryItem).filter_by(id=item_id).first()
+        if si is None:
+            return jsonify({"error": "ExperienceSummaryItem not found"}), 404
+        exp = session.query(Experience).filter_by(id=si.experience_id).first()
+        if exp is None:
+            return jsonify({"error": "Variant's experience missing"}), 404
+        candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
+        if candidate is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Candidate validation failed"}), 403
+
+        si.is_active = 0
+        si.is_pending_review = 0
+        session.commit()
+        return jsonify({"id": si.id, "is_active": False})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 @app.route("/api/experiences/<int:experience_id>/titles", methods=["POST"])
 def create_experience_title(experience_id: int):
     """Add an alternate title to an experience.
@@ -5255,6 +5462,54 @@ def _read_title_overrides(context_path: str) -> dict[int, int]:
     return out
 
 
+def _read_experience_summary_overrides(
+    context_path: str,
+) -> tuple[dict[int, dict], dict[int, int], bool]:
+    """B.4 (Sprint 6.6) — per-role intro state from a context file:
+        (recs_by_exp, chosen_by_exp, use_experience_summaries)
+    - recs_by_exp: experience-id → {summary_item_id, rationale, alternates}
+      from `llm_experience_summary_recommendations.recommendations`.
+    - chosen_by_exp: experience-id → chosen ExperienceSummaryItem id from
+      `composition_overrides.chosen_experience_summary_ids`.
+    - use_experience_summaries: the "Add role intros" toggle state.
+    _within-gated by OUTPUT_DIR. Returns ({}, {}, False) on read/parse failure
+    so the route degrades to "no role intros" rather than 500ing."""
+    empty: tuple[dict[int, dict], dict[int, int], bool] = ({}, {}, False)
+    if not context_path:
+        return empty
+    cp = Path(context_path)
+    if not _within(cp, OUTPUT_DIR) or not cp.exists():
+        return empty
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return empty
+
+    rec_block = ctx.get("llm_experience_summary_recommendations") or {}
+    recs_by_exp: dict[int, dict] = {}
+    if isinstance(rec_block, dict):
+        for rec in (rec_block.get("recommendations") or []):
+            if not isinstance(rec, dict):
+                continue
+            try:
+                eid = int(rec.get("experience_id"))  # type: ignore[arg-type]
+            except (TypeError, ValueError):
+                continue
+            recs_by_exp[eid] = rec
+
+    overrides = ctx.get("composition_overrides") or {}
+    raw_chosen = overrides.get("chosen_experience_summary_ids") or {}
+    chosen_by_exp: dict[int, int] = {}
+    if isinstance(raw_chosen, dict):
+        for k, v in raw_chosen.items():
+            try:
+                chosen_by_exp[int(k)] = int(v)
+            except (TypeError, ValueError):
+                continue
+    use_flag = bool(overrides.get("use_experience_summaries"))
+    return recs_by_exp, chosen_by_exp, use_flag
+
+
 def _apply_chosen_summary(context_set: dict) -> None:
     """β.6d — patch context_set["candidate"]["profile_text"] in-place
     with the chosen SummaryItem variant's text.
@@ -5317,6 +5572,76 @@ def _apply_chosen_summary(context_set: dict) -> None:
             "β.6d — applied summary variant id=%d (%s) to context for app=%s",
             row.id, "pinned" if pinned_id is not None else "recommended", app_id,
         )
+    finally:
+        session.close()
+
+
+def _apply_chosen_experience_summaries(context_set: dict) -> None:
+    """B.4 (Sprint 6.6) — patch each career_corpus experience's `summary`
+    in-place with the user's chosen ExperienceSummaryItem variant text, so the
+    chosen per-role intro reaches the generated résumé (WYSIWYG). Mirrors
+    _apply_chosen_summary, but per-experience and OPT-IN with NO auto-fallback.
+
+    Gated on composition_overrides.use_experience_summaries (the explicit
+    "Add role intros" toggle). For each experience named in
+    chosen_experience_summary_ids, the chosen variant's text is written onto
+    that corpus experience's `summary` field so _corpus_block emits a
+    <summary> for it. A role with no explicit pick gets no intro; the toggle
+    off is a full no-op — the generate prompt stays byte-identical (the
+    analyze→generate cache is preserved for everyone who doesn't opt in).
+
+    Resolution is by ExperienceSummaryItem.id, scoped to the experience it's
+    pinned for. Missing / inactive / foreign variants are skipped (that role
+    just gets no intro) rather than 500ing. Only meaningful in corpus mode
+    (no-op when there's no career_corpus).
+    """
+    corpus = context_set.get("career_corpus")
+    if not corpus or not isinstance(corpus, list):
+        return
+    overrides = context_set.get("composition_overrides") or {}
+    if not isinstance(overrides, dict) or not overrides.get("use_experience_summaries"):
+        return  # toggle off (default) → no role intros, byte-identical prompt
+    chosen_raw = overrides.get("chosen_experience_summary_ids") or {}
+    if not isinstance(chosen_raw, dict):
+        return
+    # Coerce {experience_id: item_id} (JSON object keys persist as strings).
+    chosen: dict[int, int] = {}
+    for k, v in chosen_raw.items():
+        try:
+            chosen[int(k)] = int(v)
+        except (TypeError, ValueError):
+            continue
+    if not chosen:
+        return
+
+    from db.models import ExperienceSummaryItem
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        applied = 0
+        for exp in corpus:
+            if not isinstance(exp, dict):
+                continue
+            try:
+                eid = int(exp.get("id"))  # type: ignore[arg-type]
+            except (TypeError, ValueError):
+                continue
+            item_id = chosen.get(eid)
+            if item_id is None:
+                continue
+            row = session.query(ExperienceSummaryItem).filter_by(
+                id=item_id, experience_id=eid, is_active=1,
+            ).first()
+            if row is None or not (row.text or "").strip():
+                continue  # missing / inactive / foreign → role gets no intro
+            exp["summary"] = row.text
+            applied += 1
+        if applied:
+            logger.info(
+                "B.4 — applied %d chosen per-role intro(s) to corpus for app=%s",
+                applied, context_set.get("application_id"),
+            )
     finally:
         session.close()
 
@@ -5401,7 +5726,7 @@ def get_application_composition(application_id: int):
     `context_path`, validated within OUTPUT_DIR).
     """
     from db.build_context import _bullet_tag_values, score_corpus_bullet
-    from db.models import Experience, SummaryItem
+    from db.models import Experience, ExperienceSummaryItem, SummaryItem
     from db.session import get_session, init_db
     from hardening import extract_keywords
 
@@ -5432,6 +5757,14 @@ def get_application_composition(application_id: int):
         # ExperienceTitle id). Drives the title radio's selected state and the
         # per-experience chosen_title_id below.
         pinned_title_ids = _read_title_overrides(ctx_path)
+        # B.4 — per-role intro recommendations + the user's per-role picks +
+        # the "Add role intros" toggle state. Drives the per-experience
+        # summary picker rendered inside each Compose experience card.
+        (
+            exp_summary_recs,
+            exp_summary_chosen,
+            use_experience_summaries,
+        ) = _read_experience_summary_overrides(ctx_path)
 
         experiences = session.query(Experience).filter_by(
             candidate_id=candidate.id,
@@ -5518,7 +5851,48 @@ def get_application_composition(application_id: int):
                 chosen_title_id = titles[0]["id"]
             else:
                 chosen_title_id = None
-            if scored_bullets or titles:
+
+            # B.4 — per-role intro variants for this experience. The LLM
+            # recommendation (if any) flags the "recommended" pick; the user's
+            # per-role choice flags "chosen". Opt-in: nothing is chosen until
+            # the user turns the toggle on and picks (the frontend seeds the
+            # picks from the recommendation when they do).
+            exp_rec = exp_summary_recs.get(exp.id, {})
+            try:
+                exp_rec_id: int | None = int(exp_rec.get("summary_item_id"))  # type: ignore[arg-type]
+            except (TypeError, ValueError):
+                exp_rec_id = None
+            exp_chosen_id = exp_summary_chosen.get(exp.id)
+            exp_alt_rationale: dict[int, str] = {}
+            _rr = (exp_rec.get("rationale") or "").strip() if isinstance(exp_rec, dict) else ""
+            if exp_rec_id is not None and _rr:
+                exp_alt_rationale[exp_rec_id] = _rr
+            for _a in (exp_rec.get("alternates") or []) if isinstance(exp_rec, dict) else []:
+                try:
+                    _aid = int(_a.get("summary_item_id", 0))
+                except (TypeError, ValueError):
+                    continue
+                _ar = (_a.get("rationale") or "").strip()
+                if _ar:
+                    exp_alt_rationale[_aid] = _ar
+            esi_rows = session.query(ExperienceSummaryItem).filter_by(
+                experience_id=exp.id, is_active=1,
+            ).order_by(
+                ExperienceSummaryItem.display_order, ExperienceSummaryItem.id,
+            ).all()
+            role_summary_variants: list[dict[str, Any]] = []
+            for esi in esi_rows:
+                role_summary_variants.append({
+                    "id": esi.id,
+                    "text": esi.text,
+                    "label": esi.label,
+                    "has_outcome": bool(esi.has_outcome),
+                    "recommended": esi.id == exp_rec_id,
+                    "chosen": esi.id == exp_chosen_id,
+                    "rationale": exp_alt_rationale.get(esi.id, ""),
+                })
+
+            if scored_bullets or titles or role_summary_variants:
                 out.append({
                     "id": exp.id, "company": exp.company,
                     "start_date": exp.start_date, "end_date": exp.end_date,
@@ -5531,6 +5905,13 @@ def get_application_composition(application_id: int):
                     # feat/compose-add-title — the effective title for the radio's
                     # default selected state (pin → official → top eligible).
                     "chosen_title_id": chosen_title_id,
+                    # B.4 — per-role intro picker payload.
+                    "summary": {
+                        "variants": role_summary_variants,
+                        "recommended_id": exp_rec_id,
+                        "chosen_id": exp_chosen_id,
+                        "has_recommendation": exp_rec_id is not None,
+                    },
                 })
         # β.6c — Positioning block. Variants come from the candidate's
         # active SummaryItem rows; the LLM recommendation (if any) flags
@@ -5591,6 +5972,8 @@ def get_application_composition(application_id: int):
                 "chosen_id": chosen_summary_id,
                 "has_recommendation": rec_id is not None,
             },
+            # B.4 — the "Add role intros" toggle state for this application.
+            "use_experience_summaries": use_experience_summaries,
         })
     finally:
         session.close()
@@ -5662,6 +6045,25 @@ def save_application_composition(application_id: int):
             except (TypeError, ValueError):
                 return jsonify({"error": "pinned_title_ids keys and ids must be integers"}), 400
 
+    # B.4 (Sprint 6.6) — optional "Add role intros" opt-in toggle + per-role
+    # intro picks: {experience_id: experience_summary_item_id}. Persisted with
+    # string keys (JSON-natural, like pinned_title_ids). Both omitted when off /
+    # empty so the default path (and the analyze→generate cache) is preserved.
+    # The toggle gates whether picks are APPLIED; picks persist independently so
+    # they're remembered if the user toggles back on. Ownership + activeness are
+    # validated against the DB inside the session block below.
+    use_experience_summaries = bool(data.get("use_experience_summaries"))
+    chosen_exp_summary_raw = data.get("chosen_experience_summary_ids")
+    chosen_experience_summary_ids: dict[str, int] = {}
+    if chosen_exp_summary_raw is not None:
+        if not isinstance(chosen_exp_summary_raw, dict):
+            return jsonify({"error": "chosen_experience_summary_ids must be an object of {experience_id: item_id}"}), 400
+        for k, v in chosen_exp_summary_raw.items():
+            try:
+                chosen_experience_summary_ids[str(int(k))] = int(v)
+            except (TypeError, ValueError):
+                return jsonify({"error": "chosen_experience_summary_ids keys and ids must be integers"}), 400
+
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
 
@@ -5689,7 +6091,7 @@ def save_application_composition(application_id: int):
         # `resynced_titles` caches the per-experience eligible set for the
         # snapshot re-sync further down (avoids a second DB pass).
         from db.build_context import eligible_titles_for
-        from db.models import Experience
+        from db.models import Experience, ExperienceSummaryItem
         resynced_titles: dict[str, Any] = {}
         for eid_str, tid in pinned_title_ids.items():
             exp = session.query(Experience).filter_by(
@@ -5702,11 +6104,37 @@ def save_application_composition(application_id: int):
                 return jsonify({"error": f"title {tid} is not an eligible title of experience {eid_str}"}), 400
             resynced_titles[eid_str] = eligible
 
+        # B.4 — validate each per-role intro pick is an active
+        # ExperienceSummaryItem of an experience owned by this candidate. A bad
+        # id is a 400 (not a silent drop) so the UI can't pin a stale/foreign id.
+        # The sentinel 0 means "explicitly cleared — no intro for this role";
+        # it's persisted (so it isn't re-defaulted on reload) but not validated.
+        for eid_str, item_id in chosen_experience_summary_ids.items():
+            if item_id == 0:
+                continue
+            exp = session.query(Experience).filter_by(
+                id=int(eid_str), candidate_id=candidate.id,
+            ).first()
+            if exp is None:
+                return jsonify({"error": f"experience {eid_str} not found for this candidate"}), 400
+            row = session.query(ExperienceSummaryItem).filter_by(
+                id=item_id, experience_id=exp.id, is_active=1,
+            ).first()
+            if row is None:
+                return jsonify({"error": f"summary variant {item_id} is not an active intro of experience {eid_str}"}), 400
+
         overrides: dict[str, Any] = {
             "pinned": pinned, "excluded": excluded, "added": added,
         }
         if pinned_summary_id is not None:
             overrides["pinned_summary_id"] = pinned_summary_id
+        # B.4 — the toggle gates application; picks persist independently (so
+        # they survive a toggle off→on). Both omitted when off/empty → default
+        # generate prompt stays byte-identical.
+        if use_experience_summaries:
+            overrides["use_experience_summaries"] = True
+        if chosen_experience_summary_ids:
+            overrides["chosen_experience_summary_ids"] = chosen_experience_summary_ids
         # Only persist bullet_order when non-empty: a full reset (all
         # experiences back to AI ranking) omits the key → absent → fall back to
         # the score sort, keeping the default path byte-identical.
@@ -5736,6 +6164,8 @@ def save_application_composition(application_id: int):
             "pinned_summary_id": pinned_summary_id,
             "bullet_order": bullet_order,
             "pinned_title_ids": pinned_title_ids,
+            "use_experience_summaries": use_experience_summaries,
+            "chosen_experience_summary_ids": chosen_experience_summary_ids,
         })
     finally:
         session.close()
@@ -5925,6 +6355,104 @@ def recommend_application_summary(application_id: int):
         # Persist + strip the transient keys
         ctx["llm_summary_recommendation"] = result
         ctx.pop("summary_items", None)
+        ctx.pop("jd_text", None)
+        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        return jsonify({
+            "application_id": application_id,
+            **result,
+        })
+    finally:
+        session.close()
+
+
+@app.route("/api/applications/<int:application_id>/recommend-experience-summaries", methods=["POST"])
+def recommend_application_experience_summaries(application_id: int):
+    """B.4 (Sprint 6.6) — pick the best per-role intro variant for each role,
+    batched. Mirrors recommend_application_summary: one Haiku call (via
+    analyzer.recommend_experience_summaries), persists to
+    context_set["llm_experience_summary_recommendations"]. Fires from the
+    Compose step when the user turns on "Add role intros"; re-runnable
+    (overwrites the field). Short-circuits without an LLM call when no role
+    has 2+ active variants. The result only SUGGESTS — per-role intros are
+    opt-in, so the UI seeds the per-role picks from this; nothing auto-applies.
+
+    Body: {context_path}. Filesystem + ownership: _safe_username via
+    _load_application_owned; _within gates context_path.
+    """
+    from analyzer import LLMResponseError, recommend_experience_summaries
+    from db.models import Experience, ExperienceSummaryItem
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(candidate.username):
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, OUTPUT_DIR) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        # Stage active ExperienceSummaryItem variants grouped per role. Roles
+        # with no variants are omitted; recommend_experience_summaries
+        # auto-picks single-variant roles and batches the rest into one call.
+        experiences = session.query(Experience).filter_by(
+            candidate_id=candidate.id,
+        ).order_by(Experience.start_date.desc(), Experience.id.desc()).all()
+        groups: list[dict[str, Any]] = []
+        for exp in experiences:
+            rows = session.query(ExperienceSummaryItem).filter_by(
+                experience_id=exp.id, is_active=1,
+            ).order_by(
+                ExperienceSummaryItem.display_order, ExperienceSummaryItem.id,
+            ).all()
+            if not rows:
+                continue
+            groups.append({
+                "experience_id": exp.id,
+                "company": exp.company,
+                "items": [
+                    {
+                        "id": r.id, "text": r.text, "label": r.label,
+                        "has_outcome": bool(r.has_outcome),
+                    }
+                    for r in rows
+                ],
+            })
+
+        # Stash transient context for the LLM call; strip before persisting.
+        ctx["experience_summary_items"] = groups
+        ctx["jd_text"] = app_row.jd_text
+        run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
+        try:
+            result = recommend_experience_summaries(
+                _get_client(), ctx,
+                username=candidate.username, run_id=run_id,
+            )
+        except anthropic.APIConnectionError as exc:
+            logger.error("Recommend-experience-summaries: Anthropic connection error: %s", exc)
+            return jsonify({"error": "AI service connection failed"}), 503
+        except LLMResponseError as exc:
+            logger.error("Recommend-experience-summaries: malformed LLM response: %s", exc.validation_error)
+            return jsonify({
+                "error": "AI role-summary recommendation was malformed",
+                "detail": str(exc.validation_error),
+            }), 502
+
+        ctx["llm_experience_summary_recommendations"] = result
+        ctx.pop("experience_summary_items", None)
         ctx.pop("jd_text", None)
         cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
         return jsonify({

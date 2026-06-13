@@ -52,3 +52,29 @@ class CorpusPage(BasePage):
     # Sprint 6.4 (#16/#1) — review-finished "Start tailoring →" hand-off CTA.
     def start_tailoring_button(self) -> Locator:
         return self.page.locator(Corpus.START_TAILORING_BUTTON)
+
+    # B.4 (Sprint 6.6) — per-role intro variants editor (expand a card first).
+    def expand_card(self, index: int = 0) -> CorpusPage:
+        self.page.locator(Corpus.CARD).nth(index).locator(
+            ".corpus-card-header"
+        ).click()
+        self.page.wait_for_selector(
+            Corpus.EXP_SUMMARY_SECTION, state="visible", timeout=DEFAULT_TIMEOUT_MS
+        )
+        return self
+
+    def exp_summary_section(self) -> Locator:
+        return self.page.locator(Corpus.EXP_SUMMARY_SECTION)
+
+    def add_intro_button(self) -> Locator:
+        return self.page.locator(Corpus.EXP_SUMMARY_SECTION).get_by_role(
+            "button", name=Corpus.ADD_INTRO_BUTTON_NAME
+        )
+
+    def intro_texts(self) -> list[str]:
+        """The intro variant textareas' values (not inner text — they're
+        <textarea>, so the text lives in .value)."""
+        locs = self.page.locator(
+            f"{Corpus.EXP_SUMMARY_SECTION} .summary-variant-text"
+        )
+        return [locs.nth(i).input_value() for i in range(locs.count())]

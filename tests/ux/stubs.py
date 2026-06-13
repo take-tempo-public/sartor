@@ -103,6 +103,38 @@ def fake_recommend_summaries(client: Any, ctx: Any, username: str = "",
     return {"recommended_item_id": None, "rationale": ""}
 
 
+def fake_recommend_experience_summaries(client: Any, ctx: Any, username: str = "",
+                                        run_id: str = "") -> dict[str, Any]:
+    """B.4 — recommend the first active intro variant per role (deterministic,
+    DB-only). Mirrors `recommend_experience_summaries`'s return shape so the
+    Compose 'Add role intros' toggle defaults each role without a real Haiku
+    call. Only fires when a role has 2+ variants (the frontend gate)."""
+    from db.models import Candidate, Experience, ExperienceSummaryItem
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        cand = session.query(Candidate).filter_by(username=username).first()
+        if cand is None:
+            return {"recommendations": []}
+        recs: list[dict[str, Any]] = []
+        for exp in session.query(Experience).filter_by(candidate_id=cand.id).all():
+            rows = (session.query(ExperienceSummaryItem)
+                    .filter_by(experience_id=exp.id, is_active=1)
+                    .order_by(ExperienceSummaryItem.display_order,
+                              ExperienceSummaryItem.id).all())
+            if rows:
+                recs.append({
+                    "experience_id": exp.id,
+                    "summary_item_id": rows[0].id,
+                    "rationale": "stubbed: first variant",
+                    "alternates": [],
+                })
+        return {"recommendations": recs}
+    finally:
+        session.close()
+
+
 def fake_clarify(client: Any, context_set: Any, analysis: Any,
                  username: str = "", run_id: str = "") -> dict[str, Any]:
     """Mirror `analyzer.clarify`'s return shape ({questions, reasoning}) so the
@@ -200,6 +232,8 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(ux_app, "_get_client", lambda: None)
     monkeypatch.setattr(analyzer, "recommend_bullets", fake_recommend_bullets)
     monkeypatch.setattr(analyzer, "recommend_summaries", fake_recommend_summaries)
+    monkeypatch.setattr(analyzer, "recommend_experience_summaries",
+                        fake_recommend_experience_summaries)
     # `clarify` is a top-level import in app.py (called bare at app.py:790) →
     # patch on the app module, like analyze_streaming.
     monkeypatch.setattr(ux_app, "clarify", fake_clarify)

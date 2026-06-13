@@ -3115,6 +3115,69 @@ input:focus, select:focus, textarea:focus {
   color: var(--fg-0);
 }
 
+/* ---- B.4 (Sprint 6.6) — per-role intro picker (Compose) + the
+   "Add role intros" opt-in toggle + the Career-corpus per-role variants
+   editor. Reuses the positioning-variant affordances (chosen = brand-soft
+   fill + 3px left stripe) so candidate-summary and role-intro pickers read
+   as the same kind of control. ---- */
+.compose-role-intros-toggle {
+  background: var(--grad-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  box-shadow: var(--edge-top), var(--shadow-1);
+}
+.compose-role-intros-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg-0);
+}
+.compose-role-intros-label input { cursor: pointer; }
+.compose-role-intro {
+  margin-top: 10px;
+}
+.compose-role-intro-variants {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.role-intro-variant {
+  cursor: pointer;
+  position: relative;
+  transition: background var(--t-fast) var(--ease),
+              border-color var(--t-fast) var(--ease),
+              transform var(--t-fast) var(--ease);
+}
+.role-intro-variant:hover {
+  background: linear-gradient(180deg, #20212e 0%, #1a1b27 100%);
+  border-color: var(--border-2);
+  transform: translateY(-1px);
+}
+.role-intro-variant.role-intro-chosen {
+  border-color: var(--brand-edge);
+  background: linear-gradient(180deg,
+    rgba(232, 167, 84, 0.10) 0%,
+    rgba(232, 167, 84, 0.05) 100%);
+}
+.role-intro-variant.role-intro-chosen::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 12px; bottom: 12px;
+  width: 3px;
+  background: var(--brand);
+  border-radius: 0 2px 2px 0;
+}
+.exp-summary-variants-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
 /* ---- Live preview (β.4) — iframe panel embedded in Step 4 Template.
    Renders the application's latest JSON Resume through the selected
    persona's HTML+CSS template. Same render path as the PDF (WYSIWYG).

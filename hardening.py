@@ -87,6 +87,11 @@ class CorpusExperience(TypedDict, total=False):
     end_date: str | None
     eligible_titles: list[CorpusEligibleTitle]
     bullets: list[CorpusBullet]
+    # B.4 (Sprint 6.6) — the user's chosen per-role intro for one application,
+    # injected at generate time by app._apply_chosen_experience_summaries (NOT
+    # part of the frozen analyze-time snapshot). _corpus_block emits a <summary>
+    # for it when present.
+    summary: str | None
 
 
 class ClarificationQuestion(TypedDict, total=False):

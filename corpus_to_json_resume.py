@@ -102,6 +102,12 @@ def build_json_resume_from_corpus(
     rec_by_exp = _read_recommendations_by_experience(ctx)
     # feat/compose-add-title — per-experience title pin (experience_id → title_id)
     title_choices = _read_title_choices(ctx)
+    # B.4 (Sprint 6.6) — per-role intro opt-in toggle + per-role picks
+    # (experience_id → ExperienceSummaryItem id). Opt-in: a role's work[].summary
+    # is emitted ONLY when the toggle is on AND the role has an explicit pick.
+    use_experience_summaries, chosen_experience_summary_ids = (
+        _read_experience_summary_choices(ctx)
+    )
 
     # ---- Assemble basics ----
     basics: dict[str, Any] = {}
@@ -157,8 +163,16 @@ def build_json_resume_from_corpus(
             entry["startDate"] = exp.start_date
         if exp.end_date:
             entry["endDate"] = exp.end_date
-        if exp.summary:
-            entry["summary"] = exp.summary
+        # B.4 — opt-in per-role intro. Emit work[].summary ONLY when the user
+        # turned on the "Add role intros" toggle AND chose a variant for THIS
+        # role. No auto-fallback to the legacy exp.summary — it lives on as a
+        # backfilled ExperienceSummaryItem variant, surfaced only when chosen.
+        if use_experience_summaries:
+            role_intro = _resolve_chosen_experience_summary_text(
+                session, exp.id, chosen_experience_summary_ids.get(exp.id),
+            )
+            if role_intro:
+                entry["summary"] = role_intro
 
         # Highlights: active bullets, with pin/exclude/added applied.
         # If a context file with llm_recommendations exists for this
@@ -211,6 +225,12 @@ def build_json_resume_from_corpus(
                     else recommended_summary_id
                 ),
                 "summary_source": summary_source,
+                # B.4 — per-role intro opt-in state + the picks that were applied.
+                "use_experience_summaries": use_experience_summaries,
+                "chosen_experience_summary_ids": {
+                    str(eid): iid
+                    for eid, iid in chosen_experience_summary_ids.items()
+                } if use_experience_summaries else {},
                 "bullet_overrides_active": bool(
                     pin_bullets or ex_bullets or add_bullets
                 ),
@@ -342,6 +362,49 @@ def _resolve_chosen_summary_text(
     if fallback:
         return fallback, "candidate_default"
     return "", "none"
+
+
+def _read_experience_summary_choices(ctx: dict[str, Any]) -> tuple[bool, dict[int, int]]:
+    """B.4 — return (use_experience_summaries, {experience_id: item_id}) from a
+    loaded context dict's `composition_overrides`. The toggle gates whether the
+    per-role picks are applied; keys/ids are coerced to int (JSON persists keys
+    as strings). Absent / invalid → (False, {})."""
+    overrides = ctx.get("composition_overrides") or {}
+    if not isinstance(overrides, dict):
+        return False, {}
+    use_flag = bool(overrides.get("use_experience_summaries"))
+    raw = overrides.get("chosen_experience_summary_ids") or {}
+    out: dict[int, int] = {}
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            try:
+                out[int(k)] = int(v)
+            except (TypeError, ValueError):
+                continue
+    return use_flag, out
+
+
+def _resolve_chosen_experience_summary_text(
+    session,
+    experience_id: int,
+    item_id: int | None,
+) -> str:
+    """B.4 — return the chosen ExperienceSummaryItem's text for a role, or ""
+    when none is chosen / the variant is missing / inactive / belongs to a
+    different role. OPT-IN: NO fallback to the legacy Experience.summary (it
+    lives on as a backfilled variant, surfaced only when explicitly chosen)."""
+    if item_id is None:
+        return ""
+    from db.models import ExperienceSummaryItem
+
+    row = (
+        session.query(ExperienceSummaryItem)
+        .filter_by(id=item_id, experience_id=experience_id, is_active=1)
+        .first()
+    )
+    if row and (row.text or "").strip():
+        return row.text
+    return ""
 
 
 def _read_bullet_overrides(
