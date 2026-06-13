@@ -77,8 +77,9 @@ is the failure mode this section exists to prevent.
    - working changes staged + internally consistent (no dangling refs / links);
    - **memory learnings** from the session written now — doing memory or cleanup *after* the merge (on `main`) gets blocked by `require-feature-branch` + the merge-wiped `~/.claude/plans/.approved` marker, forcing a repeat flag-clear-and-ceremony that steps on the next branch's work; the cheap window is here, pre-merge;
    - every **loose end flagged this session** resolved or explicitly deferred;
+   - **trailing "track this" observations** — every note surfaced this session (flaky tests, drift spotted, process friction, follow-on flags, deferred sub-decisions) is **filed durably now** (RELEASE_CHECKLIST "Discovered … (tracked, deferred)" / a memory / a PX row) **or** written into the handoff's `Carried-forward observations` section; never left to surface after merge as a new one-file branch;
    - **branches to prune** identified.
-   "Done" is the *output* of this sweep, not a declaration — do not announce completion until it is empty. Declaring progress over verifying completeness manufactures tech debt, repeat close-outs, and eroded trust.
+   "Done" is the *output* of this sweep, not a declaration — do not announce completion until it is empty. Declaring progress over verifying completeness manufactures tech debt, repeat close-outs, and eroded trust. In particular, NEVER merge and then open a follow-up branch for a doc / memory / note edit — that re-triggers the marker-wipe ceremony; fold it in before the merge.
 1. Quality gate green (`python -m ruff check .` + `python -m mypy .` + `python -m pytest`).
 2. Commit — message records what was done and why (or "no code change — verified" if the branch closed clean).
 3. Ask user to confirm merge to `main`; execute merge after confirmation.

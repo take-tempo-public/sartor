@@ -68,6 +68,22 @@
 
 ---
 
+## Carried-forward observations (tracked-deferred this session)
+
+<!-- REQUIRED — do not delete. List every "track this" item surfaced during the
+     CLOSING session that is NOT part of this branch's task: flaky tests, drift
+     spotted, process friction, follow-on flags, deferred sub-decisions. Each item
+     names WHERE it is filed, so it cannot evaporate:
+       - filed → `RELEASE_CHECKLIST.md` "Discovered … (tracked, deferred)" | a memory
+         slug | a PX-id / RELEASE_ARC row; OR
+       - unfiled → "capture in your branch" — the next agent folds it into their
+         pre-close sweep, NEVER a standalone post-merge branch.
+     Empty is allowed, but write an explicit "None." — a conscious clear, not an
+     omission. This section is the structural home for the trailing notes a closing
+     agent used to drop verbally; the close-out sweep (AGENTS.md step 0) requires it. -->
+
+---
+
 ## What this branch should build
 
 <!-- Numbered list of concrete deliverables. Each item must:
@@ -104,6 +120,11 @@ code. **Do not code first.**
   wait for authorization
 - Do not merge to `main` without explicit user confirmation
 - One branch per session — close, merge, hand off before starting the next
+- Capture-before-merge: land ALL of this branch's docs / memory / CHANGELOG /
+  RELEASE_ARC-CHECKLIST / tracked-deferred / flaky-test captures **before** the merge.
+  Never merge then open a follow-up branch for a one-file doc/memory edit — it
+  re-triggers the `--no-ff` `.approved` marker-wipe ceremony. If a small item surfaces
+  after you'd otherwise merge, the sweep isn't finished: fold it in and re-gate.
 
 ---
 
@@ -114,8 +135,12 @@ code. **Do not code first.**
    with the user) so the session closes ONCE: working changes consistent (no
    dangling refs); **session memory learnings written now** (post-merge
    memory/cleanup on `main` gets hook-blocked, forcing a repeat ceremony that
-   steps on the next branch); loose ends resolved or deferred; branches to
-   prune identified. "Done" is the output of this sweep, not a declaration.
+   steps on the next branch); loose ends resolved or deferred; **every trailing
+   "track this" observation filed durably now OR written into the `Carried-forward
+   observations` section above**; branches to prune identified. "Done" is the output
+   of this sweep, not a declaration. NEVER merge and then open a follow-up branch for
+   a doc / memory / note edit — that re-triggers the marker-wipe ceremony; fold it in
+   before the merge.
 1. Quality gate green: `ruff check .` + `mypy .` + `pytest`
 2. Commit — message records what was done and why (or "no code change —
    verified" if the branch closed clean)

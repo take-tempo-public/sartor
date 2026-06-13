@@ -274,6 +274,18 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 > folder into the wiki early** in this epic, after which the flat folder may retire
 > into the wiki's `raw/` layer.
 
+### Discovered during the v1.0.6 stream (tracked, deferred)
+
+- [ ] **Flaky UX test — `test_positioning_pin_preserves_title_pin`** — surfaced
+      2026-06-13 on the docs-only `docs/flag-plugin-activation-v1.0.7` branch:
+      [`tests/ux/regression/test_20260612_experience_summary_item.py`](../../tests/ux/regression/test_20260612_experience_summary_item.py)`::test_positioning_pin_preserves_title_pin`
+      failed **once** in a full-suite run, then **passed on isolated re-run** — an
+      intermittent UX-tier race (Playwright timing/selector), **pre-existing and not
+      code-caused** (the same `main` code passed 1169/1169 twice the same day). Deferred:
+      stabilize in a dedicated UX-tier pass (likely a missing settle/`to_be_visible`
+      before the pin assertion); **not a release blocker.** First item filed via the new
+      carry-forward close-out rule ([`AGENTS.md`](../../AGENTS.md) step 0).
+
 ### Discovered during the v1.0.5 stream (tracked, deferred)
 
 - [x] **`/api/answer-clarifications` overwrites the whole answers map — iterate
