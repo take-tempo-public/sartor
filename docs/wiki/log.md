@@ -56,3 +56,62 @@ Lint: **PASS** (no ERROR) — all 8 pages present and listed in `index.md`; ever
 error); code-module coverage = INFO (WS-4b). Audit (`consistency-tracks-enforcement` +
 `governance-extraction`): all load-bearing claims **SUPPORTED** against cited sources; no
 UNSUPPORTED. Freshness reminder confirmed **silent** (sentinel carries no 40-char SHA).
+
+## 2026-06-13 — second ingest: the code cold pass (`wiki/cold-ingest-code`)
+
+**Mode: code COLD pass** (WS-4b, item 5) — the first ingest of the *code* architecture,
+distinct from the 2026-06-09 content-scoped pass. The repo at HEAD `9816b45` was read,
+chunked per the [`../architecture.md`](../architecture.md) module map, and synthesized
+into **16 new `pages/`**, every code claim `path:line`-grounded per
+[`SCHEMA.md`](SCHEMA.md)'s one grounding rule.
+
+**Sources read** (HEAD `9816b45`): `analyzer.py`, `hardening.py`, `parser.py`,
+`generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`,
+`pdf_render.py`, `app.py`, `db/` (`models.py`, `build_context.py`, `persist_run.py`),
+`evals/` (`runner.py`, `bootstrap.py`, `rubrics/`), `dashboard/`, `static/app.js`,
+`templates/index.html`, plus [`../architecture.md`](../architecture.md) +
+[`../diagrams/`](../diagrams/) `*.mmd`.
+
+**Pages created (16):** `code-module-map` (hub), `deterministic-llm-boundary`,
+`prompt-version-discipline`, `context-set-contract`, `iteration-audit-chain`,
+`corpus-data-model`, `corpus-to-output-reach`, `application-audit-chain`,
+`pipeline-stages`, `llm-call-catalog`, `generation-and-grounding`, `route-surface`,
+`frontend-wizard`, `document-rendering`, `eval-harness`, `diagnostics-console`.
+[`index.md`](index.md) updated; `[[backlinks]]` reconciled bidirectionally, incl. new
+inbound links into `consistency-tracks-enforcement`, `project-self-assessment`,
+`engineering-workstreams`, and `non-dependency-downloads`.
+
+**Audience-tag convention authored** ([`SCHEMA.md`](SCHEMA.md) "Audience tag"): a
+machine-parseable blockquote line `> **Audience:** ` + a backticked `user`|`dev` token,
+plus blanket path→audience rules. All content pages stamped — [`overview.md`](overview.md)
+= `user`; the 24 `pages/` = `dev`. `audience: user` education pages are **reserved** for
+the Sprint-6.5 sweep (a lint INFO, not an error). This is the boundary the planned
+doc-assistant access plane gates on (see
+[`../dev/memory-architecture.md`](../dev/memory-architecture.md)).
+
+**`.last_ingest_sha` advanced sentinel → `9816b45851acf5aac3e4249e14bdd8664a8fab29`** —
+this *is* the code pass, so the checkpoint now carries a real 40-char SHA and the
+commit-time freshness reminder goes live (it was deliberately silent under the sentinel).
+
+**Diagram drifts folded in** (the re-read caught them, as tracked in
+[`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md)): Step-2 in
+[`../diagrams/pipeline.mmd`](../diagrams/pipeline.mmd) + the embedded copy in
+[`../architecture.md`](../architecture.md) "GET INTERVIEW QUESTIONS" → "GET CLARIFYING
+QUESTIONS" (the Step-6 iterate flow was already correct);
+[`../diagrams/data-flow.mmd`](../diagrams/data-flow.mmd) cover-letter node brought up to
+`cover_TS.docx /<br/>.pdf / .md` to match the already-correct `../architecture.md`.
+
+**Authoring method.** A 16-page Workflow — one author agent per page, then a *different*
+adversarial grounding auditor per page (the [`/wiki-audit`] discipline). 8 pages passed
+clean; 8 had drift the audit caught and the fix pass corrected — e.g. the `app.py` route
+count (75 → **92** `@app.route`), `check_refinement_scope` as a 2nd raw LLM call site that
+bypasses the `_call_llm` funnel, `_emit_call_log`'s JSON key (`call`, not `call_kind`), and
+`CandidateInfo`'s `linkedin_url`/`website_url` (not `links`).
+
+**Verification (lint + audit).** Lint: **PASS** (no ERROR) — all **24** `pages/` ↔
+`index.md` agree both ways; every `[[backlink]]` resolves (no dangling); no orphans
+(`code-module-map` is the hub); staleness now = a real 40-char SHA (= HEAD, 0 code files
+changed since). Audit: the adversarial per-page pass + an independent re-verify of the
+highest-impact structural claims (route count, the scope-check call site, the telemetry
+key) all SUPPORTED at HEAD; zero UNSUPPORTED remain. Gate: `ruff` ✓ · `mypy` ✓ · `pytest`
+**1169/1169** (docs-only — no `.py` touched).

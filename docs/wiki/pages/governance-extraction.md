@@ -1,5 +1,6 @@
 # Governance extraction (the mixed-doc crux)
 
+> **Audience:** `dev`
 > **Concept:** the planned extraction of a single canonical **Governance** home — the
 > design that resolves the "mixed-doc" problem (prescriptive rules tangled into
 > descriptive docs). Design is settled; the build is a separate, later, gated branch.

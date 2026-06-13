@@ -56,7 +56,7 @@ wiki is the thing that is wrong (file it back via a `/wiki-*` op once those land
 | [`overview.md`](overview.md) | The wiki's front door — a one-page orientation, seeded from and deferring to [`../system-model.md`](../system-model.md). |
 | [`log.md`](log.md) | Append-only record of every ingest / lint run. |
 | `.last_ingest_sha` | The codebase-variant diff checkpoint (see "Source model"). |
-| `pages/` | Flat, slug-named synthesized pages. **Empty until ingest** (steps 4 + WS-4b). |
+| `pages/` | Flat, slug-named synthesized pages. Populated by ingest — the excellence-walk content pass (WS-4a step 4) + the code cold-ingest (WS-4b). |
 
 ## Page conventions
 
@@ -69,6 +69,44 @@ wiki is the thing that is wrong (file it back via a `/wiki-*` op once those land
   symbol or anchor over a bare line number when one exists — line numbers drift.
 - **Mark synthesis.** Tag a statement that is *concluded* rather than quoted with
   `[synthesis]`, so a later audit knows to fact-check it against its cited sources.
+
+## Audience tag
+
+Every content page carries a machine-parseable **audience tier** — `user` or `dev` —
+as a line in its blockquote header:
+
+```
+> **Audience:** `dev`
+```
+
+or, with optional human prose after an em-dash:
+
+```
+> **Audience:** `user` — anyone meeting the project.
+```
+
+The parse target is the **backtick-wrapped token** immediately after `**Audience:**`
+(`user` or `dev`); any prose after the em-dash is for human readers only. This is the
+boundary the planned doc-grounded assistant's **access / disclosure plane** gates on —
+the `user`/`dev` toggle sets which tiers a question may reach, and `dev`-tier content
+is never surfaced to a `user`-scoped turn. Authored here **once**, because the same
+boundary serves three consumers: the assistant's access plane, the Sprint-6.5
+education user/dev split, and the later governance extraction. The WHY lives in
+[`../dev/memory-architecture.md`](../dev/memory-architecture.md) (decision #2 + the
+access plane) — referenced, not restated (D5).
+
+**Blanket path→audience rules** — a page's tier follows the source it describes:
+
+| Source it describes | Tier |
+|---|---|
+| code (`*.py`, `static/`, `templates/`), `docs/dev/`, `evals/`, `dashboard/` | `dev` |
+| `README.md`, `docs/install.md`, `docs/walkthrough*.md`, `vision.md`, wiki `overview.md` | `user` |
+
+[`overview.md`](overview.md) (the front door) is the one `user` page today.
+**`audience: user` education pages are reserved for the Sprint-6.5 sweep and are not
+yet present** — so a lint finding of "no `user`-tier pages under `pages/`" is an INFO,
+not an error. Infra files (`index.md`, `log.md`, this `SCHEMA.md`, `.last_ingest_sha`)
+are wiki meta, not retrieval Units, and are **not** stamped.
 
 ## The one grounding rule
 
@@ -114,6 +152,9 @@ as a pre-release gate. Every run appends to [`log.md`](log.md).
 
 ## Status
 
-**Skeleton only.** `pages/` is empty; [`overview.md`](overview.md) is the one seeded
-entry. Population is later branches — see
-[`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md) §Phase 4.5 (WS-4a steps 3–4 + WS-4b).
+**Populated.** `pages/` carries the excellence-walk content pages (WS-4a step 4) and
+the code-architecture pages (WS-4b code cold-ingest); `.last_ingest_sha` holds the
+HEAD the code pass was authored against. The one `user`-tier page is
+[`overview.md`](overview.md); `audience: user` education pages are still reserved for
+the Sprint-6.5 sweep. See [`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md) §Phase 4.5
+(WS-4a / WS-4b) and [`log.md`](log.md) for the ingest record.

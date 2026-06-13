@@ -1,5 +1,6 @@
 # How the system model was found
 
+> **Audience:** `dev`
 > **Concept:** the form-finding journey behind the seven-functions self-model — the
 > lenses tried, the moves that worked, and why the settled vocabulary looks the way it
 > does. The *result* is canonical elsewhere; this page is the *why*.

@@ -42,7 +42,7 @@ sequenceDiagram
     FE-->>U: Step 1 panel + Continue
 
     Note over U,FS: Step 2 — Clarify (optional)
-    U->>FE: click GET INTERVIEW QUESTIONS
+    U->>FE: click GET CLARIFYING QUESTIONS
     FE->>APP: POST /api/clarify
     APP->>ANL: clarify(ctx)
     ANL->>HK: call_kind="clarify" (~7.5s)
