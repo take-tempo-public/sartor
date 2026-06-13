@@ -18,6 +18,10 @@ graduation: none
 - **Round 2 (tensions + follow-ups):** asked + answered 2026-06-12 (R2-12
   continued as live discussion); informed by the
   [round-2 verification brief](round2-verification-brief.md)
+- **Charter:** v0.3 SIGNED 2026-06-12 (Robert Cooksey) — all sign-off
+  items confirmed inline except M-2's interview-criterion framing, which
+  carried no inline word and is treated as confirmed by the signature.
+  **Phase 1 closed.**
 
 > **Redaction note (2026-06-12):** at the owner's direction, references to
 > out-of-scope external work that surfaced conversationally during the

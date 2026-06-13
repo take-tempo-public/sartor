@@ -1,5 +1,5 @@
 ---
-status: review-artifact — DRAFT v0.3 (owner charter-review notes applied), awaiting signature
+status: review-artifact — SIGNED 2026-06-12 (Robert Cooksey); the review's severity anchor
 evidence_sha: c6e0437
 graduation: docs/governance/charter.md (v1.0.7, on owner approval)
 ---
@@ -348,16 +348,16 @@ flow with a written rationale line.
 ## Sign-off
 
 Open items to settle by editing above, then sign:
-1. C-0 claims discipline — confirm or strike.
+1. C-0 claims discipline — confirm or strike. Confirm.
 2. ~~C-2 (i)–(iv)~~ — **ruled 2026-06-12** (fix Chart.js v1.0.6; HF
    downloads = sanctioned power-user opt-in under D-6; scrape re-wired
    v1.0.6; jd_url docs corrected v1.0.6). Glance at the final two-class
-   wording.
-3. D-5 repo-imported defaults — keep, edit, or drop.
+   wording. Confirm.
+3. D-5 repo-imported defaults — keep, edit, or drop. keep
 4. M-2 interview-criterion framing (weighed vs hard gate) — confirm.
-5. Amendment ceremony — confirm, edit, or strike.
+5. Amendment ceremony — confirm, edit, or strike. Confirm.
 
-- [ ] Signed: ______________________  Date: ____________
+- [x ] Signed: Robert Cooksey  Date: 2026.06.12
 
 Once signed, this charter is the review's severity anchor and the
 graduation source for `docs/governance/charter.md` in v1.0.7.

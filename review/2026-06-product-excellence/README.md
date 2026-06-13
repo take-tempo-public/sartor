@@ -24,8 +24,8 @@ files — deliberately modeling the compliance-agent posture it evaluates.
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Setup: worktree, branch, scaffold | ✅ done (2026-06-12) |
-| 1 | Discovery interview → signed Product Charter | 🔄 in progress |
-| 2 | Domain guides ×8, product map, question bank | ⬜ pending |
+| 1 | Discovery interview → signed Product Charter | ✅ done (signed 2026-06-12) |
+| 2 | Domain guides ×8, product map, question bank | 🔄 in progress |
 | 3 | Evidence assessment + adversarial verification | ⬜ pending |
 | 4 | Prescriptions, governance draft, overlays, compliance-agent design | ⬜ pending |
 | 5 | Drift check, final assessment, graduation manifest | ⬜ pending |
