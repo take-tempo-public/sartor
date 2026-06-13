@@ -1,5 +1,5 @@
 ---
-status: review-artifact — DRAFT v0.2, awaiting owner edit + signature
+status: review-artifact — DRAFT v0.3 (owner charter-review notes applied), awaiting signature
 evidence_sha: c6e0437
 graduation: docs/governance/charter.md (v1.0.7, on owner approval)
 ---
@@ -36,10 +36,17 @@ incentivize surveillance by creating a data honeypot. The values are
 trust, user control, and user capability — stated plainly, without
 marketing language. *(R2-4.1, Q11)*
 
-**P-3.** Posture: a personal project, one of many, that the owner hopes
-helps others. It makes **soft commitments and best efforts, transparently
-documented** — never obligations that could make the project the owner's
-life. Feedback and help are welcome. *(posture directive)*
+**P-3.** Posture: an **open source project executed with the best of
+intentions — including significant effort in diligence — but no
+guarantees.** When issues are raised, the owner tries to get to them as
+soon as possible. The project is more than transparent: effort goes into
+sourcing and describing every part of itself, and the app includes a
+support agent (the doc-grounded assistant, v1.0.7) that can help a dev or
+agent-savvy user understand whatever it knows about itself — how it
+works, what it's been, what it hopes to be, and how it tries to respect
+the user. Commitments stay soft so the project never becomes an
+obligation that consumes its owner. *(posture directive; charter-review
+notes 2026-06-12)*
 
 **P-4.** It earns its keep **when a user gets an interview for a job
 where callback. wrote the resume.** Interviews are the reward and the
@@ -71,14 +78,13 @@ guarantee."
 *Each is owner-voiced or machine-enforceable. Amendment mechanics are
 proposed at the end (⚠).*
 
-**C-1. Local and yours.** callback. runs locally on the user's machine;
-all user artifacts stay on the user's disk, under the user's control,
-never uploaded; there is no hosted service. Sharing one installation
-among the people who share a machine (a partner, a household) is
-in-model — the trust boundary is the machine and the people who share
-it. Nothing is built for managing third parties' career data as a
-service. *(R2-4.1, R2-2, Q1, Q11)* 📄 *Implementation detail enforced in
-code: the server binds to 127.0.0.1 only.*
+**C-1. Local and yours.** callback. is a tool that is **local and under
+the control of a single unauthenticated user.** All user artifacts stay
+on the user's disk, under the user's control, never uploaded; there is no
+hosted service. The program leaks nothing outside itself; the machine and
+the interface are the user's domain. Use cases are left open, not
+enumerated. *(R2-4.1, Q1, Q11; charter-review notes)* 📄 *Implementation
+detail enforced in code: the server binds to 127.0.0.1 only.*
 
 **C-2. Egress.** No diagnostics or telemetry **leave the machine, ever**.
 The traffic is to the LLM provider the user configures — today
@@ -224,9 +230,14 @@ by three exhibits: the eval/tuning loop, grounding performance of
 generations, and the wiki/memory + documentation-with-git system. *(Q4,
 Q14)*
 
-**A-5.** Explicitly not served: direct structured-data integration into
-ATS back-ends (industry gaps; clean implied structure is the deliberate
-compromise); multi-client service use per C-1. *(Q6, R2-2)*
+**A-5.** Wanted but blocked by the industry: direct structured-data
+submission into application systems. User-facing application systems do
+not accept structured formats even though their back-ends digest into
+them — an industry breakage confirmed by prior research. That is why
+callback. standardizes on JSON Resume internally and plans to integrate
+industry-standard descriptors for resume data into that format: clean
+implied structure today, ready if a direct path ever opens. *(Q6;
+charter-review notes)*
 
 ## Severity inputs (how the review weighs findings)
 
@@ -244,9 +255,10 @@ diagnostics. *(Q15)*
 
 ## Success measures & release evidence
 
-**M-1.** Success is interviews (P-4) — knowable only to the user; the
-project accepts that, by C-2, it largely cannot observe its own success.
-*(Q8, R2-1)*
+**M-1.** Success is interviews (P-4) — knowable to the user, and locally
+usable by the user's own instance for outcome-informed tuning on their
+personal corpus; the project as a whole accepts that, by C-2, it cannot
+observe its own aggregate success. *(Q8, R2-1; charter-review notes)*
 
 **M-2.** v1.1.0 tag evidence (written, self-imposed criteria): *(Q17,
 R2-5 "perfect"/"yes", R2-6)*
@@ -303,9 +315,13 @@ Q24)*
 
 ## Tensions accepted
 
-**T-A.** Success is measured by interviews, but C-2 makes outcomes
-invisible to the project. The owner knows what he's leaving on the
-table. *(R2-1)*
+**T-A.** Success is measured by interviews, and C-2 keeps outcomes
+invisible to the project — but not to the user's own instance: outcomes
+are captured locally for the single user, enabling strong tuning on one
+person's personal corpus, **which is worth more than being pretty good on
+everyone's.** The trade is deliberate: per-user excellence over
+population averages; the project itself simply never learns its own
+aggregate success. *(R2-1; charter-review notes)*
 
 **T-B.** Grounding strictness trades against usefulness; direction set
 (C-3: synthesis within ground = feature) and the current balance is
