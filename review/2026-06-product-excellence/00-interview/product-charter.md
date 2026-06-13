@@ -84,29 +84,31 @@ code: the server binds to 127.0.0.1 only.*
 The traffic is to the LLM provider the user configures — today
 Anthropic; in the near future, whichever provider the user picks,
 including their own local models. *(R2-4.3, R2-1, Q10)*
+The sanctioned egress classes are exactly two: **(a)** the configured LLM
+provider, and **(b)** the optional profile/website scrape when the user
+has provided LinkedIn/portfolio URLs. JDs are always pasted text — no
+JD-URL fetch exists or is wanted. *(post-charter rulings, 2026-06-12)*
 Because the destination set is enumerable, this clause is
 machine-verifiable — and **was verified at `c6e0437`**: every LLM call
 routes to the configured provider; no analytics, error reporting, or
 phone-home exists; fonts and paged.js are vendored. By the same
 enumeration, callback. cannot submit applications or send anything on the
-user's behalf — no such destination exists. 📄 Four code/doc realities
-need your ruling to finalize the enumeration:
-- **(i)** The diagnostics dashboard currently loads Chart.js from a CDN
-  at runtime (`dashboard/templates/dashboard.html:15`) — a confirmed
-  violation of the existing no-CDN promise (vision.md L89-93,
-  SECURITY.md). Proposed: vendor it; until then the clause is honest
-  only with this exception named.
-- **(ii)** The opt-in eval-grounding scorers download ~3.2GB of model
-  weights from huggingface.co on first use, triggerable from localhost
-  diagnostics routes. Proposed: an explicit, named opt-in carve-out (or
-  offline-mode + pre-seeded cache).
-- **(iii)** The documented profile/portfolio scrape is **dead code** at
-  `c6e0437` — no runtime path calls it. Decide: re-wire it (restoring an
-  opt-in egress class) or remove it (and the docs' claim of it).
-- **(iv)** The documented "pasted-JD URL fetch" **does not exist in
-  code** — `jd_url` is stored as provenance metadata, never fetched.
-  Docs to be corrected; no egress class needed.
-Your spoken enumeration was closer to the code's truth than SECURITY.md's.
+user's behalf — no such destination exists. Four code/doc realities,
+**all ruled 2026-06-12**:
+- **(i) RULED — fix, v1.0.6.** The diagnostics dashboard loads Chart.js
+  from a CDN at runtime (`dashboard/templates/dashboard.html:15`) — a
+  confirmed violation of the no-CDN promise. Prescription PX-01: vendor
+  it.
+- **(ii) RULED — sanctioned power-user opt-in.** The eval-grounding
+  scorers download ~3.2GB of model weights from huggingface.co on first
+  use. Governed by D-6 (per-system bundling + progressive disclosure);
+  named in PRIVACY/SECURITY docs as the tuning system's opt-in install.
+- **(iii) RULED — regression, fix v1.0.6.** The profile/website scrape
+  *should* work when URLs are provided; it is dead code at `c6e0437`.
+  Prescription PX-02: re-wire.
+- **(iv) RULED — docs fix, v1.0.6.** No JD-URL fetch exists; `jd_url` is
+  provenance metadata. Prescription PX-03: correct
+  SECURITY.md/vision/README to the two-class enumeration.
 
 **C-3. Grounding mechanisms; grounded synthesis is the feature.**
 callback. does its best to keep the LLM grounded in real experience:
@@ -163,6 +165,13 @@ and no recurring human-labor promises; existing promises that exceed this
 (e.g., SECURITY.md's 5-business-day vulnerability response) are softened
 to best-effort wording. Machine-enforced gates are exempt — they don't
 tax the owner's life. *(posture directive)*
+
+**D-6. Per-system tool bundling, progressively disclosed.** Capabilities
+that require extra installs are bundled per system — the tuning system
+(grounding-scorer models), dev work (Chromium), and so on. Things a user
+never needs to do, they shouldn't have to see; install documentation is
+progressive and threaded for completeness. *(post-charter ruling,
+2026-06-12)*
 
 **D-5.** 📄 *Repo-imported defaults — confirmed only by your signature:*
 open-standards mechanics (JSON Resume as canonical intermediate; standard
@@ -324,8 +333,10 @@ flow with a written rationale line.
 
 Open items to settle by editing above, then sign:
 1. C-0 claims discipline — confirm or strike.
-2. C-2 (i)–(iv) — rule on Chart.js vendoring, the HF-download carve-out,
-   the dead scraper (re-wire or remove), and the jd_url docs fix.
+2. ~~C-2 (i)–(iv)~~ — **ruled 2026-06-12** (fix Chart.js v1.0.6; HF
+   downloads = sanctioned power-user opt-in under D-6; scrape re-wired
+   v1.0.6; jd_url docs corrected v1.0.6). Glance at the final two-class
+   wording.
 3. D-5 repo-imported defaults — keep, edit, or drop.
 4. M-2 interview-criterion framing (weighed vs hard gate) — confirm.
 5. Amendment ceremony — confirm, edit, or strike.

@@ -730,6 +730,42 @@ surface, R2-12.2).
   disagree with each other AND with code. One canonical enumeration
   needed (charter C-2 carries the draft).
 
+## Post-charter rulings (owner, 2026-06-12)
+
+**AL-4 (Chart.js CDN):** owner asked whether a fix is included → review is
+witness-only; fix delivered as an early prescription scheduled for v1.0.6
+(vendor `chart.umd.min.js` into `static/vendor/`).
+
+**AL-5/AL-7 (scraper + jd_url):**
+
+> we don't have a JD url option anywhere. we only paste JDs and we should
+> be scraping linkedin and website if provided. it sounds like those are
+> now broken and need to be fixed. that sounds like a mess around the
+> links. thank you for sorting. please be sure those are scheduled in
+> 1.0.6
+
+Ruling: the profile/website scrape is a REGRESSION (should work when URLs
+are provided) — re-wire scheduled v1.0.6. No JD-URL feature exists or is
+wanted; JDs are always pasted; SECURITY.md/vision/README corrected to
+match. Charter C-2(iii)/(iv) resolved.
+
+**AL-6 (HF model downloads):**
+
+> a super-user tuning their prompts makes that download, yes. we should
+> bundle the tools that must be installed for different systems (tuning
+> and the hugging face models, dev work and chromium). things that a user
+> never needs to do, they shouldn't have to see. then progressive
+> documentation of tool install for various systems, threaded for
+> completeness.
+
+Ruling: sanctioned power-user opt-in egress. New design principle —
+**per-system tool bundling with progressive disclosure**: capabilities
+requiring extra installs are packaged per system (tuning → grounding-
+scorer models; dev → Chromium; …), invisible to users who never enter
+that system, with progressive, threaded install documentation. Charter
+C-2(ii) resolved; becomes charter D-6 + feeds domain 7 and the Sprint 6.5
+install-guide work.
+
 **Posture directive (governs the whole charter and all prescriptions):**
 
 > let's step back now from hard commits. this is a single dev project and
