@@ -66,8 +66,9 @@ operation and there are no plans to add it.
 
 callback. vendors a small set of third-party files into the repo
 so that the runtime stays offline-capable. None of these phone
-home, none of these send data to third-party servers, none of
-these execute outside the browser preview iframe.
+home, none of these send data to third-party servers; each runs
+locally — in your browser, the preview iframe, or (for the
+test-tier asset) the local test runner.
 
 - **`static/vendor/paged.polyfill.js`** — [paged.js](https://pagedjs.org/)
   v0.4.3, MIT-licensed. Loaded only by the in-browser preview
@@ -75,12 +76,29 @@ these execute outside the browser preview iframe.
   render path (Playwright + Chromium) does NOT use this file;
   it handles `@page` CSS natively. Original copyright notice
   preserved at the top of the bundled file.
+- **`static/vendor/chart.umd.min.js`** — [Chart.js](https://www.chartjs.org/)
+  v4.4.0, MIT-licensed. Loaded by the diagnostics dashboard
+  (`/_dashboard`); charts lazy-init on detail-open. Vendored
+  (not fetched from a CDN) so the dashboard stays offline-capable;
+  the byte content is the SHA-384-pinned 4.4.0 build. Original
+  MIT notice preserved at the top of the bundled file.
 - **`personas/bundled/*.html`** — Jinja2 résumé templates,
   some adapted from community jsonresume.org themes. Attribution
   + MIT license preserved in the header of each adapted file.
 - **`personas/bundled/*.docx`** — generated programmatically by
   `scripts/build_bundled_templates.py`; not vendored from any
   upstream.
+- **`tests/ux/a11y/vendor/axe.min.js`** — [axe-core](https://github.com/dequelabs/axe-core)
+  v4.10.2, **MPL-2.0** (not MIT). **Test-tier only** — injected by
+  the `pytest -m a11y` accessibility gate via Playwright; never
+  loaded at runtime. Full notice preserved at the top of the file;
+  see [`tests/ux/a11y/vendor/README.md`](tests/ux/a11y/vendor/README.md).
+
+The repository's top-level `LICENSE` is MIT; the vendored assets
+above carry their own licenses (MIT for paged.js / Chart.js;
+**MPL-2.0** for the test-tier axe-core). A machine-readable
+REUSE/SPDX manifest declaring this mix is planned for the public
+release.
 
 No external CDN is loaded at runtime. Every static asset in the
 preview / generated output ships from the local repo.

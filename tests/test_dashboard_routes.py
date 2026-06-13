@@ -374,8 +374,9 @@ class TestIndexRoute:
             # Empty-state messages should be visible
             assert "No call records" in body or "No calls match" in body
             assert "No eval results yet" in body
-            # Chart.js script tag should still be in the head
-            assert "chart.umd" in body
+            # Chart.js is vendored locally — assert the local tag AND no external CDN.
+            assert "vendor/chart.umd.min.js" in body
+            assert "cdn.jsdelivr.net" not in body
 
 
 def _make_grounded(

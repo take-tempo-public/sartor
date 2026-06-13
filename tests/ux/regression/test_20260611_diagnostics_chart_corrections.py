@@ -109,8 +109,8 @@ def test_diagnostics_chart_corrections(
     # Server-rendered evidence (always present, no Chart.js needed): the cost
     # table lists call kinds with both a total and a mean column.
     expect(dash.detail_body().locator("table")).to_contain_text("generate")
-    # Chart.js loads from a CDN; when unavailable (offline CI) the chart degrades
-    # to the table above, so the chart-internal tooltip assertion is best-effort.
+    # Chart.js is vendored locally; if it hasn't initialized (or JS is off) the chart
+    # degrades to the table above, so the chart-internal tooltip assertion is best-effort.
     tip = page.evaluate(
         """() => {
             if (typeof Chart === 'undefined') return null;

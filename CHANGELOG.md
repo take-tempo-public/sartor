@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — vendored Chart.js; declared vendored-asset licenses (`fix/vendor-chartjs`, PX-01 + PX-06)
+
+Chart.js 4.4.0 (MIT) is now **vendored** at `static/vendor/chart.umd.min.js` instead of
+loaded from `cdn.jsdelivr.net` at runtime — closing the runtime-CDN contradiction with
+SECURITY.md / vision.md's "no external CDN / no third-party fetch at runtime" promise
+(2026-06 product-excellence review: `F-sec-03` / `F-vision-05` / `F-docs-02`; charter
+C-2(i)). The downloaded bytes were verified byte-for-byte against the prior `integrity`
+SHA-384 before the CDN `integrity`/`crossorigin` attributes were dropped. SECURITY.md now
+inventories both vendored assets' licenses — Chart.js (MIT) and the test-tier axe-core
+4.10.2 (**MPL-2.0**) (`F-sec-08`, PX-06). No new Python dependency (vendored static asset,
+like `paged.polyfill.js`).
+
 ### Added — individual skills as a Corpus Item (`feat/skill-group-item`, Sprint 6.6 B.5)
 
 The flat `Skill` row is promoted to a full Corpus Item — the same lifecycle every
