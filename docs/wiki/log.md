@@ -115,3 +115,25 @@ changed since). Audit: the adversarial per-page pass + an independent re-verify 
 highest-impact structural claims (route count, the scope-check call site, the telemetry
 key) all SUPPORTED at HEAD; zero UNSUPPORTED remain. Gate: `ruff` ✓ · `mypy` ✓ · `pytest`
 **1169/1169** (docs-only — no `.py` touched).
+
+## 2026-06-13 — diff refresh: Chart.js vendoring (`chore/wiki-refresh`)
+
+**Mode: diff** (`9816b45` → `e4e01fd`). Triggered by PX-01 (`fix/vendor-chartjs`,
+2026-06 product review), which vendored Chart.js to
+[`../../static/vendor/chart.umd.min.js`](../../static/vendor/chart.umd.min.js) and
+dropped the `cdn.jsdelivr.net` runtime fetch.
+
+**Scope.** The 78-file diff split: **38** files under `docs/dev/reviews/` were
+**excluded** (the review archive forbids wiki ingestion — provenance model); **~28**
+`docs/wiki/` files are the artifact, not sources; of the 11 actionable source changes,
+`../architecture.md` + `../diagrams/{pipeline,data-flow}.mmd` were WS-4b's own
+drift-fixes **already reflected** in the pages it wrote (re-read confirmed, no page
+change). A whole-wiki grep confirmed exactly one stale line.
+
+**Page changed (1).** [`pages/diagnostics-console.md`](pages/diagnostics-console.md) —
+the shared-drawer note "Chart.js from CDN" → "Chart.js — vendored at
+`static/vendor/chart.umd.min.js`, no runtime CDN", with a `path` cite per the grounding
+rule. `index.md` unchanged (its one-liner didn't reference the CDN).
+
+**Verification.** Wiki grep for `cdn`/`chart…from…CDN` → only score-over-time chart
+hits remain. Gate: `ruff` ✓ · `mypy` ✓ · `pytest` **1169/1169** (docs-only — no `.py`).
