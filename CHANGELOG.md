@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — C-0 claims discipline: no-invention absolutes reworded (`docs/c0-claims-discipline`, PX-09 + PX-14)
+
+Documentation-only corrections from the 2026-06 product-excellence review's PX band, reconciling
+the absolute "no invention" register on the highest-audience surfaces with what the system
+actually enforces. C-0 bars LLM-behavior absolutes; the owner recanted the exact strings in the
+review interview (R2-4.2 "'LLM cannot invent' is a bold claim … we do our best"; R2-4.4 "no
+invention ever is over-stated").
+
+- **PX-09 — no-invention absolutes → mechanism-and-effort** (`F-vision-02` / `F-docs-03`; charter
+  C-0, A-4). Reworded the categorical "The LLM cannot invent facts." and the "No invention, ever"
+  heading (`vision.md`), and the "without inventing anything about you" / "may not fabricate"
+  taglines (`llms.txt`, `docs/wiki/overview.md`, `docs/system-model.md`), to describe the actual
+  mechanism — a grounding check in the generation prompt plus the `grounding_overlap` *witness*
+  metric that **measures** rather than enforces-by-construction — and to say plainly it is
+  best-effort, **not** a categorical guarantee. The two near-identical product taglines (overview /
+  system-model) now read identically; each file's "Open revision points → point 4" self-reference
+  was updated so it no longer quotes the retired opening.
+- **PX-14 — `GROUNDING_METRIC.md` union correction** (`F-eval-04`; rides PX-09's branch per the
+  prescription). The metric design note claimed a **four-part** source union (incl. first-person
+  typed edits); corrected to the actual **three-source** deterministic union (`original primary
+  résumé + supplemental résumés + clarification answers`). Typed edits remain prompt-side ground
+  truth for the *model* — they widen the generation grounding check — but are not a member of the
+  *metric's* source set. Doc now follows code (`hardening.assemble_source_union`); no code change.
+
+Docs only — no code, prompt, route, dependency, or migration; `PROMPT_VERSION` unchanged.
+
 ### Changed — disclosure-doc corrections (`docs/disclosure-doc-corrections`, PX-03/05/07)
 
 Documentation-only corrections from the 2026-06 product-excellence review's PX band, aligning

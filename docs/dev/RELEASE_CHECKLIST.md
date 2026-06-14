@@ -295,6 +295,19 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       corrected in the same pass — **not** deferred to future one-file branches. Deliberately left: the
       plugin `author.name` (the maintainer, not a repo ref) and `name`/description (a v1.0.7
       project-rename concern). See CHANGELOG [Unreleased].
+- [x] **PX-09 (+PX-14) — C-0 claims discipline (docs)** (`docs/c0-claims-discipline`, now-v1.0.6
+      PX band; `F-vision-02` / `F-docs-03`, plus `F-eval-04` for PX-14). Docs-only; no
+      prompt/route/dep/migration; `PROMPT_VERSION` unchanged. **PX-09**: reworded the absolute
+      "The LLM cannot invent facts." / "No invention, ever" register on the highest-audience
+      surfaces (`vision.md:50`/`:151`, `llms.txt:4`, `docs/wiki/overview.md`, `docs/system-model.md`)
+      to mechanism-and-effort — a generation-prompt grounding check + the `grounding_overlap`
+      *witness* metric that **measures**, best-effort not a categorical guarantee (C-0 bars
+      LLM-behavior absolutes; owner recanted R2-4.2/R2-4.4). Consistency touch: each file's "Open
+      revision points → point 4" self-reference no longer quotes the retired opening. **PX-14**
+      (prescription: "rides PX-09's doc branch — COORDINATE"): corrected
+      `docs/dev/GROUNDING_METRIC.md`'s four-part source union to the actual **three** sources
+      (primary + supplementals + clarifications); typed edits are prompt-side, not a metric source
+      element (doc follows `hardening.assemble_source_union`). See CHANGELOG [Unreleased].
 - [ ] `ruff + mypy + pytest + pytest -m ux` green; `chore/version-bump-v1.0.6`.
 
 > **Source preserved (no longer at-risk).** The excellence-walk drafts — the system-
