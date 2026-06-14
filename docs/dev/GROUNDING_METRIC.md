@@ -21,14 +21,15 @@ generated résumé have support in the candidate's ground-truth corpus? We own
 the reference set, so every claim is verifiable against a **closed** source —
 this is what makes a real metric achievable.
 
-**The source set is the dynamic union**, not just the original résumé:
-`original primary résumé + supplemental résumés + clarification answers +
-first-person typed preview edits`. [`hardening.compute_iteration_signals`](../../hardening.py)
-already assembles exactly this union, and `AGENTS.md` ("LLM prompts") is explicit
-that the generation grounding check **widens** to accept clarifications + typed
-edits as legitimate source. **A metric scored against only the original résumé
-will over-report** — it will flag legitimately-clarified facts as fabrication.
-Score against the union, recomputed per iteration.
+**The metric's source set is the dynamic union**, not just the original résumé:
+`original primary résumé + supplemental résumés + clarification answers`.
+[`hardening.compute_iteration_signals`](../../hardening.py) already assembles exactly this
+three-source union. `AGENTS.md` ("LLM prompts") notes the generation grounding check **also
+widens** to accept first-person typed preview edits — but that widening is **prompt-side**:
+typed edits are ground truth for the *model*, not a member of the metric's deterministic
+source union. **A metric scored against only the original résumé will over-report** — it
+will flag legitimately-clarified facts as fabrication. Score against the union, recomputed
+per iteration.
 
 ## Hallucination is not one thing — split by class
 

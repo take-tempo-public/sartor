@@ -1,10 +1,11 @@
 # callback.
 
 > A local-first app that tailors your résumé — and, optionally, a cover letter — to a
-> specific job **without inventing anything about you**. It reads a job posting, asks a
-> few sharp questions, helps you pick which of your real accomplishments fit, writes a
-> grounded tailored draft, and renders it to Word or PDF. It runs on your own machine;
-> your career data never leaves it apart from the AI calls that do the writing.
+> specific job, **grounded in what's actually true about you, not invented**. It reads
+> a job posting, asks a few sharp questions, helps you pick which of your real
+> accomplishments fit, writes a grounded tailored draft, and renders it to Word or PDF.
+> It runs on your own machine; your career data never leaves it apart from the AI calls
+> that do the writing.
 
 The committed knowledge wiki under `docs/wiki/` is the best map of the system — start
 there. The wiki is a synthesized layer over the repo at git HEAD; on any conflict the

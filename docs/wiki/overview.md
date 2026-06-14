@@ -16,16 +16,19 @@
 ## What it is
 
 callback. is a local-first app that tailors your résumé — and, optionally, a cover
-letter — to a specific job **without inventing anything about you**. You paste in a job
-description; it reads the posting, asks a few sharp questions, helps you choose which of
-your real accomplishments fit, then writes a tailored draft grounded entirely in your
-actual history and renders it to Word or PDF. It runs on your own machine; your career
-data never leaves it, apart from the calls to the AI model that does the writing.
+letter — to a specific job, **grounded in what's actually true about you, not
+invented**. You paste in a job description; it reads the posting, asks a few sharp
+questions, helps you choose which of your real accomplishments fit, then writes a
+tailored draft grounded entirely in your actual history and renders it to Word or
+PDF. It runs on your own machine; your career data never leaves it, apart from the
+calls to the AI model that does the writing.
 
-The thing that makes it trustworthy is a rule it enforces on itself: it may **select,
-rephrase, and emphasize** what is already true about you, but it may not **fabricate** —
-no invented titles, numbers, or dates. That single constraint shapes the entire design,
-and it recurs at every scale of the system.
+The thing that makes it trustworthy is a rule it holds itself to: it may **select,
+rephrase, and emphasize** what is already true about you, but it is built **not to
+fabricate** — no invented titles, numbers, or dates. A grounding check in the generation
+prompt enforces that rule and a witness metric measures whether it held — a constraint on
+the model, not a guarantee about every output. That single constraint shapes the entire
+design, and it recurs at every scale of the system.
 
 ## Two subjects: the Product and the Work
 
@@ -84,5 +87,5 @@ not silently dropped.
 3. **The "Where it lives" file map.** Kept canonical in `system-model.md` and only
    *pointed to* here — is that the right split, or should the overview carry a trimmed
    map of its own?
-4. **The opening.** Lead with "without inventing anything about you" (as it does now),
+4. **The opening.** Lead with the grounding / no-fabrication promise (as it does now),
    or lead with the *problem* (the pain of hand-tailoring résumés)?

@@ -47,12 +47,13 @@ person, one machine, one job at a time.
 
 Three goals, in order of priority:
 
-1. **Honest tailoring.** The LLM cannot invent facts. Every
-   bullet, title, and summary in the output traces back to
-   either (a) the candidate's existing corpus or (b) a
-   first-person clarification they typed. The grounding check
-   in the generate prompt is load-bearing; the eval harness's
-   `grounding_overlap` metric measures whether the rule held.
+1. **Honest tailoring.** A grounding check in the generate
+   prompt — backed by the eval harness's `grounding_overlap`
+   witness metric — holds every bullet, title, and summary to
+   what traces back to either (a) the candidate's existing
+   corpus or (b) a first-person clarification they typed. It
+   measures and constrains; it is not a categorical guarantee
+   the LLM can't invent.
 
 2. **ATS-safe output by default.** Most applications are
    parsed by software before any human sees them. callback.
@@ -148,9 +149,9 @@ The deterministic boundary is enforced by tests
 `tests/test_safe_username_within.py`) and by the
 `route-security-lint` hook.
 
-### No invention, ever
+### Grounding mechanism, not a guarantee
 
-Three layers of defense against LLM hallucination:
+Three layers of best-effort defense against LLM hallucination:
 
 1. **The SYSTEM_PROMPT carries an explicit no-invention rule**
    with worked examples (OK / NOT OK pairs) for the failure
