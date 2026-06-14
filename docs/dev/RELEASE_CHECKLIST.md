@@ -308,6 +308,20 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       `docs/dev/GROUNDING_METRIC.md`'s four-part source union to the actual **three** sources
       (primary + supplementals + clarifications); typed edits are prompt-side, not a metric source
       element (doc follows `hardening.assemble_source_union`). See CHANGELOG [Unreleased].
+- [x] **PX-13 — eval-smoke gate guard** (`test/eval-gate-guard`, now-v1.0.6 PX band;
+      `F-qe-rel-05` KEEP/CONFIRMED; rides PX-08, done). Test + docs only; no behavior/prompt/
+      route/dep/migration; `PROMPT_VERSION` unchanged. Affirms + guards the eval-quality
+      regression gate so it can't silently rot. **Meta-test**: `tests/test_eval_runner.py::`
+      `TestEvalGateGuard` pins **both** exit-`2` arms LLM-free (default `pytest`, no paid call) —
+      a sub-`PASS_THRESHOLD` (4.0) score (`n_fail` path) **and** a threshold-passing score that
+      drops past `REGRESSION_DELTA` (0.5) below a seeded baseline (`regressions` path, `n_fail==0`),
+      matching `runner.py`'s `exit_code = 0 if (n_fail == 0 and not regressions) else 2`.
+      **Do-not-regress note + CI scope**: reconciled `evals/README.md`, which had drifted — three
+      spots (quick-start, exit-codes table, "Regression alerting") still claimed regressions were
+      *informational* and didn't gate (true before commit `a60a008`'s "PR gate"; the narrative was
+      never updated). Corrected to the real contract + a "machine-enforced" callout; recorded the
+      CI scope (grounding-rubric-only ×3 synthetic fixtures, label-gated `eval`, no
+      `continue-on-error`). See CHANGELOG [Unreleased].
 - [ ] `ruff + mypy + pytest + pytest -m ux` green; `chore/version-bump-v1.0.6`.
 
 > **Source preserved (no longer at-risk).** The excellence-walk drafts — the system-

@@ -40,7 +40,7 @@ pip install -e ".[dev]"  # if you haven't already
 python evals/runner.py --suite synthetic --subset smoke
 ```
 
-Runs the 3 committed synthetic fixtures × 1 rubric (`grounding`) — ~9 LLM calls, ~$0.10. Exit code is `0` if every rubric scored ≥4, otherwise `2`.
+Runs the 3 committed synthetic fixtures × 1 rubric (`grounding`) — ~9 LLM calls, ~$0.10. Exit code is `0` if every rubric scored ≥4 **and** nothing regressed past `REGRESSION_DELTA` (0.5) vs the committed baseline, otherwise `2`.
 
 Results land in `evals/results/{timestamp}.jsonl` and surface in the dashboard at `http://localhost:5000/_dashboard` while the app is running.
 
@@ -218,15 +218,15 @@ Key implementation details:
 
 | Code | Meaning |
 |---|---|
-| `0` | Every rubric scored ≥ its fixture's threshold |
+| `0` | Every rubric scored ≥ `PASS_THRESHOLD` (4.0) **and** nothing regressed past `REGRESSION_DELTA` (0.5) vs the committed baseline |
 | `1` | Configuration error (missing fixture, missing API key, etc.) |
-| `2` | At least one rubric scored below threshold |
+| `2` | At least one rubric scored below `PASS_THRESHOLD` (4.0) **or** regressed past `REGRESSION_DELTA` (0.5) vs the committed baseline (`baseline_v1.json`) |
 
-CI uses exit `2` to fail the build, distinguishing rubric failures from setup errors.
+CI uses exit `2` to fail the build, distinguishing rubric failures from setup errors. Both arms of the exit-`2` contract are pinned by an LLM-free meta-test — see [Do-not-regress: the gate is machine-enforced](#do-not-regress-the-gate-is-machine-enforced).
 
 ### Regression alerting
 
-At the start of each run the runner reads every prior result file and builds a `{(fixture, rubric): most_recent_record}` baseline. After each grading it compares the new score to baseline and logs a `WARNING` when the drop exceeds `REGRESSION_DELTA` (default 0.5, override via env var). End-of-run summary lists improvements and regressions:
+At the start of each run the runner builds a `{(fixture, rubric): baseline_record}` map: it seeds from the committed `evals/results/baseline_v1.json` (the stable schema-3 five-run means) and then layers any prior result JSONL on top, newest timestamp winning. After each grading it compares the new score to that baseline and logs a `WARNING` when the drop exceeds `REGRESSION_DELTA` (default 0.5, override via env var). End-of-run summary lists improvements and regressions:
 
 ```
 WARNING: REGRESSION: data-scientist-junior × tone dropped 4.8 → 4.2 (Δ=-0.6) vs prior run (prompt_version=2026-05-09.1, 2026-05-09T23:49:27)
@@ -237,7 +237,9 @@ WARNING: REGRESSION: data-scientist-junior × tone dropped 4.8 → 4.2 (Δ=-0.6)
 WARNING: Found 1 regression(s) ≥0.5 points.
 ```
 
-Regressions are informational — they don't change the runner's exit code (rubric pass/fail is still the gating signal). The default delta of 0.5 is calibrated for Haiku judge variance: tighter and you'll see noise; looser and you'll miss real drops. Override with `REGRESSION_DELTA=0.3` for stricter tracking during prompt iteration.
+A regression **gates the run**: a drop past `REGRESSION_DELTA` against the baseline appends to `regressions`, and `exit_code = 0 if (n_fail == 0 and not regressions) else 2` — so a regression forces exit `2` (and fails the CI check) even when every rubric still scored above `PASS_THRESHOLD`. This is the "PR gate" behavior (added in commit `a60a008`); an earlier revision treated regressions as informational only. The default delta of 0.5 is calibrated for Haiku judge variance: tighter and you'll see noise; looser and you'll miss real drops. Override with `REGRESSION_DELTA=0.3` for stricter tracking during prompt iteration.
+
+Why the gate is meaningful in CI specifically: result JSONL are **not** committed (only `baseline_v1.json` is), so a fresh CI checkout has no prior run files — the regression comparison is against the stable committed five-run means, not a noisy single prior run. Locally, your most recent run does take precedence per `(fixture, rubric)`, so a `REGRESSION_DELTA` you've tightened can fire on ordinary judge variance between back-to-back local runs.
 
 ### Candidate prompt overrides (`--prompt-overrides`)
 
@@ -867,6 +869,12 @@ eval-smoke:
 The `eval` label is opt-in because each labeled PR run costs ~$0.10 in API calls. Maintainers add the label when a PR touches `analyzer.py`, prompts, or anything that could affect output quality.
 
 `ANTHROPIC_API_KEY` must be configured as a repo secret (Settings → Secrets and variables → Actions) for the eval-smoke job to authenticate. Without the secret the job fails with a clear error.
+
+**CI eval scope:** grounding-rubric-only (`--subset smoke`) across the **3 committed synthetic fixtures**, label-gated on `eval`. The `eval-smoke` job has no `continue-on-error`, so the runner's exit `2` fails the required check.
+
+### Do-not-regress: the gate is machine-enforced
+
+The exit-`2` contract above is a real gate, not advisory: a sub-`PASS_THRESHOLD` rubric score **or** a regression past `REGRESSION_DELTA` (0.5) vs the committed `baseline_v1.json` returns exit `2` and fails CI. Because that contract is easy to weaken silently — drop `not regressions` from the `exit_code` line, loosen a threshold, add `continue-on-error` — it is itself pinned by an LLM-free meta-test, [`tests/test_eval_runner.py::TestEvalGateGuard`](../tests/test_eval_runner.py). The meta-test stubs the pipeline (no paid call, so it runs in the default `pytest`) and asserts **both** exit-`2` arms still fire: a grounding score below `PASS_THRESHOLD`, and a grounding score that passes the threshold but drops past `REGRESSION_DELTA` below a seeded baseline. If a future change softens the gate, this test goes red before the gate stops biting.
 
 ---
 

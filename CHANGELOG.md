@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — eval-smoke gate guard + README exit-code reconciliation (`test/eval-gate-guard`, PX-13)
+
+Affirms and guards the eval-quality regression gate so it can't silently rot (2026-06
+product-excellence review: `F-qe-rel-05`, KEEP/CONFIRMED; rides the PX-08 egress gate). The
+eval-smoke gate is a real machine gate: `evals/runner.py` returns process exit-code `2`
+(failing the label-gated CI check) on **either** a sub-`PASS_THRESHOLD` (4.0) rubric score
+**or** a regression past `REGRESSION_DELTA` (0.5) vs the committed `baseline_v1.json`
+(`exit_code = 0 if (n_fail == 0 and not regressions) else 2`).
+
+- **Meta-test** — new `tests/test_eval_runner.py::TestEvalGateGuard` pins **both** exit-`2`
+  arms with an LLM-free stub (runs in the default `pytest`, no paid Anthropic call): a
+  grounding score below the threshold (`n_fail` path), and a grounding score that passes the
+  threshold but drops past `REGRESSION_DELTA` below a seeded baseline (`regressions` path,
+  `n_fail == 0`). If a future change softens the gate (drops `not regressions`, loosens a
+  threshold, adds `continue-on-error`), the test goes red.
+- **Do-not-regress note + CI scope** — reconciled `evals/README.md`, which had drifted: three
+  spots (quick-start, the exit-codes table, the "Regression alerting" section) still claimed
+  regressions were *informational* and didn't affect the exit code. That was true before commit
+  `a60a008` ("PR gate") made regressions gate; the narrative was never updated. Corrected to the
+  actual contract, added a "Do-not-regress: the gate is machine-enforced" callout, and recorded
+  the CI scope explicitly — grounding-rubric-only across the 3 synthetic fixtures, label-gated
+  (`eval`), no `continue-on-error`.
+
+Test + docs only — no change to the gate's behavior, no prompt, route, dependency, or
+migration; `PROMPT_VERSION` unchanged.
+
 ### Changed — C-0 claims discipline: no-invention absolutes reworded (`docs/c0-claims-discipline`, PX-09 + PX-14)
 
 Documentation-only corrections from the 2026-06 product-excellence review's PX band, reconciling
