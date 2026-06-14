@@ -137,3 +137,57 @@ rule. `index.md` unchanged (its one-liner didn't reference the CDN).
 
 **Verification.** Wiki grep for `cdn`/`chart…from…CDN` → only score-over-time chart
 hits remain. Gate: `ruff` ✓ · `mypy` ✓ · `pytest` **1169/1169** (docs-only — no `.py`).
+
+## 2026-06-14 — diff refresh: v1.0.6 PX band (`chore/wiki-refresh-px-v106`)
+
+**Mode: diff** (`e4e01fd` → `93a34b9`). The v1.0.6 PX band since the last code-keyed
+checkpoint: **PX-02** (profile/website scrape re-wire — the only substantial code change),
+PX-08/PX-13 (egress falsifiability test + eval-smoke gate exit-2 guard), PX-03/05/07
+(disclosure docs), PX-09/PX-14 (C-0 no-invention reword + GROUNDING_METRIC three-source
+union — a [`../dev/GROUNDING_METRIC.md`](../dev/GROUNDING_METRIC.md) *doc* reword, **not** a
+code change).
+
+**Scope.** Canonical living docs (`AGENTS.md`, `CONTRIBUTING.md`, `SECURITY.md`,
+`vision.md`, [`../system-model.md`](../system-model.md), `../walkthrough.md`, `../dev/*`,
+`CHANGELOG.md`, `pyproject.toml`, `llms.txt`, …) are wiki-**referenced**, never duplicated
+(design fork D5) — no page restates them. The `docs/wiki/` files in range
+([`overview.md`](overview.md), [`pages/diagnostics-console.md`](pages/diagnostics-console.md),
+this `log.md`, `.last_ingest_sha`) are the prior `chore/wiki-refresh` pass's own artifacts,
+already current at `e4e01fd` (`overview.md`'s PX-09 re-sync to `../system-model.md` was done
+there — a re-read confirmed, no page change this round). New test files add no new
+wiki-keyed concept. Of the actionable **source** changes, four facts drifted.
+
+**Pages changed (4).**
+- [`pages/route-surface.md`](pages/route-surface.md) — `@app.route` count `92` → **93**;
+  added the PX-02 [`app.py:fetch_profile`](../../app.py) route
+  (`POST /api/users/<u>/profile/fetch`), `_safe_username` + `_within(config_path, CONFIGS_DIR)`-gated,
+  running the deterministic `scraper.fetch_profile_content` and caching into
+  `Candidate.online_profile_text`.
+- [`pages/corpus-data-model.md`](pages/corpus-data-model.md) — alembic head `0009` → **0010**
+  ([`0010_online_profile_text.py`](../../db/migrations/versions/0010_online_profile_text.py),
+  `down_revision="0009"`): adds `Candidate.online_profile_text`, the PX-02 scrape cache — a
+  **DISTINCT** channel from the `profile_text` β.6 positioning summary; native `ADD COLUMN`
+  (no batch recreate) because `candidate` is a parent table (cascade-delete safety).
+- [`pages/eval-harness.md`](pages/eval-harness.md) — `PROMPT_VERSION` `2026-06-12.2` →
+  **`2026-06-13.1`** (PX-02 added the `<candidate_web_presence>` block).
+- [`pages/prompt-version-discipline.md`](pages/prompt-version-discipline.md) — the same stale
+  `PROMPT_VERSION` literal → **`2026-06-13.1`**.
+
+[`index.md`](index.md) corpus-data-model one-liner `0009` → `0010`. No `[[backlink]]` changes
+(no new pages). `assemble_source_union` wording **left as-is** — already the 3-source union;
+PX-14 changed `GROUNDING_METRIC.md`, not the function body (verified: the `hardening.py` diff
+touches only `CandidateInfo` + `build_context_set`).
+
+**`.last_ingest_sha` advanced `e4e01fd` → `93a34b9738a5272d39539675d3fe56ea91b5fd31`** (HEAD).
+
+**Authoring + verification.** Four direct factual edits (every value pre-verified against
+HEAD), then a per-page **adversarial grounding audit** (author≠auditor; one read-only
+auditor per page, falsify-against-source). 3 pages PASS clean; the route-surface audit
+**caught a real error** — the first draft wrongly called `fetch_profile` `_within`-free, but
+it runs `_within(config_path, CONFIGS_DIR)` ([`app.py`](../../app.py):256-258) — corrected +
+re-grounded. All changed claims SUPPORTED at HEAD (`grep -c @app.route app.py` = 93; head
+`0010`, nothing revises it; `PROMPT_VERSION` = `2026-06-13.1` at `analyzer.py:280`). Lint:
+24 `pages/` ↔ `index.md` agree both ways; every `[[backlink]]` resolves; staleness now =
+HEAD. Gate: `ruff` ✓ · `mypy` ✓ (159 files) · `pytest` **1191/1191** (docs-only — no `.py`;
+the one full-suite failure was the known intermittent UX-tier flake
+`test_positioning_pin_preserves_title_pin`, green on isolated re-run).

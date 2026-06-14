@@ -49,6 +49,8 @@ of truth**; the wiki is a compiled, link-back artifact — never a copy of the c
    sentinel line on a cold pass.
 6. **Log it.** Append a dated entry to [`docs/wiki/log.md`](../../docs/wiki/log.md) (newest
    last): the branch, the mode (cold / diff), the files read, and the pages created/changed.
+   `log.md` is the wiki's changelog — a wiki pass does **not** touch the root
+   [`CHANGELOG.md`](../../CHANGELOG.md), which tracks product/code changes.
 
 Do not duplicate the project's operating rules into the wiki — `SCHEMA.md` **references**
 [`AGENTS.md`](../../AGENTS.md) / [`CLAUDE.md`](../../CLAUDE.md) / [`vision.md`](../../vision.md)

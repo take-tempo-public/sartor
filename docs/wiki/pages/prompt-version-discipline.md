@@ -19,7 +19,7 @@ and tunable, and links back to the rule.
 ## What `PROMPT_VERSION` is
 
 A single module-level string, [`analyzer.py:PROMPT_VERSION`](../../../analyzer.py)
-(`"2026-06-12.2"` at this ingest). Its own comment says to bump it when
+(`"2026-06-13.1"` at this ingest). Its own comment says to bump it when
 `SYSTEM_PROMPT`, `CLARIFY_SYSTEM_PROMPT`, **or any per-call prompt template**
 changes, because it "labels every JSONL telemetry record so quality regressions
 can be attributed to a revision."

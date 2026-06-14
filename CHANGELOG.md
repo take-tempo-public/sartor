@@ -5,6 +5,10 @@ All notable changes to callback. are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+> **Scope:** this file tracks product/code changes. Wiki ingest/refresh passes
+> (`docs/wiki/`) are recorded in [`docs/wiki/log.md`](docs/wiki/log.md) — the wiki's
+> own changelog — not here.
+
 ---
 
 ## [Unreleased]
