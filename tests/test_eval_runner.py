@@ -468,3 +468,85 @@ class TestRunSuite:
         self._stub_pipeline(runner, monkeypatch, tmp_path)
         with pytest.raises(FileNotFoundError):
             run_suite(fixture_name="does-not-exist", out_dir=tmp_path, client=MagicMock())
+
+
+class TestEvalGateGuard:
+    """PX-13 — guard the eval-smoke gate's exit-2 failure path so it can't silently rot.
+
+    The gate is a real machine gate: ``run_suite`` returns process exit-code 2 on
+    EITHER a sub-``PASS_THRESHOLD`` rubric fail OR a regression past
+    ``REGRESSION_DELTA`` vs the committed baseline
+    (``evals/runner.py``: ``exit_code = 0 if (n_fail == 0 and not regressions) else 2``).
+    These two LLM-free meta-tests pin BOTH exit-2 contributors, so a future change that
+    quietly softens the gate (e.g. dropping ``not regressions``, or loosening the
+    threshold) fails here in the default ``pytest`` run. See the
+    "Do-not-regress (machine-enforced)" note in ``evals/README.md``.
+    """
+
+    def _stub_pipeline(self, runner, monkeypatch, tmp_path, grade_score):
+        """Mirror of ``TestRunSuite._stub_pipeline`` with the judge score as a
+        parameter, so each arm can drive a specific (fixture × grounding) result.
+        Every paid call is stubbed; the real deterministic pipeline still runs on the
+        committed synthetic fixtures; the baseline lookup is isolated to ``tmp_path``."""
+        monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path)
+        monkeypatch.setattr(runner, "BASELINE_JSON", tmp_path / "baseline_v1.json")
+        monkeypatch.setattr(runner, "analyze", lambda *a, **k: {"overall_strategy": "ok"})
+        monkeypatch.setattr(runner, "clarify", lambda *a, **k: {"questions": [], "reasoning": ""})
+        monkeypatch.setattr(
+            runner, "generate",
+            lambda *a, **k: {"resume_content": "- Led a project\n- Built a system",
+                             "cover_letter_content": "Dear team,"},
+        )
+        monkeypatch.setattr(
+            runner, "_grade",
+            lambda *a, **k: {"score": grade_score, "reasons": [], "failed_rules": [], "status": "ok"},
+        )
+        monkeypatch.setattr(
+            runner, "_score_distinctiveness",
+            lambda *a, **k: {"score": 4.0, "summary": "ok"},
+        )
+
+    def test_subthreshold_score_forces_exit_2(self, tmp_path, monkeypatch):
+        """Threshold arm: a grounding score below ``PASS_THRESHOLD`` (4.0) fails the
+        gate with exit-code 2 via ``n_fail`` — no baseline involved."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path, grade_score=3.5)
+        result = run_suite(
+            suite="synthetic", subset="smoke", out_dir=tmp_path, client=MagicMock(),
+        )
+        # 3 committed synthetic fixtures × grounding, all below threshold.
+        assert result.n_fail == 3
+        assert result.n_pass == 0
+        assert result.regressions == []   # no baseline seeded → nothing to regress against
+        assert result.exit_code == 2
+
+    def test_regression_past_delta_forces_exit_2(self, tmp_path, monkeypatch):
+        """Regression arm: a grounding score that PASSES the absolute threshold
+        (4.2 >= 4.0, so ``n_fail == 0``) but drops past ``REGRESSION_DELTA`` (0.5)
+        below the committed baseline mean (4.8) STILL fails the gate with exit-code 2,
+        via ``regressions``. This is the exact "grounding drop near/past 0.5 vs the
+        committed baseline" the PX-13 prescription names."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        baseline = {
+            "schema_version": 3,
+            "baseline_id": "px13-meta-test",
+            "prompt_version": "px13-test",
+            "fixtures": {
+                name: {"grounding": {"mean": 4.8, "stdev": 0.0, "n": 5, "min": 4.8, "max": 4.8}}
+                for name in ("data-scientist-junior", "pm-senior", "sre-mid-level")
+            },
+        }
+        (tmp_path / "baseline_v1.json").write_text(json.dumps(baseline), encoding="utf-8")
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path, grade_score=4.2)
+        result = run_suite(
+            suite="synthetic", subset="smoke", out_dir=tmp_path, client=MagicMock(),
+        )
+        # 4.2 >= PASS_THRESHOLD → zero threshold fails; 4.8 - 4.2 = 0.6 > REGRESSION_DELTA.
+        assert result.n_fail == 0
+        assert len(result.regressions) == 3
+        assert result.exit_code == 2
