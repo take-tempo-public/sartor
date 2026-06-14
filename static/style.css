@@ -867,6 +867,57 @@ textarea {
   outline-offset: 2px;
 }
 
+/* ---- In-app help primitive (reusable; Sprint 6.5 feat/help-pattern-component) ----
+   The mechanism that later branches hang per-surface education copy on. Three
+   parts, all driven by _HELP_REGISTRY + openHelpModal/_initHelp in static/app.js:
+     1. the shared #helpModal (.cb-modal skeleton in index.html) carries the
+        canonical "pathfinding" copy; it reuses the .cb-modal-in fade + the global
+        prefers-reduced-motion override, so no help-specific motion is defined here;
+     2. a .help-info (i)-circle is injected into each registered block's
+        .panel-header (mirrors .compose-order-info). The header is a space-between
+        flex row, so the injector also adds .has-help-icon to keep the title + icon
+        grouped left and the collapse chevron (::after) pinned right;
+     3. a .help-inline short-form line is injected as the first .panel-body child.
+   No color-only meaning: the icon carries the literal "i" glyph + an aria-label
+   ("Help: <title>"); colour is decorative hover only. Reuses existing tokens — no
+   new ones. The real <button> inherits the global :focus-visible ring. */
+.panel-header.has-help-icon {
+  justify-content: flex-start;
+  gap: 8px;
+}
+.panel-header.has-help-icon::after {
+  margin-left: auto;
+}
+.help-info {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border-2);
+  background: none;
+  color: var(--fg-1);
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--t-fast) var(--ease),
+              color var(--t-fast) var(--ease);
+}
+.help-info:hover {
+  border-color: var(--brand-edge);
+  color: var(--brand);
+}
+.help-inline {
+  font-size: 12px;
+  color: var(--fg-2);
+  line-height: 1.4;
+  margin: 0 0 10px;
+}
+
 /* ---- Accessibility utilities (Phase 4) ---- */
 
 /* Visually hidden but discoverable to assistive tech. Used for skip-link

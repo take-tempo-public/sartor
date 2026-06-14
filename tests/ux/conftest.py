@@ -138,6 +138,27 @@ def page(_browser: Browser, live_server: str) -> Iterator[Page]:
     assert not server_errors, f"HTTP 5xx during test: {server_errors}"
 
 
+@pytest.fixture(autouse=True)
+def _help_welcome_default_seen(request: pytest.FixtureRequest, page: Page) -> None:
+    """Default every UX test to 'first-view help already seen'.
+
+    The Sprint-6.5 help primitive auto-opens a welcome modal on first view,
+    gated by a ``cb_help_seen:panelUser`` localStorage flag. Each test gets a
+    fresh browser context (empty localStorage), so without this the welcome
+    modal would overlay the landing and its full-screen backdrop would block the
+    interactions every other test performs right after ``load()``. Setting the
+    flag via an init-script (runs before every navigation) models the common
+    case — a returning user. The dedicated help test opts in to the genuine
+    first-view with ``@pytest.mark.show_welcome``.
+    """
+    if request.node.get_closest_marker("show_welcome"):
+        return
+    page.add_init_script(
+        "try { window.localStorage.setItem('cb_help_seen:panelUser', '1'); }"
+        " catch (e) { /* storage unavailable — welcome simply may show */ }"
+    )
+
+
 @pytest.fixture
 def console_errors(page: Page) -> list[str]:
     """Live JS-error list for tests that assert on it explicitly."""

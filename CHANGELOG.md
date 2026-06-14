@@ -13,6 +13,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — reusable in-app help primitive (`feat/help-pattern-component`, Sprint 6.5)
+
+The mechanism the Sprint 6.5 in-app education sweep hangs its copy on — built once,
+a11y-safe, reusable. **No per-surface education copy is authored here** (that is the
+next branch); this ships the engine plus a single demo entry so it is exercised and
+gated.
+
+- **One shared `#helpModal`** (cloned from the existing `.cb-modal` skeleton) whose
+  title/body are swapped per block; the stable `#helpModalTitle`/`#helpModalBody` ids
+  keep `aria-labelledby`/`aria-describedby` valid without per-open rewiring.
+- **One generic `openHelpModal(blockId, triggerEl)`** factored from the existing
+  per-modal pattern (Esc, Tab focus-trap, backdrop click-away, focus restored to the
+  trigger) — the reusable opener the five existing modals each re-implemented. They are
+  left untouched.
+- **A `.help-info` (i)-circle** injected into each registered `.cb-panel` header
+  (mirrors `.compose-order-info`) re-opens that block's modal. **No color-only meaning:**
+  the literal "i" glyph + an `aria-label` ("Help: <title>") + `aria-haspopup="dialog"`/
+  `aria-expanded` carry the semantics; colour is decorative hover only. An optional inline
+  short-form line is injected atop the panel body and associated via `aria-describedby`.
+- **First-view welcome auto-modal** (graceful fade-in via the existing `cb-modal-in`
+  keyframe + `prefers-reduced-motion`), shown **once-ever** via a `cb_help_seen:<block>`
+  **localStorage** flag — the app's first client-side storage usage (wrapped so a
+  disabled/throwing store is non-fatal).
+- **Tests:** new `tests/ux/regression/test_20260614_help_pattern.py` (auto-open,
+  click-away, once-ever, icon re-open, focus restore, aria wiring); `#helpModal` added to
+  the vendored axe a11y gate's scanned surfaces; a `Help` selector class in `ui_pages/`.
+  The welcome is default-suppressed for the rest of the UX suite by an autouse fixture +
+  the new `show_welcome` marker, so its full-screen backdrop never blocks other tests.
+
+Front-end + help-component only — no Flask route, no LLM call, no prompt change (no
+`PROMPT_VERSION` bump), no new dependency, no migration.
+
 ### Added — eval-smoke gate guard + README exit-code reconciliation (`test/eval-gate-guard`, PX-13)
 
 Affirms and guards the eval-quality regression gate so it can't silently rot (2026-06

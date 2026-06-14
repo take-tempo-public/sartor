@@ -33,6 +33,28 @@ class Forms:
     REQUIRED_LEGEND = ".form-required-legend"
 
 
+class Help:
+    """Reusable in-app help primitive (Sprint 6.5 feat/help-pattern-component).
+    ONE shared #helpModal whose title/body swap per block; a `.help-info`
+    (i)-circle is injected into each registered `.cb-panel` header and re-opens
+    that block's modal. The welcome block also auto-opens once-ever on first
+    view (default-suppressed in the UX suite — see the `_help_welcome_default_seen`
+    fixture + the `show_welcome` marker)."""
+
+    MODAL = "#helpModal"
+    MODAL_TITLE = "#helpModalTitle"
+    MODAL_BODY = "#helpModalBody"
+    CLOSE = "#btnCloseHelp"
+    BACKDROP = "#helpModal .cb-modal-backdrop"
+    ICON = ".help-info"
+    INLINE = ".help-inline"
+
+    @staticmethod
+    def icon(block_id: str) -> str:
+        """The injected (i)-circle for a given block (e.g. ``panelUser``)."""
+        return f"#help-icon-{block_id}"
+
+
 class Header:
     """Top-bar wordmark (`.cb-wordmark`) — clicking it routes home (#23):
     deselects the user and returns to the default Tailor landing tab."""

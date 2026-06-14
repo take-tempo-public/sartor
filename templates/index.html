@@ -862,6 +862,25 @@
     </div>
   </div>
 
+  <!-- Help modal — the reusable in-app help primitive (Sprint 6.5). ONE shared
+       modal; openHelpModal(blockId) swaps #helpModalTitle/#helpModalBody text per
+       block (the stable ids keep aria-labelledby/describedby valid without
+       per-open rewiring). Opened by the first-view auto-modal and re-opened by the
+       .help-info (i)-circle injected into each registered block. Closes on
+       click-away (the data-help-dismiss backdrop), Esc, or "Got it". See
+       _HELP_REGISTRY + openHelpModal in static/app.js. -->
+  <div id="helpModal" class="cb-modal hidden" role="dialog" aria-modal="true"
+       aria-labelledby="helpModalTitle" aria-describedby="helpModalBody">
+    <div class="cb-modal-backdrop" data-help-dismiss></div>
+    <div class="cb-modal-content" role="document">
+      <h2 id="helpModalTitle" class="cb-modal-title"></h2>
+      <p id="helpModalBody" class="cb-modal-body"></p>
+      <div class="modal-actions">
+        <button class="cb-btn cb-bg-blue" id="btnCloseHelp" data-help-dismiss>Got it</button>
+      </div>
+    </div>
+  </div>
+
   <!-- "Edit before downloading" drawer for Step 6. Slides in from the
        right; the styled preview stays visible behind the backdrop so the
        user can see the document while editing its text. The editor node

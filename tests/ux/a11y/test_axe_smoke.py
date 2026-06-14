@@ -49,7 +49,15 @@ from ui_pages import (
     WizardTemplatePage,
 )
 from ui_pages.base import DEFAULT_TIMEOUT_MS
-from ui_pages.selectors import Dashboard, Memory, Personas, Settings, TopTabs, UserPicker
+from ui_pages.selectors import (
+    Dashboard,
+    Help,
+    Memory,
+    Personas,
+    Settings,
+    TopTabs,
+    UserPicker,
+)
 
 _AXE_JS = (Path(__file__).resolve().parent / "vendor" / "axe.min.js").read_text(
     encoding="utf-8"
@@ -119,6 +127,14 @@ def test_axe_landing_and_new_user(
     page.click(UserPicker.NEW_USER_LINK)
     page.wait_for_selector(UserPicker.NEW_USERNAME, state="visible")
     found["new-user form"] = _axe_serious(page)
+
+    # Sprint 6.5 help primitive — open the shared #helpModal via the injected
+    # (i)-circle and scan its open state (dialog aria, no color-only meaning).
+    # The first-view auto-open is suppressed for this test, so opening it
+    # explicitly makes the scan independent of the localStorage gate.
+    page.click(Help.icon("panelUser"))
+    page.wait_for_selector(Help.MODAL, state="visible")
+    found["help-modal"] = _axe_serious(page)
 
     _assert_clean(found)
 
