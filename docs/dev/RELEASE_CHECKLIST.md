@@ -281,6 +281,20 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       begins here — becomes a required CI check at v1.0.7) and keep **PX-01**'s Chart.js
       vendoring honest by construction. See CHANGELOG [Unreleased]; remaining band items per
       the review's `03-prescriptions/prescriptions.md` now-v1.0.6 list.
+- [x] **PX-03/05/07 + stale-ref fold-in — disclosure-doc corrections** (`docs/disclosure-doc-corrections`,
+      now-v1.0.6 PX band). Docs / metadata-only; no prompt/route/dep/migration. **PX-03** (`AL-7`; C-2):
+      `SECURITY.md` egress enumeration corrected to the two real classes (Anthropic API; opt-in
+      profile/website scrape), dropping the phantom "pasted-JD-URL fetch" class — `jd_url` is
+      provenance-only, never fetched (verified against `scraper.py`; corroborated by the PX-08 gate);
+      `vision.md` / `README.md` were already two-class-correct, left as-is. **PX-05** (`F-sec-11`, P1/S-1):
+      the stale `Cooksey/resume` disclosure channel repointed to `amodal1/callback` in `CODE_OF_CONDUCT.md`
+      + `.github/ISSUE_TEMPLATE/config.yml`. **PX-07** (`F-qe-rel-08` / `F-sec-07`; D-4 + P-3): the two
+      hard human SLAs in `SECURITY.md` + `CODE_OF_CONDUCT.md` softened to best-effort. **Fold-in**
+      (owner-authorized): the same stale `Cooksey/resume` target in `CONTRIBUTING.md` (`cd resume`),
+      `.claude-plugin/plugin.json` (`homepage`), and `evals/schemas/context_set.schema.json` (`$id`)
+      corrected in the same pass — **not** deferred to future one-file branches. Deliberately left: the
+      plugin `author.name` (the maintainer, not a repo ref) and `name`/description (a v1.0.7
+      project-rename concern). See CHANGELOG [Unreleased].
 - [ ] `ruff + mypy + pytest + pytest -m ux` green; `chore/version-bump-v1.0.6`.
 
 > **Source preserved (no longer at-risk).** The excellence-walk drafts — the system-

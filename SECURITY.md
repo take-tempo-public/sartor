@@ -54,9 +54,11 @@ operation and there are no plans to add it.
 **What this tool does NOT do** (and never will, by design):
 - No telemetry / analytics / error reporting to any external
   service.
-- No HTTP calls beyond (a) the Anthropic API, (b) the URL scraper
-  for LinkedIn / portfolio URLs (best-effort, fails gracefully),
-  and (c) any URL you explicitly paste as a job description.
+- No HTTP calls beyond (a) the Anthropic API and (b) the optional
+  profile/website scraper for the LinkedIn / portfolio URLs you
+  provide (best-effort, fails gracefully). Job descriptions are
+  always pasted text — a JD URL is stored as provenance only and
+  is never fetched.
 - No background updates / auto-installs / phone-home.
 - No cross-candidate insights — the corpus and applications live
   only on your machine; the tool literally cannot compare you to
@@ -149,8 +151,9 @@ If you discover a security issue:
 3. Include: description of the issue, steps to reproduce, potential
    impact, and any suggested fix.
 
-We aim to respond within 5 business days and to issue a fix within
-30 days of confirmation.
+This is a solo, best-effort project: I aim to acknowledge reports
+and ship fixes as quickly as I can, but I can't promise a fixed
+timeline.
 
 ## Known accepted risks
 

@@ -23,7 +23,7 @@ The guiding philosophy is the [10 Principles framework](https://jdforsythe.githu
 
 ```bash
 git clone <your-fork-url>
-cd resume
+cd callback
 pip install -e ".[dev]"
 
 # One-time: download the Chromium binary Playwright needs for PDF

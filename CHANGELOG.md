@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — disclosure-doc corrections (`docs/disclosure-doc-corrections`, PX-03/05/07)
+
+Documentation-only corrections from the 2026-06 product-excellence review's PX band, aligning
+the public-facing security / governance docs with what the tool actually does.
+
+- **PX-03 — two-class egress enumeration** (`AL-7`; charter C-2). `SECURITY.md` listed a third
+  "any URL you explicitly paste as a job description" HTTP-egress class that has never existed:
+  `jd_url` is provenance metadata, never fetched (the only network fetch is
+  `scraper.fetch_url_content`, called solely for profile / portfolio URLs). Corrected to the two
+  real classes — the Anthropic API and the opt-in profile/website scrape — with an explicit "JDs
+  are always pasted text" note. `vision.md` / `README.md` already enumerated two classes; left
+  unchanged. Corroborated by the PX-08 egress allowlist gate.
+- **PX-05 — disclosure channel repointed** (`F-sec-11`, P1 / S-1). Conduct / vulnerability
+  reports routed to a stale `Cooksey/resume` GitHub advisories inbox; corrected to the canonical
+  `amodal1/callback` in `CODE_OF_CONDUCT.md` and `.github/ISSUE_TEMPLATE/config.yml`.
+- **PX-07 — human SLAs softened** (`F-qe-rel-08` / `F-sec-07`; charter D-4 + P-3). The hard
+  "5 business days / 30 days" promises in `SECURITY.md` and `CODE_OF_CONDUCT.md` are reworded to
+  best-effort intent (no guaranteed timeline) for a solo project. Machine gates unchanged.
+- **Stale-ref fold-in** (owner-authorized). The same stale `Cooksey/resume` repo target in
+  `CONTRIBUTING.md` (`cd resume`), `.claude-plugin/plugin.json` (`homepage`), and
+  `evals/schemas/context_set.schema.json` (`$id` — cosmetic; resolved only by file path) was
+  corrected in the same pass to avoid future one-file branches. The plugin's `author.name` (the
+  maintainer) and `name` / description (a project-rename concern for v1.0.7) were left untouched.
+
+Docs / metadata only — no code, prompt, route, dependency, or migration; `PROMPT_VERSION`
+unchanged.
+
 ### Added — profile/website scrape re-wired into the runtime path (`fix/profile-scrape-rewire`, PX-02)
 
 The opt-in LinkedIn / website / portfolio scrape (`scraper.fetch_profile_content`) had been
