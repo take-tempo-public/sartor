@@ -215,6 +215,31 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       `test_20260612_logo_home_route.py` reseeded non-empty to match smart
       landing; new `Corpus.START_TAILORING_BUTTON` selector +
       `CorpusPage.start_tailoring_button()`.
+      **Sprint 6.5 opened 2026-06-14** with `feat/help-pattern-component` (the
+      reusable a11y-safe help **mechanism**; KW10/KW3) — **landed**. ONE shared
+      `#helpModal` (cloned from the `.cb-modal` skeleton) + ONE generic
+      `openHelpModal(blockId, triggerEl)` **factored from the duplicated per-modal
+      pattern** (Esc / Tab focus-trap / backdrop click-away / focus-restore; the
+      five existing modals left untouched); a `.help-info` (i)-circle injected per
+      registered `.cb-panel` header (mirrors `.compose-order-info`) re-opens that
+      block's modal, with real aria (`aria-haspopup=dialog`, `aria-controls`,
+      `aria-expanded`) and **no color-only meaning** ("i" glyph + `aria-label`);
+      an optional inline short-form line is injected + `aria-describedby`-linked.
+      The welcome **first-view auto-modal** shows **once-ever** via a
+      `cb_help_seen:<block>` **localStorage** flag (the app's first client-side
+      storage — owner-approved; wrapped so a throwing store is non-fatal). A
+      `_HELP_REGISTRY` keyed by block id is the **extension point** — the next 6.5
+      branches add per-surface copy by adding keys, **no engine change**; this
+      branch ships only one minimal demo entry (`panelUser`), **no per-surface
+      education copy**. UX suite kept green by default-suppressing the welcome
+      (autouse `_help_welcome_default_seen` fixture + `show_welcome` opt-in marker)
+      so its full-screen backdrop never blocks other tests. New
+      `test_20260614_help_pattern.py` (6 cases) + `#helpModal` added to the axe
+      gate's scanned surfaces + a `Help` selector class. Front-end + help-component
+      only — no route, no LLM, no prompt (`PROMPT_VERSION` unchanged), no dep, no
+      migration. ruff/mypy ✓, pytest **1197/1197** incl. `-m ux`. **Next:
+      `feat/education-tailor-corpus-wizard`** (#1 + #18 — apply the pattern + the
+      KW3 first-run sequence, authoring INTO the WS-4 wiki user-facing section).
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +

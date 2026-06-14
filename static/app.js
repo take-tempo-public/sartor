@@ -62,6 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
   }
+
+  // Sprint 6.5 — inject the in-app help (i)-circles, then maybe auto-open the
+  // welcome modal once-ever on first view.
+  _initHelp();
+  _maybeAutoOpenHelp();
 });
 
 // ---- Users ----
@@ -1443,6 +1448,160 @@ function openSettingsDrawer() {
   drawer.classList.remove('hidden');
   const first = drawer.querySelector('input, textarea');
   if (first) first.focus();
+}
+
+// ===============================================================
+// Sprint 6.5 — reusable in-app help primitive (feat/help-pattern-component)
+// ===============================================================
+// ONE shared #helpModal whose title/body are swapped per block, plus an
+// (i)-circle injected into each registered block's .panel-header that re-opens
+// that block's modal, plus an optional inline short-form line. The welcome
+// block also auto-opens once-ever on first view (localStorage gate). This
+// branch ships the MECHANISM + a single demo entry; later Sprint 6.5 branches
+// add real per-surface copy by adding registry keys — no engine change needed.
+//
+// Each entry: { title, body, short?, tip?, welcome? }
+//   title   — heading swapped into #helpModalTitle (also the icon's a11y name)
+//   body    — canonical "pathfinding" copy swapped into #helpModalBody
+//   short   — optional inline short-form, injected atop the block's .panel-body
+//   tip     — optional native-tooltip text for the (i) icon (defaults to title)
+//   welcome — when true, this block auto-opens once-ever on first view
+const _HELP_REGISTRY = {
+  // DEMO / seed entry. The real per-surface education copy is authored by the
+  // next Sprint 6.5 branch (feat/education-tailor-corpus-wizard — the KW3
+  // first-run sequence); keep this minimal and generic.
+  panelUser: {
+    title: 'Welcome to callback',
+    body: "callback tailors your résumé to a specific job from a career corpus "
+      + 'it builds out of your past résumés — nothing is locked in a file you '
+      + 'hand-edit per application. Select a user to begin, or add a new one to '
+      + 'import your first résumé. Every section has an “i” you can click for a '
+      + 'quick explanation.',
+    short: 'Select a user to begin, or add a new one to import your first résumé.',
+    tip: 'About callback',
+    welcome: true,
+  },
+};
+
+const _HELP_SEEN_PREFIX = 'cb_help_seen:';
+
+// localStorage seam — wrapped so a disabled/throwing store (private mode, quota,
+// file:// origin) never breaks the app. An unreadable store reads as "not seen";
+// a failed write means the welcome may re-show, which is harmless.
+function _helpSeen(blockId) {
+  try { return window.localStorage.getItem(_HELP_SEEN_PREFIX + blockId) === '1'; }
+  catch (_e) { return false; }
+}
+function _markHelpSeen(blockId) {
+  try { window.localStorage.setItem(_HELP_SEEN_PREFIX + blockId, '1'); }
+  catch (_e) { /* storage unavailable — non-fatal */ }
+}
+
+// THE reusable opener. Factored from openDiagnosticsModal's a11y posture (Esc
+// closes, Tab focus-trap, backdrop click-away, focus restored to the trigger)
+// so every help block shares one implementation. triggerEl may be null (the
+// first-view auto-open has no trigger) — the focus/aria restore guards for that.
+function openHelpModal(blockId, triggerEl) {
+  const modal = document.getElementById('helpModal');
+  const entry = _HELP_REGISTRY[blockId];
+  if (!modal || !entry) return;
+
+  const titleEl = document.getElementById('helpModalTitle');
+  const bodyEl = document.getElementById('helpModalBody');
+  if (titleEl) titleEl.textContent = entry.title;
+  if (bodyEl) bodyEl.textContent = entry.body;
+
+  const focusable = modal.querySelectorAll('button');
+  const closeBtn = document.getElementById('btnCloseHelp');
+
+  const cleanup = () => {
+    modal.classList.add('hidden');
+    modal.removeEventListener('keydown', onKey);
+    dismissers.forEach(b => b.removeEventListener('click', cleanup));
+    if (triggerEl && typeof triggerEl.setAttribute === 'function') {
+      triggerEl.setAttribute('aria-expanded', 'false');
+    }
+    if (triggerEl && typeof triggerEl.focus === 'function') triggerEl.focus();
+  };
+
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
+    if (e.key !== 'Tab' || focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+
+  const dismissers = Array.from(modal.querySelectorAll('[data-help-dismiss]'));
+  dismissers.forEach(b => b.addEventListener('click', cleanup));
+  modal.addEventListener('keydown', onKey);
+  if (triggerEl && typeof triggerEl.setAttribute === 'function') {
+    triggerEl.setAttribute('aria-expanded', 'true');
+  }
+  modal.classList.remove('hidden');
+  if (closeBtn) closeBtn.focus();
+}
+
+// Inject the (i)-circle (+ optional inline short-form) into each registered
+// .cb-panel block. Idempotent — re-running never double-injects. Non-panel
+// targets are skipped this branch (tab-level help is a later branch).
+function _initHelp() {
+  Object.keys(_HELP_REGISTRY).forEach((blockId) => {
+    const block = document.getElementById(blockId);
+    if (!block || !block.classList.contains('cb-panel')) return;
+    if (document.getElementById('help-icon-' + blockId)) return;  // already injected
+    const entry = _HELP_REGISTRY[blockId];
+
+    const header = block.querySelector('.panel-header');
+    if (header) {
+      // .has-help-icon keeps the title + icon grouped left and pins the
+      // collapse chevron (::after) right; see static/style.css.
+      header.classList.add('has-help-icon');
+      const icon = _el('button', {
+        className: 'help-info',
+        id: 'help-icon-' + blockId,
+        type: 'button',
+        textContent: 'i',
+        title: entry.tip || entry.title,
+      }, [], {
+        'aria-label': 'Help: ' + entry.title,
+        'aria-haspopup': 'dialog',
+        'aria-controls': 'helpModal',
+        'aria-expanded': 'false',
+      });
+      // stopPropagation so opening help never toggles the panel's collapse.
+      icon.onclick = (e) => { e.stopPropagation(); openHelpModal(blockId, icon); };
+      header.appendChild(icon);
+    }
+
+    if (entry.short) {
+      const body = block.querySelector('.panel-body');
+      if (body && !document.getElementById('help-inline-' + blockId)) {
+        const p = _el('p', {
+          className: 'help-inline',
+          id: 'help-inline-' + blockId,
+          textContent: entry.short,
+        });
+        body.insertBefore(p, body.firstChild);
+        const existing = block.getAttribute('aria-describedby');
+        block.setAttribute(
+          'aria-describedby',
+          existing ? existing + ' help-inline-' + blockId : 'help-inline-' + blockId,
+        );
+      }
+    }
+  });
+}
+
+// First-view auto-open: the welcome block opens once-ever (localStorage gate).
+// Synchronous — no async user-state lookup — so it is race-free and the UX
+// suite controls it deterministically via the cb_help_seen flag.
+function _maybeAutoOpenHelp() {
+  const welcomeId = Object.keys(_HELP_REGISTRY).find(id => _HELP_REGISTRY[id].welcome);
+  if (!welcomeId || _helpSeen(welcomeId)) return;
+  _markHelpSeen(welcomeId);
+  openHelpModal(welcomeId, null);
 }
 
 // ===============================================================
