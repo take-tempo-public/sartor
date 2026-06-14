@@ -601,7 +601,10 @@ landed**, so the cold pass ingests them too; re-sequenced 2026-06-12)**:**
    architecture-diagram drifts** (the `pipeline.mmd` / `architecture.md` Step-2
    "GET INTERVIEW QUESTIONS" → "GET CLARIFYING QUESTIONS" mislabel + the data-flow
    cover-letter artifact-node mismatch), per [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md)
-   — this pass re-reads the architecture anyway.
+   — this pass re-reads the architecture anyway. **✓ LANDED `a0a1cb2` (2026-06-13)** — 16
+   code pages cold-ingested (`path:line`-grounded); `audience:` tags stamped; both diagram
+   drifts fixed. Wiki diff-refreshed to HEAD on 2026-06-14 (`chore/wiki-refresh-px-v106`).
+   **Next: Sprint 6.5.**
 
 **Then — Governance extraction → moved to v1.0.7** (Phase 4.7; decided 2026-06-12).
 It depends on the wiki proving out (which completes at the v1.0.6 tag), pairs with "the
@@ -632,7 +635,7 @@ RELEASE_CHECKLIST risk register.
 - **WS-4a landed early + WS-4b before the 6.5 sweep** — `docs/system-model.md` + the
   `docs/wiki/` skeleton + the wiki skills exist; the **preserved excellence-walk
   source is ingested into the wiki** (and may then retire into its `raw/` layer); the
-  code architecture is cold-ingested; 6.5 authors into the wiki's reserved section.
+  code architecture is cold-ingested (WS-4b ✓ `a0a1cb2`); 6.5 authors into the wiki's reserved section.
 - `ruff + mypy + pytest + pytest -m ux` green.
 
 ---

@@ -4,11 +4,12 @@
 > **Concept:** the SQLite career-corpus schema and the one lifecycle
 > (`is_active` / `is_pending_review` / `source` / `display_order` + a `*_tag`
 > join) that `Bullet`, `Skill`, `SummaryItem`, and `ExperienceSummaryItem` all
-> wear — the "unified Corpus Item" shape, and the alembic chain (head `0009`)
+> wear — the "unified Corpus Item" shape, and the alembic chain (head `0010`)
 > that grew it.
 > **Sources:** [`db/models.py`](../../../db/models.py),
 > [`db/build_context.py`](../../../db/build_context.py),
 > [`db/migrations/versions/0009_skill_corpus_item.py`](../../../db/migrations/versions/0009_skill_corpus_item.py),
+> [`db/migrations/versions/0010_online_profile_text.py`](../../../db/migrations/versions/0010_online_profile_text.py),
 > [`docs/diagrams/persistence.mmd`](../../diagrams/persistence.mmd),
 > [`docs/architecture.md`](../../architecture.md) §Persistence model.
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
@@ -107,12 +108,18 @@ application's iterations `[synthesis]`. (The hardening / no-LLM boundary itself 
 canonical in [`AGENTS.md`](../../../AGENTS.md) — cited, not restated, per
 [`SCHEMA.md`](../SCHEMA.md) D5.)
 
-## Migration chain — head `0009`
+## Migration chain — head `0010`
 
-Schema evolution is alembic-driven; the current head is **`0009`**
-([`0009_skill_corpus_item.py`](../../../db/migrations/versions/0009_skill_corpus_item.py),
-`revision="0009"`, `down_revision="0008"` — no migration revises it, verified).
-`0009` is the Skill → Corpus-Item upgrade: it adds the lifecycle columns +
+Schema evolution is alembic-driven; the current head is **`0010`**
+([`0010_online_profile_text.py`](../../../db/migrations/versions/0010_online_profile_text.py),
+`revision="0010"`, `down_revision="0009"` — no migration revises it, verified).
+`0010` (PX-02) adds the nullable `Candidate.online_profile_text` column — the cached
+opt-in profile/website scrape, a **distinct channel** from `profile_text` (the β.6
+positioning summary); reusing `profile_text` would corrupt summaries, so the scrape gets
+its own column. It uses a native `ADD COLUMN` (not a batch recreate) because `candidate`
+is a PARENT table — a batch rebuild would cascade-delete child rows when PRAGMA
+`foreign_keys` is on (it cannot be disabled inside alembic's transaction) `[synthesis]`.
+The prior head `0009` is the Skill → Corpus-Item upgrade: it adds the lifecycle columns +
 `ck_skill_source` CHECK + the composite index + the `skill_tag` join, then
 backfills legacy rows to `source='imported', is_active=1, is_pending_review=0`
 with `display_order` set to preserve the prior name-sorted order. Each ALTER is

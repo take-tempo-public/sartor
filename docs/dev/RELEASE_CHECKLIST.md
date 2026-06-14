@@ -242,8 +242,8 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       `PROMPT_VERSION → 2026-06-12.2`. Compose **Skills** card + Career-corpus **Skills**
       editor. Corpus-mode-only → unit + UX + byte-identity, no paid smoke. ruff/mypy ✓,
       pytest **1169/1169** incl. `-m ux`. **Closes Sprint 6.6.** See RELEASE_ARC
-      §Sprint 6.6 B.5 for the resolution note. (Next: WS-4b, then Sprint 6.5.)
-- [ ] **WS-4a landed early; WS-4b (after Sprint 6.6) before the 6.5 sweep** (the binding gate):
+      §Sprint 6.6 B.5 for the resolution note. (Next: Sprint 6.5.)
+- [x] **WS-4a landed early; WS-4b (after Sprint 6.6) before the 6.5 sweep** (the binding gate):
       `docs/system-model.md` (← seven-functions language) + the committed
       `docs/wiki/` skeleton + the `/wiki-*` skills exist; **the preserved
       excellence-walk source ([`excellence-walk/`](excellence-walk/)) is ingested
@@ -252,10 +252,15 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       reserved so 6.5 authors INTO the wiki**. The code-ingest also **stamps
       `audience:` tags** + feeds the v1.0.7 doc-grounded assistant's memory
       substrate — design in [`memory-architecture.md`](memory-architecture.md).
-- [ ] **`audience:` tag convention authored** (the v1.0.6-retained slice of governance
+      **✓ LANDED 2026-06-13** — WS-4b merged `a0a1cb2` (16 code pages cold-ingested,
+      both tracked Mermaid drifts fixed); wiki diff-refreshed to HEAD on 2026-06-14
+      (`chore/wiki-refresh-px-v106`).
+- [x] **`audience:` tag convention authored** (the v1.0.6-retained slice of governance
       work) — the path→audience (`user`|`dev`) rules added to the wiki `SCHEMA.md` +
       stamped in WS-4b's cold-ingest, **before the 6.5 sweep**, since the assistant's
-      access plane and the 6.5 user/dev split need it within this epic. *(Full
+      access plane and the 6.5 user/dev split need it within this epic. **✓ done** —
+      authored in `SCHEMA.md`; all content pages stamped (`overview.md`=`user`; the 24
+      `pages/`=`dev`); user-education pages reserved for the 6.5 sweep. *(Full
       **governance extraction** — lifting the scattered canonical rules into one home —
       **moved to v1.0.7**, 2026-06-12: it depends on the wiki proving out, pairs with
       "the app knows itself," and is off v1.0.6's critical path. The ⚠ `@import`

@@ -10,7 +10,7 @@
 
 ---
 
-The web app is a single Flask module: `app.py` holds over 90 routes (92 `@app.route`
+The web app is a single Flask module: `app.py` holds over 90 routes (93 `@app.route`
 decorators at HEAD) plus the security helpers and request/response glue, and the
 dashboard blueprint mounts more on top
 `[synthesis]` (the architecture map lists `app.py` as "Flask routes, security
@@ -40,7 +40,13 @@ blocks an `Edit`/`Write` to `app.py` that adds a `@app.route` touching the files
 "consistency tracks enforcement" applies literally to this surface
 ([[consistency-tracks-enforcement]]). The legacy [`app.py:download_file`](../../../app.py)
 inlines the `_within` check rather than calling the helper — same containment, older
-idiom `[synthesis]`.
+idiom `[synthesis]`. The PX-02 opt-in scrape route [`app.py:fetch_profile`](../../../app.py)
+(`POST /api/users/<username>/profile/fetch`) runs the same gate — `_safe_username`, then a
+defensive `_within(config_path, CONFIGS_DIR)` on the user's `.config` file — before reading
+the saved URLs and scraping them via the deterministic
+[`scraper.fetch_profile_content`](../../../scraper.py) (no network library imported here —
+egress lives in `scraper.py`, on the PX-08 allowlist), caching the result into
+`Candidate.online_profile_text` (see [[corpus-data-model]]) `[synthesis]`.
 
 DB-only routes (no request-sourced path) drop `_within` but still validate ownership
 via `_safe_username` — e.g. [`app.py:update_application_status`](../../../app.py) loads

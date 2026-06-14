@@ -45,7 +45,7 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
 - [`pages/iteration-audit-chain.md`](pages/iteration-audit-chain.md) — per-generate
   child context files; `parent_context_path` as the immutable audit trail.
 - [`pages/corpus-data-model.md`](pages/corpus-data-model.md) — the SQLite corpus schema
-  + the unified Corpus-Item lifecycle; alembic head 0009.
+  + the unified Corpus-Item lifecycle; alembic head 0010.
 - [`pages/corpus-to-output-reach.md`](pages/corpus-to-output-reach.md) — how curation
   reaches the deliverable: JSON-Resume build + the `composition_overrides` shape.
 - [`pages/application-audit-chain.md`](pages/application-audit-chain.md) — the per-apply
