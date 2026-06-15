@@ -252,4 +252,15 @@ def test_axe_dashboard_console(
             )
         found[f"dashboard:{tab}"] = _axe_serious(page)
 
+    # Sprint 6.5 education — scan the ported #helpModal in its OPEN state. The tab
+    # loop only ever sees it hidden (axe excludes hidden controls), so without this
+    # the dashboard help dialog's a11y is never gated. Open the Annotate explainer
+    # (the active tab after the loop) so the dialog has a populated title — an
+    # empty title would itself fire `aria-dialog-name` serious.
+    dash.open_help("annotate")
+    page.wait_for_selector(Help.MODAL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
+    found["dashboard:help-modal"] = _axe_serious(page)
+    dash.close_help()
+    page.wait_for_selector(Help.MODAL, state="hidden", timeout=DEFAULT_TIMEOUT_MS)
+
     _assert_clean(found)

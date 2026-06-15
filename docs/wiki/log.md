@@ -223,3 +223,19 @@ no-fabrication promise defers to [`overview.md`](overview.md) (D5 — not restat
 quality gate (`ruff` + `mypy` + `pytest` incl. `-m ux` / the axe gate) is run on the branch's
 combined code + content before commit; the result is recorded with the branch in
 [`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md).
+
+## 2026-06-15 — diagnostics-console education landed; dev-tier drift noted (`feat/education-diagnostics-annotate`)
+
+**Mode: note only — NOT an ingest / diff pass** (Sprint 6.5, #15 + #20 + #22). This branch
+applied in-app help to the localhost `/_dashboard` console (its own ported help mechanism in
+`dashboard/templates/dashboard.html` + lay-language annotate/empty-state copy). The console is
+a **dev surface**, so the education is dev content — **no `audience: user` page is authored**;
+the in-app copy is the home for it.
+
+**Dev-tier drift.** The dev-tier [`pages/diagnostics-console.md`](pages/diagnostics-console.md)
+now drifts from HEAD (the console gained a `#helpModal`, a per-tab `_DASH_HELP` registry, and
+rewritten copy). As with the 2026-06-14 frontend changes, `.last_ingest_sha` is **left at**
+`93a34b9` (this is not a code ingest), which keeps the commit-time freshness reminder correctly
+flagging the dev-tier pages. The consolidated code-keyed refresh (`diagnostics-console.md` +
+`frontend-wizard.md`) is deferred to a later `chore/wiki-refresh` / the version-bump branch —
+do NOT spin a standalone wiki branch.
