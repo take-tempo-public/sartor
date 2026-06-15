@@ -223,7 +223,7 @@ The plugin's subagents currently act under your local `gh auth` identity, with `
 1. **GitHub Actions with built-in `GITHUB_TOKEN`** for scheduled jobs (no secrets to manage)
 2. **A scoped GitHub App** ("callback. Bot") for distinct-identity automation
 
-Per-agent personal access tokens or separate user accounts are explicitly *not* the recommended path. See the agent definitions in `.claude-plugin/agents/` for the current personas and their permissions.
+Per-agent personal access tokens or separate user accounts are explicitly *not* the recommended path. See the agent definitions in `agents/` for the current personas and their permissions.
 
 ---
 

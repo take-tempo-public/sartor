@@ -13,6 +13,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — plugin activation: `.claude-plugin/` commands + subagents now load (`chore/plugin-activation`, Sprint 7.1)
+
+Makes the dormant Claude Code plugin's **10 commands + 6 subagents** invocable — previously
+only the 10 hooks loaded (hand-wired in `.claude/settings.json`), while the commands/agents
+were never registered (no marketplace, no install). Dev-harness only — no product code,
+route, LLM call, prompt (`PROMPT_VERSION` unchanged at `2026-06-13.1`), dependency, or
+migration. Unblocks the v1.0.7 self-documenting loop (`/callback:wiki-*`) and compliance
+pilot.
+
+- **New [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json)** — a local
+  `callback-tools` marketplace listing the `callback` plugin (`source: "."`).
+- **[`.claude-plugin/plugin.json`](.claude-plugin/plugin.json)** — `name`
+  `resume-optimizer → callback`; `version` `0.1.0 → 1.0.6` (lockstep with `pyproject.toml`).
+  The 10 command + 6 agent `.md` files **moved out of `.claude-plugin/` to the plugin root**
+  (`commands/`, `agents/`): Claude Code reserves `.claude-plugin/` for
+  `plugin.json`/`marketplace.json` and **silently skips any components nested inside it**, so
+  the manifest relies on the default root-level scan (no `commands`/`agents` path-overrides).
+  No `hooks` key.
+- **`.claude/settings.json`** — added `extraKnownMarketplaces` (`callback-tools`, directory
+  source) + `enabledPlugins` (`callback@callback-tools`). The existing **hooks block is
+  untouched** — the security/quality hooks stay wired here, deliberately *not* migrated into
+  the plugin manifest. The tool-agnostic-enforcement question (git-hooks/CI vs Claude
+  plugin) is an explicit agenda item deferred to the v1.0.7 governance pass (see
+  [`RELEASE_CHECKLIST.md`](docs/dev/RELEASE_CHECKLIST.md) tracked-deferred).
+- Commands now load **namespaced** as `/callback:<name>`; subagents as `callback:<name>`.
+- **Docs corrected to match reality:** command/agent path references repointed from
+  `.claude-plugin/commands|agents/` to the root-level `commands/`/`agents/` across `CLAUDE.md`
+  (Skill catalog + a new Subagent catalog, namespaced names), `README.md` (plugin section +
+  activation line; added the omitted `headhunter` agent + `require-feature-branch` hook),
+  `CONTRIBUTING.md`, `docs/system-model.md`, `docs/walkthrough.md`, `evals/README.md`, and the
+  `llm-wiki-design` wiki page. Historical CHANGELOG/review/benchmark entries left as-is.
+
 ## [1.0.6] — 2026-06-15
 
 ### Changed — v1.0.6 release cut: PX-10 blast-radius correction + install test-count fix (`chore/version-bump-v1.0.6`)

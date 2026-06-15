@@ -12,6 +12,17 @@
       "Bash(where *)"
     ]
   },
+  "extraKnownMarketplaces": {
+    "callback-tools": {
+      "source": {
+        "source": "directory",
+        "path": "."
+      }
+    }
+  },
+  "enabledPlugins": {
+    "callback@callback-tools": true
+  },
   "hooks": {
     "PreToolUse": [
       {

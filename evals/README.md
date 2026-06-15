@@ -280,7 +280,7 @@ What it does:
 
 To promote a winning candidate, copy its text into the constant in `analyzer.py`,
 bump `PROMPT_VERSION` in the same commit, and log the before/after in
-[`TUNING_LOG.md`](TUNING_LOG.md). The [`/prompt-tune`](../.claude-plugin/commands/prompt-tune.md)
+[`TUNING_LOG.md`](TUNING_LOG.md). The [`/prompt-tune`](../commands/prompt-tune.md)
 skill automates the whole baseline → candidate → diff → promote loop on top of
 this flag.
 
@@ -609,7 +609,7 @@ invalid until you fill it in.
 The annotation contract produces an `improvement_brief.md` + a `--suite real`
 fixture; the `/tune-from-annotations` skill is what turns that brief into a
 **promoted prompt edit**. It is the annotations-driven sibling of
-[`/prompt-tune`](../.claude-plugin/commands/prompt-tune.md): same prompt-override
+[`/prompt-tune`](../commands/prompt-tune.md): same prompt-override
 primitive underneath, but it reads the brief (instead of asking the user for the
 wording) and A/Bs against your real-data fixture.
 
@@ -733,7 +733,7 @@ irreversible step that stays a human/agent's job:
 The console is the click-through equivalent of the CLI loop documented above — same
 `run_suite`, same `prompt_overrides()` primitive, same `evals/tune.py` delta, same
 `annotations.json` contract. Reach for the CLI (`--prompt-overrides`,
-[`/prompt-tune`](../.claude-plugin/commands/prompt-tune.md),
+[`/prompt-tune`](../commands/prompt-tune.md),
 [`/tune-from-annotations`](#tune-from-annotations-workflow-tune-from-annotations))
 when you want scripted/repeatable runs; reach for the console when you want to drive
 the loop interactively and read the deltas inline.
@@ -851,7 +851,7 @@ Read `failed_rules` first — it tells you which class of failure occurred. Comm
 | `length_overflow` / `length_under` | Generated artifact outside expected band | Check the output_format rules for length guidance; generate prompt may need a tighter bound. |
 | Always-failing rubric | Rubric is too strict, or model is consistently failing this dimension | Re-read the rubric. If the criteria are right but the model can't meet them, that's a real prompt-engineering problem. |
 
-The [`prompt-archaeologist`](../.claude-plugin/agents/prompt-archaeologist.md) subagent is purpose-built for this triage — feed it the failed result and it traces back to the specific SYSTEM_PROMPT rule that should have prevented the failure. It outputs a unified diff (does not apply changes).
+The [`prompt-archaeologist`](../agents/prompt-archaeologist.md) subagent is purpose-built for this triage — feed it the failed result and it traces back to the specific SYSTEM_PROMPT rule that should have prevented the failure. It outputs a unified diff (does not apply changes).
 
 ---
 
@@ -942,7 +942,7 @@ Several enhancements are scoped but not yet built:
 - **Trend tracking** — aggregate scores by `prompt_version` over time so prompt regressions are visible on the dashboard
 - **Auto-invocation of `eval-judge` from `/replay`** — for ad-hoc grading of a single regenerated output without a full eval run
 - **Structured failure analysis** — group `failed_rules` slugs across runs to identify systemic issues
-- ~~**A/B prompt comparison**~~ — **shipped** (v1.0.4) as the [`--prompt-overrides`](#candidate-prompt-overrides---prompt-overrides) flag + `analyzer.prompt_overrides()`; the [`/prompt-tune`](../.claude-plugin/commands/prompt-tune.md) skill drives the capture-baseline → candidate → diff → promote loop on top of it
+- ~~**A/B prompt comparison**~~ — **shipped** (v1.0.4) as the [`--prompt-overrides`](#candidate-prompt-overrides---prompt-overrides) flag + `analyzer.prompt_overrides()`; the [`/prompt-tune`](../commands/prompt-tune.md) skill drives the capture-baseline → candidate → diff → promote loop on top of it
 - **Custom judge model** — `--judge-model` flag to override the default Haiku, useful for experimentation with Sonnet-as-judge
 
 ---
@@ -954,8 +954,8 @@ Several enhancements are scoped but not yet built:
 | [`analyzer.py:SYSTEM_PROMPT`](../analyzer.py) | The persona + ALWAYS/NEVER rules the eval ultimately measures |
 | [`analyzer.py:_call_llm`](../analyzer.py) | Shared instrumentation; eval traffic appears in `logs/llm_calls.jsonl` with `username="eval:{fixture}"` |
 | [`dashboard/routes.py`](../dashboard/routes.py) | Reads `evals/results/*.jsonl` for the dashboard's bottom table |
-| [`.claude-plugin/agents/eval-judge.md`](../.claude-plugin/agents/eval-judge.md) | Interactive subagent variant of the grading function |
-| [`.claude-plugin/agents/prompt-archaeologist.md`](../.claude-plugin/agents/prompt-archaeologist.md) | Failure-triage subagent for failed rubrics |
-| [`.claude-plugin/commands/eval.md`](../.claude-plugin/commands/eval.md) | Slash-command wrapper around `runner.py` |
-| [`.claude-plugin/commands/prompt-tune.md`](../.claude-plugin/commands/prompt-tune.md) | A/B prompt comparison built on the harness |
+| [`agents/eval-judge.md`](../agents/eval-judge.md) | Interactive subagent variant of the grading function |
+| [`agents/prompt-archaeologist.md`](../agents/prompt-archaeologist.md) | Failure-triage subagent for failed rubrics |
+| [`commands/eval.md`](../commands/eval.md) | Slash-command wrapper around `runner.py` |
+| [`commands/prompt-tune.md`](../commands/prompt-tune.md) | A/B prompt comparison built on the harness |
 | [`vision.md`](../vision.md) | Project-level reasoning for why eval is needed (deterministic-first, LLM-only-when-needed) |

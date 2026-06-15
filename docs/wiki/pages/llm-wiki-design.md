@@ -73,7 +73,7 @@ layer."
 ## Ops + trigger + cost
 
 The ops are **manually-invoked Claude Code skills** — `/wiki-ingest`, `/wiki-query`,
-`/wiki-lint`, `/wiki-audit` under `.claude-plugin/commands/` — **plus a lightweight
+`/wiki-lint`, `/wiki-audit` under `commands/` — **plus a lightweight
 commit-time freshness *reminder* hook, deliberately NOT auto-ingest**, because ingesting
 on every commit would spend LLM cost on every commit. `wiki-lint` runs periodically and
 as a **pre-release gate** (it fits the existing release-checklist discipline). Ownership

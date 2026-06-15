@@ -60,7 +60,7 @@ post-feature test window is a **formal gate** (E2E walkthrough + first real-data
 
 **Epic v1.0.7 — feature-complete ("the app knows itself").** Hard order 7.1 → 7.2 → {7.3, 7.7}; assistant after 7.3 design.
 
-- [ ] **7.1** `chore/plugin-activation` — make `.claude-plugin/` commands + agents load (not just hooks); fix `CLAUDE.md` "Skill catalog". Unblocks `/wiki-*` + compliance pilot.
+- [x] **7.1** `chore/plugin-activation` — make `.claude-plugin/` commands + agents load (not just hooks); fix `CLAUDE.md` "Skill catalog". Unblocks `/wiki-*` + compliance pilot. **Landed 2026-06-15:** local `callback-tools` marketplace + `enabledPlugins` committed in `.claude/settings.json`; `plugin.json` name→`callback` / version→`1.0.6`; the 10 command + 6 agent `.md` files moved out of the reserved `.claude-plugin/` to the plugin root (`commands/`, `agents/` — Claude Code skips components nested in `.claude-plugin/`), default root scan (no path-overrides); commands namespace as `/callback:…`, subagents `callback:…`. **Hooks deliberately left in `settings.json`** (enforcement-portability deferred to 7.2 — see tracked-deferred below). `CLAUDE.md` Skill+Subagent catalog and `README.md` plugin section corrected.
 - [ ] **7.2** `design/governance-extraction` → `feat/governance-extraction` — one canonical rules home; **preserve `@import`/pointer rule-access** (hard constraint). PX-23/24/27/28 ride here.
 - [ ] **7.3** `design/self-documenting-loop` → `feat/self-documenting-wiki` — bounded, cost-aware Haiku diff-pass ingest + `/wiki-lint`/`/wiki-audit` backstop (PX-33).
 - [ ] **7.4** `feat/recall-skeleton` — Stage 0 `recall/` package (no LLM; never imports `app.py` → refactor-immune).
@@ -457,6 +457,26 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 > 2026-06-08 and the originals deleted; git now holds them. WS-4a **ingests that
 > folder into the wiki early** in this epic, after which the flat folder may retire
 > into the wiki's `raw/` layer.
+
+### Discovered during the v1.0.7 stream (tracked, deferred)
+
+- [ ] **Enforcement portability — security/quality hooks: tool-agnostic git-hooks/CI vs the
+      Claude plugin** — surfaced 2026-06-15 on `chore/plugin-activation` (Sprint 7.1) when
+      deciding whether to migrate the 10 `.claude-plugin/hooks/` into the plugin manifest.
+      **Owner-directed EXPLICIT agenda item for the 7.2 `design/governance-extraction` design
+      session (raise it, don't bury it).** The plugin surface (commands/agents/hooks) is
+      Claude-Code-only, and the committed CI ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml))
+      is **latent until the GitHub remote at sprint 8.7** — so today the Claude hooks are the
+      only *active* mechanical enforcement; non-Claude agents (Codex/Cursor/Aider/llama.cpp)
+      rely on `AGENTS.md` (read by any agent) alone. The **portable** rules' enforcement
+      (`require-feature-branch`, `block-merge-to-main`, `ruff-changed`, `block-secrets`,
+      `route-security-lint`) arguably belongs in tool-agnostic **git-hooks
+      (`pre-commit`/`pre-push`) and/or CI** — which protect every agent *and* human — rather
+      than a Claude-only plugin; only the inherently-Claude hooks (plan-mode lifecycle,
+      `wiki-freshness-reminder`) clearly stay plugin-side. 7.1 deliberately left **all** hooks
+      wired in `.claude/settings.json` (zero risk, no deeper Claude-coupling) pending this
+      decision — the enforcement-side counterpart to governance's tool-agnostic *rule*
+      consolidation. Fully reversible either way.
 
 ### Discovered during the v1.0.6 stream (tracked, deferred)
 
