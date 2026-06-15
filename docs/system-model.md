@@ -86,7 +86,7 @@ the fix. *(Lives in: `tests/`, `evals/`, `dashboard/`, the build/perf `scripts/`
 ### Operation — the active labor that builds and reshapes
 The people and assistants who change the system. Notably, **AI coding agents are
 first-class contributors here** — much of the work is done by agents working under
-strict, mechanically-enforced rules. *(Lives in: `.claude-plugin/commands/` +
+strict, mechanically-enforced rules. *(Lives in: `commands/` +
 `agents/`; the human + AI operators; the operating contract in
 [`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md).)*
 
@@ -134,7 +134,7 @@ navigable as it grows.
 | **Substrate** | `configs/`, `resumes/`, `output/`, `db/resume.sqlite` |
 | **Production** | `app.py` (web layer) · `analyzer.py` (**all** AI calls) · the deterministic core `hardening.py` / `generator.py` / `parser.py` / `pdf_render.py` / `json_resume.py` · `db/` |
 | **Evaluation** | `tests/` · `evals/` · `dashboard/` |
-| **Operation** | `.claude-plugin/commands/` + `agents/` · [`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md) (the operating contract) |
+| **Operation** | `commands/` + `agents/` · [`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md) (the operating contract) |
 | **Memory** | `docs/` · `CHANGELOG.md` · (the planned knowledge wiki) |
 | **Regulation** | `.claude-plugin/hooks/` · the `ruff` + `mypy` + `pytest` gate · [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) / [`dev/RELEASE_CHECKLIST.md`](dev/RELEASE_CHECKLIST.md) |
 | **Governance** | [`vision.md`](../vision.md) · the 10 Principles |

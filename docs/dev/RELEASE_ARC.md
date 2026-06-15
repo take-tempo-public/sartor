@@ -437,7 +437,7 @@ first act.
 
 **This epic also lands** (beyond the polish sprints): the **WS-4 wiki substrate**
 (front-loaded — see below), the **corpus-item completers** **B.4**
-(ExperienceSummaryItem) and **B.5** (SkillGroupItem), and **B.8 Part 1** (outcome
+(ExperienceSummaryItem) and **B.5** (Skill-as-Corpus-Item), and **B.8 Part 1** (outcome
 capture, riding Sprint 6.1).
 
 ### Cut-line decisions (carried from the walk-through reconciliation)

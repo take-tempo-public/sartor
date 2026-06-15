@@ -524,7 +524,7 @@ overwritten, and the `parent_context_path` chain inside each
 The `context_*.json` chain is the auditable record of how each
 generated document came to exist. Re-run any iteration with the
 `/replay` slash command (see
-[`.claude-plugin/commands/replay.md`](../.claude-plugin/commands/replay.md)).
+[`commands/replay.md`](../commands/replay.md)).
 
 ---
 

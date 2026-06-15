@@ -65,10 +65,20 @@ lands, this moves to `.claude-plugin/hooks/`.
 
 ### Plugin commands + agents + hooks
 
-This project ships a Claude Code plugin under
-[`.claude-plugin/`](.claude-plugin/). Commands, subagents, and
-hooks are listed in [`README.md`](README.md#claude-code-plugin).
-Important hooks for any agent writing code here:
+This project ships a Claude Code plugin (`callback`): the manifest +
+local marketplace live in [`.claude-plugin/`](.claude-plugin/),
+commands in [`commands/`](commands/), and subagents in
+[`agents/`](agents/). Commands, subagents, and hooks are listed in
+[`README.md`](README.md#claude-code-plugin).
+**Activation:** the commands + subagents load as the `callback`
+plugin via the local `callback-tools` marketplace
+(`extraKnownMarketplaces` + `enabledPlugins` committed in
+[`.claude/settings.json`](.claude/settings.json)), so they appear
+namespaced (`/callback:…`, `callback:…`). The **hooks are wired
+directly in the same `settings.json`** — deliberately not in the
+plugin manifest, pending the tool-agnostic-enforcement decision
+slated for the v1.0.7 governance pass (see README). Important
+hooks for any agent writing code here:
 
 - `block-secrets` — blocks API keys + writes to
   `.api_key` / `.env*` / `*.pem` / `*.key`.
@@ -86,32 +96,62 @@ Important hooks for any agent writing code here:
 
 ### Skill catalog
 
-When the harness offers Skills (slash commands), prefer them
-over reinventing the workflow inline:
+The plugin's slash commands load **namespaced under the plugin
+name** (`/callback:<command>`) once the `callback-tools`
+marketplace + `enabledPlugins` entry in
+[`.claude/settings.json`](.claude/settings.json) are active (on a
+fresh clone this is a one-time marketplace-trust + reload). Prefer
+them over reinventing the workflow inline:
 
-- `/eval` — run the eval harness against synthetic or real
-  fixtures.
-- `/replay` — re-run `generate()` on a saved
+- `/callback:eval` — run the eval harness against synthetic or
+  real fixtures.
+- `/callback:replay` — re-run `generate()` on a saved
   `context_*.json`.
-- `/prompt-tune` — A/B test a `SYSTEM_PROMPT` edit against the
-  eval suite.
-- `/tune-from-annotations` — read an `improvement_brief.md`, draft
-  a candidate via the `tune-drafter` subagent, A/B it against the
+- `/callback:prompt-tune` — A/B test a `SYSTEM_PROMPT` edit
+  against the eval suite.
+- `/callback:tune-from-annotations` — read an
+  `improvement_brief.md`, draft a candidate via the
+  `callback:tune-drafter` subagent, A/B it against the
   `--suite real` fixture (+ anchor canary), promote on approval.
-- `/bench` — aggregate `logs/llm_calls.jsonl` for cache hit
-  rate, latency, cost.
-- `/inspect-context` — pretty-print + schema-validate a saved
-  `context_set`.
-- `/wiki-ingest` — compile changed sources into `docs/wiki/`
-  pages (diff-driven off `.last_ingest_sha`; sentinel or `--full`
-  = a full cold pass); advances the checkpoint, appends to
-  `log.md`.
-- `/wiki-query` — answer a question from the wiki with
+- `/callback:bench` — aggregate `logs/llm_calls.jsonl` for cache
+  hit rate, latency, cost.
+- `/callback:inspect-context` — pretty-print + schema-validate a
+  saved `context_set`.
+- `/callback:wiki-ingest` — compile changed sources into
+  `docs/wiki/` pages (diff-driven off `.last_ingest_sha`;
+  sentinel or `--full` = a full cold pass); advances the
+  checkpoint, appends to `log.md`.
+- `/callback:wiki-query` — answer a question from the wiki with
   `[[citations]]`; offer to file the answer back as a page.
-- `/wiki-lint` — severity-tiered drift/coverage report on the
-  wiki (periodic + pre-release gate).
-- `/wiki-audit` — fact-check one wiki page against its cited
-  sources.
+- `/callback:wiki-lint` — severity-tiered drift/coverage report
+  on the wiki (periodic + pre-release gate).
+- `/callback:wiki-audit` — fact-check one wiki page against its
+  cited sources.
 
-See [`.claude-plugin/commands/`](.claude-plugin/commands/) for
+See [`commands/`](commands/) for
 each command's full definition.
+
+### Subagent catalog
+
+The plugin's subagents load namespaced as `callback:<name>`.
+Delegate to them rather than doing the work inline:
+
+- `callback:eval-judge` (Haiku) — grade one (artifact × rubric)
+  → strict JSON verdict; used by the eval harness + interactive
+  grading.
+- `callback:prompt-archaeologist` — trace an eval regression to
+  the prompt rule that caused it and propose a minimal
+  unified-diff fix (does NOT apply it).
+- `callback:tune-drafter` — read-only: draft a full candidate
+  system-prompt constant from an `improvement_brief.md` for the
+  `/callback:tune-from-annotations` A/B.
+- `callback:headhunter` — recruiter-domain check when a clarify
+  question / suggestion / rubric outcome reads "technically
+  correct but unlikely to generate a callback."
+- `callback:git-flow` — autonomous git workflow under the
+  project's branch/commit conventions.
+- `callback:ux-onboarding-designer` — audit user-facing docs
+  from a first-time-user lens → sequenced rewrite ladder.
+
+See [`agents/`](agents/) for each
+subagent's full definition.

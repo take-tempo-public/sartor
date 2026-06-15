@@ -1,0 +1,13 @@
+{
+  "name": "callback-tools",
+  "owner": {
+    "name": "Cooksey"
+  },
+  "plugins": [
+    {
+      "name": "callback",
+      "source": ".",
+      "description": "callback. dev tooling: eval-harness + observability slash commands and grading/tuning subagents for the resume-optimizer Flask app. Security/quality hooks are wired separately via .claude/settings.json."
+    }
+  ]
+}

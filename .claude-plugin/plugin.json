@@ -1,7 +1,7 @@
 {
-  "name": "resume-optimizer",
-  "description": "Workflow plugin for the Resume Optimizer Flask app: eval harness commands, observability, and deterministic hooks for security and quality gates.",
-  "version": "0.1.0",
+  "name": "callback",
+  "description": "Workflow plugin for the callback. resume-optimizer Flask app: eval-harness + observability slash commands and grading/tuning subagents. Deterministic security/quality hooks ship in this directory but are wired via .claude/settings.json (see README).",
+  "version": "1.0.6",
   "author": {
     "name": "Cooksey"
   },

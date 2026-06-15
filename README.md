@@ -140,32 +140,33 @@ Common issues — stale UI after restart, `ModuleNotFoundError`, missing Chromiu
 
 ## Claude Code Plugin
 
-The project ships a Claude Code plugin under [.claude-plugin/](.claude-plugin/) — slash commands, subagents, and hooks that automate the dev workflow. Activation via `.claude/settings.json` (no install step required).
+The project ships a Claude Code plugin (`callback`) — slash commands ([commands/](commands/)), subagents ([agents/](agents/)), and hooks ([.claude-plugin/hooks/](.claude-plugin/hooks/)) that automate the dev workflow; the plugin manifest + local marketplace live in [.claude-plugin/](.claude-plugin/). **Commands + subagents** load as the `callback` plugin via a bundled local marketplace (`callback-tools`) — the `extraKnownMarketplaces` + `enabledPlugins` entries are committed in `.claude/settings.json`, so they activate on session start (a fresh clone needs a one-time marketplace-trust + reload). Because they load as a plugin they appear **namespaced**: commands as `/callback:<name>`, subagents as `callback:<name>`. The **hooks** are wired directly in the same `.claude/settings.json` rather than the plugin manifest — see [Hooks](#hooks).
 
 ### Commands
 
 | Command | What it does |
 |---|---|
-| [`/eval`](.claude-plugin/commands/eval.md) | Run the eval harness against synthetic or real fixtures |
-| [`/replay`](.claude-plugin/commands/replay.md) | Re-run `generate()` on a saved `context_*.json` |
-| [`/prompt-tune`](.claude-plugin/commands/prompt-tune.md) | A/B test a `SYSTEM_PROMPT` edit against the eval suite |
-| [`/tune-from-annotations`](.claude-plugin/commands/tune-from-annotations.md) | Draft a candidate prompt edit from an annotation `improvement_brief.md`, A/B it against the `--suite real` fixture + anchor canary, promote on approval |
-| [`/bench`](.claude-plugin/commands/bench.md) | Aggregate `logs/llm_calls.jsonl` for cache hit rate, latency, cost |
-| [`/inspect-context`](.claude-plugin/commands/inspect-context.md) | Pretty-print + schema-validate a saved `context_set` |
-| [`/wiki-ingest`](.claude-plugin/commands/wiki-ingest.md) | Compile changed sources into `docs/wiki/` pages (diff-driven off `.last_ingest_sha`; sentinel/`--full` = cold pass) |
-| [`/wiki-query`](.claude-plugin/commands/wiki-query.md) | Answer a question from the wiki with `[[citations]]`; offer to file the answer back |
-| [`/wiki-lint`](.claude-plugin/commands/wiki-lint.md) | Severity-tiered drift/coverage report on the wiki (periodic + pre-release gate) |
-| [`/wiki-audit`](.claude-plugin/commands/wiki-audit.md) | Fact-check one wiki page against its cited sources |
+| [`/callback:eval`](commands/eval.md) | Run the eval harness against synthetic or real fixtures |
+| [`/callback:replay`](commands/replay.md) | Re-run `generate()` on a saved `context_*.json` |
+| [`/callback:prompt-tune`](commands/prompt-tune.md) | A/B test a `SYSTEM_PROMPT` edit against the eval suite |
+| [`/callback:tune-from-annotations`](commands/tune-from-annotations.md) | Draft a candidate prompt edit from an annotation `improvement_brief.md`, A/B it against the `--suite real` fixture + anchor canary, promote on approval |
+| [`/callback:bench`](commands/bench.md) | Aggregate `logs/llm_calls.jsonl` for cache hit rate, latency, cost |
+| [`/callback:inspect-context`](commands/inspect-context.md) | Pretty-print + schema-validate a saved `context_set` |
+| [`/callback:wiki-ingest`](commands/wiki-ingest.md) | Compile changed sources into `docs/wiki/` pages (diff-driven off `.last_ingest_sha`; sentinel/`--full` = cold pass) |
+| [`/callback:wiki-query`](commands/wiki-query.md) | Answer a question from the wiki with `[[citations]]`; offer to file the answer back |
+| [`/callback:wiki-lint`](commands/wiki-lint.md) | Severity-tiered drift/coverage report on the wiki (periodic + pre-release gate) |
+| [`/callback:wiki-audit`](commands/wiki-audit.md) | Fact-check one wiki page against its cited sources |
 
 ### Subagents
 
 | Agent | When to invoke |
 |---|---|
-| [`eval-judge`](.claude-plugin/agents/eval-judge.md) | Grade one (artifact × rubric) → JSON verdict |
-| [`prompt-archaeologist`](.claude-plugin/agents/prompt-archaeologist.md) | Trace an eval failure to a prompt rule and propose a unified-diff fix |
-| [`tune-drafter`](.claude-plugin/agents/tune-drafter.md) | Read-only: draft a full candidate system-prompt edit from an `improvement_brief.md` for the `/tune-from-annotations` A/B |
-| [`git-flow`](.claude-plugin/agents/git-flow.md) | Execute git workflow under the project's conventions |
-| [`ux-onboarding-designer`](.claude-plugin/agents/ux-onboarding-designer.md) | Audit user-facing docs from a first-time-user lens → structured rewrite ladder |
+| [`callback:eval-judge`](agents/eval-judge.md) | Grade one (artifact × rubric) → JSON verdict |
+| [`callback:prompt-archaeologist`](agents/prompt-archaeologist.md) | Trace an eval failure to a prompt rule and propose a unified-diff fix |
+| [`callback:tune-drafter`](agents/tune-drafter.md) | Read-only: draft a full candidate system-prompt edit from an `improvement_brief.md` for the `/callback:tune-from-annotations` A/B |
+| [`callback:headhunter`](agents/headhunter.md) | Recruiter-domain check when a clarify question / suggestion / rubric outcome reads "technically correct but unlikely to generate a callback" |
+| [`callback:git-flow`](agents/git-flow.md) | Execute git workflow under the project's conventions |
+| [`callback:ux-onboarding-designer`](agents/ux-onboarding-designer.md) | Audit user-facing docs from a first-time-user lens → structured rewrite ladder |
 
 ### Hooks
 
@@ -175,6 +176,7 @@ Deterministic gates that fire automatically on tool use. See [.claude-plugin/hoo
 - `ruff-changed` — runs `ruff check` on staged Python before `git commit`
 - `block-merge-to-main` — blocks merge/push to main without explicit `CLAUDE_CONFIRM_MERGE=1`
 - `validate-context` — JSON-syntax + schema check on `output/**/context_*.json` writes
+- `require-feature-branch` — blocks `Edit`/`Write` while on `main`/`master` (override: `CLAUDE_ALLOW_MAIN_EDITS=1`)
 - `route-security-lint` — requires `_safe_username` + `_within` on new Flask routes
 - `wiki-freshness-reminder` — non-blocking nudge after `git commit` when `docs/wiki/` may be stale (silent until the first ingest sets a baseline)
 - `check-plan-approved` / `mark-plan-approved` / `cleanup-plan-on-merge` — plan-mode workflow
