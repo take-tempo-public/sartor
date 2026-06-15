@@ -33,6 +33,13 @@
     .dash-tab:hover { color: var(--fg-0); background: var(--brand-soft); }
     .dash-tab.active { color: var(--brand); border-bottom-color: var(--brand); }
 
+    /* Per-pane summary line + its (i) help circle (Sprint 6.5 education). The
+       .help-info circle itself is styled by the shared rule in style.css; this
+       only lays the summary + icon out as one row. The summary is the no-JS
+       fallback (it renders server-side); the (i) needs JS to open its modal. */
+    .dash-pane-intro { display: flex; align-items: center; gap: 0.5rem; color: var(--fg-1); font-size: 0.88rem; line-height: 1.5; margin: 0 0 1.2rem; }
+    .dash-pane-intro .help-info { flex: none; }
+
     /* Bento grid of summary tiles */
     .bento { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 0.9rem; }
     .bento .span-2 { grid-column: span 2; }
@@ -182,6 +189,12 @@
 
 <!-- ============================ PIPELINE ============================ -->
 <section class="dash-pane" data-pane="pipeline" role="tabpanel">
+  <p class="dash-pane-intro">
+    <span>Live cost, latency, cache, reliability, and a per-run trace for every LLM call — reads <code class="short">logs/llm_calls.jsonl</code>.</span>
+    <button class="help-info" id="help-icon-dashPipeline" data-help="dashPipeline" type="button"
+            title="About the Pipeline tab" aria-label="Help: Pipeline — live call telemetry"
+            aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+  </p>
   <form class="filters" method="get" action="">
     <label>Since<input type="date" name="since" value="{{ filters.since }}"></label>
     <label>User
@@ -199,7 +212,10 @@
   </form>
 
   {% if summary.count == 0 %}
-  <p class="empty">No calls match these filters{% if not log_path_present %} (no <code class="short">logs/llm_calls.jsonl</code> yet — run an analyze + generate to populate){% endif %}.</p>
+  <p class="empty">Nothing to chart yet. This tab summarizes every LLM call the app logs to
+    <code class="short">logs/llm_calls.jsonl</code>{% if not log_path_present %}, and that file doesn't exist
+    yet — run an analyze + generate from the main app to create it{% else %}, and no calls match these
+    filters — try clearing them above{% endif %}.</p>
   {% else %}
   <div class="bento">
     <button class="tile" data-detail="cost" data-title="Cost — by call kind">
@@ -233,30 +249,40 @@
 
 <!-- ============================ QUALITY ============================ -->
 <section class="dash-pane" data-pane="quality" role="tabpanel">
+  <p class="dash-pane-intro">
+    <span>Eval scores (0–5) for generated résumés, by rubric. Run a suite here or from the CLI.</span>
+    <button class="help-info" id="help-icon-dashQuality" data-help="dashQuality" type="button"
+            title="About the Quality tab" aria-label="Help: Quality — eval scores by rubric"
+            aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+  </p>
   <div class="eval-run" id="evalRun">
     <strong>Run eval</strong>
     <span class="sub">In-browser <code class="short">run_suite</code> — the same core <code class="short">python evals/runner.py</code> drives. Paid Sonnet + Haiku.</span>
     <div class="filters">
       <label>Suite
-        <select id="evalSuite">
+        <select id="evalSuite" title="synthetic = committed sample fixtures · anchor = the small always-on smoke set">
           <option value="synthetic">synthetic</option>
           <option value="anchor">anchor</option>
         </select>
       </label>
       <label>Subset
-        <select id="evalSubset">
+        <select id="evalSubset" title="smoke = a fast grounding-only subset (cheaper) · full = all four rubrics">
           <option value="smoke">smoke</option>
           <option value="full">full</option>
         </select>
       </label>
-      <label class="bs-grounding" style="margin:0;align-self:end"><input type="checkbox" id="evalGrounding"> grounding signals</label>
+      <label class="bs-grounding" style="margin:0;align-self:end"><input type="checkbox" id="evalGrounding"
+        title="Also score with the offline DeBERTa NLI + MiniCheck grounding models (needs the [eval-grounding] extras; CPU-bound, no extra paid calls)."> grounding signals</label>
       <button class="ann-btn primary" id="evalRunBtn" type="button">Run eval</button>
     </div>
     <p class="eval-cost" id="evalCost"></p>
     <div id="evalProgress" class="annotate-progress" role="status" aria-live="polite"></div>
   </div>
   {% if not eval_results %}
-  <p class="empty">No eval results yet{% if not eval_dir_present %} (no <code class="short">evals/results/</code> directory){% endif %}. Run <code class="short">python evals/runner.py --suite anchor --subset smoke</code>.</p>
+  <p class="empty">No eval scores yet. This tab grades generated résumés against the rubrics on a 0–5
+    scale{% if not eval_dir_present %}, and there's no <code class="short">evals/results/</code> directory
+    yet{% endif %}. Run a suite with the <strong>Run eval</strong> control above, or
+    <code class="short">python evals/runner.py --suite anchor --subset smoke</code> from the CLI.</p>
   {% else %}
   <div class="bento">
     <button class="tile span-2" data-detail="health" data-title="Health vs baseline">
@@ -295,10 +321,17 @@
 
 <!-- ========================== GROUNDEDNESS ========================== -->
 <section class="dash-pane" data-pane="groundedness" role="tabpanel">
+  <p class="dash-pane-intro">
+    <span>The no-invention check — specifics in the résumé that aren’t in the candidate’s source. Populated by an eval run.</span>
+    <button class="help-info" id="help-icon-dashGroundedness" data-help="dashGroundedness" type="button"
+            title="About the Groundedness tab" aria-label="Help: Groundedness — the no-invention check"
+            aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+  </p>
   {% if not groundedness_detail.has_data %}
-  <p class="empty">No groundedness records yet. The L0 fabricated-specifics metric rides on
-    <code class="short">deterministic_metrics.groundedness</code> — run
-    <code class="short">python evals/runner.py --suite anchor --subset smoke</code> to populate.</p>
+  <p class="empty">No groundedness scores yet. The L0 fabricated-specifics metric rides along on every
+    eval run (<code class="short">deterministic_metrics.groundedness</code>), so it fills in the first
+    time you run a suite — use the <strong>Run eval</strong> control on the Quality tab, or
+    <code class="short">python evals/runner.py --suite anchor --subset smoke</code>.</p>
   {% else %}
   <div class="bento">
     <button class="tile span-2" data-detail="groundedness" data-title="Groundedness (L0) — trend & evidence">
@@ -317,6 +350,12 @@
 
 <!-- ============================= TUNING ============================= -->
 <section class="dash-pane" data-pane="tuning" role="tabpanel">
+  <p class="dash-pane-intro">
+    <span>A/B a candidate prompt against the baseline without touching the persona constants. Runs two paid suites.</span>
+    <button class="help-info" id="help-icon-dashTuning" data-help="dashTuning" type="button"
+            title="About the Tuning tab" aria-label="Help: Tuning — candidate-vs-baseline A/B"
+            aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+  </p>
   <div class="scaffold-banner write">
     <strong>Read-write — localhost only.</strong> Runs <strong>two</strong> paid eval suites
     (baseline + candidate) and shows the per-(fixture, rubric) delta. The candidate run logs
@@ -336,18 +375,19 @@
         <select id="tuneConstant"></select>
       </label>
       <label>Suite
-        <select id="tuneSuite">
+        <select id="tuneSuite" title="synthetic = committed sample fixtures · anchor = the small always-on smoke set">
           <option value="synthetic">synthetic</option>
           <option value="anchor">anchor</option>
         </select>
       </label>
       <label>Subset
-        <select id="tuneSubset">
+        <select id="tuneSubset" title="smoke = a fast grounding-only subset (cheaper) · full = all four rubrics">
           <option value="smoke">smoke</option>
           <option value="full">full</option>
         </select>
       </label>
-      <label class="bs-grounding" style="margin:0;align-self:end"><input type="checkbox" id="tuneGrounding"> grounding signals</label>
+      <label class="bs-grounding" style="margin:0;align-self:end"><input type="checkbox" id="tuneGrounding"
+        title="Also score with the offline DeBERTa NLI + MiniCheck grounding models (needs the [eval-grounding] extras; CPU-bound, no extra paid calls)."> grounding signals</label>
     </div>
     <div class="tune-editor">
       <div class="tune-editor-head">
@@ -398,22 +438,30 @@
 
 <!-- ============================ ANNOTATE ============================ -->
 <section class="dash-pane" data-pane="annotate" role="tabpanel">
+  <p class="dash-pane-intro">
+    <span>Produce and label the <code class="short">annotations.json</code> ground-truth the grounding calibration needs — the console’s only write surface.</span>
+    <button class="help-info" id="help-icon-dashAnnotate" data-help="dashAnnotate" type="button"
+            title="About the Annotate tab" aria-label="Help: Annotate — the label-the-truth surface"
+            aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+  </p>
   <div class="scaffold-banner write">
-    <strong>Read-write — localhost only.</strong> The console's only write surface. It reads/writes
-    the Phase 3 <code class="short">annotations.json</code> contract under
-    <code class="short">evals/fixtures/real/</code> (gitignored, PII-bearing) — the label corpus the
-    deferred grounding calibration needs. Same format the
-    <code class="short">evals.annotation</code> CLI produces.
+    <strong>Read-write — localhost only.</strong> This is where you teach the grounding scorers what
+    "true" looks like: run the pipeline over real job descriptions, then mark each generated bullet
+    and skill as kept, fixed, omitted, or fabricated. Those labels are saved as the Phase 3
+    <code class="short">annotations.json</code> under <code class="short">evals/fixtures/real/</code>
+    (gitignored, PII-bearing) — the ground-truth the deferred grounding calibration needs. Same format
+    the <code class="short">evals.annotation</code> CLI produces.
   </div>
 
   <!-- ① Bootstrap wrapper (paid live pipeline over pasted JDs) -->
   <details class="annotate-section" id="bootstrapSection">
     <summary>① Produce a bootstrap — runs the live pipeline (paid + slow)</summary>
     <div>
-      <p class="sub">Drives analyze → clarify → generate over the job descriptions below for a real
-        candidate's corpus, then dedups across JDs into a <code class="short">bootstrap.json</code>.
+      <p class="sub">Runs the full résumé pipeline (analyze → clarify → generate) over the job
+        descriptions you paste below, using a real candidate's corpus, then merges the results across
+        JDs into one <code class="short">bootstrap.json</code> to annotate.
         <strong>Makes paid Sonnet/Haiku calls (~70s per JD)</strong> and reuses the same streaming
-        engine as the wizard's analyze.</p>
+        engine as the wizard's Analyze.</p>
       <div class="filters">
         <!-- data-user-source: auto-populated from GET /api/users on load
              (populateUserSelects). Required marker: a username is needed to
@@ -426,7 +474,8 @@
         <label>Fixture slug (optional)<input type="text" id="bsSlug" placeholder="&lt;candidate&gt;-bootstrap"></label>
       </div>
       <div id="bsJds"></div>
-      <label class="bs-grounding"><input type="checkbox" id="bsGrounding"> Run grounding scorers
+      <label class="bs-grounding"><input type="checkbox" id="bsGrounding"
+        title="Also score each deduped bullet with the offline DeBERTa NLI + MiniCheck grounding models. Needs the [eval-grounding] extras; CPU-bound, no extra paid LLM calls."> Run grounding scorers
         (DeBERTa NLI + MiniCheck) over the deduped bullets — needs the
         <code class="short">[eval-grounding]</code> extras; CPU-bound (~2-4s/bullet). Missing
         extras just save an un-scored bootstrap.</label>
@@ -447,7 +496,8 @@
       <select id="fixtureSelect"><option value="">—</option></select>
       <button class="ann-btn" id="fixtureReload" type="button">Reload</button>
     </div>
-    <p class="empty" id="fixtureEmpty">No bootstraps yet. Produce one above, or run
+    <p class="empty" id="fixtureEmpty">No bootstraps to annotate yet. Produce one with step ① above
+      (it auto-expands while this list is empty), or run
       <code class="short">python -m evals.bootstrap</code> from the CLI.</p>
   </div>
 
@@ -455,10 +505,12 @@
   <div class="annotate-section" id="annEditor" hidden>
     <p class="sub" id="annMeta"></p>
     <div class="ann-error" id="annError" hidden></div>
-    <p class="legend">Verdicts: <code class="short">keep</code> · <code class="short">fix</code>
-      (needs honest_rewrite) · <code class="short">omit</code> · <code class="short">fabricated</code>
-      (needs a forbidden_pattern regex). Every bullet &amp; skill needs a verdict before Save
-      (fail-closed, same as the CLI).</p>
+    <p class="legend">Give every bullet &amp; skill one verdict before Save (it fail-closes, exactly like
+      the CLI): <code class="short">keep</code> — true and usable as written ·
+      <code class="short">fix</code> — true but needs rewording (fill in an <code class="short">honest_rewrite</code>) ·
+      <code class="short">omit</code> — leave it off the résumé ·
+      <code class="short">fabricated</code> — not supported by the candidate's source (add a
+      <code class="short">forbidden_pattern</code> regex so the scorer catches it next time).</p>
     <h3 class="ann-h3">Bullets</h3>
     <div id="annBullets"></div>
     <h3 class="ann-h3">Skills</h3>
@@ -490,6 +542,26 @@
   </header>
   <div class="detail-body" id="detailBody"></div>
 </section>
+
+<!-- ===== Help modal — the dashboard's PORT of the reusable in-app help primitive
+         (Sprint 6.5, feat/education-diagnostics-annotate). The console is
+         self-contained and never loads static/app.js, so the opener + registry
+         live in the tabs IIFE below; this is the same #helpModal skeleton as
+         templates/index.html (reused ids → the Help POM works unchanged), styled
+         by the shared .cb-modal/.cb-modal-* rules in style.css. Lives outside any
+         .dash-pane so a tab's display:none never hides it. Closes on click-away
+         (the data-help-dismiss backdrop), Esc, or "Got it". ===== -->
+<div id="helpModal" class="cb-modal hidden" role="dialog" aria-modal="true"
+     aria-labelledby="helpModalTitle" aria-describedby="helpModalBody">
+  <div class="cb-modal-backdrop" data-help-dismiss></div>
+  <div class="cb-modal-content" role="document">
+    <h2 id="helpModalTitle" class="cb-modal-title"></h2>
+    <p id="helpModalBody" class="cb-modal-body"></p>
+    <div class="modal-actions">
+      <button class="cb-btn cb-bg-blue" id="btnCloseHelp" data-help-dismiss>Got it</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== Detail store: server-rendered detail blocks, moved into the inline
          detail panel by JS on tile click. Without JS this container is visible and
@@ -726,8 +798,158 @@
     panes.forEach(function (p) { p.classList.toggle('active', p.dataset.pane === name); });
     closeDetail();  // a detail from another tab shouldn't linger after a switch
   }
-  tabs.forEach(function (t) { t.addEventListener('click', function () { activateTab(t.dataset.tab); }); });
+
+  // ---- In-app help (Sprint 6.5, feat/education-diagnostics-annotate) ----
+  // A dashboard-local PORT of the wizard's help primitive (static/app.js
+  // openHelpModal / _HELP_REGISTRY). The console never loads app.js, so the
+  // opener + registry live here. Reuses the shared #helpModal element, the
+  // .cb-modal/.help-info CSS in style.css, AND the cb_help_seen: localStorage
+  // prefix — so the tests/ux/conftest.py `_TOUR_STOP_BLOCKS` seeding suppresses
+  // these auto-modals across the UX suite. Each tab carries a one-line summary
+  // (static .dash-pane-intro markup) + an (i)-circle that opens its explainer;
+  // the explainer also auto-opens once-ever on the tab's first view (KW9).
+  var _DASH_HELP = {
+    dashPipeline: {
+      title: 'Pipeline — live call telemetry',
+      body: 'This tab shows telemetry for every LLM call the app makes — total '
+        + 'cost, token usage, cache-hit rate, latency, reliability, and a '
+        + 'per-run trace waterfall. It reads logs/llm_calls.jsonl, which fills '
+        + 'in as you run analyze + generate from the main app, so it stays empty '
+        + 'until you have run the pipeline at least once. Click any tile to '
+        + 'expand its detail.',
+    },
+    dashQuality: {
+      title: 'Quality — eval scores by rubric',
+      body: 'This tab grades generated résumés against the eval rubrics on a 0–5 '
+        + 'scale. "Synthetic" grades against committed sample fixtures; "anchor" '
+        + 'is the small always-on smoke set. "Smoke" runs a fast grounding-only '
+        + 'subset (≈$0.10); "full" runs all four rubrics (≈$0.30). The "grounding '
+        + 'signals" checkbox additionally runs the heavier DeBERTa/MiniCheck '
+        + 'scorers. Every run makes paid Sonnet + Haiku calls. The panel is empty '
+        + 'until you run an eval here or from the CLI; results land in '
+        + 'evals/results/.',
+    },
+    dashGroundedness: {
+      title: 'Groundedness — the no-invention check',
+      body: 'Groundedness is callback’s core promise made measurable: the L0 '
+        + 'metric flags specifics (numbers, named tools, dates) that appear in a '
+        + 'generated résumé but not in the candidate’s source material. The '
+        + 'grounding box — the 0–5 score, the fabricated-specifics rate, and the '
+        + 'flagged-samples evidence — is the actionable signal. It is high-'
+        + 'precision on genuinely novel specifics but will false-positive on '
+        + 'paraphrase, and it stays uncalibrated until labelled annotations '
+        + 'exist. It populates when an eval run carries the grounding metric — '
+        + 'run any Quality eval to fill it.',
+    },
+    dashTuning: {
+      title: 'Tuning — candidate-vs-baseline A/B',
+      body: 'This tab A/Bs a candidate system prompt against the current baseline '
+        + 'WITHOUT editing the persona constants: pick a constant, edit its text, '
+        + 'and run candidate-vs-baseline. The candidate run is logged as '
+        + 'prompt_version=candidate:<hash> so it never pollutes the score-over-'
+        + 'time chart. It runs TWO paid eval suites (baseline + candidate), so it '
+        + 'costs roughly double a single Quality run. "Promote" stays a manual '
+        + 'step — copy a winning prompt into analyzer.py, bump PROMPT_VERSION, and '
+        + 'log TUNING_LOG.md by hand.',
+    },
+    dashAnnotate: {
+      title: 'Annotate — the label-the-truth surface',
+      body: 'This is the console’s only write surface. It produces and labels '
+        + 'the annotations.json ground-truth that the deferred grounding '
+        + 'calibration needs. The flow is three steps: ① produce a bootstrap (a '
+        + 'paid live pipeline run over job descriptions you paste) or export a '
+        + 'seed of the corpus (free, no LLM); ② pick a bootstrap to annotate; ③ '
+        + 'give every bullet and skill a verdict, then Save or Collate. It is '
+        + 'empty until you produce or import a bootstrap, so step ① auto-expands '
+        + 'when there is nothing to annotate yet.',
+    },
+  };
+  // tab name -> help block id (the block id is also the cb_help_seen: key).
+  var _DASH_HELP_ID = {
+    pipeline: 'dashPipeline', quality: 'dashQuality', groundedness: 'dashGroundedness',
+    tuning: 'dashTuning', annotate: 'dashAnnotate',
+  };
+  var _HELP_SEEN_PREFIX = 'cb_help_seen:';
+  // localStorage seam — wrapped so a disabled/throwing store never breaks the
+  // console. Unreadable store reads as "not seen"; a failed write just means the
+  // explainer may re-show (harmless). Mirrors app.js _helpSeen/_markHelpSeen.
+  function _dashSeen(id) {
+    try { return window.localStorage.getItem(_HELP_SEEN_PREFIX + id) === '1'; }
+    catch (e) { return false; }
+  }
+  function _markDashSeen(id) {
+    try { window.localStorage.setItem(_HELP_SEEN_PREFIX + id, '1'); }
+    catch (e) { /* storage unavailable — non-fatal */ }
+  }
+  // Byte-faithful port of app.js openHelpModal: Esc closes, Tab focus-trap,
+  // backdrop/[data-help-dismiss] click-away, aria-expanded toggle, focus restored
+  // to the trigger (null-trigger safe for the auto-open). The keydown listener is
+  // added per-open and REMOVED in cleanup so it never leaks a Tab-trap across
+  // tab switches.
+  function openDashHelp(id, trigger) {
+    var modal = document.getElementById('helpModal');
+    var entry = _DASH_HELP[id];
+    if (!modal || !entry) return;
+    var titleEl = document.getElementById('helpModalTitle');
+    var bodyEl = document.getElementById('helpModalBody');
+    if (titleEl) titleEl.textContent = entry.title;
+    if (bodyEl) bodyEl.textContent = entry.body;
+    var focusable = modal.querySelectorAll('button');
+    var closeBtn = document.getElementById('btnCloseHelp');
+    var dismissers = Array.prototype.slice.call(modal.querySelectorAll('[data-help-dismiss]'));
+    function cleanup() {
+      modal.classList.add('hidden');
+      modal.removeEventListener('keydown', onKey);
+      dismissers.forEach(function (b) { b.removeEventListener('click', cleanup); });
+      if (trigger && typeof trigger.setAttribute === 'function') trigger.setAttribute('aria-expanded', 'false');
+      if (trigger && typeof trigger.focus === 'function') trigger.focus();
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
+      if (e.key !== 'Tab' || focusable.length === 0) return;
+      var first = focusable[0], last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    dismissers.forEach(function (b) { b.addEventListener('click', cleanup); });
+    modal.addEventListener('keydown', onKey);
+    if (trigger && typeof trigger.setAttribute === 'function') trigger.setAttribute('aria-expanded', 'true');
+    modal.classList.remove('hidden');
+    if (closeBtn) closeBtn.focus();
+  }
+  // Auto-open a tab's explainer once-ever. MUST return early on _dashSeen BEFORE
+  // opening (the suppression contract conftest relies on), and never stack on an
+  // already-open modal.
+  function _maybeFireDashHelp(id, trigger) {
+    if (!id || !_DASH_HELP[id] || _dashSeen(id)) return;
+    var modal = document.getElementById('helpModal');
+    if (modal && !modal.classList.contains('hidden')) return;
+    _markDashSeen(id);
+    openDashHelp(id, trigger || null);
+  }
+  function _dashIcon(name) {
+    return document.getElementById('help-icon-' + (_DASH_HELP_ID[name] || ''));
+  }
+  // Wire each pane's static (i)-circle to its explainer (aria is already in the
+  // markup; this only attaches the click handler).
+  document.querySelectorAll('.dash-pane-intro .help-info').forEach(function (icon) {
+    var id = icon.dataset.help;
+    if (id) icon.addEventListener('click', function () { openDashHelp(id, icon); });
+  });
+
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      var name = t.dataset.tab;
+      activateTab(name);
+      // First-expand explainer fires on the user's tab CLICK (once-ever); never
+      // inside activateTab, which also runs programmatically.
+      _maybeFireDashHelp(_DASH_HELP_ID[name], _dashIcon(name));
+    });
+  });
   activateTab('pipeline');
+  // The Pipeline explainer is the welcome-equivalent: auto-opens once on first
+  // visit, right after the load-time activation.
+  _maybeFireDashHelp('dashPipeline', _dashIcon('pipeline'));
 
   // ---- Reusable: auto-populate any <select data-user-source> with the
   // candidate usernames from GET /api/users (mirrors loadUsers() in app.js).
@@ -1090,6 +1312,11 @@
         sel.appendChild(o);
       });
       $('fixtureEmpty').hidden = list.length > 0;
+      // No fixtures to annotate yet → auto-expand step ① so the user sees how to
+      // produce one (KW13 "what populates it"). Open-on-empty only; never force it
+      // shut when fixtures exist (the user may have opened it deliberately).
+      var bs = document.getElementById('bootstrapSection');
+      if (bs && !list.length) bs.open = true;
       if (cur) sel.value = cur;
     }).catch(function () { $('fixtureEmpty').hidden = false; });
   }
@@ -1107,6 +1334,8 @@
   // ---- rendering ----
   function verdictSelect(item) {
     var sel = el('select');
+    sel.title = 'keep = true, usable as-is · fix = true but reword (needs honest_rewrite) · '
+      + 'omit = leave it off · fabricated = unsupported by the source (needs a forbidden_pattern)';
     sel.appendChild(el('option', null, '— verdict —'));
     state.vocab.verdicts.forEach(function (v) { var o = el('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
     sel.value = item.verdict || '';

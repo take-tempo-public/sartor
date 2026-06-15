@@ -229,6 +229,12 @@ class Dashboard:
     def tile(detail: str) -> str:
         return f".tile[data-detail='{detail}']"
 
+    # --- per-tab education (Sprint 6.5 feat/education-diagnostics-annotate) ---
+    # Each pane opens with a one-line summary + an (i) that opens its explainer
+    # modal. The (i) and #helpModal reuse the wizard's `.help-info`/`#helpModal`
+    # ids, so the shared `Help` selector class applies on the dashboard too.
+    PANE_INTRO = ".dash-pane-intro"
+
     # --- Annotate tab (the console's read-write surface) ---
     # Stable ids the annotate IIFE binds to (load/save/collate + bootstrap wrapper).
     ANN_FIXTURE_SELECT = "#fixtureSelect"

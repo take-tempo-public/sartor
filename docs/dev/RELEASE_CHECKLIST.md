@@ -255,8 +255,27 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       Front-end + content only — no route, no LLM, no prompt (`PROMPT_VERSION`
       unchanged), no dep, no migration. ruff/mypy ✓ (161), pytest **1204/1204**
       incl. `-m ux` (the known `test_positioning_pin_preserves_title_pin` flake did
-      not recur). **Next: `feat/education-diagnostics-annotate`** (#15 + #20 + #22
-      — diagnostics tabs + the annotate tab).
+      not recur). Then `feat/education-diagnostics-annotate` (#15 + #20 + #22 —
+      the diagnostics console) — **landed 2026-06-15.** The localhost `/_dashboard`
+      console is self-contained (never loads `static/app.js`), so it got its own
+      **port** of the help primitive in `dashboard/templates/dashboard.html`: the
+      same `#helpModal` skeleton (id reused → the `Help` POM applies unchanged),
+      a per-tab `_DASH_HELP` registry, an `openDashHelp`/`_maybeFireDashHelp`
+      opener (Esc/Tab-trap/backdrop/focus-restore), a per-pane summary line + (i),
+      and a per-tab first-expand explainer (Pipeline auto-opens on load, each
+      other tab on its first click) — once-ever via the **shared** `cb_help_seen:`
+      prefix, so adding the five `dash*` ids to `_TOUR_STOP_BLOCKS` suppresses them
+      suite-wide. Annotate tab: plain-language verdict legend + scaffold-banner +
+      ① copy, per-option `title` tooltips (suite/subset/grounding), and the
+      bootstrap `<details>` auto-expands when no fixtures exist. Every empty-state
+      rewritten to say what it is + what populates it (KW13). New
+      `test_20260615_education_diagnostics_annotate.py` (8) + an axe open-`#helpModal`
+      scan; the stale `No eval results yet` route-test copy assertion tightened to
+      the new strings. Front-end + copy only — **no route, no LLM, no prompt
+      (`PROMPT_VERSION` unchanged at `2026-06-13.1`), no dep, no migration.**
+      ruff/mypy ✓ (162), pytest **1212/1212** incl. `-m ux` (flake did not recur).
+      **Next: `docs/eval-stack-install-guide`** (#17 — the user-facing tuning/
+      grounding/eval install guide).
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +

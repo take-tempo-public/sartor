@@ -13,6 +13,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — in-app education for the diagnostics console (`feat/education-diagnostics-annotate`, Sprint 6.5)
+
+Finishes the Sprint 6.5 education sweep on the one surface still left raw: the
+localhost-only `/_dashboard` diagnostics console (KW9 + KW13). Plain-language,
+a11y-safe, aimed at a first-time (technical) visitor.
+
+- **Ported help mechanism.** The console is self-contained — it never loads
+  `static/app.js`, and the wizard's `_initHelp` targets `.cb-panel` headers the
+  dashboard doesn't have — so it carries its **own port** of the help primitive in
+  `dashboard/templates/dashboard.html`: the same `#helpModal` skeleton (ids reused,
+  so the `Help` POM applies unchanged), a per-tab `_DASH_HELP` registry, and an
+  `openDashHelp` opener faithful to `app.js` `openHelpModal` (Esc / Tab focus-trap /
+  backdrop click-away / `aria-expanded` toggle / focus-restore; the keydown listener
+  is removed in cleanup so it never leaks a trap across tab switches).
+- **Per-tab summary + first-expand explainer (KW9).** Every diagnostics tab opens
+  with a one-line summary + an (i)-circle, and a once-ever explainer modal: the
+  Pipeline explainer auto-opens on first visit (the welcome-equivalent), each other
+  tab's auto-opens on its first click. Re-openable anytime via the (i). Once-ever via
+  the **shared** `cb_help_seen:` localStorage prefix — so the explainers ride the
+  same suppression seam as the wizard tour (the five `dash*` ids were added to the UX
+  suite's `_TOUR_STOP_BLOCKS`).
+- **Annotate tab rewritten for lay readers.** The verdict legend keeps the contract
+  codes (`keep`/`fix`/`omit`/`fabricated`) but glosses each plainly; the read-write
+  scaffold-banner + ① bootstrap copy are reframed; and the bootstrap `<details>`
+  **auto-expands when there are no fixtures to annotate** so the path forward is
+  obvious. Per-option `title` tooltips on the suite / subset / grounding controls
+  (KW13 "grounding box" / "synthetic-vs-smoke options").
+- **"Why empty" everywhere (KW13).** The Pipeline / Quality / Groundedness empty-states
+  now say what the panel is, why it's empty, and what populates it.
+- **Tests.** New `tests/ux/regression/test_20260615_education_diagnostics_annotate.py`
+  (8 cases: per-pane (i) aria; modal open/close/focus-restore; per-tab auto-fire +
+  once-ever under `show_tour`; plain-language verdict legend; bootstrap auto-expand on
+  empty; "why empty" copy). The `test_axe_dashboard_console` gate now also scans the
+  ported `#helpModal` in its **open** state. The stale `No eval results yet`
+  route-test copy assertion was tightened to the new strings.
+- **Boundary.** Front-end + copy only — **no route, no LLM call, no `PROMPT_VERSION`
+  change, no new dependency, no migration.** The diagnostics console is a dev surface,
+  so the education is dev content; no user-facing wiki page is authored here.
+
 ### Added — in-app education sweep: per-surface help + KW3 new-user tour (`feat/education-tailor-corpus-wizard`, Sprint 6.5)
 
 The per-surface education **content** the help primitive was built for — plain-language,

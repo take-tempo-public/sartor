@@ -139,10 +139,15 @@ def page(_browser: Browser, live_server: str) -> Iterator[Page]:
 
 
 # Every help block that AUTO-fires on first view (the welcome + each KW3 tour
-# stop). Seeding their ``cb_help_seen:<block>`` flags models a returning user so
-# the auto-modals never overlay the landing/wizard and block other tests. Panels
-# that only carry an on-demand (i) (panelAnalysis/panelApplications/panelPersonas/
-# panelMemory) never auto-open, so they are intentionally absent here.
+# stop + each /_dashboard per-tab explainer). Seeding their ``cb_help_seen:<block>``
+# flags models a returning user so the auto-modals never overlay the landing/wizard
+# or the diagnostics console and block other tests. Panels that only carry an
+# on-demand (i) (panelAnalysis/panelApplications/panelPersonas/panelMemory) never
+# auto-open, so they are intentionally absent here. The dashboard explainers
+# (``feat/education-diagnostics-annotate``) reuse the same ``cb_help_seen:`` prefix
+# (their controller is a port of the wizard's), so the same init-script seeding
+# suppresses them on the ``/_dashboard/`` navigation — but only because the ported
+# ``_maybeFireDashHelp`` reads these exact ids before opening.
 _TOUR_STOP_BLOCKS = (
     "panelUser",        # welcome
     "tourAddUser",      # add-user tip
@@ -155,6 +160,11 @@ _TOUR_STOP_BLOCKS = (
     "panelOutput",      # wizard step 6
     "tourGenerating",   # first Generate click
     "tourCoverLetter",  # first cover-letter
+    "dashPipeline",     # /_dashboard Pipeline tab explainer (auto on first load)
+    "dashQuality",      # /_dashboard Quality tab explainer
+    "dashGroundedness", # /_dashboard Groundedness tab explainer
+    "dashTuning",       # /_dashboard Tuning tab explainer
+    "dashAnnotate",     # /_dashboard Annotate tab explainer
 )
 
 

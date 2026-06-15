@@ -371,9 +371,14 @@ class TestIndexRoute:
             resp = client.get("/dashboard/", headers={"Host": "127.0.0.1"})
             assert resp.status_code == 200
             body = resp.get_data(as_text=True)
-            # Empty-state messages should be visible
-            assert "No call records" in body or "No calls match" in body
-            assert "No eval results yet" in body
+            # Empty-states explain what populates each panel (Sprint 6.5 education
+            # rewrite — feat/education-diagnostics-annotate): pipeline (no log
+            # file yet), quality, and groundedness.
+            assert "Nothing to chart yet" in body
+            assert "No eval scores yet" in body
+            assert "No groundedness scores yet" in body
+            # The throughput detail block still carries its own empty-state.
+            assert "No call records" in body
             # Chart.js is vendored locally — assert the local tag AND no external CDN.
             assert "vendor/chart.umd.min.js" in body
             assert "cdn.jsdelivr.net" not in body

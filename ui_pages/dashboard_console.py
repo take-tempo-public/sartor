@@ -10,7 +10,7 @@ from __future__ import annotations
 from playwright.sync_api import Locator
 
 from ui_pages.base import DEFAULT_TIMEOUT_MS, BasePage
-from ui_pages.selectors import Dashboard
+from ui_pages.selectors import Dashboard, Help
 
 
 class DashboardConsolePage(BasePage):
@@ -29,6 +29,30 @@ class DashboardConsolePage(BasePage):
 
     def active_pane(self, name: str) -> Locator:
         return self.page.locator(Dashboard.pane_active(name))
+
+    # --- per-tab help (Sprint 6.5 education) --------------------------------
+    # The console carries its own PORT of the help primitive; each tab's
+    # (i)-circle and its #helpModal reuse the wizard's ids/classes, so the shared
+    # `Help` selectors apply. Maps the tab name to its help block id.
+    _HELP_ID = {
+        "pipeline": "dashPipeline",
+        "quality": "dashQuality",
+        "groundedness": "dashGroundedness",
+        "tuning": "dashTuning",
+        "annotate": "dashAnnotate",
+    }
+
+    def help_icon(self, tab: str) -> Locator:
+        return self.page.locator(Help.icon(self._HELP_ID[tab]))
+
+    def open_help(self, tab: str) -> None:
+        self.help_icon(tab).click()
+
+    def help_modal(self) -> Locator:
+        return self.page.locator(Help.MODAL)
+
+    def close_help(self) -> None:
+        self.page.locator(Help.CLOSE).click()
 
     # --- tiles + detail panel ----------------------------------------------
     def tile(self, detail: str) -> Locator:
