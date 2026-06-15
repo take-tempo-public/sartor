@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — user-facing "what gets downloaded & why" + in-app eval-stack pointer (`docs/eval-stack-install-guide`, Sprint 6.5 #17)
+
+The user-facing half of the downloads story. The dev-tier provenance already lives in
+`docs/dev/excellence-walk/q3-downloads.md` + the `audience:dev` wiki page
+`non-dependency-downloads.md`, and `CONTRIBUTING.md` owns the exact eval-stack install
+commands — this adds the *user* layer. Authored from the excellence walk's Q3 deliverable;
+every figure re-verified against `pyproject.toml`, `docs/install.md`, and `CONTRIBUTING.md`.
+
+- **`docs/install.md` — new "What gets downloaded & why" section** (after Prerequisites,
+  with a `what-gets-downloaded` anchor). Plain-language: the only sizeable non-pip download
+  to run the app is the Chromium binary (~150 MB, OS user cache, not the repo); the optional
+  grounding/eval stack (~3.2 GB of model weights) is flagged as a dev / power-user feature
+  that runs only in the eval harness, with a link to `CONTRIBUTING.md` → "Grounding signal
+  scorers" for the exact steps — no dev install commands inlined.
+- **`README.md` — a "what actually downloads" pointer** beside the existing "What gets saved
+  on your machine" section, linking the new install.md section.
+- **`dashboard/templates/dashboard.html` — in-app pointer.** One sentence appended to the
+  Quality-tab `dashQuality` help body (where the "grounding signals" checkbox is described):
+  the offline scorers need the optional `[eval-grounding]` extras (~3.2 GB, dev-only), with
+  the CONTRIBUTING.md / install.md references. Plain prose (the help body renders via
+  `textContent`).
+- **Boundary.** Docs + one dashboard help-copy line — no route, LLM, prompt, dependency, or
+  migration; `PROMPT_VERSION` unchanged. Eval-stack install commands stay solely in
+  `CONTRIBUTING.md` (single source).
+
 ### Added — in-app education for the diagnostics console (`feat/education-diagnostics-annotate`, Sprint 6.5)
 
 Finishes the Sprint 6.5 education sweep on the one surface still left raw: the

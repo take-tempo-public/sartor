@@ -239,3 +239,10 @@ rewritten copy). As with the 2026-06-14 frontend changes, `.last_ingest_sha` is 
 flagging the dev-tier pages. The consolidated code-keyed refresh (`diagnostics-console.md` +
 `frontend-wizard.md`) is deferred to a later `chore/wiki-refresh` / the version-bump branch —
 do NOT spin a standalone wiki branch.
+
+**Follow-on (`docs/eval-stack-install-guide`, #17, 2026-06-15).** The user-facing install
+docs branch appended **one sentence** to the same `dashboard/templates/dashboard.html`
+`dashQuality` help body (an eval-stack install pointer → `CONTRIBUTING.md` / `docs/install.md`).
+Same file, same conclusion: the `diagnostics-console.md` drift is already flagged above and
+`.last_ingest_sha` stays at `93a34b9` — the deferred consolidated refresh picks this up too. No
+new wiki branch.

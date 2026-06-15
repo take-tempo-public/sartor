@@ -5,7 +5,8 @@
 > generated résumé.
 > **Audience:** humans installing callback. for the first time.
 > **Authoritative for:** OS-specific install steps, the Playwright
-> Chromium download step, API-key setup, troubleshooting.
+> Chromium download step, what gets downloaded & why, API-key setup,
+> troubleshooting.
 > Sibling docs:
 > [`README.md`](../README.md) (overview),
 > [`docs/walkthrough.md`](walkthrough.md) (screen-by-screen guide + flow diagrams),
@@ -30,6 +31,38 @@
   on macOS) — **outside** the repo, not committed.
 - **A modern browser** (Chrome / Edge / Firefox / Safari).
   callback. runs as a local Flask app you access in your browser.
+
+---
+
+<a name="what-gets-downloaded"></a>
+## What gets downloaded & why
+
+A plain `pip install -e .` pulls the ordinary Python packages (Flask, the
+Anthropic SDK, Pydantic, SQLAlchemy, …). A few things are fetched *outside*
+pip — here's each one, what it's for, and where it lives.
+
+**To run the app, the only sizeable non-pip download is the Chromium browser
+binary** (~150 MB, one-time, via `python -m playwright install chromium`). It
+renders every PDF and the live in-browser preview, so what you download matches
+the preview byte-for-byte. It lives in your OS user cache
+(`%LOCALAPPDATA%\ms-playwright` on Windows, `~/.cache/ms-playwright` on Linux,
+`~/Library/Caches/ms-playwright` on macOS) — **outside the repo**, never
+committed. On Linux, Chromium may also need a few system libraries (`libnss3`,
+`libatk1.0-0`, …); the Playwright installer tells you if any are missing.
+Beyond that you only need Python, the repo clone, a modern browser, and your
+Anthropic API key (all under [Prerequisites](#prerequisites) above) — nothing
+else heavy is required to run callback.
+
+**Optional — the quality / grounding eval stack (most users never need this).**
+callback. ships an offline *eval harness* that grades whether the AI invented
+anything. Turning on its grounding scorers downloads **~3.2 GB** of model
+weights (a small NLI model plus a larger fact-checking model) on first use,
+cached permanently after. This is a **developer / power-user** feature — it
+runs only in the eval harness, **never** in the app you launch with
+`python app.py`, and end users don't need it. If you do want to run it, the
+exact steps (the hardware-specific `torch` install, the `[eval-grounding]`
+extras, sizes, and licensing) live in
+[`CONTRIBUTING.md` → "Grounding signal scorers"](../CONTRIBUTING.md#grounding-signal-scorers-optional-dev-only).
 
 ---
 

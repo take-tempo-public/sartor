@@ -66,6 +66,10 @@ you opt in). Everything else stays on disk under the repo root:
 The `.gitignore` keeps all of these out of source control. The
 [`SECURITY.md`](SECURITY.md) doc has the full threat model.
 
+**What actually downloads** — and why the few non-pip things (the Chromium
+binary, and the optional ~3.2 GB grounding-eval model weights) exist — is laid
+out in [`docs/install.md` → What gets downloaded & why](docs/install.md#what-gets-downloaded).
+
 ---
 
 <a name="cost"></a>
