@@ -737,7 +737,19 @@ RELEASE_CHECKLIST risk register.
 - **Scope:** dev-harness only, **no product code**. A small `chore/` branch, or folded
   into the compliance-pilot branch as its first step.
 
-### Pre-public hardening (grounding + tone; the old Sprint PV, minus the type scan)
+### Pre-public hardening (grounding + tone) — MOVED TO v1.0.8 (2026-06-15)
+
+> **Relocated by the 2026-06-15 release-planning session.** The real-data hardening
+> below (PV-1 produce labels · PV-2 grounding calibration · PV-3 cover-letter tone)
+> **moves out of v1.0.7 into v1.0.8**, where the post-refactor **gated test window** runs
+> the **first-ever real-data eval/tuning loop on the *decomposed* code** and a
+> **correction sprint** burns its findings (see §Phase 4.8). This takes the 2026-06-12
+> escape hatch below one step tighter — the work lands *inside* v1.0.8, holding the
+> owner's "all work done by v1.0.8" line. **v1.0.7's tag is now defined by the feature
+> set** (self-documenting loop + assistant + governance + plugin activation); the
+> synthetic smoke/full eval gate still guards every v1.0.7 commit. The branch detail is
+> kept here for reference.
+
 **Shared prerequisite (human, not a branch):** a clean-corpus rebuild from a real git
 **clone** (NOT a folder copy — it drags the gitignored `db/resume.sqlite`), then
 regenerate the corpus from real JDs. The v1.0.6 walkthrough already starts producing
@@ -765,8 +777,10 @@ Then: `chore/version-bump-v1.0.7`.
 - **Governance extraction landed** (moved from v1.0.6, 2026-06-12): the canonical
   rules live in one home with agent rule-access preserved via `@import`/pointer, and
   the 3 open sub-decisions were resolved in the WS-4 design session.
-- PV-1 real labels exist; PV-2 calibrated groundedness live on `--suite real` + the
-  dashboard + consumed by the tuning gate; PV-3 `tone` holds with `PROMPT_VERSION` bumped.
+- ~~PV-1 real labels exist; PV-2 calibrated groundedness; PV-3 `tone` holds~~ **→ moved
+  to v1.0.8** (Sequence decision 2026-06-15): the real-data hardening runs in the v1.0.8
+  gated test window + correction sprint, on the decomposed code. v1.0.7 keeps the
+  synthetic smoke/full eval gate.
 - **Plugin commands + agents invocable** — the `.claude-plugin/` commands (`/wiki-*`,
   `/eval`, …) and subagents load (registered, not just hooks), so the self-documenting
   loop + compliance pilot run off real slash commands and `CLAUDE.md` "Skill catalog"
@@ -808,6 +822,43 @@ Then: `chore/version-bump-v1.0.7`.
   is reorganized in the blueprint split, rather than bolted onto the monolith. Add a
   visible "← Back" control wired to the existing step model when the wizard seam moves.
 
+### Gated test window + correction (2026-06-15 — on the decomposed code)
+
+> **The blueprint refactor OPENS a formal gated test window.** Decided in the 2026-06-15
+> planning session (fork #2): features land in v1.0.7 on the monolith; v1.0.8 does the
+> no-behavior-change split **first**, then the window + the first-ever real-data eval
+> loop run on the **decomposed** code — so the gather tests exactly what ships and also
+> catches any refactor regression. **`route-security-lint` widening leads the refactor**
+> — the hook currently matches `app.py` only
+> ([`route-security-lint.sh`](../../.claude-plugin/hooks/route-security-lint.sh), line 13),
+> so widen it (the PX-21 prescription) *before* any route — or the v1.0.7 `recall/` /
+> assistant module — moves out from under its coverage.
+
+- **Gated test window** (after the seams land): a v1.0.6-style **E2E user+dev
+  walkthrough** (app + the v1.0.7 assistant + diagnostics; R2 streaming verified live)
+  **and** `eval/live-shakedown-labels` (**PV-1**) — the **first end-to-end run of the
+  real-data eval/tuning loop** (clean-corpus rebuild → seed export → bootstrap →
+  annotate → collate → `expected.json` + labels under `evals/fixtures/real/`, gitignored
+  PII). Triage both into **one numbered findings backlog**. *Expectation: this is where
+  the significant, so-far-unexercised integration issues surface.*
+- **Correction sprint** (`fix/window-findings-*`): burn the backlog + **PV-2** grounding
+  calibration + **PV-3** cover-letter tone tune (now on the decomposed code) + a
+  `/wiki-ingest` to refresh the wiki's `app.py` `path:line` citations the split staled.
+  May spill to a v1.0.9 epic if heavy.
+
+### Pre-public prep (2026-06-15 — moved up from Phase 5 so "all work is done by v1.0.8")
+
+> **Owner decision (2026-06-15, fork #1):** the public **v1.1.0** tag stays user-owned,
+> but **all the *work* lands by v1.0.8** — the owner may create + push the GitHub repo
+> early (private/unpromoted) and only **promote** at v1.1.0 once integration issues are
+> resolved and the product is "working as expected." So Phase 5's *build* work moves here.
+
+- `release/public-prep` (one branch or a small split): `docs/screenshots/*.png` (+ optional
+  demo.gif); fresh-clone < 5 min verification; the machine-badge set (Dependabot + lockfile,
+  OpenSSF Scorecard, REUSE/SPDX — the E-2 prescription / PX-26); the UX/a11y/PDF tier as a
+  **required CI check** (PX-25); a doc-link resolution sweep; **create the GitHub repo +
+  push `main` (private/unpromoted)**.
+
 Then: `chore/version-bump-v1.0.8`.
 
 ### v1.0.8 tag criteria
@@ -815,12 +866,29 @@ Then: `chore/version-bump-v1.0.8`.
   hook hold on every moved route; all 32 test files import cleanly.
 - Route returns annotated (PV-4) — `check_untyped_defs`-clean over the post-v1.0.4 surface.
 - `ruff + mypy + pytest + pytest -m ux` green; **no behavior change** (pure refactor).
+- **The gated test window ran on the decomposed code** (E2E walkthrough + first real-data
+  eval loop); its findings backlog is burned down (or remaining items consciously deferred
+  to v1.0.9); **PV-2 calibrated groundedness live + PV-3 `tone` holds** with `PROMPT_VERSION`
+  bumped (the only prompt change in the two epics).
+- **Pre-public prep done** (moved from Phase 5): screenshots, fresh-clone < 5 min, badge set,
+  UX/a11y/PDF required CI check, doc links resolve, GitHub repo pushed (private/unpromoted).
+  "All work done by v1.0.8."
 
 ---
 
 ## Phase 5 — Public release (v1.1.0)
 
 **Blocked until v1.0.8 tagged. The v1.1.0 tag is owned by the user** — the public cut of the **complete** product: the assistant + self-documenting wiki (v1.0.7) on **clean blueprints** (v1.0.8). There is no external deadline; completeness and polish gate the tag, not a clock.
+
+> **Update (2026-06-15, fork #1): the build work moved earlier to v1.0.8.** Per the
+> owner's "all work done by v1.0.8" line, the visual assets, fresh-clone verification,
+> badge set, required-CI check, and GitHub repo create + push now live in §Phase 4.8
+> "Pre-public prep" (the repo may be pushed early, **private/unpromoted**). **v1.1.0 is
+> then the promotion act:** flip the repo public + cut the `v1.1.0` tag once the
+> integration issues from the v1.0.8 test window are resolved and the product is "working
+> as expected" — plus a final **re-verify** (fresh-clone < 5 min + doc links resolve) at
+> the cut. The branches below are retained for that final verification; their build
+> halves are done in v1.0.8.
 
 ### Branches
 

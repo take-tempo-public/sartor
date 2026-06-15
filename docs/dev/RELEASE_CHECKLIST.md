@@ -38,6 +38,51 @@ product (assistant + self-documenting wiki + clean blueprints). The v1.0.5 items
 below are reconciled in place (shipped → `[x]`); still-open items are carried into
 v1.0.6 / v1.0.7 / v1.0.8 / v1.1.0 as noted.
 
+### v1.0.7 → v1.0.8 — ordered sprint sequence (planned 2026-06-15)
+
+> The two-epic plan from the 2026-06-15 release-planning session — **the ordered "what's
+> next" between the v1.0.6 tag and the public cut.** Authoritative branch acceptance +
+> rationale: [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.7 / §4.8. **PX-item → branch
+> authority** stays the prescriptions archive
+> [`reviews/2026-06-product-excellence/03-prescriptions/`](reviews/2026-06-product-excellence/03-prescriptions/)
+> + the PX rows in this file — the slots below are **indicative, not a re-authored PX
+> map.** Each row is one branch / one session; quality gate green before every commit;
+> ask before merge. **v1.0.6 is tagged**, so v1.0.7 opens off `main`.
+
+**Owner decisions that shape the sequence:** (1) public **v1.1.0** stays the user-owned
+promotion tag, but **all work lands by v1.0.8** (GitHub repo may be pushed early,
+private/unpromoted; promote at v1.1.0 once integration issues resolve); (2) the
+`app.py`→blueprints refactor **opens** the v1.0.8 cleanup window — issue-gathering runs on
+the **decomposed** code; (3) feature-complete = the locked-in v1.0.7 set (R2
+analyze-streaming is **already shipped** — a verify-the-wiring item, not a build); (4) the
+post-feature test window is a **formal gate** (E2E walkthrough + first real-data eval loop
+→ numbered findings backlog → correction sprint).
+
+**Epic v1.0.7 — feature-complete ("the app knows itself").** Hard order 7.1 → 7.2 → {7.3, 7.7}; assistant after 7.3 design.
+
+- [ ] **7.1** `chore/plugin-activation` — make `.claude-plugin/` commands + agents load (not just hooks); fix `CLAUDE.md` "Skill catalog". Unblocks `/wiki-*` + compliance pilot.
+- [ ] **7.2** `design/governance-extraction` → `feat/governance-extraction` — one canonical rules home; **preserve `@import`/pointer rule-access** (hard constraint). PX-23/24/27/28 ride here.
+- [ ] **7.3** `design/self-documenting-loop` → `feat/self-documenting-wiki` — bounded, cost-aware Haiku diff-pass ingest + `/wiki-lint`/`/wiki-audit` backstop (PX-33).
+- [ ] **7.4** `feat/recall-skeleton` — Stage 0 `recall/` package (no LLM; never imports `app.py` → refactor-immune).
+- [ ] **7.5** `feat/doc-assistant` — **the AI assistant** (Stage 1): wiki + `git grep` retrieval + Haiku avatar (user's key) + user/dev toggle; authored as its own `blueprints/assistant.py` module (blueprint-aware so the v1.0.8 split is a move, not a rewrite).
+- [ ] **7.6** `feat/doc-assistant-vector` — Stage 2 vector tier, **eval-gated/conditional** (decided in the v1.0.8 test window; may slip).
+- [ ] **7.7** `feat/compliance-agent-pilot` — `/compliance-witness` command + read-only subagent; `.claude-plugin/`-only.
+- [ ] **7.8** `px/v107-band` — PX-18 `ACCESSIBILITY.md`, PX-31 Chromium reclassification, PX-32 KEEP/BOOST ledger; + fix the stale R2 deferred-listing in `PRODUCT_SHAPE.md`.
+- [ ] **7.9** `chore/version-bump-v1.0.7` — tag.
+
+**Epic v1.0.8 — refactor → gather → correct → public-prep ("all work done by 1.0.8").** Refactor opens the window; gather + first real-data eval loop run on the decomposed code.
+
+- [ ] **8.1** `design/app-blueprints` — seams + shared-helpers home; 32 test imports; lint-hook compat.
+- [ ] **8.2** `refactor/route-security-lint-widen` (PX-21) — widen the hook past `app.py` **before any route moves** (hook is app.py-only today).
+- [ ] **8.3a–g** `refactor/app-blueprints-<seam>` — one seam/branch (analysis · generation/cover-letter · templates · corpus · user-config · dashboard · assistant move-only); folds `ResponseReturnValue` (PV-4) + the deterministic-LLM boundary gate (PX-20); back-nav (PX-22) rides templates; loopback bind (PX-19) rides user-config.
+- [ ] **8.4** `test/keep-ledger-guards` (PX-29) — do-not-regress guards so the split can't weaken the KEEP ledger.
+- [ ] **8.5** **gated test window (on decomposed code)** — E2E user+dev walkthrough (R2 verified live) + `eval/live-shakedown-labels` (PV-1, **first** real-data eval/tuning loop) → numbered findings backlog.
+- [ ] **8.6** `fix/window-findings-*` — correction sprint: burn the backlog + PV-2 calibration + PV-3 cover-letter tone + `/wiki-ingest`. May spill to a v1.0.9 epic.
+- [ ] **8.7** `release/public-prep` — `docs/screenshots`, fresh-clone < 5 min, badge set (E-2 / PX-26), UX/a11y/PDF required CI check (PX-25), doc-link sweep, **GitHub repo create + push (private/unpromoted)**.
+- [ ] **8.8** `chore/version-bump-v1.0.8` — tag; all work done.
+
+**v1.1.0 (owner-gated promotion):** flip the repo public + cut the tag once the v1.0.8 window's integration issues are resolved and the product is "working as expected"; final fresh-clone + doc-link re-verify at the cut.
+
 ### v1.0.6 — Walkthrough polish + knowledge substrate + corpus completion (SHIPPED 2026-06-15)
 
 Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
