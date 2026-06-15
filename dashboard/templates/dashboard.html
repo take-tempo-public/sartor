@@ -827,7 +827,11 @@
         + 'signals" checkbox additionally runs the heavier DeBERTa/MiniCheck '
         + 'scorers. Every run makes paid Sonnet + Haiku calls. The panel is empty '
         + 'until you run an eval here or from the CLI; results land in '
-        + 'evals/results/.',
+        + 'evals/results/. Those grounding scorers need the optional '
+        + '[eval-grounding] extras (~3.2 GB of model weights, dev-only — never '
+        + 'used by the running app); see CONTRIBUTING.md, section "Grounding '
+        + 'signal scorers", to install them, or docs/install.md, section "What '
+        + 'gets downloaded & why", for what they pull and why.',
     },
     dashGroundedness: {
       title: 'Groundedness — the no-invention check',

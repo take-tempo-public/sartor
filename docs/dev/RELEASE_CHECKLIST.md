@@ -274,8 +274,9 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       the new strings. Front-end + copy only — **no route, no LLM, no prompt
       (`PROMPT_VERSION` unchanged at `2026-06-13.1`), no dep, no migration.**
       ruff/mypy ✓ (162), pytest **1212/1212** incl. `-m ux` (flake did not recur).
-      **Next: `docs/eval-stack-install-guide`** (#17 — the user-facing tuning/
-      grounding/eval install guide).
+      **Next: `chore/version-bump-v1.0.6`** (pyproject + CHANGELOG version + tag;
+      PX-10 rides it — re-check the risk register). *(`docs/eval-stack-install-guide`
+      #17 landed — see its row below.)*
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +
@@ -327,10 +328,18 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       "the app knows itself," and is off v1.0.6's critical path. The ⚠ `@import`
       rule-access hard constraint + the 3 open sub-decisions move with it; see
       [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.7.)*
-- [ ] **`docs/eval-stack-install-guide` (#17)** — the user-facing install/prepare
-      guide authored from the excellence walk's **Q3** deliverable (now preserved at
-      [`excellence-walk/q3-downloads.md`](excellence-walk/q3-downloads.md)) + a
-      README/`install.md` "what gets downloaded & why" section.
+- [x] **`docs/eval-stack-install-guide` (#17)** — the user-facing install/prepare
+      guide authored from the excellence walk's **Q3** deliverable (preserved at
+      [`excellence-walk/q3-downloads.md`](excellence-walk/q3-downloads.md)); all figures
+      re-verified vs `pyproject.toml` + `install.md` + `CONTRIBUTING.md`. **Landed:** a
+      plain-language **"What gets downloaded & why"** section in `docs/install.md`
+      (Chromium ~150 MB to run the app; the optional grounding/eval stack ~3.2 GB flagged
+      as a dev/power-user feature → links `CONTRIBUTING.md` "Grounding signal scorers", no
+      dev commands inlined) + a README "what actually downloads" pointer beside "What gets
+      saved" + a one-sentence in-app pointer on the dashboard `dashQuality` help body.
+      The dev-tier provenance (`q3-downloads.md` + the `audience:dev` wiki page
+      `non-dependency-downloads.md`) is unchanged. Docs + one help-copy line — no route,
+      LLM, prompt, dep, or migration; `PROMPT_VERSION` unchanged.
 - [x] **PX-02 — profile/website scrape re-wired** (`fix/profile-scrape-rewire`, now-v1.0.6
       PX band; `F-docs-04` / `AL-5`). The dead `scraper.fetch_profile_content` is wired to an
       explicit opt-in **"Fetch profile content"** action (`POST /api/users/<u>/profile/fetch`),
