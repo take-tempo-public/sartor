@@ -7,6 +7,7 @@
 > **Sources:** [`dashboard/routes.py`](../../../dashboard/routes.py),
 > [`dashboard/__init__.py`](../../../dashboard/__init__.py),
 > [`dashboard/README.md`](../../../dashboard/README.md),
+> [`dashboard/templates/dashboard.html`](../../../dashboard/templates/dashboard.html),
 > [`app.py`](../../../app.py),
 > [`docs/architecture.md`](../../architecture.md),
 > [`docs/system-model.md`](../../system-model.md).
@@ -98,6 +99,30 @@ records lacking one, so a regression is attributable to a specific prompt
 revision. The `PROMPT_VERSION`-bump discipline that keeps this honest is
 canonical in [`AGENTS.md`](../../../AGENTS.md) (D5).
 
+## In-app help: a ported primitive, not a shared import
+
+Each diagnostics pane opens with a one-line summary + an `(i)`-circle (the static
+[`.dash-pane-intro`](../../../dashboard/templates/dashboard.html) rows) that opens a
+per-tab explainer modal; the Pipeline explainer auto-opens once-ever on first visit. The
+mechanism is a deliberate **port** of the wizard's help primitive (see
+[[frontend-wizard]]) — the console is self-contained and never loads
+[`static/app.js`](../../../static/app.js), so a tabs-IIFE-local opener
+[`dashboard.html:openDashHelp`](../../../dashboard/templates/dashboard.html) + registry
+[`dashboard.html:_DASH_HELP`](../../../dashboard/templates/dashboard.html) (keyed
+`dashPipeline` / `dashQuality` / `dashGroundedness` / `dashTuning` / `dashAnnotate`)
+re-implement it inline `[synthesis]`.
+
+It is intentionally **not** coupled: the port reuses the wizard's `#helpModal` element
+ids/classes ([`dashboard.html`](../../../dashboard/templates/dashboard.html)) and the same
+`cb_help_seen:` localStorage prefix, so the shared `Help` page-object and the UX-suite's
+once-ever-suppression seed apply to both surfaces unchanged. First-view auto-open is gated
+by [`dashboard.html:_maybeFireDashHelp`](../../../dashboard/templates/dashboard.html),
+which returns early on the seen-flag before opening — the suppression contract the UX
+suite's tour-stop seed relies on `[synthesis]`. The annotate tab's verdict legend
+(`keep`/`fix`/`omit`/`fabricated`, each glossed plainly) and the per-pane "why empty" copy
+were rewritten for lay readers in the same pass — the write mechanism (routes + gating) is
+unchanged from "The SSE self-tuning loop" below.
+
 ## The SSE self-tuning loop (writes live in `app.py`)
 
 The interactive write surface is **not** in the blueprint — it is a set of routes
@@ -139,3 +164,4 @@ Every annotation write is contained: [`app.py`](../../../app.py) routes apply
 - [[code-module-map]] — where `dashboard/` and the eval tooling sit in the tree.
 - [[eval-harness]] — `evals/runner.py`, whose `results/*.jsonl` this console reads.
 - [[route-surface]] — the Flask routes, including the SSE eval/tune/annotation seam.
+- [[frontend-wizard]] — the wizard help primitive this console ports.

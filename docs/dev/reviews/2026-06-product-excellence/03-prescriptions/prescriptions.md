@@ -165,6 +165,15 @@ docs-accuracy and claims-discipline debt before it propagates.
   — the v1.0.8 epic's coupling rationale overstates by ~2.8x. Correct to
   6992/78/24 in the same doc pass as the version bump. COORDINATE: lands
   wherever the v1.0.6 RELEASE_ARC doc edits happen.
+  - **Resolved on `chore/version-bump-v1.0.6` (2026-06-15).** Implemented as
+    **current-accurate `8251 LOC / 93 routes / 32 test-files`**, not the
+    review-era `6992/78/24` — those targets were exact only at the review
+    commit `93ecc95` and had since drifted (B.4/B.5/PX-02 added route
+    families + LOC), so writing them would have re-introduced the very
+    inaccuracy PX-10 exists to fix. Re-verified against HEAD (`wc -l app.py`
+    = 8251; `grep -c @app.route app.py` = 93; 32 test files import `app`).
+    Owner-approved deviation from the literal figures; the doc-accuracy
+    intent (don't argue the v1.0.8 epic on stale coupling) is preserved.
 - **PX-11 / PX-12 — Corpus-Item + outcome-funnel doc reconciliation.**
   `F-vision-03` (shipped funnel still framed "(Future v2)" in six places)
   and `F-vision-06` (vision.md Learnings drift). COORDINATE with Sprint 6.6

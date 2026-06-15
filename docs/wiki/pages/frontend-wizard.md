@@ -3,9 +3,11 @@
 > **Audience:** `dev`
 > **Concept:** the browser wizard — the six-step panel rail, the Compose cards
 > (bullets + B.4 role-intro picker + B.5 skills card), the paged.js live preview,
-> config persistence, and the smart-landing top-tab structure.
+> config persistence, the smart-landing top-tab structure, the reusable in-app help
+> primitive, and the KW3 new-user first-run tour.
 > **Sources:** [`static/app.js`](../../../static/app.js),
-> [`templates/index.html`](../../../templates/index.html).
+> [`templates/index.html`](../../../templates/index.html),
+> [`static/style.css`](../../../static/style.css).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -114,9 +116,38 @@ and `resume_filename` is ignored server-side (comment at
 [`runAnalysis`](../../../static/app.js)) `[synthesis]`. `saveConfig`'s `included_resumes`
 spread is the surviving remnant of that path `[synthesis]`.
 
+## In-app help + the KW3 first-run tour
+
+A single shared `#helpModal` ([`templates/index.html`](../../../templates/index.html)) is
+the whole help surface; [`app.js:openHelpModal`](../../../static/app.js) swaps its
+title/body per block from [`app.js:_HELP_REGISTRY`](../../../static/app.js) (one entry per
+`.cb-panel`: a title, pathfinding body, optional inline short-form, and a `welcome` flag).
+On load [`app.js:_initHelp`](../../../static/app.js) injects a `.help-info` `(i)`-circle
+into each registered block's `.panel-header` (idempotent; adds `.has-help-icon` so the
+title + icon group left and the collapse chevron stays right — see
+[`static/style.css`](../../../static/style.css)) and, where a short-form exists, an inline
+`.help-inline` line as the first `.panel-body` child wired into `aria-describedby`. The
+`panelUser` welcome block auto-opens once-ever via
+[`app.js:_maybeAutoOpenHelp`](../../../static/app.js), gated by the `cb_help_seen:`
+localStorage seam (`_HELP_SEEN_PREFIX`), wrapped so a throwing store reads as "not seen"
+`[synthesis]`. The same primitive is **ported** (not imported) into the localhost console
+— see [[diagnostics-console]].
+
+Layered on top is the **KW3 new-user first-run tour** — a once-ever guided sequence shown
+only to new users. Its only new state is an in-memory armed flag
+([`app.js:_helpTourArmed`](../../../static/app.js) /
+[`_armHelpTour`](../../../static/app.js)): `createUser` and an empty-corpus `_landingTab()`
+arm it; a returning user never is, so the tour never re-walks onboarding `[synthesis]`.
+[`app.js:_maybeFireTourStop`](../../../static/app.js) fires a stop once-ever, only while
+armed and with no modal already open (so stops never stack);
+[`app.js:_fireWizardTourStop`](../../../static/app.js) fires the active step's stop from
+[`_wizardRender`](../../../static/app.js) and on wizard entry, guarding
+`offsetParent === null` so a panel on a hidden top tab doesn't fire early `[synthesis]`.
+
 ## Related
 
 - [[code-module-map]] — where `app.js` / `index.html` sit in the module map.
 - [[pipeline-stages]] — the analyze→compose→generate flow the wizard steps drive.
 - [[route-surface]] — the `/api/...` routes each step calls.
 - [[corpus-to-output-reach]] — how composition overrides reach the generated document.
+- [[diagnostics-console]] — the localhost console that ports this help primitive.

@@ -13,6 +13,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] — 2026-06-15
+
+### Changed — v1.0.6 release cut: PX-10 blast-radius correction + install test-count fix (`chore/version-bump-v1.0.6`)
+
+Cuts the v1.0.6 release (`pyproject` `1.0.5 → 1.0.6`) and closes the durable-doc loops
+that ride the version bump. v1.0.6 is an **internal** tag (public ships at v1.1.0).
+
+- **PX-10 — stale v1.0.8 blast-radius numbers corrected** (`F-arch-02`; 2026-06 product-
+  excellence review). The v1.0.8 monolith-decomposition epic's coupling rationale in
+  [`docs/dev/RELEASE_ARC.md`](docs/dev/RELEASE_ARC.md) cited a `6,290-LOC / 75-route`
+  `app.py` with `67 test files` importing it. Corrected to the **current-accurate**
+  `8,251-LOC / 93-route` `app.py` with `32 test files` importing `app`. The prescription's
+  literal targets (`6992 / 78 / 24`) were accurate only at the review-era commit `93ecc95`
+  and had since drifted as B.4/B.5/PX-02 landed; writing them would have re-introduced the
+  inaccuracy PX-10 exists to fix, so the numbers were re-verified against HEAD and the
+  current figures used (owner-approved deviation, 2026-06-15). The historical prescription
+  is annotated with the deviation, not rewritten.
+- **`docs/install.md` — stale test-count floor corrected.** The "Verifying the install"
+  step claimed `637+ passed`; the suite is now `1212`, so the floor is updated to
+  `1200+ passed`.
+- **Dev-tier wiki diff-refresh.** The deferred consolidated `docs/wiki/` refresh of the
+  two drifted `audience: dev` pages (`diagnostics-console.md` + `frontend-wizard.md`,
+  advancing `.last_ingest_sha` `93a34b9 → 7d8f427`) is recorded in
+  [`docs/wiki/log.md`](docs/wiki/log.md) — wiki passes are tracked there, not here (see the
+  Scope note at the top of this file).
+- **Boundary.** Docs + version metadata only — no route, LLM call, prompt change
+  (`PROMPT_VERSION` unchanged at `2026-06-13.1`), new dependency, or migration.
+
 ### Added — user-facing "what gets downloaded & why" + in-app eval-stack pointer (`docs/eval-stack-install-guide`, Sprint 6.5 #17)
 
 The user-facing half of the downloads story. The dev-tier provenance already lives in

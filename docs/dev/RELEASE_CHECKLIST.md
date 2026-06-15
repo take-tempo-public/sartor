@@ -38,12 +38,12 @@ product (assistant + self-documenting wiki + clean blueprints). The v1.0.5 items
 below are reconciled in place (shipped → `[x]`); still-open items are carried into
 v1.0.6 / v1.0.7 / v1.0.8 / v1.1.0 as noted.
 
-### v1.0.6 — Walkthrough polish + knowledge substrate + corpus completion (NEXT)
+### v1.0.6 — Walkthrough polish + knowledge substrate + corpus completion (SHIPPED 2026-06-15)
 
 Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 §Phase 4.5. Gates for the v1.0.6 tag:
 
-- [ ] **E2E walkthrough kickoff (Sprint 6.0)** — user drives the whole product
+- [x] **E2E walkthrough kickoff (Sprint 6.0)** — user drives the whole product
       (app + evals + tuning) on a real corpus to collect findings; decompose into
       the 6.x buckets (the v1.0.5 method). Doubles as **real-data capture**: the UX
       findings + the real corpus/annotation labels v1.0.7 calibration needs + the
@@ -59,7 +59,12 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       KW7~~ — **unblocked 2026-06-10** by `feat/outcome-capture-complete`: the
       re-walk should confirm the applications block updates live, the
       submit→outcome funnel works, and memory populates after clarify/interview).
-- [ ] **Sprints 6.1–6.6 merged** — 6.1 wizard-flow (incl. **B.8 Part 1** outcome
+      **Closed for the v1.0.6 tag (owner, 2026-06-15):** findings KW1–KW13 were triaged
+      + fixed (the RELEASE_ARC tag criterion); the remaining re-walk verification pass
+      (lightweight eval/tuning + `V1_0_5_VERIFICATION.md` signing + B.8 outcome-data
+      confirmation) is **waived as non-blocking for this internal tag**, tracked forward to
+      the v1.0.7 pre-public hardening pass.
+- [x] **Sprints 6.1–6.6 merged** — 6.1 wizard-flow (incl. **B.8 Part 1** outcome
       capture) · 6.2 diagnostics-console · 6.3 forms + a11y (**the axe a11y gate
       lands first**) · 6.4 IA + onboarding (corpus-first) · 6.6 corpus-item completers
       (**B.4** ExperienceSummaryItem, **B.5** Skill-as-Corpus-Item) · 6.5 in-app education sweep.
@@ -274,10 +279,12 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       the new strings. Front-end + copy only — **no route, no LLM, no prompt
       (`PROMPT_VERSION` unchanged at `2026-06-13.1`), no dep, no migration.**
       ruff/mypy ✓ (162), pytest **1212/1212** incl. `-m ux` (flake did not recur).
-      **Next: `chore/version-bump-v1.0.6`** (pyproject + CHANGELOG version + tag;
-      PX-10 rides it — re-check the risk register). *(`docs/eval-stack-install-guide`
-      #17 landed — see its row below.)*
-- [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
+      **Next: the v1.0.7 stream** ("The app knows itself" — governance extraction +
+      self-documenting wiki + doc-grounded assistant + compliance pilot + plugin
+      activation; see [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.7). *(`chore/version-bump-v1.0.6`
+      shipped 2026-06-15 — pyproject + CHANGELOG cut + tag `v1.0.6`, the PX-10 doc pass,
+      and the dev-tier wiki diff-refresh.)*
+- [x] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +
       nursery learning layer).
@@ -397,7 +404,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       never updated). Corrected to the real contract + a "machine-enforced" callout; recorded the
       CI scope (grounding-rubric-only ×3 synthetic fixtures, label-gated `eval`, no
       `continue-on-error`). See CHANGELOG [Unreleased].
-- [ ] `ruff + mypy + pytest + pytest -m ux` green; `chore/version-bump-v1.0.6`.
+- [x] `ruff + mypy + pytest + pytest -m ux` green; `chore/version-bump-v1.0.6` shipped 2026-06-15 (tagged `v1.0.6`).
 
 > **Source preserved (no longer at-risk).** The excellence-walk drafts — the system-
 > model/whys, the five-question deliverables (Q1–Q3), the sprint plan — were promoted
@@ -417,6 +424,8 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       stabilize in a dedicated UX-tier pass (likely a missing settle/`to_be_visible`
       before the pin assertion); **not a release blocker.** First item filed via the new
       carry-forward close-out rule ([`AGENTS.md`](../../AGENTS.md) step 0).
+      **Update (2026-06-15):** did not recur across the v1.0.6 gate runs (1197/1197,
+      1204/1204, 1212/1212); still deferred for a dedicated UX-tier stabilization pass.
 
 ### Discovered during the v1.0.5 stream (tracked, deferred)
 
