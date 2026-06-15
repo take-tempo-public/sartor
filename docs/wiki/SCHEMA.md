@@ -102,11 +102,12 @@ access plane) — referenced, not restated (D5).
 | code (`*.py`, `static/`, `templates/`), `docs/dev/`, `evals/`, `dashboard/` | `dev` |
 | `README.md`, `docs/install.md`, `docs/walkthrough*.md`, `vision.md`, wiki `overview.md` | `user` |
 
-[`overview.md`](overview.md) (the front door) is the one `user` page today.
-**`audience: user` education pages are reserved for the Sprint-6.5 sweep and are not
-yet present** — so a lint finding of "no `user`-tier pages under `pages/`" is an INFO,
-not an error. Infra files (`index.md`, `log.md`, this `SCHEMA.md`, `.last_ingest_sha`)
-are wiki meta, not retrieval Units, and are **not** stamped.
+[`overview.md`](overview.md) (the front door) plus the five Sprint-6.5 education guides
+under `pages/` (`using-callback`, `tailoring-a-resume`, `career-corpus`,
+`resume-templates`, `candidate-memory`) are the `user`-tier pages — authored INTO the
+wiki by `feat/education-tailor-corpus-wizard`. Infra files (`index.md`, `log.md`, this
+`SCHEMA.md`, `.last_ingest_sha`) are wiki meta, not retrieval Units, and are **not**
+stamped.
 
 ## The one grounding rule
 
@@ -152,9 +153,11 @@ as a pre-release gate. Every run appends to [`log.md`](log.md).
 
 ## Status
 
-**Populated.** `pages/` carries the excellence-walk content pages (WS-4a step 4) and
-the code-architecture pages (WS-4b code cold-ingest); `.last_ingest_sha` holds the
-HEAD the code pass was authored against. The one `user`-tier page is
-[`overview.md`](overview.md); `audience: user` education pages are still reserved for
-the Sprint-6.5 sweep. See [`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md) §Phase 4.5
-(WS-4a / WS-4b) and [`log.md`](log.md) for the ingest record.
+**Populated.** `pages/` carries the excellence-walk content pages (WS-4a step 4), the
+code-architecture pages (WS-4b code cold-ingest), and the Sprint-6.5 user-facing
+education guides (`feat/education-tailor-corpus-wizard`, hand-authored). `.last_ingest_sha`
+holds the HEAD the *code* pass was authored against — the education sweep was a content
+pass and deliberately did not advance it. The `user`-tier pages are
+[`overview.md`](overview.md) plus the five education guides under `pages/`. See
+[`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md) §Phase 4.5 and [`log.md`](log.md) for the
+record.

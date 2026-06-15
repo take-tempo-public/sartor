@@ -917,6 +917,12 @@ textarea {
   line-height: 1.4;
   margin: 0 0 10px;
 }
+/* Wizard step headers align their text on the baseline (.cb-step-header);
+   center the injected (i) within that row so the 18px circle doesn't float
+   above the larger step title. Scoped to step headers only. */
+.cb-step-header.has-help-icon .help-info {
+  align-self: center;
+}
 
 /* ---- Accessibility utilities (Phase 4) ---- */
 

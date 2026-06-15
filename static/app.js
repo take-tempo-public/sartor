@@ -92,6 +92,12 @@ function showNewUserForm() {
   if (btn) btn.classList.add('hidden');
   const u = document.getElementById('newUsername');
   if (u) u.focus();
+  // KW3: the very first user on a fresh install → arm the new-user tour and
+  // offer the "import a résumé to start" tip once (no-op for returning users —
+  // _maybeFireTourStop gates on the armed flag).
+  const sel = document.getElementById('userSelect');
+  if (sel && sel.options.length <= 1) _armHelpTour();
+  _maybeFireTourStop('tourAddUser', null);
 }
 
 const _NEW_USER_FIELDS = ['newUsername', 'newName', 'newEmail', 'newPhone', 'newLinkedin', 'newWebsite'];
@@ -137,6 +143,7 @@ async function createUser() {
     return alert(err.error || 'Failed to create user');
   }
   hideNewUserForm();  // hide form, clear inputs, restore the "New user" button
+  _armHelpTour();     // KW3: a brand-new user → walk them through the first run
   await loadUsers();
   document.getElementById('userSelect').value = data.username;
   onUserSelect();
@@ -166,7 +173,9 @@ async function onUserSelect() {
   // corpus; populated corpus → straight to Tailor. switchTopTab('corpus', …)
   // lazy-loads the corpus; switchTopTab('tailor', …) is a no-op when already
   // active but keeps the routing explicit.
-  _activateTab(await _landingTab());
+  const landing = await _landingTab();
+  if (landing === 'corpus') _armHelpTour();  // empty corpus ⇒ new-user onboarding
+  _activateTab(landing);
   _resetIterationState();
   setStatus('READY');
   refreshApplications();
@@ -411,6 +420,9 @@ async function uploadFile(file) {
   // ready but the list never updated). refreshCorpus() always refetches and
   // resets _corpusLoadedForUser itself.
   await refreshCorpus();
+  // KW3: first successful import → explain the corpus + what to do next. The
+  // user is on the Career corpus tab, so re-open lives on panelCorpus's (i).
+  _maybeFireTourStop('panelCorpus', document.getElementById('help-icon-panelCorpus'));
 }
 
 function setOutputFormat(fmt, btn) {
@@ -1045,6 +1057,7 @@ async function _fireRecommendThenCompose() {
 // ---- Generation (P8 Gate #2) ----
 async function runGeneration() {
   if (!lastContextPath) return alert('Run analysis first');
+  _maybeFireTourStop('tourGenerating', null);  // KW3: first Generate click
 
   setStatus('GENERATING');
   document.getElementById('btnGenerate').disabled = true;
@@ -1240,6 +1253,7 @@ function _updateCoverLetterButtons() {
 async function runGenerateCoverLetter() {
   if (!currentUser) return alert('Select a user first');
   if (!lastContextPath) return alert('Generate the résumé first');
+  _maybeFireTourStop('tourCoverLetter', null);  // KW3: first cover-letter
   setStatus('GENERATING COVER LETTER');
   const gen = document.getElementById('btnGenerateCover');
   if (gen) gen.disabled = true;
@@ -1456,9 +1470,10 @@ function openSettingsDrawer() {
 // ONE shared #helpModal whose title/body are swapped per block, plus an
 // (i)-circle injected into each registered block's .panel-header that re-opens
 // that block's modal, plus an optional inline short-form line. The welcome
-// block also auto-opens once-ever on first view (localStorage gate). This
-// branch ships the MECHANISM + a single demo entry; later Sprint 6.5 branches
-// add real per-surface copy by adding registry keys — no engine change needed.
+// block also auto-opens once-ever on first view (localStorage gate). Per-surface
+// copy is just registry keys (no engine change); the KW3 new-user first-run tour
+// (feat/education-tailor-corpus-wizard) layers a small once-ever sequence on top
+// — see _maybeFireTourStop / _fireWizardTourStop below.
 //
 // Each entry: { title, body, short?, tip?, welcome? }
 //   title   — heading swapped into #helpModalTitle (also the icon's a11y name)
@@ -1467,9 +1482,7 @@ function openSettingsDrawer() {
 //   tip     — optional native-tooltip text for the (i) icon (defaults to title)
 //   welcome — when true, this block auto-opens once-ever on first view
 const _HELP_REGISTRY = {
-  // DEMO / seed entry. The real per-surface education copy is authored by the
-  // next Sprint 6.5 branch (feat/education-tailor-corpus-wizard — the KW3
-  // first-run sequence); keep this minimal and generic.
+  // ---- Tailor tab -------------------------------------------------------
   panelUser: {
     title: 'Welcome to callback',
     body: "callback tailors your résumé to a specific job from a career corpus "
@@ -1480,6 +1493,133 @@ const _HELP_REGISTRY = {
     short: 'Select a user to begin, or add a new one to import your first résumé.',
     tip: 'About callback',
     welcome: true,
+  },
+  panelApplications: {
+    title: 'Prior applications',
+    body: 'Every résumé you generate is kept here against the job you tailored '
+      + 'it for. Reopen one to download it again, or to pick up where you left '
+      + 'off and refine it further. Nothing here changes your career corpus.',
+    tip: 'Prior applications',
+  },
+
+  // ---- Wizard steps (Tailor tab) ---------------------------------------
+  panelJD: {
+    title: 'Step 1 — Job description',
+    body: 'Paste the full text of the job you’re applying for, then click '
+      + 'Analyze. callback reads the posting and weighs it against your career '
+      + 'corpus to find the experience that fits this role best. The numbered '
+      + 'steps along the top let you move back and forward at any time.',
+    tip: 'Step 1 — Job description',
+  },
+  panelAnalysis: {
+    title: 'Step 1 — Analysis',
+    body: 'This is callback’s read of the job — the themes it found and how '
+      + 'your experience lines up. From here you can answer a few clarifying '
+      + 'questions next (recommended — it usually sharpens the result) or skip '
+      + 'straight to composing the résumé.',
+    tip: 'Analysis',
+  },
+  panelClarify: {
+    title: 'Step 2 — Clarify',
+    body: 'Optional, but worth it. callback asks a few short questions to draw '
+      + 'out real experience your résumé didn’t spell out and to pin down '
+      + 'anything vague. Your answers become new candidate bullet points (added '
+      + 'to your corpus to accept now or review later) and keep the résumé '
+      + 'grounded in fact. Prefer to move on? Click Skip.',
+    tip: 'Step 2 — Clarify',
+  },
+  panelCompose: {
+    title: 'Step 3 — Compose',
+    body: 'Here’s the résumé callback proposes for this job: the title it chose '
+      + 'for each role and the bullet points it selected and ordered, including '
+      + 'any new ones from your clarifying answers. Pin a bullet to force-include '
+      + 'it, exclude ones you don’t want, or open “find more” to pull others from '
+      + 'your corpus. Edits here affect this application only. Save and continue '
+      + 'when it reads right.',
+    tip: 'Step 3 — Compose',
+  },
+  panelTemplate: {
+    title: 'Step 4 — Template',
+    body: 'Your selected content is loaded — now choose how it looks. Pick a '
+      + 'template on the left and the preview shows the pages exactly as they’ll '
+      + 'print: same words, different typography and layout. You can also upload '
+      + 'your own .docx for callback to reuse (ATS-safe templates strongly '
+      + 'recommended). Click Generate when you’re happy with the look.',
+    tip: 'Step 4 — Template',
+  },
+  panelGenerate: {
+    title: 'Step 5 — Generate',
+    body: 'Choose your output format and click Generate. callback writes the '
+      + 'final, tailored résumé from the content and template you picked. This '
+      + 'usually takes about 30–60 seconds.',
+    tip: 'Step 5 — Generate',
+  },
+  panelOutput: {
+    title: 'Step 6 — Preview & download',
+    body: 'Here’s your finished résumé. The preview is editable — fix wording in '
+      + 'place and those edits are saved as the starting point for your next '
+      + 'iteration. Editing here changes the document text only; it does not '
+      + 'change your career corpus. Download when you’re ready, and you can also '
+      + 'generate an editable cover letter from the same job and résumé.',
+    tip: 'Step 6 — Preview & download',
+  },
+
+  // ---- Career corpus / Templates / Memory tabs -------------------------
+  panelCorpus: {
+    title: 'Your career corpus',
+    body: 'Your career corpus is the pool of experience callback draws from when '
+      + 'it writes a tailored résumé — the roles and bullet points it built from '
+      + 'the résumé you imported. Everything starts as “pending review”: accept '
+      + 'items one at a time, by role, or all at once. Reviewing and accepting '
+      + 'sharpens future résumés. You can also add experiences by hand, give a '
+      + 'role alternate titles, and tag things. When your corpus is ready, head '
+      + 'to Tailor to target a specific job.',
+    tip: 'Career corpus',
+  },
+  panelPersonas: {
+    title: 'Résumé templates',
+    body: 'Templates control how your résumé looks — typography, spacing, and '
+      + 'layout — without changing a word of the content. A few ATS-friendly '
+      + 'templates ship with the app, and you can upload your own .docx for '
+      + 'callback to reuse as a template. ATS-safe templates are strongly '
+      + 'recommended so applicant-tracking systems can read your résumé cleanly.',
+    tip: 'Résumé templates',
+  },
+  panelMemory: {
+    title: 'Candidate memory',
+    body: 'Candidate memory keeps the questions callback asked during “Clarify” '
+      + 'and the answers you gave, across every application. Answers with '
+      + 'concrete numbers and outcomes make the strongest new résumé bullets, so '
+      + 'they’re highlighted here. Nothing is shared between users.',
+    tip: 'Candidate memory',
+  },
+
+  // ---- KW3 first-run tour stops with no panel of their own -------------
+  // These fire once at a milestone in the first run; their topic is covered
+  // by the nearest section’s (i) for later reference (see _maybeFireTourStop).
+  tourAddUser: {
+    title: 'Add yourself as a user',
+    body: 'Start by importing a résumé — callback builds your first career '
+      + 'corpus from it, so you don’t have to type everything in by hand. An '
+      + 'ATS-friendly résumé (plain text, clear month/year dates) works best; '
+      + 'callback does its best with other formats. You can add your name and '
+      + 'contact details now or later.',
+    tip: 'Adding a user',
+  },
+  tourGenerating: {
+    title: 'Generating your résumé',
+    body: 'callback is writing your tailored résumé now — this usually takes '
+      + '30–60 seconds. When it’s done you’ll get a live preview you can edit '
+      + 'and download, plus the option to generate a matching, editable cover '
+      + 'letter.',
+    tip: 'Generating',
+  },
+  tourCoverLetter: {
+    title: 'Your cover letter',
+    body: 'callback drafts a cover letter from the same job and résumé. Like the '
+      + 'résumé preview, it’s editable in place — adjust the wording, then '
+      + 'download. Generating it again rewrites it from scratch.',
+    tip: 'Cover letter',
   },
 };
 
@@ -1602,6 +1742,39 @@ function _maybeAutoOpenHelp() {
   if (!welcomeId || _helpSeen(welcomeId)) return;
   _markHelpSeen(welcomeId);
   openHelpModal(welcomeId, null);
+}
+
+// ---- KW3 first-run tour ------------------------------------------------
+// New-users-only guided sequence layered on the help primitive. Each stop is a
+// registry entry shown ONCE (the cb_help_seen seam) at a milestone of the first
+// run. The only new state is an in-memory "armed" flag: a returning user (an
+// existing user with a non-empty corpus) is never armed, so the tour never
+// walks them through onboarding again. Stops with a panel are re-openable from
+// that panel's (i); the three tour-only stops (tourAddUser / tourGenerating /
+// tourCoverLetter) are covered by the nearest section's (i).
+let _helpTourArmed = false;
+function _armHelpTour() { _helpTourArmed = true; }
+
+// Fire a tour stop once-ever — only while armed and with no modal already open
+// (so a stop never stacks on top of the welcome or a prior stop).
+function _maybeFireTourStop(stopId, triggerEl) {
+  if (!_helpTourArmed) return;
+  if (!_HELP_REGISTRY[stopId] || _helpSeen(stopId)) return;
+  const modal = document.getElementById('helpModal');
+  if (modal && !modal.classList.contains('hidden')) return;
+  _markHelpSeen(stopId);
+  openHelpModal(stopId, triggerEl || null);
+}
+
+// Fire the active wizard step's stop, but only when its panel is actually on
+// screen. offsetParent === null ⇒ the panel sits on a hidden top tab (e.g. a
+// new user still onboarding on the Career corpus tab) ⇒ don't fire it early.
+function _fireWizardTourStop() {
+  const panelId = (_WIZARD_PANELS[_wizardStep] || [])[0];
+  if (!panelId) return;
+  const el = document.getElementById(panelId);
+  if (!el || el.offsetParent === null) return;
+  _maybeFireTourStop(panelId, document.getElementById('help-icon-' + panelId));
 }
 
 // ===============================================================
@@ -2605,6 +2778,7 @@ function switchTopTab(name, btn) {
   if (name === 'corpus') loadCorpusIfReady();
   if (name === 'personas') _personaTabActivated();
   if (name === 'memory') _memoryTabActivated();
+  if (name === 'tailor') _fireWizardTourStop();  // KW3: entering the wizard
 }
 
 async function loadCorpusIfReady() {
@@ -4913,6 +5087,7 @@ function _wizardRender() {
   if (sbLabel) sbLabel.textContent = _WIZARD_STEP_LABELS[_wizardStep] || '';
   const active = document.getElementById((_WIZARD_PANELS[_wizardStep] || [])[0]);
   if (active) active.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  _fireWizardTourStop();  // KW3: first time this step's panel is shown
 }
 
 // Advance the rail automatically as the underlying flow completes.

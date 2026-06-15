@@ -237,9 +237,26 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       `test_20260614_help_pattern.py` (6 cases) + `#helpModal` added to the axe
       gate's scanned surfaces + a `Help` selector class. Front-end + help-component
       only — no route, no LLM, no prompt (`PROMPT_VERSION` unchanged), no dep, no
-      migration. ruff/mypy ✓, pytest **1197/1197** incl. `-m ux`. **Next:
-      `feat/education-tailor-corpus-wizard`** (#1 + #18 — apply the pattern + the
-      KW3 first-run sequence, authoring INTO the WS-4 wiki user-facing section).
+      migration. ruff/mypy ✓, pytest **1197/1197** incl. `-m ux`. Then
+      `feat/education-tailor-corpus-wizard` (#1 + #18 — the per-surface education
+      copy + KW3 first-run tour, authored INTO the WS-4 wiki user section) —
+      **landed 2026-06-14.** Per-surface (i)-help on the user picker, prior
+      applications, all six wizard steps, and the Corpus / Templates / Memory
+      panels (registry keys, no engine change); the new-users-only KW3 tour
+      (welcome → add-user → post-ingest → the six steps → generating →
+      cover-letter), once-ever via `cb_help_seen:` + an in-memory armed flag, each
+      stop (i)-re-openable, wizard stops visibility-guarded. Five new
+      `audience: user` wiki guides (`using-callback` hub + tailoring / corpus /
+      templates / memory) + index/SCHEMA/log/overview reconciled (content pass —
+      `.last_ingest_sha` left at `93a34b9`; dev-tier `frontend-wizard.md` JS drift
+      deferred to a later wiki refresh). New `test_20260614_education_help.py` (7)
+      + an axe step-header-modal scan + the welcome-suppression fixture generalized
+      to all tour stops (`show_tour` marker) + a scoped step-header icon CSS rule.
+      Front-end + content only — no route, no LLM, no prompt (`PROMPT_VERSION`
+      unchanged), no dep, no migration. ruff/mypy ✓ (161), pytest **1204/1204**
+      incl. `-m ux` (the known `test_positioning_pin_preserves_title_pin` flake did
+      not recur). **Next: `feat/education-diagnostics-annotate`** (#15 + #20 + #22
+      — diagnostics tabs + the annotate tab).
 - [ ] **Corpus-item completers B.4/B.5** merged **before** the 6.5 sweep (so they're
       documented); **B.8 Part 1** outcome capture complete + verified end-to-end (the
       capture UI already exists — this *completes* it; unblocks the B.8-Part-2 +

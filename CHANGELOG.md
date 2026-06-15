@@ -13,6 +13,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — in-app education sweep: per-surface help + KW3 new-user tour (`feat/education-tailor-corpus-wizard`, Sprint 6.5)
+
+The per-surface education **content** the help primitive was built for — plain-language,
+assumes no technical background. Applies the pattern across every user-facing surface and
+authors the new-user first-run tour, mirrored INTO the WS-4 wiki's reserved user section.
+
+- **Per-surface help** — `_HELP_REGISTRY` entries (no engine change) add an (i)-circle +
+  plain-language explainer to the user picker, prior applications, all six wizard-step
+  panels, and the Career corpus / Résumé templates / Candidate memory panels.
+- **KW3 new-user first-run tour** — a small once-ever sequence layered on the primitive:
+  a welcome, an add-user tip, a post-ingest corpus explainer, a per-step modal across the
+  six wizard steps, and generating / cover-letter tips. **New-users-only** via an in-memory
+  "armed" flag (set on user creation / empty-corpus landing); returning users are never
+  walked through onboarding. Each stop fires once (reusing the `cb_help_seen:` localStorage
+  seam) and is re-openable from the nearest section's (i); wizard stops fire only when the
+  panel is actually on screen (visibility-guarded).
+- **Wiki** — five new `audience: user` guides under `docs/wiki/pages/` (`using-callback`
+  hub + tailoring / corpus / templates / memory), mirrored by the in-app copy. Recorded in
+  [`docs/wiki/log.md`](docs/wiki/log.md) (a content pass — `.last_ingest_sha` unchanged).
+- **Tests** — new `tests/ux/regression/test_20260614_education_help.py` (every panel's icon
+  + aria; open/close/focus for regular and wizard-step headers; tour arming, once-ever, and
+  the visibility guard); the vendored axe a11y gate gains a help-modal-from-step-header scan;
+  the autouse welcome-suppression fixture generalized to all tour stops + a new `show_tour`
+  marker. A scoped `.cb-step-header.has-help-icon .help-info` rule centres the (i) on the
+  baseline-aligned step headers.
+
+Front-end + content only — no Flask route, no LLM call, no prompt change (no `PROMPT_VERSION`
+bump), no new dependency, no migration.
+
 ### Added — reusable in-app help primitive (`feat/help-pattern-component`, Sprint 6.5)
 
 The mechanism the Sprint 6.5 in-app education sweep hangs its copy on — built once,

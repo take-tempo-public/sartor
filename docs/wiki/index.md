@@ -67,19 +67,33 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
 - [`pages/diagnostics-console.md`](pages/diagnostics-console.md) — the localhost
   `/_dashboard` console + the SSE eval/tune/annotation loop.
 
+### User-facing education (hand-authored, Sprint 6.5 `feat/education-tailor-corpus-wizard`)
+
+`audience: user` — plain-language guides that mirror the in-app help; a content
+pass, not a code ingest (see [`log.md`](log.md)).
+
+- [`pages/using-callback.md`](pages/using-callback.md) — the first-run guide: what
+  callback does, the path through your first résumé, the in-app “i” help; the hub.
+- [`pages/tailoring-a-resume.md`](pages/tailoring-a-resume.md) — the six-step Tailor
+  wizard, from pasting a job to download + cover letter.
+- [`pages/career-corpus.md`](pages/career-corpus.md) — the pool of experience
+  callback writes from; pending-review and how reviewing helps.
+- [`pages/resume-templates.md`](pages/resume-templates.md) — what templates control,
+  the bundled ATS-safe set, and uploading your own `.docx`.
+- [`pages/candidate-memory.md`](pages/candidate-memory.md) — the clarification Q&A
+  callback keeps across applications and why outcome-rich answers matter.
+
 ## Wiki infrastructure
 
 - [`SCHEMA.md`](SCHEMA.md) — wiki conventions, the one grounding rule, the
   git-as-engine source model.
 - [`log.md`](log.md) — append-only record of ingest / lint runs.
 
-## Reserved / planned (not yet authored)
+## Reserved / planned
 
-- **User-facing education pages** (`audience: user`) are **reserved for the Sprint 6.5
-  education sweep**, which authors them INTO this wiki. They do not exist yet — there is
-  no `[[link]]` to them, and "no `user`-tier pages under `pages/`" is a lint INFO, not an
-  error (see [`SCHEMA.md`](SCHEMA.md) "Audience tag"). Today the only `user`-tier page is
-  the front-door [`overview.md`](overview.md). See
-  [`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md) §Phase 4.5 (Sprint 6.5) and
-  [`../dev/memory-architecture.md`](../dev/memory-architecture.md) (the access plane
-  these tags gate).
+- **User-facing education pages** (`audience: user`) — **authored** by the Sprint 6.5
+  education sweep (`feat/education-tailor-corpus-wizard`); see "User-facing education"
+  above. The `user`-tier set is now [`overview.md`](overview.md) (the front door) plus
+  the five guides under `pages/`. See [`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md)
+  §Phase 4.5 (Sprint 6.5) and [`../dev/memory-architecture.md`](../dev/memory-architecture.md)
+  (the access plane these tags gate).

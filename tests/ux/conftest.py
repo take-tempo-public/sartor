@@ -138,24 +138,50 @@ def page(_browser: Browser, live_server: str) -> Iterator[Page]:
     assert not server_errors, f"HTTP 5xx during test: {server_errors}"
 
 
+# Every help block that AUTO-fires on first view (the welcome + each KW3 tour
+# stop). Seeding their ``cb_help_seen:<block>`` flags models a returning user so
+# the auto-modals never overlay the landing/wizard and block other tests. Panels
+# that only carry an on-demand (i) (panelAnalysis/panelApplications/panelPersonas/
+# panelMemory) never auto-open, so they are intentionally absent here.
+_TOUR_STOP_BLOCKS = (
+    "panelUser",        # welcome
+    "tourAddUser",      # add-user tip
+    "panelCorpus",      # post-ingest
+    "panelJD",          # wizard step 1
+    "panelClarify",     # wizard step 2
+    "panelCompose",     # wizard step 3
+    "panelTemplate",    # wizard step 4
+    "panelGenerate",    # wizard step 5
+    "panelOutput",      # wizard step 6
+    "tourGenerating",   # first Generate click
+    "tourCoverLetter",  # first cover-letter
+)
+
+
 @pytest.fixture(autouse=True)
 def _help_welcome_default_seen(request: pytest.FixtureRequest, page: Page) -> None:
-    """Default every UX test to 'first-view help already seen'.
+    """Default every UX test to 'first-run help already seen'.
 
-    The Sprint-6.5 help primitive auto-opens a welcome modal on first view,
-    gated by a ``cb_help_seen:panelUser`` localStorage flag. Each test gets a
-    fresh browser context (empty localStorage), so without this the welcome
-    modal would overlay the landing and its full-screen backdrop would block the
-    interactions every other test performs right after ``load()``. Setting the
-    flag via an init-script (runs before every navigation) models the common
-    case — a returning user. The dedicated help test opts in to the genuine
-    first-view with ``@pytest.mark.show_welcome``.
+    The Sprint-6.5 help primitive auto-opens a welcome modal on first view and
+    the education branch layers the KW3 new-user tour (one once-ever modal per
+    milestone), each gated by a ``cb_help_seen:<block>`` localStorage flag. Each
+    test gets a fresh browser context (empty localStorage), so without this an
+    auto-modal's full-screen backdrop would block the interactions every other
+    test performs right after ``load()``. Seeding every auto-firing block via an
+    init-script (runs before each navigation) models the common case — a
+    returning user. Tests opt back in: ``@pytest.mark.show_welcome`` for just the
+    welcome, ``@pytest.mark.show_tour`` for the whole new-user sequence.
     """
+    if request.node.get_closest_marker("show_tour"):
+        return  # tour tests drive the genuine new-user sequence
+    blocks = list(_TOUR_STOP_BLOCKS)
     if request.node.get_closest_marker("show_welcome"):
-        return
+        blocks.remove("panelUser")  # welcome fires; the rest stay suppressed
+    sets = "".join(
+        f"window.localStorage.setItem('cb_help_seen:{b}', '1');" for b in blocks
+    )
     page.add_init_script(
-        "try { window.localStorage.setItem('cb_help_seen:panelUser', '1'); }"
-        " catch (e) { /* storage unavailable — welcome simply may show */ }"
+        f"try {{ {sets} }} catch (e) {{ /* storage unavailable — help may show */ }}"
     )
 
 
