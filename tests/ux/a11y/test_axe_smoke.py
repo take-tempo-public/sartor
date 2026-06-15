@@ -157,6 +157,16 @@ def test_axe_main_tabs_and_settings(
     WizardJobPage(page, live_server).open()
     found["tailor-step1"] = _axe_serious(page)
 
+    # Sprint 6.5 education: scan the help modal opened from a wizard STEP header
+    # (.cb-step-header) — the injected (i) lives in a different header layout
+    # than the panelUser case already covered above. Close it before the tab
+    # switch so its backdrop doesn't intercept the next click.
+    page.click(Help.icon("panelJD"))
+    page.wait_for_selector(Help.MODAL, state="visible")
+    found["help-modal-step"] = _axe_serious(page)
+    page.click(Help.CLOSE)
+    page.wait_for_selector(Help.MODAL, state="hidden")
+
     CorpusPage(page, live_server).open().wait_for_cards()
     found["corpus"] = _axe_serious(page)
 

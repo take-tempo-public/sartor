@@ -191,3 +191,35 @@ re-grounded. All changed claims SUPPORTED at HEAD (`grep -c @app.route app.py` =
 HEAD. Gate: `ruff` ✓ · `mypy` ✓ (159 files) · `pytest` **1191/1191** (docs-only — no `.py`;
 the one full-suite failure was the known intermittent UX-tier flake
 `test_positioning_pin_preserves_title_pin`, green on isolated re-run).
+
+## 2026-06-14 — content pass: user-facing education guides (`feat/education-tailor-corpus-wizard`)
+
+**Mode: hand-authored content pass — NOT a code ingest / diff pass** (Sprint 6.5, #1 + #18).
+The first authoring INTO the wiki's reserved `audience: user` section, mirroring the in-app
+education copy this branch ships. Like the 2026-06-09 excellence-walk pass, this is a
+*content* pass: it does **not** advance `.last_ingest_sha` (that checkpoint tracks the last
+**code** ingest, per [`SCHEMA.md`](SCHEMA.md) "Source model"). The branch *does* change code
+(`static/app.js`, `static/style.css`, tests), so the dev-tier
+[`pages/frontend-wizard.md`](pages/frontend-wizard.md) may now drift from HEAD — that
+code-keyed refresh is deferred to a later `chore/wiki-refresh` / the version-bump branch, and
+leaving the checkpoint at `93a34b9` keeps the freshness reminder correctly flagging it.
+
+**Pages created (5, `audience: user`):** `using-callback` (the first-run hub),
+`tailoring-a-resume`, `career-corpus`, `resume-templates`, `candidate-memory`. Each mirrors
+the in-app `_HELP_REGISTRY` copy (`static/app.js`) and the wizard surfaces in
+`templates/index.html`; plain-language, no technical background assumed.
+
+**Wiki meta updated.** [`index.md`](index.md) gained a "User-facing education" section and
+its "Reserved / planned" note flipped from *reserved* to *authored*; [`SCHEMA.md`](SCHEMA.md)
+"Audience tag" + "Status" updated (the `user`-tier set is now [`overview.md`](overview.md) +
+these five); [`overview.md`](overview.md) gained a one-line "new here?" pointer to
+`using-callback`. `[[backlinks]]` reconciled bidirectionally among the five (hub ↔ guides).
+
+**Verification.** Every `[[backlink]]` resolves to an existing page slug (the five new guides
++ the cross-links among them); the only relative links out are to [`overview.md`](overview.md),
+which resolve. Grounding: each user page describes shipped, observable behavior and names the
+source surfaces (`templates/index.html` panels + `static/app.js` `_HELP_REGISTRY`); the
+no-fabrication promise defers to [`overview.md`](overview.md) (D5 — not restated). The full
+quality gate (`ruff` + `mypy` + `pytest` incl. `-m ux` / the axe gate) is run on the branch's
+combined code + content before commit; the result is recorded with the branch in
+[`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md).

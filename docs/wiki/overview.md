@@ -30,6 +30,9 @@ prompt enforces that rule and a witness metric measures whether it held — a co
 the model, not a guarantee about every output. That single constraint shapes the entire
 design, and it recurs at every scale of the system.
 
+> **New to the app?** [`pages/using-callback.md`](pages/using-callback.md) walks you
+> through your first run — add a user, import a résumé, tailor to a job, and download.
+
 ## Two subjects: the Product and the Work
 
 Telling these apart is the key to reading the whole repository:
