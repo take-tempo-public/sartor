@@ -246,3 +246,63 @@ docs branch appended **one sentence** to the same `dashboard/templates/dashboard
 Same file, same conclusion: the `diagnostics-console.md` drift is already flagged above and
 `.last_ingest_sha` stays at `93a34b9` — the deferred consolidated refresh picks this up too. No
 new wiki branch.
+
+## 2026-06-15 — diff refresh: Sprint 6.5 education (dev-tier pages) (`chore/version-bump-v1.0.6`)
+
+**Mode: diff** (`93a34b9` → `7d8f427`). The consolidated, code-keyed dev-tier refresh deferred
+by the 2026-06-14 (`feat/education-tailor-corpus-wizard`) content pass and the 2026-06-15
+(`feat/education-diagnostics-annotate`) note — both left `.last_ingest_sha` parked at `93a34b9`
+precisely so this version-bump branch would pick the drift up. The `/wiki-ingest` op is dormant
+(not installed), so this pass was done by hand per [`SCHEMA.md`](SCHEMA.md)'s page + grounding
+conventions.
+
+**Scope.** The Sprint 6.5 education band since the parked checkpoint. The FRONTEND source changes
+in range are [`../../static/app.js`](../../static/app.js) (+336),
+[`../../dashboard/templates/dashboard.html`](../../dashboard/templates/dashboard.html) (+285),
+[`../../static/style.css`](../../static/style.css) (+57), and
+[`../../templates/index.html`](../../templates/index.html) (+19): the reusable in-app help
+primitive (`#helpModal` + `openHelpModal` + `_HELP_REGISTRY` + `_initHelp`), per-surface
+`(i)`-circle help, the KW3 new-user first-run tour (`_helpTourArmed` / `_maybeFireTourStop` /
+`_fireWizardTourStop`), the dashboard's PORT of that primitive (`#helpModal` + `_DASH_HELP` +
+`openDashHelp` + `_maybeFireDashHelp`), and the rewritten dashboard annotate / empty-state copy —
+plus #17's one-sentence eval-stack pointer in the `dashQuality` help body. The `audience: user`
+education guides ([`using-callback`](pages/using-callback.md), …) were already authored in the
+2026-06-14 content pass and were **not** re-touched (D5 — content pass, not a code key). The
+`../../ui_pages/{dashboard_console,selectors}.py` changes in range are Playwright POM / selector
+test infrastructure — no wiki page describes that layer, so no page change.
+
+**Pages changed (2, both `audience: dev`).**
+- [`pages/diagnostics-console.md`](pages/diagnostics-console.md) — added an "In-app help: a ported
+  primitive, not a shared import" section (the `.dash-pane-intro` summary + `(i)` rows;
+  [`openDashHelp`](../../dashboard/templates/dashboard.html) +
+  [`_DASH_HELP`](../../dashboard/templates/dashboard.html) keyed
+  `dashPipeline`/`dashQuality`/`dashGroundedness`/`dashTuning`/`dashAnnotate`; the once-ever
+  [`_maybeFireDashHelp`](../../dashboard/templates/dashboard.html); the deliberate-port-not-import
+  point — reuses the wizard's `#helpModal` ids + `cb_help_seen:` prefix, never loads `app.js`) +
+  the lay-language annotate/empty-state note. Added `dashboard/templates/dashboard.html` to the
+  Sources header and a `[[frontend-wizard]]` backlink.
+- [`pages/frontend-wizard.md`](pages/frontend-wizard.md) — extended the Concept line; added an
+  "In-app help + the KW3 first-run tour" section ([`_HELP_REGISTRY`](../../static/app.js) +
+  [`openHelpModal`](../../static/app.js) + [`_initHelp`](../../static/app.js) +
+  [`_maybeAutoOpenHelp`](../../static/app.js) / `cb_help_seen:` seam; the shared `#helpModal`
+  ([`templates/index.html`](../../templates/index.html)) + `.help-info` CSS
+  ([`static/style.css`](../../static/style.css)); the KW3 tour —
+  [`_helpTourArmed`](../../static/app.js) / [`_maybeFireTourStop`](../../static/app.js) /
+  [`_fireWizardTourStop`](../../static/app.js), armed by `createUser` + an empty-corpus
+  `_landingTab`, fired from `_wizardRender` / wizard entry, `offsetParent`-guarded). Added
+  `static/style.css` to Sources + a `[[diagnostics-console]]` backlink.
+
+[`index.md`](index.md) unchanged (both one-liners stayed true). No new pages (29 `pages/` total).
+The new `[[frontend-wizard]]` ↔ `[[diagnostics-console]]` backlink pair is bidirectional. Neither
+page carries a per-page source-SHA marker (`SCHEMA.md` stamps only the audience tag), so only
+`.last_ingest_sha` advances.
+
+**`.last_ingest_sha` advanced `93a34b9` → `7d8f427e16be8a9110de202026cb0becb79b6694`** (HEAD).
+
+**Authoring + verification.** Direct factual edits; every cited symbol pre-verified at HEAD
+(`openHelpModal`:1644 / `_initHelp`:1689 / `_HELP_REGISTRY`:1484 / `_armHelpTour`:1756 /
+`_maybeFireTourStop`:1760 / `_fireWizardTourStop`:1772 in `static/app.js`; `openDashHelp`:893 /
+`_DASH_HELP`:811 / `_maybeFireDashHelp`:927 / `#helpModal`:554 / `.dash-pane-intro` in
+`dashboard/templates/dashboard.html`; `#helpModal`:872 in `templates/index.html`;
+`.help-info`:891 / `.has-help-icon`:884 in `static/style.css`). Gate: `ruff` ✓ · `mypy` ✓ ·
+`pytest` **1212/1212** (docs-only — no `.py` touched).

@@ -16,9 +16,9 @@
 | v1.0.3 | R1 Phase 2 | No | Analyze quality recovery (✓ context_probe + typed hidden_qualities) **then** the two-pass split for speed (≤72s) without giving quality back. **Tagged 2026-06-02 at commit `59b6d9c`** |
 | v1.0.4 | Eval tuning loop | No | Real-data, human-in-the-loop, model-assisted prompt improvement; internal/dev tooling. **Tagged 2026-06-02 at commit `072e290`** |
 | v1.0.5 | UI/UX redesign | No (internal until v1.1.0) | Wizard redesign + WYSIWYG + diagnostics/tuning console & annotation tab; establishes the design system. **Tagged 2026-06-07** — all seven §Phase 4 tag criteria met; gate green incl. `pytest -m ux` |
-| v1.0.6 | Walkthrough polish + knowledge substrate + corpus completion | No (internal until v1.1.0) | E2E-walkthrough-driven UX polish (Sprints 6.1–6.5) + the **WS-4 LLM-wiki substrate** (front-loaded; before the 6.5 sweep) + corpus-item completers (**B.4** ExperienceSummaryItem, **B.5** SkillGroupItem) + **B.8 Part 1** (outcome capture). **Not yet tagged** — opens with a fresh end-to-end walkthrough. See **Phase 4.5**. |
+| v1.0.6 | Walkthrough polish + knowledge substrate + corpus completion | No (internal until v1.1.0) | E2E-walkthrough-driven UX polish (Sprints 6.1–6.5) + the **WS-4 LLM-wiki substrate** (front-loaded; before the 6.5 sweep) + corpus-item completers (**B.4** ExperienceSummaryItem, **B.5** SkillGroupItem) + **B.8 Part 1** (outcome capture). **Tagged 2026-06-15** — all §Phase 4.5 tag criteria met; the E2E re-walk verification pass was waived as non-blocking for this internal tag (tracked to v1.0.7); gate green incl. `pytest -m ux`. See **Phase 4.5**. |
 | v1.0.7 | The app knows itself | No (internal until v1.1.0) | The autonomous self-documenting/self-tuning wiki loop + the doc-grounded **assistant** (Haiku, reuses the user's key) + pre-public hardening (grounding-calibration B · cover-letter tuning). **Not yet tagged.** See **Phase 4.7**. |
-| v1.0.8 | Monolith → blueprints (WS-1) | No (internal until v1.1.0) | Decompose the 6,290-LOC / 75-route `app.py` into Flask blueprints (dedicated structural epic); **absorbs the type-annotation scan** (WS-2 increment 1). Public ships on clean blueprints. **Not yet tagged.** See **Phase 4.8**. |
+| v1.0.8 | Monolith → blueprints (WS-1) | No (internal until v1.1.0) | Decompose the 8,251-LOC / 93-route `app.py` into Flask blueprints (dedicated structural epic); **absorbs the type-annotation scan** (WS-2 increment 1). Public ships on clean blueprints. **Not yet tagged.** See **Phase 4.8**. |
 | v1.1.0 | Public release | **Yes** | **Tag owned by the user** — the public cut of the complete product (assistant + self-documenting wiki + clean blueprints). GitHub push is part of this event |
 
 **Versioning model (2026-06-08).** The **patch digit is an epic** — a bounded set of
@@ -627,6 +627,12 @@ Then: `chore/version-bump-v1.0.6` (pyproject, CHANGELOG, tag) + re-check the
 RELEASE_CHECKLIST risk register.
 
 ### v1.0.6 tag criteria
+
+> **✓ MET — tagged `v1.0.6` on 2026-06-15.** Sprints 6.1–6.6 + the a11y axe gate + B.4/B.5
+> + WS-4a/4b all merged; the E2E re-walk verification pass (eval/tuning + `V1_0_5_VERIFICATION.md`
+> signing + B.8 outcome-data confirmation) was waived as non-blocking for this internal tag
+> (tracked to the v1.0.7 pre-public hardening pass). Gate green incl. `pytest -m ux`.
+
 - The E2E-walkthrough findings are triaged; tag-blocking ones fixed (overflow spills
   to a later 1.0.x epic — not a new pre-commitment).
 - Sprints 6.1–6.6 merged; the a11y axe gate is live and green.
@@ -771,20 +777,20 @@ Then: `chore/version-bump-v1.0.7`.
 
 ## Phase 4.8 — Monolith → blueprints (v1.0.8)
 
-> The dedicated structural epic: decompose the 6,290-LOC / 75-route `app.py` into
+> The dedicated structural epic: decompose the 8,251-LOC / 93-route `app.py` into
 > Flask blueprints. Placed here — **after the product is feature-complete and before
 > the public cut** — so v1.1.0 ships on clean architecture (the showcase goal) while
 > the risky refactor stays out of the public-release packaging. **A new epic is
 > justified** because WS-1 must be a dedicated, low-churn window — it **MUST NOT
 > interleave** with any feature sprint (it rewrites routes nearly every branch
-> touches; 67 test files import from `app`). **Blocked by:** v1.0.7 tag. **Blocks:**
+> touches; 32 test files import from `app`). **Blocked by:** v1.0.7 tag. **Blocks:**
 > v1.1.0.
 
 - `design/app-blueprints` — **design session first** (free; can run earlier): blueprint
   seams (analysis · generation/cover-letter · corpus · dashboard · user/config ·
   templates) & naming; shared-helpers home (`_sse`, `_error_detail_payload`,
   `_safe_username`, `_within`); app-factory vs. module-global `app`; SSE routes; the
-  67 test-file imports; `route-security-lint` hook compatibility (it currently targets
+  32 test-file imports; `route-security-lint` hook compatibility (it currently targets
   `app.py`).
 - `refactor/app-blueprints-*` — the decomposition itself, one seam per branch where
   feasible. Preserve the `_safe_username`/`_within` gate + its lint hook on every
@@ -806,7 +812,7 @@ Then: `chore/version-bump-v1.0.8`.
 
 ### v1.0.8 tag criteria
 - `app.py` decomposed into blueprints; the `_safe_username`/`_within` gate + its lint
-  hook hold on every moved route; all 67 test files import cleanly.
+  hook hold on every moved route; all 32 test files import cleanly.
 - Route returns annotated (PV-4) — `check_untyped_defs`-clean over the post-v1.0.4 surface.
 - `ruff + mypy + pytest + pytest -m ux` green; **no behavior change** (pure refactor).
 

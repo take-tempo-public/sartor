@@ -325,7 +325,7 @@ After the steps above:
 python -m pytest -q
 ```
 
-Should report `637+ passed`. Then:
+Should report `1200+ passed`. Then:
 
 ```bash
 python -m ruff check .
