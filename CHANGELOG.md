@@ -13,6 +13,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the compliance-agent pilot (`feat/compliance-agent-pilot`, Sprint 7.7)
+
+Governance gains a witness for the Regulation function — a read-only periodic read of
+whole-repo coherence that emits a **ranked, capped drift report**: places where what the
+charter / release arc / changelog / code / wiki provenance *say* has drifted from what the
+repo *is* at a pinned sha. It cautions and suggests; it **never edits, never blocks, never
+files issues** — the [`/wiki-lint`](commands/wiki-lint.md) witness posture turned on the
+governance surface, composing the read-only-subagent pattern + the witness-command pattern.
+**Dev-harness only — no product code/route/LLM-call/dep; `PROMPT_VERSION` unchanged at
+`2026-06-13.1`; no migration.**
+
+- **New [`/callback:compliance-witness`](commands/compliance-witness.md)** — the
+  orchestrator command: resolves the pinned sha (`--since <sha>` or the last release tag),
+  delegates the read to the model-pinned `compliance-witness` subagent via `Task`, applies a
+  **flag cap (default 12, `--cap N`)**, renders the findings-register table (stable id ·
+  one-line claim · ≥2 disagreeing sources cited `path:line @ <sha>` · disposition verb
+  FLAG / WATCH / AFFIRM · a suggested direction), prints a `/wiki-lint`-style gate verdict
+  (clean / needs attention), and **appends a dated counts-per-tier line to
+  [`docs/governance/compliance-log.md`](docs/governance/compliance-log.md)**. Its only writes
+  are the report surface + that log append — it **never commits, never blocks**.
+- **New [`callback:compliance-witness`](agents/compliance-witness.md)** (Sonnet, read-only
+  `Read`/`Grep`/`Glob`/`Bash` — `Bash` is read-only git only) — re-derives every cited line
+  at the pinned sha, finds **pairwise drift** (two named sources disagree, or one C-0
+  categorical lacks the by-construction enforcement the charter requires), ranks against the
+  charter + leverage tier, and returns FLAG / WATCH / AFFIRM flags. The tool grant (**no
+  `Edit`, no `Write`, no `Task`**) *is* the enforcement of every HARD non-goal — it cites,
+  it never asserts; zero drift is a valid honest-silence verdict.
+- **Pilot run (v1.0.7) — PASSES.** One supervised run against the freshly-graduated
+  [`docs/governance/`](docs/governance/) surface (born
+  [`docs/governance/compliance-log.md`](docs/governance/compliance-log.md); window
+  `e299ac8`→`1741ab1`, FLAG 1 / WATCH 2 / AFFIRM 3). The one FLAG (CW-01 — the
+  `RELEASE_CHECKLIST` 7.2 row left `[ ]`/"pending" after `feat/governance-extraction`
+  merged) was owner-scored **true drift → flag-precision 1.0 ≥ 0.66** and corrected, so the
+  witness graduates toward the standing pre-tag companion (v1.1.x). The amendment
+  ceremony's "a flag in the compliance agent's next drift report — witness, not approver"
+  step is now satisfiable. Full design in
+  [`compliance-agent-design.md`](docs/dev/reviews/2026-06-product-excellence/03-prescriptions/compliance-agent-design.md).
+
 ### Added — the self-documenting wiki loop (`feat/self-documenting-wiki`, Sprint 7.3)
 
 The `docs/wiki/` knowledge layer now refreshes itself against the code through a bounded,

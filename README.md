@@ -157,6 +157,7 @@ The project ships a Claude Code plugin (`callback`) — slash commands ([command
 | [`/callback:wiki-lint`](commands/wiki-lint.md) | Severity-tiered drift/coverage report on the wiki (periodic + pre-release gate) |
 | [`/callback:wiki-audit`](commands/wiki-audit.md) | Fact-check one wiki page against its cited sources |
 | [`/callback:wiki-self-update`](commands/wiki-self-update.md) | The self-documenting wiki loop — bounded Haiku diff-pass that delegates synthesis to `wiki-scribe` + audit to `wiki-grounding-auditor`, runs `wiki-lint`, advances the checkpoint, presents a reviewable diff (never commits) |
+| [`/callback:compliance-witness`](commands/compliance-witness.md) | Read-only governance drift witness — delegates the read to the `compliance-witness` subagent (Sonnet) at a pinned sha, caps the flags (default 12, `--cap N`), renders a findings-register table + gate verdict (clean / needs attention), appends to `docs/governance/compliance-log.md`. Reports, never edits, never blocks |
 
 ### Subagents
 
@@ -170,6 +171,7 @@ The project ships a Claude Code plugin (`callback`) — slash commands ([command
 | [`callback:ux-onboarding-designer`](agents/ux-onboarding-designer.md) | Audit user-facing docs from a first-time-user lens → structured rewrite ladder |
 | [`callback:wiki-scribe`](agents/wiki-scribe.md) | Haiku: synthesize one changed source into its affected `docs/wiki/` page(s) — minimal SCHEMA-conformant edit (the `/callback:wiki-self-update` synthesis worker) |
 | [`callback:wiki-grounding-auditor`](agents/wiki-grounding-auditor.md) | Haiku, read-only: adversarially grounding-audit one wiki page the scribe wrote → SUPPORTED / DRIFTED / UNSUPPORTED (author ≠ auditor; never edits) |
+| [`callback:compliance-witness`](agents/compliance-witness.md) | Sonnet, read-only (`Read`/`Grep`/`Glob`/`Bash` — read-only git): governance drift read at a pinned sha → ranked FLAG / WATCH / AFFIRM flags where two sources disagree (or a C-0 categorical lacks by-construction backing); cites, never asserts; no `Edit`/`Write`/`Task` |
 
 ### Hooks
 
