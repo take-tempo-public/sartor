@@ -165,6 +165,20 @@ class Memory:
     PANEL = "#panelMemory"
 
 
+class Assistant:
+    """The doc-grounded assistant panel (Sprint 7.5, feat/doc-assistant) — a
+    tab-independent collapsible `<details>` chat over the committed wiki + code,
+    backed by POST /api/assistant/ask (SSE). JS in `static/assistant.js`."""
+
+    PANEL = "#panelAssistant"
+    HEADER = "#assistantHeader"  # the <summary> that toggles the panel open
+    DEV_MODE = "#assistantDevMode"
+    QUESTION = "#assistantQuestion"
+    ASK_BUTTON = "#assistantAsk"
+    ANSWER = "#assistantAnswer"
+    STATUS = "#assistantStatus"  # streamed-answer status + the cited-sources line
+
+
 class Settings:
     """The right-slide Settings drawer (Workstream B1.3) — opened from the
     header pill; profile/config fields live inside (`#cfgName` … `#cfgNotes`)."""

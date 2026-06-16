@@ -33,6 +33,7 @@ from analyzer import (
     generate_streaming,
     prompt_overrides,
 )
+from blueprints import assistant_bp
 from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
 from hardening import (
@@ -54,6 +55,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.register_blueprint(dashboard_bp, url_prefix="/_dashboard")
+app.register_blueprint(assistant_bp, url_prefix="/api/assistant")
 
 # Disable browser caching of /static/* responses so UI edits land on
 # the next page reload without requiring a Flask restart or a manual

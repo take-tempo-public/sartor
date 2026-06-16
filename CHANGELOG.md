@@ -13,6 +13,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the doc-grounded assistant (`feat/doc-assistant`, Sprint 7.5)
+
+The **Stage 1** Memory capability: a working, **cited** chat over the committed
+`docs/wiki/` + the code at HEAD — *"a product that knows itself."* It turns the Stage-0
+`recall/` skeleton into a real assistant by adding the two free retrieval tiers, the
+Haiku **avatar** (the only LLM in the stack, reusing the user's existing Anthropic key —
+**no new credential, no new dependency**), a **user/dev audience toggle** + model-detected
+disclosure, and an S5-P1 session buffer. Built per
+[`docs/dev/memory-architecture.md`](docs/dev/memory-architecture.md) "Stage 1"; the S3
+vector tier stays out (Sprint 7.6, eval-gated).
+
+- **Two real source tiers on the `recall/` `Source` protocol** ([`recall/sources/`](recall/sources/),
+  generic + stdlib-only, roots/audience injected): `WikiSource` (S1 — `docs/wiki/pages/*.md`
+  → `[[slug]]`-cited Units, audience from each page's `**Audience:**` tag, sha from
+  `.last_ingest_sha`); `GitGrepSource` (S2 — `git grep` over **tracked** files → `path:line`
+  Units, audience from the SCHEMA path rules; ignored user data is structurally excluded);
+  `SessionSource` (S5-P1 — the in-memory session buffer). Re-exported from `recall`.
+- **The avatar** ([`analyzer.py`](analyzer.py) — honoring charter C-6 "all LLM calls live in
+  `analyzer.py`"): `avatar_answer_streaming()` + `AVATAR_SYSTEM_PROMPT`, a grounded Haiku
+  call over an assembled `recall.Context` that cites what it claims and refuses what the
+  context doesn't support. Carries its **own** `AVATAR_PROMPT_VERSION` (= `2026-06-16.1`)
+  so persona tweaks never bump the résumé-pipeline `PROMPT_VERSION`; intentionally **not**
+  in the résumé-scoped `_BASE_SYSTEM_PROMPTS` eval registry.
+- **The SSE chat route**, authored as the first module in a new `blueprints/` package
+  ([`blueprints/assistant.py`](blueprints/assistant.py), `assistant_bp`,
+  `POST /api/assistant/ask`) — blueprint-shaped so the v1.0.8 `app.py`→blueprints split is
+  a *move*, not a rewrite. It is the project-wiring layer (the callback roots + the SCHEMA
+  audience rules injected into the generic tiers); it does **not** import `app.py` (the
+  `dashboard/` precedent). The `_safe_username` security gate applies; `_within` is N/A
+  (no user-supplied path is resolved).
+- **A minimal in-app assistant panel** ([`templates/index.html`](templates/index.html) +
+  [`static/assistant.js`](static/assistant.js)) — an always-available collapsible
+  `<details>` with a dev-mode toggle, reusing the existing `_consumeSSE` SSE helper.
+- **Guards:** the `recall/sources/` tiers stay project-agnostic — a new
+  `test_recall_sources_no_hardcoded_roots` guard in
+  [`tests/test_recall_boundary.py`](tests/test_recall_boundary.py) rejects callback-specific
+  path literals (the import-boundary test can't see string literals). `blueprints/assistant.py`
+  is added to the PX-08 egress allowlist (it constructs the Anthropic client). `subprocess`
+  in `GitGrepSource` carries justified `# noqa: S603, S607` (fixed argv, no shell, local git).
+- **Tests:** unit suites for all three tiers + the avatar (LLM-free), a Flask `test_client`
+  route suite, and a Playwright UX panel test (avatar stubbed). **`PROMPT_VERSION` unchanged
+  at `2026-06-13.1`; zero new dependencies.**
+
 ### Added — the Memory substrate skeleton (`feat/recall-skeleton`, Sprint 7.4)
 
 The first piece of callback's **Memory** function as a first-class subsystem: a new

@@ -1050,6 +1050,39 @@
     </div>
   </aside>
 
+  <!-- ============================================================== -->
+  <!-- DOC-GROUNDED ASSISTANT (Sprint 7.5, feat/doc-assistant)        -->
+  <!-- Always-available collapsible chat over the committed wiki +    -->
+  <!-- code at HEAD. Backed by POST /api/assistant/ask (SSE) → a Haiku -->
+  <!-- avatar that answers WITH citations. Lives outside the tabs so   -->
+  <!-- it is reachable from any view; collapsed by default so it never -->
+  <!-- overlays the wizard. JS in static/assistant.js.                 -->
+  <!-- ============================================================== -->
+  <details class="cb-panel" id="panelAssistant">
+    <summary class="panel-header cb-bg-blue" id="assistantHeader">Ask the assistant</summary>
+    <div class="panel-body">
+      <p class="edit-hint">
+        Ask how callback. works or how to use it — answers are grounded in the
+        committed wiki + code at HEAD, with citations. Turn on dev mode for
+        implementation-level detail.
+      </p>
+      <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+        <label class="memory-checkbox" for="assistantDevMode">
+          <input type="checkbox" id="assistantDevMode"> Dev mode
+        </label>
+      </div>
+      <textarea id="assistantQuestion" rows="2" style="width:100%; box-sizing:border-box;"
+                placeholder="e.g. How do I tailor a résumé?"
+                aria-label="Ask the assistant a question"></textarea>
+      <div style="display:flex; align-items:center; gap:0.75rem; margin-top:0.5rem;">
+        <button class="cb-btn cb-bg-blue" id="assistantAsk" onclick="askAssistant()">Ask</button>
+        <span class="edit-hint" id="assistantStatus" aria-live="polite" style="margin:0"></span>
+      </div>
+      <div id="assistantAnswer" aria-live="polite"
+           style="white-space:pre-wrap; margin-top:0.75rem;"></div>
+    </div>
+  </details>
+
   <!-- callback. floating status strip — viewport-bottom sticky element
        that mirrors statusPill state and surfaces the active wizard step.
        Pulses during active phases (analysis, recommend, generate). -->
@@ -1069,5 +1102,6 @@
   </div>
 
   <script src="/static/app.js"></script>
+  <script src="/static/assistant.js"></script>
 </body>
 </html>

@@ -7,9 +7,13 @@
 > **Audience:** agents designing or building the v1.0.7 `feat/doc-assistant`,
 > `design/self-documenting-loop`, and WS-4b `wiki/cold-ingest-code` branches —
 > and any future project that wants to reuse the substrate.
-> **Status:** **DESIGN SKETCH — form-found 2026-06-09, NOT built.** The six
-> framing decisions below are *decided*; the staged build maps to v1.0.7 +
-> post-v1.1.0. Do not read any of this as shipped.
+> **Status:** **Stage 0 + Stage 1 SHIPPED; deeper tiers still design.** The six
+> framing decisions below are *decided*. **Stage 0** (the `recall/` skeleton) landed
+> Sprint 7.4 (`feat/recall-skeleton`); **Stage 1** (the doc-grounded assistant — S1
+> `WikiSource` + S2 `GitGrepSource` + S5-P1 `SessionSource` + the Haiku avatar + the
+> user/dev toggle + the SSE chat panel) landed Sprint 7.5 (`feat/doc-assistant`). The
+> **Stage 2 vector tier (S3)** is 7.6 (eval-gated); **S4 structure** + **S5 P2–P4** stay
+> design only. Read the per-stage notes below for what is built vs. held.
 > **Authoritative for:** the tier model, the two cross-cutting planes, the
 > hybrid-retrieval decision, and the **reuse/extraction contract**. Defers to
 > [`../system-model.md`](../system-model.md) (the seven-function model),
@@ -173,10 +177,15 @@ offer → (later) `session.observe(turn)` ingests the exchange, no LLM.
 - **Stage 0 — the skeleton (free, do first).** Define `Unit` / `Source` / `Scope`
   / `Context` + the two planes. *Getting these seams right is the "reusable,
   prepared to develop further" deliverable* — more important than any one tier.
-- **Stage 1 — free tiers ship the assistant.** S1 wiki (exists) + S2 `git grep`
-  + assemble + the avatar with the user/dev toggle + model-detected disclosure
-  + S5 P1 (session buffer). **Zero new deps.** → v1.0.7 `feat/doc-assistant`;
-  WS-4b code-ingest feeds S1.
+- **Stage 1 — free tiers ship the assistant. DONE 2026-06-16 (`feat/doc-assistant`,
+  7.5).** S1 wiki + S2 `git grep` + assemble + the avatar with the user/dev toggle +
+  model-detected disclosure + S5 P1 (session buffer). **Zero new deps.** The concrete
+  tiers live in `recall/sources/` (generic + injected — roots/audience passed from the
+  wiring layer, kept project-agnostic by `test_recall_sources_no_hardcoded_roots`); the
+  avatar (`analyzer.avatar_answer_streaming`, its own `AVATAR_PROMPT_VERSION`) honors C-6;
+  the SSE route is `blueprints/assistant.py` (`POST /api/assistant/ask`) + a collapsible
+  in-app panel. **Decisions (owner-confirmed):** avatar in `analyzer.py` (D1=A);
+  sources parameterized in `recall/sources/` (D2=Y); minimal in-shell UI panel.
 - **Stage 2 — eval-gated semantics (v1.0.7, in-epic).** S3 vector via **`model2vec`
   static embeddings + a rebuildable BLOB/numpy sidecar** (the lightest path: numpy +
   tokenizers + a ~10–30 MB static table — no onnxruntime, no torch; escalate to

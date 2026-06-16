@@ -95,3 +95,74 @@ def test_recall_imports_only_stdlib():
         "Stage 0 is stdlib-only; any new dependency needs a pyproject + CHANGELOG "
         "entry and a deliberate update to this test."
     )
+
+
+# --- recall/sources/ project-agnosticism guard (Stage 1, Sprint 7.5) --------------
+#
+# The concrete tiers (S1 wiki, S2 git grep, S5-P1 session) live in `recall/sources/`,
+# but they must stay PROJECT-AGNOSTIC — roots + the audience resolver are injected, so
+# no module here may hardcode a callback path or audience rule. The import boundary
+# above can't catch that (the coupling would be a string literal, not an import). This
+# guard walks every string literal that is NOT a docstring (prose may reference design
+# docs freely) and rejects callback-specific path/symbol fragments. The day a tier
+# needs `"docs/wiki"` baked in, it belongs in the wiring layer, not the substrate.
+
+SOURCES_DIR = RECALL_DIR / "sources"
+
+# Path/symbol fragments that betray project coupling if they appear in tier CODE.
+_FORBIDDEN_LITERAL_FRAGMENTS = (
+    "docs/wiki",
+    "docs/dev",
+    "configs",
+    "resumes",
+    "output/",
+    "REPO_ROOT",
+    ".last_ingest_sha",
+    "SCHEMA.md",
+    "app.py",
+    "analyzer",
+)
+
+
+def _docstring_constants(tree: ast.AST) -> set[int]:
+    """`id()` of every Constant node that is a module/class/function docstring, so the
+    literal scan can exclude prose (which legitimately names design docs)."""
+    ids: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Module | ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef):
+            body = getattr(node, "body", [])
+            if (
+                body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+            ):
+                ids.add(id(body[0].value))
+    return ids
+
+
+def test_recall_sources_subpackage_present():
+    """Guard against a vacuous pass if the sources subpackage is missing/renamed."""
+    files = sorted(SOURCES_DIR.rglob("*.py"))
+    assert files, "recall/sources/ has no .py files — the agnosticism scan would be vacuous."
+    assert (SOURCES_DIR / "__init__.py") in files
+
+
+def test_recall_sources_no_hardcoded_roots():
+    """No `recall/sources/*.py` CODE literal contains a callback-specific path/symbol —
+    the tiers stay generic; project bindings live in the wiring layer."""
+    offenders: dict[str, set[str]] = {}
+    for path in sorted(SOURCES_DIR.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        doc_ids = _docstring_constants(tree)
+        hits: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in doc_ids:
+                hits |= {frag for frag in _FORBIDDEN_LITERAL_FRAGMENTS if frag in node.value}
+        if hits:
+            offenders[path.relative_to(REPO_ROOT).as_posix()] = hits
+    assert not offenders, (
+        f"recall/sources/ hardcoded a callback-specific path/symbol: {offenders}. "
+        "The tiers must stay project-agnostic — inject roots + the audience resolver "
+        "from the wiring layer (blueprints/assistant.py), don't bake them into recall/."
+    )
