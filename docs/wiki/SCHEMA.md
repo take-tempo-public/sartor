@@ -145,11 +145,23 @@ and rot; don't.
 
 ## Ops
 
-Read, query, ingest, lint, and audit are **`/wiki-*` Claude Code skills**, adapted from
-`kfchou/wiki-skills`, landing in the next branch (`feat/wiki-skills`, WS-4a step 3).
-Trigger is a **manual** skill invocation plus a lightweight commit-time freshness
-*reminder* (not auto-ingest — per-commit LLM cost); `wiki-lint` runs periodically and
-as a pre-release gate. Every run appends to [`log.md`](log.md).
+Read, query, ingest, lint, audit, and **self-update** are **`/wiki-*` Claude Code
+skills**, adapted from `kfchou/wiki-skills`, landing in the next branch
+(`feat/wiki-skills`, WS-4a step 3). Trigger is a **manual** skill invocation plus a
+lightweight commit-time freshness *reminder* (not auto-ingest — per-commit LLM cost);
+`wiki-lint` runs periodically and as a pre-release gate. Every run appends to
+[`log.md`](log.md).
+
+`wiki-self-update` is the **self-documenting loop**: a bounded, cost-aware Haiku
+diff-pass that composes the above ops — it delegates per-page synthesis to a `wiki-scribe`
+subagent and a per-page adversarial grounding audit to a separate `wiki-grounding-auditor`
+subagent (author ≠ auditor), runs `wiki-lint` as the deterministic gate, advances
+`.last_ingest_sha`, and **presents a reviewable diff — it never auto-commits**. Its trigger
+is a **bounded checkpoint** (branch close-out / pre-tag), not a scheduler, and the freshness
+reminder escalates its message past a drift threshold to point at it. The design is
+[`../dev/self-documenting-loop-design.md`](../dev/self-documenting-loop-design.md); the
+cross-document link/cite checker stays a **separate** follow-on (this loop is
+`docs/wiki/`-scoped only).
 
 ## Status
 

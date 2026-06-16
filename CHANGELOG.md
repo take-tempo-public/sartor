@@ -13,6 +13,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the self-documenting wiki loop (`feat/self-documenting-wiki`, Sprint 7.3)
+
+The `docs/wiki/` knowledge layer now refreshes itself against the code through a bounded,
+cost-aware Claude Code dev-harness loop — "the docs track the code without a human author,"
+while a human stays at the spend boundary and the commit boundary. **Dev-harness only — no
+product code/route/LLM-call/dep; `PROMPT_VERSION` unchanged at `2026-06-13.1`; no migration.**
+
+- **New [`/callback:wiki-self-update`](commands/wiki-self-update.md)** — the orchestrator
+  command: resolves the `.last_ingest_sha`→HEAD diff, **surfaces cost before spending** and
+  enforces a per-run page cap (default 8, `--cap N`), delegates per-page synthesis to the
+  `wiki-scribe` subagent and per-page grounding audit to the separate `wiki-grounding-auditor`
+  subagent (author ≠ auditor), runs [`/callback:wiki-lint`](commands/wiki-lint.md) as the
+  deterministic gate, advances the checkpoint, logs, and **presents a reviewable diff — it
+  never auto-commits.**
+- **New [`callback:wiki-scribe`](agents/wiki-scribe.md)** (Haiku, `Read`/`Grep`/`Glob`/`Edit`)
+  — minimal SCHEMA-conformant per-page synthesis from the source at HEAD + named exemplar pages.
+- **New [`callback:wiki-grounding-auditor`](agents/wiki-grounding-auditor.md)** (Haiku,
+  read-only `Read`/`Grep`/`Glob`) — adversarial quote-match of each cite/`[synthesis]` claim
+  against source at HEAD → SUPPORTED / DRIFTED / UNSUPPORTED; the read-only tool grant *is* the
+  "never silently rewrite committed history" enforcement.
+- **Freshness hook escalation** — [`wiki-freshness-reminder.sh`](.claude-plugin/hooks/wiki-freshness-reminder.sh)
+  now escalates its message to `/wiki-self-update` past a 10-file drift threshold (below it, the
+  existing `/wiki-ingest` nudge). It **stays a witness** (always exit 0, silent under the
+  sentinel and when nothing changed) — only the wording tiers.
+- **Trigger = bounded checkpoint** (branch close-out / pre-tag — a `RELEASE_CHECKLIST` line on
+  the version-bump), **no scheduler**; the loop is invoked, never self-firing. Scope is
+  `docs/wiki/`-only — the cross-document link/cite checker stays a separate tracked follow-on.
+
 ### Added — governance extraction: one canonical rules home (`feat/governance-extraction`, Sprint 7.2)
 
 Lifts callback.'s *binding* governance rules out of the six descriptive docs they were tangled

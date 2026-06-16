@@ -131,6 +131,12 @@ them over reinventing the workflow inline:
   on the wiki (periodic + pre-release gate).
 - `/callback:wiki-audit` — fact-check one wiki page against its
   cited sources.
+- `/callback:wiki-self-update` — the self-documenting wiki loop:
+  a bounded, cost-aware Haiku diff-pass that delegates per-page
+  synthesis to `callback:wiki-scribe` + per-page grounding audit
+  to `callback:wiki-grounding-auditor`, runs `/callback:wiki-lint`,
+  advances the checkpoint, and presents a reviewable diff (never
+  commits). Bounded-checkpoint trigger (close-out / pre-tag).
 
 See [`commands/`](commands/) for
 each command's full definition.
@@ -156,6 +162,16 @@ Delegate to them rather than doing the work inline:
   project's branch/commit conventions.
 - `callback:ux-onboarding-designer` — audit user-facing docs
   from a first-time-user lens → sequenced rewrite ladder.
+- `callback:wiki-scribe` (Haiku) — synthesize one changed source
+  into its affected `docs/wiki/` page(s): minimal SCHEMA-conformant
+  edit, `Read`/`Grep`/`Glob`/`Edit` only. The `/callback:wiki-self-update`
+  per-page synthesis worker (does NOT grade itself, advance the
+  checkpoint, or commit).
+- `callback:wiki-grounding-auditor` (Haiku) — read-only
+  (`Read`/`Grep`/`Glob`) adversarial grounding audit of one wiki
+  page the scribe wrote: quote-match cites/`[synthesis]` claims
+  against source at HEAD → SUPPORTED / DRIFTED / UNSUPPORTED.
+  Author ≠ auditor; never edits.
 
 See [`agents/`](agents/) for each
 subagent's full definition.
