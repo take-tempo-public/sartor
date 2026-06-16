@@ -678,11 +678,21 @@ RELEASE_CHECKLIST risk register.
   arc** (the "Hard constraints (all phases)" + the "Do not edit without sign-off"
   gate). Each rule is stated **once** in Governance; the others **reference** it.
   Mixed docs keep their descriptive content + a pointer.
-- **Open implementation sub-decisions (resolved in the WS-4 design session at the top
-  of v1.0.7):** (i) Governance home name/location — `raw/` vs `docs/governance/` vs
-  root `GOVERNANCE.md` (lean: `docs/governance/`); (ii) per-doc extraction
-  boundaries (exact spans); (iii) `AGENTS.md` = critical-rules-inline-with-pointer
-  vs pure-shell-import.
+- **Implementation sub-decisions — RESOLVED 2026-06-15** on `design/governance-extraction`
+  (the design half of 7.2); full design in
+  [`governance-extraction-design.md`](governance-extraction-design.md): (i) Governance home =
+  **`docs/governance/`** (a directory: `charter.md` + `enforcement.md` + `metrics.md`);
+  (ii) per-doc extraction boundaries fixed by the constitution's `[src: …]` citation map
+  (six source docs lose their canonical rule, keep descriptive prose + a pointer); (iii)
+  `AGENTS.md` = **critical-rules-inline-with-pointer** (a pure import shell would strip
+  guardrails from non-Claude agents that read it raw — F-gov-05). Graduation scope = **all
+  four** draft files (the three above + `extraction-playbook.md` → `docs/dev/EXTRACTION.md`).
+  The drift-reconcile (≈8 of the draft's "owed corrections" already landed in v1.0.6 →
+  cite-don't-refix) + the four PX foldings (PX-23/24/27/28) are specified there. **Enforcement
+  portability (owner agenda item) — DECIDED: split** — fix PX-24/PX-28 hooks in place on
+  `feat/`; migrate the portable rules to a tool-agnostic shared core (git-hooks + Claude
+  wrappers + CI backstop) on a follow-on branch clustered with the v1.0.8 gate epic when the
+  remote/CI activates (Sprint 8.7).
 - **Payoff:** vision-alignment auditing reads ONE canonical constitution; the
   pre-release `wiki-lint` gate can guard it directly; "consistency tracks
   enforcement" (the Q2 finding) extends to the vision itself.
