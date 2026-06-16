@@ -78,7 +78,7 @@ callback = "app:main"
 py-modules = ["app", "analyzer", "hardening", "generator", "parser", "scraper"]
 
 [tool.setuptools.packages.find]
-include = ["dashboard*", "db*", "onboarding*"]
+include = ["dashboard*", "db*", "onboarding*", "recall*"]
 
 [tool.ruff]
 line-length = 100

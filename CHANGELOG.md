@@ -13,6 +13,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the Memory substrate skeleton (`feat/recall-skeleton`, Sprint 7.4)
+
+The first piece of callback's **Memory** function as a first-class subsystem: a new
+deterministic `recall/` Python package — the **Stage 0 skeleton** of the reusable
+retrieval/assembly substrate the doc-grounded avatar (7.5) and the self-documenting wiki
+loop build on. It defines the *seams* only — the public types + the two cross-cutting
+planes + a working `assemble()` orchestration — and ships **no real source tier and no
+LLM** (the S1 wiki + S2 `git grep` tiers are 7.5; the S3 vector tier is 7.6). **No route,
+no LLM call, no new dependency (stdlib-only), no migration; `PROMPT_VERSION` unchanged at
+`2026-06-13.1`; no user-facing behavior change** (nothing is wired into the pipeline yet).
+
+- **New `recall/` package** ([`recall/README.md`](recall/README.md) is the contract):
+  `Unit` / `Tier` / `Audience` / `Scope` / `Context` value types ([`recall/models.py`](recall/models.py)),
+  the `Source` protocol ([`recall/source.py`](recall/source.py)), the access/disclosure
+  plane ([`recall/planes.py`](recall/planes.py)), and `assemble(query, scope, sources)
+  -> Context` — search → RRF fusion → access-filter → token-budget pack
+  ([`recall/assemble.py`](recall/assemble.py)). The whole public API is those four types +
+  one entry point.
+- **Two cross-cutting planes.** *Provenance/grounding* — every `Unit` carries its stamp
+  (`tier · source_id · citation · audience · sha`), enforced at construction; `assemble()`
+  only filters/reorders/truncates, never rewrites text, so the stamp survives into the feed.
+  *Access/disclosure* — `Scope` resolves the user/dev toggle into an allowed-audience set and
+  drops units that exceed it. Design: [`docs/dev/memory-architecture.md`](docs/dev/memory-architecture.md).
+- **Shipped reference `Source`** ([`recall/memory_source.py`](recall/memory_source.py)):
+  `InMemorySource`, a minimal deterministic source — the worked example a 7.5 tier author
+  copies, and the shape the future S5-P1 session buffer takes.
+- **The refactor-immune boundary, enforced by test.** `recall/` must never import `app.py`,
+  `analyzer.py`, the DB models, Flask, or an LLM client — the rule that makes the v1.0.8
+  blueprint split a *move*, not a rewrite. [`tests/test_recall_boundary.py`](tests/test_recall_boundary.py)
+  is the AST boundary-lint (mirrors the PX-08 egress gate); no new hook
+  (enforcement-portability is the Sprint 8.7 work).
+
 ### Added — the compliance-agent pilot (`feat/compliance-agent-pilot`, Sprint 7.7)
 
 Governance gains a witness for the Regulation function — a read-only periodic read of
