@@ -1,14 +1,15 @@
 # Governance extraction (the mixed-doc crux)
 
 > **Audience:** `dev`
-> **Concept:** the planned extraction of a single canonical **Governance** home — the
+> **Concept:** the extraction of a single canonical **Governance** home — the
 > design that resolves the "mixed-doc" problem (prescriptive rules tangled into
-> descriptive docs). Design is settled; the build is a separate, later, gated branch.
-> **Sources:** [`excellence-walk.md`](../../dev/excellence-walk/excellence-walk.md)
-> "mixed-doc crux RESOLVED" + the `raw/` constitutional sections ·
-> [`../../dev/RELEASE_ARC.md`](../../dev/RELEASE_ARC.md) §Phase 4.5 (Governance extraction
-> + the ⚠ HARD CONSTRAINT) · [`../SCHEMA.md`](../SCHEMA.md) ("The `raw/` constitutional
-> layer").
+> descriptive docs). Design is settled; the build LANDED in Sprint 7.2 (v1.0.7) at
+> `docs/governance/`. **Sources:** [`excellence-walk.md`](../../dev/excellence-walk/excellence-walk.md)
+> "mixed-doc crux RESOLVED" · [`../../dev/RELEASE_ARC.md`](../../dev/RELEASE_ARC.md) §Phase 4.7
+> (Governance extraction + the ⚠ HARD CONSTRAINT) · the three files now canonical:
+> [`../../governance/charter.md`](../../governance/charter.md),
+> [`../../governance/enforcement.md`](../../governance/enforcement.md),
+> [`../../governance/metrics.md`](../../governance/metrics.md) · [`../SCHEMA.md`](../SCHEMA.md) (page structure).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md). This page describes the *design* and
 > **references** the rule-bearing docs ([`AGENTS.md`](../../../AGENTS.md),
 > [`vision.md`](../../../vision.md), …); per fork D5 it does **not** restate the rules
@@ -66,18 +67,29 @@ not lose the rules. This is the load-bearing safety condition on the whole extra
 - **"Consistency tracks enforcement"** ([[consistency-tracks-enforcement]]) then extends
   to the vision itself `[synthesis]`.
 
-## Status + open sub-decisions
+## Status + resolved sub-decisions
 
-**Design complete; build deferred** to its own carefully-gated branch *after the wiki
-proves out* — explicitly **not this ingest branch**, which only introduces the synthesis
-layer, not `raw/` or the Governance home. Three implementation sub-decisions remain open
-(per RELEASE_ARC §Phase 4.5):
+**Design complete; build LANDED in Sprint 7.2 (v1.0.7).** The three implementation sub-decisions
+were resolved on 2026-06-15 (per RELEASE_ARC §Phase 4.7 governance extraction section):
 
-1. **Governance home name / location** — `raw/` vs a self-describing `docs/governance/`
-   vs a root `GOVERNANCE.md`. *Lean: name it for its function (`docs/governance/`).*
-2. **Per-doc extraction boundaries** — the exact spans to lift from each mixed doc.
-3. **`AGENTS.md` shape** — critical-rules-inline-with-pointer vs a pure shell that
-   imports.
+1. **Governance home name / location — RESOLVED → `docs/governance/`** 
+   A directory (not `raw/`, not root `GOVERNANCE.md`) containing three files:
+   [`charter.md`](../../governance/charter.md) (the binding rules),
+   [`enforcement.md`](../../governance/enforcement.md) (gate vs witness), and
+   [`metrics.md`](../../governance/metrics.md) (success criteria + review rubric).
+   See RELEASE_ARC §Phase 4.7 (the governance-home-location sub-decision) `[synthesis]`.
+
+2. **Per-doc extraction boundaries — RESOLVED**
+   Each source doc retains descriptive content + adds a pointer to the canonical rule home.
+   The extraction boundaries are codified in `charter.md`'s citation map (table at the end) —
+   six source docs (vision.md, AGENTS.md, SECURITY.md, CONTRIBUTING.md, PRODUCT_SHAPE.md, RELEASE_ARC.md)
+   now reference rather than restate the rules `[synthesis]`.
+
+3. **`AGENTS.md` shape — RESOLVED → critical-rules-inline-with-pointer**
+   NOT a pure shell that imports (which would break non-Claude agents reading it raw).
+   Confirmed in AGENTS.md's "Canonical governance" note: it keeps the rules inline + adds
+   an explicit canonical pointer to `docs/governance/charter.md` (**F-gov-05**; RELEASE_ARC
+   §Phase 4.7, the AGENTS.md-shape sub-decision) `[synthesis]`.
 
 ## Related
 

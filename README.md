@@ -156,6 +156,7 @@ The project ships a Claude Code plugin (`callback`) — slash commands ([command
 | [`/callback:wiki-query`](commands/wiki-query.md) | Answer a question from the wiki with `[[citations]]`; offer to file the answer back |
 | [`/callback:wiki-lint`](commands/wiki-lint.md) | Severity-tiered drift/coverage report on the wiki (periodic + pre-release gate) |
 | [`/callback:wiki-audit`](commands/wiki-audit.md) | Fact-check one wiki page against its cited sources |
+| [`/callback:wiki-self-update`](commands/wiki-self-update.md) | The self-documenting wiki loop — bounded Haiku diff-pass that delegates synthesis to `wiki-scribe` + audit to `wiki-grounding-auditor`, runs `wiki-lint`, advances the checkpoint, presents a reviewable diff (never commits) |
 
 ### Subagents
 
@@ -167,6 +168,8 @@ The project ships a Claude Code plugin (`callback`) — slash commands ([command
 | [`callback:headhunter`](agents/headhunter.md) | Recruiter-domain check when a clarify question / suggestion / rubric outcome reads "technically correct but unlikely to generate a callback" |
 | [`callback:git-flow`](agents/git-flow.md) | Execute git workflow under the project's conventions |
 | [`callback:ux-onboarding-designer`](agents/ux-onboarding-designer.md) | Audit user-facing docs from a first-time-user lens → structured rewrite ladder |
+| [`callback:wiki-scribe`](agents/wiki-scribe.md) | Haiku: synthesize one changed source into its affected `docs/wiki/` page(s) — minimal SCHEMA-conformant edit (the `/callback:wiki-self-update` synthesis worker) |
+| [`callback:wiki-grounding-auditor`](agents/wiki-grounding-auditor.md) | Haiku, read-only: adversarially grounding-audit one wiki page the scribe wrote → SUPPORTED / DRIFTED / UNSUPPORTED (author ≠ auditor; never edits) |
 
 ### Hooks
 

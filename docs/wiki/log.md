@@ -306,3 +306,62 @@ page carries a per-page source-SHA marker (`SCHEMA.md` stamps only the audience 
 `dashboard/templates/dashboard.html`; `#helpModal`:872 in `templates/index.html`;
 `.help-info`:891 / `.has-help-icon`:884 in `static/style.css`). Gate: `ruff` ✓ · `mypy` ✓ ·
 `pytest` **1212/1212** (docs-only — no `.py` touched).
+
+## 2026-06-16 — first self-documenting loop run: v1.0.7 band (`feat/self-documenting-wiki`)
+
+**Mode: diff** (`7d8f427` → `a008f86`) — **the inaugural `/wiki-self-update` run.** This is
+the loop ([`../dev/self-documenting-loop-design.md`](../dev/self-documenting-loop-design.md))
+executed end-to-end for the first time: orchestrator surfaces cost → Haiku `wiki-scribe`
+synthesis → separate Haiku `wiki-grounding-auditor` (author≠auditor) → deterministic
+`wiki-lint` → checkpoint advance → this log. (The two model-pinned subagents are not yet
+registered in-session — they load on a Claude Code reload — so this run reproduced them as
+Haiku-pinned agent invocations against the committed `agents/wiki-scribe.md` /
+`agents/wiki-grounding-auditor.md` definitions; the registered path is byte-identical and
+verifies on reload.)
+
+**Scope (cost surfaced before spend).** 47 changed sources in window (excl. `docs/wiki/` +
+`docs/dev/reviews/`) — the v1.0.7-to-date band: Sprint 7.1 plugin activation, 7.2 governance
+extraction, 7.3 design + this branch's loop infra. **Per D5 the wiki references-not-duplicates
+the canonical/contract docs** (`AGENTS.md`, `CLAUDE.md`, `vision.md`, `docs/governance/`,
+`CONTRIBUTING.md`, `SECURITY.md`, `docs/system-model.md`, …) → almost none map to a page. The
+discipline holding is the headline result: **47 changed sources → 1 affected page.** Notably,
+the 7.1 commands/agents move (`.claude-plugin/commands/` → `commands/`) drifted only
+`docs/system-model.md` (fixed on 7.1) — **no wiki page restated the old location** (the lone
+`.claude-plugin` cite, in [`pages/route-surface.md`](pages/route-surface.md), is the unchanged
+`route-security-lint.sh` hook).
+
+**Page changed (1).** [`pages/governance-extraction.md`](pages/governance-extraction.md) — it
+described the extraction as *"planned… build a separate, later, gated branch"* with **three
+open sub-decisions**, but Sprint 7.2 LANDED it. Updated: status → **design settled + build
+LANDED at `docs/governance/` (7.2)**; the three sub-decisions → **resolved** (home =
+`docs/governance/`; per-doc boundaries codified in `charter.md`'s citation map; `AGENTS.md`
+shape = critical-rules-inline-with-pointer, F-gov-05); the governance `RELEASE_ARC §Phase 4.5`
+cites **re-anchored → §Phase 4.7** (governance moved there 2026-06-12); added
+`charter.md`/`enforcement.md`/`metrics.md` as cited sources. The crux description is preserved.
+[`index.md`](index.md) one-liner reconciled ("the planned…" → "LANDED Sprint 7.2"). No
+`[[backlink]]` topology change.
+
+**Auditor catch-rate (tuning signal, not a gate).** The independent auditor pass returned
+**SUPPORTED 14 / DRIFTED 3 / UNSUPPORTED 0** — it caught **3 fragile bare-line-number cites**
+the scribe introduced (`RELEASE_ARC … line 689-690`, `AGENTS.md lines 19-28`, `RELEASE_ARC …
+lines 693-694`) and suggested stable section/decision anchors; the orchestrator applied all
+three re-anchors (SCHEMA prefers a symbol/anchor over a bare line number). Catch-rate this run
+= 3 drift items caught on the 1 audited page; author≠auditor earned its keep on run #1.
+
+**WATCH (surfaced, not auto-edited — human decision).** Two phrasings reference `raw/` as
+"introduced by [the] governance-extraction [branch]" ([`pages/llm-wiki-design.md`](pages/llm-wiki-design.md)
+line 68 + the `governance-extraction` Related gloss), but 7.2 landed `docs/governance/`
+**without** introducing `raw/` (`docs/wiki/raw/` still does not exist; raw/ remains future).
+The auditor read these as forward-looking-and-still-true; left as-is for a human call rather
+than silently rewritten. Also noted: [`pages/engineering-workstreams.md`](pages/engineering-workstreams.md)
+"active — landing across v1.0.6" for WS-4 is now nearly "landed" (minor, pre-existing, §4.5 is
+WS-4's correct home). Neither is a release blocker.
+
+**`.last_ingest_sha` advanced `7d8f427` → `a008f86d03e67570272641864378ff846ed6cf46`**
+(= HEAD at the loop run; the subsequent wiki-refresh commit touches only `docs/wiki/`, which
+the loop excludes, so no drift is introduced).
+
+**Loop invariant held: this run produced a reviewable diff — it did NOT auto-commit.** The
+human reviewed the diff and committed it. Lint: PASS (no ERROR) — the changed page's 12
+relative links + 5 `[[backlinks]]` all resolve; `index.md` ↔ `pages/` agree; no bare-line
+cites remain. Gate: `ruff` ✓ · `mypy` ✓ (162 files) · `pytest` (docs-only — no `.py` touched).

@@ -27,8 +27,9 @@
   backlog (blueprints · strict typing · test-suite pass · the wiki) + phase mapping.
 - [`pages/llm-wiki-design.md`](pages/llm-wiki-design.md) — why this wiki is shaped as it
   is (the WS-4 design rationale; defers to [`SCHEMA.md`](SCHEMA.md) for the conventions).
-- [`pages/governance-extraction.md`](pages/governance-extraction.md) — the planned
-  canonical-Governance extraction that resolves the mixed-doc crux (design only).
+- [`pages/governance-extraction.md`](pages/governance-extraction.md) — the
+  canonical-Governance extraction that resolves the mixed-doc crux (LANDED Sprint 7.2 at
+  `docs/governance/`).
 
 ### From the code cold-ingest (`wiki/cold-ingest-code`, WS-4b)
 
