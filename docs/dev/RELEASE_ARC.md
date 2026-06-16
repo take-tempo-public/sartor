@@ -722,6 +722,13 @@ RELEASE_CHECKLIST risk register.
 > contract** live in [`memory-architecture.md`](memory-architecture.md) — read it
 > before designing either branch.
 >
+> **Stage 0 DONE 2026-06-16** (`feat/recall-skeleton`, 7.4): the substrate *skeleton* —
+> the `recall/` package's public types (`Unit`/`Source`/`Scope`/`Context`), the two
+> cross-cutting planes, and a working deterministic `assemble()` (RRF fusion + token-budget
+> pack) over a shipped `InMemorySource` reference — landed stdlib-only and refactor-immune
+> (AST boundary test, no hook). No real source tier yet (S1 wiki/S2 git → 7.5; S3 vector →
+> 7.6); no LLM, no route, no dep. The seams the next two rows build on now exist.
+>
 > **Scope (2026-06-09 re-cut):** the previously post-v1.1.0 **vector tier (Stage 2)** and
 > **S4 structure index** are pulled into v1.0.7 as **eval-gated in-epic** steps — build the
 > Stage-1 assistant, measure on real questions, add them *only if* the misses justify it,
