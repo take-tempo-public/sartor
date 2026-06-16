@@ -129,12 +129,21 @@ def test_context_resets_even_on_exception():
 
 def test_registry_covers_every_named_system_prompt_constant():
     # Drift guard: if someone adds a new *_SYSTEM_PROMPT persona constant but
-    # forgets to register it, it silently becomes non-overridable. Catch that.
+    # forgets to register it, it silently becomes non-overridable. Catch that —
+    # EXCEPT the doc-grounded avatar persona, which is DELIBERATELY excluded: the
+    # prompt-override / eval machinery is résumé-scoped, and the avatar carries its
+    # own AVATAR_PROMPT_VERSION (Sprint 7.5, owner decision D1=A). The exclusion is
+    # the intent, so assert it explicitly rather than loosening the guard.
+    deliberately_unregistered = {"AVATAR_SYSTEM_PROMPT"}
     module_prompts = {
         n for n in dir(analyzer)
         if n.endswith("SYSTEM_PROMPT") and isinstance(getattr(analyzer, n), str)
     }
-    assert module_prompts == set(_BASE_SYSTEM_PROMPTS)
+    # The avatar persona exists, but is intentionally kept out of the registry.
+    assert deliberately_unregistered <= module_prompts
+    assert deliberately_unregistered.isdisjoint(_BASE_SYSTEM_PROMPTS)
+    # Every OTHER persona constant must still be registered (the real drift guard).
+    assert module_prompts - deliberately_unregistered == set(_BASE_SYSTEM_PROMPTS)
 
 
 # --------------------------------------------------------------------------- #

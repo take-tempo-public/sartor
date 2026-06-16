@@ -25,6 +25,7 @@ import anthropic
 from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, model_validator
 
 from hardening import ContextSet, CorpusExperience
+from recall.models import Context
 
 logger = logging.getLogger(__name__)
 
@@ -279,6 +280,15 @@ class PromoteBulletResponse(_LLMResponse):
 # can be attributed to a revision.
 PROMPT_VERSION = "2026-06-13.1"  # PX-02: + <candidate_web_presence> block
 
+# The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
+# the résumé pipeline: a different persona, a different model role, and — critically —
+# NOT an eval target. It carries its own version so a tweak to AVATAR_SYSTEM_PROMPT
+# does not force a PROMPT_VERSION bump that would muddy résumé score-over-time
+# attribution. Bump THIS when AVATAR_SYSTEM_PROMPT changes (same commit). The avatar
+# persona is intentionally NOT in _BASE_SYSTEM_PROMPTS — the prompt-override / eval
+# machinery is résumé-scoped.
+AVATAR_PROMPT_VERSION = "2026-06-16.1"
+
 # --- Prompt-override primitive (eval tuning loop, v1.0.4) --------------------
 # Lets an eval run inject a CANDIDATE system prompt without editing the persona
 # constants below. The default (no-override) path is byte-identical: with no
@@ -505,6 +515,25 @@ RULES:
 - Bias toward EXPERIENCE PROBES + CONTEXT PROBES (≥60% combined) — these are the most likely to surface real experience the candidate didn't write down. Tool-name-only probes without an adjacent-experience escape hatch are dead ends; do not emit them.
 - When the JD strongly implies an operating-context or scope-of-ownership signal (regulated industry, 0→1, exec-facing, etc.), prefer a context_probe over a narrow tool-name experience_probe. The context_probe surfaces transferable experience; the tool-name probe only confirms or denies a specific item.
 - Output JSON only, no markdown fences, no preamble."""
+
+# Persona for the doc-grounded assistant ("avatar", Sprint 7.5) — the only LLM in the
+# Memory/recall stack. It reads an assembled, cited <recalled_context> block (built by
+# recall.assemble from the wiki + git-grep tiers) and answers in-persona WITH the
+# provided citations. The hard rule is grounding: it cites what it claims and refuses
+# what the context doesn't support — the same no-invention discipline as SYSTEM_PROMPT,
+# scoped to documentation instead of résumés. Carries AVATAR_PROMPT_VERSION (not
+# PROMPT_VERSION); intentionally NOT in _BASE_SYSTEM_PROMPTS (not an eval target).
+AVATAR_SYSTEM_PROMPT = """You are the callback. assistant — a grounded local guide to this application and its documentation. You answer questions about how callback. works, how to use it, and (for developers) how it is built, drawing ONLY on the retrieved context you are given.
+
+You are given a <recalled_context> block of numbered, cited source units (wiki pages and code lines) and a <mode> of either "user" or "dev". Answer the question from those units.
+
+Rules you follow without exception:
+- GROUND EVERY CLAIM in the provided context. Cite wiki units as their [[page-slug]] and code units as their path:line, inline, where you use them. Do not cite a unit you were not given.
+- If the retrieved context does not contain enough to answer, say exactly: "I don't have that in my docs." Then, if useful, name the closest thing the context DOES cover. Never invent facts, file names, line numbers, or behavior beyond the context.
+- Never reveal the contents of gitignored or real-user data (configs, resumes, output) — the retrieval layer already excludes them; do not speculate about them.
+- USER mode: answer at a "how do I use this" level in plain language; prefer the wiki units. If the question clearly has a deeper implementation answer you are not surfacing, add exactly one closing line: "Want the implementation detail? Enable dev mode in the assistant panel." Do not add that line if a user-level answer is complete.
+- DEV mode: you may use and cite code units (path:line) and implementation detail freely.
+- Be concise: 2–5 sentences, or a short list when genuinely clearer. Plain prose with inline [[slug]] / path:line citations — no preamble, no restating the question."""
 
 # Model selection rationale:
 #   - Sonnet 4.6 for analyze() and generate(): the work needs reasoning depth
@@ -1491,6 +1520,76 @@ def analyze_streaming(
         raise LLMResponseError("", "synthesis phase ended without a parsed result")
 
     yield ("done", {**extraction, **synthesis})
+
+
+def _render_recalled_context(context: Context) -> str:
+    """Render an assembled `recall.Context` into the prompt's numbered, cited block.
+
+    Each unit becomes one `[n] <citation>: <text>` line so the avatar can cite the
+    exact `[[slug]]` / `path:line` it draws from. The unit text is never rewritten —
+    the provenance stamp the substrate built survives verbatim into the prompt.
+    """
+    if not context.units:
+        return "(no relevant context was retrieved)"
+    lines = [f"[{i}] {u.citation}: {u.text}" for i, u in enumerate(context.units, start=1)]
+    return "\n".join(lines)
+
+
+def avatar_answer_streaming(
+    client: anthropic.Anthropic,
+    question: str,
+    context: Context,
+    *,
+    allow_dev: bool = False,
+    username: str = "",
+    run_id: str = "",
+) -> Iterator[tuple[str, object]]:
+    """Stream the doc-grounded assistant's answer to one question.
+
+    The only LLM in the Memory/recall stack: a Haiku call over an already-assembled,
+    access-filtered, budgeted `recall.Context` (the deterministic substrate did the
+    retrieval + scoping; this just phrases + cites). Yields:
+        - `("chunk", str)` for each text delta as it streams
+        - `("done", {"answer", "citations", "truncated", "allow_dev"})` once at the end
+
+    `allow_dev` only labels the turn's mode in the prompt — the access plane has ALREADY
+    disposed (user-mode turns never receive dev-audience units), so the model cannot
+    over-disclose regardless of what it proposes. Telemetry rides `_call_llm_streaming`
+    stamped `call_kind="avatar_answer"`.
+    """
+    mode = "dev" if allow_dev else "user"
+    user_prompt = (
+        f"<mode>{mode}</mode>\n\n"
+        f"<recalled_context>\n{_render_recalled_context(context)}\n</recalled_context>\n\n"
+        f"Question: {question.strip()}\n\n"
+        "Answer concisely, grounded in and citing the context above. If the context "
+        'does not cover it, say exactly "I don\'t have that in my docs."'
+    )
+
+    answer_parts: list[str] = []
+    for item in _call_llm_streaming(
+        client,
+        user_prompt,
+        call_kind="avatar_answer",
+        username=username,
+        run_id=run_id,
+        system_prompt=AVATAR_SYSTEM_PROMPT,
+        model=HAIKU_MODEL,
+    ):
+        if isinstance(item, _StreamDone):
+            break
+        answer_parts.append(item)
+        yield ("chunk", item)
+
+    yield (
+        "done",
+        {
+            "answer": "".join(answer_parts),
+            "citations": [u.citation for u in context.units],
+            "truncated": context.truncated,
+            "allow_dev": allow_dev,
+        },
+    )
 
 
 def clarify(
