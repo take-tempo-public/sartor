@@ -62,7 +62,7 @@ post-feature test window is a **formal gate** (E2E walkthrough + first real-data
 
 - [x] **7.1** `chore/plugin-activation` — make `.claude-plugin/` commands + agents load (not just hooks); fix `CLAUDE.md` "Skill catalog". Unblocks `/wiki-*` + compliance pilot. **Landed 2026-06-15:** local `callback-tools` marketplace + `enabledPlugins` committed in `.claude/settings.json`; `plugin.json` name→`callback` / version→`1.0.6`; the 10 command + 6 agent `.md` files moved out of the reserved `.claude-plugin/` to the plugin root (`commands/`, `agents/` — Claude Code skips components nested in `.claude-plugin/`), default root scan (no path-overrides); commands namespace as `/callback:…`, subagents `callback:…`. **Hooks deliberately left in `settings.json`** (enforcement-portability deferred to 7.2 — see tracked-deferred below). `CLAUDE.md` Skill+Subagent catalog and `README.md` plugin section corrected.
 - [ ] **7.2** `design/governance-extraction` → `feat/governance-extraction` — one canonical rules home; **preserve `@import`/pointer rule-access** (hard constraint). PX-23/24/27/28 ride here. **Design half DONE 2026-06-15** (`design/governance-extraction`): sub-decisions resolved (home=`docs/governance/`, AGENTS=inline-with-pointer, graduate all 4 draft files), drift-reconciled (cite-don't-refix), portability decided (split) — full spec in [`governance-extraction-design.md`](governance-extraction-design.md). `feat/` half pending.
-- [ ] **7.3** `design/self-documenting-loop` → `feat/self-documenting-wiki` — bounded, cost-aware Haiku diff-pass ingest + `/wiki-lint`/`/wiki-audit` backstop (PX-33).
+- [ ] **7.3** `design/self-documenting-loop` → `feat/self-documenting-wiki` — bounded, cost-aware Haiku diff-pass ingest + `/wiki-lint`/`/wiki-audit` backstop (PX-33). **Design half DONE 2026-06-16** (`design/self-documenting-loop`): trigger / cost / scope settled (bounded checkpoint + freshness-witness-hook escalation, no scheduler; Haiku diff-pass with warm-start exemplars by-reference + per-run page cap; `docs/wiki/`-only — the cross-document link/cite checker stays the separate follow-on, not absorbed), orchestration = new `/wiki-self-update` command + Haiku `wiki-scribe` subagent + separate read-only Haiku `wiki-grounding-auditor` subagent (author≠auditor) + `/wiki-lint` as the deterministic gate; **the loop never auto-commits** (always a reviewable diff). Full spec in [`self-documenting-loop-design.md`](self-documenting-loop-design.md). `feat/` half pending.
 - [ ] **7.4** `feat/recall-skeleton` — Stage 0 `recall/` package (no LLM; never imports `app.py` → refactor-immune).
 - [ ] **7.5** `feat/doc-assistant` — **the AI assistant** (Stage 1): wiki + `git grep` retrieval + Haiku avatar (user's key) + user/dev toggle; authored as its own `blueprints/assistant.py` module (blueprint-aware so the v1.0.8 split is a move, not a rewrite).
 - [ ] **7.6** `feat/doc-assistant-vector` — Stage 2 vector tier, **eval-gated/conditional** (decided in the v1.0.8 test window; may slip).
@@ -484,6 +484,14 @@ _Open count: 7 — approaching the ~8–10 reduction-sprint threshold; the next 
       **Update (2026-06-15):** did not recur across the v1.0.6 gate runs (1197/1197,
       1204/1204, 1212/1212) or the v1.0.7 governance-extraction gate; still deferred for a
       dedicated UX-tier stabilization pass.
+      **Update (2026-06-16, `design/self-documenting-loop` gate):** a **second** UX-tier test of
+      the **same intermittent-race class** surfaced —
+      [`tests/ux/regression/test_20260613_skill_corpus_item.py`](../../tests/ux/regression/test_20260613_skill_corpus_item.py)`::test_compose_skills_card_drop_persists`
+      failed **once** in the full suite (Playwright `wait_for_selector` timeout on
+      `.compose-row.recommended`), then **passed on isolated re-run** (9.37s). The branch was
+      **docs-only** (no `.py`/frontend touched — `git status` confirmed), so it is **not
+      code-caused**. The deferred UX-tier stabilization pass now covers **≥2** flaky tests of this
+      class (still one ledger item; not a release blocker).
 
 - [ ] **Grounding / hallucination metric — calibrated layers (B)** — the deterministic
       label-free **L0** slice shipped (`eval/grounding-metric-l0`:
@@ -511,6 +519,10 @@ _Open count: 7 — approaching the ~8–10 reduction-sprint threshold; the next 
       pointer-rot risk with no gate. Build a periodic link/cite gate (a CI step, or extend
       `wiki-lint` over `docs/governance/` + the contract docs); makes the §4.7 wiki-lint payoff
       actually true. Candidate reduction-sprint seed. _(surfaced 2026-06-15, `feat/governance-extraction`.)_
+      **Confirmed out of scope for 7.3 (2026-06-16):** the `design/self-documenting-loop` design keeps the
+      self-documenting loop **`docs/wiki/`-scoped** and explicitly does **not** absorb this cross-document
+      link/cite checker — it stays this named separate follow-on (no new open item created;
+      [`self-documenting-loop-design.md`](self-documenting-loop-design.md) §3 scope table).
 
 - [ ] **`CONTRIBUTING.md` plugin-section drift** — "Working with the Claude Code plugin" still
       says "the `.claude-plugin/` directory holds the project's commands, agents, and hook
