@@ -13,6 +13,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — governance extraction: one canonical rules home (`feat/governance-extraction`, Sprint 7.2)
+
+Lifts callback.'s *binding* governance rules out of the six descriptive docs they were tangled
+into and into **one canonical home**, `docs/governance/` — the "extract, don't register-in-place"
+decision of record (F-gov-05). Each rule is now stated **once**; each source doc keeps its prose
+and gains a pointer back. Docs + hook-script only: **no product code, route, or LLM call;
+`PROMPT_VERSION` unchanged at `2026-06-13.1`; no dependency; no migration.**
+
+- **New [`docs/governance/`](docs/governance/)** — `charter.md` (the constitution: C-0…C-6,
+  D-1…D-6, the W-1/W-2 working model, the amendment ceremony, the frozen 10-Principles backbone),
+  `enforcement.md` (gate vs witness vs tribal, with each item's ship state), `metrics.md` (the
+  v1.1.0 tag checklist SC-1..SC-5, the eval ride-along contract, the reusable review rubric).
+  Graduated from the 2026-06 product-excellence review's four-file governance-draft;
+  **drift-reconciled to HEAD** — the ~8 corrections that already landed in v1.0.6 (PX-01/02/03/05/
+  07/08/09/13/14) are cited as corrected, not re-fixed; only the C-1 bind and C-6 boundary gates
+  stay forward-sequenced to v1.0.8.
+- **New [`docs/dev/EXTRACTION.md`](docs/dev/EXTRACTION.md)** — the incubant-maturity extraction
+  playbook (when an in-repo system graduates to a product).
+- **Source-doc pointers** — `vision.md`, `AGENTS.md`, `CONTRIBUTING.md`, `SECURITY.md`,
+  `docs/PRODUCT_SHAPE.md`, `docs/dev/RELEASE_ARC.md` each gain a canonical-governance pointer and
+  keep their descriptive content. **`AGENTS.md` stays inline-with-pointer** (non-Claude agents read
+  it raw — a pure `@import` shell would strip their guardrails); `CLAUDE.md` carries the home
+  transitively via `@AGENTS.md`.
+- **PX-23** — the stale serial-session framing in `RELEASE_ARC.md` is reframed to the charter W-1
+  worktree-per-session parallelism model.
+- **PX-27** — `vision.md` gains the ATS escape hatch (goal 2), names the admitted audiences
+  (A-2/A-3/A-5), and demotes "single-tenant **by design**" to a threat-model statement.
+- **PX-24** — `block-merge-to-main.sh` now also blocks the dominant `git merge feature --no-ff`
+  path issued while `HEAD` is `main`/`master` (via worktree-local `git rev-parse --abbrev-ref HEAD`).
+- **PX-28** — `check-plan-approved.sh` no longer prints the `New-Item … .approved` hand-create hint
+  (it contradicted the never-hand-create rule); the no-marker message is now just "Write a plan and
+  call ExitPlanMode."
+- **Carry-forward ledger** — the three scattered per-stream "Discovered…(tracked, deferred)"
+  sections in `RELEASE_CHECKLIST.md` are consolidated into ONE physical authoritative ledger
+  (Open / Resolved); `AGENTS.md` close-out step 0 + `AGENT_HANDOFF_TEMPLATE.md` + charter W-1 now
+  require every handoff to render the full *cumulative* still-open subset, with a ~8–10 reduction-
+  sprint threshold.
+- **Drift fixes folded in:** `AGENTS.md` "Frontend config persistence" (dropped the absent
+  `_savePrimaryResume`/`_saveIncludedResumes` names → cite the live `saveConfig()` path);
+  `RELEASE_ARC.md` version map ("B.5 SkillGroupItem" → "Skill-as-Corpus-Item") + the §4.7 wiki-lint
+  overclaim softened (wiki-lint is `docs/wiki/`-scoped today); `CONTRIBUTING.md` stale OSS-migration
+  step reference; `CLAUDE.md` stale `.claude/hooks/` path → `.claude-plugin/hooks/`.
+
 ### Changed — plugin activation: `.claude-plugin/` commands + subagents now load (`chore/plugin-activation`, Sprint 7.1)
 
 Makes the dormant Claude Code plugin's **10 commands + 6 subagents** invocable — previously

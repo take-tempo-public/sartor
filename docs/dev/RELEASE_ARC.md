@@ -4,6 +4,8 @@
 > **Status:** approved — executing phase by phase
 > **Authoritative for:** branch sequence, architectural decisions, acceptance criteria
 > **Do not edit without user sign-off** — changes here affect multiple future sessions
+> (the sign-off gate is the charter [amendment ceremony](../governance/charter.md) applied
+> to the arc; constitutional changes also need a `CHANGELOG.md` entry + owner sign-off at merge)
 
 ---
 
@@ -16,7 +18,7 @@
 | v1.0.3 | R1 Phase 2 | No | Analyze quality recovery (✓ context_probe + typed hidden_qualities) **then** the two-pass split for speed (≤72s) without giving quality back. **Tagged 2026-06-02 at commit `59b6d9c`** |
 | v1.0.4 | Eval tuning loop | No | Real-data, human-in-the-loop, model-assisted prompt improvement; internal/dev tooling. **Tagged 2026-06-02 at commit `072e290`** |
 | v1.0.5 | UI/UX redesign | No (internal until v1.1.0) | Wizard redesign + WYSIWYG + diagnostics/tuning console & annotation tab; establishes the design system. **Tagged 2026-06-07** — all seven §Phase 4 tag criteria met; gate green incl. `pytest -m ux` |
-| v1.0.6 | Walkthrough polish + knowledge substrate + corpus completion | No (internal until v1.1.0) | E2E-walkthrough-driven UX polish (Sprints 6.1–6.5) + the **WS-4 LLM-wiki substrate** (front-loaded; before the 6.5 sweep) + corpus-item completers (**B.4** ExperienceSummaryItem, **B.5** SkillGroupItem) + **B.8 Part 1** (outcome capture). **Tagged 2026-06-15** — all §Phase 4.5 tag criteria met; the E2E re-walk verification pass was waived as non-blocking for this internal tag (tracked to v1.0.7); gate green incl. `pytest -m ux`. See **Phase 4.5**. |
+| v1.0.6 | Walkthrough polish + knowledge substrate + corpus completion | No (internal until v1.1.0) | E2E-walkthrough-driven UX polish (Sprints 6.1–6.5) + the **WS-4 LLM-wiki substrate** (front-loaded; before the 6.5 sweep) + corpus-item completers (**B.4** ExperienceSummaryItem, **B.5** Skill-as-Corpus-Item) + **B.8 Part 1** (outcome capture). **Tagged 2026-06-15** — all §Phase 4.5 tag criteria met; the E2E re-walk verification pass was waived as non-blocking for this internal tag (tracked to v1.0.7); gate green incl. `pytest -m ux`. See **Phase 4.5**. |
 | v1.0.7 | The app knows itself | No (internal until v1.1.0) | The autonomous self-documenting/self-tuning wiki loop + the doc-grounded **assistant** (Haiku, reuses the user's key) + pre-public hardening (grounding-calibration B · cover-letter tuning). **Not yet tagged.** See **Phase 4.7**. |
 | v1.0.8 | Monolith → blueprints (WS-1) | No (internal until v1.1.0) | Decompose the 8,251-LOC / 93-route `app.py` into Flask blueprints (dedicated structural epic); **absorbs the type-annotation scan** (WS-2 increment 1). Public ships on clean blueprints. **Not yet tagged.** See **Phase 4.8**. |
 | v1.1.0 | Public release | **Yes** | **Tag owned by the user** — the public cut of the complete product (assistant + self-documenting wiki + clean blueprints). GitHub push is part of this event |
@@ -387,9 +389,13 @@ This phase carries the product redesign **and** the polished home for the Phase 
 | `feat/tuning-tab-ab` ✓ DONE (merged `812e6bb`, feature `5f708f7`, 2026-06-07) | run-eval-from-console | Replaced the Tuning stub with a real in-browser A/B: pick an `analyzer._BASE_SYSTEM_PROMPTS` constant, draft/paste a candidate, run baseline+candidate evals via a dedicated localhost SSE `POST /api/tune/run` (drives `run_suite` twice + `analyzer.prompt_overrides()`), delta rendered with `evals/tune.py` (`load_scores`/`build_delta_table`/`format_delta_table`). Mirrors `/api/eval/run`'s contract incl. optional corpus-seed mode. **Promote stays the agent's job** — no route edits `analyzer.py`. No `PROMPT_VERSION` bump; no new dep. |
 | `docs/tuning-loop-discoverability` ✓ DONE (merged `8c6cb7d`, 2026-06-07) | tuning-tab-ab | In-app diagnostics-modal/pill/settings copy advertises the now-interactive loop; the in-browser console-loop walkthrough lands in `evals/README.md` (the dev-doc home) with `walkthrough.md` carrying only a flag + link to it; `GROUNDING_METRIC.md` "B (deferred)" note updated to note the label-producing loop is now browser-driven. Docs only. |
 
-**Sequencing:** strictly sequential, one branch per session. Each is independently
-shippable; `feat/run-eval-from-console`'s `run_suite` extraction is the precondition
-for `feat/tuning-tab-ab` — do not start a later branch in an earlier one's session.
+**Sequencing:** these branches carry a real ordering dependency —
+`feat/run-eval-from-console`'s `run_suite` extraction is the precondition for
+`feat/tuning-tab-ab` — so a session owns its branch end-to-end and does not start a
+later branch in an earlier one's session. (When sessions run concurrently they do so in
+*separate* isolated worktrees; the working model is charter
+[**W-1**](../governance/charter.md) parallelism, not global serialization.) Each branch
+is independently shippable.
 This arc rides within the v1.0.5 stream (or a v1.0.6 cut per the size note below —
 user's call). It also advances the deferred grounding calibration ("B"): the
 in-browser annotation loop is what *produces the labels* `GROUNDING_METRIC.md` /
@@ -693,9 +699,11 @@ RELEASE_CHECKLIST risk register.
   `feat/`; migrate the portable rules to a tool-agnostic shared core (git-hooks + Claude
   wrappers + CI backstop) on a follow-on branch clustered with the v1.0.8 gate epic when the
   remote/CI activates (Sprint 8.7).
-- **Payoff:** vision-alignment auditing reads ONE canonical constitution; the
-  pre-release `wiki-lint` gate can guard it directly; "consistency tracks
-  enforcement" (the Q2 finding) extends to the vision itself.
+- **Payoff:** vision-alignment auditing reads ONE canonical constitution; once
+  `wiki-lint`'s scope is extended to `docs/governance/` + markdown links it can guard
+  the home directly (today wiki-lint is `docs/wiki/`-scoped — `[[backlinks]]` +
+  `path:line` existence only — so the new governance pointers are not yet gate-checked);
+  "consistency tracks enforcement" (the Q2 finding) extends to the vision itself.
 
 ### The self-aware capability (built on the WS-4 wiki)
 | Branch | Design-first? | Key work |
@@ -978,7 +986,7 @@ moved **pre-public** into v1.0.8 and v1.0.7 respectively, so v1.1.0 ships with b
 - New dependency = `pyproject.toml` + CHANGELOG entry (Pydantic is the only new dep in this plan)
 - Security pattern on every new Flask route: `_safe_username() + _within() + secure_filename()`
 - If a hook blocks you: surface the hook name + error to the user, do not bypass, wait for authorization
-- One branch per agent session — close, merge, hand off before starting the next
+- One branch per agent session, owned end-to-end — concurrent sessions run in isolated worktrees, not serialized globally (charter [W-1](../governance/charter.md)); close, merge, hand off before reusing a session
 
 ## Reference documents
 

@@ -41,6 +41,15 @@ LinkedIn scraper, a multi-tenant SaaS, or a generic résumé
 template generator. The scope is narrow on purpose: one
 person, one machine, one job at a time.
 
+"One person, one machine, one job at a time" is the *unit of
+work*, not an exclusion of readers. callback. admits a
+continuum of audiences: the everyday job-seeker; the **power
+user** who reads the diagnostics and tunes prompts; the
+**developer / builder** who extends it; and — the reason
+ATS-safety is goal 2 — the applicant **blocked by an ATS**
+whose résumé never reaches a human until it parses cleanly.
+The tool's surfaces are written to be legible to all of them.
+
 ---
 
 ## What it's trying to accomplish
@@ -60,7 +69,9 @@ Three goals, in order of priority:
    ships templates that are single-column, plain-bullet, in
    standard fonts, with no tables / text boxes / icons / sidebars.
    Templates that *aren't* ATS-safe are retired — even when
-   they look prettier. See
+   they look prettier. The escape hatch is the user's, not the
+   tool's: anyone who wants a non-ATS design edits the document
+   callback. produced. See
    [`docs/PRODUCT_SHAPE.md §5.3`](docs/PRODUCT_SHAPE.md) for
    the bundled-template curation rationale.
 
@@ -79,7 +90,21 @@ These are the lines callback. won't cross, even when crossing
 them would be convenient. Together they define what kind of
 software this is.
 
+> **Canonical governance.** The *binding* form of these constraints — the
+> C-0…C-6 clauses, the D-1…D-6 defaults, and the working-model rules — now
+> lives in [`docs/governance/charter.md`](docs/governance/charter.md). This
+> section keeps the *why* and the worked detail; the charter states each rule
+> once and is the home audits and gates read against. Where a line below
+> restates a rule, the charter governs on conflict.
+
 ### Local-first, single-tenant
+
+"Single-tenant" here is a **threat-model boundary, not a product
+value**: callback. trusts exactly one unauthenticated user — the
+person who owns the machine — and leans on the OS for access
+control. Local *multi-profile* support (several candidates on one
+machine, via `list_users()`) is convenience inside that single
+trust boundary; it is not multi-tenancy.
 
 - The Flask server binds to `127.0.0.1:5000` only. There is
   no auth, no CSRF, no rate-limit, no multi-user logic. The
@@ -276,9 +301,11 @@ analysis). See [`docs/dev/perf/PERF_ANALYZE.md`](docs/dev/perf/PERF_ANALYZE.md)
 Listed explicitly so future feature proposals can check
 themselves:
 
-- **Multi-user / multi-tenant** — callback. is single-tenant
-  by design. Adding auth would change the threat model
-  fundamentally; we won't.
+- **Multi-user / multi-tenant** — there is no per-user
+  authentication or data isolation; the single-unauthenticated-user
+  threat model is the boundary (the OS owns access control). Local
+  multi-*profile* support is not multi-tenancy. Adding auth /
+  isolation would change the threat model fundamentally; we won't.
 - **Auto-apply** — the LLM produces documents; it doesn't
   submit them. There is no "click to send to LinkedIn"
   affordance and there won't be.

@@ -417,6 +417,12 @@ Proposed final shape:
 > clusters" framing for individual skills); the rest are dispositioned in §10
 > and [`dev/nursery.md`](dev/nursery.md).
 
+> **Canonical governance.** This prescriptive ladder and the seven-functions
+> self-model (§11) are descriptive planning detail; the *binding* rules they rest on
+> — the defaults D-1…D-6 and the W-2 "governance is constitution-building" stance —
+> live once in [`governance/charter.md`](governance/charter.md). The ladder stays
+> here; on any conflict the charter governs.
+
 Build the unified pattern in stages, no schema breaks between stages.
 
 ### v1.0 (next branch after `feat/release-visual-ia`)

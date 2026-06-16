@@ -28,6 +28,11 @@ overrides on top.
 If you're not Claude Code and you're reading this file by
 accident, jump straight to [`AGENTS.md`](AGENTS.md).
 
+The *binding* governance home is [`docs/governance/`](docs/governance/)
+(`charter.md` + `enforcement.md` + `metrics.md`); AGENTS.md keeps the
+operational rules inline and points to it, and the `@AGENTS.md` import
+above carries that pointer into this file.
+
 ---
 
 ## Claude-Code-specific overrides
@@ -59,9 +64,8 @@ When the harness says **"Plan mode is active"**, Claude Code must:
 4. Call `ExitPlanMode` ONLY after the plan file is complete
    and ready for user review.
 
-The PreToolUse hook at `.claude/hooks/check-plan-approved.sh`
-enforces rules 2 and 4. Once Step 4 of the v1.0 release arc
-lands, this moves to `.claude-plugin/hooks/`.
+The PreToolUse hook at `.claude-plugin/hooks/check-plan-approved.sh`
+enforces rules 2 and 4.
 
 ### Plugin commands + agents + hooks
 
