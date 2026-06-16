@@ -68,19 +68,23 @@
 
 ---
 
-## Carried-forward observations (tracked-deferred this session)
+## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
-<!-- REQUIRED — do not delete. List every "track this" item surfaced during the
-     CLOSING session that is NOT part of this branch's task: flaky tests, drift
-     spotted, process friction, follow-on flags, deferred sub-decisions. Each item
-     names WHERE it is filed, so it cannot evaporate:
-       - filed → `RELEASE_CHECKLIST.md` "Discovered … (tracked, deferred)" | a memory
-         slug | a PX-id / RELEASE_ARC row; OR
-       - unfiled → "capture in your branch" — the next agent folds it into their
-         pre-close sweep, NEVER a standalone post-merge branch.
-     Empty is allowed, but write an explicit "None." — a conscious clear, not an
-     omission. This section is the structural home for the trailing notes a closing
-     agent used to drop verbally; the close-out sweep (AGENTS.md step 0) requires it. -->
+<!-- REQUIRED — do not delete. Reproduce the FULL still-open subset of the one
+     Carry-forward ledger in `RELEASE_CHECKLIST.md` — every open item, not just the ones
+     this closing session surfaced — so nothing falls out of attention across handoffs
+     (charter W-1 "carry-forward discipline"). For each: one line + its ledger home.
+     Add any NEW "track this" item this session (flaky test, drift, process friction,
+     follow-on flag, deferred sub-decision) to that ledger FIRST (the single authoritative
+     home — not a memory/PX pointer in place of it), then it shows up here.
+       - filed → `RELEASE_CHECKLIST.md` "Carry-forward ledger" › Open (a memory slug / PX-id
+         may ALSO hold detail); OR
+       - unfiled → "capture in your branch" — the next agent folds it into their pre-close
+         sweep, NEVER a standalone post-merge branch.
+     At ~8–10 open items, flag a reduction sprint. Empty is impossible while the ledger has
+     open items; if the ledger's Open subset is genuinely empty, write "None — ledger Open
+     is empty." This section mirrors the ledger; the close-out sweep (AGENTS.md step 0)
+     requires it. -->
 
 ---
 

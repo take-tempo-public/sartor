@@ -458,7 +458,77 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 > folder into the wiki early** in this epic, after which the flat folder may retire
 > into the wiki's `raw/` layer.
 
-### Discovered during the v1.0.7 stream (tracked, deferred)
+### Carry-forward ledger
+
+> **One physical authoritative home** for tracked-deferred observations (charter
+> [W-1](../governance/charter.md) "carry-forward discipline"). The **Open** subset is
+> *cumulative* — every handoff renders it in full, not just the closing session's items,
+> so nothing falls out of attention; at **~8–10 open items**, schedule a reduction sprint.
+> **Resolved** items are kept with their resolution for the record (git holds the full
+> diff); each keeps the stream it was discovered in. (Consolidated 2026-06-15 from the
+> former per-stream "Discovered during the v1.0.x stream" sections — one home, not
+> scattered subsections joined by pointers.)
+
+#### Open
+
+_Open count: 7 — approaching the ~8–10 reduction-sprint threshold; the next stream should plan a reduction pass._
+
+- [ ] **Flaky UX test — `test_positioning_pin_preserves_title_pin`** — surfaced
+      2026-06-13 on the docs-only `docs/flag-plugin-activation-v1.0.7` branch:
+      [`tests/ux/regression/test_20260612_experience_summary_item.py`](../../tests/ux/regression/test_20260612_experience_summary_item.py)`::test_positioning_pin_preserves_title_pin`
+      failed **once** in a full-suite run, then **passed on isolated re-run** — an
+      intermittent UX-tier race (Playwright timing/selector), **pre-existing and not
+      code-caused** (the same `main` code passed 1169/1169 twice the same day). Deferred:
+      stabilize in a dedicated UX-tier pass (likely a missing settle/`to_be_visible`
+      before the pin assertion); **not a release blocker.** _(discovered: v1.0.6 stream.)_
+      **Update (2026-06-15):** did not recur across the v1.0.6 gate runs (1197/1197,
+      1204/1204, 1212/1212) or the v1.0.7 governance-extraction gate; still deferred for a
+      dedicated UX-tier stabilization pass.
+
+- [ ] **Grounding / hallucination metric — calibrated layers (B)** — the deterministic
+      label-free **L0** slice shipped (`eval/grounding-metric-l0`:
+      `hardening.compute_fabricated_specifics` + `hardening.assemble_source_union`, a
+      `groundedness` composite riding every eval record). The **calibrated model-based
+      layers (L1/L2)** + the never-run v1.0.4 live loop remain open — no labeled data
+      exists yet (`evals/fixtures/real/` is empty). **Scheduled as v1.0.7 Sprint PV / PV-2**
+      (`eval/grounding-calibration`; [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.7). Detail:
+      [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md); [`docs/PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md)
+      "calibrated layers (B)". _(discovered: v1.0.5 stream, 2026-06-05.)_
+
+- [ ] **Portable-enforcement-core migration** — **DECIDED 2026-06-15: split** (the decision
+      record is under Resolved below). The migration itself is pending: lift the portable
+      guards (`require-feature-branch`, `block-merge-to-main`, `block-secrets`,
+      `route-security-lint`, `ruff-changed`, `validate-context`) into a tool-agnostic shared
+      core invoked by BOTH committed git-hooks (`core.hooksPath`/pre-commit) AND the Claude
+      plugin, with CI as the server-side backstop. Follow-on **`feat/portable-enforcement-core`**
+      clustered with the v1.0.8 gate epic when the git remote/CI activates (Sprint 8.7).
+      Plan-mode lifecycle hooks stay Claude-only. _(discovered: v1.0.7 stream, 2026-06-15.)_
+
+- [ ] **Periodic cross-document link / cite checker** — none exists or is planned. `wiki-lint`
+      is `docs/wiki/`-scoped (`[[backlinks]]` + `path:line` existence only), so the
+      `[text](path)` links across the contract docs **and the new `docs/governance/` pointers**
+      are unchecked by any gate. The extract-don't-restate move multiplies those pointers →
+      pointer-rot risk with no gate. Build a periodic link/cite gate (a CI step, or extend
+      `wiki-lint` over `docs/governance/` + the contract docs); makes the §4.7 wiki-lint payoff
+      actually true. Candidate reduction-sprint seed. _(surfaced 2026-06-15, `feat/governance-extraction`.)_
+
+- [ ] **`CONTRIBUTING.md` plugin-section drift** — "Working with the Claude Code plugin" still
+      says "the `.claude-plugin/` directory holds the project's commands, agents, and hook
+      scripts" and references "Step 5 / 8 / 9 of the OSS migration", but Sprint 7.1 **moved**
+      commands/agents to the repo-root `commands/` / `agents/` (only hooks remain in
+      `.claude-plugin/`). Same stale class as the `:87` fix landed this branch, but outside the
+      governance-extraction scope — file, don't drive-by. _(surfaced 2026-06-15, `feat/governance-extraction`.)_
+
+- [ ] **pytest-socket `UserWarning` ×2 (latent, benign)** — the egress-allowlist suite emits
+      2 `UserWarning`s ("N passed, 2 warnings"); expected/benign (the autouse fn-scoped socket
+      fixture), observed across recent gate runs. No action; surfaced here so it stops
+      re-surprising future gates. _(filed in memory `reference-egress-allowlist-gate`.)_
+
+- [ ] **Help-opener duplication** — the dashboard's `openDashHelp` ports `openHelpModal`
+      (memory `reference-dashboard-education-ported-help`); deferred to a dedicated
+      help-refactor branch. _(discovered: Sprint 6.5.)_
+
+#### Resolved
 
 - [x] **Enforcement portability — security/quality hooks: tool-agnostic git-hooks/CI vs the
       Claude plugin** — **DECIDED 2026-06-15 on `design/governance-extraction` (7.2 design): SPLIT.**
@@ -485,22 +555,6 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       wired in `.claude/settings.json` (zero risk, no deeper Claude-coupling) pending this
       decision — the enforcement-side counterpart to governance's tool-agnostic *rule*
       consolidation. Fully reversible either way.
-
-### Discovered during the v1.0.6 stream (tracked, deferred)
-
-- [ ] **Flaky UX test — `test_positioning_pin_preserves_title_pin`** — surfaced
-      2026-06-13 on the docs-only `docs/flag-plugin-activation-v1.0.7` branch:
-      [`tests/ux/regression/test_20260612_experience_summary_item.py`](../../tests/ux/regression/test_20260612_experience_summary_item.py)`::test_positioning_pin_preserves_title_pin`
-      failed **once** in a full-suite run, then **passed on isolated re-run** — an
-      intermittent UX-tier race (Playwright timing/selector), **pre-existing and not
-      code-caused** (the same `main` code passed 1169/1169 twice the same day). Deferred:
-      stabilize in a dedicated UX-tier pass (likely a missing settle/`to_be_visible`
-      before the pin assertion); **not a release blocker.** First item filed via the new
-      carry-forward close-out rule ([`AGENTS.md`](../../AGENTS.md) step 0).
-      **Update (2026-06-15):** did not recur across the v1.0.6 gate runs (1197/1197,
-      1204/1204, 1212/1212); still deferred for a dedicated UX-tier stabilization pass.
-
-### Discovered during the v1.0.5 stream (tracked, deferred)
 
 - [x] **`/api/answer-clarifications` overwrites the whole answers map — iterate
       submit drops analyze-round answers from the iterated context** — surfaced
@@ -543,9 +597,9 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       end-to-end tests; pipeline/data-flow diagrams synced. See CHANGELOG
       [Unreleased].
 
-- [ ] **Architecture Mermaid-diagram drift (two spots) — defer to a docs/diagram
-      reconciliation pass** — surfaced 2026-06-11 during `fix/wizard-flow-polish`
-      (KW8) review. Both are pre-existing **doc-only** inaccuracies (no code/behavior
+- [x] **Architecture Mermaid-diagram drift (two spots) — RESOLVED by WS-4b** _(discovered:
+      v1.0.5 stream, 2026-06-11)_ — surfaced during `fix/wizard-flow-polish`
+      (KW8) review. Both were pre-existing **doc-only** inaccuracies (no code/behavior
       bug), so deliberately **not** fixed on a feature branch:
       1. **Step-2 clarify action mislabeled** — `docs/diagrams/pipeline.mmd` (~L45)
          and the embedded copy in `docs/architecture.md` (~L89) read
@@ -563,32 +617,12 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
          `docs/architecture.md` lists `cover_TS.docx / .pdf / .md` for the
          cover-letter artifact while `docs/diagrams/data-flow.mmd` lists only
          `cover_TS.docx`. Harmless, pre-dates recent work.
-      **Scheduled into `wiki/cold-ingest-code` (WS-4b, v1.0.6)** — pinned there
-      2026-06-12 (was "next docs/diagram reconciliation or a dedicated sweep"): that
-      pass re-reads the architecture to cold-ingest it, so it reconciles both drifts in
-      the same read. Tracked here so it survives the handoff rather than living only in
-      chat.
-
-- [ ] **Grounding/hallucination metric inserted into the v1.0.5 sequence**
-      (user-approved re-sequence 2026-06-05). `eval/grounding-metric-l0` (the
-      deterministic, label-free L0 fabricated-specifics rate) now lands **before**
-      `feat/diagnostics-console-redesign` so the dashboard is designed around a
-      real metric contract. The **calibrated** model-based layers + the never-run
-      v1.0.4 live loop + the evals/tuning update are deferred to **pre-v1.1.0**
-      (no labeled data exists yet — `evals/fixtures/real/` is empty). Authoritative
-      detail: [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4 re-sequence note +
-      [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md); deferred follow-up tracked in
-      [`docs/PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md) "Grounding / hallucination
-      metric — calibrated layers (B)".
-      **Status (2026-06-06):** the **A / L0 slice shipped** via
-      `eval/grounding-metric-l0` — `hardening.compute_fabricated_specifics`
-      (typed, severity-weighted, tolerance + entity aliasing) +
-      `hardening.assemble_source_union`, with a single `groundedness` composite
-      (L0-only by default; L1/L2-enriched under `--grounding-signals`) riding
-      every eval record in `deterministic_metrics`. **Box stays unchecked** — the
-      calibrated layers (B) are still open, and this item only closes when B lands.
-      **Now scheduled as v1.0.7 Sprint PV / PV-2** (`eval/grounding-calibration`;
-      [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.7).
+      **RESOLVED — verified 2026-06-15:** `wiki/cold-ingest-code` (WS-4b, merge `a0a1cb2`)
+      reconciled both spots while re-reading the architecture to cold-ingest it —
+      `docs/diagrams/pipeline.mmd:45` now reads "GET CLARIFYING QUESTIONS" (matches
+      `docs/architecture.md:89`) and `docs/diagrams/data-flow.mmd:77` now lists
+      `cover_TS.docx / .pdf / .md` (matches `docs/architecture.md`); recorded in
+      [`docs/wiki/log.md`](../wiki/log.md).
 
 - [x] **Diagnostics console → interactive self-tuning loop (the "finish the
       faceplate" arc)** — sourced 2026-06-06 from a walkthrough finding

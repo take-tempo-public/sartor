@@ -28,8 +28,7 @@ fi
 # No marker → not approved for this session
 if [ ! -f "$MARKER" ]; then
   echo "NO EDIT APPROVAL: No approved plan found." >&2
-  echo "Write a plan and call ExitPlanMode, or for simple tasks run:" >&2
-  echo "  New-Item -Force -ItemType File \"\$env:USERPROFILE\\.claude\\plans\\.approved\"" >&2
+  echo "Write a plan and call ExitPlanMode." >&2
   exit 2
 fi
 

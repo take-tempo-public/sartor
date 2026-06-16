@@ -16,6 +16,18 @@ if echo "$CMD" | grep -qE '\bgit[[:space:]]+push\b.*\borigin[[:space:]]+(main|ma
   TARGETING_MAIN=1
 fi
 
+# PX-24 (F-gov-01): the dominant direction is `git checkout main` then
+# `git merge feature --no-ff`, which names the branch (not "main") and slipped past
+# the greps above. Catch a `git merge` issued while HEAD is main/master. Scoped to
+# merge commands so ordinary read commands on main (status/log/checkout) are unaffected.
+# `git rev-parse --abbrev-ref HEAD` is worktree-local — safe under W-1.
+if echo "$CMD" | grep -qE '\bgit[[:space:]]+merge\b'; then
+  CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  if [ "$CUR_BRANCH" = "main" ] || [ "$CUR_BRANCH" = "master" ]; then
+    TARGETING_MAIN=1
+  fi
+fi
+
 if [ "$TARGETING_MAIN" -eq 0 ]; then
   exit 0
 fi

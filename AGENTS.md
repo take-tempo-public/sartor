@@ -16,6 +16,17 @@
 > [`docs/architecture.md`](docs/architecture.md) (system + modules),
 > [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (v1 → v2 ladder).
 
+> **Canonical governance.** The *binding* constitution — claims discipline
+> (C-0), the C-1…C-6 clauses, the D-1…D-6 defaults, the parallel-session
+> working model (W-1), and the amendment ceremony — lives in
+> [`docs/governance/charter.md`](docs/governance/charter.md), with enforcement
+> detail in [`docs/governance/enforcement.md`](docs/governance/enforcement.md).
+> The rules restated below are the at-a-glance operational mirror every agent
+> needs at session start; the charter is canonical and governs on conflict.
+> **Do not let this file become a pure import shell** — non-Claude agents
+> (Codex/Cursor/Aider) read it raw and an `@import` would silently drop their
+> guardrails.
+
 ---
 
 ## Read these first
@@ -27,7 +38,7 @@
 - [CONTRIBUTING.md](CONTRIBUTING.md) — branch + commit conventions, dev loop.
 - [README.md](README.md) — user-facing overview.
 
-The project follows the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/). The codebase is annotated with principle references (P1, P2, P5, P6, P8, P9) — they are load-bearing, not decoration.
+The project follows the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/). The codebase is annotated with principle references (P1, P2, P5, P6, P8, P9) — they are load-bearing, not decoration. The five load-bearing principles are frozen in [`docs/governance/charter.md`](docs/governance/charter.md) ("The 10 Principles backbone").
 
 ---
 
@@ -36,9 +47,9 @@ The project follows the [10 Principles framework](https://jdforsythe.github.io/1
 Full system + module map in [`docs/architecture.md`](docs/architecture.md). Quick orientation:
 
 - **All LLM calls live in `analyzer.py`.** Sonnet 4.6 for heavy reasoning (`analyze`, `clarify`, `iterate_clarify`, `generate`, `generate_cover_letter`); Haiku 4.5 for structured selection (`recommend`, `recommend_summary`, `critique_proposal`, `extract_experiences`).
-- **`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py` are deterministic** — no LLM calls allowed. The P1 Hardening boundary.
+- **`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py` are deterministic** — no LLM calls allowed. The P1 Hardening boundary (canonical rule: charter **C-6**).
 - **`context_set` is the JSON contract** between every pipeline stage. Each `/api/generate` writes a NEW timestamped child file via `hardening.save_iteration_context()`; the `parent_context_path` chain is the iteration audit trail.
-- **`PROMPT_VERSION` in `analyzer.py`** must bump in the SAME commit when any prompt changes, so eval telemetry attributes scores correctly.
+- **`PROMPT_VERSION` in `analyzer.py`** must bump in the SAME commit when any prompt changes, so eval telemetry attributes scores correctly (a charter discipline rule — [`docs/governance/charter.md`](docs/governance/charter.md), C-0 / D-4).
 
 For the full pipeline sequence (with all eight LLM call kinds, which Flask route fires each, and cost/latency footprints), see [`docs/diagrams/pipeline.mmd`](docs/diagrams/pipeline.mmd) and [`docs/diagrams/llm-routing.mmd`](docs/diagrams/llm-routing.mmd).
 
@@ -54,7 +65,7 @@ safe_file = secure_filename(filename)         # strip traversal sequences
 if not _within(path, PARENT_DIR): abort(403)  # resolved-path containment check
 ```
 
-A `route-security-lint` hook enforces this on `app.py` edits — see [`.claude-plugin/hooks/`](.claude-plugin/hooks/).
+A `route-security-lint` hook enforces this on `app.py` edits — see [`.claude-plugin/hooks/`](.claude-plugin/hooks/). Canonical rule: charter **C-1** (Local and yours) + [`docs/governance/enforcement.md`](docs/governance/enforcement.md).
 
 ### Branch before code changes
 
@@ -77,7 +88,8 @@ is the failure mode this section exists to prevent.
    - working changes staged + internally consistent (no dangling refs / links);
    - **memory learnings** from the session written now — doing memory or cleanup *after* the merge (on `main`) gets blocked by `require-feature-branch` + the merge-wiped `~/.claude/plans/.approved` marker, forcing a repeat flag-clear-and-ceremony that steps on the next branch's work; the cheap window is here, pre-merge;
    - every **loose end flagged this session** resolved or explicitly deferred;
-   - **trailing "track this" observations** — every note surfaced this session (flaky tests, drift spotted, process friction, follow-on flags, deferred sub-decisions) is **filed durably now** (RELEASE_CHECKLIST "Discovered … (tracked, deferred)" / a memory / a PX row) **or** written into the handoff's `Carried-forward observations` section; never left to surface after merge as a new one-file branch;
+   - **trailing "track this" observations** — every note surfaced this session (flaky tests, drift spotted, process friction, follow-on flags, deferred sub-decisions) is **filed durably now** into the **one** Carry-forward ledger in `RELEASE_CHECKLIST.md` (a memory / a PX row may *also* hold detail, but the ledger is the single authoritative home — not scattered per-stream sections joined by pointers); never left to surface after merge as a new one-file branch;
+   - **the handoff renders the FULL still-open ledger** — the `Carried-forward observations` section reproduces the *cumulative* still-open subset (every open item, not just this session's), so nothing falls out of attention across handoffs; at **~8–10 open items**, flag a reduction sprint. (Canonical: charter **W-1** "carry-forward discipline".)
    - **branches to prune** identified.
    "Done" is the *output* of this sweep, not a declaration — do not announce completion until it is empty. Declaring progress over verifying completeness manufactures tech debt, repeat close-outs, and eroded trust. In particular, NEVER merge and then open a follow-up branch for a doc / memory / note edit — that re-triggers the marker-wipe ceremony; fold it in before the merge.
 1. Quality gate green (`python -m ruff check .` + `python -m mypy .` + `python -m pytest`).
@@ -109,9 +121,13 @@ is the failure mode this section exists to prevent.
 
 ### Frontend config persistence
 
-- `_savePrimaryResume(filename)` — persists `latest_resume` to config on chip click.
-- `_saveIncludedResumes()` — persists `included_resumes[]` on badge toggle.
-- `saveConfig()` spreads `included_resumes` and `portfolio_urls` to survive panel saves.
+Profile config (name, contact, `portfolio_urls`, `included_resumes`, skills,
+certifications, education) persists through a single canonical path — `saveConfig()`
+in [`static/app.js`](static/app.js), which `PUT`s the full config to
+`/api/users/<user>/config`. Add new per-config fields there (spread from
+`currentConfig` so they survive panel saves), and reuse that one path rather than
+adding per-handler helpers — match the live code, don't restate volatile function
+names (charter D5, cite-don't-restate).
 
 ---
 
@@ -139,6 +155,8 @@ Dashboard for trends + heatmap + failure-mode clustering: visit `http://localhos
 ---
 
 ## What NOT to do
+
+*The binding form of several rules below is in [`docs/governance/charter.md`](docs/governance/charter.md) (deterministic boundary C-6, no-invention C-3, minimal deps D-1, the security gate C-1); this list is the operational mirror — the charter governs on conflict.*
 
 - Do not call `docx.Document()` without a template — output won't match the original's style.
 - Do not invent numbers, titles, or dates in LLM output — grounding check is the enforcement.

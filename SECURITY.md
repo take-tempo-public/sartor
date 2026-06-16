@@ -14,6 +14,13 @@
 
 ## Scope
 
+> **Canonical rule home.** The binding rules behind this policy — C-1 (local,
+> single-tenant), C-2 (egress: exactly two sanctioned classes), the
+> `_safe_username` / `_within` route gate, and the D-4 no-SLA commitment — live
+> once in [`docs/governance/`](docs/governance/) (`charter.md` + `enforcement.md`).
+> This document keeps the threat model, the accepted-risk register, and the
+> operational detail; on any conflict the governance home governs.
+
 callback. is a **single-tenant, local-first tool**. It runs on your
 machine, against your data, with one user (you). The threat model
 assumes the server is running on localhost, accessible only to the
@@ -25,6 +32,9 @@ mode). The current architecture does not support multi-user
 operation and there are no plans to add it.
 
 ## Threat model
+
+*Canonical: the two-class egress enumeration below is charter **C-2**; the
+single-unauthenticated-user boundary is **C-1**.*
 
 **In scope:**
 - Local filesystem boundaries: `_safe_username()` + `_within()`
@@ -143,6 +153,9 @@ identity — treat them as sensitive on disk.
 
 ## Reporting a vulnerability
 
+*The best-effort, no-guaranteed-timeline posture below is charter **D-4**
+(commitments hygiene): public docs make no response-time SLAs.*
+
 If you discover a security issue:
 
 1. **Do not open a public GitHub issue.**
@@ -212,6 +225,9 @@ flag that the helper consults. Don't drift the behavior
 silently.
 
 ## Security architecture
+
+*Canonical: the route guard pair is charter **C-1**; what is gate vs witness is in
+[`docs/governance/enforcement.md`](docs/governance/enforcement.md).*
 
 Path traversal is prevented in all file-serving routes via:
 

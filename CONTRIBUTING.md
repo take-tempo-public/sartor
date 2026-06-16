@@ -47,6 +47,12 @@ For a deeper architectural tour before opening a PR, read [`docs/architecture.md
 
 ## Branch conventions
 
+> **Canonical rule home.** The binding rules this section and the PR checklist
+> restate — branch conventions, the ruff + mypy + pytest bar, the `PROMPT_VERSION`
+> bump, and minimal-dependencies (D-1) — live once in
+> [`docs/governance/`](docs/governance/) (`charter.md` + `enforcement.md`). This doc
+> keeps its descriptive how-to; on any conflict the governance home governs.
+
 - One branch per change: `kebab-case-description` (e.g. `fix/cover-letter-spacing`, `feat/jd-template-library`)
 - Branch off `main`
 - Merge with `git merge --no-ff` so branch history is preserved
@@ -84,7 +90,7 @@ Before opening a PR:
 - [ ] `CHANGELOG.md` — entry under `[Unreleased]` describing the user-visible change
 - [ ] No real personal data committed (`evals/fixtures/real/` is gitignored — keep it that way)
 - [ ] If you touched a Flask route that reads or writes the filesystem, the route uses `_safe_username()` and `_within()` — see [`app.py`](app.py)
-- [ ] If you changed `analyzer.py:SYSTEM_PROMPT`, bump `PROMPT_VERSION` in the same file (see Step 6 of the OSS migration once landed)
+- [ ] If you changed `analyzer.py:SYSTEM_PROMPT` (or any per-call prompt template), bump `PROMPT_VERSION` in the same commit — a charter discipline rule ([`docs/governance/charter.md`](docs/governance/charter.md), C-0 / D-4)
 
 CI runs `ruff` + `mypy` + `pytest` on every PR. Add the `eval` label to also run synthetic smoke evals (uses Anthropic API; ~$0.10 per run).
 
