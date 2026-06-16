@@ -137,6 +137,12 @@ them over reinventing the workflow inline:
   to `callback:wiki-grounding-auditor`, runs `/callback:wiki-lint`,
   advances the checkpoint, and presents a reviewable diff (never
   commits). Bounded-checkpoint trigger (close-out / pre-tag).
+- `/callback:compliance-witness` — read-only governance drift
+  witness: delegates the read to the `callback:compliance-witness`
+  subagent (Sonnet) at a pinned sha, caps the flags (default 12,
+  `--cap N`), renders a findings-register table + a gate verdict
+  (clean / needs attention), appends to `docs/governance/compliance-log.md`.
+  Reports, never edits, never blocks. Pre-tag companion + on-demand.
 
 See [`commands/`](commands/) for
 each command's full definition.
@@ -172,6 +178,13 @@ Delegate to them rather than doing the work inline:
   page the scribe wrote: quote-match cites/`[synthesis]` claims
   against source at HEAD → SUPPORTED / DRIFTED / UNSUPPORTED.
   Author ≠ auditor; never edits.
+- `callback:compliance-witness` (Sonnet) — read-only
+  (`Read`/`Grep`/`Glob`/`Bash` — read-only git) governance drift
+  read: at a pinned sha, finds where two sources disagree (or a
+  C-0 categorical lacks by-construction backing) → ranked
+  FLAG / WATCH / AFFIRM flags. Cites, never asserts; the tool grant
+  (no `Edit`/`Write`/`Task`) is the enforcement. The
+  `/callback:compliance-witness` reader.
 
 See [`agents/`](agents/) for each
 subagent's full definition.
