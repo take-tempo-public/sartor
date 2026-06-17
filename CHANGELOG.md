@@ -13,6 +13,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation — accessibility status, Chromium reclassification, KEEP/BOOST ledger (`px/v107-band`, Sprint 7.8)
+
+A docs-only PX band (no code, prompts, routes, deps, or migrations; `PROMPT_VERSION`
+unchanged) clearing four v1.0.7 review prescriptions:
+
+- **`ACCESSIBILITY.md`** (PX-18, `F-expa11y-03`): a new root-level **honest-status page**
+  per the signed charter's E-2 — what is machine-checked (the vendored axe-core
+  serious/critical gate, the keyboard "a11y floor" regression, the `_announce()`
+  live-region, modal focus-trap/Escape/focus-return, the `--fg-2/3` WCAG-AA contrast
+  retune) versus the **known gaps** (the UX/a11y tier isn't yet run in CI → PX-25;
+  serious/critical-only; the Clarify/Output/cover-letter steps + modals + tab-order/
+  reflow/history are unscanned; the bounded pre-public NVDA walkthrough hasn't run).
+  **No conformance claim, no tag gate, no recurring-audit promise**; the v1.1.0 WCAG 2.2
+  AA self-evaluation is stated as intent, not a present claim. Linked from the README doc map.
+- **Chromium reclassified as PDF-output-only** (PX-31, `F-docs-05`): `docs/install.md`
+  lifts the ~150 MB `playwright install chromium` step out of the base **Prerequisites**
+  and gates it "optional — only for PDF output" in all three OS sequences; corrects the
+  "renders every PDF and the live preview" claim — the in-browser preview is browser-side
+  paged.js, **Chromium-free**; only PDF output needs the binary (`pdf_render.py` is the
+  sole Playwright renderer; cf. `SECURITY.md` bundled-assets). README quick-install and the
+  `pyproject.toml` playwright comment tightened to match.
+- **`docs/dev/keep-ledger.md`** (PX-32): a new **eval/governance KEEP/BOOST do-not-regress
+  ledger** — the non-polluting prompt-override A/B, the manual-promote/fail-closed
+  annotation contract, the surfaced-uncalibrated L1/L2 state, the cost/consent-gated paid
+  routes (**BOOST**), the witness-class hooks + read-only subagents, and the wiki
+  grounding/sentinel/`@import` disciplines, each with its regression risk. `F-gov-08`
+  (W-4 maturity signal) and `F-gov-10` (governance→assistant interface) logged as deferred
+  design items. The **affirmation** half of the set the v1.0.8 split guards (PX-29) will test.
+- **`docs/PRODUCT_SHAPE.md` R2 reconciled** (§10): the "stream `analyze()` output" entry,
+  still listed as a v1.1 deferral, marked **shipped in v1.0.3** — consistent with the §10
+  banner and the live `/api/analyze/stream` route.
+
 ### Added — the S3 vector tier for the assistant (`feat/doc-assistant-vector`, Sprint 7.6)
 
 **Stage 2** of the Memory substrate: a static-embedding **semantic retrieval tier** that

@@ -24,13 +24,16 @@
   [Cost guidance](../README.md#cost) for the per-application
   breakdown; budget guards are documented in
   [`SECURITY.md`](../SECURITY.md).
-- **~150 MB of free disk space** for the Chromium binary
-  Playwright downloads for PDF rendering. The binary lives in
-  your OS user cache (`%LOCALAPPDATA%\ms-playwright` on Windows,
-  `~/.cache/ms-playwright` on Linux, `~/Library/Caches/ms-playwright`
-  on macOS) — **outside** the repo, not committed.
 - **A modern browser** (Chrome / Edge / Firefox / Safari).
   callback. runs as a local Flask app you access in your browser.
+
+**Optional — only if you want PDF output:** **~150 MB of free disk space** for
+the Chromium binary Playwright downloads (`python -m playwright install
+chromium`). DOCX, Markdown, and the live in-browser preview don't need it — so
+if PDF isn't a priority you can skip this step and add it later. The binary
+lives in your OS user cache (`%LOCALAPPDATA%\ms-playwright` on Windows,
+`~/.cache/ms-playwright` on Linux, `~/Library/Caches/ms-playwright` on macOS) —
+**outside** the repo, not committed.
 
 ---
 
@@ -41,17 +44,21 @@ A plain `pip install -e .` pulls the ordinary Python packages (Flask, the
 Anthropic SDK, Pydantic, SQLAlchemy, …). A few things are fetched *outside*
 pip — here's each one, what it's for, and where it lives.
 
-**To run the app, the only sizeable non-pip download is the Chromium browser
+**To run the app you need nothing heavy beyond pip** — just Python, the repo
+clone, a modern browser, and your Anthropic API key (all under
+[Prerequisites](#prerequisites) above). DOCX output, Markdown output, and the
+live in-browser preview are all Chromium-free (the preview paginates in your own
+browser).
+
+**The one sizeable non-pip download is for PDF output: the Chromium browser
 binary** (~150 MB, one-time, via `python -m playwright install chromium`). It
-renders every PDF and the live in-browser preview, so what you download matches
-the preview byte-for-byte. It lives in your OS user cache
-(`%LOCALAPPDATA%\ms-playwright` on Windows, `~/.cache/ms-playwright` on Linux,
-`~/Library/Caches/ms-playwright` on macOS) — **outside the repo**, never
+renders PDF files (the in-browser preview shares the same HTML/CSS template but
+renders browser-side, so the PDF matches the preview). It lives in your OS user
+cache (`%LOCALAPPDATA%\ms-playwright` on Windows, `~/.cache/ms-playwright` on
+Linux, `~/Library/Caches/ms-playwright` on macOS) — **outside the repo**, never
 committed. On Linux, Chromium may also need a few system libraries (`libnss3`,
-`libatk1.0-0`, …); the Playwright installer tells you if any are missing.
-Beyond that you only need Python, the repo clone, a modern browser, and your
-Anthropic API key (all under [Prerequisites](#prerequisites) above) — nothing
-else heavy is required to run callback.
+`libatk1.0-0`, …); the Playwright installer tells you if any are missing. If you
+never export PDF, you can skip it.
 
 **Optional — the quality / grounding eval stack (most users never need this).**
 callback. ships an offline *eval harness* that grades whether the AI invented
@@ -91,7 +98,9 @@ extras, sizes, and licensing) live in
    python -m pip install -e .
    ```
 
-5. **Download the Chromium binary for PDF rendering** (one-time, ~150 MB):
+5. **Optional — only for PDF output:** download the Chromium binary (one-time,
+   ~150 MB). Skip it if you only need DOCX/Markdown output and the in-browser
+   preview; you can run this later when you want PDF.
    ```cmd
    python -m playwright install chromium
    ```
@@ -141,7 +150,8 @@ extras, sizes, and licensing) live in
    pip3 install -e .
    ```
 
-5. **Download Chromium for PDF rendering:**
+5. **Optional — only for PDF output:** download Chromium (skip if you only need
+   DOCX/Markdown output and the in-browser preview).
    ```bash
    python3 -m playwright install chromium
    ```
@@ -194,7 +204,8 @@ extras, sizes, and licensing) live in
    pip3 install -e .
    ```
 
-4. **Download Chromium for PDF rendering:**
+4. **Optional — only for PDF output:** download Chromium (skip if you only need
+   DOCX/Markdown output and the in-browser preview).
    ```bash
    python3 -m playwright install chromium
    ```

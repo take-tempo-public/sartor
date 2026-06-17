@@ -529,12 +529,15 @@ acceptance criteria / target version**.
 
 ### v1.1 (next minor release)
 
-**R2 — stream `analyze()` output.** ([docs/dev/perf/PERF_ANALYZE.md](dev/perf/PERF_ANALYZE.md))
-- *Why deferred:* deserves its own commit + eval cycle; v1.0.0
-  scope is "all initial documentation", not new pipeline behavior.
-- *Acceptance:* Anthropic SSE streaming wired through the
-  `/api/analyze` route; frontend renders tokens incrementally;
-  perceived latency 90 s → 10-15 s with total latency unchanged.
+**R2 — stream `analyze()` output. ✓ SHIPPED (v1.0.3).** ([docs/dev/perf/PERF_ANALYZE.md](dev/perf/PERF_ANALYZE.md))
+- *Status:* **shipped in v1.0.3** (commit `c8762bc`) — the SSE
+  `/api/analyze/stream` route + incremental frontend render are live.
+  Reconciled here per the §10 banner above; **no longer deferred**, kept
+  for the record. Now a *verify-the-wiring* item for the v1.0.8 E2E window
+  (checklist 8.5 "R2 verified live"), not a build.
+- *Acceptance (met):* Anthropic SSE streaming wired through the analyze
+  route; frontend renders tokens incrementally; perceived latency
+  90 s → 10-15 s with total latency unchanged.
 - *Cost:* zero; same call, different transport.
 
 **R1 — split `analyze()` into Haiku-fast + Sonnet-deep passes.**
