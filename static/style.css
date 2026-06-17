@@ -866,6 +866,13 @@ textarea {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
+/* The assistant modal carries a question box + a potentially long streamed
+   answer, so it gets a roomier reading width than the shared 540px default.
+   Scoped to the id so the .cb-modal-content cascade for every other modal is
+   untouched (the stylesheet has duplicate-selector history — never re-declare
+   .cb-modal-content). The 90vh ceiling + .cb-modal-body internal scroll still
+   apply. */
+#assistantModal .cb-modal-content { max-width: 680px; }
 
 /* ---- In-app help primitive (reusable; Sprint 6.5 feat/help-pattern-component) ----
    The mechanism that later branches hang per-surface education copy on. Three
@@ -2685,6 +2692,16 @@ textarea:focus-visible {
   border-color: var(--brand-edge);
 }
 .cb-iter-pill.hidden { display: none; }
+/* Icon-only top-bar pill (the assistant magnifier #assistantPill) — equal
+   padding centers the inline <svg> as a tidy square button. The svg inherits
+   the pill text color via stroke:currentColor, so hover/active states match
+   the labelled pills with no extra rules. */
+.cb-pill-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 9px;
+}
 
 /* ---- Floating bottom status bar — viewport-fixed, blurred, mirrors
    statusPill state. Communicates wizard step + active phase. Hidden

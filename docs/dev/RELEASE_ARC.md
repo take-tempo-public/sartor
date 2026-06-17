@@ -735,6 +735,14 @@ RELEASE_CHECKLIST risk register.
 > (C-6 honored — owner D1=A; its own `AVATAR_PROMPT_VERSION`), the SSE route in a new
 > `blueprints/` package, and a minimal in-shell chat panel. **Zero new deps.**
 >
+> **UI relocation DONE 2026-06-16** (`feat/assistant-topbar-modal`, 7.8a): the Stage-1
+> in-shell `<details>` chat panel (`#panelAssistant`, parked below the wizard) moved to a
+> **fixed top-bar magnifier icon** (`#assistantPill`) opening a **floating, scrollable
+> modal** (`#assistantModal`) — one always-findable entry point, reusing the `.cb-modal`
+> skeleton + the top-bar-pill-opens-overlay precedent. **Front-end only** — same route /
+> avatar / SSE client; `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` unchanged; no dep/migration.
+> First of a few small UI-polish sprints before the 7.9 tag.
+>
 > **Stage 2 DONE 2026-06-16** (`feat/doc-assistant-vector`, 7.6): the S3 `VectorSource`
 > semantic tier — static `model2vec` embeddings (`potion-base-8M`, dim 256) + brute-force
 > cosine over a rebuildable `db/vector_index/` sidecar, incremental ($0-on-unchanged
