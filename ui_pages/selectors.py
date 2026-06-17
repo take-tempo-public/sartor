@@ -166,12 +166,17 @@ class Memory:
 
 
 class Assistant:
-    """The doc-grounded assistant panel (Sprint 7.5, feat/doc-assistant) — a
-    tab-independent collapsible `<details>` chat over the committed wiki + code,
-    backed by POST /api/assistant/ask (SSE). JS in `static/assistant.js`."""
+    """The doc-grounded assistant (Sprint 7.5, feat/doc-assistant) — relocated
+    from an in-shell collapsible `<details>` panel to a fixed top-bar magnifier
+    pill (`#assistantPill`) that opens a floating `.cb-modal` (`#assistantModal`)
+    via `openAssistantModal()`. Backed by POST /api/assistant/ask (SSE). JS in
+    `static/assistant.js`."""
 
-    PANEL = "#panelAssistant"
-    HEADER = "#assistantHeader"  # the <summary> that toggles the panel open
+    OPEN_PILL = "#assistantPill"  # the top-bar magnifier that opens the modal
+    MODAL = "#assistantModal"
+    MODAL_TITLE = "#assistantModalTitle"
+    CLOSE = "#btnCloseAssistant"
+    BACKDROP = "#assistantModal .cb-modal-backdrop"
     DEV_MODE = "#assistantDevMode"
     QUESTION = "#assistantQuestion"
     ASK_BUTTON = "#assistantAsk"

@@ -50,6 +50,7 @@ from ui_pages import (
 )
 from ui_pages.base import DEFAULT_TIMEOUT_MS
 from ui_pages.selectors import (
+    Assistant,
     Dashboard,
     Help,
     Memory,
@@ -177,6 +178,17 @@ def test_axe_main_tabs_and_settings(
     page.click(TopTabs.PERSONAS)
     page.wait_for_selector(Personas.PANEL, state="visible")
     found["personas"] = _axe_serious(page)
+
+    # Sprint 7.x relocation: scan the doc-assistant modal opened from the top-bar
+    # magnifier (#assistantPill) in its OPEN state — axe excludes hidden controls,
+    # so the floating .cb-modal (dialog aria, focus-trapped, static title) is only
+    # gated here. Close it before the Settings step so its backdrop doesn't
+    # intercept that click (one overlay live at a time).
+    page.click(Assistant.OPEN_PILL)
+    page.wait_for_selector(Assistant.MODAL, state="visible")
+    found["assistant-modal"] = _axe_serious(page)
+    page.click(Assistant.CLOSE)
+    page.wait_for_selector(Assistant.MODAL, state="hidden")
 
     page.click(Settings.OPEN_PILL)
     page.wait_for_selector(Settings.DRAWER, state="visible")

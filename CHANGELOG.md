@@ -13,6 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — assistant moved to a fixed top-bar icon + floating modal (`feat/assistant-topbar-modal`, Sprint 7.x)
+
+A **front-end-only** relocation of the doc-grounded assistant so it is always findable in
+the same place. No route, LLM, prompt, dependency, or migration change; `PROMPT_VERSION`
+and `AVATAR_PROMPT_VERSION` unchanged.
+
+- **Entry point** is now a fixed **magnifier icon** in the floating top bar (`#assistantPill`,
+  left of Diagnostics) instead of an always-visible collapsible `<details>` panel parked
+  below the wizard. The panel (`#panelAssistant`) is **removed** — one stable, discoverable
+  entry point.
+- **Presentation** is a **floating, scrollable modal** (`#assistantModal`) built on the
+  existing `.cb-modal` skeleton (widened to ~680px; the `.cb-modal-body` internal scroll +
+  90vh cap keep a long streamed answer scrollable under a pinned title + Close). The
+  question box, Dev-mode toggle, streamed answer, and cited-sources line keep their element
+  ids, so the SSE client (`static/assistant.js` `askAssistant()`) is unchanged; a new
+  `openAssistantModal()` adds the open/close mechanics (focus-trap, Esc, backdrop,
+  focus-restore, `aria-expanded`) mirroring `openDiagnosticsModal()`.
+- **a11y:** `role="dialog"`/`aria-modal`, a static dialog title, `aria-haspopup`/
+  `aria-controls`/`aria-expanded` on the icon button (explicit `aria-label`, since it has no
+  visible text). Covered by the relocated UX regression (pill → modal → streamed cited
+  answer) and a new open-state scan in the axe a11y gate.
+
 ### Documentation — accessibility status, Chromium reclassification, KEEP/BOOST ledger (`px/v107-band`, Sprint 7.8)
 
 A docs-only PX band (no code, prompts, routes, deps, or migrations; `PROMPT_VERSION`

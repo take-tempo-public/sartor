@@ -30,6 +30,15 @@
       <span class="cb-grow"></span>
       <div class="cb-pill cb-iter-pill hidden" id="iterationPill"
            aria-label="Current iteration" title="Current iteration of the resume loop">iter 0</div>
+      <button class="cb-pill cb-pill-ghost cb-pill-icon" id="assistantPill"
+              onclick="openAssistantModal()"
+              aria-label="Ask the assistant" title="Ask the assistant"
+              aria-haspopup="dialog" aria-controls="assistantModal" aria-expanded="false">
+        <svg aria-hidden="true" width="15" height="15" viewBox="0 0 16 16" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <circle cx="7" cy="7" r="4.5"></circle><line x1="10.6" y1="10.6" x2="14" y2="14"></line>
+        </svg>
+      </button>
       <button class="cb-pill cb-pill-ghost" id="diagnosticsPill"
               onclick="openDiagnosticsModal()"
               title="Open the telemetry + eval/tuning console">Diagnostics</button>
@@ -881,6 +890,46 @@
     </div>
   </div>
 
+  <!-- Doc-grounded assistant modal (Sprint 7.5, relocated from the in-shell
+       #panelAssistant). Opened by the top-bar magnifier #assistantPill via
+       openAssistantModal() in static/assistant.js; reuses the .cb-modal skeleton
+       (#assistantModal widened to ~680px) and the .cb-modal-body internal scroll so
+       the question box + streamed answer scroll under a pinned title + Close. Same
+       control ids as the retired panel, so askAssistant() is unchanged. Backed by
+       POST /api/assistant/ask (SSE) → a Haiku avatar that answers WITH citations.
+       Closes on the data-assistant-dismiss backdrop, Esc, or "Close". -->
+  <div id="assistantModal" class="cb-modal hidden" role="dialog" aria-modal="true"
+       aria-labelledby="assistantModalTitle" aria-describedby="assistantModalIntro">
+    <div class="cb-modal-backdrop" data-assistant-dismiss></div>
+    <div class="cb-modal-content" role="document">
+      <h2 id="assistantModalTitle" class="cb-modal-title">Ask the assistant</h2>
+      <div class="cb-modal-body">
+        <p id="assistantModalIntro" class="edit-hint" style="margin-top:0">
+          Ask how callback. works or how to use it — answers are grounded in the
+          committed wiki + code at HEAD, with citations. Turn on dev mode for
+          implementation-level detail.
+        </p>
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+          <label class="memory-checkbox" for="assistantDevMode">
+            <input type="checkbox" id="assistantDevMode"> Dev mode
+          </label>
+        </div>
+        <textarea id="assistantQuestion" rows="3" style="width:100%; box-sizing:border-box;"
+                  placeholder="e.g. How do I tailor a résumé?"
+                  aria-label="Ask the assistant a question"></textarea>
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-top:0.5rem;">
+          <button class="cb-btn cb-bg-blue" id="assistantAsk" onclick="askAssistant()">Ask</button>
+          <span class="edit-hint" id="assistantStatus" aria-live="polite" style="margin:0"></span>
+        </div>
+        <div id="assistantAnswer" aria-live="polite"
+             style="white-space:pre-wrap; margin-top:0.75rem;"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="cb-btn cb-bg-blue" id="btnCloseAssistant" data-assistant-dismiss>Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- "Edit before downloading" drawer for Step 6. Slides in from the
        right; the styled preview stays visible behind the backdrop so the
        user can see the document while editing its text. The editor node
@@ -1049,39 +1098,6 @@
       </div>
     </div>
   </aside>
-
-  <!-- ============================================================== -->
-  <!-- DOC-GROUNDED ASSISTANT (Sprint 7.5, feat/doc-assistant)        -->
-  <!-- Always-available collapsible chat over the committed wiki +    -->
-  <!-- code at HEAD. Backed by POST /api/assistant/ask (SSE) → a Haiku -->
-  <!-- avatar that answers WITH citations. Lives outside the tabs so   -->
-  <!-- it is reachable from any view; collapsed by default so it never -->
-  <!-- overlays the wizard. JS in static/assistant.js.                 -->
-  <!-- ============================================================== -->
-  <details class="cb-panel" id="panelAssistant">
-    <summary class="panel-header cb-bg-blue" id="assistantHeader">Ask the assistant</summary>
-    <div class="panel-body">
-      <p class="edit-hint">
-        Ask how callback. works or how to use it — answers are grounded in the
-        committed wiki + code at HEAD, with citations. Turn on dev mode for
-        implementation-level detail.
-      </p>
-      <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
-        <label class="memory-checkbox" for="assistantDevMode">
-          <input type="checkbox" id="assistantDevMode"> Dev mode
-        </label>
-      </div>
-      <textarea id="assistantQuestion" rows="2" style="width:100%; box-sizing:border-box;"
-                placeholder="e.g. How do I tailor a résumé?"
-                aria-label="Ask the assistant a question"></textarea>
-      <div style="display:flex; align-items:center; gap:0.75rem; margin-top:0.5rem;">
-        <button class="cb-btn cb-bg-blue" id="assistantAsk" onclick="askAssistant()">Ask</button>
-        <span class="edit-hint" id="assistantStatus" aria-live="polite" style="margin:0"></span>
-      </div>
-      <div id="assistantAnswer" aria-live="polite"
-           style="white-space:pre-wrap; margin-top:0.75rem;"></div>
-    </div>
-  </details>
 
   <!-- callback. floating status strip — viewport-bottom sticky element
        that mirrors statusPill state and surfaces the active wizard step.

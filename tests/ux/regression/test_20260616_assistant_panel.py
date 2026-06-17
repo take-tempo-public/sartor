@@ -1,10 +1,10 @@
-"""UX: the doc-grounded assistant panel streams a cited answer (Sprint 7.5).
+"""UX: the doc-grounded assistant modal streams a cited answer (Sprint 7.5).
 
-Drives the always-available assistant `<details>` panel: open it, ask a question,
-and assert the streamed answer + the cited-sources line render. LLM-free — the avatar
-(`analyzer.avatar_answer_streaming`) and retrieval (`blueprints.assistant._build_sources`)
-are stubbed so the REAL SSE route + the real `static/assistant.js` / `_consumeSSE` path
-run offline.
+Drives the assistant from its top-bar magnifier (`#assistantPill`): click it to open
+the floating `#assistantModal`, ask a question, and assert the streamed answer + the
+cited-sources line render. LLM-free — the avatar (`analyzer.avatar_answer_streaming`)
+and retrieval (`blueprints.assistant._build_sources`) are stubbed so the REAL SSE route
++ the real `static/assistant.js` / `_consumeSSE` path run offline.
 """
 
 from __future__ import annotations
@@ -52,7 +52,8 @@ def test_assistant_panel_streams_cited_answer(
     UserPickerPage(page, live_server).select("robert")
     page.wait_for_load_state("networkidle")
 
-    page.click(Assistant.HEADER)  # expand the collapsed <details>
+    page.click(Assistant.OPEN_PILL)  # open the floating modal from the top-bar magnifier
+    page.wait_for_selector(Assistant.MODAL, state="visible")
     page.fill(Assistant.QUESTION, "How do I tailor a resume?")
     page.click(Assistant.ASK_BUTTON)
 

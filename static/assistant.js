@@ -53,3 +53,45 @@ function _renderAssistantSources(done) {
   const truncated = done.truncated ? ' · context truncated' : '';
   return 'Sources: ' + uniq.join(', ') + truncated;
 }
+
+// Open the assistant modal from the top-bar magnifier (#assistantPill). Mirrors
+// openDiagnosticsModal() in app.js for a11y parity — focus-trap over the modal's
+// controls, Esc / backdrop / Close all routed through one cleanup(), focus moved
+// into the question box on open and restored to the pill on close, plus the pill's
+// aria-expanded toggle (it advertises aria-haspopup="dialog"). The .cb-modal CSS
+// gives the floating, scrollable overlay; this only wires the open/close behavior.
+function openAssistantModal() {
+  const modal = document.getElementById('assistantModal');
+  if (!modal) return;
+  const trigger = document.getElementById('assistantPill');
+  const focusable = modal.querySelectorAll('button, input, textarea');
+
+  const cleanup = () => {
+    modal.classList.add('hidden');
+    modal.removeEventListener('keydown', onKey);
+    dismissers.forEach(b => b.removeEventListener('click', cleanup));
+    if (trigger && typeof trigger.setAttribute === 'function') {
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+    if (trigger && typeof trigger.focus === 'function') trigger.focus();
+  };
+
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
+    if (e.key !== 'Tab' || focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+
+  const dismissers = Array.from(modal.querySelectorAll('[data-assistant-dismiss]'));
+  dismissers.forEach(b => b.addEventListener('click', cleanup));
+  modal.addEventListener('keydown', onKey);
+  if (trigger && typeof trigger.setAttribute === 'function') {
+    trigger.setAttribute('aria-expanded', 'true');
+  }
+  modal.classList.remove('hidden');
+  const q = document.getElementById('assistantQuestion');
+  if (q && typeof q.focus === 'function') q.focus();
+}
