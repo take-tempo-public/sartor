@@ -90,12 +90,17 @@ function showNewUserForm() {
   document.getElementById('newUserForm').classList.remove('hidden');
   const btn = document.getElementById('btnNewUser');
   if (btn) btn.classList.add('hidden');
+  // Clear the dropdown so a previously-picked username doesn't sit stale above
+  // the new-user fields (it reads as a heading for the form otherwise). The
+  // selection is restored on Cancel (hideNewUserForm). currentUser/panels are
+  // intentionally left alone — this is a label fix, not a context teardown.
+  const sel = document.getElementById('userSelect');
+  if (sel) sel.value = '';
   const u = document.getElementById('newUsername');
   if (u) u.focus();
   // KW3: the very first user on a fresh install → arm the new-user tour and
   // offer the "import a résumé to start" tip once (no-op for returning users —
   // _maybeFireTourStop gates on the armed flag).
-  const sel = document.getElementById('userSelect');
   if (sel && sel.options.length <= 1) _armHelpTour();
   _maybeFireTourStop('tourAddUser', null);
 }
@@ -106,6 +111,10 @@ function hideNewUserForm() {
   document.getElementById('newUserForm').classList.add('hidden');
   const btn = document.getElementById('btnNewUser');
   if (btn) btn.classList.remove('hidden');
+  // Restore the dropdown to the active user (showNewUserForm cleared it) so
+  // Cancel leaves the picker consistent with the still-loaded context.
+  const sel = document.getElementById('userSelect');
+  if (sel && currentUser) sel.value = currentUser;
   _NEW_USER_FIELDS.forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = ''; el.classList.remove('field-invalid'); el.removeAttribute('aria-invalid'); }

@@ -22,6 +22,7 @@ class UserPicker:
     NEW_NAME = "#newName"
     NEW_EMAIL = "#newEmail"
     CREATE_BUTTON = "text=Create"
+    CANCEL_BUTTON = "#newUserForm >> text=Cancel"
 
 
 class Forms:
