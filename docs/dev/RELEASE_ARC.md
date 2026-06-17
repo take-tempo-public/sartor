@@ -743,6 +743,19 @@ RELEASE_CHECKLIST risk register.
 > avatar / SSE client; `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` unchanged; no dep/migration.
 > First of a few small UI-polish sprints before the 7.9 tag.
 >
+> **UI-polish trio DONE 2026-06-17** (`fix/v107-ui-polish-trio`, 7.8b): three small,
+> independent fixes from the UI-polish band. (#1) **stray browser windows** — the
+> `python app.py` auto-open fired inside the Flask debug-reloader's serving child, which the
+> reloader re-executes on every restart → a new window per reload; a pure
+> `_should_open_browser()` now opens **exactly once** (supervisor / non-debug single process,
+> never the reload child). (#3) **slow application load** — `list_applications` ran `1+2N`
+> queries (lazy `Application.runs` + per-app pending count); now `selectinload` + one batched
+> `group_by` count → ~3 queries regardless of N, with a constant-query-count regression
+> guard. (#4) **new-user stale dropdown** — `showNewUserForm()` clears the leftover
+> `#userSelect` value (Cancel restores it). **No prompt/dep/migration**;
+> `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` unchanged. Adds one ledger item (assistant
+> doc-coverage). The remaining named UI-polish candidate is **#2 assistant voice softening**.
+>
 > **Stage 2 DONE 2026-06-16** (`feat/doc-assistant-vector`, 7.6): the S3 `VectorSource`
 > semantic tier — static `model2vec` embeddings (`potion-base-8M`, dim 256) + brute-force
 > cosine over a rebuildable `db/vector_index/` sidecar, incremental ($0-on-unchanged

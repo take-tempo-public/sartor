@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — UI-polish trio (`fix/v107-ui-polish-trio`, Sprint 7.8b)
+
+Three small, independent fixes from the v1.0.7 UI-polish band. No prompt,
+dependency, or migration change; `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION`
+unchanged.
+
+- **Stray browser windows (#1):** `python app.py` re-opened a browser window on
+  every Flask debug-reloader restart, because the auto-open ran inside the
+  serving child (`WERKZEUG_RUN_MAIN == "true"`) that the reloader re-executes on
+  each reload — so editing files popped a new window each time ("5–6 windows per
+  session"). A new pure `app._should_open_browser()` opens **exactly once** — in
+  the persistent supervisor / non-debug single process, never in the reload
+  child — and still honors `CALLBACK_NO_BROWSER=1`.
+- **Slow application load (#3):** selecting a user loaded the prior-applications
+  list with `1 + 2N` SQL queries (lazy `Application.runs` per row + a per-app
+  pending `ProposalReview` count), so it slowed as a user accrued applications.
+  `GET /api/users/<u>/applications` now eager-loads runs with `selectinload` and
+  batches the pending counts into one grouped query (~3 queries regardless of
+  N). Output JSON and ordering unchanged; a regression test asserts the query
+  count stays constant as the application count grows.
+- **New-user form stale heading (#4):** with a user selected, clicking "New
+  user" left the previous username in the `#userSelect` dropdown directly above
+  the new-profile fields. `showNewUserForm()` now clears the dropdown (Cancel
+  restores it). Front-end label fix only.
+
 ### Changed — assistant moved to a fixed top-bar icon + floating modal (`feat/assistant-topbar-modal`, Sprint 7.x)
 
 A **front-end-only** relocation of the doc-grounded assistant so it is always findable in
