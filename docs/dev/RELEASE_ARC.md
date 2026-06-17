@@ -733,8 +733,22 @@ RELEASE_CHECKLIST risk register.
 > two free retrieval tiers (S1 `WikiSource` + S2 `GitGrepSource`) + the S5-P1 `SessionSource`
 > as generic, injected `Source`s in `recall/sources/`, the Haiku **avatar** in `analyzer.py`
 > (C-6 honored — owner D1=A; its own `AVATAR_PROMPT_VERSION`), the SSE route in a new
-> `blueprints/` package, and a minimal in-shell chat panel. **Zero new deps.** Stage 2
-> (S3 vector) remains 7.6, eval-gated.
+> `blueprints/` package, and a minimal in-shell chat panel. **Zero new deps.**
+>
+> **Stage 2 DONE 2026-06-16** (`feat/doc-assistant-vector`, 7.6): the S3 `VectorSource`
+> semantic tier — static `model2vec` embeddings (`potion-base-8M`, dim 256) + brute-force
+> cosine over a rebuildable `db/vector_index/` sidecar, incremental ($0-on-unchanged
+> content-hash reuse), built by `scripts/build_vector_index.py`; wired into the assistant
+> **"on when available"** (model + index present). **Built ahead of the eval gate at owner
+> direction** — the landed Stage-1 assistant tested *too literal / lacking semantic
+> flexibility* — a deliberate, documented override: the gate's formal labeled eval stays
+> v1.0.8 (Sprint 8.5). New **hard** deps `numpy` + `model2vec` (numpy + tokenizers +
+> safetensors, **no torch/onnxruntime**); the `recall/sources/` stdlib boundary test was
+> relaxed to admit **`numpy` only** (core `recall/` stays stdlib-only; `model2vec` lives in
+> the wiring layer so the substrate stays embedder-agnostic + extractable for the standalone
+> Memory package). No migration; résumé `PROMPT_VERSION` unchanged. A probe
+> (`scripts/vector_index_probe.py` → `evals/TUNING_LOG.md`) corroborates the owner finding;
+> the judge-scored labeled before/after eval is **owed at v1.0.8** (Carry-forward ledger).
 >
 > **Scope (2026-06-09 re-cut):** the previously post-v1.1.0 **vector tier (Stage 2)** and
 > **S4 structure index** are pulled into v1.0.7 as **eval-gated in-epic** steps — build the

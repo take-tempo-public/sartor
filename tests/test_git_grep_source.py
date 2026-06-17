@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import uuid
 from pathlib import Path
 
 import pytest
@@ -54,7 +55,12 @@ def test_search_returns_path_line_units_from_real_repo():
 
 def test_no_match_returns_empty():
     src = _make_source()
-    assert list(src.search("zqzqzq_definitely_absent_token_xyz", Scope(allow_dev=True))) == []
+    # The query token must be GENUINELY absent from every TRACKED file. Built at runtime so
+    # the literal never appears in this test's own source: `git grep` searches tracked files,
+    # so a hardcoded "absent" token self-matches this file once it is committed (that latent
+    # bug, dormant while the file was untracked during Sprint 7.5, surfaced in 7.6).
+    absent = "zz" + uuid.uuid4().hex
+    assert list(src.search(absent, Scope(allow_dev=True))) == []
 
 
 def test_audience_fn_is_applied():

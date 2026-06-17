@@ -2188,3 +2188,51 @@ conditions are met:
 Until all three conditions are met the fixture stays in `evals/exploration/`.
 Scores from exploration fixtures appear in JSONL (with `"suite": "exploration"`)
 but do not gate merges.
+
+---
+
+## S3 VECTOR TIER — measurement probe — 2026-06-16 (`feat/doc-assistant-vector`, Sprint 7.6)
+
+> **Not a prompt change** (résumé `PROMPT_VERSION` unchanged; no LLM in the retrieval
+> path). This entry records the eval-gate evidence for adding the S3 semantic-retrieval
+> tier to the doc-grounded assistant — a *retrieval* change, the institutional-memory note
+> the gate-override owes.
+
+**1. What changed?** Added the S3 `VectorSource` tier — static `model2vec` embeddings
+(`minishlab/potion-base-8M`, dim 256), brute-force cosine over a rebuildable
+`db/vector_index/` sidecar (2948 chunks over tracked `*.py` + `*.md` at HEAD), wired into
+the assistant "on when available." See CHANGELOG / RELEASE_ARC §4.7.
+
+**2. Why? (the eval-gate justification — a deliberate override)** RELEASE_ARC §4.7 gates
+S3 on "measure on real questions, add only if the code-vocabulary misses justify it,
+before the tag." The formal labeled-eval loop is v1.0.8 (Sprint 8.5), not yet run. The
+**owner tested the landed Stage-1 assistant on real questions and found it "too literal /
+lacking semantic flexibility"** (2026-06-16) and directed building S3 ahead of the formal
+gate. This probe is the lightweight corroboration.
+
+**3. Result** (`python -m scripts.vector_index_probe`, 12 real dev questions phrased *not*
+using the literal code identifier):
+- On the one pure vocabulary-gap question — *"how does the index avoid **recomputing**
+  embeddings for unchanged files"* (the code says "**re-embed**", never "recomputing") —
+  the lexical S2 `git grep` tier returned **0** hits; the S3 tier was the **sole recovery**.
+- On **all 12** questions S3 surfaced semantically-relevant `path:line` citations the
+  lexical pass did not rank — e.g. *"how do we fuse results from several sources"* →
+  `recall/assemble.py:31` (the RRF block) + `:61` (`_rrf_fuse`); *"where is the cover
+  letter opening tone handled"* → `analyzer.py:1951`.
+- Headline metric: **1/12 questions a hard lexical miss (git 0 hits); S3 recovered 1/1.**
+
+**4. Learned / caveats:**
+- The probe measures *coverage* (does S3 surface new cites?), not *relevance ranking* —
+  `git grep` almost always finds *some* longest-token match, just not the most relevant, so
+  "1/12 lexical miss" is a floor, not a verdict. The per-question "new cites" signal (S3
+  contributes on 12/12) is richer. **The owner's qualitative finding remains the primary
+  justification.**
+- The index covers only **tracked** files; the probe ran pre-commit, so this branch's own
+  new code (`recall/sources/vector_source.py`, then untracked) was NOT indexed — which is
+  exactly why the "recomputing embeddings" answer pointed at `CHANGELOG.md` (committed)
+  rather than the source. A post-merge `python -m scripts.build_vector_index` re-indexes it.
+- Provenance: model `minishlab/potion-base-8M` (dim 256), 2948 chunks, built 2026-06-16 on
+  `feat/doc-assistant-vector` over base HEAD `d9e5e77`. Sidecar is gitignored (rebuildable).
+- **Still owed (v1.0.8):** a labeled before/after eval (judge-scored top-k relevance with
+  vs without S3) to confirm the tier earns its dependency footprint — tracked in the
+  Carry-forward ledger.

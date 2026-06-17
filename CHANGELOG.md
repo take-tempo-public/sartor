@@ -13,6 +13,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the S3 vector tier for the assistant (`feat/doc-assistant-vector`, Sprint 7.6)
+
+**Stage 2** of the Memory substrate: a static-embedding **semantic retrieval tier** that
+finds the right code/doc when the question's words don't match the source's words — the
+*vocabulary bridge* the lexical `git grep` (S2) tier misses. Built ahead of the formal
+v1.0.8 labeled-eval gate **at owner direction** (the Stage-1 assistant tested too literal /
+lacking semantic flexibility); the dependency add + the boundary-test relaxation are a
+deliberate, documented gate-override (`docs/dev/RELEASE_ARC.md` §Phase 4.7).
+
+- **`VectorSource` on the `recall/` `Source` protocol** ([`recall/sources/vector_source.py`](recall/sources/vector_source.py)):
+  brute-force cosine over a rebuildable embedding sidecar. **Project-agnostic by
+  construction** — the index dir, the **embedder** (`Callable[[Sequence[str]], ndarray]`),
+  the audience resolver, and the document provider are all injected; the substrate never
+  imports `model2vec`, so it stays embedder-agnostic + extractable. Build (`refresh`) and
+  search are split: `refresh` re-embeds only chunks whose content changed (content-hash
+  reuse → incremental, $0-on-unchanged); `search` loads the process-cached sidecar, embeds
+  the query, returns top-k `path:line`-cited Units. No index → `[]` (graceful degradation).
+  Re-exported from `recall`.
+- **Wiring** ([`blueprints/assistant.py`](blueprints/assistant.py)): the `model2vec`
+  embedder is built lazily + process-cached here (confined to the project layer); the
+  vector tier joins the source list + `Tier.VECTOR` joins the scope **only when the model +
+  index are both present** ("on when available"; no user-facing toggle). Runtime retrieval
+  is fully local — no network.
+- **Build step** ([`scripts/build_vector_index.py`](scripts/build_vector_index.py)):
+  downloads the static model ONCE (~30MB — the single deliberate network step, like
+  `playwright install chromium`) into the gitignored sidecar `db/vector_index/`, enumerates
+  tracked code + docs, chunks + embeds, writes the index. `--full` cold-rebuilds. A probe
+  ([`scripts/vector_index_probe.py`](scripts/vector_index_probe.py)) measures what the tier
+  recovers over the lexical tiers (the gate-override evidence; logged in `evals/TUNING_LOG.md`).
+- **New dependencies (hard):** `numpy` (the source's cosine + the `.npy` sidecar) and
+  `model2vec` (the static embedder: numpy + tokenizers + safetensors — **no torch /
+  onnxruntime**, the lightest semantic path). The `recall/` stdlib-only boundary test
+  ([`tests/test_recall_boundary.py`](tests/test_recall_boundary.py)) is deliberately
+  relaxed to admit **`numpy` in `recall/sources/` only** (core `recall/` stays stdlib-only;
+  `model2vec` stays forbidden anywhere in `recall/`).
+- **No migration; the vector index is a derived, rebuildable sidecar** (`db/vector_index/`,
+  gitignored) — never `db/resume.sqlite` (it would inherit migrations + the corpus PII).
+  Résumé `PROMPT_VERSION` unchanged (no prompt change). Unit tests use a fake numpy
+  embedder, so the default `pytest` stays green with no model download.
+
 ### Added — the doc-grounded assistant (`feat/doc-assistant`, Sprint 7.5)
 
 The **Stage 1** Memory capability: a working, **cited** chat over the committed

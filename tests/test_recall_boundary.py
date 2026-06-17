@@ -33,6 +33,15 @@ _FORBIDDEN_ROOTS = frozenset(
     }
 )
 
+# Light third-party libs sanctioned for the recall/sources/ tiers ONLY (Stage 2,
+# Sprint 7.6). The reuse contract permits recall/ to import "light libs"
+# (docs/dev/memory-architecture.md §"Reuse boundary"); the S3 VectorSource needs
+# `numpy` for brute-force cosine + the `.npy` sidecar. The CORE recall/ modules stay
+# strictly stdlib-only (this allowance is scoped to recall/sources/), and the heavy,
+# HuggingFace-coupled `model2vec` is deliberately NOT here — it never enters recall/
+# (it lives in the wiring layer), so the substrate stays embedder-agnostic + extractable.
+_SOURCES_LIGHT_LIBS = frozenset({"numpy"})
+
 
 def _recall_py_files() -> list[Path]:
     return sorted(RECALL_DIR.rglob("*.py"))
@@ -79,21 +88,26 @@ def test_recall_imports_no_forbidden_module():
 
 
 def test_recall_imports_only_stdlib():
-    """Every import in recall/ resolves to the stdlib or back into recall itself —
-    the substrate is self-contained (Stage 0 is stdlib-only), so lifting it out
-    later is packaging-only."""
+    """Every import in recall/ resolves to the stdlib, back into recall itself, or —
+    for `recall/sources/` tiers ONLY — a sanctioned light lib (`numpy`). The core
+    substrate stays stdlib-only, so lifting it out later is packaging-only; the S3
+    vector tier's numpy use is the single deliberate Stage-2 (Sprint 7.6) relaxation."""
     stdlib = sys.stdlib_module_names
     third_party: dict[str, set[str]] = {}
     for path in _recall_py_files():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        extra = _SOURCES_LIGHT_LIBS if path.is_relative_to(SOURCES_DIR) else frozenset()
         external = {root for root in _imported_roots(tree) if root and root != "recall"}
-        outside = {root for root in external if root not in stdlib}
+        outside = {root for root in external if root not in stdlib and root not in extra}
         if outside:
             third_party[path.relative_to(REPO_ROOT).as_posix()] = outside
     assert not third_party, (
         f"recall/ imported a non-stdlib, non-recall module: {third_party}. "
-        "Stage 0 is stdlib-only; any new dependency needs a pyproject + CHANGELOG "
-        "entry and a deliberate update to this test."
+        "The core substrate is stdlib-only; recall/sources/ tiers may add only the "
+        f"sanctioned light libs {sorted(_SOURCES_LIGHT_LIBS)} (e.g. numpy for the S3 "
+        "vector tier). Any further dependency needs a pyproject + CHANGELOG entry and a "
+        "deliberate update to _SOURCES_LIGHT_LIBS here. (model2vec must NOT appear in "
+        "recall/ — it stays in the wiring layer so the substrate is embedder-agnostic.)"
     )
 
 
