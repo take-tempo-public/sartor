@@ -186,15 +186,21 @@ offer → (later) `session.observe(turn)` ingests the exchange, no LLM.
   the SSE route is `blueprints/assistant.py` (`POST /api/assistant/ask`) + a collapsible
   in-app panel. **Decisions (owner-confirmed):** avatar in `analyzer.py` (D1=A);
   sources parameterized in `recall/sources/` (D2=Y); minimal in-shell UI panel.
-- **Stage 2 — eval-gated semantics (v1.0.7, in-epic).** S3 vector via **`model2vec`
-  static embeddings + a rebuildable BLOB/numpy sidecar** (the lightest path: numpy +
-  tokenizers + a ~10–30 MB static table — no onnxruntime, no torch; escalate to
-  `fastembed`/bge only if eval shows static isn't enough). **Pulled into v1.0.7 (2026-06-09
-  re-cut) so the complete system ships at the v1.1.0 public cut — but still eval-gated,
-  NOT unconditional:** build Stage 1, measure on real questions, add the vector tier
-  *only if* the code-vocabulary misses justify it, before the tag. Index build rides
-  the `.last_ingest_sha` diff (incremental, $0). The light embedder keeps the
-  public-release dependency footprint acceptable.
+- **Stage 2 — eval-gated semantics. DONE 2026-06-16 (`feat/doc-assistant-vector`, 7.6).**
+  S3 vector via **`model2vec` static embeddings + a rebuildable numpy `.npy` sidecar** (the
+  lightest path: numpy + tokenizers + a ~30 MB static table — no onnxruntime, no torch;
+  escalate to `fastembed`/bge only if eval shows static isn't enough). Shipped as
+  `recall.VectorSource` (brute-force cosine; the embedder is *injected* so `recall/` never
+  imports `model2vec` — embedder-agnostic + extractable); the wiring + the one-time model
+  download + the build (`scripts/build_vector_index.py`) live in the project layer. The
+  rebuild is **incremental ($0 on unchanged)** via per-chunk content-hash reuse (subsumes
+  the `.last_ingest_sha` diff, robust to a stale checkpoint). **The eval gate was a
+  deliberate OWNER OVERRIDE** (2026-06-09 re-cut made it eval-gated/conditional; built ahead
+  of the formal v1.0.8 labeled eval because the landed Stage-1 assistant tested *too literal
+  / lacking semantic flexibility*; a probe corroborates — `evals/TUNING_LOG.md` — and the
+  judge-scored before/after eval is owed at v1.0.8). The light embedder keeps the
+  public-release dependency footprint acceptable. **`numpy` + `model2vec` are now hard deps**
+  (the `recall/sources/` stdlib boundary test relaxed to admit `numpy` only).
 - **Stage 3 — depth.** S4 structure index ("what calls X") — **same eval-gated, in-epic
   treatment as Stage 2** (pull into v1.0.7 if dev call-graph questions justify it). S5
   **P2–P4** (durable cross-session memory → forgetting → provenance tags) is **HELD** —
@@ -204,9 +210,11 @@ offer → (later) `session.observe(turn)` ingests the exchange, no LLM.
 
 > **Storage note.** The vector index is *derived + rebuildable* → it belongs in
 > a **sidecar**, NOT in `db/resume.sqlite` (which carries the user's real corpus
-> PII and would inherit migrations). Start with a BLOB table + brute-force cosine
-> (fine to thousands of chunks); reach for the `sqlite-vec` extension only if you
-> outgrow brute force or want SQL-native KNN.
+> PII and would inherit migrations). 7.6 shipped this as a gitignored
+> `db/vector_index/` directory — `embeddings.npy` (the float32 matrix) + `chunks.json`
+> (parallel metadata) + the saved model — with brute-force cosine (fine at the current
+> ~3k chunks). Reach for a BLOB table or the `sqlite-vec` extension only if you outgrow
+> brute force or want SQL-native KNN.
 
 ---
 

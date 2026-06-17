@@ -42,6 +42,20 @@ dependencies = [
     # (%LOCALAPPDATA%\ms-playwright on Windows, ~/.cache on Linux,
     # ~/Library/Caches on macOS), NOT inside the repo.
     "playwright>=1.40,<2.0",
+    # Sprint 7.6 — the S3 vector tier (semantic retrieval for the doc-grounded
+    # assistant). model2vec is a STATIC-embedding model: numpy + tokenizers +
+    # safetensors, NO torch / onnxruntime — the lightest semantic path. numpy is
+    # also imported directly by `recall/sources/vector_source.py` for the
+    # brute-force cosine + the `.npy` sidecar. The embedding model (~30MB) downloads
+    # ONCE via `python -m scripts.build_vector_index` into a gitignored local
+    # sidecar (db/vector_index/); runtime retrieval is fully local (no network).
+    # Both are hard deps (owner decision 2026-06-16); model2vec stays out of
+    # `recall/` (wired only in blueprints/ + scripts/) so the substrate stays
+    # extractable + embedder-agnostic. Added ahead of the formal v1.0.8 eval gate at
+    # owner direction (Stage-1 lexical retrieval tested too literal) — see CHANGELOG
+    # + RELEASE_ARC §4.7.
+    "numpy>=1.24,<3.0",
+    "model2vec>=0.3,<1.0",
 ]
 
 [project.optional-dependencies]

@@ -43,6 +43,11 @@ db/*.sqlite-journal
 db/*.sqlite-wal
 db/*.sqlite-shm
 
+# ---- S3 vector-index sidecar (Sprint 7.6; derived + rebuildable: the embedding
+#      model + the .npy/.json index). Built by `python -m scripts.build_vector_index`;
+#      never committed (rebuildable, ~30MB model) and kept OUT of db/resume.sqlite. ----
+db/vector_index/
+
 # ---- Eval results and real fixtures (per-clone, may contain real PII) ----
 evals/results/*
 !evals/results/.gitkeep
