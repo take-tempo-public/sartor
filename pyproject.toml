@@ -35,8 +35,11 @@ dependencies = [
     "pydantic>=2.0,<3.0",
     "sqlalchemy>=2.0,<3.0",
     "alembic>=1.13,<2.0",
-    # β.3 — Playwright drives headless Chromium for PDF + live HTML
-    # preview rendering. Requires a one-time Chromium binary download:
+    # β.3 — Playwright drives headless Chromium for PDF output only. (The
+    # in-browser live preview shares the same HTML/CSS template but renders
+    # browser-side via paged.js — it does NOT use Chromium; see SECURITY.md
+    # "Bundled third-party assets".) PDF output requires a one-time Chromium
+    # binary download:
     #   python -m playwright install chromium
     # The browser binary is ~150MB and lives in the OS user cache
     # (%LOCALAPPDATA%\ms-playwright on Windows, ~/.cache on Linux,

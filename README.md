@@ -12,6 +12,7 @@ A local web application that tailors résumés and cover letters to specific job
 > [`CLAUDE.md`](CLAUDE.md) (Claude-specific overrides) ·
 > [`CONTRIBUTING.md`](CONTRIBUTING.md) (PR workflow) ·
 > [`SECURITY.md`](SECURITY.md) (threat model) ·
+> [`ACCESSIBILITY.md`](ACCESSIBILITY.md) (a11y status) ·
 > [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (v1 → v2 ladder) ·
 > [`docs/dev/RELEASE_CHECKLIST.md`](docs/dev/RELEASE_CHECKLIST.md) (active release gates).
 > Each doc opens with a `Purpose / Audience / Authoritative for` block.
@@ -34,7 +35,7 @@ Quick install (Python 3.10+):
 git clone https://github.com/amodal1/callback
 cd callback
 pip install -e .
-python -m playwright install chromium       # one-time, ~150 MB, for PDF output
+python -m playwright install chromium       # optional — one-time ~150 MB, only if you want PDF output
 export ANTHROPIC_API_KEY=your-key-here       # or put it in a `.api_key` file
 python app.py
 ```
@@ -67,8 +68,9 @@ The `.gitignore` keeps all of these out of source control. The
 [`SECURITY.md`](SECURITY.md) doc has the full threat model.
 
 **What actually downloads** — and why the few non-pip things (the Chromium
-binary, and the optional ~3.2 GB grounding-eval model weights) exist — is laid
-out in [`docs/install.md` → What gets downloaded & why](docs/install.md#what-gets-downloaded).
+binary for PDF output, and the optional ~3.2 GB grounding-eval model weights)
+exist — is laid out in
+[`docs/install.md` → What gets downloaded & why](docs/install.md#what-gets-downloaded).
 
 ---
 
