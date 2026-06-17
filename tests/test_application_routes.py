@@ -203,6 +203,62 @@ class TestListApplications:
         body = client.get("/api/users/alice/applications").get_json()
         assert body[0]["pending_proposals"] == 2
 
+    def test_avoids_n_plus_1_query_growth(self, app_app):
+        """N+1 regression guard: the SQL query count for the list must be
+        CONSTANT in the number of applications (selectinload on .runs + one
+        grouped pending-count query), not 1+2N. Pre-fix this scaled with the
+        number of applications and made user-select feel slow.
+        """
+        from sqlalchemy import event
+
+        from db.session import get_engine
+
+        cid = _seed_candidate()
+        bid = _seed_bullet_for_proposals(cid)
+
+        def _seed_apps(n, offset):
+            for i in range(offset, offset + n):
+                aid = _seed_application(cid, title=f"App {i}", jd_text=f"JD {i}")
+                for it in range(2):
+                    rid = _seed_run(aid, iteration=it, run_id=f"run-{i}-{it}")
+                    _seed_pending_proposal(rid, bullet_id=bid)
+
+        engine = get_engine()
+        counter = {"n": 0}
+
+        def _count(*_args, **_kwargs):
+            counter["n"] += 1
+
+        def _count_request():
+            counter["n"] = 0
+            event.listen(engine, "after_cursor_execute", _count)
+            try:
+                body = (
+                    app_app.app.test_client()
+                    .get("/api/users/alice/applications")
+                    .get_json()
+                )
+            finally:
+                event.remove(engine, "after_cursor_execute", _count)
+            return body, counter["n"]
+
+        _seed_apps(2, 0)
+        body_small, q_small = _count_request()
+        _seed_apps(4, 2)  # 6 applications total
+        body_big, q_big = _count_request()
+
+        assert len(body_small) == 2
+        assert len(body_big) == 6
+        # Correctness preserved at scale: each app still reports its 2 runs and
+        # 2 pending proposals.
+        assert all(
+            a["iteration_count"] == 2 and a["pending_proposals"] == 2
+            for a in body_big
+        )
+        # The fix: query count does NOT grow with the application count.
+        assert q_small == q_big, (q_small, q_big)
+        assert q_big <= 6  # absolute ceiling (was 1+2N = 13 for 6 apps)
+
     def test_missing_candidate_returns_200_needs_onboarding(self, app_app):
         # Read precondition unmet → 200 + needs_onboarding (empty list), not a
         # 409 conflict, so the UI shows the import CTA without a console error.

@@ -5301,6 +5301,9 @@ def list_applications(username: str):
     lifecycle statuses — the programmatic query surface for the B.8
     outcome-learning layer. Unknown statuses → 400.
     """
+    from sqlalchemy import func
+    from sqlalchemy.orm import selectinload
+
     from db.models import Application, Candidate, ProposalReview
     from db.session import get_session, init_db
 
@@ -5330,20 +5333,40 @@ def list_applications(username: str):
                 # a bare array; the needs-onboarding case is the discriminated
                 # object the frontend branches on before treating it as a list.
                 return jsonify({"applications": [], "needs_onboarding": True})
-            query = session.query(Application).filter_by(candidate_id=candidate.id)
+            query = (
+                session.query(Application)
+                .options(selectinload(Application.runs))
+                .filter_by(candidate_id=candidate.id)
+            )
             if wanted_statuses:
                 query = query.filter(Application.status.in_(wanted_statuses))
             rows = query.order_by(Application.updated_at.desc()).all()
+
+            # Pending-proposal counts in ONE grouped query over every run id
+            # (was a per-application COUNT → N+1; selectinload above folds the
+            # per-row .runs lazy-load into one more query). Net ~3 queries
+            # regardless of how many applications the user has.
+            all_run_ids = [r.id for app_row in rows for r in app_row.runs]
+            pending_by_run: dict[int, int] = {}
+            if all_run_ids:
+                for run_id, count in (
+                    session.query(
+                        ProposalReview.application_run_id,
+                        func.count(ProposalReview.id),
+                    )
+                    .filter(
+                        ProposalReview.application_run_id.in_(all_run_ids),
+                        ProposalReview.decision == "pending",
+                    )
+                    .group_by(ProposalReview.application_run_id)
+                    .all()
+                ):
+                    pending_by_run[run_id] = count
+
             out = []
             for app_row in rows:
                 runs = sorted(app_row.runs, key=lambda r: r.iteration)
-                pending = 0
-                if runs:
-                    run_ids = [r.id for r in runs]
-                    pending = session.query(ProposalReview).filter(
-                        ProposalReview.application_run_id.in_(run_ids),
-                        ProposalReview.decision == "pending",
-                    ).count()
+                pending = sum(pending_by_run.get(r.id, 0) for r in runs)
                 out.append(_application_summary_dict(app_row, runs, pending))
             return jsonify(out)
         finally:
