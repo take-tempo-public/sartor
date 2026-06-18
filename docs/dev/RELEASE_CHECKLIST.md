@@ -473,7 +473,22 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Open count: 9 — **at** the ~8–10 reduction-sprint threshold; the next stream should plan a reduction pass (the link-checker + CONTRIBUTING-drift items below are the natural pair to clear)._
+_Open count: 10 — **at/over** the ~8–10 reduction-sprint threshold; the next stream should plan a reduction pass (the link-checker + CONTRIBUTING-drift items below are the natural pair to clear)._
+
+- [ ] **Avatar voice/tone & behavior tuning — EXECUTION (guidance landed; tuning pending)** — the
+      four-part voice/tone/behavior guidance package + owner-locked decisions landed
+      ([`docs/dev/avatar-voice-tone-guidance.md`](avatar-voice-tone-guidance.md), 2026-06-18).
+      **Executing** it is the follow-on: edit `AVATAR_SYSTEM_PROMPT` (`analyzer.py:526`) + the per-turn
+      closer (`analyzer.py:1561`) + the UI microcopy (`templates/index.html` + `static/assistant.js`),
+      bump `AVATAR_PROMPT_VERSION` (`analyzer.py:290`) in the same commit, and run the guide's §6
+      validation matrix. **Bundles a real a11y defect** in that L3 scope: `#assistantAnswer`
+      (`templates/index.html:924`) is `aria-live="polite"` and `static/assistant.js:29` appends tokens
+      per chunk → screen-reader flood (buffer, announce once on completion). Owner decisions (2026-06-17/18):
+      light-character-as-friendly-guide, structural warmth (no feeding frustration), near-mandatory cited
+      refusal + a GitHub "report it" rung for in-domain gaps, connect-capability-to-concern on reassurance-
+      fishing. **Distinct from the doc-coverage item below** — this is HOW the avatar sounds/behaves; that is
+      WHAT it knows. Detail + the locked Voice Charter live in the guidance doc; memory
+      `project-avatar-voice-tone-guidance`. _(surfaced: 2026-06-18, `docs/avatar-voice-tone-guidance`.)_
 
 - [ ] **S3 vector tier — labeled before/after eval (gate-override validation owed)** — the
       S3 `VectorSource` (Sprint 7.6, `feat/doc-assistant-vector`) was built **ahead of**
