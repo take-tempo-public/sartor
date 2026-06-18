@@ -473,22 +473,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Open count: 10 — **at/over** the ~8–10 reduction-sprint threshold; the next stream should plan a reduction pass (the link-checker + CONTRIBUTING-drift items below are the natural pair to clear)._
-
-- [ ] **Avatar voice/tone & behavior tuning — EXECUTION (guidance landed; tuning pending)** — the
-      four-part voice/tone/behavior guidance package + owner-locked decisions landed
-      ([`docs/dev/avatar-voice-tone-guidance.md`](avatar-voice-tone-guidance.md), 2026-06-18).
-      **Executing** it is the follow-on: edit `AVATAR_SYSTEM_PROMPT` (`analyzer.py:526`) + the per-turn
-      closer (`analyzer.py:1561`) + the UI microcopy (`templates/index.html` + `static/assistant.js`),
-      bump `AVATAR_PROMPT_VERSION` (`analyzer.py:290`) in the same commit, and run the guide's §6
-      validation matrix. **Bundles a real a11y defect** in that L3 scope: `#assistantAnswer`
-      (`templates/index.html:924`) is `aria-live="polite"` and `static/assistant.js:29` appends tokens
-      per chunk → screen-reader flood (buffer, announce once on completion). Owner decisions (2026-06-17/18):
-      light-character-as-friendly-guide, structural warmth (no feeding frustration), near-mandatory cited
-      refusal + a GitHub "report it" rung for in-domain gaps, connect-capability-to-concern on reassurance-
-      fishing. **Distinct from the doc-coverage item below** — this is HOW the avatar sounds/behaves; that is
-      WHAT it knows. Detail + the locked Voice Charter live in the guidance doc; memory
-      `project-avatar-voice-tone-guidance`. _(surfaced: 2026-06-18, `docs/avatar-voice-tone-guidance`.)_
+_Open count: 9 — at/over the ~8–10 reduction-sprint threshold; the next stream should plan a reduction pass (the link-checker + CONTRIBUTING-drift items below are the natural pair to clear)._
 
 - [ ] **S3 vector tier — labeled before/after eval (gate-override validation owed)** — the
       S3 `VectorSource` (Sprint 7.6, `feat/doc-assistant-vector`) was built **ahead of**
@@ -585,6 +570,26 @@ _Open count: 10 — **at/over** the ~8–10 reduction-sprint threshold; the next
       2026-06-17, `fix/v107-ui-polish-trio` scoping.)_
 
 #### Resolved
+
+- [x] **Avatar voice/tone & behavior tuning — EXECUTION** — **DONE 2026-06-18 on
+      `feat/avatar-voice-tone-tuning`.** Executed Part 4 of
+      [`avatar-voice-tone-guidance.md`](avatar-voice-tone-guidance.md): friendly-guide
+      `AVATAR_SYSTEM_PROMPT` (warmth via helpfulness, not instructed wit), near-mandatory cited
+      refusal-as-doorway + the GitHub "report it" rung (URL only in L3 chrome, never model-emitted),
+      calibrated middle, anti-sycophancy / anti-over-promise (ATS = parseability), connect-to-concern
+      on reassurance-fishing; `AVATAR_PROMPT_VERSION 2026-06-16.1 → 2026-06-18.1` (same commit;
+      `PROMPT_VERSION` untouched; avatar stays out of `_BASE_SYSTEM_PROMPTS`). **The bundled a11y
+      defect is FIXED** — `#assistantAnswer` is no longer an `aria-live` region (was flooding screen
+      readers per token); the single completion announcement rides `#assistantStatus`. Plus L3
+      microcopy (plain intro, persistent empty state, blame-free errors, real GitHub link). Validated:
+      ruff/mypy/pytest 1303 green incl. UX tier, new LLM-free deterministic tone checks, and a live
+      Haiku §6.3 spot-check matrix (both modes × all scenario types; access plane held). Detail +
+      the old-vs-new grounding-regression comparison in [`evals/TUNING_LOG.md`](../../evals/TUNING_LOG.md)
+      2026-06-18; memory [[project-avatar-voice-tone-guidance]]. **Tracked follow-on (NOT a new open
+      item):** the live transcripts surfaced a *pre-existing* (present in the OLD prompt too, so not a
+      regression) Haiku citation-format / line-number approximation fragility — the new cite-membership
+      check is the mechanism to quantify it in the **v1.0.8 labeled avatar eval** (rides the test
+      window / the grounding-metric ledger item below). _(surfaced: 2026-06-18, `docs/avatar-voice-tone-guidance`.)_
 
 - [x] **Enforcement portability — security/quality hooks: tool-agnostic git-hooks/CI vs the
       Claude plugin** — **DECIDED 2026-06-15 on `design/governance-extraction` (7.2 design): SPLIT.**

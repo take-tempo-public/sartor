@@ -905,9 +905,9 @@
       <h2 id="assistantModalTitle" class="cb-modal-title">Ask the assistant</h2>
       <div class="cb-modal-body">
         <p id="assistantModalIntro" class="edit-hint" style="margin-top:0">
-          Ask how callback. works or how to use it — answers are grounded in the
-          committed wiki + code at HEAD, with citations. Turn on dev mode for
-          implementation-level detail.
+          Ask how callback. works or how to use it, and I'll answer from the
+          project's own docs and code — with citations, so I show my sources.
+          Tick Dev mode for technical detail.
         </p>
         <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
           <label class="memory-checkbox" for="assistantDevMode">
@@ -921,8 +921,32 @@
           <button class="cb-btn cb-bg-blue" id="assistantAsk" onclick="askAssistant()">Ask</button>
           <span class="edit-hint" id="assistantStatus" aria-live="polite" style="margin:0"></span>
         </div>
-        <div id="assistantAnswer" aria-live="polite"
+        <!-- Persistent empty state: scope/boundary + verified example prompts.
+             Lives here (not the placeholder, which vanishes on focus — an a11y
+             hazard); hidden by askAssistant() once the first answer streams in. -->
+        <div id="assistantEmptyState" style="margin-top:0.75rem;">
+          <p class="edit-hint" style="margin:0 0 0.5rem">
+            I explain how callback. works and how to use it. I answer only from the
+            project's committed docs and code, with citations — I'm not the résumé
+            writer, and I won't touch your private resumes or configs.
+          </p>
+          <p class="edit-hint" style="margin:0 0 0.25rem">Try:</p>
+          <ul class="edit-hint" style="margin:0; padding-left:1.25rem">
+            <li>How do I tailor a résumé?</li>
+            <li>Is my data sent anywhere?</li>
+            <li>How do I pick an ATS-safe template?</li>
+            <li>(dev) Where do the LLM calls live?</li>
+          </ul>
+        </div>
+        <!-- Answer node is NOT a live region: tokens stream in token-by-token, so
+             announcing per chunk floods screen readers. #assistantStatus (the
+             polite region above) carries the single terminal announcement instead. -->
+        <div id="assistantAnswer" aria-busy="false" aria-atomic="false"
              style="white-space:pre-wrap; margin-top:0.75rem;"></div>
+        <p class="edit-hint" id="assistantReportHint" style="margin-top:0.75rem">
+          Something missing from the docs?
+          <a href="https://github.com/amodal1/callback/issues" target="_blank" rel="noopener">Report it on the project's GitHub</a>.
+        </p>
       </div>
       <div class="modal-actions">
         <button class="cb-btn cb-bg-blue" id="btnCloseAssistant" data-assistant-dismiss>Close</button>

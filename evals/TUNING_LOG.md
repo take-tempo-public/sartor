@@ -2236,3 +2236,92 @@ using the literal code identifier):
 - **Still owed (v1.0.8):** a labeled before/after eval (judge-scored top-k relevance with
   vs without S3) to confirm the tier earns its dependency footprint — tracked in the
   Carry-forward ledger.
+
+---
+
+## 2026-06-18 — feat/avatar-voice-tone-tuning: avatar voice/tone & behavior (`AVATAR_PROMPT_VERSION 2026-06-16.1 → 2026-06-18.1`)
+
+> **Scope note.** This tunes the **avatar** (`avatar_answer_streaming` /
+> `AVATAR_SYSTEM_PROMPT`), NOT the résumé pipeline. `PROMPT_VERSION` is untouched and the
+> avatar is **not** a `_BASE_SYSTEM_PROMPTS` / synthetic-suite target — so this entry uses
+> the avatar's own deterministic checks + a live manual spot-check matrix (the guide's §6),
+> never the résumé runner. Executes [`docs/dev/avatar-voice-tone-guidance.md`](../docs/dev/avatar-voice-tone-guidance.md) Part 4.
+
+### 1. What changed
+
+All in one commit with the `AVATAR_PROMPT_VERSION` bump (`analyzer.py:290`):
+- **L1 `AVATAR_SYSTEM_PROMPT` (`analyzer.py:526`)** — friendly-guide persona (warmth via
+  helpfulness, never instructed wit); the verbatim P0 precedence line; the refusal redirect
+  made **near-mandatory + cited** with a friendly follow-up; the **GitHub "report it" rung**
+  for in-domain-but-undocumented gaps (behavior only — the model is told to never invent a
+  URL); an explicit **calibrated-middle** clause; an **anti-sycophancy / anti-over-promise /
+  anti-performed-honesty-or-empathy** clause + the **connect-capability-to-concern** move on
+  reassurance-fishing; the warmly-reframed **L5** dev-mode nudge ("Tick Dev mode…").
+- **L2 per-turn closer (`analyzer.py:1561`)** — reworded to agree with L1; refusal byte-exact.
+- **L4** — refusal string `"I don't have that in my docs."` kept **byte-identical** in both
+  L1 and L2 (no reword — owner Q9 recommended path).
+- **Citation readability (owner-requested mid-pass)** — inline citations now read as natural
+  sentences with the source in clean **SINGLE** square brackets at the **END** of the sentence
+  it supports (`[using-callback]`, `[analyzer.py:49]`), never `[[…]]` mid-sentence; only the slug
+  or path:line goes inside the brackets (no phrase-wrapping). The `#assistantStatus` Sources
+  footer strips the `[[ ]]` to match. Owner rationale: `[[path:line]]` mid-sentence is hard for
+  non-technical readers.
+- **L3 (`templates/index.html` + `static/assistant.js`, no version bump)** — plain-languaged
+  intro ("I show my sources", dropped "committed wiki + code at HEAD"); a **persistent
+  empty-state** (scope/boundary line + 4 verified example prompts, replacing the vanishing
+  placeholder as the home for examples); two **blame-free error strings** distinct from the
+  refusal; a real **GitHub issues link** in the modal footer (the single source of the URL the
+  prompt only references by behavior); and the **`aria-live` streaming-flood fix** — dropped
+  `aria-live="polite"` from `#assistantAnswer` (now `aria-busy`-toggled, silent), so the one
+  terminal announcement rides `#assistantStatus`.
+
+### 2. Why
+
+Carry-forward ledger item "Avatar voice/tone & behavior tuning — EXECUTION". The build-time
+persona (Sprint 7.5) was never tuned; the refusal was a dead end ("if useful, name the closest
+thing"), there was no calibrated middle, no anti-over-promise guardrail, and a confirmed
+screen-reader a11y defect (per-token announcement of a live region).
+
+### 3. Result
+
+- **Gate:** `ruff` clean · `mypy` clean (189 files) · `pytest` **1303 passed** (incl. the UX
+  tier — `test_20260616_assistant_panel.py` green, so the markup/JS changes drive cleanly).
+- **Deterministic tone checks** (new, `tests/test_avatar_streaming.py`, $0): refusal byte-sync
+  across L1/L2; the locked voice clauses present; banned-phrase / over-promise / no-URL-in-output
+  scanners; cite-membership checker (`[[slug]]`/`path:line` ⊆ recalled units); brand-mark +
+  answer-node-not-a-live-region. All pass; the original 8 still pass.
+- **Live §6.3 spot-check** (real Haiku, 12 scenarios × both modes, in-process through the real
+  `recall.assemble` path): voice axes **clean** — friendly-guide tone with **zero** exclamation /
+  cheer openers, refusal-as-doorway + the GitHub rung firing correctly with **no fabricated URL
+  in any answer**, the connect-to-concern move on "will callback get me the interview?" (declined
+  the prediction, connected tailoring + parseability, explicitly disclaimed the outcome), ATS
+  framed strictly as parseability, and the **access plane held** (zero DEV-audience units in every
+  user-mode turn; #4a routes user→refuse-redirect vs dev→cited dashboard answer).
+- **Grounding regression check (P0 — explicit, not assumed):** ran the citation-drift scenarios
+  under the OLD vs NEW prompt. Citation-shaped drift is **pre-existing, not introduced**: the
+  `AGENTS.md:7` line-number approximation is emitted **identically by both** prompts; on the
+  retrieval question the OLD prompt fabricated `[[Application]]`/`[[wizard rail]]` while NEW had
+  **zero** violations. Most flagged "violations" are a cosmetic bracket-format quirk (model wraps a
+  real `path:line` unit in `[[ ]]`), present in both. The grounding clauses are byte-identical, so
+  the floor is unchanged.
+
+### 4. What we learned
+
+1. **A friendlier persona did not erode grounding** — but only because the grounding clauses were
+   kept byte-identical and the warmth was confined to manner + the next step (the guide's central
+   discipline). The old-vs-new comparison is the evidence; do it for any future avatar persona edit.
+2. **Haiku has a pre-existing citation-format / line-number fragility** (occasionally renders a
+   `path:line` as `[[path:line]]`, wraps a bare module name in `[[ ]]`, or approximates a line it
+   wasn't given). It is cosmetic-to-mild (the *claim* stays grounded) and equal across both prompts.
+   The new **cite-membership** check is the mechanism to quantify it at scale — owed in the v1.0.8
+   labeled avatar eval (Carry-forward ledger). Not fixed here: it predates the tuning, the floor is
+   unchanged, and citation-format surgery is out of this branch's voice/tone scope.
+3. **The GitHub "report it" rung works as designed** — the model states the behavior and never
+   emits a URL (the link lives only in L3 chrome), so the "never invent a support channel" invariant
+   holds while still giving in-domain-undocumented questions a real forward path.
+4. **Single-bracket, end-of-sentence citations incidentally REDUCED the citation drift.** After the
+   owner-requested format change, the re-run spot-check had **zero** cite-membership violations — the
+   `AGENTS.md:7` line-approximation and the `[[Step 1…]]` / `[[overview.md]]` fabrications from the
+   first run were gone. Plausible cause: the model no longer mirrors the `[[ ]]` it sees in the
+   recalled-context block, so it stops conflating wiki-link syntax with a citation it can invent.
+   Net: the readability change and the grounding floor moved the same direction.
