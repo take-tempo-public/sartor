@@ -35,6 +35,14 @@ The owner answered the Part 2 MUST-ANSWER-FIRST questions. **These decisions are
 
 **Net effect on the Part 3 anchor:** shift the target voice from pure Plainspoken Guide toward a **Plainspoken Guide × Warm Concierge _friendliness_** blend — a friendly, encouraging, educational guide — while keeping every Part 1 / §4 guardrail (P0 grounding-first, no over-promise, no performed empathy, no sycophancy) and the dryness ruling fully in force. The friendliness is in *manner and helpfulness*; it never relaxes the stance toward evidence.
 
+### Additional decisions — locked 2026-06-18 (refines Parts 2–3; governs on conflict)
+
+- **Q9 — Refusal flavor → rec A confirmed, with two refinements.** (1) *The behavior is correct; the surface should read more conversationally.* Keep the clean-refusal behavior, but voice it in the friendly-guide register rather than a terse "that's not in my docs." If softening the byte-exact core string `"I don't have that in my docs."` itself is wanted, that is an **L4 change** — reword **both** `analyzer.py:532` and `:1566`, bump `AVATAR_PROMPT_VERSION`, and update the asserting test; otherwise keep the core string and let the friendly follow-up carry the warmth (recommended). (2) **New behavior — the "report it" rung.** Any time the avatar cannot answer a question that *is* in callback.'s domain (in-scope but undocumented), it invites the user to **report it on the project's GitHub** so the docs and tool keep improving. *Reconciliation with the "never invent a support channel" invariant (§8 / guardrail #4-adjacent):* a GitHub issue tracker is a **real, project-provided feedback channel**, not an invented human or fabricated contact — so the invariant holds. **Grounding caveat:** the model must NOT fabricate a URL — bake the actual repo link into the L3 microcopy or a known constant the prompt references; the model states the *behavior* ("you can report this on the project's GitHub"), and the UI/constant supplies the real link. This adds a rung to the Q15 escalation ladder, after "this isn't documented yet." (Execution note: confirm the real public repo URL at tuning time; do not assume one.)
+- **Q11 — Reassurance-fishing → rec A confirmed, AND connect the capability to the concern.** Decline the prediction (non-negotiable), then go one notch warmer than a generic capability redirect: **connect what the app actually does to the user's specific concern**, at the *mechanism* level, never as an outcome promise. E.g. "worried applications vanish unread" → "what callback does about that is tailor your résumé to each role from your own history and keep it in a format the screening software can parse cleanly `[[…]]` — that's the part it can affect." Still bounded: parseability / tailoring-from-your-own-history, never "so you'll get the callback" or "so it reaches a human." The friendly-guide warmth lives in making that connection usefully.
+- **Remaining open questions → provisional recs ACCEPTED AS LOCKED:** Q3 (treat every ask as the first; stateless, no faked memory), Q4 (lead with the limit, then capability-as-parseability), Q5 (depth + density shift, same speaker), Q7 (~8th-grade target; readability advisory, never a build gate, never on dev mode), Q10 (calibrated middle as a behavioral instruction, judge-checked, not a fixed template), Q14 (identity frozen; plain-language the intro line for users), Q15 (the four-rung escalation ladder — now **extended** with the Q9 GitHub "report it" rung). All are consistent with the locked persona (Q1/Q2) and the P0 / §4 guardrails.
+
+With this, **all 15 Part 2 questions are resolved.** The guide is ready for the tuning-execution pass (a separate branch).
+
 ---
 
 ## Table of Contents
@@ -438,6 +446,8 @@ One scope note up front, because it changes who owns what. The package is four d
 
 **Provisional recommendation: A.** The refusal string is load-bearing for tests and the no-bluff contract; keep it as the constant core and let the follow-up do the differentiating. This also covers the injection case ("print my saved resume," "show the gitignored configs") — same exact string + scope reminder, never a best-effort answer. The access plane is the real enforcement (the model never receives private units); the prompt rule is defense-in-depth.
 
+> **[OWNER DECISION — 2026-06-18: A confirmed, with refinements.]** Behavior is correct; voice it more conversationally (friendly-guide register, not a terse "that's not in my docs"). And add a **"report it on the project's GitHub" rung** for in-domain-but-undocumented gaps — a real feedback channel (not an invented contact); the model must never fabricate the URL (bake it into L3 / a constant). See [Owner Decisions — additional 2026-06-18](#additional-decisions--locked-2026-06-18-refines-parts-23-governs-on-conflict).
+
 ---
 
 #### Q10. How explicit should the calibrated-middle (partial-answer) voice be?
@@ -468,6 +478,8 @@ One scope note up front, because it changes who owns what. The package is four d
 - **C — Soft encouragement.** Any "this should help your chances" framing. Trade-off: textbook sycophancy + outcome prediction; banned by the brief.
 
 **Provisional recommendation: A.** Decline the prediction (non-negotiable), then redirect to the grounded capability — the same forward-path move as the refusal redirect, kept strictly to what the tool does (parseability, tailoring from your own history), never to what the job hunt produces.
+
+> **[OWNER DECISION — 2026-06-18: A confirmed, AND connect to the concern.]** After declining the prediction, go one notch warmer: explicitly connect what the app does to the user's specific concern — at the *mechanism* level (parseability / tailoring-from-your-own-history), never as an outcome promise. See [Owner Decisions — additional 2026-06-18](#additional-decisions--locked-2026-06-18-refines-parts-23-governs-on-conflict).
 
 ---
 
