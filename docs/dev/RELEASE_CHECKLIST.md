@@ -70,6 +70,7 @@ post-feature test window is a **formal gate** (E2E walkthrough + first real-data
 - [x] **7.8** `px/v107-band` — PX-18 `ACCESSIBILITY.md`, PX-31 Chromium reclassification, PX-32 KEEP/BOOST ledger; + fix the stale R2 deferred-listing in `PRODUCT_SHAPE.md`. **DONE 2026-06-16** (`px/v107-band`). **PX-18** (`F-expa11y-03`): new root [`ACCESSIBILITY.md`](../../ACCESSIBILITY.md) honest-status page per **E-2** (signed product charter, not the graduated `docs/governance/`) — the machine-checked taxonomy (axe serious/critical · keyboard a11y-floor · `_announce()` live-region · modal trap · `--fg-2/3` contrast) **vs known gaps** (UX tier not yet in CI → PX-25; serious/critical-only; Clarify/Output/cover-letter/modals + tab-order/reflow/history unscanned; NVDA not yet walked); **no conformance claim / tag gate / recurring-audit promise** (v1.1.0 WCAG-2.2-AA self-eval stated as intent only); + README doc-map pointer. **PX-31** (`F-docs-05`): Chromium ~150 MB reclassified **PDF-output-only** — lifted out of `docs/install.md` Prerequisites + the 3 OS sequences gated "optional — only for PDF output"; corrected the "renders every PDF and the live preview" conflation (the preview is browser-side paged.js, Chromium-free — `SECURITY.md` bundled-assets; verified `pdf_render.py` is the sole Playwright renderer); README quick-install + `pyproject.toml` playwright comment tightened. **PX-32**: new [`docs/dev/keep-ledger.md`](keep-ledger.md) eval/governance do-not-regress ledger — `F-eval-05/06/08` + `F-gov-06/09` + `F-docs-07/08/09` as KEEP notes, `F-eval-09` as a precision note, `F-eval-07` **BOOST** affirmed, `F-gov-08` + `F-gov-10` logged as **deferred design items (ledger-only)**; the security/PII KEEP set cross-referenced to PX-29 (8.4). **R2 fix**: `PRODUCT_SHAPE.md` §10 R2 entry marked **shipped v1.0.3** (was still listed v1.1-deferred, contradicting the §494 banner). **Docs-only** — no code/prompt/route/dep/migration; `PROMPT_VERSION` unchanged. Gate green (ruff · mypy · pytest). **No new ledger item (open count stays 8)** — the PX-32 deferred design items live in `keep-ledger.md`, not the carry-forward ledger (owner decision).
 - [x] **7.8a** `feat/assistant-topbar-modal` — **assistant UI relocation** (first of a few small UI-polish sprints the owner flagged before the 7.9 tag). **DONE 2026-06-16** (`feat/assistant-topbar-modal`): the doc-grounded assistant's entry point moved from the always-visible in-shell collapsible `<details>` panel (`#panelAssistant`, parked below the wizard) to a **fixed top-bar magnifier icon** (`#assistantPill`, left of Diagnostics) opening a **floating, scrollable modal** (`#assistantModal`) — one stable, always-findable entry point. Reuses the existing `.cb-modal` skeleton (id-scoped to ~680px; `.cb-modal-body` internal scroll + 90vh cap unchanged) and the top-bar-pill-opens-overlay precedent (Diagnostics modal / Settings drawer). The control ids carry over, so `static/assistant.js` `askAssistant()`/SSE path is **unchanged**; one new `openAssistantModal()` adds focus-trap/Esc/backdrop/focus-restore/`aria-expanded` mirroring `openDiagnosticsModal()`. POM (`ui_pages/selectors.py` `Assistant`) re-pointed pill→modal; the assistant UX regression now drives pill → modal → streamed cited answer; the axe gate adds an open-state `#assistantModal` scan. **Front-end only** — no route, LLM, prompt, dep, or migration; `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` unchanged. Gate green (ruff · mypy · pytest · `-m ux`). **No new ledger item (open count stays 8.)**
 - [x] **7.8b** `fix/v107-ui-polish-trio` — **three small UI-polish fixes** (second of the few small sprints before 7.9). **DONE 2026-06-17** (`fix/v107-ui-polish-trio`): (#1) **stray browser windows** — `app.py` auto-opened a browser on every Flask debug-reloader restart because the open ran in the serving child (`WERKZEUG_RUN_MAIN == "true"`) the reloader re-executes per reload; a new pure `_should_open_browser()` opens **exactly once** (supervisor / non-debug single process, never the reload child; still honors `CALLBACK_NO_BROWSER=1`), covered by `tests/test_browser_open.py`. (#3) **slow application load** — `list_applications` ran `1+2N` queries (lazy `Application.runs` + per-app pending `ProposalReview` count); now `selectinload(Application.runs)` + one batched `group_by` pending-count → ~3 queries regardless of N, with a constant-query-count regression test. (#4) **new-user stale dropdown** — `showNewUserForm()` cleared the leftover `#userSelect` value (Cancel restores it) + a UX regression. **No prompt/dep/migration; `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` unchanged.** Gate green (ruff · mypy 189 · pytest 1296 incl. `-m ux`). **Adds 1 ledger item** (assistant doc-coverage → open count 8 → 9). The remaining named UI-polish candidate is **#2 assistant voice softening** (own `feat/` branch — owner's "start with voice softening").
+- [ ] **7.8c** `fix/assistant-runs-without-user` — **let the doc-grounded assistant answer without a user selected** (third small UI-polish sprint before the 7.9 tag; follows #2 voice softening on `feat/avatar-voice-tone-tuning`). **Finding (2026-06-18):** the assistant gates on a chosen user (`static/assistant.js:24` "Pick a user first, then ask."; `blueprints/assistant.py:231` 400s on missing `username`, `:233` `_safe_username` 400s on unknown), but the answer is **project-global** — grounded in the committed wiki + code at HEAD, identical for every user. `username` does **not** feed retrieval (`_build_sources`/`assemble`), scope (`allow_dev` = the Dev-mode checkbox), or the answer; it is used only for (a) a `_safe_username` existence check applied **by discipline** (the route touches **no** user filesystem — its own docstring says `_within`/`secure_filename` is N/A) and (b) telemetry attribution, which `analyzer._call_llm_streaming` already supports anonymously (`username=""` default). So gating the avatar behind user-selection is an artifact of the per-user route pattern, not a need — and it blocks the assistant at exactly the first-run moment ("how does callback. work?") where a brand-new visitor benefits most, which reads as unfinished. **Fix:** make `username` optional in the assistant path — drop the client gate, relax the route's `if not username` 400, `_safe_username`-validate only when a username is provided, and stamp anonymous telemetry (`""`/`"anonymous"`). Retrieval + answer unchanged; add a route test for the no-user path. Small + contained (`blueprints/assistant.py` ~:225–235, `static/assistant.js:24`). **Pre-7.9-tag.** _(surfaced 2026-06-18 during `feat/avatar-voice-tone-tuning` close-out; capture only — its own branch.)_
 - [ ] **7.9** `chore/version-bump-v1.0.7` — tag. **Pre-tag: run `/wiki-self-update`** for the consolidated wiki refresh (the self-documenting loop now owns the diff-pass that `chore/version-bump-v1.0.6` did by hand), then confirm `/wiki-lint` is clean before tagging. (7.3 already advanced `.last_ingest_sha` to the v1.0.7 band, so this is a small top-up unless 7.4–7.8 changed cited code.)
 
 **Epic v1.0.8 — refactor → gather → correct → public-prep ("all work done by 1.0.8").** Refactor opens the window; gather + first real-data eval loop run on the decomposed code.
@@ -473,22 +474,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Open count: 10 — **at/over** the ~8–10 reduction-sprint threshold; the next stream should plan a reduction pass (the link-checker + CONTRIBUTING-drift items below are the natural pair to clear)._
-
-- [ ] **Avatar voice/tone & behavior tuning — EXECUTION (guidance landed; tuning pending)** — the
-      four-part voice/tone/behavior guidance package + owner-locked decisions landed
-      ([`docs/dev/avatar-voice-tone-guidance.md`](avatar-voice-tone-guidance.md), 2026-06-18).
-      **Executing** it is the follow-on: edit `AVATAR_SYSTEM_PROMPT` (`analyzer.py:526`) + the per-turn
-      closer (`analyzer.py:1561`) + the UI microcopy (`templates/index.html` + `static/assistant.js`),
-      bump `AVATAR_PROMPT_VERSION` (`analyzer.py:290`) in the same commit, and run the guide's §6
-      validation matrix. **Bundles a real a11y defect** in that L3 scope: `#assistantAnswer`
-      (`templates/index.html:924`) is `aria-live="polite"` and `static/assistant.js:29` appends tokens
-      per chunk → screen-reader flood (buffer, announce once on completion). Owner decisions (2026-06-17/18):
-      light-character-as-friendly-guide, structural warmth (no feeding frustration), near-mandatory cited
-      refusal + a GitHub "report it" rung for in-domain gaps, connect-capability-to-concern on reassurance-
-      fishing. **Distinct from the doc-coverage item below** — this is HOW the avatar sounds/behaves; that is
-      WHAT it knows. Detail + the locked Voice Charter live in the guidance doc; memory
-      `project-avatar-voice-tone-guidance`. _(surfaced: 2026-06-18, `docs/avatar-voice-tone-guidance`.)_
+_Open count: 9 — at/over the ~8–10 reduction-sprint threshold; the next stream should plan a reduction pass (the link-checker + CONTRIBUTING-drift items below are the natural pair to clear)._
 
 - [ ] **S3 vector tier — labeled before/after eval (gate-override validation owed)** — the
       S3 `VectorSource` (Sprint 7.6, `feat/doc-assistant-vector`) was built **ahead of**
@@ -585,6 +571,26 @@ _Open count: 10 — **at/over** the ~8–10 reduction-sprint threshold; the next
       2026-06-17, `fix/v107-ui-polish-trio` scoping.)_
 
 #### Resolved
+
+- [x] **Avatar voice/tone & behavior tuning — EXECUTION** — **DONE 2026-06-18 on
+      `feat/avatar-voice-tone-tuning`.** Executed Part 4 of
+      [`avatar-voice-tone-guidance.md`](avatar-voice-tone-guidance.md): friendly-guide
+      `AVATAR_SYSTEM_PROMPT` (warmth via helpfulness, not instructed wit), near-mandatory cited
+      refusal-as-doorway + the GitHub "report it" rung (URL only in L3 chrome, never model-emitted),
+      calibrated middle, anti-sycophancy / anti-over-promise (ATS = parseability), connect-to-concern
+      on reassurance-fishing; `AVATAR_PROMPT_VERSION 2026-06-16.1 → 2026-06-18.1` (same commit;
+      `PROMPT_VERSION` untouched; avatar stays out of `_BASE_SYSTEM_PROMPTS`). **The bundled a11y
+      defect is FIXED** — `#assistantAnswer` is no longer an `aria-live` region (was flooding screen
+      readers per token); the single completion announcement rides `#assistantStatus`. Plus L3
+      microcopy (plain intro, persistent empty state, blame-free errors, real GitHub link). Validated:
+      ruff/mypy/pytest 1303 green incl. UX tier, new LLM-free deterministic tone checks, and a live
+      Haiku §6.3 spot-check matrix (both modes × all scenario types; access plane held). Detail +
+      the old-vs-new grounding-regression comparison in [`evals/TUNING_LOG.md`](../../evals/TUNING_LOG.md)
+      2026-06-18; memory [[project-avatar-voice-tone-guidance]]. **Tracked follow-on (NOT a new open
+      item):** the live transcripts surfaced a *pre-existing* (present in the OLD prompt too, so not a
+      regression) Haiku citation-format / line-number approximation fragility — the new cite-membership
+      check is the mechanism to quantify it in the **v1.0.8 labeled avatar eval** (rides the test
+      window / the grounding-metric ledger item below). _(surfaced: 2026-06-18, `docs/avatar-voice-tone-guidance`.)_
 
 - [x] **Enforcement portability — security/quality hooks: tool-agnostic git-hooks/CI vs the
       Claude plugin** — **DECIDED 2026-06-15 on `design/governance-extraction` (7.2 design): SPLIT.**

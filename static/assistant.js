@@ -5,18 +5,32 @@
 // currentUser. Deliberately tiny — retrieval, grounding, and citation all happen
 // server-side; this only renders the stream.
 
+// Transport-failure copy: calm, blame-free, actionable, and deliberately DISTINCT
+// from the grounded refusal ("I don't have that in my docs.") — a network error
+// must never read as "the docs lack it" when the search never ran. Short, because
+// it lands in the polite #assistantStatus region and is read aloud.
+const ASSISTANT_TRANSPORT_ERR = 'Something went wrong reaching the assistant. Try again in a moment.';
+
 async function askAssistant() {
   const qEl = document.getElementById('assistantQuestion');
   const answerEl = document.getElementById('assistantAnswer');
   const statusEl = document.getElementById('assistantStatus');
+  const emptyEl = document.getElementById('assistantEmptyState');
   const btn = document.getElementById('assistantAsk');
   const question = (qEl.value || '').trim();
 
-  if (!currentUser) { alert('Select a user first'); return; }
+  // In-voice, non-blocking, and announced via the polite region (the old blocking
+  // alert() was neither dismissable nor cleanly read by assistive tech).
+  if (!currentUser) { statusEl.textContent = 'Pick a user first, then ask.'; return; }
   if (!question) return;
 
   const allowDev = document.getElementById('assistantDevMode').checked;
+  if (emptyEl) emptyEl.classList.add('hidden');   // first ask retires the empty state
   answerEl.textContent = '';
+  // Tokens accumulate SILENTLY in #assistantAnswer (no longer a live region, so no
+  // per-chunk screen-reader flood). aria-busy marks it loading; the single terminal
+  // announcement goes to #assistantStatus and aria-busy is cleared on EVERY path.
+  answerEl.setAttribute('aria-busy', 'true');
   statusEl.textContent = 'Thinking…';
   btn.disabled = true;
 
@@ -30,18 +44,25 @@ async function askAssistant() {
           statusEl.textContent = '';
         } else if (eventName === 'done') {
           statusEl.textContent = _renderAssistantSources(data);
+          answerEl.setAttribute('aria-busy', 'false');
         } else if (eventName === 'error') {
-          statusEl.textContent = 'Error: ' + ((data && data.error) || 'unknown');
+          console.error('assistant stream error:', data && data.error);
+          statusEl.textContent = ASSISTANT_TRANSPORT_ERR;
+          answerEl.setAttribute('aria-busy', 'false');
         } else if (eventName === 'http_error') {
-          const msg = (data && data.body && data.body.error) || ('HTTP ' + (data && data.status));
-          statusEl.textContent = 'Error: ' + msg;
+          console.error('assistant http error:', data && data.status, data && data.body);
+          statusEl.textContent = ASSISTANT_TRANSPORT_ERR;
+          answerEl.setAttribute('aria-busy', 'false');
         }
       }
     );
   } catch (err) {
-    statusEl.textContent = 'Error: ' + err;
+    console.error(err);
+    statusEl.textContent = ASSISTANT_TRANSPORT_ERR;
+    answerEl.setAttribute('aria-busy', 'false');
   } finally {
     btn.disabled = false;
+    answerEl.setAttribute('aria-busy', 'false');   // never leave the node stuck busy
   }
 }
 
@@ -49,7 +70,10 @@ function _renderAssistantSources(done) {
   if (!done || !Array.isArray(done.citations) || done.citations.length === 0) {
     return 'Answered (no sources cited).';
   }
-  const uniq = [...new Set(done.citations)];
+  // Strip the wiki [[ ]] double-bracket wrapper for a clean, human-readable list
+  // (matches the single-bracket inline citation form the avatar now uses); code
+  // citations are bare path:line already.
+  const uniq = [...new Set(done.citations)].map(c => c.replace(/^\[\[|\]\]$/g, ''));
   const truncated = done.truncated ? ' · context truncated' : '';
   return 'Sources: ' + uniq.join(', ') + truncated;
 }

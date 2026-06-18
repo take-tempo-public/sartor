@@ -13,6 +13,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — avatar voice/tone & behavior tuning (`feat/avatar-voice-tone-tuning`)
+
+Executes the voice/tone/behavior guidance package ([`docs/dev/avatar-voice-tone-guidance.md`](docs/dev/avatar-voice-tone-guidance.md))
+against the live doc-grounded assistant. Tunes the **avatar only** — `AVATAR_PROMPT_VERSION`
+bumps `2026-06-16.1` → `2026-06-18.1`; **`PROMPT_VERSION` is unchanged** (the avatar carries
+its own version and is deliberately not in the résumé `_BASE_SYSTEM_PROMPTS` eval registry).
+No new dependency, no migration.
+
+- **Persona (`AVATAR_SYSTEM_PROMPT`, `analyzer.py`)** is now a *friendly, encouraging guide*
+  — warmth delivered through helpfulness and a real next step, never cheer, flattery, or
+  instructed wit. The prime directive is unchanged and made explicit: when voice and grounding
+  conflict, grounding wins.
+- **The refusal is now a doorway, not a dead end.** The exact string `"I don't have that in my
+  docs."` is byte-unchanged, but the redirect to the nearest *cited* covered topic is now
+  near-mandatory, and an in-domain-but-undocumented question is invited to be reported on the
+  project's GitHub (the model states the behavior; the real link lives only in the UI).
+- **New behavioral guardrails:** a calibrated-middle (answer the covered part, mark the gap),
+  explicit anti-sycophancy / anti-over-promise (ATS-safety is described as *parseability*,
+  never "reaches a human" or "improves your chances"), no performed honesty/empathy, and a
+  connect-the-capability-to-the-concern move on reassurance-fishing instead of predicting outcomes.
+- **Readable citations:** answers now read as natural sentences with the source in clean
+  single square brackets at the end of the sentence (`[using-callback]`, `[analyzer.py:49]`),
+  rather than `[[…]]` mid-sentence — easier for non-technical readers. The "Sources:" footer
+  strips the double brackets to match.
+- **Microcopy (`templates/index.html`, `static/assistant.js`):** plain-languaged intro ("I show
+  my sources"); a persistent empty state (scope/boundary line + verified example prompts) replacing
+  the vanishing placeholder; blame-free transport-error copy kept distinct from the grounded
+  refusal; and a real "report it on the project's GitHub" link.
+- **Accessibility fix:** `#assistantAnswer` is no longer an `aria-live` region — streaming
+  tokens into it announced the whole answer to screen readers on every chunk. It is now
+  `aria-busy`-toggled and silent; the single completion announcement rides the `#assistantStatus`
+  polite region.
+- **Tests:** added LLM-free deterministic tone checks (`tests/test_avatar_streaming.py`) —
+  refusal byte-sync across the two locations, the locked voice clauses, banned-phrase /
+  over-promise / no-URL-in-output scanners, a cite-membership checker, the brand-mark sweep, and
+  the answer-node-not-a-live-region assertion. Validated live against a Haiku spot-check matrix
+  (the guide's §6.3); see [`evals/TUNING_LOG.md`](evals/TUNING_LOG.md) 2026-06-18.
+
 ### Fixed — UI-polish trio (`fix/v107-ui-polish-trio`, Sprint 7.8b)
 
 Three small, independent fixes from the v1.0.7 UI-polish band. No prompt,
