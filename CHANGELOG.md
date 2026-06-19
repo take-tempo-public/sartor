@@ -32,6 +32,10 @@ client behavior only; no prompt, dependency, or migration change; `PROMPT_VERSIO
 - **Tests (`tests/test_assistant_route.py`):** the missing-username case now asserts a
   streamed anonymous `200` instead of a `400`; the missing-question and unknown-user `400`s
   are retained.
+- **UX regression (`tests/ux/regression/test_20260619_assistant_no_user.py`):** drives the
+  top-bar magnifier modal with **no user selected** and asserts the streamed cited answer
+  renders end-to-end — the path the route test can't cover (the real `static/assistant.js`
+  sending an empty username).
 
 ### Changed — avatar voice/tone & behavior tuning (`feat/avatar-voice-tone-tuning`)
 
