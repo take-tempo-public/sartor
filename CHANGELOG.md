@@ -13,6 +13,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — assistant answers without a user selected (`fix/assistant-runs-without-user`, Sprint 7.8c)
+
+The doc-grounded assistant no longer requires a user to be selected before it will
+answer. Its answer is **project-global** — grounded in the committed wiki + code at
+HEAD, identical for every user — so gating it behind user-selection was an artifact
+of the per-user route pattern, and it blocked the assistant at exactly the first-run
+moment ("how does callback. work?") a brand-new visitor benefits from it most. Route +
+client behavior only; no prompt, dependency, or migration change; `PROMPT_VERSION` and
+`AVATAR_PROMPT_VERSION` unchanged.
+
+- **Route (`blueprints/assistant.py`):** `POST /api/assistant/ask` now requires only a
+  `question`. `username` is optional — `_safe_username`-validated only when supplied (a
+  provided-but-unknown user is still a `400`), and absent → anonymous telemetry (`""`,
+  already the `_call_llm_streaming` default). Retrieval and the answer are unchanged.
+- **Client (`static/assistant.js`):** dropped the "Pick a user first, then ask." gate; the
+  Ask button works with no user selected and sends an empty username.
+- **Tests (`tests/test_assistant_route.py`):** the missing-username case now asserts a
+  streamed anonymous `200` instead of a `400`; the missing-question and unknown-user `400`s
+  are retained.
+- **UX regression (`tests/ux/regression/test_20260619_assistant_no_user.py`):** drives the
+  top-bar magnifier modal with **no user selected** and asserts the streamed cited answer
+  renders end-to-end — the path the route test can't cover (the real `static/assistant.js`
+  sending an empty username).
+
 ### Changed — avatar voice/tone & behavior tuning (`feat/avatar-voice-tone-tuning`)
 
 Executes the voice/tone/behavior guidance package ([`docs/dev/avatar-voice-tone-guidance.md`](docs/dev/avatar-voice-tone-guidance.md))
