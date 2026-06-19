@@ -228,11 +228,16 @@ def ask():
     allow_dev = bool(data.get("allow_dev", False))
     session_turns = data.get("session_turns") or []
 
-    if not username or not question:
-        return jsonify({"error": "username and question required"}), 400
-    safe_user = _safe_username(username)
-    if not safe_user:
-        return jsonify({"error": "Invalid or unknown user"}), 400
+    if not question:
+        return jsonify({"error": "question required"}), 400
+    # `username` is optional (7.8c): the answer is project-global and never reaches the
+    # filesystem here, so a missing user → anonymous telemetry (""). Validate by
+    # discipline only when one is supplied (a provided-but-unknown user is still a 400).
+    safe_user = ""
+    if username:
+        safe_user = _safe_username(username)
+        if not safe_user:
+            return jsonify({"error": "Invalid or unknown user"}), 400
 
     sources = _build_sources(session_turns)
     scope = Scope(

@@ -41,9 +41,15 @@ def client(tmp_path, monkeypatch):
     return app_module.app.test_client()
 
 
-def test_missing_username_returns_400(client):
+def test_no_username_streams_anonymous(client):
+    # 7.8c: the assistant answers without a user selected — the answer is project-global,
+    # so a missing username falls back to anonymous telemetry instead of a 400.
     resp = client.post("/api/assistant/ask", json={"question": "hi"})
-    assert resp.status_code == 400
+    assert resp.status_code == 200
+    assert resp.content_type.startswith("text/event-stream")
+    body = resp.get_data(as_text=True)
+    assert "event: chunk" in body
+    assert "event: done" in body
 
 
 def test_missing_question_returns_400(client):

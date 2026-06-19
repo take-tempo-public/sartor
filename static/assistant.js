@@ -19,9 +19,9 @@ async function askAssistant() {
   const btn = document.getElementById('assistantAsk');
   const question = (qEl.value || '').trim();
 
-  // In-voice, non-blocking, and announced via the polite region (the old blocking
-  // alert() was neither dismissable nor cleanly read by assistive tech).
-  if (!currentUser) { statusEl.textContent = 'Pick a user first, then ask.'; return; }
+  // No user gate (7.8c): the assistant's answer is project-global (committed wiki +
+  // code), identical for every user, so it's available before any user is selected.
+  // The route accepts an empty username and stamps anonymous telemetry.
   if (!question) return;
 
   const allowDev = document.getElementById('assistantDevMode').checked;
@@ -37,7 +37,7 @@ async function askAssistant() {
   try {
     await _consumeSSE(
       '/api/assistant/ask',
-      { username: currentUser, question, allow_dev: allowDev },
+      { username: currentUser || '', question, allow_dev: allowDev },
       (eventName, data) => {
         if (eventName === 'chunk') {
           answerEl.textContent += (data && data.text) ? data.text : '';
