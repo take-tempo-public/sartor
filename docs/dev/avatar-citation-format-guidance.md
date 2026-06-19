@@ -106,6 +106,6 @@ Extend the existing LLM-free deterministic checks in [`tests/test_avatar_streami
 
 ## How this lands
 
-- **Its own branch**, sequenced after the v1.0.7 tag (this is a v1.0.8-band polish; it is **not** a blocker for the 7.9 tag). One contained branch: context renderer + `AVATAR_SYSTEM_PROMPT` + the L3 footer/render decision + deterministic tests + `AVATAR_PROMPT_VERSION` bump + CHANGELOG.
+- **Its own branch (`7.8d`), sequenced BEFORE the v1.0.7 tag** — moved into the v1.0.7 polish band 2026-06-19 at owner direction (it was a v1.0.8 deferral), so it is **the last UI-polish before the 7.9 tag and the tag waits on it.** One contained branch: context renderer + `AVATAR_SYSTEM_PROMPT` + the L3 footer/render decision + deterministic tests + `AVATAR_PROMPT_VERSION` bump + CHANGELOG. *(The labeled before/after avatar eval that quantifies the grounding/cite-membership result still rides the v1.0.8 test window — only the implementation moves up.)*
 - **Owner locks Q-CITE-1…4 first** (provisional recs above), the way the parent guide's Part 2 questions were locked in a dedicated session.
 - **Validate live** with the parent's in-process method (the `blueprints.assistant` helpers + an old-vs-new prompt comparison) plus the deterministic R1–R3 checks; record before/after in [`evals/TUNING_LOG.md`](../../evals/TUNING_LOG.md).

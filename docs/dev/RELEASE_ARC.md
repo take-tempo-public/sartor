@@ -837,6 +837,17 @@ the real labels these consume.
 > **after v1.0.8** — safe precisely *because* the overlap is low (calibration lands
 > cleanly on the new structure). Don't pre-create that epic until needed.
 
+> **Citation-format polish MOVED INTO v1.0.7 as a pre-tag sprint (2026-06-19)**
+> (`feat/avatar-citation-format`, 7.8d): owner testing found the doc-grounded assistant's
+> citations/references render inconsistently — numeric `[N]` markers (from the
+> `[{i}]`-numbered context renderer, `analyzer.py:1538`), raw model-invented markdown links
+> (the answer body is `textContent`), and a "Sources:" footer listing **all** retrieved units
+> (`analyzer.py:1595`), not the cited set. **Moved in from a v1.0.8 deferral at owner
+> direction — the last UI-polish before the tag, so 7.9 waits on it**; bumps
+> `AVATAR_PROMPT_VERSION`. Requirements:
+> [`avatar-citation-format-guidance.md`](avatar-citation-format-guidance.md); granular row in
+> [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) (7.8d).
+
 Then: `chore/version-bump-v1.0.7`.
 
 ### v1.0.7 tag criteria
