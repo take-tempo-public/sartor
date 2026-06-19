@@ -474,7 +474,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Open count: 9 — at/over the ~8–10 reduction-sprint threshold; the next stream should plan a reduction pass (the link-checker + CONTRIBUTING-drift items below are the natural pair to clear)._
+_Open count: 10 — at the top of the ~8–10 reduction-sprint threshold; the next stream should plan a reduction pass (the link-checker + CONTRIBUTING-drift items below are the natural pair to clear)._
 
 - [ ] **S3 vector tier — labeled before/after eval (gate-override validation owed)** — the
       S3 `VectorSource` (Sprint 7.6, `feat/doc-assistant-vector`) was built **ahead of**
@@ -512,6 +512,11 @@ _Open count: 9 — at/over the ~8–10 reduction-sprint threshold; the next stre
       class (still one ledger item; not a release blocker).
       **Update (2026-06-16, `px/v107-band` gate):** neither recurred — the full suite ran
       clean (1290 passed) on the docs-only 7.8 branch; still deferred.
+      **Update (2026-06-19, `fix/assistant-runs-without-user` gate):**
+      `test_compose_skills_card_drop_persists` recurred **once** in the full suite (Playwright
+      `wait_for_selector` timeout on `.compose-row.recommended`), then **passed clean on
+      isolated re-run** (36s). The branch touched only the assistant route/client (unrelated to
+      the Compose wizard), so **not code-caused**; still deferred for the UX-tier stabilization pass.
 
 - [ ] **Grounding / hallucination metric — calibrated layers (B)** — the deterministic
       label-free **L0** slice shipped (`eval/grounding-metric-l0`:
@@ -569,6 +574,23 @@ _Open count: 9 — at/over the ~8–10 reduction-sprint threshold; the next stre
       assistant **voice** prompt work (#2, its own `feat/` branch). Potentially multi-branch;
       the owner sequenced it "lastly," after voice softening. _(discovered: v1.0.7 stream,
       2026-06-17, `fix/v107-ui-polish-trio` scoping.)_
+
+- [ ] **Avatar citation / reference formatting — consistency polish** — the doc-grounded
+      assistant's voice/tone landed well (Sprint #2, `feat/avatar-voice-tone-tuning`), but owner
+      testing (2026-06-19) found its **citations + references render inconsistently**: a Dev-mode
+      answer mixed markdown links `[text](path)`, parentheticals, and numeric `[N]` markers in the
+      same sentences, over a "Sources:" footer the `[N]` markers don't resolve to. A read-only
+      trace pinned three server/prompt-side causes — **C1** the context renderer numbers units
+      `[{i}]` (`analyzer.py:1538`) so the model mirrors `[N]` instead of the intended
+      `[slug]`/`[path:line]`; **C2** the model invents markdown links (shown raw — the body is
+      `textContent`), violating the prompt's no-bracketed-link rule; **C3** the footer ships
+      **all** retrieved units (`analyzer.py:1595`), not the cited set, so the markers are
+      unresolvable and grounding is overstated. Requirements + lever map + the scheme decision
+      (A self-describing cites vs B numbered footnotes) are captured in
+      [`avatar-citation-format-guidance.md`](avatar-citation-format-guidance.md). **Own branch,
+      after the 7.9 tag** (v1.0.8-band; bumps `AVATAR_PROMPT_VERSION`); its R4 grounding check
+      folds into the owed v1.0.8 labeled avatar eval (S3/grounding items above). _(surfaced
+      2026-06-19 during `fix/assistant-runs-without-user`; capture only — its own branch.)_
 
 #### Resolved
 
