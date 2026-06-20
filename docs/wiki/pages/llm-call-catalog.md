@@ -54,6 +54,7 @@ All four omit `model=`, so they inherit the Sonnet default `[synthesis]`.
 | `critique_proposal` | [`critique_proposal`](../../../analyzer.py) | Structured critique of a proposal. |
 | `promote_clarification_to_bullet` | [`analyzer.py` promote helper](../../../analyzer.py) | Turns a confirmed clarification into a bullet. |
 | `extract_experiences` | [`onboarding/extract_experiences.py:extract_experiences`](../../../onboarding/extract_experiences.py) | Onboarding/corpus résumé ingest — **lives outside `analyzer.py`** `[synthesis]`. |
+| `avatar_answer` | [`avatar_answer_streaming`](../../../analyzer.py) | **Memory/recall subsystem only** — the doc-grounded assistant, answering questions over a `recall.Context` (not a `context_set`). Avatar-prompt revisions track a separate source constant [`AVATAR_PROMPT_VERSION`](../../../analyzer.py); telemetry still stamps `PROMPT_VERSION` — see [[prompt-version-discipline]] `[synthesis]`. |
 
 Watch the function-name vs. `call_kind` drift in the recommend family: the functions
 are plural (`recommend_bullets`, `recommend_summaries`, …) but the `call_kind` strings

@@ -49,7 +49,7 @@
   diff-driven ingest) as a committed `docs/wiki/` layer, with `ingest/query/lint/audit`
   ops as Claude Code skills + a root `llms.txt`.
 - **Why:** Q4 — context-management for the agent, discoverability for humans + LLMs, and
-  the substrate for the post-v1.1.0 doc-grounded assistant; the Sprint 6.5 education
+  the substrate for the now-shipped doc-grounded assistant (v1.0.7; `blueprints/assistant.py:POST /api/assistant/ask` `[synthesis]`); the Sprint 6.5 education
   sweep authors *into* it. Its design rationale is **[[llm-wiki-design]]**; its follow-on,
   lifting the prescriptive rules into one canonical home, is **[[governance-extraction]]**.
 - **Status / where:** **active — landing across v1.0.6** (RELEASE_ARC §Phase 4.5). WS-4a

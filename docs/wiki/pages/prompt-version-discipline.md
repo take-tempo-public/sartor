@@ -106,9 +106,15 @@ invocation is byte-identical to the historical path (`prompt_overrides({})` is a
 no-op). This is the substrate the `/prompt-tune` and v1.0.4 tuning loop build on
 `[synthesis]`.
 
+## A second version: AVATAR_PROMPT_VERSION
+
+The doc-grounded assistant ("avatar", Sprint 7.5) is a **separate LLM subsystem** from the résumé pipeline — a different persona and **not an eval target** — so it carries its own [`analyzer.py:AVATAR_PROMPT_VERSION`](../../../analyzer.py) (`"2026-06-19.1"` at this ingest, per the inline comment at [`analyzer.py:283–289`](../../../analyzer.py)). When `AVATAR_SYSTEM_PROMPT` (the avatar's persona, defined at [`analyzer.py:519–540`](../../../analyzer.py)) changes, bump `AVATAR_PROMPT_VERSION` in the same commit; a tweak to the avatar's prompt should not force a bump to `PROMPT_VERSION`, which would muddy résumé score-over-time attribution on the dashboard `[synthesis]`. The avatar persona is intentionally **not** in the `_BASE_SYSTEM_PROMPTS` registry — the prompt-override machinery is résumé-scoped by construction, so the avatar is out of its reach.
+
+It is a **source-level discipline marker, not a telemetry field.** The lone stamp site [`analyzer.py:effective_prompt_version`](../../../analyzer.py) writes `PROMPT_VERSION` (or a `candidate:<hash>`) onto *every* funnelled call's JSONL — including the avatar's `avatar_answer` ([`analyzer.py` `_emit_call_log`](../../../analyzer.py)); it has no `AVATAR_PROMPT_VERSION` branch. So bumping `AVATAR_PROMPT_VERSION` does **not** create a second telemetry series — its whole job is to record the avatar-prompt revision in source **without** bumping `PROMPT_VERSION`, keeping the résumé score-over-time join key stable. The avatar's calls are already separable in telemetry by `call_kind="avatar_answer"`, and the avatar is not an eval target `[synthesis]`.
+
 ## Related
 
 - [[code-module-map]] — where `analyzer.py` sits in the module graph.
-- [[llm-call-catalog]] — the call kinds whose telemetry the version stamps.
+- [[llm-call-catalog]] — the call kinds whose telemetry the version stamps; the avatar's `avatar_answer` is one of them (stamped `PROMPT_VERSION`, not `AVATAR_PROMPT_VERSION`).
 - [[eval-harness]] — `runner.py`, `--prompt-overrides`, and the result records.
 - [[deterministic-llm-boundary]] — the deterministic modules that never bump it.

@@ -28,8 +28,8 @@ adapted from the `kfchou/wiki-skills` Claude Code implementation rather than rei
 
 ## The convergence insight (why this was worth doing now)
 
-The **dev docs**, the upcoming **Sprint 6.5 in-app education content**, and the
-**post-v1.1.0 doc-grounded assistant** are *one knowledge base in three renderings*. The
+The **dev docs**, the **Sprint 6.5 in-app education content**, and the
+**v1.0.7 doc-grounded assistant** are *one knowledge base in three renderings*. The
 assistant's job ("how do I rename a job-experience title" ↔ "how does the grounding
 suite work") is exactly the wiki **query** op over the repo + docs — and Sprint 6.5 is
 about to author content across that whole range. Deciding the authoring pattern *before*

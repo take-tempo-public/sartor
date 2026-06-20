@@ -365,3 +365,59 @@ the loop excludes, so no drift is introduced).
 human reviewed the diff and committed it. Lint: PASS (no ERROR) — the changed page's 12
 relative links + 5 `[[backlinks]]` all resolve; `index.md` ↔ `pages/` agree; no bare-line
 cites remain. Gate: `ruff` ✓ · `mypy` ✓ (162 files) · `pytest` (docs-only — no `.py` touched).
+
+## 2026-06-20 — diff refresh: consolidated v1.0.7 pre-tag (`chore/version-bump-v1.0.7`)
+
+**Mode:** diff (`a008f86…` → `3561657` = the version-bump branch's non-wiki tip). The 52-commit
+v1.0.7 feature band (Sprints 7.4–7.8d): the `recall/` Memory substrate, the doc-grounded
+assistant / "avatar" (`blueprints/assistant.py`, `static/assistant.js`), the S3 vector tier,
+and the citation-format work. **Per D5 the wiki references-not-duplicates** — and the new
+subsystems (`recall/`, `blueprints/`, `static/assistant.js`) are cited by **zero** pages, so
+they map to no existing page. **Owner-scoped a BOUNDED pre-tag refresh:** the route-surface /
+module-map / new-subsystem how-to documentation is deferred to its already-scheduled homes —
+**8.6 `/wiki-ingest`** for the post-blueprint-split `app.py` cites + **8.6a
+`docs/assistant-wiki-coverage`** for the assistant how-to content — because the 8.3 blueprint
+split will move every route and stale any `path:line` cites authored now.
+
+**Pages changed (4)** — all durable, `analyzer.py`/concept-keyed (untouched by the route refactor):
+- [`pages/engineering-workstreams.md`](pages/engineering-workstreams.md) +
+  [`pages/llm-wiki-design.md`](pages/llm-wiki-design.md) — corrected the now-stale framing of the
+  doc-grounded assistant as **"post-v1.1.0"**: it **shipped in v1.0.7** (Sprints 7.5–7.8d;
+  `blueprints/assistant.py`, `analyzer.py:avatar_answer_streaming`). The convergence insight is preserved.
+- [`pages/llm-call-catalog.md`](pages/llm-call-catalog.md) — added the missing **`avatar_answer`**
+  Haiku call kind (the doc-grounded assistant, over a `recall.Context`; `analyzer.py:1611` /
+  `:1648-1655`).
+- [`pages/prompt-version-discipline.md`](pages/prompt-version-discipline.md) — new section
+  documenting **`AVATAR_PROMPT_VERSION`** (`analyzer.py:290`) as the second, separately-bumped
+  prompt-version constant.
+
+**Auditor catch-rate (tuning signal, not a gate).** Independent per-page audits (author≠auditor):
+3 pages CLEAN (SUPPORTED 3 / 7 / 37); the prompt-version-discipline page returned **needs
+attention — 1 UNSUPPORTED**: the scribe claimed the avatar's `avatar_answer` telemetry "carries
+`AVATAR_PROMPT_VERSION`", but `effective_prompt_version()` (`analyzer.py:334-346`) stamps
+`PROMPT_VERSION` on every funnelled call (`analyzer.py:1072`) with **no** avatar branch. The
+orchestrator corrected both that page and the `llm-call-catalog` row to state accurately that
+`AVATAR_PROMPT_VERSION` is a **source-level discipline marker, not a telemetry field** (its job
+is to record the avatar-prompt revision in source *without* bumping `PROMPT_VERSION`, keeping the
+résumé join key stable). Catch-rate this run = **1 UNSUPPORTED caught / 4 audited pages.**
+
+**WATCH (surfaced, not auto-edited — deferred to 8.6 `/wiki-ingest`).** The auditor noted
+[`pages/engineering-workstreams.md`](pages/engineering-workstreams.md) line 16 still cites the
+pre-PX-10 `6,290-LOC / 75-route` `app.py` size; the current figure is `8,251-LOC / 93-route`
+(corrected in CHANGELOG / RELEASE_ARC at v1.0.6). Left as-is: the 8.3 blueprint split changes the
+LOC/route counts again, so the durable refresh belongs to the scheduled 8.6 `/wiki-ingest`, not
+this bounded pre-tag pass. (The prior run's two WATCH items — the `raw/` phrasing + WS-4
+"active→landed" — remain open, same rationale.)
+
+**`.last_ingest_sha` advanced `a008f86d03e67570272641864378ff846ed6cf46` →
+`35616579b866568042434f01401d366c477d6fac`** (= the version-bump branch's non-wiki tip — the
+ledger/CHANGELOG/version-bump commit plus the flaky-gate-note commit; the subsequent
+wiki-refresh commit touches only `docs/wiki/`, which the loop excludes, so `/wiki-lint` stays
+clean at the tag).
+
+**`/wiki-lint`: PASS — 0 ERROR, 0 staleness WARN** (`.last_ingest_sha` == non-wiki tip; the 4
+changed pages' `[[backlinks]]` + `path:line` cites all resolve; `index.md` ↔ `pages/` agree; the
+only `[[backlink]]`/`[[links]]` "dangles" are literal syntax mentions in `SCHEMA.md` / `log.md`).
+**Gate:** `ruff` ✓ · `mypy` ✓ (190 files) · `pytest` 1311 passed + the 1 known intermittent
+UX-tier flake (`test_positioning_pin_preserves_title_pin`, passes clean isolated — docs-only
+branch, not code-caused). **Loop invariant held: reviewable diff, no auto-commit.**
