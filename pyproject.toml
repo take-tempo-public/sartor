@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "callback"
-version = "1.0.6"
+version = "1.0.7"
 description = "Local-first résumé + cover-letter tailor for one specific job at a time. Powered by the Claude API; your data stays on your machine."
 readme = "README.md"
 license = { file = "LICENSE" }

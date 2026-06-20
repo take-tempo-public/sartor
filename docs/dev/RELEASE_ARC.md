@@ -879,6 +879,12 @@ Then: `chore/version-bump-v1.0.7`.
 > touches; 32 test files import from `app`). **Blocked by:** v1.0.7 tag. **Blocks:**
 > v1.1.0.
 
+- `chore/ledger-reduction` (proposed **8.0**, owner-confirmed 2026-06-20) — a tiny reduction
+  micro-branch run **before** the structural work: clears the two pure-hygiene carry-forward
+  items (the `CONTRIBUTING.md` plugin-section drift from the 7.1 commands/agents move; the
+  benign pytest-socket `UserWarning ×2`, a one-line `filterwarnings` entry), dropping the open
+  carry-forward ledger below the 8–10 threshold before the blueprint epic begins. Docs/test
+  hygiene only; no coupling to the seams.
 - `design/app-blueprints` — **design session first** (free; can run earlier): blueprint
   seams (analysis · generation/cover-letter · corpus · dashboard · user/config ·
   templates) & naming; shared-helpers home (`_sse`, `_error_detail_payload`,
@@ -924,6 +930,14 @@ Then: `chore/version-bump-v1.0.7`.
   calibration + **PV-3** cover-letter tone tune (now on the decomposed code) + a
   `/wiki-ingest` to refresh the wiki's `app.py` `path:line` citations the split staled.
   May spill to a v1.0.9 epic if heavy.
+- `docs/assistant-wiki-coverage` (proposed **8.6a**, owner-confirmed 2026-06-20) — the
+  doc-authoring sprint that fills the doc-grounded assistant's "woefully uninformed" coverage
+  gap (only the ~6 Sprint-6.5 `audience: user` wiki pages exist today, so many "how do I…"
+  questions hit the avatar's refusal). Author the user/dev how-to pages (downloads,
+  editing/refining, cover letters, multi-user, import mechanics, troubleshooting, the assistant
+  itself). Content, not code — runs **after** the test-window findings settle the post-split
+  route surface and **before** the public prep, so v1.1.0 ships a well-informed avatar; pairs
+  with the 8.6 `/wiki-ingest`. Possibly multi-branch.
 
 ### Pre-public prep (2026-06-15 — moved up from Phase 5 so "all work is done by v1.0.8")
 
@@ -952,6 +966,9 @@ Then: `chore/version-bump-v1.0.8`.
 - **Pre-public prep done** (moved from Phase 5): screenshots, fresh-clone < 5 min, badge set,
   UX/a11y/PDF required CI check, doc links resolve, GitHub repo pushed (private/unpromoted).
   "All work done by v1.0.8."
+- **Carry-forward ledger drained** (the 2026-06-20 7.9 triage): the `chore/ledger-reduction`
+  (8.0) hygiene pair cleared and the `docs/assistant-wiki-coverage` (8.6a) doc sprint authored,
+  so by the public cut the open ledger is down to ~the deferred in-app citation viewer.
 
 ---
 

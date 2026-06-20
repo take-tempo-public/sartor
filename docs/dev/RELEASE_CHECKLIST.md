@@ -72,16 +72,18 @@ post-feature test window is a **formal gate** (E2E walkthrough + first real-data
 - [x] **7.8b** `fix/v107-ui-polish-trio` — **three small UI-polish fixes** (second of the few small sprints before 7.9). **DONE 2026-06-17** (`fix/v107-ui-polish-trio`): (#1) **stray browser windows** — `app.py` auto-opened a browser on every Flask debug-reloader restart because the open ran in the serving child (`WERKZEUG_RUN_MAIN == "true"`) the reloader re-executes per reload; a new pure `_should_open_browser()` opens **exactly once** (supervisor / non-debug single process, never the reload child; still honors `CALLBACK_NO_BROWSER=1`), covered by `tests/test_browser_open.py`. (#3) **slow application load** — `list_applications` ran `1+2N` queries (lazy `Application.runs` + per-app pending `ProposalReview` count); now `selectinload(Application.runs)` + one batched `group_by` pending-count → ~3 queries regardless of N, with a constant-query-count regression test. (#4) **new-user stale dropdown** — `showNewUserForm()` cleared the leftover `#userSelect` value (Cancel restores it) + a UX regression. **No prompt/dep/migration; `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` unchanged.** Gate green (ruff · mypy 189 · pytest 1296 incl. `-m ux`). **Adds 1 ledger item** (assistant doc-coverage → open count 8 → 9). The remaining named UI-polish candidate is **#2 assistant voice softening** (own `feat/` branch — owner's "start with voice softening").
 - [x] **7.8c** `fix/assistant-runs-without-user` — **let the doc-grounded assistant answer without a user selected** (third small UI-polish sprint before the 7.9 tag; follows #2 voice softening on `feat/avatar-voice-tone-tuning`). **Finding (2026-06-18):** the assistant gates on a chosen user (`static/assistant.js:24` "Pick a user first, then ask."; `blueprints/assistant.py:231` 400s on missing `username`, `:233` `_safe_username` 400s on unknown), but the answer is **project-global** — grounded in the committed wiki + code at HEAD, identical for every user. `username` does **not** feed retrieval (`_build_sources`/`assemble`), scope (`allow_dev` = the Dev-mode checkbox), or the answer; it is used only for (a) a `_safe_username` existence check applied **by discipline** (the route touches **no** user filesystem — its own docstring says `_within`/`secure_filename` is N/A) and (b) telemetry attribution, which `analyzer._call_llm_streaming` already supports anonymously (`username=""` default). So gating the avatar behind user-selection is an artifact of the per-user route pattern, not a need — and it blocks the assistant at exactly the first-run moment ("how does callback. work?") where a brand-new visitor benefits most, which reads as unfinished. **Fix:** make `username` optional in the assistant path — drop the client gate, relax the route's `if not username` 400, `_safe_username`-validate only when a username is provided, and stamp anonymous telemetry (`""`/`"anonymous"`). Retrieval + answer unchanged; add a route test for the no-user path. Small + contained (`blueprints/assistant.py` ~:225–235, `static/assistant.js:24`). **Pre-7.9-tag.** _(surfaced 2026-06-18 during `feat/avatar-voice-tone-tuning` close-out; capture only — its own branch.)_ **DONE 2026-06-19** (`fix/assistant-runs-without-user`): `username` made optional in the assistant path — the route requires only `question`, `_safe_username`-validates only when one is supplied (a provided-but-unknown user is still a `400`), and absent → anonymous (`""`); the client gate ("Pick a user first, then ask.") is dropped and the Ask button sends `currentUser || ''`; the no-user route test now asserts a streamed anonymous `200` (missing-question + unknown-user `400`s retained). Retrieval + answer unchanged; L3 microcopy needed no edit (the only "pick a user first" string was the removed JS gate). No prompt/dep/migration; `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` unchanged. Gate green (ruff · mypy 189 · pytest 1304 incl. a new no-user UX regression — the lone full-run failure `test_compose_skills_card_drop_persists` is a pre-existing intermittent UX-tier race, passes clean in isolation, unrelated to this change). **Folded in (owner-directed):** the avatar citation/reference-format feedback surfaced this session is captured on this branch as [`avatar-citation-format-guidance.md`](avatar-citation-format-guidance.md); **per owner direction (2026-06-19) it is scheduled as `7.8d` below — a pre-7.9-tag sprint, not a v1.0.8 deferral** — so the carry-forward ledger is unchanged (stays 9).
 - [x] **7.8d** `feat/avatar-citation-format` — **avatar citation / reference-format consistency** (fourth small UI-polish sprint before the 7.9 tag; **moved into the v1.0.7 band 2026-06-19 at owner direction — was a v1.0.8 deferral**). The friendly-guide voice landed well (#2, `feat/avatar-voice-tone-tuning`), but owner testing (2026-06-19) found the assistant's **citations + references render inconsistently** — markdown links `[text](path)`, parentheticals, and numeric `[N]` markers mixed in the same sentences, over a "Sources:" footer the `[N]` don't resolve to. Three server/prompt-side causes per [`avatar-citation-format-guidance.md`](avatar-citation-format-guidance.md): **C1** the context renderer numbers units `[{i}]` (`analyzer.py:1538`) so the model mirrors `[N]` not `[slug]`/`[path:line]` (the real lever — a prompt-only patch is fragile); **C2** model-invented markdown links shown raw (body is `textContent`); **C3** the "Sources:" footer ships **all** retrieved units (`analyzer.py:1595`), not the cited set, so markers are unresolvable + grounding is overstated. **Owner locks scheme A (self-describing cites) vs B (numbered footnotes) first.** Bumps `AVATAR_PROMPT_VERSION`; extends `tests/test_avatar_streaming.py` (no `[\d+]`, no `](`, cite↔footer resolution). **Pre-7.9-tag.** _(surfaced 2026-06-19 during `fix/assistant-runs-without-user`; its own branch.)_ **DONE 2026-06-19** (`feat/avatar-citation-format`): owner locked **scheme B** (numbered footnotes) + render a constrained inline-markdown subset + **clickable GitHub links** (in-app viewer deferred to the ledger). **C1** — the renderer keeps numbering units (the `[n]` is now the cite key) and `AVATAR_SYSTEM_PROMPT` (`analyzer.py`) instructs the avatar to cite with the bracketed **number** (worked OK/NOT-OK examples; never a slug, markdown link, or URL); `AVATAR_PROMPT_VERSION 2026-06-18.1 → 2026-06-19.1`. **C3** — new `_resolve_cited` makes the `done` payload's `citations` a **cited-only, consecutively-renumbered** `{n,label,href}` list (parses the emitted `[n]`, renumbers in first-appearance order, remaps the body); a refusal cites nothing. **C2** — `static/assistant.js` re-renders the answer once on completion as a tiny fixed markdown subset (`` `code` `` / `**bold**` / `[n]`→GitHub `<a>`), **XSS-safe by construction** (escape first, then only fixed tags + a re-validated `https://github.com/` href via `_citation_href`); the numbered "Sources" key renders into a new non-`aria-live` `#assistantSources` block. Deterministic tests extended (href construction, cited-only + renumber, out-of-range-literal, empty-refusal footer, every-`[n]`-resolves / no-`](` / no-URL); route + UX stubs moved to the new shape + assert the rendered links. `PROMPT_VERSION` untouched; avatar stays out of `_BASE_SYSTEM_PROMPTS`; no new route/dep/migration. **Adds 1 ledger item** (in-app citation viewer, deferred → open count 9 → 10). Gate green (ruff · mypy · pytest incl. `-m ux`).
-- [ ] **7.9** `chore/version-bump-v1.0.7` — tag. **Pre-tag: run `/wiki-self-update`** for the consolidated wiki refresh (the self-documenting loop now owns the diff-pass that `chore/version-bump-v1.0.6` did by hand), then confirm `/wiki-lint` is clean before tagging. (7.3 already advanced `.last_ingest_sha` to the v1.0.7 band, so this is a small top-up unless 7.4–7.8 changed cited code.)
+- [x] **7.9** `chore/version-bump-v1.0.7` — tag. **Pre-tag: run `/wiki-self-update`** for the consolidated wiki refresh (the self-documenting loop now owns the diff-pass that `chore/version-bump-v1.0.6` did by hand), then confirm `/wiki-lint` is clean before tagging. (7.3 already advanced `.last_ingest_sha` to the v1.0.7 band, so this is a small top-up unless 7.4–7.8 changed cited code.) **DONE 2026-06-20** (`chore/version-bump-v1.0.7`): the **ledger-integration capture** (each of the 10 open carry-forward items now carries a **→ integrate at 8.x** target; the Open-count banner reconciled; the two pre-decided v1.0.8 items added — `chore/ledger-reduction` (8.0) + `docs/assistant-wiki-coverage` (8.6a), owner-confirmed slots, mirrored in `RELEASE_ARC.md` §4.8); `CHANGELOG.md` `[Unreleased]` cut to `## [1.0.7] — 2026-06-20`; `pyproject.toml` version `1.0.6 → 1.0.7` (`PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` untouched); the consolidated `/wiki-self-update` refresh (diff `a008f86…`→HEAD) presented + committed wiki-only so `/wiki-lint` stays clean at the tag. **Docs/chore only** — no code/route/LLM-call/dep/migration. Gate green (ruff · mypy · pytest). Tagged **`v1.0.7`** — closes the v1.0.7 epic; unblocks v1.0.8 (8.0 / 8.1 onward, each its own branch).
 
 **Epic v1.0.8 — refactor → gather → correct → public-prep ("all work done by 1.0.8").** Refactor opens the window; gather + first real-data eval loop run on the decomposed code.
 
+- [ ] **8.0** `chore/ledger-reduction` — reduction micro-branch run **before** the structural epic (ledger at 10/10): clear the **CONTRIBUTING.md plugin-section drift** (stale `.claude-plugin/` commands/agents description, post-7.1 move) + the **pytest-socket `UserWarning ×2`** (one `filterwarnings` entry) carry-forward items, dropping the open ledger 10→8. Docs/test hygiene only; zero coupling to the seams. _(PROPOSED 2026-06-20, 7.9 ledger capture — owner-confirmed slot.)_
 - [ ] **8.1** `design/app-blueprints` — seams + shared-helpers home; 32 test imports; lint-hook compat.
 - [ ] **8.2** `refactor/route-security-lint-widen` (PX-21) — widen the hook past `app.py` **before any route moves** (hook is app.py-only today).
 - [ ] **8.3a–g** `refactor/app-blueprints-<seam>` — one seam/branch (analysis · generation/cover-letter · templates · corpus · user-config · dashboard · assistant move-only); folds `ResponseReturnValue` (PV-4) + the deterministic-LLM boundary gate (PX-20); back-nav (PX-22) rides templates; loopback bind (PX-19) rides user-config.
 - [ ] **8.4** `test/keep-ledger-guards` (PX-29) — do-not-regress guards so the split can't weaken the KEEP ledger.
 - [ ] **8.5** **gated test window (on decomposed code)** — E2E user+dev walkthrough (R2 verified live) + `eval/live-shakedown-labels` (PV-1, **first** real-data eval/tuning loop) → numbered findings backlog.
 - [ ] **8.6** `fix/window-findings-*` — correction sprint: burn the backlog + PV-2 calibration + PV-3 cover-letter tone + `/wiki-ingest`. May spill to a v1.0.9 epic.
+- [ ] **8.6a** `docs/assistant-wiki-coverage` — author the user/dev how-to wiki pages the avatar draws on (downloads, editing/refining, cover letters, multi-user, import mechanics, troubleshooting, the assistant itself); clears the **Assistant doc-coverage** ledger item (only ~6 `audience: user` pages exist today, so the avatar is "woefully uninformed"). Content, not code — runs after 8.6 settles the post-split route surface, before the public cut (8.7) so v1.1.0 ships a well-informed avatar; pairs with the 8.6 `/wiki-ingest`. Possibly multi-branch. _(PROPOSED 2026-06-20, 7.9 ledger capture — owner-confirmed slot.)_
 - [ ] **8.7** `release/public-prep` — `docs/screenshots`, fresh-clone < 5 min, badge set (E-2 / PX-26), UX/a11y/PDF required CI check (PX-25), doc-link sweep, **GitHub repo create + push (private/unpromoted)**.
 - [ ] **8.8** `chore/version-bump-v1.0.8` — tag; all work done.
 
@@ -475,7 +477,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Open count: 10 — at the top of the ~8–10 reduction-sprint threshold; the next stream should plan a reduction pass (the link-checker + CONTRIBUTING-drift items below are the natural pair to clear)._
+_Open count: 10 — at the top of the ~8–10 reduction-sprint threshold. **Triaged 2026-06-20 (7.9 ledger capture):** each item below now carries a **→ integrate at 8.x** target mapping it to an already-scheduled v1.0.8 sprint, so the ledger drains without new standalone branches. The reduction pass is scheduled as **`chore/ledger-reduction` (8.0)**, clearing the **CONTRIBUTING-drift + pytest-socket `UserWarning`** pair (the cross-document link/cite checker routes to 8.7 instead) — that drops the open count 10→8 once 8.0 runs. Net drain: 8.5 clears the S3-eval + grounding-metric pair · 8.7 clears portable-core + link-checker + flaky-UX · 8.3 clears help-opener · 8.6a clears assistant doc-coverage · the citation viewer stays deferred → by v1.1.0 the ledger is ~2 items._
 
 - [ ] **In-app rendered citation viewer (deferred)** — the avatar's numbered citations
       (Sprint 7.8d, `feat/avatar-citation-format`) link to their source **on GitHub** (wiki
@@ -488,6 +490,8 @@ _Open count: 10 — at the top of the ~8–10 reduction-sprint threshold; the ne
       what shape the viewer actually needs (owner 2026-06-19). Known trade-off of the GitHub-link
       approach: a code citation on an unpushed local `sha` can 404 until pushed.
       _(discovered: v1.0.7 stream, 2026-06-19, `feat/avatar-citation-format`.)_
+      **→ Triage (2026-06-20, 7.9 ledger capture):** leave deferred — conditional on real
+      friction (external-tab annoyance or the unpushed-`sha`-404 biting). Do not schedule.
 
 - [ ] **S3 vector tier — labeled before/after eval (gate-override validation owed)** — the
       S3 `VectorSource` (Sprint 7.6, `feat/doc-assistant-vector`) was built **ahead of**
@@ -503,6 +507,9 @@ _Open count: 10 — at the top of the ~8–10 reduction-sprint threshold; the ne
       the embedder is injected and the tier is "on when available", so demote the deps to an
       optional extra or revert. Natural pair with the grounding-calibration item.
       _(discovered: v1.0.7 stream, 2026-06-16, `feat/doc-assistant-vector`.)_
+      **→ Integrate at 8.5 (2026-06-20, 7.9 ledger capture):** already scheduled at the gated
+      test window (`eval/live-shakedown-labels`) — leave; retires there. Pairs with the
+      **Grounding / hallucination metric** item.
 
 - [ ] **Flaky UX test — `test_positioning_pin_preserves_title_pin`** — surfaced
       2026-06-13 on the docs-only `docs/flag-plugin-activation-v1.0.7` branch:
@@ -530,6 +537,9 @@ _Open count: 10 — at the top of the ~8–10 reduction-sprint threshold; the ne
       `wait_for_selector` timeout on `.compose-row.recommended`), then **passed clean on
       isolated re-run** (36s). The branch touched only the assistant route/client (unrelated to
       the Compose wizard), so **not code-caused**; still deferred for the UX-tier stabilization pass.
+      **→ Integrate at 8.7 (2026-06-20, 7.9 ledger capture):** as a PX-25 prerequisite — the UX
+      tier cannot become a *required* CI gate with known flakes — or a tiny stabilization pass
+      right before 8.5. Not a standalone branch.
 
 - [ ] **Grounding / hallucination metric — calibrated layers (B)** — the deterministic
       label-free **L0** slice shipped (`eval/grounding-metric-l0`:
@@ -540,6 +550,9 @@ _Open count: 10 — at the top of the ~8–10 reduction-sprint threshold; the ne
       (`eval/grounding-calibration`; [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.7). Detail:
       [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md); [`docs/PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md)
       "calibrated layers (B)". _(discovered: v1.0.5 stream, 2026-06-05.)_
+      **→ Integrate at 8.5→8.6 (2026-06-20, 7.9 ledger capture):** PV-2 calibration, blocked on
+      the 8.5 real-data labels (`evals/fixtures/real/` is empty) — leave. Pairs with the
+      **S3 vector tier** item.
 
 - [ ] **Portable-enforcement-core migration** — **DECIDED 2026-06-15: split** (the decision
       record is under Resolved below). The migration itself is pending: lift the portable
@@ -549,6 +562,8 @@ _Open count: 10 — at the top of the ~8–10 reduction-sprint threshold; the ne
       plugin, with CI as the server-side backstop. Follow-on **`feat/portable-enforcement-core`**
       clustered with the v1.0.8 gate epic when the git remote/CI activates (Sprint 8.7).
       Plan-mode lifecycle hooks stay Claude-only. _(discovered: v1.0.7 stream, 2026-06-15.)_
+      **→ Integrate at 8.7 (2026-06-20, 7.9 ledger capture):** `feat/portable-enforcement-core`,
+      when the git remote/CI activates — leave.
 
 - [ ] **Periodic cross-document link / cite checker** — none exists or is planned. `wiki-lint`
       is `docs/wiki/`-scoped (`[[backlinks]]` + `path:line` existence only), so the
@@ -561,6 +576,8 @@ _Open count: 10 — at the top of the ~8–10 reduction-sprint threshold; the ne
       self-documenting loop **`docs/wiki/`-scoped** and explicitly does **not** absorb this cross-document
       link/cite checker — it stays this named separate follow-on (no new open item created;
       [`self-documenting-loop-design.md`](self-documenting-loop-design.md) §3 scope table).
+      **→ Integrate at 8.7 (2026-06-20, 7.9 ledger capture):** as the *durable CI form* of the
+      planned doc-link sweep — don't build it standalone.
 
 - [ ] **`CONTRIBUTING.md` plugin-section drift** — "Working with the Claude Code plugin" still
       says "the `.claude-plugin/` directory holds the project's commands, agents, and hook
@@ -568,15 +585,23 @@ _Open count: 10 — at the top of the ~8–10 reduction-sprint threshold; the ne
       commands/agents to the repo-root `commands/` / `agents/` (only hooks remain in
       `.claude-plugin/`). Same stale class as the `:87` fix landed this branch, but outside the
       governance-extraction scope — file, don't drive-by. _(surfaced 2026-06-15, `feat/governance-extraction`.)_
+      **→ Integrate at 8.0 (2026-06-20, 7.9 ledger capture):** a ~5-min doc fix — bundled with
+      the **pytest-socket `UserWarning`** item into the new `chore/ledger-reduction` micro-branch
+      early in v1.0.8 (drops the ledger 10→8).
 
 - [ ] **pytest-socket `UserWarning` ×2 (latent, benign)** — the egress-allowlist suite emits
       2 `UserWarning`s ("N passed, 2 warnings"); expected/benign (the autouse fn-scoped socket
       fixture), observed across recent gate runs. No action; surfaced here so it stops
       re-surprising future gates. _(filed in memory `reference-egress-allowlist-gate`.)_
+      **→ Integrate at 8.0 (2026-06-20, 7.9 ledger capture):** one `filterwarnings` entry —
+      folded into the `chore/ledger-reduction` micro-branch with the **CONTRIBUTING.md
+      plugin-section drift** item (or any test-touching branch, e.g. 8.4).
 
 - [ ] **Help-opener duplication** — the dashboard's `openDashHelp` ports `openHelpModal`
       (memory `reference-dashboard-education-ported-help`); deferred to a dedicated
       help-refactor branch. _(discovered: Sprint 6.5.)_
+      **→ Integrate at 8.3 (2026-06-20, 7.9 ledger capture):** fold opportunistically into the
+      dashboard seam (that file is already being edited there).
 
 - [ ] **Assistant doc-coverage — author the how-to content the avatar draws on** — the
       doc-grounded assistant (Sprints 7.5/7.6) is grounded but **"woefully uninformed"**: only
@@ -587,6 +612,10 @@ _Open count: 10 — at the top of the ~8–10 reduction-sprint threshold; the ne
       assistant **voice** prompt work (#2, its own `feat/` branch). Potentially multi-branch;
       the owner sequenced it "lastly," after voice softening. _(discovered: v1.0.7 stream,
       2026-06-17, `fix/v107-ui-polish-trio` scoping.)_
+      **→ Integrate at 8.6a (2026-06-20, 7.9 ledger capture):** its own focused doc-authoring
+      sprint in the v1.0.8 window (content, not code — runs parallel to the refactor; pairs with
+      8.6 `/wiki-ingest`). Was under-ranked by its "do it lastly" note — it directly gates the
+      assistant usefulness the v1.0.7 epic just built.
 
 #### Resolved
 

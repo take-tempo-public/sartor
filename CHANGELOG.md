@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7] — 2026-06-20
+
 ### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)
 
 Owner testing (2026-06-19) found the doc-grounded assistant's citations rendering
