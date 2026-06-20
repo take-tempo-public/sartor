@@ -13,6 +13,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)
+
+Owner testing (2026-06-19) found the doc-grounded assistant's citations rendering
+inconsistently — markdown links `[text](path)`, parentheticals, and numeric `[N]` markers
+colliding in the same sentences, over a "Sources:" footer the `[N]` never resolved to. This
+makes every reference **numbered, resolvable, and clickable**, and the footer **honest** (it
+lists only what the answer actually cited). Tunes the **avatar only** — `AVATAR_PROMPT_VERSION`
+bumps `2026-06-18.1` → `2026-06-19.1`; **`PROMPT_VERSION` is unchanged**. No new route, no new
+dependency, no migration.
+
+- **Numbered footnote citations (Scheme B).** `AVATAR_SYSTEM_PROMPT` (`analyzer.py`) now
+  instructs the avatar to cite a claim with the **bracketed number** of the unit it rests on
+  (`[1]`, `[2]`) at the end of the sentence — never a slug, a markdown link, or a URL — with
+  worked OK/NOT-OK examples. The per-turn closer and the `<recalled_context>` renderer docstring
+  match.
+- **Cited-only, renumbered, resolving footer.** `avatar_answer_streaming`'s `done` payload now
+  carries `citations` as a list of `{n, label, href}` for **only the units the answer cited**
+  (a new `_resolve_cited` parses the emitted `[n]`, renumbers them consecutively in
+  first-appearance order, and remaps the body) — so the footer can no longer overstate grounding
+  and every marker resolves. A refusal that cites nothing shows "no sources cited." A stray
+  `[[slug]]` the model occasionally mirrors into prose is normalized to plain text (never a real
+  numbered cite, so it can't show as raw bracket-soup).
+- **Clickable GitHub links.** Each citation links to its source on GitHub — wiki pages on `main`,
+  code lines pinned to the unit's provenance `sha` (`_citation_href`). The model still never emits
+  a URL (the no-URL invariant holds); the client builds the anchor from the citation.
+- **Constrained inline markdown (`static/assistant.js`).** On completion the answer re-renders a
+  tiny fixed subset — `` `inline code` ``, `**bold**`, and the `[n]` links — **XSS-safe by
+  construction** (escape first, then introduce only fixed tags + a re-validated GitHub href). The
+  numbered "Sources" key renders into a dedicated non-`aria-live` `#assistantSources` block; the
+  polite status region keeps a short "Answer ready."
+- **Tests (`tests/test_avatar_streaming.py`):** the deterministic LLM-free layer now covers href
+  construction, cited-only + consecutive renumbering, out-of-range markers left literal, the
+  empty refusal footer, and "every body `[n]` resolves / no `](` / no URL." Route + UX stubs move
+  to the new `citations` shape and assert the rendered links.
+- **Deferred (ledger):** an in-app rendered citation viewer — clickable links go to GitHub for
+  now; an in-app viewer waits until friction warrants it (owner 2026-06-19).
+
 ### Fixed — assistant answers without a user selected (`fix/assistant-runs-without-user`, Sprint 7.8c)
 
 The doc-grounded assistant no longer requires a user to be selected before it will

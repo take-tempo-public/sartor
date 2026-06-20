@@ -943,6 +943,10 @@
              polite region above) carries the single terminal announcement instead. -->
         <div id="assistantAnswer" aria-busy="false" aria-atomic="false"
              style="white-space:pre-wrap; margin-top:0.75rem;"></div>
+        <!-- Numbered, resolving "Sources" key (7.8d). NOT a live region: the footer can
+             run several lines and would flood a screen reader if announced; the single
+             terminal announcement is the short "Answer ready." in #assistantStatus. -->
+        <div id="assistantSources" class="edit-hint" style="margin-top:0.5rem;"></div>
         <p class="edit-hint" id="assistantReportHint" style="margin-top:0.75rem">
           Something missing from the docs?
           <a href="https://github.com/amodal1/callback/issues" target="_blank" rel="noopener">Report it on the project's GitHub</a>.

@@ -25,12 +25,15 @@ def _fake_avatar(client, question, context, *, allow_dev=False, username="", run
     # The route passes an empty username when no user is selected; the avatar is
     # anonymous by construction (username default ""), so the stub ignores it.
     yield ("chunk", "callback tailors your resume ")
-    yield ("chunk", "in six guided steps.")
+    yield ("chunk", "in six guided steps [1].")
     yield (
         "done",
         {
-            "answer": "callback tailors your resume in six guided steps.",
-            "citations": ["[[using-callback]]"],
+            "answer": "callback tailors your resume in six guided steps [1].",
+            "citations": [
+                {"n": 1, "label": "using-callback",
+                 "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/using-callback.md"},
+            ],
             "truncated": False,
             "allow_dev": allow_dev,
         },
@@ -66,7 +69,7 @@ def test_assistant_answers_without_user_selected(
         timeout=DEFAULT_TIMEOUT_MS,
     )
     page.wait_for_function(
-        "() => document.getElementById('assistantStatus')"
+        "() => document.getElementById('assistantSources')"
         ".textContent.includes('using-callback')",
         timeout=DEFAULT_TIMEOUT_MS,
     )

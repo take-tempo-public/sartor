@@ -20,8 +20,13 @@ def _stub_avatar(client, question, context, *, allow_dev=False, username="", run
     yield (
         "done",
         {
-            "answer": "Hello world.",
-            "citations": ["[[overview]]", "analyzer.py:353"],
+            "answer": "Hello world [1] [2].",
+            "citations": [
+                {"n": 1, "label": "overview",
+                 "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/overview.md"},
+                {"n": 2, "label": "analyzer.py:353",
+                 "href": "https://github.com/amodal1/callback/blob/abc123/analyzer.py#L353"},
+            ],
             "truncated": False,
             "allow_dev": allow_dev,
         },
@@ -81,8 +86,10 @@ def test_done_event_carries_citations(client):
         json={"username": "testuser", "question": "explain templates"},
     )
     body = resp.get_data(as_text=True)
-    assert "[[overview]]" in body
+    # The done payload carries the cited-only footer (label + client-built GitHub href).
+    assert "overview" in body
     assert "analyzer.py:353" in body
+    assert "github.com" in body
 
 
 def test_allow_dev_passes_through(client):

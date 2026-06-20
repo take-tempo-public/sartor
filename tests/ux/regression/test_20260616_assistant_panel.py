@@ -22,12 +22,17 @@ from ui_pages.selectors import Assistant
 
 def _fake_avatar(client, question, context, *, allow_dev=False, username="", run_id=""):
     yield ("chunk", "callback tailors your resume ")
-    yield ("chunk", "in six guided steps.")
+    yield ("chunk", "in six guided steps [1][2].")
     yield (
         "done",
         {
-            "answer": "callback tailors your resume in six guided steps.",
-            "citations": ["[[using-callback]]", "[[tailoring-a-resume]]"],
+            "answer": "callback tailors your resume in six guided steps [1][2].",
+            "citations": [
+                {"n": 1, "label": "using-callback",
+                 "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/using-callback.md"},
+                {"n": 2, "label": "tailoring-a-resume",
+                 "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/tailoring-a-resume.md"},
+            ],
             "truncated": False,
             "allow_dev": allow_dev,
         },
@@ -64,9 +69,16 @@ def test_assistant_panel_streams_cited_answer(
         ".textContent.includes('six guided steps')",
         timeout=DEFAULT_TIMEOUT_MS,
     )
-    # The cited-sources line lands on the `done` event.
+    # The numbered "Sources" key lands in its own #assistantSources block on `done`.
     page.wait_for_function(
-        "() => document.getElementById('assistantStatus')"
+        "() => document.getElementById('assistantSources')"
         ".textContent.includes('using-callback')",
+        timeout=DEFAULT_TIMEOUT_MS,
+    )
+    # The inline [n] citations re-render as clickable GitHub links (7.8d / Scheme B).
+    page.wait_for_function(
+        "() => { const a = document.getElementById('assistantAnswer')"
+        ".querySelector('a[href^=\"https://github.com/\"]');"
+        " return a && a.textContent === '[1]'; }",
         timeout=DEFAULT_TIMEOUT_MS,
     )
