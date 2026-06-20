@@ -182,7 +182,8 @@ class Assistant:
     QUESTION = "#assistantQuestion"
     ASK_BUTTON = "#assistantAsk"
     ANSWER = "#assistantAnswer"
-    STATUS = "#assistantStatus"  # streamed-answer status + the cited-sources line
+    STATUS = "#assistantStatus"  # polite live region: "Thinking…" / "Answer ready."
+    SOURCES = "#assistantSources"  # 7.8d: the numbered, resolving cited-only "Sources" key
 
 
 class Settings:

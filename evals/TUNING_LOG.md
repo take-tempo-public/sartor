@@ -2325,3 +2325,77 @@ screen-reader a11y defect (per-token announcement of a live region).
    first run were gone. Plausible cause: the model no longer mirrors the `[[ ]]` it sees in the
    recalled-context block, so it stops conflating wiki-link syntax with a citation it can invent.
    Net: the readability change and the grounding floor moved the same direction.
+
+---
+
+## 2026-06-19 — feat/avatar-citation-format: citation/reference-format consistency (`AVATAR_PROMPT_VERSION 2026-06-18.1 → 2026-06-19.1`)
+
+> **Scope note.** Tunes the **avatar** (`avatar_answer_streaming` / `AVATAR_SYSTEM_PROMPT` +
+> the `done`-payload renderer), NOT the résumé pipeline. `PROMPT_VERSION` untouched; avatar
+> not a `_BASE_SYSTEM_PROMPTS` target — so this entry uses the avatar's own deterministic
+> checks + a live in-process spot-check, never the résumé runner. Executes
+> [`docs/dev/avatar-citation-format-guidance.md`](../docs/dev/avatar-citation-format-guidance.md).
+
+### 1. What changed
+
+Owner locked **scheme B** (numbered footnotes) + a constrained inline-markdown render +
+**clickable GitHub links** (in-app viewer deferred). All in one commit with the version bump:
+- **L1 `AVATAR_SYSTEM_PROMPT`:** the citation rule now says cite a claim with the unit's
+  **bracketed number** (`[1]`, `[2]`) at the end of the sentence — never a slug, markdown link,
+  or URL — with worked OK/NOT-OK pairs; a light line permits `` `code` `` / `**bold**` but forbids
+  markdown links/headings. Per-turn closer matched. Grounding/refusal/no-invention clauses
+  **byte-identical** to `2026-06-18.1` (only the citation *format* changed).
+- **Renderer + `done` payload (`analyzer.py`):** new `_resolve_cited` parses the emitted `[n]`,
+  **renumbers** them consecutively in first-appearance order, remaps the body, and emits a
+  **cited-only** `citations` list of `{n, label, href}`; `_citation_href` builds the GitHub blob
+  URL (wiki→`main`, code→pinned `sha` + `#L`). A stray `[[slug]]` the model drops into prose is
+  normalized to plain text.
+- **L3 (`static/assistant.js` + `templates/index.html`):** answer re-renders once on completion
+  as a fixed markdown subset (`` `code` `` / `**bold**` / `[n]`→GitHub `<a>`), XSS-safe by
+  construction; the numbered "Sources" key renders into a new non-`aria-live` `#assistantSources`.
+
+### 2. Why
+
+Carry-forward / owner testing (2026-06-19): the assistant mixed markdown links `[text](path)`,
+parentheticals, and numeric `[N]` markers in the same sentences, over a "Sources:" footer the
+`[N]` never resolved to. Three causes (C1 the numbered-units renderer, C2 model-invented markdown
+links shown raw, C3 the footer = all-retrieved not cited). The footer overstatement is a P0 honesty
+problem, not cosmetics.
+
+### 3. Result
+
+- **Gate:** `ruff` clean · `mypy` clean (190 files) · `pytest` **1311 passed** (incl. the UX tier —
+  both assistant UX regressions green, so the markup/JS re-render + linked footer drive cleanly).
+- **Deterministic checks** (`tests/test_avatar_streaming.py`, $0, new + updated): `_citation_href`
+  construction (wiki / code+sha+`#L` / `path:symbol` / empty-sha→`main`); cited-only + consecutive
+  renumber (out-of-order + gaps → `[1][2]`); out-of-range marker left literal; empty-refusal footer;
+  stray-`[[slug]]` normalized; and the pipeline R1/R2/R3 ("every body `[n]` resolves, footer ⊆ cited,
+  no `](`, no URL"). All pass; the byte-exact refusal sync + voice-clause checks still pass.
+- **Live in-process spot-check** (real Haiku, 5 scenarios × the real `recall.assemble` path, both
+  modes): **5/5 PASS** — every body `[n]` resolved to a footer entry (zero unresolved), the footer
+  was cited-only and consecutively numbered, **zero** markdown links and **zero** URLs in any answer,
+  and hrefs were well-formed (wiki→`blob/main/docs/wiki/pages/<slug>.md`, code→`blob/<sha>/<path>#L<n>`).
+  The refusal (S3, "cache hit rate this week") fired correctly — exact refusal + a resolvable nearest-
+  topic cite + the GitHub rung stated as *behavior* with no URL emitted. Dev answers used `[path:line]`
+  cites + inline-`code` identifiers; user answers led with wiki slugs.
+
+### 4. What we learned
+
+1. **Numbered cites resolve reliably and the footer is honest.** Across 5 live scenarios every emitted
+   `[n]` mapped to a retrieved unit (in-range), so the cited-only footer never overstated grounding and
+   every marker was followable — the C1/C3 fix landed. Consecutive renumbering means the user always sees
+   `[1][2][3]`, never the raw context-index gaps.
+2. **Haiku still occasionally mirrors a `[[slug]]` into prose (~1/5 here).** This is the same pre-existing
+   double-bracket tic the voice/tone pass flagged — not introduced by this change and never a real (numbered)
+   cite. Surfaced in the live S1; folded in a deterministic server-side normalization (`_resolve_cited` strips
+   `[[slug]]`→`slug`) so the rendered answer is never raw bracket-soup. The broader cite-fidelity measurement
+   stays owed to the **v1.0.8 labeled avatar eval** (Carry-forward ledger).
+3. **Clickable links without new infrastructure.** GitHub blob URLs (built client-side from the citation,
+   not model-emitted) give resolvable links with no new Flask route, renderer, or sanitizer — the no-URL
+   model invariant holds because the model still only emits `[n]`. Known trade-off: a code link on an
+   unpushed local `sha` 404s until pushed (wiki links to `main` don't). An in-app rendered viewer is the
+   deferred follow-on if that friction bites.
+4. **Grounding floor unchanged by construction.** Only the citation *format* moved; the GROUND-EVERY-CLAIM /
+   refusal / no-invention clauses are byte-identical to `2026-06-18.1`, and the live spot-check showed zero
+   fabricated cites — consistent with the voice/tone pass's finding that moving off mirrored `[[ ]]` syntax
+   *reduces* drift rather than adding it.

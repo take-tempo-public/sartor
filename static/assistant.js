@@ -16,6 +16,7 @@ async function askAssistant() {
   const answerEl = document.getElementById('assistantAnswer');
   const statusEl = document.getElementById('assistantStatus');
   const emptyEl = document.getElementById('assistantEmptyState');
+  const sourcesEl = document.getElementById('assistantSources');
   const btn = document.getElementById('assistantAsk');
   const question = (qEl.value || '').trim();
 
@@ -27,6 +28,7 @@ async function askAssistant() {
   const allowDev = document.getElementById('assistantDevMode').checked;
   if (emptyEl) emptyEl.classList.add('hidden');   // first ask retires the empty state
   answerEl.textContent = '';
+  if (sourcesEl) sourcesEl.textContent = '';      // clear the prior answer's Sources key
   // Tokens accumulate SILENTLY in #assistantAnswer (no longer a live region, so no
   // per-chunk screen-reader flood). aria-busy marks it loading; the single terminal
   // announcement goes to #assistantStatus and aria-busy is cleared on EVERY path.
@@ -43,6 +45,12 @@ async function askAssistant() {
           answerEl.textContent += (data && data.text) ? data.text : '';
           statusEl.textContent = '';
         } else if (eventName === 'done') {
+          // Re-render the FULL answer once on completion: the server-renumbered text
+          // (data.answer) as a constrained markdown subset with clickable [n] cites.
+          answerEl.innerHTML = _renderAvatarAnswer(
+            (data && typeof data.answer === 'string') ? data.answer : answerEl.textContent,
+            data && data.citations
+          );
           statusEl.textContent = _renderAssistantSources(data);
           answerEl.setAttribute('aria-busy', 'false');
         } else if (eventName === 'error') {
@@ -66,16 +74,56 @@ async function askAssistant() {
   }
 }
 
+// A client-built GitHub blob URL is the ONLY href we ever inject; re-validate the
+// prefix the server sent so a malformed/foreign URL can never reach an attribute.
+function _safeCiteHref(href) {
+  return (typeof href === 'string' && href.indexOf('https://github.com/') === 0) ? href : '';
+}
+
+// Re-render the avatar's full answer as a constrained markdown subset (7.8d):
+// `inline code`, **bold**, and the numbered [n] citations as clickable GitHub links.
+// XSS-safe BY CONSTRUCTION: the answer is escaped FIRST via esc() (app.js), so no raw
+// `<`/`>`/`&` from the model or user survives; the only HTML we then introduce is the
+// fixed <code>/<strong> tags and an <a> whose href is a server-built, re-validated
+// GitHub URL (never model text) and whose link text is the bare number. The body streams
+// as plain textContent while loading; this fires once on the `done` event.
+function _renderAvatarAnswer(answer, citations) {
+  const hrefByN = {};
+  (Array.isArray(citations) ? citations : []).forEach(c => {
+    const href = c ? _safeCiteHref(c.href) : '';
+    if (href) hrefByN[String(c.n)] = href;
+  });
+  let html = esc(String(answer == null ? '' : answer));
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');        // code first: backticks bound the span
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\[(\d+)\]/g, (m, n) => {
+    const href = hrefByN[n];
+    return href ? '<a href="' + href + '" target="_blank" rel="noopener">[' + n + ']</a>' : m;
+  });
+  return html;
+}
+
+// Build the numbered, resolving "Sources" key into #assistantSources (7.8d). Each entry
+// is "[n] <a>label</a>" linking to the source on GitHub; cited-only, so the footer can't
+// overstate grounding. Returns the SHORT announcement for the polite #assistantStatus
+// region (the multi-line key would flood a screen reader if announced).
 function _renderAssistantSources(done) {
-  if (!done || !Array.isArray(done.citations) || done.citations.length === 0) {
-    return 'Answered (no sources cited).';
+  const box = document.getElementById('assistantSources');
+  const cites = (done && Array.isArray(done.citations)) ? done.citations : [];
+  if (cites.length === 0) {
+    if (box) box.textContent = 'Answered (no sources cited).';
+    return 'Answer ready.';
   }
-  // Strip the wiki [[ ]] double-bracket wrapper for a clean, human-readable list
-  // (matches the single-bracket inline citation form the avatar now uses); code
-  // citations are bare path:line already.
-  const uniq = [...new Set(done.citations)].map(c => c.replace(/^\[\[|\]\]$/g, ''));
+  const parts = cites.map(c => {
+    const label = esc(String((c && c.label != null) ? c.label : ''));
+    const n = esc(String((c && c.n != null) ? c.n : ''));
+    const href = c ? _safeCiteHref(c.href) : '';
+    const linked = href ? '<a href="' + href + '" target="_blank" rel="noopener">' + label + '</a>' : label;
+    return '[' + n + '] ' + linked;
+  });
   const truncated = done.truncated ? ' · context truncated' : '';
-  return 'Sources: ' + uniq.join(', ') + truncated;
+  if (box) box.innerHTML = 'Sources: ' + parts.join(' · ') + truncated;
+  return 'Answer ready.';
 }
 
 // Open the assistant modal from the top-bar magnifier (#assistantPill). Mirrors

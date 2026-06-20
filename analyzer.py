@@ -25,7 +25,7 @@ import anthropic
 from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, model_validator
 
 from hardening import ContextSet, CorpusExperience
-from recall.models import Context
+from recall.models import Context, Unit
 
 logger = logging.getLogger(__name__)
 
@@ -287,7 +287,7 @@ PROMPT_VERSION = "2026-06-13.1"  # PX-02: + <candidate_web_presence> block
 # attribution. Bump THIS when AVATAR_SYSTEM_PROMPT changes (same commit). The avatar
 # persona is intentionally NOT in _BASE_SYSTEM_PROMPTS — the prompt-override / eval
 # machinery is résumé-scoped.
-AVATAR_PROMPT_VERSION = "2026-06-18.1"  # voice/tone tuning: friendly-guide persona
+AVATAR_PROMPT_VERSION = "2026-06-19.1"  # 7.8d: numbered resolving cites + cited-only footer + inline markdown
 
 # --- Prompt-override primitive (eval tuning loop, v1.0.4) --------------------
 # Lets an eval run inject a CANDIDATE system prompt without editing the persona
@@ -530,7 +530,7 @@ You are given a <recalled_context> block of numbered, cited source units (wiki p
 When voice and grounding conflict, grounding wins — be plain and accurate before being personable. Never soften a refusal into a guess; never sound more sure than your citations support.
 
 Rules you follow without exception:
-- GROUND EVERY CLAIM in the provided context, and write in plain, natural sentences. Place each citation at the END of the sentence it supports — never mid-sentence — in clean SINGLE square brackets: a wiki page as [page-slug], a code unit as [path:line]. Put ONLY the slug or path:line inside the brackets — never wrap a phrase, sentence, or link text in brackets. The <recalled_context> lists each unit's citation as [[page-slug]] or path:line; cite it with single brackets, never double. If a sentence rests on two sources, put both at its end, e.g. [using-callback] [resume-templates]. Do not cite a unit you were not given.
+- GROUND EVERY CLAIM in the provided context, and write in plain, natural sentences. Each unit in <recalled_context> is shown with a bracketed number ([1], [2], …); cite a claim with that number at the END of the sentence it supports — never mid-sentence. Put ONLY the number inside the brackets — never a slug, path, phrase, sentence, link text, markdown link, or URL. If a sentence rests on two sources, put both at its end, e.g. [1][2]. Never use a number you were not given, and do not cite a unit you were not given. You may write file or identifier names in `backticks` and use **bold** for emphasis, but never a markdown link ([text](url)), a heading, or a raw URL. Worked examples — OK: "The grounding check rejects invented facts [1]." NOT-OK: "The grounding check rejects invented facts [generation-and-grounding]." (cite the number, not the slug). NOT-OK: "See [architecture.md](docs/architecture.md)." (no markdown links or URLs — name the file in `backticks` and cite its number).
 - If the retrieved context does not contain enough to answer, say exactly: "I don't have that in my docs." Then point to the nearest thing the context DOES cover, with its citation, so the reader has a next move; that pointer must itself be grounded in a given unit, and you must never pivot into answering the part the context does not support. If the question is about callback. but simply isn't documented yet, add that the reader can report it on the project's GitHub so the docs and tool keep improving — but never invent a URL, contact, or person. Never invent facts, file names, line numbers, or behavior beyond the context.
 - When the context covers part of the question but not all of it, answer the covered part with its citation and say plainly what is not covered ("the docs cover X but not the Y part of your question"). A partial cited answer beats both a guess and a flat refusal. Mark thin grounding explicitly — name what you are basing the answer on and what is missing.
 - Do not flatter, validate the reader's framing, or agree just to be agreeable. Never predict outcomes (callbacks, interviews, hiring), and never imply an outcome the tool does not control — describe ATS-safety as parseability ("so the screening software can read it"), never as "so it reaches a human" or "improves your chances". Be honest by being accurate, not by narrating it ("I'd rather be straight with you"); never simulate a feeling about the reader's situation ("that sounds exhausting"). If someone asks whether callback. will get them a result, decline the prediction and instead connect what the tool actually does — tailoring a résumé to each job from their own history, and keeping it parseable — to their concern, as a mechanism, not a promise.
@@ -1529,14 +1529,83 @@ def analyze_streaming(
 def _render_recalled_context(context: Context) -> str:
     """Render an assembled `recall.Context` into the prompt's numbered, cited block.
 
-    Each unit becomes one `[n] <citation>: <text>` line so the avatar can cite the
-    exact `[[slug]]` / `path:line` it draws from. The unit text is never rewritten —
-    the provenance stamp the substrate built survives verbatim into the prompt.
+    Each unit becomes one `[n] <citation>: <text>` line. The leading `[n]` IS the
+    citation key (7.8d / Scheme B): the avatar cites a claim with that number, and the
+    `done` payload maps each emitted `[n]` back to `context.units[n-1]` for a resolving,
+    cited-only footer. The unit's `<citation>` ([[slug]] / path:line) rides along so the
+    model knows which doc it is reading; the unit text is never rewritten — the
+    provenance stamp the substrate built survives verbatim into the prompt.
     """
     if not context.units:
         return "(no relevant context was retrieved)"
     lines = [f"[{i}] {u.citation}: {u.text}" for i, u in enumerate(context.units, start=1)]
     return "\n".join(lines)
+
+
+# Citations resolve to the source on GitHub (7.8d). Same repo as the hardcoded issues
+# link in templates/index.html — a string constant, not egress; the no-URL invariant
+# (tests/test_avatar_streaming.py) scans MODEL OUTPUT, not this source, and the client
+# builds the anchor, so the model still never emits a URL.
+_REPO_BLOB_BASE = "https://github.com/amodal1/callback/blob"
+_AVATAR_CITE_RE = re.compile(r"\[(\d+)\]")
+# A stray `[[slug]]` the model sometimes mirrors from the recalled-context block into
+# prose (Scheme B cites are numbered, so this is never a real cite) — strip to plain text.
+_STRAY_DOUBLE_BRACKET_RE = re.compile(r"\[\[([^\[\]]+)\]\]")
+
+
+def _citation_href(unit: Unit) -> str:
+    """Build a stable GitHub blob URL for one unit's source.
+
+    Wiki cites (`[[slug]]`) point at the page on `main`; code cites (`path:line`) pin the
+    unit's provenance `sha` so the line is exact when it resolves (falling back to `main`
+    only when the substrate carried no sha). A `path:symbol` / bare path links the file
+    with no line anchor.
+    """
+    cite = unit.citation
+    if cite.startswith("[["):
+        slug = cite.strip("[]")
+        return f"{_REPO_BLOB_BASE}/main/docs/wiki/pages/{slug}.md"
+    ref = unit.sha or "main"
+    path, sep, tail = cite.rpartition(":")
+    if sep and tail.isdigit():
+        return f"{_REPO_BLOB_BASE}/{ref}/{path}#L{tail}"
+    return f"{_REPO_BLOB_BASE}/{ref}/{path if sep else cite}"
+
+
+def _resolve_cited(answer: str, units: tuple[Unit, ...]) -> tuple[str, list[dict[str, object]]]:
+    """Map the answer's emitted `[n]` markers to a cited-only, renumbered footer (7.8d).
+
+    Scheme B: the avatar cites a claim with the bracketed number of the
+    `<recalled_context>` unit it rests on. Here we (0) normalize away a stray `[[slug]]`
+    the model occasionally drops into prose (a pre-existing Haiku double-bracket tic — the
+    `<recalled_context>` lists each unit's citation as `[[slug]]`, so it leaks; we strip
+    the brackets to plain text so the rendered answer never shows raw `[[ ]]`), (1) collect
+    the emitted numbers in first-appearance order, keeping only valid, in-range ones,
+    (2) assign each a fresh consecutive number, (3) remap the body's markers in a single
+    pass, and (4) build the `sources` footer — one `{n, label, href}` per cited unit,
+    deduped, **cited-only** (a retrieved-but-unused unit never appears, so the footer
+    cannot overstate grounding). An out-of-range / unknown `[n]` is left literal and never
+    linked — a visible fabrication signal rather than a silently-dropped one.
+    """
+    answer = _STRAY_DOUBLE_BRACKET_RE.sub(r"\1", answer)
+    n_units = len(units)
+    order: list[int] = []
+    for m in _AVATAR_CITE_RE.finditer(answer):
+        old = int(m.group(1))
+        if 1 <= old <= n_units and old not in order:
+            order.append(old)
+    remap = {old: new for new, old in enumerate(order, start=1)}
+
+    def _sub(m: re.Match[str]) -> str:
+        old = int(m.group(1))
+        return f"[{remap[old]}]" if old in remap else m.group(0)
+
+    renumbered = _AVATAR_CITE_RE.sub(_sub, answer)
+    sources: list[dict[str, object]] = [
+        {"n": new, "label": units[old - 1].citation.strip("[]"), "href": _citation_href(units[old - 1])}
+        for new, old in enumerate(order, start=1)
+    ]
+    return renumbered, sources
 
 
 def avatar_answer_streaming(
@@ -1554,7 +1623,9 @@ def avatar_answer_streaming(
     access-filtered, budgeted `recall.Context` (the deterministic substrate did the
     retrieval + scoping; this just phrases + cites). Yields:
         - `("chunk", str)` for each text delta as it streams
-        - `("done", {"answer", "citations", "truncated", "allow_dev"})` once at the end
+        - `("done", {"answer", "citations", "truncated", "allow_dev"})` once at the end,
+          where `answer` is renumbered to consecutive `[n]` and `citations` is the
+          cited-only footer (one `{n, label, href}` per cited unit) — see `_resolve_cited`
 
     `allow_dev` only labels the turn's mode in the prompt — the access plane has ALREADY
     disposed (user-mode turns never receive dev-audience units), so the model cannot
@@ -1567,10 +1638,10 @@ def avatar_answer_streaming(
         f"<recalled_context>\n{_render_recalled_context(context)}\n</recalled_context>\n\n"
         f"Question: {question.strip()}\n\n"
         "Answer concisely and warmly in plain, natural sentences, grounded in the "
-        "context above, with each citation in single square brackets at the END of "
-        "the sentence it supports. If the context does not cover it, say exactly "
-        "\"I don't have that in my docs.\" and point to the nearest covered topic "
-        "with its citation."
+        "context above, citing each claim with the bracketed number of the unit it "
+        "rests on ([1], [2], …) at the END of the sentence. If the context does not "
+        "cover it, say exactly \"I don't have that in my docs.\" and point to the "
+        "nearest covered topic with its number."
     )
 
     answer_parts: list[str] = []
@@ -1588,11 +1659,12 @@ def avatar_answer_streaming(
         answer_parts.append(item)
         yield ("chunk", item)
 
+    answer, sources = _resolve_cited("".join(answer_parts), context.units)
     yield (
         "done",
         {
-            "answer": "".join(answer_parts),
-            "citations": [u.citation for u in context.units],
+            "answer": answer,
+            "citations": sources,
             "truncated": context.truncated,
             "allow_dev": allow_dev,
         },
