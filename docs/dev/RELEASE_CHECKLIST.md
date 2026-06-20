@@ -537,6 +537,11 @@ _Open count: 10 — at the top of the ~8–10 reduction-sprint threshold. **Tria
       `wait_for_selector` timeout on `.compose-row.recommended`), then **passed clean on
       isolated re-run** (36s). The branch touched only the assistant route/client (unrelated to
       the Compose wizard), so **not code-caused**; still deferred for the UX-tier stabilization pass.
+      **Update (2026-06-20, `chore/version-bump-v1.0.7` gate):**
+      `test_positioning_pin_preserves_title_pin` recurred **once** in the full suite (Playwright
+      `wait_for_selector` timeout on `.compose-row.recommended`), then **passed clean on isolated
+      re-run** (7.92 s). This branch is **docs-only** (no `.py`/frontend touched), so **not
+      code-caused**; both flakes of this class remain deferred to the UX-tier stabilization pass.
       **→ Integrate at 8.7 (2026-06-20, 7.9 ledger capture):** as a PX-25 prerequisite — the UX
       tier cannot become a *required* CI gate with known flakes — or a tiny stabilization pass
       right before 8.5. Not a standalone branch.
