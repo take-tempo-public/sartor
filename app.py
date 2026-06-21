@@ -98,14 +98,29 @@ def _get_client() -> anthropic.Anthropic:
 
 
 def _load_config(username: str) -> dict:
-    path = CONFIGS_DIR / f"{username}.config"
+    # Sanitize here, not only at the call site: secure_filename strips ../ and
+    # other traversal sequences, so the config read is contained to CONFIGS_DIR
+    # even when a caller passes raw input (PX-21). An unsafe-empty or missing
+    # config resolves to {} (treated as "no such user" by callers).
+    safe = secure_filename(username)
+    if not safe:
+        return {}
+    path = CONFIGS_DIR / f"{safe}.config"
     if not path.exists():
         return {}
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _save_config(username: str, config: dict):
-    path = CONFIGS_DIR / f"{username}.config"
+def _save_config(username: str, config: dict) -> None:
+    # Mirror _load_config: sanitize at the helper so the write is contained to
+    # CONFIGS_DIR regardless of the caller (PX-21). An all-stripped username
+    # (e.g. "...") is rejected rather than written as a junk ".config" — every
+    # real caller (create_user/update_config/upload_resume) pre-sanitizes, so
+    # this raise is unreachable defense-in-depth in practice.
+    safe = secure_filename(username)
+    if not safe:
+        raise ValueError(f"unsafe username for config write: {username!r}")
+    path = CONFIGS_DIR / f"{safe}.config"
     path.write_text(json.dumps(config, indent=2), encoding="utf-8")
 
 
@@ -214,6 +229,8 @@ def create_user():
 
 @app.route("/api/users/<username>/config", methods=["GET"])
 def get_config(username):
+    if not secure_filename(username):
+        return jsonify({"error": "Invalid username"}), 400
     config = _load_config(username)
     if not config:
         return jsonify({"error": "User not found"}), 404
@@ -222,6 +239,8 @@ def get_config(username):
 
 @app.route("/api/users/<username>/config", methods=["PUT"])
 def update_config(username):
+    if not secure_filename(username):
+        return jsonify({"error": "Invalid username"}), 400
     config = request.json
     errors = validate_config(config)
     if errors:

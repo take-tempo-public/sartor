@@ -41,7 +41,8 @@ single-unauthenticated-user boundary is **C-1**.*
   enforce that file-touching routes only read/write paths owned by
   a known user under the expected parent directory. The
   `route-security-lint` PreToolUse hook enforces these helpers on
-  every Edit/Write to `app.py`.
+  every Edit/Write to `app.py` and the route-bearing blueprint
+  modules under `blueprints/`.
 - Path-traversal prevention: `werkzeug.utils.secure_filename()` on
   all user-supplied filenames; resolved-path containment via
   `_within(path, parent)`.
@@ -232,7 +233,12 @@ silently.
 Path traversal is prevented in all file-serving routes via:
 
 - `werkzeug.utils.secure_filename()` on all user-supplied filenames
-  and usernames
+  and usernames. Config filenames are canonicalized through it
+  inside `_load_config()` / `_save_config()`, so a username resolves
+  to its sanitized on-disk name even for a raw caller (e.g. `josé` →
+  `jose`). Normal-flow users are already canonical — `create_user`
+  sanitizes at creation — so only a hand-seeded raw-name config file
+  would resolve differently.
 - `_within(path, parent)` resolved-path containment checks before
   reading or writing any file
 - `_safe_username()` which validates sanitization AND known-user
@@ -240,6 +246,9 @@ Path traversal is prevented in all file-serving routes via:
 
 Enforcement is mechanical: the `route-security-lint` PreToolUse
 hook in `.claude-plugin/hooks/` blocks Edit/Write operations on
-`app.py` that touch the filesystem without `_safe_username()` and
-`_within()` calls. This guarantees future routes inherit the
-pattern.
+`app.py` and the route-bearing blueprint modules under
+`blueprints/` that touch the filesystem without `_safe_username()`
+and `_within()` calls. (The read-only `dashboard/` diagnostics
+surface is excluded by design — its routes are localhost-gated and
+take no user-supplied path, so the user-path guards do not apply.)
+This guarantees future routes inherit the pattern.

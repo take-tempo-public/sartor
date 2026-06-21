@@ -52,6 +52,38 @@ migration.
   resolution and the refined branch sequence (an 8.3a `refactor/app-factory-and-infra`
   foundation branch precedes the seam moves).
 
+### Security — route-security-lint widen + config-helper containment (`refactor/route-security-lint-widen`, Sprint 8.2)
+
+The hardening branch that **leads** the v1.0.8 blueprint refactor (PX-21): the route-security
+lint hook is widened to cover blueprint route modules *before* any route leaves `app.py`, and
+the two config helpers' path-traversal gap is closed at the helper. **No behavior change for
+valid users; no prompt/dependency/migration** — `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION`
+untouched.
+
+- **`route-security-lint` hook widened past `app.py`.** The file matcher now also covers
+  `blueprints/**.py` (any depth — a future `blueprints/corpus/*.py` sub-package is included);
+  the route detector catches blueprint decorators (`@<bp>.route/.get/.post/.put/.delete/.patch`,
+  the leading `@` keeping ordinary `data.get(` from false-matching); and `send_from_directory(`
+  joins the filesystem-access markers. The read-only localhost `dashboard/` surface is
+  **deliberately excluded** (its routes take no `<username>` and read fixed diagnostic dirs).
+  Hand-verified across a 10-case exit-code matrix. The hook stays a self-contained bash script
+  (migration-friendly for the 8.7 portable-enforcement-core lift).
+- **`_load_config` / `_save_config` containment closed at the helper.** Both now sanitize the
+  username via `secure_filename` *inside* the helper, so containment to `CONFIGS_DIR` holds even
+  for a raw caller — not only at the call site (PX-21). `get_config` / `update_config` (the two
+  raw-input routes) gain a `secure_filename`-non-empty → `400` guard (the `create_user` pattern),
+  so a nonsense username is rejected cleanly instead of 500-ing. `secure_filename` is idempotent
+  on already-safe names → existing users resolve to the same file.
+- **`SECURITY.md` scoped** to the post-split layout — the hook-coverage claims now read `app.py`
+  + `blueprints/` (with the `dashboard/` exclusion noted), plus a note that config filenames are
+  canonicalized through `secure_filename` (`josé` → `jose`). The `app.debug` 5xx-gate passage is
+  left HEAD-accurate (its `current_app.debug` re-cite lands in 8.3a, when `_error_detail_payload`
+  moves to the web-infra package).
+- **Tests.** `tests/test_app_security.py` gains `TestConfigHelperContainment` +
+  `TestConfigRouteContainment`; the helper-level cases are the real proof — an encoded-slash
+  route request is werkzeug-404'd before the handler, so that case asserts *routing* rejection,
+  not helper containment.
+
 ## [1.0.7] — 2026-06-20
 
 ### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)
