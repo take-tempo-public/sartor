@@ -148,3 +148,13 @@ markers = [
     "show_welcome: UX tests that opt INTO the Sprint-6.5 first-view help auto-modal (default-suppressed for the rest of the suite by the `_help_welcome_default_seen` autouse fixture).",
     "show_tour: UX tests that opt INTO the full KW3 new-user first-run tour (the multi-stop help sequence; default-suppressed for the rest of the suite by the `_help_welcome_default_seen` autouse fixture).",
 ]
+filterwarnings = [
+    # pytest-socket emits a UserWarning each time it blocks a network primitive. The
+    # egress-allowlist suite (tests/test_egress_allowlist.py) deliberately triggers the block to
+    # prove the gate has teeth, so these are expected, not defects. The two observed warnings have
+    # distinct messages ("...socket.socket." and "...socket.getaddrinfo."); both — plus the
+    # gethostbyname / connect variants — share the prefix below, so this start-anchored message
+    # filter covers them all while staying scoped (nothing else starts this way, so no unrelated
+    # UserWarning is masked). (Carry-forward ledger: "pytest-socket UserWarning ×2", cleared on 8.0.)
+    "ignore:A test tried to use socket.:UserWarning",
+]

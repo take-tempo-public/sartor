@@ -98,15 +98,13 @@ CI runs `ruff` + `mypy` + `pytest` on every PR. Add the `eval` label to also run
 
 ## Working with the Claude Code plugin
 
-The `.claude-plugin/` directory holds the project's commands, agents, and hook scripts. As of Claude Code v2.1.131 the `/plugin install` command targets registered marketplaces only — not local directories — so plugin components are wired via `.claude/settings.json` (committed) rather than through the plugin loader. Cloning the repo activates them automatically; no install step is required.
+The project ships a Claude Code plugin (`callback`). The pieces live in three places:
 
-The settings.json wiring covers:
+- **Slash commands** in repo-root [`commands/`](commands/) and **subagents** in repo-root [`agents/`](agents/) — they load as the `callback` plugin via a bundled local marketplace (`callback-tools`), declared by the `extraKnownMarketplaces` + `enabledPlugins` entries committed in `.claude/settings.json`. Because they load as a plugin they appear **namespaced**: commands as `/callback:<name>`, subagents as `callback:<name>`.
+- **Hooks** in [`.claude-plugin/hooks/`](.claude-plugin/hooks/) — wired **directly** in the same `.claude/settings.json` (path-referenced, not plugin-discovered), so they stay independent of the marketplace loader.
+- The plugin **manifest** + local **marketplace** definition live in [`.claude-plugin/`](.claude-plugin/) (`plugin.json` + `marketplace.json`).
 
-- **Hooks** — plan-mode workflow scripts; Step 5 adds secret-blocking, `ruff` on commit, route-security lint, context-set schema validation, and merge-to-main confirmation
-- **Skills** — `/eval`, `/replay`, `/prompt-tune`, `/tune-from-annotations`, `/bench`, `/inspect-context` (added in Step 9)
-- **Subagents** — `eval-judge`, `prompt-archaeologist`, `git-flow` (added in Step 8)
-
-If you launch Claude Code from a terminal and want to load the manifest directly, `claude --plugin-dir ./.claude-plugin` works; the VSCode extension does not accept that flag. When `/plugin install` gains local-path support upstream, the project will republish a `hooks.json` so the manifest becomes self-wiring.
+Cloning the repo activates everything on session start — a fresh clone needs a one-time marketplace-trust prompt + reload, no install step. For the full command/subagent/hook catalog see [README → Claude Code Plugin](README.md#claude-code-plugin) (and [`CLAUDE.md`](CLAUDE.md) for the agent-facing contract); this section is the layout-and-activation orientation, not a catalog, so it deliberately doesn't re-list every entry.
 
 Hooks should remain deterministic shell. LLM-backed review is reserved for explicit `/code-review:code-review` and `/security-review` invocations.
 

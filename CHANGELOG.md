@@ -13,6 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — docs/test hygiene (`chore/ledger-reduction`, Sprint 8.0)
+
+The v1.0.8 epic opens with a contained reduction micro-branch (run before the blueprint
+refactor) that clears two carry-forward ledger items. **No code/prompt change** —
+`PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched, no new dependency, no migration.
+
+- **`CONTRIBUTING.md` plugin-section drift corrected.** "Working with the Claude Code plugin"
+  described the pre-Sprint-7.1 layout (`.claude-plugin/` "holds the project's commands, agents,
+  and hook scripts", plus stale "Step 5 / 8 / 9 of the OSS migration" references). It now
+  documents the actual layout — commands/subagents in the repo-root `commands/` / `agents/`
+  loading namespaced via the local `callback-tools` marketplace; only hooks + manifest +
+  marketplace in `.claude-plugin/` — and points to README → Claude Code Plugin for the full
+  catalog instead of re-listing entries.
+- **pytest-socket `UserWarning ×2` silenced.** Added one message-scoped `filterwarnings` ignore
+  (`pyproject.toml` `[tool.pytest.ini_options]`) for the egress-allowlist suite's expected
+  socket-block warning, so gate runs no longer report 2 benign warnings. Scoped to the exact
+  message; the socket block itself is unchanged.
+
 ## [1.0.7] — 2026-06-20
 
 ### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)

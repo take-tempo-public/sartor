@@ -76,7 +76,7 @@ post-feature test window is a **formal gate** (E2E walkthrough + first real-data
 
 **Epic v1.0.8 — refactor → gather → correct → public-prep ("all work done by 1.0.8").** Refactor opens the window; gather + first real-data eval loop run on the decomposed code.
 
-- [ ] **8.0** `chore/ledger-reduction` — reduction micro-branch run **before** the structural epic (ledger at 10/10): clear the **CONTRIBUTING.md plugin-section drift** (stale `.claude-plugin/` commands/agents description, post-7.1 move) + the **pytest-socket `UserWarning ×2`** (one `filterwarnings` entry) carry-forward items, dropping the open ledger 10→8. Docs/test hygiene only; zero coupling to the seams. _(PROPOSED 2026-06-20, 7.9 ledger capture — owner-confirmed slot.)_
+- [x] **8.0** `chore/ledger-reduction` — reduction micro-branch run **before** the structural epic (ledger at 10/10): clear the **CONTRIBUTING.md plugin-section drift** (stale `.claude-plugin/` commands/agents description, post-7.1 move) + the **pytest-socket `UserWarning ×2`** (one `filterwarnings` entry) carry-forward items, dropping the open ledger 10→8. Docs/test hygiene only; zero coupling to the seams. _(PROPOSED 2026-06-20, 7.9 ledger capture — owner-confirmed slot; **DONE 2026-06-21** on `chore/ledger-reduction` — both items cleared, ledger 10→8.)_
 - [ ] **8.1** `design/app-blueprints` — seams + shared-helpers home; 32 test imports; lint-hook compat.
 - [ ] **8.2** `refactor/route-security-lint-widen` (PX-21) — widen the hook past `app.py` **before any route moves** (hook is app.py-only today).
 - [ ] **8.3a–g** `refactor/app-blueprints-<seam>` — one seam/branch (analysis · generation/cover-letter · templates · corpus · user-config · dashboard · assistant move-only); folds `ResponseReturnValue` (PV-4) + the deterministic-LLM boundary gate (PX-20); back-nav (PX-22) rides templates; loopback bind (PX-19) rides user-config.
@@ -477,7 +477,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Open count: 10 — at the top of the ~8–10 reduction-sprint threshold. **Triaged 2026-06-20 (7.9 ledger capture):** each item below now carries a **→ integrate at 8.x** target mapping it to an already-scheduled v1.0.8 sprint, so the ledger drains without new standalone branches. The reduction pass is scheduled as **`chore/ledger-reduction` (8.0)**, clearing the **CONTRIBUTING-drift + pytest-socket `UserWarning`** pair (the cross-document link/cite checker routes to 8.7 instead) — that drops the open count 10→8 once 8.0 runs. Net drain: 8.5 clears the S3-eval + grounding-metric pair · 8.7 clears portable-core + link-checker + flaky-UX · 8.3 clears help-opener · 8.6a clears assistant doc-coverage · the citation viewer stays deferred → by v1.1.0 the ledger is ~2 items._
+_Open count: 8 — at the lower edge of the ~8–10 reduction-sprint threshold (no new reduction sprint needed). **Triaged 2026-06-20 (7.9 ledger capture):** each item below carries a **→ integrate at 8.x** target mapping it to an already-scheduled v1.0.8 sprint, so the ledger drains without new standalone branches. **`chore/ledger-reduction` (8.0) ran 2026-06-21** and cleared the **CONTRIBUTING-drift + pytest-socket `UserWarning`** pair (both now under Resolved), dropping the open count 10→8. Net drain from here: 8.5 clears the S3-eval + grounding-metric pair · 8.7 clears portable-core + link-checker + flaky-UX · 8.3 clears help-opener · 8.6a clears assistant doc-coverage · the citation viewer stays deferred → by v1.1.0 the ledger is ~2 items._
 
 - [ ] **In-app rendered citation viewer (deferred)** — the avatar's numbered citations
       (Sprint 7.8d, `feat/avatar-citation-format`) link to their source **on GitHub** (wiki
@@ -584,24 +584,6 @@ _Open count: 10 — at the top of the ~8–10 reduction-sprint threshold. **Tria
       **→ Integrate at 8.7 (2026-06-20, 7.9 ledger capture):** as the *durable CI form* of the
       planned doc-link sweep — don't build it standalone.
 
-- [ ] **`CONTRIBUTING.md` plugin-section drift** — "Working with the Claude Code plugin" still
-      says "the `.claude-plugin/` directory holds the project's commands, agents, and hook
-      scripts" and references "Step 5 / 8 / 9 of the OSS migration", but Sprint 7.1 **moved**
-      commands/agents to the repo-root `commands/` / `agents/` (only hooks remain in
-      `.claude-plugin/`). Same stale class as the `:87` fix landed this branch, but outside the
-      governance-extraction scope — file, don't drive-by. _(surfaced 2026-06-15, `feat/governance-extraction`.)_
-      **→ Integrate at 8.0 (2026-06-20, 7.9 ledger capture):** a ~5-min doc fix — bundled with
-      the **pytest-socket `UserWarning`** item into the new `chore/ledger-reduction` micro-branch
-      early in v1.0.8 (drops the ledger 10→8).
-
-- [ ] **pytest-socket `UserWarning` ×2 (latent, benign)** — the egress-allowlist suite emits
-      2 `UserWarning`s ("N passed, 2 warnings"); expected/benign (the autouse fn-scoped socket
-      fixture), observed across recent gate runs. No action; surfaced here so it stops
-      re-surprising future gates. _(filed in memory `reference-egress-allowlist-gate`.)_
-      **→ Integrate at 8.0 (2026-06-20, 7.9 ledger capture):** one `filterwarnings` entry —
-      folded into the `chore/ledger-reduction` micro-branch with the **CONTRIBUTING.md
-      plugin-section drift** item (or any test-touching branch, e.g. 8.4).
-
 - [ ] **Help-opener duplication** — the dashboard's `openDashHelp` ports `openHelpModal`
       (memory `reference-dashboard-education-ported-help`); deferred to a dedicated
       help-refactor branch. _(discovered: Sprint 6.5.)_
@@ -623,6 +605,30 @@ _Open count: 10 — at the top of the ~8–10 reduction-sprint threshold. **Tria
       assistant usefulness the v1.0.7 epic just built.
 
 #### Resolved
+
+- [x] **`CONTRIBUTING.md` plugin-section drift** — **DONE 2026-06-21 on `chore/ledger-reduction`.**
+      Rewrote [`CONTRIBUTING.md`](../../CONTRIBUTING.md) "Working with the Claude Code plugin" to the
+      post-7.1 layout: commands/subagents live in the repo-root `commands/` / `agents/` (loaded as the
+      `callback` plugin via the local `callback-tools` marketplace declared in `.claude/settings.json`);
+      only the hooks + the manifest (`plugin.json`) + the marketplace (`marketplace.json`) remain in
+      `.claude-plugin/`. Dropped the stale skill/subagent enumeration and the "Step 5 / 8 / 9 of the
+      OSS migration" references; the section now points to
+      [README → Claude Code Plugin](../../README.md#claude-code-plugin) for the full catalog
+      (cite-don't-restate, charter D5 — re-listing the entries inline is what drifted in the first
+      place). _(surfaced 2026-06-15, `feat/governance-extraction`; cleared on the 8.0 reduction
+      micro-branch.)_
+
+- [x] **pytest-socket `UserWarning` ×2 (latent, benign)** — **DONE 2026-06-21 on
+      `chore/ledger-reduction`.** Added one message-scoped `filterwarnings` ignore to
+      `pyproject.toml` `[tool.pytest.ini_options]` — `"ignore:A test tried to use
+      socket.:UserWarning"`. The egress-allowlist suite
+      ([`tests/test_egress_allowlist.py`](../../tests/test_egress_allowlist.py)) deliberately trips
+      `pytest_socket.SocketBlockedError` to prove the socket block has teeth, and each construction
+      calls `warnings.warn(...)`. The two warnings turned out to be **distinct** messages
+      (`...socket.socket.` and `...socket.getaddrinfo.`), so the filter matches their shared prefix
+      `A test tried to use socket.` — start-anchored and specific enough that no unrelated
+      `UserWarning` is masked, and the block itself is untouched (the `SocketBlockedError` still raises).
+      _(filed in memory `reference-egress-allowlist-gate`; cleared on the 8.0 reduction micro-branch.)_
 
 - [x] **Avatar voice/tone & behavior tuning — EXECUTION** — **DONE 2026-06-18 on
       `feat/avatar-voice-tone-tuning`.** Executed Part 4 of
