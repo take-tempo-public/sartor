@@ -891,9 +891,23 @@ Then: `chore/version-bump-v1.0.7`.
   `_safe_username`, `_within`); app-factory vs. module-global `app`; SSE routes; the
   32 test-file imports; `route-security-lint` hook compatibility (it currently targets
   `app.py`).
-- `refactor/app-blueprints-*` — the decomposition itself, one seam per branch where
-  feasible. Preserve the `_safe_username`/`_within` gate + its lint hook on every
-  moved route.
+  **RESOLVED (8.1, owner-locked 2026-06-21 — see [`app-blueprints-design.md`](app-blueprints-design.md)):**
+  **Crafted** architecture — a `create_app(config)` **application-factory** (with a retained
+  module-level `app = create_app()` WSGI/console handle) + a typed injected **`Config`** (the
+  paths/flags; ends the ~35-file monkeypatch-the-global test smell) + a shared **web-infra
+  package** that `app.py` + every blueprint import (`assistant.py` drops its duplicated
+  `_safe_username`/`_get_client`/`_sse`; `dashboard` consumes the shared `_is_localhost_request`;
+  `onboarding/corpus_import.py`'s *second* path-constant front folds in too). **8 domain seams**
+  (analysis · generation · corpus · templates/personas · applications · users/config ·
+  diagnostics · assistant) — splitting the user-facing application tracker from the dev
+  diagnostics backend. The doc carries the full 93-route→seam map + a **zero-tech-debt
+  definition-of-done** (owner bar: minimum tech debt at the v1.1.0 tag).
+- `refactor/app-blueprints-*` — the decomposition itself. **Per the 8.1 design:** an
+  **8.3a `refactor/app-factory-and-infra`** foundation branch (factory + `Config` + web-infra
+  package + helper dedup + canonical `create_app(TestConfig)` fixture + the PX-20 boundary gate;
+  **no route moves**) lands first, then **one domain seam per branch** (8.3b–h; assistant =
+  move-only). Preserve the `_safe_username`/`_within` gate + its (now-widened, PX-21) lint hook
+  on every moved route; annotate returns with `ResponseReturnValue` (PV-4) as they move.
 - **Absorbs the type-annotation scan (PV-4 = WS-2 increment 1):** annotate route
   returns with `flask.typing.ResponseReturnValue` **as the routes move** (or flip
   `check_untyped_defs = true`), scoped to the whole post-v1.0.4 surface. Doing it here

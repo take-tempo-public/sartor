@@ -31,6 +31,27 @@ refactor) that clears two carry-forward ledger items. **No code/prompt change** 
   socket-block warning, so gate runs no longer report 2 benign warnings. Scoped to the exact
   message; the socket block itself is unchanged.
 
+### Added — blueprint-decomposition design (`design/app-blueprints`, Sprint 8.1)
+
+The design session that resolves the v1.0.8 `app.py`→blueprints architecture **with the
+owner**, before any route moves. Read-only investigation of the monolith; **no code/route/
+prompt change** — `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched, no dependency, no
+migration.
+
+- **New design doc [`docs/dev/app-blueprints-design.md`](docs/dev/app-blueprints-design.md)** —
+  records the locked decisions, the full 93-route→8-seam map, the SSE handling, the
+  test-harness migration, the hook/gate sequencing (PX-19/20/21/22/29, PV-4), and an explicit
+  **zero-tech-debt definition-of-done** for the epic (owner bar: minimum tech debt at v1.1.0).
+- **Owner decisions locked (2026-06-21):** *Crafted* architecture — a `create_app(config)`
+  application-factory (retained module-level `app = create_app()` WSGI handle) + a typed
+  injected `Config` + a shared web-infra package both `app.py` and every blueprint import; and
+  **8 domain seams** (analysis · generation · corpus · templates/personas · applications ·
+  users/config · diagnostics · assistant), splitting the user-facing tracker from the dev
+  diagnostics backend.
+- `RELEASE_ARC.md` §Phase 4.8 + `RELEASE_CHECKLIST.md` items 8.1/8.2/8.3 updated to record the
+  resolution and the refined branch sequence (an 8.3a `refactor/app-factory-and-infra`
+  foundation branch precedes the seam moves).
+
 ## [1.0.7] — 2026-06-20
 
 ### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)
