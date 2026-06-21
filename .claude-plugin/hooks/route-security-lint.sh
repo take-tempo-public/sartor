@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
-# PreToolUse hook on Edit|Write of app.py: when proposed content adds or
-# modifies a Flask @app.route that touches the filesystem, require both
-# _safe_username() and _within() to appear in the same content. Encodes
-# the security pattern documented in CLAUDE.md "Key Patterns — Security".
+# PreToolUse hook on Edit|Write of app.py OR a route-bearing blueprint module
+# under blueprints/: when proposed content adds or modifies a Flask route
+# (@app.route or @<bp>.route/.get/.post/...) that touches the filesystem,
+# require both _safe_username() and _within() to appear in the same content.
+# Encodes the security pattern documented in CLAUDE.md "Key Patterns — Security".
+#
+# Scope (PX-21, v1.0.8 blueprint split): app.py + blueprints/**.py. The
+# read-only dashboard/ surface is deliberately NOT covered — its routes are
+# localhost-gated, take no <username>, and read fixed diagnostic dirs, so the
+# _safe_username/_within user-path guards do not apply there.
 #
 # Heuristic, not perfect: catches obvious omissions; review still required
 # for routes that do filesystem access through indirection.
@@ -10,9 +16,13 @@
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))" 2>/dev/null)
 
-# Only act on app.py
+# Only act on app.py or a module under blueprints/ (any depth, so a corpus
+# sub-package like blueprints/corpus/experiences.py is covered too). The file
+# matcher intentionally over-selects (a route-free helper under blueprints/
+# also matches here) — the route + filesystem content checks below are the
+# real gate, so such a file still exits 0.
 NORM=$(echo "$FILE_PATH" | tr '\\' '/')
-if ! echo "$NORM" | grep -qE '(^|/)app\.py$'; then
+if ! echo "$NORM" | grep -qE '(^|/)app\.py$|(^|/)blueprints/.*\.py$'; then
   exit 0
 fi
 
@@ -33,11 +43,16 @@ fi
 
 # Quick checks — the proposed content must contain a route definition AND
 # evidence of filesystem access for the lint to trigger. Otherwise pass.
-if ! echo "$CONTENT" | grep -qE '@app\.route\('; then
+#
+# Route detection covers @app.route AND blueprint decorators
+# (@<bp>.route/.get/.post/.put/.delete/.patch). The leading @ is load-bearing:
+# it keeps the bare method names (.get/.post/...) from false-matching ordinary
+# dict/object access like data.get( or request.json.get(.
+if ! echo "$CONTENT" | grep -qE '@[A-Za-z_][A-Za-z0-9_]*\.(route|get|post|put|delete|patch)\('; then
   exit 0
 fi
 
-if ! echo "$CONTENT" | grep -qE '\b(open\(|send_file\(|Path\(|read_text\(|write_text\(|\.exists\(\)|os\.path\.|RESUMES_DIR|OUTPUT_DIR|CONFIGS_DIR)\b'; then
+if ! echo "$CONTENT" | grep -qE '\b(open\(|send_file\(|send_from_directory\(|Path\(|read_text\(|write_text\(|\.exists\(\)|os\.path\.|RESUMES_DIR|OUTPUT_DIR|CONFIGS_DIR)\b'; then
   exit 0
 fi
 
@@ -51,8 +66,8 @@ if ! echo "$CONTENT" | grep -q '_within'; then
 fi
 
 if [ -n "$MISSING" ]; then
-  echo "BLOCKED (route-security-lint): proposed app.py edit defines a route that" >&2
-  echo "touches the filesystem without calling:$MISSING" >&2
+  echo "BLOCKED (route-security-lint): proposed route-module edit defines a route" >&2
+  echo "that touches the filesystem without calling:$MISSING" >&2
   echo "" >&2
   echo "See CLAUDE.md 'Key Patterns — Security' for the required call sequence." >&2
   echo "If this is a false positive (e.g., a partial Edit that doesn't show the" >&2
