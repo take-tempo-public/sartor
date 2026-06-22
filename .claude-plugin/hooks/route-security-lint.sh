@@ -52,7 +52,13 @@ if ! echo "$CONTENT" | grep -qE '@[A-Za-z_][A-Za-z0-9_]*\.(route|get|post|put|de
   exit 0
 fi
 
-if ! echo "$CONTENT" | grep -qE '\b(open\(|send_file\(|send_from_directory\(|Path\(|read_text\(|write_text\(|\.exists\(\)|os\.path\.|RESUMES_DIR|OUTPUT_DIR|CONFIGS_DIR)\b'; then
+# CONFIGS_DIR is intentionally NOT a filesystem indicator (Sprint 8.3d): post-8.3a
+# a route body only ever reaches it as `_safe_username(configs_dir=...)`, and
+# _safe_username IS the containment guard (secure_filename + existence check). The
+# raw `CONFIGS_DIR / f"{username}.config"` path construction that _within protected
+# was removed in PX-21. OUTPUT_DIR/RESUMES_DIR/open(/Path(/send_file( remain
+# indicators, so upload/ingest/download routes still require _within.
+if ! echo "$CONTENT" | grep -qE '\b(open\(|send_file\(|send_from_directory\(|Path\(|read_text\(|write_text\(|\.exists\(\)|os\.path\.|RESUMES_DIR|OUTPUT_DIR)\b'; then
   exit 0
 fi
 
