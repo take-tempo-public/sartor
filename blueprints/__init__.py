@@ -12,5 +12,6 @@ from blueprints.analysis import analysis_bp
 from blueprints.assistant import assistant_bp
 from blueprints.corpus import corpus_bp
 from blueprints.generation import generation_bp
+from blueprints.templates import templates_bp
 
-__all__ = ["analysis_bp", "assistant_bp", "corpus_bp", "generation_bp"]
+__all__ = ["analysis_bp", "assistant_bp", "corpus_bp", "generation_bp", "templates_bp"]

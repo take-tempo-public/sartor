@@ -262,6 +262,63 @@ diff vs a pre-move baseline); no prompt/dependency/migration**, `PROMPT_VERSION`
   config-dependent helper copies for the remaining un-moved seams (templates/personas,
   applications, users/config, diagnostics — they retire in 8.3e–h).
 
+### Changed — templates/personas blueprint seam + PX-22 wizard back-nav (`refactor/app-blueprints-templates`, Sprint 8.3e)
+
+The **fourth domain seam** moved out of the `app.py` monolith: all **11 persona-template +
+live-preview routes** leave `app.py` for a new `blueprints/templates.py`, the
+`_resolve_persona_*` transitional duplicate 8.3c left in `blueprints/generation.py` is cleared,
+and (owner-approved) the wizard gains browser Back/Forward navigation (PX-22). The route move is
+a **pure refactor — every URL/method/request/response is byte-identical** (verified by an
+`app.url_map` path+methods diff vs a pre-move baseline, 96 rules unchanged); **no
+prompt/dependency/migration**, `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched. PX-22 is a
+front-end behavior change only.
+
+- **New `blueprints/templates.py` (single module, 11 routes).** `templates_bp =
+  Blueprint("templates", __name__)`, registered with **no `url_prefix`** (full-path decorators):
+  `list_bundled_personas` · `list_user_personas` · `upload_user_persona` · `get_persona` ·
+  `update_persona` · `delete_persona` · `download_persona` · `preview_persona_with_resume` ·
+  `preview_application_html` · `preview_cover_letter_html` · `preview_candidate_html`. The
+  persona-only helpers move with the seam (`_persona_dict`/`_persona_dicts_safe`,
+  `_preview_placeholder_html`, `_json_resume_has_content`, `_cover_letter_placeholder_html`,
+  `_latest_generated_resume_md`, `_inline_persona_css`, `_inject_paged_polyfill` +
+  `_PAGED_PREVIEW_INJECTION`). Reads paths from `current_app.config["PERSONAS_DIR"]` /
+  `["BUNDLED_PERSONAS_DIR"]` / `["BASE_DIR"]` / `["OUTPUT_DIR"]` and the shared `web_infra` helpers
+  (`_safe_username(configs_dir=…)` / `_within` / `_error_detail_payload` /
+  `_get_or_provision_candidate`); the package never imports `app.py`. **LLM-free** — no
+  `anthropic` reference, so the module is deliberately **not** on the egress allowlist. PV-4:
+  every route annotated `-> ResponseReturnValue`; the provision result is bridged with
+  `cast("Candidate", …)` where `.id` is read (byte-identical runtime behavior). The now-unused
+  `PERSONAS_DIR` / `BUNDLED_PERSONAS_DIR` module globals + the `send_file` / `generate_resume`
+  imports are dropped from `app.py` (`config.py` is the canonical home).
+- **`_resolve_persona_*` duplicate cleared (carry-forward ledger item Resolved).**
+  `_resolve_persona_template_path` / `_resolve_default_persona_template_path` now live **canonically**
+  in `blueprints/templates.py`; the app.py copies and the 8.3c transitional copy in
+  `blueprints/generation.py` are deleted, and `generation.py` imports the pair from
+  `blueprints.templates` (sibling blueprint→blueprint import; templates never imports generation, so
+  no cycle).
+- **`_load_application_owned` transitional duplicate (new carry-forward ledger item).** The two
+  application-preview routes need it, but it is owned by the *applications* seam (8.3f, still in
+  `app.py` with ~10 callers). Mirroring the 8.3c decision, a clearly-commented transitional copy
+  rides `blueprints/templates.py` (its one port: `_safe_username(configs_dir=current_app.config[…])`);
+  it dedupes when the applications seam lands. Net ledger: item 2 Resolved, this added → unchanged.
+- **PX-22 — browser Back/Forward traverse wizard steps (`static/app.js`).** `wizardGoTo` pushes a
+  `{wizardStep}` `history` entry on each step change (`wizardInit` + the resume-from-prior landings
+  stamp a `replaceState` baseline); a `popstate` listener restores the step (re-running its
+  side-effects, never re-pushing). Two correctness fixes were required for Back to actually step the
+  wizard rather than feel dead: (a) `_wizardPushHistory` **skips a duplicate** entry for the
+  step already current (the Skip-to-Compose path navigates to step 3 twice); (b) the live-preview
+  iframes load history-neutrally via `contentWindow.location.replace()` (a new `_loadPreviewFrame`
+  helper) instead of `frame.src =`, so preview reloads on steps 4/6 don't pollute the joint session
+  history. Scope is session-only (no address-bar `?step=N`, no deep-link-on-load).
+- **Tests migrate onto the factory fixture.** `test_persona_routes.py`,
+  `test_default_template_resolver.py`, and `test_live_preview_route.py` drop the module-global
+  monkeypatch + `importlib.reload` (and the 8.3c `/api/download-edited` config-injection stopgap) for
+  `create_app(Config(base_dir=tmp_path))` (keeping the `db.session.DEFAULT_DB_PATH` monkeypatch); the
+  moved resolvers are invoked inside an app context. A new `pytest -m ux` regression
+  (`test_20260622_wizard_back_nav.py`) drives the wizard forward, then asserts browser Back steps it
+  backward and Forward restores it. The UX harness leaves `BASE_DIR`/`PERSONAS_DIR` at the real repo
+  root (so bundled personas resolve) while injecting the tmp `CONFIGS_DIR`/`OUTPUT_DIR`.
+
 ## [1.0.7] — 2026-06-20
 
 ### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)

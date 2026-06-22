@@ -24,8 +24,17 @@ import pytest
 
 @pytest.fixture
 def preview_app(tmp_path, monkeypatch):
-    """Fresh in-memory DB + temp directories so we can seed candidates,
-    applications, and corpus rows without colliding with real user data."""
+    """Factory-built app on a fresh sqlite DB + temp tree (Sprint 8.3e).
+
+    The preview routes moved to blueprints/templates.py and read
+    current_app.config[...], so create_app(Config(base_dir=tmp_path)) replaces
+    the old reload + monkeypatch-the-globals fixture; the DB-path monkeypatch
+    stays. Returns a namespace exposing the factory app + Config-derived paths so
+    the existing test bodies keep referencing `preview_app.app` / `.OUTPUT_DIR` /
+    `.CONFIGS_DIR` unchanged.
+    """
+    import types
+
     db_file = tmp_path / "preview.sqlite"
 
     import db.session as db_session_mod
@@ -33,19 +42,11 @@ def preview_app(tmp_path, monkeypatch):
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
-
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "PERSONAS_DIR", tmp_path / "personas")
-    monkeypatch.setattr(app_module, "BUNDLED_PERSONAS_DIR", tmp_path / "personas" / "bundled")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "personas").mkdir()
-    (tmp_path / "personas" / "bundled").mkdir()
-    (tmp_path / "output").mkdir()
+    from app import create_app
+    from config import Config
+    cfg = Config(base_dir=tmp_path)
+    app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
+    cfg.bundled_personas_dir.mkdir(parents=True, exist_ok=True)
 
     from db.session import init_db
     init_db(db_file)
@@ -56,15 +57,15 @@ def preview_app(tmp_path, monkeypatch):
     repo_root = Path(__file__).resolve().parents[1]
     src_html = repo_root / "personas" / "bundled" / "classic.html"
     src_css = repo_root / "personas" / "bundled" / "classic.css"
-    (tmp_path / "personas" / "bundled" / "classic.html").write_text(
+    (cfg.bundled_personas_dir / "classic.html").write_text(
         src_html.read_text(encoding="utf-8"), encoding="utf-8",
     )
-    (tmp_path / "personas" / "bundled" / "classic.css").write_text(
+    (cfg.bundled_personas_dir / "classic.css").write_text(
         src_css.read_text(encoding="utf-8"), encoding="utf-8",
     )
     # Materialize the shared cover-letter shell so the cover-letter preview
-    # route (BASE_DIR / personas / cover_letter.html) resolves in-temp.
-    (tmp_path / "personas" / "cover_letter.html").write_text(
+    # route (PERSONAS_DIR / cover_letter.html) resolves in-temp.
+    (cfg.personas_dir / "cover_letter.html").write_text(
         (repo_root / "personas" / "cover_letter.html").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
@@ -73,10 +74,17 @@ def preview_app(tmp_path, monkeypatch):
     for filename in ("classic.docx", "modern.docx"):
         doc = Document()
         doc.add_paragraph(f"stub for {filename}")
-        doc.save(str(tmp_path / "personas" / "bundled" / filename))
+        doc.save(str(cfg.bundled_personas_dir / filename))
 
-    (tmp_path / "configs" / "casey.config").write_text("{}", encoding="utf-8")
-    return app_module
+    (cfg.configs_dir / "casey.config").write_text("{}", encoding="utf-8")
+    return types.SimpleNamespace(
+        app=app,
+        BASE_DIR=cfg.base_dir,
+        CONFIGS_DIR=cfg.configs_dir,
+        OUTPUT_DIR=cfg.output_dir,
+        PERSONAS_DIR=cfg.personas_dir,
+        BUNDLED_PERSONAS_DIR=cfg.bundled_personas_dir,
+    )
 
 
 def _seed_candidate_app(app_module, username="casey",
