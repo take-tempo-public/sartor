@@ -9,9 +9,17 @@ existing `dashboard/` blueprint package.
 from __future__ import annotations
 
 from blueprints.analysis import analysis_bp
+from blueprints.applications import applications_bp
 from blueprints.assistant import assistant_bp
 from blueprints.corpus import corpus_bp
 from blueprints.generation import generation_bp
 from blueprints.templates import templates_bp
 
-__all__ = ["analysis_bp", "assistant_bp", "corpus_bp", "generation_bp", "templates_bp"]
+__all__ = [
+    "analysis_bp",
+    "applications_bp",
+    "assistant_bp",
+    "corpus_bp",
+    "generation_bp",
+    "templates_bp",
+]

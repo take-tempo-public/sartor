@@ -319,6 +319,54 @@ front-end behavior change only.
   backward and Forward restores it. The UX harness leaves `BASE_DIR`/`PERSONAS_DIR` at the real repo
   root (so bundled personas resolve) while injecting the tmp `CONFIGS_DIR`/`OUTPUT_DIR`.
 
+### Changed — applications blueprint seam (`refactor/app-blueprints-applications`, Sprint 8.3f)
+
+The **fifth domain seam** moved out of the `app.py` monolith: all **13 application-tracker +
+per-application Compose routes** leave `app.py` for a new `blueprints/applications.py`. The route
+move is a **pure refactor — every URL/method/request/response is byte-identical** (verified by an
+`app.url_map` path+methods diff vs a pre-move baseline: 96 rules unchanged, only the 13 endpoint
+*names* gained the `applications.` blueprint prefix). Two **owner-signed** clean-ups ride along
+(below). **No prompt/dependency/migration** — `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched.
+
+- **New `blueprints/applications.py` (single module, 13 routes).** `applications_bp =
+  Blueprint("applications", __name__)`, registered with **no `url_prefix`** (full-path decorators):
+  `list_applications` · `get_application` · `update_application_status` · `update_application_notes` ·
+  `update_application_meta` · `get_application_composition` · `save_application_composition` ·
+  `recommend_application_bullets` · `recommend_application_summary` ·
+  `recommend_application_experience_summaries` · `recommend_application_skills` ·
+  `suggest_application_skills` · `list_clarifications` (the candidate-memory list — the design's
+  ‡ "finalize at move time" route, owner-placed here). The applications-only helpers move with the
+  seam (`_VALID_APP_STATUSES`, `_application_summary_dict`, `_build_resume_state`, `_parse_ats_status`,
+  `_find_context_path_for_run`, `_latest_analysis_essentials`, and the seven `_read_*` context-override
+  readers). Reads paths from `current_app.config["OUTPUT_DIR"]` / `["CONFIGS_DIR"]` and the shared
+  `web_infra` helpers (`_safe_username(configs_dir=…)` / `_within` / `_error_detail_payload` /
+  `_get_client`); the corpus serializers `_tag_list` / `_skill_to_dict` are imported from
+  `blueprints.corpus` (the legal corpus→applications direction); the module never imports `app.py`.
+  PV-4: every route annotated `-> ResponseReturnValue`.
+- **Egress allowlist: `app.py` out, `blueprints/applications.py` in.** The five recommend/suggest
+  routes carry the last `anthropic` error-type references in `app.py`; with them moved, `app.py` no
+  longer imports `anthropic`, so its `import anthropic` is dropped and `app.py` is **removed** from
+  `tests/test_egress_allowlist.py` (the gate asserts both directions — a listed non-importer is
+  "allowlist rot"). `blueprints/applications.py` is added in its place.
+- **`_load_application_owned` transitional duplicate cleared (carry-forward ledger item Resolved).**
+  The helper is now **canonical** in `blueprints/applications.py`; the `app.py` copy and the 8.3e
+  transitional copy in `blueprints/templates.py` are deleted, and `templates.py` imports it from
+  `blueprints.applications` (sibling blueprint→blueprint import; applications never imports templates,
+  so no cycle).
+- **`list_resumes` raw-username hardening (owner-signed behavior tightening; carry-forward ledger item
+  Resolved).** `GET /api/users/<username>/resumes` (in `blueprints/corpus/curation.py`) built its
+  directory path from the **raw** route `username` without the `_safe_username` guard its sibling
+  corpus routes use. It now calls `_safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])`
+  and returns `400` for an unknown/unsafe user (matching `list_corpus_duplicates`). The only behavior
+  change in the branch: a real selected user is unaffected; an unknown username is now rejected rather
+  than reading an empty directory.
+- **Tests migrate onto the factory fixture.** The application / composition / clarifications / recommend /
+  suggest test files drop the module-global monkeypatch + `importlib.reload` for
+  `create_app(Config(base_dir=tmp_path))` (keeping the `db.session.DEFAULT_DB_PATH` monkeypatch); the
+  recommend/suggest `_get_client` stubs retarget to `blueprints.applications` (the analyzer
+  `recommend_*`/`suggest_*` stubs stay on `analyzer`). The UX harness adds the
+  `blueprints.applications._get_client` stub for the Compose recommend/suggest steps.
+
 ## [1.0.7] — 2026-06-20
 
 ### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)

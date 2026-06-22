@@ -85,7 +85,15 @@ def upload_resume() -> ResponseReturnValue:
 
 @corpus_bp.route("/api/users/<username>/resumes", methods=["GET"])
 def list_resumes(username: str) -> ResponseReturnValue:
-    user_dir = current_app.config["RESUMES_DIR"] / username
+    # _safe_username sanitizes + confirms the user exists, scoping the listing to
+    # a known candidate's RESUMES_DIR (Sprint 8.3f — was the raw route `username`;
+    # the one corpus FS route that reached the filesystem without the _safe_username
+    # guard its siblings use, e.g. list_corpus_duplicates). secure_filename inside
+    # the guard strips traversal, so RESUMES_DIR / safe_user stays contained.
+    safe_user = _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+    user_dir = current_app.config["RESUMES_DIR"] / safe_user
     if not user_dir.exists():
         return jsonify([])
     allowed = current_app.config["ALLOWED_EXTENSIONS"]

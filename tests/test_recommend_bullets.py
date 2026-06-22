@@ -17,24 +17,22 @@ import pytest
 
 @pytest.fixture
 def rec_app(tmp_path, monkeypatch):
+    import types
+
     db_file = tmp_path / "rec.sqlite"
     import db.session as db_session_mod
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
-    import importlib
 
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "output").mkdir()
-    (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
+    from app import create_app
+    from config import Config
+    cfg = Config(base_dir=tmp_path)
+    app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
+    (cfg.configs_dir / "alice.config").write_text("{}", encoding="utf-8")
     from db.session import init_db
     init_db(db_file)
-    return app_module, tmp_path
+    return types.SimpleNamespace(app=app), tmp_path
 
 
 def _seed(app_module, tmp_path):
@@ -81,7 +79,7 @@ class TestRecommendRoute:
             ],
         }
         with patch("analyzer.recommend_bullets", return_value=fake), \
-             patch.object(app_module, "_get_client", return_value=object()):
+             patch("blueprints.applications._get_client", return_value=object()):
             client = app_module.app.test_client()
             r = client.post(
                 f"/api/applications/{aid}/recommend",
@@ -121,7 +119,7 @@ class TestRecommendRoute:
         from analyzer import LLMResponseError
         with patch("analyzer.recommend_bullets",
                    side_effect=LLMResponseError("bad shape", "no recommendations key")), \
-             patch.object(app_module, "_get_client", return_value=object()):
+             patch("blueprints.applications._get_client", return_value=object()):
             client = app_module.app.test_client()
             r = client.post(
                 f"/api/applications/{aid}/recommend",
@@ -164,7 +162,7 @@ class TestRecommendDedup:
         }
         from unittest.mock import patch
         with patch("analyzer.recommend_bullets", return_value=fake), \
-             patch.object(app_module, "_get_client", return_value=object()):
+             patch("blueprints.applications._get_client", return_value=object()):
             # Hit the recommend route; the route is what actually persists.
             # The dedup happens inside recommend_bullets which we're mocking
             # away here — so this test only verifies the route persists the
