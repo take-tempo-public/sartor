@@ -124,6 +124,7 @@ SANCTIONED_EGRESS_FILES = frozenset(
         "blueprints/assistant.py",  # provider — avatar SSE route: anthropic error types (uses web_infra._get_client, 8.3a)
         "blueprints/analysis.py",  # provider — analyze/clarify route bodies: anthropic error types (uses web_infra._get_client, 8.3b)
         "blueprints/generation.py",  # provider — generate/cover-letter route bodies: anthropic error types (uses web_infra._get_client, 8.3c)
+        "blueprints/corpus/proposals.py",  # provider — critique/promote route bodies: anthropic error types (uses web_infra._get_client, 8.3d)
         "web_infra/clients.py",  # provider — the _get_client() Anthropic factory (shared, 8.3a)
         "scraper.py",  # scrape — the sole requests importer (arbitrary user URLs)
         "evals/runner.py",  # provider — eval harness LLM calls

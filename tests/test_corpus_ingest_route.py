@@ -16,28 +16,29 @@ import pytest
 
 @pytest.fixture
 def ingest_app(tmp_path, monkeypatch):
+    """Factory-built app on a fresh DB + temp dirs (Sprint 8.3d).
+
+    The ingest route moved to blueprints/corpus/curation and reads
+    current_app.config at request time, so create_app(Config(base_dir=tmp_path))
+    replaces the old reload + monkeypatch-the-globals pattern. Config.ensure_dirs
+    makes configs/output/resumes. Provisioning threads configs_dir through
+    web_infra, so the corpus_import.CONFIGS_DIR monkeypatch is gone. The DB-path
+    monkeypatch stays.
+    """
     db_file = tmp_path / "ingest.sqlite"
     import db.session as db_session_mod
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
-    import importlib
 
-    import app as app_module
-    importlib.reload(app_module)
-    for sub in ("configs", "output", "resumes"):
-        (tmp_path / sub).mkdir()
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "RESUMES_DIR", tmp_path / "resumes")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
+    from app import create_app
+    from config import Config
+
+    app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
-    # Provisioning reads corpus_import's own module-level CONFIGS_DIR.
-    import onboarding.corpus_import as corpus_import_mod
-    monkeypatch.setattr(corpus_import_mod, "CONFIGS_DIR", tmp_path / "configs")
     from db.session import init_db
     init_db(db_file)
-    return app_module
+    return app
 
 
 def _seed_candidate():
@@ -70,10 +71,10 @@ _FAKE_EXTRACT = [
 class TestIngestResume:
     def test_ingests_md_into_corpus_as_pending(self, ingest_app):
         _seed_candidate()
-        client = ingest_app.app.test_client()
+        client = ingest_app.test_client()
         with patch("onboarding.extract_experiences.extract_experiences",
                    return_value=_FAKE_EXTRACT), \
-             patch.object(ingest_app, "_get_client", return_value=object()):
+             patch("blueprints.corpus.curation._get_client", return_value=object()):
             r = client.post(
                 "/api/users/alice/corpus/ingest-resume",
                 data={"file": (io.BytesIO(b"# Resume\n\n## Experience\n\n"
@@ -102,8 +103,8 @@ class TestIngestResume:
         # The route must surface that as a 4xx — not a 201 the client reads as a
         # successful import (the "status says ready over an empty corpus" bug).
         _seed_candidate()
-        client = ingest_app.app.test_client()
-        with patch.object(ingest_app, "_get_client", return_value=object()):
+        client = ingest_app.test_client()
+        with patch("blueprints.corpus.curation._get_client", return_value=object()):
             r = client.post(
                 "/api/users/alice/corpus/ingest-resume",
                 data={"file": (io.BytesIO(b"   \n   "), "blank.md")},
@@ -119,10 +120,10 @@ class TestIngestResume:
         # warning, not a failure — 201 with a zero count (the client warns,
         # doesn't error). Guards the 422-only-on-error carve-out.
         _seed_candidate()
-        client = ingest_app.app.test_client()
+        client = ingest_app.test_client()
         with patch("onboarding.extract_experiences.extract_experiences",
                    return_value=[]), \
-             patch.object(ingest_app, "_get_client", return_value=object()):
+             patch("blueprints.corpus.curation._get_client", return_value=object()):
             r = client.post(
                 "/api/users/alice/corpus/ingest-resume",
                 data={"file": (io.BytesIO(b"# Resume\n\nSummary only, no roles"),
@@ -136,7 +137,7 @@ class TestIngestResume:
 
     def test_rejects_unsupported_extension(self, ingest_app):
         _seed_candidate()
-        client = ingest_app.app.test_client()
+        client = ingest_app.test_client()
         r = client.post(
             "/api/users/alice/corpus/ingest-resume",
             data={"file": (io.BytesIO(b"x"), "evil.exe")},
@@ -147,10 +148,10 @@ class TestIngestResume:
     def test_missing_candidate_is_auto_provisioned(self, ingest_app):
         # A config-only user (no Candidate row) is provisioned on ingest —
         # importing a résumé IS the onboarding step, no separate import.
-        client = ingest_app.app.test_client()
+        client = ingest_app.test_client()
         with patch("onboarding.extract_experiences.extract_experiences",
                    return_value=_FAKE_EXTRACT), \
-             patch.object(ingest_app, "_get_client", return_value=object()):
+             patch("blueprints.corpus.curation._get_client", return_value=object()):
             r = client.post(
                 "/api/users/alice/corpus/ingest-resume",
                 data={"file": (io.BytesIO(b"# Resume\n\n## Experience\n\n"
@@ -168,7 +169,7 @@ class TestIngestResume:
             s.close()
 
     def test_unknown_user_400(self, ingest_app):
-        client = ingest_app.app.test_client()
+        client = ingest_app.test_client()
         r = client.post(
             "/api/users/ghost/corpus/ingest-resume",
             data={"file": (io.BytesIO(b"# x"), "r.md")},

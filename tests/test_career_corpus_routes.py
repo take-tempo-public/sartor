@@ -12,7 +12,15 @@ import pytest
 
 @pytest.fixture
 def corpus_app(tmp_path, monkeypatch):
-    """Reload app.py against a fresh sqlite DB + temp config dir."""
+    """Factory-built app on a fresh sqlite DB + temp config dir (Sprint 8.3d).
+
+    All routes this file exercises (experiences / bullets / titles / tags) now
+    live on blueprints/corpus and read current_app.config[...] at request time,
+    so create_app(Config(base_dir=tmp_path)) replaces the old reload +
+    monkeypatch-the-globals pattern. Provisioning threads configs_dir through
+    web_infra, so the corpus_import.CONFIGS_DIR monkeypatch is gone. The DB-path
+    monkeypatch stays (distinct seam).
+    """
     db_file = tmp_path / "corpus.sqlite"
 
     import db.session as db_session_mod
@@ -20,25 +28,15 @@ def corpus_app(tmp_path, monkeypatch):
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
+    from app import create_app
+    from config import Config
 
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "output").mkdir()
+    app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
-
-    # Provisioning (corpus_import.import_candidate_from_config) reads its own
-    # module-level CONFIGS_DIR — point it at the temp config dir too.
-    import onboarding.corpus_import as corpus_import_mod
-    monkeypatch.setattr(corpus_import_mod, "CONFIGS_DIR", tmp_path / "configs")
 
     from db.session import init_db
     init_db(db_file)
-    return app_module
+    return app
 
 
 def _seed_candidate(username="alice", name="Alice Test"):
@@ -123,7 +121,7 @@ class TestListExperiences:
         _seed_title(e1, title="Senior PM")
         _seed_bullet(e1, text="Owned 5 teams shipping AI features.")
 
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.get("/api/users/alice/experiences")
         assert r.status_code == 200, r.get_json()
         body = r.get_json()
@@ -140,7 +138,7 @@ class TestListExperiences:
         # Corpus tab renders its (empty) editor without a console error.
         # (The POST create-experience route now auto-provisions — see
         # TestCreateExperience.)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.get("/api/users/alice/experiences")
         assert r.status_code == 200
         body = r.get_json()
@@ -148,7 +146,7 @@ class TestListExperiences:
         assert body["experiences"] == []
 
     def test_400_when_user_unknown(self, corpus_app):
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.get("/api/users/ghost/experiences")
         assert r.status_code == 400
 
@@ -161,7 +159,7 @@ class TestListExperiences:
 class TestCreateExperience:
     def test_creates_experience_returns_detail(self, corpus_app):
         _seed_candidate()
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(
             "/api/users/alice/experiences",
             json={
@@ -184,7 +182,7 @@ class TestCreateExperience:
 
     def test_rejects_missing_company(self, corpus_app):
         _seed_candidate()
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(
             "/api/users/alice/experiences",
             json={"start_date": "2023-01"},
@@ -194,7 +192,7 @@ class TestCreateExperience:
 
     def test_rejects_bad_start_date_format(self, corpus_app):
         _seed_candidate()
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(
             "/api/users/alice/experiences",
             json={"company": "X", "start_date": "January 2023"},
@@ -204,7 +202,7 @@ class TestCreateExperience:
 
     def test_rejects_bad_end_date_format(self, corpus_app):
         _seed_candidate()
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(
             "/api/users/alice/experiences",
             json={"company": "X", "start_date": "2023-01", "end_date": "2024"},
@@ -214,7 +212,7 @@ class TestCreateExperience:
     def test_missing_candidate_is_auto_provisioned(self, corpus_app):
         # A config-only user (no Candidate row) is provisioned on the first
         # write — adding an experience by hand works without any import step.
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(
             "/api/users/alice/experiences",
             json={"company": "X", "start_date": "2023-01"},
@@ -243,7 +241,7 @@ class TestGetExperience:
         _seed_bullet(eid, text="Led 5-person team.", display_order=0)
         _seed_bullet(eid, text="Shipped RAG eval framework.", display_order=1)
 
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.get(f"/api/experiences/{eid}")
         assert r.status_code == 200
         body = r.get_json()
@@ -258,7 +256,7 @@ class TestGetExperience:
         ]
 
     def test_404_for_unknown_id(self, corpus_app):
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.get("/api/experiences/99999")
         assert r.status_code == 404
 
@@ -267,7 +265,7 @@ class TestUpdateExperience:
     def test_updates_company_and_dates(self, corpus_app):
         cid = _seed_candidate()
         eid = _seed_experience(cid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.put(
             f"/api/experiences/{eid}",
             json={"company": "Renamed Co", "end_date": "2024-12"},
@@ -279,14 +277,14 @@ class TestUpdateExperience:
     def test_rejects_empty_company(self, corpus_app):
         cid = _seed_candidate()
         eid = _seed_experience(cid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.put(f"/api/experiences/{eid}", json={"company": "   "})
         assert r.status_code == 400
 
     def test_rejects_bad_start_date(self, corpus_app):
         cid = _seed_candidate()
         eid = _seed_experience(cid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.put(f"/api/experiences/{eid}", json={"start_date": "2024"})
         assert r.status_code == 400
 
@@ -298,7 +296,7 @@ class TestDeleteExperience:
         _seed_bullet(eid, display_order=0)
         _seed_bullet(eid, text="another", display_order=1)
 
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.delete(f"/api/experiences/{eid}")
         assert r.status_code == 200
         body = r.get_json()
@@ -326,7 +324,7 @@ class TestCreateBullet:
     def test_creates_bullet_auto_detects_outcome(self, corpus_app):
         cid = _seed_candidate()
         eid = _seed_experience(cid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(
             f"/api/experiences/{eid}/bullets",
             json={"text": "Reduced latency by 40% across 3 services."},
@@ -341,7 +339,7 @@ class TestCreateBullet:
     def test_creates_bullet_without_outcome(self, corpus_app):
         cid = _seed_candidate()
         eid = _seed_experience(cid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(
             f"/api/experiences/{eid}/bullets",
             json={"text": "Mentored teammates."},
@@ -352,14 +350,14 @@ class TestCreateBullet:
     def test_rejects_empty_text(self, corpus_app):
         cid = _seed_candidate()
         eid = _seed_experience(cid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(f"/api/experiences/{eid}/bullets", json={"text": "   "})
         assert r.status_code == 400
 
     def test_rejects_unknown_pattern_kind(self, corpus_app):
         cid = _seed_candidate()
         eid = _seed_experience(cid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(
             f"/api/experiences/{eid}/bullets",
             json={"text": "x", "pattern_kind": "bogus"},
@@ -368,7 +366,7 @@ class TestCreateBullet:
 
     def test_404_for_missing_experience(self, corpus_app):
         _seed_candidate()
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post("/api/experiences/99999/bullets", json={"text": "x"})
         assert r.status_code == 404
 
@@ -378,7 +376,7 @@ class TestUpdateBullet:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         bid = _seed_bullet(eid, text="Mentored team.", has_outcome=0)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.put(
             f"/api/bullets/{bid}",
             json={"text": "Mentored team of 8 over 6 months."},
@@ -393,7 +391,7 @@ class TestUpdateBullet:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         bid = _seed_bullet(eid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.put(
             f"/api/bullets/{bid}",
             json={"text": "Reduced latency by 40%.", "has_outcome": False},
@@ -406,7 +404,7 @@ class TestUpdateBullet:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         bid = _seed_bullet(eid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.put(f"/api/bullets/{bid}", json={"text": ""})
         assert r.status_code == 400
 
@@ -416,7 +414,7 @@ class TestDeleteBullet:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         bid = _seed_bullet(eid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.delete(f"/api/bullets/{bid}")
         assert r.status_code == 200
         assert r.get_json()["is_active"] is False
@@ -441,7 +439,7 @@ class TestCreateExperienceTitle:
     def test_creates_non_official_title(self, corpus_app):
         cid = _seed_candidate()
         eid = _seed_experience(cid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(
             f"/api/experiences/{eid}/titles",
             json={"title": "Director, AI Research"},
@@ -460,7 +458,7 @@ class TestCreateExperienceTitle:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         _seed_title(eid, title="Senior PM", is_official=1)  # existing official
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(
             f"/api/experiences/{eid}/titles",
             json={"title": "Director, AI Research", "truthful_enough_to_use": True},
@@ -492,7 +490,7 @@ class TestCreateExperienceTitle:
         eid = _seed_experience(cid)
         prior = _seed_title(eid, title="Senior PM", is_official=1)
 
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(
             f"/api/experiences/{eid}/titles",
             json={"title": "Director, AI", "is_official": True},
@@ -513,7 +511,7 @@ class TestCreateExperienceTitle:
     def test_rejects_empty_title(self, corpus_app):
         cid = _seed_candidate()
         eid = _seed_experience(cid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post(f"/api/experiences/{eid}/titles", json={"title": "   "})
         assert r.status_code == 400
 
@@ -527,7 +525,7 @@ class TestUpdateExperienceTitle:
             eid, title="Director, AI", is_official=0, source="user_added",
         )
 
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.put(
             f"/api/experience-titles/{alt}",
             json={"is_official": True},
@@ -548,7 +546,7 @@ class TestUpdateExperienceTitle:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         tid = _seed_title(eid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.put(
             f"/api/experience-titles/{tid}",
             json={"title": "Lead PM, Platform"},
@@ -560,7 +558,7 @@ class TestUpdateExperienceTitle:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         tid = _seed_title(eid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.put(f"/api/experience-titles/{tid}", json={"title": ""})
         assert r.status_code == 400
 
@@ -570,7 +568,7 @@ class TestDeleteExperienceTitle:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         tid = _seed_title(eid, is_official=1)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.delete(f"/api/experience-titles/{tid}")
         assert r.status_code == 200
         body = r.get_json()
@@ -616,7 +614,7 @@ class TestSuggestTags:
         _seed_tag(cid, "role", "design-mgmt", "Design Mgmt", usage_count=12)
         _seed_tag(cid, "domain", "ai", "AI", usage_count=20)
 
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.get("/api/users/alice/tags?kind=role")
         assert r.status_code == 200
         body = r.get_json()
@@ -631,7 +629,7 @@ class TestSuggestTags:
         _seed_tag(cid, "domain", "ai-platform", "AI Platform")
         _seed_tag(cid, "domain", "fintech", "Fintech")
 
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.get("/api/users/alice/tags?kind=domain&q=ai")
         assert r.status_code == 200
         body = r.get_json()
@@ -640,19 +638,19 @@ class TestSuggestTags:
 
     def test_returns_empty_for_unseeded_candidate(self, corpus_app):
         # Config exists, no candidate row — should return [] not 404
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.get("/api/users/alice/tags")
         assert r.status_code == 200
         assert r.get_json() == []
 
     def test_400_for_invalid_kind(self, corpus_app):
         _seed_candidate()
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.get("/api/users/alice/tags?kind=bogus")
         assert r.status_code == 400
 
     def test_400_for_unknown_user(self, corpus_app):
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.get("/api/users/ghost/tags")
         assert r.status_code == 400
 
@@ -667,7 +665,7 @@ class TestBulletTagLinkUnlink:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         bid = _seed_bullet(eid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
 
         r = client.post(f"/api/bullets/{bid}/tags",
                          json={"value": "AI / ML", "kind": "domain"})
@@ -685,7 +683,7 @@ class TestBulletTagLinkUnlink:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         bid = _seed_bullet(eid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         client.post(f"/api/bullets/{bid}/tags", json={"value": "ai", "kind": "domain"})
         client.post(f"/api/bullets/{bid}/tags", json={"value": "ai", "kind": "domain"})
         detail = client.get(f"/api/experiences/{eid}").get_json()
@@ -696,7 +694,7 @@ class TestBulletTagLinkUnlink:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         bid = _seed_bullet(eid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         tag = client.post(f"/api/bullets/{bid}/tags",
                           json={"value": "ai", "kind": "domain"}).get_json()
         r = client.delete(f"/api/bullets/{bid}/tags/{tag['id']}")
@@ -708,7 +706,7 @@ class TestBulletTagLinkUnlink:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         bid = _seed_bullet(eid)
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         assert client.post(f"/api/bullets/{bid}/tags",
                            json={"value": "  ", "kind": "skill"}).status_code == 400
         assert client.post(f"/api/bullets/{bid}/tags",
@@ -716,7 +714,7 @@ class TestBulletTagLinkUnlink:
 
     def test_404_for_unknown_bullet(self, corpus_app):
         _seed_candidate()
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         r = client.post("/api/bullets/99999/tags",
                         json={"value": "ai", "kind": "domain"})
         assert r.status_code == 404
@@ -727,7 +725,7 @@ class TestTitleTagLinkUnlink:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         tid = _seed_title(eid, title="Director, AI")
-        client = corpus_app.app.test_client()
+        client = corpus_app.test_client()
         tag = client.post(f"/api/experience-titles/{tid}/tags",
                           json={"value": "design-mgmt", "kind": "role"}).get_json()
         detail = client.get(f"/api/experiences/{eid}").get_json()

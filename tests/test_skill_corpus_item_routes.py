@@ -20,6 +20,13 @@ import pytest
 
 @pytest.fixture
 def skill_app(tmp_path, monkeypatch):
+    """Factory-built app on a fresh DB + temp config dir (Sprint 8.3d).
+
+    The skills CRUD + skill-tags routes now all live on blueprints/corpus and read
+    current_app.config[...] at request time, so create_app(Config(base_dir=tmp_path))
+    replaces the old reload + monkeypatch-the-globals pattern. The DB-path
+    monkeypatch stays (distinct seam).
+    """
     db_file = tmp_path / "skills.sqlite"
 
     import db.session as db_session_mod
@@ -27,20 +34,15 @@ def skill_app(tmp_path, monkeypatch):
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
+    from app import create_app
+    from config import Config
 
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "output").mkdir()
+    app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "casey.config").write_text("{}", encoding="utf-8")
 
     from db.session import init_db
     init_db(db_file)
-    return app_module
+    return app
 
 
 def _seed_candidate(username="casey"):
@@ -80,7 +82,7 @@ class TestList:
         _add_skill(cid, "Python")
         _add_skill(cid, "Go", is_pending_review=1, source="llm_proposed")
         _add_skill(cid, "Perl", is_active=0)
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.get("/api/users/casey/skills")
         assert r.status_code == 200
         names = [s["name"] for s in r.get_json()["skills"]]
@@ -91,7 +93,7 @@ class TestList:
         _add_skill(cid, "Python")
         _add_skill(cid, "Go", is_pending_review=1, source="llm_proposed")
         _add_skill(cid, "Perl", is_active=0)
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         pending = client.get("/api/users/casey/skills?include_pending=1").get_json()["skills"]
         assert {s["name"] for s in pending} == {"Python", "Go"}
         both = client.get(
@@ -100,7 +102,7 @@ class TestList:
         assert {s["name"] for s in both} == {"Python", "Go", "Perl"}
 
     def test_unknown_user_empty(self, skill_app):
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.get("/api/users/casey/skills")
         # _safe_username rejects a user with no config/candidate.
         assert r.status_code in (200, 400)
@@ -109,7 +111,7 @@ class TestList:
 class TestCreate:
     def test_happy_path(self, skill_app):
         _seed_candidate()
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.post("/api/users/casey/skills",
                         json={"name": "Kubernetes", "category": "platform"})
         assert r.status_code == 201, r.get_data(as_text=True)
@@ -122,14 +124,14 @@ class TestCreate:
 
     def test_empty_name_rejected(self, skill_app):
         _seed_candidate()
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.post("/api/users/casey/skills", json={"name": "   "})
         assert r.status_code == 400
 
     def test_duplicate_name_conflict(self, skill_app):
         cid = _seed_candidate()
         _add_skill(cid, "Python")
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.post("/api/users/casey/skills", json={"name": "Python"})
         assert r.status_code == 409
 
@@ -138,7 +140,7 @@ class TestUpdate:
     def test_update_fields(self, skill_app):
         cid = _seed_candidate()
         sid = _add_skill(cid, "Python")
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.put(f"/api/skills/{sid}",
                         json={"category": "language", "years": 5, "display_order": 3})
         assert r.status_code == 200
@@ -150,7 +152,7 @@ class TestUpdate:
     def test_approve_pending(self, skill_app):
         cid = _seed_candidate()
         sid = _add_skill(cid, "Go", is_pending_review=1, source="llm_proposed")
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.put(f"/api/skills/{sid}", json={"is_pending_review": False})
         assert r.status_code == 200
         assert r.get_json()["is_pending_review"] is False
@@ -158,7 +160,7 @@ class TestUpdate:
     def test_empty_name_rejected(self, skill_app):
         cid = _seed_candidate()
         sid = _add_skill(cid, "Python")
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.put(f"/api/skills/{sid}", json={"name": ""})
         assert r.status_code == 400
 
@@ -166,13 +168,13 @@ class TestUpdate:
         cid = _seed_candidate()
         _add_skill(cid, "Python")
         sid = _add_skill(cid, "Go", display_order=1)
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.put(f"/api/skills/{sid}", json={"name": "Python"})
         assert r.status_code == 409
 
     def test_unknown_skill_404(self, skill_app):
         _seed_candidate()
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.put("/api/skills/9999", json={"name": "X"})
         assert r.status_code == 404
 
@@ -183,7 +185,7 @@ class TestDelete:
         from db.session import get_session
         cid = _seed_candidate()
         sid = _add_skill(cid, "Go", is_pending_review=1, source="llm_proposed")
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.delete(f"/api/skills/{sid}")
         assert r.status_code == 200
         assert r.get_json()["deleted"] is True
@@ -198,7 +200,7 @@ class TestDelete:
         from db.session import get_session
         cid = _seed_candidate()
         sid = _add_skill(cid, "Python")
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.delete(f"/api/skills/{sid}")
         assert r.status_code == 200
         assert r.get_json()["is_active"] is False
@@ -214,7 +216,7 @@ class TestTags:
     def test_link_and_unlink_tag(self, skill_app):
         cid = _seed_candidate()
         sid = _add_skill(cid, "Python")
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.post(f"/api/skills/{sid}/tags",
                         json={"value": "Backend", "kind": "domain"})
         assert r.status_code == 201, r.get_data(as_text=True)
@@ -230,7 +232,7 @@ class TestTags:
 
     def test_link_unknown_skill_404(self, skill_app):
         _seed_candidate()
-        client = skill_app.app.test_client()
+        client = skill_app.test_client()
         r = client.post("/api/skills/9999/tags", json={"value": "x", "kind": "domain"})
         assert r.status_code == 404
 

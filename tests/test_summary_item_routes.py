@@ -19,7 +19,14 @@ import pytest
 
 @pytest.fixture
 def summary_app(tmp_path, monkeypatch):
-    """Fresh DB + tmp dirs so each test starts clean."""
+    """Factory-built app on a fresh DB + temp config dir (Sprint 8.3d).
+
+    The summary routes moved to blueprints/corpus and read current_app.config[...]
+    at request time, so create_app(Config(base_dir=tmp_path)) replaces the old
+    reload + monkeypatch-the-globals pattern. Provisioning now threads configs_dir
+    through web_infra, so the corpus_import.CONFIGS_DIR monkeypatch is gone. The
+    DB-path monkeypatch stays (distinct seam).
+    """
     db_file = tmp_path / "summary.sqlite"
 
     import db.session as db_session_mod
@@ -27,25 +34,16 @@ def summary_app(tmp_path, monkeypatch):
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
+    from app import create_app
+    from config import Config
 
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "output").mkdir()
+    app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "casey.config").write_text("{}", encoding="utf-8")
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
 
-    # Provisioning reads corpus_import's own module-level CONFIGS_DIR.
-    import onboarding.corpus_import as corpus_import_mod
-    monkeypatch.setattr(corpus_import_mod, "CONFIGS_DIR", tmp_path / "configs")
-
     from db.session import init_db
     init_db(db_file)
-    return app_module
+    return app
 
 
 def _seed_candidate(app_module, username="casey", profile_text=None):
@@ -106,7 +104,7 @@ class TestMigrationBackfill:
 class TestList:
     def test_empty_for_user_with_no_summaries(self, summary_app):
         _seed_candidate(summary_app, "casey")
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         r = client.get("/api/users/casey/summaries")
         assert r.status_code == 200
         assert r.get_json()["summaries"] == []
@@ -114,7 +112,7 @@ class TestList:
     def test_empty_for_unknown_user_no_404(self, summary_app):
         """Mirrors the bullet/title list behavior: no 404, just empty.
         Keeps the frontend's empty-state simple."""
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         r = client.get("/api/users/casey/summaries")
         # casey has a .config but no Candidate row → empty list, 200
         assert r.status_code == 200
@@ -132,7 +130,7 @@ class TestList:
         finally:
             session.close()
 
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         r = client.get("/api/users/casey/summaries")
         items = r.get_json()["summaries"]
         assert len(items) == 1
@@ -150,7 +148,7 @@ class TestList:
         finally:
             session.close()
 
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         r = client.get("/api/users/casey/summaries?include_inactive=1")
         items = r.get_json()["summaries"]
         assert len(items) == 2
@@ -164,7 +162,7 @@ class TestList:
 class TestCreate:
     def test_create_happy_path(self, summary_app):
         _seed_candidate(summary_app, "casey")
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         r = client.post("/api/users/casey/summaries", json={
             "text":  "Principal-level designer with a decade of...",
             "label": "Design IC",
@@ -180,7 +178,7 @@ class TestCreate:
 
     def test_create_auto_increments_display_order(self, summary_app):
         _seed_candidate(summary_app, "casey")
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         r1 = client.post("/api/users/casey/summaries", json={"text": "First"})
         r2 = client.post("/api/users/casey/summaries", json={"text": "Second"})
         assert r1.get_json()["display_order"] == 0
@@ -188,13 +186,13 @@ class TestCreate:
 
     def test_create_rejects_empty_text(self, summary_app):
         _seed_candidate(summary_app, "casey")
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         r = client.post("/api/users/casey/summaries", json={"text": "   "})
         assert r.status_code == 400
 
     def test_create_rejects_invalid_source(self, summary_app):
         _seed_candidate(summary_app, "casey")
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         r = client.post("/api/users/casey/summaries", json={
             "text": "Valid text", "source": "bogus",
         })
@@ -203,7 +201,7 @@ class TestCreate:
     def test_create_config_only_user_is_auto_provisioned(self, summary_app):
         # casey has a .config but no Candidate row — adding a summary variant
         # provisions the row on the first write (no separate import step).
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         r = client.post("/api/users/casey/summaries", json={"text": "Some text"})
         assert r.status_code == 201, r.get_data(as_text=True)
         from db.models import Candidate
@@ -223,7 +221,7 @@ class TestCreate:
 class TestUpdate:
     def test_update_text(self, summary_app):
         _seed_candidate(summary_app, "casey")
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         created = client.post("/api/users/casey/summaries", json={"text": "Original"}).get_json()
         r = client.put(f"/api/summaries/{created['id']}", json={"text": "Updated"})
         assert r.status_code == 200
@@ -231,7 +229,7 @@ class TestUpdate:
 
     def test_update_label_and_outcome_flag(self, summary_app):
         _seed_candidate(summary_app, "casey")
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         created = client.post("/api/users/casey/summaries", json={"text": "Some positioning"}).get_json()
         r = client.put(f"/api/summaries/{created['id']}", json={
             "label": "AI platform PM", "has_outcome": True,
@@ -242,13 +240,13 @@ class TestUpdate:
 
     def test_update_rejects_empty_text(self, summary_app):
         _seed_candidate(summary_app, "casey")
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         created = client.post("/api/users/casey/summaries", json={"text": "T"}).get_json()
         r = client.put(f"/api/summaries/{created['id']}", json={"text": "  "})
         assert r.status_code == 400
 
     def test_update_unknown_returns_404(self, summary_app):
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         r = client.put("/api/summaries/99999", json={"text": "x"})
         assert r.status_code == 404
 
@@ -263,7 +261,7 @@ class TestDelete:
         from db.models import SummaryItem
         from db.session import get_session
         _seed_candidate(summary_app, "casey")
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         created = client.post("/api/users/casey/summaries", json={"text": "T"}).get_json()
 
         r = client.delete(f"/api/summaries/{created['id']}")
@@ -281,6 +279,6 @@ class TestDelete:
             session.close()
 
     def test_delete_unknown_returns_404(self, summary_app):
-        client = summary_app.app.test_client()
+        client = summary_app.test_client()
         r = client.delete("/api/summaries/99999")
         assert r.status_code == 404

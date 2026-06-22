@@ -18,6 +18,13 @@ import pytest
 
 @pytest.fixture
 def exp_app(tmp_path, monkeypatch):
+    """Factory-built app on a fresh sqlite DB + temp config dir (Sprint 8.3d).
+
+    The experience-summary routes moved to blueprints/corpus and read
+    current_app.config[...] at request time, so the canonical
+    create_app(Config(base_dir=tmp_path)) fixture replaces the old reload +
+    monkeypatch-the-globals pattern. The DB-path monkeypatch stays (distinct seam).
+    """
     db_file = tmp_path / "expsum.sqlite"
 
     import db.session as db_session_mod
@@ -25,20 +32,15 @@ def exp_app(tmp_path, monkeypatch):
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
+    from app import create_app
+    from config import Config
 
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "output").mkdir()
+    app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "casey.config").write_text("{}", encoding="utf-8")
 
     from db.session import init_db
     init_db(db_file)
-    return app_module
+    return app
 
 
 def _seed_experience(username="casey", company="Acme", summary=None):
@@ -80,7 +82,7 @@ class TestList:
         _cid, eid = _seed_experience()
         active = _add_variant(eid, text="Active intro.")
         retired = _add_variant(eid, text="Retired intro.", is_active=0)
-        client = exp_app.app.test_client()
+        client = exp_app.test_client()
 
         r = client.get(f"/api/experiences/{eid}/summaries")
         assert r.status_code == 200
@@ -92,20 +94,20 @@ class TestList:
         assert ids == {active, retired}
 
     def test_unknown_experience_404(self, exp_app):
-        client = exp_app.app.test_client()
+        client = exp_app.test_client()
         assert client.get("/api/experiences/9999/summaries").status_code == 404
 
     def test_unowned_candidate_403(self, exp_app):
         # "ghost" has no .config file → _safe_username returns None → 403.
         _cid, eid = _seed_experience(username="ghost")
-        client = exp_app.app.test_client()
+        client = exp_app.test_client()
         assert client.get(f"/api/experiences/{eid}/summaries").status_code == 403
 
 
 class TestCreate:
     def test_happy_path(self, exp_app):
         _cid, eid = _seed_experience()
-        client = exp_app.app.test_client()
+        client = exp_app.test_client()
         r = client.post(f"/api/experiences/{eid}/summaries",
                         json={"text": "First framing.", "label": "scale"})
         assert r.status_code == 201, r.get_data(as_text=True)
@@ -121,19 +123,19 @@ class TestCreate:
 
     def test_empty_text_rejected(self, exp_app):
         _cid, eid = _seed_experience()
-        client = exp_app.app.test_client()
+        client = exp_app.test_client()
         assert client.post(f"/api/experiences/{eid}/summaries",
                            json={"text": "  "}).status_code == 400
 
     def test_invalid_source_rejected(self, exp_app):
         _cid, eid = _seed_experience()
-        client = exp_app.app.test_client()
+        client = exp_app.test_client()
         r = client.post(f"/api/experiences/{eid}/summaries",
                         json={"text": "x", "source": "bogus"})
         assert r.status_code == 400
 
     def test_unknown_experience_404(self, exp_app):
-        client = exp_app.app.test_client()
+        client = exp_app.test_client()
         r = client.post("/api/experiences/9999/summaries", json={"text": "x"})
         assert r.status_code == 404
 
@@ -142,7 +144,7 @@ class TestUpdate:
     def test_update_fields(self, exp_app):
         _cid, eid = _seed_experience()
         sid = _add_variant(eid, text="Old.")
-        client = exp_app.app.test_client()
+        client = exp_app.test_client()
         r = client.put(f"/api/experience-summaries/{sid}",
                        json={"text": "New.", "label": "tag", "has_outcome": True,
                              "display_order": 3})
@@ -156,12 +158,12 @@ class TestUpdate:
     def test_empty_text_rejected(self, exp_app):
         _cid, eid = _seed_experience()
         sid = _add_variant(eid)
-        client = exp_app.app.test_client()
+        client = exp_app.test_client()
         assert client.put(f"/api/experience-summaries/{sid}",
                           json={"text": ""}).status_code == 400
 
     def test_unknown_item_404(self, exp_app):
-        client = exp_app.app.test_client()
+        client = exp_app.test_client()
         assert client.put("/api/experience-summaries/9999",
                           json={"text": "x"}).status_code == 404
 
@@ -172,7 +174,7 @@ class TestDelete:
         from db.session import get_session
         _cid, eid = _seed_experience()
         sid = _add_variant(eid)
-        client = exp_app.app.test_client()
+        client = exp_app.test_client()
         r = client.delete(f"/api/experience-summaries/{sid}")
         assert r.status_code == 200
         assert r.get_json()["is_active"] is False
