@@ -11,7 +11,7 @@ import threading
 import webbrowser
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, make_response, render_template, request
+from flask import Flask, Response, jsonify, request
 from werkzeug.utils import secure_filename
 
 from analyzer import prompt_overrides
@@ -22,10 +22,10 @@ from blueprints import (
     corpus_bp,
     generation_bp,
     templates_bp,
+    users_bp,
 )
 from config import Config
 from dashboard import dashboard_bp
-from hardening import validate_config
 from web_infra import (
     _get_client,
     _is_localhost_request,
@@ -83,6 +83,10 @@ def register_blueprints(app: Flask) -> None:
     # (/api/users/<u>/applications, /api/applications/<id>/composition, …), so the
     # URLs stay byte-identical (Sprint 8.3f).
     app.register_blueprint(applications_bp)
+    # No url_prefix: the users/config routes carry full paths (/, /api/users,
+    # /api/users/<u>/config, /api/users/<u>/profile/fetch), so the URLs stay
+    # byte-identical (Sprint 8.3g).
+    app.register_blueprint(users_bp)
 
 
 def create_app(config: Config | None = None) -> Flask:
@@ -179,133 +183,9 @@ def _get_or_provision_candidate(session, safe_user: str):
     return candidate
 
 
-# --- Routes ---
-
-@app.route("/")
-def index():
-    """Serve the single-page app shell.
-
-    Cache headers are set to `no-cache` so a freshly-deployed
-    `templates/index.html` is always picked up on the next request —
-    avoids the "I shipped a UI change but the user still sees the old
-    button set" footgun. Static CSS/JS continue to use Flask's
-    default caching; we cache-bust those by file path when needed.
-    """
-    resp = make_response(render_template("index.html"))
-    resp.headers["Cache-Control"] = "no-cache, must-revalidate"
-    return resp
-
-
-@app.route("/api/users", methods=["GET"])
-def list_users():
-    users = [p.stem for p in CONFIGS_DIR.glob("*.config")]
-    return jsonify(users)
-
-
-@app.route("/api/users", methods=["POST"])
-def create_user():
-    data = request.json
-    username = data.get("username", "").strip()
-    if not username:
-        return jsonify({"error": "Username required"}), 400
-    safe = secure_filename(username)
-    if not safe:
-        return jsonify({"error": "Invalid username"}), 400
-
-    config = {
-        "name": data.get("name", username),
-        "email": data.get("email", ""),
-        "phone": data.get("phone", ""),
-        "linkedin_url": data.get("linkedin_url", ""),
-        "website_url": data.get("website_url", ""),
-        "portfolio_urls": [],
-        "skills": [],
-        "certifications": [],
-        "education_summary": "",
-        "notes": "",
-    }
-    _save_config(safe, config)
-    (RESUMES_DIR / safe).mkdir(exist_ok=True)
-    logger.info("Created user: %s", safe)
-    return jsonify({"username": safe, "config": config})
-
-
-@app.route("/api/users/<username>/config", methods=["GET"])
-def get_config(username):
-    if not secure_filename(username):
-        return jsonify({"error": "Invalid username"}), 400
-    config = _load_config(username)
-    if not config:
-        return jsonify({"error": "User not found"}), 404
-    return jsonify(config)
-
-
-@app.route("/api/users/<username>/config", methods=["PUT"])
-def update_config(username):
-    if not secure_filename(username):
-        return jsonify({"error": "Invalid username"}), 400
-    config = request.json
-    errors = validate_config(config)
-    if errors:
-        return jsonify({"errors": errors}), 400
-    _save_config(username, config)
-    logger.info("Updated config for: %s", username)
-    return jsonify({"ok": True})
-
-
-@app.route("/api/users/<username>/profile/fetch", methods=["POST"])
-def fetch_profile(username):
-    """PX-02: opt-in scrape of the user's saved profile URLs into the corpus.
-
-    User-triggered by the Settings "Fetch profile content" button — that click
-    IS the opt-in act. Reads the SAVED config (linkedin_url / website_url /
-    portfolio_urls), runs the deterministic, best-effort
-    `scraper.fetch_profile_content` (per-URL cap; `RequestException` swallowed →
-    ""), and caches the combined text in `Candidate.online_profile_text`. From
-    there `build_context_set_from_db` surfaces it to the LLM via the
-    `<candidate_web_presence>` block.
-
-    The network egress happens inside `scraper.py` (already on the PX-08 egress
-    allowlist); this route imports no network library. Stored as a DISTINCT
-    column from `profile_text` (the β.6 positioning summary) so the scrape can
-    never clobber the résumé `basics.summary`.
-    """
-    from db.session import get_session, init_db
-    from scraper import fetch_profile_content
-
-    safe_user = _safe_username(username)
-    if not safe_user:
-        return jsonify({"error": "Invalid or unknown user"}), 400
-    # Defensive containment: the config we read must resolve within CONFIGS_DIR.
-    config_path = CONFIGS_DIR / f"{safe_user}.config"
-    if not _within(config_path, CONFIGS_DIR):
-        return jsonify({"error": "Invalid config path"}), 403
-
-    config = _load_config(safe_user)
-    url_count = sum(
-        1 for u in (
-            config.get("linkedin_url", ""),
-            config.get("website_url", ""),
-            *config.get("portfolio_urls", []),
-        ) if u
-    )
-    scraped = fetch_profile_content(config)
-
-    init_db()
-    session = get_session()
-    try:
-        candidate = _get_or_provision_candidate(session, safe_user)
-        candidate.online_profile_text = scraped or None
-        session.commit()
-    finally:
-        session.close()
-
-    logger.info(
-        "PX-02 profile fetch for %s: %d chars from %d configured URL(s)",
-        safe_user, len(scraped), url_count,
-    )
-    return jsonify({"ok": True, "chars": len(scraped), "urls": url_count})
-
+# --- Routes (diagnostics: annotation / bootstrap / eval / tune — still resident
+# in app.py through Sprint 8.3h; the six users/config routes moved to
+# blueprints/users.py in 8.3g) ---
 
 # ---------------------------------------------------------------------------
 # Annotation + bootstrap write surface (the console's first READ-WRITE routes).

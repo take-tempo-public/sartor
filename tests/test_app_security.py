@@ -23,6 +23,26 @@ def app_module(tmp_path, monkeypatch):
     return _app
 
 
+@pytest.fixture
+def config_route_app(tmp_path):
+    """Factory-built app for the config ROUTES (get_config / update_config).
+
+    Those routes moved to blueprints/users.py (Sprint 8.3g) and read
+    `current_app.config["CONFIGS_DIR"]`, so the `app_module` monkeypatch-the-global
+    fixture no longer reaches them — they need a `create_app(Config(base_dir=tmp))`
+    app. The helper-level classes above stay on `app_module`: they exercise the
+    app.py-local `_safe_username` / `_within` / `_load_config` / `_save_config`
+    copies directly, and the seam move leaves those in place.
+    """
+    import types
+
+    from app import create_app
+    from config import Config
+
+    cfg = Config(base_dir=tmp_path)  # ensure_dirs() makes configs/resumes/output
+    return types.SimpleNamespace(app=create_app(cfg), configs_dir=cfg.configs_dir)
+
+
 class TestSafeUsername:
     def test_valid_existing_user_passes(self, app_module):
         assert app_module._safe_username("alice") == "alice"
@@ -99,24 +119,25 @@ class TestConfigRouteContainment:
     reaches the handler stays contained to CONFIGS_DIR.
     """
 
-    def test_all_strip_username_returns_400(self, app_module):
+    def test_all_strip_username_returns_400(self, config_route_app):
         # "..." reaches the handler (not a special path segment); secure_filename
         # reduces it to "" → the call-site guard returns 400, not a 500.
-        client = app_module.app.test_client()
+        client = config_route_app.app.test_client()
         assert client.get("/api/users/.../config").status_code == 400
 
-    def test_reaching_value_writes_inside_configs_dir(self, tmp_path, app_module):
+    def test_reaching_value_writes_inside_configs_dir(self, config_route_app):
         # "x..y" is a single segment that reaches the handler and sanitizes to
         # itself → the config is written inside CONFIGS_DIR, never outside.
-        client = app_module.app.test_client()
+        configs_dir = config_route_app.configs_dir
+        client = config_route_app.app.test_client()
         resp = client.put("/api/users/x..y/config", json={"name": "X"})
         assert resp.status_code == 200
-        assert (tmp_path / "x..y.config").exists()
-        assert not (tmp_path.parent / "x..y.config").exists()
+        assert (configs_dir / "x..y.config").exists()
+        assert not (configs_dir.parent / "x..y.config").exists()
 
-    def test_encoded_slash_traversal_rejected_by_routing(self, app_module):
+    def test_encoded_slash_traversal_rejected_by_routing(self, config_route_app):
         # NOTE: this proves werkzeug rejects an encoded-slash path segment at
         # routing (404) — NOT that the helper contains traversal. The helper
         # containment is proved by TestConfigHelperContainment above.
-        client = app_module.app.test_client()
+        client = config_route_app.app.test_client()
         assert client.get("/api/users/..%2f../config").status_code == 404

@@ -13,18 +13,25 @@ tests/test_egress_allowlist.py + tests/test_scraper.py).
 
 from __future__ import annotations
 
-import importlib
 import json
+import types
 
 import pytest
 
 
 @pytest.fixture
 def fetch_app(tmp_path, monkeypatch):
-    """Fresh DB + tmp configs/ + output/ so each test starts clean.
+    """Factory-built app on a fresh sqlite DB + temp tree (Sprint 8.3g).
 
-    Mirrors the summary-route fixture: reload app so module-level CONFIGS_DIR /
-    OUTPUT_DIR / BASE_DIR + the corpus_import CONFIGS_DIR all point at tmp dirs.
+    The profile-fetch route moved to blueprints/users.py and reads
+    current_app.config[...], so create_app(Config(base_dir=tmp_path)) replaces the
+    old reload + monkeypatch-the-globals fixture; the DB-path monkeypatch stays.
+    The corpus_import CONFIGS_DIR monkeypatch is GONE: _get_or_provision_candidate
+    threads configs_dir from the injected Config all the way through
+    import_candidate_from_config to _safe_load_config, so the onboarding layer no
+    longer needs its own path-constant front patched (design §7 zero-debt).
+    Returns a namespace exposing .app + .CONFIGS_DIR so the existing test bodies
+    (fetch_app.app / _write_config) keep working.
     """
     db_file = tmp_path / "fetch.sqlite"
 
@@ -33,20 +40,15 @@ def fetch_app(tmp_path, monkeypatch):
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "output").mkdir()
-
-    import onboarding.corpus_import as corpus_import_mod
-    monkeypatch.setattr(corpus_import_mod, "CONFIGS_DIR", tmp_path / "configs")
+    from app import create_app
+    from config import Config
+    cfg = Config(base_dir=tmp_path)
+    app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
 
     from db.session import init_db
     init_db(db_file)
-    return app_module
+
+    return types.SimpleNamespace(app=app, CONFIGS_DIR=cfg.configs_dir)
 
 
 def _write_config(app_module, username: str, **fields) -> None:

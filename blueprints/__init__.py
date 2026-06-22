@@ -14,6 +14,7 @@ from blueprints.assistant import assistant_bp
 from blueprints.corpus import corpus_bp
 from blueprints.generation import generation_bp
 from blueprints.templates import templates_bp
+from blueprints.users import users_bp
 
 __all__ = [
     "analysis_bp",
@@ -22,4 +23,5 @@ __all__ = [
     "corpus_bp",
     "generation_bp",
     "templates_bp",
+    "users_bp",
 ]
