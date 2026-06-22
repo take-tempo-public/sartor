@@ -123,10 +123,14 @@ class TestCritiqueProposalHelper:
 
 @pytest.fixture
 def b4_app(tmp_path, monkeypatch):
-    """Import app with CORPUS_BACKED=1 + fresh in-memory DB path.
+    """Factory-built app (CORPUS_BACKED=1) on a fresh DB path (Sprint 8.3d).
 
-    Returns the app module so tests can use app.test_client() and seed the
-    DB directly via the helper below.
+    The proposal critique/decide/promote routes moved to
+    blueprints/corpus/proposals and read current_app.config at request time, so
+    create_app(Config(base_dir=tmp_path)) replaces the old reload +
+    monkeypatch-the-globals pattern. Returns the Flask app; tests seed the DB
+    directly via _seed_b4 against the same tmp_path/"b4.sqlite". The DB-path
+    monkeypatch stays.
     """
     monkeypatch.setenv("CORPUS_BACKED", "1")
     db_file = tmp_path / "b4.sqlite"
@@ -135,15 +139,11 @@ def b4_app(tmp_path, monkeypatch):
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
+    from app import create_app
+    from config import Config
 
-    import app
-    importlib.reload(app)
-    monkeypatch.setattr(app, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app, "OUTPUT_DIR", tmp_path / "output")
-    (tmp_path / "configs").mkdir(exist_ok=True)
+    app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
-    (tmp_path / "output").mkdir(exist_ok=True)
     return app
 
 
@@ -256,8 +256,8 @@ class TestCritiqueRoute:
             "concerns": ["'hospital ops' invents a domain Casey's corpus doesn't support"],
         }
         with patch("analyzer.critique_proposal", return_value=fake_critique), \
-             patch.object(b4_app, "_get_client", return_value=object()):
-            client = b4_app.app.test_client()
+             patch("blueprints.corpus.proposals._get_client", return_value=object()):
+            client = b4_app.test_client()
             r = client.post(
                 f"/api/proposals/{ids['pr_bullet_id']}/critique",
                 json={"user_edited_text": None},
@@ -282,7 +282,7 @@ class TestCritiqueRoute:
 
     def test_critique_route_404_when_missing(self, b4_app, tmp_path):
         _seed_b4(tmp_path / "b4.sqlite")
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         r = client.post("/api/proposals/99999/critique", json={})
         assert r.status_code == 404
 
@@ -295,7 +295,7 @@ class TestCritiqueRoute:
 class TestDecideRoute:
     def test_accept_original_clears_pending_on_bullet(self, b4_app, tmp_path):
         ids = _seed_b4(tmp_path / "b4.sqlite")
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         r = client.post(
             f"/api/proposals/{ids['pr_bullet_id']}/decide",
             json={"decision": "accept_original"},
@@ -318,7 +318,7 @@ class TestDecideRoute:
 
     def test_accept_edit_updates_bullet_text(self, b4_app, tmp_path):
         ids = _seed_b4(tmp_path / "b4.sqlite")
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         r = client.post(
             f"/api/proposals/{ids['pr_bullet_id']}/decide",
             json={"decision": "accept_edit",
@@ -339,7 +339,7 @@ class TestDecideRoute:
 
     def test_reject_soft_deletes_bullet(self, b4_app, tmp_path):
         ids = _seed_b4(tmp_path / "b4.sqlite")
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         r = client.post(
             f"/api/proposals/{ids['pr_bullet_id']}/decide",
             json={"decision": "reject"},
@@ -359,7 +359,7 @@ class TestDecideRoute:
 
     def test_accept_original_on_title_marks_truthful_enough(self, b4_app, tmp_path):
         ids = _seed_b4(tmp_path / "b4.sqlite")
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         r = client.post(
             f"/api/proposals/{ids['pr_title_id']}/decide",
             json={"decision": "accept_original"},
@@ -380,7 +380,7 @@ class TestDecideRoute:
 
     def test_reject_title_keeps_it_in_db_but_non_eligible(self, b4_app, tmp_path):
         ids = _seed_b4(tmp_path / "b4.sqlite")
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         r = client.post(
             f"/api/proposals/{ids['pr_title_id']}/decide",
             json={"decision": "reject"},
@@ -402,7 +402,7 @@ class TestDecideRoute:
 
     def test_invalid_decision_returns_400(self, b4_app, tmp_path):
         ids = _seed_b4(tmp_path / "b4.sqlite")
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         r = client.post(
             f"/api/proposals/{ids['pr_bullet_id']}/decide",
             json={"decision": "rubber_stamp"},
@@ -411,7 +411,7 @@ class TestDecideRoute:
 
     def test_accept_edit_requires_user_edited_text(self, b4_app, tmp_path):
         ids = _seed_b4(tmp_path / "b4.sqlite")
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         r = client.post(
             f"/api/proposals/{ids['pr_bullet_id']}/decide",
             json={"decision": "accept_edit", "user_edited_text": "   "},
@@ -420,7 +420,7 @@ class TestDecideRoute:
 
     def test_re_deciding_with_different_decision_returns_409(self, b4_app, tmp_path):
         ids = _seed_b4(tmp_path / "b4.sqlite")
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         client.post(
             f"/api/proposals/{ids['pr_bullet_id']}/decide",
             json={"decision": "reject"},
@@ -461,7 +461,7 @@ class TestPromoteClarificationRoute:
             s.close()
             engine.dispose()
 
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         r = client.post(
             f"/api/clarifications/{clar_id}/promote-to-bullet",
             json={"experience_id": ids["experience_id"],
@@ -516,8 +516,8 @@ class TestPromoteClarificationRoute:
             "rationale": "Past-tense action verb; preserves all stated specifics.",
         }
         with patch("analyzer.promote_clarification_to_bullet", return_value=fake_llm), \
-             patch.object(b4_app, "_get_client", return_value=object()):
-            client = b4_app.app.test_client()
+             patch("blueprints.corpus.proposals._get_client", return_value=object()):
+            client = b4_app.test_client()
             r = client.post(
                 f"/api/clarifications/{clar_id}/promote-to-bullet",
                 json={"experience_id": ids["experience_id"]},
@@ -529,7 +529,7 @@ class TestPromoteClarificationRoute:
 
     def test_promote_404_when_clarification_missing(self, b4_app, tmp_path):
         ids = _seed_b4(tmp_path / "b4.sqlite")
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         r = client.post(
             "/api/clarifications/99999/promote-to-bullet",
             json={"experience_id": ids["experience_id"], "user_text": "x"},
@@ -568,7 +568,7 @@ class TestPromoteClarificationRoute:
         # Add bob.config so _safe_username doesn't preemptively 403
         (tmp_path / "configs" / "bob.config").write_text("{}", encoding="utf-8")
 
-        client = b4_app.app.test_client()
+        client = b4_app.test_client()
         r = client.post(
             f"/api/clarifications/{clar_id}/promote-to-bullet",
             json={"experience_id": other_exp_id, "user_text": "Attempted cross-tenant."},

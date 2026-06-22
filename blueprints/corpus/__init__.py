@@ -41,6 +41,7 @@ from __future__ import annotations
 from blueprints.corpus import (  # noqa: F401  (side-effect imports)
     curation,
     experiences,
+    proposals,
     skills,
     summaries,
     tags,
