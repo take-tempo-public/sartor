@@ -7,26 +7,47 @@ import pytest
 
 @pytest.fixture
 def app_app(tmp_path, monkeypatch):
-    """Reload app.py against a fresh sqlite DB + temp config dir."""
+    """Factory-built app on a fresh sqlite DB + temp tree (Sprint 8.3f).
+
+    The application routes moved to blueprints/applications.py and read
+    current_app.config[...], so create_app(Config(base_dir=tmp_path)) replaces the
+    old reload + monkeypatch-the-globals fixture; the DB-path monkeypatch stays.
+    Returns a namespace exposing the factory app + Config paths (bodies keep using
+    `app_app.app` / `.OUTPUT_DIR`) plus a context-pushing wrapper around the moved
+    `_find_context_path_for_run` helper (it now reads current_app).
+    """
+    import types
+
+    import blueprints.applications as applications_bp_mod
+
     db_file = tmp_path / "apps.sqlite"
     import db.session as db_session_mod
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
-    import importlib
 
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "output").mkdir()
-    (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
+    from app import create_app
+    from config import Config
+    cfg = Config(base_dir=tmp_path)
+    app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
+    (cfg.configs_dir / "alice.config").write_text("{}", encoding="utf-8")
 
     from db.session import init_db
     init_db(db_file)
-    return app_module
+
+    def _find_context_path_for_run(safe_user, application_run_id):
+        with app.app_context():
+            return applications_bp_mod._find_context_path_for_run(
+                safe_user, application_run_id,
+            )
+
+    return types.SimpleNamespace(
+        app=app,
+        BASE_DIR=cfg.base_dir,
+        CONFIGS_DIR=cfg.configs_dir,
+        OUTPUT_DIR=cfg.output_dir,
+        _find_context_path_for_run=_find_context_path_for_run,
+    )
 
 
 def _seed_candidate(username="alice"):

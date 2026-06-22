@@ -43,6 +43,7 @@ from flask import Blueprint, current_app, jsonify, request, send_file
 from flask.typing import ResponseReturnValue
 from werkzeug.utils import secure_filename
 
+from blueprints.applications import _load_application_owned
 from generator import generate_resume
 from web_infra import (
     _error_detail_payload,
@@ -214,32 +215,6 @@ def _resolve_default_persona_template_path(
         return _resolve_persona_template_path(row.id)
     finally:
         session.close()
-
-
-# --- Transitional duplicate (Sprint 8.3e) ---------------------------------
-# `_load_application_owned` is the canonical home of the applications seam (8.3f),
-# but the two application-preview routes below need it now and a blueprint cannot
-# import app.py (leaf-ward rule). It is carried here as a CLEARLY-COMMENTED copy of
-# the canonical app.py version (which is still called by the ~10 applications-seam
-# routes that remain in app.py). When the applications seam lands, delete this block
-# and import it from `blueprints/applications` (templates + the remaining routes
-# then share one copy). Tracked in the Carry-forward ledger. The one behavior port
-# from the app.py copy: `_safe_username` takes `configs_dir` from current_app.config
-# (the web_infra signature), where the module-global app.py copy read CONFIGS_DIR.
-
-def _load_application_owned(session, application_id: int):
-    """(app_row, candidate) for an application, or (None, None). Runs the
-    standard _safe_username defense on the owning candidate."""
-    from db.models import Application, Candidate
-    app_row = session.query(Application).filter_by(id=application_id).first()
-    if app_row is None:
-        return None, None
-    candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
-    if candidate is None or not _safe_username(
-        candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
-    ):
-        return None, None
-    return app_row, candidate
 
 
 # --- Preview-render domain helpers (moved with the seam) ---

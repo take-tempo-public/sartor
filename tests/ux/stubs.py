@@ -286,6 +286,7 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     offline. Apply before navigating."""
     import analyzer
     import blueprints.analysis as analysis_bp_mod
+    import blueprints.applications as applications_bp_mod
     import blueprints.generation as generation_bp_mod
 
     # The analysis seam (analyze/clarify/iterate-clarify) moved to
@@ -302,6 +303,12 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(ux_app, "_get_client", lambda: None)
     monkeypatch.setattr(generation_bp_mod, "_get_client", lambda: None)
     monkeypatch.setattr(generation_bp_mod, "generate_streaming", fake_generate_streaming)
+    # The applications seam (per-application recommend/suggest) moved to
+    # blueprints/applications.py (Sprint 8.3f): the Compose recommend/suggest routes
+    # resolve `_get_client` from that module → patch THERE. The analyzer
+    # recommend_*/suggest_* funcs are imported locally from `analyzer`, so the
+    # analyzer.* stubs below already cover them.
+    monkeypatch.setattr(applications_bp_mod, "_get_client", lambda: None)
     monkeypatch.setattr(analyzer, "recommend_bullets", fake_recommend_bullets)
     monkeypatch.setattr(analyzer, "recommend_summaries", fake_recommend_summaries)
     monkeypatch.setattr(analyzer, "recommend_experience_summaries",

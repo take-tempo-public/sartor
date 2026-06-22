@@ -120,11 +120,14 @@ def test_deterministic_modules_make_no_egress():
 SANCTIONED_EGRESS_FILES = frozenset(
     {
         "analyzer.py",  # provider — all heavy/structured LLM calls
-        "app.py",  # provider — anthropic error types in route bodies (the _get_client factory moved to web_infra/clients.py, 8.3a)
+        # app.py dropped its `import anthropic` in 8.3f: the last anthropic-error-type
+        # route bodies (the applications recommend/suggest routes) moved to
+        # blueprints/applications.py, so app.py no longer imports any egress library.
         "blueprints/assistant.py",  # provider — avatar SSE route: anthropic error types (uses web_infra._get_client, 8.3a)
         "blueprints/analysis.py",  # provider — analyze/clarify route bodies: anthropic error types (uses web_infra._get_client, 8.3b)
         "blueprints/generation.py",  # provider — generate/cover-letter route bodies: anthropic error types (uses web_infra._get_client, 8.3c)
         "blueprints/corpus/proposals.py",  # provider — critique/promote route bodies: anthropic error types (uses web_infra._get_client, 8.3d)
+        "blueprints/applications.py",  # provider — recommend/suggest route bodies: anthropic error types (uses web_infra._get_client, 8.3f)
         "web_infra/clients.py",  # provider — the _get_client() Anthropic factory (shared, 8.3a)
         "scraper.py",  # scrape — the sole requests importer (arbitrary user URLs)
         "evals/runner.py",  # provider — eval harness LLM calls

@@ -53,39 +53,32 @@ class TestFunction:
 
 @pytest.fixture
 def suggest_app(tmp_path, monkeypatch):
+    import types
+
     db_file = tmp_path / "suggskill.sqlite"
     import db.session as db_session_mod
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
-
-    import app as _app
-    importlib.reload(_app)
-
-    output_dir = tmp_path / "output"
-    configs_dir = tmp_path / "configs"
-    output_dir.mkdir()
-    configs_dir.mkdir()
-    (configs_dir / "casey.config").write_text("{}", encoding="utf-8")
+    # Sprint 8.3f: the applications seam moved to blueprints/applications.py, so this
+    # fully migrates onto create_app(Config(base_dir=tmp_path)) — both the route under
+    # test (POST /api/applications/<id>/suggest-skills) and the test's GET
+    # /api/users/<u>/skills verification call read current_app.config[...], now set by
+    # the factory (no more per-route global / app.config injection).
+    from app import create_app
+    from config import Config
+    cfg = Config(base_dir=tmp_path)
+    app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
+    output_dir = cfg.output_dir
+    (cfg.configs_dir / "casey.config").write_text("{}", encoding="utf-8")
     (output_dir / "casey").mkdir()
-    monkeypatch.setattr(_app, "OUTPUT_DIR", output_dir)
-    monkeypatch.setattr(_app, "CONFIGS_DIR", configs_dir)
-    monkeypatch.setattr(_app, "_get_client", lambda: object())
-
-    # Sprint 8.3d: the test's GET /api/users/<u>/skills verification call hits the
-    # MOVED corpus list_skills route, which reads current_app.config[...] at request
-    # time — so inject the temp paths onto the live app too. The route under test
-    # (POST /api/applications/<id>/suggest-skills) is the un-moved applications seam
-    # and reads the monkeypatched module globals above. This file fully migrates onto
-    # create_app(Config(base_dir=tmp_path)) when the applications seam moves (8.3f).
-    _app.app.config["CONFIGS_DIR"] = configs_dir
-    _app.app.config["OUTPUT_DIR"] = output_dir
+    # suggest-skills resolves _get_client from blueprints.applications now.
+    monkeypatch.setattr("blueprints.applications._get_client", lambda: object())
 
     from db.session import init_db
     init_db(db_file)
-    return _app, output_dir
+    return types.SimpleNamespace(app=app), output_dir
 
 
 def _seed(output_dir):

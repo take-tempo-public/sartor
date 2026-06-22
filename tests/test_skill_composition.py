@@ -23,29 +23,28 @@ import blueprints.generation as bgen
 
 @pytest.fixture
 def comp_app(tmp_path, monkeypatch):
+    """Factory-built app (Sprint 8.3f) — the composition routes moved to
+    blueprints/applications.py and read current_app.config[...]; the DB-path
+    monkeypatch stays. Preserves the `(namespace, output_dir)` 2-tuple shape."""
+    import types
+
     db_file = tmp_path / "skillcomp.sqlite"
     import db.session as db_session_mod
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
-
-    import app as _app
-    importlib.reload(_app)
-
-    output_dir = tmp_path / "output"
-    configs_dir = tmp_path / "configs"
-    output_dir.mkdir()
-    configs_dir.mkdir()
-    (configs_dir / "casey.config").write_text("{}", encoding="utf-8")
+    from app import create_app
+    from config import Config
+    cfg = Config(base_dir=tmp_path)
+    app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
+    output_dir = cfg.output_dir
+    (cfg.configs_dir / "casey.config").write_text("{}", encoding="utf-8")
     (output_dir / "casey").mkdir()
-    monkeypatch.setattr(_app, "OUTPUT_DIR", output_dir)
-    monkeypatch.setattr(_app, "CONFIGS_DIR", configs_dir)
 
     from db.session import init_db
     init_db(db_file)
-    return _app, output_dir
+    return types.SimpleNamespace(app=app), output_dir
 
 
 def _seed(output_dir, *, overrides=None, recommendation=None):
