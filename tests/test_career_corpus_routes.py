@@ -31,6 +31,15 @@ def corpus_app(tmp_path, monkeypatch):
     (tmp_path / "output").mkdir()
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
 
+    # Sprint 8.3d: the experiences/bullets/titles routes moved to
+    # blueprints/corpus and read current_app.config[...] at request time, so the
+    # live app needs the temp paths injected too. The still-resident tags routes
+    # read the monkeypatched module globals above. This file fully migrates onto
+    # create_app(Config(base_dir=tmp_path)) once the tags family also moves.
+    app_module.app.config["CONFIGS_DIR"] = tmp_path / "configs"
+    app_module.app.config["OUTPUT_DIR"] = tmp_path / "output"
+    app_module.app.config["BASE_DIR"] = tmp_path
+
     # Provisioning (corpus_import.import_candidate_from_config) reads its own
     # module-level CONFIGS_DIR — point it at the temp config dir too.
     import onboarding.corpus_import as corpus_import_mod

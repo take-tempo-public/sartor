@@ -21,18 +21,24 @@ Submodules (route count):
     curation.py     upload + list-resumes + duplicates + ingest + accept + pending-counts (9)
     proposals.py    critique + decide + promote-to-bullet (3) — the only `anthropic` submodule
 
-Import-order contract (circular-import-safe): `corpus_bp` comes from `_bp` (a leaf),
-then the shared serializers are re-exported (for `app.py`'s still-resident
-applications routes, which import `_tag_list` / `_skill_to_dict` from here per the
-Sprint 8.3d owner decision), then the route submodules are imported for their
-decorator side-effects. Submodules import `corpus_bp` from `._bp` and serializers
-from `._shared`; neither imports anything from this package root. Like every
-blueprint, this package never imports `app.py` (leaf-ward direction only); DB-layer
-imports stay lazy inside each function.
+Circular-import safety: `corpus_bp` lives in `_bp` — a standalone leaf importable
+on its own — so the order of the three import lines below does not matter (isort
+sorts the side-effect submodule import ahead of the `_bp`/`_shared` ones; that is
+fine because each submodule pulls `corpus_bp` straight from `._bp`, not from this
+package root). The submodule imports run only for their decorator side-effects
+(each attaches its handlers to `corpus_bp`); `_tag_list` / `_skill_to_dict` are
+re-exported for `app.py`'s still-resident applications routes, which import them
+from here per the Sprint 8.3d owner decision. Submodules import `corpus_bp` from
+`._bp` and serializers from `._shared`; neither imports anything from this package
+root. Like every blueprint, this package never imports `app.py` (leaf-ward
+direction only); DB-layer imports stay lazy inside each function.
 """
 
 from __future__ import annotations
 
+# Route submodules — imported for their decorator side-effects (each attaches its
+# handlers to corpus_bp). One line added per family as it lands (Sprint 8.3d).
+from blueprints.corpus import experiences  # noqa: F401  (side-effect import)
 from blueprints.corpus._bp import corpus_bp
 from blueprints.corpus._shared import _skill_to_dict, _tag_list
 
