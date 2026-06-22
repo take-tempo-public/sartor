@@ -38,6 +38,14 @@ def skill_app(tmp_path, monkeypatch):
     (tmp_path / "output").mkdir()
     (tmp_path / "configs" / "casey.config").write_text("{}", encoding="utf-8")
 
+    # Sprint 8.3d: the skills CRUD routes moved to blueprints/corpus and read
+    # current_app.config[...] at request time, so inject the temp paths onto the
+    # live app. The still-resident skill-tags routes read the monkeypatched module
+    # globals above. Full create_app migration follows when the tags family moves.
+    app_module.app.config["CONFIGS_DIR"] = tmp_path / "configs"
+    app_module.app.config["OUTPUT_DIR"] = tmp_path / "output"
+    app_module.app.config["BASE_DIR"] = tmp_path
+
     from db.session import init_db
     init_db(db_file)
     return app_module
