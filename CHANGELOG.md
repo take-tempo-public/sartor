@@ -207,6 +207,61 @@ response is byte-identical; no prompt/dependency/migration**, `PROMPT_VERSION` /
   `blueprints.generation`. `app.py` keeps its module-global constants + config-dependent helper
   copies for the un-moved seams (they retire in 8.3d–h).
 
+### Changed — corpus blueprint seam (`refactor/app-blueprints-corpus`, Sprint 8.3d)
+
+The **third and largest domain seam** moved out of the `app.py` monolith: all **42 corpus
+routes** leave `app.py` for a new `blueprints/corpus/` **sub-package**. **Pure refactor — every
+route's URL/method/request/response is byte-identical (verified by an `app.url_map` path+methods
+diff vs a pre-move baseline); no prompt/dependency/migration**, `PROMPT_VERSION` /
+`AVATAR_PROMPT_VERSION` untouched.
+
+- **New `blueprints/corpus/` sub-package (owner decision: 6 route files + shared layer).** One
+  `corpus_bp = Blueprint("corpus", __name__)` (in `_bp.py`) with the route families split by
+  entity: `experiences.py` (15 — experiences/bullets/titles/experience-summaries),
+  `summaries.py` (4), `skills.py` (4), `tags.py` (7 + tag-mutation helpers), `curation.py`
+  (9 — upload/resumes/duplicates/ingest/accept/pending + `_find_root`), `proposals.py`
+  (3 — critique/decide/promote). Cross-cutting serializers live in `_shared.py`. Registered with
+  **no `url_prefix`** (full-path decorators) so the URLs stay identical; the package never imports
+  `app.py`.
+- **Shared serializers `_tag_list` / `_skill_to_dict` (owner decision).** Both are corpus-domain
+  serializers (design §3.4) but are also called by two still-resident *applications* routes
+  (`get_application_composition`, `suggest_application_skills`, 8.3f). Since `app.py → blueprint`
+  is the legal import direction, corpus owns the **canonical** copy in `_shared.py` and `app.py`
+  imports them — **no transitional duplicate, no new carry-forward ledger item** (the inverse of
+  8.3c's `_resolve_*` case, where the owning seam was in the future). The import relocates to
+  `blueprints/applications` at 8.3f.
+- **Reads config via `current_app`.** Every route/helper takes paths from
+  `current_app.config["CONFIGS_DIR"]` / `["RESUMES_DIR"]` / `["OUTPUT_DIR"]` / `["ALLOWED_EXTENSIONS"]`
+  and uses the shared `web_infra` helpers (`_safe_username` / `_within` / `_get_client` /
+  `_get_or_provision_candidate` / `_load_config` / `_save_config`), threading
+  `configs_dir=current_app.config["CONFIGS_DIR"]`. The `onboarding.corpus_import` "second
+  monkeypatch front" retires for the migrated corpus tests: provisioning threads `configs_dir`
+  through `web_infra._get_or_provision_candidate`, so the `corpus_import.CONFIGS_DIR` monkeypatch
+  is gone.
+- **PV-4 typing.** All 42 moved routes are annotated `-> ResponseReturnValue`; the
+  `_get_or_provision_candidate` result is bridged with `cast("Candidate", …)` where `.id` is
+  accessed, preserving byte-identical runtime behavior. `blueprints/corpus/proposals.py` is the one
+  corpus submodule added to the egress allowlist (critique + promote catch `anthropic` error types);
+  ingest delegates its Haiku call to `onboarding.corpus_import`, so `curation.py` imports no
+  `anthropic`. `app.py` drops the now-unused top-level `from analyzer import LLMResponseError` (the
+  remaining applications `recommend_*` routes import it locally); it keeps `import anthropic` and its
+  allowlist entry (those routes still use it).
+- **route-security-lint refinement (owner-authorized).** The hook's filesystem-indicator heuristic
+  dropped `CONFIGS_DIR` from its match set: post-8.3a a route body only ever reaches `CONFIGS_DIR`
+  via `_safe_username(configs_dir=…)` — which IS the containment guard — and the raw
+  `CONFIGS_DIR / f"{u}.config"` construction `_within` protected was removed in PX-21. The
+  FS-free corpus submodules (which reference `CONFIGS_DIR` only as that argument) were otherwise
+  false-flagged for a missing `_within`. `OUTPUT_DIR`/`RESUMES_DIR`/`open(`/`Path(`/`send_file(`
+  remain indicators, so upload/ingest/download still require `_within` (all three hook arms
+  hand-verified).
+- **Tests migrate onto the factory fixture.** The eight corpus test files drop the module-global
+  monkeypatch + `importlib.reload` for `create_app(Config(base_dir=tmp_path))` (keeping the distinct
+  `db.session.DEFAULT_DB_PATH` monkeypatch); the ingest/proposal `_get_client` patches retarget to
+  `blueprints.corpus.curation` / `.proposals`; the analyzer-function patches are unchanged (the
+  routes import them lazily from `analyzer`). `app.py` keeps its module-global constants +
+  config-dependent helper copies for the remaining un-moved seams (templates/personas,
+  applications, users/config, diagnostics — they retire in 8.3e–h).
+
 ## [1.0.7] — 2026-06-20
 
 ### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)

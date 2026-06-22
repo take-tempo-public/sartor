@@ -74,6 +74,15 @@ def suggest_app(tmp_path, monkeypatch):
     monkeypatch.setattr(_app, "CONFIGS_DIR", configs_dir)
     monkeypatch.setattr(_app, "_get_client", lambda: object())
 
+    # Sprint 8.3d: the test's GET /api/users/<u>/skills verification call hits the
+    # MOVED corpus list_skills route, which reads current_app.config[...] at request
+    # time — so inject the temp paths onto the live app too. The route under test
+    # (POST /api/applications/<id>/suggest-skills) is the un-moved applications seam
+    # and reads the monkeypatched module globals above. This file fully migrates onto
+    # create_app(Config(base_dir=tmp_path)) when the applications seam moves (8.3f).
+    _app.app.config["CONFIGS_DIR"] = configs_dir
+    _app.app.config["OUTPUT_DIR"] = output_dir
+
     from db.session import init_db
     init_db(db_file)
     return _app, output_dir
