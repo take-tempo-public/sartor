@@ -38,7 +38,12 @@ from __future__ import annotations
 
 # Route submodules — imported for their decorator side-effects (each attaches its
 # handlers to corpus_bp). One line added per family as it lands (Sprint 8.3d).
-from blueprints.corpus import experiences, skills, summaries  # noqa: F401  (side-effect imports)
+from blueprints.corpus import (  # noqa: F401  (side-effect imports)
+    experiences,
+    skills,
+    summaries,
+    tags,
+)
 from blueprints.corpus._bp import corpus_bp
 from blueprints.corpus._shared import _skill_to_dict, _tag_list
 
