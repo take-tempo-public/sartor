@@ -1,9 +1,11 @@
 """Tests for the /api/clarify and /api/answer-clarifications routes.
 
-Mocks analyzer.clarify() at the import boundary in app.py so tests run without
-network or Anthropic SDK calls. Verifies the security guards (_safe_username,
-_within) and the persistence shape (clarification_questions, clarifications)
-written back to the context file.
+The routes live on `blueprints/analysis.py` (Sprint 8.3b). Tests build the app via
+the `create_app(Config(base_dir=tmp_path))` factory — config paths are injected, not
+module globals monkeypatched — and stub `analyzer.clarify` on the blueprint module
+(the imported binding the route resolves) so they run without network or Anthropic SDK
+calls. Verifies the security guards (_safe_username, _within) and the persistence
+shape (clarification_questions, clarifications) written back to the context file.
 """
 
 import json
@@ -14,23 +16,15 @@ import pytest
 
 @pytest.fixture
 def app_client(tmp_path, monkeypatch):
-    """Flask test client with OUTPUT_DIR and CONFIGS_DIR redirected to tmp_path.
+    """Factory-built test client with config paths under tmp_path.
 
     Also creates a saved context_*.json file under OUTPUT_DIR/alice/ so the
-    routes have something to load. analyzer.clarify is replaced with a
-    deterministic stub so no network or LLM call is made.
+    routes have something to load. `blueprints.analysis.clarify` is replaced
+    with a deterministic stub so no network or LLM call is made.
     """
-    import app as _app
-
-    output_dir = tmp_path / "output"
-    configs_dir = tmp_path / "configs"
-    output_dir.mkdir()
-    configs_dir.mkdir()
-    (configs_dir / "alice.config").write_text("{}", encoding="utf-8")
-    (output_dir / "alice").mkdir()
-
-    monkeypatch.setattr(_app, "OUTPUT_DIR", output_dir)
-    monkeypatch.setattr(_app, "CONFIGS_DIR", configs_dir)
+    import blueprints.analysis as ban
+    from app import create_app
+    from config import Config
 
     # Stub clarify to return a deterministic payload; the route should accept it
     # whether or not the LLM was actually called.
@@ -53,12 +47,19 @@ def app_client(tmp_path, monkeypatch):
             "reasoning": "Two probes covering missing tech and shipped status.",
         }
 
-    monkeypatch.setattr(_app, "clarify", _stub_clarify)
+    monkeypatch.setattr(ban, "clarify", _stub_clarify)
     # Avoid real API client construction
-    monkeypatch.setattr(_app, "_get_client", lambda: object())
+    monkeypatch.setattr(ban, "_get_client", lambda: object())
 
-    _app.app.config["TESTING"] = True
-    client = _app.app.test_client()
+    app = create_app(Config(base_dir=tmp_path))
+    app.config["TESTING"] = True
+    # ensure_dirs() (in the factory) already created configs/output under tmp_path.
+    output_dir = tmp_path / "output"
+    configs_dir = tmp_path / "configs"
+    (configs_dir / "alice.config").write_text("{}", encoding="utf-8")
+    (output_dir / "alice").mkdir()
+
+    client = app.test_client()
     context_path = output_dir / "alice" / "context_20260511_120000.json"
     initial = {
         "timestamp": "2026-05-11T12:00:00",
@@ -326,24 +327,27 @@ class TestAnswerClarificationsRoute:
 @pytest.fixture
 def memory_client(tmp_path, monkeypatch):
     """app_client variant with a real temp DB so the memory write path can
-    resolve context.application_run_id → run → application → candidate."""
+    resolve context.application_run_id → run → application → candidate.
+
+    The DB-path monkeypatch (db.session.DEFAULT_DB_PATH) is a distinct, legitimate
+    seam — only the app-global path monkeypatch retires with the factory.
+    """
     db_file = tmp_path / "memory.sqlite"
     import db.session as db_session_mod
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import app as _app
+    from app import create_app
+    from config import Config
 
+    app = create_app(Config(base_dir=tmp_path))
+    app.config["TESTING"] = True
+    # ensure_dirs() (in the factory) already created configs/output under tmp_path.
     output_dir = tmp_path / "output"
     configs_dir = tmp_path / "configs"
-    output_dir.mkdir()
-    configs_dir.mkdir()
     (configs_dir / "alice.config").write_text("{}", encoding="utf-8")
     (output_dir / "alice").mkdir()
-    monkeypatch.setattr(_app, "OUTPUT_DIR", output_dir)
-    monkeypatch.setattr(_app, "CONFIGS_DIR", configs_dir)
-    _app.app.config["TESTING"] = True
 
     from db.session import init_db
     init_db(db_file)
@@ -387,7 +391,7 @@ def memory_client(tmp_path, monkeypatch):
         ],
     }, indent=2), encoding="utf-8")
 
-    return _app.app.test_client(), context_path, ids
+    return app.test_client(), context_path, ids
 
 
 def _memory_rows(candidate_id):

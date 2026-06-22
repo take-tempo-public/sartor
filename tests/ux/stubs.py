@@ -285,9 +285,20 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     """Make every analyzer entry point the wizard can hit deterministic +
     offline. Apply before navigating."""
     import analyzer
+    import blueprints.analysis as analysis_bp_mod
 
-    monkeypatch.setattr(ux_app, "analyze_streaming", fake_analyze_streaming)
+    # The analysis seam (analyze/clarify/iterate-clarify) moved to
+    # blueprints/analysis.py (Sprint 8.3b): those routes resolve the bare names
+    # from the blueprint module's namespace, so patch THERE, not on `ux_app`.
+    monkeypatch.setattr(analysis_bp_mod, "analyze_streaming", fake_analyze_streaming)
+    monkeypatch.setattr(analysis_bp_mod, "clarify", fake_clarify)
+    monkeypatch.setattr(analysis_bp_mod, "clarify_iteration", fake_clarify_iteration)
+    monkeypatch.setattr(analysis_bp_mod, "_get_client", lambda: None)
+    # `generate_streaming` is still a top-level import in app.py (generation seam,
+    # moves in 8.3c) → patch on the app module. `_get_client` is imported into
+    # BOTH app.py and the blueprint, so stub both (the generate route uses app's).
     monkeypatch.setattr(ux_app, "_get_client", lambda: None)
+    monkeypatch.setattr(ux_app, "generate_streaming", fake_generate_streaming)
     monkeypatch.setattr(analyzer, "recommend_bullets", fake_recommend_bullets)
     monkeypatch.setattr(analyzer, "recommend_summaries", fake_recommend_summaries)
     monkeypatch.setattr(analyzer, "recommend_experience_summaries",
@@ -296,12 +307,3 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     # routes → patch on the analyzer module, like recommend_bullets).
     monkeypatch.setattr(analyzer, "recommend_skills", fake_recommend_skills)
     monkeypatch.setattr(analyzer, "suggest_skills", fake_suggest_skills)
-    # `clarify` is a top-level import in app.py (called bare at app.py:790) →
-    # patch on the app module, like analyze_streaming.
-    monkeypatch.setattr(ux_app, "clarify", fake_clarify)
-    # `generate_streaming` + `clarify_iteration` are also top-level imports in
-    # app.py → patch on the app module. Additive: existing flow tests never reach
-    # generate/iterate-clarify, so stubbing these is a no-op for them and unlocks
-    # the full analyze→generate→iteration-interview drive for the polish test.
-    monkeypatch.setattr(ux_app, "generate_streaming", fake_generate_streaming)
-    monkeypatch.setattr(ux_app, "clarify_iteration", fake_clarify_iteration)

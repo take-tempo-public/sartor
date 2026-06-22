@@ -122,6 +122,7 @@ SANCTIONED_EGRESS_FILES = frozenset(
         "analyzer.py",  # provider — all heavy/structured LLM calls
         "app.py",  # provider — anthropic error types in route bodies (the _get_client factory moved to web_infra/clients.py, 8.3a)
         "blueprints/assistant.py",  # provider — avatar SSE route: anthropic error types (uses web_infra._get_client, 8.3a)
+        "blueprints/analysis.py",  # provider — analyze/clarify route bodies: anthropic error types (uses web_infra._get_client, 8.3b)
         "web_infra/clients.py",  # provider — the _get_client() Anthropic factory (shared, 8.3a)
         "scraper.py",  # scrape — the sole requests importer (arbitrary user URLs)
         "evals/runner.py",  # provider — eval harness LLM calls

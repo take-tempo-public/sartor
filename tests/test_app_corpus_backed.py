@@ -16,13 +16,20 @@ from unittest.mock import patch
 
 import pytest
 
+import blueprints.analysis as ban
+
 
 @pytest.fixture
 def db_app(tmp_path, monkeypatch):
-    """Import app.py against a temp DB + temp config dir.
+    """Factory-built app against a temp DB + temp config dir.
 
-    Returns the app module so tests can use app.test_client() and seed
-    candidate rows directly.
+    Returns the Flask app so tests can use app.test_client() and seed candidate
+    rows directly. The route lives on `blueprints/analysis.py` (Sprint 8.3b), so
+    config paths come from `Config(base_dir=tmp_path)` (no app-global monkeypatch)
+    and the analyze/_get_client stubs target the blueprint module. The DB-path
+    monkeypatch (db.session.DEFAULT_DB_PATH) is a distinct, legitimate seam.
+    Provisioning threads `configs_dir` from the injected Config, so no separate
+    `onboarding.corpus_import.CONFIGS_DIR` monkeypatch is needed.
     """
     # Ensure DB lives in tmp_path and gets a fresh schema for this test
     import db.session as db_session
@@ -30,20 +37,13 @@ def db_app(tmp_path, monkeypatch):
     db_session._engine = None
     db_session._SessionLocal = None
 
-    import importlib
+    from app import create_app
+    from config import Config
 
-    import app
-    importlib.reload(app)
-
-    monkeypatch.setattr(app, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app, "OUTPUT_DIR", tmp_path / "output")
-    (tmp_path / "configs").mkdir(exist_ok=True)
+    app = create_app(Config(base_dir=tmp_path))
+    app.config["TESTING"] = True
+    # ensure_dirs() (in the factory) already created configs/output under tmp_path.
     (tmp_path / "configs" / "casey.config").write_text("{}", encoding="utf-8")
-    (tmp_path / "output").mkdir(exist_ok=True)
-
-    # Provisioning reads corpus_import's own module-level CONFIGS_DIR.
-    import onboarding.corpus_import as corpus_import_mod
-    monkeypatch.setattr(corpus_import_mod, "CONFIGS_DIR", tmp_path / "configs")
 
     return app
 
@@ -95,9 +95,9 @@ class TestAnalyzeRoute:
             "comparison": {}, "suggestions": [], "keyword_placement": [],
             "ats_improvements": [], "overall_strategy": "x",
         }
-        with patch.object(db_app, "analyze", return_value=fake_analysis), \
-             patch.object(db_app, "_get_client", return_value=object()):
-            client = db_app.app.test_client()
+        with patch.object(ban, "analyze", return_value=fake_analysis), \
+             patch.object(ban, "_get_client", return_value=object()):
+            client = db_app.test_client()
             response = client.post(
                 "/api/analyze",
                 json={
@@ -125,9 +125,9 @@ class TestAnalyzeRoute:
             "comparison": {}, "suggestions": [], "keyword_placement": [],
             "ats_improvements": [], "overall_strategy": "x",
         }
-        with patch.object(db_app, "analyze", return_value=fake_analysis), \
-             patch.object(db_app, "_get_client", return_value=object()):
-            client = db_app.app.test_client()
+        with patch.object(ban, "analyze", return_value=fake_analysis), \
+             patch.object(ban, "_get_client", return_value=object()):
+            client = db_app.test_client()
             response = client.post(
                 "/api/analyze",
                 json={
@@ -152,9 +152,9 @@ class TestAnalyzeRoute:
             "comparison": {}, "suggestions": [], "keyword_placement": [],
             "ats_improvements": [], "overall_strategy": "x",
         }
-        with patch.object(db_app, "analyze", return_value=fake_analysis), \
-             patch.object(db_app, "_get_client", return_value=object()):
-            client = db_app.app.test_client()
+        with patch.object(ban, "analyze", return_value=fake_analysis), \
+             patch.object(ban, "_get_client", return_value=object()):
+            client = db_app.test_client()
             response = client.post(
                 "/api/analyze",
                 json={"username": "ghost", "job_description": "Some JD"},
@@ -178,9 +178,9 @@ class TestAnalyzeRoute:
             "comparison": {}, "suggestions": [], "keyword_placement": [],
             "ats_improvements": [], "overall_strategy": "x",
         }
-        with patch.object(db_app, "analyze", return_value=fake_analysis), \
-             patch.object(db_app, "_get_client", return_value=object()):
-            client = db_app.app.test_client()
+        with patch.object(ban, "analyze", return_value=fake_analysis), \
+             patch.object(ban, "_get_client", return_value=object()):
+            client = db_app.test_client()
             client.post(
                 "/api/analyze",
                 json={"username": "casey", "job_description": "Senior PM\nJob desc."},
@@ -205,7 +205,7 @@ class TestAnalyzeRoute:
             engine.dispose()
 
     def test_missing_username_returns_400(self, db_app, tmp_path):
-        client = db_app.app.test_client()
+        client = db_app.test_client()
         response = client.post(
             "/api/analyze",
             json={"job_description": "JD"},  # no username
@@ -214,7 +214,7 @@ class TestAnalyzeRoute:
         assert "username" in response.get_json()["error"]
 
     def test_missing_jd_returns_400(self, db_app, tmp_path):
-        client = db_app.app.test_client()
+        client = db_app.test_client()
         response = client.post(
             "/api/analyze",
             json={"username": "casey"},  # no job_description

@@ -126,6 +126,39 @@ response is byte-identical; no prompt/dependency/migration**, `PROMPT_VERSION` /
   module-global monkeypatch test pattern is **intentionally retained** — those seam tests migrate
   with their routes in 8.3b–h (the zero-tech-debt DoD is measured at the v1.1.0 tag).
 
+### Changed — analysis blueprint seam (`refactor/app-blueprints-analysis`, Sprint 8.3b)
+
+The **first domain seam** moved out of the `app.py` monolith. The five analysis routes leave
+`app.py` for a new `blueprints/analysis.py`. **Pure refactor — every route's URL/method/request/
+response is byte-identical; no prompt/dependency/migration**, `PROMPT_VERSION` /
+`AVATAR_PROMPT_VERSION` untouched.
+
+- **New `blueprints/analysis.py`.** `POST /api/analyze`, `POST /api/analyze/stream` (SSE),
+  `POST /api/clarify`, `POST /api/answer-clarifications`, `POST /api/iterate-clarify` — plus
+  their three analysis-only domain helpers (`_run_analysis_corpus_backed`,
+  `_run_analysis_corpus_backed_streaming`, `_persist_clarifications_to_memory`). Registered with
+  **no `url_prefix`** (full-path decorators) so the URLs stay identical; the blueprint never
+  imports `app.py`.
+- **Reads config via `current_app`.** Route/helper bodies take their paths from
+  `current_app.config["OUTPUT_DIR"]` / `["CONFIGS_DIR"]` and use the shared `web_infra` helpers
+  (`_safe_username` / `_within` / `_get_client` / `_sse` / `_get_or_provision_candidate`,
+  threading `configs_dir=current_app.config["CONFIGS_DIR"]`). The SSE helper captures the output
+  dir as a local **before** the generator, so `stream()` never touches `current_app` (no
+  `stream_with_context` needed — matches `blueprints/assistant.py`).
+- **PV-4 typing.** Every moved route and the two corpus-backed helpers are annotated
+  `-> ResponseReturnValue` (which also fixed one latent `clarification_questions` TypedDict
+  imprecision the untyped monolith body had skipped). `blueprints/analysis.py` added to the
+  egress allowlist (it catches `anthropic` error types).
+- **Tests migrate onto the factory fixture.** `tests/test_app_clarify.py` and
+  `tests/test_app_corpus_backed.py` drop the module-global monkeypatch + `importlib.reload` for
+  `create_app(Config(base_dir=tmp_path))`, stubbing the analyzer functions on the blueprint
+  module; the iterate-clarify tests relocate to a new `tests/test_app_iterate_clarify.py` on the
+  same fixture (seeding the iteration≥1 context directly, so they no longer depend on the
+  still-in-`app.py` `/api/generate`). The UX harness injects the moved routes' config onto the
+  live app and retargets `install_llm_stubs` to `blueprints.analysis`. `app.py` keeps its
+  module-global constants + config-dependent helper copies for the un-moved seams (they retire in
+  8.3c–h).
+
 ## [1.0.7] — 2026-06-20
 
 ### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)
