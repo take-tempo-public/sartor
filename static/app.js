@@ -4731,6 +4731,7 @@ function _resumeIntoStep6(rs) {
     // iteration + styled preview need a re-generate (toast below).
     _wizardStep = 6;
     _wizardRender();
+    _wizardStampHistory(6);  // PX-22: re-entry baseline at the landed step
   }
   setStatus('RESUMED FROM PRIOR APPLICATION');
 
@@ -4777,6 +4778,7 @@ function _resumeIntoPreGenerateStep(rs, targetStep) {
   _wizardStep = targetStep;
   _wizardRender();
   if (targetStep === 3) loadComposition();
+  _wizardStampHistory(targetStep);  // PX-22: re-entry baseline at the landed step
   setStatus('RESUMED FROM PRIOR APPLICATION');
 }
 
@@ -5022,6 +5024,7 @@ function wizardInit() {
   if (rail) rail.classList.remove('hidden');
   _wizardStep = 1;
   _wizardRender();
+  _wizardStampHistory(1);  // PX-22: baseline history entry so Back from step 2 lands on step 1
   // Reveal the floating bottom statusbar once the wizard engages.
   const sb = document.getElementById('cbStatusbar');
   if (sb) {
@@ -5039,7 +5042,7 @@ function _wizardReachable(step) {
   return true;
 }
 
-function wizardGoTo(step) {
+function wizardGoTo(step, opts) {
   if (!_wizardReachable(step)) {
     _toast(step >= 6
       ? 'Generate the documents first.'
@@ -5050,6 +5053,9 @@ function wizardGoTo(step) {
   _wizardRender();
   if (step === 3) loadComposition();
   if (step === 4) _loadTemplatePicker();
+  // PX-22: record a history entry for this step change, UNLESS this call is the
+  // popstate restore itself (which must not re-push, or Back/Forward would stack).
+  if (!(opts && opts.fromHistory)) _wizardPushHistory(step);
 }
 
 function wizardNext() { wizardGoTo(Math.min(6, _wizardStep + 1)); }
@@ -5103,9 +5109,44 @@ function _wizardRender() {
 function _wizardAdvanceTo(step) {
   if (step > _wizardStep && _wizardReachable(step)) {
     _wizardStep = step;
+    _wizardPushHistory(step);  // PX-22: auto-advance pushes too, so Back unwinds it
   }
   _wizardRender();
 }
+
+// ---------------------------------------------------------------------------
+// PX-22 — browser Back/Forward traverse wizard steps within the session.
+// We push a {wizardStep} history entry on each step change and restore on
+// popstate. Scope is deliberately session-only: no address-bar `?step=N` and no
+// deep-link-on-load restore, so the forward-gating rule (`_wizardReachable`)
+// stays uncoupled from the URL. `_wizardStampHistory` (replaceState) marks a
+// re-entry baseline (wizardInit + the resume-from-prior landings) so Back from
+// the first step leaves the wizard cleanly instead of restoring a stale step;
+// `_wizardPushHistory` (pushState) records a transition.
+// ---------------------------------------------------------------------------
+function _wizardStampHistory(step) {
+  try { history.replaceState({ wizardStep: step }, ''); } catch (e) { /* history unavailable */ }
+}
+
+function _wizardPushHistory(step) {
+  try {
+    // Don't stack a duplicate entry for the step already current — some flows
+    // navigate to the same step twice (e.g. Skip-to-Compose runs `wizardGoTo(3)`
+    // then skipClarifications → compose again). A duplicate would make one Back
+    // press look dead. A real transition (different step) always pushes.
+    if (history.state && history.state.wizardStep === step) return;
+    history.pushState({ wizardStep: step }, '');
+  } catch (e) { /* history unavailable */ }
+}
+
+function _onWizardPopState(e) {
+  const step = e.state && e.state.wizardStep;
+  if (typeof step !== 'number') return;     // pre-wizard entry — let the browser leave the wizard
+  if (!_wizardReachable(step)) return;      // context changed; don't force an unreachable step
+  wizardGoTo(step, { fromHistory: true });  // restore UI + step side-effects; no re-push
+}
+
+window.addEventListener('popstate', _onWizardPopState);
 
 // ===============================================================
 // Workstream E — Step 3 Compose (fit-ranked bullets/titles)
@@ -5187,6 +5228,21 @@ async function loadComposition() {
   // Step 6 (Output) where it's clearly relevant.
 }
 
+// PX-22: load a preview iframe WITHOUT adding a joint session-history entry, so
+// the browser Back / Forward buttons traverse wizard steps (see
+// _wizardPushHistory) instead of unwinding preview reloads. Setting `frame.src`
+// pushes a history entry on every refresh; `contentWindow.location.replace()`
+// navigates in place (no entry). The preview iframes are same-origin
+// (sandbox="allow-scripts allow-same-origin"), so contentWindow access is
+// permitted; the `frame.src` fallback covers a detached frame with no window.
+function _loadPreviewFrame(frame, url) {
+  if (frame.contentWindow) {
+    frame.contentWindow.location.replace(url);
+  } else {
+    frame.src = url;
+  }
+}
+
 // β.6 post-review — refresh the Step 6 (Output) résumé preview iframe.
 // Shows the styled document the user downloads (post-WYSIWYG: the route
 // serves the cached last_generated_json_resume, so preview == download
@@ -5208,7 +5264,7 @@ async function _refreshOutputPreview() {
   const pageInfo = document.getElementById('outputPreviewPageInfo');
   if (pageInfo) pageInfo.textContent = 'Page — of —';
   _wirePreviewPageCount(frame, 'outputPreviewPageInfo');
-  frame.src = `/api/applications/${_composeApplicationId}/preview?${params.toString()}`;
+  _loadPreviewFrame(frame, `/api/applications/${_composeApplicationId}/preview?${params.toString()}`);
 }
 
 // v1.0.5 (Step 6 redesign) — refresh the Step 6 cover-letter preview iframe.
@@ -5232,7 +5288,7 @@ async function _refreshCoverPreview() {
   const pageInfo = document.getElementById('coverPreviewPageInfo');
   if (pageInfo) pageInfo.textContent = 'Page — of —';
   _wirePreviewPageCount(frame, 'coverPreviewPageInfo');
-  frame.src = `/api/applications/${_composeApplicationId}/cover-letter-preview?${params.toString()}`;
+  _loadPreviewFrame(frame, `/api/applications/${_composeApplicationId}/cover-letter-preview?${params.toString()}`);
 }
 
 // β.6c — fire recommend-summary in the background. Idempotent on the
@@ -6815,7 +6871,7 @@ async function _refreshLivePreview(templateId) {
   frame.classList.remove('hidden');
 
   _wirePreviewPageCount(frame, 'previewPageInfo');
-  frame.src = url;
+  _loadPreviewFrame(frame, url);
 }
 
 // Wire a preview iframe's paged.js page-count → a "Page N of M" chip.

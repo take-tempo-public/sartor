@@ -913,13 +913,16 @@ Then: `chore/version-bump-v1.0.7`.
   `check_untyped_defs = true`), scoped to the whole post-v1.0.4 surface. Doing it here
   avoids annotating the monolith and then re-doing it post-split. The full
   `mypy --strict` ratchet + a typed `context_set` is the post-public **WS-2-full**.
-- **Deferred UX: wizard back-navigation.** The wizard rail (`wizardGoTo`, the
-  `.wizard-step` buttons in `templates/index.html`) advances forward but offers no
-  per-step **back** affordance — a first-time user who misclicks a step has no way to
-  step back. Deferred here (decided 2026-06-10, during the onboarding E2E-blocker
-  sprint) because back-nav is cleanest to add once the wizard's route/state handling
-  is reorganized in the blueprint split, rather than bolted onto the monolith. Add a
-  visible "← Back" control wired to the existing step model when the wizard seam moves.
+- **Wizard back-navigation (PX-22) — LANDED 2026-06-22 on `refactor/app-blueprints-templates`
+  (8.3e).** The wizard rail (`wizardGoTo`, the `.wizard-step` buttons in `templates/index.html`)
+  and per-panel "← BACK" controls already let a user step back in-app; PX-22 added the missing
+  **browser Back/Forward** affordance — a first-time user who reaches for the browser Back button
+  now traverses wizard steps instead of leaving the page. `wizardGoTo` pushes a `{wizardStep}`
+  `history` entry (baseline `replaceState` at `wizardInit` + the resume-from-prior landings); a
+  `popstate` listener restores the step. Two correctness fixes shipped with it (skip a duplicate
+  same-step push; load preview iframes via `location.replace` so step-4/6 preview reloads don't
+  pollute joint history). Session-only scope (no address-bar `?step=N` / deep-link-on-load).
+  Originally deferred 2026-06-10 to land once the wizard seam reorganized in the blueprint split.
 
 ### Gated test window + correction (2026-06-15 — on the decomposed code)
 

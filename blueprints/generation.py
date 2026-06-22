@@ -22,12 +22,10 @@ DB-layer imports stay lazy inside each function, as in the monolith.
 Cross-seam helpers (owner decision, Sprint 8.3c): the generation-sole-caller
 helpers (`_check_date_grounding`, `_persist_*`, `_apply_*`) move here outright. The
 shared `_resolve_persona_template_path` / `_resolve_default_persona_template_path`
-pair is *also* called by the persona-preview routes that still live in `app.py`
-(they move at 8.3e, the templates/personas seam) — so a blueprint cannot simply
-take them. They are carried here as a **transitional duplicate** of the canonical
-app.py copies and will be deduplicated when the templates seam lands (generation
-will then import them from `blueprints/templates`). Tracked in the Carry-forward
-ledger.
+pair is owned by the templates/personas seam (8.3e); 8.3c carried a transitional
+duplicate here until that seam landed. The duplicate is now gone — generation
+imports the pair from `blueprints/templates` (sibling blueprint import; templates
+never imports generation, so there is no cycle).
 """
 
 from __future__ import annotations
@@ -49,6 +47,16 @@ from analyzer import (
     check_refinement_scope,
     generate,
     generate_streaming,
+)
+
+# Persona-template resolvers are owned by the templates seam (Sprint 8.3e). The
+# generation routes (run_generation / run_generation_stream / download_edited)
+# call them to resolve the persona the user generates with. Sibling blueprint
+# import — templates never imports generation, so there is no cycle. (8.3c
+# carried a transitional duplicate here; this import replaces it.)
+from blueprints.templates import (
+    _resolve_default_persona_template_path,
+    _resolve_persona_template_path,
 )
 from generator import generate_cover_letter, generate_resume
 from hardening import (
@@ -230,113 +238,6 @@ def _check_date_grounding(context_set: ContextSet, result: dict) -> dict | None:
     return findings
 
 
-# --- Transitional duplicate (Sprint 8.3c) ---------------------------------
-# The two persona-template resolvers below are a CARRIED COPY of the canonical
-# app.py versions. They belong to the templates/personas seam (8.3e); the
-# persona-preview routes that still live in app.py call the canonical copies.
-# When the templates seam lands, delete this block and import the pair from
-# `blueprints/templates` (the generation routes will then share one copy).
-# Tracked in the Carry-forward ledger. Reads BASE_DIR / PERSONAS_DIR from
-# current_app.config (request-context only — both callers run pre-stream()).
-
-def _resolve_persona_template_path(persona_template_id: int) -> str | None:
-    """Look up a persona_template's on-disk path. None if not found / missing.
-
-    The DB stores `path` relative to the repo root (e.g.
-    "personas/bundled/classic.docx"). We resolve to absolute, verify
-    containment under PERSONAS_DIR (defense-in-depth), and return the
-    string path generator.py expects.
-    """
-    from db.models import PersonaTemplate
-    from db.session import get_session, init_db
-
-    init_db()
-    session = get_session()
-    try:
-        row = session.query(PersonaTemplate).filter_by(id=persona_template_id).first()
-        if row is None:
-            return None
-        disk_path = (current_app.config["BASE_DIR"] / row.path).resolve()
-        if not disk_path.exists() or not _within(disk_path, current_app.config["PERSONAS_DIR"]):
-            logger.warning(
-                "Persona template id=%s has invalid path %s",
-                persona_template_id, row.path,
-            )
-            return None
-        return str(disk_path)
-    finally:
-        session.close()
-
-
-def _resolve_default_persona_template_path(
-    username: str | None = None,
-    application_id: int | None = None,
-) -> str | None:
-    """Resolve the default template path for the current candidate + JD role.
-
-    Lookup priority (first match wins):
-      1. Candidate's `is_default = 1` template matching this application's
-         `target_role_tag_id`, if both are known. (E.g. the user marked a
-         "Design IC" template default; this application's JD was tagged
-         "Design IC".)
-      2. Candidate's `is_default = 1` template with `primary_role_tag_id
-         IS NULL` — the candidate's general default that applies when
-         no role-specific template wins.
-      3. Bundled `Classic Single-Column` as the maximally ATS-safe
-         baseline (the original behavior; preserved for back-compat
-         and for routes that don't pass a username).
-
-    The partial unique index `ix_persona_template_default` enforces at
-    most one `is_default = 1` per (candidate_id, primary_role_tag_id),
-    so the candidate-scoped queries return at most one row.
-
-    Used by /api/generate when no explicit `persona_template_id` was
-    supplied and no legacy file-based resume path is available.
-    """
-    from db.models import Application, Candidate, PersonaTemplate
-    from db.session import get_session, init_db
-
-    init_db()
-    session = get_session()
-    try:
-        # Priority 1+2: candidate-scoped defaults (require username)
-        if username:
-            candidate = session.query(Candidate).filter_by(username=username).first()
-            if candidate is not None:
-                role_tag_id: int | None = None
-                if application_id is not None:
-                    app_row = session.query(Application).filter_by(id=application_id).first()
-                    if app_row is not None:
-                        role_tag_id = app_row.target_role_tag_id
-
-                # Priority 1: role-specific default
-                if role_tag_id is not None:
-                    row = session.query(PersonaTemplate).filter_by(
-                        candidate_id=candidate.id,
-                        primary_role_tag_id=role_tag_id,
-                        is_default=1,
-                    ).first()
-                    if row is not None:
-                        return _resolve_persona_template_path(row.id)
-
-                # Priority 2: general default (no role tag)
-                row = session.query(PersonaTemplate).filter_by(
-                    candidate_id=candidate.id,
-                    primary_role_tag_id=None,
-                    is_default=1,
-                ).first()
-                if row is not None:
-                    return _resolve_persona_template_path(row.id)
-
-        # Priority 3: bundled Classic (existing fallback)
-        row = session.query(PersonaTemplate).filter_by(
-            source="bundled", name="Classic Single-Column",
-        ).first()
-        if row is None:
-            return None
-        return _resolve_persona_template_path(row.id)
-    finally:
-        session.close()
 
 
 # --- Composition-application helpers (moved with the seam) ---

@@ -19,12 +19,17 @@ import pytest
 
 @pytest.fixture
 def resolver_app(tmp_path, monkeypatch):
-    """Reload app.py against a fresh in-memory DB + temp dirs.
+    """Factory-built app on a fresh sqlite DB + temp tree (Sprint 8.3e).
 
-    Mirrors the persona_routes fixture pattern so the migration-seeded
-    bundled rows (including Classic Single-Column) are present and the
-    Phase β.1 resolver has a real DB to query.
+    `_resolve_default_persona_template_path` moved to blueprints/templates.py and
+    reads current_app.config[...], so create_app(Config(base_dir=tmp_path))
+    replaces the old reload + monkeypatch-the-globals fixture and the resolver is
+    called inside an app context (the namespace's wrapper). The migration-seeded
+    bundled rows (incl. Classic Single-Column) are present so the Phase β.1
+    resolver has a real DB to query.
     """
+    import types
+
     db_file = tmp_path / "resolver.sqlite"
 
     import db.session as db_session_mod
@@ -32,37 +37,45 @@ def resolver_app(tmp_path, monkeypatch):
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
-
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "PERSONAS_DIR", tmp_path / "personas")
-    monkeypatch.setattr(app_module, "BUNDLED_PERSONAS_DIR", tmp_path / "personas" / "bundled")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "personas").mkdir()
-    (tmp_path / "personas" / "bundled").mkdir()
-    (tmp_path / "output").mkdir()
+    from app import create_app
+    from config import Config
+    cfg = Config(base_dir=tmp_path)
+    app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
+    cfg.bundled_personas_dir.mkdir(parents=True, exist_ok=True)
 
     from db.session import init_db
     init_db(db_file)
 
-    # The seed migration (0002) inserted DB rows pointing at
-    # personas/bundled/*.docx, but the actual files don't exist in this
-    # tmp_path. _resolve_persona_template_path enforces disk_path.exists()
-    # as defense-in-depth, so the fallback to Classic would return None
-    # without these stub files. Materialize the minimum needed for tests
-    # to verify the resolver returns a real path string.
+    # The seed migration inserted DB rows pointing at personas/bundled/*.docx, but
+    # the actual files don't exist in this tmp_path. _resolve_persona_template_path
+    # enforces disk_path.exists() as defense-in-depth, so the fallback to Classic
+    # would return None without these stub files. Materialize the minimum needed
+    # for tests to verify the resolver returns a real path string.
     from docx import Document
     for filename in ("classic.docx", "modern.docx"):
-        target = tmp_path / "personas" / "bundled" / filename
+        target = cfg.bundled_personas_dir / filename
         doc = Document()
         doc.add_paragraph(f"Test stub for bundled {filename}.")
         doc.save(str(target))
 
-    return app_module
+    import blueprints.templates as templates_mod
+
+    def _ctx(fn):
+        def wrapped(*a, **k):
+            with app.app_context():
+                return fn(*a, **k)
+        return wrapped
+
+    return types.SimpleNamespace(
+        app=app,
+        BASE_DIR=cfg.base_dir,
+        CONFIGS_DIR=cfg.configs_dir,
+        OUTPUT_DIR=cfg.output_dir,
+        PERSONAS_DIR=cfg.personas_dir,
+        BUNDLED_PERSONAS_DIR=cfg.bundled_personas_dir,
+        _resolve_persona_template_path=_ctx(templates_mod._resolve_persona_template_path),
+        _resolve_default_persona_template_path=_ctx(templates_mod._resolve_default_persona_template_path),
+    )
 
 
 def _make_candidate(username="testuser"):

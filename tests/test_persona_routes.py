@@ -15,11 +15,19 @@ import pytest
 
 @pytest.fixture
 def persona_app(tmp_path, monkeypatch):
-    """Reload app.py against a fresh in-memory DB and temp config dir.
+    """Factory-built app on a fresh sqlite DB + temp tree (Sprint 8.3e).
 
-    Returns the app module + the resolved DB path so individual tests can
-    seed candidate / persona rows directly.
+    The persona/preview routes moved to blueprints/templates.py and read
+    current_app.config[...] at request time, so create_app(Config(base_dir=
+    tmp_path)) replaces the old reload + monkeypatch-the-globals fixture (and its
+    8.3c /api/download-edited config-injection stopgap). The DB-path monkeypatch
+    stays (distinct seam). Returns a small namespace exposing the factory app +
+    the Config-derived paths + the moved resolver helpers (each wrapped in an app
+    context, since they now read current_app.config) so the existing test bodies
+    keep referencing `persona_app.app` / `.BASE_DIR` / `._resolve_*` unchanged.
     """
+    import types
+
     db_file = tmp_path / "personas.sqlite"
 
     import db.session as db_session_mod
@@ -27,37 +35,37 @@ def persona_app(tmp_path, monkeypatch):
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
+    from app import create_app
+    from config import Config
+    cfg = Config(base_dir=tmp_path)
+    app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
+    cfg.bundled_personas_dir.mkdir(parents=True, exist_ok=True)
+    (cfg.configs_dir / "alice.config").write_text("{}", encoding="utf-8")
 
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "PERSONAS_DIR", tmp_path / "personas")
-    monkeypatch.setattr(app_module, "BUNDLED_PERSONAS_DIR", tmp_path / "personas" / "bundled")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    # /api/download-edited moved to blueprints/generation.py (Sprint 8.3c); it
-    # reads paths from current_app.config, NOT the module globals above — so
-    # mirror the temp paths onto the live app's config (the persona routes under
-    # test stay on app.py and keep reading the module globals). The persona
-    # seam's own fixture migration to create_app lands at 8.3e.
-    app_module.app.config["CONFIGS_DIR"] = tmp_path / "configs"
-    app_module.app.config["OUTPUT_DIR"] = tmp_path / "output"
-    app_module.app.config["RESUMES_DIR"] = tmp_path / "resumes"
-    app_module.app.config["PERSONAS_DIR"] = tmp_path / "personas"
-    app_module.app.config["BASE_DIR"] = tmp_path
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "personas").mkdir()
-    (tmp_path / "personas" / "bundled").mkdir()
-    (tmp_path / "output").mkdir()
-    (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
-
-    # Materialize the schema. The seed migration (0002) will populate 5
-    # bundled rows — tests using bundled rows assert their counts against
-    # this baseline. Tests adding their own bundled rows know to expect 5+N.
+    # Materialize the schema. The seed migration populates the canonical bundled
+    # rows — tests using bundled rows assert their counts against this baseline.
     from db.session import init_db
     init_db(db_file)
-    return app_module
+
+    import blueprints.templates as templates_mod
+
+    def _ctx(fn):
+        def wrapped(*a, **k):
+            with app.app_context():
+                return fn(*a, **k)
+        return wrapped
+
+    return types.SimpleNamespace(
+        app=app,
+        BASE_DIR=cfg.base_dir,
+        CONFIGS_DIR=cfg.configs_dir,
+        OUTPUT_DIR=cfg.output_dir,
+        RESUMES_DIR=cfg.resumes_dir,
+        PERSONAS_DIR=cfg.personas_dir,
+        BUNDLED_PERSONAS_DIR=cfg.bundled_personas_dir,
+        _resolve_persona_template_path=_ctx(templates_mod._resolve_persona_template_path),
+        _resolve_default_persona_template_path=_ctx(templates_mod._resolve_default_persona_template_path),
+    )
 
 
 def _seed_candidate(app_module, username="alice"):
