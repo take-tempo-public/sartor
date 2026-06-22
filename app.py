@@ -23,7 +23,22 @@ from analyzer import (
     LLMResponseError,
     prompt_overrides,
 )
-from blueprints import analysis_bp, assistant_bp, generation_bp
+from blueprints import analysis_bp, assistant_bp, corpus_bp, generation_bp
+
+# Corpus serializers — moved to blueprints/corpus/_shared.py (Sprint 8.3d). The
+# applications routes still resident here (get_application_composition,
+# suggest_application_skills) keep using `_tag_list` / `_skill_to_dict` until the
+# applications seam moves (8.3f), so those import from the corpus package. The
+# rest are transitional imports for corpus routes not yet moved on this branch and
+# shrink to nothing as each family lands.
+from blueprints.corpus import _skill_to_dict, _tag_list
+from blueprints.corpus._shared import (
+    _experience_detail_dict,
+    _experience_summary_dict,
+    _experience_summary_item_to_dict,
+    _load_experience_for_candidate,
+    _summary_item_to_dict,
+)
 from config import Config
 from dashboard import dashboard_bp
 from generator import generate_resume
@@ -74,6 +89,10 @@ def register_blueprints(app: Flask) -> None:
     # No url_prefix: same as analysis — the generation routes carry full paths
     # (/api/generate, /api/save-edits, /api/download/…, …) (Sprint 8.3c).
     app.register_blueprint(generation_bp)
+    # No url_prefix: the corpus routes carry full paths (/api/users/<u>/experiences,
+    # /api/bullets/<id>, /api/proposals/<id>/critique, …) and share no common
+    # sub-prefix, so the URLs stay byte-identical (Sprint 8.3d).
+    app.register_blueprint(corpus_bp)
 
 
 def create_app(config: Config | None = None) -> Flask:
@@ -1804,26 +1823,6 @@ def _inject_paged_polyfill(html_str: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _experience_summary_dict(exp) -> dict:
-    """Compact experience row for the Career Corpus list view."""
-    official = next((t for t in exp.titles if t.is_official), None)
-    active_bullets = [b for b in exp.bullets if b.is_active]
-    pending_bullets = [b for b in active_bullets if b.is_pending_review]
-    return {
-        "id": exp.id,
-        "company": exp.company,
-        "location": exp.location,
-        "start_date": exp.start_date,
-        "end_date": exp.end_date,
-        "display_order": exp.display_order,
-        "summary": exp.summary,
-        "official_title": official.title if official else None,
-        "title_count": len(exp.titles),
-        "bullet_count_active": len(active_bullets),
-        "bullet_count_pending": len(pending_bullets),
-    }
-
-
 def _normalize_tag_value(s: str) -> str:
     """Canonical tag form: lowercase, trimmed, non-alphanumerics → single
     hyphens (e.g. "AI / ML" → "ai-ml"). Mirrors the normalization the
@@ -1831,62 +1830,6 @@ def _normalize_tag_value(s: str) -> str:
     s = (s or "").strip().lower()
     out = re.sub(r"[^a-z0-9]+", "-", s)
     return out.strip("-")
-
-
-def _tag_list(tag_links) -> list[dict]:
-    """Serialize a bullet/title's tag_links (each carries .tag) for the UI."""
-    out = []
-    for link in tag_links:
-        t = link.tag
-        if t is None:
-            continue
-        out.append({
-            "id": t.id, "value": t.value,
-            "display_value": t.display_value, "kind": t.kind,
-        })
-    return sorted(out, key=lambda d: d["value"])
-
-
-def _experience_detail_dict(exp) -> dict:
-    """Full experience payload for the inline expand view."""
-    titles = sorted(exp.titles, key=lambda t: (0 if t.is_official else 1, t.id))
-    bullets = sorted(
-        (b for b in exp.bullets if b.is_active),
-        key=lambda b: b.display_order,
-    )
-    return {
-        "id": exp.id,
-        "company": exp.company,
-        "location": exp.location,
-        "start_date": exp.start_date,
-        "end_date": exp.end_date,
-        "display_order": exp.display_order,
-        "summary": exp.summary,
-        "titles": [
-            {
-                "id": t.id, "title": t.title,
-                "is_official": bool(t.is_official),
-                "truthful_enough_to_use": bool(t.truthful_enough_to_use),
-                "is_pending_review": bool(t.is_pending_review),
-                "source": t.source, "notes": t.notes,
-                "tags": _tag_list(t.tag_links),
-            }
-            for t in titles
-        ],
-        "bullets": [
-            {
-                "id": b.id, "text": b.text,
-                "display_order": b.display_order,
-                "is_active": bool(b.is_active),
-                "is_pending_review": bool(b.is_pending_review),
-                "has_outcome": bool(b.has_outcome),
-                "pattern_kind": b.pattern_kind,
-                "source": b.source,
-                "tags": _tag_list(b.tag_links),
-            }
-            for b in bullets
-        ],
-    }
 
 
 @app.route("/api/users/<username>/experiences", methods=["GET"])
@@ -1978,18 +1921,6 @@ def create_experience(username: str):
         raise
     finally:
         session.close()
-
-
-def _load_experience_for_candidate(session, experience_id: int):
-    """Look up an Experience + its candidate. Returns (exp, candidate) or
-    (None, None) when not found. Defense-in-depth helper used by every
-    route that mutates an experience-scoped row."""
-    from db.models import Candidate, Experience
-    exp = session.query(Experience).filter_by(id=experience_id).first()
-    if exp is None:
-        return None, None
-    candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
-    return exp, candidate
 
 
 @app.route("/api/experiences/<int:experience_id>", methods=["GET"])
@@ -2254,23 +2185,6 @@ def delete_bullet(bullet_id: int):
 # ---------------------------------------------------------------------------
 
 
-def _summary_item_to_dict(s) -> dict:
-    """Shared response shape for SummaryItem routes."""
-    return {
-        "id": s.id,
-        "candidate_id": s.candidate_id,
-        "text": s.text,
-        "label": s.label,
-        "display_order": s.display_order,
-        "is_active": bool(s.is_active),
-        "is_pending_review": bool(s.is_pending_review),
-        "has_outcome": bool(s.has_outcome),
-        "source": s.source,
-        "created_at": s.created_at,
-        "updated_at": s.updated_at,
-    }
-
-
 @app.route("/api/users/<username>/summaries", methods=["GET"])
 def list_summary_items(username: str):
     """List the candidate's SummaryItem variants in display order.
@@ -2445,25 +2359,6 @@ def delete_summary_item(summary_id: int):
 # filesystem path, so _within() does not apply; _safe_username gates the
 # owning candidate.
 # ---------------------------------------------------------------------------
-
-
-def _skill_to_dict(s, tags: list | None = None) -> dict:
-    """Shared response shape for Skill routes."""
-    return {
-        "id": s.id,
-        "candidate_id": s.candidate_id,
-        "name": s.name,
-        "category": s.category,
-        "proficiency": s.proficiency,
-        "years": s.years,
-        "display_order": s.display_order,
-        "is_active": bool(s.is_active),
-        "is_pending_review": bool(s.is_pending_review),
-        "source": s.source,
-        "tags": tags if tags is not None else [],
-        "created_at": s.created_at,
-        "updated_at": s.updated_at,
-    }
 
 
 @app.route("/api/users/<username>/skills", methods=["GET"])
@@ -2674,23 +2569,6 @@ def delete_skill(skill_id: int):
 # experience → candidate → _safe_username. No filesystem access, so the
 # route-security-lint hook (filesystem-route guard) does not apply.
 # ---------------------------------------------------------------------------
-
-
-def _experience_summary_item_to_dict(s) -> dict:
-    """Shared response shape for ExperienceSummaryItem routes."""
-    return {
-        "id": s.id,
-        "experience_id": s.experience_id,
-        "text": s.text,
-        "label": s.label,
-        "display_order": s.display_order,
-        "is_active": bool(s.is_active),
-        "is_pending_review": bool(s.is_pending_review),
-        "has_outcome": bool(s.has_outcome),
-        "source": s.source,
-        "created_at": s.created_at,
-        "updated_at": s.updated_at,
-    }
 
 
 @app.route("/api/experiences/<int:experience_id>/summaries", methods=["GET"])
