@@ -17,6 +17,11 @@ import json
 
 import pytest
 
+# _apply_chosen_experience_summaries moved to blueprints/generation.py (8.3c);
+# the /composition route tests below still exercise the un-moved compose route
+# via the app module (`_app`), so only the direct helper calls retarget here.
+import blueprints.generation as bgen
+
 
 @pytest.fixture
 def comp_app(tmp_path, monkeypatch):
@@ -220,7 +225,7 @@ class TestApplyChosenToSnapshot:
                 "chosen_experience_summary_ids": {str(eid): vids[0]},
             },
         }
-        _app._apply_chosen_experience_summaries(ctx)
+        bgen._apply_chosen_experience_summaries(ctx)
         assert ctx["career_corpus"][0]["summary"] == "Platform-scale framing."
 
     def test_noop_when_toggle_off(self, comp_app):
@@ -234,7 +239,7 @@ class TestApplyChosenToSnapshot:
                 "chosen_experience_summary_ids": {str(eid): vids[0]},
             },
         }
-        _app._apply_chosen_experience_summaries(ctx)
+        bgen._apply_chosen_experience_summaries(ctx)
         assert "summary" not in ctx["career_corpus"][0]
 
 

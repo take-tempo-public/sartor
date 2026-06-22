@@ -21,22 +21,21 @@ import pytest
 
 @pytest.fixture
 def app_with_data(tmp_path, monkeypatch):
-    """Fresh DB + minimal route module loaded so we can call
-    `_apply_chosen_summary` against a real SummaryItem row."""
+    """Fresh DB so we can call `_apply_chosen_summary` against a real
+    SummaryItem row. The helper moved to `blueprints/generation.py` (Sprint
+    8.3c); it operates on the context_set dict + DB only (no app context), so
+    the fixture just sets up the tmp DB and returns the blueprint module."""
     db_file = tmp_path / "apply.sqlite"
     import db.session as db_session_mod
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
-
-    import app as _app
-    importlib.reload(_app)
-
     from db.session import init_db
     init_db(db_file)
-    return _app
+
+    import blueprints.generation as bgen
+    return bgen
 
 
 def _seed(*, profile_text: str = "Default profile text.",

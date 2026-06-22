@@ -36,6 +36,16 @@ def persona_app(tmp_path, monkeypatch):
     monkeypatch.setattr(app_module, "PERSONAS_DIR", tmp_path / "personas")
     monkeypatch.setattr(app_module, "BUNDLED_PERSONAS_DIR", tmp_path / "personas" / "bundled")
     monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
+    # /api/download-edited moved to blueprints/generation.py (Sprint 8.3c); it
+    # reads paths from current_app.config, NOT the module globals above — so
+    # mirror the temp paths onto the live app's config (the persona routes under
+    # test stay on app.py and keep reading the module globals). The persona
+    # seam's own fixture migration to create_app lands at 8.3e.
+    app_module.app.config["CONFIGS_DIR"] = tmp_path / "configs"
+    app_module.app.config["OUTPUT_DIR"] = tmp_path / "output"
+    app_module.app.config["RESUMES_DIR"] = tmp_path / "resumes"
+    app_module.app.config["PERSONAS_DIR"] = tmp_path / "personas"
+    app_module.app.config["BASE_DIR"] = tmp_path
     (tmp_path / "configs").mkdir()
     (tmp_path / "personas").mkdir()
     (tmp_path / "personas" / "bundled").mkdir()

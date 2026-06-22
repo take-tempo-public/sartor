@@ -15,6 +15,11 @@ import json
 
 import pytest
 
+# _apply_recommended_skills moved to blueprints/generation.py (8.3c); the
+# /composition route tests below still exercise the un-moved compose route via
+# the app module (`_app`), so only the direct helper calls retarget here.
+import blueprints.generation as bgen
+
 
 @pytest.fixture
 def comp_app(tmp_path, monkeypatch):
@@ -176,7 +181,7 @@ class TestApplyRecommendedSkills:
             },
             "composition_overrides": {"excluded_skill_ids": [ids["Python"]]},
         }
-        _app._apply_recommended_skills(ctx)
+        bgen._apply_recommended_skills(ctx)
         # recommended [K, Py] minus excluded {Py} → [Kubernetes]
         assert ctx["candidate"]["skills"] == ["Kubernetes"]
 
@@ -185,6 +190,6 @@ class TestApplyRecommendedSkills:
         _cid, aid, _ids, _ctx_path = _seed(output_dir)
         before = ["Python", "Go", "Kubernetes"]
         ctx = {"application_id": aid, "candidate": {"skills": list(before)}}
-        _app._apply_recommended_skills(ctx)
+        bgen._apply_recommended_skills(ctx)
         # Byte-identical: untouched when nothing to apply.
         assert ctx["candidate"]["skills"] == before

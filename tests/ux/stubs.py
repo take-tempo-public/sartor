@@ -286,6 +286,7 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     offline. Apply before navigating."""
     import analyzer
     import blueprints.analysis as analysis_bp_mod
+    import blueprints.generation as generation_bp_mod
 
     # The analysis seam (analyze/clarify/iterate-clarify) moved to
     # blueprints/analysis.py (Sprint 8.3b): those routes resolve the bare names
@@ -294,11 +295,13 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(analysis_bp_mod, "clarify", fake_clarify)
     monkeypatch.setattr(analysis_bp_mod, "clarify_iteration", fake_clarify_iteration)
     monkeypatch.setattr(analysis_bp_mod, "_get_client", lambda: None)
-    # `generate_streaming` is still a top-level import in app.py (generation seam,
-    # moves in 8.3c) → patch on the app module. `_get_client` is imported into
-    # BOTH app.py and the blueprint, so stub both (the generate route uses app's).
+    # The generation seam (generate/cover-letter) moved to blueprints/generation.py
+    # (Sprint 8.3c): the streaming generate route resolves `generate_streaming` +
+    # `_get_client` from the blueprint module → patch THERE. `_get_client` is also
+    # imported into app.py (un-moved routes still call it), so stub it on `ux_app` too.
     monkeypatch.setattr(ux_app, "_get_client", lambda: None)
-    monkeypatch.setattr(ux_app, "generate_streaming", fake_generate_streaming)
+    monkeypatch.setattr(generation_bp_mod, "_get_client", lambda: None)
+    monkeypatch.setattr(generation_bp_mod, "generate_streaming", fake_generate_streaming)
     monkeypatch.setattr(analyzer, "recommend_bullets", fake_recommend_bullets)
     monkeypatch.setattr(analyzer, "recommend_summaries", fake_recommend_summaries)
     monkeypatch.setattr(analyzer, "recommend_experience_summaries",
