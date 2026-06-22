@@ -13,6 +13,30 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 @pytest.fixture()
+def app(tmp_path):
+    """The canonical factory-built app (Sprint 8.3a).
+
+    Replaces the `import app as app_module; monkeypatch.setattr(app_module,
+    "CONFIGS_DIR", tmp); app_module.app.test_client()` pattern: build a fresh app
+    whose injected `Config` points every path at `tmp_path`, no module globals
+    touched. NOTE: a freshly-built `create_app(...)` carries the blueprints
+    (assistant + dashboard) but NOT the 93 module-level `@app.route` handlers —
+    those decorate the import-time `app` only. Seam tests migrate onto this fixture
+    as their routes move onto factory-registered blueprints (8.3b-h).
+    """
+    from app import create_app
+    from config import Config
+
+    return create_app(Config(base_dir=tmp_path))
+
+
+@pytest.fixture()
+def client(app):
+    """A test client for the canonical factory-built `app` fixture."""
+    return app.test_client()
+
+
+@pytest.fixture()
 def db_session() -> Iterator:
     """Yield an in-memory SQLite session with the full schema created.
 

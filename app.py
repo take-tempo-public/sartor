@@ -9,7 +9,6 @@ import logging
 import os
 import re
 import threading
-import traceback
 import uuid
 import webbrowser
 from datetime import datetime
@@ -34,6 +33,7 @@ from analyzer import (
     prompt_overrides,
 )
 from blueprints import assistant_bp
+from config import Config
 from dashboard import dashboard_bp
 from generator import generate_cover_letter, generate_resume
 from hardening import (
@@ -45,6 +45,13 @@ from hardening import (
     summarize_recent_edits,
     validate_config,
 )
+from web_infra import (
+    _error_detail_payload,
+    _get_client,
+    _is_localhost_request,
+    _sse,
+    _within,
+)
 
 # P7 Observability: structured logging
 logging.basicConfig(
@@ -52,20 +59,6 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-app = Flask(__name__)
-app.register_blueprint(dashboard_bp, url_prefix="/_dashboard")
-app.register_blueprint(assistant_bp, url_prefix="/api/assistant")
-
-# Disable browser caching of /static/* responses so UI edits land on
-# the next page reload without requiring a Flask restart or a manual
-# cache-bust query string. The `/` route also sets `Cache-Control:
-# no-cache` (see the `index` view) so the HTML shell is covered too.
-# Local-first single-tenant tool: cache-friendliness has no real
-# payoff here, and the alternative (cache-buster query strings,
-# process-start tokens, etc.) bites whenever the developer or user
-# forgets to restart.
-app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 
 BASE_DIR = Path(__file__).parent
 CONFIGS_DIR = BASE_DIR / "configs"
@@ -81,20 +74,52 @@ ANNOTATION_ROOT = BASE_DIR / "evals" / "fixtures" / "real"
 
 ALLOWED_EXTENSIONS = {".docx", ".pdf", ".md"}
 
-# Ensure directories exist
-for d in (CONFIGS_DIR, RESUMES_DIR, OUTPUT_DIR):
-    d.mkdir(exist_ok=True)
+# These module-global path constants are retained for the not-yet-moved routes +
+# their tests (Sprint 8.3a foundation moves NO routes). They mirror the injected
+# Config; each seam branch (8.3b-h) migrates its routes from these globals to
+# `current_app.config[...]` as it moves. The factory below is the single source of
+# truth for a fresh app's config.
 
 
-def _get_client() -> anthropic.Anthropic:
-    """Get Anthropic client. API key from env or config."""
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        # Try reading from a local key file
-        key_file = BASE_DIR / ".api_key"
-        if key_file.exists():
-            api_key = key_file.read_text().strip()
-    return anthropic.Anthropic(api_key=api_key)
+def register_blueprints(app: Flask) -> None:
+    """Register every blueprint in one place (called by the factory)."""
+    app.register_blueprint(dashboard_bp, url_prefix="/_dashboard")
+    app.register_blueprint(assistant_bp, url_prefix="/api/assistant")
+
+
+def create_app(config: Config | None = None) -> Flask:
+    """Application factory (Sprint 8.3a).
+
+    The composition root: builds the Flask app from an injected `Config`
+    (defaulting to production paths), pushes the config, ensures the runtime
+    directories exist (the old import-time mkdir loop), and registers the
+    blueprints. The side effects that importing this module used to trigger now
+    happen here, when the factory is called.
+    """
+    app = Flask(__name__)
+    config = config or Config()
+    app.config.update(config.as_flask_config())
+    # Disable browser caching of /static/* responses so UI edits land on
+    # the next page reload without requiring a Flask restart or a manual
+    # cache-bust query string. The `/` route also sets `Cache-Control:
+    # no-cache` (see the `index` view) so the HTML shell is covered too.
+    # Local-first single-tenant tool: cache-friendliness has no real
+    # payoff here, and the alternative (cache-buster query strings,
+    # process-start tokens, etc.) bites whenever the developer or user
+    # forgets to restart.
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+    config.ensure_dirs()
+    register_blueprints(app)
+    return app
+
+
+# Module-level WSGI / console-script (`callback = app:main`) / back-compat handle.
+# The 93 @app.route decorators below attach to THIS instance at import; the factory
+# additionally registers the blueprints. A freshly-built create_app(...) in a test
+# carries the blueprints but not the module-level routes (they decorate this
+# instance only) — main-route tests use this `app` until their seam moves onto a
+# factory-registered blueprint.
+app = create_app()
 
 
 def _load_config(username: str) -> dict:
@@ -138,15 +163,6 @@ def _safe_username(username: str) -> str | None:
     return safe
 
 
-def _within(path: Path, parent: Path) -> bool:
-    """Return True only if path resolves to within parent. Prevents traversal."""
-    try:
-        path.resolve().relative_to(parent.resolve())
-        return True
-    except ValueError:
-        return False
-
-
 def _get_or_provision_candidate(session, safe_user: str):
     """Return the candidate row for safe_user, creating it from config if absent.
 
@@ -163,17 +179,6 @@ def _get_or_provision_candidate(session, safe_user: str):
         import_candidate_from_config(safe_user, session)  # add + flush, no commit
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
     return candidate
-
-
-def _is_localhost_request() -> bool:
-    """True only for loopback hosts. Same posture as dashboard_bp.before_request.
-
-    Gates the dev/eval-only annotation + bootstrap write surface so it is
-    unreachable except from the local machine (it touches PII-bearing artifacts
-    under evals/fixtures/real/).
-    """
-    host = (request.host or "").split(":")[0]
-    return host in {"localhost", "127.0.0.1", "::1", "[::1]"}
 
 
 # --- Routes ---
@@ -371,51 +376,6 @@ def run_analysis():
         return jsonify({"error": "Invalid or unknown user"}), 400
 
     return _run_analysis_corpus_backed(safe_user, jd_text, data)
-
-
-def _sse(event: str, payload: dict) -> str:
-    """Format a Server-Sent Event line block. SSE protocol requires:
-    `event: <name>\\ndata: <line>\\n\\n` with the trailing blank line.
-    Multi-line data values aren't used here so a single data line suffices.
-    """
-    return f"event: {event}\ndata: {json.dumps(payload)}\n\n"
-
-
-def _error_detail_payload(exc: Exception) -> dict:
-    """Return the per-route 5xx error payload extras.
-
-    In debug mode (Flask's default for `python app.py`): includes the
-    exception class + message + the last 3 traceback frames. This is
-    load-bearing for the dev-console / smoke-debugging workflow — the
-    user opens dev tools, sees the response body, copies the traceback
-    into a bug report without needing terminal access.
-
-    In production-mode (FLASK_DEBUG=0): returns only a short
-    `request_id` (8 hex chars) so the user / support can correlate
-    with the server log (`logger.exception` emits the full traceback
-    server-side regardless). Suppresses class names, file paths, and
-    function names that an attacker could fingerprint to scope
-    follow-up attacks. Per the security review (2026-05-27):
-    "Information Disclosure via Error Details".
-
-    The request_id is logged alongside the exception so support can
-    look it up via `grep <request_id> logs/` to retrieve the full
-    traceback.
-    """
-    request_id = uuid.uuid4().hex[:8]
-    # logger.exception is called by the route wrapper one level up;
-    # this just adds the correlation id to the response.
-    logger.error("error request_id=%s class=%s", request_id, type(exc).__name__)
-    if app.debug:
-        return {
-            "detail": "{cls}: {msg}\n\n{tb}".format(
-                cls=type(exc).__name__,
-                msg=str(exc),
-                tb="".join(traceback.format_tb(exc.__traceback__)[-3:]),
-            ),
-            "request_id": request_id,
-        }
-    return {"request_id": request_id}
 
 
 @app.route("/api/analyze/stream", methods=["POST"])
@@ -8309,7 +8269,11 @@ def main() -> None:
         opener.daemon = True
         opener.start()
 
-    app.run(debug=debug_mode, port=5000)
+    # PX-19: bind loopback only. The host comes from the injected Config
+    # (Config.host default "127.0.0.1"), so the dev server is never reachable off
+    # the local machine — matching the localhost-only posture SECURITY.md commits
+    # to. (A third silent-flip vector is `SERVER_NAME`; leave it unset locally.)
+    app.run(host=app.config.get("HOST", "127.0.0.1"), debug=debug_mode, port=5000)
 
 
 if __name__ == "__main__":

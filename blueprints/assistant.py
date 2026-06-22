@@ -16,24 +16,21 @@ the request/SSE plumbing. The generic source tiers are injected from `recall.sou
 with these bindings.
 
 Like `dashboard/routes.py`, this module **does not import `app.py`** — it re-derives its
-paths and inlines the few shared helpers (`_safe_username` / `_get_client` / `_sse`,
-duplicated from `app.py` pending the Sprint 8.1 shared-helpers home). That keeps the
-blueprint independently importable, so the v1.0.8 split is a move, not a rewrite.
+paths and imports the shared cross-cutting helpers (`_safe_username` / `_get_client` /
+`_sse`) from the `web_infra/` package (Sprint 8.3a; they used to be duplicated here). That
+keeps the blueprint independently importable, so the v1.0.8 split is a move, not a rewrite.
 """
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 import re
 import uuid
 from collections.abc import Sequence
 from pathlib import Path
 
 import anthropic
-from flask import Blueprint, Response, jsonify, request
-from werkzeug.utils import secure_filename
+from flask import Blueprint, Response, current_app, jsonify, request
 
 import analyzer
 from recall import (
@@ -47,6 +44,7 @@ from recall import (
     assemble,
 )
 from recall.sources.vector_source import Embedder
+from web_infra import _get_client, _safe_username, _sse
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +52,6 @@ assistant_bp = Blueprint("assistant", __name__)
 
 # Re-derived locally (the dashboard-blueprint precedent) — never imported from app.py.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CONFIGS_DIR = PROJECT_ROOT / "configs"
 _WIKI_DIR = PROJECT_ROOT / "docs" / "wiki"
 _INGEST_SHA_PATH = _WIKI_DIR / ".last_ingest_sha"
 
@@ -185,30 +182,12 @@ def _build_sources(session_turns: list) -> list:
     return sources
 
 
-# --- shared helpers, duplicated from app.py (pending the Sprint 8.1 shared-helpers home) --
 
 
-def _safe_username(username: str) -> str | None:
-    """app.py:_safe_username — sanitize + confirm the user exists (None if invalid)."""
-    safe = secure_filename(username)
-    if not safe or not (CONFIGS_DIR / f"{safe}.config").exists():
-        return None
-    return safe
 
 
-def _get_client() -> anthropic.Anthropic:
-    """app.py:_get_client — Anthropic client from env or the local `.api_key` file."""
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        key_file = PROJECT_ROOT / ".api_key"
-        if key_file.exists():
-            api_key = key_file.read_text().strip()
-    return anthropic.Anthropic(api_key=api_key)
 
 
-def _sse(event: str, payload: dict) -> str:
-    """app.py:_sse — one Server-Sent Event frame (trailing blank line required)."""
-    return f"event: {event}\ndata: {json.dumps(payload)}\n\n"
 
 
 @assistant_bp.route("/ask", methods=["POST"])
@@ -235,7 +214,7 @@ def ask():
     # discipline only when one is supplied (a provided-but-unknown user is still a 400).
     safe_user = ""
     if username:
-        safe_user = _safe_username(username)
+        safe_user = _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
         if not safe_user:
             return jsonify({"error": "Invalid or unknown user"}), 400
 
