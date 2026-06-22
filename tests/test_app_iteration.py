@@ -12,30 +12,40 @@ from pathlib import Path
 
 import pytest
 
+import blueprints.generation as bgen
+
 
 @pytest.fixture
 def app_client(tmp_path, monkeypatch):
-    """Flask test client with OUTPUT_DIR/CONFIGS_DIR/RESUMES_DIR redirected
-    and the LLM/document-generation calls stubbed.
+    """Factory-built Flask test client with config paths under tmp_path and the
+    LLM/document-generation calls stubbed on the generation blueprint.
 
-    Seeds an iteration-0 context for /alice/ that mirrors what /api/analyze
+    The generate/save-edits routes live on `blueprints/generation.py` (Sprint
+    8.3c), so paths come from `Config(base_dir=tmp_path)` (no app-global
+    monkeypatch) and the generate/document-writer/_get_client stubs target the
+    blueprint module. The DB-path monkeypatch (db.session.DEFAULT_DB_PATH) keeps
+    `_resolve_default_persona_template_path` hermetic — a distinct, legitimate
+    seam. Seeds an iteration-0 context for /alice/ that mirrors what /api/analyze
     would have written. Tests exercise routes without any real LLM call.
     """
-    import app as _app
+    import db.session as db_session
+    monkeypatch.setattr(db_session, "DEFAULT_DB_PATH", tmp_path / "test.sqlite")
+    db_session._engine = None
+    db_session._SessionLocal = None
+
+    from app import create_app
+    from config import Config
+
+    app = create_app(Config(base_dir=tmp_path))
+    app.config["TESTING"] = True
 
     output_dir = tmp_path / "output"
     configs_dir = tmp_path / "configs"
     resumes_dir = tmp_path / "resumes"
-    output_dir.mkdir()
-    configs_dir.mkdir()
-    resumes_dir.mkdir()
+    # ensure_dirs() (in the factory) already created configs/resumes/output.
     (configs_dir / "alice.config").write_text("{}", encoding="utf-8")
     (output_dir / "alice").mkdir()
     (resumes_dir / "alice").mkdir()
-
-    monkeypatch.setattr(_app, "OUTPUT_DIR", output_dir)
-    monkeypatch.setattr(_app, "CONFIGS_DIR", configs_dir)
-    monkeypatch.setattr(_app, "RESUMES_DIR", resumes_dir)
 
     # Stub the generate() LLM call — return deterministic content.
     def _stub_generate(client, context_set, analysis, refinement_notes="",
@@ -65,13 +75,12 @@ def app_client(tmp_path, monkeypatch):
         out.write_text(content, encoding="utf-8")
         return str(out)
 
-    monkeypatch.setattr(_app, "generate", _stub_generate)
-    monkeypatch.setattr(_app, "generate_resume", _stub_resume_writer)
-    monkeypatch.setattr(_app, "generate_cover_letter", _stub_letter_writer)
-    monkeypatch.setattr(_app, "_get_client", lambda: object())
+    monkeypatch.setattr(bgen, "generate", _stub_generate)
+    monkeypatch.setattr(bgen, "generate_resume", _stub_resume_writer)
+    monkeypatch.setattr(bgen, "generate_cover_letter", _stub_letter_writer)
+    monkeypatch.setattr(bgen, "_get_client", lambda: object())
 
-    _app.app.config["TESTING"] = True
-    client = _app.app.test_client()
+    client = app.test_client()
 
     context_path = output_dir / "alice" / "context_20260511_120000.json"
     initial = {
@@ -304,8 +313,6 @@ class TestGenerateDateGrounding:
         context_path.write_text(json.dumps(ctx), encoding="utf-8")
 
     def _stub_generate_returning(self, monkeypatch, resume_content):
-        import app as _app
-
         def _stub(client, context_set, analysis, refinement_notes="",
                   username="", run_id="", with_cover_letter=True):
             return {
@@ -314,7 +321,7 @@ class TestGenerateDateGrounding:
                 "changes_made": [],
                 "proofread_notes": ["model note"],
             }
-        monkeypatch.setattr(_app, "generate", _stub)
+        monkeypatch.setattr(bgen, "generate", _stub)
 
     def test_corrupted_date_flags_and_warns(self, app_client, monkeypatch):
         client, context_path, _ = app_client

@@ -159,6 +159,54 @@ response is byte-identical; no prompt/dependency/migration**, `PROMPT_VERSION` /
   module-global constants + config-dependent helper copies for the un-moved seams (they retire in
   8.3c–h).
 
+### Changed — generation blueprint seam (`refactor/app-blueprints-generation`, Sprint 8.3c)
+
+The **second domain seam** moved out of the `app.py` monolith. The seven generation routes leave
+`app.py` for a new `blueprints/generation.py`. **Pure refactor — every route's URL/method/request/
+response is byte-identical; no prompt/dependency/migration**, `PROMPT_VERSION` /
+`AVATAR_PROMPT_VERSION` untouched.
+
+- **New `blueprints/generation.py`.** `POST /api/save-edits`, `POST /api/generate`,
+  `POST /api/generate/stream` (SSE), `POST /api/validate-refinement`,
+  `POST /api/generate-cover-letter`, `GET /api/download/<path:filepath>`,
+  `POST /api/download-edited` — plus their generation-only domain helpers
+  (`_check_date_grounding`, `_persist_run_persona`, `_persist_cover_letter_to_db`,
+  `_persist_corpus_generation_to_db`, and the composition-application trio
+  `_apply_chosen_summary` / `_apply_chosen_experience_summaries` / `_apply_recommended_skills`).
+  Registered with **no `url_prefix`** (full-path decorators) so the URLs stay identical; the
+  blueprint never imports `app.py`.
+- **Cross-seam helper bridge (owner decision).** Three generation routes resolve a persona
+  template via `_resolve_persona_template_path` / `_resolve_default_persona_template_path`, which
+  belong to the **templates/personas** seam (8.3e) and are still called by the persona-preview
+  routes in `app.py`. Since a blueprint cannot import `app.py`, this pair is carried in
+  `blueprints/generation.py` as a clearly-commented **transitional duplicate** (canonical copies
+  stay in `app.py`); it is deduplicated when the templates seam lands at 8.3e (generation will then
+  import it). Tracked in the Carry-forward ledger. The `_apply_*` trio — generation's sole callers
+  today, grouped with the applications seam by the 8.1 design — moves here outright (no dead code);
+  revisited at 8.3f if an applications route grows a caller.
+- **Reads config via `current_app`.** Route/helper bodies take paths from
+  `current_app.config["OUTPUT_DIR"]` / `["CONFIGS_DIR"]` / `["RESUMES_DIR"]` / `["BASE_DIR"]` /
+  `["PERSONAS_DIR"]` and use the shared `web_infra` helpers (`_safe_username` / `_within` /
+  `_get_client` / `_sse`, threading `configs_dir=current_app.config["CONFIGS_DIR"]`). The streaming
+  route captures `output_dir` as a local **before** the generator, so `stream()` never touches
+  `current_app`. `download_file`'s inline containment guard is preserved byte-identically.
+- **PV-4 typing.** Every moved route is annotated `-> ResponseReturnValue`. The loose
+  `_apply_*(context_set: dict)` helpers (which read/write keys outside the `ContextSet` schema) are
+  bridged at the call site with a runtime-noop `cast(dict, context_set)` so mypy's TypedDict→dict
+  variance check passes without copying (the in-place mutations still land on the same object).
+  `blueprints/generation.py` added to the egress allowlist (it catches `anthropic` error types).
+- **Tests migrate onto the factory fixture.** `tests/test_app_iteration.py` and
+  `tests/test_cover_letter_detached.py` drop the module-global monkeypatch + `importlib.reload` for
+  `create_app(Config(base_dir=tmp_path))`, stubbing the generate functions on the blueprint module
+  (keeping the distinct `db.session.DEFAULT_DB_PATH` monkeypatch + the lazy-imported
+  `analyzer.generate_cover_letter_against_resume` stub). The three `_apply_*` unit tests
+  (`test_apply_chosen_summary` / `test_experience_summary_composition` / `test_skill_composition`)
+  retarget the moved helper to `blueprints.generation`. `test_persona_routes.py`'s `/api/download-edited`
+  case gets live-app config injection (the persona seam's own fixture migrates at 8.3e). The UX
+  harness retargets `install_llm_stubs` `generate_streaming` + `_get_client` to
+  `blueprints.generation`. `app.py` keeps its module-global constants + config-dependent helper
+  copies for the un-moved seams (they retire in 8.3d–h).
+
 ## [1.0.7] — 2026-06-20
 
 ### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)

@@ -38,11 +38,12 @@ def ux_app(tmp_path, monkeypatch) -> ModuleType:
     # template paths (BASE_DIR / "personas/bundled/*.docx") resolve for the
     # Step-6 WYSIWYG preview. Isolation comes from the temp DB + OUTPUT_DIR +
     # CONFIGS_DIR; nothing in the wizard flow writes via BASE_DIR directly.
-    # The analysis routes moved to blueprints/analysis.py (Sprint 8.3b) read
-    # paths from current_app.config, NOT the module globals above — so inject the
-    # two keys they read onto the live app's config (the module-global routes
-    # like /api/generate still read the globals until their seam moves). Surgical
-    # by design: do NOT inject BASE_DIR (persona templates need the real root).
+    # The analysis (blueprints/analysis.py, 8.3b) and generation
+    # (blueprints/generation.py, 8.3c) routes read paths from current_app.config,
+    # NOT the module globals above — so inject the two keys they read onto the
+    # live app's config (the still-module-global routes from un-moved seams keep
+    # reading the globals until their seam moves). Surgical by design: do NOT
+    # inject BASE_DIR (persona templates need the real root).
     app_module.app.config["CONFIGS_DIR"] = tmp_path / "configs"
     app_module.app.config["OUTPUT_DIR"] = tmp_path / "output"
     (tmp_path / "configs").mkdir()

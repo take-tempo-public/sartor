@@ -19,13 +19,24 @@ from pathlib import Path
 
 import pytest
 
+import blueprints.generation as bgen
+
 
 @pytest.fixture
 def app_with_stubs(tmp_path, monkeypatch):
-    """Reload app.py against a tmp_path-isolated DB + filesystem; stub
-    LLM calls + document writers. Seeds an iteration-0 context for
-    user 'alice' that mirrors what /api/analyze + /api/generate would
-    produce (résumé available, cover letter not yet)."""
+    """Factory-built app against a tmp_path-isolated DB + filesystem; stub LLM
+    calls + document writers on the generation blueprint (Sprint 8.3c). Seeds an
+    iteration-0 context for user 'alice' that mirrors what /api/analyze +
+    /api/generate would produce (résumé available, cover letter not yet).
+
+    The generate / save-edits / cover-letter routes live on
+    `blueprints/generation.py`, so paths come from `Config(base_dir=tmp_path)`
+    and the generate/document-writer/_get_client/save_iteration_context stubs
+    target the blueprint module. `generate_cover_letter_against_resume` is
+    lazy-imported from `analyzer` inside the route, so it is stubbed there. The
+    DB-path monkeypatch (db.session.DEFAULT_DB_PATH) is a distinct, legitimate
+    seam — the corpus-persist test seeds rows into that same tmp DB.
+    """
     db_file = tmp_path / "cl.sqlite"
 
     import db.session as db_session_mod
@@ -33,20 +44,16 @@ def app_with_stubs(tmp_path, monkeypatch):
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import importlib
+    from app import create_app
+    from config import Config
 
-    import app as _app
-    importlib.reload(_app)
+    app = create_app(Config(base_dir=tmp_path))
+    app.config["TESTING"] = True
 
     output_dir = tmp_path / "output"
-    configs_dir = tmp_path / "configs"
-    output_dir.mkdir()
-    configs_dir.mkdir()
-    (configs_dir / "alice.config").write_text("{}", encoding="utf-8")
+    # ensure_dirs() (in the factory) already created configs/resumes/output.
+    (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
     (output_dir / "alice").mkdir()
-
-    monkeypatch.setattr(_app, "OUTPUT_DIR", output_dir)
-    monkeypatch.setattr(_app, "CONFIGS_DIR", configs_dir)
 
     # Stub generate() — returns empty cover_letter_content when
     # with_cover_letter is False (mirrors production behavior).
@@ -83,9 +90,9 @@ def app_with_stubs(tmp_path, monkeypatch):
             "proofread_notes": [],
         }
 
-    monkeypatch.setattr(_app, "generate", _stub_generate)
-    monkeypatch.setattr(_app, "generate_resume", _stub_resume_writer)
-    monkeypatch.setattr(_app, "generate_cover_letter", _stub_letter_writer)
+    monkeypatch.setattr(bgen, "generate", _stub_generate)
+    monkeypatch.setattr(bgen, "generate_resume", _stub_resume_writer)
+    monkeypatch.setattr(bgen, "generate_cover_letter", _stub_letter_writer)
 
     # generate_cover_letter_against_resume is imported lazily inside
     # the route, so patch it at the module from which the route imports.
@@ -93,10 +100,8 @@ def app_with_stubs(tmp_path, monkeypatch):
     monkeypatch.setattr(_analyzer, "generate_cover_letter_against_resume",
                         _stub_cl_against)
 
-    # Stub the Anthropic client + iteration context machinery.
-    monkeypatch.setattr(_app, "_get_client", lambda: object())
-    monkeypatch.setattr(_app, "save_iteration_context",
-                        lambda *a, **k: str(output_dir / "alice" / "context_iter1.json"))
+    # Stub the Anthropic client.
+    monkeypatch.setattr(bgen, "_get_client", lambda: object())
 
     # Seed an iteration-0 context with a finalized résumé already written
     # so the cover-letter route has something to work against.
@@ -122,10 +127,10 @@ def app_with_stubs(tmp_path, monkeypatch):
         new.write_text(json.dumps(parent_context), encoding="utf-8")
         return str(new)
 
-    monkeypatch.setattr(_app, "save_iteration_context", _stub_save_iter)
+    monkeypatch.setattr(bgen, "save_iteration_context", _stub_save_iter)
 
-    _app._cover_letter_writes = written
-    return _app, ctx_path
+    app._cover_letter_writes = written
+    return app, ctx_path
 
 
 # ---------------------------------------------------------------------
@@ -136,7 +141,7 @@ def app_with_stubs(tmp_path, monkeypatch):
 class TestGenerateOptOutDefault:
     def test_default_omits_cover_letter_file(self, app_with_stubs):
         _app, ctx_path = app_with_stubs
-        client = _app.app.test_client()
+        client = _app.test_client()
 
         # No generate_cover_letter flag in the body → default is False
         r = client.post("/api/generate", json={
@@ -155,7 +160,7 @@ class TestGenerateOptOutDefault:
 
     def test_explicit_true_still_produces_cover_letter(self, app_with_stubs):
         _app, ctx_path = app_with_stubs
-        client = _app.app.test_client()
+        client = _app.test_client()
 
         r = client.post("/api/generate", json={
             "username": "alice",
@@ -178,7 +183,7 @@ class TestGenerateOptOutDefault:
 class TestGenerateCoverLetterRoute:
     def test_happy_path_writes_letter_and_updates_context(self, app_with_stubs):
         _app, ctx_path = app_with_stubs
-        client = _app.app.test_client()
+        client = _app.test_client()
 
         r = client.post("/api/generate-cover-letter", json={
             "username": "alice",
@@ -233,7 +238,7 @@ class TestGenerateCoverLetterRoute:
         ctx["application_run_id"] = run_pk
         ctx_path.write_text(json.dumps(ctx), encoding="utf-8")
 
-        client = _app.app.test_client()
+        client = _app.test_client()
         r = client.post("/api/generate-cover-letter", json={
             "username": "alice",
             "context_path": str(ctx_path),
@@ -260,7 +265,7 @@ class TestGenerateCoverLetterRoute:
         ctx["resume"]["text"] = ""
         ctx_path.write_text(json.dumps(ctx), encoding="utf-8")
 
-        client = _app.app.test_client()
+        client = _app.test_client()
         r = client.post("/api/generate-cover-letter", json={
             "username": "alice",
             "context_path": str(ctx_path),
@@ -271,13 +276,13 @@ class TestGenerateCoverLetterRoute:
 
     def test_returns_400_for_missing_context_path(self, app_with_stubs):
         _app, _ctx_path = app_with_stubs
-        client = _app.app.test_client()
+        client = _app.test_client()
         r = client.post("/api/generate-cover-letter", json={"username": "alice"})
         assert r.status_code == 400
 
     def test_path_traversal_blocked(self, app_with_stubs):
         _app, _ctx_path = app_with_stubs
-        client = _app.app.test_client()
+        client = _app.test_client()
         r = client.post("/api/generate-cover-letter", json={
             "username": "alice",
             "context_path": "/etc/passwd",
