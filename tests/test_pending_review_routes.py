@@ -7,24 +7,27 @@ import pytest
 
 @pytest.fixture
 def pr_app(tmp_path, monkeypatch):
+    """Factory-built app on a fresh DB + temp config dir (Sprint 8.3d).
+
+    The accept / pending-counts routes moved to blueprints/corpus/curation and
+    read current_app.config at request time, so create_app(Config(base_dir=tmp_path))
+    replaces the old reload + monkeypatch-the-globals pattern. The DB-path
+    monkeypatch stays.
+    """
     db_file = tmp_path / "pr.sqlite"
     import db.session as db_session_mod
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
-    import importlib
 
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "output").mkdir()
+    from app import create_app
+    from config import Config
+
+    app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
     from db.session import init_db
     init_db(db_file)
-    return app_module
+    return app
 
 
 def _seed_candidate(username="alice"):
@@ -89,7 +92,7 @@ class TestAcceptBullet:
             bid = pending.id
         finally:
             s.close()
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         r = client.post(f"/api/bullets/{bid}/accept")
         assert r.status_code == 200
         assert r.get_json()["is_pending_review"] is False
@@ -101,7 +104,7 @@ class TestAcceptBullet:
             s.close()
 
     def test_404_for_unknown_bullet(self, pr_app):
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         r = client.post("/api/bullets/99999/accept")
         assert r.status_code == 404
 
@@ -119,7 +122,7 @@ class TestAcceptTitle:
             ).first().id
         finally:
             s.close()
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         r = client.post(f"/api/experience-titles/{tid}/accept")
         assert r.status_code == 200
         assert r.get_json()["is_pending_review"] is False
@@ -131,7 +134,7 @@ class TestAcceptExperienceAll:
         eid = _seed_exp_with_pending(cid,
                                      n_pending_bullets=3, n_pending_titles=2,
                                      n_accepted_bullets=1)
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         r = client.post(f"/api/experiences/{eid}/accept-all")
         assert r.status_code == 200
         body = r.get_json()
@@ -154,7 +157,7 @@ class TestAcceptExperienceAll:
             s.close()
 
     def test_404_for_unknown_experience(self, pr_app):
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         r = client.post("/api/experiences/99999/accept-all")
         assert r.status_code == 404
 
@@ -162,7 +165,7 @@ class TestAcceptExperienceAll:
 class TestPendingCounts:
     def test_zero_when_no_pending(self, pr_app):
         _seed_candidate()
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         body = client.get("/api/users/alice/pending-counts").get_json()
         assert body["candidate_present"] is True
         assert body["pending_titles"] == 0
@@ -173,7 +176,7 @@ class TestPendingCounts:
         cid = _seed_candidate()
         _seed_exp_with_pending(cid, n_pending_bullets=3, n_pending_titles=2)
         _seed_exp_with_pending(cid, n_pending_bullets=1, n_pending_titles=0)
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         body = client.get("/api/users/alice/pending-counts").get_json()
         assert body["pending_bullets"] == 4
         assert body["pending_titles"] == 2
@@ -181,13 +184,13 @@ class TestPendingCounts:
 
     def test_missing_candidate_returns_zeros(self, pr_app):
         # config exists, no candidate row
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         body = client.get("/api/users/alice/pending-counts").get_json()
         assert body["candidate_present"] is False
         assert body["pending_bullets"] == 0
 
     def test_400_for_unknown_user(self, pr_app):
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         r = client.get("/api/users/ghost/pending-counts")
         assert r.status_code == 400
 
@@ -200,7 +203,7 @@ class TestAcceptAllPendingCorpus:
         e1 = _seed_exp_with_pending(cid, n_pending_bullets=3, n_pending_titles=2,
                                     n_accepted_bullets=1)
         e2 = _seed_exp_with_pending(cid, n_pending_bullets=1, n_pending_titles=0)
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         r = client.post("/api/users/alice/accept-all-pending")
         assert r.status_code == 200
         body = r.get_json()
@@ -223,18 +226,18 @@ class TestAcceptAllPendingCorpus:
 
     def test_zero_when_nothing_pending(self, pr_app):
         _seed_candidate()
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         body = client.post("/api/users/alice/accept-all-pending").get_json()
         assert body == {"titles_accepted": 0, "bullets_accepted": 0}
 
     def test_missing_candidate_returns_zeros(self, pr_app):
         # config exists, no candidate row → no-op, not an error
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         r = client.post("/api/users/alice/accept-all-pending")
         assert r.status_code == 200
         assert r.get_json() == {"titles_accepted": 0, "bullets_accepted": 0}
 
     def test_400_for_unknown_user(self, pr_app):
-        client = pr_app.app.test_client()
+        client = pr_app.test_client()
         r = client.post("/api/users/ghost/accept-all-pending")
         assert r.status_code == 400

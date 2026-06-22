@@ -12,24 +12,26 @@ import pytest
 
 @pytest.fixture
 def dup_app(tmp_path, monkeypatch):
+    """Factory-built app on a fresh DB + temp config dir (Sprint 8.3d).
+
+    The duplicates route moved to blueprints/corpus and reads current_app.config
+    at request time, so create_app(Config(base_dir=tmp_path)) replaces the old
+    reload + monkeypatch-the-globals pattern. The DB-path monkeypatch stays.
+    """
     db_file = tmp_path / "dup.sqlite"
     import db.session as db_session_mod
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
-    import importlib
 
-    import app as app_module
-    importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "output").mkdir()
+    from app import create_app
+    from config import Config
+
+    app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
     from db.session import init_db
     init_db(db_file)
-    return app_module
+    return app
 
 
 def _seed(username="alice", bullets_per_exp=None):
@@ -71,7 +73,7 @@ class TestDuplicatesRoute:
             ("Mentored four junior engineers through their first launches.", False),
             ("Authored the architecture review document for the new platform.", True),
         ])
-        client = dup_app.app.test_client()
+        client = dup_app.test_client()
         body = client.get("/api/users/alice/duplicates").get_json()
         assert body["cluster_count"] == 0
         assert body["experiences"] == []
@@ -84,7 +86,7 @@ class TestDuplicatesRoute:
             (body_text.replace("the order", "our order"), False),  # near-verbatim
             ("Mentored a junior engineer through their first launch.", False),
         ])
-        client = dup_app.app.test_client()
+        client = dup_app.test_client()
         body = client.get("/api/users/alice/duplicates").get_json()
         assert body["cluster_count"] == 1
         assert len(body["experiences"]) == 1
@@ -102,7 +104,7 @@ class TestDuplicatesRoute:
             ("Mentored four junior engineers through their first launches.", False),
             ("Coached three junior engineers through onboarding.", False),
         ])
-        client = dup_app.app.test_client()
+        client = dup_app.test_client()
         b_default = client.get("/api/users/alice/duplicates").get_json()
         assert b_default["cluster_count"] == 0
         b_loose = client.get("/api/users/alice/duplicates?threshold=0.5").get_json()
@@ -113,7 +115,7 @@ class TestDuplicatesRoute:
     def test_200_needs_onboarding_when_candidate_missing(self, dup_app):
         # Read precondition unmet → 200 + needs_onboarding (empty clusters),
         # not a 409 conflict.
-        client = dup_app.app.test_client()
+        client = dup_app.test_client()
         r = client.get("/api/users/alice/duplicates")
         assert r.status_code == 200
         body = r.get_json()
@@ -122,6 +124,6 @@ class TestDuplicatesRoute:
         assert body["cluster_count"] == 0
 
     def test_400_when_user_unknown(self, dup_app):
-        client = dup_app.app.test_client()
+        client = dup_app.test_client()
         r = client.get("/api/users/ghost/duplicates")
         assert r.status_code == 400
