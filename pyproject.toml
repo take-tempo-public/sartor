@@ -92,10 +92,10 @@ Changelog = "https://github.com/amodal1/callback/blob/main/CHANGELOG.md"
 callback = "app:main"
 
 [tool.setuptools]
-py-modules = ["app", "analyzer", "hardening", "generator", "parser", "scraper"]
+py-modules = ["app", "analyzer", "config", "hardening", "generator", "parser", "scraper"]
 
 [tool.setuptools.packages.find]
-include = ["blueprints*", "dashboard*", "db*", "onboarding*", "recall*"]
+include = ["blueprints*", "dashboard*", "db*", "onboarding*", "recall*", "web_infra*"]
 
 [tool.ruff]
 line-length = 100

@@ -84,6 +84,48 @@ untouched.
   route request is werkzeug-404'd before the handler, so that case asserts *routing* rejection,
   not helper containment.
 
+### Changed — application factory + shared web-infra package (`refactor/app-factory-and-infra`, Sprint 8.3a)
+
+The **foundation** branch of the `app.py`→blueprints decomposition (no route moves; the 8
+domain seams are 8.3b–h). `app.py` becomes a `create_app(config)` factory over a typed
+injected `Config`, and the cross-cutting helpers move to a shared leaf `web_infra/` package
+both `app.py` and the blueprints import. **Pure refactor — every route's URL/method/request/
+response is byte-identical; no prompt/dependency/migration**, `PROMPT_VERSION` /
+`AVATAR_PROMPT_VERSION` untouched.
+
+- **Application factory.** New `create_app(config: Config | None = None)` is the composition
+  root: it pushes the config, runs the directory-creation (the old import-time `mkdir` loop),
+  and registers the blueprints. The module-level `app = create_app()` WSGI / console-script
+  handle is retained. `main()` + `_should_open_browser` stay in `app.py`.
+- **Typed `Config` (new top-level `config.py`).** Replaces the eight module-global path
+  constants + `ALLOWED_EXTENSIONS` + the bind host; `Config(base_dir=...)` re-points every
+  derived directory off one root. `ensure_dirs()` is byte-identical to the retired loop
+  (configs/resumes/output only — annotation_root/personas stay lazily created).
+- **Shared `web_infra/` package (new).** Six fixed groups — `security` (`_safe_username` /
+  `_within`), `http` (`_sse` / `_error_detail_payload`), `clients` (`_get_client`), `config_io`
+  (`_load_config` / `_save_config`), `provisioning` (`_get_or_provision_candidate`),
+  `request_gates` (`_is_localhost_request`). It is leaf infrastructure — it never imports
+  `app.py`, a blueprint, or `config.py` (enforced by `tests/test_web_infra_is_leaf.py`).
+  `_error_detail_payload` now reads `current_app.debug` (same flag, behavior-identical).
+- **Dedup.** `blueprints/assistant.py` deletes its duplicated `_safe_username` / `_get_client`
+  / `_sse` and imports them from `web_infra/`; `dashboard/routes.py` consumes the shared
+  `_is_localhost_request` rather than a third loopback copy.
+- **`onboarding/corpus_import.py` second front folded in.** `_safe_load_config` /
+  `import_candidate_from_config` take an explicit, defaulted `configs_dir` (additive — the CLI
+  + legacy tests are unaffected); the app reaches them via `web_infra._get_or_provision_candidate`,
+  which threads `current_app.config["CONFIGS_DIR"]`.
+- **PX-19 — loopback bind.** `app.run(...)` now binds `host="127.0.0.1"` from `Config.host`;
+  `SERVER_NAME` noted as a third silent-flip vector.
+- **PX-20 — construction boundary gate.** New `tests/test_construction_boundary.py` fails if any
+  deterministic module (`hardening` / `parser` / `generator` / `scraper` / `json_resume` /
+  `corpus_to_json_resume` / `pdf_render`) imports `analyzer` or `anthropic` (charter C-6, by
+  construction not review).
+- **Tests.** New `tests/test_config.py`, `tests/test_web_infra.py`, `tests/test_web_infra_is_leaf.py`;
+  `tests/conftest.py` gains the canonical `app` / `client` factory fixtures; `tests/test_assistant_route.py`
+  migrates onto them; `web_infra/clients.py` added to the egress allowlist. The remaining
+  module-global monkeypatch test pattern is **intentionally retained** — those seam tests migrate
+  with their routes in 8.3b–h (the zero-tech-debt DoD is measured at the v1.1.0 tag).
+
 ## [1.0.7] — 2026-06-20
 
 ### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)

@@ -187,9 +187,13 @@ Several 5xx route handlers (`list_bundled_personas`,
 `list_user_personas`, `list_experiences`, `list_summary_items`,
 `list_applications`, `recommend_application_bullets`) wrap their
 body in `try / except` with `logger.exception` and respond via
-the `_error_detail_payload()` helper in [`app.py`](app.py).
+the `_error_detail_payload()` helper in
+[`web_infra/http.py`](web_infra/http.py) (it moved out of `app.py`
+in the 8.3a blueprint-split foundation; the routes import it).
 
-The helper's behavior is **gated on `app.debug`**:
+The helper's behavior is **gated on `current_app.debug`** (the
+same Flask flag, read via Flask's request-context proxy now that
+the helper lives outside `app.py`):
 
 - **Debug mode** (Flask's default for `python app.py` —
   controlled by `FLASK_DEBUG` defaulting to `1`): the response
@@ -214,8 +218,9 @@ the same code paths may run behind reverse proxies or in
 container deployments where leaking class names + paths to
 unauthenticated callers would be a legitimate information-
 disclosure issue. The gate is the contract; the gate's
-mechanism is `app.debug`; turning `app.debug` off in any
-non-local deployment is the operator's responsibility.
+mechanism is `current_app.debug`; turning debug off
+(`FLASK_DEBUG=0`) in any non-local deployment is the operator's
+responsibility.
 
 If you intentionally want richer 5xx detail in a non-debug
 deployment (e.g., a private staging environment with trusted

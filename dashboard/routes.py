@@ -24,6 +24,8 @@ from pathlib import Path
 
 from flask import Blueprint, abort, render_template, request
 
+from web_infra import _is_localhost_request
+
 logger = logging.getLogger(__name__)
 
 dashboard_bp = Blueprint(
@@ -886,9 +888,12 @@ def _baseline_health(records: list[dict], baseline: dict) -> dict:
 
 @dashboard_bp.before_request
 def _localhost_guard():
-    """Same posture as the rest of the app: localhost-only by host check."""
-    host = (request.host or "").split(":")[0]
-    if host not in {"localhost", "127.0.0.1", "::1", "[::1]"}:
+    """Same posture as the rest of the app: localhost-only by host check.
+
+    Consumes the shared `web_infra._is_localhost_request` (Sprint 8.3a) rather
+    than carrying a third copy of the loopback host-set.
+    """
+    if not _is_localhost_request():
         abort(403)
 
 

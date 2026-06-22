@@ -108,9 +108,16 @@ class ImportReport:
 # ---------------------------------------------------------------------------
 
 
-def _safe_load_config(username: str) -> dict[str, Any]:
-    """Read configs/{user}.config; return {} if absent."""
-    path = CONFIGS_DIR / f"{username}.config"
+def _safe_load_config(username: str, *, configs_dir: Path | None = None) -> dict[str, Any]:
+    """Read configs/{user}.config; raise if absent.
+
+    `configs_dir` is the injected configs directory (Sprint 8.3a) — the app reaches
+    this function via `web_infra._get_or_provision_candidate`, which passes
+    `current_app.config["CONFIGS_DIR"]`. It defaults to the module-level
+    `CONFIGS_DIR` so the CLI import path + the legacy tests keep working unchanged.
+    """
+    base = configs_dir if configs_dir is not None else CONFIGS_DIR
+    path = base / f"{username}.config"
     if not path.exists():
         raise FileNotFoundError(f"No config found at {path}")
     with path.open(encoding="utf-8") as fh:
@@ -122,15 +129,19 @@ def import_candidate_from_config(
     session: Session,
     *,
     dry_run: bool = False,
+    configs_dir: Path | None = None,
 ) -> ImportReport:
     """Read configs/{user}.config and seed candidate + skills + certs + education.
 
     Idempotent: existing candidate (matched on `username`) gets non-destructive
     updates only for empty fields. Skills/certs/education match by name and
     are skipped if already present.
+
+    `configs_dir` (Sprint 8.3a) is threaded to `_safe_load_config`; defaults to the
+    module-level `CONFIGS_DIR` so the CLI + legacy callers are unaffected.
     """
     report = ImportReport()
-    cfg = _safe_load_config(username)
+    cfg = _safe_load_config(username, configs_dir=configs_dir)
 
     candidate = session.query(Candidate).filter_by(username=username).first()
     if candidate is None:

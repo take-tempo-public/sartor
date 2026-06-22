@@ -10,8 +10,9 @@ from __future__ import annotations
 import pytest
 
 import analyzer
-import app as app_module
 import blueprints.assistant as ba
+from app import create_app
+from config import Config
 
 
 def _stub_avatar(client, question, context, *, allow_dev=False, username="", run_id=""):
@@ -35,15 +36,18 @@ def _stub_avatar(client, question, context, *, allow_dev=False, username="", run
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
+    # Factory-built app: the injected Config points CONFIGS_DIR at tmp_path/configs,
+    # which the route reads via current_app.config (Sprint 8.3a — replaces the old
+    # monkeypatch of blueprints.assistant.CONFIGS_DIR, which no longer exists).
     cfg = tmp_path / "configs"
     cfg.mkdir()
     (cfg / "testuser.config").write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(ba, "CONFIGS_DIR", cfg)
-    # Isolate the route from retrieval + the network.
+    # Isolate the route from retrieval + the network. _get_client / _build_sources are
+    # module-level names in blueprints.assistant (the imported binding is patchable).
     monkeypatch.setattr(ba, "_build_sources", lambda turns: [])
     monkeypatch.setattr(ba, "_get_client", lambda: None)
     monkeypatch.setattr(analyzer, "avatar_answer_streaming", _stub_avatar)
-    return app_module.app.test_client()
+    return create_app(Config(base_dir=tmp_path)).test_client()
 
 
 def test_no_username_streams_anonymous(client):
