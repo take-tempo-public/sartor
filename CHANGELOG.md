@@ -367,6 +367,43 @@ move is a **pure refactor — every URL/method/request/response is byte-identica
   `recommend_*`/`suggest_*` stubs stay on `analyzer`). The UX harness adds the
   `blueprints.applications._get_client` stub for the Compose recommend/suggest steps.
 
+### Changed — users/config blueprint seam (`refactor/app-blueprints-users-config`, Sprint 8.3g)
+
+The **sixth domain seam** moved out of the `app.py` monolith: all **6 users/config routes** leave
+`app.py` for a new `blueprints/users.py`. The move is a **pure refactor — every URL/method/request/
+response is byte-identical** (verified by an `app.url_map` path+methods diff vs a pre-move baseline:
+96 rules unchanged, only the 6 endpoint *names* gained the `users.` blueprint prefix). **No prompt/
+dependency/migration** — `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched.
+
+- **New `blueprints/users.py` (single module, 6 routes).** `users_bp = Blueprint("users", __name__)`,
+  registered with **no `url_prefix`** (full-path decorators): `index` (the SPA shell) · `list_users` ·
+  `create_user` · `get_config` · `update_config` · `fetch_profile` (the PX-02 opt-in profile scrape).
+  Reads paths from `current_app.config["CONFIGS_DIR"]` / `["RESUMES_DIR"]` and the shared `web_infra`
+  config-io / security / provisioning helpers (`_load_config(configs_dir=…)` / `_save_config(configs_dir=…)`
+  / `_safe_username(configs_dir=…)` / `_within` / `_get_or_provision_candidate(configs_dir=…)`); the
+  `db.session` + `scraper` imports stay lazy inside `fetch_profile`; the module never imports `app.py`.
+  PV-4: every route annotated `-> ResponseReturnValue`. **LLM-free** — `fetch_profile`'s only egress is
+  inside `scraper.py` (already allowlisted), so `blueprints/users.py` is **not** on the egress allowlist.
+- **app.py.** `users_bp` registered in `register_blueprints()`; the 6 route bodies removed; the
+  now-unused `make_response` / `render_template` / `validate_config` imports pruned. The app.py-local
+  helper copies (`_safe_username` / `_load_config` / `_save_config` / `_get_or_provision_candidate`) and
+  the `CONFIGS_DIR` / `RESUMES_DIR` globals are **kept** — the still-resident diagnostics routes use
+  `_safe_username` + the globals; the whole local-helper block retires together at 8.3h when `app.py`
+  has zero routes.
+- **Second monkeypatch front retired for this seam.** `fetch_profile`'s provisioning chain
+  (`_get_or_provision_candidate` → `import_candidate_from_config` → `_safe_load_config`) is fully
+  `configs_dir`-parameterized in `web_infra/`, so the blueprint passes
+  `current_app.config["CONFIGS_DIR"]` end-to-end and `tests/test_profile_fetch_route.py` **drops** its
+  `onboarding.corpus_import.CONFIGS_DIR` monkeypatch (design §7 zero-debt).
+- **Tests.** `test_profile_fetch_route.py` and the `TestConfigRouteContainment` class of
+  `test_app_security.py` migrate from module-global monkeypatch + `importlib.reload` to
+  `create_app(Config(base_dir=tmp_path))` (keeping the `db.session.DEFAULT_DB_PATH` monkeypatch; the
+  `scraper.fetch_url_content` stub is unchanged). The helper-level classes (`TestSafeUsername` /
+  `TestWithin` / `TestConfigHelperContainment`) stay on the `app_module` fixture — they test the
+  app.py-local helpers that remain. New `tests/test_users_routes.py` adds the previously-absent
+  `list_users` / `create_user` unit coverage (pinning the `RESUMES_DIR` config-key swap). The UX harness
+  injects `RESUMES_DIR` onto the live app config so a new-user flow can't write into the real `resumes/`.
+
 ## [1.0.7] — 2026-06-20
 
 ### Changed — avatar citation/reference-format consistency (`feat/avatar-citation-format`, Sprint 7.8d)

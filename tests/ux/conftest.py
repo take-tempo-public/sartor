@@ -39,18 +39,23 @@ def ux_app(tmp_path, monkeypatch) -> ModuleType:
     # Step-6 WYSIWYG preview. Isolation comes from the temp DB + OUTPUT_DIR +
     # CONFIGS_DIR; nothing in the wizard flow writes via BASE_DIR directly.
     # The analysis (blueprints/analysis.py, 8.3b), generation
-    # (blueprints/generation.py, 8.3c) and templates/personas
-    # (blueprints/templates.py, 8.3e) routes read paths from current_app.config,
-    # NOT the module globals above — so inject the two temp keys they read onto
-    # the live app's config. BASE_DIR / PERSONAS_DIR / BUNDLED_PERSONAS_DIR are
+    # (blueprints/generation.py, 8.3c), templates/personas
+    # (blueprints/templates.py, 8.3e) and users/config (blueprints/users.py, 8.3g)
+    # routes read paths from current_app.config, NOT the module globals above — so
+    # inject the temp keys they read onto the live app's config. RESUMES_DIR is
+    # injected for 8.3g: create_user does `(current_app.config["RESUMES_DIR"] /
+    # safe).mkdir(...)`, so without this a new-user UX flow would write into the
+    # real repo `resumes/`. BASE_DIR / PERSONAS_DIR / BUNDLED_PERSONAS_DIR are
     # deliberately NOT injected: the moved persona/preview routes read them from
     # the live app's (production) config, which already points at the real repo
     # root — exactly what the bundled-template resolution needs. The still-module-
     # global routes from un-moved seams keep reading the globals until they move.
     app_module.app.config["CONFIGS_DIR"] = tmp_path / "configs"
     app_module.app.config["OUTPUT_DIR"] = tmp_path / "output"
+    app_module.app.config["RESUMES_DIR"] = tmp_path / "resumes"
     (tmp_path / "configs").mkdir()
     (tmp_path / "output").mkdir()
+    (tmp_path / "resumes").mkdir()
 
     from db.session import init_db
 
