@@ -249,7 +249,20 @@ def build_bootstrap_document(
     grounding: dict[str, Any] | None = None
     if grounding_fn is not None:
         reps_md = "\n".join(f"- {c['representative']}" for c in bullet_clusters)
-        grounding = grounding_fn(reps_md, [corpus_source])
+        try:
+            grounding = grounding_fn(reps_md, [corpus_source])
+        except Exception:  # noqa: BLE001
+            # Grounding is an OPTIONAL enhancement. A scorer failure — a drifted
+            # dependency, a failed model download, or the [eval-grounding] extras
+            # not installed — must NEVER discard the completed (and paid)
+            # analyze/clarify/generate pipeline work that already populated per_jd.
+            # Degrade to an un-scored document; the caller still persists it.
+            # (window-8.5-findings EV-2.)
+            logger.warning(
+                "Grounding scoring failed; building bootstrap without scores.",
+                exc_info=True,
+            )
+            grounding = None
 
     return {
         "bootstrap_schema_version": BOOTSTRAP_SCHEMA_VERSION,
