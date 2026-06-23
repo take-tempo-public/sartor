@@ -10,9 +10,12 @@
 > **Companion:** the walkthrough runbook
 > [`window-8.5-walkthrough.md`](window-8.5-walkthrough.md). Scoring + tuning
 > provenance is in [`../../evals/TUNING_LOG.md`](../../evals/TUNING_LOG.md).
-> **Status:** OPEN — being populated on `eval/live-shakedown-labels`. Findings are
-> observed/triaged here only; **no fixes land on 8.5** (the window does not burn
-> its own backlog).
+> **Status:** GROUNDING SLICE BURNED on 8.6 `fix/window-findings-grounding`
+> (2026-06-23) — EV-1 / EV-2 / EV-3 / S3-1 resolved; PV-1 labels + PV-2 calibration
+> **staged** (owner-gated). PV-3 cover-letter tone → sibling `fix/window-findings-tone`;
+> the `/wiki-ingest` app.py-cite re-anchor → folded into 8.6a. See the **Resolution**
+> section at the foot of this file. Findings were observed/triaged here on 8.5; **no
+> fixes landed on 8.5** (the window did not burn its own backlog).
 
 ---
 
@@ -134,3 +137,46 @@ As of branch close (2026-06-23), pre-walkthrough:
 
 Net: the highest-leverage item for 8.6 is **EV-1** — it must be fixed before PV-2 can
 produce calibratable L1/L2 labels, so it should lead the correction sprint.
+
+---
+
+## Resolution — 8.6 `fix/window-findings-grounding` (2026-06-23)
+
+The **grounding slice** of this backlog burned on the first 8.6 sub-branch
+(`fix/window-findings-grounding`, owner-confirmed split). PV-3 cover-letter tone → sibling
+`fix/window-findings-tone`; the `/wiki-ingest` `app.py`-cite re-anchor → folded into **8.6a**
+(`docs/assistant-wiki-coverage`, which already rewrites wiki pages).
+
+- **EV-1 — RESOLVED.** `minicheck` pinned to `b58b9fa…` in `pyproject.toml` (was an unpinned
+  `git+` ref). **Correction to this finding's root-cause text** (verified against the installed
+  package, a `reference-prescription-metrics-can-restale`-class drift): `flan-t5-large` was **NOT
+  dropped** — it is still a valid `model_name` routing through the non-vLLM CPU `Inferencer`; and
+  `MiniCheck.score()` still returns the **4-tuple** the code already unpacked (its `-> List[float]`
+  annotation is simply wrong). The **actual** breaks were (a) the dropped `device` kwarg
+  (`grounding_signals.py`) and — surfaced only by running it end-to-end — (b) `transformers>=5`
+  needs **`accelerate`** for the `device_map="auto"` the loader uses, and (c) NLTK's **`punkt_tab`**
+  tokenizer data isn't auto-present. **Fix:** drop `device`; add `accelerate>=1.0` + declare
+  `nltk>=3.9`; auto-ensure `punkt_tab` in `_load_minicheck_scorer`; widen the transformers cap to
+  `<6.0` (validated on the installed 5.10.2). **Validated end-to-end on CPU** — L1 NLI mean 0.995,
+  L2 MiniCheck mean 0.973.
+- **EV-2 — RESOLVED.** `build_bootstrap_document` now wraps the optional `grounding_fn` call in
+  `try/except` (log + `grounding=None` + still return the doc), so a scorer failure never discards
+  the completed (paid) pipeline work. The browser bootstrap route was reconciled (its now-redundant
+  try/except folded into an outcome-derived note) and a unit test added
+  (`test_grounding_fn_failure_is_soft_doc_still_built`).
+- **EV-3 — RESOLVED.** Both `export_corpus_seed.py` and `capture_screenshots.py` reconfigure
+  `stdout`/`stderr` to UTF-8 at entry. (The per-char ASCII approach the finding implied missed the
+  `--help`/`__doc__` argparse path **and** ~30 progress prints in `capture_screenshots.py`; the
+  reconfigure fixes the whole class.) Verified exit 0 — success print **and** `--help` — under a
+  forced cp1252 console.
+- **S3-1 — RESOLVED.** `scripts/build_vector_index.py` now writes a `manifest.json`
+  (`built_at_sha`) on build and has a `--check` staleness mode (manifest sha vs HEAD) + a unit
+  test. The local index was rebuilt (`--full`, 3239 chunks re-anchored onto `blueprints/**`). The
+  index stays gitignored/local; the **freshness check is the committed durable guard** against
+  silent re-staling.
+- **PV-1 labels + PV-2 calibration — STAGED (owner-gated).** EV-1 unblocked the loop and the L0+L1+L2
+  scorers are proven to run on CPU. Full label production + calibration is owner-gated (manual
+  browser annotation) and **may spill to v1.0.9** per RELEASE_ARC §4.8. The `testuser` seed is
+  ready at the gitignored `evals/fixtures/real/testuser/seed.json`. Remaining steps: bootstrap
+  (`--grounding-signals`) → owner annotate → collate → `runner.py --suite real --seed …` → PV-2
+  metric calibration.

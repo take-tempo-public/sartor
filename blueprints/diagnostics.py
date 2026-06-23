@@ -649,9 +649,11 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
         # Optional grounding scorers (eval-only models), resolved AFTER the paid
         # pipeline so a missing dep never wastes the LLM spend. The grounding_signals
         # module is pure-Python (the heavy deps import lazily inside the scorer), so
-        # the import here always succeeds; a missing `[eval-grounding]` extra surfaces
-        # as an ImportError at build time below — caught and degraded to an un-scored
-        # bootstrap + warning, never a 500 (the paid pipeline output is preserved).
+        # the import here always succeeds; any scorer failure (a missing
+        # `[eval-grounding]` extra, a drifted dep, a failed model download) is now
+        # absorbed *inside* build_bootstrap_document, which degrades to an un-scored
+        # doc rather than raising (window-8.5-findings EV-2) — so the paid pipeline
+        # output is never lost and this route never 500s on a grounding hiccup.
         grounding_fn = None
         grounding_note = None
         if grounding_requested:
@@ -662,32 +664,23 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
                            "deduped bullets — this is CPU-bound (~2-4s/bullet)…",
             })
 
-        def _collate(gf):
-            return build_bootstrap_document(
-                result["per_jd"],
-                username=safe_user,
-                seed_path="(browser bootstrap wrapper)",
-                threshold=DEFAULT_JACCARD,
-                corpus_source=result.get("corpus", ""),
-                grounding_fn=gf,
-            )
-
         # Deterministic collation + write (LLM-free apart from the optional scorers).
-        try:
-            doc = _collate(grounding_fn)
-        except ImportError as exc:
-            logger.warning("Grounding extras missing; saving bootstrap without scores: %s", exc)
+        # build_bootstrap_document fails soft on grounding, so this never raises for
+        # a scoring failure; we surface a note below from the outcome.
+        doc = build_bootstrap_document(
+            result["per_jd"],
+            username=safe_user,
+            seed_path="(browser bootstrap wrapper)",
+            threshold=DEFAULT_JACCARD,
+            corpus_source=result.get("corpus", ""),
+            grounding_fn=grounding_fn,
+        )
+        if grounding_requested and doc.get("grounding_signals") is None:
             grounding_note = (
-                "Grounding extras not installed — bootstrap saved without scores. "
-                "Install with: pip install -e '.[eval-grounding]' (see CONTRIBUTING.md)."
+                "Grounding unavailable — bootstrap saved without scores (see the server "
+                "log for detail; if the extras are missing, install with "
+                "pip install -e '.[eval-grounding]' — see CONTRIBUTING.md)."
             )
-            doc = _collate(None)
-        except Exception as exc:  # noqa: BLE001
-            # Scoring blew up (e.g. model download failed) — re-collate without it
-            # so the expensive pipeline output is never lost.
-            logger.warning("Grounding scoring failed; saving bootstrap without scores: %s", exc)
-            grounding_note = f"Grounding scoring failed ({exc}); bootstrap saved without scores."
-            doc = _collate(None)
         fixture_dir.mkdir(parents=True, exist_ok=True)
         (fixture_dir / "bootstrap.json").write_text(
             json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8",

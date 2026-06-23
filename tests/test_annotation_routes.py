@@ -530,9 +530,12 @@ class TestBootstrapGrounding:
         })
         assert resp.status_code == 200
         body = resp.get_data(as_text=True)
-        # Degrades: non-fatal warning, the bootstrap still completes.
+        # Degrades softly: the grounding crash is absorbed inside
+        # build_bootstrap_document (EV-2), so the route emits a non-fatal warning
+        # with the actionable install hint and the bootstrap still completes.
         assert "event: warning" in body
-        assert "not installed" in body
+        assert "Grounding unavailable" in body
+        assert "pip install" in body  # actionable install hint preserved
         assert "event: done" in body
         doc = json.loads(
             (ann_app.ANNOTATION_ROOT / "alice-bootstrap" / "bootstrap.json").read_text(encoding="utf-8"),

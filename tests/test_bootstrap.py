@@ -223,6 +223,23 @@ class TestBuildBootstrapDocument:
         assert "- Led migration to Kubernetes" in md
         assert len([ln for ln in md.splitlines() if ln.startswith("- ")]) == 3
 
+    def test_grounding_fn_failure_is_soft_doc_still_built(self) -> None:
+        # EV-2 (window-8.5-findings): a grounding scorer crash — a drifted dep, a
+        # failed model download, or the extras not installed — must NOT discard the
+        # completed (paid) pipeline work. The doc is still built with grounding=None.
+        def boom_grounding(resume_md: str, sources: list[str]) -> dict:
+            raise TypeError("MiniCheck() got an unexpected keyword argument 'device'")
+
+        doc = bootstrap.build_bootstrap_document(
+            self._per_jd(), username="alex", seed_path="seed.json",
+            threshold=0.75, corpus_source="CORPUS", grounding_fn=boom_grounding,
+        )
+        assert doc["grounding_signals"] is None
+        # The rest of the document is fully intact — nothing was discarded.
+        assert doc["jd_count"] == 2
+        assert doc["dedup"]["bullets"]["cluster_count"] == 3
+        assert doc["dedup"]["skills"]["cluster_count"] == 3
+
 
 class TestPipelineOrchestration:
     def _patch_pipeline(self, monkeypatch, *, clarify_raises: bool = False) -> None:

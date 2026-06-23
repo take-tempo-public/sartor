@@ -961,6 +961,15 @@ Then: `chore/version-bump-v1.0.7`.
   calibration + **PV-3** cover-letter tone tune (now on the decomposed code) + a
   `/wiki-ingest` to refresh the wiki's `app.py` `path:line` citations the split staled.
   May spill to a v1.0.9 epic if heavy.
+  - **Update (2026-06-23) — owner-confirmed sub-branch split + first sub-branch landed.** 8.6 is
+    **multiple sub-branches**: **(1) `fix/window-findings-grounding`** — the **grounding slice**
+    (EV-1 minicheck pin/fix, EV-2 bootstrap fail-soft, EV-3 cp1252 print crashes, S3-1 vector-index
+    freshness), **landed 2026-06-23**; EV-1 fixed + the L0+L1+L2 scorers re-validated on CPU, so
+    **PV-2 is unblocked but staged** (owner-gated manual annotation; may spill to v1.0.9). **(2)
+    `fix/window-findings-tone`** — **PV-3** cover-letter tone (the only `PROMPT_VERSION`-bumping
+    change), a sibling branch. **(3)** the **`/wiki-ingest` re-anchor folds into 8.6a**
+    (`docs/assistant-wiki-coverage`, which already rewrites wiki pages) rather than this sprint.
+    Findings + resolution: [`window-8.5-findings.md`](window-8.5-findings.md).
 - `docs/assistant-wiki-coverage` (proposed **8.6a**, owner-confirmed 2026-06-20) — the
   doc-authoring sprint that fills the doc-grounded assistant's "woefully uninformed" coverage
   gap (only the ~6 Sprint-6.5 `audience: user` wiki pages exist today, so many "how do I…"
