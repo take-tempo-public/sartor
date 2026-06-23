@@ -13,6 +13,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.8 correction sprint — cover-letter tone (`fix/window-findings-tone`, Sprint 8.6, PV-3)
+
+The second 8.6 sub-branch: **PV-3 cover-letter tone tune** — the only `PROMPT_VERSION`-bumping
+change in the v1.0.7/v1.0.8 epics. Reinforces the existing throat-clearing/hedging bans (the
+v1.0.3 `tone` lapse was an *adherence* slip, not a missing rule) via the project's standard
+mechanism — a worked OK/NOT-OK example. `AVATAR_PROMPT_VERSION` untouched; no new dependency.
+
+**Changed**
+- `analyzer.py` `_COVER_LETTER_RULES_BLOCK`: de-cloned the single STRUCTURE-Para-3 close example
+  (the model was copying `"I'd welcome a direct conversation about what this team is building."`
+  near-verbatim into the documented lapse) — replaced with a functional description of the close's
+  job (concrete topic / timing signal / scheduling line; implies initiative, never polite waiting).
+- `PROMPT_VERSION` `2026-06-13.1` → `2026-06-23.1` (same commit).
+
+**Added**
+- `analyzer.py` `_COVER_LETTER_RULES_BLOCK`: a `WORKED EXAMPLES` sub-block — OK / NOT-OK pairs for
+  the cover-letter **opener** and **close**, the two surfaces the v1.0.3 lapse hit.
+- `tests/test_corpus_mode_prompt.py::TestCoverLetterWorkedExamples` — deterministic ($0) assertions
+  that the worked-example scaffold is present and wired into the generate prompt when
+  `with_cover_letter=True`, absent when `False`.
+
+**Fixed**
+- `evals/runner.py`: the **EV-3-class cp1252 console crash** the 8.6 grounding fix didn't cover —
+  `--help` (the `→` epilog) and any `→` print raised `UnicodeEncodeError` under a Windows cp1252
+  console. Added the same `sys.stdout`/`sys.stderr.reconfigure(encoding="utf-8")` loop at
+  `runner.main()` entry (mirrors `scripts/export_corpus_seed.py` + `capture_screenshots.py`); verified
+  exit 0 plain and under forced `PYTHONIOENCODING=cp1252`. Surfaced during the PV-3 validation;
+  owner-directed fold-in before the merge.
+
+**Validation** — paired before/after `--suite synthetic --subset full`, n=3 each side: **tone holds
+at the 4.2 floor with no regression on any rubric**; the opener/close fix is judge-confirmed adopted
+(substance-first opener + concrete close). One sub-4.0 after-sample (pm 3.2) was a scenario-specific
+gap-admission hedge, a *different* tone failure mode than PV-3 targeted. Detail + tables:
+[`evals/TUNING_LOG.md`](evals/TUNING_LOG.md) (2026-06-23 PV-3 entry). Gate: ruff · mypy (227) ·
+pytest **1391** incl. `-m ux`.
+
 ### v1.0.8 correction sprint — grounding slice (`fix/window-findings-grounding`, Sprint 8.6)
 
 The first 8.6 sub-branch burns the **grounding slice** of the

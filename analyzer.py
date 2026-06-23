@@ -278,7 +278,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-06-13.1"  # PX-02: + <candidate_web_presence> block
+PROMPT_VERSION = "2026-06-23.1"  # PV-3: + cover-letter worked OK/NOT-OK opener+close examples
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -1976,7 +1976,8 @@ Paragraph 2 — EVIDENCE (3-5 sentences):
   Do not repeat the resume verbatim. The letter illuminates; the resume documents.
 
 Paragraph 3 — CLOSE (2-3 sentences):
-  Confident forward look — not "I hope to hear from you." More: "I'd welcome a direct conversation about what this team is building."
+  Confident forward look — not "I hope to hear from you," and not a generic "I would welcome a conversation."
+  The close must name something concrete — a specific topic it will cover, a timing signal, or a direct scheduling line — so it implies initiative, never polite waiting.
   One sentence on fit or timing if relevant. Close cleanly. No trailing pleasantries.
 
 FORMAT:
@@ -1986,6 +1987,20 @@ FORMAT:
   - Match industry register: measured for finance/law; direct for tech; considered for mission-driven orgs
   - Banned phrases: "passionate about," "team player," "detail-oriented," "hard worker," "results-driven," "leverage," "synergy"
   - The letter must stand alone. Assume the reader has not seen the resume.
+
+WORKED EXAMPLES — the opener and the close are where this voice most often slips. Study both:
+
+  OPENER —
+    NOT OK: "I am writing to be considered for the Staff Engineer role. I have eight years of experience and am genuinely excited about your mission."
+            (Announces the application and recites credentials — the reader learns nothing they could not infer from the application's existence.)
+    OK: "Your platform team's public postmortems describe the exact reliability gaps I spent two years closing at a similar-scale company. I'm applying for the Staff Engineer role to work that problem from the inside."
+            (Opens on a specific, above-the-JD observation; names the role in the second sentence; leads with what the candidate brings.)
+
+  CLOSE —
+    NOT OK: "I would welcome a conversation about how I might contribute to your team."
+            (Passive, generic, no specificity — it sounds like waiting to be called.)
+    OK: "I'd welcome a direct conversation about the first-90-days migration sequence and the year-one scaling questions the role description doesn't cover. I can make time this week."
+            (Forward-leaning, names a concrete topic and a timing signal, implies initiative.)
 </cover_letter_rules>"""
 
 

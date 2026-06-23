@@ -168,7 +168,13 @@ The **grounding slice** of this backlog burned on the first 8.6 sub-branch
   `stdout`/`stderr` to UTF-8 at entry. (The per-char ASCII approach the finding implied missed the
   `--help`/`__doc__` argparse path **and** ~30 progress prints in `capture_screenshots.py`; the
   reconfigure fixes the whole class.) Verified exit 0 — success print **and** `--help` — under a
-  forced cp1252 console.
+  forced cp1252 console. **Correction + fix (2026-06-23, PV-3):** "the whole class" was scoped to
+  those **two scripts** — `evals/runner.py` was **not** reconfigured and crashed on `--help` (the
+  `→` epilog) / any `→` print under cp1252. Surfaced while running the PV-3 validation harness
+  (worked around with `PYTHONIOENCODING=utf-8`); **the owner directed folding the 1-line fix in
+  before the merge**, so `runner.main()` now carries the same
+  `sys.stdout`/`sys.stderr.reconfigure(encoding="utf-8")` loop — verified exit 0 on `--help` plain
+  **and** under forced `PYTHONIOENCODING=cp1252`. Resolved (RELEASE_CHECKLIST Carry-forward ledger).
 - **S3-1 — RESOLVED.** `scripts/build_vector_index.py` now writes a `manifest.json`
   (`built_at_sha`) on build and has a `--check` staleness mode (manifest sha vs HEAD) + a unit
   test. The local index was rebuilt (`--full`, 3239 chunks re-anchored onto `blueprints/**`). The
@@ -180,3 +186,22 @@ The **grounding slice** of this backlog burned on the first 8.6 sub-branch
   ready at the gitignored `evals/fixtures/real/testuser/seed.json`. Remaining steps: bootstrap
   (`--grounding-signals`) → owner annotate → collate → `runner.py --suite real --seed …` → PV-2
   metric calibration.
+
+## Resolution — 8.6 `fix/window-findings-tone` (PV-3 cover-letter tone, 2026-06-23)
+
+The **second 8.6 sub-branch** (sibling to the grounding slice). PV-3 is a RELEASE_ARC §4.8
+deliverable, **not** an EV/S3 finding from this backlog — recorded here only because the sub-branch
+series lives under `fix/window-findings-*`.
+
+- **PV-3 — DONE.** Reinforced the existing throat-clearing/hedging cover-letter bans (the v1.0.3
+  `tone` 2.1 was an *adherence* slip) by adding a `WORKED EXAMPLES` OK/NOT-OK opener+close sub-block
+  to `_COVER_LETTER_RULES_BLOCK` and **de-cloning** the single Para-3 close example the model was
+  copying near-verbatim into the lapse. **`PROMPT_VERSION 2026-06-13.1 → 2026-06-23.1`** (the only
+  prompt bump in the v1.0.7/v1.0.8 epics; `AVATAR_PROMPT_VERSION` untouched, no new dep). Validated
+  with a paired before/after `--suite synthetic --subset full` n=3: **tone held at the 4.2 floor,
+  no regression on any rubric**; the opener/close fix is judge-confirmed adopted; the one sub-4.0
+  after-sample (pm 3.2) was a scenario-specific gap-admission hedge — a *different* tone failure
+  mode (logged as a future-tuning learning, not folded in). New deterministic test
+  `TestCoverLetterWorkedExamples`. Full tables + lessons: [`../../evals/TUNING_LOG.md`](../../evals/TUNING_LOG.md)
+  (2026-06-23 PV-3 entry). A latent `evals/runner.py` cp1252 crash (EV-3 class, not covered by the
+  grounding fix) was surfaced + filed to the Carry-forward ledger (see the EV-3 correction above).

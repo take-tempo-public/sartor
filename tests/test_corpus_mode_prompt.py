@@ -18,8 +18,10 @@ from unittest.mock import patch
 import pytest
 
 from analyzer import (
+    _COVER_LETTER_RULES_BLOCK,
     GENERATE_CORPUS_REQUIRED_KEYS,
     GENERATE_REQUIRED_KEYS,
+    _build_generate_prompt,
     _corpus_block,
     _stable_user_prefix,
     generate,
@@ -456,3 +458,42 @@ class TestTitlePinEmission:
             ctx["composition_overrides"] = {"pinned_title_ids": {key: 11}}
             prefix = _stable_user_prefix(ctx)
             assert 'id="t11" official="false" pinned="true"' in prefix
+
+
+# ---------------------------------------------------------------------------
+# PV-3 — cover-letter worked OK/NOT-OK opener+close examples
+# ---------------------------------------------------------------------------
+
+
+class TestCoverLetterWorkedExamples:
+    """PV-3 (2026-06-23.1): the cover-letter contract gained a WORKED EXAMPLES
+    sub-block (OK/NOT-OK pairs for the OPENER and CLOSE) to reinforce adherence
+    to the existing throat-clearing/hedging bans — the documented v1.0.3 tone
+    lapse was an adherence slip, and a worked example is the project's standard
+    fix (AGENTS.md). Assert on the scaffold tokens, NOT the example sentences,
+    so finalizing the wording never churns this test."""
+
+    _ANALYSIS: dict = {}
+
+    def test_block_contains_worked_examples_section(self):
+        block = _COVER_LETTER_RULES_BLOCK
+        assert "WORKED EXAMPLES" in block
+        assert "OPENER" in block
+        assert "CLOSE" in block
+        # one OK and one NOT OK per surface (opener + close)
+        assert block.count("NOT OK:") >= 2
+        assert block.count("OK:") >= 4  # "NOT OK:" also contains "OK:"
+
+    def test_block_present_when_cover_letter_enabled(self):
+        prompt, _ = _build_generate_prompt(
+            _make_legacy_context(), self._ANALYSIS, with_cover_letter=True,
+        )
+        assert "<cover_letter_rules>" in prompt
+        assert "WORKED EXAMPLES" in prompt
+
+    def test_block_absent_when_cover_letter_disabled(self):
+        prompt, _ = _build_generate_prompt(
+            _make_legacy_context(), self._ANALYSIS, with_cover_letter=False,
+        )
+        assert "<cover_letter_rules>" not in prompt
+        assert "WORKED EXAMPLES" not in prompt

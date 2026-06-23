@@ -84,6 +84,8 @@ post-feature test window is a **formal gate** (E2E walkthrough + first real-data
 - [ ] **8.5** **gated test window (on decomposed code)** — E2E user+dev walkthrough (R2 verified live) + `eval/live-shakedown-labels` (PV-1, **first** real-data eval/tuning loop) → numbered findings backlog.
       **Progress (2026-06-23, `eval/live-shakedown-labels`) — the eval half ran.** Landed: the **flaky Compose-wizard UX stabilization** (ledger #3, test-only — `ui_pages/wizard_compose.py` waits on `.compose-experience-card` not `.compose-row.recommended`; 20/20 loop); the **S3 before/after labeled eval → KEEP** (Carry-forward #2 **resolved**; mean judge relevance 1.12→2.58, Δ+1.46; new `scripts/vector_before_after_eval.py`); and the **PV-1 real-data shakedown** (candidate `testuser`, 3 JDs) — which **proved the real corpus→context→generate path works** (3 pipelines OK) and produced the numbered findings backlog [`window-8.5-findings.md`](window-8.5-findings.md): **EV-1** minicheck unpinned-git-dep drift (HIGH, gates PV-2) · **EV-2** grounding-abort discards paid work (Med) · **EV-3** seed-export unicode crash (Low) · **S3-1** vector index stale post-split (Med). **Carried forward (owner-decided 2026-06-23):** (a) PV-1 **label production → 8.6** (blocked on EV-1 — fix minicheck first, then one full L0+L1+L2 annotation pass; see ledger #4); (b) the **E2E walkthrough + R2-live** verification → run against `main` (runbook [`window-8.5-walkthrough.md`](window-8.5-walkthrough.md); see ledger). No prompt/dep/migration; `PROMPT_VERSION` untouched. Gate green (ruff · mypy · pytest incl. `-m ux`).
 - [ ] **8.6** `fix/window-findings-*` — correction sprint: burn the backlog + PV-2 calibration + PV-3 cover-letter tone + `/wiki-ingest`. May spill to a v1.0.9 epic.
+      **Progress (sub-branch 1, 2026-06-23, `fix/window-findings-grounding`):** grounding slice burned (EV-1/EV-2/EV-3 + S3-1); merge `cb8dc40`. Eval/dev tooling only; `PROMPT_VERSION` untouched.
+      **Progress (sub-branch 2, 2026-06-23, `fix/window-findings-tone`) — PV-3 DONE.** Cover-letter tone tune: `_COVER_LETTER_RULES_BLOCK` gained a `WORKED EXAMPLES` OK/NOT-OK opener+close sub-block + de-cloned the single Para-3 close example the model was copying into the v1.0.3 lapse; **`PROMPT_VERSION 2026-06-13.1 → 2026-06-23.1`** (the only prompt bump in the v1.0.7/v1.0.8 epics; `AVATAR_PROMPT_VERSION` untouched, no new dep). Validated via paired before/after `--suite synthetic --subset full` n=3: **tone holds at the 4.2 floor, no regression on any rubric**; opener/close fix judge-confirmed adopted; the lone pm 3.2 was a scenario-specific gap-admission hedge (a different, untargeted tone failure mode — logged as a future-tuning learning). New deterministic test `TestCoverLetterWorkedExamples`. Detail: [`evals/TUNING_LOG.md`](../../evals/TUNING_LOG.md) (2026-06-23 PV-3) + [`window-8.5-findings.md`](window-8.5-findings.md). Gate green (ruff · mypy 227 · pytest 1391 incl. `-m ux`). **Remaining for 8.6/8.6a:** PV-1/PV-2 (owner-gated, staged, may spill to v1.0.9); the `/wiki-ingest` re-anchor folds into 8.6a.
 - [ ] **8.6a** `docs/assistant-wiki-coverage` — author the user/dev how-to wiki pages the avatar draws on (downloads, editing/refining, cover letters, multi-user, import mechanics, troubleshooting, the assistant itself); clears the **Assistant doc-coverage** ledger item (only ~6 `audience: user` pages exist today, so the avatar is "woefully uninformed"). Content, not code — runs after 8.6 settles the post-split route surface, before the public cut (8.7) so v1.1.0 ships a well-informed avatar; pairs with the 8.6 `/wiki-ingest`. Possibly multi-branch. _(PROPOSED 2026-06-20, 7.9 ledger capture — owner-confirmed slot.)_
 - [ ] **8.7** `release/public-prep` — `docs/screenshots`, fresh-clone < 5 min, badge set (E-2 / PX-26), UX/a11y/PDF required CI check (PX-25), doc-link sweep, **GitHub repo create + push (private/unpromoted)**.
 - [ ] **8.8** `chore/version-bump-v1.0.8` — tag; all work done.
@@ -577,6 +579,16 @@ _Open count: 8 — at the top of the ~8–10 reduction-sprint threshold, but the
       **Update (2026-06-23, `fix/window-findings-grounding` 8.6 gate):** first post-fix full-suite
       gate run on 8.6 — UX tier clean (see the branch's gate); one clean run banked toward the
       "a few clean runs" resolve bar. Still **watch** (one run is not yet "a few").
+      **Update (2026-06-23, `fix/window-findings-tone` 8.6 PV-3):** the **commit gate** ran
+      **1391 passed** clean incl. the UX tier (one clean run banked). The follow-up **fold-in gate**
+      (the runner.py cp1252 fix) then surfaced a **recurrence** — a *distinct* member of the class:
+      `tests/ux/regression/test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts`
+      `IndexError` on `compose.bullet_texts()[0]` (bullets not yet rendered) — which **passed clean on
+      isolated re-run** (2/2). PV-3 touches no Compose/bullet/reorder code, so **not code-caused**, but
+      it shows the `.compose-experience-card` stabilization (8.5) did **not** cover this second
+      Compose-*load* race (the prior fix targeted `.compose-row.recommended` waits). Net: still
+      **watch**, and the "clean runs" tally is **reset** — the class is not converging, so the eventual
+      PX-25 "UX tier as a required CI gate" will need either a broader compose-load wait or a retry policy.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -670,6 +682,18 @@ _Open count: 8 — at the top of the ~8–10 reduction-sprint threshold, but the
       assistant usefulness the v1.0.7 epic just built.
 
 #### Resolved
+
+- [x] **`evals/runner.py` cp1252 console crash (EV-3 class)** — **DONE 2026-06-23 on
+      `fix/window-findings-tone` (PV-3), owner-directed fold-in.** `python evals/runner.py --help`
+      (the `→` epilog) — and any `→`/non-cp1252 print — raised `UnicodeEncodeError` under a Windows
+      cp1252 console: the EV-3 class, but the 8.6 grounding fix only reconfigured
+      `scripts/export_corpus_seed.py` + `capture_screenshots.py`, **not** `runner.py` (correcting
+      EV-3's "fixes the whole class"). Added the same
+      `sys.stdout`/`sys.stderr.reconfigure(encoding="utf-8")` loop at the top of `runner.main()`.
+      **Verified exit 0** — `--help` plain **and** under forced `PYTHONIOENCODING=cp1252`. Surfaced +
+      filed during the PV-3 validation; the owner directed folding the 1-liner in **before the merge**
+      (avoid a follow-up branch for a 1-file edit). Open ledger unchanged at 8 (added + resolved in the
+      same close-out). _(surfaced 2026-06-23, PV-3 validation harness.)_
 
 - [x] **S3 vector tier — labeled before/after eval (gate-override validation) → KEEP** — **DONE 2026-06-23 on `eval/live-shakedown-labels` (8.5).** The judge-scored before/after relevance eval the 7.6 gate-override owed: new [`scripts/vector_before_after_eval.py`](../../scripts/vector_before_after_eval.py) runs a 12-question dev-vocab set through `recall.assemble` with the lexical tiers (wiki+git+session) vs +S3, scoring each set's relevance with the Haiku eval-judge (retrieval corpus = committed wiki+code, no PII). **Result: mean relevance base 1.12 → +S3 2.58 (Δ +1.46, +130%); improved 8/12, regressed 1/12; S3 added a lexical-missed cite on 12/12 → KEEP.** S3 earns its `numpy`+`model2vec` footprint; **no demote.** The qualitative probe's "0/12 lexical misses" (git-grep hits on all) is not counter-evidence — the judge scores those lexical-only sets at 1.12/5 (many hits, little relevance). Full detail: [`evals/TUNING_LOG.md`](../../evals/TUNING_LOG.md) (2026-06-23 entry §A) + [`window-8.5-findings.md`](window-8.5-findings.md) §3. _(One gotcha surfaced + → 8.6: the `db/vector_index/` was stale post-blueprint-split (cited moved `app.py` lines); a free rebuild re-anchored it, but it has no committed rebuild trigger — finding S3-1.)_ _(discovered: v1.0.7 stream, 2026-06-16, `feat/doc-assistant-vector`; retired at the 8.5 gated test window as scheduled.)_
 
