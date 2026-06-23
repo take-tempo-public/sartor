@@ -402,6 +402,16 @@ def cleanup(keep_user: bool) -> None:
 
 
 def main() -> int:
+    # Windows cp1252 consoles can't encode this script's unicode progress output
+    # (the ✓/📸 markers, em-dashes, ellipses) or the em-dashes in `--help`/`__doc__`
+    # — force UTF-8 on our streams before argparse or any print runs (the EV-3
+    # crash class, window-8.5-findings).
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+        except (AttributeError, ValueError):  # non-reconfigurable stream (e.g. piped)
+            pass
+
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--headless", action="store_true", help="run Chromium headless")
     ap.add_argument(
