@@ -65,7 +65,7 @@ safe_file = secure_filename(filename)         # strip traversal sequences
 if not _within(path, PARENT_DIR): abort(403)  # resolved-path containment check
 ```
 
-A `route-security-lint` hook enforces this on `app.py` edits — see [`.claude-plugin/hooks/`](.claude-plugin/hooks/). Canonical rule: charter **C-1** (Local and yours) + [`docs/governance/enforcement.md`](docs/governance/enforcement.md).
+A `route-security-lint` hook enforces this on `app.py` + `blueprints/**.py` route edits (PX-21 widen), and a committed gate (`tests/test_route_containment_gate.py`, PX-29) asserts it across the whole blueprint tree — see [`.claude-plugin/hooks/`](.claude-plugin/hooks/). Canonical rule: charter **C-1** (Local and yours) + [`docs/governance/enforcement.md`](docs/governance/enforcement.md).
 
 ### Branch before code changes
 
