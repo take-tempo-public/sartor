@@ -1,22 +1,33 @@
-"""Tests for the annotation + bootstrap write surface (app.py).
+"""Tests for the annotation + bootstrap write surface (blueprints/diagnostics.py).
 
-The console's first READ-WRITE routes (feat/annotation-tab). All routes are
-localhost-only and write ONLY under the (monkeypatched-to-temp) ANNOTATION_ROOT,
-reusing the deterministic, fail-closed evals.annotation contract. The bootstrap
-SSE route's LLM pipeline is stubbed — no paid calls in the suite.
+The diagnostics console's READ-WRITE routes (feat/annotation-tab; moved out of
+app.py to blueprints/diagnostics.py in Sprint 8.3h). All routes are localhost-only
+and write ONLY under the temp ANNOTATION_ROOT (supplied by the factory's injected
+Config, no module-global monkeypatch), reusing the deterministic, fail-closed
+evals.annotation contract. The bootstrap SSE route's LLM pipeline is stubbed — no
+paid calls in the suite.
 """
 
 from __future__ import annotations
 
-import importlib
 import json
+from types import SimpleNamespace
 
 import pytest
 
 
 @pytest.fixture
 def ann_app(tmp_path, monkeypatch):
-    """Reload app.py with temp DB + temp config/output + temp ANNOTATION_ROOT."""
+    """Factory app on temp dirs + temp DB (Sprint 8.3h — diagnostics seam).
+
+    The annotation/eval/tune routes read ANNOTATION_ROOT / CONFIGS_DIR from
+    ``current_app.config``, so the seam builds a ``create_app(Config(base_dir=tmp))``
+    app rather than monkeypatching app.py globals (which no longer exist). The
+    DB-path monkeypatch stays (a distinct seam). Returns a namespace exposing the
+    app, the config paths, and the helpers the containment tests call directly
+    (``_within`` from web_infra; ``_annotation_fixture_path`` from the blueprint,
+    bound to this app's annotation root) — so the test bodies are unchanged.
+    """
     db_file = tmp_path / "ann.sqlite"
     import db.session as db_session_mod
 
@@ -24,23 +35,30 @@ def ann_app(tmp_path, monkeypatch):
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
-    import app as app_module
+    import blueprints.diagnostics as diagnostics_mod
+    import web_infra
+    from app import create_app
+    from config import Config
 
-    importlib.reload(app_module)
-    ann_root = tmp_path / "fixtures_real"
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    monkeypatch.setattr(app_module, "BASE_DIR", tmp_path)
-    monkeypatch.setattr(app_module, "ANNOTATION_ROOT", ann_root)
-    (tmp_path / "configs").mkdir()
-    (tmp_path / "output").mkdir()
-    ann_root.mkdir()
-    (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
+    cfg = Config(base_dir=tmp_path)
+    application = create_app(cfg)
+    ann_root = cfg.annotation_root
+    ann_root.mkdir(parents=True, exist_ok=True)  # ensure_dirs() deliberately skips this one
+    (cfg.configs_dir / "alice.config").write_text("{}", encoding="utf-8")
 
     from db.session import init_db
 
     init_db(db_file)
-    return app_module
+    return SimpleNamespace(
+        app=application,
+        ANNOTATION_ROOT=ann_root,
+        CONFIGS_DIR=cfg.configs_dir,
+        OUTPUT_DIR=cfg.output_dir,
+        _within=web_infra._within,
+        _annotation_fixture_path=lambda slug: diagnostics_mod._annotation_fixture_path(
+            slug, ann_root,
+        ),
+    )
 
 
 def _seed_bootstrap(root, slug="alice-bootstrap", candidate="alice"):

@@ -21,7 +21,7 @@ def write_user_config(ux_app: ModuleType, username: str,
     matching an onboarded user."""
     config = {"name": name or username.title(),
               "email": email or f"{username}@example.com"}
-    (ux_app.CONFIGS_DIR / f"{username}.config").write_text(
+    (ux_app.app.config["CONFIGS_DIR"] / f"{username}.config").write_text(
         json.dumps(config), encoding="utf-8")
 
 
@@ -161,7 +161,7 @@ def bundled_persona_id_by_path(path: str) -> int:
 def write_context_file(ux_app: ModuleType, username: str, filename: str,
                        payload: dict) -> str:
     """Write a context_*.json under OUTPUT_DIR/<user>/; return the abs path."""
-    user_dir = ux_app.OUTPUT_DIR / username
+    user_dir = ux_app.app.config["OUTPUT_DIR"] / username
     user_dir.mkdir(parents=True, exist_ok=True)
     p = user_dir / filename
     p.write_text(json.dumps(payload), encoding="utf-8")

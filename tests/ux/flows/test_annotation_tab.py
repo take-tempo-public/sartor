@@ -1,7 +1,7 @@
 """UX walk — the /_dashboard "Annotate" read-write tab.
 
-Seeds a bootstrap.json under a temp ANNOTATION_ROOT (monkeypatched on the live
-app module so the threaded server sees it) plus a configs/<user>.config so
+Seeds a bootstrap.json under the temp ANNOTATION_ROOT the conftest injects onto the
+live app config (so the threaded server sees it) plus a configs/<user>.config so
 _safe_username passes, then drives the tab: pick the bootstrap, fill every
 verdict, Save (fail-closed write), and Collate → fixture + brief. The
 unconditional console-error / 5xx sentinel (conftest `page`) proves the
@@ -49,17 +49,18 @@ _BOOTSTRAP = {
 
 @pytest.mark.ux
 def test_annotation_tab_save_and_collate(
-    page: Page, live_server: str, ux_app: ModuleType, monkeypatch, tmp_path
+    page: Page, live_server: str, ux_app: ModuleType
 ) -> None:
-    # Temp ANNOTATION_ROOT visible to the already-running live server thread.
-    ann_root = tmp_path / "annroot"
+    # The conftest injects a temp ANNOTATION_ROOT onto the live app config; seed the
+    # bootstrap fixture under it so the already-running server thread finds it (the
+    # diagnostics routes read current_app.config["ANNOTATION_ROOT"] per request).
+    ann_root = ux_app.app.config["ANNOTATION_ROOT"]
     fixture_dir = ann_root / "alice-bootstrap"
     (fixture_dir / "jds").mkdir(parents=True)
     (fixture_dir / "bootstrap.json").write_text(json.dumps(_BOOTSTRAP), encoding="utf-8")
     (fixture_dir / "jds" / "jd1.txt").write_text("Senior PM JD body.", encoding="utf-8")
-    monkeypatch.setattr(ux_app, "ANNOTATION_ROOT", ann_root)
     # _safe_username needs a configs/<user>.config (CONFIGS_DIR is the ux temp dir).
-    (ux_app.CONFIGS_DIR / "alice.config").write_text("{}", encoding="utf-8")
+    (ux_app.app.config["CONFIGS_DIR"] / "alice.config").write_text("{}", encoding="utf-8")
 
     dash = DashboardConsolePage(page, live_server).load()
 

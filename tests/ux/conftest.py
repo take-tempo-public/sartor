@@ -32,30 +32,25 @@ def ux_app(tmp_path, monkeypatch) -> ModuleType:
     import app as app_module
 
     importlib.reload(app_module)
-    monkeypatch.setattr(app_module, "CONFIGS_DIR", tmp_path / "configs")
-    monkeypatch.setattr(app_module, "OUTPUT_DIR", tmp_path / "output")
-    # NB: BASE_DIR is left at the real repo root (unlike app_app) so persona
-    # template paths (BASE_DIR / "personas/bundled/*.docx") resolve for the
-    # Step-6 WYSIWYG preview. Isolation comes from the temp DB + OUTPUT_DIR +
-    # CONFIGS_DIR; nothing in the wizard flow writes via BASE_DIR directly.
-    # The analysis (blueprints/analysis.py, 8.3b), generation
-    # (blueprints/generation.py, 8.3c), templates/personas
-    # (blueprints/templates.py, 8.3e) and users/config (blueprints/users.py, 8.3g)
-    # routes read paths from current_app.config, NOT the module globals above — so
-    # inject the temp keys they read onto the live app's config. RESUMES_DIR is
-    # injected for 8.3g: create_user does `(current_app.config["RESUMES_DIR"] /
-    # safe).mkdir(...)`, so without this a new-user UX flow would write into the
-    # real repo `resumes/`. BASE_DIR / PERSONAS_DIR / BUNDLED_PERSONAS_DIR are
-    # deliberately NOT injected: the moved persona/preview routes read them from
-    # the live app's (production) config, which already points at the real repo
-    # root — exactly what the bundled-template resolution needs. The still-module-
-    # global routes from un-moved seams keep reading the globals until they move.
+    # Every route reads its paths from `current_app.config` (the v1.0.8 app.py→
+    # blueprints decomposition completed at Sprint 8.3h — app.py no longer carries
+    # path globals to monkeypatch), so isolate the suite by injecting the temp keys
+    # onto the live app's config. RESUMES_DIR: create_user does
+    # `(current_app.config["RESUMES_DIR"] / safe).mkdir(...)`, so without it a new-user
+    # UX flow would write into the real repo `resumes/`. ANNOTATION_ROOT: the
+    # diagnostics Annotate tab (annotation/bootstrap/eval/tune routes) writes under it,
+    # so point it at the temp tree too. BASE_DIR / PERSONAS_DIR / BUNDLED_PERSONAS_DIR
+    # are deliberately left at the live (production) config's real repo root — exactly
+    # what bundled-template / persona resolution needs for the Step-6 WYSIWYG preview;
+    # nothing in the wizard flow writes via BASE_DIR directly.
     app_module.app.config["CONFIGS_DIR"] = tmp_path / "configs"
     app_module.app.config["OUTPUT_DIR"] = tmp_path / "output"
     app_module.app.config["RESUMES_DIR"] = tmp_path / "resumes"
+    app_module.app.config["ANNOTATION_ROOT"] = tmp_path / "annotation"
     (tmp_path / "configs").mkdir()
     (tmp_path / "output").mkdir()
     (tmp_path / "resumes").mkdir()
+    (tmp_path / "annotation").mkdir()
 
     from db.session import init_db
 
