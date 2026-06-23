@@ -567,6 +567,10 @@ _Open count: 8 — at the top of the ~8–10 reduction-sprint threshold, but the
       `ANNOTATION_ROOT` monkeypatch — not the flaky class; fixed, then the full suite ran clean.) 8.3h
       touches no Compose/recommend code, so this is neutral evidence for the flaky class; the
       stabilization option still stands for 8.5/8.7.
+      **Update (2026-06-23, `test/keep-ledger-guards` 8.4 gate):** the class did **not recur** —
+      the UX tier ran **69 passed, 0 failed** (`pytest -m ux`, 160 s) plus 1314 non-ux. 8.4 adds
+      only guard tests + 3 behavior-identical route hardenings (no Compose/recommend code), so
+      neutral evidence; the stabilization option still stands for 8.5/8.7.
       **→ Integrate at 8.7 (2026-06-20, 7.9 ledger capture):** as a PX-25 prerequisite — the UX
       tier cannot become a *required* CI gate with known flakes — or a tiny stabilization pass
       right before 8.5. Not a standalone branch.
