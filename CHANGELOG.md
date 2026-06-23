@@ -13,6 +13,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.8 correction sprint — grounding slice (`fix/window-findings-grounding`, Sprint 8.6)
+
+The first 8.6 sub-branch burns the **grounding slice** of the
+[`window-8.5-findings.md`](docs/dev/window-8.5-findings.md) backlog (EV-1/EV-2/EV-3 + S3-1).
+**Eval/dev tooling only — no product-behavior change**; `PROMPT_VERSION` /
+`AVATAR_PROMPT_VERSION` untouched. PV-3 cover-letter tone is a sibling branch; the
+`/wiki-ingest` re-anchor folds into 8.6a. PV-1 labels + PV-2 calibration are staged
+(owner-gated, may spill to v1.0.9).
+
+**Changed**
+- `pyproject.toml` (`eval-grounding` extra): **pinned `minicheck`** to commit
+  `b58b9fa69acbd1015ec970fa65dd752413a053d2` (was an unpinned `git+` ref that drifted to a
+  vLLM/Bespoke-7B rewrite — EV-1, HIGH) and **widened the `transformers` cap** `>=4.40,<5.0`
+  → `>=4.40,<6.0` (the `<5.0` pin was already being violated by a fresh install; validated on
+  5.10.2). The CPU `flan-t5-large` scorer was re-validated end-to-end (NLI mean 0.995,
+  MiniCheck mean 0.973).
+
+**Added**
+- `pyproject.toml` (`eval-grounding` extra): **`accelerate>=1.0`** (required by
+  `transformers>=5` for the `device_map="auto"` the MiniCheck loader uses) and **`nltk>=3.9`**
+  (declared directly — `evals/grounding_signals.py` now ensures its `punkt_tab` data).
+- `scripts/build_vector_index.py`: a `manifest.json` (`built_at_sha`) written on build + a
+  `--check` staleness mode (manifest sha vs HEAD) so the gitignored vector index can no longer
+  silently stale after a refactor moves code (S3-1). Local `--full` rebuild re-anchored the
+  index onto `blueprints/**`.
+
+**Fixed**
+- **EV-1** — the L2/MiniCheck grounding scorer no longer crashes: dropped the removed `device`
+  kwarg in `evals/grounding_signals.py` and auto-ensure NLTK `punkt_tab` before scoring. (The
+  finding's "dropped `flan-t5-large`/`score()`-shape" root cause was inaccurate — corrected in
+  the findings doc; the real breaks were `device` + the `accelerate`/`punkt_tab` deps.)
+- **EV-2** — `evals/bootstrap.py:build_bootstrap_document` wraps the optional `grounding_fn`
+  call in `try/except` (log + `grounding=None` + still return the doc), so a grounding scorer
+  failure never discards the completed (paid) analyze/clarify/generate work. The browser
+  bootstrap route (`blueprints/diagnostics.py`) reconciled to a single outcome-derived note.
+- **EV-3** — `scripts/export_corpus_seed.py` + `scripts/capture_screenshots.py` reconfigure
+  `stdout`/`stderr` to UTF-8 at entry, so the unicode in their progress output and `--help`
+  text no longer `UnicodeEncodeError`s on a Windows cp1252 console (the export previously
+  exited non-zero *after* the seed had written).
+
 ### v1.0.8 gated test window — eval half (`eval/live-shakedown-labels`, Sprint 8.5)
 
 The first run of the real-data eval/tuning loop on the decomposed code, plus the S3

@@ -2462,3 +2462,36 @@ seed-export edges:
 FIRST, then run the full bootstrap+annotation+eval in ONE pass (full L0+L1+L2, no double
 annotation, no re-spend). 8.5 delivers the findings + the proof the pipeline path works;
 the real-suite eval scores + the #4 calibration labels move to 8.6 PV-2.
+
+---
+
+## 2026-06-23 — `fix/window-findings-grounding` (Sprint 8.6): EV-1 minicheck fix — grounding scorers runnable again (NOT a prompt change)
+
+> **Not a prompt change** (`PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched). Recorded
+> here because it unblocks the **PV-2 grounding-calibration loop** — the next tuner needs to
+> know the L0+L1+L2 scorers run, and on what stack. Findings + resolution:
+> [`../docs/dev/window-8.5-findings.md`](../docs/dev/window-8.5-findings.md).
+
+**What changed?** Pinned `minicheck` to `b58b9fa…` (`pyproject.toml` `eval-grounding`), dropped
+the removed `device="cpu"` kwarg in `evals/grounding_signals.py:_load_minicheck_scorer`, added
+`accelerate>=1.0` + `nltk>=3.9`, and auto-ensure NLTK `punkt_tab`. Widened the `transformers`
+cap to `<6.0`. (EV-2/EV-3/S3-1 also fixed — see CHANGELOG; not eval-scoring-relevant.)
+
+**Why?** The 8.5 shakedown's EV-1: the unpinned `minicheck` git dep drifted and the L2 scorer
+`TypeError`d on `device="cpu"`, blocking the PV-2 L1/L2 labels.
+
+**What was the result?** Re-validated the grounding scorers end-to-end on CPU against a 2-bullet
+synthetic source (the installed `transformers 5.10.2` stack): **L1 (DeBERTa NLI) mean_entailment
+0.995, contradiction_count 0; L2 (MiniCheck flan-t5-large) mean_score 0.973** (per-bullet 0.971 /
+0.976), bullet_count 2. So L0 (deterministic) + L1 + L2 all produce scores again — PV-2 can now
+produce a full L0+L1+L2 label set. No fixture eval run (this is a tooling fix, not a prompt A/B).
+
+**What did we learn?**
+- The 8.5 finding's stated root cause **overstated the breakage** (claimed `flan-t5-large` and the
+  `score()` 4-tuple were dropped). Verifying against the *installed* package showed both were
+  intact; the real breaks were the `device` kwarg + two undeclared transitive needs (`accelerate`,
+  `punkt_tab`) only a real run surfaces. **Lesson: validate a dependency-drift finding against the
+  installed package before acting — re-running is what exposes the true break (and the false ones).**
+- **Pin git/research deps.** An unpinned `git+` ref is a time bomb; pin to a sha the moment the dep
+  is used in a loop that isn't run every release.
+- PV-2 hand-off: the scorer is proven; the remaining cost is the owner's manual annotation pass.
