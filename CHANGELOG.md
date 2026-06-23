@@ -13,6 +13,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.8 gated test window — eval half (`eval/live-shakedown-labels`, Sprint 8.5)
+
+The first run of the real-data eval/tuning loop on the decomposed code, plus the S3
+gate-override validation owed since v1.0.7. **No product-behavior change** — the only new
+code is eval/test apparatus; `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched, no
+dependency or migration. The window's *purpose* — surfacing so-far-unexercised
+integration issues — is met; the issues themselves are triaged into a findings backlog
+that the 8.6 correction sprint burns.
+
+**Added**
+- `scripts/vector_before_after_eval.py` — a judge-scored **before/after relevance eval**
+  for the S3 vector tier (the gate-override validation the 7.6 override owed). Runs a
+  dev-vocab question set through `recall.assemble` with the lexical tiers vs +S3 and scores
+  each set's relevance with the Haiku eval-judge (reuses `evals.runner._grade`, so no
+  egress-allowlist change; retrieval corpus = committed wiki+code, no PII). **Verdict:
+  KEEP** — mean relevance 1.12 → 2.58 (+1.46); the `numpy`+`model2vec` footprint earns its
+  keep. See `evals/TUNING_LOG.md` (2026-06-23) + `docs/dev/window-8.5-findings.md`.
+- `docs/dev/window-8.5-findings.md` — the one numbered findings backlog (EV-1 minicheck
+  unpinned-git-dep drift · EV-2 grounding-abort discards work · EV-3 seed-export unicode
+  crash · S3-1 stale vector index) the 8.6 sprint consumes.
+- `docs/dev/window-8.5-walkthrough.md` — the E2E walkthrough runbook (R2-live + post-split
+  route surface + assistant + diagnostics) for the deferred walkthrough half.
+
+**Fixed**
+- The recurring flaky Compose-wizard UX race (Carry-forward ledger #3, ≥3 members) —
+  **test-only**: `ui_pages/wizard_compose.py:_wait_loaded()` now settles on
+  `.compose-experience-card` (always rendered) instead of `.compose-row.recommended`
+  (absent on no-recommendations fixtures = the race). 20/20 loop, zero flakes.
+
+**Deferred to 8.6 (owner-decided 2026-06-23)** — PV-1 label production (blocked on EV-1:
+fix minicheck first, then one full L0+L1+L2 annotation pass) and the E2E walkthrough +
+R2-live verification (run against `main`).
+
 ### Added — KEEP-ledger do-not-regress guard tests (`test/keep-ledger-guards`, Sprint 8.4, PX-29)
 
 The load-bearing security / PII / accessibility / governance KEEP affirmations from

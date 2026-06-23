@@ -943,6 +943,20 @@ Then: `chore/version-bump-v1.0.7`.
   annotate → collate → `expected.json` + labels under `evals/fixtures/real/`, gitignored
   PII). Triage both into **one numbered findings backlog**. *Expectation: this is where
   the significant, so-far-unexercised integration issues surface.*
+  - **Update (2026-06-23, `eval/live-shakedown-labels`):** the *eval half* ran and the
+    expectation held. The real corpus→context→generate path **works** (3 bootstrap
+    pipelines OK on `testuser`), but the never-run grounding tooling broke: **EV-1** (the
+    L2/MiniCheck scorer's unpinned git dep drifted to an incompatible version) + **EV-2**
+    (the optional grounding failure aborts the whole bootstrap) + **EV-3** (seed-export
+    Windows-console crash) + **S3-1** (the vector index staled post-split). The **S3
+    before/after labeled eval** cleared its gate-override → **KEEP** (relevance 1.12→2.58).
+    Findings: [`window-8.5-findings.md`](window-8.5-findings.md). **Owner-decided at
+    close-out:** PV-1 *label production* defers to **8.6** (fix EV-1's minicheck FIRST, then
+    one full L0+L1+L2 annotation pass — no double annotation), and the **E2E walkthrough +
+    R2-live** half defers to a run against `main` (runbook
+    [`window-8.5-walkthrough.md`](window-8.5-walkthrough.md)). 8.5 delivered the findings +
+    the S3 verdict + the flaky-UX stabilization; the walkthrough findings + calibration
+    labels land via 8.6.
 - **Correction sprint** (`fix/window-findings-*`): burn the backlog + **PV-2** grounding
   calibration + **PV-3** cover-letter tone tune (now on the decomposed code) + a
   `/wiki-ingest` to refresh the wiki's `app.py` `path:line` citations the split staled.

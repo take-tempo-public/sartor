@@ -38,14 +38,18 @@ class WizardComposePage(BasePage):
             Wizard.PANEL_COMPOSE, state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
         self.page.wait_for_load_state("networkidle")
-        # The skip-to-compose path renders Compose twice (loadComposition runs
-        # once before recommend, once after); networkidle can resolve in the
-        # gap, so we wait on a `.recommended` bullet row — which only exists
-        # after the post-recommend render — as the deterministic final-render
-        # signal (avoids reading mid-clear). All compose-reaching tests stub
-        # recommend to return the bullets, so a recommended row always appears.
+        # `loadComposition()` (static/app.js) sets a loading placeholder, awaits
+        # the /composition fetch, then `_clearChildren` + synchronously appends
+        # the whole card tree (positioning + skills + experience cards) in one
+        # tick — there is no awaited gap mid-render, so a rendered card is a
+        # sound "compose ready" signal. Wait on `.compose-experience-card`, NOT a
+        # `.recommended` bullet row: a recommended row only exists when recommend
+        # marks a bullet, which the no-recommendations fixtures deliberately do
+        # not — so the old wait raced on an element that may never appear (the
+        # flaky-class root cause). A card always renders when the composition has
+        # ≥1 experience. (Matches `wait_cards()`.)
         self.page.wait_for_selector(
-            Compose.RECOMMENDED_ROW, timeout=DEFAULT_TIMEOUT_MS
+            Compose.EXPERIENCE_CARD, timeout=DEFAULT_TIMEOUT_MS
         )
 
     def wait_cards(self) -> WizardComposePage:
