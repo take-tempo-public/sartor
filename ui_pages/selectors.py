@@ -64,6 +64,15 @@ class Header:
     WORDMARK = ".cb-wordmark"
 
 
+class LiveRegion:
+    """The shell's screen-reader announcer (`_announce()` in app.js writes here at
+    every meaningful async completion — analysis ready, generation done, edits
+    saved). A polite, atomic sr-only region; its content is assertable via
+    `to_contain_text` (sr-only ≠ hidden for text assertions). F-expa11y-08."""
+
+    ANNOUNCER = "#srAnnounce"
+
+
 class TopTabs:
     CORPUS = "#topTabCorpus"
     TAILOR = "#topTabTailor"

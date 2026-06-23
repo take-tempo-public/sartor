@@ -1119,10 +1119,12 @@ def download_file(filepath: str) -> ResponseReturnValue:
     full_path = Path(filepath)
     if not full_path.exists():
         return jsonify({"error": "File not found"}), 404
-    # Security: ensure the file is within our output directory
-    try:
-        full_path.resolve().relative_to(current_app.config["OUTPUT_DIR"].resolve())
-    except ValueError:
+    # Security: ensure the file is within our output directory. _within IS this
+    # resolve()/relative_to containment check (web_infra.security) — calling the
+    # canonical guard instead of an inline copy is what the F-sec-05 route-
+    # containment gate asserts. This route is path-keyed (no <username>), so it
+    # carries _within but no _safe_username (the gate's reviewed exemption).
+    if not _within(full_path, current_app.config["OUTPUT_DIR"]):
         return jsonify({"error": "Access denied"}), 403
     return send_file(str(full_path), as_attachment=True)
 

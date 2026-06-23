@@ -71,6 +71,12 @@ def upload_resume() -> ResponseReturnValue:
     user_dir = current_app.config["RESUMES_DIR"] / safe_user
     user_dir.mkdir(exist_ok=True)
     save_path = user_dir / safe_name
+    # Containment guard: safe_user (via _safe_username) and safe_name (via
+    # secure_filename) are both sanitized, so this is always-True today — a
+    # belt-and-suspenders _within check the F-sec-05 gate requires on every
+    # FS-touching route, restoring the guard lost in the 8.3 body-only move.
+    if not _within(save_path, current_app.config["RESUMES_DIR"]):
+        return jsonify({"error": "Invalid filename"}), 400
     file.save(str(save_path))
 
     # Update config with latest resume reference
@@ -94,6 +100,11 @@ def list_resumes(username: str) -> ResponseReturnValue:
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
     user_dir = current_app.config["RESUMES_DIR"] / safe_user
+    # Containment guard: safe_user is already secure_filename-sanitized inside
+    # _safe_username, so this is always-True today — the belt-and-suspenders
+    # _within check the F-sec-05 gate requires on every FS-touching route.
+    if not _within(user_dir, current_app.config["RESUMES_DIR"]):
+        return jsonify({"error": "Invalid user"}), 400
     if not user_dir.exists():
         return jsonify([])
     allowed = current_app.config["ALLOWED_EXTENSIONS"]

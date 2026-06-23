@@ -13,6 +13,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — KEEP-ledger do-not-regress guard tests (`test/keep-ledger-guards`, Sprint 8.4, PX-29)
+
+The load-bearing security / PII / accessibility / governance KEEP affirmations from
+the 2026-06 product-excellence review (cross-referenced from
+[`docs/dev/keep-ledger.md`](docs/dev/keep-ledger.md) → the findings register) are now
+committed **guard tests** asserting the **final post-blueprint-split layout**, so
+neither the split nor the v1.1.0 public tag can quietly weaken them. They reuse the
+existing AST-gate precedents (`tests/test_egress_allowlist.py` reviewed-allowlist +
+`tests/test_construction_boundary.py` AST-walk). **No prompt / dependency / migration**
+— `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched.
+
+- **F-sec-05 route containment** — `tests/test_route_containment_gate.py` AST-walks
+  every `blueprints/**.py` route and asserts every filesystem-touching route carries
+  `_within` (containment) + `_safe_username` (user-scoping), with two reviewed,
+  reasoned exemption registries: `WITHIN_NOT_REQUIRED` (containment delegated to a
+  sanitizing helper, or a fixed / sanitized-only path) and `SAFE_USERNAME_NOT_REQUIRED`
+  (no `<username>` to verify). Each registry waives exactly one guard, so a no-username
+  download that loses `_within`, or an exemption that later gains its guard, still
+  fails. Detection is docstring/comment-free (per-statement `ast.unparse`) and
+  call-form (`_within(` / `_safe_username(`), so a guard named only in prose never trips
+  it. This commits the `route-security-lint` hook's intent over the **whole** tree (the
+  hook scans only the Edit diff), closing the WATCH rider the review flagged.
+- **F-sec-06 zero-PII clone** — `tests/test_zero_pii_clone.py` generalizes the
+  `configs/`-only `git ls-files` check to the whole PII/secret surface (configs /
+  resumes / output / personas / `evals/fixtures/real` / db / logs track only synthetic
+  fixtures), asserts no secret-shaped file is tracked, scans tracked text files for the
+  `sk-ant-…` API-key shape (self-safe assembled pattern), and pins the load-bearing
+  `.gitignore` lines so a future "tidy" can't silently un-ignore real data.
+- **F-expa11y-07 / F-expa11y-08 a11y floor** — `tests/test_a11y_floor_guards.py`
+  (always-runs static scan: the `#srAnnounce` polite/atomic live region + the
+  `_announce()` helper + its ≥7 success call sites; the keyboard reorder
+  buttons/aria-labels/`_moveBulletRow`) + `tests/ux/a11y/test_announce_live_region.py`
+  (Chromium-gated: drives analyze→completion and asserts the live region receives the
+  announcement). The review had flagged `_announce()` as "no test guards it."
+- **F-gov-04 hook witness/blocker split** — `tests/test_governance_hooks_gate.py` pins
+  the 7 enforced blockers (reachable `exit 2`) and 3 witnesses (never `exit 2`) as named
+  frozensets and cross-checks the `.claude/settings.json` wiring (blockers → PreToolUse,
+  witnesses → PostToolUse).
+
+### Changed — route-containment drift closed (3 behavior-identical hardenings, Sprint 8.4)
+
+Restoring the `_within` containment guard the route-containment gate requires, after
+the 8.3 blueprint split's body-only move-edits had silently dropped it from two routes
+(the F-sec-05 WATCH rider). **All three are behavior-identical** (verified green under
+the existing route tests):
+
+- `upload_resume` / `list_resumes` (`blueprints/corpus/curation.py`) gain a redundant
+  `_within(…, RESUMES_DIR)` — always-True today because the path is built only from
+  `secure_filename` / `_safe_username`-sanitized parts (belt-and-suspenders).
+- `download_file` (`blueprints/generation.py`) replaces its inline
+  `full_path.resolve().relative_to(OUTPUT_DIR.resolve())` containment check with the
+  canonical `_within(full_path, OUTPUT_DIR)` (a literal extraction — `_within`'s body
+  *is* that check).
+- Doc accuracy: `AGENTS.md` now states `route-security-lint` covers `app.py` +
+  `blueprints/**.py` (the PX-21 widen) and names the committed gate.
+
 ### Changed — diagnostics blueprint seam — the last seam, app.py → zero routes (`refactor/app-blueprints-diagnostics`, Sprint 8.3h)
 
 The seventh and **final** domain seam of the v1.0.8 `app.py`→blueprints
