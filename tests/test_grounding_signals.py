@@ -85,6 +85,7 @@ class TestScoreNliBullets:
 class TestScoreMinicheckBullets:
     def test_high_score(self):
         mock_scorer = MagicMock()
+        # score() returns a 4-tuple (labels, probs, chunks, arrays); we read probs.
         mock_scorer.score.return_value = ([1], [0.92], None, None)
         results = score_minicheck_bullets(
             ["Led a team"], "Led a team of engineers", _scorer=mock_scorer

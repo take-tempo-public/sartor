@@ -64,6 +64,11 @@ def _load_minicheck_scorer() -> Any:
 
     First call downloads ~3 GB of model weights to the HuggingFace cache
     (~/.cache/huggingface/ on Linux/Mac, %USERPROFILE%\\.cache\\huggingface\\ on Windows).
+
+    Note: ``flan-t5-large`` is a non-vLLM checkpoint, so the pinned minicheck
+    (see pyproject ``eval-grounding``) routes it through the transformers
+    ``Inferencer`` path and selects the device internally — the constructor no
+    longer accepts a ``device`` kwarg (it is vLLM-only on the LLM checkpoints).
     """
     try:
         from minicheck.minicheck import MiniCheck
@@ -72,11 +77,29 @@ def _load_minicheck_scorer() -> Any:
             "minicheck is required for MiniCheck scoring. "
             "See CONTRIBUTING.md 'Grounding signal scorers' for install instructions."
         ) from exc
+    _ensure_minicheck_nltk_data()
     return MiniCheck(
         model_name=_MINICHECK_MODEL_NAME,
         enable_prefix_caching=False,
-        device="cpu",
     )
+
+
+def _ensure_minicheck_nltk_data() -> None:
+    """Ensure NLTK's ``punkt_tab`` tokenizer data is present before MiniCheck runs.
+
+    MiniCheck sentence-splits documents with NLTK; ``nltk>=3.9`` renamed the
+    ``punkt`` resource to ``punkt_tab``, and a fresh install does not ship it, so
+    ``MiniCheck.score()`` crashes with a ``LookupError`` deep inside the library
+    (the EV-1 never-run-setup class — window-8.5-findings). Download it once if
+    missing. Dev-only tooling; mirrors the implicit HuggingFace weight download
+    above (NLTK is not a sanctioned-egress library — see test_egress_allowlist).
+    """
+    import nltk  # noqa: PLC0415
+
+    try:
+        nltk.data.find("tokenizers/punkt_tab")
+    except LookupError:
+        nltk.download("punkt_tab", quiet=True)
 
 
 def score_nli_bullets(
@@ -140,6 +163,10 @@ def score_minicheck_bullets(
         return []
 
     scorer = _scorer or _load_minicheck_scorer()
+    # MiniCheck.score() returns a 4-tuple (pred_labels, raw_prob_scores,
+    # used_chunks, raw_arrays); we want the 2nd element, the per-claim support
+    # probabilities. (The pinned minicheck annotates this `-> List[float]`, which
+    # is wrong — the runtime value is the 4-tuple. Verified against the real model.)
     _, raw_probs, _, _ = scorer.score(
         docs=[source_text] * len(bullets),
         claims=bullets,

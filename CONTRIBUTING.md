@@ -165,6 +165,17 @@ pip install -e ".[eval-grounding]"
 python evals/runner.py --suite anchor --subset smoke --grounding-signals
 ```
 
+The first run also auto-downloads NLTK's `punkt_tab` sentence-tokenizer data (a
+few MB) that MiniCheck needs — no manual step required.
+
+> **Note — pinned dependencies (window-8.5 EV-1, 2026-06-23).** `minicheck` is
+> pinned to a specific commit in `pyproject.toml` rather than tracking the
+> upstream default branch, which drifted to a vLLM/`Bespoke-7B` rewrite that
+> dropped the CPU `flan-t5-large` path's `device` kwarg. The extra also installs
+> `accelerate` (required by `transformers>=5` for the `device_map="auto"` the
+> MiniCheck loader uses) and allows `transformers<6.0` (validated on 5.10.2). The
+> scorer was re-validated end-to-end on CPU on this stack.
+
 ### CPU inference time
 
 On a CPU-only laptop: ~2–4 s per bullet. A typical résumé has 15–25 bullets,

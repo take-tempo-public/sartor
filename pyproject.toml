@@ -74,9 +74,19 @@ dev = [
 # torch is NOT listed here because it requires a platform-specific wheel
 # (CPU-only vs CUDA). Install torch FIRST, then this group.
 # See CONTRIBUTING.md "Grounding signal scorers" for full instructions.
+#
+# minicheck is PINNED to a known-good commit: the upstream default branch
+# drifted to a vLLM/Bespoke-7B rewrite (dropped the `device` kwarg), and an
+# unpinned `git+` ref silently re-drifts (window-8.5-findings EV-1). This commit
+# keeps the CPU `flan-t5-large` path and was validated end-to-end on 2026-06-23.
+# accelerate is required by transformers>=5 for the `device_map="auto"` the
+# minicheck Inferencer uses; the transformers cap is widened to <6.0 (validated
+# on 5.10.2 — the previous <5.0 cap was already being violated by a fresh install).
 eval-grounding = [
-    "transformers>=4.40,<5.0",
-    "minicheck @ git+https://github.com/Liyan06/MiniCheck.git",
+    "transformers>=4.40,<6.0",
+    "accelerate>=1.0",
+    "nltk>=3.9",  # MiniCheck sentence-splits with NLTK; declared directly (grounding_signals ensures punkt_tab)
+    "minicheck @ git+https://github.com/Liyan06/MiniCheck.git@b58b9fa69acbd1015ec970fa65dd752413a053d2",
 ]
 
 [project.urls]
