@@ -156,7 +156,9 @@ def test_dash_bootstrap_autoexpands_when_no_fixtures(
     server thread)."""
     empty_root = tmp_path / "no_fixtures"
     empty_root.mkdir()
-    monkeypatch.setattr(ux_app, "ANNOTATION_ROOT", empty_root)
+    # The annotation routes read ANNOTATION_ROOT from current_app.config (Sprint 8.3h —
+    # the diagnostics seam); set it on the live app so the running server thread sees it.
+    ux_app.app.config["ANNOTATION_ROOT"] = empty_root
 
     dash = DashboardConsolePage(page, live_server).load()
     dash.activate_tab("annotate")

@@ -1,26 +1,35 @@
 """Security helper tests — _safe_username and _within (path-traversal defenses).
 
 These guard every Flask route that touches the filesystem. Regressions here
-are CVE-class.
+are CVE-class. The helpers live in the leaf `web_infra` package (the app.py-local
+copies retired with the last route seam, Sprint 8.3h).
 """
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 
 @pytest.fixture
-def app_module(tmp_path, monkeypatch):
-    """Import app.py with CONFIGS_DIR redirected to a temp dir.
+def app_module(tmp_path):
+    """The `web_infra` security/config helpers, bound to a temp CONFIGS_DIR.
 
-    `_safe_username` checks `(CONFIGS_DIR / "{user}.config").exists()`, so we
-    redirect CONFIGS_DIR before populating it.
+    Post-Sprint-8.3h the helpers are canonical in `web_infra` (the app.py copies
+    retired with the diagnostics seam — the last route move). `_safe_username`
+    checks `(configs_dir / "{user}.config").exists()`, so a real config is seeded in
+    the temp dir and threaded as the keyword-only `configs_dir`. The namespace binds
+    that temp dir so the helper-test bodies below stay unchanged (1-arg calls).
     """
-    import app as _app
+    import web_infra
 
-    monkeypatch.setattr(_app, "CONFIGS_DIR", tmp_path)
     (tmp_path / "alice.config").write_text("{}", encoding="utf-8")
-    return _app
+    return SimpleNamespace(
+        _safe_username=lambda u: web_infra._safe_username(u, configs_dir=tmp_path),
+        _within=web_infra._within,
+        _load_config=lambda u: web_infra._load_config(u, configs_dir=tmp_path),
+        _save_config=lambda u, cfg: web_infra._save_config(u, cfg, configs_dir=tmp_path),
+    )
 
 
 @pytest.fixture
@@ -28,11 +37,10 @@ def config_route_app(tmp_path):
     """Factory-built app for the config ROUTES (get_config / update_config).
 
     Those routes moved to blueprints/users.py (Sprint 8.3g) and read
-    `current_app.config["CONFIGS_DIR"]`, so the `app_module` monkeypatch-the-global
-    fixture no longer reaches them — they need a `create_app(Config(base_dir=tmp))`
-    app. The helper-level classes above stay on `app_module`: they exercise the
-    app.py-local `_safe_username` / `_within` / `_load_config` / `_save_config`
-    copies directly, and the seam move leaves those in place.
+    `current_app.config["CONFIGS_DIR"]`, so they need a `create_app(Config(base_dir=
+    tmp))` app. The helper-level classes above test the same containment one layer
+    down, calling the canonical `web_infra` helpers directly (the `app_module`
+    fixture binds them to a temp `configs_dir`).
     """
     import types
 

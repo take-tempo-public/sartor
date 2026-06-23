@@ -13,6 +13,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — diagnostics blueprint seam — the last seam, app.py → zero routes (`refactor/app-blueprints-diagnostics`, Sprint 8.3h)
+
+The seventh and **final** domain seam of the v1.0.8 `app.py`→blueprints
+decomposition. The 9 diagnostics routes (annotation / bootstrap / eval / tune — the
+localhost dev-console write/SSE backend) moved out of `app.py` to a new single-module
+`blueprints/diagnostics.py`, after which **`app.py` carries zero `@app.route`
+handlers** and is the thin composition root (factory + WSGI handle + `main()`). **No
+behavior change** — every URL / method / request / response is byte-identical; **no
+prompt / dependency / migration** — `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION`
+untouched.
+
+- **9 routes → `blueprints/diagnostics.py`** (registered with **no `url_prefix`** →
+  all 9 URLs byte-identical, verified by an `app.url_map` path+methods diff: 96 rules
+  unchanged, only the 9 endpoints gain a `diagnostics.` prefix): `annotation_fixtures`
+  · `annotation_load` · `annotation_save` · `annotation_collate` ·
+  `annotation_score_grounding` (SSE) · `annotation_seed_export` ·
+  `annotation_bootstrap_stream` (SSE) · `eval_run_stream` (SSE) · `tune_run_stream`
+  (SSE). The 4 diagnostics-only domain helpers moved with them
+  (`_annotation_fixture_path`, `_load_bootstrap_doc`, `_write_seed_json`,
+  `_patch_annotation_scores`); `_annotation_fixture_path` is now **pure** (takes its
+  `annotation_root` explicitly rather than reading a module global). Bodies read
+  `current_app.config["ANNOTATION_ROOT"]` / `["CONFIGS_DIR"]` and import the shared
+  `web_infra` helpers; PV-4 `-> ResponseReturnValue` on every route. The 5 SSE routes
+  keep the established pattern (config captured as a local **before** the `stream()`
+  generator, which never touches `current_app`).
+- **The transitional `app.py`-local block retired (zero-debt completion).** With the
+  last routes gone, the local helper copies (`_safe_username` / `_load_config` /
+  `_save_config` / `_get_or_provision_candidate`) and the module path globals
+  (`BASE_DIR` / `CONFIGS_DIR` / `RESUMES_DIR` / `OUTPUT_DIR` / `ANNOTATION_ROOT` /
+  `ALLOWED_EXTENSIONS`) — kept since 8.3a's "Option X" for the not-yet-moved routes —
+  were deleted; the orphaned imports were pruned. `_should_open_browser` stays
+  (`tests/test_browser_open.py` imports it; `main()` calls it).
+- **Egress unchanged.** `blueprints/diagnostics.py` imports no `anthropic` — the routes
+  catch only generic `Exception` and delegate the paid work to `evals.runner` /
+  `evals.bootstrap` / `evals.grounding_signals` (already allowlisted) and the
+  `web_infra` client factory — so it is **not** added to the egress allowlist, and
+  `app.py` stays off it.
+- **Tests migrated, no module-global monkeypatch left for the seam.**
+  `tests/test_annotation_routes.py` builds a `create_app(Config(base_dir=tmp))` app
+  (DB-path monkeypatch kept; the containment helpers exposed via a `SimpleNamespace` so
+  the bodies are unchanged). `tests/test_app_security.py`'s three helper-test classes
+  (`TestSafeUsername` / `TestWithin` / `TestConfigHelperContainment`) retarget to the
+  canonical `web_infra` helpers. The UX harness drops the now-dead module-global
+  monkeypatch and injects `ANNOTATION_ROOT` onto the live app config; `tests/ux/`
+  (`conftest.py` / `seeding.py` / `stubs.py` / `flows/test_annotation_tab.py` / the
+  education-diagnostics regression) read paths from `app.config` and stub
+  `_get_client` on `blueprints.diagnostics`.
+- **Definition-of-done:** the v1.0.8 `app.py`→blueprints decomposition is **complete**
+  — all 93 routes live on a domain blueprint, `app.py` has zero routes / no path
+  globals / no per-request helpers, and no moved seam relies on a module-global
+  monkeypatch.
+
 ### Fixed — docs/test hygiene (`chore/ledger-reduction`, Sprint 8.0)
 
 The v1.0.8 epic opens with a contained reduction micro-branch (run before the blueprint

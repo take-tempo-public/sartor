@@ -12,6 +12,7 @@ from blueprints.analysis import analysis_bp
 from blueprints.applications import applications_bp
 from blueprints.assistant import assistant_bp
 from blueprints.corpus import corpus_bp
+from blueprints.diagnostics import diagnostics_bp
 from blueprints.generation import generation_bp
 from blueprints.templates import templates_bp
 from blueprints.users import users_bp
@@ -21,6 +22,7 @@ __all__ = [
     "applications_bp",
     "assistant_bp",
     "corpus_bp",
+    "diagnostics_bp",
     "generation_bp",
     "templates_bp",
     "users_bp",

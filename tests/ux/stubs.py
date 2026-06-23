@@ -287,6 +287,7 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     import analyzer
     import blueprints.analysis as analysis_bp_mod
     import blueprints.applications as applications_bp_mod
+    import blueprints.diagnostics as diagnostics_bp_mod
     import blueprints.generation as generation_bp_mod
 
     # The analysis seam (analyze/clarify/iterate-clarify) moved to
@@ -298,11 +299,13 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(analysis_bp_mod, "_get_client", lambda: None)
     # The generation seam (generate/cover-letter) moved to blueprints/generation.py
     # (Sprint 8.3c): the streaming generate route resolves `generate_streaming` +
-    # `_get_client` from the blueprint module → patch THERE. `_get_client` is also
-    # imported into app.py (un-moved routes still call it), so stub it on `ux_app` too.
-    monkeypatch.setattr(ux_app, "_get_client", lambda: None)
+    # `_get_client` from the blueprint module → patch THERE.
     monkeypatch.setattr(generation_bp_mod, "_get_client", lambda: None)
     monkeypatch.setattr(generation_bp_mod, "generate_streaming", fake_generate_streaming)
+    # The diagnostics seam (annotation/bootstrap/eval/tune) moved to
+    # blueprints/diagnostics.py (Sprint 8.3h — the last seam; app.py no longer imports
+    # `_get_client`): the bootstrap route resolves it from that module → patch THERE.
+    monkeypatch.setattr(diagnostics_bp_mod, "_get_client", lambda: None)
     # The applications seam (per-application recommend/suggest) moved to
     # blueprints/applications.py (Sprint 8.3f): the Compose recommend/suggest routes
     # resolve `_get_client` from that module → patch THERE. The analyzer
