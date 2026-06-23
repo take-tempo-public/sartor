@@ -2399,3 +2399,66 @@ problem, not cosmetics.
    refusal / no-invention clauses are byte-identical to `2026-06-18.1`, and the live spot-check showed zero
    fabricated cites — consistent with the voice/tone pass's finding that moving off mirrored `[[ ]]` syntax
    *reduces* drift rather than adding it.
+
+---
+
+## 2026-06-23 — `eval/live-shakedown-labels` (Sprint 8.5): S3 before/after labeled eval (KEEP) + PV-1 real-data shakedown
+
+> **Not a prompt change** (`PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched). The
+> v1.0.8 gated test window's eval half. (A) closes the "still owed (v1.0.8)" item the
+> 2026-06-16 S3 probe entry above flagged; (B) is the first run of the real-data
+> eval/tuning loop. Full findings backlog: [`docs/dev/window-8.5-findings.md`](../docs/dev/window-8.5-findings.md).
+
+### A. S3 vector tier — judge-scored before/after relevance eval (Carry-forward #2 → RESOLVED: KEEP)
+
+**What.** The labeled before/after eval the 7.6 gate-override owed: new
+`scripts/vector_before_after_eval.py` runs a fixed 12-question dev-vocab set through
+`recall.assemble` with the lexical tiers (wiki+git+session) vs +S3 vector, scoring each
+retrieval set's relevance 0–5 with the Haiku eval-judge (reuses `evals.runner._grade`, so
+no egress-allowlist change). Retrieval corpus = committed wiki+code (no PII) → committable.
+Run on a **freshly-rebuilt** index (the 06-16 index had staled — see gotcha).
+
+**Result** (`python -m scripts.vector_before_after_eval`, top-k=6):
+- Mean judge relevance: **base 1.12 vs +S3 2.58 (Δ +1.46, +130%)**; improved 8/12,
+  regressed 1/12; S3 added a lexical-missed cite on **12/12**.
+- **Verdict: KEEP.** S3 more than doubles retrieval relevance and earns its
+  `numpy`+`model2vec` footprint. No demote at 8.6.
+
+**Learned.** The 7.6 probe's "git grep finds *some* hit on ~all questions" is confirmed
+(0/12 lexical misses by hit-count) but is NOT evidence against S3: the judge scores those
+lexical-only sets at 1.12/5 — many hits, little relevance. The semantic tier supplies the
+relevance. Caveat: directional, N=12 dev-vocab; absolute relevance (2.58) is still only
+"partially relevant" — retrieval quality is a longer-term improvement area.
+
+**Gotcha — index stale after the blueprint split.** The committed-code index (built
+06-16) cited pre-split `app.py` line numbers the 8.3 decomposition moved; a free
+`python -m scripts.build_vector_index` re-anchored every cite onto `blueprints/**`. The
+index is gitignored + has no committed rebuild trigger → it silently staled. → 8.6: pair a
+rebuild with `/wiki-ingest`; add a freshness check (window-8.5-findings.md S3-1).
+
+### B. PV-1 real-data eval/tuning loop — first run (Carry-forward #4: labels DEFERRED to 8.6)
+
+**What.** First end-to-end run on the decomposed code: candidate `testuser` (real corpus:
+5 exp / 66 bullets / 9 skills / 4 summaries) → seed export → bootstrap over 3 JDs (the
+synthetic JDs against the real corpus) → (annotate → collate → eval, deferred).
+
+**Result.** The **real corpus→context→generate path works** — all 3 bootstrap pipelines
+completed (analyze→clarify→generate; 19/13, 23/13, 21/12 bullets/skills). The shakedown's
+job — surfacing so-far-unexercised integration breaks — succeeded at the grounding +
+seed-export edges:
+- **EV-1 (HIGH):** the L2/MiniCheck grounding scorer is broken by an **unpinned git dep**
+  (`minicheck @ git+…`, pyproject `eval-grounding`): a fresh install pulled a drifted
+  incompatible major version (default `Bespoke-MiniCheck-7B`/vLLM; dropped `device` +
+  `flan-t5-large`), so `grounding_signals.py:75`'s `device="cpu"` `TypeError`s. Also
+  `transformers` installed is 5.10.2, violating the `<5.0` pin; CONTRIBUTING.md still cites
+  `flan-t5-large`. The "never-run live loop" latent breakage. **Blocks L1/L2 labels.**
+- **EV-2 (Med):** an optional `--grounding-signals` failure has no try/except, so it
+  aborted the whole bootstrap and discarded ~$0.60 of completed pipeline work
+  (`bootstrap.json` never written).
+- **EV-3 (Low):** `export_corpus_seed.py` `UnicodeEncodeError` on its `→` success print
+  (Windows cp1252) — seed wrote fine but exits non-zero. Workaround `PYTHONIOENCODING=utf-8`.
+
+**Decision (owner, 2026-06-23).** Defer PV-1 label production to 8.6: fix EV-1 (minicheck)
+FIRST, then run the full bootstrap+annotation+eval in ONE pass (full L0+L1+L2, no double
+annotation, no re-spend). 8.5 delivers the findings + the proof the pipeline path works;
+the real-suite eval scores + the #4 calibration labels move to 8.6 PV-2.
