@@ -971,8 +971,11 @@ Then: `chore/version-bump-v1.0.7`.
     a `WORKED EXAMPLES` OK/NOT-OK opener+close sub-block + de-cloned the single close example the
     model was copying into the v1.0.3 lapse; paired before/after `--suite synthetic --subset full`
     n=3 showed **tone holds at the 4.2 floor with no regression**; see TUNING_LOG (2026-06-23 PV-3).
-    **(3)** the **`/wiki-ingest` re-anchor folds into 8.6a**
-    (`docs/assistant-wiki-coverage`, which already rewrites wiki pages) rather than this sprint.
+    **(3) `fix/window-findings-grounding-calibration` (8.6b)** — **PV-1 label production + PV-2
+    grounding calibration**, the **owner-gated** sub-branch (manual browser annotation): EV-1 is fixed
+    and the L0+L1+L2 scorers are proven on CPU, so it is **unblocked but staged**, and **may spill to a
+    v1.0.9 epic** (slotted explicitly 2026-06-23). **(4)** the **`/wiki-ingest` re-anchor folds into
+    8.6a** (`docs/assistant-wiki-coverage`, which already rewrites wiki pages) rather than this sprint.
     Findings + resolution: [`window-8.5-findings.md`](window-8.5-findings.md).
 - `docs/assistant-wiki-coverage` (proposed **8.6a**, owner-confirmed 2026-06-20) — the
   doc-authoring sprint that fills the doc-grounded assistant's "woefully uninformed" coverage
@@ -995,6 +998,20 @@ Then: `chore/version-bump-v1.0.7`.
   OpenSSF Scorecard, REUSE/SPDX — the E-2 prescription / PX-26); the UX/a11y/PDF tier as a
   **required CI check** (PX-25); a doc-link resolution sweep; **create the GitHub repo +
   push `main` (private/unpromoted)**.
+  **Folds in here (slotted 2026-06-23 from the carry-forward ledger — re-homing, not new items):**
+  (i) **`feat/portable-enforcement-core`** — lift the portable guards (`require-feature-branch`,
+  `block-merge-to-main`, `block-secrets`, `route-security-lint`, `ruff-changed`, `validate-context`)
+  into a tool-agnostic core invoked by BOTH committed git-hooks AND the plugin, CI as the
+  server-side backstop (activate when the git remote/CI lands; plan-mode lifecycle hooks stay
+  Claude-only). (ii) the **periodic cross-document link / cite checker** — the durable CI form of the
+  doc-link sweep (a CI step or `wiki-lint` extended over `docs/governance/` + the contract docs), so
+  the extract-don't-restate pointers are gated. (iii) **resolve the flaky Compose-wizard UX class** as
+  a **PX-25 prerequisite** — the UX tier can't become a *required* CI gate while a compose-load race
+  intermittently fails (the 8.5 `.compose-experience-card` fix didn't cover the second
+  `bullet_texts()[0]` race; tally reset 2026-06-23); needs a broader compose-load wait or retry policy.
+  (iv) the **help-opener de-dup** (`openDashHelp`/`openHelpModal`) as pre-public **UI polish**
+  (owner-chosen home (a)). The **in-app rendered citation viewer** stays **deferred to v1.1.0+** (not
+  in the 1.0.8 sequence; conditional on real friction).
 
 Then: `chore/version-bump-v1.0.8`.
 
