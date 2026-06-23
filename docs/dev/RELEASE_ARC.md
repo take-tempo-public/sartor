@@ -967,7 +967,11 @@ Then: `chore/version-bump-v1.0.7`.
     freshness), **landed 2026-06-23**; EV-1 fixed + the L0+L1+L2 scorers re-validated on CPU, so
     **PV-2 is unblocked but staged** (owner-gated manual annotation; may spill to v1.0.9). **(2)
     `fix/window-findings-tone`** — **PV-3** cover-letter tone (the only `PROMPT_VERSION`-bumping
-    change), a sibling branch. **(3)** the **`/wiki-ingest` re-anchor folds into 8.6a**
+    change), a sibling branch — **landed 2026-06-23** (`PROMPT_VERSION 2026-06-13.1 → 2026-06-23.1`):
+    a `WORKED EXAMPLES` OK/NOT-OK opener+close sub-block + de-cloned the single close example the
+    model was copying into the v1.0.3 lapse; paired before/after `--suite synthetic --subset full`
+    n=3 showed **tone holds at the 4.2 floor with no regression**; see TUNING_LOG (2026-06-23 PV-3).
+    **(3)** the **`/wiki-ingest` re-anchor folds into 8.6a**
     (`docs/assistant-wiki-coverage`, which already rewrites wiki pages) rather than this sprint.
     Findings + resolution: [`window-8.5-findings.md`](window-8.5-findings.md).
 - `docs/assistant-wiki-coverage` (proposed **8.6a**, owner-confirmed 2026-06-20) — the

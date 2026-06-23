@@ -2495,3 +2495,113 @@ produce a full L0+L1+L2 label set. No fixture eval run (this is a tooling fix, n
 - **Pin git/research deps.** An unpinned `git+` ref is a time bomb; pin to a sha the moment the dep
   is used in a loop that isn't run every release.
 - PV-2 hand-off: the scorer is proven; the remaining cost is the owner's manual annotation pass.
+
+---
+
+## 2026-06-23 — `fix/window-findings-tone` (Sprint 8.6, PV-3): cover-letter opener+close adherence (`PROMPT_VERSION 2026-06-13.1 → 2026-06-23.1`)
+
+> **Scope note.** Tunes the résumé pipeline's **cover-letter contract**
+> (`_COVER_LETTER_RULES_BLOCK`, `analyzer.py`). This **IS** a `PROMPT_VERSION` bump — the
+> only one in the v1.0.7/v1.0.8 epics. The block is a **user-prompt fragment**, NOT in
+> `_BASE_SYSTEM_PROMPTS`, so it could **not** be A/B'd via the `--prompt-overrides`
+> primitive (which only targets system-prompt constants) — it was edited directly and
+> validated with a paired before/after `--suite synthetic --subset full` run, per
+> RELEASE_ARC §4.8. `AVATAR_PROMPT_VERSION` untouched.
+
+### 1. What changed
+
+All in `analyzer.py`, one commit with the version bump:
+- **`_COVER_LETTER_RULES_BLOCK`** — **(a)** added a `WORKED EXAMPLES` sub-block (additive,
+  before `</cover_letter_rules>`) with OK / NOT-OK pairs for the **OPENER** and the **CLOSE** —
+  the two surfaces the documented v1.0.3 lapse hit (tone rubric Check 3 opener, Check 4 hedging).
+  **(b)** De-cloned STRUCTURE Paragraph 3: replaced the single close example
+  (`More: "I'd welcome a direct conversation about what this team is building."`) with a
+  *functional* description (name a concrete topic / timing signal / direct scheduling line —
+  implies initiative, never polite waiting). Rationale: the model was **cloning** that one
+  example into the near-verbatim lapse, so the concrete model now lives only in the worked CLOSE
+  example. VOICE/FORMAT untouched; **no banned-phrases-list expansion** (declined — adds a new
+  regression surface; see learnings).
+- `PROMPT_VERSION` `2026-06-13.1` → `2026-06-23.1` (`analyzer.py:281`).
+- New deterministic test class `TestCoverLetterWorkedExamples` in
+  `tests/test_corpus_mode_prompt.py` (asserts the scaffold tokens are present + wired into the
+  prompt when `with_cover_letter=True`, absent when `False` — asserts on scaffold, not the
+  example sentences, so finalizing wording never churns the test).
+
+### 2. Why
+
+v1.0.3 (`PROMPT_VERSION 2026-06-01.3`) `ds × tone` raw `[4.2, 4.2, **2.1**, 4.2, 4.2]`
+(TUNING_LOG `2026-06-01` entry ~line 630): 1 of 5 cover letters opened with throat-clearing
+("I am writing to be considered for…") and closed with a vague hedge ("I would welcome a
+conversation"). The rules block **already banned** both — so this was an **adherence** slip, not
+a missing rule. The project's standard fix for adherence is a **worked OK/NOT-OK example**
+(AGENTS.md: "worked examples are the load-bearing teaching signal"). RELEASE_ARC §4.8 PV-3.
+
+### 3. Result
+
+**Gate:** ruff ✓ · mypy ✓ (227 files) · pytest **1391 passed** (1388 + the 3 new), incl. `-m ux`.
+
+**Paired before/after `--suite synthetic --subset full`, n=3 each side** (~$0.32/run, ~$2 total).
+Before stamped `2026-06-13.1` (branch byte-identical to `main`); after stamped `2026-06-23.1`.
+Judge-error (transient Haiku invalid-JSON) + scenario_misaligned records excluded from means.
+
+**Tone (the target rubric) — mean [raw]:**
+
+| Fixture | before (`.06-13.1`) | after (`.06-23.1`) |
+|---|---|---|
+| data-scientist-junior | 4.20 [4.2, 4.2, 4.2] | 4.17 [4.1, 4.2, 4.2] |
+| pm-senior | 4.20 [4.2, 4.2, 4.2] | 3.87 [**3.2**, 4.2, 4.2] |
+| sre-mid-level | 4.20 [4.2, 4.2, 4.2] | 4.20 [4.2, 4.2, 4.2] |
+
+**No-regression check (other rubrics, mean before→after)** — the edit can only touch the cover
+letter (tone + marginally keyword_coverage), and the table bears that out:
+
+| Rubric | ds | pm | sre |
+|---|---|---|---|
+| ats_format | 4.40→4.60 | 4.57→4.53 | 4.60→4.70 |
+| callback_likelihood | 4.40→4.37 | 4.00→4.07 | 4.27→4.20 |
+| grounding | 4.73→4.77 | 4.77→4.77 | 4.53→4.40 |
+| keyword_coverage | 4.20→4.20 | 4.20→4.20 | 4.40→4.33 |
+| clarification_quality | 4.20→4.20 | 4.07→4.20 | 4.20→3.87 |
+
+All deltas are within the documented ±0.6 Haiku single-grading noise. `sre × clarification 3.87`
+is the known iteration/clarify fixture fragility (`missing_expected_theme`), not cover-letter-related.
+
+**The fix is landing (judge-confirmed).** On the after `ds` letter the judge noted the opener is
+now substance-first ("Borealis's public-sector forecasting work…" — "direct and specific ✓") and
+the model adopted the concrete close pattern ("I'd welcome a direct conversation about… I can make
+time"). The deduction on the 4.1 was an unrelated 36-word sentence (Check 8), not opener/close.
+
+**The lone after `pm` 3.2** (run 1) decomposed (judge `failed_rules`): `throat_clearing_opener`
+(a *company-observation* opener "Atrium's positioning is precise" — a debatable judge call, since
+Check 3 only bans "I am writing/excited/pleased" literals), `hedging` ("I recognize the healthcare
+vocabulary gap… I don't have Epic or FHIR background yet"), `generic_hook`, `sentence_length_over_25`
+(31- and 26-word sentences). The dominant cause is a **scenario-specific gap-admission hedge** —
+the pm-senior fixture is a B2B PM applying to healthtech — i.e. a *different* tone failure mode
+than the opener/close throat-clearing PV-3 targeted.
+
+### 4. What we learned
+
+1. **De-cloning the single close example was the higher-leverage half.** The model treated the one
+   prescriptive close example as a template and cloned it (the v1.0.3 lapse was a near-verbatim
+   copy). Replacing it with a *functional* description + a worked OK/NOT-OK pair removes the string
+   it was copying. General rule: a single concrete example in a prompt is a clone magnet — give a
+   functional spec plus contrasting OK/NOT-OK pairs, not one exemplar.
+2. **n=3 each side can't *prove* a 1/5 lapse is eradicated — and it didn't try to.** The honest
+   claim: tone **held at the 4.2 floor with no regression on any rubric**, and the worked-example
+   opener/close is demonstrably adopted (judge-confirmed). The one sub-4.0 after-sample is within
+   the pre-existing bimodal variance (v1.0.3 had a 2.1; this run a 3.2) and is **scenario-driven**,
+   not an opener/close lapse.
+3. **PV-3 surfaced a distinct, untargeted tone failure mode: defensive gap-admission.** The pm 3.2's
+   dominant deduction was "I don't have Epic/FHIR yet" — the model apologizing for a domain gap, read
+   as hedging. No opener/close rule catches this. Candidate **future** tuning item (a body-paragraph
+   "don't apologize for gaps; frame the adjacent strength" rule) — deliberately **not** folded into
+   PV-3 (the headhunter flagged that expanding the banned/hedging list adds its own regression surface
+   that wants separate validation).
+4. **The judge sometimes penalizes the very close pattern the block prescribes.** Even on a passing
+   (4.2) letter it flagged "I'd welcome a direct conversation" as a borderline "soft close" — yet
+   that register is exactly what the block (old and new) endorses and the rubric's Check 4 does not
+   list. A reminder that the Haiku tone judge has interpretation drift beyond its literal checks;
+   read `reasons`, don't over-fit to a single grading.
+5. **Running the paired eval concurrently with the full `pytest` suite induced 3 judge_errors**
+   (transient Haiku invalid-JSON) in after-run 1; after-runs 2–3 (post-pytest) were clean. Don't
+   overlap the eval harness with a CPU-heavy test run when judge stability matters.

@@ -84,6 +84,8 @@ post-feature test window is a **formal gate** (E2E walkthrough + first real-data
 - [ ] **8.5** **gated test window (on decomposed code)** — E2E user+dev walkthrough (R2 verified live) + `eval/live-shakedown-labels` (PV-1, **first** real-data eval/tuning loop) → numbered findings backlog.
       **Progress (2026-06-23, `eval/live-shakedown-labels`) — the eval half ran.** Landed: the **flaky Compose-wizard UX stabilization** (ledger #3, test-only — `ui_pages/wizard_compose.py` waits on `.compose-experience-card` not `.compose-row.recommended`; 20/20 loop); the **S3 before/after labeled eval → KEEP** (Carry-forward #2 **resolved**; mean judge relevance 1.12→2.58, Δ+1.46; new `scripts/vector_before_after_eval.py`); and the **PV-1 real-data shakedown** (candidate `testuser`, 3 JDs) — which **proved the real corpus→context→generate path works** (3 pipelines OK) and produced the numbered findings backlog [`window-8.5-findings.md`](window-8.5-findings.md): **EV-1** minicheck unpinned-git-dep drift (HIGH, gates PV-2) · **EV-2** grounding-abort discards paid work (Med) · **EV-3** seed-export unicode crash (Low) · **S3-1** vector index stale post-split (Med). **Carried forward (owner-decided 2026-06-23):** (a) PV-1 **label production → 8.6** (blocked on EV-1 — fix minicheck first, then one full L0+L1+L2 annotation pass; see ledger #4); (b) the **E2E walkthrough + R2-live** verification → run against `main` (runbook [`window-8.5-walkthrough.md`](window-8.5-walkthrough.md); see ledger). No prompt/dep/migration; `PROMPT_VERSION` untouched. Gate green (ruff · mypy · pytest incl. `-m ux`).
 - [ ] **8.6** `fix/window-findings-*` — correction sprint: burn the backlog + PV-2 calibration + PV-3 cover-letter tone + `/wiki-ingest`. May spill to a v1.0.9 epic.
+      **Progress (sub-branch 1, 2026-06-23, `fix/window-findings-grounding`):** grounding slice burned (EV-1/EV-2/EV-3 + S3-1); merge `cb8dc40`. Eval/dev tooling only; `PROMPT_VERSION` untouched.
+      **Progress (sub-branch 2, 2026-06-23, `fix/window-findings-tone`) — PV-3 DONE.** Cover-letter tone tune: `_COVER_LETTER_RULES_BLOCK` gained a `WORKED EXAMPLES` OK/NOT-OK opener+close sub-block + de-cloned the single Para-3 close example the model was copying into the v1.0.3 lapse; **`PROMPT_VERSION 2026-06-13.1 → 2026-06-23.1`** (the only prompt bump in the v1.0.7/v1.0.8 epics; `AVATAR_PROMPT_VERSION` untouched, no new dep). Validated via paired before/after `--suite synthetic --subset full` n=3: **tone holds at the 4.2 floor, no regression on any rubric**; opener/close fix judge-confirmed adopted; the lone pm 3.2 was a scenario-specific gap-admission hedge (a different, untargeted tone failure mode — logged as a future-tuning learning). New deterministic test `TestCoverLetterWorkedExamples`. Detail: [`evals/TUNING_LOG.md`](../../evals/TUNING_LOG.md) (2026-06-23 PV-3) + [`window-8.5-findings.md`](window-8.5-findings.md). Gate green (ruff · mypy 227 · pytest 1391 incl. `-m ux`). **Remaining for 8.6/8.6a:** PV-1/PV-2 (owner-gated, staged, may spill to v1.0.9); the `/wiki-ingest` re-anchor folds into 8.6a.
 - [ ] **8.6a** `docs/assistant-wiki-coverage` — author the user/dev how-to wiki pages the avatar draws on (downloads, editing/refining, cover letters, multi-user, import mechanics, troubleshooting, the assistant itself); clears the **Assistant doc-coverage** ledger item (only ~6 `audience: user` pages exist today, so the avatar is "woefully uninformed"). Content, not code — runs after 8.6 settles the post-split route surface, before the public cut (8.7) so v1.1.0 ships a well-informed avatar; pairs with the 8.6 `/wiki-ingest`. Possibly multi-branch. _(PROPOSED 2026-06-20, 7.9 ledger capture — owner-confirmed slot.)_
 - [ ] **8.7** `release/public-prep` — `docs/screenshots`, fresh-clone < 5 min, badge set (E-2 / PX-26), UX/a11y/PDF required CI check (PX-25), doc-link sweep, **GitHub repo create + push (private/unpromoted)**.
 - [ ] **8.8** `chore/version-bump-v1.0.8` — tag; all work done.
@@ -577,6 +579,9 @@ _Open count: 8 — at the top of the ~8–10 reduction-sprint threshold, but the
       **Update (2026-06-23, `fix/window-findings-grounding` 8.6 gate):** first post-fix full-suite
       gate run on 8.6 — UX tier clean (see the branch's gate); one clean run banked toward the
       "a few clean runs" resolve bar. Still **watch** (one run is not yet "a few").
+      **Update (2026-06-23, `fix/window-findings-tone` 8.6 PV-3 gate):** full suite **1391 passed**
+      incl. the UX tier, no Compose-wizard timeout — **second** clean 8.6 gate run banked. Still
+      **watch** (2 of "a few"; PV-3 touches no Compose/recommend code, so neutral-to-positive evidence).
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -668,6 +673,19 @@ _Open count: 8 — at the top of the ~8–10 reduction-sprint threshold, but the
       sprint in the v1.0.8 window (content, not code — runs parallel to the refactor; pairs with
       8.6 `/wiki-ingest`). Was under-ranked by its "do it lastly" note — it directly gates the
       assistant usefulness the v1.0.7 epic just built.
+
+- [ ] **`evals/runner.py` cp1252 console crash (EV-3 class, not covered by the 8.6 fix)** —
+      `python evals/runner.py --help` (and any run that prints a non-cp1252 char like `→` to a
+      Windows cp1252 console) raises `UnicodeEncodeError`, the **exact class EV-3 fixed** — but the
+      8.6 grounding-slice fix only added the UTF-8 `stdout`/`stderr` reconfigure to
+      `scripts/export_corpus_seed.py` + `scripts/capture_screenshots.py`, **not** `evals/runner.py`,
+      so the finding's "the reconfigure fixes the whole class" claim was scoped to those two scripts.
+      **Workaround (used for the PV-3 eval runs):** `PYTHONIOENCODING=utf-8`. **Fix is a 1-liner**
+      (the same `sys.stdout.reconfigure(encoding="utf-8")` at `runner.py` entry) — deliberately
+      **not** folded into PV-3 (out of the cover-letter-tone scope, owner-approved plan); a clean
+      reduction-sprint / next-eval-tooling-touch pickup. Low severity (dev tooling only). _(surfaced
+      2026-06-23, `fix/window-findings-tone` PV-3 — running the validation harness.)_ **Open ledger 8 → 9
+      (at the reduction-sprint threshold — flag for the next close-out).**
 
 #### Resolved
 
