@@ -34,6 +34,14 @@ mechanism — a worked OK/NOT-OK example. `AVATAR_PROMPT_VERSION` untouched; no 
   that the worked-example scaffold is present and wired into the generate prompt when
   `with_cover_letter=True`, absent when `False`.
 
+**Fixed**
+- `evals/runner.py`: the **EV-3-class cp1252 console crash** the 8.6 grounding fix didn't cover —
+  `--help` (the `→` epilog) and any `→` print raised `UnicodeEncodeError` under a Windows cp1252
+  console. Added the same `sys.stdout`/`sys.stderr.reconfigure(encoding="utf-8")` loop at
+  `runner.main()` entry (mirrors `scripts/export_corpus_seed.py` + `capture_screenshots.py`); verified
+  exit 0 plain and under forced `PYTHONIOENCODING=cp1252`. Surfaced during the PV-3 validation;
+  owner-directed fold-in before the merge.
+
 **Validation** — paired before/after `--suite synthetic --subset full`, n=3 each side: **tone holds
 at the 4.2 floor with no regression on any rubric**; the opener/close fix is judge-confirmed adopted
 (substance-first opener + concrete close). One sub-4.0 after-sample (pm 3.2) was a scenario-specific

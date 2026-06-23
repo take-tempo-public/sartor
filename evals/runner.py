@@ -1420,6 +1420,15 @@ def main(argv: list[str] | None = None) -> int:
     delegates to ``run_suite`` and returns its exit code. The no-flag invocation is
     byte-identical to the historical behavior.
     """
+    # Windows console fix (EV-3 class): force UTF-8 so --help (the `→` epilog) and
+    # any non-cp1252 progress char don't raise UnicodeEncodeError under a cp1252
+    # console. Mirrors scripts/export_corpus_seed.py + capture_screenshots.py.
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+        except (AttributeError, ValueError):  # non-reconfigurable stream (e.g. piped)
+            pass
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",

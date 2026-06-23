@@ -168,12 +168,13 @@ The **grounding slice** of this backlog burned on the first 8.6 sub-branch
   `stdout`/`stderr` to UTF-8 at entry. (The per-char ASCII approach the finding implied missed the
   `--help`/`__doc__` argparse path **and** ~30 progress prints in `capture_screenshots.py`; the
   reconfigure fixes the whole class.) Verified exit 0 — success print **and** `--help` — under a
-  forced cp1252 console. **Correction (2026-06-23, PV-3):** "the whole class" was scoped to those
-  **two scripts** — `evals/runner.py` was **not** reconfigured and still crashes on `--help` (the
-  `→` epilog) / any `→` print under cp1252. Surfaced while running the PV-3 validation harness;
-  worked around with `PYTHONIOENCODING=utf-8`; the 1-line fix is tracked in the
-  [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) Carry-forward ledger (Low; deliberately not folded
-  into PV-3's cover-letter-tone scope).
+  forced cp1252 console. **Correction + fix (2026-06-23, PV-3):** "the whole class" was scoped to
+  those **two scripts** — `evals/runner.py` was **not** reconfigured and crashed on `--help` (the
+  `→` epilog) / any `→` print under cp1252. Surfaced while running the PV-3 validation harness
+  (worked around with `PYTHONIOENCODING=utf-8`); **the owner directed folding the 1-line fix in
+  before the merge**, so `runner.main()` now carries the same
+  `sys.stdout`/`sys.stderr.reconfigure(encoding="utf-8")` loop — verified exit 0 on `--help` plain
+  **and** under forced `PYTHONIOENCODING=cp1252`. Resolved (RELEASE_CHECKLIST Carry-forward ledger).
 - **S3-1 — RESOLVED.** `scripts/build_vector_index.py` now writes a `manifest.json`
   (`built_at_sha`) on build and has a `--check` staleness mode (manifest sha vs HEAD) + a unit
   test. The local index was rebuilt (`--full`, 3239 chunks re-anchored onto `blueprints/**`). The
