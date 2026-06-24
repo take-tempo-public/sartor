@@ -171,7 +171,11 @@ def test_recall_sources_no_hardcoded_roots():
         doc_ids = _docstring_constants(tree)
         hits: set[str] = set()
         for node in ast.walk(tree):
-            if isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in doc_ids:
+            if (
+                isinstance(node, ast.Constant)
+                and isinstance(node.value, str)
+                and id(node) not in doc_ids
+            ):
                 hits |= {frag for frag in _FORBIDDEN_LITERAL_FRAGMENTS if frag in node.value}
         if hits:
             offenders[path.relative_to(REPO_ROOT).as_posix()] = hits

@@ -11,9 +11,7 @@ class WizardJobPage(BasePage):
         """Switch to the Tailor tab and select wizard Step 1."""
         self.page.click(TopTabs.TAILOR)
         self.page.click(Wizard.step_button(1))
-        self.page.wait_for_selector(
-            Wizard.JD_TEXT, state="visible", timeout=DEFAULT_TIMEOUT_MS
-        )
+        self.page.wait_for_selector(Wizard.JD_TEXT, state="visible", timeout=DEFAULT_TIMEOUT_MS)
         return self
 
     def fill_jd(self, jd_text: str) -> WizardJobPage:
@@ -26,7 +24,8 @@ class WizardJobPage(BasePage):
             self.page.fill(Wizard.JD_TEXT, jd_text)
         self.page.click(Wizard.ANALYZE_BUTTON)
         self.page.wait_for_selector(
-            f"{Wizard.ANALYSIS_CONTENT} > *", state="attached",
+            f"{Wizard.ANALYSIS_CONTENT} > *",
+            state="attached",
             timeout=LLM_TIMEOUT_MS,
         )
         return self

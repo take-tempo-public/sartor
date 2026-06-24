@@ -78,6 +78,7 @@ generation_bp = Blueprint("generation", __name__)
 
 # --- Generation-only domain helpers (moved with the seam) ---
 
+
 def _persist_run_persona(application_run_id: int, persona_template_id: int) -> None:
     """Record which persona template the user generated with on the run
     (audit; the column exists but was always NULL before Workstream C)."""
@@ -119,18 +120,24 @@ def _persist_cover_letter_to_db(
     try:
         run = session.query(ApplicationRun).filter_by(id=application_run_id).first()
         if run is None:
-            logger.warning("Application_run not found for cover-letter persist (id=%s)", application_run_id)
+            logger.warning(
+                "Application_run not found for cover-letter persist (id=%s)", application_run_id
+            )
             return
         app_row = session.query(Application).filter_by(id=run.application_id).first()
         if app_row is None:
-            logger.warning("Parent application not found for cover-letter persist (run id=%s)", application_run_id)
+            logger.warning(
+                "Parent application not found for cover-letter persist (run id=%s)",
+                application_run_id,
+            )
             return
 
         persist_cover_letter_md(session, run, cover_letter_md)
         session.commit()
         logger.info(
             "Persisted cover-letter md: app_run=%d (%d chars)",
-            application_run_id, len(cover_letter_md),
+            application_run_id,
+            len(cover_letter_md),
         )
     except Exception:
         session.rollback()
@@ -172,7 +179,10 @@ def _persist_corpus_generation_to_db(
             return
 
         report = persist_corpus_generation(
-            session, run, generate_result, candidate_id=app_row.candidate_id,
+            session,
+            run,
+            generate_result,
+            candidate_id=app_row.candidate_id,
         )
         if ats_findings is not None:
             run.ats_roundtrip_json = json.dumps(ats_findings)
@@ -215,12 +225,18 @@ def _check_date_grounding(context_set: ContextSet, result: dict) -> dict | None:
         findings = compute_date_grounding(result.get("resume_content", ""), corpus)
     except Exception as exc:
         logger.warning("Date-grounding check failed to run: %s", exc)
-        return {"status": "not_run", "checked": 0, "flagged": [],
-                "corpus_ranges": [], "notes": [f"check raised: {exc}"]}
+        return {
+            "status": "not_run",
+            "checked": 0,
+            "flagged": [],
+            "corpus_ranges": [],
+            "notes": [f"check raised: {exc}"],
+        }
     if findings["status"] == "flag":
         logger.warning(
             "Date-grounding flag on generated resume: %s (corpus ranges: %s)",
-            findings["flagged"], findings["corpus_ranges"],
+            findings["flagged"],
+            findings["corpus_ranges"],
         )
         notes = result.setdefault("proofread_notes", [])
         for f in findings["flagged"]:
@@ -238,12 +254,11 @@ def _check_date_grounding(context_set: ContextSet, result: dict) -> dict | None:
     return findings
 
 
-
-
 # --- Composition-application helpers (moved with the seam) ---
 # Generation is the sole caller of the three `_apply_*` helpers today. The 8.1
 # design groups them with the applications seam (8.3f) by domain; they move with
 # generation now and are revisited at 8.3f if an applications route grows a caller.
+
 
 def _apply_chosen_summary(context_set: dict) -> None:
     """β.6d — patch context_set["candidate"]["profile_text"] in-place
@@ -296,16 +311,24 @@ def _apply_chosen_summary(context_set: dict) -> None:
         candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
         if candidate is None:
             return
-        row = session.query(SummaryItem).filter_by(
-            id=chosen_id, candidate_id=candidate.id, is_active=1,
-        ).first()
+        row = (
+            session.query(SummaryItem)
+            .filter_by(
+                id=chosen_id,
+                candidate_id=candidate.id,
+                is_active=1,
+            )
+            .first()
+        )
         if row is None or not (row.text or "").strip():
             return  # chosen variant is inactive / missing / blank → fallback
         candidate_block["profile_text"] = row.text
         context_set["candidate"] = candidate_block
         logger.info(
             "β.6d — applied summary variant id=%d (%s) to context for app=%s",
-            row.id, "pinned" if pinned_id is not None else "recommended", app_id,
+            row.id,
+            "pinned" if pinned_id is not None else "recommended",
+            app_id,
         )
     finally:
         session.close()
@@ -365,9 +388,15 @@ def _apply_chosen_experience_summaries(context_set: dict) -> None:
             item_id = chosen.get(eid)
             if item_id is None:
                 continue
-            row = session.query(ExperienceSummaryItem).filter_by(
-                id=item_id, experience_id=eid, is_active=1,
-            ).first()
+            row = (
+                session.query(ExperienceSummaryItem)
+                .filter_by(
+                    id=item_id,
+                    experience_id=eid,
+                    is_active=1,
+                )
+                .first()
+            )
             if row is None or not (row.text or "").strip():
                 continue  # missing / inactive / foreign → role gets no intro
             exp["summary"] = row.text
@@ -375,7 +404,8 @@ def _apply_chosen_experience_summaries(context_set: dict) -> None:
         if applied:
             logger.info(
                 "B.4 — applied %d chosen per-role intro(s) to corpus for app=%s",
-                applied, context_set.get("application_id"),
+                applied,
+                context_set.get("application_id"),
             )
     finally:
         session.close()
@@ -421,9 +451,16 @@ def _apply_recommended_skills(context_set: dict) -> None:
         app_row = session.query(Application).filter_by(id=int(app_id)).first()
         if app_row is None:
             return
-        rows = session.query(Skill).filter_by(
-            candidate_id=app_row.candidate_id, is_active=1, is_pending_review=0,
-        ).order_by(Skill.display_order, Skill.id).all()
+        rows = (
+            session.query(Skill)
+            .filter_by(
+                candidate_id=app_row.candidate_id,
+                is_active=1,
+                is_pending_review=0,
+            )
+            .order_by(Skill.display_order, Skill.id)
+            .all()
+        )
         name_by_id = {r.id: r.name for r in rows if (r.name or "").strip()}
         all_active_ids = [r.id for r in rows if r.id in name_by_id]
         ordered = resolve_skill_selection(
@@ -433,19 +470,19 @@ def _apply_recommended_skills(context_set: dict) -> None:
             excluded=excluded,
             skill_order=skill_order,
         )
-        candidate_block["skills"] = [
-            name_by_id[sid] for sid in ordered if sid in name_by_id
-        ]
+        candidate_block["skills"] = [name_by_id[sid] for sid in ordered if sid in name_by_id]
         context_set["candidate"] = candidate_block
         logger.info(
             "B.5 — applied curated skill set (%d skills) to context for app=%s",
-            len(candidate_block["skills"]), app_id,
+            len(candidate_block["skills"]),
+            app_id,
         )
     finally:
         session.close()
 
 
 # --- Routes ---
+
 
 @generation_bp.route("/api/save-edits", methods=["POST"])
 def save_edits() -> ResponseReturnValue:
@@ -473,7 +510,9 @@ def save_edits() -> ResponseReturnValue:
     if not isinstance(edited_resume, str) or not isinstance(edited_cover_letter, str):
         return jsonify({"error": "edited_resume and edited_cover_letter must be strings"}), 400
     if not edited_resume.strip() and not edited_cover_letter.strip():
-        return jsonify({"error": "At least one of edited_resume or edited_cover_letter required"}), 400
+        return jsonify(
+            {"error": "At least one of edited_resume or edited_cover_letter required"}
+        ), 400
 
     cp = Path(context_path)
     if not _within(cp, output_dir):
@@ -483,7 +522,8 @@ def save_edits() -> ResponseReturnValue:
 
     safe_user = (
         _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
-        if username else None
+        if username
+        else None
     )
     if not safe_user:
         safe_user = secure_filename(cp.parent.name)
@@ -508,25 +548,31 @@ def save_edits() -> ResponseReturnValue:
         targets.append("resume")
     if saved_cover:
         targets.append("cover_letter")
-    notes.append({
-        "timestamp": datetime.now().isoformat(),
-        "action": "save_edits",
-        "summary": f"edits saved as baseline for: {', '.join(targets)}",
-    })
+    notes.append(
+        {
+            "timestamp": datetime.now().isoformat(),
+            "action": "save_edits",
+            "summary": f"edits saved as baseline for: {', '.join(targets)}",
+        }
+    )
     context_set["iteration_notes"] = notes
 
     cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
 
     logger.info(
         "Saved edits for %s: resume=%s cover_letter=%s",
-        safe_user, saved_resume, saved_cover,
+        safe_user,
+        saved_resume,
+        saved_cover,
     )
-    return jsonify({
-        "ok": True,
-        "saved_resume": saved_resume,
-        "saved_cover_letter": saved_cover,
-        "context_path": str(cp),
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "saved_resume": saved_resume,
+            "saved_cover_letter": saved_cover,
+            "context_path": str(cp),
+        }
+    )
 
 
 @generation_bp.route("/api/generate", methods=["POST"])
@@ -568,8 +614,9 @@ def run_generation() -> ResponseReturnValue:
     if not analysis:
         return jsonify({"error": "No valid analysis found in context"}), 400
 
-    logger.info("Starting generation for %s (iteration=%s)", username,
-                context_set.get("iteration", 0))
+    logger.info(
+        "Starting generation for %s (iteration=%s)", username, context_set.get("iteration", 0)
+    )
 
     # β.6d — apply the chosen SummaryItem variant to the candidate's
     # positioning text before the LLM sees the context. Priority chain:
@@ -599,7 +646,9 @@ def run_generation() -> ResponseReturnValue:
     run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
     try:
         result = generate(
-            client, context_set, analysis,
+            client,
+            context_set,
+            analysis,
             refinement_notes=refinement_notes,
             username=username,
             run_id=run_id,
@@ -609,11 +658,15 @@ def run_generation() -> ResponseReturnValue:
         logger.error("Anthropic API connection error during generation: %s", exc)
         return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
     except LLMResponseError as exc:
-        logger.error("LLM generation response failed validation after retry: %s", exc.validation_error)
-        return jsonify({
-            "error": "AI generation response was malformed after retry. Please try again.",
-            "detail": exc.validation_error,
-        }), 502
+        logger.error(
+            "LLM generation response failed validation after retry: %s", exc.validation_error
+        )
+        return jsonify(
+            {
+                "error": "AI generation response was malformed after retry. Please try again.",
+                "detail": exc.validation_error,
+            }
+        ), 502
 
     safe_user = _safe_username(username, configs_dir=configs_dir) if username else None
     if not safe_user:
@@ -643,15 +696,17 @@ def run_generation() -> ResponseReturnValue:
             template_path = _resolve_persona_template_path(resolved_persona_id)
         else:
             ctx_app_id = context_set.get("application_id")
-            template_path = (
-                context_set["resume"].get("path")
-                or _resolve_default_persona_template_path(
-                    username=safe_user,
-                    application_id=int(ctx_app_id) if ctx_app_id is not None else None,
-                )
+            template_path = context_set["resume"].get(
+                "path"
+            ) or _resolve_default_persona_template_path(
+                username=safe_user,
+                application_id=int(ctx_app_id) if ctx_app_id is not None else None,
             )
     resume_path = generate_resume(
-        result["resume_content"], output_format, safe_user, str(output_dir),
+        result["resume_content"],
+        output_format,
+        safe_user,
+        str(output_dir),
         template_path=template_path,
     )
     # Phase β.5 — only write the cover-letter file when the call actually
@@ -672,11 +727,14 @@ def run_generation() -> ResponseReturnValue:
     if output_format == ".docx":
         try:
             from db.ats_roundtrip import run_ats_roundtrip
+
             ats_findings = run_ats_roundtrip(resume_path, result["resume_content"])
             if ats_findings["status"] != "pass":
                 logger.warning(
                     "ATS round-trip %s on %s: %s",
-                    ats_findings["status"], resume_path, ats_findings["notes"],
+                    ats_findings["status"],
+                    resume_path,
+                    ats_findings["notes"],
                 )
         except Exception as exc:
             logger.warning("ATS round-trip check failed to run: %s", exc)
@@ -697,13 +755,16 @@ def run_generation() -> ResponseReturnValue:
             if resolved_persona_id is not None:
                 _persist_run_persona(int(app_run_id), resolved_persona_id)
             _persist_corpus_generation_to_db(
-                int(app_run_id), result, ats_findings=ats_findings,
+                int(app_run_id),
+                result,
+                ats_findings=ats_findings,
             )
         except Exception as exc:
             # Persistence failure must not break the user's generate flow —
             # the markdown is already produced and saved to disk. Log loudly.
-            logger.error("Corpus generation persist failed (run_id=%s): %s",
-                         app_run_id, exc, exc_info=True)
+            logger.error(
+                "Corpus generation persist failed (run_id=%s): %s", app_run_id, exc, exc_info=True
+            )
 
     # Snapshot this iteration as a new immutable context file. The chain of
     # parent_context_path pointers forms the iteration audit trail.
@@ -727,26 +788,30 @@ def run_generation() -> ResponseReturnValue:
     new_iteration = int(context_set.get("iteration", 0) or 0) + 1
     logger.info(
         "Iteration %d snapshotted: %s (parent=%s)",
-        new_iteration, new_context_path, str(cp),
+        new_iteration,
+        new_context_path,
+        str(cp),
     )
 
-    return jsonify({
-        "resume_path": resume_path,
-        "cover_letter_path": cover_letter_path,
-        "resume_format": output_format,
-        "changes_made": result.get("changes_made", []),
-        "proofread_notes": result.get("proofread_notes", []),
-        "resume_preview": result["resume_content"],
-        "cover_letter_preview": result["cover_letter_content"],
-        "context_path": new_context_path,
-        "iteration": new_iteration,
-        "parent_context_path": str(cp),
-        "ats_roundtrip": ats_findings,
-        "date_grounding": date_findings,
-        # Workstream C: echo the persona used so the frontend can thread it
-        # to /api/download-edited (so DOWNLOAD honors the chosen template).
-        "persona_template_id": resolved_persona_id,
-    })
+    return jsonify(
+        {
+            "resume_path": resume_path,
+            "cover_letter_path": cover_letter_path,
+            "resume_format": output_format,
+            "changes_made": result.get("changes_made", []),
+            "proofread_notes": result.get("proofread_notes", []),
+            "resume_preview": result["resume_content"],
+            "cover_letter_preview": result["cover_letter_content"],
+            "context_path": new_context_path,
+            "iteration": new_iteration,
+            "parent_context_path": str(cp),
+            "ats_roundtrip": ats_findings,
+            "date_grounding": date_findings,
+            # Workstream C: echo the persona used so the frontend can thread it
+            # to /api/download-edited (so DOWNLOAD honors the chosen template).
+            "persona_template_id": resolved_persona_id,
+        }
+    )
 
 
 @generation_bp.route("/api/generate/stream", methods=["POST"])
@@ -794,7 +859,8 @@ def run_generation_stream() -> ResponseReturnValue:
 
     logger.info(
         "Starting streaming generation for %s (iteration=%s)",
-        username, context_set.get("iteration", 0),
+        username,
+        context_set.get("iteration", 0),
     )
     # The _apply_* helpers treat the context_set as a loose dict (they read /
     # write keys outside the ContextSet schema). It is a dict at runtime; cast
@@ -828,12 +894,11 @@ def run_generation_stream() -> ResponseReturnValue:
             template_path = _resolve_persona_template_path(resolved_persona_id)
         else:
             ctx_app_id = context_set.get("application_id")
-            template_path = (
-                context_set["resume"].get("path")
-                or _resolve_default_persona_template_path(
-                    username=safe_user,
-                    application_id=int(ctx_app_id) if ctx_app_id is not None else None,
-                )
+            template_path = context_set["resume"].get(
+                "path"
+            ) or _resolve_default_persona_template_path(
+                username=safe_user,
+                application_id=int(ctx_app_id) if ctx_app_id is not None else None,
             )
 
     client = _get_client()
@@ -843,7 +908,9 @@ def run_generation_stream() -> ResponseReturnValue:
         try:
             result: dict | None = None
             for event_kind, payload in generate_streaming(
-                client, context_set, analysis,
+                client,
+                context_set,
+                analysis,
                 refinement_notes=refinement_notes,
                 username=safe_user,
                 run_id=run_id,
@@ -856,37 +923,48 @@ def run_generation_stream() -> ResponseReturnValue:
                 elif event_kind == "done":
                     result = payload if isinstance(payload, dict) else None
             if result is None:
-                yield _sse("error", {
-                    "error": "Streaming generate finished without a parsed result.",
-                    "http_status": 502,
-                })
+                yield _sse(
+                    "error",
+                    {
+                        "error": "Streaming generate finished without a parsed result.",
+                        "http_status": 502,
+                    },
+                )
                 return
 
             # Post-LLM persistence — mirror the non-streaming route.
             resume_path = generate_resume(
-                result["resume_content"], resolved_output_format,
-                safe_user, str(output_dir),
+                result["resume_content"],
+                resolved_output_format,
+                safe_user,
+                str(output_dir),
                 template_path=template_path,
             )
             cover_letter_path = ""
             if (result.get("cover_letter_content") or "").strip():
                 cover_letter_path = generate_cover_letter(
-                    result["cover_letter_content"], safe_user, str(output_dir),
+                    result["cover_letter_content"],
+                    safe_user,
+                    str(output_dir),
                 )
             logger.info(
                 "Streaming generation complete: %s, %s",
-                resume_path, cover_letter_path,
+                resume_path,
+                cover_letter_path,
             )
 
             ats_findings: dict | None = None
             if resolved_output_format == ".docx":
                 try:
                     from db.ats_roundtrip import run_ats_roundtrip
+
                     ats_findings = run_ats_roundtrip(resume_path, result["resume_content"])
                     if ats_findings["status"] != "pass":
                         logger.warning(
                             "ATS round-trip %s on %s: %s",
-                            ats_findings["status"], resume_path, ats_findings["notes"],
+                            ats_findings["status"],
+                            resume_path,
+                            ats_findings["notes"],
                         )
                 except Exception as exc:
                     logger.warning("ATS round-trip check failed to run: %s", exc)
@@ -901,12 +979,16 @@ def run_generation_stream() -> ResponseReturnValue:
                     if resolved_persona_id is not None:
                         _persist_run_persona(int(app_run_id), resolved_persona_id)
                     _persist_corpus_generation_to_db(
-                        int(app_run_id), result, ats_findings=ats_findings,
+                        int(app_run_id),
+                        result,
+                        ats_findings=ats_findings,
                     )
                 except Exception as exc:
                     logger.error(
                         "Corpus generation persist failed (run_id=%s): %s",
-                        app_run_id, exc, exc_info=True,
+                        app_run_id,
+                        exc,
+                        exc_info=True,
                     )
 
             summary_parts = []
@@ -929,46 +1011,60 @@ def run_generation_stream() -> ResponseReturnValue:
             new_iteration = int(context_set.get("iteration", 0) or 0) + 1
             logger.info(
                 "Iteration %d snapshotted: %s (parent=%s)",
-                new_iteration, new_context_path, str(cp),
+                new_iteration,
+                new_context_path,
+                str(cp),
             )
 
-            yield _sse("done", {
-                "resume_path": resume_path,
-                "cover_letter_path": cover_letter_path,
-                "resume_format": resolved_output_format,
-                "changes_made": result.get("changes_made", []),
-                "proofread_notes": result.get("proofread_notes", []),
-                "resume_preview": result["resume_content"],
-                "cover_letter_preview": result.get("cover_letter_content", ""),
-                "context_path": new_context_path,
-                "iteration": new_iteration,
-                "parent_context_path": str(cp),
-                "ats_roundtrip": ats_findings,
-                "date_grounding": date_findings,
-                "persona_template_id": resolved_persona_id,
-            })
+            yield _sse(
+                "done",
+                {
+                    "resume_path": resume_path,
+                    "cover_letter_path": cover_letter_path,
+                    "resume_format": resolved_output_format,
+                    "changes_made": result.get("changes_made", []),
+                    "proofread_notes": result.get("proofread_notes", []),
+                    "resume_preview": result["resume_content"],
+                    "cover_letter_preview": result.get("cover_letter_content", ""),
+                    "context_path": new_context_path,
+                    "iteration": new_iteration,
+                    "parent_context_path": str(cp),
+                    "ats_roundtrip": ats_findings,
+                    "date_grounding": date_findings,
+                    "persona_template_id": resolved_persona_id,
+                },
+            )
         except anthropic.APIConnectionError as exc:
             logger.error("Anthropic API connection error during streaming generation: %s", exc)
-            yield _sse("error", {
-                "error": "Connection to AI service failed. Please try again.",
-                "http_status": 503,
-            })
+            yield _sse(
+                "error",
+                {
+                    "error": "Connection to AI service failed. Please try again.",
+                    "http_status": 503,
+                },
+            )
         except LLMResponseError as exc:
             logger.error(
                 "LLM streaming generation response failed validation after retry: %s",
                 exc.validation_error,
             )
-            yield _sse("error", {
-                "error": "AI generation response was malformed after retry. Please try again.",
-                "detail": exc.validation_error,
-                "http_status": 502,
-            })
+            yield _sse(
+                "error",
+                {
+                    "error": "AI generation response was malformed after retry. Please try again.",
+                    "detail": exc.validation_error,
+                    "http_status": 502,
+                },
+            )
         except Exception:
             logger.exception("Streaming generation failed unexpectedly")
-            yield _sse("error", {
-                "error": "Internal error during generation.",
-                "http_status": 500,
-            })
+            yield _sse(
+                "error",
+                {
+                    "error": "Internal error during generation.",
+                    "http_status": 500,
+                },
+            )
 
     return Response(
         stream(),
@@ -1043,11 +1139,12 @@ def run_generate_cover_letter() -> ResponseReturnValue:
         or (context_set.get("resume", {}).get("text") or "").strip()
     )
     if not resume_content:
-        return jsonify({
-            "error": "No résumé to base the cover letter on. "
-                     "Run /api/generate first.",
-            "needs_resume": True,
-        }), 409
+        return jsonify(
+            {
+                "error": "No résumé to base the cover letter on. Run /api/generate first.",
+                "needs_resume": True,
+            }
+        ), 409
 
     safe_user = _safe_username(username, configs_dir=configs_dir) if username else None
     if not safe_user:
@@ -1059,19 +1156,25 @@ def run_generate_cover_letter() -> ResponseReturnValue:
     run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
     try:
         result = generate_cover_letter_against_resume(
-            client, context_set, analysis, resume_content,
+            client,
+            context_set,
+            analysis,
+            resume_content,
             refinement_notes=refinement_notes,
-            username=username, run_id=run_id,
+            username=username,
+            run_id=run_id,
         )
     except anthropic.APIConnectionError as exc:
         logger.error("Anthropic connection error during cover-letter generate: %s", exc)
         return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
     except LLMResponseError as exc:
         logger.error("Cover-letter LLM response failed validation: %s", exc.validation_error)
-        return jsonify({
-            "error": "AI cover-letter response was malformed after retry.",
-            "detail": exc.validation_error,
-        }), 502
+        return jsonify(
+            {
+                "error": "AI cover-letter response was malformed after retry.",
+                "detail": exc.validation_error,
+            }
+        ), 502
 
     cl_content = (result.get("cover_letter_content") or "").strip()
     if not cl_content:
@@ -1103,15 +1206,19 @@ def run_generate_cover_letter() -> ResponseReturnValue:
         except Exception as exc:
             logger.error(
                 "Cover-letter persist failed (run_id=%s): %s",
-                app_run_id, exc, exc_info=True,
+                app_run_id,
+                exc,
+                exc_info=True,
             )
 
-    return jsonify({
-        "cover_letter_path":    cover_letter_path,
-        "cover_letter_preview": cl_content,
-        "context_path":         str(cp),
-        "proofread_notes":      result.get("proofread_notes", []),
-    })
+    return jsonify(
+        {
+            "cover_letter_path": cover_letter_path,
+            "cover_letter_preview": cl_content,
+            "context_path": str(cp),
+            "proofread_notes": result.get("proofread_notes", []),
+        }
+    )
 
 
 @generation_bp.route("/api/download/<path:filepath>")
@@ -1167,7 +1274,10 @@ def download_edited() -> ResponseReturnValue:
 
     if doc_type == "resume":
         path = generate_resume(
-            content, output_format, safe_user, str(output_dir),
+            content,
+            output_format,
+            safe_user,
+            str(output_dir),
             template_path=template_path or None,
         )
     else:
@@ -1176,8 +1286,11 @@ def download_edited() -> ResponseReturnValue:
         # .pdf renders through personas/cover_letter.html, the .docx borrows the
         # same CSS primary family — so the letter matches the chosen résumé persona.
         path = generate_cover_letter(
-            content, safe_user, str(output_dir),
-            output_format=output_format, template_path=template_path or None,
+            content,
+            safe_user,
+            str(output_dir),
+            output_format=output_format,
+            template_path=template_path or None,
         )
 
     return send_file(str(path), as_attachment=True, download_name=Path(path).name)

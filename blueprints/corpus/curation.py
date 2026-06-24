@@ -108,10 +108,7 @@ def list_resumes(username: str) -> ResponseReturnValue:
     if not user_dir.exists():
         return jsonify([])
     allowed = current_app.config["ALLOWED_EXTENSIONS"]
-    files = [
-        f.name for f in user_dir.iterdir()
-        if f.suffix.lower() in allowed
-    ]
+    files = [f.name for f in user_dir.iterdir() if f.suffix.lower() in allowed]
     return jsonify(sorted(files))
 
 
@@ -145,21 +142,33 @@ def list_corpus_duplicates(username: str) -> ResponseReturnValue:
         if candidate is None:
             # Read precondition unmet → 200 + flag, not 409 (see
             # list_user_personas). Mirror the success shape, empty.
-            return jsonify({
-                "threshold": threshold,
-                "experiences": [],
-                "cluster_count": 0,
-                "needs_onboarding": True,
-            })
+            return jsonify(
+                {
+                    "threshold": threshold,
+                    "experiences": [],
+                    "cluster_count": 0,
+                    "needs_onboarding": True,
+                }
+            )
 
         out_experiences = []
-        for exp in session.query(Experience).filter_by(
-            candidate_id=candidate.id,
-        ).order_by(Experience.start_date.desc(), Experience.id.desc()).all():
+        for exp in (
+            session.query(Experience)
+            .filter_by(
+                candidate_id=candidate.id,
+            )
+            .order_by(Experience.start_date.desc(), Experience.id.desc())
+            .all()
+        ):
             active = [
-                b for b in session.query(Bullet).filter_by(
-                    experience_id=exp.id, is_active=1,
-                ).order_by(Bullet.display_order, Bullet.id).all()
+                b
+                for b in session.query(Bullet)
+                .filter_by(
+                    experience_id=exp.id,
+                    is_active=1,
+                )
+                .order_by(Bullet.display_order, Bullet.id)
+                .all()
             ]
             # Union-find clustering by Jaccard ≥ threshold (_find_root is
             # module-level to avoid late-binding of the per-iteration parent
@@ -191,32 +200,38 @@ def list_corpus_duplicates(username: str) -> ResponseReturnValue:
                         bid,
                     ),
                 )[0]
-                out_clusters.append({
-                    "recommended_keep": recommended,
-                    "bullets": [
-                        {
-                            "id": bid,
-                            "text": text_by_id[bid],
-                            "has_outcome": has_outcome_by_id[bid],
-                        }
-                        for bid in ids
-                    ],
-                })
-            out_experiences.append({
-                "id": exp.id,
-                "company": exp.company,
-                "start_date": exp.start_date,
-                "end_date": exp.end_date,
-                "clusters": out_clusters,
-            })
+                out_clusters.append(
+                    {
+                        "recommended_keep": recommended,
+                        "bullets": [
+                            {
+                                "id": bid,
+                                "text": text_by_id[bid],
+                                "has_outcome": has_outcome_by_id[bid],
+                            }
+                            for bid in ids
+                        ],
+                    }
+                )
+            out_experiences.append(
+                {
+                    "id": exp.id,
+                    "company": exp.company,
+                    "start_date": exp.start_date,
+                    "end_date": exp.end_date,
+                    "clusters": out_clusters,
+                }
+            )
         cluster_count = 0
         for e in out_experiences:
             cluster_count += len(e["clusters"])  # type: ignore[arg-type]
-        return jsonify({
-            "threshold": threshold,
-            "experiences": out_experiences,
-            "cluster_count": cluster_count,
-        })
+        return jsonify(
+            {
+                "threshold": threshold,
+                "experiences": out_experiences,
+                "cluster_count": cluster_count,
+            }
+        )
     finally:
         session.close()
 
@@ -267,9 +282,14 @@ def ingest_resume_to_corpus(username: str) -> ResponseReturnValue:
         )
         report = ImportReport()
         ingest_one_resume(
-            save_path, candidate.id, session,
-            client=_get_client(), username=safe_user,
-            is_primary=False, dry_run=False, report=report,
+            save_path,
+            candidate.id,
+            session,
+            client=_get_client(),
+            username=safe_user,
+            is_primary=False,
+            dry_run=False,
+            report=report,
         )
         session.commit()
         payload = {
@@ -286,9 +306,7 @@ def ingest_resume_to_corpus(username: str) -> ResponseReturnValue:
         # 422 so the client takes its error path instead of a green toast. A
         # genuine 0-but-no-error result (a résumé with no dated roles) stays
         # 201 — the client warns without claiming success.
-        nothing_landed = (
-            report.experiences_created + report.experiences_merged == 0
-        )
+        nothing_landed = report.experiences_created + report.experiences_merged == 0
         if nothing_landed and report.errors:
             payload["error"] = "Could not extract any experiences from the résumé"
             return jsonify(payload), 422
@@ -319,7 +337,8 @@ def accept_bullet(bullet_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Bullet's experience missing"}), 404
         candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
         bullet.is_pending_review = 0
@@ -349,7 +368,8 @@ def accept_experience_title(title_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Title's experience missing"}), 404
         candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
         title.is_pending_review = 0
@@ -378,18 +398,31 @@ def accept_experience_all(experience_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Experience not found"}), 404
         if not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
             return jsonify({"error": "Candidate validation failed"}), 403
-        titles_cleared = session.query(ExperienceTitle).filter_by(
-            experience_id=exp.id, is_pending_review=1,
-        ).update({"is_pending_review": 0})
-        bullets_cleared = session.query(Bullet).filter_by(
-            experience_id=exp.id, is_pending_review=1, is_active=1,
-        ).update({"is_pending_review": 0})
+        titles_cleared = (
+            session.query(ExperienceTitle)
+            .filter_by(
+                experience_id=exp.id,
+                is_pending_review=1,
+            )
+            .update({"is_pending_review": 0})
+        )
+        bullets_cleared = (
+            session.query(Bullet)
+            .filter_by(
+                experience_id=exp.id,
+                is_pending_review=1,
+                is_active=1,
+            )
+            .update({"is_pending_review": 0})
+        )
         session.commit()
-        return jsonify({
-            "experience_id": exp.id,
-            "titles_accepted": titles_cleared,
-            "bullets_accepted": bullets_cleared,
-        })
+        return jsonify(
+            {
+                "experience_id": exp.id,
+                "titles_accepted": titles_cleared,
+                "bullets_accepted": bullets_cleared,
+            }
+        )
     except Exception:
         session.rollback()
         raise
@@ -417,27 +450,42 @@ def accept_all_pending(username: str) -> ResponseReturnValue:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
             return jsonify({"titles_accepted": 0, "bullets_accepted": 0})
-        exp_ids = [row[0] for row in session.query(Experience.id).filter_by(
-            candidate_id=candidate.id,
-        ).all()]
+        exp_ids = [
+            row[0]
+            for row in session.query(Experience.id)
+            .filter_by(
+                candidate_id=candidate.id,
+            )
+            .all()
+        ]
         if not exp_ids:
             return jsonify({"titles_accepted": 0, "bullets_accepted": 0})
         # Bulk updates over exp_ids; synchronize_session=False because we
         # commit + close immediately and never reuse the session objects.
-        titles_cleared = session.query(ExperienceTitle).filter(
-            ExperienceTitle.experience_id.in_(exp_ids),
-            ExperienceTitle.is_pending_review == 1,
-        ).update({"is_pending_review": 0}, synchronize_session=False)
-        bullets_cleared = session.query(Bullet).filter(
-            Bullet.experience_id.in_(exp_ids),
-            Bullet.is_pending_review == 1,
-            Bullet.is_active == 1,
-        ).update({"is_pending_review": 0}, synchronize_session=False)
+        titles_cleared = (
+            session.query(ExperienceTitle)
+            .filter(
+                ExperienceTitle.experience_id.in_(exp_ids),
+                ExperienceTitle.is_pending_review == 1,
+            )
+            .update({"is_pending_review": 0}, synchronize_session=False)
+        )
+        bullets_cleared = (
+            session.query(Bullet)
+            .filter(
+                Bullet.experience_id.in_(exp_ids),
+                Bullet.is_pending_review == 1,
+                Bullet.is_active == 1,
+            )
+            .update({"is_pending_review": 0}, synchronize_session=False)
+        )
         session.commit()
-        return jsonify({
-            "titles_accepted": titles_cleared,
-            "bullets_accepted": bullets_cleared,
-        })
+        return jsonify(
+            {
+                "titles_accepted": titles_cleared,
+                "bullets_accepted": bullets_cleared,
+            }
+        )
     except Exception:
         session.rollback()
         raise
@@ -464,49 +512,76 @@ def pending_counts(username: str) -> ResponseReturnValue:
     try:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
-            return jsonify({
-                "candidate_present": False,
-                "pending_titles": 0,
-                "pending_bullets": 0,
-                "experiences_with_pending": 0,
-            })
-        exp_ids = [row[0] for row in session.query(Experience.id).filter_by(
-            candidate_id=candidate.id,
-        ).all()]
+            return jsonify(
+                {
+                    "candidate_present": False,
+                    "pending_titles": 0,
+                    "pending_bullets": 0,
+                    "experiences_with_pending": 0,
+                }
+            )
+        exp_ids = [
+            row[0]
+            for row in session.query(Experience.id)
+            .filter_by(
+                candidate_id=candidate.id,
+            )
+            .all()
+        ]
         if not exp_ids:
-            return jsonify({
-                "candidate_present": True,
-                "pending_titles": 0,
-                "pending_bullets": 0,
-                "experiences_with_pending": 0,
-            })
-        n_titles = session.query(ExperienceTitle).filter(
-            ExperienceTitle.experience_id.in_(exp_ids),
-            ExperienceTitle.is_pending_review == 1,
-        ).count()
-        n_bullets = session.query(Bullet).filter(
-            Bullet.experience_id.in_(exp_ids),
-            Bullet.is_pending_review == 1,
-            Bullet.is_active == 1,
-        ).count()
+            return jsonify(
+                {
+                    "candidate_present": True,
+                    "pending_titles": 0,
+                    "pending_bullets": 0,
+                    "experiences_with_pending": 0,
+                }
+            )
+        n_titles = (
+            session.query(ExperienceTitle)
+            .filter(
+                ExperienceTitle.experience_id.in_(exp_ids),
+                ExperienceTitle.is_pending_review == 1,
+            )
+            .count()
+        )
+        n_bullets = (
+            session.query(Bullet)
+            .filter(
+                Bullet.experience_id.in_(exp_ids),
+                Bullet.is_pending_review == 1,
+                Bullet.is_active == 1,
+            )
+            .count()
+        )
         # Experiences with at least one pending row (title or bullet)
         pending_exp_ids = set()
-        for t in session.query(ExperienceTitle.experience_id).filter(
-            ExperienceTitle.experience_id.in_(exp_ids),
-            ExperienceTitle.is_pending_review == 1,
-        ).all():
+        for t in (
+            session.query(ExperienceTitle.experience_id)
+            .filter(
+                ExperienceTitle.experience_id.in_(exp_ids),
+                ExperienceTitle.is_pending_review == 1,
+            )
+            .all()
+        ):
             pending_exp_ids.add(t[0])
-        for b in session.query(Bullet.experience_id).filter(
-            Bullet.experience_id.in_(exp_ids),
-            Bullet.is_pending_review == 1,
-            Bullet.is_active == 1,
-        ).all():
+        for b in (
+            session.query(Bullet.experience_id)
+            .filter(
+                Bullet.experience_id.in_(exp_ids),
+                Bullet.is_pending_review == 1,
+                Bullet.is_active == 1,
+            )
+            .all()
+        ):
             pending_exp_ids.add(b[0])
-        return jsonify({
-            "candidate_present": True,
-            "pending_titles": n_titles,
-            "pending_bullets": n_bullets,
-            "experiences_with_pending": len(pending_exp_ids),
-        })
+        return jsonify(
+            {
+                "candidate_present": True,
+                "pending_titles": n_titles,
+                "pending_bullets": n_bullets,
+                "experiences_with_pending": len(pending_exp_ids),
+            }
+        )
     finally:
         session.close()

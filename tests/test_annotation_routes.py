@@ -56,7 +56,8 @@ def ann_app(tmp_path, monkeypatch):
         OUTPUT_DIR=cfg.output_dir,
         _within=web_infra._within,
         _annotation_fixture_path=lambda slug: diagnostics_mod._annotation_fixture_path(
-            slug, ann_root,
+            slug,
+            ann_root,
         ),
     )
 
@@ -72,22 +73,44 @@ def _seed_bootstrap(root, slug="alice-bootstrap", candidate="alice"):
         "prompt_version": "2026-06-06.1",
         "jaccard_threshold": 0.75,
         "jd_count": 1,
-        "per_jd": [{
-            "jd_file": "jd1.txt", "run_id": "r1",
-            "clarification_questions": [
-                {"id": "q1", "text": "What was your scope?", "kind": "scope_probe"},
-            ],
-        }],
+        "per_jd": [
+            {
+                "jd_file": "jd1.txt",
+                "run_id": "r1",
+                "clarification_questions": [
+                    {"id": "q1", "text": "What was your scope?", "kind": "scope_probe"},
+                ],
+            }
+        ],
         "dedup": {
-            "bullets": {"cluster_count": 2, "clusters": [
-                {"representative": "Led a $5M migration", "members": ["Led a $5M migration"],
-                 "jd_files": ["jd1.txt"], "size": 1},
-                {"representative": "Built CI pipelines", "members": ["Built CI pipelines"],
-                 "jd_files": ["jd1.txt"], "size": 1},
-            ]},
-            "skills": {"cluster_count": 1, "clusters": [
-                {"representative": "Python", "members": ["Python"], "jd_files": ["jd1.txt"], "size": 1},
-            ]},
+            "bullets": {
+                "cluster_count": 2,
+                "clusters": [
+                    {
+                        "representative": "Led a $5M migration",
+                        "members": ["Led a $5M migration"],
+                        "jd_files": ["jd1.txt"],
+                        "size": 1,
+                    },
+                    {
+                        "representative": "Built CI pipelines",
+                        "members": ["Built CI pipelines"],
+                        "jd_files": ["jd1.txt"],
+                        "size": 1,
+                    },
+                ],
+            },
+            "skills": {
+                "cluster_count": 1,
+                "clusters": [
+                    {
+                        "representative": "Python",
+                        "members": ["Python"],
+                        "jd_files": ["jd1.txt"],
+                        "size": 1,
+                    },
+                ],
+            },
         },
         "grounding_signals": None,
     }
@@ -111,6 +134,7 @@ def _complete_doc(ann_app, slug="alice-bootstrap"):
 
 
 # --- list ------------------------------------------------------------------
+
 
 class TestFixturesList:
     def test_lists_seeded_bootstrap(self, ann_app):
@@ -140,6 +164,7 @@ class TestFixturesList:
 
 
 # --- load ------------------------------------------------------------------
+
 
 class TestLoad:
     def test_returns_template_when_no_annotations(self, ann_app):
@@ -180,12 +205,16 @@ class TestLoad:
 
 # --- save (fail-closed) ----------------------------------------------------
 
+
 class TestSave:
     def test_rejects_incomplete_template(self, ann_app):
         _seed_bootstrap(ann_app.ANNOTATION_ROOT)
         from evals.annotation import build_annotation_template
+
         bootstrap = json.loads(
-            (ann_app.ANNOTATION_ROOT / "alice-bootstrap" / "bootstrap.json").read_text(encoding="utf-8"),
+            (ann_app.ANNOTATION_ROOT / "alice-bootstrap" / "bootstrap.json").read_text(
+                encoding="utf-8"
+            ),
         )
         template = build_annotation_template(bootstrap)  # verdicts all None
         client = ann_app.app.test_client()
@@ -209,6 +238,7 @@ class TestSave:
         assert out.exists()
         # Round-trips through the canonical validator.
         from evals.annotation import load_annotations
+
         load_annotations(out)
 
     def test_rejects_fabricated_without_pattern(self, ann_app):
@@ -229,6 +259,7 @@ class TestSave:
 
 
 # --- collate ---------------------------------------------------------------
+
 
 class TestCollate:
     def test_requires_saved_annotations(self, ann_app):
@@ -255,8 +286,8 @@ class TestCollate:
         assert resp.status_code == 200
         body = resp.get_json()
         assert body["ok"] is True
-        assert body["must_keywords"] == 1          # "Python"
-        assert body["forbidden_inventions"] == 1   # \$5M\b
+        assert body["must_keywords"] == 1  # "Python"
+        assert body["forbidden_inventions"] == 1  # \$5M\b
         assert body["jd_written"] is True
         assert (fixture_dir / "expected.json").exists()
         assert (fixture_dir / "improvement_brief.md").exists()
@@ -268,6 +299,7 @@ class TestCollate:
 
 
 # --- path containment helpers ----------------------------------------------
+
 
 class TestContainment:
     def test_fixture_path_sanitizes_traversal(self, ann_app):
@@ -287,6 +319,7 @@ class TestContainment:
 
 # --- bootstrap SSE (LLM stubbed) -------------------------------------------
 
+
 class TestBootstrapStream:
     def test_writes_bootstrap_from_stubbed_pipeline(self, ann_app, monkeypatch):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")  # client construct only; never called
@@ -296,25 +329,47 @@ class TestBootstrapStream:
             for i, (name, _text) in enumerate(jds):
                 if progress:
                     progress("jd_start", {"jd_file": name, "index": i, "total": len(jds)})
-                    progress("jd_done", {"jd_file": name, "index": i, "total": len(jds),
-                                         "bullets": 1, "skills": 1, "questions": 0})
-                per_jd.append({
-                    "jd_file": name, "run_id": f"run{i}", "analysis": {},
-                    "clarification_questions": [], "clarification_reasoning": "",
-                    "generated_resume": "", "generated_cover_letter": "",
-                    "bullets": [f"Did {name} work"], "skills": ["Python"],
-                })
+                    progress(
+                        "jd_done",
+                        {
+                            "jd_file": name,
+                            "index": i,
+                            "total": len(jds),
+                            "bullets": 1,
+                            "skills": 1,
+                            "questions": 0,
+                        },
+                    )
+                per_jd.append(
+                    {
+                        "jd_file": name,
+                        "run_id": f"run{i}",
+                        "analysis": {},
+                        "clarification_questions": [],
+                        "clarification_reasoning": "",
+                        "generated_resume": "",
+                        "generated_cover_letter": "",
+                        "bullets": [f"Did {name} work"],
+                        "skills": ["Python"],
+                    }
+                )
             return per_jd, "corpus source text"
 
         import evals.bootstrap as bootstrap_mod
+
         monkeypatch.setattr(bootstrap_mod, "run_pipeline_over_jd_texts", _fake_pipeline)
 
         client = ann_app.app.test_client()
-        resp = client.post("/api/annotation/bootstrap", json={
-            "username": "alice",
-            "jds": [{"name": "kafka backend", "text": "JD one"},
-                    {"name": "frontend", "text": "JD two"}],
-        })
+        resp = client.post(
+            "/api/annotation/bootstrap",
+            json={
+                "username": "alice",
+                "jds": [
+                    {"name": "kafka backend", "text": "JD one"},
+                    {"name": "frontend", "text": "JD two"},
+                ],
+            },
+        )
         assert resp.status_code == 200
         body = resp.get_data(as_text=True)
         assert "event: start" in body
@@ -335,9 +390,13 @@ class TestBootstrapStream:
 
     def test_rejects_unknown_user(self, ann_app):
         client = ann_app.app.test_client()
-        resp = client.post("/api/annotation/bootstrap", json={
-            "username": "nobody", "jds": [{"name": "x", "text": "y"}],
-        })
+        resp = client.post(
+            "/api/annotation/bootstrap",
+            json={
+                "username": "nobody",
+                "jds": [{"name": "x", "text": "y"}],
+            },
+        )
         assert resp.status_code == 400
 
 
@@ -351,27 +410,62 @@ _SEED = {
     "generator": "test",
     "candidate_username": "alice",
     "candidate": {
-        "username": "alice", "name": "Alice Lee", "email": None, "phone": None,
-        "linkedin_url": None, "website_url": None, "notes": None, "profile_text": None,
+        "username": "alice",
+        "name": "Alice Lee",
+        "email": None,
+        "phone": None,
+        "linkedin_url": None,
+        "website_url": None,
+        "notes": None,
+        "profile_text": None,
     },
     "tags": [],
-    "experiences": [{
-        "id": 1, "company": "Acme", "location": None, "start_date": "2020",
-        "end_date": "2023", "display_order": 0, "summary": None,
-        "titles": [{
-            "id": 1, "title": "Engineer", "is_official": True,
-            "truthful_enough_to_use": True, "is_pending_review": False,
-            "source": "user", "tag_links": [],
-        }],
-        "bullets": [
-            {"id": 1, "text": "Led a $5M migration", "display_order": 0,
-             "is_active": True, "is_pending_review": False, "source": "user",
-             "pattern_kind": None, "has_outcome": True, "tag_links": []},
-            {"id": 2, "text": "Built CI pipelines", "display_order": 1,
-             "is_active": True, "is_pending_review": False, "source": "user",
-             "pattern_kind": None, "has_outcome": False, "tag_links": []},
-        ],
-    }],
+    "experiences": [
+        {
+            "id": 1,
+            "company": "Acme",
+            "location": None,
+            "start_date": "2020",
+            "end_date": "2023",
+            "display_order": 0,
+            "summary": None,
+            "titles": [
+                {
+                    "id": 1,
+                    "title": "Engineer",
+                    "is_official": True,
+                    "truthful_enough_to_use": True,
+                    "is_pending_review": False,
+                    "source": "user",
+                    "tag_links": [],
+                }
+            ],
+            "bullets": [
+                {
+                    "id": 1,
+                    "text": "Led a $5M migration",
+                    "display_order": 0,
+                    "is_active": True,
+                    "is_pending_review": False,
+                    "source": "user",
+                    "pattern_kind": None,
+                    "has_outcome": True,
+                    "tag_links": [],
+                },
+                {
+                    "id": 2,
+                    "text": "Built CI pipelines",
+                    "display_order": 1,
+                    "is_active": True,
+                    "is_pending_review": False,
+                    "source": "user",
+                    "pattern_kind": None,
+                    "has_outcome": False,
+                    "tag_links": [],
+                },
+            ],
+        }
+    ],
     "summary_items": [],
     "skills": [{"id": 1, "name": "Python", "category": None, "proficiency": None, "years": None}],
     "educations": [],
@@ -389,8 +483,10 @@ def _fake_scorer(resume_md, source_texts):
     bullets = [ln[2:].strip() for ln in resume_md.splitlines() if ln.strip().startswith("- ")]
     return {
         "bullet_count": len(bullets),
-        "nli": [{"bullet": b, "nli_entailment_score": 0.9, "nli_contradiction_flag": False}
-                for b in bullets],
+        "nli": [
+            {"bullet": b, "nli_entailment_score": 0.9, "nli_contradiction_flag": False}
+            for b in bullets
+        ],
         "nli_summary": {"mean_entailment": 0.9, "contradiction_count": 0},
         "minicheck": [{"bullet": b, "minicheck_grounding_score": 0.8} for b in bullets],
         "minicheck_summary": {"mean_score": 0.8, "low_score_count": 0},
@@ -415,13 +511,13 @@ class TestScoreGrounding:
         gs = doc["grounding_signals"]
         assert gs is not None
         assert gs["bullet_count"] == 2
-        assert len(gs["nli"]) == 2                       # index-aligned to the 2 clusters
+        assert len(gs["nli"]) == 2  # index-aligned to the 2 clusters
         assert gs["nli"][0]["nli_entailment_score"] == 0.9
 
     def test_patches_existing_annotations_without_clobbering_verdicts(self, ann_app, monkeypatch):
         fixture_dir, _ = _seed_bootstrap(ann_app.ANNOTATION_ROOT)
         _write_seed(fixture_dir)
-        doc = _complete_doc(ann_app)               # null pre-scores + verdict=keep
+        doc = _complete_doc(ann_app)  # null pre-scores + verdict=keep
         doc["bullets"][0]["note"] = "human note"
         (fixture_dir / "annotations.json").write_text(json.dumps(doc), encoding="utf-8")
         monkeypatch.setattr("evals.grounding_signals.run_grounding_signals", _fake_scorer)
@@ -442,7 +538,7 @@ class TestScoreGrounding:
         assert patched["bullets"][0]["note"] == "human note"
 
     def test_no_seed_returns_409(self, ann_app):
-        _seed_bootstrap(ann_app.ANNOTATION_ROOT)   # no seed.json written
+        _seed_bootstrap(ann_app.ANNOTATION_ROOT)  # no seed.json written
         client = ann_app.app.test_client()
         resp = client.post("/api/annotation/fixture/alice/alice-bootstrap/score")
         assert resp.status_code == 409
@@ -454,11 +550,12 @@ class TestScoreGrounding:
 
         def _raise_import(*_a, **_k):
             raise ImportError("transformers is required for NLI scoring.")
+
         monkeypatch.setattr("evals.grounding_signals.run_grounding_signals", _raise_import)
 
         client = ann_app.app.test_client()
         resp = client.post("/api/annotation/fixture/alice/alice-bootstrap/score")
-        assert resp.status_code == 200            # SSE; the error rides in the stream
+        assert resp.status_code == 200  # SSE; the error rides in the stream
         body = resp.get_data(as_text=True)
         assert "event: error" in body
         assert "not installed" in body
@@ -485,13 +582,26 @@ class TestBootstrapGrounding:
     @staticmethod
     def _stub_pipeline(monkeypatch):
         def _fake_pipeline(client, session, username, jds, *, progress=None):
-            return ([{
-                "jd_file": n, "run_id": f"r{i}", "analysis": {},
-                "clarification_questions": [], "clarification_reasoning": "",
-                "generated_resume": "", "generated_cover_letter": "",
-                "bullets": [f"Did {n} work"], "skills": ["Python"],
-            } for i, (n, _t) in enumerate(jds)], "corpus source text")
+            return (
+                [
+                    {
+                        "jd_file": n,
+                        "run_id": f"r{i}",
+                        "analysis": {},
+                        "clarification_questions": [],
+                        "clarification_reasoning": "",
+                        "generated_resume": "",
+                        "generated_cover_letter": "",
+                        "bullets": [f"Did {n} work"],
+                        "skills": ["Python"],
+                    }
+                    for i, (n, _t) in enumerate(jds)
+                ],
+                "corpus source text",
+            )
+
         import evals.bootstrap as bootstrap_mod
+
         monkeypatch.setattr(bootstrap_mod, "run_pipeline_over_jd_texts", _fake_pipeline)
 
     def test_optin_scores_bootstrap(self, ann_app, monkeypatch):
@@ -500,17 +610,22 @@ class TestBootstrapGrounding:
         monkeypatch.setattr("evals.grounding_signals.run_grounding_signals", _fake_scorer)
 
         client = ann_app.app.test_client()
-        resp = client.post("/api/annotation/bootstrap", json={
-            "username": "alice",
-            "jds": [{"name": "kafka", "text": "JD one"}],
-            "grounding_signals": True,
-        })
+        resp = client.post(
+            "/api/annotation/bootstrap",
+            json={
+                "username": "alice",
+                "jds": [{"name": "kafka", "text": "JD one"}],
+                "grounding_signals": True,
+            },
+        )
         assert resp.status_code == 200
         body = resp.get_data(as_text=True)
         assert "event: done" in body
         assert "event: error" not in body
         doc = json.loads(
-            (ann_app.ANNOTATION_ROOT / "alice-bootstrap" / "bootstrap.json").read_text(encoding="utf-8"),
+            (ann_app.ANNOTATION_ROOT / "alice-bootstrap" / "bootstrap.json").read_text(
+                encoding="utf-8"
+            ),
         )
         assert doc["grounding_signals"] is not None
 
@@ -520,14 +635,18 @@ class TestBootstrapGrounding:
 
         def _raise_import(*_a, **_k):
             raise ImportError("transformers is required.")
+
         monkeypatch.setattr("evals.grounding_signals.run_grounding_signals", _raise_import)
 
         client = ann_app.app.test_client()
-        resp = client.post("/api/annotation/bootstrap", json={
-            "username": "alice",
-            "jds": [{"name": "kafka", "text": "JD one"}],
-            "grounding_signals": True,
-        })
+        resp = client.post(
+            "/api/annotation/bootstrap",
+            json={
+                "username": "alice",
+                "jds": [{"name": "kafka", "text": "JD one"}],
+                "grounding_signals": True,
+            },
+        )
         assert resp.status_code == 200
         body = resp.get_data(as_text=True)
         # Degrades softly: the grounding crash is absorbed inside
@@ -538,12 +657,15 @@ class TestBootstrapGrounding:
         assert "pip install" in body  # actionable install hint preserved
         assert "event: done" in body
         doc = json.loads(
-            (ann_app.ANNOTATION_ROOT / "alice-bootstrap" / "bootstrap.json").read_text(encoding="utf-8"),
+            (ann_app.ANNOTATION_ROOT / "alice-bootstrap" / "bootstrap.json").read_text(
+                encoding="utf-8"
+            ),
         )
         assert doc["grounding_signals"] is None
 
 
 # --- console eval run (run_suite stubbed; no paid calls) -------------------
+
 
 class TestEvalRunRoute:
     """POST /api/eval/run — the localhost SSE route that drives run_suite from the
@@ -561,11 +683,23 @@ class TestEvalRunRoute:
             progress = kwargs.get("progress")
             if progress is not None:
                 progress("fixture_start", {"fixture": "sre-mid-level", "index": 0, "total": 1})
-                progress("rubric_done", {"fixture": "sre-mid-level", "rubric": "grounding",
-                                         "score": 4.7, "status": "ok", "verdict": "pass"})
+                progress(
+                    "rubric_done",
+                    {
+                        "fixture": "sre-mid-level",
+                        "rubric": "grounding",
+                        "score": 4.7,
+                        "status": "ok",
+                        "verdict": "pass",
+                    },
+                )
             return EvalRunResult(
-                exit_code=0, out_path=Path("20260607_000000Z.jsonl"),
-                n_pass=1, n_fail=0, regressions=[], improvements=[],
+                exit_code=0,
+                out_path=Path("20260607_000000Z.jsonl"),
+                n_pass=1,
+                n_fail=0,
+                regressions=[],
+                improvements=[],
             )
 
         monkeypatch.setattr(runner, "run_suite", fake_run_suite)
@@ -590,8 +724,9 @@ class TestEvalRunRoute:
 
     def test_localhost_guard_blocks_remote_host(self, ann_app):
         client = ann_app.app.test_client()
-        resp = client.post("/api/eval/run", json={"suite": "synthetic"},
-                           headers={"Host": "evil.example"})
+        resp = client.post(
+            "/api/eval/run", json={"suite": "synthetic"}, headers={"Host": "evil.example"}
+        )
         assert resp.status_code == 403
 
     def test_invalid_suite_rejected(self, ann_app):
@@ -603,18 +738,28 @@ class TestEvalRunRoute:
         # A bootstrap fixture exists but no seed.json was ever captured.
         _seed_bootstrap(ann_app.ANNOTATION_ROOT)
         client = ann_app.app.test_client()
-        resp = client.post("/api/eval/run", json={
-            "suite": "real", "fixture": "alice-bootstrap",
-            "slug": "alice-bootstrap", "username": "alice",
-        })
+        resp = client.post(
+            "/api/eval/run",
+            json={
+                "suite": "real",
+                "fixture": "alice-bootstrap",
+                "slug": "alice-bootstrap",
+                "username": "alice",
+            },
+        )
         assert resp.status_code == 409
 
     def test_seed_mode_unknown_user_400(self, ann_app):
         _seed_bootstrap(ann_app.ANNOTATION_ROOT)
         client = ann_app.app.test_client()
-        resp = client.post("/api/eval/run", json={
-            "suite": "real", "slug": "alice-bootstrap", "username": "nobody",
-        })
+        resp = client.post(
+            "/api/eval/run",
+            json={
+                "suite": "real",
+                "slug": "alice-bootstrap",
+                "username": "nobody",
+            },
+        )
         assert resp.status_code == 400
 
     def test_seed_mode_runs_when_seed_present(self, ann_app, monkeypatch):
@@ -623,10 +768,15 @@ class TestEvalRunRoute:
         fixture_dir, _ = _seed_bootstrap(ann_app.ANNOTATION_ROOT)
         (fixture_dir / "seed.json").write_text(json.dumps(_SEED), encoding="utf-8")
         client = ann_app.app.test_client()
-        resp = client.post("/api/eval/run", json={
-            "suite": "real", "fixture": "alice-bootstrap",
-            "slug": "alice-bootstrap", "username": "alice",
-        })
+        resp = client.post(
+            "/api/eval/run",
+            json={
+                "suite": "real",
+                "fixture": "alice-bootstrap",
+                "slug": "alice-bootstrap",
+                "username": "alice",
+            },
+        )
         assert resp.status_code == 200
         body = resp.get_data(as_text=True)
         assert "event: done" in body
@@ -638,6 +788,7 @@ class TestEvalRunRoute:
 
 
 # --- console tune A/B (run_suite stubbed; no paid calls) -------------------
+
 
 class TestTuneRunRoute:
     """POST /api/tune/run — the localhost SSE route that A/Bs a candidate prompt against
@@ -654,19 +805,41 @@ class TestTuneRunRoute:
             progress = kwargs.get("progress")
             if progress is not None:
                 progress("fixture_start", {"fixture": "sre-mid-level", "index": 0, "total": 1})
-                progress("rubric_done", {"fixture": "sre-mid-level", "rubric": "grounding",
-                                         "score": 4.7, "status": "ok", "verdict": "pass"})
+                progress(
+                    "rubric_done",
+                    {
+                        "fixture": "sre-mid-level",
+                        "rubric": "grounding",
+                        "score": 4.7,
+                        "status": "ok",
+                        "verdict": "pass",
+                    },
+                )
             # A real result line so load_scores/build_delta_table/format_delta_table run.
             out = tmp_path / f"{phase}_{len(calls)}.jsonl"
             score = 4.7 if phase == "baseline" else 4.0  # candidate moves → non-zero delta
             out.write_text(
-                json.dumps({"status": "ok", "fixture": "sre-mid-level",
-                            "rubric": "grounding", "score": score}) + "\n",
+                json.dumps(
+                    {
+                        "status": "ok",
+                        "fixture": "sre-mid-level",
+                        "rubric": "grounding",
+                        "score": score,
+                    }
+                )
+                + "\n",
                 encoding="utf-8",
             )
             cv = "candidate:deadbeef0000" if phase == "candidate" else None
-            return EvalRunResult(exit_code=0, out_path=out, n_pass=1, n_fail=0,
-                                 regressions=[], improvements=[], candidate_version=cv)
+            return EvalRunResult(
+                exit_code=0,
+                out_path=out,
+                n_pass=1,
+                n_fail=0,
+                regressions=[],
+                improvements=[],
+                candidate_version=cv,
+            )
 
         monkeypatch.setattr(runner, "run_suite", fake_run_suite)
 
@@ -674,10 +847,14 @@ class TestTuneRunRoute:
         calls: list = []
         self._stub_run_suite(monkeypatch, tmp_path, calls)
         client = ann_app.app.test_client()
-        resp = client.post("/api/tune/run", json={
-            "prompt_overrides": {"SYSTEM_PROMPT": "candidate text"},
-            "suite": "synthetic", "subset": "smoke",
-        })
+        resp = client.post(
+            "/api/tune/run",
+            json={
+                "prompt_overrides": {"SYSTEM_PROMPT": "candidate text"},
+                "suite": "synthetic",
+                "subset": "smoke",
+            },
+        )
         assert resp.status_code == 200
         body = resp.get_data(as_text=True)
         assert "event: start" in body
@@ -691,16 +868,24 @@ class TestTuneRunRoute:
 
     def test_localhost_guard_blocks_remote_host(self, ann_app):
         client = ann_app.app.test_client()
-        resp = client.post("/api/tune/run", json={
-            "prompt_overrides": {"SYSTEM_PROMPT": "x"},
-        }, headers={"Host": "evil.example"})
+        resp = client.post(
+            "/api/tune/run",
+            json={
+                "prompt_overrides": {"SYSTEM_PROMPT": "x"},
+            },
+            headers={"Host": "evil.example"},
+        )
         assert resp.status_code == 403
 
     def test_invalid_suite_rejected(self, ann_app):
         client = ann_app.app.test_client()
-        resp = client.post("/api/tune/run", json={
-            "prompt_overrides": {"SYSTEM_PROMPT": "x"}, "suite": "bogus",
-        })
+        resp = client.post(
+            "/api/tune/run",
+            json={
+                "prompt_overrides": {"SYSTEM_PROMPT": "x"},
+                "suite": "bogus",
+            },
+        )
         assert resp.status_code == 400
 
     def test_missing_overrides_400(self, ann_app):
@@ -710,18 +895,25 @@ class TestTuneRunRoute:
 
     def test_empty_candidate_text_400(self, ann_app):
         client = ann_app.app.test_client()
-        resp = client.post("/api/tune/run", json={
-            "prompt_overrides": {"SYSTEM_PROMPT": "   "},
-        })
+        resp = client.post(
+            "/api/tune/run",
+            json={
+                "prompt_overrides": {"SYSTEM_PROMPT": "   "},
+            },
+        )
         assert resp.status_code == 400
 
     def test_unknown_constant_400_and_no_run(self, ann_app, monkeypatch, tmp_path):
         calls: list = []
         self._stub_run_suite(monkeypatch, tmp_path, calls)
         client = ann_app.app.test_client()
-        resp = client.post("/api/tune/run", json={
-            "prompt_overrides": {"NOT_A_CONSTANT": "x"}, "suite": "synthetic",
-        })
+        resp = client.post(
+            "/api/tune/run",
+            json={
+                "prompt_overrides": {"NOT_A_CONSTANT": "x"},
+                "suite": "synthetic",
+            },
+        )
         assert resp.status_code == 400
         # Eager key validation must fire BEFORE the baseline run — no paid spend.
         assert calls == []
@@ -729,23 +921,34 @@ class TestTuneRunRoute:
     def test_seed_mode_missing_seed_409(self, ann_app):
         _seed_bootstrap(ann_app.ANNOTATION_ROOT)
         client = ann_app.app.test_client()
-        resp = client.post("/api/tune/run", json={
-            "prompt_overrides": {"SYSTEM_PROMPT": "x"},
-            "suite": "real", "slug": "alice-bootstrap", "username": "alice",
-        })
+        resp = client.post(
+            "/api/tune/run",
+            json={
+                "prompt_overrides": {"SYSTEM_PROMPT": "x"},
+                "suite": "real",
+                "slug": "alice-bootstrap",
+                "username": "alice",
+            },
+        )
         assert resp.status_code == 409
 
     def test_seed_mode_unknown_user_400(self, ann_app):
         _seed_bootstrap(ann_app.ANNOTATION_ROOT)
         client = ann_app.app.test_client()
-        resp = client.post("/api/tune/run", json={
-            "prompt_overrides": {"SYSTEM_PROMPT": "x"},
-            "suite": "real", "slug": "alice-bootstrap", "username": "nobody",
-        })
+        resp = client.post(
+            "/api/tune/run",
+            json={
+                "prompt_overrides": {"SYSTEM_PROMPT": "x"},
+                "suite": "real",
+                "slug": "alice-bootstrap",
+                "username": "nobody",
+            },
+        )
         assert resp.status_code == 400
 
 
 # --- standalone seed export (deterministic, LLM-free; reads the LIVE DB) ----
+
 
 def _provision_live_candidate(ann_app, username="alice", name="Alice Lee"):
     """Insert a Candidate row into the live app DB the export route reads from.
@@ -776,7 +979,7 @@ class TestSeedExport:
         assert resp.status_code == 200
         body = resp.get_json()
         assert body["ok"] is True
-        assert body["slug"] == "alice-bootstrap"          # default slug
+        assert body["slug"] == "alice-bootstrap"  # default slug
         assert body["candidate"] == "alice"
         seed_file = ann_app.ANNOTATION_ROOT / "alice-bootstrap" / "seed.json"
         assert seed_file.exists()
@@ -788,7 +991,8 @@ class TestSeedExport:
         _provision_live_candidate(ann_app)
         client = ann_app.app.test_client()
         resp = client.post(
-            "/api/annotation/seed/export", json={"username": "alice", "slug": "my-seed"},
+            "/api/annotation/seed/export",
+            json={"username": "alice", "slug": "my-seed"},
         )
         assert resp.status_code == 200
         assert resp.get_json()["slug"] == "my-seed"
@@ -803,7 +1007,8 @@ class TestSeedExport:
         _provision_live_candidate(ann_app)
         client = ann_app.app.test_client()
         resp = client.post(
-            "/api/annotation/seed/export", json={"username": "alice"},
+            "/api/annotation/seed/export",
+            json={"username": "alice"},
             headers={"Host": "evil.example"},
         )
         assert resp.status_code == 403
@@ -821,7 +1026,8 @@ class TestSeedExport:
         _provision_live_candidate(ann_app)
         client = ann_app.app.test_client()
         resp = client.post(
-            "/api/annotation/seed/export", json={"username": "alice", "slug": "../../etc"},
+            "/api/annotation/seed/export",
+            json={"username": "alice", "slug": "../../etc"},
         )
         # secure_filename collapses "../../etc" → "etc"; the write stays contained.
         assert resp.status_code == 200

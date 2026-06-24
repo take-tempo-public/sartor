@@ -139,12 +139,14 @@ def dedup_texts(items: Iterable[tuple[str, str]], threshold: float) -> list[Clus
                     c["jd_files"].append(jd_file)
                 break
         else:
-            acc.append({
-                "representative": text,
-                "members": [text],
-                "jd_files": [jd_file],
-                "tokens": toks,
-            })
+            acc.append(
+                {
+                    "representative": text,
+                    "members": [text],
+                    "jd_files": [jd_file],
+                    "tokens": toks,
+                }
+            )
     return [
         Cluster(
             representative=c["representative"],
@@ -316,7 +318,11 @@ def run_pipeline_over_jds(
     """
     jds = [(p.name, p.read_text(encoding="utf-8")) for p in jd_paths]
     return run_pipeline_over_jd_texts(
-        client, session, username, jds, progress=progress,
+        client,
+        session,
+        username,
+        jds,
+        progress=progress,
     )
 
 
@@ -340,6 +346,7 @@ def run_pipeline_over_jd_texts(
     for the grounding pass. ``progress`` (optional) is invoked at each step so a
     caller can stream coarse per-JD progress; it never alters the result.
     """
+
     def _emit(event: str, **payload: Any) -> None:
         if progress is not None:
             progress(event, payload)
@@ -354,7 +361,10 @@ def run_pipeline_over_jd_texts(
         _emit("jd_start", jd_file=jd_name, index=index, total=total, run_id=run_id)
 
         context, _application, _run = build_context_set_from_db(
-            session, candidate_username=username, jd_text=jd_text, run_id=run_id,
+            session,
+            candidate_username=username,
+            jd_text=jd_text,
+            run_id=run_id,
         )
         if not corpus_source:
             corpus_source = context["resume"]["text"]
@@ -376,25 +386,33 @@ def run_pipeline_over_jd_texts(
         result = generate(client, context, analysis, username=username_tag, run_id=run_id)
         resume_md = result.get("resume_content", "")
 
-        per_jd.append({
-            "jd_file": jd_name,
-            "run_id": run_id,
-            "analysis": analysis,
-            "clarification_questions": clar_questions,
-            "clarification_reasoning": clar_reasoning,
-            "generated_resume": resume_md,
-            "generated_cover_letter": result.get("cover_letter_content", ""),
-            "bullets": extract_bullets(resume_md),
-            "skills": _extract_skills(resume_md),
-        })
+        per_jd.append(
+            {
+                "jd_file": jd_name,
+                "run_id": run_id,
+                "analysis": analysis,
+                "clarification_questions": clar_questions,
+                "clarification_reasoning": clar_reasoning,
+                "generated_resume": resume_md,
+                "generated_cover_letter": result.get("cover_letter_content", ""),
+                "bullets": extract_bullets(resume_md),
+                "skills": _extract_skills(resume_md),
+            }
+        )
         logger.info(
             "  %s → %d bullets, %d skills, %d clarify questions",
-            jd_name, len(per_jd[-1]["bullets"]),
-            len(per_jd[-1]["skills"]), len(clar_questions),
+            jd_name,
+            len(per_jd[-1]["bullets"]),
+            len(per_jd[-1]["skills"]),
+            len(clar_questions),
         )
         _emit(
-            "jd_done", jd_file=jd_name, index=index, total=total,
-            bullets=len(per_jd[-1]["bullets"]), skills=len(per_jd[-1]["skills"]),
+            "jd_done",
+            jd_file=jd_name,
+            index=index,
+            total=total,
+            bullets=len(per_jd[-1]["bullets"]),
+            skills=len(per_jd[-1]["skills"]),
             questions=len(clar_questions),
         )
     return per_jd, corpus_source
@@ -428,7 +446,9 @@ def _resolve_output_path(username: str, out_arg: str | None) -> Path:
     else:
         safe = secure_filename(username)
         if not safe:
-            raise ValueError(f"username {username!r} sanitizes to empty; cannot place bootstrap.json")
+            raise ValueError(
+                f"username {username!r} sanitizes to empty; cannot place bootstrap.json"
+            )
         target = ALLOWED_ROOT / safe / "bootstrap.json"
 
     if not _within(target, ALLOWED_ROOT):
@@ -452,26 +472,37 @@ def main(argv: list[str] | None = None) -> int:
 
     ap = argparse.ArgumentParser(description="callback. corpus bootstrap engine")
     ap.add_argument(
-        "--seed", required=True, metavar="PATH",
+        "--seed",
+        required=True,
+        metavar="PATH",
         help="Path to a corpus seed.json (from scripts.export_corpus_seed).",
     )
     ap.add_argument(
-        "--jd-dir", required=True, metavar="PATH",
+        "--jd-dir",
+        required=True,
+        metavar="PATH",
         help="Directory of job-description files (*.txt / *.jd), one JD per file.",
     )
     ap.add_argument(
-        "--out", default=None, metavar="PATH",
+        "--out",
+        default=None,
+        metavar="PATH",
         help="Output path (must resolve under evals/fixtures/real/). "
-             "Default: evals/fixtures/real/<candidate>/bootstrap.json",
+        "Default: evals/fixtures/real/<candidate>/bootstrap.json",
     )
     ap.add_argument(
-        "--grounding-signals", action="store_true", default=False,
+        "--grounding-signals",
+        action="store_true",
+        default=False,
         help="Run DeBERTa NLI + MiniCheck-FT5 offline grounding scorers over the "
-             "deduplicated bullet cluster representatives. Requires the eval-grounding "
-             "extra (see CONTRIBUTING.md); first run downloads ~3.2 GB of weights.",
+        "deduplicated bullet cluster representatives. Requires the eval-grounding "
+        "extra (see CONTRIBUTING.md); first run downloads ~3.2 GB of weights.",
     )
     ap.add_argument(
-        "--jaccard", type=float, default=DEFAULT_JACCARD, metavar="FLOAT",
+        "--jaccard",
+        type=float,
+        default=DEFAULT_JACCARD,
+        metavar="FLOAT",
         help=f"Cross-JD dedup similarity threshold (default {DEFAULT_JACCARD}).",
     )
     args = ap.parse_args(argv)
@@ -504,7 +535,10 @@ def main(argv: list[str] | None = None) -> int:
 
     logger.info(
         "Bootstrap: candidate=%s, %d JDs from %s, jaccard=%.2f%s",
-        username, len(jd_paths), jd_dir.as_posix(), args.jaccard,
+        username,
+        len(jd_paths),
+        jd_dir.as_posix(),
+        args.jaccard,
         ", grounding-signals ON" if args.grounding_signals else "",
     )
 
@@ -519,6 +553,7 @@ def main(argv: list[str] | None = None) -> int:
     grounding_fn: GroundingFn | None = None
     if args.grounding_signals:
         from evals.grounding_signals import run_grounding_signals  # noqa: PLC0415
+
         grounding_fn = run_grounding_signals
 
     doc = build_bootstrap_document(

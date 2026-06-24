@@ -14,17 +14,20 @@ def memory_app(tmp_path, monkeypatch):
 
     db_file = tmp_path / "mem.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     (cfg.configs_dir / "alice.config").write_text("{}", encoding="utf-8")
 
     from db.session import init_db
+
     init_db(db_file)
     return types.SimpleNamespace(
         app=app,
@@ -37,6 +40,7 @@ def memory_app(tmp_path, monkeypatch):
 def _seed_candidate(username="alice"):
     from db.models import Candidate
     from db.session import get_session
+
     s = get_session()
     try:
         c = Candidate(username=username, name=username.title())
@@ -47,15 +51,19 @@ def _seed_candidate(username="alice"):
         s.close()
 
 
-def _seed_clarification(candidate_id, question, answer, kind="manual",
-                       is_promoted=0, origin_application_id=None):
+def _seed_clarification(
+    candidate_id, question, answer, kind="manual", is_promoted=0, origin_application_id=None
+):
     from db.models import Clarification
     from db.session import get_session
+
     s = get_session()
     try:
         c = Clarification(
             candidate_id=candidate_id,
-            question=question, answer=answer, kind=kind,
+            question=question,
+            answer=answer,
+            kind=kind,
             is_promoted_to_bullet=is_promoted,
             origin_application_id=origin_application_id,
         )
@@ -71,10 +79,13 @@ def _seed_application(candidate_id, title="App", jd_text="JD"):
 
     from db.models import Application
     from db.session import get_session
+
     s = get_session()
     try:
         a = Application(
-            candidate_id=candidate_id, title=title, jd_text=jd_text,
+            candidate_id=candidate_id,
+            title=title,
+            jd_text=jd_text,
             jd_fingerprint=hashlib.sha256(jd_text.encode()).hexdigest()[:16],
         )
         s.add(a)

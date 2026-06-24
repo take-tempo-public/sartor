@@ -221,11 +221,10 @@ def ensure_corpus_imported(page: Page) -> None:
     # encoding, the Flask route, and Flask debug-mode's auto-reload
     # window from the dependency chain.
     from onboarding.corpus_import import run_import
+
     report = run_import(DEMO_USER, with_llm=True)
     if report.errors:
-        raise RuntimeError(
-            f"corpus_import reported errors: {report.errors}"
-        )
+        raise RuntimeError(f"corpus_import reported errors: {report.errors}")
     print(
         f"  · imported: {report.experiences_created} experiences "
         f"({report.experiences_merged} merged), "

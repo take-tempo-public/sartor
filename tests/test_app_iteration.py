@@ -29,6 +29,7 @@ def app_client(tmp_path, monkeypatch):
     would have written. Tests exercise routes without any real LLM call.
     """
     import db.session as db_session
+
     monkeypatch.setattr(db_session, "DEFAULT_DB_PATH", tmp_path / "test.sqlite")
     db_session._engine = None
     db_session._SessionLocal = None
@@ -48,15 +49,21 @@ def app_client(tmp_path, monkeypatch):
     (resumes_dir / "alice").mkdir()
 
     # Stub the generate() LLM call — return deterministic content.
-    def _stub_generate(client, context_set, analysis, refinement_notes="",
-                      username="", run_id="", with_cover_letter=True):
+    def _stub_generate(
+        client,
+        context_set,
+        analysis,
+        refinement_notes="",
+        username="",
+        run_id="",
+        with_cover_letter=True,
+    ):
         # β.5 — accept the new kwarg. When False, mimic the production
         # behavior of an empty cover_letter_content so the route's
         # "skip cover-letter write" branch is exercised.
         return {
             "resume_content": f"# Generated resume (iter input={context_set.get('iteration', 0)})",
-            "cover_letter_content":
-                "Generated cover letter body." if with_cover_letter else "",
+            "cover_letter_content": "Generated cover letter body." if with_cover_letter else "",
             "changes_made": ["a"],
             "proofread_notes": [],
         }
@@ -86,21 +93,33 @@ def app_client(tmp_path, monkeypatch):
     initial = {
         "timestamp": "2026-05-11T12:00:00",
         "candidate": {"name": "Alice", "skills": []},
-        "resume": {"text": "original resume", "filename": "alice.docx",
-                   "format": ".docx", "sections": [], "path": ""},
+        "resume": {
+            "text": "original resume",
+            "filename": "alice.docx",
+            "format": ".docx",
+            "sections": [],
+            "path": "",
+        },
         "supplemental_resumes": [],
         "job_description": "JD body.",
         "deterministic_analysis": {
-            "jd_keywords": {}, "resume_keywords": {},
-            "keyword_overlap": {}, "ats_warnings": [],
+            "jd_keywords": {},
+            "resume_keywords": {},
+            "keyword_overlap": {},
+            "ats_warnings": [],
         },
         "llm_analysis": {
-            "essential_skills": [], "preferred_skills": [],
+            "essential_skills": [],
+            "preferred_skills": [],
             "comparison": {"strengths": [], "gaps": [], "title_alignment": ""},
-            "keyword_placement": [], "overall_strategy": "",
-            "ideal_resume_profile": "", "industry_keywords": [],
-            "hidden_qualities": [], "professional_vocabulary": [],
-            "suggestions": [], "ats_improvements": [],
+            "keyword_placement": [],
+            "overall_strategy": "",
+            "ideal_resume_profile": "",
+            "industry_keywords": [],
+            "hidden_qualities": [],
+            "professional_vocabulary": [],
+            "suggestions": [],
+            "ats_improvements": [],
         },
         "iteration": 0,
         "run_id": "rid_iteration_test",
@@ -110,6 +129,7 @@ def app_client(tmp_path, monkeypatch):
 
 
 # ---------- /api/save-edits ------------------------------------------------
+
 
 class TestSaveEditsRoute:
     def test_missing_context_path_returns_400(self, app_client):
@@ -121,44 +141,59 @@ class TestSaveEditsRoute:
         client, _, _ = app_client
         outside = tmp_path / "elsewhere.json"
         outside.write_text("{}", encoding="utf-8")
-        resp = client.post("/api/save-edits", json={
-            "context_path": str(outside),
-            "edited_resume": "x",
-        })
+        resp = client.post(
+            "/api/save-edits",
+            json={
+                "context_path": str(outside),
+                "edited_resume": "x",
+            },
+        )
         assert resp.status_code == 403
 
     def test_nonexistent_context_returns_404(self, app_client, tmp_path):
         client, _, output_dir = app_client
         ghost = output_dir / "alice" / "ghost.json"
-        resp = client.post("/api/save-edits", json={
-            "context_path": str(ghost),
-            "edited_resume": "x",
-        })
+        resp = client.post(
+            "/api/save-edits",
+            json={
+                "context_path": str(ghost),
+                "edited_resume": "x",
+            },
+        )
         assert resp.status_code == 404
 
     def test_both_edits_empty_returns_400(self, app_client):
         client, context_path, _ = app_client
-        resp = client.post("/api/save-edits", json={
-            "context_path": str(context_path),
-            "edited_resume": "   ",
-            "edited_cover_letter": "",
-        })
+        resp = client.post(
+            "/api/save-edits",
+            json={
+                "context_path": str(context_path),
+                "edited_resume": "   ",
+                "edited_cover_letter": "",
+            },
+        )
         assert resp.status_code == 400
 
     def test_non_string_edits_return_400(self, app_client):
         client, context_path, _ = app_client
-        resp = client.post("/api/save-edits", json={
-            "context_path": str(context_path),
-            "edited_resume": ["not", "a", "string"],
-        })
+        resp = client.post(
+            "/api/save-edits",
+            json={
+                "context_path": str(context_path),
+                "edited_resume": ["not", "a", "string"],
+            },
+        )
         assert resp.status_code == 400
 
     def test_persists_resume_edit_only(self, app_client):
         client, context_path, _ = app_client
-        resp = client.post("/api/save-edits", json={
-            "context_path": str(context_path),
-            "edited_resume": "USER EDITED RESUME",
-        })
+        resp = client.post(
+            "/api/save-edits",
+            json={
+                "context_path": str(context_path),
+                "edited_resume": "USER EDITED RESUME",
+            },
+        )
         assert resp.status_code == 200
         body = resp.get_json()
         assert body["saved_resume"] is True
@@ -174,11 +209,14 @@ class TestSaveEditsRoute:
 
     def test_persists_both_edits(self, app_client):
         client, context_path, _ = app_client
-        resp = client.post("/api/save-edits", json={
-            "context_path": str(context_path),
-            "edited_resume": "RESUME EDIT",
-            "edited_cover_letter": "LETTER EDIT",
-        })
+        resp = client.post(
+            "/api/save-edits",
+            json={
+                "context_path": str(context_path),
+                "edited_resume": "RESUME EDIT",
+                "edited_cover_letter": "LETTER EDIT",
+            },
+        )
         assert resp.status_code == 200
         saved = json.loads(context_path.read_text(encoding="utf-8"))
         assert saved["edited_resume_text"] == "RESUME EDIT"
@@ -186,15 +224,19 @@ class TestSaveEditsRoute:
 
     def test_returns_context_path_for_frontend(self, app_client):
         client, context_path, _ = app_client
-        resp = client.post("/api/save-edits", json={
-            "context_path": str(context_path),
-            "edited_resume": "x",
-        })
+        resp = client.post(
+            "/api/save-edits",
+            json={
+                "context_path": str(context_path),
+                "edited_resume": "x",
+            },
+        )
         body = resp.get_json()
         assert body["context_path"] == str(context_path)
 
 
 # ---------- /api/generate iteration semantics ------------------------------
+
 
 class TestGenerateRouteIteration:
     def test_first_generate_writes_new_iteration_file(self, app_client):
@@ -203,10 +245,13 @@ class TestGenerateRouteIteration:
         client, context_path, output_dir = app_client
         parent_size_before = context_path.stat().st_size
 
-        resp = client.post("/api/generate", json={
-            "username": "alice",
-            "context_path": str(context_path),
-        })
+        resp = client.post(
+            "/api/generate",
+            json={
+                "username": "alice",
+                "context_path": str(context_path),
+            },
+        )
         assert resp.status_code == 200
         body = resp.get_json()
 
@@ -222,10 +267,13 @@ class TestGenerateRouteIteration:
 
     def test_new_context_records_lineage(self, app_client):
         client, context_path, _ = app_client
-        resp = client.post("/api/generate", json={
-            "username": "alice",
-            "context_path": str(context_path),
-        })
+        resp = client.post(
+            "/api/generate",
+            json={
+                "username": "alice",
+                "context_path": str(context_path),
+            },
+        )
         body = resp.get_json()
         new_ctx = json.loads(Path(body["context_path"]).read_text(encoding="utf-8"))
 
@@ -239,14 +287,21 @@ class TestGenerateRouteIteration:
     def test_second_generate_increments_iteration(self, app_client):
         """Calling generate against an iteration-1 context produces iter-2."""
         client, context_path, _ = app_client
-        first = client.post("/api/generate", json={
-            "username": "alice", "context_path": str(context_path),
-        }).get_json()
+        first = client.post(
+            "/api/generate",
+            json={
+                "username": "alice",
+                "context_path": str(context_path),
+            },
+        ).get_json()
 
-        second = client.post("/api/generate", json={
-            "username": "alice",
-            "context_path": first["context_path"],
-        })
+        second = client.post(
+            "/api/generate",
+            json={
+                "username": "alice",
+                "context_path": first["context_path"],
+            },
+        )
         assert second.status_code == 200
         body = second.get_json()
         assert body["iteration"] == 2
@@ -262,20 +317,26 @@ class TestGenerateRouteIteration:
         consume them — the new iteration must NOT carry edited_* forward."""
         client, context_path, _ = app_client
         # Save edits onto iteration 0
-        client.post("/api/save-edits", json={
-            "context_path": str(context_path),
-            "edited_resume": "USER EDITED",
-            "edited_cover_letter": "USER LETTER",
-        })
+        client.post(
+            "/api/save-edits",
+            json={
+                "context_path": str(context_path),
+                "edited_resume": "USER EDITED",
+                "edited_cover_letter": "USER LETTER",
+            },
+        )
         # Confirm edits landed on parent
         parent_after_edits = json.loads(context_path.read_text(encoding="utf-8"))
         assert parent_after_edits["edited_resume_text"] == "USER EDITED"
 
         # Now generate — child must not carry edited_* fields
-        body = client.post("/api/generate", json={
-            "username": "alice",
-            "context_path": str(context_path),
-        }).get_json()
+        body = client.post(
+            "/api/generate",
+            json={
+                "username": "alice",
+                "context_path": str(context_path),
+            },
+        ).get_json()
         child = json.loads(Path(body["context_path"]).read_text(encoding="utf-8"))
         assert "edited_resume_text" not in child
         assert "edited_cover_letter_text" not in child
@@ -284,14 +345,18 @@ class TestGenerateRouteIteration:
         client, _, _ = app_client
         outside = tmp_path / "outside.json"
         outside.write_text("{}", encoding="utf-8")
-        resp = client.post("/api/generate", json={
-            "username": "alice",
-            "context_path": str(outside),
-        })
+        resp = client.post(
+            "/api/generate",
+            json={
+                "username": "alice",
+                "context_path": str(outside),
+            },
+        )
         assert resp.status_code == 403
 
 
 # ---------- /api/generate date-grounding guard (KW6) ------------------------
+
 
 class TestGenerateDateGrounding:
     """KW6: corpus-mode generates run the deterministic date check; flagged
@@ -299,12 +364,22 @@ class TestGenerateDateGrounding:
     Warn-only — the route still returns 200 and the resume is untouched."""
 
     CORPUS = [
-        {"id": 1, "company": "Acme", "start_date": "2016-01", "end_date": "2018-12",
-         "eligible_titles": [{"id": 1, "title": "Product Lead", "is_official": True}],
-         "bullets": [{"id": 1, "text": "Did a thing.", "tags": [], "has_outcome": False}]},
-        {"id": 2, "company": "Acme", "start_date": "2012-01", "end_date": "2016-12",
-         "eligible_titles": [{"id": 2, "title": "Design Lead", "is_official": True}],
-         "bullets": [{"id": 2, "text": "Did another thing.", "tags": [], "has_outcome": False}]},
+        {
+            "id": 1,
+            "company": "Acme",
+            "start_date": "2016-01",
+            "end_date": "2018-12",
+            "eligible_titles": [{"id": 1, "title": "Product Lead", "is_official": True}],
+            "bullets": [{"id": 1, "text": "Did a thing.", "tags": [], "has_outcome": False}],
+        },
+        {
+            "id": 2,
+            "company": "Acme",
+            "start_date": "2012-01",
+            "end_date": "2016-12",
+            "eligible_titles": [{"id": 2, "title": "Design Lead", "is_official": True}],
+            "bullets": [{"id": 2, "text": "Did another thing.", "tags": [], "has_outcome": False}],
+        },
     ]
 
     def _make_corpus_context(self, context_path):
@@ -313,28 +388,43 @@ class TestGenerateDateGrounding:
         context_path.write_text(json.dumps(ctx), encoding="utf-8")
 
     def _stub_generate_returning(self, monkeypatch, resume_content):
-        def _stub(client, context_set, analysis, refinement_notes="",
-                  username="", run_id="", with_cover_letter=True):
+        def _stub(
+            client,
+            context_set,
+            analysis,
+            refinement_notes="",
+            username="",
+            run_id="",
+            with_cover_letter=True,
+        ):
             return {
                 "resume_content": resume_content,
                 "cover_letter_content": "Letter.",
                 "changes_made": [],
                 "proofread_notes": ["model note"],
             }
+
         monkeypatch.setattr(bgen, "generate", _stub)
 
     def test_corrupted_date_flags_and_warns(self, app_client, monkeypatch):
         client, context_path, _ = app_client
         self._make_corpus_context(context_path)
         # The KW6 shape: 2012-2016 role re-stamped with the adjacent 2016-2018.
-        self._stub_generate_returning(monkeypatch, (
-            "# Alice\n\n## Experience\n\n"
-            "### Acme, Product Lead\t2016 – 2018\n- Did a thing.\n\n"
-            "### Acme, Design Lead\t2016 – 2018\n- Did another thing.\n"
-        ))
-        resp = client.post("/api/generate", json={
-            "username": "alice", "context_path": str(context_path),
-        })
+        self._stub_generate_returning(
+            monkeypatch,
+            (
+                "# Alice\n\n## Experience\n\n"
+                "### Acme, Product Lead\t2016 – 2018\n- Did a thing.\n\n"
+                "### Acme, Design Lead\t2016 – 2018\n- Did another thing.\n"
+            ),
+        )
+        resp = client.post(
+            "/api/generate",
+            json={
+                "username": "alice",
+                "context_path": str(context_path),
+            },
+        )
         assert resp.status_code == 200
         body = resp.get_json()
         assert body["date_grounding"]["status"] == "flag"
@@ -348,21 +438,32 @@ class TestGenerateDateGrounding:
     def test_correct_dates_pass_without_warning(self, app_client, monkeypatch):
         client, context_path, _ = app_client
         self._make_corpus_context(context_path)
-        self._stub_generate_returning(monkeypatch, (
-            "# Alice\n\n## Experience\n\n"
-            "### Acme, Product Lead\t2016 – 2018\n- Did a thing.\n\n"
-            "### Acme, Design Lead\t2012 – 2016\n- Did another thing.\n"
-        ))
-        body = client.post("/api/generate", json={
-            "username": "alice", "context_path": str(context_path),
-        }).get_json()
+        self._stub_generate_returning(
+            monkeypatch,
+            (
+                "# Alice\n\n## Experience\n\n"
+                "### Acme, Product Lead\t2016 – 2018\n- Did a thing.\n\n"
+                "### Acme, Design Lead\t2012 – 2016\n- Did another thing.\n"
+            ),
+        )
+        body = client.post(
+            "/api/generate",
+            json={
+                "username": "alice",
+                "context_path": str(context_path),
+            },
+        ).get_json()
         assert body["date_grounding"]["status"] == "pass"
         assert body["proofread_notes"] == ["model note"]
 
     def test_legacy_mode_skips_check(self, app_client):
         # Seeded context has no career_corpus -> no date ground truth.
         client, context_path, _ = app_client
-        body = client.post("/api/generate", json={
-            "username": "alice", "context_path": str(context_path),
-        }).get_json()
+        body = client.post(
+            "/api/generate",
+            json={
+                "username": "alice",
+                "context_path": str(context_path),
+            },
+        ).get_json()
         assert body["date_grounding"] is None

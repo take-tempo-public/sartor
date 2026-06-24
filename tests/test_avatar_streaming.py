@@ -22,9 +22,24 @@ def _ctx(units: tuple[Unit, ...] = (), *, truncated: bool = False) -> Context:
 
 def _two_units() -> tuple[Unit, ...]:
     return (
-        Unit("The grounding check rejects invented facts.", Tier.WIKI, "wiki",
-             "[[generation-and-grounding]]", Audience.USER, "a" * 40, score=2.0),
-        Unit("SYSTEM_PROMPT = ...", Tier.GIT, "git", "analyzer.py:353", Audience.DEV, "a" * 40, score=1.0),
+        Unit(
+            "The grounding check rejects invented facts.",
+            Tier.WIKI,
+            "wiki",
+            "[[generation-and-grounding]]",
+            Audience.USER,
+            "a" * 40,
+            score=2.0,
+        ),
+        Unit(
+            "SYSTEM_PROMPT = ...",
+            Tier.GIT,
+            "git",
+            "analyzer.py:353",
+            Audience.DEV,
+            "a" * 40,
+            score=1.0,
+        ),
     )
 
 
@@ -41,7 +56,9 @@ def _install_stub(monkeypatch, captured: dict, deltas=("Hello ", "world.")):
 def test_yields_chunks_then_done(monkeypatch):
     captured: dict = {}
     _install_stub(monkeypatch, captured)
-    events = list(analyzer.avatar_answer_streaming(None, "how does grounding work?", _ctx(_two_units())))
+    events = list(
+        analyzer.avatar_answer_streaming(None, "how does grounding work?", _ctx(_two_units()))
+    )
     assert events[0] == ("chunk", "Hello ")
     assert events[1] == ("chunk", "world.")
     name, payload = events[-1]
@@ -53,16 +70,26 @@ def test_done_payload_carries_citations_and_flags(monkeypatch):
     captured: dict = {}
     # The answer must actually cite both units — the footer is cited-only (7.8d), so an
     # answer that names neither would yield an empty `citations` list, not all-retrieved.
-    _install_stub(monkeypatch, captured, deltas=("Grounding rejects facts [1]. ", "Defined here [2]."))
+    _install_stub(
+        monkeypatch, captured, deltas=("Grounding rejects facts [1]. ", "Defined here [2].")
+    )
     events = list(
-        analyzer.avatar_answer_streaming(None, "q", _ctx(_two_units(), truncated=True), allow_dev=True)
+        analyzer.avatar_answer_streaming(
+            None, "q", _ctx(_two_units(), truncated=True), allow_dev=True
+        )
     )
     _, payload = events[-1]
     assert payload["citations"] == [
-        {"n": 1, "label": "generation-and-grounding",
-         "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/generation-and-grounding.md"},
-        {"n": 2, "label": "analyzer.py:353",
-         "href": "https://github.com/amodal1/callback/blob/" + "a" * 40 + "/analyzer.py#L353"},
+        {
+            "n": 1,
+            "label": "generation-and-grounding",
+            "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/generation-and-grounding.md",
+        },
+        {
+            "n": 2,
+            "label": "analyzer.py:353",
+            "href": "https://github.com/amodal1/callback/blob/" + "a" * 40 + "/analyzer.py#L353",
+        },
     ]
     assert payload["truncated"] is True
     assert payload["allow_dev"] is True
@@ -256,7 +283,9 @@ def test_no_url_scanner_flags_links_in_output():
 def test_cite_membership_flags_ungiven_citations():
     units = _two_units()  # citations: [[generation-and-grounding]], analyzer.py:353
     # Clean single-bracket, end-of-sentence form (what the avatar now emits).
-    grounded = "The grounding check rejects invented facts [generation-and-grounding] [analyzer.py:353]."
+    grounded = (
+        "The grounding check rejects invented facts [generation-and-grounding] [analyzer.py:353]."
+    )
     assert _cite_membership_violations(grounded, units) == set()
     fabricated = "See [made-up-page] and [analyzer.py:999] for details."
     assert _cite_membership_violations(fabricated, units) == {"made-up-page", "analyzer.py:999"}
@@ -282,11 +311,15 @@ def test_answer_node_is_not_a_live_region():
     # region (per-token announcements flood screen readers); #assistantStatus stays
     # the single polite announce channel.
     html = (_REPO_ROOT / "templates" / "index.html").read_text(encoding="utf-8")
-    answer_tag = html[html.index('id="assistantAnswer"') - 20 : html.index('id="assistantAnswer"') + 120]
-    assert 'aria-live' not in answer_tag
-    assert 'aria-busy' in answer_tag
+    answer_tag = html[
+        html.index('id="assistantAnswer"') - 20 : html.index('id="assistantAnswer"') + 120
+    ]
+    assert "aria-live" not in answer_tag
+    assert "aria-busy" in answer_tag
     # The status region keeps its polite live announcement.
-    status_tag = html[html.index('id="assistantStatus"') - 20 : html.index('id="assistantStatus"') + 120]
+    status_tag = html[
+        html.index('id="assistantStatus"') - 20 : html.index('id="assistantStatus"') + 120
+    ]
     assert 'aria-live="polite"' in status_tag
 
 
@@ -295,14 +328,17 @@ def test_sources_block_is_not_a_live_region():
     # NOT a live region — a multi-line key would flood a screen reader if announced.
     html = (_REPO_ROOT / "templates" / "index.html").read_text(encoding="utf-8")
     assert 'id="assistantSources"' in html
-    src_tag = html[html.index('id="assistantSources"') - 20 : html.index('id="assistantSources"') + 120]
-    assert 'aria-live' not in src_tag
+    src_tag = html[
+        html.index('id="assistantSources"') - 20 : html.index('id="assistantSources"') + 120
+    ]
+    assert "aria-live" not in src_tag
 
 
 # --------------------------------------------------------------------------- #
 # Citation FORMAT (7.8d / Scheme B): numbered, resolving, cited-only footer with
 # clickable GitHub links + inline-markdown render. Deterministic, LLM-free.
 # --------------------------------------------------------------------------- #
+
 
 def test_citation_href_wiki_code_symbol_and_no_sha():
     wiki, code = _two_units()
@@ -320,7 +356,9 @@ def test_citation_href_wiki_code_symbol_and_no_sha():
     )
     # empty sha (pre-ingest sentinel) → falls back to main
     nosha = Unit("x = 1", Tier.GIT, "git", "app.py:5", Audience.DEV, "")
-    assert analyzer._citation_href(nosha) == "https://github.com/amodal1/callback/blob/main/app.py#L5"
+    assert (
+        analyzer._citation_href(nosha) == "https://github.com/amodal1/callback/blob/main/app.py#L5"
+    )
 
 
 def test_footer_is_cited_only_and_renumbered_in_first_appearance_order(monkeypatch):
@@ -331,7 +369,10 @@ def test_footer_is_cited_only_and_renumbered_in_first_appearance_order(monkeypat
     _, payload = list(analyzer.avatar_answer_streaming(None, "q", _ctx(_two_units())))[-1]
     assert payload["answer"] == "Code is here [1]. Grounding [2]."
     assert [c["n"] for c in payload["citations"]] == [1, 2]
-    assert [c["label"] for c in payload["citations"]] == ["analyzer.py:353", "generation-and-grounding"]
+    assert [c["label"] for c in payload["citations"]] == [
+        "analyzer.py:353",
+        "generation-and-grounding",
+    ]
 
 
 def test_footer_drops_an_uncited_retrieved_unit(monkeypatch):
@@ -356,13 +397,17 @@ def test_stray_double_bracket_slug_is_normalized_to_plain_text(monkeypatch):
     # text, never raw [[ ]] bracket-soup — the inconsistency this sprint targets.
     captured: dict = {}
     _install_stub(
-        monkeypatch, captured,
+        monkeypatch,
+        captured,
         deltas=("Grounding rejects facts [1]. See [[tailoring-a-resume]] for the full flow.",),
     )
     _, payload = list(analyzer.avatar_answer_streaming(None, "q", _ctx(_two_units())))[-1]
     assert "[[" not in payload["answer"]
     assert "tailoring-a-resume" in payload["answer"]  # the slug text survives, unbracketed
-    assert payload["answer"] == "Grounding rejects facts [1]. See tailoring-a-resume for the full flow."
+    assert (
+        payload["answer"]
+        == "Grounding rejects facts [1]. See tailoring-a-resume for the full flow."
+    )
 
 
 def test_refusal_answer_has_empty_cited_only_footer(monkeypatch):
@@ -377,12 +422,13 @@ def test_done_answer_markers_resolve_and_carry_no_url_or_markdown_link(monkeypat
     # the footer is exactly the cited set, and the model text carries no markdown link or URL.
     captured: dict = {}
     _install_stub(
-        monkeypatch, captured,
+        monkeypatch,
+        captured,
         deltas=("Use `analyzer.py` for the call site [2]. ", "Grounding rejects facts [1]."),
     )
     _, payload = list(analyzer.avatar_answer_streaming(None, "q", _ctx(_two_units())))[-1]
     body_nums = set(re.findall(r"\[(\d+)\]", payload["answer"]))
     footer_nums = {str(c["n"]) for c in payload["citations"]}
-    assert body_nums == footer_nums           # every marker resolves; footer ⊆ cited set
-    assert "](" not in payload["answer"]       # no markdown-link tell
+    assert body_nums == footer_nums  # every marker resolves; footer ⊆ cited set
+    assert "](" not in payload["answer"]  # no markdown-link tell
     assert _scan_urls(payload["answer"]) == []  # no raw URL in model output

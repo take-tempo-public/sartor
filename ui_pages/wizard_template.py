@@ -18,9 +18,7 @@ class WizardTemplatePage(BasePage):
         self.page.wait_for_selector(
             Wizard.PANEL_TEMPLATE, state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
-        self.page.wait_for_selector(
-            Wizard.TEMPLATE_OPTIONS, timeout=DEFAULT_TIMEOUT_MS
-        )
+        self.page.wait_for_selector(Wizard.TEMPLATE_OPTIONS, timeout=DEFAULT_TIMEOUT_MS)
         return self
 
     def template_option_count(self) -> int:

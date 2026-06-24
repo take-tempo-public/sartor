@@ -40,12 +40,10 @@ def test_new_user_form_clears_then_restores_dropdown(
 
     # Open the new-user form → the dropdown must no longer show "alice".
     page.click(UserPicker.NEW_USER_LINK)
-    page.wait_for_selector(UserPicker.NEW_USER_FORM, state="visible",
-                           timeout=DEFAULT_TIMEOUT_MS)
+    page.wait_for_selector(UserPicker.NEW_USER_FORM, state="visible", timeout=DEFAULT_TIMEOUT_MS)
     assert page.eval_on_selector(UserPicker.SELECT, "el => el.value") == ""
 
     # Cancel → the dropdown is restored to the active user, form hidden.
     page.click(UserPicker.CANCEL_BUTTON)
-    page.wait_for_selector(UserPicker.NEW_USER_FORM, state="hidden",
-                           timeout=DEFAULT_TIMEOUT_MS)
+    page.wait_for_selector(UserPicker.NEW_USER_FORM, state="hidden", timeout=DEFAULT_TIMEOUT_MS)
     assert page.eval_on_selector(UserPicker.SELECT, "el => el.value") == "alice"

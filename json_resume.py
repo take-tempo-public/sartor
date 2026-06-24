@@ -64,21 +64,21 @@ _SKILLS_SPLIT_RE = re.compile(r"\s*[·•|,]\s+")
 
 # Map h2 title text → JSON Resume top-level key. Lowercased for matching.
 _SECTION_MAP = {
-    "summary":         "_summary",
-    "experience":      "work",
+    "summary": "_summary",
+    "experience": "work",
     "work experience": "work",
-    "employment":      "work",
-    "skills":          "skills",
-    "education":       "education",
-    "certifications":  "certificates",
-    "certificates":    "certificates",
-    "projects":        "projects",
-    "publications":    "publications",
-    "awards":          "awards",
-    "languages":       "languages",
-    "interests":       "interests",
-    "volunteer":       "volunteer",
-    "references":      "references",
+    "employment": "work",
+    "skills": "skills",
+    "education": "education",
+    "certifications": "certificates",
+    "certificates": "certificates",
+    "projects": "projects",
+    "publications": "publications",
+    "awards": "awards",
+    "languages": "languages",
+    "interests": "interests",
+    "volunteer": "volunteer",
+    "references": "references",
 }
 
 
@@ -90,16 +90,16 @@ def md_to_json_resume(markdown: str) -> dict[str, Any]:
     `meta.callback.unparsed`).
     """
     doc: dict[str, Any] = {
-        "$schema":      SCHEMA_URI,
-        "basics":       {},
-        "work":         [],
-        "education":    [],
-        "skills":       [],
+        "$schema": SCHEMA_URI,
+        "basics": {},
+        "work": [],
+        "education": [],
+        "skills": [],
         "certificates": [],
-        "projects":     [],
+        "projects": [],
         "meta": {
             "callback": {
-                "version":  "1.0",
+                "version": "1.0",
                 "unparsed": [],
             },
         },
@@ -116,7 +116,7 @@ def md_to_json_resume(markdown: str) -> dict[str, Any]:
     # Step 2 — walk sections by ##
     section_ranges = _section_ranges(lines, header_end)
     for title, start, end in section_ranges:
-        section_body = lines[start + 1:end]
+        section_body = lines[start + 1 : end]
         _parse_section(title, section_body, doc)
 
     return doc
@@ -125,6 +125,7 @@ def md_to_json_resume(markdown: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------
 # Section detection
 # ---------------------------------------------------------------------
+
 
 def _find_first_h2_index(lines: list[str]) -> int:
     for i, line in enumerate(lines):
@@ -153,6 +154,7 @@ def _section_ranges(lines: list[str], start_after: int) -> list[tuple[str, int, 
 # ---------------------------------------------------------------------
 # Header (basics)
 # ---------------------------------------------------------------------
+
 
 def _parse_header(lines: list[str], doc: dict[str, Any]) -> None:
     """Pull # Name + the 1-2 subtitle/contact lines into doc['basics']."""
@@ -183,11 +185,13 @@ def _parse_header(lines: list[str], doc: dict[str, Any]) -> None:
             if network == "Website":
                 basics["url"] = normalized
             else:
-                profiles.append({
-                    "network":  network,
-                    "url":      normalized,
-                    "username": _username_from_url(url),
-                })
+                profiles.append(
+                    {
+                        "network": network,
+                        "url": normalized,
+                        "username": _username_from_url(url),
+                    }
+                )
 
         # Treat a line with NO email / phone / URL as the label
         # (subtitle). The 1-2 lines after # Name are the typical
@@ -223,6 +227,7 @@ def _username_from_url(url: str) -> str:
 # Section dispatch
 # ---------------------------------------------------------------------
 
+
 def _parse_section(title: str, body: list[str], doc: dict[str, Any]) -> None:
     key = _SECTION_MAP.get(title.strip().lower())
     if key == "_summary":
@@ -242,10 +247,12 @@ def _parse_section(title: str, body: list[str], doc: dict[str, Any]) -> None:
     else:
         # Unknown section — log under meta.callback.unparsed so nothing
         # is silently dropped, but don't crash.
-        doc["meta"]["callback"]["unparsed"].append({
-            "section": title,
-            "raw":     "\n".join(body).strip(),
-        })
+        doc["meta"]["callback"]["unparsed"].append(
+            {
+                "section": title,
+                "raw": "\n".join(body).strip(),
+            }
+        )
 
 
 def _collapse_paragraph(body: list[str]) -> str:
@@ -264,6 +271,7 @@ def _collapse_paragraph(body: list[str]) -> str:
 # ---------------------------------------------------------------------
 # Experience / Education / Project — h3-delimited entries
 # ---------------------------------------------------------------------
+
 
 def _parse_h3_entries(body: list[str], kind: str) -> list[dict[str, Any]]:
     """Split body on `### `; parse each entry into a JSON Resume work/education/project dict."""
@@ -317,7 +325,7 @@ def _entry_from_chunk(chunk: list[str], kind: str) -> dict[str, Any]:
     #   - bare paragraph lines = role summary
     #   - "- " lines = highlights / bullets
     summary_parts: list[str] = []
-    highlights:    list[str] = []
+    highlights: list[str] = []
     for line in chunk[1:]:
         s = line.strip()
         if not s:
@@ -382,6 +390,7 @@ def _split_h3_header(text: str) -> tuple[str, str, str, str]:
 # Skills
 # ---------------------------------------------------------------------
 
+
 def _parse_skills(body: list[str]) -> list[dict[str, Any]]:
     """Parse a Skills section into JSON Resume skills[].
 
@@ -426,6 +435,7 @@ def _parse_skills(body: list[str]) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------
 # Generic single-line entries (certifications, awards, etc.)
 # ---------------------------------------------------------------------
+
 
 def _parse_simple_list(body: list[str], name_key: str) -> list[dict[str, Any]]:
     """One non-empty line = one entry, mapped under `name_key`."""

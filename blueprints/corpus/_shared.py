@@ -47,10 +47,14 @@ def _tag_list(tag_links) -> list[dict]:
         t = link.tag
         if t is None:
             continue
-        out.append({
-            "id": t.id, "value": t.value,
-            "display_value": t.display_value, "kind": t.kind,
-        })
+        out.append(
+            {
+                "id": t.id,
+                "value": t.value,
+                "display_value": t.display_value,
+                "kind": t.kind,
+            }
+        )
     return sorted(out, key=lambda d: d["value"])
 
 
@@ -71,18 +75,21 @@ def _experience_detail_dict(exp) -> dict:
         "summary": exp.summary,
         "titles": [
             {
-                "id": t.id, "title": t.title,
+                "id": t.id,
+                "title": t.title,
                 "is_official": bool(t.is_official),
                 "truthful_enough_to_use": bool(t.truthful_enough_to_use),
                 "is_pending_review": bool(t.is_pending_review),
-                "source": t.source, "notes": t.notes,
+                "source": t.source,
+                "notes": t.notes,
                 "tags": _tag_list(t.tag_links),
             }
             for t in titles
         ],
         "bullets": [
             {
-                "id": b.id, "text": b.text,
+                "id": b.id,
+                "text": b.text,
                 "display_order": b.display_order,
                 "is_active": bool(b.is_active),
                 "is_pending_review": bool(b.is_pending_review),
@@ -97,12 +104,14 @@ def _experience_detail_dict(exp) -> dict:
 
 
 def _load_experience_for_candidate(
-    session, experience_id: int,
+    session,
+    experience_id: int,
 ) -> tuple[Experience | None, Candidate | None]:
     """Look up an Experience + its candidate. Returns (exp, candidate) or
     (None, None) when not found. Defense-in-depth helper used by every
     route that mutates an experience-scoped row."""
     from db.models import Candidate, Experience
+
     exp = session.query(Experience).filter_by(id=experience_id).first()
     if exp is None:
         return None, None

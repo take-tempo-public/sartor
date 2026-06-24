@@ -32,12 +32,14 @@ import pytest
 def classic_template_path():
     """Resolve the bundled Classic HTML template path."""
     from pathlib import Path
+
     return Path(__file__).resolve().parents[1] / "personas" / "bundled" / "classic.html"
 
 
 class TestHtmlTemplatePathFor:
     def test_resolves_docx_to_html_sibling(self, classic_template_path):
         from pdf_render import html_template_path_for
+
         docx = classic_template_path.with_suffix(".docx")
         result = html_template_path_for(str(docx))
         assert result is not None
@@ -46,6 +48,7 @@ class TestHtmlTemplatePathFor:
 
     def test_returns_none_for_persona_without_html_companion(self, tmp_path):
         from pdf_render import html_template_path_for
+
         lonely_docx = tmp_path / "no_companion.docx"
         lonely_docx.write_bytes(b"")  # empty file so .exists() returns True
         result = html_template_path_for(str(lonely_docx))
@@ -53,6 +56,7 @@ class TestHtmlTemplatePathFor:
 
     def test_returns_none_for_nonexistent_docx(self, tmp_path):
         from pdf_render import html_template_path_for
+
         # Even if the docx itself is missing, the sibling resolver
         # only cares about the html sibling — which also won't exist.
         result = html_template_path_for(str(tmp_path / "nope.docx"))
@@ -67,9 +71,10 @@ class TestHtmlRender:
 
     def test_renders_basics_block(self, classic_template_path):
         from pdf_render import render_html_string
+
         doc = {
             "basics": {
-                "name":  "Casey Rivera",
+                "name": "Casey Rivera",
                 "label": "Principal Product Designer",
                 "email": "casey@example.com",
                 "phone": "555-0142",
@@ -83,6 +88,7 @@ class TestHtmlRender:
 
     def test_renders_summary(self, classic_template_path):
         from pdf_render import render_html_string
+
         doc = {"basics": {"name": "X", "summary": "Senior designer with a decade of experience."}}
         html = render_html_string(doc, html_template_path=classic_template_path)
         assert "Senior designer with a decade of experience." in html
@@ -91,19 +97,22 @@ class TestHtmlRender:
 
     def test_renders_work_with_highlights(self, classic_template_path):
         from pdf_render import render_html_string
+
         doc = {
             "basics": {"name": "X"},
-            "work": [{
-                "name":       "Polaris Cognition",
-                "position":   "Senior Designer",
-                "startDate":  "2022-09",
-                "endDate":    "present",
-                "summary":    "Player-coach across product design.",
-                "highlights": [
-                    "Shipped a thing.",
-                    "Led another thing.",
-                ],
-            }],
+            "work": [
+                {
+                    "name": "Polaris Cognition",
+                    "position": "Senior Designer",
+                    "startDate": "2022-09",
+                    "endDate": "present",
+                    "summary": "Player-coach across product design.",
+                    "highlights": [
+                        "Shipped a thing.",
+                        "Led another thing.",
+                    ],
+                }
+            ],
         }
         html = render_html_string(doc, html_template_path=classic_template_path)
         assert "Polaris Cognition" in html
@@ -115,6 +124,7 @@ class TestHtmlRender:
 
     def test_renders_skills_flat(self, classic_template_path):
         from pdf_render import render_html_string
+
         doc = {
             "basics": {"name": "X"},
             "skills": [
@@ -132,11 +142,12 @@ class TestHtmlRender:
 
     def test_renders_skills_grouped(self, classic_template_path):
         from pdf_render import render_html_string
+
         doc = {
             "basics": {"name": "X"},
             "skills": [
                 {"name": "Languages", "keywords": ["Python", "TypeScript", "Rust"]},
-                {"name": "Infra",     "keywords": ["Kubernetes", "Terraform"]},
+                {"name": "Infra", "keywords": ["Kubernetes", "Terraform"]},
             ],
         }
         html = render_html_string(doc, html_template_path=classic_template_path)
@@ -146,10 +157,17 @@ class TestHtmlRender:
 
     def test_renders_education_certificates(self, classic_template_path):
         from pdf_render import render_html_string
+
         doc = {
-            "basics":       {"name": "X"},
-            "education":    [{"institution": "Polytechnic", "area": "MS HCI",
-                              "startDate": "2014", "endDate": "2016"}],
+            "basics": {"name": "X"},
+            "education": [
+                {
+                    "institution": "Polytechnic",
+                    "area": "MS HCI",
+                    "startDate": "2014",
+                    "endDate": "2016",
+                }
+            ],
             "certificates": [{"name": "Nielsen Norman UX Master"}],
         }
         html = render_html_string(doc, html_template_path=classic_template_path)
@@ -159,6 +177,7 @@ class TestHtmlRender:
 
     def test_handles_missing_sections_gracefully(self, classic_template_path):
         from pdf_render import render_html_string
+
         doc = {"basics": {"name": "Just a Name"}}
         html = render_html_string(doc, html_template_path=classic_template_path)
         assert "Just a Name" in html
@@ -169,9 +188,11 @@ class TestHtmlRender:
 
     def test_raises_when_template_missing(self, tmp_path):
         from pdf_render import render_html_string
+
         with pytest.raises(FileNotFoundError):
-            render_html_string({"basics": {"name": "X"}},
-                               html_template_path=tmp_path / "missing.html")
+            render_html_string(
+                {"basics": {"name": "X"}}, html_template_path=tmp_path / "missing.html"
+            )
 
 
 # -------------------------------------------------------------------
@@ -183,12 +204,14 @@ class TestHtmlRender:
 def cover_letter_template_path():
     """Resolve the shared business-letter cover-letter template path."""
     from pathlib import Path
+
     return Path(__file__).resolve().parents[1] / "personas" / "cover_letter.html"
 
 
 @pytest.fixture
 def bundled_css_dir():
     from pathlib import Path
+
     return Path(__file__).resolve().parents[1] / "personas" / "bundled"
 
 
@@ -198,6 +221,7 @@ class TestPersonaFontFamily:
 
     def test_extracts_single_line_stack(self, bundled_css_dir):
         from pdf_render import persona_font_family
+
         value = persona_font_family(bundled_css_dir / "classic.css")
         assert "Helvetica Neue" in value
         assert value.endswith("sans-serif")
@@ -206,6 +230,7 @@ class TestPersonaFontFamily:
     def test_collapses_multiline_value(self, bundled_css_dir):
         # modern.css and spacious.css wrap the font-family value across lines.
         from pdf_render import persona_font_family
+
         modern = persona_font_family(bundled_css_dir / "modern.css")
         assert "Roboto" in modern
         assert "Liberation Sans" in modern
@@ -219,14 +244,17 @@ class TestPersonaFontFamily:
 
     def test_falls_back_when_none(self):
         from pdf_render import _DEFAULT_COVER_LETTER_FONT, persona_font_family
+
         assert persona_font_family(None) == _DEFAULT_COVER_LETTER_FONT
 
     def test_falls_back_when_missing_file(self, tmp_path):
         from pdf_render import _DEFAULT_COVER_LETTER_FONT, persona_font_family
+
         assert persona_font_family(tmp_path / "nope.css") == _DEFAULT_COVER_LETTER_FONT
 
     def test_falls_back_when_no_rule(self, tmp_path):
         from pdf_render import _DEFAULT_COVER_LETTER_FONT, persona_font_family
+
         css = tmp_path / "blank.css"
         css.write_text("body { color: #111; }", encoding="utf-8")
         assert persona_font_family(css) == _DEFAULT_COVER_LETTER_FONT
@@ -238,6 +266,7 @@ class TestCoverLetterRender:
 
     def test_renders_body_text(self, cover_letter_template_path):
         from pdf_render import render_cover_letter_html
+
         md = (
             "June 4, 2026\n"
             "Hiring Manager, Acme Corp\n\n"
@@ -246,7 +275,8 @@ class TestCoverLetterRender:
             "Sincerely,\nPriya Patel"
         )
         html = render_cover_letter_html(
-            md, font_family='"Helvetica Neue", Helvetica, sans-serif',
+            md,
+            font_family='"Helvetica Neue", Helvetica, sans-serif',
             template_path=cover_letter_template_path,
         )
         assert "Hiring Manager, Acme Corp" in html
@@ -257,8 +287,10 @@ class TestCoverLetterRender:
         # The font stack carries double-quotes; they must survive into the
         # <style> block (autoescaping them to &#34; would break the CSS).
         from pdf_render import render_cover_letter_html
+
         html = render_cover_letter_html(
-            "Hello.", font_family='"Helvetica Neue", Helvetica, sans-serif',
+            "Hello.",
+            font_family='"Helvetica Neue", Helvetica, sans-serif',
             template_path=cover_letter_template_path,
         )
         assert '"Helvetica Neue", Helvetica, sans-serif' in html
@@ -269,33 +301,44 @@ class TestCoverLetterRender:
         # Single newlines in the header block become <br> (nl2br) so the date /
         # addressee / salutation flow inline with the body — not a styled block.
         from pdf_render import render_cover_letter_html
+
         md = "June 4, 2026\nHiring Manager\nAcme Corp\n\nDear Hiring Manager,"
         html = render_cover_letter_html(
-            md, font_family="serif", template_path=cover_letter_template_path,
+            md,
+            font_family="serif",
+            template_path=cover_letter_template_path,
         )
         assert "<br" in html  # nl2br emitted line breaks within the block
 
     def test_blank_lines_make_paragraphs(self, cover_letter_template_path):
         from pdf_render import render_cover_letter_html
+
         md = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph."
         html = render_cover_letter_html(
-            md, font_family="serif", template_path=cover_letter_template_path,
+            md,
+            font_family="serif",
+            template_path=cover_letter_template_path,
         )
         assert html.count("<p>") >= 3
 
     def test_empty_markdown_does_not_crash(self, cover_letter_template_path):
         from pdf_render import render_cover_letter_html
+
         html = render_cover_letter_html(
-            "", font_family="serif", template_path=cover_letter_template_path,
+            "",
+            font_family="serif",
+            template_path=cover_letter_template_path,
         )
         # Shell still renders; the cover-letter container is present.
         assert "cover-letter" in html
 
     def test_raises_when_template_missing(self, tmp_path):
         from pdf_render import render_cover_letter_html
+
         with pytest.raises(FileNotFoundError):
             render_cover_letter_html(
-                "Hi.", font_family="serif",
+                "Hi.",
+                font_family="serif",
                 template_path=tmp_path / "missing.html",
             )
 
@@ -309,6 +352,7 @@ def _chromium_available() -> bool:
     """Detect whether the Playwright browser binary is installed."""
     try:
         from playwright.sync_api import sync_playwright
+
         with sync_playwright() as p:
             browser = p.chromium.launch()
             browser.close()
@@ -328,23 +372,23 @@ class TestPdfRenderEndToEnd:
 
         doc = {
             "basics": {
-                "name":  "Test Resume",
+                "name": "Test Resume",
                 "label": "Engineer",
                 "email": "test@example.com",
             },
-            "work": [{
-                "name":       "Acme Cloud",
-                "position":   "SRE",
-                "startDate":  "2023",
-                "endDate":    "present",
-                "highlights": ["Built something deterministic."],
-            }],
+            "work": [
+                {
+                    "name": "Acme Cloud",
+                    "position": "SRE",
+                    "startDate": "2023",
+                    "endDate": "present",
+                    "highlights": ["Built something deterministic."],
+                }
+            ],
         }
 
         output = tmp_path / "out.pdf"
-        result = render_pdf(doc,
-                            html_template_path=classic_template_path,
-                            output_pdf_path=output)
+        result = render_pdf(doc, html_template_path=classic_template_path, output_pdf_path=output)
         assert result.exists()
         assert result.stat().st_size > 1000  # something more than an empty PDF
         # Verify the PDF magic bytes
@@ -359,18 +403,18 @@ class TestPdfRenderEndToEnd:
 
         doc = {
             "basics": {"name": "Roundtrip Candidate", "label": "Engineer"},
-            "work": [{
-                "name":       "Test Co",
-                "position":   "SRE",
-                "startDate":  "2023",
-                "endDate":    "present",
-                "highlights": ["Stamped this exact sentence into a PDF."],
-            }],
+            "work": [
+                {
+                    "name": "Test Co",
+                    "position": "SRE",
+                    "startDate": "2023",
+                    "endDate": "present",
+                    "highlights": ["Stamped this exact sentence into a PDF."],
+                }
+            ],
         }
         output = tmp_path / "rt.pdf"
-        render_pdf(doc,
-                   html_template_path=classic_template_path,
-                   output_pdf_path=output)
+        render_pdf(doc, html_template_path=classic_template_path, output_pdf_path=output)
 
         with pdfplumber.open(str(output)) as pdf:
             full_text = "\n".join((page.extract_text() or "") for page in pdf.pages)

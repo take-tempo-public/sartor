@@ -20,11 +20,13 @@ import pytest
 class TestShortCircuit:
     def test_no_skills_returns_empty(self):
         from analyzer import recommend_skills
+
         result = recommend_skills(client=object(), context_set={"skill_items": []})
         assert result == {"recommendation": {"skill_ids": [], "rationale": "No skills to order."}}
 
     def test_single_skill_auto_picked_no_llm(self):
         from analyzer import recommend_skills
+
         result = recommend_skills(
             client=object(),
             context_set={"skill_items": [{"id": 7, "name": "Python"}]},
@@ -41,11 +43,13 @@ class TestNormalize:
             # 99 is not in the staged set; 3 is repeated.
             return {"recommendation": {"skill_ids": [3, 99, 1, 3], "rationale": "r"}}
 
-        ctx = {"skill_items": [
-            {"id": 1, "name": "Python"},
-            {"id": 2, "name": "Go"},
-            {"id": 3, "name": "Kubernetes"},
-        ]}
+        ctx = {
+            "skill_items": [
+                {"id": 1, "name": "Python"},
+                {"id": 2, "name": "Go"},
+                {"id": 3, "name": "Kubernetes"},
+            ]
+        }
         with patch("analyzer._parse_or_retry", _fake_parse_or_retry):
             result = recommend_skills(client=object(), context_set=ctx)
         assert result["recommendation"]["skill_ids"] == [3, 1]
@@ -54,12 +58,22 @@ class TestNormalize:
 class TestBlock:
     def test_formats_skills_xml(self):
         from analyzer import _skills_block
-        block = _skills_block([
-            {"id": 1, "name": "C++ & Rust", "category": "language",
-             "tags": ["systems", "backend"]},
-            {"id": 2, "name": "Kubernetes"},
-        ])
-        assert '<skill id="1" category="language" tags="systems, backend">C++ &amp; Rust</skill>' in block
+
+        block = _skills_block(
+            [
+                {
+                    "id": 1,
+                    "name": "C++ & Rust",
+                    "category": "language",
+                    "tags": ["systems", "backend"],
+                },
+                {"id": 2, "name": "Kubernetes"},
+            ]
+        )
+        assert (
+            '<skill id="1" category="language" tags="systems, backend">C++ &amp; Rust</skill>'
+            in block
+        )
         assert '<skill id="2">Kubernetes</skill>' in block
 
 
@@ -74,12 +88,14 @@ def recommend_app(tmp_path, monkeypatch):
 
     db_file = tmp_path / "recskill.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     output_dir = cfg.output_dir
@@ -90,6 +106,7 @@ def recommend_app(tmp_path, monkeypatch):
     monkeypatch.setattr("blueprints.applications._get_client", lambda: object())
 
     from db.session import init_db
+
     init_db(db_file)
     return types.SimpleNamespace(app=app), output_dir
 
@@ -99,36 +116,67 @@ def _seed(output_dir):
 
     from db.models import Application, Candidate, Skill
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(username="casey", name="Casey Rivera")
         session.add(c)
         session.flush()
         a = Application(
-            candidate_id=c.id, title="SRE",
+            candidate_id=c.id,
+            title="SRE",
             jd_text="SRE running Kubernetes at scale.",
             jd_fingerprint="f" * 16,
         )
         session.add(a)
         session.flush()
-        session.add_all([
-            Skill(candidate_id=c.id, name="Python", display_order=0,
-                  is_active=1, is_pending_review=0, source="imported"),
-            Skill(candidate_id=c.id, name="Kubernetes", display_order=1,
-                  is_active=1, is_pending_review=0, source="imported"),
-            # pending + inactive must NOT be staged.
-            Skill(candidate_id=c.id, name="Rust", display_order=2,
-                  is_active=1, is_pending_review=1, source="llm_proposed"),
-            Skill(candidate_id=c.id, name="Perl", display_order=3, is_active=0,
-                  is_pending_review=0, source="imported"),
-        ])
+        session.add_all(
+            [
+                Skill(
+                    candidate_id=c.id,
+                    name="Python",
+                    display_order=0,
+                    is_active=1,
+                    is_pending_review=0,
+                    source="imported",
+                ),
+                Skill(
+                    candidate_id=c.id,
+                    name="Kubernetes",
+                    display_order=1,
+                    is_active=1,
+                    is_pending_review=0,
+                    source="imported",
+                ),
+                # pending + inactive must NOT be staged.
+                Skill(
+                    candidate_id=c.id,
+                    name="Rust",
+                    display_order=2,
+                    is_active=1,
+                    is_pending_review=1,
+                    source="llm_proposed",
+                ),
+                Skill(
+                    candidate_id=c.id,
+                    name="Perl",
+                    display_order=3,
+                    is_active=0,
+                    is_pending_review=0,
+                    source="imported",
+                ),
+            ]
+        )
         session.commit()
         aid = a.id
     finally:
         session.close()
 
-    ctx = {"application_id": aid, "llm_analysis": {"essential_skills": ["kubernetes"]},
-           "run_id": "testrun"}
+    ctx = {
+        "application_id": aid,
+        "llm_analysis": {"essential_skills": ["kubernetes"]},
+        "run_id": "testrun",
+    }
     ctx_path = output_dir / "casey" / "context_iter0.json"
     ctx_path.write_text(json.dumps(ctx), encoding="utf-8")
     return aid, str(ctx_path)
@@ -149,14 +197,16 @@ class TestRoute:
 
         with patch("analyzer.recommend_skills", _stub):
             client = _app.app.test_client()
-            r = client.post(f"/api/applications/{aid}/recommend-skills",
-                            json={"context_path": ctx_path})
+            r = client.post(
+                f"/api/applications/{aid}/recommend-skills", json={"context_path": ctx_path}
+            )
         assert r.status_code == 200, r.get_data(as_text=True)
         # Only active + approved skills were staged (no Rust/Perl).
         assert seen["names"] == {"Python", "Kubernetes"}
         assert seen["jd"].startswith("SRE")
 
         import json
+
         ctx = json.loads(open(ctx_path, encoding="utf-8").read())
         assert "llm_skill_recommendations" in ctx
         assert "skill_items" not in ctx  # transient stripped
@@ -165,8 +215,9 @@ class TestRoute:
     def test_unknown_application_404(self, recommend_app):
         _app, _ = recommend_app
         client = _app.app.test_client()
-        r = client.post("/api/applications/9999/recommend-skills",
-                        json={"context_path": "/whatever"})
+        r = client.post(
+            "/api/applications/9999/recommend-skills", json={"context_path": "/whatever"}
+        )
         assert r.status_code == 404
 
     def test_missing_context_path_400(self, recommend_app):

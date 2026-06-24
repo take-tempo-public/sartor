@@ -134,9 +134,7 @@ def _get_client() -> anthropic.Anthropic:
         if key_file.exists():
             api_key = key_file.read_text(encoding="utf-8").strip()
     if not api_key:
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY not set and no .api_key file found at project root"
-        )
+        raise RuntimeError("ANTHROPIC_API_KEY not set and no .api_key file found at project root")
     return anthropic.Anthropic(api_key=api_key)
 
 
@@ -190,7 +188,10 @@ def _build_context(fixture: dict) -> ContextSet:
     overlap = compute_keyword_overlap(resume_keywords, jd_keywords)
     ats_warnings = check_ats_format(parsed)
     return build_context_set(
-        fixture["jd"], parsed, config, profile_text="",
+        fixture["jd"],
+        parsed,
+        config,
+        profile_text="",
         jd_keywords=jd_keywords,
         resume_keywords=resume_keywords,
         keyword_overlap=overlap,
@@ -259,9 +260,7 @@ def _enrich_groundedness(block: dict, grounding_signals_data: dict) -> None:
     block["mean_entailment"] = nli.get("mean_entailment", 0.0)
     block["contradiction_count"] = nli.get("contradiction_count", 0)
     block["mean_minicheck"] = minicheck.get("mean_score", 0.0)
-    block["unsupported_claim_rate"] = (
-        round(low_scores / bullet_count, 3) if bullet_count else 0.0
-    )
+    block["unsupported_claim_rate"] = round(low_scores / bullet_count, 3) if bullet_count else 0.0
 
 
 def _post_generation_metrics(
@@ -730,6 +729,7 @@ def _run_iteration_phase(
     from typing import cast as _cast  # noqa: PLC0415
 
     from hardening import ClarificationQuestion  # noqa: PLC0415
+
     if clarify_questions:
         iter_context["clarification_questions"] = _cast(
             list[ClarificationQuestion], clarify_questions
@@ -746,11 +746,13 @@ def _run_iteration_phase(
     for q in clarify_questions or []:
         ans = (clarify_answers.get(q.get("id", ""), "") or "").strip()
         if ans:
-            prior_clarifications.append({
-                "question": q.get("text", ""),
-                "answer": ans,
-                "kind": q.get("kind", ""),
-            })
+            prior_clarifications.append(
+                {
+                    "question": q.get("text", ""),
+                    "answer": ans,
+                    "kind": q.get("kind", ""),
+                }
+            )
 
     iter_status = "ok"
     iter_questions: list[dict] = []
@@ -798,8 +800,11 @@ def _run_iteration_phase(
         }
 
     payload = _iteration_payload(
-        fixture=fixture, context=context, analysis=analysis,
-        iteration_questions=iter_questions, iteration_reasoning=iter_reasoning,
+        fixture=fixture,
+        context=context,
+        analysis=analysis,
+        iteration_questions=iter_questions,
+        iteration_reasoning=iter_reasoning,
         current_resume_text=edited_resume,
         current_cover_letter_text=generated_cover,
         recent_edits_summary=edits_summary,
@@ -866,6 +871,7 @@ def run_suite(
     ``(event, payload)`` at coarse milestones so a caller can stream progress; it
     never alters the result.
     """
+
     def _emit(event: str, **payload: Any) -> None:
         if progress is not None:
             progress(event, payload)
@@ -884,7 +890,8 @@ def run_suite(
         logger.warning(
             "PROMPT OVERRIDES ACTIVE — keys=%s; this run is logged as "
             "prompt_version=%s (quarantined from score-over-time).",
-            sorted(overrides), candidate_version,
+            sorted(overrides),
+            candidate_version,
         )
 
     # Load static baseline data once for baseline_comparison fields on JSONL records.
@@ -913,7 +920,10 @@ def run_suite(
 
     logger.info(
         "Eval run: %d fixtures × %d rubrics = %d gradings (judge model: %s)",
-        len(fixtures), len(rubrics), len(fixtures) * len(rubrics), JUDGE_MODEL,
+        len(fixtures),
+        len(rubrics),
+        len(fixtures) * len(rubrics),
+        JUDGE_MODEL,
     )
 
     client = client or _get_client()
@@ -927,7 +937,8 @@ def run_suite(
     if baseline:
         logger.info(
             "Regression-alert baseline: %d (fixture, rubric) pairs from prior runs (delta=%.1f)",
-            len(baseline), REGRESSION_DELTA,
+            len(baseline),
+            REGRESSION_DELTA,
         )
     out_path = out_dir / f"{timestamp}.jsonl"
 
@@ -959,7 +970,9 @@ def run_suite(
                 continue
             _emit(
                 "fixture_start",
-                fixture=fixture["name"], index=index, total=total_fixtures,
+                fixture=fixture["name"],
+                index=index,
+                total=total_fixtures,
             )
 
             # One run_id per fixture pipeline so the analyze + generate calls
@@ -969,7 +982,8 @@ def run_suite(
             run_id = uuid.uuid4().hex[:12]
             logger.info(
                 "Fixture %s: building context + running pipeline (run_id=%s)",
-                fixture["name"], run_id,
+                fixture["name"],
+                run_id,
             )
             t0 = time.perf_counter()
             t0_iso = datetime.now(timezone.utc).isoformat()
@@ -988,15 +1002,18 @@ def run_suite(
                 if seed_data is not None:
                     assert session is not None and seed_username is not None
                     context = _build_context_from_seed(
-                        session, candidate_username=seed_username,
-                        jd_text=fixture["jd"], run_id=run_id,
+                        session,
+                        candidate_username=seed_username,
+                        jd_text=fixture["jd"],
+                        run_id=run_id,
                     )
                 else:
                     context = _build_context(fixture)
                 _t_analyze = time.perf_counter()
                 _emit("analyzing", fixture=fixture["name"], index=index, total=total_fixtures)
                 analysis = analyze(
-                    client, context,
+                    client,
+                    context,
                     username=f"eval:{fixture['name']}",
                     run_id=run_id,
                 )
@@ -1004,7 +1021,9 @@ def run_suite(
                 _emit("clarifying", fixture=fixture["name"], index=index, total=total_fixtures)
                 try:
                     clarify_result = clarify(
-                        client, context, analysis,
+                        client,
+                        context,
+                        analysis,
                         username=f"eval:{fixture['name']}",
                         run_id=run_id,
                     )
@@ -1016,61 +1035,74 @@ def run_suite(
                     clarify_error = str(exc)
                     logger.warning(
                         "Clarify step failed for %s, continuing without it: %s",
-                        fixture["name"], exc,
+                        fixture["name"],
+                        exc,
                     )
                 _t_generate = time.perf_counter()
                 _emit("generating", fixture=fixture["name"], index=index, total=total_fixtures)
                 result = generate(
-                    client, context, analysis,
+                    client,
+                    context,
+                    analysis,
                     username=f"eval:{fixture['name']}",
                     run_id=run_id,
                 )
                 _t_generate_end = time.perf_counter()
             except Exception as exc:
                 logger.error("Pipeline failed for %s: %s", fixture["name"], exc)
-                out.write(json.dumps({
-                    "schema_version": SCHEMA_VERSION,
-                    "score_max": SCORE_MAX,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "source": "eval",
-                    "fixture": fixture["name"],
-                    "rubric": None,
-                    "score": None,
-                    "status": "pipeline_error",
-                    "error": str(exc),
-                    "run_id": run_id,
-                    "prompt_version": effective_prompt_version(),
-                    "anchor_version": anchor_version,
-                    "suite": suite,
-                    "fixture_hash": fixture["hash"],
-                    "rubric_version": None,
-                    "model_snapshots": MODEL_SNAPSHOTS,
-                    "baseline_comparison": None,
-                    "phase_latencies_ms": None,
-                }) + "\n")
+                out.write(
+                    json.dumps(
+                        {
+                            "schema_version": SCHEMA_VERSION,
+                            "score_max": SCORE_MAX,
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "source": "eval",
+                            "fixture": fixture["name"],
+                            "rubric": None,
+                            "score": None,
+                            "status": "pipeline_error",
+                            "error": str(exc),
+                            "run_id": run_id,
+                            "prompt_version": effective_prompt_version(),
+                            "anchor_version": anchor_version,
+                            "suite": suite,
+                            "fixture_hash": fixture["hash"],
+                            "rubric_version": None,
+                            "model_snapshots": MODEL_SNAPSHOTS,
+                            "baseline_comparison": None,
+                            "phase_latencies_ms": None,
+                        }
+                    )
+                    + "\n"
+                )
                 n_fail += 1
                 continue
 
             elapsed_ms = int((time.perf_counter() - t0) * 1000)
             phase_latencies_ms = {
-                "analyze": int((_t_clarify - _t_analyze) * 1000) if (_t_analyze and _t_clarify) else None,
-                "clarify": int((_t_generate - _t_clarify) * 1000) if (_t_clarify and _t_generate) else None,
-                "generate": int((_t_generate_end - _t_generate) * 1000) if (_t_generate and _t_generate_end) else None,
+                "analyze": int((_t_clarify - _t_analyze) * 1000)
+                if (_t_analyze and _t_clarify)
+                else None,
+                "clarify": int((_t_generate - _t_clarify) * 1000)
+                if (_t_clarify and _t_generate)
+                else None,
+                "generate": int((_t_generate_end - _t_generate) * 1000)
+                if (_t_generate and _t_generate_end)
+                else None,
             }
             logger.info("  pipeline %s done in %dms", fixture["name"], elapsed_ms)
             if clarify_error is None:
                 exp_probes = sum(
                     1 for q in clarify_questions if q.get("kind") == "experience_probe"
                 )
-                ctx_probes = sum(
-                    1 for q in clarify_questions if q.get("kind") == "context_probe"
-                )
-                scope_probes = sum(
-                    1 for q in clarify_questions if q.get("kind") == "scope_probe"
-                )
+                ctx_probes = sum(1 for q in clarify_questions if q.get("kind") == "context_probe")
+                scope_probes = sum(1 for q in clarify_questions if q.get("kind") == "scope_probe")
                 logger.info(
                     "  clarify produced %d questions (%d experience, %d context, %d scope probes)",
-                    len(clarify_questions), exp_probes, ctx_probes, scope_probes,
+                    len(clarify_questions),
+                    exp_probes,
+                    ctx_probes,
+                    scope_probes,
                 )
 
             # Compute post-generation deterministic metrics. These ride along on
@@ -1117,6 +1149,7 @@ def run_suite(
             grounding_signals_data: dict | None = None
             if grounding_signals:
                 from evals.grounding_signals import run_grounding_signals  # noqa: PLC0415
+
                 grounding_signals_data = run_grounding_signals(
                     result.get("resume_content", ""),
                     sources,
@@ -1142,31 +1175,36 @@ def run_suite(
                 # clarification_quality rubric — emit a pipeline_error row so
                 # the dashboard surfaces it, but don't waste a judge call.
                 if rubric_path.stem == "clarification_quality" and clarify_error is not None:
-                    out.write(json.dumps({
-                        "schema_version": SCHEMA_VERSION,
-                        "score_max": SCORE_MAX,
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "source": "eval",
-                        "fixture": fixture["name"],
-                        "rubric": rubric_path.stem,
-                        "score": None,
-                        "reasons": [f"clarify step failed: {clarify_error}"],
-                        "failed_rules": [],
-                        "status": "pipeline_error",
-                        "prompt_version": effective_prompt_version(),
-                        "run_id": run_id,
-                        "deterministic_metrics": det_metrics,
-                        "cost_usd": cost_usd,
-                        "pipeline_latency_ms": elapsed_ms,
-                        "anchor_version": anchor_version,
-                        "suite": suite,
-                        "fixture_hash": fixture["hash"],
-                        "rubric_version": rubric_versions.get(rubric_path),
-                        "model_snapshots": MODEL_SNAPSHOTS,
-                        "baseline_comparison": None,
-                        "phase_latencies_ms": phase_latencies_ms,
-                        "grounding_signals": grounding_signals_data,
-                    }) + "\n")
+                    out.write(
+                        json.dumps(
+                            {
+                                "schema_version": SCHEMA_VERSION,
+                                "score_max": SCORE_MAX,
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                                "source": "eval",
+                                "fixture": fixture["name"],
+                                "rubric": rubric_path.stem,
+                                "score": None,
+                                "reasons": [f"clarify step failed: {clarify_error}"],
+                                "failed_rules": [],
+                                "status": "pipeline_error",
+                                "prompt_version": effective_prompt_version(),
+                                "run_id": run_id,
+                                "deterministic_metrics": det_metrics,
+                                "cost_usd": cost_usd,
+                                "pipeline_latency_ms": elapsed_ms,
+                                "anchor_version": anchor_version,
+                                "suite": suite,
+                                "fixture_hash": fixture["hash"],
+                                "rubric_version": rubric_versions.get(rubric_path),
+                                "model_snapshots": MODEL_SNAPSHOTS,
+                                "baseline_comparison": None,
+                                "phase_latencies_ms": phase_latencies_ms,
+                                "grounding_signals": grounding_signals_data,
+                            }
+                        )
+                        + "\n"
+                    )
                     n_fail += 1
                     logger.info(
                         "  %s × clarification_quality → skipped (clarify failed)",
@@ -1199,20 +1237,23 @@ def run_suite(
                         # mirroring how the dashboard's heatmap handles N/A cells.
                         continue
                     iter_score = iter_record.get("score")
-                    iter_record.update({
-                        "anchor_version": anchor_version,
-                        "suite": suite,
-                        "fixture_hash": fixture["hash"],
-                        "rubric_version": rubric_versions.get(rubric_path),
-                        "model_snapshots": MODEL_SNAPSHOTS,
-                        "baseline_comparison": _compute_baseline_comparison(
-                            fixture["name"], rubric_path.stem,
-                            iter_score if isinstance(iter_score, (int, float)) else None,
-                            baseline_v1_data,
-                        ),
-                        "phase_latencies_ms": phase_latencies_ms,
-                        "grounding_signals": grounding_signals_data,
-                    })
+                    iter_record.update(
+                        {
+                            "anchor_version": anchor_version,
+                            "suite": suite,
+                            "fixture_hash": fixture["hash"],
+                            "rubric_version": rubric_versions.get(rubric_path),
+                            "model_snapshots": MODEL_SNAPSHOTS,
+                            "baseline_comparison": _compute_baseline_comparison(
+                                fixture["name"],
+                                rubric_path.stem,
+                                iter_score if isinstance(iter_score, (int, float)) else None,
+                                baseline_v1_data,
+                            ),
+                            "phase_latencies_ms": phase_latencies_ms,
+                            "grounding_signals": grounding_signals_data,
+                        }
+                    )
                     out.write(json.dumps(iter_record) + "\n")
                     if isinstance(iter_score, (int, float)) and iter_score >= PASS_THRESHOLD:
                         n_pass += 1
@@ -1222,11 +1263,16 @@ def run_suite(
                         verdict = "fail"
                     logger.info(
                         "  %s × iteration_quality → score=%s (%s)",
-                        fixture["name"], iter_score, verdict,
+                        fixture["name"],
+                        iter_score,
+                        verdict,
                     )
                     if isinstance(iter_score, (int, float)):
                         delta = _detect_regression(
-                            fixture["name"], rubric_path.stem, float(iter_score), baseline,
+                            fixture["name"],
+                            rubric_path.stem,
+                            float(iter_score),
+                            baseline,
                         )
                         if delta is not None:
                             if delta["is_regression"]:
@@ -1254,7 +1300,9 @@ def run_suite(
                 except Exception as exc:
                     logger.error(
                         "Grading failed for %s × %s: %s",
-                        fixture["name"], rubric_path.stem, exc,
+                        fixture["name"],
+                        rubric_path.stem,
+                        exc,
                     )
                     grade = {"score": None, "reasons": [str(exc)], "status": "judge_error"}
 
@@ -1283,7 +1331,8 @@ def run_suite(
                     "rubric_version": rubric_versions.get(rubric_path),
                     "model_snapshots": MODEL_SNAPSHOTS,
                     "baseline_comparison": _compute_baseline_comparison(
-                        fixture["name"], rubric_path.stem,
+                        fixture["name"],
+                        rubric_path.stem,
                         _score if isinstance(_score, (int, float)) else None,
                         baseline_v1_data,
                     ),
@@ -1301,17 +1350,26 @@ def run_suite(
                     verdict = "fail"
                 logger.info(
                     "  %s × %s → score=%s (%s)",
-                    fixture["name"], rubric_path.stem, score, verdict,
+                    fixture["name"],
+                    rubric_path.stem,
+                    score,
+                    verdict,
                 )
                 _emit(
                     "rubric_done",
-                    fixture=fixture["name"], rubric=rubric_path.stem,
-                    score=score, status=record.get("status"), verdict=verdict,
+                    fixture=fixture["name"],
+                    rubric=rubric_path.stem,
+                    score=score,
+                    status=record.get("status"),
+                    verdict=verdict,
                 )
 
                 if isinstance(score, (int, float)) and record.get("status") != "judge_error":
                     delta = _detect_regression(
-                        fixture["name"], rubric_path.stem, float(score), baseline,
+                        fixture["name"],
+                        rubric_path.stem,
+                        float(score),
+                        baseline,
                     )
                     if delta is not None:
                         if delta["is_regression"]:
@@ -1319,8 +1377,11 @@ def run_suite(
                             logger.warning(
                                 "REGRESSION: %s × %s dropped %.1f → %.1f (Δ=%+.1f) "
                                 "vs prior run (prompt_version=%s, %s)",
-                                delta["fixture"], delta["rubric"],
-                                delta["prev_score"], delta["new_score"], delta["delta"],
+                                delta["fixture"],
+                                delta["rubric"],
+                                delta["prev_score"],
+                                delta["new_score"],
+                                delta["delta"],
                                 delta["prev_prompt_version"] or "unknown",
                                 delta["prev_timestamp"][:19] if delta["prev_timestamp"] else "—",
                             )
@@ -1333,36 +1394,38 @@ def run_suite(
             # and scored; missing rubrics (e.g. smoke skips all but grounding)
             # are excluded from both numerator and denominator.
             if weights and fixture_scores:
-                total_weight = sum(
-                    weights[r] for r in fixture_scores if r in weights
-                )
+                total_weight = sum(weights[r] for r in fixture_scores if r in weights)
                 if total_weight > 0:
                     weighted_sum = sum(
-                        fixture_scores[r] * weights[r]
-                        for r in fixture_scores if r in weights
+                        fixture_scores[r] * weights[r] for r in fixture_scores if r in weights
                     )
                     eval_composite: float | None = round(weighted_sum / total_weight, 3)
                 else:
                     eval_composite = None
             else:
                 eval_composite = None
-            out.write(json.dumps({
-                "schema_version": SCHEMA_VERSION,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "source": "eval",
-                "fixture": fixture["name"],
-                "rubric": "eval_composite",
-                "score": eval_composite,
-                "run_id": run_id,
-                "prompt_version": effective_prompt_version(),
-                "weights_used": weights,
-                "scores_used": fixture_scores,
-                "anchor_version": anchor_version,
-                "suite": suite,
-                "fixture_hash": fixture["hash"],
-                "model_snapshots": MODEL_SNAPSHOTS,
-                "phase_latencies_ms": phase_latencies_ms,
-            }) + "\n")
+            out.write(
+                json.dumps(
+                    {
+                        "schema_version": SCHEMA_VERSION,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "source": "eval",
+                        "fixture": fixture["name"],
+                        "rubric": "eval_composite",
+                        "score": eval_composite,
+                        "run_id": run_id,
+                        "prompt_version": effective_prompt_version(),
+                        "weights_used": weights,
+                        "scores_used": fixture_scores,
+                        "anchor_version": anchor_version,
+                        "suite": suite,
+                        "fixture_hash": fixture["hash"],
+                        "model_snapshots": MODEL_SNAPSHOTS,
+                        "phase_latencies_ms": phase_latencies_ms,
+                    }
+                )
+                + "\n"
+            )
             logger.info(
                 "  %s → eval_composite=%.3f (from %d rubrics)",
                 fixture["name"],
@@ -1371,13 +1434,17 @@ def run_suite(
             )
             _emit(
                 "fixture_done",
-                fixture=fixture["name"], index=index, total=total_fixtures,
+                fixture=fixture["name"],
+                index=index,
+                total=total_fixtures,
                 eval_composite=eval_composite,
             )
 
     logger.info(
         "Eval complete: %d pass, %d fail. Results: %s",
-        n_pass, n_fail, out_path,
+        n_pass,
+        n_fail,
+        out_path,
     )
 
     # Regression summary — concise, only printed when there's something to say.
@@ -1386,18 +1453,27 @@ def run_suite(
         for d in regressions:
             logger.info(
                 "  ✗ %s × %s: %.1f → %.1f (Δ=%+.1f)",
-                d["fixture"], d["rubric"], d["prev_score"], d["new_score"], d["delta"],
+                d["fixture"],
+                d["rubric"],
+                d["prev_score"],
+                d["new_score"],
+                d["delta"],
             )
         for d in improvements:
             logger.info(
                 "  ✓ %s × %s: %.1f → %.1f (Δ=%+.1f)",
-                d["fixture"], d["rubric"], d["prev_score"], d["new_score"], d["delta"],
+                d["fixture"],
+                d["rubric"],
+                d["prev_score"],
+                d["new_score"],
+                d["delta"],
             )
         if regressions:
             logger.warning(
                 "Found %d regression(s) ≥%.1f points. Inspect dashboard heatmap "
                 "and check `failed_rules` for the affected (fixture, rubric) pairs.",
-                len(regressions), REGRESSION_DELTA,
+                len(regressions),
+                REGRESSION_DELTA,
             )
 
     exit_code = 0 if (n_fail == 0 and not regressions) else 2
@@ -1494,7 +1570,8 @@ def main(argv: list[str] | None = None) -> int:
         ):
             logger.error(
                 "--prompt-overrides must be a JSON object mapping prompt-name "
-                "(string) -> override text (string): %s", ov_path,
+                "(string) -> override text (string): %s",
+                ov_path,
             )
             return 1
         overrides = loaded
@@ -1512,7 +1589,8 @@ def main(argv: list[str] | None = None) -> int:
         logger.warning(
             "SEED MODE ACTIVE — corpus from %s (candidate=%s, schema v%s); fixture "
             "resume files are ignored, JD + expected.json still grade.",
-            args.seed, seed_data.get("candidate_username"),
+            args.seed,
+            seed_data.get("candidate_username"),
             seed_data.get("seed_schema_version"),
         )
 

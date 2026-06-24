@@ -38,7 +38,9 @@ _EXPECTED_BUNDLED = 4
 
 @pytest.mark.ux
 def test_personas_copy_matches_bundled_count(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
 ) -> None:
     seed_user(ux_app, "alice")
     BasePage(page, live_server).load()
@@ -60,6 +62,4 @@ def test_personas_copy_matches_bundled_count(
     # "FOUR" and the source casing is what we actually want to guard.
     hint = (page.locator(_HINT).text_content() or "").lower()
     assert "five" not in hint, f"stale bundled-template count in copy: {hint!r}"
-    assert "four" in hint, (
-        f"copy should state the real bundled count (four): {hint!r}"
-    )
+    assert "four" in hint, f"copy should state the real bundled count (four): {hint!r}"

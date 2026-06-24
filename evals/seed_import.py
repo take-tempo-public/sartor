@@ -134,121 +134,143 @@ def import_seed(session: Session, seed: dict[str, Any]) -> str:
     session.flush()  # assign candidate.id for the child FKs below
 
     for t in seed["tags"]:
-        session.add(Tag(
-            id=t["id"],
-            candidate_id=candidate.id,
-            kind=t["kind"],
-            value=t["value"],
-            display_value=t["display_value"],
-        ))
+        session.add(
+            Tag(
+                id=t["id"],
+                candidate_id=candidate.id,
+                kind=t["kind"],
+                value=t["value"],
+                display_value=t["display_value"],
+            )
+        )
     session.flush()
 
     for exp in seed["experiences"]:
-        session.add(Experience(
-            id=exp["id"],
-            candidate_id=candidate.id,
-            company=exp["company"],
-            location=exp.get("location"),
-            start_date=exp["start_date"],
-            end_date=exp.get("end_date"),
-            display_order=exp.get("display_order", 0),
-            summary=exp.get("summary"),
-        ))
+        session.add(
+            Experience(
+                id=exp["id"],
+                candidate_id=candidate.id,
+                company=exp["company"],
+                location=exp.get("location"),
+                start_date=exp["start_date"],
+                end_date=exp.get("end_date"),
+                display_order=exp.get("display_order", 0),
+                summary=exp.get("summary"),
+            )
+        )
         session.flush()
 
         for title in exp["titles"]:
-            session.add(ExperienceTitle(
-                id=title["id"],
-                experience_id=exp["id"],
-                title=title["title"],
-                is_official=_flag(title["is_official"]),
-                truthful_enough_to_use=_flag(title["truthful_enough_to_use"]),
-                is_pending_review=_flag(title["is_pending_review"]),
-                source=title["source"],
-            ))
+            session.add(
+                ExperienceTitle(
+                    id=title["id"],
+                    experience_id=exp["id"],
+                    title=title["title"],
+                    is_official=_flag(title["is_official"]),
+                    truthful_enough_to_use=_flag(title["truthful_enough_to_use"]),
+                    is_pending_review=_flag(title["is_pending_review"]),
+                    source=title["source"],
+                )
+            )
             session.flush()
             for link in title["tag_links"]:
-                session.add(ExperienceTitleTag(
-                    experience_title_id=title["id"],
-                    tag_id=link["tag_id"],
-                    confidence=link["confidence"],
-                ))
+                session.add(
+                    ExperienceTitleTag(
+                        experience_title_id=title["id"],
+                        tag_id=link["tag_id"],
+                        confidence=link["confidence"],
+                    )
+                )
 
         for bullet in exp["bullets"]:
-            session.add(Bullet(
-                id=bullet["id"],
-                experience_id=exp["id"],
-                text=bullet["text"],
-                display_order=bullet.get("display_order", 0),
-                is_active=_flag(bullet["is_active"]),
-                is_pending_review=_flag(bullet["is_pending_review"]),
-                source=bullet["source"],
-                pattern_kind=bullet.get("pattern_kind"),
-                has_outcome=_flag(bullet["has_outcome"]),
-            ))
+            session.add(
+                Bullet(
+                    id=bullet["id"],
+                    experience_id=exp["id"],
+                    text=bullet["text"],
+                    display_order=bullet.get("display_order", 0),
+                    is_active=_flag(bullet["is_active"]),
+                    is_pending_review=_flag(bullet["is_pending_review"]),
+                    source=bullet["source"],
+                    pattern_kind=bullet.get("pattern_kind"),
+                    has_outcome=_flag(bullet["has_outcome"]),
+                )
+            )
             session.flush()
             for link in bullet["tag_links"]:
-                session.add(BulletTag(
-                    bullet_id=bullet["id"],
-                    tag_id=link["tag_id"],
-                    confidence=link["confidence"],
-                ))
+                session.add(
+                    BulletTag(
+                        bullet_id=bullet["id"],
+                        tag_id=link["tag_id"],
+                        confidence=link["confidence"],
+                    )
+                )
 
     for item in seed["summary_items"]:
-        session.add(SummaryItem(
-            id=item["id"],
-            candidate_id=candidate.id,
-            text=item["text"],
-            label=item.get("label"),
-            display_order=item.get("display_order", 0),
-            is_active=_flag(item["is_active"]),
-            is_pending_review=_flag(item["is_pending_review"]),
-            source=item["source"],
-            has_outcome=_flag(item["has_outcome"]),
-        ))
+        session.add(
+            SummaryItem(
+                id=item["id"],
+                candidate_id=candidate.id,
+                text=item["text"],
+                label=item.get("label"),
+                display_order=item.get("display_order", 0),
+                is_active=_flag(item["is_active"]),
+                is_pending_review=_flag(item["is_pending_review"]),
+                source=item["source"],
+                has_outcome=_flag(item["has_outcome"]),
+            )
+        )
         session.flush()
         for link in item["tag_links"]:
-            session.add(SummaryItemTag(
-                summary_item_id=item["id"],
-                tag_id=link["tag_id"],
-                confidence=link["confidence"],
-            ))
+            session.add(
+                SummaryItemTag(
+                    summary_item_id=item["id"],
+                    tag_id=link["tag_id"],
+                    confidence=link["confidence"],
+                )
+            )
 
     for s in seed["skills"]:
-        session.add(Skill(
-            id=s["id"],
-            candidate_id=candidate.id,
-            name=s["name"],
-            category=s.get("category"),
-            proficiency=s.get("proficiency"),
-            years=s.get("years"),
-        ))
+        session.add(
+            Skill(
+                id=s["id"],
+                candidate_id=candidate.id,
+                name=s["name"],
+                category=s.get("category"),
+                proficiency=s.get("proficiency"),
+                years=s.get("years"),
+            )
+        )
 
     for ed in seed["educations"]:
-        session.add(Education(
-            id=ed["id"],
-            candidate_id=candidate.id,
-            institution=ed["institution"],
-            degree=ed.get("degree"),
-            field=ed.get("field"),
-            start_date=ed.get("start_date"),
-            end_date=ed.get("end_date"),
-            display_order=ed.get("display_order", 0),
-            is_active=_flag(ed["is_active"]),
-            notes=ed.get("notes"),
-        ))
+        session.add(
+            Education(
+                id=ed["id"],
+                candidate_id=candidate.id,
+                institution=ed["institution"],
+                degree=ed.get("degree"),
+                field=ed.get("field"),
+                start_date=ed.get("start_date"),
+                end_date=ed.get("end_date"),
+                display_order=ed.get("display_order", 0),
+                is_active=_flag(ed["is_active"]),
+                notes=ed.get("notes"),
+            )
+        )
 
     for cert in seed["certifications"]:
-        session.add(Certification(
-            id=cert["id"],
-            candidate_id=candidate.id,
-            name=cert["name"],
-            issuer=cert.get("issuer"),
-            issued=cert.get("issued"),
-            expires=cert.get("expires"),
-            display_order=cert.get("display_order", 0),
-            is_active=_flag(cert["is_active"]),
-        ))
+        session.add(
+            Certification(
+                id=cert["id"],
+                candidate_id=candidate.id,
+                name=cert["name"],
+                issuer=cert.get("issuer"),
+                issued=cert.get("issued"),
+                expires=cert.get("expires"),
+                display_order=cert.get("display_order", 0),
+                is_active=_flag(cert["is_active"]),
+            )
+        )
 
     session.commit()
     return candidate.username

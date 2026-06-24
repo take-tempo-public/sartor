@@ -54,7 +54,7 @@ def _load_nli_pipeline() -> Any:
     return pipeline(
         "text-classification",
         model=_NLI_MODEL_ID,
-        device=-1,   # CPU; pass device=0 for CUDA
+        device=-1,  # CPU; pass device=0 for CUDA
         top_k=None,  # return all three label scores
     )
 
@@ -131,11 +131,14 @@ def score_nli_bullets(
         raw = nli({"text": source_text, "text_pair": bullet}, truncation=True)
         # raw: [{"label": str, "score": float}, ...] for all three NLI classes
         scores = {item["label"].lower(): item["score"] for item in raw}
-        results.append({
-            "bullet": bullet,
-            "nli_entailment_score": round(scores.get("entailment", 0.0), 4),
-            "nli_contradiction_flag": scores.get("contradiction", 0.0) > _CONTRADICTION_THRESHOLD,
-        })
+        results.append(
+            {
+                "bullet": bullet,
+                "nli_entailment_score": round(scores.get("entailment", 0.0), 4),
+                "nli_contradiction_flag": scores.get("contradiction", 0.0)
+                > _CONTRADICTION_THRESHOLD,
+            }
+        )
     return results
 
 

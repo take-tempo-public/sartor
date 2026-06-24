@@ -47,8 +47,8 @@ _JD = "Senior Backend Engineer — Kubernetes latency at scale, Kafka, Postgres.
 _K8S = "Reduced Kubernetes"
 _SYNCS = "Attended weekly syncs"
 
-_NO_REC_CO = "NoRecCo"   # experience A — under test (no recommendations)
-_REC_CO = "RecCo"        # experience B — recommended (anchors the load wait)
+_NO_REC_CO = "NoRecCo"  # experience A — under test (no recommendations)
+_REC_CO = "RecCo"  # experience B — recommended (anchors the load wait)
 
 
 def _is_composition_post(resp: Response) -> bool:
@@ -64,43 +64,73 @@ def _seed_two_experiences(candidate_id: int) -> None:
     s = get_session()
     try:
         a = Experience(
-            candidate_id=candidate_id, company=_NO_REC_CO,
-            start_date="2023-01", display_order=0,
+            candidate_id=candidate_id,
+            company=_NO_REC_CO,
+            start_date="2023-01",
+            display_order=0,
         )
         s.add(a)
         s.flush()
-        s.add(ExperienceTitle(
-            experience_id=a.id, title="Staff Engineer",
-            is_official=1, is_pending_review=0, source="official",
-        ))
-        s.add(Bullet(
-            experience_id=a.id,
-            text="Reduced Kubernetes latency 40% across 12 services",
-            display_order=0, is_active=1, is_pending_review=0,
-            source="manual", has_outcome=1,
-        ))
-        s.add(Bullet(
-            experience_id=a.id, text="Attended weekly syncs",
-            display_order=1, is_active=1, is_pending_review=0,
-            source="manual", has_outcome=0,
-        ))
+        s.add(
+            ExperienceTitle(
+                experience_id=a.id,
+                title="Staff Engineer",
+                is_official=1,
+                is_pending_review=0,
+                source="official",
+            )
+        )
+        s.add(
+            Bullet(
+                experience_id=a.id,
+                text="Reduced Kubernetes latency 40% across 12 services",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=1,
+            )
+        )
+        s.add(
+            Bullet(
+                experience_id=a.id,
+                text="Attended weekly syncs",
+                display_order=1,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=0,
+            )
+        )
 
         b = Experience(
-            candidate_id=candidate_id, company=_REC_CO,
-            start_date="2021-01", display_order=1,
+            candidate_id=candidate_id,
+            company=_REC_CO,
+            start_date="2021-01",
+            display_order=1,
         )
         s.add(b)
         s.flush()
-        s.add(ExperienceTitle(
-            experience_id=b.id, title="Senior Engineer",
-            is_official=1, is_pending_review=0, source="official",
-        ))
-        s.add(Bullet(
-            experience_id=b.id,
-            text="Built Kafka pipeline processing 2M events/day",
-            display_order=0, is_active=1, is_pending_review=0,
-            source="manual", has_outcome=1,
-        ))
+        s.add(
+            ExperienceTitle(
+                experience_id=b.id,
+                title="Senior Engineer",
+                is_official=1,
+                is_pending_review=0,
+                source="official",
+            )
+        )
+        s.add(
+            Bullet(
+                experience_id=b.id,
+                text="Built Kafka pipeline processing 2M events/day",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=1,
+            )
+        )
         s.commit()
     finally:
         s.close()
@@ -110,6 +140,7 @@ def _recommend_only_company(company: str) -> Any:
     """recommend_bullets stub: recommend every active bullet for the experience
     whose company == `company`, and NONE for the others — so the other
     experiences render via the no-recommendations fallback path under test."""
+
     def stub(client: Any, ctx: Any, username: str = "", run_id: str = "") -> dict[str, Any]:
         from db.models import Bullet, Candidate, Experience
         from db.session import get_session
@@ -120,26 +151,34 @@ def _recommend_only_company(company: str) -> Any:
             if cand is None:
                 return {"recommendations": []}
             recs: list[dict[str, Any]] = []
-            for exp in (session.query(Experience)
-                        .filter_by(candidate_id=cand.id, company=company).all()):
+            for exp in (
+                session.query(Experience).filter_by(candidate_id=cand.id, company=company).all()
+            ):
                 bullet_ids = [
-                    bl.id for bl in session.query(Bullet)
+                    bl.id
+                    for bl in session.query(Bullet)
                     .filter_by(experience_id=exp.id, is_active=1)
-                    .order_by(Bullet.display_order).all()
+                    .order_by(Bullet.display_order)
+                    .all()
                 ]
                 if bullet_ids:
-                    recs.append({
-                        "experience_id": exp.id, "bullet_ids": bullet_ids,
-                        "rationale": "stubbed: recommended experience",
-                    })
+                    recs.append(
+                        {
+                            "experience_id": exp.id,
+                            "bullet_ids": bullet_ids,
+                            "rationale": "stubbed: recommended experience",
+                        }
+                    )
             return {"recommendations": recs}
         finally:
             session.close()
+
     return stub
 
 
-def _reach_compose(page: Page, live_server: str, ux_app: ModuleType,
-                   monkeypatch: pytest.MonkeyPatch) -> WizardComposePage:
+def _reach_compose(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> WizardComposePage:
     import analyzer
 
     cid = seed_user(ux_app, "alice")
@@ -157,7 +196,9 @@ def _reach_compose(page: Page, live_server: str, ux_app: ModuleType,
 @pytest.mark.ux
 @pytest.mark.slow
 def test_no_recommendations_order_persists_on_reload(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     compose = _reach_compose(page, live_server, ux_app, monkeypatch)
@@ -178,6 +219,7 @@ def test_no_recommendations_order_persists_on_reload(
     # honors the GET-returned order.
     WizardTemplatePage(page, live_server).open()
     compose.reload()
-    assert compose.bullet_texts()[0].startswith("Attended"), \
+    assert compose.bullet_texts()[0].startswith("Attended"), (
         "no-recommendations custom order did not persist on reload"
+    )
     assert compose.has_custom_order()

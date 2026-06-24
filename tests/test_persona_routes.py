@@ -31,12 +31,14 @@ def persona_app(tmp_path, monkeypatch):
     db_file = tmp_path / "personas.sqlite"
 
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     cfg.bundled_personas_dir.mkdir(parents=True, exist_ok=True)
@@ -45,6 +47,7 @@ def persona_app(tmp_path, monkeypatch):
     # Materialize the schema. The seed migration populates the canonical bundled
     # rows — tests using bundled rows assert their counts against this baseline.
     from db.session import init_db
+
     init_db(db_file)
 
     import blueprints.templates as templates_mod
@@ -53,6 +56,7 @@ def persona_app(tmp_path, monkeypatch):
         def wrapped(*a, **k):
             with app.app_context():
                 return fn(*a, **k)
+
         return wrapped
 
     return types.SimpleNamespace(
@@ -64,7 +68,9 @@ def persona_app(tmp_path, monkeypatch):
         PERSONAS_DIR=cfg.personas_dir,
         BUNDLED_PERSONAS_DIR=cfg.bundled_personas_dir,
         _resolve_persona_template_path=_ctx(templates_mod._resolve_persona_template_path),
-        _resolve_default_persona_template_path=_ctx(templates_mod._resolve_default_persona_template_path),
+        _resolve_default_persona_template_path=_ctx(
+            templates_mod._resolve_default_persona_template_path
+        ),
     )
 
 
@@ -72,6 +78,7 @@ def _seed_candidate(app_module, username="alice"):
     """Insert a candidate row + return its id."""
     from db.models import Candidate
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(username=username, name="Alice Test")
@@ -89,6 +96,7 @@ def _seed_bundled_persona_file(app_module, filename="dummy.docx"):
 
     from db.models import PersonaTemplate
     from db.session import get_session
+
     bundled_dir = app_module.BASE_DIR / "personas" / "bundled"
     target = bundled_dir / filename
     doc = Document()
@@ -98,8 +106,11 @@ def _seed_bundled_persona_file(app_module, filename="dummy.docx"):
     session = get_session()
     try:
         row = PersonaTemplate(
-            candidate_id=None, name=filename.replace(".docx", "").title(),
-            path=f"personas/bundled/{filename}", source="bundled", is_default=0,
+            candidate_id=None,
+            name=filename.replace(".docx", "").title(),
+            path=f"personas/bundled/{filename}",
+            source="bundled",
+            is_default=0,
         )
         session.add(row)
         session.commit()
@@ -144,15 +155,20 @@ class TestListUserPersonas:
         # Add an owned row
         from db.models import PersonaTemplate
         from db.session import get_session
+
         s = get_session()
         try:
             (persona_app.BASE_DIR / "personas" / "alice").mkdir(parents=True, exist_ok=True)
             owned_path = persona_app.BASE_DIR / "personas" / "alice" / "mine.docx"
             owned_path.write_bytes(b"placeholder")
-            s.add(PersonaTemplate(
-                candidate_id=cid, name="My Persona",
-                path="personas/alice/mine.docx", source="user_upload",
-            ))
+            s.add(
+                PersonaTemplate(
+                    candidate_id=cid,
+                    name="My Persona",
+                    path="personas/alice/mine.docx",
+                    source="user_upload",
+                )
+            )
             s.commit()
         finally:
             s.close()
@@ -201,7 +217,8 @@ class TestUploadPersona:
         }
         r = client.post(
             "/api/users/alice/personas",
-            data=payload, content_type="multipart/form-data",
+            data=payload,
+            content_type="multipart/form-data",
         )
         assert r.status_code == 201, r.get_json()
         body = r.get_json()
@@ -213,6 +230,7 @@ class TestUploadPersona:
         # DB row landed
         from db.models import PersonaTemplate
         from db.session import get_session
+
         s = get_session()
         try:
             count = s.query(PersonaTemplate).filter_by(source="user_upload").count()
@@ -252,11 +270,14 @@ class TestUpdatePersona:
         cid = _seed_candidate(persona_app)
         from db.models import PersonaTemplate
         from db.session import get_session
+
         s = get_session()
         try:
             row = PersonaTemplate(
-                candidate_id=cid, name="Old Name",
-                path="personas/alice/x.docx", source="user_upload",
+                candidate_id=cid,
+                name="Old Name",
+                path="personas/alice/x.docx",
+                source="user_upload",
             )
             s.add(row)
             s.commit()
@@ -273,11 +294,14 @@ class TestUpdatePersona:
         cid = _seed_candidate(persona_app)
         from db.models import PersonaTemplate
         from db.session import get_session
+
         s = get_session()
         try:
             row = PersonaTemplate(
-                candidate_id=cid, name="x",
-                path="personas/alice/x.docx", source="user_upload",
+                candidate_id=cid,
+                name="x",
+                path="personas/alice/x.docx",
+                source="user_upload",
             )
             s.add(row)
             s.commit()
@@ -311,11 +335,14 @@ class TestDeletePersona:
 
         from db.models import PersonaTemplate
         from db.session import get_session
+
         s = get_session()
         try:
             row = PersonaTemplate(
-                candidate_id=cid, name="ToDelete",
-                path="personas/alice/del.docx", source="user_upload",
+                candidate_id=cid,
+                name="ToDelete",
+                path="personas/alice/del.docx",
+                source="user_upload",
             )
             s.add(row)
             s.commit()
@@ -388,19 +415,27 @@ def _seed_app_run_with_resume(candidate_id, md="# Jane\n\n## Experience\n\n- Did
 
     from db.models import Application, ApplicationRun
     from db.session import get_session
+
     s = get_session()
     try:
         a = Application(
-            candidate_id=candidate_id, title="T", jd_text="jd",
+            candidate_id=candidate_id,
+            title="T",
+            jd_text="jd",
             jd_fingerprint=hashlib.sha256(b"jd").hexdigest()[:16],
         )
         s.add(a)
         s.flush()
-        s.add(ApplicationRun(
-            application_id=a.id, iteration=0, run_id="prevrun12345",
-            prompt_version="t", corpus_snapshot_json="{}",
-            generated_resume_md=md,
-        ))
+        s.add(
+            ApplicationRun(
+                application_id=a.id,
+                iteration=0,
+                run_id="prevrun12345",
+                prompt_version="t",
+                corpus_snapshot_json="{}",
+                generated_resume_md=md,
+            )
+        )
         s.commit()
     finally:
         s.close()
@@ -437,12 +472,15 @@ class TestDownloadEditedPersona:
         _seed_candidate(persona_app)
         pid, _ = _seed_bundled_persona_file(persona_app, "dl.docx")
         client = persona_app.app.test_client()
-        r = client.post("/api/download-edited", json={
-            "username": "alice",
-            "content": "# Jane\n\n## Experience\n\n- Built things",
-            "type": "resume",
-            "original_format": ".docx",
-            "persona_template_id": pid,
-        })
+        r = client.post(
+            "/api/download-edited",
+            json={
+                "username": "alice",
+                "content": "# Jane\n\n## Experience\n\n- Built things",
+                "type": "resume",
+                "original_format": ".docx",
+                "persona_template_id": pid,
+            },
+        )
         assert r.status_code == 200
         assert r.data[:2] == b"PK"  # produced a real .docx (templated, not dropped)

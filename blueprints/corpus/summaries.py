@@ -63,10 +63,12 @@ def list_summary_items(username: str) -> ResponseReturnValue:
             session.close()
     except Exception as exc:
         logger.exception("list_summary_items failed for user=%s", safe_user)
-        return jsonify({
-            "error": "Failed to load summaries",
-            **_error_detail_payload(exc),
-        }), 500
+        return jsonify(
+            {
+                "error": "Failed to load summaries",
+                **_error_detail_payload(exc),
+            }
+        ), 500
 
 
 @corpus_bp.route("/api/users/<username>/summaries", methods=["POST"])
@@ -99,7 +101,9 @@ def create_summary_item(username: str) -> ResponseReturnValue:
         candidate = cast(
             "Candidate",
             _get_or_provision_candidate(
-                session, safe_user, configs_dir=current_app.config["CONFIGS_DIR"],
+                session,
+                safe_user,
+                configs_dir=current_app.config["CONFIGS_DIR"],
             ),
         )
 
@@ -142,7 +146,8 @@ def update_summary_item(summary_id: int) -> ResponseReturnValue:
             return jsonify({"error": "SummaryItem not found"}), 404
         candidate = session.query(Candidate).filter_by(id=si.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
@@ -190,7 +195,8 @@ def delete_summary_item(summary_id: int) -> ResponseReturnValue:
             return jsonify({"error": "SummaryItem not found"}), 404
         candidate = session.query(Candidate).filter_by(id=si.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 

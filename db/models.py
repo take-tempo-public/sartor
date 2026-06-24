@@ -59,7 +59,9 @@ class Candidate(Base):
     # the scrape can never clobber the positioning summary / basics.summary.
     online_profile_text: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
-    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at: Mapped[str] = mapped_column(
+        String, nullable=False, default=utc_now, onupdate=utc_now
+    )
 
     experiences: Mapped[list[Experience]] = relationship(
         back_populates="candidate", cascade="all, delete-orphan"
@@ -67,9 +69,7 @@ class Candidate(Base):
     skills: Mapped[list[Skill]] = relationship(
         back_populates="candidate", cascade="all, delete-orphan"
     )
-    tags: Mapped[list[Tag]] = relationship(
-        back_populates="candidate", cascade="all, delete-orphan"
-    )
+    tags: Mapped[list[Tag]] = relationship(back_populates="candidate", cascade="all, delete-orphan")
     applications: Mapped[list[Application]] = relationship(
         back_populates="candidate", cascade="all, delete-orphan"
     )
@@ -79,7 +79,8 @@ class Candidate(Base):
     # β.6 — SummaryItem variants. Candidate has 1..N; recommend_summaries
     # picks one per JD; composition_overrides can pin/exclude per app.
     summary_items: Mapped[list[SummaryItem]] = relationship(
-        back_populates="candidate", cascade="all, delete-orphan",
+        back_populates="candidate",
+        cascade="all, delete-orphan",
     )
 
 
@@ -97,7 +98,9 @@ class Experience(Base):
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     summary: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
-    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at: Mapped[str] = mapped_column(
+        String, nullable=False, default=utc_now, onupdate=utc_now
+    )
 
     candidate: Mapped[Candidate] = relationship(back_populates="experiences")
     titles: Mapped[list[ExperienceTitle]] = relationship(
@@ -129,10 +132,14 @@ class ExperienceTitle(Base):
     is_official: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     truthful_enough_to_use: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_pending_review: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    source: Mapped[str] = mapped_column(String, nullable=False)  # 'official' | 'user_added' | 'llm_proposed:<run_id>'
+    source: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # 'official' | 'user_added' | 'llm_proposed:<run_id>'
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
-    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at: Mapped[str] = mapped_column(
+        String, nullable=False, default=utc_now, onupdate=utc_now
+    )
 
     experience: Mapped[Experience] = relationship(back_populates="titles")
     tag_links: Mapped[list[ExperienceTitleTag]] = relationship(
@@ -162,10 +169,14 @@ class Bullet(Base):
     is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     is_pending_review: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     source: Mapped[str] = mapped_column(String, nullable=False)  # see plan §bullet
-    pattern_kind: Mapped[str | None] = mapped_column(String)  # 'xyz' | 'star' | 'car' | 'manual' | NULL
+    pattern_kind: Mapped[str | None] = mapped_column(
+        String
+    )  # 'xyz' | 'star' | 'car' | 'manual' | NULL
     has_outcome: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
-    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at: Mapped[str] = mapped_column(
+        String, nullable=False, default=utc_now, onupdate=utc_now
+    )
 
     experience: Mapped[Experience] = relationship(back_populates="bullets")
     tag_links: Mapped[list[BulletTag]] = relationship(
@@ -182,7 +193,10 @@ class Bullet(Base):
         ),
         Index(
             "ix_bullet_experience_active_pending_order",
-            "experience_id", "is_active", "is_pending_review", "display_order",
+            "experience_id",
+            "is_active",
+            "is_pending_review",
+            "display_order",
         ),
     )
 
@@ -197,7 +211,9 @@ class Tag(Base):
         ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
     )
     kind: Mapped[str] = mapped_column(String, nullable=False)  # role|domain|skill|tech
-    value: Mapped[str] = mapped_column(String, nullable=False)  # normalized: lowercase, hyphen-separated
+    value: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # normalized: lowercase, hyphen-separated
     display_value: Mapped[str] = mapped_column(String, nullable=False)  # user's original casing
     usage_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     merged_into_id: Mapped[int | None] = mapped_column(
@@ -220,9 +236,7 @@ class BulletTag(Base):
     bullet_id: Mapped[int] = mapped_column(
         ForeignKey("bullet.id", ondelete="CASCADE"), primary_key=True
     )
-    tag_id: Mapped[int] = mapped_column(
-        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
-    )
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True)
     confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
 
     bullet: Mapped[Bullet] = relationship(back_populates="tag_links")
@@ -237,9 +251,7 @@ class ExperienceTitleTag(Base):
     experience_title_id: Mapped[int] = mapped_column(
         ForeignKey("experience_title.id", ondelete="CASCADE"), primary_key=True
     )
-    tag_id: Mapped[int] = mapped_column(
-        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
-    )
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True)
     confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
 
     title: Mapped[ExperienceTitle] = relationship(back_populates="tag_links")
@@ -255,7 +267,9 @@ class BulletMetric(Base):
     bullet_id: Mapped[int] = mapped_column(
         ForeignKey("bullet.id", ondelete="CASCADE"), nullable=False
     )
-    metric_kind: Mapped[str] = mapped_column(String, nullable=False)  # count|currency|percent|duration|scope
+    metric_kind: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # count|currency|percent|duration|scope
     value: Mapped[str] = mapped_column(String, nullable=False)  # verbatim from source
     unit: Mapped[str | None] = mapped_column(String)
 
@@ -306,14 +320,20 @@ class SummaryItem(Base):
         ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
     )
     text: Mapped[str] = mapped_column(Text, nullable=False)
-    label: Mapped[str | None] = mapped_column(String)  # optional human-readable name like "AI platform PM"
+    label: Mapped[str | None] = mapped_column(
+        String
+    )  # optional human-readable name like "AI platform PM"
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     is_pending_review: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    source: Mapped[str] = mapped_column(String, nullable=False, default="manual")  # 'manual' | 'imported' | 'llm_proposed'
+    source: Mapped[str] = mapped_column(
+        String, nullable=False, default="manual"
+    )  # 'manual' | 'imported' | 'llm_proposed'
     has_outcome: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
-    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at: Mapped[str] = mapped_column(
+        String, nullable=False, default=utc_now, onupdate=utc_now
+    )
 
     candidate: Mapped[Candidate] = relationship(back_populates="summary_items")
     tag_links: Mapped[list[SummaryItemTag]] = relationship(
@@ -327,7 +347,10 @@ class SummaryItem(Base):
         ),
         Index(
             "ix_summary_item_candidate_active_pending_order",
-            "candidate_id", "is_active", "is_pending_review", "display_order",
+            "candidate_id",
+            "is_active",
+            "is_pending_review",
+            "display_order",
         ),
     )
 
@@ -342,9 +365,7 @@ class SummaryItemTag(Base):
     summary_item_id: Mapped[int] = mapped_column(
         ForeignKey("summary_item.id", ondelete="CASCADE"), primary_key=True
     )
-    tag_id: Mapped[int] = mapped_column(
-        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
-    )
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True)
     confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
 
     summary_item: Mapped[SummaryItem] = relationship(back_populates="tag_links")
@@ -393,10 +414,14 @@ class ExperienceSummaryItem(Base):
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     is_pending_review: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    source: Mapped[str] = mapped_column(String, nullable=False, default="manual")  # 'manual' | 'imported' | 'llm_proposed'
+    source: Mapped[str] = mapped_column(
+        String, nullable=False, default="manual"
+    )  # 'manual' | 'imported' | 'llm_proposed'
     has_outcome: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
-    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at: Mapped[str] = mapped_column(
+        String, nullable=False, default=utc_now, onupdate=utc_now
+    )
 
     experience: Mapped[Experience] = relationship(back_populates="summary_items")
     tag_links: Mapped[list[ExperienceSummaryItemTag]] = relationship(
@@ -410,7 +435,10 @@ class ExperienceSummaryItem(Base):
         ),
         Index(
             "ix_experience_summary_item_active_pending_order",
-            "experience_id", "is_active", "is_pending_review", "display_order",
+            "experience_id",
+            "is_active",
+            "is_pending_review",
+            "display_order",
         ),
     )
 
@@ -424,9 +452,7 @@ class ExperienceSummaryItemTag(Base):
     experience_summary_item_id: Mapped[int] = mapped_column(
         ForeignKey("experience_summary_item.id", ondelete="CASCADE"), primary_key=True
     )
-    tag_id: Mapped[int] = mapped_column(
-        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
-    )
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True)
     confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
 
     summary_item: Mapped[ExperienceSummaryItem] = relationship(back_populates="tag_links")
@@ -465,15 +491,21 @@ class Skill(Base):
         ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
-    category: Mapped[str | None] = mapped_column(String)  # language|framework|platform|methodology|domain
+    category: Mapped[str | None] = mapped_column(
+        String
+    )  # language|framework|platform|methodology|domain
     proficiency: Mapped[str | None] = mapped_column(String)  # expert|proficient|familiar
     years: Mapped[float | None] = mapped_column(nullable=True)
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     is_pending_review: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    source: Mapped[str] = mapped_column(String, nullable=False, default="manual")  # 'manual' | 'imported' | 'llm_proposed'
+    source: Mapped[str] = mapped_column(
+        String, nullable=False, default="manual"
+    )  # 'manual' | 'imported' | 'llm_proposed'
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
-    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at: Mapped[str] = mapped_column(
+        String, nullable=False, default=utc_now, onupdate=utc_now
+    )
 
     candidate: Mapped[Candidate] = relationship(back_populates="skills")
     tag_links: Mapped[list[SkillTag]] = relationship(
@@ -488,7 +520,10 @@ class Skill(Base):
         ),
         Index(
             "ix_skill_candidate_active_pending_order",
-            "candidate_id", "is_active", "is_pending_review", "display_order",
+            "candidate_id",
+            "is_active",
+            "is_pending_review",
+            "display_order",
         ),
     )
 
@@ -506,9 +541,7 @@ class SkillTag(Base):
     skill_id: Mapped[int] = mapped_column(
         ForeignKey("skill.id", ondelete="CASCADE"), primary_key=True
     )
-    tag_id: Mapped[int] = mapped_column(
-        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
-    )
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True)
     confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
 
     skill: Mapped[Skill] = relationship(back_populates="tag_links")
@@ -612,7 +645,8 @@ class PersonaTemplate(Base):
         CheckConstraint("source IN ('bundled', 'user_upload')", name="ck_persona_template_source"),
         Index(
             "ix_persona_template_default",
-            "candidate_id", "primary_role_tag_id",
+            "candidate_id",
+            "primary_role_tag_id",
             unique=True,
             sqlite_where=text("is_default = 1"),
         ),
@@ -625,9 +659,7 @@ class PersonaTemplateTag(Base):
     persona_template_id: Mapped[int] = mapped_column(
         ForeignKey("persona_template.id", ondelete="CASCADE"), primary_key=True
     )
-    tag_id: Mapped[int] = mapped_column(
-        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
-    )
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True)
 
     template: Mapped[PersonaTemplate] = relationship(back_populates="tag_links")
     tag: Mapped[Tag] = relationship()
@@ -657,7 +689,9 @@ class Application(Base):
     )
     status: Mapped[str] = mapped_column(String, nullable=False, default="draft")
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
-    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now, onupdate=utc_now)
+    updated_at: Mapped[str] = mapped_column(
+        String, nullable=False, default=utc_now, onupdate=utc_now
+    )
     sent_at: Mapped[str | None] = mapped_column(String)
     outcome_at: Mapped[str | None] = mapped_column(String)
     notes: Mapped[str | None] = mapped_column(String)
@@ -687,7 +721,9 @@ class ApplicationRun(Base):
     parent_run_id: Mapped[int | None] = mapped_column(
         ForeignKey("application_run.id", ondelete="SET NULL"), nullable=True
     )
-    run_id: Mapped[str] = mapped_column(String, unique=True, nullable=False)  # 12-hex correlation primitive
+    run_id: Mapped[str] = mapped_column(
+        String, unique=True, nullable=False
+    )  # 12-hex correlation primitive
     prompt_version: Mapped[str] = mapped_column(String, nullable=False)
     persona_template_id: Mapped[int | None] = mapped_column(
         ForeignKey("persona_template.id", ondelete="SET NULL"), nullable=True
@@ -861,9 +897,7 @@ class ClarificationTag(Base):
     clarification_id: Mapped[int] = mapped_column(
         ForeignKey("clarification.id", ondelete="CASCADE"), primary_key=True
     )
-    tag_id: Mapped[int] = mapped_column(
-        ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
-    )
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True)
     confidence: Mapped[float] = mapped_column(nullable=False, default=1.0)
 
     clarification: Mapped[Clarification] = relationship(back_populates="tag_links")
@@ -911,15 +945,33 @@ __all__ = [
     "Base",
     "utc_now",
     # Core
-    "Candidate", "Experience", "ExperienceTitle", "Bullet",
-    "Tag", "BulletTag", "ExperienceTitleTag", "BulletMetric",
+    "Candidate",
+    "Experience",
+    "ExperienceTitle",
+    "Bullet",
+    "Tag",
+    "BulletTag",
+    "ExperienceTitleTag",
+    "BulletMetric",
     # Career assets
-    "Skill", "SkillTag", "Education", "Certification", "Project", "Publication",
+    "Skill",
+    "SkillTag",
+    "Education",
+    "Certification",
+    "Project",
+    "Publication",
     # Templates
-    "PersonaTemplate", "PersonaTemplateTag",
+    "PersonaTemplate",
+    "PersonaTemplateTag",
     # Applications
-    "Application", "ApplicationRun", "ApplicationRunTitle", "ApplicationBullet",
+    "Application",
+    "ApplicationRun",
+    "ApplicationRunTitle",
+    "ApplicationBullet",
     # Memory + audit
-    "ProposalReview", "Clarification", "ClarificationTag",
-    "IterationLog", "Engagement",
+    "ProposalReview",
+    "Clarification",
+    "ClarificationTag",
+    "IterationLog",
+    "Engagement",
 ]

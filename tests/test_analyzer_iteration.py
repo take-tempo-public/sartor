@@ -22,6 +22,7 @@ from analyzer import (
 
 # ---------- _supplemental_block --------------------------------------------
 
+
 def test_supplemental_block_iteration_zero_uses_supplemental_wrapper():
     ctx = {
         "resume": {"text": "primary", "filename": "p.docx"},
@@ -81,6 +82,7 @@ def test_supplemental_block_iteration_one_no_supplementals_still_demotes_primary
 
 # ---------- _current_draft_text --------------------------------------------
 
+
 def test_current_draft_text_iteration_zero_returns_primary():
     ctx = {
         "iteration": 0,
@@ -131,6 +133,7 @@ def test_current_draft_text_treats_whitespace_only_edits_as_absent():
 
 # ---------- _current_cover_letter_draft ------------------------------------
 
+
 def test_cover_letter_draft_empty_at_iteration_zero():
     ctx = {"iteration": 0, "edited_cover_letter_text": "x", "last_generated_cover_letter": "y"}
     text, label = _current_cover_letter_draft(ctx)
@@ -150,6 +153,7 @@ def test_cover_letter_draft_prefers_edited_at_iteration_one():
 
 
 # ---------- _stable_user_prefix --------------------------------------------
+
 
 def _minimal_ctx_for_prefix(iteration: int = 0, **extras) -> dict:
     base: dict = {
@@ -199,18 +203,33 @@ def test_stable_prefix_iteration_one_falls_back_to_last_generated_when_no_edits(
 
 # ---------- generate(): edited text consumption + grounding update --------
 
+
 def _capture_prompt(monkeypatch):
     """Return (captured_prompts list, captured_prefixes list) and stub _call_llm."""
     captured_prompts: list[str] = []
     captured_prefixes: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         captured_prompts.append(prompt)
         captured_prefixes.append(cached_user_prefix)
-        return json.dumps({
-            "resume_content": "# Out", "cover_letter_content": "Letter",
-            "changes_made": [], "proofread_notes": [],
-        })
+        return json.dumps(
+            {
+                "resume_content": "# Out",
+                "cover_letter_content": "Letter",
+                "changes_made": [],
+                "proofread_notes": [],
+            }
+        )
 
     monkeypatch.setattr(analyzer, "_call_llm", fake)
     return captured_prompts, captured_prefixes
@@ -218,8 +237,11 @@ def _capture_prompt(monkeypatch):
 
 def _minimal_analysis() -> dict:
     return {
-        "essential_skills": [], "keyword_placement": [], "suggestions": [],
-        "overall_strategy": "", "professional_vocabulary": [],
+        "essential_skills": [],
+        "keyword_placement": [],
+        "suggestions": [],
+        "overall_strategy": "",
+        "professional_vocabulary": [],
     }
 
 
@@ -296,30 +318,33 @@ def test_generate_grounding_block_widened_for_typed_edits(monkeypatch):
 
 # ---------- clarify_iteration() (Phase 2) ----------------------------------
 
+
 def _minimal_iter_clarify_response() -> str:
-    return json.dumps({
-        "questions": [
-            {
-                "id": "q1",
-                "text": "Recent edit added 'shipped V2' — which customer segment?",
-                "target_gap": "Recent edit added 'shipped V2 to enterprise'",
-                "kind": "iteration_probe",
-            },
-            {
-                "id": "q2",
-                "text": "Terraform still missing — any side-project ownership?",
-                "target_gap": "Essential skill Terraform missing from current draft",
-                "kind": "experience_probe",
-            },
-            {
-                "id": "q3",
-                "text": "Current draft says 'led platform' — direct reports or matrix?",
-                "target_gap": "Scope ambiguity in current draft platform bullet",
-                "kind": "scope_probe",
-            },
-        ],
-        "reasoning": "Mix of iteration follow-up, missing-skill probe, and scope.",
-    })
+    return json.dumps(
+        {
+            "questions": [
+                {
+                    "id": "q1",
+                    "text": "Recent edit added 'shipped V2' — which customer segment?",
+                    "target_gap": "Recent edit added 'shipped V2 to enterprise'",
+                    "kind": "iteration_probe",
+                },
+                {
+                    "id": "q2",
+                    "text": "Terraform still missing — any side-project ownership?",
+                    "target_gap": "Essential skill Terraform missing from current draft",
+                    "kind": "experience_probe",
+                },
+                {
+                    "id": "q3",
+                    "text": "Current draft says 'led platform' — direct reports or matrix?",
+                    "target_gap": "Scope ambiguity in current draft platform bullet",
+                    "kind": "scope_probe",
+                },
+            ],
+            "reasoning": "Mix of iteration follow-up, missing-skill probe, and scope.",
+        }
+    )
 
 
 def test_clarify_iteration_uses_dedicated_system_prompt(monkeypatch):
@@ -329,7 +354,17 @@ def test_clarify_iteration_uses_dedicated_system_prompt(monkeypatch):
     draft, etc."""
     received_systems: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         received_systems.append(system_prompt)
         assert cached_user_prefix == ""  # no cached prefix for compact call
         assert call_kind == "iterate_clarify"
@@ -358,7 +393,17 @@ def test_clarify_iteration_includes_signal_sources_in_prompt(monkeypatch):
     (with their answers, so the LLM knows what's established truth)."""
     captured_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         captured_prompts.append(prompt)
         return _minimal_iter_clarify_response()
 
@@ -379,11 +424,18 @@ def test_clarify_iteration_includes_signal_sources_in_prompt(monkeypatch):
         deterministic_signals={
             "verb_diversity": {"diversity_ratio": 0.32, "top_repeated": [["led", 4]]},
             "specificity_density": {"density": 0.25},
-            "grounding_overlap": {"overlap_ratio": 0.18, "missing_samples": ["kubernetes deployment"]},
+            "grounding_overlap": {
+                "overlap_ratio": 0.18,
+                "missing_samples": ["kubernetes deployment"],
+            },
             "keyword_coverage": {"still_missing_from_current_draft": ["terraform"]},
         },
         prior_clarifications=[
-            {"question": "Have you used K8s?", "answer": "Yes, in prod 2023.", "kind": "experience_probe"},
+            {
+                "question": "Have you used K8s?",
+                "answer": "Yes, in prod 2023.",
+                "kind": "experience_probe",
+            },
         ],
     )
 
@@ -409,7 +461,17 @@ def test_clarify_iteration_excludes_skipped_prior_clarifications(monkeypatch):
     skipped-with-blank-answer pairs would confuse the LLM."""
     captured_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         captured_prompts.append(prompt)
         return _minimal_iter_clarify_response()
 
@@ -443,7 +505,17 @@ def test_clarify_iteration_retries_on_missing_keys(monkeypatch):
     ]
     calls: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         calls.append(call_kind)
         return responses.pop(0)
 
@@ -453,8 +525,10 @@ def test_clarify_iteration_retries_on_missing_keys(monkeypatch):
         client=None,
         context_set={"deterministic_analysis": {"keyword_overlap": {}}},
         analysis={"comparison": {}, "essential_skills": []},
-        current_resume_text="r", current_cover_letter_text="",
-        recent_edits_summary="", deterministic_signals={},
+        current_resume_text="r",
+        current_cover_letter_text="",
+        recent_edits_summary="",
+        deterministic_signals={},
         prior_clarifications=[],
     )
     assert "questions" in result

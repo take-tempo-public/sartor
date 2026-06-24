@@ -23,6 +23,7 @@ import pytest
 class TestRecommendSummariesShortCircuit:
     def test_zero_variants_returns_null_recommendation(self):
         from analyzer import recommend_summaries
+
         result = recommend_summaries(
             client=object(),  # never called
             context_set={"summary_items": []},
@@ -31,12 +32,15 @@ class TestRecommendSummariesShortCircuit:
 
     def test_blank_text_variants_treated_as_zero(self):
         from analyzer import recommend_summaries
+
         result = recommend_summaries(
             client=object(),
-            context_set={"summary_items": [
-                {"id": 1, "text": ""},
-                {"id": 2, "text": "   "},
-            ]},
+            context_set={
+                "summary_items": [
+                    {"id": 1, "text": ""},
+                    {"id": 2, "text": "   "},
+                ]
+            },
         )
         assert result["recommendation"] is None
         assert result["alternates"] == []
@@ -44,12 +48,19 @@ class TestRecommendSummariesShortCircuit:
     def test_single_variant_returns_it_unchanged(self):
         """Saves the Haiku call — there's no decision to make."""
         from analyzer import recommend_summaries
+
         result = recommend_summaries(
             client=object(),
-            context_set={"summary_items": [
-                {"id": 7, "text": "AI platform PM with a decade of leadership.",
-                 "label": "AI Platform PM", "has_outcome": False},
-            ]},
+            context_set={
+                "summary_items": [
+                    {
+                        "id": 7,
+                        "text": "AI platform PM with a decade of leadership.",
+                        "label": "AI Platform PM",
+                        "has_outcome": False,
+                    },
+                ]
+            },
         )
         assert result["recommendation"]["summary_item_id"] == 7
         assert "only variant" in result["recommendation"]["rationale"].lower()
@@ -59,6 +70,7 @@ class TestRecommendSummariesShortCircuit:
 class TestDedupSummaryRecommendations:
     def test_drops_alternate_near_duplicate_of_recommendation(self):
         from analyzer import _dedup_summary_recommendations
+
         items = [
             {"id": 1, "text": "Senior product manager with a decade in AI platforms."},
             {"id": 2, "text": "Senior product manager with a decade in AI platforms work."},
@@ -78,6 +90,7 @@ class TestDedupSummaryRecommendations:
 
     def test_drops_alternates_that_dup_each_other(self):
         from analyzer import _dedup_summary_recommendations
+
         items = [
             {"id": 1, "text": "Different positioning, unique phrasing entirely here."},
             {"id": 2, "text": "Senior product manager with a decade in AI platforms."},
@@ -97,6 +110,7 @@ class TestDedupSummaryRecommendations:
 
     def test_preserves_distinct_alternates(self):
         from analyzer import _dedup_summary_recommendations
+
         items = [
             {"id": 1, "text": "AI platform PM positioning."},
             {"id": 2, "text": "Design IC positioning entirely different."},
@@ -116,6 +130,7 @@ class TestDedupSummaryRecommendations:
         """If the LLM mistakenly echoes the same id as both
         recommendation + alternate, drop the alternate."""
         from analyzer import _dedup_summary_recommendations
+
         items = [{"id": 5, "text": "Some positioning text here."}]
         result = {
             "recommendation": {"summary_item_id": 5, "rationale": "primary"},
@@ -138,12 +153,14 @@ def recommend_app(tmp_path, monkeypatch):
 
     db_file = tmp_path / "recsum.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     output_dir = cfg.output_dir
@@ -154,6 +171,7 @@ def recommend_app(tmp_path, monkeypatch):
     monkeypatch.setattr("blueprints.applications._get_client", lambda: object())
 
     from db.session import init_db
+
     init_db(db_file)
 
     return types.SimpleNamespace(app=app), output_dir
@@ -166,28 +184,36 @@ def _seed(app_module, output_dir):
 
     from db.models import Application, Candidate, SummaryItem
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(username="casey", name="Casey Rivera")
         session.add(c)
         session.flush()
         a = Application(
-            candidate_id=c.id, title="Senior PM",
+            candidate_id=c.id,
+            title="Senior PM",
             jd_text="Senior PM building AI platforms.",
             jd_fingerprint="f" * 16,
         )
         session.add(a)
         session.flush()
         # Three variants to give the LLM a real choice
-        for i, text in enumerate([
-            "AI platform PM with a decade of platform leadership and outcomes.",
-            "Early-stage builder PM focused on zero-to-one launches and user growth.",
-            "Enterprise PM with a record of cross-team alignment and shipping.",
-        ]):
-            session.add(SummaryItem(
-                candidate_id=c.id, text=text,
-                display_order=i, is_active=1,
-            ))
+        for i, text in enumerate(
+            [
+                "AI platform PM with a decade of platform leadership and outcomes.",
+                "Early-stage builder PM focused on zero-to-one launches and user growth.",
+                "Enterprise PM with a record of cross-team alignment and shipping.",
+            ]
+        ):
+            session.add(
+                SummaryItem(
+                    candidate_id=c.id,
+                    text=text,
+                    display_order=i,
+                    is_active=1,
+                )
+            )
         session.commit()
         cid = c.id
         aid = a.id
@@ -227,8 +253,10 @@ class TestRecommendSummaryRoute:
                     "rationale": "Strong AI platform framing match.",
                 },
                 "alternates": [
-                    {"summary_item_id": items[1]["id"],
-                     "rationale": "Builder framing is a close second."},
+                    {
+                        "summary_item_id": items[1]["id"],
+                        "rationale": "Builder framing is a close second.",
+                    },
                 ],
             }
 
@@ -247,9 +275,12 @@ class TestRecommendSummaryRoute:
         # Persistence: context file contains llm_summary_recommendation,
         # and the transient summary_items + jd_text were stripped
         import json
+
         ctx = json.loads(open(ctx_path, encoding="utf-8").read())
         assert "llm_summary_recommendation" in ctx
-        assert ctx["llm_summary_recommendation"]["recommendation"]["rationale"].startswith("Strong AI")
+        assert ctx["llm_summary_recommendation"]["recommendation"]["rationale"].startswith(
+            "Strong AI"
+        )
         assert "summary_items" not in ctx
         assert "jd_text" not in ctx
 
@@ -279,13 +310,15 @@ class TestRecommendSummaryRoute:
 
         from db.models import Application, Candidate
         from db.session import get_session
+
         session = get_session()
         try:
             c = Candidate(username="casey", name="Casey")
             session.add(c)
             session.flush()
             a = Application(
-                candidate_id=c.id, title="Senior PM",
+                candidate_id=c.id,
+                title="Senior PM",
                 jd_text="Test JD.",
                 jd_fingerprint="g" * 16,
             )
@@ -296,11 +329,16 @@ class TestRecommendSummaryRoute:
             session.close()
 
         ctx_path = output_dir / "casey" / "ctx0.json"
-        ctx_path.write_text(json.dumps({
-            "application_id": aid,
-            "llm_analysis": {},
-            "iteration": 0,
-        }), encoding="utf-8")
+        ctx_path.write_text(
+            json.dumps(
+                {
+                    "application_id": aid,
+                    "llm_analysis": {},
+                    "iteration": 0,
+                }
+            ),
+            encoding="utf-8",
+        )
 
         client = _app.app.test_client()
         r = client.post(

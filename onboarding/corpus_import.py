@@ -174,9 +174,11 @@ def import_candidate_from_config(
         name = raw.strip() if isinstance(raw, str) else ""
         if not name:
             continue
-        if not dry_run and session.query(Skill).filter_by(
-            candidate_id=candidate.id, name=name
-        ).first() is not None:
+        if (
+            not dry_run
+            and session.query(Skill).filter_by(candidate_id=candidate.id, name=name).first()
+            is not None
+        ):
             report.skills_skipped += 1
             continue
         if not dry_run:
@@ -188,9 +190,11 @@ def import_candidate_from_config(
         name = raw.strip() if isinstance(raw, str) else ""
         if not name:
             continue
-        if not dry_run and session.query(Certification).filter_by(
-            candidate_id=candidate.id, name=name
-        ).first() is not None:
+        if (
+            not dry_run
+            and session.query(Certification).filter_by(candidate_id=candidate.id, name=name).first()
+            is not None
+        ):
             report.certifications_skipped += 1
             continue
         if not dry_run:
@@ -202,17 +206,23 @@ def import_candidate_from_config(
     # User can split it in the Career Corpus tab during Phase D.
     edu_summary = (cfg.get("education_summary") or "").strip()
     if edu_summary:
-        if not dry_run and session.query(Education).filter_by(
-            candidate_id=candidate.id, institution=edu_summary
-        ).first() is not None:
+        if (
+            not dry_run
+            and session.query(Education)
+            .filter_by(candidate_id=candidate.id, institution=edu_summary)
+            .first()
+            is not None
+        ):
             report.education_skipped += 1
         else:
             if not dry_run:
-                session.add(Education(
-                    candidate_id=candidate.id,
-                    institution=edu_summary,
-                    notes="Imported from legacy education_summary; split into structured rows when ready.",
-                ))
+                session.add(
+                    Education(
+                        candidate_id=candidate.id,
+                        institution=edu_summary,
+                        notes="Imported from legacy education_summary; split into structured rows when ready.",
+                    )
+                )
             report.education_created += 1
 
     # Flush so the report's counters match what subsequent SELECTs will see.
@@ -313,13 +323,15 @@ def import_clarifications_from_output(
             seen_this_run.add(dedup_key)
             safe_kind = kind if kind in _VALID_KINDS else "manual"
             if not dry_run:
-                session.add(Clarification(
-                    candidate_id=candidate_id,
-                    question=qtext,
-                    answer=atext,
-                    kind=safe_kind,
-                    target_gap=None,
-                ))
+                session.add(
+                    Clarification(
+                        candidate_id=candidate_id,
+                        question=qtext,
+                        answer=atext,
+                        kind=safe_kind,
+                        target_gap=None,
+                    )
+                )
             report.clarifications_created += 1
 
     if not dry_run:
@@ -350,8 +362,7 @@ def _iter_resume_files(username: str) -> list[Path]:
     if not user_dir.exists():
         return []
     available = sorted(
-        p for p in user_dir.iterdir()
-        if p.is_file() and p.suffix.lower() in _RESUME_EXTS
+        p for p in user_dir.iterdir() if p.is_file() and p.suffix.lower() in _RESUME_EXTS
     )
 
     cfg_path = CONFIGS_DIR / f"{username}.config"
@@ -419,11 +430,16 @@ def import_experiences_from_resumes(
 
     files = _iter_resume_files(username)
     for index, resume_path in enumerate(files):
-        is_primary = (index == 0)  # _iter_resume_files puts primary first
+        is_primary = index == 0  # _iter_resume_files puts primary first
         ingest_one_resume(
-            resume_path, candidate_id, session,
-            client=client, username=username, is_primary=is_primary,
-            dry_run=dry_run, report=report,
+            resume_path,
+            candidate_id,
+            session,
+            client=client,
+            username=username,
+            is_primary=is_primary,
+            dry_run=dry_run,
+            report=report,
         )
 
     if not dry_run:
@@ -474,10 +490,13 @@ def ingest_one_resume(
 
     for exp in extracted:
         _insert_or_merge_experience(
-            exp, candidate_id,
+            exp,
+            candidate_id,
             source_filename=resume_path.name,
             is_primary_file=is_primary,
-            session=session, dry_run=dry_run, report=report,
+            session=session,
+            dry_run=dry_run,
+            report=report,
         )
     if not dry_run:
         session.flush()
@@ -535,14 +554,23 @@ def _insert_or_merge_experience(
                 report.bullets_created += 1
         return
 
-    existing = session.query(Experience).filter_by(
-        candidate_id=candidate_id, company=company, start_date=start_date,
-    ).first()
+    existing = (
+        session.query(Experience)
+        .filter_by(
+            candidate_id=candidate_id,
+            company=company,
+            start_date=start_date,
+        )
+        .first()
+    )
 
     if existing is not None:
         _merge_into_existing_experience(
-            existing, exp, source_filename=source_filename,
-            session=session, report=report,
+            existing,
+            exp,
+            source_filename=source_filename,
+            session=session,
+            report=report,
         )
         return
 
@@ -559,30 +587,34 @@ def _insert_or_merge_experience(
     session.flush()  # need experience_row.id for FKs
 
     if title_text:
-        session.add(ExperienceTitle(
-            experience_id=experience_row.id,
-            title=title_text,
-            is_official=1,
-            truthful_enough_to_use=1,
-            is_pending_review=1,
-            source="user_added",
-            notes=f"Imported from {source_filename}; review before promoting to canonical.",
-        ))
+        session.add(
+            ExperienceTitle(
+                experience_id=experience_row.id,
+                title=title_text,
+                is_official=1,
+                truthful_enough_to_use=1,
+                is_pending_review=1,
+                source="user_added",
+                notes=f"Imported from {source_filename}; review before promoting to canonical.",
+            )
+        )
 
     source_prefix = "primary" if is_primary_file else "supplemental"
     for b in exp.get("bullets", []):
         btext = b.get("text", "")
         if not btext:
             continue
-        session.add(Bullet(
-            experience_id=experience_row.id,
-            text=btext,
-            display_order=report.bullets_created,
-            is_active=1,
-            is_pending_review=1,
-            source=f"{source_prefix}:{source_filename}",
-            has_outcome=1 if b.get("has_outcome") else 0,
-        ))
+        session.add(
+            Bullet(
+                experience_id=experience_row.id,
+                text=btext,
+                display_order=report.bullets_created,
+                is_active=1,
+                is_pending_review=1,
+                source=f"{source_prefix}:{source_filename}",
+                has_outcome=1 if b.get("has_outcome") else 0,
+            )
+        )
         report.bullets_created += 1
 
     report.experiences_created += 1
@@ -626,20 +658,23 @@ def _merge_into_existing_experience(
 
     if title_text:
         existing_title_set = {
-            row[0] for row in session.query(ExperienceTitle.title).filter(
+            row[0]
+            for row in session.query(ExperienceTitle.title).filter(
                 ExperienceTitle.experience_id == existing.id
             )
         }
         if title_text not in existing_title_set:
-            session.add(ExperienceTitle(
-                experience_id=existing.id,
-                title=title_text,
-                is_official=0,
-                truthful_enough_to_use=1,
-                is_pending_review=1,
-                source="user_added",
-                notes=f"Alternate framing from {source_filename}; review and promote if accurate.",
-            ))
+            session.add(
+                ExperienceTitle(
+                    experience_id=existing.id,
+                    title=title_text,
+                    is_official=0,
+                    truthful_enough_to_use=1,
+                    is_pending_review=1,
+                    source="user_added",
+                    notes=f"Alternate framing from {source_filename}; review and promote if accurate.",
+                )
+            )
             report.alternate_titles_created += 1
 
     source_value = f"supplemental:{source_filename}"
@@ -649,13 +684,12 @@ def _merge_into_existing_experience(
     # the text and ignoring the source catches that case AND continues
     # to keep genuinely different phrasings from different files.
     existing_bullet_keys = {
-        _normalize(row[0]) for row in session.query(Bullet.text).filter(
-            Bullet.experience_id == existing.id
-        )
+        _normalize(row[0])
+        for row in session.query(Bullet.text).filter(Bullet.experience_id == existing.id)
     }
-    existing_bullet_count = session.query(Bullet).filter(
-        Bullet.experience_id == existing.id
-    ).count()
+    existing_bullet_count = (
+        session.query(Bullet).filter(Bullet.experience_id == existing.id).count()
+    )
     for b in exp.get("bullets", []):
         btext = b.get("text", "")
         if not btext:
@@ -663,15 +697,17 @@ def _merge_into_existing_experience(
         norm_btext = _normalize(btext)
         if norm_btext in existing_bullet_keys:
             continue
-        session.add(Bullet(
-            experience_id=existing.id,
-            text=btext,
-            display_order=existing_bullet_count + report.bullets_created,
-            is_active=1,
-            is_pending_review=1,
-            source=source_value,
-            has_outcome=1 if b.get("has_outcome") else 0,
-        ))
+        session.add(
+            Bullet(
+                experience_id=existing.id,
+                text=btext,
+                display_order=existing_bullet_count + report.bullets_created,
+                is_active=1,
+                is_pending_review=1,
+                source=source_value,
+                has_outcome=1 if b.get("has_outcome") else 0,
+            )
+        )
         # Track within this loop so two identical bullets in the same
         # extraction don't both insert.
         existing_bullet_keys.add(norm_btext)
@@ -714,8 +750,11 @@ def run_import(
 
         if with_llm and not dry_run:
             exp_report = import_experiences_from_resumes(
-                username, candidate_report.candidate_id, session,
-                dry_run=dry_run, api_key=api_key,
+                username,
+                candidate_report.candidate_id,
+                session,
+                dry_run=dry_run,
+                api_key=api_key,
             )
             candidate_report.merge(exp_report)
         elif with_llm and dry_run:
@@ -738,6 +777,7 @@ def run_import(
 def _make_isolated_session(db_path: Path | str) -> Session:
     """Build a session against an explicit DB path (not the process-wide default)."""
     from db.session import make_engine, make_session_factory
+
     eng = make_engine(db_path)
     return make_session_factory(eng)()
 
@@ -783,12 +823,22 @@ def main(argv: list[str] | None = None) -> int:
         description="Import legacy file-based PII into the SQLite corpus.",
     )
     parser.add_argument("--user", required=True, help="Username (matches configs/{user}.config)")
-    parser.add_argument("--dry-run", action="store_true", help="Print what would be inserted, no DB writes")
-    parser.add_argument("--with-llm", action="store_true",
-                        help="Also parse resumes via Haiku and import experiences + bullets (~$0.02/run)")
-    parser.add_argument("--api-key", default=None,
-                        help="Anthropic API key override (else uses ANTHROPIC_API_KEY env or .api_key file)")
-    parser.add_argument("--db", default=None, help="Override DB path (defaults to db/resume.sqlite)")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Print what would be inserted, no DB writes"
+    )
+    parser.add_argument(
+        "--with-llm",
+        action="store_true",
+        help="Also parse resumes via Haiku and import experiences + bullets (~$0.02/run)",
+    )
+    parser.add_argument(
+        "--api-key",
+        default=None,
+        help="Anthropic API key override (else uses ANTHROPIC_API_KEY env or .api_key file)",
+    )
+    parser.add_argument(
+        "--db", default=None, help="Override DB path (defaults to db/resume.sqlite)"
+    )
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")

@@ -179,8 +179,15 @@ PRESETS: list[TypographyPreset] = [
 # ---------------------------------------------------------------------------
 
 
-def _apply_font(run, family: str, size_pt: int, *, bold: bool = False,
-                italic: bool = False, small_caps: bool = False) -> None:
+def _apply_font(
+    run,
+    family: str,
+    size_pt: int,
+    *,
+    bold: bool = False,
+    italic: bool = False,
+    small_caps: bool = False,
+) -> None:
     """Set typography on a single run."""
     run.font.name = family
     run.font.size = Pt(size_pt)
@@ -192,7 +199,10 @@ def _apply_font(run, family: str, size_pt: int, *, bold: bool = False,
 
 def _apply_paragraph_spacing(
     paragraph,
-    *, line_spacing: float, space_before_pt: int = 0, space_after_pt: int = 0,
+    *,
+    line_spacing: float,
+    space_before_pt: int = 0,
+    space_after_pt: int = 0,
 ) -> None:
     pf = paragraph.paragraph_format
     pf.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
@@ -235,7 +245,9 @@ def build_template_to_path(preset: TypographyPreset, out_path: Path) -> None:
     # 3) Contact (role: "contact")
     p_contact = doc.add_paragraph()
     p_contact.alignment = preset.name_alignment
-    _apply_paragraph_spacing(p_contact, line_spacing=1.0, space_after_pt=preset.section_space_before_pt)
+    _apply_paragraph_spacing(
+        p_contact, line_spacing=1.0, space_after_pt=preset.section_space_before_pt
+    )
     run = p_contact.add_run(preset.sample_contact)
     _apply_font(run, preset.font_family, preset.contact_pt)
 
@@ -245,11 +257,15 @@ def build_template_to_path(preset: TypographyPreset, out_path: Path) -> None:
     # 5) Job title line with right-aligned date tab (role: "job_title")
     p_job = doc.add_paragraph()
     _apply_paragraph_spacing(
-        p_job, line_spacing=preset.line_spacing,
-        space_before_pt=preset.section_space_after_pt, space_after_pt=0,
+        p_job,
+        line_spacing=preset.line_spacing,
+        space_before_pt=preset.section_space_after_pt,
+        space_after_pt=0,
     )
     # Right tab stop for the date column
-    tab_pos = (preset.margin_inches and Inches(8.5 - 2 * preset.margin_inches)) or Inches(DATE_TAB_INCHES)
+    tab_pos = (preset.margin_inches and Inches(8.5 - 2 * preset.margin_inches)) or Inches(
+        DATE_TAB_INCHES
+    )
     p_job.paragraph_format.tab_stops.add_tab_stop(tab_pos, WD_TAB_ALIGNMENT.RIGHT)
     run = p_job.add_run("Sample Company, Senior Role")
     _apply_font(run, preset.font_family, preset.job_title_pt, bold=True)
@@ -260,7 +276,8 @@ def build_template_to_path(preset: TypographyPreset, out_path: Path) -> None:
     # 6) Job subtitle (role: "job_subtitle") — optional context line
     p_sub2 = doc.add_paragraph()
     _apply_paragraph_spacing(
-        p_sub2, line_spacing=preset.line_spacing,
+        p_sub2,
+        line_spacing=preset.line_spacing,
         space_after_pt=preset.body_space_after_pt,
     )
     run = p_sub2.add_run("Optional one-line context (team, scope, technology)")
@@ -269,10 +286,13 @@ def build_template_to_path(preset: TypographyPreset, out_path: Path) -> None:
     # 7) Body paragraph (role: "body")
     p_body = doc.add_paragraph()
     _apply_paragraph_spacing(
-        p_body, line_spacing=preset.line_spacing,
+        p_body,
+        line_spacing=preset.line_spacing,
         space_after_pt=preset.body_space_after_pt,
     )
-    run = p_body.add_run("Plain body paragraphs use this style — typical resume practice favors bullets, but some sections (Summary) read better as prose.")
+    run = p_body.add_run(
+        "Plain body paragraphs use this style — typical resume practice favors bullets, but some sections (Summary) read better as prose."
+    )
     _apply_font(run, preset.font_family, preset.body_pt)
 
     # 8) Bullets (role: "bullet")
@@ -283,7 +303,8 @@ def build_template_to_path(preset: TypographyPreset, out_path: Path) -> None:
     ):
         p_bul = doc.add_paragraph(style="List Bullet")
         _apply_paragraph_spacing(
-            p_bul, line_spacing=preset.line_spacing,
+            p_bul,
+            line_spacing=preset.line_spacing,
             space_after_pt=preset.bullet_space_after_pt,
         )
         run = p_bul.add_run(text)
@@ -293,7 +314,8 @@ def build_template_to_path(preset: TypographyPreset, out_path: Path) -> None:
     _add_section_heading(doc, preset, "Education")
     p_edu = doc.add_paragraph()
     _apply_paragraph_spacing(
-        p_edu, line_spacing=preset.line_spacing,
+        p_edu,
+        line_spacing=preset.line_spacing,
         space_after_pt=preset.body_space_after_pt,
     )
     run = p_edu.add_run("BS Cognitive Science, ExampleU (2010–2014)")
@@ -302,7 +324,8 @@ def build_template_to_path(preset: TypographyPreset, out_path: Path) -> None:
     _add_section_heading(doc, preset, "Skills")
     p_skills = doc.add_paragraph()
     _apply_paragraph_spacing(
-        p_skills, line_spacing=preset.line_spacing,
+        p_skills,
+        line_spacing=preset.line_spacing,
         space_after_pt=preset.body_space_after_pt,
     )
     run = p_skills.add_run("Sample skill 1 · Sample skill 2 · Sample skill 3 · Sample skill 4")
@@ -315,15 +338,19 @@ def build_template_to_path(preset: TypographyPreset, out_path: Path) -> None:
 def _add_section_heading(doc, preset: TypographyPreset, text: str) -> None:
     p = doc.add_paragraph()
     _apply_paragraph_spacing(
-        p, line_spacing=1.0,
+        p,
+        line_spacing=1.0,
         space_before_pt=preset.section_space_before_pt,
         space_after_pt=preset.section_space_after_pt,
     )
     display_text = text.upper() if preset.section_heading_uppercase else text
     run = p.add_run(display_text)
     _apply_font(
-        run, preset.font_family, preset.section_heading_pt,
-        bold=True, small_caps=preset.section_heading_small_caps,
+        run,
+        preset.font_family,
+        preset.section_heading_pt,
+        bold=True,
+        small_caps=preset.section_heading_small_caps,
     )
     if preset.section_heading_underline:
         run.underline = True
@@ -337,7 +364,8 @@ def _add_section_heading(doc, preset: TypographyPreset, text: str) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument(
-        "--out", default=str(DEFAULT_OUT),
+        "--out",
+        default=str(DEFAULT_OUT),
         help="Output directory (defaults to personas/bundled at repo root)",
     )
     args = parser.parse_args(argv)

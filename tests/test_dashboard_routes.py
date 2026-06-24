@@ -66,9 +66,24 @@ class TestPerRubricPassRate:
 class TestScoreOverTime:
     def test_groups_by_prompt_version(self):
         records = [
-            {"rubric": "grounding", "score": 3.0, "prompt_version": "v1", "timestamp": "2026-05-01T00:00:00Z"},
-            {"rubric": "grounding", "score": 4.5, "prompt_version": "v2", "timestamp": "2026-05-09T00:00:00Z"},
-            {"rubric": "tone", "score": 5.0, "prompt_version": "v2", "timestamp": "2026-05-09T00:00:00Z"},
+            {
+                "rubric": "grounding",
+                "score": 3.0,
+                "prompt_version": "v1",
+                "timestamp": "2026-05-01T00:00:00Z",
+            },
+            {
+                "rubric": "grounding",
+                "score": 4.5,
+                "prompt_version": "v2",
+                "timestamp": "2026-05-09T00:00:00Z",
+            },
+            {
+                "rubric": "tone",
+                "score": 5.0,
+                "prompt_version": "v2",
+                "timestamp": "2026-05-09T00:00:00Z",
+            },
         ]
         out = _score_over_time(records)
         labels = sorted({d["label"] for d in out["datasets"]})
@@ -80,8 +95,18 @@ class TestScoreOverTime:
 
     def test_filters_records_without_prompt_version(self):
         records = [
-            {"rubric": "grounding", "score": 3.0, "prompt_version": "", "timestamp": "2026-05-01T00:00:00Z"},
-            {"rubric": "grounding", "score": 4.0, "prompt_version": "v2", "timestamp": "2026-05-09T00:00:00Z"},
+            {
+                "rubric": "grounding",
+                "score": 3.0,
+                "prompt_version": "",
+                "timestamp": "2026-05-01T00:00:00Z",
+            },
+            {
+                "rubric": "grounding",
+                "score": 4.0,
+                "prompt_version": "v2",
+                "timestamp": "2026-05-09T00:00:00Z",
+            },
         ]
         out = _score_over_time(records)
         # 1 of 2 records filtered
@@ -96,8 +121,18 @@ class TestScoreOverTime:
 class TestRubricFixtureHeatmap:
     def test_takes_most_recent_per_pair(self):
         records = [
-            {"rubric": "grounding", "fixture": "A", "score": 3.0, "timestamp": "2026-05-01T00:00:00Z"},
-            {"rubric": "grounding", "fixture": "A", "score": 4.5, "timestamp": "2026-05-09T00:00:00Z"},
+            {
+                "rubric": "grounding",
+                "fixture": "A",
+                "score": 3.0,
+                "timestamp": "2026-05-01T00:00:00Z",
+            },
+            {
+                "rubric": "grounding",
+                "fixture": "A",
+                "score": 4.5,
+                "timestamp": "2026-05-09T00:00:00Z",
+            },
         ]
         out = _rubric_fixture_heatmap(records)
         cell = out["rows"][0]["cells"][0]
@@ -106,7 +141,12 @@ class TestRubricFixtureHeatmap:
     def test_missing_pairs_are_empty_cells(self):
         # Two rubrics, but only one has data for fixture B
         records = [
-            {"rubric": "grounding", "fixture": "A", "score": 4.0, "timestamp": "2026-05-09T00:00:00Z"},
+            {
+                "rubric": "grounding",
+                "fixture": "A",
+                "score": 4.0,
+                "timestamp": "2026-05-09T00:00:00Z",
+            },
             {"rubric": "tone", "fixture": "B", "score": 5.0, "timestamp": "2026-05-09T00:00:00Z"},
         ]
         out = _rubric_fixture_heatmap(records)
@@ -116,8 +156,18 @@ class TestRubricFixtureHeatmap:
 
     def test_color_scales_with_score(self):
         records = [
-            {"rubric": "grounding", "fixture": "A", "score": 0.0, "timestamp": "2026-05-09T00:00:00Z"},
-            {"rubric": "grounding", "fixture": "B", "score": 5.0, "timestamp": "2026-05-09T00:00:00Z"},
+            {
+                "rubric": "grounding",
+                "fixture": "A",
+                "score": 0.0,
+                "timestamp": "2026-05-09T00:00:00Z",
+            },
+            {
+                "rubric": "grounding",
+                "fixture": "B",
+                "score": 5.0,
+                "timestamp": "2026-05-09T00:00:00Z",
+            },
         ]
         out = _rubric_fixture_heatmap(records)
         cells = out["rows"][0]["cells"]
@@ -216,9 +266,15 @@ class TestSummarizeCalls:
         # Six calls with widely varying latencies; mean is dragged by the
         # outlier but p50 stays near the bulk.
         records = [
-            {"model": "claude-sonnet-4-6", "input_tokens": 100, "output_tokens": 100,
-             "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0,
-             "latency_ms": ms, "status": "ok"}
+            {
+                "model": "claude-sonnet-4-6",
+                "input_tokens": 100,
+                "output_tokens": 100,
+                "cache_creation_input_tokens": 0,
+                "cache_read_input_tokens": 0,
+                "latency_ms": ms,
+                "status": "ok",
+            }
             for ms in [1000, 1100, 1200, 1300, 1400, 90000]
         ]
         out = _summarize_calls(records)
@@ -306,13 +362,21 @@ class TestParetoData:
 
     def test_two_versions_delta_summary(self):
         records = [
-            _make_composite(prompt_version="v1", timestamp="2026-05-01T00:00:00Z",
-                            score=4.0, run_id="r1",
-                            phase_latencies_ms={"analyze": 90000, "generate": 50000}),
+            _make_composite(
+                prompt_version="v1",
+                timestamp="2026-05-01T00:00:00Z",
+                score=4.0,
+                run_id="r1",
+                phase_latencies_ms={"analyze": 90000, "generate": 50000},
+            ),
             _make_cost_record(run_id="r1", cost_usd=0.13),
-            _make_composite(prompt_version="v2", timestamp="2026-05-10T00:00:00Z",
-                            score=4.4, run_id="r2",
-                            phase_latencies_ms={"analyze": 95000, "generate": 55000}),
+            _make_composite(
+                prompt_version="v2",
+                timestamp="2026-05-10T00:00:00Z",
+                score=4.4,
+                run_id="r2",
+                phase_latencies_ms={"analyze": 95000, "generate": 55000},
+            ),
             _make_cost_record(run_id="r2", cost_usd=0.14),
         ]
         out = _pareto_data(records)
@@ -325,13 +389,21 @@ class TestParetoData:
 
     def test_pareto_improving_classification(self):
         records = [
-            _make_composite(prompt_version="v1", timestamp="2026-05-01T00:00:00Z",
-                            score=4.0, run_id="r1",
-                            phase_latencies_ms={"analyze": 100000, "generate": 60000}),
+            _make_composite(
+                prompt_version="v1",
+                timestamp="2026-05-01T00:00:00Z",
+                score=4.0,
+                run_id="r1",
+                phase_latencies_ms={"analyze": 100000, "generate": 60000},
+            ),
             _make_cost_record(run_id="r1", cost_usd=0.15),
-            _make_composite(prompt_version="v2", timestamp="2026-05-10T00:00:00Z",
-                            score=4.5, run_id="r2",
-                            phase_latencies_ms={"analyze": 80000, "generate": 40000}),
+            _make_composite(
+                prompt_version="v2",
+                timestamp="2026-05-10T00:00:00Z",
+                score=4.5,
+                run_id="r2",
+                phase_latencies_ms={"analyze": 80000, "generate": 40000},
+            ),
             _make_cost_record(run_id="r2", cost_usd=0.12),
         ]
         out = _pareto_data(records)
@@ -339,13 +411,21 @@ class TestParetoData:
 
     def test_dominated_classification(self):
         records = [
-            _make_composite(prompt_version="v1", timestamp="2026-05-01T00:00:00Z",
-                            score=4.5, run_id="r1",
-                            phase_latencies_ms={"analyze": 80000, "generate": 40000}),
+            _make_composite(
+                prompt_version="v1",
+                timestamp="2026-05-01T00:00:00Z",
+                score=4.5,
+                run_id="r1",
+                phase_latencies_ms={"analyze": 80000, "generate": 40000},
+            ),
             _make_cost_record(run_id="r1", cost_usd=0.12),
-            _make_composite(prompt_version="v2", timestamp="2026-05-10T00:00:00Z",
-                            score=4.0, run_id="r2",
-                            phase_latencies_ms={"analyze": 100000, "generate": 60000}),
+            _make_composite(
+                prompt_version="v2",
+                timestamp="2026-05-10T00:00:00Z",
+                score=4.0,
+                run_id="r2",
+                phase_latencies_ms={"analyze": 100000, "generate": 60000},
+            ),
             _make_cost_record(run_id="r2", cost_usd=0.15),
         ]
         out = _pareto_data(records)
@@ -457,10 +537,12 @@ class TestGroundednessTrend:
 
     def test_sorted_by_timestamp_and_carries_version_and_rate(self):
         records = [
-            _make_grounded("r2", score=4.0, rate=0.2, timestamp="2026-06-07T00:00:00Z",
-                           prompt_version="v2"),
-            _make_grounded("r1", score=5.0, rate=0.0, timestamp="2026-06-06T00:00:00Z",
-                           prompt_version="v1"),
+            _make_grounded(
+                "r2", score=4.0, rate=0.2, timestamp="2026-06-07T00:00:00Z", prompt_version="v2"
+            ),
+            _make_grounded(
+                "r1", score=5.0, rate=0.0, timestamp="2026-06-06T00:00:00Z", prompt_version="v1"
+            ),
         ]
         out = _groundedness_trend(records)
         data = out["datasets"][0]["data"]
@@ -470,8 +552,12 @@ class TestGroundednessTrend:
 
     def test_skips_records_without_groundedness(self):
         records = [
-            {"rubric": "grounding", "run_id": "r1", "timestamp": "2026-06-06T00:00:00Z",
-             "deterministic_metrics": {"verb_diversity": 1.0}},  # pre-2026-06-06 shape
+            {
+                "rubric": "grounding",
+                "run_id": "r1",
+                "timestamp": "2026-06-06T00:00:00Z",
+                "deterministic_metrics": {"verb_diversity": 1.0},
+            },  # pre-2026-06-06 shape
         ]
         out = _groundedness_trend(records)
         assert out["has_data"] is False
@@ -484,11 +570,16 @@ class TestLatestGroundednessDetail:
     def test_picks_most_recent_and_surfaces_evidence(self):
         records = [
             _make_grounded("r1", score=5.0, timestamp="2026-06-06T00:00:00Z"),
-            _make_grounded("r2", score=3.5, rate=0.3, timestamp="2026-06-08T00:00:00Z",
-                           prompt_version="v2", flagged_count=2,
-                           flagged_samples=["$5M", "Kubernetes"],
-                           per_bullet=[{"bullet": "Led $5M migration", "n_specifics": 2,
-                                        "flagged": ["$5M"]}]),
+            _make_grounded(
+                "r2",
+                score=3.5,
+                rate=0.3,
+                timestamp="2026-06-08T00:00:00Z",
+                prompt_version="v2",
+                flagged_count=2,
+                flagged_samples=["$5M", "Kubernetes"],
+                per_bullet=[{"bullet": "Led $5M migration", "n_specifics": 2, "flagged": ["$5M"]}],
+            ),
         ]
         out = _latest_groundedness_detail(records)
         assert out["has_data"] is True
@@ -525,8 +616,9 @@ class TestCostByCallKind:
         assert out[0]["total_cost_usd"] >= out[1]["total_cost_usd"]
 
     def test_missing_call_kind_labeled_unknown(self):
-        out = _cost_by_call_kind([{"model": "claude-sonnet-4-6", "output_tokens": 10,
-                                   "input_tokens": 10}])
+        out = _cost_by_call_kind(
+            [{"model": "claude-sonnet-4-6", "output_tokens": 10, "input_tokens": 10}]
+        )
         assert out[0]["call_kind"] == "unknown"
 
 
@@ -565,10 +657,22 @@ class TestRunTrace:
 
     def test_groups_orders_and_computes_pct(self):
         records = [
-            {"run_id": "r1", "call": "generate", "latency_ms": 30000,
-             "timestamp": "2026-06-06T00:00:02Z", "model": "m", "status": "ok"},
-            {"run_id": "r1", "call": "analyze", "latency_ms": 90000,
-             "timestamp": "2026-06-06T00:00:01Z", "model": "m", "status": "ok"},
+            {
+                "run_id": "r1",
+                "call": "generate",
+                "latency_ms": 30000,
+                "timestamp": "2026-06-06T00:00:02Z",
+                "model": "m",
+                "status": "ok",
+            },
+            {
+                "run_id": "r1",
+                "call": "analyze",
+                "latency_ms": 90000,
+                "timestamp": "2026-06-06T00:00:01Z",
+                "model": "m",
+                "status": "ok",
+            },
         ]
         out = _run_trace(records)
         assert out["has_data"] is True
@@ -586,10 +690,22 @@ class TestRunTrace:
 
     def test_latest_run_is_most_recent(self):
         records = [
-            {"run_id": "old", "call": "generate", "latency_ms": 1,
-             "timestamp": "2026-06-01T00:00:00Z", "model": "m", "status": "ok"},
-            {"run_id": "new", "call": "generate", "latency_ms": 1,
-             "timestamp": "2026-06-09T00:00:00Z", "model": "m", "status": "ok"},
+            {
+                "run_id": "old",
+                "call": "generate",
+                "latency_ms": 1,
+                "timestamp": "2026-06-01T00:00:00Z",
+                "model": "m",
+                "status": "ok",
+            },
+            {
+                "run_id": "new",
+                "call": "generate",
+                "latency_ms": 1,
+                "timestamp": "2026-06-09T00:00:00Z",
+                "model": "m",
+                "status": "ok",
+            },
         ]
         out = _run_trace(records)
         assert out["latest"]["run_id"] == "new"
@@ -610,21 +726,34 @@ class TestBaselineHealth:
     }
 
     def test_no_baseline(self):
-        out = _baseline_health([{"fixture": "pm-senior", "rubric": "grounding",
-                                 "score": 4.0, "timestamp": "t"}], {})
+        out = _baseline_health(
+            [{"fixture": "pm-senior", "rubric": "grounding", "score": 4.0, "timestamp": "t"}], {}
+        )
         assert out["has_baseline"] is False
 
     def test_verdict_bands(self):
         records = [
             # delta -0.6 → regressed
-            {"fixture": "pm-senior", "rubric": "grounding", "score": 4.0,
-             "timestamp": "2026-06-06T00:00:00Z"},
+            {
+                "fixture": "pm-senior",
+                "rubric": "grounding",
+                "score": 4.0,
+                "timestamp": "2026-06-06T00:00:00Z",
+            },
             # delta -0.35 → watch
-            {"fixture": "pm-senior", "rubric": "tone", "score": 3.85,
-             "timestamp": "2026-06-06T00:00:00Z"},
+            {
+                "fixture": "pm-senior",
+                "rubric": "tone",
+                "score": 3.85,
+                "timestamp": "2026-06-06T00:00:00Z",
+            },
             # delta -0.1 → ok
-            {"fixture": "pm-senior", "rubric": "ats_format", "score": 4.4,
-             "timestamp": "2026-06-06T00:00:00Z"},
+            {
+                "fixture": "pm-senior",
+                "rubric": "ats_format",
+                "score": 4.4,
+                "timestamp": "2026-06-06T00:00:00Z",
+            },
         ]
         out = _baseline_health(records, self._BASELINE)
         by_rubric = {r["rubric"]: r["status"] for r in out["rows"]}
@@ -637,16 +766,24 @@ class TestBaselineHealth:
 
     def test_overall_ok_when_all_pass(self):
         records = [
-            {"fixture": "pm-senior", "rubric": "grounding", "score": 4.7,
-             "timestamp": "2026-06-06T00:00:00Z"},
+            {
+                "fixture": "pm-senior",
+                "rubric": "grounding",
+                "score": 4.7,
+                "timestamp": "2026-06-06T00:00:00Z",
+            },
         ]
         out = _baseline_health(records, self._BASELINE)
         assert out["overall"] == "ok"
 
     def test_skips_rubric_absent_from_baseline(self):
         records = [
-            {"fixture": "pm-senior", "rubric": "unknown_rubric", "score": 1.0,
-             "timestamp": "2026-06-06T00:00:00Z"},
+            {
+                "fixture": "pm-senior",
+                "rubric": "unknown_rubric",
+                "score": 1.0,
+                "timestamp": "2026-06-06T00:00:00Z",
+            },
         ]
         out = _baseline_health(records, self._BASELINE)
         assert out["rows"] == []
@@ -654,10 +791,18 @@ class TestBaselineHealth:
 
     def test_takes_most_recent_score_per_pair(self):
         records = [
-            {"fixture": "pm-senior", "rubric": "grounding", "score": 4.0,
-             "timestamp": "2026-06-06T00:00:00Z"},  # regressed, older
-            {"fixture": "pm-senior", "rubric": "grounding", "score": 4.6,
-             "timestamp": "2026-06-08T00:00:00Z"},  # ok, newer → wins
+            {
+                "fixture": "pm-senior",
+                "rubric": "grounding",
+                "score": 4.0,
+                "timestamp": "2026-06-06T00:00:00Z",
+            },  # regressed, older
+            {
+                "fixture": "pm-senior",
+                "rubric": "grounding",
+                "score": 4.6,
+                "timestamp": "2026-06-08T00:00:00Z",
+            },  # ok, newer → wins
         ]
         out = _baseline_health(records, self._BASELINE)
         assert out["rows"][0]["status"] == "ok"

@@ -46,9 +46,7 @@ logger = logging.getLogger(__name__)
 
 # Neutral business-letter fallback when a persona CSS has no readable
 # font-family rule. Matches the Classic persona's stack.
-_DEFAULT_COVER_LETTER_FONT = (
-    '"Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif'
-)
+_DEFAULT_COVER_LETTER_FONT = '"Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif'
 
 # First `font-family:` declaration in a CSS file, captured up to its `;`
 # (values may wrap across lines — see modern.css / spacious.css).
@@ -129,8 +127,11 @@ def render_pdf(
     tmp_html: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".html", dir=str(html_path.parent),
-            delete=False, encoding="utf-8",
+            mode="w",
+            suffix=".html",
+            dir=str(html_path.parent),
+            delete=False,
+            encoding="utf-8",
         ) as tmp:
             tmp.write(html_str)
             tmp_html = Path(tmp.name)
@@ -143,8 +144,7 @@ def render_pdf(
                 page.pdf(
                     path=str(out_path),
                     format="Letter",
-                    margin={"top": "0.6in", "bottom": "0.6in",
-                            "left": "0.65in", "right": "0.65in"},
+                    margin={"top": "0.6in", "bottom": "0.6in", "left": "0.65in", "right": "0.65in"},
                     print_background=True,
                 )
             finally:
@@ -175,9 +175,7 @@ def render_html_string(
 
     html_path = Path(html_template_path).resolve()
     if not html_path.exists():
-        raise FileNotFoundError(
-            f"HTML persona template not found at {html_path}."
-        )
+        raise FileNotFoundError(f"HTML persona template not found at {html_path}.")
 
     env = Environment(
         loader=FileSystemLoader(str(html_path.parent)),
@@ -243,9 +241,7 @@ def render_cover_letter_html(
 
     html_path = Path(template_path).resolve()
     if not html_path.exists():
-        raise FileNotFoundError(
-            f"Cover-letter HTML template not found at {html_path}."
-        )
+        raise FileNotFoundError(f"Cover-letter HTML template not found at {html_path}.")
 
     body_html = _markdown.markdown(cover_letter_markdown or "", extensions=["nl2br"])
 
@@ -292,7 +288,9 @@ def render_cover_letter_pdf(
     from playwright.sync_api import sync_playwright
 
     html_str = render_cover_letter_html(
-        cover_letter_markdown, font_family=font_family, template_path=template_path,
+        cover_letter_markdown,
+        font_family=font_family,
+        template_path=template_path,
     )
 
     out_path = Path(output_pdf_path).resolve()
@@ -301,7 +299,10 @@ def render_cover_letter_pdf(
     tmp_html: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".html", delete=False, encoding="utf-8",
+            mode="w",
+            suffix=".html",
+            delete=False,
+            encoding="utf-8",
         ) as tmp:
             tmp.write(html_str)
             tmp_html = Path(tmp.name)

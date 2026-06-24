@@ -64,12 +64,18 @@ def app_client(tmp_path, monkeypatch):
     initial = {
         "timestamp": "2026-05-11T12:00:00",
         "candidate": {"name": "Alice", "skills": ["docker"]},
-        "resume": {"text": "...", "filename": "alice.docx", "format": ".docx",
-                   "sections": [], "path": ""},
+        "resume": {
+            "text": "...",
+            "filename": "alice.docx",
+            "format": ".docx",
+            "sections": [],
+            "path": "",
+        },
         "supplemental_resumes": [],
         "job_description": "K8s SRE role.",
         "deterministic_analysis": {
-            "jd_keywords": {}, "resume_keywords": {},
+            "jd_keywords": {},
+            "resume_keywords": {},
             "keyword_overlap": {"missing_from_resume": ["kubernetes"]},
             "ats_warnings": [],
         },
@@ -155,8 +161,12 @@ class TestAnswerClarificationsRoute:
         ]
         if include_iter:
             questions.append(
-                {"id": "iter1_q1", "text": "Iter Q1?", "kind": "iteration_probe",
-                 "target_gap": "draft weakness"},
+                {
+                    "id": "iter1_q1",
+                    "text": "Iter Q1?",
+                    "kind": "iteration_probe",
+                    "target_gap": "draft weakness",
+                },
             )
         ctx["clarification_questions"] = questions
         context_path.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
@@ -170,26 +180,30 @@ class TestAnswerClarificationsRoute:
         client, _, _ = app_client
         outside = tmp_path / "outside.json"
         outside.write_text("{}", encoding="utf-8")
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(outside), "answers": {}
-        })
+        resp = client.post(
+            "/api/answer-clarifications", json={"context_path": str(outside), "answers": {}}
+        )
         assert resp.status_code == 403
 
     def test_answers_must_be_dict(self, app_client):
         client, context_path, _ = app_client
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path), "answers": ["not", "a", "dict"]
-        })
+        resp = client.post(
+            "/api/answer-clarifications",
+            json={"context_path": str(context_path), "answers": ["not", "a", "dict"]},
+        )
         assert resp.status_code == 400
 
     def test_stores_valid_answers(self, app_client):
         client, context_path, _ = app_client
         self._seed_questions(context_path)
 
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "Yes, used K8s briefly.", "q2": "Shipped to prod."},
-        })
+        resp = client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "Yes, used K8s briefly.", "q2": "Shipped to prod."},
+            },
+        )
         assert resp.status_code == 200
         body = resp.get_json()
         # memory_rows == 0: this context is legacy/file-only (no
@@ -206,10 +220,13 @@ class TestAnswerClarificationsRoute:
         client, context_path, _ = app_client
         self._seed_questions(context_path)
 
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "real answer", "q_attacker": "injected"},
-        })
+        resp = client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "real answer", "q_attacker": "injected"},
+            },
+        )
         assert resp.status_code == 200
         saved = json.loads(context_path.read_text(encoding="utf-8"))
         assert "q_attacker" not in saved["clarifications"]
@@ -219,10 +236,13 @@ class TestAnswerClarificationsRoute:
         client, context_path, _ = app_client
         self._seed_questions(context_path)
 
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "   ", "q2": "real answer"},
-        })
+        resp = client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "   ", "q2": "real answer"},
+            },
+        )
         assert resp.status_code == 200
         saved = json.loads(context_path.read_text(encoding="utf-8"))
         assert saved["clarifications"] == {"q2": "real answer"}
@@ -231,17 +251,24 @@ class TestAnswerClarificationsRoute:
         client, context_path, _ = app_client
         self._seed_questions(context_path)
 
-        client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "first try"},
-        })
-        client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "revised answer", "q2": "added later"},
-        })
+        client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "first try"},
+            },
+        )
+        client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "revised answer", "q2": "added later"},
+            },
+        )
         saved = json.loads(context_path.read_text(encoding="utf-8"))
         assert saved["clarifications"] == {
-            "q1": "revised answer", "q2": "added later",
+            "q1": "revised answer",
+            "q2": "added later",
         }
 
     def test_merge_preserves_prior_round_answers(self, app_client):
@@ -257,17 +284,23 @@ class TestAnswerClarificationsRoute:
         self._seed_questions(context_path, include_iter=True)
 
         # Round 1 — analyze-time answers.
-        client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "Lead implementer.", "q2": "Shipped to prod."},
-            "merge": True,
-        })
+        client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "Lead implementer.", "q2": "Shipped to prod."},
+                "merge": True,
+            },
+        )
         # Round 2 — iteration interview submits only its own answer.
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"iter1_q1": "Reduced p99 latency by 40%."},
-            "merge": True,
-        })
+        resp = client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"iter1_q1": "Reduced p99 latency by 40%."},
+                "merge": True,
+            },
+        )
         assert resp.status_code == 200
         # `answered` reports this-submit count, not the cumulative total.
         assert resp.get_json()["answered"] == 1
@@ -285,16 +318,22 @@ class TestAnswerClarificationsRoute:
         client, context_path, _ = app_client
         self._seed_questions(context_path)
 
-        client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "saved", "q2": "saved"},
-            "merge": True,
-        })
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {},
-            "merge": False,
-        })
+        client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "saved", "q2": "saved"},
+                "merge": True,
+            },
+        )
+        resp = client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {},
+                "merge": False,
+            },
+        )
         assert resp.status_code == 200
         saved = json.loads(context_path.read_text(encoding="utf-8"))
         assert saved["clarifications"] == {}
@@ -306,14 +345,20 @@ class TestAnswerClarificationsRoute:
         client, context_path, _ = app_client
         self._seed_questions(context_path)
 
-        client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "first id"},
-        })
-        client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q2": "second id"},
-        })
+        client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "first id"},
+            },
+        )
+        client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q2": "second id"},
+            },
+        )
         saved = json.loads(context_path.read_text(encoding="utf-8"))
         assert saved["clarifications"] == {"q1": "first id", "q2": "second id"}
 
@@ -334,6 +379,7 @@ def memory_client(tmp_path, monkeypatch):
     """
     db_file = tmp_path / "memory.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
@@ -350,24 +396,32 @@ def memory_client(tmp_path, monkeypatch):
     (output_dir / "alice").mkdir()
 
     from db.session import init_db
+
     init_db(db_file)
 
     from db.models import Application, ApplicationRun, Candidate
     from db.session import get_session
+
     s = get_session()
     try:
         cand = Candidate(username="alice", name="Alice")
         s.add(cand)
         s.flush()
         app_row = Application(
-            candidate_id=cand.id, title="SRE @ Foo", jd_text="K8s SRE role.",
-            jd_fingerprint="f" * 16, status="draft",
+            candidate_id=cand.id,
+            title="SRE @ Foo",
+            jd_text="K8s SRE role.",
+            jd_fingerprint="f" * 16,
+            status="draft",
         )
         s.add(app_row)
         s.flush()
         run = ApplicationRun(
-            application_id=app_row.id, iteration=0, run_id="run123run123",
-            prompt_version="2026-06-10.1", corpus_snapshot_json="{}",
+            application_id=app_row.id,
+            iteration=0,
+            run_id="run123run123",
+            prompt_version="2026-06-10.1",
+            corpus_snapshot_json="{}",
         )
         s.add(run)
         s.commit()
@@ -376,20 +430,33 @@ def memory_client(tmp_path, monkeypatch):
         s.close()
 
     context_path = output_dir / "alice" / "context_20260610_120000.json"
-    context_path.write_text(json.dumps({
-        "timestamp": "2026-06-10T12:00:00",
-        "candidate": {"name": "Alice"},
-        "job_description": "K8s SRE role.",
-        "run_id": "run123run123",
-        "application_run_id": ids["run"],
-        "clarification_questions": [
-            {"id": "q1", "text": "Used Kubernetes in production?",
-             "kind": "experience_probe", "target_gap": "k8s missing"},
-            {"id": "q2", "text": "Worked in a regulated environment?",
-             "kind": "context_probe",
-             "target_gap": "Context signal: regulated industry"},
-        ],
-    }, indent=2), encoding="utf-8")
+    context_path.write_text(
+        json.dumps(
+            {
+                "timestamp": "2026-06-10T12:00:00",
+                "candidate": {"name": "Alice"},
+                "job_description": "K8s SRE role.",
+                "run_id": "run123run123",
+                "application_run_id": ids["run"],
+                "clarification_questions": [
+                    {
+                        "id": "q1",
+                        "text": "Used Kubernetes in production?",
+                        "kind": "experience_probe",
+                        "target_gap": "k8s missing",
+                    },
+                    {
+                        "id": "q2",
+                        "text": "Worked in a regulated environment?",
+                        "kind": "context_probe",
+                        "target_gap": "Context signal: regulated industry",
+                    },
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
     return app.test_client(), context_path, ids
 
@@ -397,6 +464,7 @@ def memory_client(tmp_path, monkeypatch):
 def _memory_rows(candidate_id):
     from db.models import Clarification
     from db.session import get_session
+
     s = get_session()
     try:
         return s.query(Clarification).filter_by(candidate_id=candidate_id).all()
@@ -407,10 +475,13 @@ def _memory_rows(candidate_id):
 class TestClarificationMemoryWrite:
     def test_answers_create_memory_rows(self, memory_client):
         client, context_path, ids = memory_client
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "Yes, two years on EKS.", "q2": "HIPAA workflows."},
-        })
+        resp = client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "Yes, two years on EKS.", "q2": "HIPAA workflows."},
+            },
+        )
         assert resp.status_code == 200
         assert resp.get_json()["memory_rows"] == 2
 
@@ -430,14 +501,20 @@ class TestClarificationMemoryWrite:
 
     def test_resubmit_updates_answer_without_duplicating(self, memory_client):
         client, context_path, ids = memory_client
-        client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "first answer"},
-        })
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "revised answer"},
-        })
+        client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "first answer"},
+            },
+        )
+        resp = client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "revised answer"},
+            },
+        )
         assert resp.get_json()["memory_rows"] == 1
         rows = _memory_rows(ids["candidate"])
         assert len(rows) == 1
@@ -445,24 +522,34 @@ class TestClarificationMemoryWrite:
 
     def test_unchanged_resubmit_writes_nothing(self, memory_client):
         client, context_path, ids = memory_client
-        client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "same answer"},
-        })
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "same answer"},
-        })
+        client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "same answer"},
+            },
+        )
+        resp = client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "same answer"},
+            },
+        )
         assert resp.get_json()["memory_rows"] == 0
         assert len(_memory_rows(ids["candidate"])) == 1
 
     def test_promoted_row_is_never_clobbered(self, memory_client):
         client, context_path, ids = memory_client
-        client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "original answer"},
-        })
+        client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "original answer"},
+            },
+        )
         from db.session import get_session
+
         s = get_session()
         try:
             row = _memory_rows(ids["candidate"])[0]
@@ -473,10 +560,13 @@ class TestClarificationMemoryWrite:
         finally:
             s.close()
 
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {"q1": "attempted rewrite"},
-        })
+        resp = client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "attempted rewrite"},
+            },
+        )
         assert resp.get_json()["memory_rows"] == 0
         rows = _memory_rows(ids["candidate"])
         assert len(rows) == 1
@@ -484,10 +574,13 @@ class TestClarificationMemoryWrite:
 
     def test_skip_writes_nothing(self, memory_client):
         client, context_path, ids = memory_client
-        resp = client.post("/api/answer-clarifications", json={
-            "context_path": str(context_path),
-            "answers": {},
-        })
+        resp = client.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {},
+            },
+        )
         assert resp.status_code == 200
         assert resp.get_json()["memory_rows"] == 0
         assert _memory_rows(ids["candidate"]) == []

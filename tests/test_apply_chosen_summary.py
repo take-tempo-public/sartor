@@ -27,19 +27,23 @@ def app_with_data(tmp_path, monkeypatch):
     the fixture just sets up the tmp DB and returns the blueprint module."""
     db_file = tmp_path / "apply.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from db.session import init_db
+
     init_db(db_file)
 
     import blueprints.generation as bgen
+
     return bgen
 
 
-def _seed(*, profile_text: str = "Default profile text.",
-          variants: list[str] | None = None) -> tuple[int, int, list[int]]:
+def _seed(
+    *, profile_text: str = "Default profile text.", variants: list[str] | None = None
+) -> tuple[int, int, list[int]]:
     """Seed candidate + application + (optional) SummaryItem variants.
     Returns (candidate_id, application_id, [variant_ids])."""
     from db.models import Application, Candidate, SummaryItem
@@ -48,20 +52,23 @@ def _seed(*, profile_text: str = "Default profile text.",
     session = get_session()
     vids: list[int] = []
     try:
-        c = Candidate(username="casey", name="Casey",
-                      profile_text=profile_text)
+        c = Candidate(username="casey", name="Casey", profile_text=profile_text)
         session.add(c)
         session.flush()
         a = Application(
-            candidate_id=c.id, title="Senior PM",
-            jd_text="Test JD.", jd_fingerprint="z" * 16,
+            candidate_id=c.id,
+            title="Senior PM",
+            jd_text="Test JD.",
+            jd_fingerprint="z" * 16,
         )
         session.add(a)
         session.flush()
         for i, text in enumerate(variants or []):
             si = SummaryItem(
-                candidate_id=c.id, text=text,
-                display_order=i, is_active=1,
+                candidate_id=c.id,
+                text=text,
+                display_order=i,
+                is_active=1,
             )
             session.add(si)
             session.flush()
@@ -72,20 +79,27 @@ def _seed(*, profile_text: str = "Default profile text.",
         session.close()
 
 
-def _ctx(application_id: int, profile_text: str, *,
-         pinned_summary_id: int | None = None,
-         recommended_summary_id: int | None = None) -> dict:
+def _ctx(
+    application_id: int,
+    profile_text: str,
+    *,
+    pinned_summary_id: int | None = None,
+    recommended_summary_id: int | None = None,
+) -> dict:
     """Build a minimal context_set for the function under test."""
     ctx: dict = {
         "application_id": application_id,
         "candidate": {
-            "name": "Casey", "email": "casey@example.com",
+            "name": "Casey",
+            "email": "casey@example.com",
             "profile_text": profile_text,
         },
     }
     if pinned_summary_id is not None:
         ctx["composition_overrides"] = {
-            "pinned": [], "excluded": [], "added": [],
+            "pinned": [],
+            "excluded": [],
+            "added": [],
             "pinned_summary_id": pinned_summary_id,
         }
     if recommended_summary_id is not None:
@@ -110,9 +124,7 @@ class TestPriorityChain:
             profile_text="Default text.",
             variants=["Variant A text.", "Variant B text.", "Variant C text."],
         )
-        ctx = _ctx(aid, "Default text.",
-                   pinned_summary_id=vids[2],
-                   recommended_summary_id=vids[0])
+        ctx = _ctx(aid, "Default text.", pinned_summary_id=vids[2], recommended_summary_id=vids[0])
         app_with_data._apply_chosen_summary(ctx)
         assert ctx["candidate"]["profile_text"] == "Variant C text."
 
@@ -121,8 +133,7 @@ class TestPriorityChain:
             profile_text="Default text.",
             variants=["Variant A text.", "Variant B text."],
         )
-        ctx = _ctx(aid, "Default text.",
-                   recommended_summary_id=vids[1])
+        ctx = _ctx(aid, "Default text.", recommended_summary_id=vids[1])
         app_with_data._apply_chosen_summary(ctx)
         assert ctx["candidate"]["profile_text"] == "Variant B text."
 
@@ -148,8 +159,7 @@ class TestDefensiveFallbacks:
 
     def test_missing_variant_falls_back(self, app_with_data):
         _cid, aid, _ = _seed(variants=[])
-        ctx = _ctx(aid, "Fallback text.",
-                   pinned_summary_id=99999)  # doesn't exist
+        ctx = _ctx(aid, "Fallback text.", pinned_summary_id=99999)  # doesn't exist
         app_with_data._apply_chosen_summary(ctx)
         assert ctx["candidate"]["profile_text"] == "Fallback text."
 
@@ -158,6 +168,7 @@ class TestDefensiveFallbacks:
         deleted this variant after pinning, so we degrade gracefully."""
         from db.models import SummaryItem
         from db.session import get_session
+
         _cid, aid, vids = _seed(
             profile_text="Fallback text.",
             variants=["Pinned but retired."],
@@ -178,6 +189,7 @@ class TestDefensiveFallbacks:
     def test_blank_variant_text_falls_back(self, app_with_data):
         from db.models import SummaryItem
         from db.session import get_session
+
         _cid, aid, vids = _seed(
             profile_text="Fallback text.",
             variants=["Variant text."],
@@ -201,34 +213,40 @@ class TestDefensiveFallbacks:
         the application's candidate_id."""
         from db.models import Application, Candidate, SummaryItem
         from db.session import get_session
+
         # Casey + a stranger
         _seed(profile_text="Casey default.", variants=["Casey variant."])
         session = get_session()
         try:
-            stranger = Candidate(username="alice", name="Alice",
-                                 profile_text="Alice default.")
+            stranger = Candidate(username="alice", name="Alice", profile_text="Alice default.")
             session.add(stranger)
             session.flush()
             stranger_si = SummaryItem(
-                candidate_id=stranger.id, text="Alice's private variant.",
+                candidate_id=stranger.id,
+                text="Alice's private variant.",
             )
             session.add(stranger_si)
             session.flush()
             alice_app = Application(
-                candidate_id=stranger.id, title="X",
-                jd_text="y", jd_fingerprint="y" * 16,
+                candidate_id=stranger.id,
+                title="X",
+                jd_text="y",
+                jd_fingerprint="y" * 16,
             )
             session.add(alice_app)
             session.commit()
             stranger_si_id = stranger_si.id
-            casey_app_id = (session.query(Application)
-                            .join(Candidate, Application.candidate_id == Candidate.id)
-                            .filter(Candidate.username == "casey").first().id)
+            casey_app_id = (
+                session.query(Application)
+                .join(Candidate, Application.candidate_id == Candidate.id)
+                .filter(Candidate.username == "casey")
+                .first()
+                .id
+            )
         finally:
             session.close()
 
         # Pin Alice's variant on Casey's application → should NOT apply
-        ctx = _ctx(casey_app_id, "Casey default.",
-                   pinned_summary_id=stranger_si_id)
+        ctx = _ctx(casey_app_id, "Casey default.", pinned_summary_id=stranger_si_id)
         app_with_data._apply_chosen_summary(ctx)
         assert ctx["candidate"]["profile_text"] == "Casey default."

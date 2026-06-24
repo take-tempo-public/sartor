@@ -32,21 +32,41 @@ def _seed_pending_experience(candidate_id: int) -> int:
 
     s = get_session()
     try:
-        e = Experience(candidate_id=candidate_id, company="Acme",
-                       start_date="2022-01", display_order=0)
+        e = Experience(
+            candidate_id=candidate_id, company="Acme", start_date="2022-01", display_order=0
+        )
         s.add(e)
         s.flush()
-        s.add(ExperienceTitle(
-            experience_id=e.id, title="Staff Engineer",
-            is_official=1, is_pending_review=0, source="official"))
-        s.add(ExperienceTitle(
-            experience_id=e.id, title="Senior Engineer",
-            is_official=0, is_pending_review=1, source="llm_proposed:ux"))
+        s.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="Staff Engineer",
+                is_official=1,
+                is_pending_review=0,
+                source="official",
+            )
+        )
+        s.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="Senior Engineer",
+                is_official=0,
+                is_pending_review=1,
+                source="llm_proposed:ux",
+            )
+        )
         for i in range(2):
-            s.add(Bullet(
-                experience_id=e.id, text=f"Pending bullet {i}",
-                display_order=i, is_active=1, is_pending_review=1,
-                source="llm_proposed:ux", has_outcome=0))
+            s.add(
+                Bullet(
+                    experience_id=e.id,
+                    text=f"Pending bullet {i}",
+                    display_order=i,
+                    is_active=1,
+                    is_pending_review=1,
+                    source="llm_proposed:ux",
+                    has_outcome=0,
+                )
+            )
         s.commit()
         return e.id
     finally:
@@ -55,8 +75,7 @@ def _seed_pending_experience(candidate_id: int) -> int:
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_add_variant_affordance_present(page: Page, live_server: str,
-                                        ux_app: ModuleType) -> None:
+def test_add_variant_affordance_present(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """#2 — the summary-variants editor + its '+ Add variant' button are
     surfaced on the Corpus tab (locks in the β.6e affordance)."""
     seed_user(ux_app, "alice")
@@ -71,8 +90,9 @@ def test_add_variant_affordance_present(page: Page, live_server: str,
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_empty_state_copy_is_review_honest(page: Page, live_server: str,
-                                           ux_app: ModuleType) -> None:
+def test_empty_state_copy_is_review_honest(
+    page: Page, live_server: str, ux_app: ModuleType
+) -> None:
     """Empty-state copy reflects the review step and drops the misleading
     'automatically' (imported items land pending review)."""
     seed_user(ux_app, "alice")  # no experiences → empty state
@@ -89,8 +109,7 @@ def test_empty_state_copy_is_review_honest(page: Page, live_server: str,
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_accept_all_pending_clears_banner(page: Page, live_server: str,
-                                          ux_app: ModuleType) -> None:
+def test_accept_all_pending_clears_banner(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """KW2 — the banner's 'Accept all pending' clears every pending flag. On a
     non-empty corpus the pending prompt then flips to the Sprint 6.4 ready
     hand-off ('Start tailoring →'), not a bare hide (an EMPTY corpus is what
@@ -115,8 +134,7 @@ def test_accept_all_pending_clears_banner(page: Page, live_server: str,
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_panel_chevron_enlarged(page: Page, live_server: str,
-                                ux_app: ModuleType) -> None:
+def test_panel_chevron_enlarged(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """#5 — the panel collapse chevron (::after) is enlarged to 18px (~+50%
     over the old 12px). Light computed-style guard."""
     seed_user(ux_app, "alice")
@@ -126,6 +144,6 @@ def test_panel_chevron_enlarged(page: Page, live_server: str,
     CorpusPage(page, live_server).open()
 
     size = page.eval_on_selector(
-        "#panelCorpus .panel-header",
-        "el => getComputedStyle(el, '::after').fontSize")
+        "#panelCorpus .panel-header", "el => getComputedStyle(el, '::after').fontSize"
+    )
     assert size == "18px"

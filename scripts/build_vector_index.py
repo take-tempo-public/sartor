@@ -175,7 +175,8 @@ def _run_check() -> int:
         logger.warning(
             "vector index STALE: built at %s but HEAD is %s -- citations may point at "
             "moved lines. Rebuild with `python -m scripts.build_vector_index --full`.",
-            str(status["built_at_sha"])[:10], head_sha[:10],
+            str(status["built_at_sha"])[:10],
+            head_sha[:10],
         )
         return 1
     logger.info("vector index fresh: built at HEAD (%s).", head_sha[:10])
@@ -185,15 +186,18 @@ def _run_check() -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Build/refresh the S3 vector index sidecar.")
     parser.add_argument(
-        "--model", default=DEFAULT_MODEL,
+        "--model",
+        default=DEFAULT_MODEL,
         help="model2vec model id (first build only; thereafter loaded from the local sidecar)",
     )
     parser.add_argument(
-        "--full", action="store_true",
+        "--full",
+        action="store_true",
         help="cold rebuild: clear the sidecar index and re-embed everything (model is kept)",
     )
     parser.add_argument(
-        "--check", action="store_true",
+        "--check",
+        action="store_true",
         help="report index staleness (manifest sha vs HEAD) and exit; no model load, no rebuild",
     )
     args = parser.parse_args(argv)
@@ -224,7 +228,10 @@ def main(argv: list[str] | None = None) -> int:
     _write_manifest(VECTOR_INDEX_DIR, head_sha=head_sha, model_id=args.model, meta=meta)
     logger.info(
         "vector index built: %d chunks (dim %d) at %s (manifest @ %s)",
-        meta["count"], meta["dim"], VECTOR_INDEX_DIR, head_sha[:10],
+        meta["count"],
+        meta["dim"],
+        VECTOR_INDEX_DIR,
+        head_sha[:10],
     )
     return 0
 

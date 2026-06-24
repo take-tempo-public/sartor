@@ -47,10 +47,10 @@ class Color:
     DIM = "\x1b[2m"
     HEADER = "\x1b[1;36m"  # bold cyan
     PROMPT = "\x1b[1;33m"  # bold yellow
-    OK = "\x1b[32m"        # green
-    WARN = "\x1b[33m"      # yellow
-    ERROR = "\x1b[31m"     # red
-    META = "\x1b[2;37m"    # dim white
+    OK = "\x1b[32m"  # green
+    WARN = "\x1b[33m"  # yellow
+    ERROR = "\x1b[31m"  # red
+    META = "\x1b[2;37m"  # dim white
 
 
 def _enable_ansi_on_windows() -> None:
@@ -65,7 +65,10 @@ def _enable_ansi_on_windows() -> None:
         return
     try:
         import ctypes
-        kernel32 = ctypes.windll.kernel32  # win32-only attribute; guarded by sys.platform check above
+
+        kernel32 = (
+            ctypes.windll.kernel32
+        )  # win32-only attribute; guarded by sys.platform check above
         ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
         STD_OUTPUT_HANDLE = -11
         handle = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
@@ -120,7 +123,9 @@ class ReviewSession:
     def show_experience(self, exp: Experience, idx: int, total: int) -> None:
         print()
         print(f"{Color.HEADER}{'═' * 70}{Color.RESET}")
-        print(f"{Color.HEADER}Experience {idx} of {total}{Color.RESET} {Color.DIM}— pending review{Color.RESET}")
+        print(
+            f"{Color.HEADER}Experience {idx} of {total}{Color.RESET} {Color.DIM}— pending review{Color.RESET}"
+        )
         print(f"{Color.HEADER}{'═' * 70}{Color.RESET}")
         print(f"  {Color.BOLD}Company:{Color.RESET}  {exp.company}")
         if exp.location:
@@ -138,12 +143,18 @@ class ReviewSession:
 
         active_bullets = [b for b in exp.bullets if b.is_active]
         pending_bullets = [b for b in active_bullets if b.is_pending_review]
-        print(f"\n  {Color.BOLD}Bullets:{Color.RESET} "
-              f"{len(active_bullets)} active "
-              f"({Color.WARN}{len(pending_bullets)} pending{Color.RESET})")
+        print(
+            f"\n  {Color.BOLD}Bullets:{Color.RESET} "
+            f"{len(active_bullets)} active "
+            f"({Color.WARN}{len(pending_bullets)} pending{Color.RESET})"
+        )
 
         for i, b in enumerate(active_bullets, start=1):
-            pending_marker = f"{Color.WARN}[P]{Color.RESET}" if b.is_pending_review else f"{Color.OK}[✓]{Color.RESET}"
+            pending_marker = (
+                f"{Color.WARN}[P]{Color.RESET}"
+                if b.is_pending_review
+                else f"{Color.OK}[✓]{Color.RESET}"
+            )
             outcome_marker = f"{Color.OK}#{Color.RESET}" if b.has_outcome else " "
             text = b.text if len(b.text) <= 100 else b.text[:97] + "..."
             print(f"    {pending_marker} {outcome_marker} {i:>2}. {text}")
@@ -171,13 +182,19 @@ class ReviewSession:
             b.is_pending_review = 0
         self.session.commit()
         self.accepted += 1
-        print(f"  {Color.OK}✓ Accepted — title + {len(exp.bullets)} bullets are now canonical.{Color.RESET}")
+        print(
+            f"  {Color.OK}✓ Accepted — title + {len(exp.bullets)} bullets are now canonical.{Color.RESET}"
+        )
 
     def drop_experience(self, exp: Experience) -> None:
-        confirm = input(
-            f"  {Color.WARN}Delete experience '{exp.company}' and all its bullets? "
-            f"This is permanent. [y/N] {Color.RESET}"
-        ).strip().lower()
+        confirm = (
+            input(
+                f"  {Color.WARN}Delete experience '{exp.company}' and all its bullets? "
+                f"This is permanent. [y/N] {Color.RESET}"
+            )
+            .strip()
+            .lower()
+        )
         if confirm != "y":
             print("  Cancelled.")
             return
@@ -201,15 +218,23 @@ class ReviewSession:
                 continue
             print(f"\n  {Color.BOLD}Bullet {i}/{len(active)}:{Color.RESET}")
             print(f"    {b.text}")
-            outcome = f"{Color.OK}has metric{Color.RESET}" if b.has_outcome else f"{Color.DIM}no metric{Color.RESET}"
+            outcome = (
+                f"{Color.OK}has metric{Color.RESET}"
+                if b.has_outcome
+                else f"{Color.DIM}no metric{Color.RESET}"
+            )
             print(f"    {Color.META}({outcome}){Color.RESET}")
-            choice = input(
-                f"    [{Color.BOLD}a{Color.RESET}]ccept  "
-                f"[{Color.BOLD}e{Color.RESET}]dit text  "
-                f"[{Color.BOLD}d{Color.RESET}]rop  "
-                f"[{Color.BOLD}s{Color.RESET}]kip  "
-                f"[{Color.BOLD}q{Color.RESET}]uit bullets > "
-            ).strip().lower()
+            choice = (
+                input(
+                    f"    [{Color.BOLD}a{Color.RESET}]ccept  "
+                    f"[{Color.BOLD}e{Color.RESET}]dit text  "
+                    f"[{Color.BOLD}d{Color.RESET}]rop  "
+                    f"[{Color.BOLD}s{Color.RESET}]kip  "
+                    f"[{Color.BOLD}q{Color.RESET}]uit bullets > "
+                )
+                .strip()
+                .lower()
+            )
             if choice == "a":
                 b.is_pending_review = 0
                 self.session.commit()
@@ -228,7 +253,9 @@ class ReviewSession:
                 b.is_pending_review = 0
                 self.session.commit()
                 self.edited += 1
-                print(f"    {Color.ERROR}✗ dropped (soft-delete; preserves audit trail){Color.RESET}")
+                print(
+                    f"    {Color.ERROR}✗ dropped (soft-delete; preserves audit trail){Color.RESET}"
+                )
             elif choice == "q":
                 return
             else:  # skip
@@ -278,14 +305,20 @@ class ReviewSession:
         pending = self.pending_experiences()
         total = len(pending)
         if total == 0:
-            print(f"{Color.OK}No experiences pending review for {self.candidate.username}.{Color.RESET}")
+            print(
+                f"{Color.OK}No experiences pending review for {self.candidate.username}.{Color.RESET}"
+            )
             return 0
 
-        print(f"{Color.HEADER}Reviewing {total} experience(s) for {self.candidate.username}.{Color.RESET}")
+        print(
+            f"{Color.HEADER}Reviewing {total} experience(s) for {self.candidate.username}.{Color.RESET}"
+        )
         print(
             f"{Color.META}Per-experience actions: accept, drill into bullets, edit fields, drop, skip, quit.{Color.RESET}"
         )
-        print(f"{Color.META}Progress saves after every action. Safe to quit at any time.{Color.RESET}")
+        print(
+            f"{Color.META}Progress saves after every action. Safe to quit at any time.{Color.RESET}"
+        )
 
         for idx, exp in enumerate(pending, start=1):
             while True:
@@ -330,7 +363,9 @@ class ReviewSession:
             )
             print(f"  {Color.META}Re-run this command to continue.{Color.RESET}")
         else:
-            print(f"\n  {Color.OK}All experiences fully reviewed. Corpus is canonical.{Color.RESET}")
+            print(
+                f"\n  {Color.OK}All experiences fully reviewed. Corpus is canonical.{Color.RESET}"
+            )
 
 
 def iter_pending_experiences(session: Session, candidate_id: int) -> Iterator[Experience]:
@@ -359,7 +394,9 @@ def main(argv: list[str] | None = None) -> int:
         description="Walk through LLM-extracted experiences and bullets interactively."
     )
     parser.add_argument("--user", required=True, help="Username to review")
-    parser.add_argument("--db", default=None, help="Override DB path (defaults to db/resume.sqlite)")
+    parser.add_argument(
+        "--db", default=None, help="Override DB path (defaults to db/resume.sqlite)"
+    )
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.WARNING, format="%(message)s")
@@ -370,6 +407,7 @@ def main(argv: list[str] | None = None) -> int:
         session = get_session()
     else:
         from db.session import make_engine, make_session_factory
+
         session = make_session_factory(make_engine(args.db))()
 
     try:
@@ -386,7 +424,9 @@ def main(argv: list[str] | None = None) -> int:
         rs = ReviewSession(session, candidate)
         return rs.run()
     except KeyboardInterrupt:
-        print(f"\n{Color.WARN}Interrupted — progress through the most-recent committed action was saved.{Color.RESET}")
+        print(
+            f"\n{Color.WARN}Interrupted — progress through the most-recent committed action was saved.{Color.RESET}"
+        )
         return 130
     finally:
         session.close()

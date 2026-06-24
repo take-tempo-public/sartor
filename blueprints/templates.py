@@ -62,6 +62,7 @@ templates_bp = Blueprint("templates", __name__)
 
 # --- Persona serializers (moved with the seam) ---
 
+
 def _persona_dict(template) -> dict:
     """Serialize a persona_template row for the API response."""
     return {
@@ -107,7 +108,9 @@ def _persona_dicts_safe(templates) -> list[dict]:
                 row_id = repr(t)
             logger.warning(
                 "_persona_dict failed for persona_template row=%s: %s: %s",
-                row_id, type(exc).__name__, exc,
+                row_id,
+                type(exc).__name__,
+                exc,
             )
     return out
 
@@ -116,6 +119,7 @@ def _persona_dicts_safe(templates) -> list[dict]:
 # Reads BASE_DIR / PERSONAS_DIR from current_app.config (request-context only —
 # all callers run inside a request). The generation seam (8.3c) carried a
 # transitional duplicate of this pair; it now imports them from here.
+
 
 def _resolve_persona_template_path(persona_template_id: int) -> str | None:
     """Look up a persona_template's on-disk path. None if not found / missing.
@@ -138,7 +142,8 @@ def _resolve_persona_template_path(persona_template_id: int) -> str | None:
         if not disk_path.exists() or not _within(disk_path, current_app.config["PERSONAS_DIR"]):
             logger.warning(
                 "Persona template id=%s has invalid path %s",
-                persona_template_id, row.path,
+                persona_template_id,
+                row.path,
             )
             return None
         return str(disk_path)
@@ -189,27 +194,40 @@ def _resolve_default_persona_template_path(
 
                 # Priority 1: role-specific default
                 if role_tag_id is not None:
-                    row = session.query(PersonaTemplate).filter_by(
-                        candidate_id=candidate.id,
-                        primary_role_tag_id=role_tag_id,
-                        is_default=1,
-                    ).first()
+                    row = (
+                        session.query(PersonaTemplate)
+                        .filter_by(
+                            candidate_id=candidate.id,
+                            primary_role_tag_id=role_tag_id,
+                            is_default=1,
+                        )
+                        .first()
+                    )
                     if row is not None:
                         return _resolve_persona_template_path(row.id)
 
                 # Priority 2: general default (no role tag)
-                row = session.query(PersonaTemplate).filter_by(
-                    candidate_id=candidate.id,
-                    primary_role_tag_id=None,
-                    is_default=1,
-                ).first()
+                row = (
+                    session.query(PersonaTemplate)
+                    .filter_by(
+                        candidate_id=candidate.id,
+                        primary_role_tag_id=None,
+                        is_default=1,
+                    )
+                    .first()
+                )
                 if row is not None:
                     return _resolve_persona_template_path(row.id)
 
         # Priority 3: bundled Classic (existing fallback)
-        row = session.query(PersonaTemplate).filter_by(
-            source="bundled", name="Classic Single-Column",
-        ).first()
+        row = (
+            session.query(PersonaTemplate)
+            .filter_by(
+                source="bundled",
+                name="Classic Single-Column",
+            )
+            .first()
+        )
         if row is None:
             return None
         return _resolve_persona_template_path(row.id)
@@ -218,6 +236,7 @@ def _resolve_default_persona_template_path(
 
 
 # --- Preview-render domain helpers (moved with the seam) ---
+
 
 def _latest_generated_resume_md(candidate_id: int) -> str | None:
     """Most recent non-empty generated_resume_md across a candidate's
@@ -374,7 +393,8 @@ def _inline_persona_css(html_str: str, html_path: Path) -> str:
     return re.sub(
         r'<link\s+rel="stylesheet"\s+href="[^"]+\.css"\s*/?>',
         f"<style>\n{css_str}\n</style>",
-        html_str, count=1,
+        html_str,
+        count=1,
     )
 
 
@@ -517,10 +537,12 @@ def list_bundled_personas() -> ResponseReturnValue:
             session.close()
     except Exception as exc:
         logger.exception("list_bundled_personas failed")
-        return jsonify({
-            "error": "Failed to load bundled personas",
-            **_error_detail_payload(exc),
-        }), 500
+        return jsonify(
+            {
+                "error": "Failed to load bundled personas",
+                **_error_detail_payload(exc),
+            }
+        ), 500
 
 
 @templates_bp.route("/api/users/<username>/personas", methods=["GET"])
@@ -545,25 +567,31 @@ def list_user_personas(username: str) -> ResponseReturnValue:
                 # frontend keys off `needs_onboarding` to show the import CTA; a
                 # naive consumer just sees empty lists. (POST writes keep 409 —
                 # see AGENTS-noted contract.)
-                return jsonify({
-                    "bundled": [],
-                    "owned": [],
-                    "needs_onboarding": True,
-                })
+                return jsonify(
+                    {
+                        "bundled": [],
+                        "owned": [],
+                        "needs_onboarding": True,
+                    }
+                )
             bundled = session.query(PersonaTemplate).filter_by(source="bundled").all()
             owned = session.query(PersonaTemplate).filter_by(candidate_id=candidate.id).all()
-            return jsonify({
-                "bundled": _persona_dicts_safe(bundled),
-                "owned": _persona_dicts_safe(owned),
-            })
+            return jsonify(
+                {
+                    "bundled": _persona_dicts_safe(bundled),
+                    "owned": _persona_dicts_safe(owned),
+                }
+            )
         finally:
             session.close()
     except Exception as exc:
         logger.exception("list_user_personas failed for user=%s", safe_user)
-        return jsonify({
-            "error": "Failed to load personas",
-            **_error_detail_payload(exc),
-        }), 500
+        return jsonify(
+            {
+                "error": "Failed to load personas",
+                **_error_detail_payload(exc),
+            }
+        ), 500
 
 
 @templates_bp.route("/api/users/<username>/personas", methods=["POST"])
@@ -592,9 +620,14 @@ def upload_user_persona(username: str) -> ResponseReturnValue:
     init_db()
     session = get_session()
     try:
-        candidate = cast("Candidate", _get_or_provision_candidate(
-            session, safe_user, configs_dir=current_app.config["CONFIGS_DIR"],
-        ))
+        candidate = cast(
+            "Candidate",
+            _get_or_provision_candidate(
+                session,
+                safe_user,
+                configs_dir=current_app.config["CONFIGS_DIR"],
+            ),
+        )
 
         safe_name = secure_filename(file.filename)
         user_persona_dir = personas_dir / safe_user
@@ -776,24 +809,35 @@ def preview_persona_with_resume(persona_id: int) -> ResponseReturnValue:
         disk_path = (current_app.config["BASE_DIR"] / row.path).resolve()
         if not disk_path.exists() or not _within(disk_path, current_app.config["PERSONAS_DIR"]):
             return jsonify({"error": "Invalid persona path"}), 403
-        candidate = cast("Candidate", _get_or_provision_candidate(
-            session, safe_user, configs_dir=current_app.config["CONFIGS_DIR"],
-        ))
+        candidate = cast(
+            "Candidate",
+            _get_or_provision_candidate(
+                session,
+                safe_user,
+                configs_dir=current_app.config["CONFIGS_DIR"],
+            ),
+        )
         resume_md = _latest_generated_resume_md(candidate.id)
         if not resume_md:
-            return jsonify({
-                "error": "No generated resume yet — run GENERATE in an "
-                         "application first, then preview a template against it.",
-            }), 409
+            return jsonify(
+                {
+                    "error": "No generated resume yet — run GENERATE in an "
+                    "application first, then preview a template against it.",
+                }
+            ), 409
     finally:
         session.close()
 
     out_path = generate_resume(
-        resume_md, ".docx", safe_user, str(output_dir),
+        resume_md,
+        ".docx",
+        safe_user,
+        str(output_dir),
         template_path=str(disk_path),
     )
     return send_file(
-        str(out_path), as_attachment=True,
+        str(out_path),
+        as_attachment=True,
         download_name=f"preview_{row.name}.docx",
     )
 
@@ -873,7 +917,8 @@ def preview_application_html(application_id: int) -> ResponseReturnValue:
                 return jsonify({"error": "Template not found"}), 404
         else:
             docx_template_path = _resolve_default_persona_template_path(
-                username=candidate.username, application_id=application_id,
+                username=candidate.username,
+                application_id=application_id,
             )
 
         if docx_template_path is None:
@@ -884,6 +929,7 @@ def preview_application_html(application_id: int) -> ResponseReturnValue:
         # ship an .html companion yet — keeps the preview working as more
         # personas pick up HTML companions over time.
         from pdf_render import html_template_path_for
+
         html_path = html_template_path_for(docx_template_path)
         if html_path is None:
             html_path = current_app.config["BUNDLED_PERSONAS_DIR"] / "classic.html"
@@ -934,14 +980,19 @@ def preview_application_html(application_id: int) -> ResponseReturnValue:
             json_doc = cached_json_resume
         else:
             if not ctx_has_recommendations:
-                return _preview_placeholder_html(html_path), 200, {
-                    "Content-Type": "text/html; charset=utf-8",
-                }
+                return (
+                    _preview_placeholder_html(html_path),
+                    200,
+                    {
+                        "Content-Type": "text/html; charset=utf-8",
+                    },
+                )
             # Build the JSON Resume directly from the candidate's corpus,
             # applying composition_overrides + chosen-summary resolution
             # scoped to THIS application.
             json_doc = build_json_resume_from_corpus(
-                session, candidate.id,
+                session,
+                candidate.id,
                 application_id=application_id,
                 context_path=ctx_path_arg,
             )
@@ -1015,12 +1066,10 @@ def preview_cover_letter_html(application_id: int) -> ResponseReturnValue:
                 return jsonify({"error": "Template not found"}), 404
         else:
             docx_template_path = _resolve_default_persona_template_path(
-                username=candidate.username, application_id=application_id,
+                username=candidate.username,
+                application_id=application_id,
             )
-        css_path = (
-            Path(docx_template_path).with_suffix(".css")
-            if docx_template_path else None
-        )
+        css_path = Path(docx_template_path).with_suffix(".css") if docx_template_path else None
         font_family = persona_font_family(css_path)
 
         # Read the generated cover letter from the supplied context file,
@@ -1040,13 +1089,19 @@ def preview_cover_letter_html(application_id: int) -> ResponseReturnValue:
         session.close()
 
     if not cover_letter_md:
-        return _cover_letter_placeholder_html(), 200, {
-            "Content-Type": "text/html; charset=utf-8",
-        }
+        return (
+            _cover_letter_placeholder_html(),
+            200,
+            {
+                "Content-Type": "text/html; charset=utf-8",
+            },
+        )
 
     cover_template = current_app.config["PERSONAS_DIR"] / "cover_letter.html"
     html_str = render_cover_letter_html(
-        cover_letter_md, font_family=font_family, template_path=cover_template,
+        cover_letter_md,
+        font_family=font_family,
+        template_path=cover_template,
     )
     html_str = _inject_paged_polyfill(html_str)
     return html_str, 200, {"Content-Type": "text/html; charset=utf-8"}
@@ -1080,10 +1135,12 @@ def preview_candidate_html(username: str) -> ResponseReturnValue:
     try:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
-            return jsonify({
-                "error": "Candidate not in corpus yet",
-                "needs_onboarding": True,
-            }), 409
+            return jsonify(
+                {
+                    "error": "Candidate not in corpus yet",
+                    "needs_onboarding": True,
+                }
+            ), 409
 
         template_id_raw = request.args.get("template_id")
         docx_template_path: str | None = None
@@ -1097,7 +1154,8 @@ def preview_candidate_html(username: str) -> ResponseReturnValue:
                 return jsonify({"error": "Template not found"}), 404
         else:
             docx_template_path = _resolve_default_persona_template_path(
-                username=candidate.username, application_id=None,
+                username=candidate.username,
+                application_id=None,
             )
 
         if docx_template_path is None:
@@ -1110,7 +1168,9 @@ def preview_candidate_html(username: str) -> ResponseReturnValue:
                 return jsonify({"error": "No HTML template available"}), 500
 
         json_doc = build_json_resume_from_corpus(
-            session, candidate.id, application_id=None,
+            session,
+            candidate.id,
+            application_id=None,
         )
     finally:
         session.close()

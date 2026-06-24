@@ -91,7 +91,8 @@ def build_json_resume_from_corpus(
     # ---- Resolve the chosen summary variant ----
     pinned_summary_id, recommended_summary_id = _read_summary_choices(ctx)
     chosen_summary_text, summary_source = _resolve_chosen_summary_text(
-        session, candidate.id,
+        session,
+        candidate.id,
         pinned_id=pinned_summary_id,
         recommended_id=recommended_summary_id,
         fallback_text=candidate.profile_text or "",
@@ -105,9 +106,7 @@ def build_json_resume_from_corpus(
     # B.4 (Sprint 6.6) — per-role intro opt-in toggle + per-role picks
     # (experience_id → ExperienceSummaryItem id). Opt-in: a role's work[].summary
     # is emitted ONLY when the toggle is on AND the role has an explicit pick.
-    use_experience_summaries, chosen_experience_summary_ids = (
-        _read_experience_summary_choices(ctx)
-    )
+    use_experience_summaries, chosen_experience_summary_ids = _read_experience_summary_choices(ctx)
     # B.5 (Sprint 6.6) — per-JD skill curation: recommend_skills ordering +
     # pin/drop/reorder overrides. Pending/retired skills are excluded by
     # _collect_skills; with no recommendation + no overrides this is every
@@ -131,11 +130,13 @@ def build_json_resume_from_corpus(
 
     profiles: list[dict[str, str]] = []
     if candidate.linkedin_url:
-        profiles.append({
-            "network":  "LinkedIn",
-            "url":      candidate.linkedin_url,
-            "username": _username_from_linkedin(candidate.linkedin_url),
-        })
+        profiles.append(
+            {
+                "network": "LinkedIn",
+                "url": candidate.linkedin_url,
+                "username": _username_from_linkedin(candidate.linkedin_url),
+            }
+        )
     if candidate.website_url:
         # Website goes on basics.url per JSON Resume convention
         basics["url"] = candidate.website_url
@@ -175,7 +176,9 @@ def build_json_resume_from_corpus(
         # backfilled ExperienceSummaryItem variant, surfaced only when chosen.
         if use_experience_summaries:
             role_intro = _resolve_chosen_experience_summary_text(
-                session, exp.id, chosen_experience_summary_ids.get(exp.id),
+                session,
+                exp.id,
+                chosen_experience_summary_ids.get(exp.id),
             )
             if role_intro:
                 entry["summary"] = role_intro
@@ -210,45 +213,44 @@ def build_json_resume_from_corpus(
 
     # ---- Assemble skills[] ----
     skills = _collect_skills(
-        session, candidate.id,
-        pinned=skill_pinned, excluded=skill_excluded,
-        skill_order=skill_order, rec_ids=skill_rec_ids,
+        session,
+        candidate.id,
+        pinned=skill_pinned,
+        excluded=skill_excluded,
+        skill_order=skill_order,
+        rec_ids=skill_rec_ids,
     )
 
     # ---- Final document ----
     doc: dict[str, Any] = {
-        "$schema":      SCHEMA_URI,
-        "basics":       basics,
-        "work":         work,
-        "education":    [],
-        "skills":       skills,
+        "$schema": SCHEMA_URI,
+        "basics": basics,
+        "work": work,
+        "education": [],
+        "skills": skills,
         "certificates": [],
-        "projects":     [],
+        "projects": [],
         "meta": {
             "callback": {
-                "version":  "1.0",
+                "version": "1.0",
                 "candidate_id": candidate.id,
                 "application_id": application_id,
                 "chosen_summary_id": (
-                    pinned_summary_id
-                    if pinned_summary_id is not None
-                    else recommended_summary_id
+                    pinned_summary_id if pinned_summary_id is not None else recommended_summary_id
                 ),
                 "summary_source": summary_source,
                 # B.4 — per-role intro opt-in state + the picks that were applied.
                 "use_experience_summaries": use_experience_summaries,
                 "chosen_experience_summary_ids": {
-                    str(eid): iid
-                    for eid, iid in chosen_experience_summary_ids.items()
-                } if use_experience_summaries else {},
-                "bullet_overrides_active": bool(
-                    pin_bullets or ex_bullets or add_bullets
-                ),
+                    str(eid): iid for eid, iid in chosen_experience_summary_ids.items()
+                }
+                if use_experience_summaries
+                else {},
+                "bullet_overrides_active": bool(pin_bullets or ex_bullets or add_bullets),
                 # B.5 — whether per-JD skill curation was applied + the
                 # recommend_skills ordering it was seeded from.
                 "skill_curation_active": bool(
-                    skill_rec_ids is not None or skill_pinned
-                    or skill_excluded or skill_order
+                    skill_rec_ids is not None or skill_pinned or skill_excluded or skill_order
                 ),
                 "recommended_skill_ids": skill_rec_ids or [],
             },
@@ -267,13 +269,13 @@ def _empty_document() -> dict[str, Any]:
     from json_resume import SCHEMA_URI
 
     return {
-        "$schema":      SCHEMA_URI,
-        "basics":       {},
-        "work":         [],
-        "education":    [],
-        "skills":       [],
+        "$schema": SCHEMA_URI,
+        "basics": {},
+        "work": [],
+        "education": [],
+        "skills": [],
         "certificates": [],
-        "projects":     [],
+        "projects": [],
         "meta": {"callback": {"version": "1.0"}, "language": "en-US"},
     }
 
@@ -467,7 +469,7 @@ def _official_title_text(exp: Any) -> str | None:
 
 
 def _first_title_text(exp: Any) -> str | None:
-    for t in (exp.titles or []):
+    for t in exp.titles or []:
         if t.title:
             return t.title
     return None
@@ -497,7 +499,7 @@ def _read_skill_overrides(
 
     def _id_set(key: str) -> set[int]:
         out: set[int] = set()
-        for x in (ov.get(key) or []):
+        for x in ov.get(key) or []:
             try:
                 out.add(int(x))
             except (TypeError, ValueError):
@@ -505,7 +507,7 @@ def _read_skill_overrides(
         return out
 
     order: list[int] = []
-    for x in (ov.get("skill_order") or []):
+    for x in ov.get("skill_order") or []:
         try:
             order.append(int(x))
         except (TypeError, ValueError):

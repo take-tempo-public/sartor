@@ -42,19 +42,26 @@ CANNED_ANALYSIS: dict[str, Any] = {
         "title_alignment": "strong",
     },
     "suggestions": [
-        {"section": "Summary", "action": "Lead with Kafka platform ownership",
-         "rationale": "JD weights Kafka as non-negotiable"},
+        {
+            "section": "Summary",
+            "action": "Lead with Kafka platform ownership",
+            "rationale": "JD weights Kafka as non-negotiable",
+        },
     ],
     "keyword_placement": [
-        {"keyword": "Kafka", "suggested_location": "Summary",
-         "how": "name the topic / partition scale"},
+        {
+            "keyword": "Kafka",
+            "suggested_location": "Summary",
+            "how": "name the topic / partition scale",
+        },
     ],
     "overall_strategy": "Position as a senior platform IC who has led a Kafka migration.",
 }
 
 
-def fake_analyze_streaming(client: Any, context_set: Any, username: str = "",
-                           run_id: str = "") -> Iterator[tuple[str, object]]:
+def fake_analyze_streaming(
+    client: Any, context_set: Any, username: str = "", run_id: str = ""
+) -> Iterator[tuple[str, object]]:
     """Mirror `analyzer.analyze_streaming`'s tuple protocol (the route
     serializes these into SSE — we never touch wire framing)."""
     yield ("phase", {"phase": "extraction"})
@@ -62,8 +69,9 @@ def fake_analyze_streaming(client: Any, context_set: Any, username: str = "",
     yield ("done", dict(CANNED_ANALYSIS))
 
 
-def fake_recommend_bullets(client: Any, ctx: Any, username: str = "",
-                           run_id: str = "") -> dict[str, Any]:
+def fake_recommend_bullets(
+    client: Any, ctx: Any, username: str = "", run_id: str = ""
+) -> dict[str, Any]:
     """Recommend every active bullet (the common path: recommendations exist,
     so Compose renders them in the GET's saved order rather than the
     no-recommendations score-sorted fallback). Deterministic + DB-only.
@@ -82,22 +90,28 @@ def fake_recommend_bullets(client: Any, ctx: Any, username: str = "",
         recs: list[dict[str, Any]] = []
         for exp in session.query(Experience).filter_by(candidate_id=cand.id).all():
             bullet_ids = [
-                b.id for b in session.query(Bullet)
+                b.id
+                for b in session.query(Bullet)
                 .filter_by(experience_id=exp.id, is_active=1)
-                .order_by(Bullet.display_order).all()
+                .order_by(Bullet.display_order)
+                .all()
             ]
             if bullet_ids:
-                recs.append({
-                    "experience_id": exp.id, "bullet_ids": bullet_ids,
-                    "rationale": "stubbed: all active bullets",
-                })
+                recs.append(
+                    {
+                        "experience_id": exp.id,
+                        "bullet_ids": bullet_ids,
+                        "rationale": "stubbed: all active bullets",
+                    }
+                )
         return {"recommendations": recs}
     finally:
         session.close()
 
 
-def fake_recommend_summaries(client: Any, ctx: Any, username: str = "",
-                             run_id: str = "") -> dict[str, Any]:
+def fake_recommend_summaries(
+    client: Any, ctx: Any, username: str = "", run_id: str = ""
+) -> dict[str, Any]:
     """Recommend the candidate's first active summary variant (deterministic,
     DB-only). Returns the REAL `{recommendation, alternates}` shape — the old
     placeholder (`{recommended_item_id}`) never set `has_recommendation`, so the
@@ -112,22 +126,25 @@ def fake_recommend_summaries(client: Any, ctx: Any, username: str = "",
         cand = session.query(Candidate).filter_by(username=username).first()
         if cand is None:
             return {"recommendation": None, "alternates": []}
-        first = (session.query(SummaryItem)
-                 .filter_by(candidate_id=cand.id, is_active=1)
-                 .order_by(SummaryItem.display_order, SummaryItem.id).first())
+        first = (
+            session.query(SummaryItem)
+            .filter_by(candidate_id=cand.id, is_active=1)
+            .order_by(SummaryItem.display_order, SummaryItem.id)
+            .first()
+        )
         if first is None:
             return {"recommendation": None, "alternates": []}
         return {
-            "recommendation": {"summary_item_id": first.id,
-                               "rationale": "stubbed: first variant"},
+            "recommendation": {"summary_item_id": first.id, "rationale": "stubbed: first variant"},
             "alternates": [],
         }
     finally:
         session.close()
 
 
-def fake_recommend_experience_summaries(client: Any, ctx: Any, username: str = "",
-                                        run_id: str = "") -> dict[str, Any]:
+def fake_recommend_experience_summaries(
+    client: Any, ctx: Any, username: str = "", run_id: str = ""
+) -> dict[str, Any]:
     """B.4 — recommend the first active intro variant per role (deterministic,
     DB-only). Mirrors `recommend_experience_summaries`'s return shape so the
     Compose 'Add role intros' toggle defaults each role without a real Haiku
@@ -142,24 +159,29 @@ def fake_recommend_experience_summaries(client: Any, ctx: Any, username: str = "
             return {"recommendations": []}
         recs: list[dict[str, Any]] = []
         for exp in session.query(Experience).filter_by(candidate_id=cand.id).all():
-            rows = (session.query(ExperienceSummaryItem)
-                    .filter_by(experience_id=exp.id, is_active=1)
-                    .order_by(ExperienceSummaryItem.display_order,
-                              ExperienceSummaryItem.id).all())
+            rows = (
+                session.query(ExperienceSummaryItem)
+                .filter_by(experience_id=exp.id, is_active=1)
+                .order_by(ExperienceSummaryItem.display_order, ExperienceSummaryItem.id)
+                .all()
+            )
             if rows:
-                recs.append({
-                    "experience_id": exp.id,
-                    "summary_item_id": rows[0].id,
-                    "rationale": "stubbed: first variant",
-                    "alternates": [],
-                })
+                recs.append(
+                    {
+                        "experience_id": exp.id,
+                        "summary_item_id": rows[0].id,
+                        "rationale": "stubbed: first variant",
+                        "alternates": [],
+                    }
+                )
         return {"recommendations": recs}
     finally:
         session.close()
 
 
-def fake_recommend_skills(client: Any, ctx: Any, username: str = "",
-                          run_id: str = "") -> dict[str, Any]:
+def fake_recommend_skills(
+    client: Any, ctx: Any, username: str = "", run_id: str = ""
+) -> dict[str, Any]:
     """B.5 — recommend all the candidate's active+approved skills in display
     order (deterministic, DB-only). Returns the real
     {recommendation:{skill_ids, rationale}} shape so the Compose skills card's
@@ -173,40 +195,55 @@ def fake_recommend_skills(client: Any, ctx: Any, username: str = "",
         if cand is None:
             return {"recommendation": {"skill_ids": [], "rationale": "stub: no candidate"}}
         ids = [
-            s.id for s in session.query(Skill)
+            s.id
+            for s in session.query(Skill)
             .filter_by(candidate_id=cand.id, is_active=1, is_pending_review=0)
-            .order_by(Skill.display_order, Skill.id).all()
+            .order_by(Skill.display_order, Skill.id)
+            .all()
         ]
         return {"recommendation": {"skill_ids": ids, "rationale": "stubbed: all active skills"}}
     finally:
         session.close()
 
 
-def fake_suggest_skills(client: Any, ctx: Any, username: str = "",
-                        run_id: str = "") -> dict[str, Any]:
+def fake_suggest_skills(
+    client: Any, ctx: Any, username: str = "", run_id: str = ""
+) -> dict[str, Any]:
     """B.5 — propose one grounded skill (deterministic, DB-only). Returns the
     real {proposals:[...]} shape; the route inserts it as a pending row."""
-    return {"proposals": [
-        {"name": "Stubbed Skill", "category": "domain",
-         "evidence": {"experience_id": None, "bullet_id": None, "quote": "stub"},
-         "rationale": "stubbed proposal"},
-    ]}
+    return {
+        "proposals": [
+            {
+                "name": "Stubbed Skill",
+                "category": "domain",
+                "evidence": {"experience_id": None, "bullet_id": None, "quote": "stub"},
+                "rationale": "stubbed proposal",
+            },
+        ]
+    }
 
 
-def fake_clarify(client: Any, context_set: Any, analysis: Any,
-                 username: str = "", run_id: str = "") -> dict[str, Any]:
+def fake_clarify(
+    client: Any, context_set: Any, analysis: Any, username: str = "", run_id: str = ""
+) -> dict[str, Any]:
     """Mirror `analyzer.clarify`'s return shape ({questions, reasoning}) so the
     /api/clarify route runs for real (persists questions onto the context) while
     staying deterministic + offline. Two questions, each with the id/text/kind/
     target_gap keys `_renderClarifyQuestions` (static/app.js) reads."""
     return {
         "questions": [
-            {"id": "q1", "kind": "experience_probe",
-             "text": "Have you run Kubernetes in production?",
-             "target_gap": "Essential skill not evidenced in the resume"},
-            {"id": "q2", "kind": "scope_probe",
-             "text": "How large was the team you led on the Kafka migration?",
-             "target_gap": "Leadership scope flagged as ambiguous"},
+            {
+                "id": "q1",
+                "kind": "experience_probe",
+                "text": "Have you run Kubernetes in production?",
+                "target_gap": "Essential skill not evidenced in the resume",
+            },
+            {
+                "id": "q2",
+                "kind": "scope_probe",
+                "text": "How large was the team you led on the Kafka migration?",
+                "target_gap": "Leadership scope flagged as ambiguous",
+            },
         ],
         "reasoning": "Two probes: one missing essential skill, one scope ambiguity.",
     }
@@ -239,10 +276,15 @@ Globex · 2017 – 2020
 """
 
 
-def fake_generate_streaming(client: Any, context_set: Any, analysis: Any,
-                            refinement_notes: str = "", username: str = "",
-                            run_id: str = "", with_cover_letter: bool = True,
-                            ) -> Iterator[tuple[str, object]]:
+def fake_generate_streaming(
+    client: Any,
+    context_set: Any,
+    analysis: Any,
+    refinement_notes: str = "",
+    username: str = "",
+    run_id: str = "",
+    with_cover_letter: bool = True,
+) -> Iterator[tuple[str, object]]:
     """Mirror `analyzer.generate_streaming`'s event protocol (`("chunk"|"retry"|
     "done", payload)`). The route forwards these as SSE and, on `done`, runs the
     real deterministic `generate_resume()` + persists the iteration context — so
@@ -255,14 +297,18 @@ def fake_generate_streaming(client: Any, context_set: Any, analysis: Any,
     yield ("done", done)
 
 
-def fake_clarify_iteration(client: Any, context_set: Any, analysis: Any,
-                           current_resume_text: str = "",
-                           current_cover_letter_text: str = "",
-                           recent_edits_summary: str = "",
-                           deterministic_signals: Any = None,
-                           prior_clarifications: Any = None,
-                           username: str = "", run_id: str = "",
-                           ) -> dict[str, Any]:
+def fake_clarify_iteration(
+    client: Any,
+    context_set: Any,
+    analysis: Any,
+    current_resume_text: str = "",
+    current_cover_letter_text: str = "",
+    recent_edits_summary: str = "",
+    deterministic_signals: Any = None,
+    prior_clarifications: Any = None,
+    username: str = "",
+    run_id: str = "",
+) -> dict[str, Any]:
     """Mirror `analyzer.clarify_iteration`'s return shape ({questions, reasoning})
     so the /api/iterate-clarify route runs for real (re-keys ids, appends to the
     context) while staying deterministic + offline. The route renames the ids to
@@ -270,12 +316,18 @@ def fake_clarify_iteration(client: Any, context_set: Any, analysis: Any,
     id/text/kind/target_gap."""
     return {
         "questions": [
-            {"id": "p1", "kind": "iteration_probe",
-             "text": "Which Kafka metrics improved after the migration?",
-             "target_gap": "Quantify the platform impact in the current draft"},
-            {"id": "p2", "kind": "scope_probe",
-             "text": "How many engineers did you coordinate on the cutover?",
-             "target_gap": "Leadership scope still ambiguous after iteration 1"},
+            {
+                "id": "p1",
+                "kind": "iteration_probe",
+                "text": "Which Kafka metrics improved after the migration?",
+                "target_gap": "Quantify the platform impact in the current draft",
+            },
+            {
+                "id": "p2",
+                "kind": "scope_probe",
+                "text": "How many engineers did you coordinate on the cutover?",
+                "target_gap": "Leadership scope still ambiguous after iteration 1",
+            },
         ],
         "reasoning": "Two iteration probes targeting the draft's weakest claims.",
     }
@@ -314,8 +366,9 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(applications_bp_mod, "_get_client", lambda: None)
     monkeypatch.setattr(analyzer, "recommend_bullets", fake_recommend_bullets)
     monkeypatch.setattr(analyzer, "recommend_summaries", fake_recommend_summaries)
-    monkeypatch.setattr(analyzer, "recommend_experience_summaries",
-                        fake_recommend_experience_summaries)
+    monkeypatch.setattr(
+        analyzer, "recommend_experience_summaries", fake_recommend_experience_summaries
+    )
     # B.5 — skill matcher + grounded generator (imported locally in their
     # routes → patch on the analyzer module, like recommend_bullets).
     monkeypatch.setattr(analyzer, "recommend_skills", fake_recommend_skills)

@@ -65,12 +65,21 @@ def _write_context(legacy_tree: Path, username: str, filename: str, payload: dic
 
 class TestImportCandidate:
     def test_creates_candidate_with_basic_fields(self, db_session, legacy_tree):
-        _write_config(legacy_tree, "alice", {
-            "name": "Alice", "email": "a@x.com", "phone": "555-0100",
-            "linkedin_url": "https://linkedin.com/in/alice",
-            "website_url": "", "skills": [], "certifications": [],
-            "education_summary": "", "notes": "Remote only.",
-        })
+        _write_config(
+            legacy_tree,
+            "alice",
+            {
+                "name": "Alice",
+                "email": "a@x.com",
+                "phone": "555-0100",
+                "linkedin_url": "https://linkedin.com/in/alice",
+                "website_url": "",
+                "skills": [],
+                "certifications": [],
+                "education_summary": "",
+                "notes": "Remote only.",
+            },
+        )
         report = import_candidate_from_config("alice", db_session)
         assert report.candidate_created is True
         assert report.candidate_id is not None
@@ -82,12 +91,16 @@ class TestImportCandidate:
         assert c.notes == "Remote only."
 
     def test_creates_skills_and_certifications(self, db_session, legacy_tree):
-        _write_config(legacy_tree, "bob", {
-            "name": "Bob",
-            "skills": ["Python", "PostgreSQL", "  ", ""],  # whitespace + empty filtered out
-            "certifications": ["AWS SA Pro", "CKAD"],
-            "education_summary": "MS CS, MIT",
-        })
+        _write_config(
+            legacy_tree,
+            "bob",
+            {
+                "name": "Bob",
+                "skills": ["Python", "PostgreSQL", "  ", ""],  # whitespace + empty filtered out
+                "certifications": ["AWS SA Pro", "CKAD"],
+                "education_summary": "MS CS, MIT",
+            },
+        )
         report = import_candidate_from_config("bob", db_session)
         assert report.skills_created == 2  # whitespace/empty filtered
         assert report.certifications_created == 2
@@ -98,10 +111,16 @@ class TestImportCandidate:
         assert db_session.query(Education).count() == 1
 
     def test_idempotent_on_rerun(self, db_session, legacy_tree):
-        _write_config(legacy_tree, "carol", {
-            "name": "Carol", "skills": ["A", "B"], "certifications": ["X"],
-            "education_summary": "BSc",
-        })
+        _write_config(
+            legacy_tree,
+            "carol",
+            {
+                "name": "Carol",
+                "skills": ["A", "B"],
+                "certifications": ["X"],
+                "education_summary": "BSc",
+            },
+        )
         import_candidate_from_config("carol", db_session)
         db_session.commit()
 
@@ -133,8 +152,7 @@ def _make_context_payload(qa_pairs: list[tuple[str, str, str, str]]) -> dict:
     """qa_pairs: [(qid, qtext, atext, kind), ...]"""
     return {
         "clarification_questions": [
-            {"id": qid, "text": q, "kind": k, "target_gap": ""}
-            for qid, q, _a, k in qa_pairs
+            {"id": qid, "text": q, "kind": k, "target_gap": ""} for qid, q, _a, k in qa_pairs
         ],
         "clarifications": {qid: a for qid, _q, a, _k in qa_pairs},
     }
@@ -149,11 +167,27 @@ class TestImportClarifications:
 
     def test_imports_qa_pairs_with_answers(self, db_session, legacy_tree):
         cid = self._seed_candidate(db_session, legacy_tree)
-        _write_context(legacy_tree, "alice", "context_20260101_120000.json",
-            _make_context_payload([
-                ("q1", "Have you used K8s?", "Yes, briefly on a side project.", "experience_probe"),
-                ("q2", "Was the launch shipped?", "Shipped to 50 enterprise customers.", "scope_probe"),
-            ]))
+        _write_context(
+            legacy_tree,
+            "alice",
+            "context_20260101_120000.json",
+            _make_context_payload(
+                [
+                    (
+                        "q1",
+                        "Have you used K8s?",
+                        "Yes, briefly on a side project.",
+                        "experience_probe",
+                    ),
+                    (
+                        "q2",
+                        "Was the launch shipped?",
+                        "Shipped to 50 enterprise customers.",
+                        "scope_probe",
+                    ),
+                ]
+            ),
+        )
         report = import_clarifications_from_output("alice", cid, db_session)
         assert report.clarifications_created == 2
         assert report.context_files_scanned == 1
@@ -161,12 +195,17 @@ class TestImportClarifications:
 
     def test_skips_unanswered_questions(self, db_session, legacy_tree):
         cid = self._seed_candidate(db_session, legacy_tree)
-        _write_context(legacy_tree, "alice", "context_a.json", {
-            "clarification_questions": [
-                {"id": "q1", "text": "Asked but skipped?", "kind": "experience_probe"},
-            ],
-            "clarifications": {},  # user skipped
-        })
+        _write_context(
+            legacy_tree,
+            "alice",
+            "context_a.json",
+            {
+                "clarification_questions": [
+                    {"id": "q1", "text": "Asked but skipped?", "kind": "experience_probe"},
+                ],
+                "clarifications": {},  # user skipped
+            },
+        )
         report = import_clarifications_from_output("alice", cid, db_session)
         assert report.clarifications_created == 0
 
@@ -182,24 +221,53 @@ class TestImportClarifications:
 
     def test_dedupe_normalizes_whitespace_and_case(self, db_session, legacy_tree):
         cid = self._seed_candidate(db_session, legacy_tree)
-        _write_context(legacy_tree, "alice", "context_1.json", _make_context_payload([
-            ("q1", "Have you used K8s?", "Yes, BRIEFLY on a side project.", "experience_probe"),
-        ]))
-        _write_context(legacy_tree, "alice", "context_2.json", _make_context_payload([
-            ("q1", "  Have you used K8s?  ", "yes, briefly on a side project.", "experience_probe"),
-        ]))
+        _write_context(
+            legacy_tree,
+            "alice",
+            "context_1.json",
+            _make_context_payload(
+                [
+                    (
+                        "q1",
+                        "Have you used K8s?",
+                        "Yes, BRIEFLY on a side project.",
+                        "experience_probe",
+                    ),
+                ]
+            ),
+        )
+        _write_context(
+            legacy_tree,
+            "alice",
+            "context_2.json",
+            _make_context_payload(
+                [
+                    (
+                        "q1",
+                        "  Have you used K8s?  ",
+                        "yes, briefly on a side project.",
+                        "experience_probe",
+                    ),
+                ]
+            ),
+        )
         report = import_clarifications_from_output("alice", cid, db_session)
         assert report.clarifications_created == 1
         assert report.clarifications_skipped == 1
 
     def test_unknown_kind_falls_back_to_manual(self, db_session, legacy_tree):
         cid = self._seed_candidate(db_session, legacy_tree)
-        _write_context(legacy_tree, "alice", "context_x.json", {
-            "clarification_questions": [
-                {"id": "q1", "text": "What is X?", "kind": "novel_unsupported_kind"},
-            ],
-            "clarifications": {"q1": "An answer."},
-        })
+        _write_context(
+            legacy_tree,
+            "alice",
+            "context_x.json",
+            {
+                "clarification_questions": [
+                    {"id": "q1", "text": "What is X?", "kind": "novel_unsupported_kind"},
+                ],
+                "clarifications": {"q1": "An answer."},
+            },
+        )
         import_clarifications_from_output("alice", cid, db_session)
         row = db_session.query(Clarification).one()
         assert row.kind == "manual"
@@ -274,7 +342,8 @@ class TestIterResumeFiles:
         _write_resume(resumes_tree, "alice", "main.md")
         _write_resume(resumes_tree, "alice", "zeta.md")
         (resumes_tree / "configs" / "alice.config").write_text(
-            json.dumps({"latest_resume": "main.md"}), encoding="utf-8",
+            json.dumps({"latest_resume": "main.md"}),
+            encoding="utf-8",
         )
         result = [p.name for p in _iter_resume_files("alice")]
         assert result == ["main.md", "alpha.md", "zeta.md"]
@@ -294,7 +363,8 @@ class TestIterResumeFiles:
         _write_resume(resumes_tree, "alice", "a.md")
         _write_resume(resumes_tree, "alice", "b.md")
         (resumes_tree / "configs" / "alice.config").write_text(
-            json.dumps({"included_resumes": []}), encoding="utf-8",
+            json.dumps({"included_resumes": []}),
+            encoding="utf-8",
         )
         result = [p.name for p in _iter_resume_files("alice")]
         # Empty whitelist treated as "no whitelist" — back to alphabetical fallback.
@@ -319,14 +389,20 @@ class TestInsertOrMergeExperience:
         c = self._make_candidate(db_session)
         report = ImportReport()
         exp_data = {
-            "company": "Acme", "start_date": "2020-01", "end_date": "2023-04",
+            "company": "Acme",
+            "start_date": "2020-01",
+            "end_date": "2023-04",
             "candidate_inferred_title": "Senior PM",
             "bullets": [{"text": "Did the thing.", "has_outcome": False}],
         }
         _insert_or_merge_experience(
-            exp_data, c.id,
-            source_filename="primary.md", is_primary_file=True,
-            session=db_session, dry_run=False, report=report,
+            exp_data,
+            c.id,
+            source_filename="primary.md",
+            is_primary_file=True,
+            session=db_session,
+            dry_run=False,
+            report=report,
         )
         db_session.flush()
         assert report.experiences_created == 1
@@ -344,19 +420,33 @@ class TestInsertOrMergeExperience:
         report = ImportReport()
         # Primary extraction first
         _insert_or_merge_experience(
-            {"company": "Acme", "start_date": "2020-01",
-             "candidate_inferred_title": "Senior PM",
-             "bullets": [{"text": "Led team.", "has_outcome": False}]},
-            c.id, source_filename="primary.md", is_primary_file=True,
-            session=db_session, dry_run=False, report=report,
+            {
+                "company": "Acme",
+                "start_date": "2020-01",
+                "candidate_inferred_title": "Senior PM",
+                "bullets": [{"text": "Led team.", "has_outcome": False}],
+            },
+            c.id,
+            source_filename="primary.md",
+            is_primary_file=True,
+            session=db_session,
+            dry_run=False,
+            report=report,
         )
         # Supplemental with same dates but different title framing
         _insert_or_merge_experience(
-            {"company": "Acme", "start_date": "2020-01",
-             "candidate_inferred_title": "AI Product Lead",
-             "bullets": [{"text": "Owned eval framework.", "has_outcome": False}]},
-            c.id, source_filename="ai_framed.md", is_primary_file=False,
-            session=db_session, dry_run=False, report=report,
+            {
+                "company": "Acme",
+                "start_date": "2020-01",
+                "candidate_inferred_title": "AI Product Lead",
+                "bullets": [{"text": "Owned eval framework.", "has_outcome": False}],
+            },
+            c.id,
+            source_filename="ai_framed.md",
+            is_primary_file=False,
+            session=db_session,
+            dry_run=False,
+            report=report,
         )
         db_session.flush()
 
@@ -377,18 +467,34 @@ class TestInsertOrMergeExperience:
         c = self._make_candidate(db_session)
         report = ImportReport()
         _insert_or_merge_experience(
-            {"company": "Acme", "start_date": "2020-01",
-             "candidate_inferred_title": "Senior PM",
-             "bullets": [{"text": "Led team.", "has_outcome": False}]},
-            c.id, source_filename="primary.md", is_primary_file=True,
-            session=db_session, dry_run=False, report=report,
+            {
+                "company": "Acme",
+                "start_date": "2020-01",
+                "candidate_inferred_title": "Senior PM",
+                "bullets": [{"text": "Led team.", "has_outcome": False}],
+            },
+            c.id,
+            source_filename="primary.md",
+            is_primary_file=True,
+            session=db_session,
+            dry_run=False,
+            report=report,
         )
         _insert_or_merge_experience(
-            {"company": "Acme", "start_date": "2020-01",
-             "candidate_inferred_title": "Senior PM",  # same title — no alternate
-             "bullets": [{"text": "Different phrasing of similar achievement.", "has_outcome": False}]},
-            c.id, source_filename="other.md", is_primary_file=False,
-            session=db_session, dry_run=False, report=report,
+            {
+                "company": "Acme",
+                "start_date": "2020-01",
+                "candidate_inferred_title": "Senior PM",  # same title — no alternate
+                "bullets": [
+                    {"text": "Different phrasing of similar achievement.", "has_outcome": False}
+                ],
+            },
+            c.id,
+            source_filename="other.md",
+            is_primary_file=False,
+            session=db_session,
+            dry_run=False,
+            report=report,
         )
         db_session.flush()
 
@@ -412,20 +518,34 @@ class TestInsertOrMergeExperience:
         c = self._make_candidate(db_session)
         report = ImportReport()
         _insert_or_merge_experience(
-            {"company": "Acme", "start_date": "2020-01",
-             "candidate_inferred_title": "Senior PM",
-             "bullets": [{"text": "Led team.", "has_outcome": False}]},
-            c.id, source_filename="primary.md", is_primary_file=True,
-            session=db_session, dry_run=False, report=report,
+            {
+                "company": "Acme",
+                "start_date": "2020-01",
+                "candidate_inferred_title": "Senior PM",
+                "bullets": [{"text": "Led team.", "has_outcome": False}],
+            },
+            c.id,
+            source_filename="primary.md",
+            is_primary_file=True,
+            session=db_session,
+            dry_run=False,
+            report=report,
         )
         # Same text — should be deduped on second insert despite the
         # source prefix flipping to supplemental on the merge path.
         _insert_or_merge_experience(
-            {"company": "Acme", "start_date": "2020-01",
-             "candidate_inferred_title": "AI Lead",
-             "bullets": [{"text": "Led team.", "has_outcome": False}]},
-            c.id, source_filename="primary.md", is_primary_file=False,
-            session=db_session, dry_run=False, report=report,
+            {
+                "company": "Acme",
+                "start_date": "2020-01",
+                "candidate_inferred_title": "AI Lead",
+                "bullets": [{"text": "Led team.", "has_outcome": False}],
+            },
+            c.id,
+            source_filename="primary.md",
+            is_primary_file=False,
+            session=db_session,
+            dry_run=False,
+            report=report,
         )
         db_session.flush()
 
@@ -439,11 +559,18 @@ class TestInsertOrMergeExperience:
         c = self._make_candidate(db_session)
         report = ImportReport()
         _insert_or_merge_experience(
-            {"company": "Acme", "start_date": "2020-01",
-             "candidate_inferred_title": "PM",
-             "bullets": [{"text": "x", "has_outcome": False}]},
-            c.id, source_filename="r.md", is_primary_file=True,
-            session=db_session, dry_run=True, report=report,
+            {
+                "company": "Acme",
+                "start_date": "2020-01",
+                "candidate_inferred_title": "PM",
+                "bullets": [{"text": "x", "has_outcome": False}],
+            },
+            c.id,
+            source_filename="r.md",
+            is_primary_file=True,
+            session=db_session,
+            dry_run=True,
+            report=report,
         )
         # Counters update but nothing in DB
         assert report.experiences_created == 1
@@ -456,8 +583,12 @@ class TestInsertOrMergeExperience:
         report = ImportReport()
         _insert_or_merge_experience(
             {"company": "", "start_date": "", "candidate_inferred_title": ""},
-            c.id, source_filename="r.md", is_primary_file=True,
-            session=db_session, dry_run=False, report=report,
+            c.id,
+            source_filename="r.md",
+            is_primary_file=True,
+            session=db_session,
+            dry_run=False,
+            report=report,
         )
         assert report.experiences_created == 0
         assert db_session.query(Experience).count() == 0

@@ -22,8 +22,7 @@ from ui_pages import BasePage, CorpusPage, UserPickerPage
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_corpus_tab_renders_cards(page: Page, live_server: str,
-                                  ux_app: ModuleType) -> None:
+def test_corpus_tab_renders_cards(page: Page, live_server: str, ux_app: ModuleType) -> None:
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)
 

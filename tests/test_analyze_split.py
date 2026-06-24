@@ -41,39 +41,58 @@ def _extraction_json(hidden_qualities=None) -> str:
         hidden_qualities = [
             {"category": "operating_context", "signal": "regulated, workflow-heavy environments"}
         ]
-    return json.dumps({
-        "essential_skills": ["kubernetes"],
-        "preferred_skills": ["terraform"],
-        "industry_keywords": ["sre"],
-        "hidden_qualities": hidden_qualities,
-        "professional_vocabulary": ["slo"],
-        "keyword_placement": [
-            {"keyword": "kubernetes", "suggested_location": "Experience", "how": "..."}
-        ],
-    })
+    return json.dumps(
+        {
+            "essential_skills": ["kubernetes"],
+            "preferred_skills": ["terraform"],
+            "industry_keywords": ["sre"],
+            "hidden_qualities": hidden_qualities,
+            "professional_vocabulary": ["slo"],
+            "keyword_placement": [
+                {"keyword": "kubernetes", "suggested_location": "Experience", "how": "..."}
+            ],
+        }
+    )
 
 
 def _synthesis_json() -> str:
-    return json.dumps({
-        "comparison": {"strengths": [], "gaps": ["No K8s"], "title_alignment": "ok"},
-        "suggestions": [{"section": "Skills", "action": "add k8s", "rationale": "gap"}],
-        "overall_strategy": "Position as a platform SRE.",
-    })
+    return json.dumps(
+        {
+            "comparison": {"strengths": [], "gaps": ["No K8s"], "title_alignment": "ok"},
+            "suggestions": [{"section": "Skills", "action": "add k8s", "rationale": "gap"}],
+            "overall_strategy": "Position as a platform SRE.",
+        }
+    )
 
 
 # ---------- analyze() — two-pass orchestration -----------------------------
+
 
 def test_analyze_runs_extraction_then_synthesis_and_merges(monkeypatch):
     monkeypatch.setattr(analyzer, "_stable_user_prefix", lambda cs: "PREFIX")
     calls: list[dict] = []
     responses = [_extraction_json(), _synthesis_json()]
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id,
-             system_prompt="", model=None, **kwargs):
-        calls.append({
-            "call_kind": call_kind, "system_prompt": system_prompt,
-            "model": model, "cached_user_prefix": cached_user_prefix,
-        })
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        model=None,
+        **kwargs,
+    ):
+        calls.append(
+            {
+                "call_kind": call_kind,
+                "system_prompt": system_prompt,
+                "model": model,
+                "cached_user_prefix": cached_user_prefix,
+            }
+        )
         return responses.pop(0)
 
     monkeypatch.setattr(analyzer, "_call_llm", fake)
@@ -108,12 +127,22 @@ def test_extraction_bare_string_hidden_quality_triggers_retry(monkeypatch):
     calls: list[str] = []
     responses = [
         _extraction_json(hidden_qualities=["autonomous"]),  # invalid bare string
-        _extraction_json(),                                 # valid retry
+        _extraction_json(),  # valid retry
         _synthesis_json(),
     ]
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id,
-             system_prompt="", model=None, **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        model=None,
+        **kwargs,
+    ):
         calls.append(call_kind)
         return responses.pop(0)
 
@@ -126,6 +155,7 @@ def test_extraction_bare_string_hidden_quality_triggers_retry(monkeypatch):
 
 
 # ---------- prompt builders -------------------------------------------------
+
 
 def test_extraction_prompt_uses_typed_hidden_qualities_and_no_strategy():
     prompt = analyzer._analyze_extraction_prompt(_CONTEXT)
@@ -143,8 +173,8 @@ def test_synthesis_prompt_carries_extracted_signal():
     extraction = json.loads(_extraction_json())
     prompt = analyzer._analyze_synthesis_prompt(_CONTEXT, extraction)
     assert "<extracted_signal>" in prompt
-    assert "kubernetes" in prompt                       # essential skill forwarded
-    assert "[operating_context]" in prompt              # typed hidden quality rendered
+    assert "kubernetes" in prompt  # essential skill forwarded
+    assert "[operating_context]" in prompt  # typed hidden quality rendered
     assert "regulated, workflow-heavy environments" in prompt
 
 
@@ -157,6 +187,7 @@ def test_synthesis_prompt_tolerates_legacy_bare_string_hidden_qualities():
 
 
 # ---------- analyze_streaming() — phase sentinel ----------------------------
+
 
 def _scripted_streaming(responses_in_order):
     """Fake _call_llm_streaming yielding one chunk + a _StreamDone per call,

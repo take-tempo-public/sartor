@@ -62,6 +62,7 @@ analysis_bp = Blueprint("analysis", __name__)
 
 # --- Analyze ---
 
+
 @analysis_bp.route("/api/analyze", methods=["POST"])
 def run_analysis() -> ResponseReturnValue:
     """P8 Human Gate #1: returns analysis for user review before generation.
@@ -116,7 +117,9 @@ def run_analysis_stream() -> ResponseReturnValue:
 
 
 def _run_analysis_corpus_backed_streaming(
-    safe_user: str, jd_text: str, data: dict,
+    safe_user: str,
+    jd_text: str,
+    data: dict,
 ) -> ResponseReturnValue:
     """SSE-streaming counterpart to `_run_analysis_corpus_backed`.
 
@@ -162,9 +165,7 @@ def _run_analysis_corpus_backed_streaming(
             )
         except ValueError as exc:
             setup_session.rollback()
-            logger.warning(
-                "[analyze/stream 409] user=%s needs_onboarding: %s", safe_user, exc
-            )
+            logger.warning("[analyze/stream 409] user=%s needs_onboarding: %s", safe_user, exc)
             return jsonify({"error": str(exc), "needs_onboarding": True}), 409
         application_id = application.id
         application_run_id = application_run.id
@@ -174,7 +175,9 @@ def _run_analysis_corpus_backed_streaming(
         setup_session.commit()
         logger.info(
             "DB-backed streaming analysis for %s: application_id=%d run_id=%s",
-            safe_user, application_id, run_id,
+            safe_user,
+            application_id,
+            run_id,
         )
     finally:
         setup_session.close()
@@ -185,7 +188,10 @@ def _run_analysis_corpus_backed_streaming(
         try:
             analysis: dict | None = None
             for event_kind, payload in analyze_streaming(
-                client, context_set, username=safe_user, run_id=run_id,
+                client,
+                context_set,
+                username=safe_user,
+                run_id=run_id,
             ):
                 if event_kind == "chunk":
                     yield _sse("chunk", {"text": payload})
@@ -198,10 +204,13 @@ def _run_analysis_corpus_backed_streaming(
                 elif event_kind == "done":
                     analysis = payload if isinstance(payload, dict) else None
             if analysis is None:
-                yield _sse("error", {
-                    "error": "Streaming analyze finished without a parsed result.",
-                    "http_status": 502,
-                })
+                yield _sse(
+                    "error",
+                    {
+                        "error": "Streaming analyze finished without a parsed result.",
+                        "http_status": 502,
+                    },
+                )
                 return
 
             # Persist analysis_json on the application_run row + write the
@@ -209,9 +218,13 @@ def _run_analysis_corpus_backed_streaming(
             # save-edits, iterate-clarify) all consume.
             persist_session = get_session()
             try:
-                run_row = persist_session.query(ApplicationRun).filter_by(
-                    id=application_run_id,
-                ).first()
+                run_row = (
+                    persist_session.query(ApplicationRun)
+                    .filter_by(
+                        id=application_run_id,
+                    )
+                    .first()
+                )
                 if run_row is not None:
                     run_row.analysis_json = json.dumps(analysis)
                     persist_session.commit()
@@ -230,42 +243,55 @@ def _run_analysis_corpus_backed_streaming(
             context_path = save_context_set(context_set, safe_user, str(output_dir))
             logger.info(
                 "Streaming analysis complete for %s, saved to %s",
-                safe_user, context_path,
+                safe_user,
+                context_path,
             )
 
-            yield _sse("done", {
-                "analysis": analysis,
-                "deterministic": {
-                    "keyword_overlap": context_set["deterministic_analysis"]["keyword_overlap"],
-                    "ats_warnings": context_set["deterministic_analysis"]["ats_warnings"],
+            yield _sse(
+                "done",
+                {
+                    "analysis": analysis,
+                    "deterministic": {
+                        "keyword_overlap": context_set["deterministic_analysis"]["keyword_overlap"],
+                        "ats_warnings": context_set["deterministic_analysis"]["ats_warnings"],
+                    },
+                    "context_path": context_path,
+                    "template_path": "",
+                    "application_id": application_id,
+                    "application_run_id": application_run_id,
                 },
-                "context_path": context_path,
-                "template_path": "",
-                "application_id": application_id,
-                "application_run_id": application_run_id,
-            })
+            )
         except anthropic.APIConnectionError as exc:
             logger.error("Anthropic API connection error during streaming analysis: %s", exc)
-            yield _sse("error", {
-                "error": "Connection to AI service failed. Please try again.",
-                "http_status": 503,
-            })
+            yield _sse(
+                "error",
+                {
+                    "error": "Connection to AI service failed. Please try again.",
+                    "http_status": 503,
+                },
+            )
         except LLMResponseError as exc:
             logger.error(
                 "LLM streaming analysis response failed validation after retry: %s",
                 exc.validation_error,
             )
-            yield _sse("error", {
-                "error": "AI analysis response was malformed after retry. Please try again.",
-                "detail": exc.validation_error,
-                "http_status": 502,
-            })
+            yield _sse(
+                "error",
+                {
+                    "error": "AI analysis response was malformed after retry. Please try again.",
+                    "detail": exc.validation_error,
+                    "http_status": 502,
+                },
+            )
         except Exception:
             logger.exception("Streaming analysis failed unexpectedly")
-            yield _sse("error", {
-                "error": "Internal error during analysis.",
-                "http_status": 500,
-            })
+            yield _sse(
+                "error",
+                {
+                    "error": "Internal error during analysis.",
+                    "http_status": 500,
+                },
+            )
 
     return Response(
         stream(),
@@ -278,7 +304,9 @@ def _run_analysis_corpus_backed_streaming(
 
 
 def _run_analysis_corpus_backed(
-    safe_user: str, jd_text: str, data: dict,
+    safe_user: str,
+    jd_text: str,
+    data: dict,
 ) -> ResponseReturnValue:
     """DB-backed analyze path used when CORPUS_BACKED=1.
 
@@ -318,17 +346,19 @@ def _run_analysis_corpus_backed(
             )
         except ValueError as exc:
             session.rollback()
-            logger.warning(
-                "[analyze 409] user=%s needs_onboarding: %s", safe_user, exc
-            )
-            return jsonify({
-                "error": str(exc),
-                "needs_onboarding": True,
-            }), 409
+            logger.warning("[analyze 409] user=%s needs_onboarding: %s", safe_user, exc)
+            return jsonify(
+                {
+                    "error": str(exc),
+                    "needs_onboarding": True,
+                }
+            ), 409
 
         logger.info(
             "DB-backed analysis for %s: application_id=%d run_id=%s",
-            safe_user, application.id, run_id,
+            safe_user,
+            application.id,
+            run_id,
         )
 
         client = _get_client()
@@ -344,10 +374,12 @@ def _run_analysis_corpus_backed(
                 "LLM analysis response failed validation after retry: %s",
                 exc.validation_error,
             )
-            return jsonify({
-                "error": "AI analysis response was malformed after retry. Please try again.",
-                "detail": exc.validation_error,
-            }), 502
+            return jsonify(
+                {
+                    "error": "AI analysis response was malformed after retry. Please try again.",
+                    "detail": exc.validation_error,
+                }
+            ), 502
 
         # Persist analysis on the application_run row + keep the JSON file
         # path live for unchanged downstream routes.
@@ -364,22 +396,25 @@ def _run_analysis_corpus_backed(
         session.commit()
         logger.info("Analysis complete for %s, saved to %s", safe_user, context_path)
 
-        return jsonify({
-            "analysis": analysis,
-            "deterministic": {
-                "keyword_overlap": context_set["deterministic_analysis"]["keyword_overlap"],
-                "ats_warnings": context_set["deterministic_analysis"]["ats_warnings"],
-            },
-            "context_path": context_path,
-            "template_path": "",  # no file-backed template in DB mode; Phase C picks a persona
-            "application_id": application.id,
-            "application_run_id": application_run.id,
-        })
+        return jsonify(
+            {
+                "analysis": analysis,
+                "deterministic": {
+                    "keyword_overlap": context_set["deterministic_analysis"]["keyword_overlap"],
+                    "ats_warnings": context_set["deterministic_analysis"]["ats_warnings"],
+                },
+                "context_path": context_path,
+                "template_path": "",  # no file-backed template in DB mode; Phase C picks a persona
+                "application_id": application.id,
+                "application_run_id": application_run.id,
+            }
+        )
     finally:
         session.close()
 
 
 # --- Clarify ---
+
 
 @analysis_bp.route("/api/clarify", methods=["POST"])
 def run_clarify() -> ResponseReturnValue:
@@ -410,7 +445,8 @@ def run_clarify() -> ResponseReturnValue:
     # context path's parent directory (OUTPUT_DIR/<username>/context_*.json).
     safe_user = (
         _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
-        if username else None
+        if username
+        else None
     )
     if not safe_user:
         safe_user = secure_filename(cp.parent.name)
@@ -435,10 +471,12 @@ def run_clarify() -> ResponseReturnValue:
         return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
     except LLMResponseError as exc:
         logger.error("LLM clarify response failed validation after retry: %s", exc.validation_error)
-        return jsonify({
-            "error": "AI clarification response was malformed after retry. Please try again.",
-            "detail": exc.validation_error,
-        }), 502
+        return jsonify(
+            {
+                "error": "AI clarification response was malformed after retry. Please try again.",
+                "detail": exc.validation_error,
+            }
+        ), 502
 
     questions = result.get("questions", [])
     # Persist the questions back to the same context file so the user can
@@ -449,11 +487,13 @@ def run_clarify() -> ResponseReturnValue:
     cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
 
     logger.info("Clarify produced %d questions for %s", len(questions), safe_user)
-    return jsonify({
-        "questions": questions,
-        "reasoning": result.get("reasoning", ""),
-        "context_path": str(cp),
-    })
+    return jsonify(
+        {
+            "questions": questions,
+            "reasoning": result.get("reasoning", ""),
+            "context_path": str(cp),
+        }
+    )
 
 
 def _persist_clarifications_to_memory(context_set: ContextSet, answered: dict[str, str]) -> int:
@@ -502,13 +542,15 @@ def _persist_clarifications_to_memory(context_set: ContextSet, answered: dict[st
             return 0
         candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return 0
 
         existing: dict[str, Clarification] = {}
         for row in session.query(Clarification).filter_by(
-            candidate_id=candidate.id, origin_application_id=app_row.id,
+            candidate_id=candidate.id,
+            origin_application_id=app_row.id,
         ):
             existing[_norm_qa(row.question)] = row
 
@@ -588,7 +630,8 @@ def submit_clarifications() -> ResponseReturnValue:
     # authority; this is belt-and-suspenders.
     safe_user = (
         _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
-        if username else None
+        if username
+        else None
     )
     if not safe_user:
         safe_user = secure_filename(cp.parent.name)
@@ -636,14 +679,19 @@ def submit_clarifications() -> ResponseReturnValue:
 
     logger.info(
         "Stored %d clarification answers (out of %d questions) for %s; %d memory rows",
-        len(cleaned), len(valid_ids), safe_user, memory_rows,
+        len(cleaned),
+        len(valid_ids),
+        safe_user,
+        memory_rows,
     )
-    return jsonify({
-        "ok": True,
-        "answered": len(cleaned),
-        "total": len(valid_ids),
-        "memory_rows": memory_rows,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "answered": len(cleaned),
+            "total": len(valid_ids),
+            "memory_rows": memory_rows,
+        }
+    )
 
 
 @analysis_bp.route("/api/iterate-clarify", methods=["POST"])
@@ -675,7 +723,8 @@ def run_iterate_clarify() -> ResponseReturnValue:
 
     safe_user = (
         _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
-        if username else None
+        if username
+        else None
     )
     if not safe_user:
         safe_user = secure_filename(cp.parent.name)
@@ -692,9 +741,11 @@ def run_iterate_clarify() -> ResponseReturnValue:
         # The iteration interview is meaningful only after at least one
         # generation has produced a draft. Before that, the regular /api/clarify
         # route is the right one — it works off the analyzer output, not a draft.
-        return jsonify({
-            "error": "Iteration interview requires at least one generated draft. Run /api/generate first.",
-        }), 400
+        return jsonify(
+            {
+                "error": "Iteration interview requires at least one generated draft. Run /api/generate first.",
+            }
+        ), 400
 
     # Resolve current drafts (edited > last_generated > primary fallback).
     # Reuses the same precedence generate() applies, so the questions target
@@ -711,39 +762,54 @@ def run_iterate_clarify() -> ResponseReturnValue:
     prior_clarifications: list[dict] = []
     for q in prior_qs:
         qid = q.get("id", "")
-        ans = prior_answers.get(qid, "").strip() if isinstance(prior_answers.get(qid, ""), str) else ""
+        ans = (
+            prior_answers.get(qid, "").strip()
+            if isinstance(prior_answers.get(qid, ""), str)
+            else ""
+        )
         if ans:
-            prior_clarifications.append({
-                "question": q.get("text", ""),
-                "answer": ans,
-                "kind": q.get("kind", ""),
-            })
+            prior_clarifications.append(
+                {
+                    "question": q.get("text", ""),
+                    "answer": ans,
+                    "kind": q.get("kind", ""),
+                }
+            )
 
     run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
     client = _get_client()
     logger.info(
         "Starting iteration clarify for %s iteration=%d run_id=%s",
-        safe_user, iteration, run_id,
+        safe_user,
+        iteration,
+        run_id,
     )
     try:
         result = clarify_iteration(
-            client, context_set, analysis,
+            client,
+            context_set,
+            analysis,
             current_resume_text=current_resume_text,
             current_cover_letter_text=current_cover_text,
             recent_edits_summary=edits_summary,
             deterministic_signals=signals,
             prior_clarifications=prior_clarifications,
-            username=safe_user, run_id=run_id,
+            username=safe_user,
+            run_id=run_id,
         )
     except anthropic.APIConnectionError as exc:
         logger.error("Anthropic API connection error during iterate-clarify: %s", exc)
         return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
     except LLMResponseError as exc:
-        logger.error("LLM iterate-clarify response failed validation after retry: %s", exc.validation_error)
-        return jsonify({
-            "error": "AI iteration-interview response was malformed after retry. Please try again.",
-            "detail": exc.validation_error,
-        }), 502
+        logger.error(
+            "LLM iterate-clarify response failed validation after retry: %s", exc.validation_error
+        )
+        return jsonify(
+            {
+                "error": "AI iteration-interview response was malformed after retry. Please try again.",
+                "detail": exc.validation_error,
+            }
+        ), 502
 
     new_questions = result.get("questions", []) or []
 
@@ -772,23 +838,29 @@ def run_iterate_clarify() -> ResponseReturnValue:
     context_set["run_id"] = run_id
 
     notes = list(context_set.get("iteration_notes") or [])
-    notes.append({
-        "timestamp": datetime.now().isoformat(),
-        "action": "iterate_clarify",
-        "summary": f"surfaced {len(renamed)} iteration questions at iteration {iteration}",
-    })
+    notes.append(
+        {
+            "timestamp": datetime.now().isoformat(),
+            "action": "iterate_clarify",
+            "summary": f"surfaced {len(renamed)} iteration questions at iteration {iteration}",
+        }
+    )
     context_set["iteration_notes"] = notes
 
     cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
 
     logger.info(
         "iterate-clarify produced %d questions for %s (iteration=%d)",
-        len(renamed), safe_user, iteration,
+        len(renamed),
+        safe_user,
+        iteration,
     )
-    return jsonify({
-        "questions": renamed,
-        "reasoning": result.get("reasoning", ""),
-        "context_path": str(cp),
-        "iteration": iteration,
-        "signals": signals,
-    })
+    return jsonify(
+        {
+            "questions": renamed,
+            "reasoning": result.get("reasoning", ""),
+            "context_path": str(cp),
+            "iteration": iteration,
+            "signals": signals,
+        }
+    )

@@ -36,8 +36,7 @@ _ICON = Help.icon("panelUser")
 @pytest.mark.ux
 @pytest.mark.slow
 @pytest.mark.show_welcome
-def test_welcome_auto_opens_on_first_view(page: Page, live_server: str,
-                                          ux_app: ModuleType) -> None:
+def test_welcome_auto_opens_on_first_view(page: Page, live_server: str, ux_app: ModuleType) -> None:
     BasePage(page, live_server).load()
 
     page.wait_for_selector(Help.MODAL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
@@ -53,8 +52,7 @@ def test_welcome_auto_opens_on_first_view(page: Page, live_server: str,
 @pytest.mark.ux
 @pytest.mark.slow
 @pytest.mark.show_welcome
-def test_welcome_closes_on_click_away(page: Page, live_server: str,
-                                      ux_app: ModuleType) -> None:
+def test_welcome_closes_on_click_away(page: Page, live_server: str, ux_app: ModuleType) -> None:
     BasePage(page, live_server).load()
     page.wait_for_selector(Help.MODAL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
 
@@ -67,23 +65,20 @@ def test_welcome_closes_on_click_away(page: Page, live_server: str,
 @pytest.mark.ux
 @pytest.mark.slow
 @pytest.mark.show_welcome
-def test_welcome_shows_once_only(page: Page, live_server: str,
-                                 ux_app: ModuleType) -> None:
+def test_welcome_shows_once_only(page: Page, live_server: str, ux_app: ModuleType) -> None:
     BasePage(page, live_server).load()
     # First view fires (and the app stamps the cb_help_seen flag)...
     page.wait_for_selector(Help.MODAL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
 
     # ...so a reload in the same browser context must NOT re-open it.
     page.reload()
-    page.wait_for_selector(Help.MODAL_TITLE, state="attached",
-                           timeout=DEFAULT_TIMEOUT_MS)
+    page.wait_for_selector(Help.MODAL_TITLE, state="attached", timeout=DEFAULT_TIMEOUT_MS)
     assert page.locator(Help.MODAL).is_hidden()
 
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_icon_reopens_block_modal(page: Page, live_server: str,
-                                  ux_app: ModuleType) -> None:
+def test_icon_reopens_block_modal(page: Page, live_server: str, ux_app: ModuleType) -> None:
     # Welcome suppressed (no show_welcome marker) → the landing has no overlay.
     BasePage(page, live_server).load()
     page.wait_for_selector(_ICON, state="visible", timeout=DEFAULT_TIMEOUT_MS)
@@ -103,8 +98,7 @@ def test_icon_reopens_block_modal(page: Page, live_server: str,
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_closing_restores_focus_to_icon(page: Page, live_server: str,
-                                        ux_app: ModuleType) -> None:
+def test_closing_restores_focus_to_icon(page: Page, live_server: str, ux_app: ModuleType) -> None:
     BasePage(page, live_server).load()
     page.wait_for_selector(_ICON, state="visible", timeout=DEFAULT_TIMEOUT_MS)
 
@@ -120,8 +114,9 @@ def test_closing_restores_focus_to_icon(page: Page, live_server: str,
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_help_aria_wiring_and_no_color_only_meaning(page: Page, live_server: str,
-                                                    ux_app: ModuleType) -> None:
+def test_help_aria_wiring_and_no_color_only_meaning(
+    page: Page, live_server: str, ux_app: ModuleType
+) -> None:
     BasePage(page, live_server).load()
     page.wait_for_selector(_ICON, state="visible", timeout=DEFAULT_TIMEOUT_MS)
 

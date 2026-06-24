@@ -140,18 +140,22 @@ def _infer_sections(text: str) -> list:
         if last_end > 0 or match.start() > 0:
             content = text[last_end : match.start()].strip()
             if content:
-                sections.append({
-                    "heading": last_heading,
-                    "content": [line for line in content.split("\n") if line.strip()],
-                })
+                sections.append(
+                    {
+                        "heading": last_heading,
+                        "content": [line for line in content.split("\n") if line.strip()],
+                    }
+                )
         last_heading = match.group(0).strip().lstrip("#").strip()
         last_end = match.end()
 
     remaining = text[last_end:].strip()
     if remaining:
-        sections.append({
-            "heading": last_heading,
-            "content": [line for line in remaining.split("\n") if line.strip()],
-        })
+        sections.append(
+            {
+                "heading": last_heading,
+                "content": [line for line in remaining.split("\n") if line.strip()],
+            }
+        )
 
     return sections

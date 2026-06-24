@@ -31,6 +31,7 @@ VALID_CATEGORIES = [
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _analyze_payload(hidden_qualities) -> dict:
     """A full, shape-valid AnalyzeResponse payload with a pluggable
     hidden_qualities value so tests can vary just that field."""
@@ -60,6 +61,7 @@ def _clarify_questions(kinds: list[str]) -> dict:
 # ---------------------------------------------------------------------------
 # HiddenQualityItem — category enum enforcement
 # ---------------------------------------------------------------------------
+
 
 class TestHiddenQualityItem:
     @pytest.mark.parametrize("category", VALID_CATEGORIES)
@@ -91,6 +93,7 @@ class TestHiddenQualityItem:
 # ---------------------------------------------------------------------------
 # AnalyzeResponse — hidden_qualities typed as list[HiddenQualityItem]
 # ---------------------------------------------------------------------------
+
 
 class TestAnalyzeResponseHiddenQualities:
     def test_passes_with_structured_items(self):
@@ -124,6 +127,7 @@ class TestAnalyzeResponseHiddenQualities:
 # ---------------------------------------------------------------------------
 # clarify() <context_signals> render — structured + legacy tolerant
 # ---------------------------------------------------------------------------
+
 
 class TestClarifyContextSignalsRender:
     def _run_clarify(self, hidden_qualities):

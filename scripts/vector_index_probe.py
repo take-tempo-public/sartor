@@ -60,7 +60,8 @@ def main() -> int:
         logger.info(
             "S3 vector tier inactive (%s). Run `python -m scripts.build_vector_index` "
             "first, then re-run this probe. Index dir: %s",
-            reason, _VECTOR_INDEX_DIR,
+            reason,
+            _VECTOR_INDEX_DIR,
         )
         return 0
 
@@ -77,7 +78,8 @@ def main() -> int:
         git_hits = sum(1 for u in base if u.tier is Tier.GIT)
         base_keys = {(u.source_id, u.citation) for u in base}
         new_vec = [
-            u for u in withvec
+            u
+            for u in withvec
             if u.tier is Tier.VECTOR and (u.source_id, u.citation) not in base_keys
         ]
         if git_hits == 0:
@@ -91,7 +93,9 @@ def main() -> int:
     logger.info(
         "%d/%d questions had NO git-grep hit (lexical miss); the vector tier recovered "
         "%d of those with a cited code chunk.",
-        lexical_miss, len(QUESTIONS), vector_recovered,
+        lexical_miss,
+        len(QUESTIONS),
+        vector_recovered,
     )
     return 0
 

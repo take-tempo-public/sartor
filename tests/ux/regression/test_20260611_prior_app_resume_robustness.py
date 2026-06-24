@@ -40,19 +40,28 @@ from ui_pages.selectors import PriorApps, Wizard
 def _seed_analyze_only_app(ux_app: ModuleType, candidate_id: int) -> int:
     """An application that ran analyze but never generated — with a real on-disk
     context file carrying the analysis (the exact #4 gap)."""
-    aid = seed_application(candidate_id, title="Senior Platform Engineer",
-                           company="", jd_text="Kafka at scale.")
+    aid = seed_application(
+        candidate_id, title="Senior Platform Engineer", company="", jd_text="Kafka at scale."
+    )
     rid = seed_run(aid, iteration=0)  # no generated_resume_md
-    write_context_file(ux_app, "alice", "context_an_iter0.json", {
-        "application_run_id": rid,
-        "iteration": 0,
-        "llm_analysis": dict(CANNED_ANALYSIS),
-        "deterministic_analysis": {
-            "keyword_overlap": {"match_score": 0.42, "matched": ["python"],
-                                "missing_from_resume": ["kafka"]},
-            "ats_warnings": [],
+    write_context_file(
+        ux_app,
+        "alice",
+        "context_an_iter0.json",
+        {
+            "application_run_id": rid,
+            "iteration": 0,
+            "llm_analysis": dict(CANNED_ANALYSIS),
+            "deterministic_analysis": {
+                "keyword_overlap": {
+                    "match_score": 0.42,
+                    "matched": ["python"],
+                    "missing_from_resume": ["kafka"],
+                },
+                "ats_warnings": [],
+            },
         },
-    })
+    )
     return aid
 
 
@@ -67,10 +76,14 @@ def _seed_pending_proposal(candidate_id: int, application_run_id: int) -> None:
         assert exp is not None
         bullet = s.query(Bullet).filter_by(experience_id=exp.id).first()
         assert bullet is not None
-        s.add(ProposalReview(
-            application_run_id=application_run_id, bullet_id=bullet.id,
-            original_text="proposed", decision="pending",
-        ))
+        s.add(
+            ProposalReview(
+                application_run_id=application_run_id,
+                bullet_id=bullet.id,
+                original_text="proposed",
+                decision="pending",
+            )
+        )
         s.commit()
     finally:
         s.close()
@@ -79,7 +92,9 @@ def _seed_pending_proposal(candidate_id: int, application_run_id: int) -> None:
 @pytest.mark.ux
 @pytest.mark.slow
 def test_analyze_only_application_resumes_to_step_1(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
 ) -> None:
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)  # non-empty corpus → smart landing keeps us on Tailor
@@ -104,12 +119,13 @@ def test_analyze_only_application_resumes_to_step_1(
 @pytest.mark.ux
 @pytest.mark.slow
 def test_card_company_editable_and_pill_relabeled(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
 ) -> None:
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)  # gives the pending proposal a real bullet FK
-    aid = seed_application(cid, title="Staff PM", company="",
-                           jd_text="Own the roadmap.")
+    aid = seed_application(cid, title="Staff PM", company="", jd_text="Own the roadmap.")
     rid = seed_run(aid, iteration=0)
     _seed_pending_proposal(cid, rid)
 

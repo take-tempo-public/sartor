@@ -49,8 +49,7 @@ _ALL_HELP_PANELS = [
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_every_panel_has_help_icon(page: Page, live_server: str,
-                                   ux_app: ModuleType) -> None:
+def test_every_panel_has_help_icon(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """Each registered panel gets an (i) with real dialog semantics and a
     non-empty accessible name — the meaning rides the glyph + label, not colour.
 
@@ -83,15 +82,17 @@ _OPEN_CYCLE = [
 @pytest.mark.ux
 @pytest.mark.slow
 @pytest.mark.parametrize("block_id, tab_btn, reveal", _OPEN_CYCLE)
-def test_panel_help_opens_and_restores_focus(page: Page, live_server: str,
-                                             ux_app: ModuleType, block_id: str,
-                                             tab_btn: str | None,
-                                             reveal: bool) -> None:
+def test_panel_help_opens_and_restores_focus(
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
+    block_id: str,
+    tab_btn: str | None,
+    reveal: bool,
+) -> None:
     BasePage(page, live_server).load()
     if reveal:  # step panels start hidden until the wizard reveals them
-        page.evaluate(
-            f"() => document.getElementById('{block_id}').classList.remove('hidden')"
-        )
+        page.evaluate(f"() => document.getElementById('{block_id}').classList.remove('hidden')")
     if tab_btn:
         page.click(tab_btn)
 
@@ -120,8 +121,7 @@ def test_panel_help_opens_and_restores_focus(page: Page, live_server: str,
 @pytest.mark.ux
 @pytest.mark.slow
 @pytest.mark.show_tour
-def test_welcome_autoopens_under_tour(page: Page, live_server: str,
-                                      ux_app: ModuleType) -> None:
+def test_welcome_autoopens_under_tour(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """With the tour opted in (nothing pre-seeded), the welcome still fires on
     first view — it is the entry point of the KW3 sequence."""
     BasePage(page, live_server).load()
@@ -133,8 +133,9 @@ def test_welcome_autoopens_under_tour(page: Page, live_server: str,
 @pytest.mark.ux
 @pytest.mark.slow
 @pytest.mark.show_tour
-def test_tour_stop_requires_arming_and_fires_once(page: Page, live_server: str,
-                                                  ux_app: ModuleType) -> None:
+def test_tour_stop_requires_arming_and_fires_once(
+    page: Page, live_server: str, ux_app: ModuleType
+) -> None:
     """A tour stop is gated by the in-memory armed flag (new-users-only) and the
     once-ever cb_help_seen seam: returning users (never armed) never see it, and
     an armed stop never re-fires after it has been shown once."""
@@ -163,8 +164,9 @@ def test_tour_stop_requires_arming_and_fires_once(page: Page, live_server: str,
 @pytest.mark.ux
 @pytest.mark.slow
 @pytest.mark.show_tour
-def test_wizard_stop_fires_only_when_panel_visible(page: Page, live_server: str,
-                                                   ux_app: ModuleType) -> None:
+def test_wizard_stop_fires_only_when_panel_visible(
+    page: Page, live_server: str, ux_app: ModuleType
+) -> None:
     """A wizard step's tour stop must not fire while its panel sits on a hidden
     top tab (offsetParent === null), only once the Tailor tab brings it on
     screen."""
@@ -184,8 +186,6 @@ def test_wizard_stop_fires_only_when_panel_visible(page: Page, live_server: str,
     assert page.locator(Help.MODAL).is_hidden()
 
     # Back on the Tailor tab the panel is on screen → switchTopTab fires the stop.
-    page.evaluate(
-        "() => switchTopTab('tailor', document.getElementById('topTabTailor'))"
-    )
+    page.evaluate("() => switchTopTab('tailor', document.getElementById('topTabTailor'))")
     page.wait_for_selector(Help.MODAL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
     assert "Step 1" in (page.locator(Help.MODAL_TITLE).text_content() or "")

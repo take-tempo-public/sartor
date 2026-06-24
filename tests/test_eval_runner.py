@@ -51,15 +51,17 @@ class TestNormalizeEvalRecord:
         assert out["reasons"] == []
 
     def test_existing_fields_retained(self):
-        out = _normalize_eval_record({
-            "score": 5,
-            "schema_version": 2,
-            "score_max": 5.0,
-            "prompt_version": "2026-05-09.1",
-            "run_id": "abc123def456",
-            "failed_rules": ["invented_metric"],
-            "reasons": ["test"],
-        })
+        out = _normalize_eval_record(
+            {
+                "score": 5,
+                "schema_version": 2,
+                "score_max": 5.0,
+                "prompt_version": "2026-05-09.1",
+                "run_id": "abc123def456",
+                "failed_rules": ["invented_metric"],
+                "reasons": ["test"],
+            }
+        )
         assert out["schema_version"] == 2
         assert out["prompt_version"] == "2026-05-09.1"
         assert out["run_id"] == "abc123def456"
@@ -82,11 +84,13 @@ class TestPassThreshold:
 
     def test_pass_threshold_is_float(self):
         from evals.runner import PASS_THRESHOLD
+
         assert PASS_THRESHOLD == 4.0
         assert isinstance(PASS_THRESHOLD, float)
 
     def test_classification_at_boundary(self):
         from evals.runner import PASS_THRESHOLD
+
         assert 4.0 >= PASS_THRESHOLD
         assert 3.9 < PASS_THRESHOLD
         assert 4.1 >= PASS_THRESHOLD
@@ -150,9 +154,7 @@ class TestGradeCoercion:
         from evals.runner import _grade
 
         client = MagicMock()
-        client.messages.create.return_value = self._make_judge_response(
-            "not json at all"
-        )
+        client.messages.create.return_value = self._make_judge_response("not json at all")
 
         rubric = tmp_path / "rubric.md"
         rubric.write_text("Grade this.", encoding="utf-8")
@@ -171,9 +173,7 @@ class TestGradeCoercion:
         from evals.runner import _grade
 
         client = MagicMock()
-        client.messages.create.return_value = self._make_judge_response(
-            "not json at all"
-        )
+        client.messages.create.return_value = self._make_judge_response("not json at all")
 
         rubric = tmp_path / "rubric.md"
         rubric.write_text("Grade this.", encoding="utf-8")
@@ -188,10 +188,12 @@ class TestSchemaConstants:
 
     def test_schema_version_present(self):
         from evals.runner import SCHEMA_VERSION
+
         assert SCHEMA_VERSION == 3
 
     def test_score_max_present(self):
         from evals.runner import SCORE_MAX
+
         assert SCORE_MAX == 5.0
 
 
@@ -201,6 +203,7 @@ class TestRegressionDetection:
 
     def test_no_baseline_returns_none(self):
         from evals.runner import _detect_regression
+
         out = _detect_regression("a", "grounding", 4.5, baseline={})
         assert out is None
 
@@ -208,6 +211,7 @@ class TestRegressionDetection:
         # Force a tight delta so any drop > 0.1 trips
         monkeypatch.setattr("evals.runner.REGRESSION_DELTA", 0.1)
         from evals.runner import _detect_regression
+
         baseline = {("a", "grounding"): {"score": 4.8, "prompt_version": "v1"}}
         out = _detect_regression("a", "grounding", 3.5, baseline)
         assert out is not None
@@ -219,6 +223,7 @@ class TestRegressionDetection:
     def test_score_improvement_flagged(self, monkeypatch):
         monkeypatch.setattr("evals.runner.REGRESSION_DELTA", 0.1)
         from evals.runner import _detect_regression
+
         baseline = {("a", "tone"): {"score": 3.8}}
         out = _detect_regression("a", "tone", 4.7, baseline)
         assert out is not None
@@ -229,6 +234,7 @@ class TestRegressionDetection:
     def test_within_delta_is_neither(self, monkeypatch):
         monkeypatch.setattr("evals.runner.REGRESSION_DELTA", 0.5)
         from evals.runner import _detect_regression
+
         baseline = {("a", "tone"): {"score": 4.5}}
         out = _detect_regression("a", "tone", 4.2, baseline)
         assert out is not None
@@ -240,6 +246,7 @@ class TestRegressionDetection:
         # Legacy int score in baseline should still compare
         monkeypatch.setattr("evals.runner.REGRESSION_DELTA", 0.5)
         from evals.runner import _detect_regression
+
         baseline = {("a", "grounding"): {"score": 5}}
         out = _detect_regression("a", "grounding", 3.0, baseline)
         assert out is not None
@@ -250,6 +257,7 @@ class TestRegressionDetection:
         # Two prior result files + a "current" one. Current file's records
         # should be excluded so the new run can be compared against history only.
         from evals.runner import _load_baseline_scores
+
         results_dir = tmp_path / "results"
         results_dir.mkdir()
         monkeypatch.setattr("evals.runner.RESULTS_DIR", results_dir)
@@ -295,9 +303,8 @@ class TestGroundednessComposite:
 
     def test_l0_only_by_default(self):
         from evals.runner import _groundedness_composite
-        block = _groundedness_composite(
-            {"fabricated_specifics_rate": 0.2, "flagged": 3}
-        )
+
+        block = _groundedness_composite({"fabricated_specifics_rate": 0.2, "flagged": 3})
         assert block["layers"] == ["L0"]
         assert block["fabricated_specifics_rate"] == 0.2
         assert block["flagged_count"] == 3
@@ -308,21 +315,22 @@ class TestGroundednessComposite:
 
     def test_clean_l0_scores_five(self):
         from evals.runner import _groundedness_composite
-        block = _groundedness_composite(
-            {"fabricated_specifics_rate": 0.0, "flagged": 0}
-        )
+
+        block = _groundedness_composite({"fabricated_specifics_rate": 0.0, "flagged": 0})
         assert block["score"] == 5.0
 
     def test_enrich_adds_l1_l2_in_place(self):
         from evals.runner import _enrich_groundedness, _groundedness_composite
-        block = _groundedness_composite(
-            {"fabricated_specifics_rate": 0.0, "flagged": 0}
+
+        block = _groundedness_composite({"fabricated_specifics_rate": 0.0, "flagged": 0})
+        _enrich_groundedness(
+            block,
+            {
+                "bullet_count": 10,
+                "nli_summary": {"mean_entailment": 0.82, "contradiction_count": 1},
+                "minicheck_summary": {"mean_score": 0.74, "low_score_count": 2},
+            },
         )
-        _enrich_groundedness(block, {
-            "bullet_count": 10,
-            "nli_summary": {"mean_entailment": 0.82, "contradiction_count": 1},
-            "minicheck_summary": {"mean_score": 0.74, "low_score_count": 2},
-        })
         assert block["layers"] == ["L0", "L1", "L2"]
         assert block["mean_entailment"] == 0.82
         assert block["contradiction_count"] == 1
@@ -332,14 +340,16 @@ class TestGroundednessComposite:
 
     def test_enrich_handles_zero_bullets(self):
         from evals.runner import _enrich_groundedness, _groundedness_composite
-        block = _groundedness_composite(
-            {"fabricated_specifics_rate": 0.0, "flagged": 0}
+
+        block = _groundedness_composite({"fabricated_specifics_rate": 0.0, "flagged": 0})
+        _enrich_groundedness(
+            block,
+            {
+                "bullet_count": 0,
+                "nli_summary": {"mean_entailment": 0.0, "contradiction_count": 0},
+                "minicheck_summary": {"mean_score": 0.0, "low_score_count": 0},
+            },
         )
-        _enrich_groundedness(block, {
-            "bullet_count": 0,
-            "nli_summary": {"mean_entailment": 0.0, "contradiction_count": 0},
-            "minicheck_summary": {"mean_score": 0.0, "low_score_count": 0},
-        })
         assert block["unsupported_claim_rate"] == 0.0
 
 
@@ -359,8 +369,12 @@ class TestRunSuite:
         def fake_run_suite(**kwargs):
             captured.update(kwargs)
             return EvalRunResult(
-                exit_code=2, out_path=None, n_pass=1, n_fail=1,
-                regressions=[], improvements=[],
+                exit_code=2,
+                out_path=None,
+                n_pass=1,
+                n_fail=1,
+                regressions=[],
+                improvements=[],
             )
 
         monkeypatch.setattr(runner, "run_suite", fake_run_suite)
@@ -401,16 +415,21 @@ class TestRunSuite:
         monkeypatch.setattr(runner, "analyze", lambda *a, **k: {"overall_strategy": "ok"})
         monkeypatch.setattr(runner, "clarify", lambda *a, **k: {"questions": [], "reasoning": ""})
         monkeypatch.setattr(
-            runner, "generate",
-            lambda *a, **k: {"resume_content": "- Led a project\n- Built a system",
-                             "cover_letter_content": "Dear team,"},
+            runner,
+            "generate",
+            lambda *a, **k: {
+                "resume_content": "- Led a project\n- Built a system",
+                "cover_letter_content": "Dear team,",
+            },
         )
         monkeypatch.setattr(
-            runner, "_grade",
+            runner,
+            "_grade",
             lambda *a, **k: {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"},
         )
         monkeypatch.setattr(
-            runner, "_score_distinctiveness",
+            runner,
+            "_score_distinctiveness",
             lambda *a, **k: {"score": 4.0, "summary": "ok"},
         )
 
@@ -422,7 +441,10 @@ class TestRunSuite:
 
         self._stub_pipeline(runner, monkeypatch, tmp_path)
         result = run_suite(
-            suite="synthetic", subset="smoke", out_dir=tmp_path, client=MagicMock(),
+            suite="synthetic",
+            subset="smoke",
+            out_dir=tmp_path,
+            client=MagicMock(),
         )
         assert isinstance(result, EvalRunResult)
         assert result.out_path is not None and result.out_path.exists()
@@ -452,11 +474,20 @@ class TestRunSuite:
         self._stub_pipeline(runner, monkeypatch, tmp_path)
         events: list[str] = []
         run_suite(
-            suite="synthetic", subset="smoke", fixture_name="sre-mid-level",
-            out_dir=tmp_path, client=MagicMock(),
+            suite="synthetic",
+            subset="smoke",
+            fixture_name="sre-mid-level",
+            out_dir=tmp_path,
+            client=MagicMock(),
             progress=lambda ev, payload: events.append(ev),
         )
-        for milestone in ("fixture_start", "analyzing", "generating", "rubric_done", "fixture_done"):
+        for milestone in (
+            "fixture_start",
+            "analyzing",
+            "generating",
+            "rubric_done",
+            "fixture_done",
+        ):
             assert milestone in events, f"missing progress event: {milestone}"
 
     def test_run_suite_unknown_fixture_raises(self, tmp_path, monkeypatch):
@@ -493,16 +524,26 @@ class TestEvalGateGuard:
         monkeypatch.setattr(runner, "analyze", lambda *a, **k: {"overall_strategy": "ok"})
         monkeypatch.setattr(runner, "clarify", lambda *a, **k: {"questions": [], "reasoning": ""})
         monkeypatch.setattr(
-            runner, "generate",
-            lambda *a, **k: {"resume_content": "- Led a project\n- Built a system",
-                             "cover_letter_content": "Dear team,"},
+            runner,
+            "generate",
+            lambda *a, **k: {
+                "resume_content": "- Led a project\n- Built a system",
+                "cover_letter_content": "Dear team,",
+            },
         )
         monkeypatch.setattr(
-            runner, "_grade",
-            lambda *a, **k: {"score": grade_score, "reasons": [], "failed_rules": [], "status": "ok"},
+            runner,
+            "_grade",
+            lambda *a, **k: {
+                "score": grade_score,
+                "reasons": [],
+                "failed_rules": [],
+                "status": "ok",
+            },
         )
         monkeypatch.setattr(
-            runner, "_score_distinctiveness",
+            runner,
+            "_score_distinctiveness",
             lambda *a, **k: {"score": 4.0, "summary": "ok"},
         )
 
@@ -514,12 +555,15 @@ class TestEvalGateGuard:
 
         self._stub_pipeline(runner, monkeypatch, tmp_path, grade_score=3.5)
         result = run_suite(
-            suite="synthetic", subset="smoke", out_dir=tmp_path, client=MagicMock(),
+            suite="synthetic",
+            subset="smoke",
+            out_dir=tmp_path,
+            client=MagicMock(),
         )
         # 3 committed synthetic fixtures × grounding, all below threshold.
         assert result.n_fail == 3
         assert result.n_pass == 0
-        assert result.regressions == []   # no baseline seeded → nothing to regress against
+        assert result.regressions == []  # no baseline seeded → nothing to regress against
         assert result.exit_code == 2
 
     def test_regression_past_delta_forces_exit_2(self, tmp_path, monkeypatch):
@@ -544,7 +588,10 @@ class TestEvalGateGuard:
 
         self._stub_pipeline(runner, monkeypatch, tmp_path, grade_score=4.2)
         result = run_suite(
-            suite="synthetic", subset="smoke", out_dir=tmp_path, client=MagicMock(),
+            suite="synthetic",
+            subset="smoke",
+            out_dir=tmp_path,
+            client=MagicMock(),
         )
         # 4.2 >= PASS_THRESHOLD → zero threshold fails; 4.8 - 4.2 = 0.6 > REGRESSION_DELTA.
         assert result.n_fail == 0

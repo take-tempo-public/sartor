@@ -33,6 +33,7 @@ def db_app(tmp_path, monkeypatch):
     """
     # Ensure DB lives in tmp_path and gets a fresh schema for this test
     import db.session as db_session
+
     monkeypatch.setattr(db_session, "DEFAULT_DB_PATH", tmp_path / "test.sqlite")
     db_session._engine = None
     db_session._SessionLocal = None
@@ -62,20 +63,33 @@ def _seed_db_candidate(db_path: Path) -> int:
         session.flush()
 
         e = Experience(
-            candidate_id=c.id, company="Polaris",
-            start_date="2022-09", end_date=None,
+            candidate_id=c.id,
+            company="Polaris",
+            start_date="2022-09",
+            end_date=None,
         )
         session.add(e)
         session.flush()
-        session.add(ExperienceTitle(
-            experience_id=e.id, title="Senior PM",
-            is_official=1, is_pending_review=0, source="official",
-        ))
-        session.add(Bullet(
-            experience_id=e.id, text="Led 5-person team.",
-            display_order=0, is_active=1, is_pending_review=0,
-            source="primary:r.md", has_outcome=1,
-        ))
+        session.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="Senior PM",
+                is_official=1,
+                is_pending_review=0,
+                source="official",
+            )
+        )
+        session.add(
+            Bullet(
+                experience_id=e.id,
+                text="Led 5-person team.",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="primary:r.md",
+                has_outcome=1,
+            )
+        )
         session.commit()
         return c.id
     finally:
@@ -89,14 +103,22 @@ class TestAnalyzeRoute:
 
         # Mock the analyze() LLM call so we don't burn money
         fake_analysis = {
-            "essential_skills": [], "preferred_skills": [],
-            "industry_keywords": [], "hidden_qualities": [],
-            "professional_vocabulary": [], "ideal_resume_profile": "x",
-            "comparison": {}, "suggestions": [], "keyword_placement": [],
-            "ats_improvements": [], "overall_strategy": "x",
+            "essential_skills": [],
+            "preferred_skills": [],
+            "industry_keywords": [],
+            "hidden_qualities": [],
+            "professional_vocabulary": [],
+            "ideal_resume_profile": "x",
+            "comparison": {},
+            "suggestions": [],
+            "keyword_placement": [],
+            "ats_improvements": [],
+            "overall_strategy": "x",
         }
-        with patch.object(ban, "analyze", return_value=fake_analysis), \
-             patch.object(ban, "_get_client", return_value=object()):
+        with (
+            patch.object(ban, "analyze", return_value=fake_analysis),
+            patch.object(ban, "_get_client", return_value=object()),
+        ):
             client = db_app.test_client()
             response = client.post(
                 "/api/analyze",
@@ -119,14 +141,22 @@ class TestAnalyzeRoute:
         the route must accept it harmlessly without failing."""
         _seed_db_candidate(tmp_path / "test.sqlite")
         fake_analysis = {
-            "essential_skills": [], "preferred_skills": [],
-            "industry_keywords": [], "hidden_qualities": [],
-            "professional_vocabulary": [], "ideal_resume_profile": "x",
-            "comparison": {}, "suggestions": [], "keyword_placement": [],
-            "ats_improvements": [], "overall_strategy": "x",
+            "essential_skills": [],
+            "preferred_skills": [],
+            "industry_keywords": [],
+            "hidden_qualities": [],
+            "professional_vocabulary": [],
+            "ideal_resume_profile": "x",
+            "comparison": {},
+            "suggestions": [],
+            "keyword_placement": [],
+            "ats_improvements": [],
+            "overall_strategy": "x",
         }
-        with patch.object(ban, "analyze", return_value=fake_analysis), \
-             patch.object(ban, "_get_client", return_value=object()):
+        with (
+            patch.object(ban, "analyze", return_value=fake_analysis),
+            patch.object(ban, "_get_client", return_value=object()),
+        ):
             client = db_app.test_client()
             response = client.post(
                 "/api/analyze",
@@ -143,17 +173,24 @@ class TestAnalyzeRoute:
         # A user with a config but no candidate row is auto-provisioned on
         # analyze (the row is created from the config), then the analysis runs
         # against the now-present corpus. No separate import step.
-        (tmp_path / "configs" / "ghost.config").write_text(
-            '{"name": "Ghost"}', encoding="utf-8")
+        (tmp_path / "configs" / "ghost.config").write_text('{"name": "Ghost"}', encoding="utf-8")
         fake_analysis = {
-            "essential_skills": [], "preferred_skills": [],
-            "industry_keywords": [], "hidden_qualities": [],
-            "professional_vocabulary": [], "ideal_resume_profile": "x",
-            "comparison": {}, "suggestions": [], "keyword_placement": [],
-            "ats_improvements": [], "overall_strategy": "x",
+            "essential_skills": [],
+            "preferred_skills": [],
+            "industry_keywords": [],
+            "hidden_qualities": [],
+            "professional_vocabulary": [],
+            "ideal_resume_profile": "x",
+            "comparison": {},
+            "suggestions": [],
+            "keyword_placement": [],
+            "ats_improvements": [],
+            "overall_strategy": "x",
         }
-        with patch.object(ban, "analyze", return_value=fake_analysis), \
-             patch.object(ban, "_get_client", return_value=object()):
+        with (
+            patch.object(ban, "analyze", return_value=fake_analysis),
+            patch.object(ban, "_get_client", return_value=object()),
+        ):
             client = db_app.test_client()
             response = client.post(
                 "/api/analyze",
@@ -163,6 +200,7 @@ class TestAnalyzeRoute:
         assert response.status_code == 200, response.get_json()
         from db.models import Candidate
         from db.session import get_session
+
         s = get_session()
         try:
             assert s.query(Candidate).filter_by(username="ghost").first() is not None
@@ -172,14 +210,22 @@ class TestAnalyzeRoute:
     def test_creates_application_row_in_db(self, db_app, tmp_path):
         _seed_db_candidate(tmp_path / "test.sqlite")
         fake_analysis = {
-            "essential_skills": [], "preferred_skills": [],
-            "industry_keywords": [], "hidden_qualities": [],
-            "professional_vocabulary": [], "ideal_resume_profile": "x",
-            "comparison": {}, "suggestions": [], "keyword_placement": [],
-            "ats_improvements": [], "overall_strategy": "x",
+            "essential_skills": [],
+            "preferred_skills": [],
+            "industry_keywords": [],
+            "hidden_qualities": [],
+            "professional_vocabulary": [],
+            "ideal_resume_profile": "x",
+            "comparison": {},
+            "suggestions": [],
+            "keyword_placement": [],
+            "ats_improvements": [],
+            "overall_strategy": "x",
         }
-        with patch.object(ban, "analyze", return_value=fake_analysis), \
-             patch.object(ban, "_get_client", return_value=object()):
+        with (
+            patch.object(ban, "analyze", return_value=fake_analysis),
+            patch.object(ban, "_get_client", return_value=object()),
+        ):
             client = db_app.test_client()
             client.post(
                 "/api/analyze",
@@ -189,6 +235,7 @@ class TestAnalyzeRoute:
         # Verify the application row landed
         from db.models import Application, ApplicationRun
         from db.session import make_engine, make_session_factory
+
         engine = make_engine(tmp_path / "test.sqlite")
         session = make_session_factory(engine)()
         try:

@@ -30,12 +30,14 @@ def comp_app(tmp_path, monkeypatch):
 
     db_file = tmp_path / "skillcomp.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     output_dir = cfg.output_dir
@@ -43,6 +45,7 @@ def comp_app(tmp_path, monkeypatch):
     (output_dir / "casey").mkdir()
 
     from db.session import init_db
+
     init_db(db_file)
     return types.SimpleNamespace(app=app), output_dir
 
@@ -50,25 +53,37 @@ def comp_app(tmp_path, monkeypatch):
 def _seed(output_dir, *, overrides=None, recommendation=None):
     from db.models import Application, Candidate, Skill
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(username="casey", name="Casey Rivera")
         session.add(c)
         session.flush()
-        a = Application(candidate_id=c.id, title="SRE",
-                        jd_text="SRE.", jd_fingerprint="f" * 16)
+        a = Application(candidate_id=c.id, title="SRE", jd_text="SRE.", jd_fingerprint="f" * 16)
         session.add(a)
         session.flush()
         ids = {}
         for i, name in enumerate(["Python", "Go", "Kubernetes"]):
-            sk = Skill(candidate_id=c.id, name=name, display_order=i,
-                       is_active=1, is_pending_review=0, source="imported")
+            sk = Skill(
+                candidate_id=c.id,
+                name=name,
+                display_order=i,
+                is_active=1,
+                is_pending_review=0,
+                source="imported",
+            )
             session.add(sk)
             session.flush()
             ids[name] = sk.id
         # A pending suggestion to surface in the lane.
-        pend = Skill(candidate_id=c.id, name="Rust", display_order=3,
-                     is_active=1, is_pending_review=1, source="llm_proposed")
+        pend = Skill(
+            candidate_id=c.id,
+            name="Rust",
+            display_order=3,
+            is_active=1,
+            is_pending_review=1,
+            source="llm_proposed",
+        )
         session.add(pend)
         session.flush()
         ids["Rust"] = pend.id
@@ -131,12 +146,15 @@ class TestPostComposition:
         _app, output_dir = comp_app
         _cid, aid, ids, ctx_path = _seed(output_dir)
         client = _app.app.test_client()
-        r = client.post(f"/api/applications/{aid}/composition", json={
-            "context_path": ctx_path,
-            "pinned_skill_ids": [ids["Go"]],
-            "excluded_skill_ids": [ids["Python"]],
-            "skill_order": [ids["Kubernetes"], ids["Go"]],
-        })
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={
+                "context_path": ctx_path,
+                "pinned_skill_ids": [ids["Go"]],
+                "excluded_skill_ids": [ids["Python"]],
+                "skill_order": [ids["Kubernetes"], ids["Go"]],
+            },
+        )
         assert r.status_code == 200, r.get_data(as_text=True)
         ctx = json.loads(open(ctx_path, encoding="utf-8").read())
         ov = ctx["composition_overrides"]
@@ -148,8 +166,7 @@ class TestPostComposition:
         _app, output_dir = comp_app
         _cid, aid, _ids, ctx_path = _seed(output_dir)
         client = _app.app.test_client()
-        r = client.post(f"/api/applications/{aid}/composition",
-                        json={"context_path": ctx_path})
+        r = client.post(f"/api/applications/{aid}/composition", json={"context_path": ctx_path})
         assert r.status_code == 200
         ov = json.loads(open(ctx_path, encoding="utf-8").read())["composition_overrides"]
         # Byte-identical default path: no skill keys persisted.
@@ -161,10 +178,13 @@ class TestPostComposition:
         _app, output_dir = comp_app
         _cid, aid, _ids, ctx_path = _seed(output_dir)
         client = _app.app.test_client()
-        r = client.post(f"/api/applications/{aid}/composition", json={
-            "context_path": ctx_path,
-            "pinned_skill_ids": [99999],
-        })
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={
+                "context_path": ctx_path,
+                "pinned_skill_ids": [99999],
+            },
+        )
         assert r.status_code == 400
 
 

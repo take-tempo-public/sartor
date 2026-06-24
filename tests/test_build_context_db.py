@@ -44,59 +44,107 @@ def _seed_full_candidate(session) -> Candidate:
     session.flush()
 
     e1 = Experience(
-        candidate_id=c.id, company="Polaris",
-        start_date="2022-09", end_date=None, location="Remote",
+        candidate_id=c.id,
+        company="Polaris",
+        start_date="2022-09",
+        end_date=None,
+        location="Remote",
     )
     session.add(e1)
     session.flush()
-    session.add(ExperienceTitle(
-        experience_id=e1.id, title="Senior PM, ML Platform",
-        is_official=1, is_pending_review=0, source="official",
-    ))
-    session.add(ExperienceTitle(
-        experience_id=e1.id, title="AI Product Lead",
-        is_official=0, truthful_enough_to_use=1, is_pending_review=0, source="user_added",
-    ))
-    session.add(Bullet(
-        experience_id=e1.id, text="Led 5-person eval framework team.",
-        display_order=0, is_active=1, is_pending_review=0,
-        source="primary:r.md", has_outcome=1,
-    ))
-    session.add(Bullet(
-        experience_id=e1.id, text="Defined product roadmap.",
-        display_order=1, is_active=1, is_pending_review=0,
-        source="primary:r.md", has_outcome=0,
-    ))
+    session.add(
+        ExperienceTitle(
+            experience_id=e1.id,
+            title="Senior PM, ML Platform",
+            is_official=1,
+            is_pending_review=0,
+            source="official",
+        )
+    )
+    session.add(
+        ExperienceTitle(
+            experience_id=e1.id,
+            title="AI Product Lead",
+            is_official=0,
+            truthful_enough_to_use=1,
+            is_pending_review=0,
+            source="user_added",
+        )
+    )
+    session.add(
+        Bullet(
+            experience_id=e1.id,
+            text="Led 5-person eval framework team.",
+            display_order=0,
+            is_active=1,
+            is_pending_review=0,
+            source="primary:r.md",
+            has_outcome=1,
+        )
+    )
+    session.add(
+        Bullet(
+            experience_id=e1.id,
+            text="Defined product roadmap.",
+            display_order=1,
+            is_active=1,
+            is_pending_review=0,
+            source="primary:r.md",
+            has_outcome=0,
+        )
+    )
 
     e2 = Experience(
-        candidate_id=c.id, company="Acme",
-        start_date="2018-05", end_date="2022-08",
+        candidate_id=c.id,
+        company="Acme",
+        start_date="2018-05",
+        end_date="2022-08",
     )
     session.add(e2)
     session.flush()
-    session.add(ExperienceTitle(
-        experience_id=e2.id, title="Design Manager",
-        is_official=1, is_pending_review=0, source="official",
-    ))
-    session.add(Bullet(
-        experience_id=e2.id, text="Built design org.",
-        display_order=0, is_active=1, is_pending_review=0,
-        source="primary:r.md",
-    ))
+    session.add(
+        ExperienceTitle(
+            experience_id=e2.id,
+            title="Design Manager",
+            is_official=1,
+            is_pending_review=0,
+            source="official",
+        )
+    )
+    session.add(
+        Bullet(
+            experience_id=e2.id,
+            text="Built design org.",
+            display_order=0,
+            is_active=1,
+            is_pending_review=0,
+            source="primary:r.md",
+        )
+    )
     # Retired bullet should NOT appear in synthesized resume
-    session.add(Bullet(
-        experience_id=e2.id, text="Retired bullet.",
-        display_order=1, is_active=0, is_pending_review=0,
-        source="primary:r.md",
-    ))
+    session.add(
+        Bullet(
+            experience_id=e2.id,
+            text="Retired bullet.",
+            display_order=1,
+            is_active=0,
+            is_pending_review=0,
+            source="primary:r.md",
+        )
+    )
 
     session.add(Skill(candidate_id=c.id, name="Python"))
     session.add(Skill(candidate_id=c.id, name="TypeScript"))
     session.add(Certification(candidate_id=c.id, name="NN/g UX Master"))
-    session.add(Education(
-        candidate_id=c.id, institution="ExampleU", degree="BS Cog Sci",
-        start_date="2010", end_date="2014",
-    ))
+    session.add(
+        Education(
+            candidate_id=c.id,
+            institution="ExampleU",
+            degree="BS Cog Sci",
+            start_date="2010",
+            end_date="2014",
+        )
+    )
     session.flush()
     return c
 
@@ -175,8 +223,10 @@ class TestSynthesizeResumeMarkdown:
         c = _seed_full_candidate(db_session)
         text = _synthesize_resume_markdown(
             experiences=list(c.experiences),
-            skills=["Python"], certifications=[],
-            educations=[], candidate=c,
+            skills=["Python"],
+            certifications=[],
+            educations=[],
+            candidate=c,
         )
         assert "# Casey Tester" in text
         assert "casey@example.com" in text
@@ -185,8 +235,10 @@ class TestSynthesizeResumeMarkdown:
         c = _seed_full_candidate(db_session)
         text = _synthesize_resume_markdown(
             experiences=sorted(c.experiences, key=lambda e: e.start_date, reverse=True),
-            skills=[], certifications=[],
-            educations=[], candidate=c,
+            skills=[],
+            certifications=[],
+            educations=[],
+            candidate=c,
         )
         # Official titles shown in the synthesized headers
         assert "Senior PM, ML Platform" in text
@@ -199,8 +251,10 @@ class TestSynthesizeResumeMarkdown:
         c = _seed_full_candidate(db_session)
         text = _synthesize_resume_markdown(
             experiences=list(c.experiences),
-            skills=[], certifications=[],
-            educations=[], candidate=c,
+            skills=[],
+            certifications=[],
+            educations=[],
+            candidate=c,
         )
         assert "Retired bullet." not in text
         # Active ones are present
@@ -214,10 +268,16 @@ class TestSynthesizeResumeMarkdown:
             skills=["Python", "TypeScript"],
             certifications=["NN/g UX Master"],
             educations=[
-                type("E", (), {
-                    "institution": "MIT", "degree": "BS CS",
-                    "start_date": "2010", "end_date": "2014",
-                })(),
+                type(
+                    "E",
+                    (),
+                    {
+                        "institution": "MIT",
+                        "degree": "BS CS",
+                        "start_date": "2010",
+                        "end_date": "2014",
+                    },
+                )(),
             ],
             candidate=c,
         )
@@ -245,8 +305,14 @@ class TestBuildContextSetFromDb:
             run_id="abc123def456",
         )
         # ContextSet shape — same keys as file-based build_context_set
-        for required in ("timestamp", "candidate", "resume", "supplemental_resumes",
-                         "job_description", "deterministic_analysis"):
+        for required in (
+            "timestamp",
+            "candidate",
+            "resume",
+            "supplemental_resumes",
+            "job_description",
+            "deterministic_analysis",
+        ):
             assert required in ctx, f"Missing ContextSet key: {required}"
 
         assert ctx["candidate"]["name"] == "Casey Tester"
@@ -277,7 +343,10 @@ class TestBuildContextSetFromDb:
         _seed_full_candidate(db_session)
         db_session.commit()
         ctx, _app, _run = build_context_set_from_db(
-            db_session, candidate_username="casey", jd_text="x", run_id="run_empty",
+            db_session,
+            candidate_username="casey",
+            jd_text="x",
+            run_id="run_empty",
         )
         assert ctx["candidate"]["online_profile_text"] == ""
 
@@ -353,7 +422,10 @@ class TestCareerCorpusPayload:
         _seed_full_candidate(db_session)
         db_session.commit()
         ctx, _app, _run = build_context_set_from_db(
-            db_session, candidate_username="casey", jd_text="x", run_id="r",
+            db_session,
+            candidate_username="casey",
+            jd_text="x",
+            run_id="r",
         )
         assert "career_corpus" in ctx
         assert isinstance(ctx["career_corpus"], list)
@@ -363,11 +435,12 @@ class TestCareerCorpusPayload:
         _seed_full_candidate(db_session)
         db_session.commit()
         ctx, _app, _run = build_context_set_from_db(
-            db_session, candidate_username="casey", jd_text="x", run_id="r",
+            db_session,
+            candidate_username="casey",
+            jd_text="x",
+            run_id="r",
         )
-        polaris = next(
-            e for e in ctx["career_corpus"] if e["company"] == "Polaris"
-        )
+        polaris = next(e for e in ctx["career_corpus"] if e["company"] == "Polaris")
         # Polaris has 2 eligible titles (official + truthful_enough alternate)
         assert len(polaris["eligible_titles"]) == 2
         # Official always first
@@ -380,7 +453,10 @@ class TestCareerCorpusPayload:
         _seed_full_candidate(db_session)
         db_session.commit()
         ctx, _app, _run = build_context_set_from_db(
-            db_session, candidate_username="casey", jd_text="x", run_id="r",
+            db_session,
+            candidate_username="casey",
+            jd_text="x",
+            run_id="r",
         )
         acme = next(e for e in ctx["career_corpus"] if e["company"] == "Acme")
         # Acme has 2 bullets seeded: 1 active, 1 retired (is_active=0)
@@ -391,7 +467,10 @@ class TestCareerCorpusPayload:
         _seed_full_candidate(db_session)
         db_session.commit()
         ctx, _app, _run = build_context_set_from_db(
-            db_session, candidate_username="casey", jd_text="x", run_id="r",
+            db_session,
+            candidate_username="casey",
+            jd_text="x",
+            run_id="r",
         )
         polaris = next(e for e in ctx["career_corpus"] if e["company"] == "Polaris")
         bullets = polaris["bullets"]
@@ -408,28 +487,50 @@ class TestCareerCorpusPayload:
             Experience,
             ExperienceTitle,
         )
+
         c = Candidate(username="bob", name="Bob")
         db_session.add(c)
         db_session.flush()
         e = Experience(
-            candidate_id=c.id, company="X", start_date="2020-01", end_date="2021-12",
+            candidate_id=c.id,
+            company="X",
+            start_date="2020-01",
+            end_date="2021-12",
         )
         db_session.add(e)
         db_session.flush()
         # Three titles: official, truthful_enough, and neither
-        db_session.add(ExperienceTitle(
-            experience_id=e.id, title="Real PM", is_official=1, source="official",
-        ))
-        db_session.add(ExperienceTitle(
-            experience_id=e.id, title="Alt PM", truthful_enough_to_use=1, source="user_added",
-        ))
-        db_session.add(ExperienceTitle(
-            experience_id=e.id, title="Suggested but not approved",
-            is_official=0, truthful_enough_to_use=0, source="llm_proposed:rN",
-        ))
+        db_session.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="Real PM",
+                is_official=1,
+                source="official",
+            )
+        )
+        db_session.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="Alt PM",
+                truthful_enough_to_use=1,
+                source="user_added",
+            )
+        )
+        db_session.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="Suggested but not approved",
+                is_official=0,
+                truthful_enough_to_use=0,
+                source="llm_proposed:rN",
+            )
+        )
         db_session.commit()
         ctx, _app, _run = build_context_set_from_db(
-            db_session, candidate_username="bob", jd_text="x", run_id="r",
+            db_session,
+            candidate_username="bob",
+            jd_text="x",
+            run_id="r",
         )
         exp_payload = ctx["career_corpus"][0]
         titles_in_payload = {t["title"] for t in exp_payload["eligible_titles"]}

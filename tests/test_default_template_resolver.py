@@ -33,17 +33,20 @@ def resolver_app(tmp_path, monkeypatch):
     db_file = tmp_path / "resolver.sqlite"
 
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     cfg.bundled_personas_dir.mkdir(parents=True, exist_ok=True)
 
     from db.session import init_db
+
     init_db(db_file)
 
     # The seed migration inserted DB rows pointing at personas/bundled/*.docx, but
@@ -52,6 +55,7 @@ def resolver_app(tmp_path, monkeypatch):
     # would return None without these stub files. Materialize the minimum needed
     # for tests to verify the resolver returns a real path string.
     from docx import Document
+
     for filename in ("classic.docx", "modern.docx"):
         target = cfg.bundled_personas_dir / filename
         doc = Document()
@@ -64,6 +68,7 @@ def resolver_app(tmp_path, monkeypatch):
         def wrapped(*a, **k):
             with app.app_context():
                 return fn(*a, **k)
+
         return wrapped
 
     return types.SimpleNamespace(
@@ -74,13 +79,16 @@ def resolver_app(tmp_path, monkeypatch):
         PERSONAS_DIR=cfg.personas_dir,
         BUNDLED_PERSONAS_DIR=cfg.bundled_personas_dir,
         _resolve_persona_template_path=_ctx(templates_mod._resolve_persona_template_path),
-        _resolve_default_persona_template_path=_ctx(templates_mod._resolve_default_persona_template_path),
+        _resolve_default_persona_template_path=_ctx(
+            templates_mod._resolve_default_persona_template_path
+        ),
     )
 
 
 def _make_candidate(username="testuser"):
     from db.models import Candidate
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(username=username, name="Test User")
@@ -94,6 +102,7 @@ def _make_candidate(username="testuser"):
 def _make_tag(candidate_id, value, kind="role"):
     from db.models import Tag
     from db.session import get_session
+
     session = get_session()
     try:
         t = Tag(candidate_id=candidate_id, kind=kind, value=value, display_value=value)
@@ -107,6 +116,7 @@ def _make_tag(candidate_id, value, kind="role"):
 def _make_application(candidate_id, role_tag_id=None, title="Senior PM"):
     from db.models import Application
     from db.session import get_session
+
     session = get_session()
     try:
         a = Application(
@@ -123,8 +133,9 @@ def _make_application(candidate_id, role_tag_id=None, title="Senior PM"):
         session.close()
 
 
-def _make_user_template(app_module, candidate_id, name, *, is_default=0,
-                       primary_role_tag_id=None, filename=None):
+def _make_user_template(
+    app_module, candidate_id, name, *, is_default=0, primary_role_tag_id=None, filename=None
+):
     """Drop a minimal valid .docx into personas/{candidate_id}/ + insert row."""
     from docx import Document
 
@@ -142,9 +153,12 @@ def _make_user_template(app_module, candidate_id, name, *, is_default=0,
     session = get_session()
     try:
         row = PersonaTemplate(
-            candidate_id=candidate_id, name=name,
-            path=f"personas/{candidate_id}/{filename}", source="user_upload",
-            is_default=is_default, primary_role_tag_id=primary_role_tag_id,
+            candidate_id=candidate_id,
+            name=name,
+            path=f"personas/{candidate_id}/{filename}",
+            source="user_upload",
+            is_default=is_default,
+            primary_role_tag_id=primary_role_tag_id,
         )
         session.add(row)
         session.commit()
@@ -192,7 +206,10 @@ class TestGeneralDefault:
     def test_general_default_returned_without_application(self, resolver_app):
         cid = _make_candidate("alice")
         row_id, target_path = _make_user_template(
-            resolver_app, cid, "Alice Master", is_default=1,
+            resolver_app,
+            cid,
+            "Alice Master",
+            is_default=1,
         )
         result = resolver_app._resolve_default_persona_template_path(username="alice")
         assert result is not None
@@ -202,10 +219,14 @@ class TestGeneralDefault:
         cid = _make_candidate("alice")
         app_id = _make_application(cid, role_tag_id=None)
         row_id, target_path = _make_user_template(
-            resolver_app, cid, "Alice Master", is_default=1,
+            resolver_app,
+            cid,
+            "Alice Master",
+            is_default=1,
         )
         result = resolver_app._resolve_default_persona_template_path(
-            username="alice", application_id=app_id,
+            username="alice",
+            application_id=app_id,
         )
         assert result is not None
         assert str(target_path) in result
@@ -222,16 +243,24 @@ class TestRoleSpecificDefault:
 
         # General fallback (would win if role-specific didn't exist)
         _make_user_template(
-            resolver_app, cid, "Alice General", is_default=1,
+            resolver_app,
+            cid,
+            "Alice General",
+            is_default=1,
         )
         # Role-specific (should win)
         _, role_target = _make_user_template(
-            resolver_app, cid, "Alice Design IC", is_default=1,
-            primary_role_tag_id=design_ic_tag, filename="design_ic.docx",
+            resolver_app,
+            cid,
+            "Alice Design IC",
+            is_default=1,
+            primary_role_tag_id=design_ic_tag,
+            filename="design_ic.docx",
         )
 
         result = resolver_app._resolve_default_persona_template_path(
-            username="alice", application_id=app_id,
+            username="alice",
+            application_id=app_id,
         )
         assert result is not None
         assert str(role_target) in result
@@ -244,16 +273,24 @@ class TestRoleSpecificDefault:
 
         # General fallback
         _, general_target = _make_user_template(
-            resolver_app, cid, "Alice General", is_default=1,
+            resolver_app,
+            cid,
+            "Alice General",
+            is_default=1,
         )
         # A role-specific default — but for Design IC, not PM
         _make_user_template(
-            resolver_app, cid, "Alice Design IC", is_default=1,
-            primary_role_tag_id=design_ic_tag, filename="design_ic.docx",
+            resolver_app,
+            cid,
+            "Alice Design IC",
+            is_default=1,
+            primary_role_tag_id=design_ic_tag,
+            filename="design_ic.docx",
         )
 
         result = resolver_app._resolve_default_persona_template_path(
-            username="alice", application_id=app_id,
+            username="alice",
+            application_id=app_id,
         )
         # No PM-specific default → general wins
         assert result is not None
@@ -269,7 +306,10 @@ class TestIsolation:
         alice_id = _make_candidate("alice")
         _make_candidate("bob")
         _make_user_template(
-            resolver_app, alice_id, "Alice Master", is_default=1,
+            resolver_app,
+            alice_id,
+            "Alice Master",
+            is_default=1,
         )
 
         # Bob has no templates of his own → must fall back to Classic

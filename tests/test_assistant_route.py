@@ -23,10 +23,16 @@ def _stub_avatar(client, question, context, *, allow_dev=False, username="", run
         {
             "answer": "Hello world [1] [2].",
             "citations": [
-                {"n": 1, "label": "overview",
-                 "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/overview.md"},
-                {"n": 2, "label": "analyzer.py:353",
-                 "href": "https://github.com/amodal1/callback/blob/abc123/analyzer.py#L353"},
+                {
+                    "n": 1,
+                    "label": "overview",
+                    "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/overview.md",
+                },
+                {
+                    "n": 2,
+                    "label": "analyzer.py:353",
+                    "href": "https://github.com/amodal1/callback/blob/abc123/analyzer.py#L353",
+                },
             ],
             "truncated": False,
             "allow_dev": allow_dev,

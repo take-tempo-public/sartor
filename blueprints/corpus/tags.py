@@ -62,16 +62,26 @@ def suggest_tags(username: str) -> ResponseReturnValue:
             query = query.filter_by(kind=kind)
         if q:
             query = query.filter(Tag.value.contains(q))
-        rows = query.order_by(
-            Tag.usage_count.desc(), Tag.value,
-        ).limit(limit).all()
-        return jsonify([
-            {
-                "id": t.id, "kind": t.kind, "value": t.value,
-                "display_value": t.display_value, "usage_count": t.usage_count,
-            }
-            for t in rows
-        ])
+        rows = (
+            query.order_by(
+                Tag.usage_count.desc(),
+                Tag.value,
+            )
+            .limit(limit)
+            .all()
+        )
+        return jsonify(
+            [
+                {
+                    "id": t.id,
+                    "kind": t.kind,
+                    "value": t.value,
+                    "display_value": t.display_value,
+                    "usage_count": t.usage_count,
+                }
+                for t in rows
+            ]
+        )
     finally:
         session.close()
 
@@ -86,14 +96,24 @@ def _find_or_create_tag(session, candidate_id: int, kind: str, value: str):
     if absent. Follows the merged_into alias chain so links always point at
     the canonical tag."""
     from db.models import Tag
+
     norm = _normalize_tag_value(value)
-    tag = session.query(Tag).filter_by(
-        candidate_id=candidate_id, kind=kind, value=norm,
-    ).first()
+    tag = (
+        session.query(Tag)
+        .filter_by(
+            candidate_id=candidate_id,
+            kind=kind,
+            value=norm,
+        )
+        .first()
+    )
     if tag is None:
         tag = Tag(
-            candidate_id=candidate_id, kind=kind, value=norm,
-            display_value=(value or "").strip() or norm, usage_count=0,
+            candidate_id=candidate_id,
+            kind=kind,
+            value=norm,
+            display_value=(value or "").strip() or norm,
+            usage_count=0,
         )
         session.add(tag)
         session.flush()
@@ -118,6 +138,7 @@ def _tag_link_target(session, kind: str, subject_id: int):
         Skill,
         SkillTag,
     )
+
     link_model: type
     # Skills are candidate-level — no Experience hop, candidate resolved directly.
     if kind == "skill":
@@ -159,7 +180,9 @@ def _link_tag_route(subject_kind: str, subject_id: int) -> ResponseReturnValue:
     session = get_session()
     try:
         subject, candidate, link_model, fk = _tag_link_target(
-            session, subject_kind, subject_id,
+            session,
+            subject_kind,
+            subject_id,
         )
         if subject is None or candidate is None:
             return jsonify({"error": f"{subject_kind} not found"}), 404
@@ -167,17 +190,25 @@ def _link_tag_route(subject_kind: str, subject_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Candidate validation failed"}), 403
 
         tag = _find_or_create_tag(session, candidate.id, tag_kind, value)
-        existing = session.query(link_model).filter_by(
-            **{fk: subject_id, "tag_id": tag.id},
-        ).first()
+        existing = (
+            session.query(link_model)
+            .filter_by(
+                **{fk: subject_id, "tag_id": tag.id},
+            )
+            .first()
+        )
         if existing is None:
             session.add(link_model(**{fk: subject_id, "tag_id": tag.id}))
             tag.usage_count = (tag.usage_count or 0) + 1
         session.commit()
-        return jsonify({
-            "id": tag.id, "value": tag.value,
-            "display_value": tag.display_value, "kind": tag.kind,
-        }), 201
+        return jsonify(
+            {
+                "id": tag.id,
+                "value": tag.value,
+                "display_value": tag.display_value,
+                "kind": tag.kind,
+            }
+        ), 201
     except Exception:
         session.rollback()
         raise
@@ -194,16 +225,22 @@ def _unlink_tag_route(subject_kind: str, subject_id: int, tag_id: int) -> Respon
     session = get_session()
     try:
         subject, candidate, link_model, fk = _tag_link_target(
-            session, subject_kind, subject_id,
+            session,
+            subject_kind,
+            subject_id,
         )
         if subject is None or candidate is None:
             return jsonify({"error": f"{subject_kind} not found"}), 404
         if not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
             return jsonify({"error": "Candidate validation failed"}), 403
 
-        link = session.query(link_model).filter_by(
-            **{fk: subject_id, "tag_id": tag_id},
-        ).first()
+        link = (
+            session.query(link_model)
+            .filter_by(
+                **{fk: subject_id, "tag_id": tag_id},
+            )
+            .first()
+        )
         if link is None:
             return jsonify({"error": "Tag not linked"}), 404
         session.delete(link)
@@ -237,8 +274,7 @@ def link_title_tag(title_id: int) -> ResponseReturnValue:
     return _link_tag_route("title", title_id)
 
 
-@corpus_bp.route("/api/experience-titles/<int:title_id>/tags/<int:tag_id>",
-                 methods=["DELETE"])
+@corpus_bp.route("/api/experience-titles/<int:title_id>/tags/<int:tag_id>", methods=["DELETE"])
 def unlink_title_tag(title_id: int, tag_id: int) -> ResponseReturnValue:
     """Detach a tag from an experience title."""
     return _unlink_tag_route("title", title_id, tag_id)

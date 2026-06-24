@@ -85,12 +85,14 @@ def build_context_set_from_db(
         ).scalars()
     )
     skills = [
-        s.name for s in session.execute(
+        s.name
+        for s in session.execute(
             select(Skill).where(Skill.candidate_id == candidate.id).order_by(Skill.name)
         ).scalars()
     ]
     certifications = [
-        c.name for c in session.execute(
+        c.name
+        for c in session.execute(
             select(Certification)
             .where(Certification.candidate_id == candidate.id)
             .order_by(Certification.display_order, Certification.id)
@@ -130,7 +132,8 @@ def build_context_set_from_db(
     session.flush()
 
     snapshot = _select_corpus_snapshot(
-        experiences, set(jd_keywords.get("keywords", {}).keys()),
+        experiences,
+        set(jd_keywords.get("keywords", {}).keys()),
     )
 
     application_run = ApplicationRun(
@@ -228,23 +231,27 @@ def _build_career_corpus_payload(experiences: list[Experience]) -> list[CorpusEx
         for b in sorted(exp.bullets, key=lambda x: x.display_order):
             if not b.is_active:
                 continue
-            bullets.append({
-                "id": b.id,
-                "text": b.text,
-                "tags": [],  # Phase B.2 doesn't surface tags yet; B.3 adds the join
-                "has_outcome": bool(b.has_outcome),
-                "source": b.source,
-            })
+            bullets.append(
+                {
+                    "id": b.id,
+                    "text": b.text,
+                    "tags": [],  # Phase B.2 doesn't surface tags yet; B.3 adds the join
+                    "has_outcome": bool(b.has_outcome),
+                    "source": b.source,
+                }
+            )
 
-        payload.append({
-            "id": exp.id,
-            "company": exp.company,
-            "location": exp.location or "",
-            "start_date": exp.start_date,
-            "end_date": exp.end_date,
-            "eligible_titles": eligible_titles,
-            "bullets": bullets,
-        })
+        payload.append(
+            {
+                "id": exp.id,
+                "company": exp.company,
+                "location": exp.location or "",
+                "start_date": exp.start_date,
+                "end_date": exp.end_date,
+                "eligible_titles": eligible_titles,
+                "bullets": bullets,
+            }
+        )
     return payload
 
 
@@ -383,12 +390,7 @@ def score_corpus_bullet(
         parts = {p for p in (tv or "").lower().split("-") if len(p) > 2}
         if parts & tag_target:
             tag_hits += 1
-    return (
-        2.0 * ess_overlap
-        + 1.0 * jd_overlap
-        + 1.5 * tag_hits
-        + (1.5 if has_outcome else 0.0)
-    )
+    return 2.0 * ess_overlap + 1.0 * jd_overlap + 1.5 * tag_hits + (1.5 if has_outcome else 0.0)
 
 
 def _bullet_tag_values(bullet) -> list[str]:
@@ -426,8 +428,10 @@ def _select_corpus_snapshot(
                 active,
                 key=lambda b: (
                     -score_corpus_bullet(
-                        b.text, bool(b.has_outcome),
-                        _bullet_tag_values(b), jd_kw,
+                        b.text,
+                        bool(b.has_outcome),
+                        _bullet_tag_values(b),
+                        jd_kw,
                     ),
                     b.display_order,
                 ),

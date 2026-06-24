@@ -137,7 +137,9 @@ def extract_experiences(
 
     raw_experiences = data.get("experiences") or []
     if not isinstance(raw_experiences, list):
-        logger.warning("extract_experiences: 'experiences' field is not a list, got %r", type(raw_experiences))
+        logger.warning(
+            "extract_experiences: 'experiences' field is not a list, got %r", type(raw_experiences)
+        )
         return []
 
     return [_normalize_experience(exp) for exp in raw_experiences if isinstance(exp, dict)]
@@ -179,9 +181,7 @@ def _normalize_experience(raw: dict) -> ExtractedExperience:
 
     raw_bullets = raw.get("bullets") or []
     if isinstance(raw_bullets, list):
-        exp["bullets"] = [
-            _normalize_bullet(b) for b in raw_bullets if isinstance(b, dict)
-        ]
+        exp["bullets"] = [_normalize_bullet(b) for b in raw_bullets if isinstance(b, dict)]
         # Drop any bullet with empty text after normalization.
         exp["bullets"] = [b for b in exp["bullets"] if b.get("text")]
 

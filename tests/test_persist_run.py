@@ -31,7 +31,9 @@ from db.persist_run import (
 )
 
 
-def _seed_minimal_candidate_with_run(session) -> tuple[Candidate, Experience, Bullet, ExperienceTitle, ApplicationRun]:
+def _seed_minimal_candidate_with_run(
+    session,
+) -> tuple[Candidate, Experience, Bullet, ExperienceTitle, ApplicationRun]:
     """Seed a candidate with one experience, one bullet, one title, plus an
     application + application_run anchor. Returns the rows for assertions."""
     c = Candidate(username="alice", name="Alice")
@@ -39,35 +41,49 @@ def _seed_minimal_candidate_with_run(session) -> tuple[Candidate, Experience, Bu
     session.flush()
 
     e = Experience(
-        candidate_id=c.id, company="Acme",
-        start_date="2020-01", end_date="2023-04",
+        candidate_id=c.id,
+        company="Acme",
+        start_date="2020-01",
+        end_date="2023-04",
     )
     session.add(e)
     session.flush()
 
     t = ExperienceTitle(
-        experience_id=e.id, title="Senior PM",
-        is_official=1, is_pending_review=0, source="official",
+        experience_id=e.id,
+        title="Senior PM",
+        is_official=1,
+        is_pending_review=0,
+        source="official",
     )
     session.add(t)
 
     b = Bullet(
-        experience_id=e.id, text="Led 5-person team.",
-        display_order=0, is_active=1, is_pending_review=0,
+        experience_id=e.id,
+        text="Led 5-person team.",
+        display_order=0,
+        is_active=1,
+        is_pending_review=0,
         source="primary:r.md",
     )
     session.add(b)
     session.flush()
 
     app_row = Application(
-        candidate_id=c.id, title="x", jd_text="...", jd_fingerprint="abcd",
+        candidate_id=c.id,
+        title="x",
+        jd_text="...",
+        jd_fingerprint="abcd",
     )
     session.add(app_row)
     session.flush()
 
     run = ApplicationRun(
-        application_id=app_row.id, iteration=0, run_id="run123",
-        prompt_version="test", corpus_snapshot_json="{}",
+        application_id=app_row.id,
+        iteration=0,
+        run_id="run123",
+        prompt_version="test",
+        corpus_snapshot_json="{}",
     )
     session.add(run)
     session.flush()
@@ -115,12 +131,17 @@ class TestSelectedBullets:
     def test_creates_application_bullet_rows(self, db_session):
         c, e, b, t, run = _seed_minimal_candidate_with_run(db_session)
         result = {
-            "resume_content": "x", "cover_letter_content": "y",
+            "resume_content": "x",
+            "cover_letter_content": "y",
             "selected_bullets": [
-                {"experience_id": f"e{e.id}", "chosen_title_id": f"t{t.id}",
-                 "bullet_ids_in_order": [f"b{b.id}"]}
+                {
+                    "experience_id": f"e{e.id}",
+                    "chosen_title_id": f"t{t.id}",
+                    "bullet_ids_in_order": [f"b{b.id}"],
+                }
             ],
-            "proposed_new_bullets": [], "proposed_experience_titles": [],
+            "proposed_new_bullets": [],
+            "proposed_experience_titles": [],
         }
         report = persist_corpus_generation(db_session, run, result, c.id)
         assert report.application_bullets_created == 1
@@ -131,7 +152,9 @@ class TestSelectedBullets:
         assert rows[0].bullet_id == b.id
         assert rows[0].position == 0
 
-        title_rows = db_session.query(ApplicationRunTitle).filter_by(application_run_id=run.id).all()
+        title_rows = (
+            db_session.query(ApplicationRunTitle).filter_by(application_run_id=run.id).all()
+        )
         assert len(title_rows) == 1
         assert title_rows[0].experience_id == e.id
         assert title_rows[0].experience_title_id == t.id
@@ -139,19 +162,21 @@ class TestSelectedBullets:
     def test_preserves_bullet_order(self, db_session):
         c, e, _b, _t, run = _seed_minimal_candidate_with_run(db_session)
         # Add 2 more bullets
-        b2 = Bullet(experience_id=e.id, text="Bullet B", display_order=1,
-                    is_active=1, source="primary:r.md")
-        b3 = Bullet(experience_id=e.id, text="Bullet C", display_order=2,
-                    is_active=1, source="primary:r.md")
+        b2 = Bullet(
+            experience_id=e.id, text="Bullet B", display_order=1, is_active=1, source="primary:r.md"
+        )
+        b3 = Bullet(
+            experience_id=e.id, text="Bullet C", display_order=2, is_active=1, source="primary:r.md"
+        )
         db_session.add_all([b2, b3])
         db_session.flush()
 
         result = {
             "selected_bullets": [
-                {"experience_id": f"e{e.id}",
-                 "bullet_ids_in_order": [f"b{b3.id}", f"b{b2.id}"]}
+                {"experience_id": f"e{e.id}", "bullet_ids_in_order": [f"b{b3.id}", f"b{b2.id}"]}
             ],
-            "proposed_new_bullets": [], "proposed_experience_titles": [],
+            "proposed_new_bullets": [],
+            "proposed_experience_titles": [],
         }
         persist_corpus_generation(db_session, run, result, c.id)
 
@@ -169,10 +194,10 @@ class TestSelectedBullets:
         c, e, b, _t, run = _seed_minimal_candidate_with_run(db_session)
         result = {
             "selected_bullets": [
-                {"experience_id": f"e{e.id}",
-                 "bullet_ids_in_order": [f"b{b.id}", "b99999"]}
+                {"experience_id": f"e{e.id}", "bullet_ids_in_order": [f"b{b.id}", "b99999"]}
             ],
-            "proposed_new_bullets": [], "proposed_experience_titles": [],
+            "proposed_new_bullets": [],
+            "proposed_experience_titles": [],
         }
         report = persist_corpus_generation(db_session, run, result, c.id)
         assert report.application_bullets_created == 1
@@ -189,17 +214,25 @@ class TestSelectedBullets:
         e2 = Experience(candidate_id=c2.id, company="Other", start_date="2019-01")
         db_session.add(e2)
         db_session.flush()
-        b_other = Bullet(experience_id=e2.id, text="Other person's bullet.",
-                         display_order=0, is_active=1, source="primary:r.md")
+        b_other = Bullet(
+            experience_id=e2.id,
+            text="Other person's bullet.",
+            display_order=0,
+            is_active=1,
+            source="primary:r.md",
+        )
         db_session.add(b_other)
         db_session.flush()
 
         result = {
             "selected_bullets": [
-                {"experience_id": f"e{e1.id}",
-                 "bullet_ids_in_order": [f"b{b_other.id}"]}  # cross-candidate ID!
+                {
+                    "experience_id": f"e{e1.id}",
+                    "bullet_ids_in_order": [f"b{b_other.id}"],
+                }  # cross-candidate ID!
             ],
-            "proposed_new_bullets": [], "proposed_experience_titles": [],
+            "proposed_new_bullets": [],
+            "proposed_experience_titles": [],
         }
         report = persist_corpus_generation(db_session, run, result, c1.id)
         # The cross-candidate bullet must not have been linked to c1's run.
@@ -218,10 +251,12 @@ class TestProposedBullets:
         result = {
             "selected_bullets": [],
             "proposed_new_bullets": [
-                {"experience_id": f"e{e.id}",
-                 "text": "Proposed new bullet text.",
-                 "pattern_kind": "xyz",
-                 "rationale": "Fills a JD gap."}
+                {
+                    "experience_id": f"e{e.id}",
+                    "text": "Proposed new bullet text.",
+                    "pattern_kind": "xyz",
+                    "rationale": "Fills a JD gap.",
+                }
             ],
             "proposed_experience_titles": [],
         }
@@ -230,9 +265,11 @@ class TestProposedBullets:
         assert report.proposal_reviews_created == 1
 
         # New bullet row exists, pending review, llm_proposed source
-        new_bullets = db_session.query(Bullet).filter(
-            Bullet.experience_id == e.id, Bullet.is_pending_review == 1
-        ).all()
+        new_bullets = (
+            db_session.query(Bullet)
+            .filter(Bullet.experience_id == e.id, Bullet.is_pending_review == 1)
+            .all()
+        )
         assert len(new_bullets) == 1
         assert new_bullets[0].text == "Proposed new bullet text."
         assert new_bullets[0].source == f"llm_proposed:{run.run_id}"
@@ -256,9 +293,12 @@ class TestProposedBullets:
             "proposed_experience_titles": [],
         }
         persist_corpus_generation(db_session, run, result, c.id)
-        bullets = db_session.query(Bullet).filter(
-            Bullet.experience_id == e.id, Bullet.is_pending_review == 1
-        ).order_by(Bullet.id).all()
+        bullets = (
+            db_session.query(Bullet)
+            .filter(Bullet.experience_id == e.id, Bullet.is_pending_review == 1)
+            .order_by(Bullet.id)
+            .all()
+        )
         # "X-Y-Z" normalizes to "xyz"
         assert bullets[0].pattern_kind == "xyz"
         # Unknown values become NULL (pattern_kind CHECK accepts NULL)
@@ -277,18 +317,24 @@ class TestProposedTitles:
             "selected_bullets": [],
             "proposed_new_bullets": [],
             "proposed_experience_titles": [
-                {"experience_id": f"e{e.id}",
-                 "title": "AI Product Lead",
-                 "rationale": "JD asks for AI framing."}
+                {
+                    "experience_id": f"e{e.id}",
+                    "title": "AI Product Lead",
+                    "rationale": "JD asks for AI framing.",
+                }
             ],
         }
         report = persist_corpus_generation(db_session, run, result, c.id)
         assert report.proposed_titles_created == 1
 
-        new_titles = db_session.query(ExperienceTitle).filter(
-            ExperienceTitle.experience_id == e.id,
-            ExperienceTitle.is_pending_review == 1,
-        ).all()
+        new_titles = (
+            db_session.query(ExperienceTitle)
+            .filter(
+                ExperienceTitle.experience_id == e.id,
+                ExperienceTitle.is_pending_review == 1,
+            )
+            .all()
+        )
         assert len(new_titles) == 1
         assert new_titles[0].title == "AI Product Lead"
         assert new_titles[0].is_official == 0
@@ -305,9 +351,7 @@ class TestProposedTitles:
         result = {
             "selected_bullets": [],
             "proposed_new_bullets": [],
-            "proposed_experience_titles": [
-                {"experience_id": f"e{e.id}", "title": t.title}
-            ],
+            "proposed_experience_titles": [{"experience_id": f"e{e.id}", "title": t.title}],
         }
         report = persist_corpus_generation(db_session, run, result, c.id)
         # Duplicate title text → no new row
@@ -323,7 +367,8 @@ class TestIterationLogEntry:
     def test_one_iteration_log_row_per_persist_call(self, db_session):
         c, _e, _b, _t, run = _seed_minimal_candidate_with_run(db_session)
         result = {
-            "selected_bullets": [], "proposed_new_bullets": [],
+            "selected_bullets": [],
+            "proposed_new_bullets": [],
             "proposed_experience_titles": [],
         }
         persist_corpus_generation(db_session, run, result, c.id)
@@ -356,7 +401,8 @@ class TestMalformedInput:
     def test_empty_response_writes_nothing_but_logs_iteration(self, db_session):
         c, _e, _b, _t, run = _seed_minimal_candidate_with_run(db_session)
         result = {
-            "selected_bullets": [], "proposed_new_bullets": [],
+            "selected_bullets": [],
+            "proposed_new_bullets": [],
             "proposed_experience_titles": [],
         }
         report = persist_corpus_generation(db_session, run, result, c.id)
@@ -367,8 +413,10 @@ class TestMalformedInput:
     def test_stores_generated_md_on_run_row(self, db_session):
         c, _e, _b, _t, run = _seed_minimal_candidate_with_run(db_session)
         result = {
-            "resume_content": "# Resume", "cover_letter_content": "Dear...",
-            "selected_bullets": [], "proposed_new_bullets": [],
+            "resume_content": "# Resume",
+            "cover_letter_content": "Dear...",
+            "selected_bullets": [],
+            "proposed_new_bullets": [],
             "proposed_experience_titles": [],
         }
         persist_corpus_generation(db_session, run, result, c.id)

@@ -32,22 +32,66 @@ from ui_pages import DashboardConsolePage
 # instead of the longest span. Tokens are present so the cost rollup has data.
 _RUN = "uxr62trace"
 _CALLS = [
-    {"timestamp": "2026-06-11T00:00:01Z", "username": "eval:pm-senior", "run_id": _RUN,
-     "call": "analyze_extraction", "model": "claude-haiku-4-5-20251001", "prompt_version": "2026-06-11.1",
-     "input_tokens": 1200, "output_tokens": 400, "cache_creation_input_tokens": 0,
-     "cache_read_input_tokens": 0, "latency_ms": 5000, "stop_reason": "end_turn", "status": "ok"},
-    {"timestamp": "2026-06-11T00:00:06Z", "username": "eval:pm-senior", "run_id": _RUN,
-     "call": "analyze_synthesis", "model": "claude-sonnet-4-6", "prompt_version": "2026-06-11.1",
-     "input_tokens": 3000, "output_tokens": 2600, "cache_creation_input_tokens": 0,
-     "cache_read_input_tokens": 2000, "latency_ms": 60000, "stop_reason": "end_turn", "status": "ok"},
-    {"timestamp": "2026-06-11T00:01:06Z", "username": "eval:pm-senior", "run_id": _RUN,
-     "call": "clarify", "model": "claude-haiku-4-5-20251001", "prompt_version": "2026-06-11.1",
-     "input_tokens": 1500, "output_tokens": 600, "cache_creation_input_tokens": 0,
-     "cache_read_input_tokens": 0, "latency_ms": 4000, "stop_reason": "end_turn", "status": "ok"},
-    {"timestamp": "2026-06-11T00:01:10Z", "username": "eval:pm-senior", "run_id": _RUN,
-     "call": "generate", "model": "claude-sonnet-4-6", "prompt_version": "2026-06-11.1",
-     "input_tokens": 4000, "output_tokens": 2300, "cache_creation_input_tokens": 0,
-     "cache_read_input_tokens": 3500, "latency_ms": 50000, "stop_reason": "end_turn", "status": "ok"},
+    {
+        "timestamp": "2026-06-11T00:00:01Z",
+        "username": "eval:pm-senior",
+        "run_id": _RUN,
+        "call": "analyze_extraction",
+        "model": "claude-haiku-4-5-20251001",
+        "prompt_version": "2026-06-11.1",
+        "input_tokens": 1200,
+        "output_tokens": 400,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "latency_ms": 5000,
+        "stop_reason": "end_turn",
+        "status": "ok",
+    },
+    {
+        "timestamp": "2026-06-11T00:00:06Z",
+        "username": "eval:pm-senior",
+        "run_id": _RUN,
+        "call": "analyze_synthesis",
+        "model": "claude-sonnet-4-6",
+        "prompt_version": "2026-06-11.1",
+        "input_tokens": 3000,
+        "output_tokens": 2600,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 2000,
+        "latency_ms": 60000,
+        "stop_reason": "end_turn",
+        "status": "ok",
+    },
+    {
+        "timestamp": "2026-06-11T00:01:06Z",
+        "username": "eval:pm-senior",
+        "run_id": _RUN,
+        "call": "clarify",
+        "model": "claude-haiku-4-5-20251001",
+        "prompt_version": "2026-06-11.1",
+        "input_tokens": 1500,
+        "output_tokens": 600,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "latency_ms": 4000,
+        "stop_reason": "end_turn",
+        "status": "ok",
+    },
+    {
+        "timestamp": "2026-06-11T00:01:10Z",
+        "username": "eval:pm-senior",
+        "run_id": _RUN,
+        "call": "generate",
+        "model": "claude-sonnet-4-6",
+        "prompt_version": "2026-06-11.1",
+        "input_tokens": 4000,
+        "output_tokens": 2300,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3500,
+        "latency_ms": 50000,
+        "stop_reason": "end_turn",
+        "status": "ok",
+    },
 ]
 
 
@@ -70,7 +114,9 @@ def test_diagnostics_chart_corrections(
     dash.open_tile("throughput")
     expect(dash.detail_panel_open()).to_be_visible()
     panel_w = dash.detail_panel().evaluate("el => el.clientWidth")
-    assert panel_w > 700, f"detail panel should use the page width, got {panel_w}px (drawer was 560)"
+    assert panel_w > 700, (
+        f"detail panel should use the page width, got {panel_w}px (drawer was 560)"
+    )
     overflow = dash.detail_body().evaluate("el => el.scrollWidth - el.clientWidth")
     assert overflow <= 1, f"Calls panel overflows horizontally by {overflow}px (#12)"
     dash.close_detail()

@@ -123,9 +123,13 @@ class TestFixtureUsedNotRealUser:
 
     def test_only_example_and_testuser_configs_are_tracked(self):
         import subprocess
+
         result = subprocess.run(
             ["git", "ls-files", "configs/"],
-            cwd=REPO_ROOT, capture_output=True, text=True, check=False,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
         )
         if result.returncode != 0:
             pytest.skip("Not in a git working tree (CI quirk or detached snapshot)")

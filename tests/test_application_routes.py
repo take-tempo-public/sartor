@@ -22,23 +22,27 @@ def app_app(tmp_path, monkeypatch):
 
     db_file = tmp_path / "apps.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     (cfg.configs_dir / "alice.config").write_text("{}", encoding="utf-8")
 
     from db.session import init_db
+
     init_db(db_file)
 
     def _find_context_path_for_run(safe_user, application_run_id):
         with app.app_context():
             return applications_bp_mod._find_context_path_for_run(
-                safe_user, application_run_id,
+                safe_user,
+                application_run_id,
             )
 
     return types.SimpleNamespace(
@@ -53,6 +57,7 @@ def app_app(tmp_path, monkeypatch):
 def _seed_candidate(username="alice"):
     from db.models import Candidate
     from db.session import get_session
+
     s = get_session()
     try:
         c = Candidate(username=username, name=username.title())
@@ -63,17 +68,26 @@ def _seed_candidate(username="alice"):
         s.close()
 
 
-def _seed_application(candidate_id, title="Senior PM @ Foo", company="Foo Inc",
-                     jd_text="Long JD text here.", status="draft"):
+def _seed_application(
+    candidate_id,
+    title="Senior PM @ Foo",
+    company="Foo Inc",
+    jd_text="Long JD text here.",
+    status="draft",
+):
     import hashlib
 
     from db.models import Application
     from db.session import get_session
+
     s = get_session()
     try:
         a = Application(
-            candidate_id=candidate_id, title=title, company=company,
-            jd_text=jd_text, status=status,
+            candidate_id=candidate_id,
+            title=title,
+            company=company,
+            jd_text=jd_text,
+            status=status,
             jd_fingerprint=hashlib.sha256(jd_text.encode()).hexdigest()[:16],
         )
         s.add(a)
@@ -83,17 +97,27 @@ def _seed_application(candidate_id, title="Senior PM @ Foo", company="Foo Inc",
         s.close()
 
 
-def _seed_run(application_id, iteration=0, run_id="abc123def456",
-              generated_resume_md=None, ats_roundtrip_json=None,
-              generated_cover_letter_md=None, edited_resume_text=None,
-              edited_cover_letter_text=None, persona_template_id=None):
+def _seed_run(
+    application_id,
+    iteration=0,
+    run_id="abc123def456",
+    generated_resume_md=None,
+    ats_roundtrip_json=None,
+    generated_cover_letter_md=None,
+    edited_resume_text=None,
+    edited_cover_letter_text=None,
+    persona_template_id=None,
+):
     from db.models import ApplicationRun
     from db.session import get_session
+
     s = get_session()
     try:
         r = ApplicationRun(
-            application_id=application_id, iteration=iteration,
-            run_id=run_id, prompt_version="2026-05-12.1",
+            application_id=application_id,
+            iteration=iteration,
+            run_id=run_id,
+            prompt_version="2026-05-12.1",
             corpus_snapshot_json="{}",
             generated_resume_md=generated_resume_md,
             generated_cover_letter_md=generated_cover_letter_md,
@@ -109,14 +133,13 @@ def _seed_run(application_id, iteration=0, run_id="abc123def456",
         s.close()
 
 
-def _seed_persona(candidate_id=None, name="Classic", path="classic.docx",
-                  source="bundled"):
+def _seed_persona(candidate_id=None, name="Classic", path="classic.docx", source="bundled"):
     from db.models import PersonaTemplate
     from db.session import get_session
+
     s = get_session()
     try:
-        p = PersonaTemplate(candidate_id=candidate_id, name=name, path=path,
-                            source=source)
+        p = PersonaTemplate(candidate_id=candidate_id, name=name, path=path, source=source)
         s.add(p)
         s.commit()
         return p.id
@@ -138,12 +161,12 @@ def _write_context_file(app_module, username, filename, payload):
     return p
 
 
-def _seed_pending_proposal(application_run_id, bullet_id=None,
-                          experience_title_id=None):
+def _seed_pending_proposal(application_run_id, bullet_id=None, experience_title_id=None):
     """Seed a pending proposal_review row. Requires that exactly one of
     bullet_id or experience_title_id is non-null (CHECK constraint)."""
     from db.models import ProposalReview
     from db.session import get_session
+
     s = get_session()
     try:
         p = ProposalReview(
@@ -164,14 +187,22 @@ def _seed_bullet_for_proposals(candidate_id):
     """Make a bullet so proposal_review.bullet_id has a real FK target."""
     from db.models import Bullet, Experience
     from db.session import get_session
+
     s = get_session()
     try:
-        e = Experience(candidate_id=candidate_id, company="X",
-                       start_date="2020-01", display_order=0)
+        e = Experience(
+            candidate_id=candidate_id, company="X", start_date="2020-01", display_order=0
+        )
         s.add(e)
         s.flush()
-        b = Bullet(experience_id=e.id, text="bullet", display_order=0,
-                   is_active=1, source="manual", has_outcome=0)
+        b = Bullet(
+            experience_id=e.id,
+            text="bullet",
+            display_order=0,
+            is_active=1,
+            source="manual",
+            has_outcome=0,
+        )
         s.add(b)
         s.commit()
         return b.id
@@ -254,11 +285,7 @@ class TestListApplications:
             counter["n"] = 0
             event.listen(engine, "after_cursor_execute", _count)
             try:
-                body = (
-                    app_app.app.test_client()
-                    .get("/api/users/alice/applications")
-                    .get_json()
-                )
+                body = app_app.app.test_client().get("/api/users/alice/applications").get_json()
             finally:
                 event.remove(engine, "after_cursor_execute", _count)
             return body, counter["n"]
@@ -272,10 +299,7 @@ class TestListApplications:
         assert len(body_big) == 6
         # Correctness preserved at scale: each app still reports its 2 runs and
         # 2 pending proposals.
-        assert all(
-            a["iteration_count"] == 2 and a["pending_proposals"] == 2
-            for a in body_big
-        )
+        assert all(a["iteration_count"] == 2 and a["pending_proposals"] == 2 for a in body_big)
         # The fix: query count does NOT grow with the application count.
         assert q_small == q_big, (q_small, q_big)
         assert q_big <= 6  # absolute ceiling (was 1+2N = 13 for 6 apps)
@@ -299,18 +323,14 @@ class TestListApplications:
         # ?status= is the programmatic query surface for the B.8 learning layer.
         cid = _seed_candidate()
         _seed_application(cid, title="Draft app")
-        sub = _seed_application(cid, title="Sub app", jd_text="JD two",
-                                status="submitted")
-        iv = _seed_application(cid, title="Int app", jd_text="JD three",
-                               status="interview")
+        sub = _seed_application(cid, title="Sub app", jd_text="JD two", status="submitted")
+        iv = _seed_application(cid, title="Int app", jd_text="JD three", status="interview")
 
         client = app_app.app.test_client()
         body = client.get("/api/users/alice/applications?status=interview").get_json()
         assert [a["id"] for a in body] == [iv]
 
-        body = client.get(
-            "/api/users/alice/applications?status=interview,submitted"
-        ).get_json()
+        body = client.get("/api/users/alice/applications?status=interview,submitted").get_json()
         assert {a["id"] for a in body} == {sub, iv}
 
     def test_status_filter_unknown_value_400(self, app_app):
@@ -329,11 +349,9 @@ class TestListApplications:
 class TestGetApplication:
     def test_returns_full_detail_with_runs(self, app_app):
         cid = _seed_candidate()
-        aid = _seed_application(cid, title="Senior PM @ Foo",
-                                jd_text="JD content here")
+        aid = _seed_application(cid, title="Senior PM @ Foo", jd_text="JD content here")
         _seed_run(aid, iteration=0, generated_resume_md="# Resume")
-        _seed_run(aid, iteration=1, run_id="abc123def458",
-                  ats_roundtrip_json='{"status": "pass"}')
+        _seed_run(aid, iteration=1, run_id="abc123def458", ats_roundtrip_json='{"status": "pass"}')
 
         client = app_app.app.test_client()
         r = client.get(f"/api/applications/{aid}")
@@ -378,8 +396,7 @@ class TestUpdateApplicationStatus:
         cid = _seed_candidate()
         aid = _seed_application(cid)
         client = app_app.app.test_client()
-        r = client.put(f"/api/applications/{aid}/status",
-                       json={"status": "submitted"})
+        r = client.put(f"/api/applications/{aid}/status", json={"status": "submitted"})
         assert r.status_code == 200
         assert r.get_json()["status"] == "submitted"
 
@@ -387,8 +404,7 @@ class TestUpdateApplicationStatus:
         cid = _seed_candidate()
         aid = _seed_application(cid)
         client = app_app.app.test_client()
-        r = client.put(f"/api/applications/{aid}/status",
-                       json={"status": "ghosted"})
+        r = client.put(f"/api/applications/{aid}/status", json={"status": "ghosted"})
         assert r.status_code == 400
 
     def test_404_for_unknown_id(self, app_app):
@@ -458,7 +474,6 @@ class TestUpdateApplicationStatus:
         assert r2.status_code == 400
 
 
-
 def test_no_response_backfill_migration(tmp_path):
     """Migration 0007 DML: no_response → submitted, outcome_at cleared."""
     import sqlite3
@@ -485,10 +500,10 @@ def test_no_response_backfill_migration(tmp_path):
         )
         conn.commit()
 
-        rows = conn.execute(
-            "SELECT status, outcome_at FROM application ORDER BY id"
-        ).fetchall()
-    assert rows[0] == ("submitted", None), "no_response row should become submitted with outcome_at cleared"
+        rows = conn.execute("SELECT status, outcome_at FROM application ORDER BY id").fetchall()
+    assert rows[0] == ("submitted", None), (
+        "no_response row should become submitted with outcome_at cleared"
+    )
     assert rows[1] == ("submitted", None), "already-submitted row should be unchanged"
 
 
@@ -500,22 +515,46 @@ def test_no_response_backfill_migration(tmp_path):
 def _seed_exp_with_bullets(candidate_id, company="Acme"):
     from db.models import Bullet, Experience, ExperienceTitle
     from db.session import get_session
+
     s = get_session()
     try:
-        e = Experience(candidate_id=candidate_id, company=company,
-                       start_date="2021-01", display_order=0)
+        e = Experience(
+            candidate_id=candidate_id, company=company, start_date="2021-01", display_order=0
+        )
         s.add(e)
         s.flush()
-        s.add(ExperienceTitle(experience_id=e.id, title="Staff Engineer",
-                              is_official=1, is_pending_review=0, source="official"))
+        s.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="Staff Engineer",
+                is_official=1,
+                is_pending_review=0,
+                source="official",
+            )
+        )
         # One JD-relevant bullet, one not.
-        s.add(Bullet(experience_id=e.id,
-                     text="Reduced Kubernetes latency 40% across 12 services",
-                     display_order=0, is_active=1, is_pending_review=0,
-                     source="manual", has_outcome=1))
-        s.add(Bullet(experience_id=e.id, text="Attended weekly syncs",
-                     display_order=1, is_active=1, is_pending_review=0,
-                     source="manual", has_outcome=0))
+        s.add(
+            Bullet(
+                experience_id=e.id,
+                text="Reduced Kubernetes latency 40% across 12 services",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=1,
+            )
+        )
+        s.add(
+            Bullet(
+                experience_id=e.id,
+                text="Attended weekly syncs",
+                display_order=1,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=0,
+            )
+        )
         s.commit()
         return e.id
     finally:
@@ -527,7 +566,8 @@ class TestComposition:
         cid = _seed_candidate()
         _seed_exp_with_bullets(cid)
         aid = _seed_application(
-            cid, jd_text="Seeking Kubernetes latency optimization at scale",
+            cid,
+            jd_text="Seeking Kubernetes latency optimization at scale",
         )
         client = app_app.app.test_client()
         r = client.get(f"/api/applications/{aid}/composition")
@@ -545,6 +585,7 @@ class TestComposition:
         aid = _seed_application(cid)
         # Minimal context file under OUTPUT_DIR/alice/
         import json
+
         out = tmp_path / "output" / "alice"
         out.mkdir(parents=True, exist_ok=True)
         ctx = out / "context_x.json"
@@ -552,6 +593,7 @@ class TestComposition:
 
         from db.models import Bullet
         from db.session import get_session
+
         s = get_session()
         try:
             bid = s.query(Bullet).filter_by(experience_id=eid).first().id
@@ -571,9 +613,7 @@ class TestComposition:
         g = client.get(
             f"/api/applications/{aid}/composition?context_path={ctx}",
         ).get_json()
-        pinned_flags = [
-            b["pinned"] for e in g["experiences"] for b in e["bullets"]
-        ]
+        pinned_flags = [b["pinned"] for e in g["experiences"] for b in e["bullets"]]
         assert any(pinned_flags)
 
     def test_404_for_unknown_application(self, app_app):
@@ -584,8 +624,7 @@ class TestComposition:
         cid = _seed_candidate()
         aid = _seed_application(cid)
         client = app_app.app.test_client()
-        r = client.post(f"/api/applications/{aid}/composition",
-                        json={"pinned": [], "excluded": []})
+        r = client.post(f"/api/applications/{aid}/composition", json={"pinned": [], "excluded": []})
         assert r.status_code == 400
 
 
@@ -596,6 +635,7 @@ class TestCompositionAddedField:
         _seed_exp_with_bullets(cid)
         aid = _seed_application(cid)
         import json
+
         out = tmp_path / "output" / "alice"
         out.mkdir(parents=True, exist_ok=True)
         ctx = out / "context_add.json"
@@ -604,8 +644,7 @@ class TestCompositionAddedField:
         client = app_app.app.test_client()
         r = client.post(
             f"/api/applications/{aid}/composition",
-            json={"context_path": str(ctx),
-                  "pinned": [], "excluded": [], "added": [42, 43]},
+            json={"context_path": str(ctx), "pinned": [], "excluded": [], "added": [42, 43]},
         )
         assert r.status_code == 200, r.get_json()
         saved = json.loads(ctx.read_text(encoding="utf-8"))
@@ -619,26 +658,35 @@ class TestCompositionAddedField:
         eid = _seed_exp_with_bullets(cid)
         aid = _seed_application(cid, jd_text="Kubernetes latency at scale")
         import json
+
         out = tmp_path / "output" / "alice"
         out.mkdir(parents=True, exist_ok=True)
         ctx = out / "context_flags.json"
         # Need a real bullet id to mark recommended
         from db.models import Bullet
         from db.session import get_session
+
         s = get_session()
         try:
             bids = [b.id for b in s.query(Bullet).filter_by(experience_id=eid).all()]
         finally:
             s.close()
-        ctx.write_text(json.dumps({
-            "application_id": aid,
-            "llm_recommendations": {
-                str(eid): {"bullet_ids": [bids[0]], "rationale": "best fit"},
-            },
-            "composition_overrides": {
-                "pinned": [], "excluded": [], "added": [bids[1]],
-            },
-        }), encoding="utf-8")
+        ctx.write_text(
+            json.dumps(
+                {
+                    "application_id": aid,
+                    "llm_recommendations": {
+                        str(eid): {"bullet_ids": [bids[0]], "rationale": "best fit"},
+                    },
+                    "composition_overrides": {
+                        "pinned": [],
+                        "excluded": [],
+                        "added": [bids[1]],
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
 
         client = app_app.app.test_client()
         r = client.get(
@@ -659,17 +707,29 @@ def _seed_exp_with_two_titles(candidate_id, company="Acme"):
     alternative. Returns (eid, official_tid, alt_tid)."""
     from db.models import Experience, ExperienceTitle
     from db.session import get_session
+
     s = get_session()
     try:
-        e = Experience(candidate_id=candidate_id, company=company,
-                       start_date="2021-01", display_order=0)
+        e = Experience(
+            candidate_id=candidate_id, company=company, start_date="2021-01", display_order=0
+        )
         s.add(e)
         s.flush()
-        off = ExperienceTitle(experience_id=e.id, title="Staff Engineer",
-                              is_official=1, is_pending_review=0, source="official")
-        alt = ExperienceTitle(experience_id=e.id, title="Principal Engineer",
-                              is_official=0, truthful_enough_to_use=1,
-                              is_pending_review=0, source="user_added")
+        off = ExperienceTitle(
+            experience_id=e.id,
+            title="Staff Engineer",
+            is_official=1,
+            is_pending_review=0,
+            source="official",
+        )
+        alt = ExperienceTitle(
+            experience_id=e.id,
+            title="Principal Engineer",
+            is_official=0,
+            truthful_enough_to_use=1,
+            is_pending_review=0,
+            source="user_added",
+        )
         s.add(off)
         s.add(alt)
         s.commit()
@@ -685,6 +745,7 @@ class TestCompositionTitlePin:
 
     def _ctx(self, tmp_path, aid, extra=None):
         import json
+
         out = tmp_path / "output" / "alice"
         out.mkdir(parents=True, exist_ok=True)
         ctx = out / "context_title.json"
@@ -696,6 +757,7 @@ class TestCompositionTitlePin:
 
     def test_post_persists_pinned_title_ids(self, app_app, tmp_path):
         import json
+
         cid = _seed_candidate()
         eid, _off, alt = _seed_exp_with_two_titles(cid)
         aid = _seed_application(cid)
@@ -703,8 +765,12 @@ class TestCompositionTitlePin:
         client = app_app.app.test_client()
         r = client.post(
             f"/api/applications/{aid}/composition",
-            json={"context_path": str(ctx), "pinned": [], "excluded": [],
-                  "pinned_title_ids": {str(eid): alt}},
+            json={
+                "context_path": str(ctx),
+                "pinned": [],
+                "excluded": [],
+                "pinned_title_ids": {str(eid): alt},
+            },
         )
         assert r.status_code == 200, r.get_json()
         saved = json.loads(ctx.read_text(encoding="utf-8"))
@@ -715,9 +781,13 @@ class TestCompositionTitlePin:
         cid = _seed_candidate()
         eid, off, alt = _seed_exp_with_two_titles(cid)
         aid = _seed_application(cid)
-        ctx = self._ctx(tmp_path, aid, extra={
-            "composition_overrides": {"pinned_title_ids": {str(eid): alt}},
-        })
+        ctx = self._ctx(
+            tmp_path,
+            aid,
+            extra={
+                "composition_overrides": {"pinned_title_ids": {str(eid): alt}},
+            },
+        )
         client = app_app.app.test_client()
         g = client.get(
             f"/api/applications/{aid}/composition?context_path={ctx}",
@@ -750,8 +820,12 @@ class TestCompositionTitlePin:
         client = app_app.app.test_client()
         r = client.post(
             f"/api/applications/{aid}/composition",
-            json={"context_path": str(ctx), "pinned": [], "excluded": [],
-                  "pinned_title_ids": {str(eid): 999999}},
+            json={
+                "context_path": str(ctx),
+                "pinned": [],
+                "excluded": [],
+                "pinned_title_ids": {str(eid): 999999},
+            },
         )
         assert r.status_code == 400
         assert "eligible" in r.get_json()["error"]
@@ -760,30 +834,44 @@ class TestCompositionTitlePin:
         """The generate snapshot is frozen at analyze; pinning a title re-syncs
         eligible_titles from the DB so a post-analyze title reaches generate."""
         import json
+
         cid = _seed_candidate()
         eid, off, alt = _seed_exp_with_two_titles(cid)
         aid = _seed_application(cid)
         # Analyze-time snapshot that predates the alt title: only the official
         # title is in career_corpus[exp].eligible_titles.
-        ctx = self._ctx(tmp_path, aid, extra={
-            "career_corpus": [
-                {"id": eid, "company": "Acme", "eligible_titles": [
-                    {"id": off, "title": "Staff Engineer", "is_official": True},
-                ], "bullets": []},
-            ],
-        })
+        ctx = self._ctx(
+            tmp_path,
+            aid,
+            extra={
+                "career_corpus": [
+                    {
+                        "id": eid,
+                        "company": "Acme",
+                        "eligible_titles": [
+                            {"id": off, "title": "Staff Engineer", "is_official": True},
+                        ],
+                        "bullets": [],
+                    },
+                ],
+            },
+        )
         client = app_app.app.test_client()
         r = client.post(
             f"/api/applications/{aid}/composition",
-            json={"context_path": str(ctx), "pinned": [], "excluded": [],
-                  "pinned_title_ids": {str(eid): alt}},
+            json={
+                "context_path": str(ctx),
+                "pinned": [],
+                "excluded": [],
+                "pinned_title_ids": {str(eid): alt},
+            },
         )
         assert r.status_code == 200, r.get_json()
         saved = json.loads(ctx.read_text(encoding="utf-8"))
         exp_entry = next(e for e in saved["career_corpus"] if e["id"] == eid)
         title_ids = {t["id"] for t in exp_entry["eligible_titles"]}
-        assert alt in title_ids   # re-synced into the frozen snapshot
-        assert off in title_ids   # official still present
+        assert alt in title_ids  # re-synced into the frozen snapshot
+        assert off in title_ids  # official still present
 
 
 class TestCompositionBulletOrder:
@@ -796,16 +884,17 @@ class TestCompositionBulletOrder:
         JD-relevant, higher-scoring bullet seeded first)."""
         from db.models import Bullet
         from db.session import get_session
+
         s = get_session()
         try:
-            rows = (s.query(Bullet).filter_by(experience_id=eid)
-                    .order_by(Bullet.display_order).all())
+            rows = s.query(Bullet).filter_by(experience_id=eid).order_by(Bullet.display_order).all()
             return [b.id for b in rows]
         finally:
             s.close()
 
     def _ctx(self, tmp_path, aid, extra=None):
         import json
+
         out = tmp_path / "output" / "alice"
         out.mkdir(parents=True, exist_ok=True)
         ctx = out / "context_order.json"
@@ -817,6 +906,7 @@ class TestCompositionBulletOrder:
 
     def test_post_persists_bullet_order(self, app_app, tmp_path):
         import json
+
         cid = _seed_candidate()
         eid = _seed_exp_with_bullets(cid)
         aid = _seed_application(cid)
@@ -825,8 +915,13 @@ class TestCompositionBulletOrder:
         client = app_app.app.test_client()
         r = client.post(
             f"/api/applications/{aid}/composition",
-            json={"context_path": str(ctx), "pinned": [k8s], "excluded": [],
-                  "added": [], "bullet_order": {str(eid): [syncs, k8s]}},
+            json={
+                "context_path": str(ctx),
+                "pinned": [k8s],
+                "excluded": [],
+                "added": [],
+                "bullet_order": {str(eid): [syncs, k8s]},
+            },
         )
         assert r.status_code == 200, r.get_json()
         saved = json.loads(ctx.read_text(encoding="utf-8"))["composition_overrides"]
@@ -841,12 +936,18 @@ class TestCompositionBulletOrder:
         aid = _seed_application(cid, jd_text="Kubernetes latency at scale")
         k8s, syncs = self._bullet_ids(eid)
         # Reverse the default (k8s-first) score ranking.
-        ctx = self._ctx(tmp_path, aid, {
-            "composition_overrides": {
-                "pinned": [], "excluded": [], "added": [],
-                "bullet_order": {str(eid): [syncs, k8s]},
+        ctx = self._ctx(
+            tmp_path,
+            aid,
+            {
+                "composition_overrides": {
+                    "pinned": [],
+                    "excluded": [],
+                    "added": [],
+                    "bullet_order": {str(eid): [syncs, k8s]},
+                },
             },
-        })
+        )
         client = app_app.app.test_client()
         g = client.get(
             f"/api/applications/{aid}/composition?context_path={ctx}",
@@ -872,21 +973,33 @@ class TestCompositionBulletOrder:
 
     def test_reset_omits_bullet_order_key(self, app_app, tmp_path):
         import json
+
         cid = _seed_candidate()
         eid = _seed_exp_with_bullets(cid)
         aid = _seed_application(cid)
         k8s, syncs = self._bullet_ids(eid)
-        ctx = self._ctx(tmp_path, aid, {
-            "composition_overrides": {
-                "pinned": [], "excluded": [], "added": [],
-                "bullet_order": {str(eid): [syncs, k8s]},
+        ctx = self._ctx(
+            tmp_path,
+            aid,
+            {
+                "composition_overrides": {
+                    "pinned": [],
+                    "excluded": [],
+                    "added": [],
+                    "bullet_order": {str(eid): [syncs, k8s]},
+                },
             },
-        })
+        )
         client = app_app.app.test_client()
         r = client.post(
             f"/api/applications/{aid}/composition",
-            json={"context_path": str(ctx), "pinned": [], "excluded": [],
-                  "added": [], "bullet_order": {}},
+            json={
+                "context_path": str(ctx),
+                "pinned": [],
+                "excluded": [],
+                "added": [],
+                "bullet_order": {},
+            },
         )
         assert r.status_code == 200, r.get_json()
         saved = json.loads(ctx.read_text(encoding="utf-8"))["composition_overrides"]
@@ -898,12 +1011,18 @@ class TestCompositionBulletOrder:
         aid = _seed_application(cid, jd_text="Kubernetes latency at scale")
         k8s, syncs = self._bullet_ids(eid)
         # Saved order names ONLY syncs; k8s post-dates the order.
-        ctx = self._ctx(tmp_path, aid, {
-            "composition_overrides": {
-                "pinned": [], "excluded": [], "added": [],
-                "bullet_order": {str(eid): [syncs]},
+        ctx = self._ctx(
+            tmp_path,
+            aid,
+            {
+                "composition_overrides": {
+                    "pinned": [],
+                    "excluded": [],
+                    "added": [],
+                    "bullet_order": {str(eid): [syncs]},
+                },
             },
-        })
+        )
         client = app_app.app.test_client()
         g = client.get(
             f"/api/applications/{aid}/composition?context_path={ctx}",
@@ -920,12 +1039,15 @@ class TestCompositionBulletOrder:
         aid = _seed_application(cid)
         ctx = self._ctx(tmp_path, aid)
         client = app_app.app.test_client()
-        r1 = client.post(f"/api/applications/{aid}/composition",
-                         json={"context_path": str(ctx), "bullet_order": [1, 2]})
+        r1 = client.post(
+            f"/api/applications/{aid}/composition",
+            json={"context_path": str(ctx), "bullet_order": [1, 2]},
+        )
         assert r1.status_code == 400
-        r2 = client.post(f"/api/applications/{aid}/composition",
-                         json={"context_path": str(ctx),
-                               "bullet_order": {"1": ["x"]}})
+        r2 = client.post(
+            f"/api/applications/{aid}/composition",
+            json={"context_path": str(ctx), "bullet_order": {"1": ["x"]}},
+        )
         assert r2.status_code == 400
 
 
@@ -939,8 +1061,7 @@ class TestNotesEndpoint:
         cid = _seed_candidate()
         aid = _seed_application(cid)
         client = app_app.app.test_client()
-        r = client.put(f"/api/applications/{aid}/notes",
-                       json={"notes": "Follow up on Thursday"})
+        r = client.put(f"/api/applications/{aid}/notes", json={"notes": "Follow up on Thursday"})
         assert r.status_code == 200
         body = r.get_json()
         assert body["notes"] == "Follow up on Thursday"
@@ -949,8 +1070,7 @@ class TestNotesEndpoint:
         cid = _seed_candidate()
         aid = _seed_application(cid)
         client = app_app.app.test_client()
-        client.put(f"/api/applications/{aid}/notes",
-                   json={"notes": "some note"})
+        client.put(f"/api/applications/{aid}/notes", json={"notes": "some note"})
         r = client.put(f"/api/applications/{aid}/notes", json={"notes": ""})
         assert r.status_code == 200
         assert r.get_json()["notes"] is None
@@ -974,13 +1094,10 @@ class TestGetApplicationDetail:
         aid = _seed_application(cid)
         client = app_app.app.test_client()
         # Seed notes via the notes endpoint
-        client.put(f"/api/applications/{aid}/notes",
-                   json={"notes": "Check LinkedIn"})
+        client.put(f"/api/applications/{aid}/notes", json={"notes": "Check LinkedIn"})
         # Seed sent_at / outcome_at via the status endpoint
-        client.put(f"/api/applications/{aid}/status",
-                   json={"status": "submitted"})
-        client.put(f"/api/applications/{aid}/status",
-                   json={"status": "rejected"})
+        client.put(f"/api/applications/{aid}/status", json={"status": "submitted"})
+        client.put(f"/api/applications/{aid}/status", json={"status": "rejected"})
         r = client.get(f"/api/applications/{aid}")
         assert r.status_code == 200
         body = r.get_json()
@@ -999,16 +1116,19 @@ class TestFindContextPathForRun:
     context_*.json (ApplicationRun has no context_path column)."""
 
     def test_returns_newest_matching_by_iteration(self, app_app):
-        _write_context_file(app_app, "alice", "context_a_iter1.json",
-                            {"application_run_id": 7, "iteration": 1})
-        newer = _write_context_file(app_app, "alice", "context_b_iter2.json",
-                                    {"application_run_id": 7, "iteration": 2})
+        _write_context_file(
+            app_app, "alice", "context_a_iter1.json", {"application_run_id": 7, "iteration": 1}
+        )
+        newer = _write_context_file(
+            app_app, "alice", "context_b_iter2.json", {"application_run_id": 7, "iteration": 2}
+        )
         got = app_app._find_context_path_for_run("alice", 7)
         assert got == str(newer)
 
     def test_ignores_files_for_other_runs(self, app_app):
-        _write_context_file(app_app, "alice", "context_x_iter1.json",
-                            {"application_run_id": 999, "iteration": 1})
+        _write_context_file(
+            app_app, "alice", "context_x_iter1.json", {"application_run_id": 999, "iteration": 1}
+        )
         assert app_app._find_context_path_for_run("alice", 7) is None
 
     def test_none_when_user_dir_absent(self, app_app):
@@ -1018,17 +1138,16 @@ class TestFindContextPathForRun:
     def test_skips_unparseable_json_returns_valid_match(self, app_app):
         bad = app_app.OUTPUT_DIR / "alice"
         bad.mkdir(parents=True, exist_ok=True)
-        (bad / "context_broken_iter1.json").write_text("{not json",
-                                                       encoding="utf-8")
-        good = _write_context_file(app_app, "alice", "context_ok_iter1.json",
-                                   {"application_run_id": 7, "iteration": 1})
+        (bad / "context_broken_iter1.json").write_text("{not json", encoding="utf-8")
+        good = _write_context_file(
+            app_app, "alice", "context_ok_iter1.json", {"application_run_id": 7, "iteration": 1}
+        )
         assert app_app._find_context_path_for_run("alice", 7) == str(good)
 
     def test_none_when_only_unparseable(self, app_app):
         bad = app_app.OUTPUT_DIR / "alice"
         bad.mkdir(parents=True, exist_ok=True)
-        (bad / "context_broken_iter1.json").write_text("{not json",
-                                                       encoding="utf-8")
+        (bad / "context_broken_iter1.json").write_text("{not json", encoding="utf-8")
         assert app_app._find_context_path_for_run("alice", 7) is None
 
 
@@ -1040,8 +1159,7 @@ def _analyze_ctx(run_id, **extra):
         "iteration": 0,
         "llm_analysis": {"essential_skills": ["Python"]},
         "deterministic_analysis": {
-            "keyword_overlap": {"match_score": 0.5, "matched": [],
-                                "missing_from_resume": []},
+            "keyword_overlap": {"match_score": 0.5, "matched": [], "missing_from_resume": []},
             "ats_warnings": [],
         },
     }
@@ -1056,13 +1174,22 @@ class TestResumeState:
         cid = _seed_candidate()
         pid = _seed_persona()
         aid = _seed_application(cid)
-        rid = _seed_run(aid, iteration=0, generated_resume_md="# Resume",
-                        generated_cover_letter_md="Dear Hiring Manager,",
-                        persona_template_id=pid)
+        rid = _seed_run(
+            aid,
+            iteration=0,
+            generated_resume_md="# Resume",
+            generated_cover_letter_md="Dear Hiring Manager,",
+            persona_template_id=pid,
+        )
         ctx = _write_context_file(
-            app_app, "alice", "context_a_iter1.json",
-            {"application_run_id": rid, "iteration": 1,
-             "last_generated_json_resume": {"basics": {"name": "Alice"}}},
+            app_app,
+            "alice",
+            "context_a_iter1.json",
+            {
+                "application_run_id": rid,
+                "iteration": 1,
+                "last_generated_json_resume": {"basics": {"name": "Alice"}},
+            },
         )
 
         body = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()
@@ -1078,8 +1205,7 @@ class TestResumeState:
         cid = _seed_candidate()
         aid = _seed_application(cid)
         _seed_run(aid, iteration=0, generated_resume_md="# Resume")
-        rs = app_app.app.test_client().get(
-            f"/api/applications/{aid}").get_json()["resume_state"]
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
         assert rs["resumable"] is True
         assert rs["resume_md"] == "# Resume"
         assert rs["cover_letter_md"] == ""
@@ -1088,8 +1214,7 @@ class TestResumeState:
         cid = _seed_candidate()
         aid = _seed_application(cid)
         _seed_run(aid, iteration=0)  # analyzed-only: no generated_resume_md
-        rs = app_app.app.test_client().get(
-            f"/api/applications/{aid}").get_json()["resume_state"]
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
         assert rs == {"resumable": False}
 
     def test_degraded_when_context_file_missing(self, app_app):
@@ -1097,8 +1222,7 @@ class TestResumeState:
         aid = _seed_application(cid)
         _seed_run(aid, iteration=0, generated_resume_md="# Resume")
         # No context file written to disk.
-        rs = app_app.app.test_client().get(
-            f"/api/applications/{aid}").get_json()["resume_state"]
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
         assert rs["resumable"] is True
         assert rs["resume_md"] == "# Resume"
         assert rs["context_path"] is None
@@ -1107,12 +1231,15 @@ class TestResumeState:
     def test_prefers_edited_text_over_generated(self, app_app):
         cid = _seed_candidate()
         aid = _seed_application(cid)
-        _seed_run(aid, iteration=0, generated_resume_md="# Generated",
-                  generated_cover_letter_md="Generated CL",
-                  edited_resume_text="# Edited",
-                  edited_cover_letter_text="Edited CL")
-        rs = app_app.app.test_client().get(
-            f"/api/applications/{aid}").get_json()["resume_state"]
+        _seed_run(
+            aid,
+            iteration=0,
+            generated_resume_md="# Generated",
+            generated_cover_letter_md="Generated CL",
+            edited_resume_text="# Edited",
+            edited_cover_letter_text="Edited CL",
+        )
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
         assert rs["resume_md"] == "# Edited"
         assert rs["cover_letter_md"] == "Edited CL"
 
@@ -1122,18 +1249,15 @@ class TestResumeState:
         cid = _seed_candidate()
         aid = _seed_application(cid)
         _seed_run(aid, iteration=0, generated_resume_md="# Resume")
-        rs = app_app.app.test_client().get(
-            f"/api/applications/{aid}").get_json()["resume_state"]
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
         assert rs["target_step"] == 6
 
     def test_resumable_at_step_1_when_only_analyzed(self, app_app):
         cid = _seed_candidate()
         aid = _seed_application(cid)
         rid = _seed_run(aid, iteration=0)  # analyzed-only: no generated résumé
-        _write_context_file(app_app, "alice", "context_an_iter0.json",
-                            _analyze_ctx(rid))
-        rs = app_app.app.test_client().get(
-            f"/api/applications/{aid}").get_json()["resume_state"]
+        _write_context_file(app_app, "alice", "context_an_iter0.json", _analyze_ctx(rid))
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
         assert rs["resumable"] is True
         assert rs["target_step"] == 1
         assert rs["analysis"] == {"essential_skills": ["Python"]}
@@ -1145,13 +1269,16 @@ class TestResumeState:
         aid = _seed_application(cid)
         rid = _seed_run(aid, iteration=0)
         _write_context_file(
-            app_app, "alice", "context_cl_iter0.json",
-            _analyze_ctx(rid,
-                         clarification_questions=[{"id": "q1", "text": "Ran k8s?"}],
-                         clarifications={"q1": "Yes, in prod."}),
+            app_app,
+            "alice",
+            "context_cl_iter0.json",
+            _analyze_ctx(
+                rid,
+                clarification_questions=[{"id": "q1", "text": "Ran k8s?"}],
+                clarifications={"q1": "Yes, in prod."},
+            ),
         )
-        rs = app_app.app.test_client().get(
-            f"/api/applications/{aid}").get_json()["resume_state"]
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
         assert rs["target_step"] == 2
         assert rs["clarification_questions"][0]["id"] == "q1"
         assert rs["clarifications"] == {"q1": "Yes, in prod."}
@@ -1161,12 +1288,12 @@ class TestResumeState:
         aid = _seed_application(cid)
         rid = _seed_run(aid, iteration=0)
         _write_context_file(
-            app_app, "alice", "context_co_iter0.json",
-            _analyze_ctx(rid, clarifications={"q1": "Yes"},
-                         llm_recommendations={"1": ["b1"]}),
+            app_app,
+            "alice",
+            "context_co_iter0.json",
+            _analyze_ctx(rid, clarifications={"q1": "Yes"}, llm_recommendations={"1": ["b1"]}),
         )
-        rs = app_app.app.test_client().get(
-            f"/api/applications/{aid}").get_json()["resume_state"]
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
         assert rs["target_step"] == 3  # compose beats clarify
 
     def test_composition_overrides_resume_at_step_3(self, app_app):
@@ -1174,11 +1301,12 @@ class TestResumeState:
         aid = _seed_application(cid)
         rid = _seed_run(aid, iteration=0)
         _write_context_file(
-            app_app, "alice", "context_cv_iter0.json",
+            app_app,
+            "alice",
+            "context_cv_iter0.json",
             _analyze_ctx(rid, composition_overrides={"pinned": [1]}),
         )
-        rs = app_app.app.test_client().get(
-            f"/api/applications/{aid}").get_json()["resume_state"]
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
         assert rs["target_step"] == 3
 
 
@@ -1189,8 +1317,8 @@ class TestUpdateMeta:
         cid = _seed_candidate()
         aid = _seed_application(cid, title="Old", company=None)
         r = app_app.app.test_client().put(
-            f"/api/applications/{aid}/meta",
-            json={"title": "Staff PM", "company": "Acme Robotics"})
+            f"/api/applications/{aid}/meta", json={"title": "Staff PM", "company": "Acme Robotics"}
+        )
         assert r.status_code == 200
         body = r.get_json()
         assert body["title"] == "Staff PM"
@@ -1199,27 +1327,31 @@ class TestUpdateMeta:
     def test_clears_company_when_blank(self, app_app):
         cid = _seed_candidate()
         aid = _seed_application(cid, company="Acme")
-        body = app_app.app.test_client().put(
-            f"/api/applications/{aid}/meta", json={"company": "  "}).get_json()
+        body = (
+            app_app.app.test_client()
+            .put(f"/api/applications/{aid}/meta", json={"company": "  "})
+            .get_json()
+        )
         assert body["company"] is None
 
     def test_company_only_leaves_title_intact(self, app_app):
         cid = _seed_candidate()
         aid = _seed_application(cid, title="Keep me")
-        body = app_app.app.test_client().put(
-            f"/api/applications/{aid}/meta", json={"company": "Acme"}).get_json()
+        body = (
+            app_app.app.test_client()
+            .put(f"/api/applications/{aid}/meta", json={"company": "Acme"})
+            .get_json()
+        )
         assert body["title"] == "Keep me"
         assert body["company"] == "Acme"
 
     def test_rejects_empty_title(self, app_app):
         cid = _seed_candidate()
         aid = _seed_application(cid)
-        r = app_app.app.test_client().put(
-            f"/api/applications/{aid}/meta", json={"title": "   "})
+        r = app_app.app.test_client().put(f"/api/applications/{aid}/meta", json={"title": "   "})
         assert r.status_code == 400
 
     def test_404_for_unknown_id(self, app_app):
         _seed_candidate()
-        r = app_app.app.test_client().put(
-            "/api/applications/99999/meta", json={"company": "X"})
+        r = app_app.app.test_client().put("/api/applications/99999/meta", json={"company": "X"})
         assert r.status_code == 404

@@ -20,6 +20,7 @@ def dup_app(tmp_path, monkeypatch):
     """
     db_file = tmp_path / "dup.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
@@ -30,6 +31,7 @@ def dup_app(tmp_path, monkeypatch):
     app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
     from db.session import init_db
+
     init_db(db_file)
     return app
 
@@ -39,22 +41,29 @@ def _seed(username="alice", bullets_per_exp=None):
     of (text, has_outcome) tuples."""
     from db.models import Bullet, Candidate, Experience
     from db.session import get_session
+
     s = get_session()
     try:
         c = Candidate(username=username, name=username.title())
         s.add(c)
         s.flush()
         e = Experience(
-            candidate_id=c.id, company="Polaris",
-            start_date="2022-01", display_order=0,
+            candidate_id=c.id,
+            company="Polaris",
+            start_date="2022-01",
+            display_order=0,
         )
         s.add(e)
         s.flush()
         ids = []
         for i, (text, outcome) in enumerate(bullets_per_exp or []):
             b = Bullet(
-                experience_id=e.id, text=text, display_order=i,
-                is_active=1, is_pending_review=0, source="manual",
+                experience_id=e.id,
+                text=text,
+                display_order=i,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
                 has_outcome=1 if outcome else 0,
             )
             s.add(b)
@@ -68,24 +77,30 @@ def _seed(username="alice", bullets_per_exp=None):
 
 class TestDuplicatesRoute:
     def test_empty_when_no_duplicates(self, dup_app):
-        _seed(bullets_per_exp=[
-            ("Owned the on-call rotation.", False),
-            ("Mentored four junior engineers through their first launches.", False),
-            ("Authored the architecture review document for the new platform.", True),
-        ])
+        _seed(
+            bullets_per_exp=[
+                ("Owned the on-call rotation.", False),
+                ("Mentored four junior engineers through their first launches.", False),
+                ("Authored the architecture review document for the new platform.", True),
+            ]
+        )
         client = dup_app.test_client()
         body = client.get("/api/users/alice/duplicates").get_json()
         assert body["cluster_count"] == 0
         assert body["experiences"] == []
 
     def test_clusters_near_verbatim_pair(self, dup_app):
-        body_text = ("Reduced API latency across the order service by "
-                     "introducing connection pooling and a request cache.")
-        _, eid, ids = _seed(bullets_per_exp=[
-            (body_text, True),
-            (body_text.replace("the order", "our order"), False),  # near-verbatim
-            ("Mentored a junior engineer through their first launch.", False),
-        ])
+        body_text = (
+            "Reduced API latency across the order service by "
+            "introducing connection pooling and a request cache."
+        )
+        _, eid, ids = _seed(
+            bullets_per_exp=[
+                (body_text, True),
+                (body_text.replace("the order", "our order"), False),  # near-verbatim
+                ("Mentored a junior engineer through their first launch.", False),
+            ]
+        )
         client = dup_app.test_client()
         body = client.get("/api/users/alice/duplicates").get_json()
         assert body["cluster_count"] == 1
@@ -100,10 +115,12 @@ class TestDuplicatesRoute:
 
     def test_threshold_param_relaxes_clustering(self, dup_app):
         """At a low threshold the route over-clusters; documents the knob."""
-        _seed(bullets_per_exp=[
-            ("Mentored four junior engineers through their first launches.", False),
-            ("Coached three junior engineers through onboarding.", False),
-        ])
+        _seed(
+            bullets_per_exp=[
+                ("Mentored four junior engineers through their first launches.", False),
+                ("Coached three junior engineers through onboarding.", False),
+            ]
+        )
         client = dup_app.test_client()
         b_default = client.get("/api/users/alice/duplicates").get_json()
         assert b_default["cluster_count"] == 0

@@ -64,18 +64,25 @@ def list_experiences(username: str) -> ResponseReturnValue:
                 # list_user_personas). Success shape is a bare array; the
                 # needs-onboarding case is the discriminated object.
                 return jsonify({"experiences": [], "needs_onboarding": True})
-            rows = session.query(Experience).filter_by(
-                candidate_id=candidate.id,
-            ).order_by(Experience.start_date.desc(), Experience.id.desc()).all()
+            rows = (
+                session.query(Experience)
+                .filter_by(
+                    candidate_id=candidate.id,
+                )
+                .order_by(Experience.start_date.desc(), Experience.id.desc())
+                .all()
+            )
             return jsonify([_experience_summary_dict(e) for e in rows])
         finally:
             session.close()
     except Exception as exc:
         logger.exception("list_experiences failed for user=%s", safe_user)
-        return jsonify({
-            "error": "Failed to load corpus",
-            **_error_detail_payload(exc),
-        }), 500
+        return jsonify(
+            {
+                "error": "Failed to load corpus",
+                **_error_detail_payload(exc),
+            }
+        ), 500
 
 
 @corpus_bp.route("/api/users/<username>/experiences", methods=["POST"])
@@ -109,13 +116,19 @@ def create_experience(username: str) -> ResponseReturnValue:
         candidate = cast(
             "Candidate",
             _get_or_provision_candidate(
-                session, safe_user, configs_dir=current_app.config["CONFIGS_DIR"],
+                session,
+                safe_user,
+                configs_dir=current_app.config["CONFIGS_DIR"],
             ),
         )
 
-        existing = session.query(Experience).filter_by(
-            candidate_id=candidate.id,
-        ).count()
+        existing = (
+            session.query(Experience)
+            .filter_by(
+                candidate_id=candidate.id,
+            )
+            .count()
+        )
         exp = Experience(
             candidate_id=candidate.id,
             company=company,
@@ -225,9 +238,7 @@ def delete_experience(experience_id: int) -> ResponseReturnValue:
         if not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
             return jsonify({"error": "Candidate validation failed"}), 403
 
-        retired = session.query(Bullet).filter_by(experience_id=exp.id).update(
-            {"is_active": 0}
-        )
+        retired = session.query(Bullet).filter_by(experience_id=exp.id).update({"is_active": 0})
         session.commit()
         return jsonify({"retired_bullets": retired, "experience_id": exp.id})
     except Exception:
@@ -262,7 +273,8 @@ def create_bullet(experience_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Experience not found"}), 404
         candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
@@ -291,15 +303,18 @@ def create_bullet(experience_id: int) -> ResponseReturnValue:
         session.add(bullet)
         session.commit()
         session.refresh(bullet)
-        return jsonify({
-            "id": bullet.id, "text": bullet.text,
-            "display_order": bullet.display_order,
-            "is_active": bool(bullet.is_active),
-            "is_pending_review": bool(bullet.is_pending_review),
-            "has_outcome": bool(bullet.has_outcome),
-            "pattern_kind": bullet.pattern_kind,
-            "source": bullet.source,
-        }), 201
+        return jsonify(
+            {
+                "id": bullet.id,
+                "text": bullet.text,
+                "display_order": bullet.display_order,
+                "is_active": bool(bullet.is_active),
+                "is_pending_review": bool(bullet.is_pending_review),
+                "has_outcome": bool(bullet.has_outcome),
+                "pattern_kind": bullet.pattern_kind,
+                "source": bullet.source,
+            }
+        ), 201
     except Exception:
         session.rollback()
         raise
@@ -326,7 +341,8 @@ def update_bullet(bullet_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Bullet's experience missing"}), 404
         candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
@@ -350,14 +366,17 @@ def update_bullet(bullet_id: int) -> ResponseReturnValue:
 
         session.commit()
         session.refresh(bullet)
-        return jsonify({
-            "id": bullet.id, "text": bullet.text,
-            "display_order": bullet.display_order,
-            "is_active": bool(bullet.is_active),
-            "has_outcome": bool(bullet.has_outcome),
-            "pattern_kind": bullet.pattern_kind,
-            "source": bullet.source,
-        })
+        return jsonify(
+            {
+                "id": bullet.id,
+                "text": bullet.text,
+                "display_order": bullet.display_order,
+                "is_active": bool(bullet.is_active),
+                "has_outcome": bool(bullet.has_outcome),
+                "pattern_kind": bullet.pattern_kind,
+                "source": bullet.source,
+            }
+        )
     except Exception:
         session.rollback()
         raise
@@ -383,7 +402,8 @@ def delete_bullet(bullet_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Bullet's experience missing"}), 404
         candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
@@ -428,24 +448,28 @@ def list_experience_summaries(experience_id: int) -> ResponseReturnValue:
                 return jsonify({"error": "Experience not found"}), 404
             candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
             if candidate is None or not _safe_username(
-                candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+                candidate.username,
+                configs_dir=current_app.config["CONFIGS_DIR"],
             ):
                 return jsonify({"error": "Candidate validation failed"}), 403
             q = session.query(ExperienceSummaryItem).filter_by(experience_id=exp.id)
             if not include_inactive:
                 q = q.filter(ExperienceSummaryItem.is_active == 1)
             rows = q.order_by(
-                ExperienceSummaryItem.display_order, ExperienceSummaryItem.id,
+                ExperienceSummaryItem.display_order,
+                ExperienceSummaryItem.id,
             ).all()
             return jsonify({"summaries": [_experience_summary_item_to_dict(s) for s in rows]})
         finally:
             session.close()
     except Exception as exc:
         logger.exception("list_experience_summaries failed for exp=%s", experience_id)
-        return jsonify({
-            "error": "Failed to load role summaries",
-            **_error_detail_payload(exc),
-        }), 500
+        return jsonify(
+            {
+                "error": "Failed to load role summaries",
+                **_error_detail_payload(exc),
+            }
+        ), 500
 
 
 @corpus_bp.route("/api/experiences/<int:experience_id>/summaries", methods=["POST"])
@@ -475,13 +499,18 @@ def create_experience_summary(experience_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Experience not found"}), 404
         candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
-        next_order = session.query(ExperienceSummaryItem).filter_by(
-            experience_id=exp.id,
-        ).count()
+        next_order = (
+            session.query(ExperienceSummaryItem)
+            .filter_by(
+                experience_id=exp.id,
+            )
+            .count()
+        )
         si = ExperienceSummaryItem(
             experience_id=exp.id,
             text=text,
@@ -524,7 +553,8 @@ def update_experience_summary(item_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Variant's experience missing"}), 404
         candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
@@ -575,7 +605,8 @@ def delete_experience_summary(item_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Variant's experience missing"}), 404
         candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
@@ -620,14 +651,16 @@ def create_experience_title(experience_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Experience not found"}), 404
         candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
         is_official = 1 if data.get("is_official") else 0
         if is_official:
             session.query(ExperienceTitle).filter_by(
-                experience_id=exp.id, is_official=1,
+                experience_id=exp.id,
+                is_official=1,
             ).update({"is_official": 0})
 
         title = ExperienceTitle(
@@ -642,13 +675,17 @@ def create_experience_title(experience_id: int) -> ResponseReturnValue:
         session.add(title)
         session.commit()
         session.refresh(title)
-        return jsonify({
-            "id": title.id, "title": title.title,
-            "is_official": bool(title.is_official),
-            "truthful_enough_to_use": bool(title.truthful_enough_to_use),
-            "is_pending_review": bool(title.is_pending_review),
-            "source": title.source, "notes": title.notes,
-        }), 201
+        return jsonify(
+            {
+                "id": title.id,
+                "title": title.title,
+                "is_official": bool(title.is_official),
+                "truthful_enough_to_use": bool(title.truthful_enough_to_use),
+                "is_pending_review": bool(title.is_pending_review),
+                "source": title.source,
+                "notes": title.notes,
+            }
+        ), 201
     except Exception:
         session.rollback()
         raise
@@ -678,7 +715,8 @@ def update_experience_title(title_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Title's experience missing"}), 404
         candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
@@ -703,13 +741,17 @@ def update_experience_title(title_id: int) -> ResponseReturnValue:
 
         session.commit()
         session.refresh(title)
-        return jsonify({
-            "id": title.id, "title": title.title,
-            "is_official": bool(title.is_official),
-            "truthful_enough_to_use": bool(title.truthful_enough_to_use),
-            "is_pending_review": bool(title.is_pending_review),
-            "source": title.source, "notes": title.notes,
-        })
+        return jsonify(
+            {
+                "id": title.id,
+                "title": title.title,
+                "is_official": bool(title.is_official),
+                "truthful_enough_to_use": bool(title.truthful_enough_to_use),
+                "is_pending_review": bool(title.is_pending_review),
+                "source": title.source,
+                "notes": title.notes,
+            }
+        )
     except Exception:
         session.rollback()
         raise
@@ -736,7 +778,8 @@ def delete_experience_title(title_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Title's experience missing"}), 404
         candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
@@ -744,10 +787,13 @@ def delete_experience_title(title_id: int) -> ResponseReturnValue:
         title.truthful_enough_to_use = 0
         title.is_pending_review = 0
         session.commit()
-        return jsonify({
-            "id": title.id, "is_official": False,
-            "truthful_enough_to_use": False,
-        })
+        return jsonify(
+            {
+                "id": title.id,
+                "is_official": False,
+                "truthful_enough_to_use": False,
+            }
+        )
     except Exception:
         session.rollback()
         raise

@@ -37,8 +37,7 @@ from ui_pages.selectors import Header, PriorApps, TopTabs, UserPicker
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_wordmark_routes_home(page: Page, live_server: str,
-                              ux_app: ModuleType) -> None:
+def test_wordmark_routes_home(page: Page, live_server: str, ux_app: ModuleType) -> None:
     # Non-empty corpus so smart landing puts alice on Tailor/applications
     # (an empty corpus would land on Career corpus — see test_20260612_corpus_first_landing).
     cid = seed_user(ux_app, "alice")
@@ -48,8 +47,7 @@ def test_wordmark_routes_home(page: Page, live_server: str,
     UserPickerPage(page, live_server).select("alice")
     # A user is selected → the applications panel is up. Move off the default
     # tab so "home" has a tab to restore, not just a user to deselect.
-    page.wait_for_selector(PriorApps.PANEL, state="visible",
-                           timeout=DEFAULT_TIMEOUT_MS)
+    page.wait_for_selector(PriorApps.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
     page.click(TopTabs.CORPUS)
 
     # Click the wordmark — the home route.
@@ -57,8 +55,7 @@ def test_wordmark_routes_home(page: Page, live_server: str,
 
     # Back on the default Tailor tab...
     page.wait_for_function(
-        "() => document.getElementById('topTabTailor')"
-        ".getAttribute('aria-selected') === 'true'",
+        "() => document.getElementById('topTabTailor').getAttribute('aria-selected') === 'true'",
         timeout=DEFAULT_TIMEOUT_MS,
     )
     # ...with NO user selected and the picker re-locked open as the landing view.

@@ -93,10 +93,7 @@ def _browser() -> Iterator[Browser]:
         browser = pw.chromium.launch()
     except Exception as exc:  # pragma: no cover - environment guard
         pw.stop()
-        pytest.skip(
-            "Chromium not installed — run `python -m playwright install "
-            f"chromium` ({exc})"
-        )
+        pytest.skip(f"Chromium not installed — run `python -m playwright install chromium` ({exc})")
     try:
         yield browser
     finally:
@@ -160,22 +157,22 @@ def page(_browser: Browser, live_server: str) -> Iterator[Page]:
 # suppresses them on the ``/_dashboard/`` navigation — but only because the ported
 # ``_maybeFireDashHelp`` reads these exact ids before opening.
 _TOUR_STOP_BLOCKS = (
-    "panelUser",        # welcome
-    "tourAddUser",      # add-user tip
-    "panelCorpus",      # post-ingest
-    "panelJD",          # wizard step 1
-    "panelClarify",     # wizard step 2
-    "panelCompose",     # wizard step 3
-    "panelTemplate",    # wizard step 4
-    "panelGenerate",    # wizard step 5
-    "panelOutput",      # wizard step 6
-    "tourGenerating",   # first Generate click
+    "panelUser",  # welcome
+    "tourAddUser",  # add-user tip
+    "panelCorpus",  # post-ingest
+    "panelJD",  # wizard step 1
+    "panelClarify",  # wizard step 2
+    "panelCompose",  # wizard step 3
+    "panelTemplate",  # wizard step 4
+    "panelGenerate",  # wizard step 5
+    "panelOutput",  # wizard step 6
+    "tourGenerating",  # first Generate click
     "tourCoverLetter",  # first cover-letter
-    "dashPipeline",     # /_dashboard Pipeline tab explainer (auto on first load)
-    "dashQuality",      # /_dashboard Quality tab explainer
-    "dashGroundedness", # /_dashboard Groundedness tab explainer
-    "dashTuning",       # /_dashboard Tuning tab explainer
-    "dashAnnotate",     # /_dashboard Annotate tab explainer
+    "dashPipeline",  # /_dashboard Pipeline tab explainer (auto on first load)
+    "dashQuality",  # /_dashboard Quality tab explainer
+    "dashGroundedness",  # /_dashboard Groundedness tab explainer
+    "dashTuning",  # /_dashboard Tuning tab explainer
+    "dashAnnotate",  # /_dashboard Annotate tab explainer
 )
 
 
@@ -198,9 +195,7 @@ def _help_welcome_default_seen(request: pytest.FixtureRequest, page: Page) -> No
     blocks = list(_TOUR_STOP_BLOCKS)
     if request.node.get_closest_marker("show_welcome"):
         blocks.remove("panelUser")  # welcome fires; the rest stay suppressed
-    sets = "".join(
-        f"window.localStorage.setItem('cb_help_seen:{b}', '1');" for b in blocks
-    )
+    sets = "".join(f"window.localStorage.setItem('cb_help_seen:{b}', '1');" for b in blocks)
     page.add_init_script(
         f"try {{ {sets} }} catch (e) {{ /* storage unavailable — help may show */ }}"
     )

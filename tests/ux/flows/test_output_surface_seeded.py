@@ -30,30 +30,44 @@ from tests.ux.seeding import (
 from ui_pages import BasePage, PriorAppsPage, UserPickerPage, WizardOutputPage
 
 _RESUME_JSON = {
-    "basics": {"name": "Alice Resumed", "label": "Staff Platform Engineer",
-               "email": "alice@example.com"},
-    "work": [{
-        "name": "Acme Logistics", "position": "Staff Engineer",
-        "startDate": "2021-01",
-        "highlights": ["Led the Kafka migration across 12 topics"],
-    }],
+    "basics": {
+        "name": "Alice Resumed",
+        "label": "Staff Platform Engineer",
+        "email": "alice@example.com",
+    },
+    "work": [
+        {
+            "name": "Acme Logistics",
+            "position": "Staff Engineer",
+            "startDate": "2021-01",
+            "highlights": ["Led the Kafka migration across 12 topics"],
+        }
+    ],
 }
 
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_resume_prior_application_renders_step6(page: Page, live_server: str,
-                                                ux_app: ModuleType) -> None:
+def test_resume_prior_application_renders_step6(
+    page: Page, live_server: str, ux_app: ModuleType
+) -> None:
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)  # non-empty corpus → smart landing keeps us on Tailor
     pid = bundled_persona_id()
     aid = seed_application(cid, title="Senior Backend @ Acme")
-    rid = seed_run(aid, iteration=0, generated_resume_md="# Alice\n- Led migration",
-                   persona_template_id=pid)
-    write_context_file(ux_app, "alice", "context_resume_iter1.json", {
-        "application_run_id": rid, "iteration": 1,
-        "last_generated_json_resume": _RESUME_JSON,
-    })
+    rid = seed_run(
+        aid, iteration=0, generated_resume_md="# Alice\n- Led migration", persona_template_id=pid
+    )
+    write_context_file(
+        ux_app,
+        "alice",
+        "context_resume_iter1.json",
+        {
+            "application_run_id": rid,
+            "iteration": 1,
+            "last_generated_json_resume": _RESUME_JSON,
+        },
+    )
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")

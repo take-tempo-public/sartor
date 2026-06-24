@@ -60,17 +60,17 @@ def list_skills(username: str) -> ResponseReturnValue:
             if not include_pending:
                 q = q.filter(Skill.is_pending_review == 0)
             rows = q.order_by(Skill.display_order, Skill.id).all()
-            return jsonify({"skills": [
-                _skill_to_dict(s, _tag_list(s.tag_links)) for s in rows
-            ]})
+            return jsonify({"skills": [_skill_to_dict(s, _tag_list(s.tag_links)) for s in rows]})
         finally:
             session.close()
     except Exception as exc:
         logger.exception("list_skills failed for user=%s", safe_user)
-        return jsonify({
-            "error": "Failed to load skills",
-            **_error_detail_payload(exc),
-        }), 500
+        return jsonify(
+            {
+                "error": "Failed to load skills",
+                **_error_detail_payload(exc),
+            }
+        ), 500
 
 
 @corpus_bp.route("/api/users/<username>/skills", methods=["POST"])
@@ -105,16 +105,26 @@ def create_skill(username: str) -> ResponseReturnValue:
         candidate = cast(
             "Candidate",
             _get_or_provision_candidate(
-                session, safe_user, configs_dir=current_app.config["CONFIGS_DIR"],
+                session,
+                safe_user,
+                configs_dir=current_app.config["CONFIGS_DIR"],
             ),
         )
-        existing = session.query(Skill).filter_by(
-            candidate_id=candidate.id, name=name,
-        ).first()
+        existing = (
+            session.query(Skill)
+            .filter_by(
+                candidate_id=candidate.id,
+                name=name,
+            )
+            .first()
+        )
         if existing is not None:
-            return jsonify({
-                "error": "skill already exists", "id": existing.id,
-            }), 409
+            return jsonify(
+                {
+                    "error": "skill already exists",
+                    "id": existing.id,
+                }
+            ), 409
 
         next_order = session.query(Skill).filter_by(candidate_id=candidate.id).count()
         sk = Skill(
@@ -157,7 +167,8 @@ def update_skill(skill_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Skill not found"}), 404
         candidate = session.query(Candidate).filter_by(id=sk.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
@@ -165,11 +176,15 @@ def update_skill(skill_id: int) -> ResponseReturnValue:
             name = (data.get("name") or "").strip()
             if not name:
                 return jsonify({"error": "name cannot be empty"}), 400
-            dup = session.query(Skill).filter(
-                Skill.candidate_id == sk.candidate_id,
-                Skill.name == name,
-                Skill.id != sk.id,
-            ).first()
+            dup = (
+                session.query(Skill)
+                .filter(
+                    Skill.candidate_id == sk.candidate_id,
+                    Skill.name == name,
+                    Skill.id != sk.id,
+                )
+                .first()
+            )
             if dup is not None:
                 return jsonify({"error": "another skill already has that name", "id": dup.id}), 409
             sk.name = name
@@ -221,7 +236,8 @@ def delete_skill(skill_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Skill not found"}), 404
         candidate = session.query(Candidate).filter_by(id=sk.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 

@@ -22,6 +22,7 @@ from analyzer import (
 
 # ---------- _strip_fences ---------------------------------------------------
 
+
 @pytest.mark.parametrize(
     "raw,expected",
     [
@@ -37,6 +38,7 @@ def test_strip_fences_variants(raw, expected):
 
 
 # ---------- _parse_or_retry happy paths -------------------------------------
+
 
 def _scripted_call_llm(responses):
     """Build a fake _call_llm that pops one response per call.
@@ -56,10 +58,12 @@ def _scripted_call_llm(responses):
 
 
 def _valid_analysis_json() -> str:
-    body = {k: [] if k != "ideal_resume_profile" and k != "overall_strategy"
-            and k != "comparison" else
-            ("text" if k != "comparison" else {})
-            for k in ANALYZE_REQUIRED_KEYS}
+    body = {
+        k: []
+        if k != "ideal_resume_profile" and k != "overall_strategy" and k != "comparison"
+        else ("text" if k != "comparison" else {})
+        for k in ANALYZE_REQUIRED_KEYS
+    }
     return json.dumps(body)
 
 
@@ -68,10 +72,13 @@ def test_parse_or_retry_happy_path(monkeypatch):
     monkeypatch.setattr(analyzer, "_call_llm", fake)
 
     result = _parse_or_retry(
-        client=None, base_prompt="prompt",
+        client=None,
+        base_prompt="prompt",
         cached_user_prefix="prefix",
         response_model=AnalyzeResponse,
-        call_kind="analyze", username="u", run_id="r",
+        call_kind="analyze",
+        username="u",
+        run_id="r",
     )
 
     assert set(result.keys()) >= ANALYZE_REQUIRED_KEYS
@@ -84,10 +91,13 @@ def test_parse_or_retry_strips_markdown_fences(monkeypatch):
     monkeypatch.setattr(analyzer, "_call_llm", fake)
 
     result = _parse_or_retry(
-        client=None, base_prompt="prompt",
+        client=None,
+        base_prompt="prompt",
         cached_user_prefix="prefix",
         response_model=AnalyzeResponse,
-        call_kind="analyze", username="u", run_id="r",
+        call_kind="analyze",
+        username="u",
+        run_id="r",
     )
 
     assert set(result.keys()) >= ANALYZE_REQUIRED_KEYS
@@ -119,10 +129,13 @@ def test_parse_or_retry_tolerates_literal_control_chars_in_strings(monkeypatch):
     monkeypatch.setattr(analyzer, "_call_llm", fake)
 
     result = _parse_or_retry(
-        client=None, base_prompt="prompt",
+        client=None,
+        base_prompt="prompt",
         cached_user_prefix="prefix",
         response_model=AnalyzeResponse,
-        call_kind="analyze", username="u", run_id="r",
+        call_kind="analyze",
+        username="u",
+        run_id="r",
     )
 
     assert result["overall_strategy"] == "First line.\nSecond line.\nThird line."
@@ -131,19 +144,25 @@ def test_parse_or_retry_tolerates_literal_control_chars_in_strings(monkeypatch):
 
 # ---------- _parse_or_retry retry succeeds ----------------------------------
 
+
 def test_parse_or_retry_recovers_from_missing_keys(monkeypatch):
     """First response is missing required keys; second is valid."""
-    fake = _scripted_call_llm([
-        json.dumps({"essential_skills": []}),  # missing nearly everything
-        _valid_analysis_json(),
-    ])
+    fake = _scripted_call_llm(
+        [
+            json.dumps({"essential_skills": []}),  # missing nearly everything
+            _valid_analysis_json(),
+        ]
+    )
     monkeypatch.setattr(analyzer, "_call_llm", fake)
 
     result = _parse_or_retry(
-        client=None, base_prompt="prompt",
+        client=None,
+        base_prompt="prompt",
         cached_user_prefix="prefix",
         response_model=AnalyzeResponse,
-        call_kind="analyze", username="u", run_id="r",
+        call_kind="analyze",
+        username="u",
+        run_id="r",
     )
 
     assert set(result.keys()) >= ANALYZE_REQUIRED_KEYS
@@ -152,17 +171,22 @@ def test_parse_or_retry_recovers_from_missing_keys(monkeypatch):
 
 def test_parse_or_retry_recovers_from_invalid_json(monkeypatch):
     """First response is unparseable; second is valid."""
-    fake = _scripted_call_llm([
-        "this is not json at all { unterminated",
-        _valid_analysis_json(),
-    ])
+    fake = _scripted_call_llm(
+        [
+            "this is not json at all { unterminated",
+            _valid_analysis_json(),
+        ]
+    )
     monkeypatch.setattr(analyzer, "_call_llm", fake)
 
     result = _parse_or_retry(
-        client=None, base_prompt="prompt",
+        client=None,
+        base_prompt="prompt",
         cached_user_prefix="prefix",
         response_model=AnalyzeResponse,
-        call_kind="analyze", username="u", run_id="r",
+        call_kind="analyze",
+        username="u",
+        run_id="r",
     )
 
     assert set(result.keys()) >= ANALYZE_REQUIRED_KEYS
@@ -171,6 +195,7 @@ def test_parse_or_retry_recovers_from_invalid_json(monkeypatch):
 
 # ---------- _parse_or_retry retry exhausted ---------------------------------
 
+
 def test_parse_or_retry_raises_on_persistent_missing_keys(monkeypatch):
     bad = json.dumps({"essential_skills": []})
     fake = _scripted_call_llm([bad, bad])
@@ -178,10 +203,13 @@ def test_parse_or_retry_raises_on_persistent_missing_keys(monkeypatch):
 
     with pytest.raises(LLMResponseError) as excinfo:
         _parse_or_retry(
-            client=None, base_prompt="prompt",
+            client=None,
+            base_prompt="prompt",
             cached_user_prefix="prefix",
             response_model=AnalyzeResponse,
-            call_kind="analyze", username="u", run_id="r",
+            call_kind="analyze",
+            username="u",
+            run_id="r",
         )
 
     assert excinfo.value.validation_error
@@ -196,10 +224,13 @@ def test_parse_or_retry_raises_on_persistent_invalid_json(monkeypatch):
 
     with pytest.raises(LLMResponseError) as excinfo:
         _parse_or_retry(
-            client=None, base_prompt="prompt",
+            client=None,
+            base_prompt="prompt",
             cached_user_prefix="prefix",
             response_model=AnalyzeResponse,
-            call_kind="analyze", username="u", run_id="r",
+            call_kind="analyze",
+            username="u",
+            run_id="r",
         )
 
     assert excinfo.value.raw == junk
@@ -208,17 +239,22 @@ def test_parse_or_retry_raises_on_persistent_invalid_json(monkeypatch):
 
 def test_parse_or_retry_uses_retry_call_kind(monkeypatch):
     """Retry must use call_kind '<orig>_retry' for dashboard attribution."""
-    fake = _scripted_call_llm([
-        "junk",
-        _valid_analysis_json(),
-    ])
+    fake = _scripted_call_llm(
+        [
+            "junk",
+            _valid_analysis_json(),
+        ]
+    )
     monkeypatch.setattr(analyzer, "_call_llm", fake)
 
     _parse_or_retry(
-        client=None, base_prompt="prompt",
+        client=None,
+        base_prompt="prompt",
         cached_user_prefix="prefix",
         response_model=AnalyzeResponse,
-        call_kind="generate", username="u", run_id="r",
+        call_kind="generate",
+        username="u",
+        run_id="r",
     )
 
     assert fake.calls == ["generate", "generate_retry"]
@@ -226,22 +262,36 @@ def test_parse_or_retry_uses_retry_call_kind(monkeypatch):
 
 # ---------- _parse_or_retry threads system_prompt to _call_llm --------------
 
+
 def test_parse_or_retry_threads_system_prompt(monkeypatch):
     """The optional system_prompt arg must reach _call_llm so calls like
     clarify() use a dedicated persona rather than the main SYSTEM_PROMPT."""
     received_system_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         received_system_prompts.append(system_prompt)
         return _valid_analysis_json()
 
     monkeypatch.setattr(analyzer, "_call_llm", fake)
 
     _parse_or_retry(
-        client=None, base_prompt="p",
+        client=None,
+        base_prompt="p",
         cached_user_prefix="",
         response_model=AnalyzeResponse,
-        call_kind="clarify", username="u", run_id="r",
+        call_kind="clarify",
+        username="u",
+        run_id="r",
         system_prompt="DEDICATED",
     )
 
@@ -249,6 +299,7 @@ def test_parse_or_retry_threads_system_prompt(monkeypatch):
 
 
 # ---------- _parse_or_retry_streaming (R2 SSE streaming path) --------------
+
 
 def _scripted_call_llm_streaming(scripted_chunks_per_attempt):
     """Fake _call_llm_streaming that yields a scripted chunk sequence per call.
@@ -277,16 +328,21 @@ def test_parse_or_retry_streaming_yields_chunks_then_done(monkeypatch):
     carrying the parsed JSON dict. No retry events."""
     full_json = _valid_analysis_json()
     third = len(full_json) // 3
-    valid_chunks = [full_json[:third], full_json[third:2 * third], full_json[2 * third:]]
+    valid_chunks = [full_json[:third], full_json[third : 2 * third], full_json[2 * third :]]
     fake = _scripted_call_llm_streaming([valid_chunks])
     monkeypatch.setattr(analyzer, "_call_llm_streaming", fake)
 
-    events = list(_parse_or_retry_streaming(
-        client=None, base_prompt="prompt",
-        cached_user_prefix="prefix",
-        response_model=AnalyzeResponse,
-        call_kind="analyze", username="u", run_id="r",
-    ))
+    events = list(
+        _parse_or_retry_streaming(
+            client=None,
+            base_prompt="prompt",
+            cached_user_prefix="prefix",
+            response_model=AnalyzeResponse,
+            call_kind="analyze",
+            username="u",
+            run_id="r",
+        )
+    )
 
     chunks = [payload for kind, payload in events if kind == "chunk"]
     retries = [payload for kind, payload in events if kind == "retry"]
@@ -309,12 +365,17 @@ def test_parse_or_retry_streaming_emits_retry_on_first_parse_failure(monkeypatch
     fake = _scripted_call_llm_streaming([junk_chunks, good_chunks])
     monkeypatch.setattr(analyzer, "_call_llm_streaming", fake)
 
-    events = list(_parse_or_retry_streaming(
-        client=None, base_prompt="prompt",
-        cached_user_prefix="prefix",
-        response_model=AnalyzeResponse,
-        call_kind="analyze", username="u", run_id="r",
-    ))
+    events = list(
+        _parse_or_retry_streaming(
+            client=None,
+            base_prompt="prompt",
+            cached_user_prefix="prefix",
+            response_model=AnalyzeResponse,
+            call_kind="analyze",
+            username="u",
+            run_id="r",
+        )
+    )
 
     kinds = [k for k, _ in events]
     # Order: junk chunks, retry, good chunk, done.
@@ -333,43 +394,51 @@ def test_parse_or_retry_streaming_raises_after_exhausted_retries(monkeypatch):
     monkeypatch.setattr(analyzer, "_call_llm_streaming", fake)
 
     with pytest.raises(LLMResponseError):
-        list(_parse_or_retry_streaming(
-            client=None, base_prompt="prompt",
-            cached_user_prefix="prefix",
-            response_model=AnalyzeResponse,
-            call_kind="analyze", username="u", run_id="r",
-        ))
+        list(
+            _parse_or_retry_streaming(
+                client=None,
+                base_prompt="prompt",
+                cached_user_prefix="prefix",
+                response_model=AnalyzeResponse,
+                call_kind="analyze",
+                username="u",
+                run_id="r",
+            )
+        )
 
     assert fake.call_kinds == ["analyze", "analyze_retry"]
 
 
 # ---------- clarify() ------------------------------------------------------
 
+
 def _minimal_clarify_response() -> str:
     """Valid clarify() response shape: ≥60% combined experience+context probes."""
-    return json.dumps({
-        "questions": [
-            {
-                "id": "q1",
-                "text": "Have you used Kubernetes in production?",
-                "target_gap": "Essential skill Kubernetes missing from resume",
-                "kind": "experience_probe",
-            },
-            {
-                "id": "q2",
-                "text": "Have you operated in regulated or workflow-heavy environments?",
-                "target_gap": "Context signal: regulated-industry workflows",
-                "kind": "context_probe",
-            },
-            {
-                "id": "q3",
-                "text": "Did the K8s migration ship to production or remain a POC?",
-                "target_gap": "Analyzer flagged ambiguity in shipped status",
-                "kind": "scope_probe",
-            },
-        ],
-        "reasoning": "Two experience/context probes plus one scope probe — 67% combined.",
-    })
+    return json.dumps(
+        {
+            "questions": [
+                {
+                    "id": "q1",
+                    "text": "Have you used Kubernetes in production?",
+                    "target_gap": "Essential skill Kubernetes missing from resume",
+                    "kind": "experience_probe",
+                },
+                {
+                    "id": "q2",
+                    "text": "Have you operated in regulated or workflow-heavy environments?",
+                    "target_gap": "Context signal: regulated-industry workflows",
+                    "kind": "context_probe",
+                },
+                {
+                    "id": "q3",
+                    "text": "Did the K8s migration ship to production or remain a POC?",
+                    "target_gap": "Analyzer flagged ambiguity in shipped status",
+                    "kind": "scope_probe",
+                },
+            ],
+            "reasoning": "Two experience/context probes plus one scope probe — 67% combined.",
+        }
+    )
 
 
 def test_clarify_returns_structured_questions(monkeypatch):
@@ -377,7 +446,17 @@ def test_clarify_returns_structured_questions(monkeypatch):
     a questions/reasoning JSON response."""
     received_system_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         received_system_prompts.append(system_prompt)
         # clarify uses no cached prefix — the analyzer has already digested the resume/JD
         assert cached_user_prefix == ""
@@ -400,8 +479,9 @@ def test_clarify_returns_structured_questions(monkeypatch):
         "overall_strategy": "",
     }
 
-    result = analyzer.clarify(client=None, context_set=context_set, analysis=analysis,
-                              username="u", run_id="r")
+    result = analyzer.clarify(
+        client=None, context_set=context_set, analysis=analysis, username="u", run_id="r"
+    )
 
     assert "questions" in result and "reasoning" in result
     assert len(result["questions"]) == 3
@@ -417,7 +497,17 @@ def test_clarify_retries_on_missing_keys(monkeypatch):
     ]
     calls: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         calls.append(call_kind)
         return responses.pop(0)
 
@@ -433,19 +523,32 @@ def test_clarify_retries_on_missing_keys(monkeypatch):
 
 # ---------- generate() injects clarifications into prompt -------------------
 
+
 def test_generate_includes_clarification_block_when_present(monkeypatch):
     """When context_set has clarifications, the generate prompt must contain
     the <candidate_clarifications> block with paired question and answer."""
     captured_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         captured_prompts.append(prompt)
-        return json.dumps({
-            "resume_content": "# Name\n## Experience\n",
-            "cover_letter_content": "Cover letter body",
-            "changes_made": [],
-            "proofread_notes": [],
-        })
+        return json.dumps(
+            {
+                "resume_content": "# Name\n## Experience\n",
+                "cover_letter_content": "Cover letter body",
+                "changes_made": [],
+                "proofread_notes": [],
+            }
+        )
 
     monkeypatch.setattr(analyzer, "_call_llm", fake)
 
@@ -456,7 +559,12 @@ def test_generate_includes_clarification_block_when_present(monkeypatch):
         "job_description": "jd",
         "deterministic_analysis": {"keyword_overlap": {}},
         "clarification_questions": [
-            {"id": "q1", "text": "Used Kubernetes?", "kind": "experience_probe", "target_gap": "k8s"},
+            {
+                "id": "q1",
+                "text": "Used Kubernetes?",
+                "kind": "experience_probe",
+                "target_gap": "k8s",
+            },
             {"id": "q2", "text": "Shipped?", "kind": "scope_probe", "target_gap": "scope"},
         ],
         "clarifications": {
@@ -465,8 +573,11 @@ def test_generate_includes_clarification_block_when_present(monkeypatch):
         },
     }
     analysis = {
-        "essential_skills": [], "keyword_placement": [], "suggestions": [],
-        "overall_strategy": "", "professional_vocabulary": [],
+        "essential_skills": [],
+        "keyword_placement": [],
+        "suggestions": [],
+        "overall_strategy": "",
+        "professional_vocabulary": [],
     }
 
     analyzer.generate(client=None, context_set=context_set, analysis=analysis)
@@ -486,14 +597,26 @@ def test_generate_omits_clarification_block_when_absent(monkeypatch):
     contexts."""
     captured_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         captured_prompts.append(prompt)
-        return json.dumps({
-            "resume_content": "# Name\n",
-            "cover_letter_content": "letter",
-            "changes_made": [],
-            "proofread_notes": [],
-        })
+        return json.dumps(
+            {
+                "resume_content": "# Name\n",
+                "cover_letter_content": "letter",
+                "changes_made": [],
+                "proofread_notes": [],
+            }
+        )
 
     monkeypatch.setattr(analyzer, "_call_llm", fake)
 
@@ -505,8 +628,11 @@ def test_generate_omits_clarification_block_when_absent(monkeypatch):
         "deterministic_analysis": {"keyword_overlap": {}},
     }
     analysis = {
-        "essential_skills": [], "keyword_placement": [], "suggestions": [],
-        "overall_strategy": "", "professional_vocabulary": [],
+        "essential_skills": [],
+        "keyword_placement": [],
+        "suggestions": [],
+        "overall_strategy": "",
+        "professional_vocabulary": [],
     }
 
     analyzer.generate(client=None, context_set=context_set, analysis=analysis)
@@ -518,12 +644,26 @@ def test_generate_omits_clarification_block_when_all_skipped(monkeypatch):
     the block must still be omitted — no empty wrapper in the prompt."""
     captured_prompts: list[str] = []
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         captured_prompts.append(prompt)
-        return json.dumps({
-            "resume_content": "# x", "cover_letter_content": "x",
-            "changes_made": [], "proofread_notes": [],
-        })
+        return json.dumps(
+            {
+                "resume_content": "# x",
+                "cover_letter_content": "x",
+                "changes_made": [],
+                "proofread_notes": [],
+            }
+        )
 
     monkeypatch.setattr(analyzer, "_call_llm", fake)
 
@@ -538,8 +678,13 @@ def test_generate_omits_clarification_block_when_all_skipped(monkeypatch):
         ],
         "clarifications": {},  # user clicked Skip
     }
-    analysis = {"essential_skills": [], "keyword_placement": [], "suggestions": [],
-                "overall_strategy": "", "professional_vocabulary": []}
+    analysis = {
+        "essential_skills": [],
+        "keyword_placement": [],
+        "suggestions": [],
+        "overall_strategy": "",
+        "professional_vocabulary": [],
+    }
 
     analyzer.generate(client=None, context_set=context_set, analysis=analysis)
     assert "<candidate_clarifications>" not in captured_prompts[0]

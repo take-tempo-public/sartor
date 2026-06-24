@@ -33,9 +33,7 @@ from ui_pages.selectors import Dashboard, Forms, UserPicker
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_new_user_form_required_markers(
-    page: Page, live_server: str, ux_app: ModuleType
-) -> None:
+def test_new_user_form_required_markers(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """The new-user form marks username/name/email required (programmatic +
     visible) and leaves the optional fields unmarked."""
     BasePage(page, live_server).load()
@@ -116,12 +114,8 @@ def test_console_username_dropdowns_populate(
     page.wait_for_selector(Dashboard.pane_active("annotate"), state="visible")
     dash.reveal_details_for(Dashboard.ANN_BS_USER)
     # <option>s are never "visible" to Playwright — wait on `attached`.
-    page.wait_for_selector(
-        f"{Dashboard.ANN_BS_USER} option[value='alice']", state="attached"
-    )
-    page.wait_for_selector(
-        f"{Dashboard.ANN_BS_USER} option[value='bob']", state="attached"
-    )
+    page.wait_for_selector(f"{Dashboard.ANN_BS_USER} option[value='alice']", state="attached")
+    page.wait_for_selector(f"{Dashboard.ANN_BS_USER} option[value='bob']", state="attached")
 
     assert page.eval_on_selector(Dashboard.ANN_BS_USER, "el => el.tagName") == "SELECT"
     assert page.get_attribute(Dashboard.ANN_BS_USER, "aria-required") == "true"
@@ -137,9 +131,7 @@ def test_console_username_dropdowns_populate(
     dash.activate_tab("tuning")
     page.wait_for_selector(Dashboard.pane_active("tuning"), state="visible")
     dash.reveal_details_for(Dashboard.TUNE_USER)
-    page.wait_for_selector(
-        f"{Dashboard.TUNE_USER} option[value='bob']", state="attached"
-    )
+    page.wait_for_selector(f"{Dashboard.TUNE_USER} option[value='bob']", state="attached")
 
     assert page.eval_on_selector(Dashboard.TUNE_USER, "el => el.tagName") == "SELECT"
     assert page.get_attribute(Dashboard.TUNE_USER, "aria-required") is None

@@ -44,11 +44,13 @@ class TestExtractBullets:
 class TestScoreNliBullets:
     def _mock_pipeline(self, entailment: float, contradiction: float) -> MagicMock:
         neutral = max(0.0, round(1.0 - entailment - contradiction, 4))
-        return MagicMock(return_value=[
-            {"label": "entailment", "score": entailment},
-            {"label": "neutral", "score": neutral},
-            {"label": "contradiction", "score": contradiction},
-        ])
+        return MagicMock(
+            return_value=[
+                {"label": "entailment", "score": entailment},
+                {"label": "neutral", "score": neutral},
+                {"label": "contradiction", "score": contradiction},
+            ]
+        )
 
     def test_high_entailment_no_flag(self):
         pipeline = self._mock_pipeline(entailment=0.9, contradiction=0.05)
@@ -96,9 +98,7 @@ class TestScoreMinicheckBullets:
     def test_low_score(self):
         mock_scorer = MagicMock()
         mock_scorer.score.return_value = ([0], [0.18], None, None)
-        results = score_minicheck_bullets(
-            ["Led a team of 50"], "Led a team", _scorer=mock_scorer
-        )
+        results = score_minicheck_bullets(["Led a team of 50"], "Led a team", _scorer=mock_scorer)
         assert results[0]["minicheck_grounding_score"] == pytest.approx(0.18)
 
     def test_multiple_bullets_aligned_correctly(self):
@@ -151,7 +151,11 @@ class TestRunGroundingSignals:
     def test_summary_means_computed_correctly(self):
         mock_nli = [
             {"bullet": "Led a team", "nli_entailment_score": 0.8, "nli_contradiction_flag": False},
-            {"bullet": "Shipped product", "nli_entailment_score": 0.6, "nli_contradiction_flag": True},
+            {
+                "bullet": "Shipped product",
+                "nli_entailment_score": 0.6,
+                "nli_contradiction_flag": True,
+            },
         ]
         mock_mc = [
             {"bullet": "Led a team", "minicheck_grounding_score": 0.9},

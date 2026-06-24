@@ -37,7 +37,9 @@ _JD = "Senior Backend Engineer — Kubernetes latency at scale, Kafka, Postgres.
 @pytest.mark.ux
 @pytest.mark.slow
 def test_continue_to_clarify_initiates_clarify_directly(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     cid = seed_user(ux_app, "alice")

@@ -41,8 +41,7 @@ from ui_pages.selectors import Corpus, Memory, Personas, PriorApps, TopTabs
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_new_user_tab_sweep_has_no_4xx(page: Page, live_server: str,
-                                       ux_app: ModuleType) -> None:
+def test_new_user_tab_sweep_has_no_4xx(page: Page, live_server: str, ux_app: ModuleType) -> None:
     # Config only, NO Candidate row — the brand-new-user state that used to
     # 409 across every read endpoint.
     write_user_config(ux_app, "robert")
@@ -62,9 +61,9 @@ def test_new_user_tab_sweep_has_no_4xx(page: Page, live_server: str,
 
     # Sweep every tab that fires a passive read on activation.
     for tab, panel in (
-        (TopTabs.CORPUS, Corpus.PANEL),          # GET /experiences (+ /duplicates)
-        (TopTabs.PERSONAS, Personas.PANEL),      # GET /personas (owned + picker)
-        (TopTabs.MEMORY, Memory.PANEL),          # GET /clarifications
+        (TopTabs.CORPUS, Corpus.PANEL),  # GET /experiences (+ /duplicates)
+        (TopTabs.PERSONAS, Personas.PANEL),  # GET /personas (owned + picker)
+        (TopTabs.MEMORY, Memory.PANEL),  # GET /clarifications
         (TopTabs.TAILOR, PriorApps.PANEL),  # GET /applications
     ):
         page.click(tab)

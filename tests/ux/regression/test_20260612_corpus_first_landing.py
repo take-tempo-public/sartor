@@ -33,8 +33,7 @@ from ui_pages.selectors import Corpus, PriorApps, TopTabs
 def _wait_tab_active(page: Page, tab_id: str) -> None:
     """Block until the named top-tab button reports aria-selected=true."""
     page.wait_for_function(
-        "(id) => document.getElementById(id)"
-        ".getAttribute('aria-selected') === 'true'",
+        "(id) => document.getElementById(id).getAttribute('aria-selected') === 'true'",
         arg=tab_id,
         timeout=DEFAULT_TIMEOUT_MS,
     )
@@ -42,8 +41,7 @@ def _wait_tab_active(page: Page, tab_id: str) -> None:
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_empty_corpus_lands_on_corpus(page: Page, live_server: str,
-                                      ux_app: ModuleType) -> None:
+def test_empty_corpus_lands_on_corpus(page: Page, live_server: str, ux_app: ModuleType) -> None:
     # Empty corpus (no experiences) → onboard on the Career corpus tab.
     seed_user(ux_app, "alice")
 
@@ -58,8 +56,7 @@ def test_empty_corpus_lands_on_corpus(page: Page, live_server: str,
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_populated_corpus_lands_on_tailor(page: Page, live_server: str,
-                                          ux_app: ModuleType) -> None:
+def test_populated_corpus_lands_on_tailor(page: Page, live_server: str, ux_app: ModuleType) -> None:
     # A populated corpus → straight to the Tailor workflow.
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)
@@ -68,14 +65,14 @@ def test_populated_corpus_lands_on_tailor(page: Page, live_server: str,
     UserPickerPage(page, live_server).select("alice")
 
     _wait_tab_active(page, "topTabTailor")
-    page.wait_for_selector(PriorApps.PANEL, state="visible",
-                           timeout=DEFAULT_TIMEOUT_MS)
+    page.wait_for_selector(PriorApps.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
 
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_ready_corpus_shows_start_tailoring_cta(page: Page, live_server: str,
-                                                ux_app: ModuleType) -> None:
+def test_ready_corpus_shows_start_tailoring_cta(
+    page: Page, live_server: str, ux_app: ModuleType
+) -> None:
     # Non-empty corpus with everything accepted (0 pending) → the Career corpus
     # tab offers the "Start tailoring →" hand-off, which routes to Tailor.
     cid = seed_user(ux_app, "alice")

@@ -136,9 +136,7 @@ def main() -> int:
     client = _get_client()
     vec_tiers = _BASE_TIERS | {Tier.VECTOR}
 
-    with tempfile.NamedTemporaryFile(
-        "w", suffix=".md", delete=False, encoding="utf-8"
-    ) as fh:
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as fh:
         fh.write(_RELEVANCE_RUBRIC)
         rubric_path = Path(fh.name)
 
@@ -177,7 +175,9 @@ def main() -> int:
                 }
             )
             cites = ", ".join(u.citation for u in vector_only[:3]) or "-"
-            logger.info("%-52s | %4.1f | %4.1f | %+4.1f | %s", q[:52], base_score, vec_score, delta, cites)
+            logger.info(
+                "%-52s | %4.1f | %4.1f | %+4.1f | %s", q[:52], base_score, vec_score, delta, cites
+            )
     finally:
         rubric_path.unlink(missing_ok=True)
 

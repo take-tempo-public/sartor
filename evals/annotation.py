@@ -86,27 +86,56 @@ VERDICTS = frozenset({"keep", "fix", "omit", "fabricated"})
 # be bare (``jd_pandering``) or parameterized (``missing_must_keyword:python``);
 # validation checks the prefix before the first ``:``. Keep this in sync if a
 # rubric adds a slug — it is a vocabulary mirror, not a prompt.
-ALLOWED_FAILED_RULES = frozenset({
-    # grounding.md
-    "invented_metric", "invented_role", "invented_company", "invented_credential",
-    "invented_timeframe", "forbidden_pattern_match", "scope_inflation",
-    "verb_overreach", "jd_pandering",
-    # clarification_quality.md
-    "wrong_count", "too_few_experience_probes", "generic_question", "fabricated_gap",
-    "compound_question", "leading_question", "over_word_limit", "missing_expected_theme",
-    "redundant_with_resume",
-    # keyword_coverage.md
-    "missing_must_keyword", "low_coverage", "keyword_stuffing", "forced_phrasing",
-    # ats_format.md
-    "missing_heading", "length_overflow", "table_layout", "missing_contact",
-    # tone.md
-    "throat_clearing_opener", "banned_phrase", "hedging", "length_under", "generic_hook",
-    # callback_likelihood.md
-    "weak_opening_bullets", "low_quantification", "generic_framing", "missing_role_tailoring",
-    # iteration_quality.md
-    "redundant_question", "missed_recent_edit", "targets_stale_draft",
-    "too_few_experience_iteration_probes",
-})
+ALLOWED_FAILED_RULES = frozenset(
+    {
+        # grounding.md
+        "invented_metric",
+        "invented_role",
+        "invented_company",
+        "invented_credential",
+        "invented_timeframe",
+        "forbidden_pattern_match",
+        "scope_inflation",
+        "verb_overreach",
+        "jd_pandering",
+        # clarification_quality.md
+        "wrong_count",
+        "too_few_experience_probes",
+        "generic_question",
+        "fabricated_gap",
+        "compound_question",
+        "leading_question",
+        "over_word_limit",
+        "missing_expected_theme",
+        "redundant_with_resume",
+        # keyword_coverage.md
+        "missing_must_keyword",
+        "low_coverage",
+        "keyword_stuffing",
+        "forced_phrasing",
+        # ats_format.md
+        "missing_heading",
+        "length_overflow",
+        "table_layout",
+        "missing_contact",
+        # tone.md
+        "throat_clearing_opener",
+        "banned_phrase",
+        "hedging",
+        "length_under",
+        "generic_hook",
+        # callback_likelihood.md
+        "weak_opening_bullets",
+        "low_quantification",
+        "generic_framing",
+        "missing_role_tailoring",
+        # iteration_quality.md
+        "redundant_question",
+        "missed_recent_edit",
+        "targets_stale_draft",
+        "too_few_experience_iteration_probes",
+    }
+)
 
 # Default per-rubric pass thresholds for a produced expected.json (README
 # "Anatomy of a fixture": 4 for grounding/keyword/ATS, 3 for the more subjective
@@ -178,7 +207,9 @@ def _validate_item(item: Any, where: str) -> None:
     if verdict == "fabricated":
         pattern = item.get("forbidden_pattern")
         if not isinstance(pattern, str) or not pattern.strip():
-            raise ValueError(f"{where}: verdict 'fabricated' requires a non-empty forbidden_pattern")
+            raise ValueError(
+                f"{where}: verdict 'fabricated' requires a non-empty forbidden_pattern"
+            )
         try:
             re.compile(pattern)
         except re.error as exc:
@@ -247,7 +278,9 @@ def load_annotations(path: str | Path) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def _grounding_by_index(bootstrap_doc: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def _grounding_by_index(
+    bootstrap_doc: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Return (nli_list, minicheck_list) from a bootstrap doc's grounding_signals.
 
     bootstrap.py scores the bullet-cluster representatives, rendered as a ``- ``
@@ -278,7 +311,9 @@ def _bullet_item_template(
         if nli.get("bullet") not in (None, rep):
             logger.warning(
                 "grounding/cluster misalignment at index %d: nli bullet %r != representative %r",
-                index, nli.get("bullet"), rep,
+                index,
+                nli.get("bullet"),
+                rep,
             )
         nli_score = nli.get("nli_entailment_score")
         contradiction = nli.get("nli_contradiction_flag")
@@ -349,15 +384,17 @@ def build_annotation_template(
     for rec in bootstrap_doc.get("per_jd", []):
         jd_file = rec.get("jd_file", "")
         for q in rec.get("clarification_questions", []):
-            clarification_ratings.append({
-                "jd_file": jd_file,
-                "question_id": q.get("id", ""),
-                "question_text": q.get("text", ""),
-                "kind": q.get("kind", ""),
-                "rating": None,
-                "failed_rules": [],
-                "note": "",
-            })
+            clarification_ratings.append(
+                {
+                    "jd_file": jd_file,
+                    "question_id": q.get("id", ""),
+                    "question_text": q.get("text", ""),
+                    "kind": q.get("kind", ""),
+                    "rating": None,
+                    "failed_rules": [],
+                    "note": "",
+                }
+            )
 
     return {
         "annotation_schema_version": ANNOTATION_SCHEMA_VERSION,
@@ -417,11 +454,13 @@ def collate_expected(
     """
     validate_annotations(annotations_doc)
 
-    must_keywords = _dedup_preserve_order([
-        s["representative"].lower()
-        for s in annotations_doc["skills"]
-        if s.get("verdict") == "keep" and s.get("representative")
-    ])
+    must_keywords = _dedup_preserve_order(
+        [
+            s["representative"].lower()
+            for s in annotations_doc["skills"]
+            if s.get("verdict") == "keep" and s.get("representative")
+        ]
+    )
 
     forbidden = [
         item["forbidden_pattern"]
@@ -503,9 +542,7 @@ def _scorer_disagreements(annotations_doc: dict[str, Any]) -> list[str]:
                 f"- human=`fabricated` but MiniCheck={mc} (≥0.5 = scorer thinks grounded): {rep!r}"
             )
         if verdict == "keep" and contradiction is True:
-            lines.append(
-                f"- human=`keep` but NLI flagged a contradiction: {rep!r}"
-            )
+            lines.append(f"- human=`keep` but NLI flagged a contradiction: {rep!r}")
     return lines
 
 
@@ -525,10 +562,9 @@ def build_improvement_brief(
     prompt_version = bootstrap_doc.get("prompt_version", "")
     jd_count = bootstrap_doc.get("jd_count", len(bootstrap_doc.get("per_jd", [])))
 
-    all_items: list[tuple[str, dict[str, Any]]] = (
-        [("bullet", b) for b in annotations_doc["bullets"]]
-        + [("skill", s) for s in annotations_doc["skills"]]
-    )
+    all_items: list[tuple[str, dict[str, Any]]] = [
+        ("bullet", b) for b in annotations_doc["bullets"]
+    ] + [("skill", s) for s in annotations_doc["skills"]]
 
     out: list[str] = []
     out.append(f"# Improvement brief — {candidate}")
@@ -541,9 +577,7 @@ def build_improvement_brief(
     out.append("")
 
     # 1. Fabrication patterns — widest JD span first (most systemic).
-    fab = [
-        (kind, item) for kind, item in all_items if item.get("verdict") == "fabricated"
-    ]
+    fab = [(kind, item) for kind, item in all_items if item.get("verdict") == "fabricated"]
     fab.sort(key=lambda ki: len(ki[1].get("jd_files", [])), reverse=True)
     out.append("## Fabrication patterns")
     out.append("")
@@ -551,7 +585,9 @@ def build_improvement_brief(
         for kind, item in fab:
             span = len(item.get("jd_files", []))
             slugs = ", ".join(item.get("failed_rules", [])) or "(no slug)"
-            out.append(f"- **{kind}** (span {span} JD(s); `{slugs}`): {item.get('representative', '')!r}")
+            out.append(
+                f"- **{kind}** (span {span} JD(s); `{slugs}`): {item.get('representative', '')!r}"
+            )
             out.append(f"  - forbidden_pattern: `{item.get('forbidden_pattern', '')}`")
             if item.get("note"):
                 out.append(f"  - note: {item['note']}")
@@ -601,8 +637,7 @@ def build_improvement_brief(
             slugs = ", ".join(r.get("failed_rules", [])) or "—"
             out.append(
                 f"- [{r['rating']}/5] ({r.get('jd_file', '')}) {r.get('question_text', '')!r} "
-                f"— slugs: {slugs}"
-                + (f" — {r['note']}" if r.get("note") else "")
+                f"— slugs: {slugs}" + (f" — {r['note']}" if r.get("note") else "")
             )
     else:
         out.append("_No questions rated._")
@@ -647,7 +682,9 @@ def _guard(target: Path) -> Path:
     return resolved.resolve()
 
 
-def _resolve_template_path(candidate_username: str, bootstrap_path: Path, out_arg: str | None) -> Path:
+def _resolve_template_path(
+    candidate_username: str, bootstrap_path: Path, out_arg: str | None
+) -> Path:
     """Compute the annotations.json path (default: beside the bootstrap) and guard it."""
     if out_arg:
         return _guard(Path(out_arg))
@@ -674,13 +711,13 @@ def _load_bootstrap(path_str: str) -> tuple[dict[str, Any], Path]:
     doc = json.loads(path.read_text(encoding="utf-8"))
     version = doc.get("bootstrap_schema_version")
     if version != 1:
-        raise ValueError(
-            f"unsupported bootstrap_schema_version={version!r}; this module reads 1"
-        )
+        raise ValueError(f"unsupported bootstrap_schema_version={version!r}; this module reads 1")
     return doc, path
 
 
-def _cmd_emit_template(bootstrap_doc: dict[str, Any], bootstrap_path: Path, out_arg: str | None) -> int:
+def _cmd_emit_template(
+    bootstrap_doc: dict[str, Any], bootstrap_path: Path, out_arg: str | None
+) -> int:
     candidate = str(bootstrap_doc.get("candidate_username", ""))
     out_path = _resolve_template_path(candidate, bootstrap_path, out_arg)
     template = build_annotation_template(bootstrap_doc, bootstrap_source=str(bootstrap_path))
@@ -689,8 +726,10 @@ def _cmd_emit_template(bootstrap_doc: dict[str, Any], bootstrap_path: Path, out_
     logger.info(
         "annotation template: %d bullet clusters, %d skill clusters, %d clarification "
         "questions → %s",
-        len(template["bullets"]), len(template["skills"]),
-        len(template["clarification_ratings"]), out_path.as_posix(),
+        len(template["bullets"]),
+        len(template["skills"]),
+        len(template["clarification_ratings"]),
+        out_path.as_posix(),
     )
     return 0
 
@@ -729,20 +768,25 @@ def _cmd_collate(
     brief = build_improvement_brief(annotations_doc, bootstrap_doc)
 
     fixture_dir.mkdir(parents=True, exist_ok=True)
-    expected_path.write_text(json.dumps(expected, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    expected_path.write_text(
+        json.dumps(expected, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     shutil.copyfile(anchor_src, jd_path)
     brief_path.parent.mkdir(parents=True, exist_ok=True)
     brief_path.write_text(brief, encoding="utf-8")
 
     logger.info(
         "collated fixture %s: %d must_keywords, %d forbidden_inventions (anchor JD %s) → %s",
-        slug, len(expected["must_keywords"]), len(expected["forbidden_inventions"]),
-        anchor_name, fixture_dir.as_posix(),
+        slug,
+        len(expected["must_keywords"]),
+        len(expected["forbidden_inventions"]),
+        anchor_name,
+        fixture_dir.as_posix(),
     )
     logger.info("improvement brief → %s", brief_path.as_posix())
     logger.info(
-        "run it: python evals/runner.py --suite real --seed "
-        "evals/fixtures/real/%s/seed.json", candidate,
+        "run it: python evals/runner.py --suite real --seed evals/fixtures/real/%s/seed.json",
+        candidate,
     )
     return 0
 
@@ -755,23 +799,44 @@ def main(argv: list[str] | None = None) -> int:
 
     ap = argparse.ArgumentParser(description="callback. eval annotation contract")
     ap.add_argument(
-        "--bootstrap", required=True, metavar="PATH",
+        "--bootstrap",
+        required=True,
+        metavar="PATH",
         help="Path to a bootstrap.json (from evals.bootstrap).",
     )
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument(
-        "--emit-template", action="store_true",
+        "--emit-template",
+        action="store_true",
         help="Write a blank annotations.json skeleton beside the bootstrap.json.",
     )
     mode.add_argument(
-        "--collate", action="store_true",
+        "--collate",
+        action="store_true",
         help="Collate a completed annotations.json into a --suite real fixture + brief.",
     )
     ap.add_argument("--out", default=None, metavar="PATH", help="Override template output path.")
-    ap.add_argument("--annotations", default=None, metavar="PATH", help="Completed annotations.json (collate).")
-    ap.add_argument("--jd-dir", default=None, metavar="PATH", help="JD directory used for the bootstrap (collate).")
-    ap.add_argument("--fixture-slug", default=None, metavar="NAME", help="Fixture dir slug (default <candidate>-bootstrap).")
-    ap.add_argument("--anchor-jd", default=None, metavar="NAME", help="JD filename to use as the fixture's jd.txt.")
+    ap.add_argument(
+        "--annotations", default=None, metavar="PATH", help="Completed annotations.json (collate)."
+    )
+    ap.add_argument(
+        "--jd-dir",
+        default=None,
+        metavar="PATH",
+        help="JD directory used for the bootstrap (collate).",
+    )
+    ap.add_argument(
+        "--fixture-slug",
+        default=None,
+        metavar="NAME",
+        help="Fixture dir slug (default <candidate>-bootstrap).",
+    )
+    ap.add_argument(
+        "--anchor-jd",
+        default=None,
+        metavar="NAME",
+        help="JD filename to use as the fixture's jd.txt.",
+    )
     args = ap.parse_args(argv)
 
     try:
@@ -787,11 +852,17 @@ def main(argv: list[str] | None = None) -> int:
             logger.error("--collate requires --annotations PATH")
             return 1
         if not args.jd_dir:
-            logger.error("--collate requires --jd-dir PATH (the JD directory used for the bootstrap)")
+            logger.error(
+                "--collate requires --jd-dir PATH (the JD directory used for the bootstrap)"
+            )
             return 1
         return _cmd_collate(
-            bootstrap_doc, bootstrap_path, args.annotations,
-            args.jd_dir, args.fixture_slug, args.anchor_jd,
+            bootstrap_doc,
+            bootstrap_path,
+            args.annotations,
+            args.jd_dir,
+            args.fixture_slug,
+            args.anchor_jd,
         )
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         logger.error("%s", exc)

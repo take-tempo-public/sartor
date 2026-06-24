@@ -28,6 +28,7 @@ def exp_app(tmp_path, monkeypatch):
     db_file = tmp_path / "expsum.sqlite"
 
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
@@ -39,6 +40,7 @@ def exp_app(tmp_path, monkeypatch):
     (tmp_path / "configs" / "casey.config").write_text("{}", encoding="utf-8")
 
     from db.session import init_db
+
     init_db(db_file)
     return app
 
@@ -47,13 +49,13 @@ def _seed_experience(username="casey", company="Acme", summary=None):
     """Candidate + one experience. Returns (candidate_id, experience_id)."""
     from db.models import Candidate, Experience
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(username=username, name=username.title())
         session.add(c)
         session.flush()
-        e = Experience(candidate_id=c.id, company=company,
-                       start_date="2021-01", summary=summary)
+        e = Experience(candidate_id=c.id, company=company, start_date="2021-01", summary=summary)
         session.add(e)
         session.commit()
         return c.id, e.id
@@ -64,11 +66,14 @@ def _seed_experience(username="casey", company="Acme", summary=None):
 def _add_variant(experience_id, text="An intro.", is_active=1, label=None):
     from db.models import ExperienceSummaryItem
     from db.session import get_session
+
     session = get_session()
     try:
         si = ExperienceSummaryItem(
-            experience_id=experience_id, text=text,
-            is_active=is_active, label=label,
+            experience_id=experience_id,
+            text=text,
+            is_active=is_active,
+            label=label,
         )
         session.add(si)
         session.commit()
@@ -108,8 +113,9 @@ class TestCreate:
     def test_happy_path(self, exp_app):
         _cid, eid = _seed_experience()
         client = exp_app.test_client()
-        r = client.post(f"/api/experiences/{eid}/summaries",
-                        json={"text": "First framing.", "label": "scale"})
+        r = client.post(
+            f"/api/experiences/{eid}/summaries", json={"text": "First framing.", "label": "scale"}
+        )
         assert r.status_code == 201, r.get_data(as_text=True)
         body = r.get_json()
         assert body["text"] == "First framing."
@@ -124,14 +130,14 @@ class TestCreate:
     def test_empty_text_rejected(self, exp_app):
         _cid, eid = _seed_experience()
         client = exp_app.test_client()
-        assert client.post(f"/api/experiences/{eid}/summaries",
-                           json={"text": "  "}).status_code == 400
+        assert (
+            client.post(f"/api/experiences/{eid}/summaries", json={"text": "  "}).status_code == 400
+        )
 
     def test_invalid_source_rejected(self, exp_app):
         _cid, eid = _seed_experience()
         client = exp_app.test_client()
-        r = client.post(f"/api/experiences/{eid}/summaries",
-                        json={"text": "x", "source": "bogus"})
+        r = client.post(f"/api/experiences/{eid}/summaries", json={"text": "x", "source": "bogus"})
         assert r.status_code == 400
 
     def test_unknown_experience_404(self, exp_app):
@@ -145,9 +151,10 @@ class TestUpdate:
         _cid, eid = _seed_experience()
         sid = _add_variant(eid, text="Old.")
         client = exp_app.test_client()
-        r = client.put(f"/api/experience-summaries/{sid}",
-                       json={"text": "New.", "label": "tag", "has_outcome": True,
-                             "display_order": 3})
+        r = client.put(
+            f"/api/experience-summaries/{sid}",
+            json={"text": "New.", "label": "tag", "has_outcome": True, "display_order": 3},
+        )
         assert r.status_code == 200
         body = r.get_json()
         assert body["text"] == "New."
@@ -159,19 +166,18 @@ class TestUpdate:
         _cid, eid = _seed_experience()
         sid = _add_variant(eid)
         client = exp_app.test_client()
-        assert client.put(f"/api/experience-summaries/{sid}",
-                          json={"text": ""}).status_code == 400
+        assert client.put(f"/api/experience-summaries/{sid}", json={"text": ""}).status_code == 400
 
     def test_unknown_item_404(self, exp_app):
         client = exp_app.test_client()
-        assert client.put("/api/experience-summaries/9999",
-                          json={"text": "x"}).status_code == 404
+        assert client.put("/api/experience-summaries/9999", json={"text": "x"}).status_code == 404
 
 
 class TestDelete:
     def test_soft_retire(self, exp_app):
         from db.models import ExperienceSummaryItem
         from db.session import get_session
+
         _cid, eid = _seed_experience()
         sid = _add_variant(eid)
         client = exp_app.test_client()
@@ -209,18 +215,26 @@ class TestMigrationBackfill:
         command.upgrade(_cfg(), "head")
         eng = sa.create_engine(url)
         with eng.begin() as cx:
-            cx.execute(sa.text(
-                "INSERT INTO candidate (id, username, created_at, updated_at) "
-                "VALUES (1,'casey','t','t')"))
-            cx.execute(sa.text(
-                "INSERT INTO experience (id, candidate_id, company, start_date, "
-                "display_order, summary, created_at, updated_at) "
-                "VALUES (1,1,'Acme','2021-01',0,'Owned platform scale.','t','t')"))
+            cx.execute(
+                sa.text(
+                    "INSERT INTO candidate (id, username, created_at, updated_at) "
+                    "VALUES (1,'casey','t','t')"
+                )
+            )
+            cx.execute(
+                sa.text(
+                    "INSERT INTO experience (id, candidate_id, company, start_date, "
+                    "display_order, summary, created_at, updated_at) "
+                    "VALUES (1,1,'Acme','2021-01',0,'Owned platform scale.','t','t')"
+                )
+            )
         # Drop the B.4 tables, then re-run the upgrade to exercise the backfill.
         command.downgrade(_cfg(), "0007")
         command.upgrade(_cfg(), "head")
         with eng.begin() as cx:
-            rows = cx.execute(sa.text(
-                "SELECT experience_id, text, source, is_active "
-                "FROM experience_summary_item")).fetchall()
+            rows = cx.execute(
+                sa.text(
+                    "SELECT experience_id, text, source, is_active FROM experience_summary_item"
+                )
+            ).fetchall()
         assert rows == [(1, "Owned platform scale.", "imported", 1)]

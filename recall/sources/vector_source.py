@@ -189,9 +189,7 @@ class VectorSource:
             return {}
         return {chunk.content_hash: loaded.embeddings[i] for i, chunk in enumerate(loaded.chunks)}
 
-    def _embed_chunks(
-        self, chunks: Sequence[_Chunk], reuse: dict[str, np.ndarray]
-    ) -> np.ndarray:
+    def _embed_chunks(self, chunks: Sequence[_Chunk], reuse: dict[str, np.ndarray]) -> np.ndarray:
         """Embed `chunks`, reusing cached rows for unchanged content. Returns an
         (len(chunks), dim) float32 matrix aligned to `chunks`."""
         if not chunks:
@@ -207,9 +205,14 @@ class VectorSource:
             reuse_dim = int(next(iter(reuse.values())).shape[-1])
             fresh_dim = int(next(iter(fresh.values())).shape[-1])
             if reuse_dim != fresh_dim:
-                logger.warning("vector index dim changed (%d→%d); full re-embed", reuse_dim, fresh_dim)
+                logger.warning(
+                    "vector index dim changed (%d→%d); full re-embed", reuse_dim, fresh_dim
+                )
                 return self._embed_chunks(chunks, {})
-        rows = [reuse[c.content_hash] if c.content_hash in reuse else fresh[c.content_hash] for c in chunks]
+        rows = [
+            reuse[c.content_hash] if c.content_hash in reuse else fresh[c.content_hash]
+            for c in chunks
+        ]
         return np.asarray(rows, dtype=np.float32)
 
     def _write_sidecar(self, chunks: Sequence[_Chunk], embeddings: np.ndarray) -> None:
@@ -333,7 +336,9 @@ class VectorSource:
         if len(chunks) != int(embeddings.shape[0]):
             logger.warning(
                 "vector sidecar inconsistent (%d chunks, %d rows) at %s — ignoring",
-                len(chunks), int(embeddings.shape[0]), self._index_dir,
+                len(chunks),
+                int(embeddings.shape[0]),
+                self._index_dir,
             )
             return None
         dim = int(embeddings.shape[1]) if embeddings.ndim == 2 and embeddings.size else 0
