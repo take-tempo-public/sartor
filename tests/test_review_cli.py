@@ -27,39 +27,70 @@ def _seed_candidate_with_pending(session) -> Candidate:
 
     # Experience 1: pending (title + 2 bullets all pending)
     e1 = Experience(
-        candidate_id=c.id, company="PendingCo",
-        start_date="2022-01", end_date=None, display_order=0,
+        candidate_id=c.id,
+        company="PendingCo",
+        start_date="2022-01",
+        end_date=None,
+        display_order=0,
     )
     session.add(e1)
     session.flush()
-    session.add(ExperienceTitle(
-        experience_id=e1.id, title="Senior PM", is_official=1,
-        is_pending_review=1, source="user_added",
-    ))
-    session.add(Bullet(
-        experience_id=e1.id, text="Led team of 5.", display_order=0,
-        is_pending_review=1, source="primary:r.md",
-    ))
-    session.add(Bullet(
-        experience_id=e1.id, text="Shipped V2.", display_order=1,
-        is_pending_review=1, source="primary:r.md",
-    ))
+    session.add(
+        ExperienceTitle(
+            experience_id=e1.id,
+            title="Senior PM",
+            is_official=1,
+            is_pending_review=1,
+            source="user_added",
+        )
+    )
+    session.add(
+        Bullet(
+            experience_id=e1.id,
+            text="Led team of 5.",
+            display_order=0,
+            is_pending_review=1,
+            source="primary:r.md",
+        )
+    )
+    session.add(
+        Bullet(
+            experience_id=e1.id,
+            text="Shipped V2.",
+            display_order=1,
+            is_pending_review=1,
+            source="primary:r.md",
+        )
+    )
 
     # Experience 2: already-reviewed (everything is_pending_review=0)
     e2 = Experience(
-        candidate_id=c.id, company="DoneCo",
-        start_date="2018-01", end_date="2021-12", display_order=1,
+        candidate_id=c.id,
+        company="DoneCo",
+        start_date="2018-01",
+        end_date="2021-12",
+        display_order=1,
     )
     session.add(e2)
     session.flush()
-    session.add(ExperienceTitle(
-        experience_id=e2.id, title="PM", is_official=1,
-        is_pending_review=0, source="user_added",
-    ))
-    session.add(Bullet(
-        experience_id=e2.id, text="Did the thing.", display_order=0,
-        is_pending_review=0, source="primary:r.md",
-    ))
+    session.add(
+        ExperienceTitle(
+            experience_id=e2.id,
+            title="PM",
+            is_official=1,
+            is_pending_review=0,
+            source="user_added",
+        )
+    )
+    session.add(
+        Bullet(
+            experience_id=e2.id,
+            text="Did the thing.",
+            display_order=0,
+            is_pending_review=0,
+            source="primary:r.md",
+        )
+    )
 
     session.flush()
     return c
@@ -86,9 +117,14 @@ class TestPendingDetection:
         e = Experience(candidate_id=c.id, company="Co", start_date="2020-01")
         db_session.add(e)
         db_session.flush()
-        db_session.add(ExperienceTitle(
-            experience_id=e.id, title="T", is_pending_review=1, source="user_added",
-        ))
+        db_session.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="T",
+                is_pending_review=1,
+                source="user_added",
+            )
+        )
         # No bullets at all
         db_session.flush()
         rs = ReviewSession(db_session, c)
@@ -102,13 +138,23 @@ class TestPendingDetection:
         db_session.add(e)
         db_session.flush()
         # Title is reviewed
-        db_session.add(ExperienceTitle(
-            experience_id=e.id, title="T", is_pending_review=0, source="official",
-        ))
+        db_session.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="T",
+                is_pending_review=0,
+                source="official",
+            )
+        )
         # But a bullet is pending
-        db_session.add(Bullet(
-            experience_id=e.id, text="x", is_pending_review=1, source="primary:r.md",
-        ))
+        db_session.add(
+            Bullet(
+                experience_id=e.id,
+                text="x",
+                is_pending_review=1,
+                source="primary:r.md",
+            )
+        )
         db_session.flush()
         rs = ReviewSession(db_session, c)
         assert len(rs.pending_experiences()) == 1
@@ -166,7 +212,10 @@ class TestReviewBullets:
         exp = rs.pending_experiences()[0]
 
         # 2 pending bullets → accept both
-        with patch("builtins.input", side_effect=["a", "a"]), patch("sys.stdout", new_callable=StringIO):
+        with (
+            patch("builtins.input", side_effect=["a", "a"]),
+            patch("sys.stdout", new_callable=StringIO),
+        ):
             rs.review_bullets(exp)
 
         assert all(b.is_pending_review == 0 for b in exp.bullets)
@@ -179,7 +228,10 @@ class TestReviewBullets:
 
         # First bullet: edit + new text. Second bullet: accept.
         inputs = ["e", "Reworded version.", "a"]
-        with patch("builtins.input", side_effect=inputs), patch("sys.stdout", new_callable=StringIO):
+        with (
+            patch("builtins.input", side_effect=inputs),
+            patch("sys.stdout", new_callable=StringIO),
+        ):
             rs.review_bullets(exp)
 
         bullets = sorted(exp.bullets, key=lambda b: b.display_order)
@@ -192,7 +244,10 @@ class TestReviewBullets:
         rs = ReviewSession(db_session, c)
         exp = rs.pending_experiences()[0]
 
-        with patch("builtins.input", side_effect=["d", "a"]), patch("sys.stdout", new_callable=StringIO):
+        with (
+            patch("builtins.input", side_effect=["d", "a"]),
+            patch("sys.stdout", new_callable=StringIO),
+        ):
             rs.review_bullets(exp)
 
         bullets = sorted(exp.bullets, key=lambda b: b.display_order)

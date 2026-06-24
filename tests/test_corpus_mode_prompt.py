@@ -32,21 +32,31 @@ def _make_legacy_context() -> dict:
     return {
         "timestamp": "2026-05-12T00:00:00",
         "candidate": {
-            "name": "Casey", "email": "casey@example.com",
-            "phone": "", "linkedin_url": "", "website_url": "",
-            "skills": ["Python"], "certifications": [],
-            "education_summary": "", "notes": "",
+            "name": "Casey",
+            "email": "casey@example.com",
+            "phone": "",
+            "linkedin_url": "",
+            "website_url": "",
+            "skills": ["Python"],
+            "certifications": [],
+            "education_summary": "",
+            "notes": "",
             "profile_text": "",
         },
         "resume": {
-            "format": "md", "sections": [], "text": "Resume text here.",
-            "filename": "resume.md", "path": "",
+            "format": "md",
+            "sections": [],
+            "text": "Resume text here.",
+            "filename": "resume.md",
+            "path": "",
         },
         "supplemental_resumes": [],
         "job_description": "Senior PM at Foo",
         "deterministic_analysis": {
-            "jd_keywords": {}, "resume_keywords": {},
-            "keyword_overlap": {}, "ats_warnings": [],
+            "jd_keywords": {},
+            "resume_keywords": {},
+            "keyword_overlap": {},
+            "ats_warnings": [],
         },
     }
 
@@ -65,10 +75,20 @@ def _make_corpus_context() -> dict:
                 {"id": 11, "title": "AI Product Lead", "is_official": False},
             ],
             "bullets": [
-                {"id": 100, "text": "Led 5-person team.", "tags": ["pm"],
-                 "has_outcome": True, "source": "primary:r.md"},
-                {"id": 101, "text": "Defined roadmap.", "tags": [],
-                 "has_outcome": False, "source": "primary:r.md"},
+                {
+                    "id": 100,
+                    "text": "Led 5-person team.",
+                    "tags": ["pm"],
+                    "has_outcome": True,
+                    "source": "primary:r.md",
+                },
+                {
+                    "id": 101,
+                    "text": "Defined roadmap.",
+                    "tags": [],
+                    "has_outcome": False,
+                    "source": "primary:r.md",
+                },
             ],
         },
     ]
@@ -82,13 +102,25 @@ def _make_corpus_context() -> dict:
 
 class TestCorpusBlockEmission:
     def test_emits_experience_with_titles_and_bullets(self):
-        corpus = [{
-            "id": 1, "company": "Polaris", "location": "",
-            "start_date": "2022-09", "end_date": None,
-            "eligible_titles": [{"id": 10, "title": "Senior PM", "is_official": True}],
-            "bullets": [{"id": 100, "text": "Led team.", "tags": [],
-                        "has_outcome": True, "source": "primary:r.md"}],
-        }]
+        corpus = [
+            {
+                "id": 1,
+                "company": "Polaris",
+                "location": "",
+                "start_date": "2022-09",
+                "end_date": None,
+                "eligible_titles": [{"id": 10, "title": "Senior PM", "is_official": True}],
+                "bullets": [
+                    {
+                        "id": 100,
+                        "text": "Led team.",
+                        "tags": [],
+                        "has_outcome": True,
+                        "source": "primary:r.md",
+                    }
+                ],
+            }
+        ]
         out = _corpus_block(corpus, iteration=0)
         assert '<career_corpus iteration="0">' in out
         assert 'id="e1"' in out
@@ -99,11 +131,17 @@ class TestCorpusBlockEmission:
         assert "</career_corpus>" in out
 
     def test_escapes_double_quotes_in_attributes(self):
-        corpus = [{
-            "id": 1, "company": 'Big "Quoted" Inc', "location": "",
-            "start_date": "2020-01", "end_date": "2021-12",
-            "eligible_titles": [], "bullets": [],
-        }]
+        corpus = [
+            {
+                "id": 1,
+                "company": 'Big "Quoted" Inc',
+                "location": "",
+                "start_date": "2020-01",
+                "end_date": "2021-12",
+                "eligible_titles": [],
+                "bullets": [],
+            }
+        ]
         out = _corpus_block(corpus, iteration=0)
         assert 'company="Big &quot;Quoted&quot; Inc"' in out
 
@@ -194,8 +232,17 @@ class TestWebPresenceBlock:
 def _mock_llm_call(captured: dict, fake_response: dict):
     """Build a fake _call_llm that records the kwargs it received."""
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id,
-            system_prompt="", **kwargs):
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         captured["prompt"] = prompt
         captured["cached_user_prefix"] = cached_user_prefix
         captured["call_kind"] = call_kind
@@ -209,14 +256,18 @@ class TestGenerateDispatch:
     def test_legacy_context_uses_legacy_required_keys(self, monkeypatch):
         ctx = _make_legacy_context()
         analysis = {
-            "essential_skills": [], "keyword_placement": [],
-            "suggestions": [], "overall_strategy": "",
+            "essential_skills": [],
+            "keyword_placement": [],
+            "suggestions": [],
+            "overall_strategy": "",
             "professional_vocabulary": [],
         }
         captured: dict = {}
         fake_response = {
-            "resume_content": "x", "cover_letter_content": "y",
-            "changes_made": [], "proofread_notes": [],
+            "resume_content": "x",
+            "cover_letter_content": "y",
+            "changes_made": [],
+            "proofread_notes": [],
         }
         with patch("analyzer._call_llm", _mock_llm_call(captured, fake_response)):
             result = generate(None, ctx, analysis, username="u", run_id="r")
@@ -229,17 +280,20 @@ class TestGenerateDispatch:
     def test_corpus_context_injects_corpus_mode_block(self, monkeypatch):
         ctx = _make_corpus_context()
         analysis = {
-            "essential_skills": [], "keyword_placement": [],
-            "suggestions": [], "overall_strategy": "",
+            "essential_skills": [],
+            "keyword_placement": [],
+            "suggestions": [],
+            "overall_strategy": "",
             "professional_vocabulary": [],
         }
         captured: dict = {}
         fake_response = {
-            "resume_content": "x", "cover_letter_content": "y",
-            "changes_made": [], "proofread_notes": [],
+            "resume_content": "x",
+            "cover_letter_content": "y",
+            "changes_made": [],
+            "proofread_notes": [],
             "selected_bullets": [
-                {"experience_id": "e1", "chosen_title_id": "t10",
-                 "bullet_ids_in_order": ["b100"]}
+                {"experience_id": "e1", "chosen_title_id": "t10", "bullet_ids_in_order": ["b100"]}
             ],
             "proposed_new_bullets": [],
             "proposed_experience_titles": [],
@@ -262,15 +316,20 @@ class TestGenerateDispatch:
         per-JD title pin). This is the PROMPT_VERSION-bumping change."""
         ctx = _make_corpus_context()
         analysis = {
-            "essential_skills": [], "keyword_placement": [],
-            "suggestions": [], "overall_strategy": "",
+            "essential_skills": [],
+            "keyword_placement": [],
+            "suggestions": [],
+            "overall_strategy": "",
             "professional_vocabulary": [],
         }
         captured: dict = {}
         fake_response = {
-            "resume_content": "x", "cover_letter_content": "y",
-            "changes_made": [], "proofread_notes": [],
-            "selected_bullets": [], "proposed_new_bullets": [],
+            "resume_content": "x",
+            "cover_letter_content": "y",
+            "changes_made": [],
+            "proofread_notes": [],
+            "selected_bullets": [],
+            "proposed_new_bullets": [],
             "proposed_experience_titles": [],
         }
         with patch("analyzer._call_llm", _mock_llm_call(captured, fake_response)):
@@ -282,16 +341,21 @@ class TestGenerateDispatch:
         + proposed_new_bullets + proposed_experience_titles. Missing any of these
         triggers _parse_or_retry's missing-key validation."""
         from analyzer import LLMResponseError
+
         ctx = _make_corpus_context()
         analysis = {
-            "essential_skills": [], "keyword_placement": [],
-            "suggestions": [], "overall_strategy": "",
+            "essential_skills": [],
+            "keyword_placement": [],
+            "suggestions": [],
+            "overall_strategy": "",
             "professional_vocabulary": [],
         }
         # Response that's valid for the legacy schema but missing the corpus keys
         incomplete_response = {
-            "resume_content": "x", "cover_letter_content": "y",
-            "changes_made": [], "proofread_notes": [],
+            "resume_content": "x",
+            "cover_letter_content": "y",
+            "changes_made": [],
+            "proofread_notes": [],
         }
         captured: dict = {}
         with patch("analyzer._call_llm", _mock_llm_call(captured, incomplete_response)):
@@ -310,7 +374,9 @@ class TestRequiredKeySets:
         assert GENERATE_REQUIRED_KEYS.issubset(GENERATE_CORPUS_REQUIRED_KEYS)
         new_in_corpus = GENERATE_CORPUS_REQUIRED_KEYS - GENERATE_REQUIRED_KEYS
         assert new_in_corpus == {
-            "selected_bullets", "proposed_new_bullets", "proposed_experience_titles",
+            "selected_bullets",
+            "proposed_new_bullets",
+            "proposed_experience_titles",
         }
 
 
@@ -336,8 +402,8 @@ class TestCorpusEffectiveSetFilter:
             "1": {"bullet_ids": [100], "rationale": "x"},
         }
         prefix = _stable_user_prefix(ctx)
-        assert "Led 5-person team." in prefix     # recommended → kept
-        assert "Defined roadmap." not in prefix   # non-recommended → dropped
+        assert "Led 5-person team." in prefix  # recommended → kept
+        assert "Defined roadmap." not in prefix  # non-recommended → dropped
 
     def test_added_and_pinned_join_recommended(self):
         ctx = _make_corpus_context()
@@ -388,17 +454,22 @@ class TestBulletOrderHonored:
 
     def test_unlisted_bullets_go_to_end(self):
         ctx = _make_corpus_context()
-        ctx["career_corpus"][0]["bullets"].append({
-            "id": 102, "text": "Shipped launch.", "tags": [],
-            "has_outcome": True, "source": "primary:r.md",
-        })
+        ctx["career_corpus"][0]["bullets"].append(
+            {
+                "id": 102,
+                "text": "Shipped launch.",
+                "tags": [],
+                "has_outcome": True,
+                "source": "primary:r.md",
+            }
+        )
         # Order names 102 then 100; 101 is unlisted → must land at the END,
         # never silently re-sorted away (the drawer-added-later edge case).
         ctx["composition_overrides"] = {"bullet_order": {"1": [102, 100]}}
         prefix = _stable_user_prefix(ctx)
-        assert (self._index_of(prefix, 102)
-                < self._index_of(prefix, 100)
-                < self._index_of(prefix, 101))
+        assert (
+            self._index_of(prefix, 102) < self._index_of(prefix, 100) < self._index_of(prefix, 101)
+        )
 
     def test_absent_bullet_order_is_default_corpus_order(self):
         prefix = _stable_user_prefix(_make_corpus_context())
@@ -410,7 +481,10 @@ class TestBulletOrderHonored:
         baseline = _stable_user_prefix(_make_corpus_context())
         ctx = _make_corpus_context()
         ctx["composition_overrides"] = {
-            "pinned": [], "excluded": [], "added": [], "bullet_order": {},
+            "pinned": [],
+            "excluded": [],
+            "added": [],
+            "bullet_order": {},
         }
         assert _stable_user_prefix(ctx) == baseline
 
@@ -432,11 +506,12 @@ class TestTitlePinEmission:
         ctx = _make_corpus_context()
         ctx["composition_overrides"] = {"pinned_title_ids": {"1": 11}}
         prefix = _stable_user_prefix(ctx)
-        assert ('<eligible_title id="t11" official="false" pinned="true">'
-                'AI Product Lead</eligible_title>') in prefix
+        assert (
+            '<eligible_title id="t11" official="false" pinned="true">'
+            "AI Product Lead</eligible_title>"
+        ) in prefix
         # The non-pinned sibling title carries no pin attr.
-        assert ('<eligible_title id="t10" official="true">Senior PM'
-                '</eligible_title>') in prefix
+        assert ('<eligible_title id="t10" official="true">Senior PM</eligible_title>') in prefix
 
     def test_no_pin_no_attr(self):
         prefix = _stable_user_prefix(_make_corpus_context())
@@ -446,7 +521,10 @@ class TestTitlePinEmission:
         baseline = _stable_user_prefix(_make_corpus_context())
         ctx = _make_corpus_context()
         ctx["composition_overrides"] = {
-            "pinned": [], "excluded": [], "added": [], "pinned_title_ids": {},
+            "pinned": [],
+            "excluded": [],
+            "added": [],
+            "pinned_title_ids": {},
         }
         assert _stable_user_prefix(ctx) == baseline
 
@@ -486,14 +564,18 @@ class TestCoverLetterWorkedExamples:
 
     def test_block_present_when_cover_letter_enabled(self):
         prompt, _ = _build_generate_prompt(
-            _make_legacy_context(), self._ANALYSIS, with_cover_letter=True,
+            _make_legacy_context(),
+            self._ANALYSIS,
+            with_cover_letter=True,
         )
         assert "<cover_letter_rules>" in prompt
         assert "WORKED EXAMPLES" in prompt
 
     def test_block_absent_when_cover_letter_disabled(self):
         prompt, _ = _build_generate_prompt(
-            _make_legacy_context(), self._ANALYSIS, with_cover_letter=False,
+            _make_legacy_context(),
+            self._ANALYSIS,
+            with_cover_letter=False,
         )
         assert "<cover_letter_rules>" not in prompt
         assert "WORKED EXAMPLES" not in prompt

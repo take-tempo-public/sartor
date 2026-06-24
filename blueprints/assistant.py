@@ -82,7 +82,13 @@ _EMBEDDER_LOADED = False
 _AUDIENCE_TAG_RE = re.compile(r"\*\*Audience:\*\*\s*`(user|dev)`", re.IGNORECASE)
 _USER_DOC_NAMES = frozenset({"README.md", "vision.md"})
 _DEV_PATH_PREFIXES = (
-    "docs/dev/", "evals/", "dashboard/", "static/", "templates/", "tests/", "scripts/",
+    "docs/dev/",
+    "evals/",
+    "dashboard/",
+    "static/",
+    "templates/",
+    "tests/",
+    "scripts/",
 )
 
 
@@ -131,7 +137,9 @@ def _make_embedder() -> Embedder | None:
     try:
         model = StaticModel.from_pretrained(str(_VECTOR_MODEL_DIR))
     except Exception as exc:  # noqa: BLE001 - any load failure → tier inactive, never a crash
-        logger.warning("could not load vector model from %s; S3 tier disabled: %s", _VECTOR_MODEL_DIR, exc)
+        logger.warning(
+            "could not load vector model from %s; S3 tier disabled: %s", _VECTOR_MODEL_DIR, exc
+        )
         return None
 
     def _embed(texts: Sequence[str]) -> np.ndarray:
@@ -182,14 +190,6 @@ def _build_sources(session_turns: list) -> list:
     return sources
 
 
-
-
-
-
-
-
-
-
 @assistant_bp.route("/ask", methods=["POST"])
 def ask():
     """Answer one question over the committed wiki + code at HEAD, streamed + cited.
@@ -232,8 +232,12 @@ def ask():
     def stream():
         try:
             for kind, payload in analyzer.avatar_answer_streaming(
-                client, question, context,
-                allow_dev=allow_dev, username=safe_user, run_id=run_id,
+                client,
+                question,
+                context,
+                allow_dev=allow_dev,
+                username=safe_user,
+                run_id=run_id,
             ):
                 if kind == "chunk":
                     yield _sse("chunk", {"text": payload})
@@ -241,7 +245,9 @@ def ask():
                     yield _sse("done", payload)
         except anthropic.APIConnectionError as exc:
             logger.warning("avatar LLM connection failed: %s", exc)
-            yield _sse("error", {"error": f"Assistant connection failed: {exc}", "http_status": 502})
+            yield _sse(
+                "error", {"error": f"Assistant connection failed: {exc}", "http_status": 502}
+            )
         except Exception as exc:  # noqa: BLE001 - terminal SSE error frame, never a 500 page
             logger.exception("avatar stream failed")
             yield _sse("error", {"error": str(exc), "http_status": 500})

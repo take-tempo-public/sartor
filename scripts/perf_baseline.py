@@ -76,7 +76,7 @@ def main() -> int:
         if not latencies:
             continue
         if args.since:
-            latencies = latencies[-args.since:]
+            latencies = latencies[-args.since :]
         latencies.sort()
         n = len(latencies)
         p50 = int(statistics.median(latencies))
@@ -86,8 +86,8 @@ def main() -> int:
         out_tokens = [r.get("output_tokens", 0) for r in records if r.get("output_tokens")]
         med_out = int(statistics.median(out_tokens)) if out_tokens else 0
         print(
-            f"{kind:<24} {n:>4} {p50/1000:>7.1f}s {p90/1000:>7.1f}s "
-            f"{max_lat/1000:>7.1f}s {med_out:>12}"
+            f"{kind:<24} {n:>4} {p50 / 1000:>7.1f}s {p90 / 1000:>7.1f}s "
+            f"{max_lat / 1000:>7.1f}s {med_out:>12}"
         )
 
     return 0

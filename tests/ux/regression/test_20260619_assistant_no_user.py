@@ -31,8 +31,11 @@ def _fake_avatar(client, question, context, *, allow_dev=False, username="", run
         {
             "answer": "callback tailors your resume in six guided steps [1].",
             "citations": [
-                {"n": 1, "label": "using-callback",
-                 "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/using-callback.md"},
+                {
+                    "n": 1,
+                    "label": "using-callback",
+                    "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/using-callback.md",
+                },
             ],
             "truncated": False,
             "allow_dev": allow_dev,
@@ -64,12 +67,10 @@ def test_assistant_answers_without_user_selected(
     # With the gate gone, the streamed answer renders (the old gate would instead have
     # written "Pick a user first, then ask." to #assistantStatus and returned).
     page.wait_for_function(
-        "() => document.getElementById('assistantAnswer')"
-        ".textContent.includes('six guided steps')",
+        "() => document.getElementById('assistantAnswer').textContent.includes('six guided steps')",
         timeout=DEFAULT_TIMEOUT_MS,
     )
     page.wait_for_function(
-        "() => document.getElementById('assistantSources')"
-        ".textContent.includes('using-callback')",
+        "() => document.getElementById('assistantSources').textContent.includes('using-callback')",
         timeout=DEFAULT_TIMEOUT_MS,
     )

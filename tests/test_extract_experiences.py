@@ -32,8 +32,14 @@ def _make_valid_response() -> dict:
                 "candidate_inferred_title": "Senior PM",
                 "suggested_role_tags": ["pm", "product-leadership"],
                 "bullets": [
-                    {"text": "Led 5-person team shipping V2 to 50 enterprise customers.", "suggested_tags": ["leadership"]},
-                    {"text": "Authored design language for in-product agent UIs.", "suggested_tags": ["ic-design"]},
+                    {
+                        "text": "Led 5-person team shipping V2 to 50 enterprise customers.",
+                        "suggested_tags": ["leadership"],
+                    },
+                    {
+                        "text": "Authored design language for in-product agent UIs.",
+                        "suggested_tags": ["ic-design"],
+                    },
                 ],
             },
             {
@@ -88,20 +94,24 @@ class TestNormalizeBullet:
 
 class TestNormalizeExperience:
     def test_drops_experience_with_invalid_start_date(self):
-        exp = _normalize_experience({
-            "company": "Acme",
-            "start_date": "2020",  # not YYYY-MM
-            "candidate_inferred_title": "PM",
-            "bullets": [{"text": "x", "suggested_tags": []}],
-        })
+        exp = _normalize_experience(
+            {
+                "company": "Acme",
+                "start_date": "2020",  # not YYYY-MM
+                "candidate_inferred_title": "PM",
+                "bullets": [{"text": "x", "suggested_tags": []}],
+            }
+        )
         assert exp["company"] == ""  # sentinel — caller should drop
 
     def test_drops_experience_with_missing_company(self):
-        exp = _normalize_experience({
-            "company": "",
-            "start_date": "2020-01",
-            "candidate_inferred_title": "PM",
-        })
+        exp = _normalize_experience(
+            {
+                "company": "",
+                "start_date": "2020-01",
+                "candidate_inferred_title": "PM",
+            }
+        )
         # Schema check should catch missing company too — start_date alone won't save it
         # because validation expects both. Re-check what happens:
         # Actually the _normalize logic only drops on invalid start_date; company validation
@@ -109,17 +119,19 @@ class TestNormalizeExperience:
         assert exp["company"] == ""
 
     def test_preserves_valid_experience(self):
-        exp = _normalize_experience({
-            "company": "Acme",
-            "location": "Seattle",
-            "start_date": "2020-01",
-            "end_date": "2023-04",
-            "candidate_inferred_title": "Senior PM",
-            "suggested_role_tags": ["PM"],
-            "bullets": [
-                {"text": "Led team of 5.", "suggested_tags": ["LEADERSHIP"]},
-            ],
-        })
+        exp = _normalize_experience(
+            {
+                "company": "Acme",
+                "location": "Seattle",
+                "start_date": "2020-01",
+                "end_date": "2023-04",
+                "candidate_inferred_title": "Senior PM",
+                "suggested_role_tags": ["PM"],
+                "bullets": [
+                    {"text": "Led team of 5.", "suggested_tags": ["LEADERSHIP"]},
+                ],
+            }
+        )
         assert exp["company"] == "Acme"
         assert exp["location"] == "Seattle"
         assert exp["start_date"] == "2020-01"
@@ -129,21 +141,30 @@ class TestNormalizeExperience:
         assert exp["bullets"][0]["has_outcome"] is True  # "5" is a count
 
     def test_drops_bullets_with_empty_text(self):
-        exp = _normalize_experience({
-            "company": "Acme", "start_date": "2020-01", "candidate_inferred_title": "PM",
-            "bullets": [
-                {"text": "Real bullet.", "suggested_tags": []},
-                {"text": "", "suggested_tags": []},
-                {"text": "  ", "suggested_tags": []},
-            ],
-        })
+        exp = _normalize_experience(
+            {
+                "company": "Acme",
+                "start_date": "2020-01",
+                "candidate_inferred_title": "PM",
+                "bullets": [
+                    {"text": "Real bullet.", "suggested_tags": []},
+                    {"text": "", "suggested_tags": []},
+                    {"text": "  ", "suggested_tags": []},
+                ],
+            }
+        )
         assert len(exp["bullets"]) == 1
 
     def test_end_date_null_preserved(self):
-        exp = _normalize_experience({
-            "company": "Acme", "start_date": "2020-01", "candidate_inferred_title": "PM",
-            "end_date": None, "bullets": [],
-        })
+        exp = _normalize_experience(
+            {
+                "company": "Acme",
+                "start_date": "2020-01",
+                "candidate_inferred_title": "PM",
+                "end_date": None,
+                "bullets": [],
+            }
+        )
         assert exp["end_date"] is None
 
 
@@ -204,8 +225,18 @@ class TestExtractExperiencesEndToEnd:
     def test_drops_experience_with_bad_date(self):
         bad_response = {
             "experiences": [
-                {"company": "Acme", "start_date": "not-a-date", "candidate_inferred_title": "PM", "bullets": []},
-                {"company": "Beta", "start_date": "2020-01", "candidate_inferred_title": "PM", "bullets": []},
+                {
+                    "company": "Acme",
+                    "start_date": "not-a-date",
+                    "candidate_inferred_title": "PM",
+                    "bullets": [],
+                },
+                {
+                    "company": "Beta",
+                    "start_date": "2020-01",
+                    "candidate_inferred_title": "PM",
+                    "bullets": [],
+                },
             ],
         }
         client = _mock_anthropic_client(json.dumps(bad_response))

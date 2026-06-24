@@ -103,9 +103,7 @@ def create_app(config: Config | None = None) -> Flask:
 app = create_app()
 
 
-def _should_open_browser(
-    werkzeug_run_main: str | None, no_browser: str | None
-) -> bool:
+def _should_open_browser(werkzeug_run_main: str | None, no_browser: str | None) -> bool:
     """Decide whether THIS process should auto-open the default browser.
 
     Open exactly once at startup. In debug mode Flask's reloader runs ``main()``
@@ -148,6 +146,7 @@ def main() -> None:
     if _should_open_browser(
         os.environ.get("WERKZEUG_RUN_MAIN"), os.environ.get("CALLBACK_NO_BROWSER")
     ):
+
         def _open_browser() -> None:
             try:
                 webbrowser.open("http://localhost:5000")

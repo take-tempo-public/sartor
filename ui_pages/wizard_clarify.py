@@ -36,6 +36,4 @@ class WizardClarifyPage(BasePage):
 
     def submit_to_compose(self) -> None:
         self.page.click(Wizard.SUBMIT_CLARIFICATIONS)
-        self.page.wait_for_selector(
-            Wizard.PANEL_COMPOSE, state="visible", timeout=LLM_TIMEOUT_MS
-        )
+        self.page.wait_for_selector(Wizard.PANEL_COMPOSE, state="visible", timeout=LLM_TIMEOUT_MS)

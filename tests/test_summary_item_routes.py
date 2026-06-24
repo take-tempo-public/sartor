@@ -30,6 +30,7 @@ def summary_app(tmp_path, monkeypatch):
     db_file = tmp_path / "summary.sqlite"
 
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
@@ -42,6 +43,7 @@ def summary_app(tmp_path, monkeypatch):
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
 
     from db.session import init_db
+
     init_db(db_file)
     return app
 
@@ -49,10 +51,10 @@ def summary_app(tmp_path, monkeypatch):
 def _seed_candidate(app_module, username="casey", profile_text=None):
     from db.models import Candidate
     from db.session import get_session
+
     session = get_session()
     try:
-        c = Candidate(username=username, name=username.title(),
-                      profile_text=profile_text)
+        c = Candidate(username=username, name=username.title(), profile_text=profile_text)
         session.add(c)
         session.commit()
         return c.id
@@ -74,15 +76,16 @@ class TestMigrationBackfill:
         migration produces."""
         from db.models import Candidate, SummaryItem
         from db.session import get_session
+
         session = get_session()
         try:
-            c = Candidate(username="alice", name="Alice",
-                          profile_text="Seed positioning text.")
+            c = Candidate(username="alice", name="Alice", profile_text="Seed positioning text.")
             session.add(c)
             session.commit()
             # Simulate the migration's INSERT
             si = SummaryItem(
-                candidate_id=c.id, text=c.profile_text or "",
+                candidate_id=c.id,
+                text=c.profile_text or "",
                 source="imported",
             )
             session.add(si)
@@ -121,11 +124,14 @@ class TestList:
     def test_omits_inactive_by_default(self, summary_app):
         from db.models import SummaryItem
         from db.session import get_session
+
         cid = _seed_candidate(summary_app, "casey")
         session = get_session()
         try:
             session.add(SummaryItem(candidate_id=cid, text="Active variant", display_order=0))
-            session.add(SummaryItem(candidate_id=cid, text="Retired variant", display_order=1, is_active=0))
+            session.add(
+                SummaryItem(candidate_id=cid, text="Retired variant", display_order=1, is_active=0)
+            )
             session.commit()
         finally:
             session.close()
@@ -139,6 +145,7 @@ class TestList:
     def test_include_inactive_query_param(self, summary_app):
         from db.models import SummaryItem
         from db.session import get_session
+
         cid = _seed_candidate(summary_app, "casey")
         session = get_session()
         try:
@@ -163,10 +170,13 @@ class TestCreate:
     def test_create_happy_path(self, summary_app):
         _seed_candidate(summary_app, "casey")
         client = summary_app.test_client()
-        r = client.post("/api/users/casey/summaries", json={
-            "text":  "Principal-level designer with a decade of...",
-            "label": "Design IC",
-        })
+        r = client.post(
+            "/api/users/casey/summaries",
+            json={
+                "text": "Principal-level designer with a decade of...",
+                "label": "Design IC",
+            },
+        )
         assert r.status_code == 201, r.get_data(as_text=True)
         body = r.get_json()
         assert body["text"].startswith("Principal-level designer")
@@ -193,9 +203,13 @@ class TestCreate:
     def test_create_rejects_invalid_source(self, summary_app):
         _seed_candidate(summary_app, "casey")
         client = summary_app.test_client()
-        r = client.post("/api/users/casey/summaries", json={
-            "text": "Valid text", "source": "bogus",
-        })
+        r = client.post(
+            "/api/users/casey/summaries",
+            json={
+                "text": "Valid text",
+                "source": "bogus",
+            },
+        )
         assert r.status_code == 400
 
     def test_create_config_only_user_is_auto_provisioned(self, summary_app):
@@ -206,6 +220,7 @@ class TestCreate:
         assert r.status_code == 201, r.get_data(as_text=True)
         from db.models import Candidate
         from db.session import get_session
+
         s = get_session()
         try:
             assert s.query(Candidate).filter_by(username="casey").first() is not None
@@ -230,10 +245,16 @@ class TestUpdate:
     def test_update_label_and_outcome_flag(self, summary_app):
         _seed_candidate(summary_app, "casey")
         client = summary_app.test_client()
-        created = client.post("/api/users/casey/summaries", json={"text": "Some positioning"}).get_json()
-        r = client.put(f"/api/summaries/{created['id']}", json={
-            "label": "AI platform PM", "has_outcome": True,
-        })
+        created = client.post(
+            "/api/users/casey/summaries", json={"text": "Some positioning"}
+        ).get_json()
+        r = client.put(
+            f"/api/summaries/{created['id']}",
+            json={
+                "label": "AI platform PM",
+                "has_outcome": True,
+            },
+        )
         body = r.get_json()
         assert body["label"] == "AI platform PM"
         assert body["has_outcome"] is True
@@ -260,6 +281,7 @@ class TestDelete:
     def test_delete_is_soft(self, summary_app):
         from db.models import SummaryItem
         from db.session import get_session
+
         _seed_candidate(summary_app, "casey")
         client = summary_app.test_client()
         created = client.post("/api/users/casey/summaries", json={"text": "T"}).get_json()

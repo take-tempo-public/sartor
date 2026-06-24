@@ -27,9 +27,9 @@ from ui_pages import BasePage, UserPickerPage
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_first_user_select_no_server_error(page: Page, live_server: str,
-                                           ux_app: ModuleType,
-                                           server_errors: list[str]) -> None:
+def test_first_user_select_no_server_error(
+    page: Page, live_server: str, ux_app: ModuleType, server_errors: list[str]
+) -> None:
     seed_user(ux_app, "alice")
 
     BasePage(page, live_server).load()

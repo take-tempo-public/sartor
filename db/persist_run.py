@@ -97,30 +97,44 @@ def persist_corpus_generation(
 
     selected = generate_result.get("selected_bullets") or []
     _persist_selected_bullets(
-        session, application_run, selected, candidate_id, report,
+        session,
+        application_run,
+        selected,
+        candidate_id,
+        report,
     )
 
     proposed_bullets = generate_result.get("proposed_new_bullets") or []
     _persist_proposed_bullets(
-        session, application_run, proposed_bullets, candidate_id, report,
+        session,
+        application_run,
+        proposed_bullets,
+        candidate_id,
+        report,
     )
 
     proposed_titles = generate_result.get("proposed_experience_titles") or []
     _persist_proposed_titles(
-        session, application_run, proposed_titles, candidate_id, report,
+        session,
+        application_run,
+        proposed_titles,
+        candidate_id,
+        report,
     )
 
     # Iteration_log entry — one row recording this generation. The summary
     # captures the headline counts for the dashboard.
-    session.add(IterationLog(
-        application_run_id=application_run.id,
-        action="generate",
-        summary=(
-            f"selected={report.application_bullets_created} bullets, "
-            f"titles={report.application_run_titles_created}, "
-            f"proposals={report.proposed_bullets_created}b/{report.proposed_titles_created}t"
-        ),
-    ))
+    session.add(
+        IterationLog(
+            application_run_id=application_run.id,
+            action="generate",
+            summary=(
+                f"selected={report.application_bullets_created} bullets, "
+                f"titles={report.application_run_titles_created}, "
+                f"proposals={report.proposed_bullets_created}b/{report.proposed_titles_created}t"
+            ),
+        )
+    )
     session.flush()
     return report
 
@@ -172,9 +186,14 @@ def _persist_selected_bullets(
             continue
 
         # Verify experience belongs to this candidate
-        experience = session.query(Experience).filter_by(
-            id=exp_id, candidate_id=candidate_id,
-        ).first()
+        experience = (
+            session.query(Experience)
+            .filter_by(
+                id=exp_id,
+                candidate_id=candidate_id,
+            )
+            .first()
+        )
         if experience is None:
             report.experiences_referenced_but_missing.append(exp_id)
             continue
@@ -182,17 +201,24 @@ def _persist_selected_bullets(
         # Chosen title — optional in the schema but the prompt requests it
         chosen_title_id = _strip_id_prefix(entry.get("chosen_title_id"), "t")
         if chosen_title_id is not None:
-            title_row = session.query(ExperienceTitle).filter_by(
-                id=chosen_title_id, experience_id=experience.id,
-            ).first()
+            title_row = (
+                session.query(ExperienceTitle)
+                .filter_by(
+                    id=chosen_title_id,
+                    experience_id=experience.id,
+                )
+                .first()
+            )
             if title_row is None:
                 report.titles_referenced_but_missing.append(chosen_title_id)
             else:
-                session.add(ApplicationRunTitle(
-                    application_run_id=application_run.id,
-                    experience_id=experience.id,
-                    experience_title_id=title_row.id,
-                ))
+                session.add(
+                    ApplicationRunTitle(
+                        application_run_id=application_run.id,
+                        experience_id=experience.id,
+                        experience_title_id=title_row.id,
+                    )
+                )
                 report.application_run_titles_created += 1
 
         # Bullets in order
@@ -202,17 +228,24 @@ def _persist_selected_bullets(
             if bullet_id is None:
                 report.skipped_due_to_malformed_payload += 1
                 continue
-            bullet_row = session.query(Bullet).filter_by(
-                id=bullet_id, experience_id=experience.id,
-            ).first()
+            bullet_row = (
+                session.query(Bullet)
+                .filter_by(
+                    id=bullet_id,
+                    experience_id=experience.id,
+                )
+                .first()
+            )
             if bullet_row is None:
                 report.bullets_referenced_but_missing.append(bullet_id)
                 continue
-            session.add(ApplicationBullet(
-                application_run_id=application_run.id,
-                bullet_id=bullet_row.id,
-                position=position,
-            ))
+            session.add(
+                ApplicationBullet(
+                    application_run_id=application_run.id,
+                    bullet_id=bullet_row.id,
+                    position=position,
+                )
+            )
             report.application_bullets_created += 1
     session.flush()
 
@@ -242,9 +275,14 @@ def _persist_proposed_bullets(
             report.skipped_due_to_malformed_payload += 1
             continue
 
-        experience = session.query(Experience).filter_by(
-            id=exp_id, candidate_id=candidate_id,
-        ).first()
+        experience = (
+            session.query(Experience)
+            .filter_by(
+                id=exp_id,
+                candidate_id=candidate_id,
+            )
+            .first()
+        )
         if experience is None:
             report.experiences_referenced_but_missing.append(exp_id)
             continue
@@ -256,9 +294,13 @@ def _persist_proposed_bullets(
             pattern_kind = normalized if normalized in _VALID_PATTERN_KINDS else None
 
         # Use the last display_order in this experience + 1 (best effort)
-        last_order = session.query(Bullet).filter_by(
-            experience_id=experience.id,
-        ).count()
+        last_order = (
+            session.query(Bullet)
+            .filter_by(
+                experience_id=experience.id,
+            )
+            .count()
+        )
 
         new_bullet = Bullet(
             experience_id=experience.id,
@@ -274,14 +316,16 @@ def _persist_proposed_bullets(
         session.flush()  # need new_bullet.id for the proposal_review FK
         report.proposed_bullets_created += 1
 
-        session.add(ProposalReview(
-            application_run_id=application_run.id,
-            bullet_id=new_bullet.id,
-            original_text=text,
-            decision="pending",
-            llm_critique_json=None,
-            user_edited_text=None,
-        ))
+        session.add(
+            ProposalReview(
+                application_run_id=application_run.id,
+                bullet_id=new_bullet.id,
+                original_text=text,
+                decision="pending",
+                llm_critique_json=None,
+                user_edited_text=None,
+            )
+        )
         report.proposal_reviews_created += 1
     session.flush()
 
@@ -311,18 +355,28 @@ def _persist_proposed_titles(
             report.skipped_due_to_malformed_payload += 1
             continue
 
-        experience = session.query(Experience).filter_by(
-            id=exp_id, candidate_id=candidate_id,
-        ).first()
+        experience = (
+            session.query(Experience)
+            .filter_by(
+                id=exp_id,
+                candidate_id=candidate_id,
+            )
+            .first()
+        )
         if experience is None:
             report.experiences_referenced_but_missing.append(exp_id)
             continue
 
         # Don't duplicate: skip if a title with same text already exists on
         # this experience (whether official, alternate, or proposed).
-        existing = session.query(ExperienceTitle).filter_by(
-            experience_id=experience.id, title=title_text,
-        ).first()
+        existing = (
+            session.query(ExperienceTitle)
+            .filter_by(
+                experience_id=experience.id,
+                title=title_text,
+            )
+            .first()
+        )
         if existing is not None:
             continue
 
@@ -339,14 +393,16 @@ def _persist_proposed_titles(
         session.flush()
         report.proposed_titles_created += 1
 
-        session.add(ProposalReview(
-            application_run_id=application_run.id,
-            experience_title_id=new_title.id,
-            original_text=title_text,
-            decision="pending",
-            llm_critique_json=None,
-            user_edited_text=None,
-        ))
+        session.add(
+            ProposalReview(
+                application_run_id=application_run.id,
+                experience_title_id=new_title.id,
+                original_text=title_text,
+                decision="pending",
+                llm_critique_json=None,
+                user_edited_text=None,
+            )
+        )
         report.proposal_reviews_created += 1
     session.flush()
 
@@ -371,8 +427,8 @@ def _strip_id_prefix(raw: Any, expected_prefix: str) -> int | None:
     value = raw.strip()
     if not value:
         return None
-    if value.startswith(expected_prefix) and value[len(expected_prefix):].isdigit():
-        return int(value[len(expected_prefix):])
+    if value.startswith(expected_prefix) and value[len(expected_prefix) :].isdigit():
+        return int(value[len(expected_prefix) :])
     if value.isdigit():
         return int(value)
     return None

@@ -40,8 +40,9 @@ def _is_composition_post(resp: Response) -> bool:
     return "/composition" in resp.url and resp.request.method == "POST"
 
 
-def _reach_compose(page: Page, live_server: str, ux_app: ModuleType,
-                   monkeypatch: pytest.MonkeyPatch) -> WizardComposePage:
+def _reach_compose(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> WizardComposePage:
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)
     install_llm_stubs(ux_app, monkeypatch)
@@ -54,7 +55,9 @@ def _reach_compose(page: Page, live_server: str, ux_app: ModuleType,
 @pytest.mark.ux
 @pytest.mark.slow
 def test_keyboard_reorder_persists_and_reset_reverts(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     compose = _reach_compose(page, live_server, ux_app, monkeypatch)
@@ -85,7 +88,9 @@ def test_keyboard_reorder_persists_and_reset_reverts(
 @pytest.mark.ux
 @pytest.mark.slow
 def test_pointer_drag_reorders(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     compose = _reach_compose(page, live_server, ux_app, monkeypatch)

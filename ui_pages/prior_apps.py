@@ -9,15 +9,11 @@ from ui_pages.selectors import PriorApps
 class PriorAppsPage(BasePage):
     def open_detail(self, app_id: int) -> None:
         """Open a prior-app card's detail modal."""
-        self.page.wait_for_selector(
-            PriorApps.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS
-        )
+        self.page.wait_for_selector(PriorApps.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
         card = self.page.locator(PriorApps.card(app_id))
         card.wait_for(state="visible", timeout=DEFAULT_TIMEOUT_MS)
         card.click()
-        self.page.wait_for_selector(
-            PriorApps.MODAL, state="visible", timeout=DEFAULT_TIMEOUT_MS
-        )
+        self.page.wait_for_selector(PriorApps.MODAL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
 
     def resume_visible(self) -> bool:
         """Whether the modal's 'Resume in wizard' button is offered. Hidden for

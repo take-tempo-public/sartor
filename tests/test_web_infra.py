@@ -29,9 +29,7 @@ from web_infra import (
 
 def _seed_config(configs_dir: Path, username: str, data: dict | None = None) -> None:
     configs_dir.mkdir(parents=True, exist_ok=True)
-    (configs_dir / f"{username}.config").write_text(
-        json.dumps(data or {}), encoding="utf-8"
-    )
+    (configs_dir / f"{username}.config").write_text(json.dumps(data or {}), encoding="utf-8")
 
 
 class TestSecurity:

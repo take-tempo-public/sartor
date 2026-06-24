@@ -19,9 +19,7 @@ from docx.shared import Inches, Pt
 
 # Matches any common bullet prefix used by LLMs:
 # -, *, •, –, —, ·, ◆, ●, ▪, ›, ‣
-BULLET_RE = re.compile(
-    r"^[-*\u2022\u2013\u2014\u00b7\u25c6\u25cf\u25aa\u2023\u2043\u203a]\s+"
-)
+BULLET_RE = re.compile(r"^[-*\u2022\u2013\u2014\u00b7\u25c6\u25cf\u25aa\u2023\u2043\u203a]\s+")
 
 # Inline markdown: ***bold+italic***, **bold**, *italic*
 _INLINE_RE = re.compile(r"(\*\*\*[^*\n]+?\*\*\*|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)")
@@ -141,12 +139,14 @@ def generate_resume(
     # tested; realistic failure modes are disk-write issues.
     try:
         sidecar = _Path(str(path)).with_suffix(".jsonresume.json")
-        sidecar.write_text(_json.dumps(json_doc, indent=2, ensure_ascii=False),
-                           encoding="utf-8")
+        sidecar.write_text(_json.dumps(json_doc, indent=2, ensure_ascii=False), encoding="utf-8")
     except Exception as exc:  # noqa: BLE001 — non-blocking sidecar
         import logging
+
         logging.getLogger(__name__).warning(
-            "JSON Resume sidecar write failed for %s: %s", path, exc,
+            "JSON Resume sidecar write failed for %s: %s",
+            path,
+            exc,
         )
 
     return str(path)
@@ -186,9 +186,7 @@ def _render_pdf_from_json(
             "Drop classic.html + classic.css into personas/bundled/."
         )
 
-    render_pdf(json_doc,
-               html_template_path=html_template,
-               output_pdf_path=output_pdf_path)
+    render_pdf(json_doc, html_template_path=html_template, output_pdf_path=output_pdf_path)
 
 
 def generate_cover_letter(
@@ -304,9 +302,9 @@ def _write_cover_letter_docx(
     normal.font.name = _cover_letter_font_name(template_path)
     normal.font.size = Pt(11)
     pf = normal.paragraph_format
-    pf.line_spacing = 1.15          # near single-spaced — business-letter dense
+    pf.line_spacing = 1.15  # near single-spaced — business-letter dense
     pf.space_before = Pt(0)
-    pf.space_after = Pt(8)          # ≈ the shell's 9pt inter-paragraph gap
+    pf.space_after = Pt(8)  # ≈ the shell's 9pt inter-paragraph gap
     for section in doc.sections:
         section.top_margin = Inches(1)
         section.bottom_margin = Inches(1)
@@ -327,7 +325,7 @@ def _write_cover_letter_docx(
         else:
             text = stripped
         p = doc.add_paragraph()
-        _add_inline_runs(p, text)   # honors **bold** / *italic*
+        _add_inline_runs(p, text)  # honors **bold** / *italic*
 
     doc.save(str(path))
 
@@ -402,6 +400,7 @@ def _apply_numPr(paragraph, numPr_template) -> None:
 # build a dict of role-to-prototype, then apply those prototypes when writing
 # the corresponding markdown elements.
 
+
 def _capture_proto(p) -> dict:
     """Capture a paragraph's formatting into a serializable prototype.
 
@@ -415,9 +414,7 @@ def _capture_proto(p) -> dict:
         "alignment": p.alignment,
         "space_before_pt": pf.space_before.pt if pf.space_before else None,
         "space_after_pt": pf.space_after.pt if pf.space_after else None,
-        "tab_stops": [
-            (t.position.pt, t.alignment) for t in (pf.tab_stops or [])
-        ],
+        "tab_stops": [(t.position.pt, t.alignment) for t in (pf.tab_stops or [])],
         "run_bold": bool(run0.bold) if (run0 and run0.bold is not None) else None,
         "run_size_pt": run0.font.size.pt if (run0 and run0.font.size) else None,
     }
@@ -448,16 +445,11 @@ def _capture_template_styles(doc: "docx.document.Document") -> dict:
         is_centered = p.alignment == WD_ALIGN_PARAGRAPH.CENTER
         any_bold = any(r.bold for r in p.runs)
         has_right_tab = any(
-            t.alignment == WD_TAB_ALIGNMENT.RIGHT
-            for t in (p.paragraph_format.tab_stops or [])
+            t.alignment == WD_TAB_ALIGNMENT.RIGHT for t in (p.paragraph_format.tab_stops or [])
         )
 
         # Header zone: centered paragraphs at the top, in order
-        if (
-            is_centered
-            and centered_seen < 3
-            and "section_heading" not in styles
-        ):
+        if is_centered and centered_seen < 3 and "section_heading" not in styles:
             role = ("name", "subtitle", "contact")[centered_seen]
             styles.setdefault(role, proto)
             centered_seen += 1

@@ -156,9 +156,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--baseline", required=True, metavar="PATH", help="baseline result JSONL")
     ap.add_argument("--candidate", required=True, metavar="PATH", help="candidate result JSONL")
-    ap.add_argument(
-        "--json", action="store_true", help="emit the rows as JSON instead of a table"
-    )
+    ap.add_argument("--json", action="store_true", help="emit the rows as JSON instead of a table")
     args = ap.parse_args(argv)
 
     try:

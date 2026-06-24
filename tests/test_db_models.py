@@ -75,7 +75,10 @@ class TestEnumConstraints:
     def test_application_status_rejects_unknown(self, db_session):
         c = _make_candidate(db_session)
         bad = Application(
-            candidate_id=c.id, title="x", jd_text="x", jd_fingerprint="abcd",
+            candidate_id=c.id,
+            title="x",
+            jd_text="x",
+            jd_fingerprint="abcd",
             status="not_a_real_status",
         )
         db_session.add(bad)
@@ -85,7 +88,10 @@ class TestEnumConstraints:
     def test_clarification_kind_rejects_unknown(self, db_session):
         c = _make_candidate(db_session)
         bad = Clarification(
-            candidate_id=c.id, question="?", answer="!", kind="bad_kind",
+            candidate_id=c.id,
+            question="?",
+            answer="!",
+            kind="bad_kind",
         )
         db_session.add(bad)
         with pytest.raises(IntegrityError):
@@ -107,14 +113,24 @@ class TestPartialUniqueIndexes:
     def test_at_most_one_official_title_per_experience(self, db_session):
         c = _make_candidate(db_session)
         e = _make_experience(db_session, c)
-        db_session.add(ExperienceTitle(
-            experience_id=e.id, title="A", is_official=1, source="official",
-        ))
+        db_session.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="A",
+                is_official=1,
+                source="official",
+            )
+        )
         db_session.flush()
         # Adding a second official title should fail.
-        db_session.add(ExperienceTitle(
-            experience_id=e.id, title="B", is_official=1, source="official",
-        ))
+        db_session.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="B",
+                is_official=1,
+                source="official",
+            )
+        )
         with pytest.raises(IntegrityError):
             db_session.flush()
 
@@ -122,10 +138,15 @@ class TestPartialUniqueIndexes:
         c = _make_candidate(db_session)
         e = _make_experience(db_session, c)
         for i in range(3):
-            db_session.add(ExperienceTitle(
-                experience_id=e.id, title=f"alt-{i}",
-                is_official=0, truthful_enough_to_use=1, source="user_added",
-            ))
+            db_session.add(
+                ExperienceTitle(
+                    experience_id=e.id,
+                    title=f"alt-{i}",
+                    is_official=0,
+                    truthful_enough_to_use=1,
+                    source="user_added",
+                )
+            )
         db_session.flush()
         assert db_session.query(ExperienceTitle).count() == 3
 
@@ -139,9 +160,13 @@ class TestCascadeDeletes:
     def test_deleting_candidate_cascades_experiences_and_bullets(self, db_session):
         c = _make_candidate(db_session)
         e = _make_experience(db_session, c)
-        db_session.add(Bullet(
-            experience_id=e.id, text="Did the thing.", source="primary",
-        ))
+        db_session.add(
+            Bullet(
+                experience_id=e.id,
+                text="Did the thing.",
+                source="primary",
+            )
+        )
         db_session.flush()
         assert db_session.query(Experience).count() == 1
         assert db_session.query(Bullet).count() == 1
@@ -160,19 +185,29 @@ class TestCascadeDeletes:
         db_session.flush()
 
         app = Application(
-            candidate_id=c.id, title="x", jd_text="...", jd_fingerprint="abcd",
+            candidate_id=c.id,
+            title="x",
+            jd_text="...",
+            jd_fingerprint="abcd",
         )
         db_session.add(app)
         db_session.flush()
         run = ApplicationRun(
-            application_id=app.id, iteration=0, run_id="abc123",
-            prompt_version="test", corpus_snapshot_json="{}",
+            application_id=app.id,
+            iteration=0,
+            run_id="abc123",
+            prompt_version="test",
+            corpus_snapshot_json="{}",
         )
         db_session.add(run)
         db_session.flush()
-        db_session.add(ApplicationBullet(
-            application_run_id=run.id, bullet_id=b.id, position=0,
-        ))
+        db_session.add(
+            ApplicationBullet(
+                application_run_id=run.id,
+                bullet_id=b.id,
+                position=0,
+            )
+        )
         db_session.flush()
 
         # Hard-deleting the bullet must fail because application_bullet references it.
@@ -190,13 +225,19 @@ class TestProposalReviewXor:
     def _setup_run(self, db_session):
         c = _make_candidate(db_session)
         app = Application(
-            candidate_id=c.id, title="x", jd_text="...", jd_fingerprint="abcd",
+            candidate_id=c.id,
+            title="x",
+            jd_text="...",
+            jd_fingerprint="abcd",
         )
         db_session.add(app)
         db_session.flush()
         run = ApplicationRun(
-            application_id=app.id, iteration=0, run_id="run-1",
-            prompt_version="test", corpus_snapshot_json="{}",
+            application_id=app.id,
+            iteration=0,
+            run_id="run-1",
+            prompt_version="test",
+            corpus_snapshot_json="{}",
         )
         db_session.add(run)
         db_session.flush()
@@ -204,9 +245,12 @@ class TestProposalReviewXor:
 
     def test_neither_bullet_nor_title_set_fails(self, db_session):
         _, run = self._setup_run(db_session)
-        db_session.add(ProposalReview(
-            application_run_id=run.id, original_text="x",
-        ))
+        db_session.add(
+            ProposalReview(
+                application_run_id=run.id,
+                original_text="x",
+            )
+        )
         with pytest.raises(IntegrityError):
             db_session.flush()
 
@@ -217,10 +261,14 @@ class TestProposalReviewXor:
         t = ExperienceTitle(experience_id=e.id, title="T", source="official")
         db_session.add_all([b, t])
         db_session.flush()
-        db_session.add(ProposalReview(
-            application_run_id=run.id, original_text="x",
-            bullet_id=b.id, experience_title_id=t.id,
-        ))
+        db_session.add(
+            ProposalReview(
+                application_run_id=run.id,
+                original_text="x",
+                bullet_id=b.id,
+                experience_title_id=t.id,
+            )
+        )
         with pytest.raises(IntegrityError):
             db_session.flush()
 
@@ -230,9 +278,13 @@ class TestProposalReviewXor:
         b = Bullet(experience_id=e.id, text="Did the thing.", source="primary")
         db_session.add(b)
         db_session.flush()
-        db_session.add(ProposalReview(
-            application_run_id=run.id, original_text="x", bullet_id=b.id,
-        ))
+        db_session.add(
+            ProposalReview(
+                application_run_id=run.id,
+                original_text="x",
+                bullet_id=b.id,
+            )
+        )
         db_session.flush()  # no error
         assert db_session.query(ProposalReview).count() == 1
 
@@ -242,9 +294,13 @@ class TestProposalReviewXor:
         t = ExperienceTitle(experience_id=e.id, title="T", source="official")
         db_session.add(t)
         db_session.flush()
-        db_session.add(ProposalReview(
-            application_run_id=run.id, original_text="x", experience_title_id=t.id,
-        ))
+        db_session.add(
+            ProposalReview(
+                application_run_id=run.id,
+                original_text="x",
+                experience_title_id=t.id,
+            )
+        )
         db_session.flush()
         assert db_session.query(ProposalReview).count() == 1
 

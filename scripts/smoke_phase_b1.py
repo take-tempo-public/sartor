@@ -36,6 +36,7 @@ DEFAULT_JD = REPO_ROOT / "evals" / "fixtures" / "synthetic" / "pm-senior" / "jd.
 
 def _resolve_api_key() -> str | None:
     import os
+
     env = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if env:
         return env
@@ -45,7 +46,9 @@ def _resolve_api_key() -> str | None:
     return None
 
 
-def _check_bullet_grounding(generated_resume_md: str, corpus_text: str) -> tuple[int, int, list[str]]:
+def _check_bullet_grounding(
+    generated_resume_md: str, corpus_text: str
+) -> tuple[int, int, list[str]]:
     """Heuristic: each output bullet should substring-match the corpus text.
 
     Returns (matched_count, total_count, suspicious_bullets). A bullet is
@@ -65,7 +68,7 @@ def _check_bullet_grounding(generated_resume_md: str, corpus_text: str) -> tuple
         # Pick a few 30-char windows from the middle; if any appear in corpus,
         # call it grounded. Loose check — full match is too strict for LLM
         # paraphrasing, and zero match is the bright-line fabrication signal.
-        windows = [b[i:i+30].lower() for i in range(0, max(1, len(b) - 30), 20)]
+        windows = [b[i : i + 30].lower() for i in range(0, max(1, len(b) - 30), 20)]
         if any(w and w in corpus_lower for w in windows):
             matched += 1
         else:
@@ -78,7 +81,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--user", default="testuser", help="Username (must already be imported)")
     parser.add_argument("--jd", default=str(DEFAULT_JD), help="JD text file path")
     parser.add_argument(
-        "--db", default=None,
+        "--db",
+        default=None,
         help="Override DB path (defaults to db/resume.sqlite)",
     )
     args = parser.parse_args(argv)
@@ -100,6 +104,7 @@ def main(argv: list[str] | None = None) -> int:
     session = get_session() if args.db is None else None
     if session is None:
         from db.session import make_engine, make_session_factory
+
         session = make_session_factory(make_engine(args.db))()
 
     client = anthropic.Anthropic(api_key=api_key)
@@ -129,11 +134,15 @@ def main(argv: list[str] | None = None) -> int:
         snapshot = json.loads(application_run.corpus_snapshot_json)
         print(f"[ctx]  built in {t_build:.2f}s")
         print(f"       application_id={application.id} run_id={run_id}")
-        print(f"       corpus snapshot: {len(snapshot['bullet_ids'])} bullets, "
-              f"{len(snapshot['experience_title_ids'])} eligible titles")
+        print(
+            f"       corpus snapshot: {len(snapshot['bullet_ids'])} bullets, "
+            f"{len(snapshot['experience_title_ids'])} eligible titles"
+        )
         print(f"       synthesized resume: {len(corpus_text)} chars")
-        print(f"       keyword match_score: "
-              f"{context_set['deterministic_analysis']['keyword_overlap']['match_score']:.2f}\n")
+        print(
+            f"       keyword match_score: "
+            f"{context_set['deterministic_analysis']['keyword_overlap']['match_score']:.2f}\n"
+        )
 
         # ---- Analyze ----
         t0 = time.perf_counter()
@@ -147,12 +156,16 @@ def main(argv: list[str] | None = None) -> int:
         application_run.analysis_json = json.dumps(analysis)
         context_set["llm_analysis"] = analysis
 
-        print(f"[anlz] {t_analyze:.2f}s — essential_skills={len(analysis.get('essential_skills', []))}, "
-              f"gaps={len(analysis.get('comparison', {}).get('gaps', []))}, "
-              f"suggestions={len(analysis.get('suggestions', []))}")
+        print(
+            f"[anlz] {t_analyze:.2f}s — essential_skills={len(analysis.get('essential_skills', []))}, "
+            f"gaps={len(analysis.get('comparison', {}).get('gaps', []))}, "
+            f"suggestions={len(analysis.get('suggestions', []))}"
+        )
         if analysis.get("essential_skills"):
-            print(f"       essential_skills[:5]: "
-                  f"{[s.get('skill') if isinstance(s, dict) else s for s in analysis['essential_skills'][:5]]}")
+            print(
+                f"       essential_skills[:5]: "
+                f"{[s.get('skill') if isinstance(s, dict) else s for s in analysis['essential_skills'][:5]]}"
+            )
         print()
 
         # ---- Generate ----
@@ -167,22 +180,28 @@ def main(argv: list[str] | None = None) -> int:
 
         resume_md = result["resume_content"]
         cover_md = result["cover_letter_content"]
-        print(f"[gen]  {t_generate:.2f}s — resume={len(resume_md)} chars, "
-              f"cover={len(cover_md)} chars")
-        print(f"       changes_made: {len(result.get('changes_made', []))}, "
-              f"proofread_notes: {len(result.get('proofread_notes', []))}\n")
+        print(
+            f"[gen]  {t_generate:.2f}s — resume={len(resume_md)} chars, cover={len(cover_md)} chars"
+        )
+        print(
+            f"       changes_made: {len(result.get('changes_made', []))}, "
+            f"proofread_notes: {len(result.get('proofread_notes', []))}\n"
+        )
 
         # ---- Grounding heuristic check ----
         matched, total, suspicious = _check_bullet_grounding(resume_md, corpus_text)
         print(f"[grnd] bullets in generated resume: {total}")
         print(f"       substring-grounded against corpus: {matched}/{total}")
         if suspicious:
-            print(f"       {len(suspicious)} suspicious bullet(s) (no 30-char window matched corpus):")
+            print(
+                f"       {len(suspicious)} suspicious bullet(s) (no 30-char window matched corpus):"
+            )
             for s in suspicious[:5]:
                 print(f"         - {s}")
 
         # ---- Cost summary from JSONL telemetry ----
         from hardening import compute_call_cost
+
         log_path = REPO_ROOT / "logs" / "llm_calls.jsonl"
         total_cost = 0.0
         cache_read_total = 0
@@ -210,7 +229,10 @@ def main(argv: list[str] | None = None) -> int:
         from db.persist_run import persist_corpus_generation
 
         report = persist_corpus_generation(
-            session, application_run, result, candidate_id=application.candidate_id,
+            session,
+            application_run,
+            result,
+            candidate_id=application.candidate_id,
         )
         print(f"\n[persist] application_bullet rows: {report.application_bullets_created}")
         print(f"          application_run_title rows: {report.application_run_titles_created}")
@@ -218,33 +240,56 @@ def main(argv: list[str] | None = None) -> int:
         print(f"          proposed new titles:         {report.proposed_titles_created}")
         print(f"          proposal_review rows:        {report.proposal_reviews_created}")
         if report.bullets_referenced_but_missing:
-            print(f"          {len(report.bullets_referenced_but_missing)} hallucinated bullet_id(s) skipped")
+            print(
+                f"          {len(report.bullets_referenced_but_missing)} hallucinated bullet_id(s) skipped"
+            )
         if report.titles_referenced_but_missing:
-            print(f"          {len(report.titles_referenced_but_missing)} hallucinated title_id(s) skipped")
+            print(
+                f"          {len(report.titles_referenced_but_missing)} hallucinated title_id(s) skipped"
+            )
         if report.skipped_due_to_malformed_payload:
             print(f"          {report.skipped_due_to_malformed_payload} malformed entries skipped")
 
         # Sanity-check: every bullet selected should match a real bullet text
-        app_bullets = session.query(ApplicationBullet).filter_by(
-            application_run_id=application_run.id,
-        ).all()
-        pending_bullets = session.query(Bullet).filter(
-            Bullet.is_pending_review == 1,
-            Bullet.source == f"llm_proposed:{run_id}",
-        ).all()
-        pending_titles = session.query(ExperienceTitle).filter(
-            ExperienceTitle.is_pending_review == 1,
-            ExperienceTitle.source == f"llm_proposed:{run_id}",
-        ).all()
-        pending_proposals = session.query(ProposalReview).filter_by(
-            application_run_id=application_run.id, decision="pending",
-        ).all()
+        app_bullets = (
+            session.query(ApplicationBullet)
+            .filter_by(
+                application_run_id=application_run.id,
+            )
+            .all()
+        )
+        pending_bullets = (
+            session.query(Bullet)
+            .filter(
+                Bullet.is_pending_review == 1,
+                Bullet.source == f"llm_proposed:{run_id}",
+            )
+            .all()
+        )
+        pending_titles = (
+            session.query(ExperienceTitle)
+            .filter(
+                ExperienceTitle.is_pending_review == 1,
+                ExperienceTitle.source == f"llm_proposed:{run_id}",
+            )
+            .all()
+        )
+        pending_proposals = (
+            session.query(ProposalReview)
+            .filter_by(
+                application_run_id=application_run.id,
+                decision="pending",
+            )
+            .all()
+        )
         print(f"\n[verify] application_bullet rows in DB:    {len(app_bullets)}")
         print(f"         pending llm_proposed bullets:      {len(pending_bullets)}")
         print(f"         pending llm_proposed titles:       {len(pending_titles)}")
         print(f"         pending proposal_review rows:      {len(pending_proposals)}")
-        print(f"         iteration_log rows for this run:   "
-              f"{session.query(IterationLog).filter_by(application_run_id=application_run.id).count()}")
+        print(
+            f"         iteration_log rows for this run:   "
+            f"{session.query(IterationLog).filter_by(application_run_id=application_run.id).count()}"
+        )
 
         # ---- Outputs ----
         print(f"\n{'=' * 70}\nGENERATED RESUME\n{'=' * 70}")

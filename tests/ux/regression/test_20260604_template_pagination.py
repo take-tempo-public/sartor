@@ -61,8 +61,10 @@ def _multi_page_resume() -> dict:
             "position": "Staff Software Engineer",
             "startDate": f"20{10 + i:02d}-01",
             "endDate": f"20{11 + i:02d}-01",
-            "summary": ("Owned platform reliability and developer-experience "
-                        "initiatives across multiple product teams."),
+            "summary": (
+                "Owned platform reliability and developer-experience "
+                "initiatives across multiple product teams."
+            ),
             "highlights": [
                 "Reduced p99 API latency 42% via read-through caching and "
                 "connection pooling across 18 services",
@@ -82,19 +84,24 @@ def _multi_page_resume() -> dict:
             "name": "Jordan Multi-Page",
             "label": "Staff Software Engineer",
             "email": "jordan@example.com",
-            "summary": ("Staff engineer with 12 years building distributed "
-                        "systems at scale, specializing in reliability, "
-                        "developer experience, and cost-efficient platform "
-                        "architecture."),
+            "summary": (
+                "Staff engineer with 12 years building distributed "
+                "systems at scale, specializing in reliability, "
+                "developer experience, and cost-efficient platform "
+                "architecture."
+            ),
         },
         "work": work,
         "skills": [
-            {"name": "Languages",
-             "keywords": ["Python", "Go", "TypeScript", "Rust", "Java"]},
-            {"name": "Infrastructure",
-             "keywords": ["Kubernetes", "Kafka", "Postgres", "Terraform", "AWS"]},
-            {"name": "Practices",
-             "keywords": ["SRE", "CI/CD", "Observability", "Incident response"]},
+            {"name": "Languages", "keywords": ["Python", "Go", "TypeScript", "Rust", "Java"]},
+            {
+                "name": "Infrastructure",
+                "keywords": ["Kubernetes", "Kafka", "Postgres", "Terraform", "AWS"],
+            },
+            {
+                "name": "Practices",
+                "keywords": ["SRE", "CI/CD", "Observability", "Incident response"],
+            },
         ],
     }
 
@@ -124,13 +131,17 @@ _BLANK_PAGES_JS = """() => {
 @pytest.mark.ux
 @pytest.mark.slow
 def test_bundled_templates_have_no_blank_pages(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     console_errors: list[str],
 ) -> None:
     cid = seed_user(ux_app, "jordan")
     aid = seed_application(cid, title="Staff Engineer @ Scale")
     ctx_path = write_context_file(
-        ux_app, "jordan", "context_resume_iter1.json",
+        ux_app,
+        "jordan",
+        "context_resume_iter1.json",
         {"iteration": 1, "last_generated_json_resume": _multi_page_resume()},
     )
 
@@ -138,11 +149,14 @@ def test_bundled_templates_have_no_blank_pages(
 
     for label, path in _BUNDLED:
         pid = bundled_persona_id_by_path(path)
-        url = (f"{base}/api/applications/{aid}/preview"
-               f"?template_id={pid}&context_path={quote(ctx_path)}")
+        url = (
+            f"{base}/api/applications/{aid}/preview"
+            f"?template_id={pid}&context_path={quote(ctx_path)}"
+        )
         resp = page.goto(url)
         assert resp is not None and resp.status == 200, (
-            f"{label}: preview route returned {resp.status if resp else 'no response'}")
+            f"{label}: preview route returned {resp.status if resp else 'no response'}"
+        )
 
         page.wait_for_selector(".pagedjs_page", timeout=DEFAULT_TIMEOUT_MS)
         page.wait_for_function(_SETTLE_JS, timeout=DEFAULT_TIMEOUT_MS, polling=300)
@@ -152,10 +166,12 @@ def test_bundled_templates_have_no_blank_pages(
         # a 1-page result would mean the render collapsed, not that pagination
         # is "perfect".
         assert result["total"] >= 2, (
-            f"{label}: expected a multi-page render, got {result['total']} page(s)")
+            f"{label}: expected a multi-page render, got {result['total']} page(s)"
+        )
         assert result["blank"] == [], (
             f"{label}: blank page(s) at index {result['blank']} of "
-            f"{result['total']} — section-level break-avoidance regressed?")
+            f"{result['total']} — section-level break-avoidance regressed?"
+        )
 
     # The decisive paged.js console-error fix: no getBoundingClientRect (or any
     # other) JS error leaked across all four renders. The `page` fixture's

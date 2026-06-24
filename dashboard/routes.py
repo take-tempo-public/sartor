@@ -165,6 +165,7 @@ def _summarize_calls(records: list[dict]) -> dict:
     # Per-call cost rollup using the same pricing table the eval runner uses.
     # Imported lazily to avoid cycles when hardening pulls in dashboard helpers.
     from hardening import compute_call_cost
+
     per_call_costs = sorted(compute_call_cost(r) for r in records)
     total_cost = sum(per_call_costs)
     return {
@@ -203,16 +204,17 @@ def _per_rubric_pass_rate(records: list[dict]) -> list[dict]:
     for rubric, rs in sorted(by_rubric.items()):
         total = len(rs)
         pass_count = sum(
-            1 for r in rs
-            if isinstance(r.get("score"), (int, float)) and r["score"] >= 4.0
+            1 for r in rs if isinstance(r.get("score"), (int, float)) and r["score"] >= 4.0
         )
-        out.append({
-            "rubric": rubric,
-            "total": total,
-            "pass_count": pass_count,
-            "fail_count": total - pass_count,
-            "pass_rate": round(pass_count / total, 3) if total else 0.0,
-        })
+        out.append(
+            {
+                "rubric": rubric,
+                "total": total,
+                "pass_count": pass_count,
+                "fail_count": total - pass_count,
+                "pass_rate": round(pass_count / total, 3) if total else 0.0,
+            }
+        )
     return out
 
 
@@ -225,10 +227,9 @@ def _score_over_time(records: list[dict]) -> dict:
         {labels: [iso_timestamp], datasets: [{label: rubric, data: [score]}]}
     """
     typed_records = [
-        r for r in records
-        if r.get("prompt_version")
-        and isinstance(r.get("score"), (int, float))
-        and r.get("rubric")
+        r
+        for r in records
+        if r.get("prompt_version") and isinstance(r.get("score"), (int, float)) and r.get("rubric")
     ]
     typed_records.sort(key=lambda r: r.get("timestamp", ""))
 
@@ -241,15 +242,18 @@ def _score_over_time(records: list[dict]) -> dict:
     for i, rubric in enumerate(rubrics_seen):
         data = [
             {"x": r["timestamp"], "y": r["score"], "v": r.get("prompt_version", "")}
-            for r in typed_records if r["rubric"] == rubric
+            for r in typed_records
+            if r["rubric"] == rubric
         ]
-        datasets.append({
-            "label": rubric,
-            "data": data,
-            "borderColor": palette[i % len(palette)],
-            "backgroundColor": palette[i % len(palette)],
-            "tension": 0.2,
-        })
+        datasets.append(
+            {
+                "label": rubric,
+                "data": data,
+                "borderColor": palette[i % len(palette)],
+                "backgroundColor": palette[i % len(palette)],
+                "tension": 0.2,
+            }
+        )
 
     return {
         "labels": labels,
@@ -290,12 +294,14 @@ def _rubric_fixture_heatmap(records: list[dict]) -> dict:
                 score = cell_record["score"]
                 # Hue: red (0) → green (120) based on score / 5
                 hue = max(0.0, min(120.0, 120.0 * score / 5.0))
-                cells.append({
-                    "score": round(score, 1),
-                    "color": f"hsl({hue:.0f} 60% 30%)",
-                    "prompt_version": cell_record.get("prompt_version", ""),
-                    "timestamp": cell_record.get("timestamp", ""),
-                })
+                cells.append(
+                    {
+                        "score": round(score, 1),
+                        "color": f"hsl({hue:.0f} 60% 30%)",
+                        "prompt_version": cell_record.get("prompt_version", ""),
+                        "timestamp": cell_record.get("timestamp", ""),
+                    }
+                )
         rows.append({"rubric": rubric, "cells": cells})
 
     return {"rubrics": rubrics, "fixtures": fixtures, "rows": rows}
@@ -369,16 +375,18 @@ def _pareto_data(eval_records: list[dict]) -> dict:
         if score is None or total_lat_ms == 0:
             continue
         run_id = r.get("run_id", "")
-        points.append({
-            "run_id": run_id,
-            "fixture": r.get("fixture", ""),
-            "prompt_version": r.get("prompt_version", ""),
-            "timestamp": r.get("timestamp", ""),
-            "score": float(score),
-            "total_latency_ms": int(total_lat_ms),
-            "cost_usd": cost_by_run.get(run_id),
-            "scores_used": r.get("scores_used", {}),
-        })
+        points.append(
+            {
+                "run_id": run_id,
+                "fixture": r.get("fixture", ""),
+                "prompt_version": r.get("prompt_version", ""),
+                "timestamp": r.get("timestamp", ""),
+                "score": float(score),
+                "total_latency_ms": int(total_lat_ms),
+                "cost_usd": cost_by_run.get(run_id),
+                "scores_used": r.get("scores_used", {}),
+            }
+        )
 
     if not points:
         return _EMPTY
@@ -419,22 +427,26 @@ def _pareto_data(eval_records: list[dict]) -> dict:
             lat_s = round(pt["total_latency_ms"] / 1000.0, 1)
             cost = pt["cost_usd"]
             radius = round(5.0 + 15.0 * (cost / max_cost), 1) if cost is not None else 8.0
-            data.append({
-                "x": lat_s,
-                "y": round(pt["score"], 3),
-                "r": radius,
-                "fixture": pt["fixture"],
-                "run_id": pt["run_id"],
-                "cost_usd": round(cost, 4) if cost is not None else None,
-                "scores_used": pt["scores_used"],
-            })
+            data.append(
+                {
+                    "x": lat_s,
+                    "y": round(pt["score"], 3),
+                    "r": radius,
+                    "fixture": pt["fixture"],
+                    "run_id": pt["run_id"],
+                    "cost_usd": round(cost, 4) if cost is not None else None,
+                    "scores_used": pt["scores_used"],
+                }
+            )
         color = palette[i % len(palette)]
-        scatter_datasets.append({
-            "label": version,
-            "data": data,
-            "backgroundColor": color + "99",
-            "borderColor": color,
-        })
+        scatter_datasets.append(
+            {
+                "label": version,
+                "data": data,
+                "backgroundColor": color + "99",
+                "borderColor": color,
+            }
+        )
 
     # Dashed polyline: version centroids in chronological order.
     timeline_data = [
@@ -577,16 +589,18 @@ def _groundedness_points(records: list[dict]) -> list[dict]:
     points = []
     for r in _dedup_by_run(candidates):
         gnd = r["deterministic_metrics"]["groundedness"]
-        points.append({
-            "timestamp": r.get("timestamp", ""),
-            "prompt_version": r.get("prompt_version", ""),
-            "run_id": r.get("run_id", ""),
-            "fixture": r.get("fixture", ""),
-            "score": float(gnd["score"]),
-            "fabricated_specifics_rate": gnd.get("fabricated_specifics_rate", 0.0),
-            "flagged_count": gnd.get("flagged_count", 0),
-            "layers": gnd.get("layers", ["L0"]),
-        })
+        points.append(
+            {
+                "timestamp": r.get("timestamp", ""),
+                "prompt_version": r.get("prompt_version", ""),
+                "run_id": r.get("run_id", ""),
+                "fixture": r.get("fixture", ""),
+                "score": float(gnd["score"]),
+                "fabricated_specifics_rate": gnd.get("fabricated_specifics_rate", 0.0),
+                "flagged_count": gnd.get("flagged_count", 0),
+                "layers": gnd.get("layers", ["L0"]),
+            }
+        )
     points.sort(key=lambda p: p["timestamp"])
     return points
 
@@ -614,13 +628,17 @@ def _groundedness_trend(records: list[dict]) -> dict:
     return {
         "has_data": bool(data),
         "labels": [p["timestamp"] for p in points],
-        "datasets": [{
-            "label": "groundedness (L0)",
-            "data": data,
-            "borderColor": "#4ade80",
-            "backgroundColor": "#4ade80",
-            "tension": 0.2,
-        }] if data else [],
+        "datasets": [
+            {
+                "label": "groundedness (L0)",
+                "data": data,
+                "borderColor": "#4ade80",
+                "backgroundColor": "#4ade80",
+                "tension": 0.2,
+            }
+        ]
+        if data
+        else [],
         "points": len(data),
     }
 
@@ -717,14 +735,16 @@ def _reliability(records: list[dict]) -> dict:
             by_kind[kind]["truncation"] += 1
     rows = []
     for kind, c in sorted(by_kind.items()):
-        rows.append({
-            "call_kind": kind,
-            "total": c["total"],
-            "error_count": c["error"],
-            "error_rate": round(c["error"] / c["total"], 3) if c["total"] else 0.0,
-            "truncation_count": c["truncation"],
-            "truncation_rate": round(c["truncation"] / c["total"], 3) if c["total"] else 0.0,
-        })
+        rows.append(
+            {
+                "call_kind": kind,
+                "total": c["total"],
+                "error_count": c["error"],
+                "error_rate": round(c["error"] / c["total"], 3) if c["total"] else 0.0,
+                "truncation_count": c["truncation"],
+                "truncation_rate": round(c["truncation"] / c["total"], 3) if c["total"] else 0.0,
+            }
+        )
     return {
         "total": total,
         "error_count": error,
@@ -761,12 +781,14 @@ def _run_trace(records: list[dict]) -> dict:
     runs = []
     for run_id, calls in runs_sorted[:10]:
         total_lat = sum(c.get("latency_ms", 0) or 0 for c in calls)
-        runs.append({
-            "run_id": run_id,
-            "span_count": len(calls),
-            "total_latency_ms": total_lat,
-            "timestamp": _run_ts(calls),
-        })
+        runs.append(
+            {
+                "run_id": run_id,
+                "span_count": len(calls),
+                "total_latency_ms": total_lat,
+                "timestamp": _run_ts(calls),
+            }
+        )
 
     latest_run_id, latest_calls = runs_sorted[0]
     latest_calls = sorted(latest_calls, key=lambda c: c.get("timestamp", ""))
@@ -783,8 +805,12 @@ def _run_trace(records: list[dict]) -> dict:
             "model": c.get("model", ""),
             "latency_ms": c.get("latency_ms", 0) or 0,
             "status": c.get("status", ""),
-            "pct": round(100.0 * (c.get("latency_ms", 0) or 0) / total_lat, 1) if total_lat else 0.0,
-            "bar_pct": round(100.0 * (c.get("latency_ms", 0) or 0) / max_lat, 1) if max_lat else 0.0,
+            "pct": round(100.0 * (c.get("latency_ms", 0) or 0) / total_lat, 1)
+            if total_lat
+            else 0.0,
+            "bar_pct": round(100.0 * (c.get("latency_ms", 0) or 0) / max_lat, 1)
+            if max_lat
+            else 0.0,
         }
         for c in latest_calls
     ]
@@ -857,14 +883,16 @@ def _baseline_health(records: list[dict], baseline: dict) -> dict:
         else:
             status = "ok"
         counts[status] += 1
-        rows.append({
-            "fixture": fixture,
-            "rubric": rubric,
-            "score": round(score, 2),
-            "baseline_mean": round(mean, 2),
-            "delta": delta,
-            "status": status,
-        })
+        rows.append(
+            {
+                "fixture": fixture,
+                "rubric": rubric,
+                "score": round(score, 2),
+                "baseline_mean": round(mean, 2),
+                "delta": delta,
+                "status": status,
+            }
+        )
     rows.sort(key=lambda d: (d["fixture"], d["rubric"]))
 
     if counts["regressed"]:

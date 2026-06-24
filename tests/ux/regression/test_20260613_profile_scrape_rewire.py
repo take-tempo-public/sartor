@@ -21,8 +21,9 @@ from ui_pages import BasePage, UserPickerPage
 from ui_pages.selectors import Settings
 
 
-def _open_settings_for(page: Page, live_server: str, ux_app: ModuleType,
-                       username: str = "alice") -> None:
+def _open_settings_for(
+    page: Page, live_server: str, ux_app: ModuleType, username: str = "alice"
+) -> None:
     seed_user(ux_app, username)
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select(username)
@@ -32,13 +33,16 @@ def _open_settings_for(page: Page, live_server: str, ux_app: ModuleType,
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_fetch_button_reports_success(page: Page, live_server: str,
-                                      ux_app: ModuleType) -> None:
+def test_fetch_button_reports_success(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """With URLs configured, clicking Fetch shows the character/source count
     returned by the route."""
+
     def _stub(route: Route) -> None:
-        route.fulfill(status=200, content_type="application/json",
-                      body='{"ok": true, "chars": 412, "urls": 1}')
+        route.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"ok": true, "chars": 412, "urls": 1}',
+        )
 
     page.route("**/api/users/*/profile/fetch", _stub)
 
@@ -53,12 +57,13 @@ def test_fetch_button_reports_success(page: Page, live_server: str,
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_fetch_button_reports_no_urls(page: Page, live_server: str,
-                                      ux_app: ModuleType) -> None:
+def test_fetch_button_reports_no_urls(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """No configured URLs → the graceful 'nothing to fetch' message."""
+
     def _stub(route: Route) -> None:
-        route.fulfill(status=200, content_type="application/json",
-                      body='{"ok": true, "chars": 0, "urls": 0}')
+        route.fulfill(
+            status=200, content_type="application/json", body='{"ok": true, "chars": 0, "urls": 0}'
+        )
 
     page.route("**/api/users/*/profile/fetch", _stub)
 

@@ -20,6 +20,7 @@ import pytest
 class TestFunction:
     def test_empty_corpus_returns_no_proposals(self):
         from analyzer import suggest_skills
+
         result = suggest_skills(client=object(), context_set={"career_corpus": []})
         assert result == {"proposals": []}
 
@@ -27,16 +28,25 @@ class TestFunction:
         from analyzer import suggest_skills
 
         def _fake_parse_or_retry(*_a, **_k):
-            return {"proposals": [
-                {"name": "Kubernetes", "evidence": {"bullet_id": 1, "quote": "q"}},
-                {"name": "python", "evidence": {"bullet_id": 2, "quote": "q"}},  # existing (case-insensitive)
-                {"name": "Kubernetes", "evidence": {"bullet_id": 3, "quote": "q"}},  # in-batch dup
-                {"name": "  ", "evidence": {}},  # blank → dropped
-            ]}
+            return {
+                "proposals": [
+                    {"name": "Kubernetes", "evidence": {"bullet_id": 1, "quote": "q"}},
+                    {
+                        "name": "python",
+                        "evidence": {"bullet_id": 2, "quote": "q"},
+                    },  # existing (case-insensitive)
+                    {
+                        "name": "Kubernetes",
+                        "evidence": {"bullet_id": 3, "quote": "q"},
+                    },  # in-batch dup
+                    {"name": "  ", "evidence": {}},  # blank → dropped
+                ]
+            }
 
         ctx = {
-            "career_corpus": [{"id": 1, "company": "Acme",
-                               "bullets": [{"id": 1, "text": "Ran K8s."}]}],
+            "career_corpus": [
+                {"id": 1, "company": "Acme", "bullets": [{"id": 1, "text": "Ran K8s."}]}
+            ],
             "llm_analysis": {"essential_skills": ["kubernetes"]},
             "existing_skill_names": ["Python"],
         }
@@ -57,6 +67,7 @@ def suggest_app(tmp_path, monkeypatch):
 
     db_file = tmp_path / "suggskill.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
@@ -68,6 +79,7 @@ def suggest_app(tmp_path, monkeypatch):
     # the factory (no more per-route global / app.config injection).
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     output_dir = cfg.output_dir
@@ -77,6 +89,7 @@ def suggest_app(tmp_path, monkeypatch):
     monkeypatch.setattr("blueprints.applications._get_client", lambda: object())
 
     from db.session import init_db
+
     init_db(db_file)
     return types.SimpleNamespace(app=app), output_dir
 
@@ -86,19 +99,30 @@ def _seed(output_dir):
 
     from db.models import Application, Candidate, Skill
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(username="casey", name="Casey Rivera")
         session.add(c)
         session.flush()
         a = Application(
-            candidate_id=c.id, title="SRE",
-            jd_text="SRE running Kubernetes.", jd_fingerprint="f" * 16,
+            candidate_id=c.id,
+            title="SRE",
+            jd_text="SRE running Kubernetes.",
+            jd_fingerprint="f" * 16,
         )
         session.add(a)
         session.flush()
-        session.add(Skill(candidate_id=c.id, name="Python", display_order=0,
-                          is_active=1, is_pending_review=0, source="imported"))
+        session.add(
+            Skill(
+                candidate_id=c.id,
+                name="Python",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="imported",
+            )
+        )
         session.commit()
         cid, aid = c.id, a.id
     finally:
@@ -106,8 +130,9 @@ def _seed(output_dir):
 
     ctx = {
         "application_id": aid,
-        "career_corpus": [{"id": 1, "company": "Acme",
-                           "bullets": [{"id": 1, "text": "Migrated to Kubernetes."}]}],
+        "career_corpus": [
+            {"id": 1, "company": "Acme", "bullets": [{"id": 1, "text": "Migrated to Kubernetes."}]}
+        ],
         "llm_analysis": {"essential_skills": ["kubernetes"]},
         "run_id": "testrun",
     }
@@ -124,17 +149,23 @@ class TestRoute:
         def _stub(client, context_set, *, username="", run_id=""):
             # The route stages existing names so the generator can dedup.
             assert "Python" in (context_set.get("existing_skill_names") or [])
-            return {"proposals": [
-                {"name": "Kubernetes", "category": "platform",
-                 "evidence": {"bullet_id": 1, "quote": "Migrated to Kubernetes."},
-                 "rationale": "JD wants K8s; bullet 1 shows it."},
-                {"name": "Python", "evidence": {}},  # existing → skipped by route
-            ]}
+            return {
+                "proposals": [
+                    {
+                        "name": "Kubernetes",
+                        "category": "platform",
+                        "evidence": {"bullet_id": 1, "quote": "Migrated to Kubernetes."},
+                        "rationale": "JD wants K8s; bullet 1 shows it.",
+                    },
+                    {"name": "Python", "evidence": {}},  # existing → skipped by route
+                ]
+            }
 
         with patch("analyzer.suggest_skills", _stub):
             client = _app.app.test_client()
-            r = client.post(f"/api/applications/{aid}/suggest-skills",
-                            json={"context_path": ctx_path})
+            r = client.post(
+                f"/api/applications/{aid}/suggest-skills", json={"context_path": ctx_path}
+            )
         assert r.status_code == 200, r.get_data(as_text=True)
         created = r.get_json()["proposals"]
         assert [p["name"] for p in created] == ["Kubernetes"]  # existing skipped
@@ -147,13 +178,11 @@ class TestRoute:
         # (it does NOT reach the recommend set / preview / prompt until approved).
         default = client.get("/api/users/casey/skills").get_json()["skills"]
         assert {s["name"] for s in default} == {"Python"}
-        pending = client.get(
-            "/api/users/casey/skills?include_pending=1").get_json()["skills"]
+        pending = client.get("/api/users/casey/skills?include_pending=1").get_json()["skills"]
         assert {s["name"] for s in pending} == {"Python", "Kubernetes"}
 
     def test_unknown_application_404(self, suggest_app):
         _app, _ = suggest_app
         client = _app.app.test_client()
-        r = client.post("/api/applications/9999/suggest-skills",
-                        json={"context_path": "/whatever"})
+        r = client.post("/api/applications/9999/suggest-skills", json={"context_path": "/whatever"})
         assert r.status_code == 404

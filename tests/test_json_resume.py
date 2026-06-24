@@ -77,11 +77,7 @@ class TestHeaderBlock:
         assert basics["email"] == "casey@example.com"
 
     def test_url_without_protocol_gets_https(self):
-        md = (
-            "# Jane Doe\n"
-            "Engineer\n"
-            "jane@example.com | janedoe.com\n"
-        )
+        md = "# Jane Doe\nEngineer\njane@example.com | janedoe.com\n"
         doc = md_to_json_resume(md)
         # Bare-domain URL becomes the website (basics.url) with https
         # added; "Website" network classification routes it there.
@@ -89,11 +85,7 @@ class TestHeaderBlock:
         assert "janedoe.com" in doc["basics"]["url"]
 
     def test_github_profile(self):
-        md = (
-            "# Jane Doe\n"
-            "Engineer\n"
-            "jane@example.com | github.com/janedoe\n"
-        )
+        md = "# Jane Doe\nEngineer\njane@example.com | github.com/janedoe\n"
         doc = md_to_json_resume(md)
         profiles = doc["basics"].get("profiles", [])
         assert any(p["network"] == "GitHub" for p in profiles)
@@ -210,24 +202,14 @@ class TestExperience:
 
 class TestSkills:
     def test_dot_middle_separator(self):
-        md = (
-            "# Jane Doe\n"
-            "\n"
-            "## Skills\n"
-            "Python · TypeScript · Postgres · Kubernetes\n"
-        )
+        md = "# Jane Doe\n\n## Skills\nPython · TypeScript · Postgres · Kubernetes\n"
         doc = md_to_json_resume(md)
         assert len(doc["skills"]) == 4
         assert doc["skills"][0] == {"name": "Python"}
         assert doc["skills"][-1] == {"name": "Kubernetes"}
 
     def test_comma_separator(self):
-        md = (
-            "# Jane Doe\n"
-            "\n"
-            "## Skills\n"
-            "Python, TypeScript, Postgres\n"
-        )
+        md = "# Jane Doe\n\n## Skills\nPython, TypeScript, Postgres\n"
         doc = md_to_json_resume(md)
         names = [s["name"] for s in doc["skills"]]
         assert names == ["Python", "TypeScript", "Postgres"]
@@ -248,23 +230,13 @@ class TestSkills:
         assert doc["skills"][1]["keywords"] == ["Kubernetes", "Terraform"]
 
     def test_plain_bullet_form(self):
-        md = (
-            "# Jane Doe\n"
-            "\n"
-            "## Skills\n"
-            "- Python\n"
-            "- TypeScript\n"
-        )
+        md = "# Jane Doe\n\n## Skills\n- Python\n- TypeScript\n"
         doc = md_to_json_resume(md)
         names = [s["name"] for s in doc["skills"]]
         assert names == ["Python", "TypeScript"]
 
     def test_empty_section(self):
-        md = (
-            "# Jane Doe\n"
-            "\n"
-            "## Skills\n"
-        )
+        md = "# Jane Doe\n\n## Skills\n"
         doc = md_to_json_resume(md)
         assert doc["skills"] == []
 
@@ -310,12 +282,7 @@ class TestCertifications:
         assert "Certified Scrum Product Owner" in names
 
     def test_bullet_form_strips_marker(self):
-        md = (
-            "# Jane Doe\n"
-            "\n"
-            "## Certifications\n"
-            "- AWS Solutions Architect Professional\n"
-        )
+        md = "# Jane Doe\n\n## Certifications\n- AWS Solutions Architect Professional\n"
         doc = md_to_json_resume(md)
         assert doc["certificates"][0]["name"] == "AWS Solutions Architect Professional"
 
@@ -327,12 +294,7 @@ class TestCertifications:
 
 class TestUnknownSections:
     def test_unknown_section_goes_to_unparsed(self):
-        md = (
-            "# Jane Doe\n"
-            "\n"
-            "## Hobbies and Other Things\n"
-            "Long-distance cycling.\n"
-        )
+        md = "# Jane Doe\n\n## Hobbies and Other Things\nLong-distance cycling.\n"
         doc = md_to_json_resume(md)
         unparsed = doc["meta"]["callback"]["unparsed"]
         assert len(unparsed) == 1

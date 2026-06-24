@@ -38,7 +38,10 @@ SAMPLE_CL = (
 class TestCoverLetterMarkdown:
     def test_md_writes_markdown_file(self, tmp_path):
         path = generate_cover_letter(
-            SAMPLE_CL, "u", str(tmp_path), output_format=".md",
+            SAMPLE_CL,
+            "u",
+            str(tmp_path),
+            output_format=".md",
         )
         p = Path(path)
         assert p.suffix == ".md"
@@ -51,7 +54,10 @@ class TestCoverLetterMarkdown:
     def test_md_content_is_normalized(self, tmp_path):
         # _normalize_markdown collapses 3+ newlines to 2 and strips trailing space.
         path = generate_cover_letter(
-            "Line one.\n\n\n\nLine two.   ", "u", str(tmp_path), output_format=".md",
+            "Line one.\n\n\n\nLine two.   ",
+            "u",
+            str(tmp_path),
+            output_format=".md",
         )
         text = Path(path).read_text(encoding="utf-8")
         assert "\n\n\n" not in text
@@ -70,7 +76,10 @@ class TestCoverLetterDocx:
 
     def test_unknown_format_falls_back_to_docx(self, tmp_path):
         path = generate_cover_letter(
-            SAMPLE_CL, "u", str(tmp_path), output_format=".rtf",
+            SAMPLE_CL,
+            "u",
+            str(tmp_path),
+            output_format=".rtf",
         )
         assert Path(path).suffix == ".docx"
 
@@ -87,15 +96,22 @@ class TestCoverLetterDocx:
         # With a persona template, the Normal font is the persona CSS's primary
         # family — the same source the .pdf uses (classic.css → "Helvetica Neue").
         path = generate_cover_letter(
-            SAMPLE_CL, "u", str(tmp_path),
-            output_format=".docx", template_path=str(CLASSIC_DOCX),
+            SAMPLE_CL,
+            "u",
+            str(tmp_path),
+            output_format=".docx",
+            template_path=str(CLASSIC_DOCX),
         )
         doc = docx.Document(path)
         assert doc.styles["Normal"].font.name == "Helvetica Neue"
 
     def test_docx_no_template_uses_default_business_font(self, tmp_path):
         path = generate_cover_letter(
-            SAMPLE_CL, "u", str(tmp_path), output_format=".docx", template_path=None,
+            SAMPLE_CL,
+            "u",
+            str(tmp_path),
+            output_format=".docx",
+            template_path=None,
         )
         doc = docx.Document(path)
         # No persona CSS → persona_font_family returns the neutral business stack
@@ -109,7 +125,9 @@ class TestCoverLetterDocx:
         from docx.shared import Pt
 
         path = generate_cover_letter(
-            "# Priya Patel\n\nDear Hiring Manager,\n\nBody.", "u", str(tmp_path),
+            "# Priya Patel\n\nDear Hiring Manager,\n\nBody.",
+            "u",
+            str(tmp_path),
             output_format=".docx",
         )
         doc = docx.Document(path)
@@ -133,8 +151,14 @@ class TestCoverLetterPdfDispatch:
     def test_pdf_routes_through_shared_shell_with_persona_font(self, tmp_path, monkeypatch):
         captured: dict = {}
 
-        def _stub(cover_letter_markdown, *, font_family, template_path, output_pdf_path,
-                  chromium_args=None):
+        def _stub(
+            cover_letter_markdown,
+            *,
+            font_family,
+            template_path,
+            output_pdf_path,
+            chromium_args=None,
+        ):
             captured["markdown"] = cover_letter_markdown
             captured["font_family"] = font_family
             captured["template_path"] = Path(template_path)
@@ -143,11 +167,15 @@ class TestCoverLetterPdfDispatch:
             return Path(output_pdf_path)
 
         import pdf_render
+
         monkeypatch.setattr(pdf_render, "render_cover_letter_pdf", _stub)
 
         path = generate_cover_letter(
-            SAMPLE_CL, "u", str(tmp_path),
-            output_format=".pdf", template_path=str(CLASSIC_DOCX),
+            SAMPLE_CL,
+            "u",
+            str(tmp_path),
+            output_format=".pdf",
+            template_path=str(CLASSIC_DOCX),
         )
 
         assert Path(path).suffix == ".pdf"
@@ -160,17 +188,28 @@ class TestCoverLetterPdfDispatch:
     def test_pdf_without_template_uses_default_font(self, tmp_path, monkeypatch):
         captured: dict = {}
 
-        def _stub(cover_letter_markdown, *, font_family, template_path, output_pdf_path,
-                  chromium_args=None):
+        def _stub(
+            cover_letter_markdown,
+            *,
+            font_family,
+            template_path,
+            output_pdf_path,
+            chromium_args=None,
+        ):
             captured["font_family"] = font_family
             Path(output_pdf_path).write_bytes(b"%PDF-stub")
             return Path(output_pdf_path)
 
         import pdf_render
         from pdf_render import _DEFAULT_COVER_LETTER_FONT
+
         monkeypatch.setattr(pdf_render, "render_cover_letter_pdf", _stub)
 
         generate_cover_letter(
-            SAMPLE_CL, "u", str(tmp_path), output_format=".pdf", template_path=None,
+            SAMPLE_CL,
+            "u",
+            str(tmp_path),
+            output_format=".pdf",
+            template_path=None,
         )
         assert captured["font_family"] == _DEFAULT_COVER_LETTER_FONT

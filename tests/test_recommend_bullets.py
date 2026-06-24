@@ -21,16 +21,19 @@ def rec_app(tmp_path, monkeypatch):
 
     db_file = tmp_path / "rec.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     (cfg.configs_dir / "alice.config").write_text("{}", encoding="utf-8")
     from db.session import init_db
+
     init_db(db_file)
     return types.SimpleNamespace(app=app), tmp_path
 
@@ -38,13 +41,16 @@ def rec_app(tmp_path, monkeypatch):
 def _seed(app_module, tmp_path):
     from db.models import Application, Candidate
     from db.session import get_session
+
     s = get_session()
     try:
         c = Candidate(username="alice", name="Alice")
         s.add(c)
         s.flush()
         a = Application(
-            candidate_id=c.id, title="App", jd_text="Senior PM at Foo",
+            candidate_id=c.id,
+            title="App",
+            jd_text="Senior PM at Foo",
             jd_fingerprint=hashlib.sha256(b"jd").hexdigest()[:16],
         )
         s.add(a)
@@ -56,16 +62,32 @@ def _seed(app_module, tmp_path):
     out = tmp_path / "output" / "alice"
     out.mkdir(parents=True, exist_ok=True)
     ctx = out / "context_rec.json"
-    ctx.write_text(json.dumps({
-        "application_id": aid,
-        "career_corpus": [
-            {"id": 7, "company": "Polaris", "start_date": "2022-01",
-             "end_date": None, "eligible_titles": [], "bullets": [
-                {"id": 100, "text": "Led 5-person team.", "tags": [],
-                 "has_outcome": True, "source": "manual"},
-             ]},
-        ],
-    }), encoding="utf-8")
+    ctx.write_text(
+        json.dumps(
+            {
+                "application_id": aid,
+                "career_corpus": [
+                    {
+                        "id": 7,
+                        "company": "Polaris",
+                        "start_date": "2022-01",
+                        "end_date": None,
+                        "eligible_titles": [],
+                        "bullets": [
+                            {
+                                "id": 100,
+                                "text": "Led 5-person team.",
+                                "tags": [],
+                                "has_outcome": True,
+                                "source": "manual",
+                            },
+                        ],
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
     return cid, aid, ctx
 
 
@@ -78,8 +100,10 @@ class TestRecommendRoute:
                 {"experience_id": 7, "bullet_ids": [100], "rationale": "fits PM"},
             ],
         }
-        with patch("analyzer.recommend_bullets", return_value=fake), \
-             patch("blueprints.applications._get_client", return_value=object()):
+        with (
+            patch("analyzer.recommend_bullets", return_value=fake),
+            patch("blueprints.applications._get_client", return_value=object()),
+        ):
             client = app_module.app.test_client()
             r = client.post(
                 f"/api/applications/{aid}/recommend",
@@ -117,9 +141,14 @@ class TestRecommendRoute:
         app_module, tmp_path = rec_app
         _, aid, ctx = _seed(app_module, tmp_path)
         from analyzer import LLMResponseError
-        with patch("analyzer.recommend_bullets",
-                   side_effect=LLMResponseError("bad shape", "no recommendations key")), \
-             patch("blueprints.applications._get_client", return_value=object()):
+
+        with (
+            patch(
+                "analyzer.recommend_bullets",
+                side_effect=LLMResponseError("bad shape", "no recommendations key"),
+            ),
+            patch("blueprints.applications._get_client", return_value=object()),
+        ):
             client = app_module.app.test_client()
             r = client.post(
                 f"/api/applications/{aid}/recommend",
@@ -137,32 +166,61 @@ class TestRecommendDedup:
         # Override the corpus with two near-duplicate bullets.
         out = tmp_path / "output" / "alice"
         ctx2 = out / "context_dedup.json"
-        ctx2.write_text(json.dumps({
-            "application_id": aid,
-            "career_corpus": [
-                {"id": 7, "company": "Polaris", "start_date": "2022-01",
-                 "end_date": None, "eligible_titles": [], "bullets": [
-                    {"id": 100,
-                     "text": "Reduced API latency 40% across 12 services.",
-                     "tags": [], "has_outcome": True, "source": "manual"},
-                    {"id": 101,
-                     "text": "Cut API latency 40% across twelve services.",
-                     "tags": [], "has_outcome": False, "source": "manual"},
-                    {"id": 102,
-                     "text": "Mentored a junior PM through the launch.",
-                     "tags": [], "has_outcome": False, "source": "manual"},
-                 ]},
-            ],
-        }), encoding="utf-8")
+        ctx2.write_text(
+            json.dumps(
+                {
+                    "application_id": aid,
+                    "career_corpus": [
+                        {
+                            "id": 7,
+                            "company": "Polaris",
+                            "start_date": "2022-01",
+                            "end_date": None,
+                            "eligible_titles": [],
+                            "bullets": [
+                                {
+                                    "id": 100,
+                                    "text": "Reduced API latency 40% across 12 services.",
+                                    "tags": [],
+                                    "has_outcome": True,
+                                    "source": "manual",
+                                },
+                                {
+                                    "id": 101,
+                                    "text": "Cut API latency 40% across twelve services.",
+                                    "tags": [],
+                                    "has_outcome": False,
+                                    "source": "manual",
+                                },
+                                {
+                                    "id": 102,
+                                    "text": "Mentored a junior PM through the launch.",
+                                    "tags": [],
+                                    "has_outcome": False,
+                                    "source": "manual",
+                                },
+                            ],
+                        },
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
         fake = {
             "recommendations": [
-                {"experience_id": 7, "bullet_ids": [100, 101, 102],
-                 "rationale": "latency + mentorship"},
+                {
+                    "experience_id": 7,
+                    "bullet_ids": [100, 101, 102],
+                    "rationale": "latency + mentorship",
+                },
             ],
         }
         from unittest.mock import patch
-        with patch("analyzer.recommend_bullets", return_value=fake), \
-             patch("blueprints.applications._get_client", return_value=object()):
+
+        with (
+            patch("analyzer.recommend_bullets", return_value=fake),
+            patch("blueprints.applications._get_client", return_value=object()),
+        ):
             # Hit the recommend route; the route is what actually persists.
             # The dedup happens inside recommend_bullets which we're mocking
             # away here — so this test only verifies the route persists the
@@ -185,26 +243,48 @@ class TestRecommendDedup:
         cross-resume-import duplication shape); 'same achievement,
         different phrasing' below 0.75 is left to user review."""
         from analyzer import _dedup_recommendations
-        corpus = [{
-            "id": 7, "company": "X", "start_date": "2022-01", "end_date": None,
-            "eligible_titles": [], "bullets": [
-                {"id": 100,
-                 "text": "Reduced API latency across the order service by "
-                         "introducing connection pooling and a request cache.",
-                 "tags": [], "has_outcome": True, "source": "manual"},
-                {"id": 101,
-                 "text": "Reduced API latency across our order service by "
-                         "introducing connection pooling and a request cache.",
-                 "tags": [], "has_outcome": False, "source": "manual"},
-                {"id": 102,
-                 "text": "Mentored a junior engineer through their first launch.",
-                 "tags": [], "has_outcome": False, "source": "manual"},
-            ],
-        }]
+
+        corpus = [
+            {
+                "id": 7,
+                "company": "X",
+                "start_date": "2022-01",
+                "end_date": None,
+                "eligible_titles": [],
+                "bullets": [
+                    {
+                        "id": 100,
+                        "text": "Reduced API latency across the order service by "
+                        "introducing connection pooling and a request cache.",
+                        "tags": [],
+                        "has_outcome": True,
+                        "source": "manual",
+                    },
+                    {
+                        "id": 101,
+                        "text": "Reduced API latency across our order service by "
+                        "introducing connection pooling and a request cache.",
+                        "tags": [],
+                        "has_outcome": False,
+                        "source": "manual",
+                    },
+                    {
+                        "id": 102,
+                        "text": "Mentored a junior engineer through their first launch.",
+                        "tags": [],
+                        "has_outcome": False,
+                        "source": "manual",
+                    },
+                ],
+            }
+        ]
         result = {
             "recommendations": [
-                {"experience_id": 7, "bullet_ids": [100, 101, 102],
-                 "rationale": "latency + mentorship"},
+                {
+                    "experience_id": 7,
+                    "bullet_ids": [100, 101, 102],
+                    "rationale": "latency + mentorship",
+                },
             ],
         }
         _dedup_recommendations(result, corpus)
@@ -218,17 +298,30 @@ class TestRecommendDedup:
         copy has has_outcome=True, the second copy replaces the first in
         the kept list (outcome wins regardless of arrival order)."""
         from analyzer import _dedup_recommendations
-        body = ("Reduced API latency across the order service by introducing "
-                "connection pooling and a request cache.")
-        corpus = [{
-            "id": 7, "company": "X", "start_date": "2022-01", "end_date": None,
-            "eligible_titles": [], "bullets": [
-                {"id": 300, "text": body, "tags": [], "has_outcome": False,
-                 "source": "manual"},
-                {"id": 301, "text": body.replace("the order", "our order"),
-                 "tags": [], "has_outcome": True, "source": "manual"},
-            ],
-        }]
+
+        body = (
+            "Reduced API latency across the order service by introducing "
+            "connection pooling and a request cache."
+        )
+        corpus = [
+            {
+                "id": 7,
+                "company": "X",
+                "start_date": "2022-01",
+                "end_date": None,
+                "eligible_titles": [],
+                "bullets": [
+                    {"id": 300, "text": body, "tags": [], "has_outcome": False, "source": "manual"},
+                    {
+                        "id": 301,
+                        "text": body.replace("the order", "our order"),
+                        "tags": [],
+                        "has_outcome": True,
+                        "source": "manual",
+                    },
+                ],
+            }
+        ]
         result = {
             "recommendations": [
                 {"experience_id": 7, "bullet_ids": [300, 301], "rationale": "x"},

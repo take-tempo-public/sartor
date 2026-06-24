@@ -30,6 +30,7 @@ def skill_app(tmp_path, monkeypatch):
     db_file = tmp_path / "skills.sqlite"
 
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
@@ -41,6 +42,7 @@ def skill_app(tmp_path, monkeypatch):
     (tmp_path / "configs" / "casey.config").write_text("{}", encoding="utf-8")
 
     from db.session import init_db
+
     init_db(db_file)
     return app
 
@@ -48,6 +50,7 @@ def skill_app(tmp_path, monkeypatch):
 def _seed_candidate(username="casey"):
     from db.models import Candidate
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(username=username, name=username.title())
@@ -58,15 +61,26 @@ def _seed_candidate(username="casey"):
         session.close()
 
 
-def _add_skill(candidate_id, name="Python", *, is_active=1,
-               is_pending_review=0, source="manual", display_order=0):
+def _add_skill(
+    candidate_id,
+    name="Python",
+    *,
+    is_active=1,
+    is_pending_review=0,
+    source="manual",
+    display_order=0,
+):
     from db.models import Skill
     from db.session import get_session
+
     session = get_session()
     try:
         sk = Skill(
-            candidate_id=candidate_id, name=name, is_active=is_active,
-            is_pending_review=is_pending_review, source=source,
+            candidate_id=candidate_id,
+            name=name,
+            is_active=is_active,
+            is_pending_review=is_pending_review,
+            source=source,
             display_order=display_order,
         )
         session.add(sk)
@@ -112,8 +126,9 @@ class TestCreate:
     def test_happy_path(self, skill_app):
         _seed_candidate()
         client = skill_app.test_client()
-        r = client.post("/api/users/casey/skills",
-                        json={"name": "Kubernetes", "category": "platform"})
+        r = client.post(
+            "/api/users/casey/skills", json={"name": "Kubernetes", "category": "platform"}
+        )
         assert r.status_code == 201, r.get_data(as_text=True)
         body = r.get_json()
         assert body["name"] == "Kubernetes"
@@ -141,8 +156,9 @@ class TestUpdate:
         cid = _seed_candidate()
         sid = _add_skill(cid, "Python")
         client = skill_app.test_client()
-        r = client.put(f"/api/skills/{sid}",
-                        json={"category": "language", "years": 5, "display_order": 3})
+        r = client.put(
+            f"/api/skills/{sid}", json={"category": "language", "years": 5, "display_order": 3}
+        )
         assert r.status_code == 200
         body = r.get_json()
         assert body["category"] == "language"
@@ -183,6 +199,7 @@ class TestDelete:
     def test_pending_llm_proposed_hard_deleted(self, skill_app):
         from db.models import Skill
         from db.session import get_session
+
         cid = _seed_candidate()
         sid = _add_skill(cid, "Go", is_pending_review=1, source="llm_proposed")
         client = skill_app.test_client()
@@ -198,6 +215,7 @@ class TestDelete:
     def test_approved_soft_retired(self, skill_app):
         from db.models import Skill
         from db.session import get_session
+
         cid = _seed_candidate()
         sid = _add_skill(cid, "Python")
         client = skill_app.test_client()
@@ -217,8 +235,7 @@ class TestTags:
         cid = _seed_candidate()
         sid = _add_skill(cid, "Python")
         client = skill_app.test_client()
-        r = client.post(f"/api/skills/{sid}/tags",
-                        json={"value": "Backend", "kind": "domain"})
+        r = client.post(f"/api/skills/{sid}/tags", json={"value": "Backend", "kind": "domain"})
         assert r.status_code == 201, r.get_data(as_text=True)
         tag_id = r.get_json()["id"]
         # The tag now appears on the skill row.
@@ -261,18 +278,25 @@ class TestMigrationBackfill:
         command.downgrade(_cfg(), "0008")
         eng = sa.create_engine(url)
         with eng.begin() as cx:
-            cx.execute(sa.text(
-                "INSERT INTO candidate (id, username, created_at, updated_at) "
-                "VALUES (1,'casey','t','t')"))
+            cx.execute(
+                sa.text(
+                    "INSERT INTO candidate (id, username, created_at, updated_at) "
+                    "VALUES (1,'casey','t','t')"
+                )
+            )
             for sid, name in [(1, "Zebra"), (2, "apple")]:
-                cx.execute(sa.text(
-                    "INSERT INTO skill (id, candidate_id, name) VALUES (:i,1,:n)"),
-                    {"i": sid, "n": name})
+                cx.execute(
+                    sa.text("INSERT INTO skill (id, candidate_id, name) VALUES (:i,1,:n)"),
+                    {"i": sid, "n": name},
+                )
         command.upgrade(_cfg(), "head")
         with eng.begin() as cx:
-            rows = cx.execute(sa.text(
-                "SELECT name, source, is_active, is_pending_review, display_order "
-                "FROM skill ORDER BY id")).fetchall()
+            rows = cx.execute(
+                sa.text(
+                    "SELECT name, source, is_active, is_pending_review, display_order "
+                    "FROM skill ORDER BY id"
+                )
+            ).fetchall()
         eng.dispose()
         by_name = {r[0]: r for r in rows}
         assert by_name["Zebra"][1:4] == ("imported", 1, 0)

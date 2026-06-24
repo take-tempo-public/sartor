@@ -161,20 +161,27 @@ def fetch_profile(username: str) -> ResponseReturnValue:
 
     config = _load_config(safe_user, configs_dir=configs_dir)
     url_count = sum(
-        1 for u in (
+        1
+        for u in (
             config.get("linkedin_url", ""),
             config.get("website_url", ""),
             *config.get("portfolio_urls", []),
-        ) if u
+        )
+        if u
     )
     scraped = fetch_profile_content(config)
 
     init_db()
     session = get_session()
     try:
-        candidate = cast("Candidate", _get_or_provision_candidate(
-            session, safe_user, configs_dir=configs_dir,
-        ))
+        candidate = cast(
+            "Candidate",
+            _get_or_provision_candidate(
+                session,
+                safe_user,
+                configs_dir=configs_dir,
+            ),
+        )
         candidate.online_profile_text = scraped or None
         session.commit()
     finally:
@@ -182,6 +189,8 @@ def fetch_profile(username: str) -> ResponseReturnValue:
 
     logger.info(
         "PX-02 profile fetch for %s: %d chars from %d configured URL(s)",
-        safe_user, len(scraped), url_count,
+        safe_user,
+        len(scraped),
+        url_count,
     )
     return jsonify({"ok": True, "chars": len(scraped), "urls": url_count})

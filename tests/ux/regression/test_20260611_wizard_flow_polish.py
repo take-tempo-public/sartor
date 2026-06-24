@@ -54,7 +54,9 @@ _JD = "Senior Backend Engineer — Kubernetes latency at scale, Kafka, Postgres.
 
 @pytest.mark.ux
 def test_iterate_clarify_copy_uses_followup_language(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
 ) -> None:
     """KW8: the iteration-interview button + divider use the clarify vocabulary,
     not 'interview'. Static DOM, so no wizard drive is needed."""
@@ -68,9 +70,7 @@ def test_iterate_clarify_copy_uses_followup_language(
     assert "follow-up questions" in btn, f"button copy not aligned: {btn!r}"
     assert "interview" not in btn, f"stale 'interview' wording in button: {btn!r}"
 
-    divider = (
-        page.locator(Wizard.ITERATE_CLARIFY_DIVIDER_LABEL).text_content() or ""
-    ).lower()
+    divider = (page.locator(Wizard.ITERATE_CLARIFY_DIVIDER_LABEL).text_content() or "").lower()
     assert "follow-up clarification" in divider, f"divider copy not aligned: {divider!r}"
     assert "interview" not in divider, f"stale 'interview' wording in divider: {divider!r}"
 
@@ -78,7 +78,9 @@ def test_iterate_clarify_copy_uses_followup_language(
 @pytest.mark.ux
 @pytest.mark.slow
 def test_iterate_clarify_questions_scroll_into_view(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """KW5: clicking 'Get follow-up questions' scrolls the revealed section into
@@ -120,9 +122,7 @@ def test_iterate_clarify_questions_scroll_into_view(
     )
 
     page.click(Wizard.ITERATE_CLARIFY_BUTTON)
-    page.wait_for_selector(
-        Wizard.ITERATE_CLARIFY_QUESTION_TEXTAREA, state="visible"
-    )
+    page.wait_for_selector(Wizard.ITERATE_CLARIFY_QUESTION_TEXTAREA, state="visible")
 
     scrolled = page.evaluate("() => window.__scrolledIds")
     assert "iterateClarifyArea" in scrolled, (
@@ -131,7 +131,5 @@ def test_iterate_clarify_questions_scroll_into_view(
     )
 
     # KW8 in-context: the rendered section uses the follow-up wording.
-    divider = (
-        page.locator(Wizard.ITERATE_CLARIFY_DIVIDER_LABEL).text_content() or ""
-    ).lower()
+    divider = (page.locator(Wizard.ITERATE_CLARIFY_DIVIDER_LABEL).text_content() or "").lower()
     assert "follow-up clarification" in divider, f"divider copy not aligned: {divider!r}"

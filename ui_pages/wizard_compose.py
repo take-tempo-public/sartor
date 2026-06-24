@@ -48,19 +48,13 @@ class WizardComposePage(BasePage):
         # not — so the old wait raced on an element that may never appear (the
         # flaky-class root cause). A card always renders when the composition has
         # ≥1 experience. (Matches `wait_cards()`.)
-        self.page.wait_for_selector(
-            Compose.EXPERIENCE_CARD, timeout=DEFAULT_TIMEOUT_MS
-        )
+        self.page.wait_for_selector(Compose.EXPERIENCE_CARD, timeout=DEFAULT_TIMEOUT_MS)
 
     def wait_cards(self) -> WizardComposePage:
         """Wait for compose cards to render (used after a clarify-submit
         lands on Compose, e.g. the screenshot script's full-flow path)."""
-        self.page.wait_for_selector(
-            Wizard.PANEL_COMPOSE, state="visible", timeout=LLM_TIMEOUT_MS
-        )
-        self.page.wait_for_selector(
-            Compose.EXPERIENCE_CARD, timeout=LLM_TIMEOUT_MS
-        )
+        self.page.wait_for_selector(Wizard.PANEL_COMPOSE, state="visible", timeout=LLM_TIMEOUT_MS)
+        self.page.wait_for_selector(Compose.EXPERIENCE_CARD, timeout=LLM_TIMEOUT_MS)
         return self
 
     def continue_to_template(self) -> None:
@@ -76,15 +70,15 @@ class WizardComposePage(BasePage):
     def _first_card(self) -> Locator:
         # The β.6c positioning card also carries `.compose-experience-card`, so
         # exclude it — `_first_card` is only ever about a real experience card.
-        return self.page.locator(
-            f"{Compose.EXPERIENCE_CARD}:not(.positioning-card)"
-        ).first
+        return self.page.locator(f"{Compose.EXPERIENCE_CARD}:not(.positioning-card)").first
 
     def title_texts(self) -> list[str]:
         """Eligible title texts on the first experience card."""
-        return self._first_card().locator(
-            f"{Compose.TITLE_LIST} {Compose.ROW} {Compose.ROW_TEXT}"
-        ).all_inner_texts()
+        return (
+            self._first_card()
+            .locator(f"{Compose.TITLE_LIST} {Compose.ROW} {Compose.ROW_TEXT}")
+            .all_inner_texts()
+        )
 
     def add_title(self, title: str) -> None:
         """Open the '+ Add title' modal on the first card, submit `title`, and
@@ -94,22 +88,25 @@ class WizardComposePage(BasePage):
         self.page.fill(Compose.FORM_MODAL_TITLE_INPUT, title)
         self.page.click(Compose.FORM_MODAL_SUBMIT)
         # loadComposition() re-renders; wait for the new title row to appear.
-        self._first_card().locator(
-            f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=title
-        ).wait_for(state="visible", timeout=DEFAULT_TIMEOUT_MS)
+        self._first_card().locator(f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=title).wait_for(
+            state="visible", timeout=DEFAULT_TIMEOUT_MS
+        )
         self.page.wait_for_load_state("networkidle")
 
     def select_title(self, text: str) -> None:
         """Check the radio of the title row matching `text` (first card)."""
-        self._first_card().locator(
-            f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=text
-        ).locator(Compose.TITLE_RADIO).check()
+        self._first_card().locator(f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=text).locator(
+            Compose.TITLE_RADIO
+        ).check()
 
     def title_is_selected(self, text: str) -> bool:
         """Whether the title row matching `text` (first card) is the chosen one."""
-        return self._first_card().locator(
-            f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=text
-        ).locator(Compose.TITLE_RADIO).is_checked()
+        return (
+            self._first_card()
+            .locator(f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=text)
+            .locator(Compose.TITLE_RADIO)
+            .is_checked()
+        )
 
     # --- per-role intros (B.4, Sprint 6.6) ---------------------------------
     def role_intros_toggle(self) -> Locator:
@@ -135,15 +132,15 @@ class WizardComposePage(BasePage):
         return self.page.locator(Compose.BULLET_LIST).first
 
     def _row(self, text: str) -> Locator:
-        return self._bullet_list().locator(
-            f":scope > {Compose.ROW}", has_text=text
-        )
+        return self._bullet_list().locator(f":scope > {Compose.ROW}", has_text=text)
 
     def bullet_texts(self) -> list[str]:
         """Visible bullet texts in DOM (visual) order."""
-        return self._bullet_list().locator(
-            f":scope > {Compose.ROW} {Compose.ROW_TEXT}"
-        ).all_inner_texts()
+        return (
+            self._bullet_list()
+            .locator(f":scope > {Compose.ROW} {Compose.ROW_TEXT}")
+            .all_inner_texts()
+        )
 
     def has_custom_order(self) -> bool:
         return self._bullet_list().get_attribute("data-custom-order") == "true"
@@ -156,9 +153,7 @@ class WizardComposePage(BasePage):
         self._row(text).get_by_role("button", name=Compose.MOVE_UP_LABEL).click()
 
     def reset_order(self) -> None:
-        self.page.locator(Compose.EXPERIENCE_CARD).first.locator(
-            Compose.RESET_ORDER
-        ).click()
+        self.page.locator(Compose.EXPERIENCE_CARD).first.locator(Compose.RESET_ORDER).click()
 
     def drag_below(self, src_text: str, target_text: str) -> None:
         """Pointer-path reorder via dispatched native HTML5 DnD with a shared
@@ -172,8 +167,6 @@ class WizardComposePage(BasePage):
         data_transfer = self.page.evaluate_handle("() => new DataTransfer()")
         list_loc = self._bullet_list()
         src.dispatch_event("dragstart", {"dataTransfer": data_transfer})
-        list_loc.dispatch_event(
-            "dragover", {"dataTransfer": data_transfer, "clientY": client_y}
-        )
+        list_loc.dispatch_event("dragover", {"dataTransfer": data_transfer, "clientY": client_y})
         list_loc.dispatch_event("drop", {"dataTransfer": data_transfer})
         src.dispatch_event("dragend", {"dataTransfer": data_transfer})

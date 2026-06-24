@@ -123,12 +123,14 @@ class TestValidateConfig:
 
     def test_scheme_less_dotted_host_is_tolerated(self):
         # A bare host the fetch layer already accepts must not be rejected here.
-        errors = validate_config({
-            "name": "Jane",
-            "linkedin_url": "linkedin.com/in/jane",
-            "website_url": "jane.dev",
-            "portfolio_urls": ["github.com/jane"],
-        })
+        errors = validate_config(
+            {
+                "name": "Jane",
+                "linkedin_url": "linkedin.com/in/jane",
+                "website_url": "jane.dev",
+                "portfolio_urls": ["github.com/jane"],
+            }
+        )
         assert errors == []
 
 
@@ -156,12 +158,7 @@ class TestVerbDiversity:
         assert out["top_repeated"] == []
 
     def test_low_diversity_flags_repeated_verb(self):
-        text = (
-            "- Built dashboards.\n"
-            "- Built reports.\n"
-            "- Built ETL.\n"
-            "- Maintained the warehouse.\n"
-        )
+        text = "- Built dashboards.\n- Built reports.\n- Built ETL.\n- Maintained the warehouse.\n"
         out = compute_verb_diversity(text)
         assert out["unique_verbs"] == 2
         assert out["total_bullets"] == 4
@@ -334,9 +331,12 @@ class TestFabricatedSpecifics:
         )
         num_fabricated = compute_fabricated_specifics(
             "- Ran 50 jobs on FakeCloudX.",
-            ["Ran nightly jobs on FakeCloudX platform."],   # entity grounded, 50 novel
+            ["Ran nightly jobs on FakeCloudX platform."],  # entity grounded, 50 novel
         )
-        assert num_fabricated["fabricated_specifics_rate"] > ent_fabricated["fabricated_specifics_rate"]
+        assert (
+            num_fabricated["fabricated_specifics_rate"]
+            > ent_fabricated["fabricated_specifics_rate"]
+        )
 
     def test_per_bullet_shape(self):
         source = ["Built things with many users and people."]
@@ -436,19 +436,31 @@ class TestContextSetClarificationFields:
         return {
             "timestamp": "2026-05-11T12:00:00",
             "candidate": {
-                "name": "Alice", "email": "", "phone": "", "linkedin_url": "",
-                "website_url": "", "skills": [], "certifications": [],
-                "education_summary": "", "notes": "", "profile_text": "",
+                "name": "Alice",
+                "email": "",
+                "phone": "",
+                "linkedin_url": "",
+                "website_url": "",
+                "skills": [],
+                "certifications": [],
+                "education_summary": "",
+                "notes": "",
+                "profile_text": "",
             },
             "resume": {
-                "format": ".docx", "sections": [], "text": "x",
-                "filename": "alice.docx", "path": "",
+                "format": ".docx",
+                "sections": [],
+                "text": "x",
+                "filename": "alice.docx",
+                "path": "",
             },
             "supplemental_resumes": [],
             "job_description": "jd",
             "deterministic_analysis": {
-                "jd_keywords": {}, "resume_keywords": {},
-                "keyword_overlap": {}, "ats_warnings": [],
+                "jd_keywords": {},
+                "resume_keywords": {},
+                "keyword_overlap": {},
+                "ats_warnings": [],
             },
         }
 
@@ -468,8 +480,12 @@ class TestContextSetClarificationFields:
         must round-trip through save and reload as plain JSON."""
         ctx = self._base_context()
         ctx["clarification_questions"] = [
-            {"id": "q1", "text": "Used K8s?", "kind": "experience_probe",
-             "target_gap": "k8s missing"},
+            {
+                "id": "q1",
+                "text": "Used K8s?",
+                "kind": "experience_probe",
+                "target_gap": "k8s missing",
+            },
         ]
         ctx["clarifications"] = {"q1": "Briefly in 2024."}
         path = save_context_set(ctx, "alice", str(tmp_path))
@@ -479,7 +495,9 @@ class TestContextSetClarificationFields:
 
 
 class TestComputeTopThirdDensity:
-    _BULLETS = "- Led cloud migration\n- Wrote python automation scripts\n- Managed kubernetes clusters\n"
+    _BULLETS = (
+        "- Led cloud migration\n- Wrote python automation scripts\n- Managed kubernetes clusters\n"
+    )
     _JD_KW: dict = {"keywords": {"kubernetes": 5, "cloud": 4, "python": 3}, "total_unique": 3}
 
     def test_empty_resume_returns_zero(self):
@@ -596,10 +614,7 @@ class TestComputeDateGrounding:
         assert "Junior Designer" in out["flagged"][0]["heading"]
 
     def test_altered_range_flags(self):
-        resume = (
-            "## Experience\n\n"
-            "### Acme, Design Lead\t2017 – 2019\n- Did a thing.\n"
-        )
+        resume = "## Experience\n\n### Acme, Design Lead\t2017 – 2019\n- Did a thing.\n"
         out = compute_date_grounding(resume, self.CORPUS)
         assert out["status"] == "flag"
         assert out["flagged"][0]["found"] == "2017 – 2019"
@@ -653,11 +668,7 @@ class TestComputeDateGrounding:
             {"id": 1, "company": "A", "start_date": "2016-01", "end_date": "2018-12"},
             {"id": 2, "company": "B", "start_date": "2016-03", "end_date": "2018-06"},
         ]
-        resume = (
-            "## Experience\n\n"
-            "### A, Lead\t2016 – 2018\n\n"
-            "### B, Advisor\t2016 – 2018\n"
-        )
+        resume = "## Experience\n\n### A, Lead\t2016 – 2018\n\n### B, Advisor\t2016 – 2018\n"
         out = compute_date_grounding(resume, corpus)
         assert out["status"] == "pass"
         assert out["checked"] == 2

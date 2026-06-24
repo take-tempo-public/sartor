@@ -37,9 +37,9 @@ _JD = (
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_happy_path_through_template_preview(page: Page, live_server: str,
-                                             ux_app: ModuleType,
-                                             monkeypatch: pytest.MonkeyPatch) -> None:
+def test_happy_path_through_template_preview(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)
     install_llm_stubs(ux_app, monkeypatch)

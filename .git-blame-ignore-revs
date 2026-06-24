@@ -1,0 +1,8 @@
+# Revisions to ignore in `git blame` so mass-formatting commits don't obscure authorship.
+#
+# Enable locally (one time):
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub honors this file automatically (no setup needed).
+
+# style: apply ruff format across the tree (kit Phase 1) — 161 files reformatted
+eb23a740766021c26b93efdb653e949ba7d04569

@@ -16,6 +16,7 @@ def pr_app(tmp_path, monkeypatch):
     """
     db_file = tmp_path / "pr.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
@@ -26,6 +27,7 @@ def pr_app(tmp_path, monkeypatch):
     app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
     from db.session import init_db
+
     init_db(db_file)
     return app
 
@@ -33,6 +35,7 @@ def pr_app(tmp_path, monkeypatch):
 def _seed_candidate(username="alice"):
     from db.models import Candidate
     from db.session import get_session
+
     s = get_session()
     try:
         c = Candidate(username=username, name=username.title())
@@ -43,35 +46,56 @@ def _seed_candidate(username="alice"):
         s.close()
 
 
-def _seed_exp_with_pending(candidate_id, n_pending_bullets=2,
-                           n_pending_titles=1, n_accepted_bullets=1):
+def _seed_exp_with_pending(
+    candidate_id, n_pending_bullets=2, n_pending_titles=1, n_accepted_bullets=1
+):
     from db.models import Bullet, Experience, ExperienceTitle
     from db.session import get_session
+
     s = get_session()
     try:
         e = Experience(
-            candidate_id=candidate_id, company="Acme", start_date="2022-01",
+            candidate_id=candidate_id,
+            company="Acme",
+            start_date="2022-01",
             display_order=0,
         )
         s.add(e)
         s.flush()
         for i in range(n_pending_titles):
-            s.add(ExperienceTitle(
-                experience_id=e.id, title=f"Title {i}",
-                is_official=0, is_pending_review=1, source="llm_proposed:abc",
-            ))
+            s.add(
+                ExperienceTitle(
+                    experience_id=e.id,
+                    title=f"Title {i}",
+                    is_official=0,
+                    is_pending_review=1,
+                    source="llm_proposed:abc",
+                )
+            )
         for i in range(n_pending_bullets):
-            s.add(Bullet(
-                experience_id=e.id, text=f"Pending bullet {i}",
-                display_order=i, is_active=1, is_pending_review=1,
-                source="llm_proposed:abc", has_outcome=0,
-            ))
+            s.add(
+                Bullet(
+                    experience_id=e.id,
+                    text=f"Pending bullet {i}",
+                    display_order=i,
+                    is_active=1,
+                    is_pending_review=1,
+                    source="llm_proposed:abc",
+                    has_outcome=0,
+                )
+            )
         for i in range(n_accepted_bullets):
-            s.add(Bullet(
-                experience_id=e.id, text=f"Accepted bullet {i}",
-                display_order=n_pending_bullets + i, is_active=1,
-                is_pending_review=0, source="manual", has_outcome=0,
-            ))
+            s.add(
+                Bullet(
+                    experience_id=e.id,
+                    text=f"Accepted bullet {i}",
+                    display_order=n_pending_bullets + i,
+                    is_active=1,
+                    is_pending_review=0,
+                    source="manual",
+                    has_outcome=0,
+                )
+            )
         s.commit()
         return e.id
     finally:
@@ -84,11 +108,17 @@ class TestAcceptBullet:
         eid = _seed_exp_with_pending(cid)
         from db.models import Bullet
         from db.session import get_session
+
         s = get_session()
         try:
-            pending = s.query(Bullet).filter_by(
-                experience_id=eid, is_pending_review=1,
-            ).first()
+            pending = (
+                s.query(Bullet)
+                .filter_by(
+                    experience_id=eid,
+                    is_pending_review=1,
+                )
+                .first()
+            )
             bid = pending.id
         finally:
             s.close()
@@ -115,11 +145,18 @@ class TestAcceptTitle:
         eid = _seed_exp_with_pending(cid)
         from db.models import ExperienceTitle
         from db.session import get_session
+
         s = get_session()
         try:
-            tid = s.query(ExperienceTitle).filter_by(
-                experience_id=eid, is_pending_review=1,
-            ).first().id
+            tid = (
+                s.query(ExperienceTitle)
+                .filter_by(
+                    experience_id=eid,
+                    is_pending_review=1,
+                )
+                .first()
+                .id
+            )
         finally:
             s.close()
         client = pr_app.test_client()
@@ -131,9 +168,9 @@ class TestAcceptTitle:
 class TestAcceptExperienceAll:
     def test_clears_all_pending_under_experience(self, pr_app):
         cid = _seed_candidate()
-        eid = _seed_exp_with_pending(cid,
-                                     n_pending_bullets=3, n_pending_titles=2,
-                                     n_accepted_bullets=1)
+        eid = _seed_exp_with_pending(
+            cid, n_pending_bullets=3, n_pending_titles=2, n_accepted_bullets=1
+        )
         client = pr_app.test_client()
         r = client.post(f"/api/experiences/{eid}/accept-all")
         assert r.status_code == 200
@@ -143,15 +180,27 @@ class TestAcceptExperienceAll:
         # confirm no pending left
         from db.models import Bullet, ExperienceTitle
         from db.session import get_session
+
         s = get_session()
         try:
-            pending = s.query(Bullet).filter_by(
-                experience_id=eid, is_pending_review=1, is_active=1,
-            ).count()
+            pending = (
+                s.query(Bullet)
+                .filter_by(
+                    experience_id=eid,
+                    is_pending_review=1,
+                    is_active=1,
+                )
+                .count()
+            )
             assert pending == 0
-            pending_titles = s.query(ExperienceTitle).filter_by(
-                experience_id=eid, is_pending_review=1,
-            ).count()
+            pending_titles = (
+                s.query(ExperienceTitle)
+                .filter_by(
+                    experience_id=eid,
+                    is_pending_review=1,
+                )
+                .count()
+            )
             assert pending_titles == 0
         finally:
             s.close()
@@ -200,8 +249,9 @@ class TestAcceptAllPendingCorpus:
 
     def test_clears_pending_across_all_experiences(self, pr_app):
         cid = _seed_candidate()
-        e1 = _seed_exp_with_pending(cid, n_pending_bullets=3, n_pending_titles=2,
-                                    n_accepted_bullets=1)
+        e1 = _seed_exp_with_pending(
+            cid, n_pending_bullets=3, n_pending_titles=2, n_accepted_bullets=1
+        )
         e2 = _seed_exp_with_pending(cid, n_pending_bullets=1, n_pending_titles=0)
         client = pr_app.test_client()
         r = client.post("/api/users/alice/accept-all-pending")
@@ -212,15 +262,29 @@ class TestAcceptAllPendingCorpus:
         # confirm nothing pending remains under either experience
         from db.models import Bullet, ExperienceTitle
         from db.session import get_session
+
         s = get_session()
         try:
             for eid in (e1, e2):
-                assert s.query(Bullet).filter_by(
-                    experience_id=eid, is_pending_review=1, is_active=1,
-                ).count() == 0
-                assert s.query(ExperienceTitle).filter_by(
-                    experience_id=eid, is_pending_review=1,
-                ).count() == 0
+                assert (
+                    s.query(Bullet)
+                    .filter_by(
+                        experience_id=eid,
+                        is_pending_review=1,
+                        is_active=1,
+                    )
+                    .count()
+                    == 0
+                )
+                assert (
+                    s.query(ExperienceTitle)
+                    .filter_by(
+                        experience_id=eid,
+                        is_pending_review=1,
+                    )
+                    .count()
+                    == 0
+                )
         finally:
             s.close()
 

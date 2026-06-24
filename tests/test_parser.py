@@ -38,6 +38,7 @@ class TestParseResume:
         # the old paragraph-only parser dropped — yielding empty text and a
         # silent zero-experience ingest. The parser must read cell text too.
         import docx
+
         doc = docx.Document()
         table = doc.add_table(rows=1, cols=2)
         table.cell(0, 0).text = "Acme Corporation"
@@ -51,6 +52,7 @@ class TestParseResume:
 
     def test_docx_interleaves_paragraphs_and_tables_in_order(self, tmp_path):
         import docx
+
         doc = docx.Document()
         doc.add_paragraph("Jane Smith")
         table = doc.add_table(rows=1, cols=1)
@@ -60,4 +62,8 @@ class TestParseResume:
         doc.save(str(path))
 
         text = parse_resume(str(path))["text"]
-        assert text.index("Jane Smith") < text.index("Built the data platform") < text.index("References available")
+        assert (
+            text.index("Jane Smith")
+            < text.index("Built the data platform")
+            < text.index("References available")
+        )

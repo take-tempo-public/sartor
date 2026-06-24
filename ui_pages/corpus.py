@@ -11,9 +11,7 @@ from ui_pages.selectors import Corpus, TopTabs
 class CorpusPage(BasePage):
     def open(self) -> CorpusPage:
         self.page.click(TopTabs.CORPUS)
-        self.page.wait_for_selector(
-            Corpus.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS
-        )
+        self.page.wait_for_selector(Corpus.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
         return self
 
     def wait_for_cards(self) -> CorpusPage:
@@ -27,9 +25,7 @@ class CorpusPage(BasePage):
         return self.page.locator(Corpus.CARD).count()
 
     def import_button(self) -> Locator:
-        return self.page.locator(Corpus.PANEL).get_by_role(
-            "button", name=Corpus.IMPORT_BUTTON_NAME
-        )
+        return self.page.locator(Corpus.PANEL).get_by_role("button", name=Corpus.IMPORT_BUTTON_NAME)
 
     # β.6e summary-variants editor (#2 — the Add-variant affordance).
     def summary_variants_section(self) -> Locator:
@@ -55,9 +51,7 @@ class CorpusPage(BasePage):
 
     # B.4 (Sprint 6.6) — per-role intro variants editor (expand a card first).
     def expand_card(self, index: int = 0) -> CorpusPage:
-        self.page.locator(Corpus.CARD).nth(index).locator(
-            ".corpus-card-header"
-        ).click()
+        self.page.locator(Corpus.CARD).nth(index).locator(".corpus-card-header").click()
         self.page.wait_for_selector(
             Corpus.EXP_SUMMARY_SECTION, state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
@@ -74,7 +68,5 @@ class CorpusPage(BasePage):
     def intro_texts(self) -> list[str]:
         """The intro variant textareas' values (not inner text — they're
         <textarea>, so the text lives in .value)."""
-        locs = self.page.locator(
-            f"{Corpus.EXP_SUMMARY_SECTION} .summary-variant-text"
-        )
+        locs = self.page.locator(f"{Corpus.EXP_SUMMARY_SECTION} .summary-variant-text")
         return [locs.nth(i).input_value() for i in range(locs.count())]

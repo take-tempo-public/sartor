@@ -112,10 +112,12 @@ def list_applications(username: str) -> ResponseReturnValue:
         wanted_statuses = {s.strip() for s in raw_status.split(",") if s.strip()}
         invalid = wanted_statuses - _VALID_APP_STATUSES
         if invalid:
-            return jsonify({
-                "error": f"status must be among {sorted(_VALID_APP_STATUSES)}; "
-                         f"got {sorted(invalid)}",
-            }), 400
+            return jsonify(
+                {
+                    "error": f"status must be among {sorted(_VALID_APP_STATUSES)}; "
+                    f"got {sorted(invalid)}",
+                }
+            ), 400
 
     # Wrapped with logger.exception (2026-05-26) — see list_bundled_personas.
     try:
@@ -168,10 +170,12 @@ def list_applications(username: str) -> ResponseReturnValue:
             session.close()
     except Exception as exc:
         logger.exception("list_applications failed for user=%s", safe_user)
-        return jsonify({
-            "error": "Failed to load applications",
-            **_error_detail_payload(exc),
-        }), 500
+        return jsonify(
+            {
+                "error": "Failed to load applications",
+                **_error_detail_payload(exc),
+            }
+        ), 500
 
 
 @applications_bp.route("/api/applications/<int:application_id>", methods=["GET"])
@@ -191,48 +195,62 @@ def get_application(application_id: int) -> ResponseReturnValue:
         if app_row is None:
             return jsonify({"error": "Application not found"}), 404
         candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
-        safe_user = _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]) if candidate else None
+        safe_user = (
+            _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"])
+            if candidate
+            else None
+        )
         if candidate is None or safe_user is None:
             return jsonify({"error": "Candidate validation failed"}), 403
 
         runs_sorted = sorted(app_row.runs, key=lambda r: r.iteration)
         runs_dict = []
         for r in runs_sorted:
-            pending = session.query(ProposalReview).filter_by(
-                application_run_id=r.id, decision="pending",
-            ).count()
-            runs_dict.append({
-                "id": r.id,
-                "iteration": r.iteration,
-                "run_id": r.run_id,
-                "prompt_version": r.prompt_version,
-                "persona_template_id": r.persona_template_id,
-                "created_at": r.created_at,
-                "has_resume": r.generated_resume_md is not None,
-                "has_cover_letter": r.generated_cover_letter_md is not None,
-                "has_edits": (r.edited_resume_text is not None
-                              or r.edited_cover_letter_text is not None),
-                "pending_proposals": pending,
-                "ats_roundtrip_status": _parse_ats_status(r.ats_roundtrip_json),
-            })
+            pending = (
+                session.query(ProposalReview)
+                .filter_by(
+                    application_run_id=r.id,
+                    decision="pending",
+                )
+                .count()
+            )
+            runs_dict.append(
+                {
+                    "id": r.id,
+                    "iteration": r.iteration,
+                    "run_id": r.run_id,
+                    "prompt_version": r.prompt_version,
+                    "persona_template_id": r.persona_template_id,
+                    "created_at": r.created_at,
+                    "has_resume": r.generated_resume_md is not None,
+                    "has_cover_letter": r.generated_cover_letter_md is not None,
+                    "has_edits": (
+                        r.edited_resume_text is not None or r.edited_cover_letter_text is not None
+                    ),
+                    "pending_proposals": pending,
+                    "ats_roundtrip_status": _parse_ats_status(r.ats_roundtrip_json),
+                }
+            )
 
-        return jsonify({
-            "id": app_row.id,
-            "title": app_row.title,
-            "company": app_row.company,
-            "status": app_row.status,
-            "jd_text": app_row.jd_text,
-            "jd_url": app_row.jd_url,
-            "jd_fingerprint": app_row.jd_fingerprint,
-            "candidate_username": candidate.username,
-            "created_at": app_row.created_at,
-            "updated_at": app_row.updated_at,
-            "sent_at": app_row.sent_at,
-            "outcome_at": app_row.outcome_at,
-            "notes": app_row.notes,
-            "runs": runs_dict,
-            "resume_state": _build_resume_state(safe_user, runs_sorted),
-        })
+        return jsonify(
+            {
+                "id": app_row.id,
+                "title": app_row.title,
+                "company": app_row.company,
+                "status": app_row.status,
+                "jd_text": app_row.jd_text,
+                "jd_url": app_row.jd_url,
+                "jd_fingerprint": app_row.jd_fingerprint,
+                "candidate_username": candidate.username,
+                "created_at": app_row.created_at,
+                "updated_at": app_row.updated_at,
+                "sent_at": app_row.sent_at,
+                "outcome_at": app_row.outcome_at,
+                "notes": app_row.notes,
+                "runs": runs_dict,
+                "resume_state": _build_resume_state(safe_user, runs_sorted),
+            }
+        )
     finally:
         session.close()
 
@@ -290,8 +308,7 @@ def _build_resume_state(safe_user: str, runs_sorted: list) -> dict:
         # context file is gone — the editors still hydrate from the DB markdown).
         if resume_md:
             cover_md = r.edited_cover_letter_text or r.generated_cover_letter_md or ""
-            return {**base, "target_step": 6,
-                    "resume_md": resume_md, "cover_letter_md": cover_md}
+            return {**base, "target_step": 6, "resume_md": resume_md, "cover_letter_md": cover_md}
 
         # No generated résumé — restore the furthest pre-generate step from the
         # context file. ctx_data is a dict here (guarded by the continue above).
@@ -314,8 +331,12 @@ def _build_resume_state(safe_user: str, runs_sorted: list) -> dict:
         else:
             target_step = 1
 
-        state = {**base, "target_step": target_step,
-                 "analysis": analysis, "deterministic": deterministic}
+        state = {
+            **base,
+            "target_step": target_step,
+            "analysis": analysis,
+            "deterministic": deterministic,
+        }
         if target_step == 2:
             state["clarification_questions"] = ctx_data.get("clarification_questions") or []
             state["clarifications"] = ctx_data.get("clarifications") or {}
@@ -393,7 +414,9 @@ def update_application_status(application_id: int) -> ResponseReturnValue:
         if app_row is None:
             return jsonify({"error": "Application not found"}), 404
         candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
-        if candidate is None or not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
+        if candidate is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
             return jsonify({"error": "Candidate validation failed"}), 403
         app_row.status = status
         now_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -402,12 +425,14 @@ def update_application_status(application_id: int) -> ResponseReturnValue:
         if status in {"interview", "rejected", "withdrawn"} and app_row.outcome_at is None:
             app_row.outcome_at = now_ts
         session.commit()
-        return jsonify({
-            "id": app_row.id,
-            "status": app_row.status,
-            "sent_at": app_row.sent_at,
-            "outcome_at": app_row.outcome_at,
-        })
+        return jsonify(
+            {
+                "id": app_row.id,
+                "status": app_row.status,
+                "sent_at": app_row.sent_at,
+                "outcome_at": app_row.outcome_at,
+            }
+        )
     except Exception:
         session.rollback()
         raise
@@ -471,9 +496,13 @@ def update_application_meta(application_id: int) -> ResponseReturnValue:
             company = data["company"]
             app_row.company = (company.strip() or None) if isinstance(company, str) else None
         session.commit()
-        return jsonify({
-            "id": app_row.id, "title": app_row.title, "company": app_row.company,
-        })
+        return jsonify(
+            {
+                "id": app_row.id,
+                "title": app_row.title,
+                "company": app_row.company,
+            }
+        )
     except Exception:
         session.rollback()
         raise
@@ -490,11 +519,14 @@ def _load_application_owned(session, application_id: int):
     """(app_row, candidate) for an application, or (None, None). Runs the
     standard _safe_username defense on the owning candidate."""
     from db.models import Application, Candidate
+
     app_row = session.query(Application).filter_by(id=application_id).first()
     if app_row is None:
         return None, None
     candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
-    if candidate is None or not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
+    if candidate is None or not _safe_username(
+        candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+    ):
         return None, None
     return app_row, candidate
 
@@ -610,7 +642,7 @@ def _read_experience_summary_overrides(
     rec_block = ctx.get("llm_experience_summary_recommendations") or {}
     recs_by_exp: dict[int, dict] = {}
     if isinstance(rec_block, dict):
-        for rec in (rec_block.get("recommendations") or []):
+        for rec in rec_block.get("recommendations") or []:
             if not isinstance(rec, dict):
                 continue
             try:
@@ -785,9 +817,14 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             skill_rec_ids,
         ) = _read_skill_composition(ctx_path)
 
-        experiences = session.query(Experience).filter_by(
-            candidate_id=candidate.id,
-        ).order_by(Experience.start_date.desc(), Experience.id.desc()).all()
+        experiences = (
+            session.query(Experience)
+            .filter_by(
+                candidate_id=candidate.id,
+            )
+            .order_by(Experience.start_date.desc(), Experience.id.desc())
+            .all()
+        )
 
         out = []
         for exp in experiences:
@@ -799,19 +836,26 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                     continue
                 tags = _bullet_tag_values(b)
                 score = score_corpus_bullet(
-                    b.text, bool(b.has_outcome), tags, jd_kw, essential,
+                    b.text,
+                    bool(b.has_outcome),
+                    tags,
+                    jd_kw,
+                    essential,
                 )
-                scored_bullets.append({
-                    "id": b.id, "text": b.text,
-                    "score": round(score, 2),
-                    "has_outcome": bool(b.has_outcome),
-                    "is_pending_review": bool(b.is_pending_review),
-                    "tags": _tag_list(b.tag_links),
-                    "pinned": b.id in pinned,
-                    "excluded": b.id in excluded,
-                    "recommended": b.id in rec_ids,
-                    "added": b.id in added,
-                })
+                scored_bullets.append(
+                    {
+                        "id": b.id,
+                        "text": b.text,
+                        "score": round(score, 2),
+                        "has_outcome": bool(b.has_outcome),
+                        "is_pending_review": bool(b.is_pending_review),
+                        "tags": _tag_list(b.tag_links),
+                        "pinned": b.id in pinned,
+                        "excluded": b.id in excluded,
+                        "recommended": b.id in rec_ids,
+                        "added": b.id in added,
+                    }
+                )
             scored_bullets.sort(
                 key=lambda d: (
                     # Pinned and recommended sit at the top; excluded sink.
@@ -842,20 +886,21 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             for t in exp.titles:
                 if not (t.is_official or t.truthful_enough_to_use):
                     continue
-                t_toks = {
-                    w for w in re.split(r"[^a-z0-9]+", t.title.lower())
-                    if len(w) > 2
-                }
-                titles.append({
-                    "id": t.id, "title": t.title,
-                    "is_official": bool(t.is_official),
-                    "score": round(
-                        float(len(t_toks & (jd_kw | essential))), 2,
-                    ),
-                    "tags": _tag_list(t.tag_links),
-                    # feat/compose-add-title — the user's per-JD pick for this JD.
-                    "pinned": t.id == pinned_tid,
-                })
+                t_toks = {w for w in re.split(r"[^a-z0-9]+", t.title.lower()) if len(w) > 2}
+                titles.append(
+                    {
+                        "id": t.id,
+                        "title": t.title,
+                        "is_official": bool(t.is_official),
+                        "score": round(
+                            float(len(t_toks & (jd_kw | essential))),
+                            2,
+                        ),
+                        "tags": _tag_list(t.tag_links),
+                        # feat/compose-add-title — the user's per-JD pick for this JD.
+                        "pinned": t.id == pinned_tid,
+                    }
+                )
             titles.sort(
                 key=lambda d: (not d["is_official"], -float(d["score"]), int(d["id"])),
             )
@@ -894,44 +939,58 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                 _ar = (_a.get("rationale") or "").strip()
                 if _ar:
                     exp_alt_rationale[_aid] = _ar
-            esi_rows = session.query(ExperienceSummaryItem).filter_by(
-                experience_id=exp.id, is_active=1,
-            ).order_by(
-                ExperienceSummaryItem.display_order, ExperienceSummaryItem.id,
-            ).all()
+            esi_rows = (
+                session.query(ExperienceSummaryItem)
+                .filter_by(
+                    experience_id=exp.id,
+                    is_active=1,
+                )
+                .order_by(
+                    ExperienceSummaryItem.display_order,
+                    ExperienceSummaryItem.id,
+                )
+                .all()
+            )
             role_summary_variants: list[dict[str, Any]] = []
             for esi in esi_rows:
-                role_summary_variants.append({
-                    "id": esi.id,
-                    "text": esi.text,
-                    "label": esi.label,
-                    "has_outcome": bool(esi.has_outcome),
-                    "recommended": esi.id == exp_rec_id,
-                    "chosen": esi.id == exp_chosen_id,
-                    "rationale": exp_alt_rationale.get(esi.id, ""),
-                })
+                role_summary_variants.append(
+                    {
+                        "id": esi.id,
+                        "text": esi.text,
+                        "label": esi.label,
+                        "has_outcome": bool(esi.has_outcome),
+                        "recommended": esi.id == exp_rec_id,
+                        "chosen": esi.id == exp_chosen_id,
+                        "rationale": exp_alt_rationale.get(esi.id, ""),
+                    }
+                )
 
             if scored_bullets or titles or role_summary_variants:
-                out.append({
-                    "id": exp.id, "company": exp.company,
-                    "start_date": exp.start_date, "end_date": exp.end_date,
-                    "bullets": scored_bullets, "titles": titles,
-                    "rationale": rec.get("rationale", ""),
-                    "has_recommendations": bool(rec_ids),
-                    # feat/bullet-drag-reorder — drives Reset enable/disable and
-                    # the "newly added — drag to reposition" hint in the UI.
-                    "has_custom_order": has_custom_order,
-                    # feat/compose-add-title — the effective title for the radio's
-                    # default selected state (pin → official → top eligible).
-                    "chosen_title_id": chosen_title_id,
-                    # B.4 — per-role intro picker payload.
-                    "summary": {
-                        "variants": role_summary_variants,
-                        "recommended_id": exp_rec_id,
-                        "chosen_id": exp_chosen_id,
-                        "has_recommendation": exp_rec_id is not None,
-                    },
-                })
+                out.append(
+                    {
+                        "id": exp.id,
+                        "company": exp.company,
+                        "start_date": exp.start_date,
+                        "end_date": exp.end_date,
+                        "bullets": scored_bullets,
+                        "titles": titles,
+                        "rationale": rec.get("rationale", ""),
+                        "has_recommendations": bool(rec_ids),
+                        # feat/bullet-drag-reorder — drives Reset enable/disable and
+                        # the "newly added — drag to reposition" hint in the UI.
+                        "has_custom_order": has_custom_order,
+                        # feat/compose-add-title — the effective title for the radio's
+                        # default selected state (pin → official → top eligible).
+                        "chosen_title_id": chosen_title_id,
+                        # B.4 — per-role intro picker payload.
+                        "summary": {
+                            "variants": role_summary_variants,
+                            "recommended_id": exp_rec_id,
+                            "chosen_id": exp_chosen_id,
+                            "has_recommendation": exp_rec_id is not None,
+                        },
+                    }
+                )
         # β.6c — Positioning block. Variants come from the candidate's
         # active SummaryItem rows; the LLM recommendation (if any) flags
         # the "recommended" pick; the user's pinned_summary_id overrides
@@ -943,18 +1002,26 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             rec_id = int(rec_id_raw) if rec_id_raw is not None else None
         except (TypeError, ValueError):
             rec_id = None
-        si_rows = session.query(SummaryItem).filter_by(
-            candidate_id=candidate.id, is_active=1,
-        ).order_by(SummaryItem.display_order, SummaryItem.id).all()
+        si_rows = (
+            session.query(SummaryItem)
+            .filter_by(
+                candidate_id=candidate.id,
+                is_active=1,
+            )
+            .order_by(SummaryItem.display_order, SummaryItem.id)
+            .all()
+        )
         for s in si_rows:
-            summary_variants.append({
-                "id": s.id,
-                "text": s.text,
-                "label": s.label,
-                "has_outcome": bool(s.has_outcome),
-                "recommended": s.id == rec_id,
-                "pinned": s.id == pinned_summary_id,
-            })
+            summary_variants.append(
+                {
+                    "id": s.id,
+                    "text": s.text,
+                    "label": s.label,
+                    "has_outcome": bool(s.has_outcome),
+                    "recommended": s.id == rec_id,
+                    "pinned": s.id == pinned_summary_id,
+                }
+            )
         # Surface alternates' rationales so the UI can show a tooltip
         # for each "Recommended" / alternate chip.
         alternates = (summary_recommendation or {}).get("alternates") or []
@@ -976,9 +1043,7 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
         # The chosen variant for this application: pinned wins, else the
         # LLM recommendation, else null. Surfaces the user-effective
         # state without making the frontend re-derive it.
-        chosen_summary_id = (
-            pinned_summary_id if pinned_summary_id is not None else rec_id
-        )
+        chosen_summary_id = pinned_summary_id if pinned_summary_id is not None else rec_id
 
         # B.5 — Skills block. The universe is the candidate's active, approved
         # skills in display order; recommend_skills (if run) flags + orders the
@@ -987,13 +1052,23 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
         # the same logic the preview + generate prompt use). `pending` is the
         # llm_proposed suggestions awaiting approve/deny.
         from corpus_to_json_resume import resolve_skill_selection
-        skill_rows = session.query(Skill).filter_by(
-            candidate_id=candidate.id, is_active=1, is_pending_review=0,
-        ).order_by(Skill.display_order, Skill.id).all()
+
+        skill_rows = (
+            session.query(Skill)
+            .filter_by(
+                candidate_id=candidate.id,
+                is_active=1,
+                is_pending_review=0,
+            )
+            .order_by(Skill.display_order, Skill.id)
+            .all()
+        )
         rec_rank = {sid: i for i, sid in enumerate(skill_rec_ids or [])}
         skill_items_out = [
             {
-                "id": s.id, "name": s.name, "category": s.category,
+                "id": s.id,
+                "name": s.name,
+                "category": s.category,
                 "tags": _tag_list(s.tag_links),
                 "recommended": s.id in rec_rank,
                 "recommended_rank": rec_rank.get(s.id),
@@ -1009,36 +1084,45 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             excluded=skill_excluded,
             skill_order=skill_order,
         )
-        pending_skill_rows = session.query(Skill).filter_by(
-            candidate_id=candidate.id, is_active=1, is_pending_review=1,
-        ).order_by(Skill.display_order, Skill.id).all()
+        pending_skill_rows = (
+            session.query(Skill)
+            .filter_by(
+                candidate_id=candidate.id,
+                is_active=1,
+                is_pending_review=1,
+            )
+            .order_by(Skill.display_order, Skill.id)
+            .all()
+        )
         pending_skills_out = [
             {"id": s.id, "name": s.name, "category": s.category, "source": s.source}
             for s in pending_skill_rows
         ]
 
-        return jsonify({
-            "application_id": application_id,
-            "experiences": out,
-            "any_recommendations": any(e["has_recommendations"] for e in out),
-            "summary": {
-                "variants": summary_variants,
-                "recommended_id": rec_id,
-                "pinned_id": pinned_summary_id,
-                "chosen_id": chosen_summary_id,
-                "has_recommendation": rec_id is not None,
-            },
-            # B.4 — the "Add role intros" toggle state for this application.
-            "use_experience_summaries": use_experience_summaries,
-            # B.5 — skill curation payload for the Compose skill card.
-            "skills": {
-                "items": skill_items_out,
-                "chosen_ids": chosen_skill_ids,
-                "skill_order": skill_order,
-                "has_recommendation": skill_rec_ids is not None,
-                "pending": pending_skills_out,
-            },
-        })
+        return jsonify(
+            {
+                "application_id": application_id,
+                "experiences": out,
+                "any_recommendations": any(e["has_recommendations"] for e in out),
+                "summary": {
+                    "variants": summary_variants,
+                    "recommended_id": rec_id,
+                    "pinned_id": pinned_summary_id,
+                    "chosen_id": chosen_summary_id,
+                    "has_recommendation": rec_id is not None,
+                },
+                # B.4 — the "Add role intros" toggle state for this application.
+                "use_experience_summaries": use_experience_summaries,
+                # B.5 — skill curation payload for the Compose skill card.
+                "skills": {
+                    "items": skill_items_out,
+                    "chosen_ids": chosen_skill_ids,
+                    "skill_order": skill_order,
+                    "has_recommendation": skill_rec_ids is not None,
+                    "pending": pending_skills_out,
+                },
+            }
+        )
     finally:
         session.close()
 
@@ -1071,7 +1155,9 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
     bullet_order: dict[str, list[int]] = {}
     if bullet_order_raw is not None:
         if not isinstance(bullet_order_raw, dict):
-            return jsonify({"error": "bullet_order must be an object of {experience_id: [bullet_id, ...]}"}), 400
+            return jsonify(
+                {"error": "bullet_order must be an object of {experience_id: [bullet_id, ...]}"}
+            ), 400
         for k, v in bullet_order_raw.items():
             if not isinstance(v, list):
                 return jsonify({"error": "bullet_order values must be arrays of bullet ids"}), 400
@@ -1102,7 +1188,9 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
     pinned_title_ids: dict[str, int] = {}
     if pinned_title_raw is not None:
         if not isinstance(pinned_title_raw, dict):
-            return jsonify({"error": "pinned_title_ids must be an object of {experience_id: title_id}"}), 400
+            return jsonify(
+                {"error": "pinned_title_ids must be an object of {experience_id: title_id}"}
+            ), 400
         for k, v in pinned_title_raw.items():
             try:
                 pinned_title_ids[str(int(k))] = int(v)
@@ -1121,12 +1209,18 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
     chosen_experience_summary_ids: dict[str, int] = {}
     if chosen_exp_summary_raw is not None:
         if not isinstance(chosen_exp_summary_raw, dict):
-            return jsonify({"error": "chosen_experience_summary_ids must be an object of {experience_id: item_id}"}), 400
+            return jsonify(
+                {
+                    "error": "chosen_experience_summary_ids must be an object of {experience_id: item_id}"
+                }
+            ), 400
         for k, v in chosen_exp_summary_raw.items():
             try:
                 chosen_experience_summary_ids[str(int(k))] = int(v)
             except (TypeError, ValueError):
-                return jsonify({"error": "chosen_experience_summary_ids keys and ids must be integers"}), 400
+                return jsonify(
+                    {"error": "chosen_experience_summary_ids keys and ids must be integers"}
+                ), 400
 
     # B.5 (Sprint 6.6) — skill curation overrides: pinned/excluded skill ids +
     # an explicit display order (skill_order). Each persisted only when
@@ -1154,7 +1248,9 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
     session = get_session()
     try:
         app_row, candidate = _load_application_owned(session, application_id)
-        if app_row is None or not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
             return jsonify({"error": "Application not found"}), 404
 
         cp = Path(context_path)
@@ -1175,16 +1271,24 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
         # snapshot re-sync further down (avoids a second DB pass).
         from db.build_context import eligible_titles_for
         from db.models import Experience, ExperienceSummaryItem, Skill
+
         resynced_titles: dict[str, Any] = {}
         for eid_str, tid in pinned_title_ids.items():
-            exp = session.query(Experience).filter_by(
-                id=int(eid_str), candidate_id=candidate.id,
-            ).first()
+            exp = (
+                session.query(Experience)
+                .filter_by(
+                    id=int(eid_str),
+                    candidate_id=candidate.id,
+                )
+                .first()
+            )
             if exp is None:
                 return jsonify({"error": f"experience {eid_str} not found for this candidate"}), 400
             eligible = eligible_titles_for(exp)
             if tid not in {t["id"] for t in eligible}:
-                return jsonify({"error": f"title {tid} is not an eligible title of experience {eid_str}"}), 400
+                return jsonify(
+                    {"error": f"title {tid} is not an eligible title of experience {eid_str}"}
+                ), 400
             resynced_titles[eid_str] = eligible
 
         # B.4 — validate each per-role intro pick is an active
@@ -1195,16 +1299,31 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
         for eid_str, item_id in chosen_experience_summary_ids.items():
             if item_id == 0:
                 continue
-            exp = session.query(Experience).filter_by(
-                id=int(eid_str), candidate_id=candidate.id,
-            ).first()
+            exp = (
+                session.query(Experience)
+                .filter_by(
+                    id=int(eid_str),
+                    candidate_id=candidate.id,
+                )
+                .first()
+            )
             if exp is None:
                 return jsonify({"error": f"experience {eid_str} not found for this candidate"}), 400
-            row = session.query(ExperienceSummaryItem).filter_by(
-                id=item_id, experience_id=exp.id, is_active=1,
-            ).first()
+            row = (
+                session.query(ExperienceSummaryItem)
+                .filter_by(
+                    id=item_id,
+                    experience_id=exp.id,
+                    is_active=1,
+                )
+                .first()
+            )
             if row is None:
-                return jsonify({"error": f"summary variant {item_id} is not an active intro of experience {eid_str}"}), 400
+                return jsonify(
+                    {
+                        "error": f"summary variant {item_id} is not an active intro of experience {eid_str}"
+                    }
+                ), 400
 
         # B.5 — validate pinned + ordered skill ids belong to this candidate's
         # active, approved skills. A foreign/stale id is a 400, not a silent
@@ -1213,18 +1332,27 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
         skill_ref_ids = set(skill_pinned_in) | set(skill_order_in)
         if skill_ref_ids:
             owned_skill_ids = {
-                s.id for s in session.query(Skill).filter_by(
-                    candidate_id=candidate.id, is_active=1, is_pending_review=0,
-                ).all()
+                s.id
+                for s in session.query(Skill)
+                .filter_by(
+                    candidate_id=candidate.id,
+                    is_active=1,
+                    is_pending_review=0,
+                )
+                .all()
             }
             bad_skill_ids = skill_ref_ids - owned_skill_ids
             if bad_skill_ids:
-                return jsonify({
-                    "error": f"skill ids not owned/active: {sorted(bad_skill_ids)}",
-                }), 400
+                return jsonify(
+                    {
+                        "error": f"skill ids not owned/active: {sorted(bad_skill_ids)}",
+                    }
+                ), 400
 
         overrides: dict[str, Any] = {
-            "pinned": pinned, "excluded": excluded, "added": added,
+            "pinned": pinned,
+            "excluded": excluded,
+            "added": added,
         }
         if pinned_summary_id is not None:
             overrides["pinned_summary_id"] = pinned_summary_id
@@ -1266,18 +1394,22 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                     exp_entry["eligible_titles"] = resynced_titles[key]
 
         cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
-        return jsonify({
-            "application_id": application_id,
-            "pinned": pinned, "excluded": excluded, "added": added,
-            "pinned_summary_id": pinned_summary_id,
-            "bullet_order": bullet_order,
-            "pinned_title_ids": pinned_title_ids,
-            "use_experience_summaries": use_experience_summaries,
-            "chosen_experience_summary_ids": chosen_experience_summary_ids,
-            "pinned_skill_ids": skill_pinned_in,
-            "excluded_skill_ids": skill_excluded_in,
-            "skill_order": skill_order_in,
-        })
+        return jsonify(
+            {
+                "application_id": application_id,
+                "pinned": pinned,
+                "excluded": excluded,
+                "added": added,
+                "pinned_summary_id": pinned_summary_id,
+                "bullet_order": bullet_order,
+                "pinned_title_ids": pinned_title_ids,
+                "use_experience_summaries": use_experience_summaries,
+                "chosen_experience_summary_ids": chosen_experience_summary_ids,
+                "pinned_skill_ids": skill_pinned_in,
+                "excluded_skill_ids": skill_excluded_in,
+                "skill_order": skill_order_in,
+            }
+        )
     finally:
         session.close()
 
@@ -1315,7 +1447,9 @@ def recommend_application_bullets(application_id: int) -> ResponseReturnValue:
         session = get_session()
         try:
             app_row, candidate = _load_application_owned(session, application_id)
-            if app_row is None or not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
+            if app_row is None or not _safe_username(
+                candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+            ):
                 return jsonify({"error": "Application not found"}), 404
 
             cp = Path(context_path)
@@ -1336,18 +1470,22 @@ def recommend_application_bullets(application_id: int) -> ResponseReturnValue:
             run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
             try:
                 result = recommend_bullets(
-                    _get_client(), ctx,
-                    username=candidate.username, run_id=run_id,
+                    _get_client(),
+                    ctx,
+                    username=candidate.username,
+                    run_id=run_id,
                 )
             except anthropic.APIConnectionError as exc:
                 logger.error("Recommend: Anthropic connection error: %s", exc)
                 return jsonify({"error": "AI service connection failed"}), 503
             except LLMResponseError as exc:
                 logger.error("Recommend: malformed LLM response: %s", exc.validation_error)
-                return jsonify({
-                    "error": "AI recommendation response was malformed",
-                    "detail": str(exc.validation_error),
-                }), 502
+                return jsonify(
+                    {
+                        "error": "AI recommendation response was malformed",
+                        "detail": str(exc.validation_error),
+                    }
+                ), 502
 
             # The recommend prompt explicitly tells the LLM "Use the numeric
             # ids only — do NOT prefix with 'e' or 'b'" (analyzer.py:1967),
@@ -1370,7 +1508,11 @@ def recommend_application_bullets(application_id: int) -> ResponseReturnValue:
                 eid_int = _to_int(rec.get("experience_id"))
                 if eid_int is None:
                     continue
-                bullet_ids_int = [bi for bi in (_to_int(b) for b in (rec.get("bullet_ids") or [])) if bi is not None]
+                bullet_ids_int = [
+                    bi
+                    for bi in (_to_int(b) for b in (rec.get("bullet_ids") or []))
+                    if bi is not None
+                ]
                 by_exp[str(eid_int)] = {
                     "bullet_ids": bullet_ids_int,
                     "rationale": (rec.get("rationale") or "").strip(),
@@ -1378,18 +1520,22 @@ def recommend_application_bullets(application_id: int) -> ResponseReturnValue:
             ctx["llm_recommendations"] = by_exp
             ctx.pop("jd_text", None)  # transient; don't leak into iteration chain
             cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
-            return jsonify({
-                "application_id": application_id,
-                "recommendations": by_exp,
-            })
+            return jsonify(
+                {
+                    "application_id": application_id,
+                    "recommendations": by_exp,
+                }
+            )
         finally:
             session.close()
     except Exception as exc:
         logger.exception("recommend_application_bullets failed for app=%s", application_id)
-        return jsonify({
-            "error": "Recommend failed",
-            **_error_detail_payload(exc),
-        }), 500
+        return jsonify(
+            {
+                "error": "Recommend failed",
+                **_error_detail_payload(exc),
+            }
+        ), 500
 
 
 @applications_bp.route("/api/applications/<int:application_id>/recommend-summary", methods=["POST"])
@@ -1418,7 +1564,9 @@ def recommend_application_summary(application_id: int) -> ResponseReturnValue:
     session = get_session()
     try:
         app_row, candidate = _load_application_owned(session, application_id)
-        if app_row is None or not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
             return jsonify({"error": "Application not found"}), 404
 
         cp = Path(context_path)
@@ -1432,12 +1580,20 @@ def recommend_application_summary(application_id: int) -> ResponseReturnValue:
             return jsonify({"error": "context_path does not match application"}), 400
 
         # Load active SummaryItem variants for this candidate.
-        rows = session.query(SummaryItem).filter_by(
-            candidate_id=candidate.id, is_active=1,
-        ).order_by(SummaryItem.display_order, SummaryItem.id).all()
+        rows = (
+            session.query(SummaryItem)
+            .filter_by(
+                candidate_id=candidate.id,
+                is_active=1,
+            )
+            .order_by(SummaryItem.display_order, SummaryItem.id)
+            .all()
+        )
         items = [
             {
-                "id": r.id, "text": r.text, "label": r.label,
+                "id": r.id,
+                "text": r.text,
+                "label": r.label,
                 "has_outcome": bool(r.has_outcome),
             }
             for r in rows
@@ -1450,33 +1606,41 @@ def recommend_application_summary(application_id: int) -> ResponseReturnValue:
         run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
         try:
             result = recommend_summaries(
-                _get_client(), ctx,
-                username=candidate.username, run_id=run_id,
+                _get_client(),
+                ctx,
+                username=candidate.username,
+                run_id=run_id,
             )
         except anthropic.APIConnectionError as exc:
             logger.error("Recommend-summary: Anthropic connection error: %s", exc)
             return jsonify({"error": "AI service connection failed"}), 503
         except LLMResponseError as exc:
             logger.error("Recommend-summary: malformed LLM response: %s", exc.validation_error)
-            return jsonify({
-                "error": "AI summary recommendation was malformed",
-                "detail": str(exc.validation_error),
-            }), 502
+            return jsonify(
+                {
+                    "error": "AI summary recommendation was malformed",
+                    "detail": str(exc.validation_error),
+                }
+            ), 502
 
         # Persist + strip the transient keys
         ctx["llm_summary_recommendation"] = result
         ctx.pop("summary_items", None)
         ctx.pop("jd_text", None)
         cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
-        return jsonify({
-            "application_id": application_id,
-            **result,
-        })
+        return jsonify(
+            {
+                "application_id": application_id,
+                **result,
+            }
+        )
     finally:
         session.close()
 
 
-@applications_bp.route("/api/applications/<int:application_id>/recommend-experience-summaries", methods=["POST"])
+@applications_bp.route(
+    "/api/applications/<int:application_id>/recommend-experience-summaries", methods=["POST"]
+)
 def recommend_application_experience_summaries(application_id: int) -> ResponseReturnValue:
     """B.4 (Sprint 6.6) — pick the best per-role intro variant for each role,
     batched. Mirrors recommend_application_summary: one Haiku call (via
@@ -1503,7 +1667,9 @@ def recommend_application_experience_summaries(application_id: int) -> ResponseR
     session = get_session()
     try:
         app_row, candidate = _load_application_owned(session, application_id)
-        if app_row is None or not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
             return jsonify({"error": "Application not found"}), 404
 
         cp = Path(context_path)
@@ -1519,29 +1685,45 @@ def recommend_application_experience_summaries(application_id: int) -> ResponseR
         # Stage active ExperienceSummaryItem variants grouped per role. Roles
         # with no variants are omitted; recommend_experience_summaries
         # auto-picks single-variant roles and batches the rest into one call.
-        experiences = session.query(Experience).filter_by(
-            candidate_id=candidate.id,
-        ).order_by(Experience.start_date.desc(), Experience.id.desc()).all()
+        experiences = (
+            session.query(Experience)
+            .filter_by(
+                candidate_id=candidate.id,
+            )
+            .order_by(Experience.start_date.desc(), Experience.id.desc())
+            .all()
+        )
         groups: list[dict[str, Any]] = []
         for exp in experiences:
-            rows = session.query(ExperienceSummaryItem).filter_by(
-                experience_id=exp.id, is_active=1,
-            ).order_by(
-                ExperienceSummaryItem.display_order, ExperienceSummaryItem.id,
-            ).all()
+            rows = (
+                session.query(ExperienceSummaryItem)
+                .filter_by(
+                    experience_id=exp.id,
+                    is_active=1,
+                )
+                .order_by(
+                    ExperienceSummaryItem.display_order,
+                    ExperienceSummaryItem.id,
+                )
+                .all()
+            )
             if not rows:
                 continue
-            groups.append({
-                "experience_id": exp.id,
-                "company": exp.company,
-                "items": [
-                    {
-                        "id": r.id, "text": r.text, "label": r.label,
-                        "has_outcome": bool(r.has_outcome),
-                    }
-                    for r in rows
-                ],
-            })
+            groups.append(
+                {
+                    "experience_id": exp.id,
+                    "company": exp.company,
+                    "items": [
+                        {
+                            "id": r.id,
+                            "text": r.text,
+                            "label": r.label,
+                            "has_outcome": bool(r.has_outcome),
+                        }
+                        for r in rows
+                    ],
+                }
+            )
 
         # Stash transient context for the LLM call; strip before persisting.
         ctx["experience_summary_items"] = groups
@@ -1549,27 +1731,35 @@ def recommend_application_experience_summaries(application_id: int) -> ResponseR
         run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
         try:
             result = recommend_experience_summaries(
-                _get_client(), ctx,
-                username=candidate.username, run_id=run_id,
+                _get_client(),
+                ctx,
+                username=candidate.username,
+                run_id=run_id,
             )
         except anthropic.APIConnectionError as exc:
             logger.error("Recommend-experience-summaries: Anthropic connection error: %s", exc)
             return jsonify({"error": "AI service connection failed"}), 503
         except LLMResponseError as exc:
-            logger.error("Recommend-experience-summaries: malformed LLM response: %s", exc.validation_error)
-            return jsonify({
-                "error": "AI role-summary recommendation was malformed",
-                "detail": str(exc.validation_error),
-            }), 502
+            logger.error(
+                "Recommend-experience-summaries: malformed LLM response: %s", exc.validation_error
+            )
+            return jsonify(
+                {
+                    "error": "AI role-summary recommendation was malformed",
+                    "detail": str(exc.validation_error),
+                }
+            ), 502
 
         ctx["llm_experience_summary_recommendations"] = result
         ctx.pop("experience_summary_items", None)
         ctx.pop("jd_text", None)
         cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
-        return jsonify({
-            "application_id": application_id,
-            **result,
-        })
+        return jsonify(
+            {
+                "application_id": application_id,
+                **result,
+            }
+        )
     finally:
         session.close()
 
@@ -1599,7 +1789,9 @@ def recommend_application_skills(application_id: int) -> ResponseReturnValue:
     session = get_session()
     try:
         app_row, candidate = _load_application_owned(session, application_id)
-        if app_row is None or not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
             return jsonify({"error": "Application not found"}), 404
 
         cp = Path(context_path)
@@ -1613,14 +1805,24 @@ def recommend_application_skills(application_id: int) -> ResponseReturnValue:
             return jsonify({"error": "context_path does not match application"}), 400
 
         # Stage active, approved skills (+ tag display values) for the matcher.
-        rows = session.query(Skill).filter_by(
-            candidate_id=candidate.id, is_active=1, is_pending_review=0,
-        ).order_by(Skill.display_order, Skill.id).all()
+        rows = (
+            session.query(Skill)
+            .filter_by(
+                candidate_id=candidate.id,
+                is_active=1,
+                is_pending_review=0,
+            )
+            .order_by(Skill.display_order, Skill.id)
+            .all()
+        )
         ctx["skill_items"] = [
             {
-                "id": s.id, "name": s.name, "category": s.category,
+                "id": s.id,
+                "name": s.name,
+                "category": s.category,
                 "tags": [
-                    lnk.tag.display_value for lnk in s.tag_links
+                    lnk.tag.display_value
+                    for lnk in s.tag_links
                     if lnk.tag and (lnk.tag.display_value or "").strip()
                 ],
             }
@@ -1630,27 +1832,33 @@ def recommend_application_skills(application_id: int) -> ResponseReturnValue:
         run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
         try:
             result = recommend_skills(
-                _get_client(), ctx,
-                username=candidate.username, run_id=run_id,
+                _get_client(),
+                ctx,
+                username=candidate.username,
+                run_id=run_id,
             )
         except anthropic.APIConnectionError as exc:
             logger.error("Recommend-skills: Anthropic connection error: %s", exc)
             return jsonify({"error": "AI service connection failed"}), 503
         except LLMResponseError as exc:
             logger.error("Recommend-skills: malformed LLM response: %s", exc.validation_error)
-            return jsonify({
-                "error": "AI skill recommendation was malformed",
-                "detail": str(exc.validation_error),
-            }), 502
+            return jsonify(
+                {
+                    "error": "AI skill recommendation was malformed",
+                    "detail": str(exc.validation_error),
+                }
+            ), 502
 
         ctx["llm_skill_recommendations"] = result
         ctx.pop("skill_items", None)
         ctx.pop("jd_text", None)
         cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
-        return jsonify({
-            "application_id": application_id,
-            **result,
-        })
+        return jsonify(
+            {
+                "application_id": application_id,
+                **result,
+            }
+        )
     finally:
         session.close()
 
@@ -1681,7 +1889,9 @@ def suggest_application_skills(application_id: int) -> ResponseReturnValue:
     session = get_session()
     try:
         app_row, candidate = _load_application_owned(session, application_id)
-        if app_row is None or not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
             return jsonify({"error": "Application not found"}), 404
 
         cp = Path(context_path)
@@ -1697,30 +1907,36 @@ def suggest_application_skills(application_id: int) -> ResponseReturnValue:
         # Existing skill names (any state) — for dedup + to tell the LLM what
         # the candidate already has so it doesn't re-propose them.
         all_rows = session.query(Skill).filter_by(candidate_id=candidate.id).all()
-        existing_lower = {(s.name or "").strip().lower() for s in all_rows if (s.name or "").strip()}
+        existing_lower = {
+            (s.name or "").strip().lower() for s in all_rows if (s.name or "").strip()
+        }
         ctx["existing_skill_names"] = [s.name for s in all_rows if (s.name or "").strip()]
         run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
         try:
             result = suggest_skills(
-                _get_client(), ctx,
-                username=candidate.username, run_id=run_id,
+                _get_client(),
+                ctx,
+                username=candidate.username,
+                run_id=run_id,
             )
         except anthropic.APIConnectionError as exc:
             logger.error("Suggest-skills: Anthropic connection error: %s", exc)
             return jsonify({"error": "AI service connection failed"}), 503
         except LLMResponseError as exc:
             logger.error("Suggest-skills: malformed LLM response: %s", exc.validation_error)
-            return jsonify({
-                "error": "AI skill suggestion was malformed",
-                "detail": str(exc.validation_error),
-            }), 502
+            return jsonify(
+                {
+                    "error": "AI skill suggestion was malformed",
+                    "detail": str(exc.validation_error),
+                }
+            ), 502
 
         # Insert each grounded proposal as a pending skill. Dedup against
         # existing names (any state) AND within this batch; the unique
         # constraint is the final backstop.
         next_order = session.query(Skill).filter_by(candidate_id=candidate.id).count()
         created: list[dict[str, Any]] = []
-        for p in (result.get("proposals") or []):
+        for p in result.get("proposals") or []:
             if not isinstance(p, dict):
                 continue
             name = (p.get("name") or "").strip()
@@ -1739,17 +1955,21 @@ def suggest_application_skills(application_id: int) -> ResponseReturnValue:
             )
             session.add(sk)
             session.flush()
-            created.append({
-                **_skill_to_dict(sk, []),
-                "evidence": p.get("evidence"),
-                "rationale": p.get("rationale"),
-            })
+            created.append(
+                {
+                    **_skill_to_dict(sk, []),
+                    "evidence": p.get("evidence"),
+                    "rationale": p.get("rationale"),
+                }
+            )
             next_order += 1
         session.commit()
-        return jsonify({
-            "application_id": application_id,
-            "proposals": created,
-        })
+        return jsonify(
+            {
+                "application_id": application_id,
+                "proposals": created,
+            }
+        )
     except Exception:
         session.rollback()
         raise
@@ -1789,8 +2009,11 @@ def list_clarifications(username: str) -> ResponseReturnValue:
     include_promoted = request.args.get("include_promoted") == "1"
     limit = min(int(request.args.get("limit", 200)), 1000)
     valid_kinds = {
-        "experience_probe", "scope_probe", "iteration_probe",
-        "outcome_probe", "manual",
+        "experience_probe",
+        "scope_probe",
+        "iteration_probe",
+        "outcome_probe",
+        "manual",
     }
     if kind and kind not in valid_kinds:
         return jsonify({"error": f"kind must be one of {sorted(valid_kinds)}"}), 400
@@ -1816,9 +2039,13 @@ def list_clarifications(username: str) -> ResponseReturnValue:
         app_ids = [r.origin_application_id for r in rows if r.origin_application_id]
         app_title_by_id: dict[int, str] = {}
         if app_ids:
-            for app_row in session.query(Application).filter(
-                Application.id.in_(app_ids),
-            ).all():
+            for app_row in (
+                session.query(Application)
+                .filter(
+                    Application.id.in_(app_ids),
+                )
+                .all()
+            ):
                 app_title_by_id[app_row.id] = app_row.title
 
         out = []
@@ -1828,20 +2055,23 @@ def list_clarifications(username: str) -> ResponseReturnValue:
             outcome_rich = bool(METRIC_RE.search(r.answer))
             if only_outcome_rich and not outcome_rich:
                 continue
-            out.append({
-                "id": r.id,
-                "question": r.question,
-                "answer": r.answer,
-                "kind": r.kind,
-                "target_gap": r.target_gap,
-                "is_promoted_to_bullet": bool(r.is_promoted_to_bullet),
-                "outcome_rich": outcome_rich,
-                "origin_application_id": r.origin_application_id,
-                "origin_application_title":
-                    app_title_by_id.get(r.origin_application_id) if r.origin_application_id else None,
-                "origin_run_id": r.origin_run_id,
-                "created_at": r.created_at,
-            })
+            out.append(
+                {
+                    "id": r.id,
+                    "question": r.question,
+                    "answer": r.answer,
+                    "kind": r.kind,
+                    "target_gap": r.target_gap,
+                    "is_promoted_to_bullet": bool(r.is_promoted_to_bullet),
+                    "outcome_rich": outcome_rich,
+                    "origin_application_id": r.origin_application_id,
+                    "origin_application_title": app_title_by_id.get(r.origin_application_id)
+                    if r.origin_application_id
+                    else None,
+                    "origin_run_id": r.origin_run_id,
+                    "created_at": r.created_at,
+                }
+            )
         return jsonify(out)
     finally:
         session.close()

@@ -17,12 +17,17 @@ import pytest
 import blueprints.analysis as ban
 
 _BASE_ANALYSIS = {
-    "essential_skills": [], "preferred_skills": [],
+    "essential_skills": [],
+    "preferred_skills": [],
     "comparison": {"strengths": [], "gaps": [], "title_alignment": ""},
-    "keyword_placement": [], "overall_strategy": "",
-    "ideal_resume_profile": "", "industry_keywords": [],
-    "hidden_qualities": [], "professional_vocabulary": [],
-    "suggestions": [], "ats_improvements": [],
+    "keyword_placement": [],
+    "overall_strategy": "",
+    "ideal_resume_profile": "",
+    "industry_keywords": [],
+    "hidden_qualities": [],
+    "professional_vocabulary": [],
+    "suggestions": [],
+    "ats_improvements": [],
 }
 
 
@@ -36,13 +41,20 @@ def _seed_context(output_dir: Path, name: str, *, iteration: int, **extra) -> Pa
     ctx: dict = {
         "timestamp": "2026-05-11T12:00:00",
         "candidate": {"name": "Alice", "skills": []},
-        "resume": {"text": "original resume", "filename": "alice.docx",
-                   "format": ".docx", "sections": [], "path": ""},
+        "resume": {
+            "text": "original resume",
+            "filename": "alice.docx",
+            "format": ".docx",
+            "sections": [],
+            "path": "",
+        },
         "supplemental_resumes": [],
         "job_description": "JD body.",
         "deterministic_analysis": {
-            "jd_keywords": {}, "resume_keywords": {},
-            "keyword_overlap": {}, "ats_warnings": [],
+            "jd_keywords": {},
+            "resume_keywords": {},
+            "keyword_overlap": {},
+            "ats_warnings": [],
         },
         "llm_analysis": dict(_BASE_ANALYSIS),
         "iteration": iteration,
@@ -70,17 +82,27 @@ def iterate_client(tmp_path, monkeypatch):
     # Stub the iteration clarifier — return a fixed 3-question payload and record
     # the inputs so tests can verify route plumbing (signals passed, questions
     # persisted with iteration-prefixed ids) rather than the LLM's question quality.
-    def _stub_iterate_clarify(client, context_set, analysis, current_resume_text,
-                              current_cover_letter_text, recent_edits_summary,
-                              deterministic_signals, prior_clarifications,
-                              username="", run_id=""):
-        captured.update({
-            "current_resume_text": current_resume_text,
-            "current_cover_letter_text": current_cover_letter_text,
-            "recent_edits_summary": recent_edits_summary,
-            "deterministic_signals": deterministic_signals,
-            "prior_clarifications": prior_clarifications,
-        })
+    def _stub_iterate_clarify(
+        client,
+        context_set,
+        analysis,
+        current_resume_text,
+        current_cover_letter_text,
+        recent_edits_summary,
+        deterministic_signals,
+        prior_clarifications,
+        username="",
+        run_id="",
+    ):
+        captured.update(
+            {
+                "current_resume_text": current_resume_text,
+                "current_cover_letter_text": current_cover_letter_text,
+                "recent_edits_summary": recent_edits_summary,
+                "deterministic_signals": deterministic_signals,
+                "prior_clarifications": prior_clarifications,
+            }
+        )
         return {
             "questions": [
                 {"id": "q1", "text": "Q1?", "target_gap": "g1", "kind": "iteration_probe"},
@@ -122,9 +144,12 @@ class TestIterateClarifyRoute:
         on iteration 0 (analyze-only) should bounce the user back to /api/clarify."""
         client, output_dir, _ = iterate_client
         parent_path = _seed_context(output_dir, "context_iter0.json", iteration=0)
-        resp = client.post("/api/iterate-clarify", json={
-            "context_path": str(parent_path),
-        })
+        resp = client.post(
+            "/api/iterate-clarify",
+            json={
+                "context_path": str(parent_path),
+            },
+        )
         assert resp.status_code == 400
         body = resp.get_json()
         assert "at least one generated draft" in body["error"].lower()
@@ -132,13 +157,19 @@ class TestIterateClarifyRoute:
     def test_happy_path_persists_questions_with_iteration_prefixed_ids(self, iterate_client):
         client, output_dir, _ = iterate_client
         iter1_path = _seed_context(
-            output_dir, "context_iter1.json", iteration=1,
+            output_dir,
+            "context_iter1.json",
+            iteration=1,
             last_generated_resume="# Draft\n- Did things.",
         )
 
-        resp = client.post("/api/iterate-clarify", json={
-            "context_path": str(iter1_path), "username": "alice",
-        })
+        resp = client.post(
+            "/api/iterate-clarify",
+            json={
+                "context_path": str(iter1_path),
+                "username": "alice",
+            },
+        )
         assert resp.status_code == 200
         body = resp.get_json()
         assert len(body["questions"]) == 3
@@ -162,7 +193,9 @@ class TestIterateClarifyRoute:
         # Seed an iteration-1 context that already carries a prior clarify-round
         # question + answer (the state /api/generate would have inherited forward).
         iter1_path = _seed_context(
-            output_dir, "context_iter1.json", iteration=1,
+            output_dir,
+            "context_iter1.json",
+            iteration=1,
             last_generated_resume="# Draft\n- Did things.",
             clarification_questions=[
                 {"id": "q1", "text": "Prior Q?", "target_gap": "g", "kind": "experience_probe"},
@@ -170,9 +203,13 @@ class TestIterateClarifyRoute:
             clarifications={"q1": "Prior answer."},
         )
 
-        client.post("/api/iterate-clarify", json={
-            "context_path": str(iter1_path), "username": "alice",
-        })
+        client.post(
+            "/api/iterate-clarify",
+            json={
+                "context_path": str(iter1_path),
+                "username": "alice",
+            },
+        )
 
         saved = json.loads(iter1_path.read_text(encoding="utf-8"))
         ids = [q["id"] for q in saved["clarification_questions"]]
@@ -190,19 +227,30 @@ class TestIterateClarifyRoute:
         # skipped one) plus a user edit on top of the last generated draft — the
         # state save-edits + generate would have produced.
         iter1_path = _seed_context(
-            output_dir, "context_iter1.json", iteration=1,
+            output_dir,
+            "context_iter1.json",
+            iteration=1,
             last_generated_resume="# Draft\n- Did things.",
             edited_resume_text="# Edited\n- Shipped V2 to enterprise customers in Q3.",
             clarification_questions=[
                 {"id": "q1", "text": "K8s?", "kind": "experience_probe", "target_gap": "k8s"},
-                {"id": "q_skipped", "text": "Skipped?", "kind": "scope_probe", "target_gap": "scope"},
+                {
+                    "id": "q_skipped",
+                    "text": "Skipped?",
+                    "kind": "scope_probe",
+                    "target_gap": "scope",
+                },
             ],
             clarifications={"q1": "Yes prod 2023."},  # q_skipped intentionally omitted
         )
 
-        client.post("/api/iterate-clarify", json={
-            "context_path": str(iter1_path), "username": "alice",
-        })
+        client.post(
+            "/api/iterate-clarify",
+            json={
+                "context_path": str(iter1_path),
+                "username": "alice",
+            },
+        )
 
         inputs = captured
         # Current draft reflects the edit (precedence: edited > last_generated)

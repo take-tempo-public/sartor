@@ -28,7 +28,9 @@ _JD = "Senior Backend Engineer — Kubernetes latency at scale, Kafka, Postgres.
 
 @pytest.mark.ux
 def test_announce_fires_on_analysis_complete(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """After Analyze renders, runAnalysis() calls _announce('Analysis complete…');

@@ -24,7 +24,10 @@ def _git_available() -> bool:
     try:
         r = subprocess.run(
             ["git", "rev-parse", "--is-inside-work-tree"],
-            cwd=REPO_ROOT, capture_output=True, text=True, check=False,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
         )
         return r.returncode == 0
     except OSError:

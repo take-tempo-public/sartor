@@ -39,7 +39,9 @@ def _active_step(page: Page) -> int | None:
 @pytest.mark.ux
 @pytest.mark.slow
 def test_browser_back_forward_traverses_wizard_steps(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     cid = seed_user(ux_app, "alice")

@@ -150,12 +150,27 @@ class TestAssembleEndToEnd:
         return InMemorySource(
             "mix",
             [
-                _unit(text="alpha beta gamma", source_id="wiki", citation="[[a]]",
-                      audience=Audience.USER, tier=Tier.WIKI),
-                _unit(text="alpha delta", source_id="wiki", citation="[[b]]",
-                      audience=Audience.USER, tier=Tier.WIKI),
-                _unit(text="alpha epsilon", source_id="git", citation="g.py:1",
-                      audience=Audience.DEV, tier=Tier.GIT),
+                _unit(
+                    text="alpha beta gamma",
+                    source_id="wiki",
+                    citation="[[a]]",
+                    audience=Audience.USER,
+                    tier=Tier.WIKI,
+                ),
+                _unit(
+                    text="alpha delta",
+                    source_id="wiki",
+                    citation="[[b]]",
+                    audience=Audience.USER,
+                    tier=Tier.WIKI,
+                ),
+                _unit(
+                    text="alpha epsilon",
+                    source_id="git",
+                    citation="g.py:1",
+                    audience=Audience.DEV,
+                    tier=Tier.GIT,
+                ),
             ],
         )
 

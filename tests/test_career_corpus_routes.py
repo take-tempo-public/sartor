@@ -24,6 +24,7 @@ def corpus_app(tmp_path, monkeypatch):
     db_file = tmp_path / "corpus.sqlite"
 
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
@@ -35,6 +36,7 @@ def corpus_app(tmp_path, monkeypatch):
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
 
     from db.session import init_db
+
     init_db(db_file)
     return app
 
@@ -43,6 +45,7 @@ def _seed_candidate(username="alice", name="Alice Test"):
     """Insert a candidate row, return its id."""
     from db.models import Candidate
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(username=username, name=name)
@@ -53,16 +56,20 @@ def _seed_candidate(username="alice", name="Alice Test"):
         session.close()
 
 
-def _seed_experience(candidate_id, company="Polaris", start_date="2022-09",
-                     end_date=None, display_order=0):
+def _seed_experience(
+    candidate_id, company="Polaris", start_date="2022-09", end_date=None, display_order=0
+):
     """Insert one experience row, return its id."""
     from db.models import Experience
     from db.session import get_session
+
     session = get_session()
     try:
         e = Experience(
-            candidate_id=candidate_id, company=company,
-            start_date=start_date, end_date=end_date,
+            candidate_id=candidate_id,
+            company=company,
+            start_date=start_date,
+            end_date=end_date,
             display_order=display_order,
         )
         session.add(e)
@@ -72,15 +79,18 @@ def _seed_experience(candidate_id, company="Polaris", start_date="2022-09",
         session.close()
 
 
-def _seed_title(experience_id, title="Senior PM", is_official=1,
-                source="official"):
+def _seed_title(experience_id, title="Senior PM", is_official=1, source="official"):
     from db.models import ExperienceTitle
     from db.session import get_session
+
     session = get_session()
     try:
         t = ExperienceTitle(
-            experience_id=experience_id, title=title,
-            is_official=is_official, is_pending_review=0, source=source,
+            experience_id=experience_id,
+            title=title,
+            is_official=is_official,
+            is_pending_review=0,
+            source=source,
         )
         session.add(t)
         session.commit()
@@ -89,16 +99,22 @@ def _seed_title(experience_id, title="Senior PM", is_official=1,
         session.close()
 
 
-def _seed_bullet(experience_id, text="Led 5-person team.", has_outcome=1,
-                 source="primary:r.md", display_order=0):
+def _seed_bullet(
+    experience_id, text="Led 5-person team.", has_outcome=1, source="primary:r.md", display_order=0
+):
     from db.models import Bullet
     from db.session import get_session
+
     session = get_session()
     try:
         b = Bullet(
-            experience_id=experience_id, text=text,
-            display_order=display_order, is_active=1, is_pending_review=0,
-            source=source, has_outcome=has_outcome,
+            experience_id=experience_id,
+            text=text,
+            display_order=display_order,
+            is_active=1,
+            is_pending_review=0,
+            source=source,
+            has_outcome=has_outcome,
         )
         session.add(b)
         session.commit()
@@ -116,8 +132,9 @@ class TestListExperiences:
     def test_returns_experiences_for_known_candidate(self, corpus_app):
         cid = _seed_candidate()
         e1 = _seed_experience(cid, company="Polaris", start_date="2022-09")
-        e2 = _seed_experience(cid, company="Aurora", start_date="2020-01",
-                              end_date="2022-08", display_order=1)
+        e2 = _seed_experience(
+            cid, company="Aurora", start_date="2020-01", end_date="2022-08", display_order=1
+        )
         _seed_title(e1, title="Senior PM")
         _seed_bullet(e1, text="Owned 5 teams shipping AI features.")
 
@@ -220,6 +237,7 @@ class TestCreateExperience:
         assert r.status_code == 201, r.get_data(as_text=True)
         from db.models import Candidate
         from db.session import get_session
+
         s = get_session()
         try:
             assert s.query(Candidate).filter_by(username="alice").first() is not None
@@ -305,11 +323,17 @@ class TestDeleteExperience:
         # Confirm at DB layer
         from db.models import Bullet
         from db.session import get_session
+
         s = get_session()
         try:
-            active = s.query(Bullet).filter_by(
-                experience_id=eid, is_active=1,
-            ).count()
+            active = (
+                s.query(Bullet)
+                .filter_by(
+                    experience_id=eid,
+                    is_active=1,
+                )
+                .count()
+            )
             assert active == 0
         finally:
             s.close()
@@ -421,6 +445,7 @@ class TestDeleteBullet:
 
         from db.models import Bullet
         from db.session import get_session
+
         s = get_session()
         try:
             row = s.query(Bullet).filter_by(id=bid).first()
@@ -476,6 +501,7 @@ class TestCreateExperienceTitle:
         from db.build_context import eligible_titles_for
         from db.models import Experience
         from db.session import get_session
+
         s = get_session()
         try:
             exp = s.query(Experience).filter_by(id=eid).first()
@@ -501,6 +527,7 @@ class TestCreateExperienceTitle:
         # Prior should now be non-official
         from db.models import ExperienceTitle
         from db.session import get_session
+
         s = get_session()
         try:
             prior_row = s.query(ExperienceTitle).filter_by(id=prior).first()
@@ -522,7 +549,10 @@ class TestUpdateExperienceTitle:
         eid = _seed_experience(cid)
         official = _seed_title(eid, title="Senior PM", is_official=1)
         alt = _seed_title(
-            eid, title="Director, AI", is_official=0, source="user_added",
+            eid,
+            title="Director, AI",
+            is_official=0,
+            source="user_added",
         )
 
         client = corpus_app.test_client()
@@ -535,6 +565,7 @@ class TestUpdateExperienceTitle:
 
         from db.models import ExperienceTitle
         from db.session import get_session
+
         s = get_session()
         try:
             old = s.query(ExperienceTitle).filter_by(id=official).first()
@@ -577,6 +608,7 @@ class TestDeleteExperienceTitle:
 
         from db.models import ExperienceTitle
         from db.session import get_session
+
         s = get_session()
         try:
             row = s.query(ExperienceTitle).filter_by(id=tid).first()
@@ -594,11 +626,15 @@ class TestDeleteExperienceTitle:
 def _seed_tag(candidate_id, kind, value, display_value=None, usage_count=0):
     from db.models import Tag
     from db.session import get_session
+
     s = get_session()
     try:
         t = Tag(
-            candidate_id=candidate_id, kind=kind, value=value,
-            display_value=display_value or value, usage_count=usage_count,
+            candidate_id=candidate_id,
+            kind=kind,
+            value=value,
+            display_value=display_value or value,
+            usage_count=usage_count,
         )
         s.add(t)
         s.commit()
@@ -667,11 +703,10 @@ class TestBulletTagLinkUnlink:
         bid = _seed_bullet(eid)
         client = corpus_app.test_client()
 
-        r = client.post(f"/api/bullets/{bid}/tags",
-                         json={"value": "AI / ML", "kind": "domain"})
+        r = client.post(f"/api/bullets/{bid}/tags", json={"value": "AI / ML", "kind": "domain"})
         assert r.status_code == 201, r.get_json()
         tag = r.get_json()
-        assert tag["value"] == "ai-ml"          # normalized
+        assert tag["value"] == "ai-ml"  # normalized
         assert tag["display_value"] == "AI / ML"  # original casing kept
 
         # Tag shows up in the experience detail payload
@@ -695,8 +730,9 @@ class TestBulletTagLinkUnlink:
         eid = _seed_experience(cid)
         bid = _seed_bullet(eid)
         client = corpus_app.test_client()
-        tag = client.post(f"/api/bullets/{bid}/tags",
-                          json={"value": "ai", "kind": "domain"}).get_json()
+        tag = client.post(
+            f"/api/bullets/{bid}/tags", json={"value": "ai", "kind": "domain"}
+        ).get_json()
         r = client.delete(f"/api/bullets/{bid}/tags/{tag['id']}")
         assert r.status_code == 200
         detail = client.get(f"/api/experiences/{eid}").get_json()
@@ -707,16 +743,23 @@ class TestBulletTagLinkUnlink:
         eid = _seed_experience(cid)
         bid = _seed_bullet(eid)
         client = corpus_app.test_client()
-        assert client.post(f"/api/bullets/{bid}/tags",
-                           json={"value": "  ", "kind": "skill"}).status_code == 400
-        assert client.post(f"/api/bullets/{bid}/tags",
-                           json={"value": "x", "kind": "bogus"}).status_code == 400
+        assert (
+            client.post(
+                f"/api/bullets/{bid}/tags", json={"value": "  ", "kind": "skill"}
+            ).status_code
+            == 400
+        )
+        assert (
+            client.post(
+                f"/api/bullets/{bid}/tags", json={"value": "x", "kind": "bogus"}
+            ).status_code
+            == 400
+        )
 
     def test_404_for_unknown_bullet(self, corpus_app):
         _seed_candidate()
         client = corpus_app.test_client()
-        r = client.post("/api/bullets/99999/tags",
-                        json={"value": "ai", "kind": "domain"})
+        r = client.post("/api/bullets/99999/tags", json={"value": "ai", "kind": "domain"})
         assert r.status_code == 404
 
 
@@ -726,8 +769,9 @@ class TestTitleTagLinkUnlink:
         eid = _seed_experience(cid)
         tid = _seed_title(eid, title="Director, AI")
         client = corpus_app.test_client()
-        tag = client.post(f"/api/experience-titles/{tid}/tags",
-                          json={"value": "design-mgmt", "kind": "role"}).get_json()
+        tag = client.post(
+            f"/api/experience-titles/{tid}/tags", json={"value": "design-mgmt", "kind": "role"}
+        ).get_json()
         detail = client.get(f"/api/experiences/{eid}").get_json()
         title = next(t for t in detail["titles"] if t["id"] == tid)
         assert any(x["value"] == "design-mgmt" for x in title["tags"])

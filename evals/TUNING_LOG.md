@@ -2605,3 +2605,27 @@ than the opener/close throat-clearing PV-3 targeted.
 5. **Running the paired eval concurrently with the full `pytest` suite induced 3 judge_errors**
    (transient Haiku invalid-JSON) in after-run 1; after-runs 2–3 (post-pytest) were clean. Don't
    overlap the eval harness with a CPU-heavy test run when judge stability matters.
+
+---
+
+## chore/kit-phase1-ruff-format -- tree-wide ruff format (2026-06-23)
+
+Not a prompt-tuning iteration -- logged here for the no-eval-run discipline (the
+compose-add-title precedent: prove byte-identity with a check, don't spend a paid run).
+
+1. **What changed?** Applied `ruff format` across the tree (161 of 217 files) as the
+   second kit-adoption Phase-1 item. No prompt template was edited; `PROMPT_VERSION` and
+   `AVATAR_PROMPT_VERSION` are unchanged.
+2. **Why?** Kit-adoption Phase 1 (kit-adoption-design.md section 4): adopt the
+   `ruff format` formatter + wire `ruff format --check` as a block-day-one gate (KIT-6).
+3. **Result?** Prompt-inert by construction: ruff format never edits inside string
+   literals. Proven, not assumed -- a sha256 dump of all analyzer prompt constants (every
+   *_SYSTEM_PROMPT, the _BASE_SYSTEM_PROMPTS registry, _COVER_LETTER_RULES_BLOCK, both
+   version strings; 31 entries) was byte-identical before and after the reformat (zero
+   differences). So NO eval run was spent and NO PROMPT_VERSION bump was made.
+   Deterministic gate green: ruff check . / mypy (227 files) / pytest 1391 passed.
+4. **Learned?** A pure `ruff format` pass is safe for prompt-bearing modules: the
+   formatter only restructures code outside string literals. The only near-prompt change
+   observed was a paren-wrap of `AVATAR_PROMPT_VERSION = "..."  # long comment` (value
+   identical). Prove it cheaply with a constants dump-diff rather than a paid synthetic
+   run; only bump PROMPT_VERSION when a template's bytes actually change.

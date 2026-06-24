@@ -34,12 +34,14 @@ def composition_app(tmp_path, monkeypatch):
 
     db_file = tmp_path / "comp.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     output_dir = cfg.output_dir
@@ -47,13 +49,19 @@ def composition_app(tmp_path, monkeypatch):
     (output_dir / "casey").mkdir()
 
     from db.session import init_db
+
     init_db(db_file)
     return types.SimpleNamespace(app=app), output_dir
 
 
-def _seed(_app, output_dir, *, with_variants: bool = True,
-          with_recommendation: bool = False,
-          pinned_summary_id: int | None = None) -> tuple[int, int, str, list[int]]:
+def _seed(
+    _app,
+    output_dir,
+    *,
+    with_variants: bool = True,
+    with_recommendation: bool = False,
+    pinned_summary_id: int | None = None,
+) -> tuple[int, int, str, list[int]]:
     """Seed candidate + application + (optionally) summary variants.
     Returns (candidate_id, application_id, context_path, [variant_ids])."""
     from db.models import Application, Candidate, SummaryItem
@@ -66,21 +74,26 @@ def _seed(_app, output_dir, *, with_variants: bool = True,
         session.add(c)
         session.flush()
         a = Application(
-            candidate_id=c.id, title="Senior PM",
+            candidate_id=c.id,
+            title="Senior PM",
             jd_text="Senior PM building AI platforms.",
             jd_fingerprint="f" * 16,
         )
         session.add(a)
         session.flush()
         if with_variants:
-            for i, text in enumerate([
-                "AI platform PM with platform-leadership outcomes.",
-                "Early-stage builder PM focused on launches.",
-                "Enterprise PM with cross-team alignment record.",
-            ]):
+            for i, text in enumerate(
+                [
+                    "AI platform PM with platform-leadership outcomes.",
+                    "Early-stage builder PM focused on launches.",
+                    "Enterprise PM with cross-team alignment record.",
+                ]
+            ):
                 si = SummaryItem(
-                    candidate_id=c.id, text=text,
-                    display_order=i, is_active=1,
+                    candidate_id=c.id,
+                    text=text,
+                    display_order=i,
+                    is_active=1,
                     label=f"Variant {i + 1}",
                 )
                 session.add(si)
@@ -103,13 +116,17 @@ def _seed(_app, output_dir, *, with_variants: bool = True,
                 "rationale": "Strongest AI platform framing.",
             },
             "alternates": [
-                {"summary_item_id": variant_ids[1],
-                 "rationale": "Builder framing is a close second."},
+                {
+                    "summary_item_id": variant_ids[1],
+                    "rationale": "Builder framing is a close second.",
+                },
             ],
         }
     if pinned_summary_id is not None:
         ctx["composition_overrides"] = {
-            "pinned": [], "excluded": [], "added": [],
+            "pinned": [],
+            "excluded": [],
+            "added": [],
             "pinned_summary_id": pinned_summary_id,
         }
 
@@ -146,7 +163,9 @@ class TestGetCompositionSummary:
     def test_recommendation_flagged_on_correct_variant(self, composition_app):
         _app, output_dir = composition_app
         _cid, aid, ctx_path, vids = _seed(
-            _app, output_dir, with_recommendation=True,
+            _app,
+            output_dir,
+            with_recommendation=True,
         )
         client = _app.app.test_client()
         r = client.get(
@@ -169,14 +188,17 @@ class TestGetCompositionSummary:
     def test_pinned_overrides_recommendation(self, composition_app):
         _app, output_dir = composition_app
         _cid, aid, ctx_path, vids = _seed(
-            _app, output_dir,
+            _app,
+            output_dir,
             with_recommendation=True,
             pinned_summary_id=None,  # will set below
         )
         # Seed with a pin on variant[1] AND a recommendation on variant[0]
         ctx = json.loads(open(ctx_path, encoding="utf-8").read())
         ctx["composition_overrides"] = {
-            "pinned": [], "excluded": [], "added": [],
+            "pinned": [],
+            "excluded": [],
+            "added": [],
             "pinned_summary_id": vids[1],
         }
         open(ctx_path, "w", encoding="utf-8").write(json.dumps(ctx))
@@ -220,7 +242,9 @@ class TestPostComposition:
             f"/api/applications/{aid}/composition",
             json={
                 "context_path": ctx_path,
-                "pinned": [], "excluded": [], "added": [],
+                "pinned": [],
+                "excluded": [],
+                "added": [],
                 "pinned_summary_id": vids[2],
             },
         )
@@ -235,14 +259,18 @@ class TestPostComposition:
         _app, output_dir = composition_app
         # Seed with an existing pin we'll then clear via the POST
         _cid, aid, ctx_path, vids = _seed(
-            _app, output_dir, pinned_summary_id=1,  # arbitrary positive value
+            _app,
+            output_dir,
+            pinned_summary_id=1,  # arbitrary positive value
         )
         client = _app.app.test_client()
         r = client.post(
             f"/api/applications/{aid}/composition",
             json={
                 "context_path": ctx_path,
-                "pinned": [], "excluded": [], "added": [],
+                "pinned": [],
+                "excluded": [],
+                "added": [],
                 "pinned_summary_id": None,
             },
         )
@@ -257,7 +285,9 @@ class TestPostComposition:
             f"/api/applications/{aid}/composition",
             json={
                 "context_path": ctx_path,
-                "pinned": [], "excluded": [], "added": [],
+                "pinned": [],
+                "excluded": [],
+                "added": [],
                 "pinned_summary_id": "not-an-int",
             },
         )
@@ -273,7 +303,9 @@ class TestPostComposition:
             f"/api/applications/{aid}/composition",
             json={
                 "context_path": ctx_path,
-                "pinned": [], "excluded": [], "added": [],
+                "pinned": [],
+                "excluded": [],
+                "added": [],
             },
         )
         assert r.status_code == 200

@@ -45,40 +45,73 @@ def _seed_candidate(session) -> None:
     from db.models import Bullet, Candidate, Experience, ExperienceTitle, Skill
 
     c = Candidate(
-        username="alex", name="Alex Chen", email="alex@example.com",
-        phone="555-0100", linkedin_url=None, website_url=None,
-        notes=None, profile_text="Platform SRE.",
+        username="alex",
+        name="Alex Chen",
+        email="alex@example.com",
+        phone="555-0100",
+        linkedin_url=None,
+        website_url=None,
+        notes=None,
+        profile_text="Platform SRE.",
     )
     session.add(c)
     session.flush()
 
     e = Experience(
-        candidate_id=c.id, company="Polaris", location="Remote",
-        start_date="2022-09", end_date=None, display_order=0, summary="Backend.",
+        candidate_id=c.id,
+        company="Polaris",
+        location="Remote",
+        start_date="2022-09",
+        end_date=None,
+        display_order=0,
+        summary="Backend.",
     )
     session.add(e)
     session.flush()
 
-    session.add(ExperienceTitle(
-        experience_id=e.id, title="Senior SRE", is_official=1,
-        truthful_enough_to_use=1, is_pending_review=0, source="official",
-    ))
-    session.add_all([
-        Bullet(
-            experience_id=e.id, text="Cut p99 latency 40%.", display_order=0,
-            is_active=1, is_pending_review=0, source="primary:r.md",
-            pattern_kind=None, has_outcome=1,
-        ),
-        Bullet(
-            experience_id=e.id, text="Ran incident response for Kafka pipelines.",
-            display_order=1, is_active=1, is_pending_review=0, source="primary:r.md",
-            pattern_kind=None, has_outcome=0,
-        ),
-    ])
-    session.add(Skill(
-        candidate_id=c.id, name="Python", category="language",
-        proficiency="expert", years=6.0,
-    ))
+    session.add(
+        ExperienceTitle(
+            experience_id=e.id,
+            title="Senior SRE",
+            is_official=1,
+            truthful_enough_to_use=1,
+            is_pending_review=0,
+            source="official",
+        )
+    )
+    session.add_all(
+        [
+            Bullet(
+                experience_id=e.id,
+                text="Cut p99 latency 40%.",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="primary:r.md",
+                pattern_kind=None,
+                has_outcome=1,
+            ),
+            Bullet(
+                experience_id=e.id,
+                text="Ran incident response for Kafka pipelines.",
+                display_order=1,
+                is_active=1,
+                is_pending_review=0,
+                source="primary:r.md",
+                pattern_kind=None,
+                has_outcome=0,
+            ),
+        ]
+    )
+    session.add(
+        Skill(
+            candidate_id=c.id,
+            name="Python",
+            category="language",
+            proficiency="expert",
+            years=6.0,
+        )
+    )
     session.commit()
 
 
@@ -169,32 +202,55 @@ class TestBuildBootstrapDocument:
     def _per_jd(self) -> list[dict]:
         return [
             {
-                "jd_file": "a.txt", "run_id": "r1", "analysis": {"x": 1},
-                "clarification_questions": [], "clarification_reasoning": "",
-                "generated_resume": "", "generated_cover_letter": "",
+                "jd_file": "a.txt",
+                "run_id": "r1",
+                "analysis": {"x": 1},
+                "clarification_questions": [],
+                "clarification_reasoning": "",
+                "generated_resume": "",
+                "generated_cover_letter": "",
                 "bullets": ["Led migration to Kubernetes", "Cut latency by improving caching"],
                 "skills": ["Python", "Go"],
             },
             {
-                "jd_file": "b.txt", "run_id": "r2", "analysis": {"x": 2},
-                "clarification_questions": [], "clarification_reasoning": "",
-                "generated_resume": "", "generated_cover_letter": "",
-                "bullets": ["Led migration to Kubernetes clusters", "Built HIPAA-compliant pipeline"],
+                "jd_file": "b.txt",
+                "run_id": "r2",
+                "analysis": {"x": 2},
+                "clarification_questions": [],
+                "clarification_reasoning": "",
+                "generated_resume": "",
+                "generated_cover_letter": "",
+                "bullets": [
+                    "Led migration to Kubernetes clusters",
+                    "Built HIPAA-compliant pipeline",
+                ],
                 "skills": ["Python", "Rust"],
             },
         ]
 
     def test_schema_and_dedup_counts(self) -> None:
         doc = bootstrap.build_bootstrap_document(
-            self._per_jd(), username="alex", seed_path="seed.json",
-            threshold=0.75, corpus_source="CORPUS", grounding_fn=None,
+            self._per_jd(),
+            username="alex",
+            seed_path="seed.json",
+            threshold=0.75,
+            corpus_source="CORPUS",
+            grounding_fn=None,
         )
         assert doc["bootstrap_schema_version"] == bootstrap.BOOTSTRAP_SCHEMA_VERSION
         assert doc["generator"] == "evals/bootstrap.py"
         assert {
-            "bootstrap_schema_version", "generator", "generated_at",
-            "candidate_username", "seed_path", "prompt_version",
-            "jaccard_threshold", "jd_count", "per_jd", "dedup", "grounding_signals",
+            "bootstrap_schema_version",
+            "generator",
+            "generated_at",
+            "candidate_username",
+            "seed_path",
+            "prompt_version",
+            "jaccard_threshold",
+            "jd_count",
+            "per_jd",
+            "dedup",
+            "grounding_signals",
         }.issubset(doc.keys())
         assert doc["jd_count"] == 2
         assert doc["candidate_username"] == "alex"
@@ -212,8 +268,12 @@ class TestBuildBootstrapDocument:
             return {"bullet_count": 3, "sentinel": True}
 
         doc = bootstrap.build_bootstrap_document(
-            self._per_jd(), username="alex", seed_path="seed.json",
-            threshold=0.75, corpus_source="CORPUS", grounding_fn=fake_grounding,
+            self._per_jd(),
+            username="alex",
+            seed_path="seed.json",
+            threshold=0.75,
+            corpus_source="CORPUS",
+            grounding_fn=fake_grounding,
         )
         assert doc["grounding_signals"] == {"bullet_count": 3, "sentinel": True}
         assert len(calls) == 1
@@ -231,8 +291,12 @@ class TestBuildBootstrapDocument:
             raise TypeError("MiniCheck() got an unexpected keyword argument 'device'")
 
         doc = bootstrap.build_bootstrap_document(
-            self._per_jd(), username="alex", seed_path="seed.json",
-            threshold=0.75, corpus_source="CORPUS", grounding_fn=boom_grounding,
+            self._per_jd(),
+            username="alex",
+            seed_path="seed.json",
+            threshold=0.75,
+            corpus_source="CORPUS",
+            grounding_fn=boom_grounding,
         )
         assert doc["grounding_signals"] is None
         # The rest of the document is fully intact — nothing was discarded.
@@ -274,7 +338,10 @@ class TestPipelineOrchestration:
         client = anthropic.Anthropic(api_key="test-key")
         with seeded_session(seed) as (session, username):
             per_jd, corpus_source = bootstrap.run_pipeline_over_jds(
-                client, session, username, [jd_a, jd_b],
+                client,
+                session,
+                username,
+                [jd_a, jd_b],
             )
 
         assert len(per_jd) == 2

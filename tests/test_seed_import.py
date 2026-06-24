@@ -53,9 +53,14 @@ def _seed_candidate(session) -> None:
     )
 
     c = Candidate(
-        username="alex", name="Alex Chen", email="alex@example.com",
-        phone="555-0100", linkedin_url="https://lnkd.in/alex",
-        website_url="https://alex.dev", notes="n", profile_text="Platform SRE.",
+        username="alex",
+        name="Alex Chen",
+        email="alex@example.com",
+        phone="555-0100",
+        linkedin_url="https://lnkd.in/alex",
+        website_url="https://alex.dev",
+        notes="n",
+        profile_text="Platform SRE.",
     )
     session.add(c)
     session.flush()
@@ -65,51 +70,96 @@ def _seed_candidate(session) -> None:
     session.flush()
 
     e = Experience(
-        candidate_id=c.id, company="Polaris", location="Remote",
-        start_date="2022-09", end_date=None, display_order=0, summary="Backend.",
+        candidate_id=c.id,
+        company="Polaris",
+        location="Remote",
+        start_date="2022-09",
+        end_date=None,
+        display_order=0,
+        summary="Backend.",
     )
     session.add(e)
     session.flush()
 
     title = ExperienceTitle(
-        experience_id=e.id, title="Senior SRE", is_official=1,
-        truthful_enough_to_use=1, is_pending_review=0, source="official",
+        experience_id=e.id,
+        title="Senior SRE",
+        is_official=1,
+        truthful_enough_to_use=1,
+        is_pending_review=0,
+        source="official",
     )
     session.add(title)
     session.flush()
     session.add(ExperienceTitleTag(experience_title_id=title.id, tag_id=tag.id, confidence=1.0))
 
     active = Bullet(
-        experience_id=e.id, text="Cut p99 latency 40%.", display_order=0,
-        is_active=1, is_pending_review=0, source="primary:r.md",
-        pattern_kind="xyz", has_outcome=1,
+        experience_id=e.id,
+        text="Cut p99 latency 40%.",
+        display_order=0,
+        is_active=1,
+        is_pending_review=0,
+        source="primary:r.md",
+        pattern_kind="xyz",
+        has_outcome=1,
     )
     inactive = Bullet(
-        experience_id=e.id, text="Retired bullet.", display_order=1,
-        is_active=0, is_pending_review=0, source="primary:r.md",
-        pattern_kind=None, has_outcome=0,
+        experience_id=e.id,
+        text="Retired bullet.",
+        display_order=1,
+        is_active=0,
+        is_pending_review=0,
+        source="primary:r.md",
+        pattern_kind=None,
+        has_outcome=0,
     )
     session.add_all([active, inactive])
     session.flush()
     session.add(BulletTag(bullet_id=active.id, tag_id=tag.id, confidence=0.9))
 
     summary = SummaryItem(
-        candidate_id=c.id, text="SRE who ships reliability.", label="SRE",
-        display_order=0, is_active=1, is_pending_review=0, source="manual",
+        candidate_id=c.id,
+        text="SRE who ships reliability.",
+        label="SRE",
+        display_order=0,
+        is_active=1,
+        is_pending_review=0,
+        source="manual",
         has_outcome=0,
     )
     session.add(summary)
     session.flush()
     session.add(SummaryItemTag(summary_item_id=summary.id, tag_id=tag.id, confidence=1.0))
 
-    session.add(Skill(candidate_id=c.id, name="Python", category="language",
-                       proficiency="expert", years=6.0))
-    session.add(Education(candidate_id=c.id, institution="State U", degree="BS",
-                          field="CS", start_date="2014", end_date="2018",
-                          display_order=0, is_active=1, notes=None))
-    session.add(Certification(candidate_id=c.id, name="CKA", issuer="CNCF",
-                              issued="2021", expires="2024", display_order=0,
-                              is_active=1))
+    session.add(
+        Skill(
+            candidate_id=c.id, name="Python", category="language", proficiency="expert", years=6.0
+        )
+    )
+    session.add(
+        Education(
+            candidate_id=c.id,
+            institution="State U",
+            degree="BS",
+            field="CS",
+            start_date="2014",
+            end_date="2018",
+            display_order=0,
+            is_active=1,
+            notes=None,
+        )
+    )
+    session.add(
+        Certification(
+            candidate_id=c.id,
+            name="CKA",
+            issuer="CNCF",
+            issued="2021",
+            expires="2024",
+            display_order=0,
+            is_active=1,
+        )
+    )
     session.commit()
 
 
@@ -149,8 +199,11 @@ class TestRoundTrip:
 
         with seeded_session(seed) as (fresh, _username):
             from db.models import Bullet, Experience, Tag
+
             assert [t.id for t in fresh.query(Tag).order_by(Tag.id).all()] == src_tag_ids
-            assert [e.id for e in fresh.query(Experience).order_by(Experience.id).all()] == src_exp_ids
+            assert [
+                e.id for e in fresh.query(Experience).order_by(Experience.id).all()
+            ] == src_exp_ids
             assert sorted(b.id for b in fresh.query(Bullet).all()) == sorted(src_bullet_ids)
 
     def test_inactive_rows_imported(self, db_session) -> None:
@@ -161,6 +214,7 @@ class TestRoundTrip:
         seed = export_seed(db_session, candidate_username="alex")
         with seeded_session(seed) as (fresh, _username):
             from db.models import Bullet
+
             flags = {b.text: b.is_active for b in fresh.query(Bullet).all()}
         assert flags == {"Cut p99 latency 40%.": 1, "Retired bullet.": 0}
 
@@ -172,6 +226,7 @@ class TestRoundTrip:
         seed = export_seed(db_session, candidate_username="alex")
         with seeded_session(seed) as (fresh, _username):
             from db.models import BulletTag, Tag
+
             tag_ids = {t.id for t in fresh.query(Tag).all()}
             links = fresh.query(BulletTag).all()
             assert links, "expected at least one bullet tag link"
@@ -193,13 +248,20 @@ class TestBuildsContextSet:
 
         with seeded_session(seed) as (fresh, username):
             context, _app, _run = build_context_set_from_db(
-                fresh, candidate_username=username,
-                jd_text=SAMPLE_JD, run_id="abc123def456",
+                fresh,
+                candidate_username=username,
+                jd_text=SAMPLE_JD,
+                run_id="abc123def456",
             )
 
             required = {
-                "candidate", "resume", "supplemental_resumes", "job_description",
-                "deterministic_analysis", "run_id", "career_corpus",
+                "candidate",
+                "resume",
+                "supplemental_resumes",
+                "job_description",
+                "deterministic_analysis",
+                "run_id",
+                "career_corpus",
             }
             assert required.issubset(context.keys())
             assert context["resume"]["format"] == "md"
@@ -224,13 +286,17 @@ class TestBuildsContextSet:
         seed = export_seed(db_session, candidate_username="alex")
 
         src_ctx, _a, _r = build_context_set_from_db(
-            db_session, candidate_username="alex",
-            jd_text=SAMPLE_JD, run_id="run000000001",
+            db_session,
+            candidate_username="alex",
+            jd_text=SAMPLE_JD,
+            run_id="run000000001",
         )
         with seeded_session(seed) as (fresh, username):
             imp_ctx, _a2, _r2 = build_context_set_from_db(
-                fresh, candidate_username=username,
-                jd_text=SAMPLE_JD, run_id="run000000002",
+                fresh,
+                candidate_username=username,
+                jd_text=SAMPLE_JD,
+                run_id="run000000002",
             )
             assert imp_ctx["career_corpus"] == src_ctx["career_corpus"]
             assert imp_ctx["resume"]["text"] == src_ctx["resume"]["text"]
@@ -242,11 +308,19 @@ class TestValidation:
 
     def test_validate_rejects_unsupported_version(self) -> None:
         with pytest.raises(ValueError, match="seed_schema_version"):
-            validate_seed({
-                "seed_schema_version": 2, "candidate_username": "x", "candidate": {},
-                "tags": [], "experiences": [], "summary_items": [], "skills": [],
-                "educations": [], "certifications": [],
-            })
+            validate_seed(
+                {
+                    "seed_schema_version": 2,
+                    "candidate_username": "x",
+                    "candidate": {},
+                    "tags": [],
+                    "experiences": [],
+                    "summary_items": [],
+                    "skills": [],
+                    "educations": [],
+                    "certifications": [],
+                }
+            )
 
     def test_validate_rejects_missing_keys(self) -> None:
         with pytest.raises(ValueError, match="missing required keys"):

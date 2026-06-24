@@ -38,17 +38,20 @@ def preview_app(tmp_path, monkeypatch):
     db_file = tmp_path / "preview.sqlite"
 
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     cfg.bundled_personas_dir.mkdir(parents=True, exist_ok=True)
 
     from db.session import init_db
+
     init_db(db_file)
 
     # Materialize the bundled Classic HTML + CSS in the temp dir so the
@@ -58,10 +61,12 @@ def preview_app(tmp_path, monkeypatch):
     src_html = repo_root / "personas" / "bundled" / "classic.html"
     src_css = repo_root / "personas" / "bundled" / "classic.css"
     (cfg.bundled_personas_dir / "classic.html").write_text(
-        src_html.read_text(encoding="utf-8"), encoding="utf-8",
+        src_html.read_text(encoding="utf-8"),
+        encoding="utf-8",
     )
     (cfg.bundled_personas_dir / "classic.css").write_text(
-        src_css.read_text(encoding="utf-8"), encoding="utf-8",
+        src_css.read_text(encoding="utf-8"),
+        encoding="utf-8",
     )
     # Materialize the shared cover-letter shell so the cover-letter preview
     # route (PERSONAS_DIR / cover_letter.html) resolves in-temp.
@@ -71,6 +76,7 @@ def preview_app(tmp_path, monkeypatch):
     )
     # Also drop a stub .docx so the bundled-template DB rows resolve.
     from docx import Document
+
     for filename in ("classic.docx", "modern.docx"):
         doc = Document()
         doc.add_paragraph(f"stub for {filename}")
@@ -87,25 +93,33 @@ def preview_app(tmp_path, monkeypatch):
     )
 
 
-def _seed_candidate_app(app_module, username="casey",
-                        name="Casey Rivera",
-                        profile_text="Senior PM with a decade of leadership.",
-                        title="Senior PM"):
+def _seed_candidate_app(
+    app_module,
+    username="casey",
+    name="Casey Rivera",
+    profile_text="Senior PM with a decade of leadership.",
+    title="Senior PM",
+):
     """Insert a candidate (with profile_text) + application row.
     Returns (candidate_id, application_id)."""
     from db.models import Application, Candidate
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(
-            username=username, name=name, profile_text=profile_text,
+            username=username,
+            name=name,
+            profile_text=profile_text,
             email="casey@example.com",
         )
         session.add(c)
         session.flush()
         a = Application(
-            candidate_id=c.id, title=title,
-            jd_text="placeholder JD", jd_fingerprint="x" * 16,
+            candidate_id=c.id,
+            title=title,
+            jd_text="placeholder JD",
+            jd_fingerprint="x" * 16,
         )
         session.add(a)
         session.commit()
@@ -114,29 +128,41 @@ def _seed_candidate_app(app_module, username="casey",
         session.close()
 
 
-def _seed_experience_with_bullets(candidate_id: int, *,
-                                  company="Polaris", position="Lead PM",
-                                  bullet_texts=("Shipped the unified corpus.",)):
+def _seed_experience_with_bullets(
+    candidate_id: int,
+    *,
+    company="Polaris",
+    position="Lead PM",
+    bullet_texts=("Shipped the unified corpus.",),
+):
     """Seed one experience + bullets + an official title for the candidate."""
     from db.models import Bullet, Experience, ExperienceTitle
     from db.session import get_session
+
     session = get_session()
     try:
         exp = Experience(
-            candidate_id=candidate_id, company=company,
-            start_date="2022", end_date="present",
+            candidate_id=candidate_id,
+            company=company,
+            start_date="2022",
+            end_date="present",
         )
         session.add(exp)
         session.flush()
         t = ExperienceTitle(
-            experience_id=exp.id, title=position,
-            is_official=1, source="official",
+            experience_id=exp.id,
+            title=position,
+            is_official=1,
+            source="official",
         )
         session.add(t)
         for i, text in enumerate(bullet_texts):
             b = Bullet(
-                experience_id=exp.id, text=text,
-                display_order=i, is_active=1, source="resume_import",
+                experience_id=exp.id,
+                text=text,
+                display_order=i,
+                is_active=1,
+                source="resume_import",
             )
             session.add(b)
         session.commit()
@@ -151,9 +177,14 @@ def _seed_experience_with_bullets(candidate_id: int, *,
 
 
 def _write_context_with_recommendations(
-    out_dir: Path, application_id: int, experience_id: int,
-    bullet_ids: list[int], *, extra_overrides: dict | None = None,
-    pinned_summary_id: int | None = None, filename: str = "context_test.json",
+    out_dir: Path,
+    application_id: int,
+    experience_id: int,
+    bullet_ids: list[int],
+    *,
+    extra_overrides: dict | None = None,
+    pinned_summary_id: int | None = None,
+    filename: str = "context_test.json",
 ) -> Path:
     """Persist a context_*.json under out_dir with the curation fields
     the preview route now requires (per the 2026-05-26 architectural
@@ -164,25 +195,33 @@ def _write_context_with_recommendations(
     """
     import json as _json
     from typing import Any
+
     out_dir.mkdir(parents=True, exist_ok=True)
     composition_overrides: dict[str, Any] = {
-        "pinned": [], "excluded": [], "added": [],
+        "pinned": [],
+        "excluded": [],
+        "added": [],
     }
     if pinned_summary_id is not None:
         composition_overrides["pinned_summary_id"] = pinned_summary_id
     if extra_overrides:
         composition_overrides.update(extra_overrides)
     ctx_path = out_dir / filename
-    ctx_path.write_text(_json.dumps({
-        "application_id": application_id,
-        "composition_overrides": composition_overrides,
-        "llm_recommendations": {
-            str(experience_id): {
-                "bullet_ids": [int(b) for b in bullet_ids],
-                "rationale": "test fixture",
-            },
-        },
-    }), encoding="utf-8")
+    ctx_path.write_text(
+        _json.dumps(
+            {
+                "application_id": application_id,
+                "composition_overrides": composition_overrides,
+                "llm_recommendations": {
+                    str(experience_id): {
+                        "bullet_ids": [int(b) for b in bullet_ids],
+                        "rationale": "test fixture",
+                    },
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
     return ctx_path
 
 
@@ -194,20 +233,21 @@ class TestApplicationPreviewHappyPath:
         explicitly and confirms the full render happens."""
         from db.models import Bullet
         from db.session import get_session
+
         cid, aid = _seed_candidate_app(preview_app, username="casey")
         exp_id = _seed_experience_with_bullets(cid)
         # Resolve the bullet ids we just seeded so we can put them in
         # llm_recommendations.
         session = get_session()
         try:
-            bullet_ids = [
-                b.id for b in session.query(Bullet)
-                .filter_by(experience_id=exp_id).all()
-            ]
+            bullet_ids = [b.id for b in session.query(Bullet).filter_by(experience_id=exp_id).all()]
         finally:
             session.close()
         ctx_file = _write_context_with_recommendations(
-            preview_app.OUTPUT_DIR / "casey", aid, exp_id, bullet_ids,
+            preview_app.OUTPUT_DIR / "casey",
+            aid,
+            exp_id,
+            bullet_ids,
         )
 
         client = preview_app.app.test_client()
@@ -253,7 +293,7 @@ class TestApplicationPreviewHappyPath:
         body = client.get(
             "/api/users/casey/preview",
         ).get_data(as_text=True)
-        assert "<link rel=\"stylesheet\"" not in body
+        assert '<link rel="stylesheet"' not in body
         assert "<style>" in body
         # A signature rule from classic.css proves the inline succeeded
         assert "Helvetica" in body or "page-break" in body
@@ -274,23 +314,24 @@ class TestApplicationPreviewHappyPath:
         session = get_session()
         try:
             si = SummaryItem(
-                candidate_id=cid, text="Pinned variant text.",
-                display_order=0, is_active=1,
+                candidate_id=cid,
+                text="Pinned variant text.",
+                display_order=0,
+                is_active=1,
             )
             session.add(si)
             session.flush()
             si_id = si.id
             session.commit()
-            bullet_ids = [
-                b.id for b in session.query(Bullet)
-                .filter_by(experience_id=exp_id).all()
-            ]
+            bullet_ids = [b.id for b in session.query(Bullet).filter_by(experience_id=exp_id).all()]
         finally:
             session.close()
 
         ctx_file = _write_context_with_recommendations(
             (preview_app.OUTPUT_DIR / "casey").resolve(),
-            aid, exp_id, bullet_ids,
+            aid,
+            exp_id,
+            bullet_ids,
             pinned_summary_id=si_id,
             filename="context_pin.json",
         )
@@ -329,9 +370,14 @@ LLM-rewritten positioning for this exact job.
 
 
 def _write_context_with_cached_json_resume(
-    out_dir: Path, application_id: int, markdown: str, *,
-    include_recommendations: bool = False, experience_id: int | None = None,
-    bullet_ids: list[int] | None = None, filename: str = "context_gen.json",
+    out_dir: Path,
+    application_id: int,
+    markdown: str,
+    *,
+    include_recommendations: bool = False,
+    experience_id: int | None = None,
+    bullet_ids: list[int] | None = None,
+    filename: str = "context_gen.json",
 ) -> Path:
     """Persist a post-generate context carrying last_generated_json_resume —
     the deterministic md_to_json_resume() of `markdown`, exactly as
@@ -373,7 +419,9 @@ class TestApplicationPreviewWysiwyg:
         _seed_experience_with_bullets(cid)
 
         ctx_file = _write_context_with_cached_json_resume(
-            preview_app.OUTPUT_DIR / "casey", aid, _WYSIWYG_MARKDOWN,
+            preview_app.OUTPUT_DIR / "casey",
+            aid,
+            _WYSIWYG_MARKDOWN,
         )
 
         client = preview_app.app.test_client()
@@ -398,7 +446,9 @@ class TestApplicationPreviewWysiwyg:
 
         # No recommendations on this context (include_recommendations=False).
         ctx_file = _write_context_with_cached_json_resume(
-            preview_app.OUTPUT_DIR / "casey", aid, _WYSIWYG_MARKDOWN,
+            preview_app.OUTPUT_DIR / "casey",
+            aid,
+            _WYSIWYG_MARKDOWN,
             filename="context_no_recs.json",
         )
 
@@ -419,7 +469,9 @@ class TestApplicationPreviewWysiwyg:
 
         # Empty markdown → md_to_json_resume() emits an empty skeleton.
         ctx_file = _write_context_with_cached_json_resume(
-            preview_app.OUTPUT_DIR / "casey", aid, "",
+            preview_app.OUTPUT_DIR / "casey",
+            aid,
+            "",
             filename="context_empty.json",
         )
 
@@ -438,18 +490,27 @@ class TestApplicationPreviewWysiwyg:
 
 
 def _write_context_with_cover_letter(
-    out_dir: Path, application_id: int, cover_letter_md: str,
-    *, filename: str = "context_cl.json",
+    out_dir: Path,
+    application_id: int,
+    cover_letter_md: str,
+    *,
+    filename: str = "context_cl.json",
 ) -> Path:
     """Persist a context carrying last_generated_cover_letter — as
     run_generate_cover_letter writes it in place after a CL generation."""
     import json as _json
+
     out_dir.mkdir(parents=True, exist_ok=True)
     ctx_path = out_dir / filename
-    ctx_path.write_text(_json.dumps({
-        "application_id": application_id,
-        "last_generated_cover_letter": cover_letter_md,
-    }), encoding="utf-8")
+    ctx_path.write_text(
+        _json.dumps(
+            {
+                "application_id": application_id,
+                "last_generated_cover_letter": cover_letter_md,
+            }
+        ),
+        encoding="utf-8",
+    )
     return ctx_path
 
 
@@ -467,7 +528,9 @@ class TestCoverLetterPreview:
         business-letter shell as self-contained HTML."""
         _cid, aid = _seed_candidate_app(preview_app, username="casey")
         ctx = _write_context_with_cover_letter(
-            preview_app.OUTPUT_DIR / "casey", aid, self._CL,
+            preview_app.OUTPUT_DIR / "casey",
+            aid,
+            self._CL,
         )
         client = preview_app.app.test_client()
         r = client.get(
@@ -496,7 +559,9 @@ class TestCoverLetterPreview:
         not a blank styled page."""
         _cid, aid = _seed_candidate_app(preview_app, username="casey")
         ctx = _write_context_with_cover_letter(
-            preview_app.OUTPUT_DIR / "casey", aid, "",
+            preview_app.OUTPUT_DIR / "casey",
+            aid,
+            "",
             filename="context_cl_empty.json",
         )
         client = preview_app.app.test_client()
@@ -515,12 +580,18 @@ class TestCoverLetterPreview:
         guard refuses it, so its cover letter never renders (placeholder
         shown). Proves path-traversal containment on the new route."""
         import json as _json
+
         _cid, aid = _seed_candidate_app(preview_app, username="casey")
         outside = tmp_path / "evil_context.json"
-        outside.write_text(_json.dumps({
-            "application_id": aid,
-            "last_generated_cover_letter": "SENTINEL_LEAK_TEXT",
-        }), encoding="utf-8")
+        outside.write_text(
+            _json.dumps(
+                {
+                    "application_id": aid,
+                    "last_generated_cover_letter": "SENTINEL_LEAK_TEXT",
+                }
+            ),
+            encoding="utf-8",
+        )
         client = preview_app.app.test_client()
         body = client.get(
             f"/api/applications/{aid}/cover-letter-preview?context_path={outside}",
@@ -569,27 +640,31 @@ class TestPreviewWithExplicitTemplate:
         # the seeded bullet ids so llm_recommendations covers them.
         session = get_session()
         try:
-            classic = session.query(PersonaTemplate).filter_by(
-                source="bundled", name="Classic Single-Column",
-            ).first()
+            classic = (
+                session.query(PersonaTemplate)
+                .filter_by(
+                    source="bundled",
+                    name="Classic Single-Column",
+                )
+                .first()
+            )
             assert classic is not None
             classic_id = classic.id
-            bullet_ids = [
-                b.id for b in session.query(Bullet)
-                .filter_by(experience_id=exp_id).all()
-            ]
+            bullet_ids = [b.id for b in session.query(Bullet).filter_by(experience_id=exp_id).all()]
         finally:
             session.close()
 
         ctx_file = _write_context_with_recommendations(
-            preview_app.OUTPUT_DIR / "casey", aid, exp_id, bullet_ids,
+            preview_app.OUTPUT_DIR / "casey",
+            aid,
+            exp_id,
+            bullet_ids,
             filename="context_tpl.json",
         )
 
         client = preview_app.app.test_client()
         r = client.get(
-            f"/api/applications/{aid}/preview"
-            f"?template_id={classic_id}&context_path={ctx_file}",
+            f"/api/applications/{aid}/preview?template_id={classic_id}&context_path={ctx_file}",
         )
         assert r.status_code == 200
         assert "Casey" in r.get_data(as_text=True)
@@ -636,7 +711,8 @@ class TestUserPreview:
         through onboarding rather than showing a blank preview."""
         # Materialize a config file (no candidate row)
         (preview_app.CONFIGS_DIR / "newbie.config").write_text(
-            "{}", encoding="utf-8",
+            "{}",
+            encoding="utf-8",
         )
         client = preview_app.app.test_client()
         r = client.get("/api/users/newbie/preview")

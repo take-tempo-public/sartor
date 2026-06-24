@@ -39,7 +39,7 @@ def test_live_region_present_and_polite() -> None:
     atomic live region (so screen readers announce completions without interrupting)."""
     html = _read(INDEX_HTML)
     match = re.search(r"<[^>]*\bid=\"srAnnounce\"[^>]*>", html)
-    assert match, 'The #srAnnounce live region is missing from templates/index.html (F-expa11y-08).'
+    assert match, "The #srAnnounce live region is missing from templates/index.html (F-expa11y-08)."
     tag = match.group(0)
     assert 'aria-live="polite"' in tag, f'#srAnnounce must be aria-live="polite"; got: {tag}'
     assert 'aria-atomic="true"' in tag, f'#srAnnounce must be aria-atomic="true"; got: {tag}'
@@ -48,7 +48,9 @@ def test_live_region_present_and_polite() -> None:
 def test_announce_helper_defined_and_wired() -> None:
     """static/app.js defines _announce() and wires it to the #srAnnounce region."""
     js = _read(APP_JS)
-    assert "function _announce(" in js, "_announce() helper is missing from static/app.js (F-expa11y-08)."
+    assert "function _announce(" in js, (
+        "_announce() helper is missing from static/app.js (F-expa11y-08)."
+    )
     assert "getElementById('srAnnounce')" in js, (
         "_announce() must write to the #srAnnounce region (getElementById('srAnnounce'))."
     )

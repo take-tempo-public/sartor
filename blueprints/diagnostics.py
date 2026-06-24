@@ -84,7 +84,8 @@ def _write_seed_json(fixture_dir: Path, seed: dict) -> Path:
     """
     seed_path = fixture_dir / "seed.json"
     seed_path.write_text(
-        json.dumps(seed, indent=2, ensure_ascii=False) + "\n", encoding="utf-8",
+        json.dumps(seed, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
     )
     return seed_path
 
@@ -148,16 +149,18 @@ def annotation_fixtures() -> ResponseReturnValue:
             if doc is None:
                 continue
             dedup = doc.get("dedup", {}) or {}
-            fixtures.append({
-                "slug": entry.name,
-                "candidate_username": doc.get("candidate_username", ""),
-                "prompt_version": doc.get("prompt_version", ""),
-                "jd_count": doc.get("jd_count", 0),
-                "bullet_clusters": (dedup.get("bullets", {}) or {}).get("cluster_count", 0),
-                "skill_clusters": (dedup.get("skills", {}) or {}).get("cluster_count", 0),
-                "has_annotations": (entry / "annotations.json").exists(),
-                "has_expected": (entry / "expected.json").exists(),
-            })
+            fixtures.append(
+                {
+                    "slug": entry.name,
+                    "candidate_username": doc.get("candidate_username", ""),
+                    "prompt_version": doc.get("prompt_version", ""),
+                    "jd_count": doc.get("jd_count", 0),
+                    "bullet_clusters": (dedup.get("bullets", {}) or {}).get("cluster_count", 0),
+                    "skill_clusters": (dedup.get("skills", {}) or {}).get("cluster_count", 0),
+                    "has_annotations": (entry / "annotations.json").exists(),
+                    "has_expected": (entry / "expected.json").exists(),
+                }
+            )
     return jsonify({"fixtures": fixtures})
 
 
@@ -193,16 +196,19 @@ def annotation_load(username: str, slug: str) -> ResponseReturnValue:
         doc = json.loads(ann_path.read_text(encoding="utf-8"))
     else:
         doc = build_annotation_template(
-            bootstrap, bootstrap_source=str(fixture_dir / "bootstrap.json"),
+            bootstrap,
+            bootstrap_source=str(fixture_dir / "bootstrap.json"),
         )
-    return jsonify({
-        "annotations": doc,
-        "has_annotations": ann_path.exists(),
-        "vocab": {
-            "verdicts": sorted(VERDICTS),
-            "failed_rules": sorted(ALLOWED_FAILED_RULES),
-        },
-    })
+    return jsonify(
+        {
+            "annotations": doc,
+            "has_annotations": ann_path.exists(),
+            "vocab": {
+                "verdicts": sorted(VERDICTS),
+                "failed_rules": sorted(ALLOWED_FAILED_RULES),
+            },
+        }
+    )
 
 
 @diagnostics_bp.route("/api/annotation/fixture/<username>/<slug>", methods=["POST"])
@@ -239,14 +245,20 @@ def annotation_save(username: str, slug: str) -> ResponseReturnValue:
     fixture_dir.mkdir(parents=True, exist_ok=True)
     out_path = fixture_dir / "annotations.json"
     out_path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    logger.info("Saved annotations for fixture %s (%d bullets, %d skills)",
-                slug, len(doc.get("bullets", [])), len(doc.get("skills", [])))
-    return jsonify({
-        "ok": True,
-        "path": str(out_path),
-        "bullets": len(doc.get("bullets", [])),
-        "skills": len(doc.get("skills", [])),
-    })
+    logger.info(
+        "Saved annotations for fixture %s (%d bullets, %d skills)",
+        slug,
+        len(doc.get("bullets", [])),
+        len(doc.get("skills", [])),
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "path": str(out_path),
+            "bullets": len(doc.get("bullets", [])),
+            "skills": len(doc.get("skills", [])),
+        }
+    )
 
 
 @diagnostics_bp.route("/api/annotation/fixture/<username>/<slug>/collate", methods=["POST"])
@@ -294,33 +306,40 @@ def annotation_collate(username: str, slug: str) -> ResponseReturnValue:
     anchor_name = pick_anchor_jd(bootstrap)
     anchor_src = (fixture_dir / "jds" / secure_filename(anchor_name)) if anchor_name else None
     jd_written = False
-    if (anchor_src is not None and _within(anchor_src, annotation_root)
-            and anchor_src.exists()):
+    if anchor_src is not None and _within(anchor_src, annotation_root) and anchor_src.exists():
         (fixture_dir / "jd.txt").write_text(
-            anchor_src.read_text(encoding="utf-8"), encoding="utf-8",
+            anchor_src.read_text(encoding="utf-8"),
+            encoding="utf-8",
         )
         jd_written = True
 
     expected_path = fixture_dir / "expected.json"
     brief_path = fixture_dir / "improvement_brief.md"
-    expected_path.write_text(json.dumps(expected, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    expected_path.write_text(
+        json.dumps(expected, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     brief_path.write_text(brief, encoding="utf-8")
-    logger.info("Collated fixture %s: %d must_keywords, %d forbidden_inventions",
-                slug, len(expected.get("must_keywords", [])),
-                len(expected.get("forbidden_inventions", [])))
-    return jsonify({
-        "ok": True,
-        "expected_path": str(expected_path),
-        "brief_path": str(brief_path),
-        "jd_written": jd_written,
-        "anchor_jd": anchor_name,
-        "must_keywords": len(expected.get("must_keywords", [])),
-        "forbidden_inventions": len(expected.get("forbidden_inventions", [])),
-        "run_command": (
-            f"python evals/runner.py --suite real --seed "
-            f"evals/fixtures/real/{secure_filename(slug)}/seed.json"
-        ),
-    })
+    logger.info(
+        "Collated fixture %s: %d must_keywords, %d forbidden_inventions",
+        slug,
+        len(expected.get("must_keywords", [])),
+        len(expected.get("forbidden_inventions", [])),
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "expected_path": str(expected_path),
+            "brief_path": str(brief_path),
+            "jd_written": jd_written,
+            "anchor_jd": anchor_name,
+            "must_keywords": len(expected.get("must_keywords", [])),
+            "forbidden_inventions": len(expected.get("forbidden_inventions", [])),
+            "run_command": (
+                f"python evals/runner.py --suite real --seed "
+                f"evals/fixtures/real/{secure_filename(slug)}/seed.json"
+            ),
+        }
+    )
 
 
 @diagnostics_bp.route("/api/annotation/fixture/<username>/<slug>/score", methods=["POST"])
@@ -352,12 +371,16 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
 
     seed_path = fixture_dir / "seed.json"
     if not seed_path.exists():
-        return jsonify({
-            "error": "No seed.json for this fixture — re-run the bootstrap to capture the "
-                     "corpus snapshot, then score.",
-        }), 409
+        return jsonify(
+            {
+                "error": "No seed.json for this fixture — re-run the bootstrap to capture the "
+                "corpus snapshot, then score.",
+            }
+        ), 409
 
-    clusters = ((bootstrap.get("dedup", {}) or {}).get("bullets", {}) or {}).get("clusters", []) or []
+    clusters = ((bootstrap.get("dedup", {}) or {}).get("bullets", {}) or {}).get(
+        "clusters", []
+    ) or []
     if not clusters:
         return jsonify({"error": "Bootstrap has no bullet clusters to score"}), 400
 
@@ -373,10 +396,13 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
     try:
         from db.build_context import build_context_set_from_db
         from evals.seed_import import seeded_session
+
         with seeded_session(seed_path) as (seed_session, seed_user):
             ctx, _app, _run = build_context_set_from_db(
-                seed_session, candidate_username=seed_user,
-                jd_text="(grounding backfill)", run_id="grounding-backfill",
+                seed_session,
+                candidate_username=seed_user,
+                jd_text="(grounding backfill)",
+                run_id="grounding-backfill",
             )
             corpus_source = (ctx["resume"]["text"] or "").strip()
     except Exception as exc:  # noqa: BLE001
@@ -411,50 +437,72 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
 
         threading.Thread(target=worker, daemon=True).start()
         yield _sse("start", {"slug": slug, "bullet_clusters": len(clusters)})
-        yield _sse("scoring", {
-            "message": f"Scoring {len(clusters)} bullet clusters (DeBERTa NLI + MiniCheck, "
-                       "~2-4s each)…",
-        })
+        yield _sse(
+            "scoring",
+            {
+                "message": f"Scoring {len(clusters)} bullet clusters (DeBERTa NLI + MiniCheck, "
+                "~2-4s each)…",
+            },
+        )
 
         # Single scorer call (no incremental progress) — block until the worker is done.
         while events.get() is not sentinel:
             pass
 
         if "import_error" in result:
-            logger.warning("Grounding backfill: extras not installed for %s: %s",
-                           slug, result["import_error"])
-            yield _sse("error", {
-                "error": "Grounding extras not installed.",
-                "detail": "Install with: pip install -e '.[eval-grounding]' (see CONTRIBUTING.md).",
-                "http_status": 400,
-            })
+            logger.warning(
+                "Grounding backfill: extras not installed for %s: %s", slug, result["import_error"]
+            )
+            yield _sse(
+                "error",
+                {
+                    "error": "Grounding extras not installed.",
+                    "detail": "Install with: pip install -e '.[eval-grounding]' (see CONTRIBUTING.md).",
+                    "http_status": 400,
+                },
+            )
             return
         if "error" in result:
-            logger.error("Grounding backfill failed for %s: %s", slug, result["error"],
-                         exc_info=result["error"])
-            yield _sse("error", {
-                "error": "Grounding scoring failed.",
-                "detail": str(result["error"]),
-                "http_status": 500,
-            })
+            logger.error(
+                "Grounding backfill failed for %s: %s",
+                slug,
+                result["error"],
+                exc_info=result["error"],
+            )
+            yield _sse(
+                "error",
+                {
+                    "error": "Grounding scoring failed.",
+                    "detail": str(result["error"]),
+                    "http_status": 500,
+                },
+            )
             return
 
         gs = result["gs"]
         bootstrap["grounding_signals"] = gs
         bootstrap_path.write_text(
-            json.dumps(bootstrap, indent=2, ensure_ascii=False) + "\n", encoding="utf-8",
+            json.dumps(bootstrap, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
         )
         patched = _patch_annotation_scores(ann_path, gs) if ann_path.exists() else 0
         bullet_count = gs.get("bullet_count", 0)
-        logger.info("Grounding backfill wrote %s (%d bullets scored, %d annotations patched)",
-                    slug, bullet_count, patched)
-        yield _sse("done", {
-            "slug": slug,
-            "bullet_count": bullet_count,
-            "mean_entailment": (gs.get("nli_summary", {}) or {}).get("mean_entailment", 0.0),
-            "mean_minicheck": (gs.get("minicheck_summary", {}) or {}).get("mean_score", 0.0),
-            "annotations_patched": patched,
-        })
+        logger.info(
+            "Grounding backfill wrote %s (%d bullets scored, %d annotations patched)",
+            slug,
+            bullet_count,
+            patched,
+        )
+        yield _sse(
+            "done",
+            {
+                "slug": slug,
+                "bullet_count": bullet_count,
+                "mean_entailment": (gs.get("nli_summary", {}) or {}).get("mean_entailment", 0.0),
+                "mean_minicheck": (gs.get("minicheck_summary", {}) or {}).get("mean_score", 0.0),
+                "annotations_patched": patched,
+            },
+        )
 
     return Response(
         stream(),
@@ -479,7 +527,9 @@ def annotation_seed_export() -> ResponseReturnValue:
         return jsonify({"error": "localhost only"}), 403
     annotation_root = current_app.config["ANNOTATION_ROOT"]
     data = request.get_json(silent=True) or {}
-    safe_user = _safe_username(data.get("username", ""), configs_dir=current_app.config["CONFIGS_DIR"])
+    safe_user = _safe_username(
+        data.get("username", ""), configs_dir=current_app.config["CONFIGS_DIR"]
+    )
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
     slug = secure_filename(data.get("slug") or f"{safe_user}-bootstrap")
@@ -502,10 +552,12 @@ def annotation_seed_export() -> ResponseReturnValue:
     except ValueError as exc:
         # Config exists (passed _safe_username) but no Candidate corpus row yet —
         # same needs-onboarding shape as /api/analyze. Distinct from the 400 above.
-        return jsonify({
-            "error": "No corpus for this user yet — import a résumé / build the corpus first.",
-            "detail": str(exc),
-        }), 409
+        return jsonify(
+            {
+                "error": "No corpus for this user yet — import a résumé / build the corpus first.",
+                "detail": str(exc),
+            }
+        ), 409
     finally:
         session.close()
 
@@ -515,18 +567,22 @@ def annotation_seed_export() -> ResponseReturnValue:
     n_bullets = sum(len(e["bullets"]) for e in seed["experiences"])
     logger.info(
         "Seed export wrote %s/seed.json (%d experiences, %d bullets)",
-        slug, len(seed["experiences"]), n_bullets,
+        slug,
+        len(seed["experiences"]),
+        n_bullets,
     )
-    return jsonify({
-        "ok": True,
-        "slug": slug,
-        "candidate": safe_user,
-        "experiences": len(seed["experiences"]),
-        "bullets": n_bullets,
-        "summary_items": len(seed["summary_items"]),
-        "skills": len(seed["skills"]),
-        "path": f"evals/fixtures/real/{slug}/seed.json",
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "slug": slug,
+            "candidate": safe_user,
+            "experiences": len(seed["experiences"]),
+            "bullets": n_bullets,
+            "summary_items": len(seed["summary_items"]),
+            "skills": len(seed["skills"]),
+            "path": f"evals/fixtures/real/{slug}/seed.json",
+        }
+    )
 
 
 @diagnostics_bp.route("/api/annotation/bootstrap", methods=["POST"])
@@ -604,7 +660,10 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
                 session = get_session()
                 try:
                     per_jd, corpus = run_pipeline_over_jd_texts(
-                        client, session, safe_user, jds,
+                        client,
+                        session,
+                        safe_user,
+                        jds,
                         progress=lambda ev, payload: events.put(("progress", ev, payload)),
                     )
                     result["per_jd"] = per_jd
@@ -639,11 +698,14 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
 
         if "error" in result:
             logger.error("Bootstrap wrapper failed: %s", result["error"], exc_info=result["error"])
-            yield _sse("error", {
-                "error": "Bootstrap pipeline failed.",
-                "detail": str(result["error"]),
-                "http_status": 500,
-            })
+            yield _sse(
+                "error",
+                {
+                    "error": "Bootstrap pipeline failed.",
+                    "detail": str(result["error"]),
+                    "http_status": 500,
+                },
+            )
             return
 
         # Optional grounding scorers (eval-only models), resolved AFTER the paid
@@ -658,11 +720,15 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
         grounding_note = None
         if grounding_requested:
             from evals.grounding_signals import run_grounding_signals
+
             grounding_fn = run_grounding_signals
-            yield _sse("scoring", {
-                "message": "Running grounding scorers (DeBERTa NLI + MiniCheck) over "
-                           "deduped bullets — this is CPU-bound (~2-4s/bullet)…",
-            })
+            yield _sse(
+                "scoring",
+                {
+                    "message": "Running grounding scorers (DeBERTa NLI + MiniCheck) over "
+                    "deduped bullets — this is CPU-bound (~2-4s/bullet)…",
+                },
+            )
 
         # Deterministic collation + write (LLM-free apart from the optional scorers).
         # build_bootstrap_document fails soft on grounding, so this never raises for
@@ -683,7 +749,8 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
             )
         fixture_dir.mkdir(parents=True, exist_ok=True)
         (fixture_dir / "bootstrap.json").write_text(
-            json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8",
+            json.dumps(doc, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
         )
         # Persist the corpus snapshot so the fixture is runnable by
         # `runner.py --suite real --seed …/seed.json` and so the grounding backfill
@@ -702,18 +769,26 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
             if _within(jd_file, annotation_root):
                 jd_file.write_text(text, encoding="utf-8")
         grounded = doc.get("grounding_signals") is not None
-        logger.info("Bootstrap wrapper wrote %s (%d JDs, %d bullet clusters, grounded=%s)",
-                    slug, doc["jd_count"], doc["dedup"]["bullets"]["cluster_count"], grounded)
+        logger.info(
+            "Bootstrap wrapper wrote %s (%d JDs, %d bullet clusters, grounded=%s)",
+            slug,
+            doc["jd_count"],
+            doc["dedup"]["bullets"]["cluster_count"],
+            grounded,
+        )
         if grounding_note:
             yield _sse("warning", {"message": grounding_note})
-        yield _sse("done", {
-            "slug": slug,
-            "candidate": safe_user,
-            "jd_count": doc["jd_count"],
-            "bullet_clusters": doc["dedup"]["bullets"]["cluster_count"],
-            "skill_clusters": doc["dedup"]["skills"]["cluster_count"],
-            "grounded": grounded,
-        })
+        yield _sse(
+            "done",
+            {
+                "slug": slug,
+                "candidate": safe_user,
+                "jd_count": doc["jd_count"],
+                "bullet_clusters": doc["dedup"]["bullets"]["cluster_count"],
+                "skill_clusters": doc["dedup"]["skills"]["cluster_count"],
+                "grounded": grounded,
+            },
+        )
 
     return Response(
         stream(),
@@ -764,7 +839,9 @@ def eval_run_stream() -> ResponseReturnValue:
     raw_slug = str(data.get("slug", "")).strip()
     if raw_slug:
         annotation_root = current_app.config["ANNOTATION_ROOT"]
-        safe_user = _safe_username(str(data.get("username", "")), configs_dir=current_app.config["CONFIGS_DIR"])
+        safe_user = _safe_username(
+            str(data.get("username", "")), configs_dir=current_app.config["CONFIGS_DIR"]
+        )
         if not safe_user:
             return jsonify({"error": "Invalid or unknown user"}), 400
         fixture_dir = _annotation_fixture_path(raw_slug, annotation_root)
@@ -772,11 +849,14 @@ def eval_run_stream() -> ResponseReturnValue:
             return jsonify({"error": "Invalid fixture slug"}), 400
         seed_path = fixture_dir / "seed.json"
         if not _within(seed_path, annotation_root) or not seed_path.exists():
-            return jsonify({
-                "error": "No seed.json for this fixture — re-run the bootstrap to "
-                         "capture the corpus snapshot, then run the eval.",
-            }), 409
+            return jsonify(
+                {
+                    "error": "No seed.json for this fixture — re-run the bootstrap to "
+                    "capture the corpus snapshot, then run the eval.",
+                }
+            ), 409
         from evals.seed_import import load_seed
+
         try:
             seed_data = load_seed(str(seed_path))
         except (OSError, json.JSONDecodeError, ValueError) as exc:
@@ -808,10 +888,16 @@ def eval_run_stream() -> ResponseReturnValue:
                 events.put(sentinel)
 
         threading.Thread(target=worker, daemon=True).start()
-        yield _sse("start", {
-            "suite": suite, "subset": subset, "fixture": fixture_name,
-            "grounding": grounding_signals, "seeded": seed_data is not None,
-        })
+        yield _sse(
+            "start",
+            {
+                "suite": suite,
+                "subset": subset,
+                "fixture": fixture_name,
+                "grounding": grounding_signals,
+                "seeded": seed_data is not None,
+            },
+        )
 
         while True:
             item = events.get()
@@ -822,25 +908,32 @@ def eval_run_stream() -> ResponseReturnValue:
 
         if "error" in result:
             logger.error("Console eval run failed: %s", result["error"], exc_info=result["error"])
-            yield _sse("error", {
-                "error": "Eval run failed.",
-                "detail": str(result["error"]),
-                "http_status": 500,
-            })
+            yield _sse(
+                "error",
+                {
+                    "error": "Eval run failed.",
+                    "detail": str(result["error"]),
+                    "http_status": 500,
+                },
+            )
             return
 
         res = result["res"]
-        logger.info("Console eval run complete: %d pass, %d fail → %s",
-                    res.n_pass, res.n_fail, res.out_path)
-        yield _sse("done", {
-            "suite": suite,
-            "subset": subset,
-            "out_file": res.out_path.name if res.out_path else None,
-            "n_pass": res.n_pass,
-            "n_fail": res.n_fail,
-            "regressions": len(res.regressions),
-            "exit_code": res.exit_code,
-        })
+        logger.info(
+            "Console eval run complete: %d pass, %d fail → %s", res.n_pass, res.n_fail, res.out_path
+        )
+        yield _sse(
+            "done",
+            {
+                "suite": suite,
+                "subset": subset,
+                "out_file": res.out_path.name if res.out_path else None,
+                "n_pass": res.n_pass,
+                "n_fail": res.n_fail,
+                "regressions": len(res.regressions),
+                "exit_code": res.exit_code,
+            },
+        )
 
     return Response(
         stream(),
@@ -885,8 +978,9 @@ def tune_run_stream() -> ResponseReturnValue:
     # an unknown key) — all before any paid call, so a typo never spends the baseline run.
     raw_overrides = data.get("prompt_overrides")
     if not isinstance(raw_overrides, dict) or not raw_overrides:
-        return jsonify({"error": "prompt_overrides must be a non-empty object "
-                                 "{CONSTANT_NAME: candidate_text}"}), 400
+        return jsonify(
+            {"error": "prompt_overrides must be a non-empty object {CONSTANT_NAME: candidate_text}"}
+        ), 400
     overrides: dict[str, str] = {}
     for key, value in raw_overrides.items():
         if not isinstance(value, str) or not value.strip():
@@ -909,7 +1003,9 @@ def tune_run_stream() -> ResponseReturnValue:
     raw_slug = str(data.get("slug", "")).strip()
     if raw_slug:
         annotation_root = current_app.config["ANNOTATION_ROOT"]
-        safe_user = _safe_username(str(data.get("username", "")), configs_dir=current_app.config["CONFIGS_DIR"])
+        safe_user = _safe_username(
+            str(data.get("username", "")), configs_dir=current_app.config["CONFIGS_DIR"]
+        )
         if not safe_user:
             return jsonify({"error": "Invalid or unknown user"}), 400
         fixture_dir = _annotation_fixture_path(raw_slug, annotation_root)
@@ -917,11 +1013,14 @@ def tune_run_stream() -> ResponseReturnValue:
             return jsonify({"error": "Invalid fixture slug"}), 400
         seed_path = fixture_dir / "seed.json"
         if not _within(seed_path, annotation_root) or not seed_path.exists():
-            return jsonify({
-                "error": "No seed.json for this fixture — re-run the bootstrap to "
-                         "capture the corpus snapshot, then run the A/B.",
-            }), 409
+            return jsonify(
+                {
+                    "error": "No seed.json for this fixture — re-run the bootstrap to "
+                    "capture the corpus snapshot, then run the A/B.",
+                }
+            ), 409
         from evals.seed_import import load_seed
+
         try:
             seed_data = load_seed(str(seed_path))
         except (OSError, json.JSONDecodeError, ValueError) as exc:
@@ -962,11 +1061,19 @@ def tune_run_stream() -> ResponseReturnValue:
                 events.put(sentinel)
 
         threading.Thread(target=worker, daemon=True).start()
-        yield _sse("start", {
-            "mode": "tune", "runs": 2, "suite": suite, "subset": subset,
-            "fixture": fixture_name, "grounding": grounding_signals,
-            "seeded": seed_data is not None, "overrides": sorted(overrides),
-        })
+        yield _sse(
+            "start",
+            {
+                "mode": "tune",
+                "runs": 2,
+                "suite": suite,
+                "subset": subset,
+                "fixture": fixture_name,
+                "grounding": grounding_signals,
+                "seeded": seed_data is not None,
+                "overrides": sorted(overrides),
+            },
+        )
 
         while True:
             item = events.get()
@@ -977,11 +1084,14 @@ def tune_run_stream() -> ResponseReturnValue:
 
         if "error" in result:
             logger.error("Console tune A/B failed: %s", result["error"], exc_info=result["error"])
-            yield _sse("error", {
-                "error": "Tune A/B failed.",
-                "detail": str(result["error"]),
-                "http_status": 500,
-            })
+            yield _sse(
+                "error",
+                {
+                    "error": "Tune A/B failed.",
+                    "detail": str(result["error"]),
+                    "http_status": 500,
+                },
+            )
             return
 
         base = result["baseline"]
@@ -993,19 +1103,26 @@ def tune_run_stream() -> ResponseReturnValue:
         rows = build_delta_table(load_scores(base.out_path), load_scores(cand.out_path))
         logger.info(
             "Console tune A/B complete: baseline %d/%d, candidate %d/%d (%s) → %d row(s)",
-            base.n_pass, base.n_fail, cand.n_pass, cand.n_fail,
-            cand.candidate_version, len(rows),
+            base.n_pass,
+            base.n_fail,
+            cand.n_pass,
+            cand.n_fail,
+            cand.candidate_version,
+            len(rows),
         )
-        yield _sse("delta", {
-            "table": format_delta_table(rows),
-            "rows": [asdict(r) for r in rows],
-            "candidate_version": cand.candidate_version,
-            "baseline_file": base.out_path.name,
-            "candidate_file": cand.out_path.name,
-            "regressed": sum(1 for r in rows if r.regressed),
-            "baseline": {"n_pass": base.n_pass, "n_fail": base.n_fail},
-            "candidate": {"n_pass": cand.n_pass, "n_fail": cand.n_fail},
-        })
+        yield _sse(
+            "delta",
+            {
+                "table": format_delta_table(rows),
+                "rows": [asdict(r) for r in rows],
+                "candidate_version": cand.candidate_version,
+                "baseline_file": base.out_path.name,
+                "candidate_file": cand.out_path.name,
+                "regressed": sum(1 for r in rows if r.regressed),
+                "baseline": {"n_pass": base.n_pass, "n_fail": base.n_fail},
+                "candidate": {"n_pass": cand.n_pass, "n_fail": cand.n_fail},
+            },
+        )
 
     return Response(
         stream(),

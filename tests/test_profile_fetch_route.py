@@ -36,16 +36,19 @@ def fetch_app(tmp_path, monkeypatch):
     db_file = tmp_path / "fetch.sqlite"
 
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
 
     from db.session import init_db
+
     init_db(db_file)
 
     return types.SimpleNamespace(app=app, CONFIGS_DIR=cfg.configs_dir)
@@ -53,9 +56,16 @@ def fetch_app(tmp_path, monkeypatch):
 
 def _write_config(app_module, username: str, **fields) -> None:
     base = {
-        "name": username.title(), "email": "", "phone": "",
-        "linkedin_url": "", "website_url": "", "portfolio_urls": [],
-        "skills": [], "certifications": [], "education_summary": "", "notes": "",
+        "name": username.title(),
+        "email": "",
+        "phone": "",
+        "linkedin_url": "",
+        "website_url": "",
+        "portfolio_urls": [],
+        "skills": [],
+        "certifications": [],
+        "education_summary": "",
+        "notes": "",
     }
     base.update(fields)
     path = app_module.CONFIGS_DIR / f"{username}.config"
@@ -65,6 +75,7 @@ def _write_config(app_module, username: str, **fields) -> None:
 def _seed_candidate(username="casey", **fields):
     from db.models import Candidate
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(username=username, name=username.title(), **fields)
@@ -78,6 +89,7 @@ def _seed_candidate(username="casey", **fields):
 def _get_candidate(username="casey"):
     from db.models import Candidate
     from db.session import get_session
+
     session = get_session()
     try:
         return session.query(Candidate).filter_by(username=username).first()
@@ -91,7 +103,8 @@ class TestProfileFetchWiring:
         scraper.fetch_profile_content (→ fetch_url_content per URL) for every
         configured URL and caches the combined text in online_profile_text."""
         _write_config(
-            fetch_app, "casey",
+            fetch_app,
+            "casey",
             linkedin_url="https://linkedin.com/in/casey",
             website_url="https://casey.dev",
             portfolio_urls=["https://github.com/casey", "https://casey.art"],
@@ -141,8 +154,7 @@ class TestProfileFetchWiring:
         cleared to None, graceful status."""
         _write_config(fetch_app, "casey")  # all URL fields empty
         called = []
-        monkeypatch.setattr("scraper.fetch_url_content",
-                            lambda url: called.append(url) or "x")
+        monkeypatch.setattr("scraper.fetch_url_content", lambda url: called.append(url) or "x")
         client = fetch_app.app.test_client()
         r = client.post("/api/users/casey/profile/fetch")
         assert r.status_code == 200
@@ -156,7 +168,8 @@ class TestProfileFetchWiring:
         """URLs present but all unreachable (scraper swallows → "") → chars 0,
         column None. The scrape 'fails gracefully' contract."""
         _write_config(
-            fetch_app, "casey",
+            fetch_app,
+            "casey",
             linkedin_url="https://linkedin.com/in/casey",
             website_url="https://casey.dev",
         )
@@ -174,7 +187,8 @@ class TestProfileFetchWiring:
         profile_text (the β.6 positioning summary / résumé basics.summary
         fallback) is left untouched."""
         _write_config(
-            fetch_app, "casey",
+            fetch_app,
+            "casey",
             linkedin_url="https://linkedin.com/in/casey",
         )
         _seed_candidate("casey", profile_text="Senior PM positioning summary.")
@@ -190,7 +204,8 @@ class TestProfileFetchWiring:
         """A config-only user (no Candidate row yet) gets provisioned on fetch,
         same lazy-provisioning posture as the analyze path."""
         _write_config(
-            fetch_app, "casey",
+            fetch_app,
+            "casey",
             website_url="https://casey.dev",
         )
         assert _get_candidate("casey") is None  # config-only, no row

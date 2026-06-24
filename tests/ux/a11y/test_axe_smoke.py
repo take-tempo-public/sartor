@@ -60,9 +60,7 @@ from ui_pages.selectors import (
     UserPicker,
 )
 
-_AXE_JS = (Path(__file__).resolve().parent / "vendor" / "axe.min.js").read_text(
-    encoding="utf-8"
-)
+_AXE_JS = (Path(__file__).resolve().parent / "vendor" / "axe.min.js").read_text(encoding="utf-8")
 
 # Run axe over the whole top document EXCEPT iframes; only populate the
 # violations array (faster). Returns a compact, JSON-serializable summary.
@@ -116,9 +114,7 @@ def _assert_clean(found: dict[str, list[dict[str, Any]]]) -> None:
 @pytest.mark.ux
 @pytest.mark.a11y
 @pytest.mark.slow
-def test_axe_landing_and_new_user(
-    page: Page, live_server: str, ux_app: ModuleType
-) -> None:
+def test_axe_landing_and_new_user(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """User-picker landing + the revealed new-user form."""
     seed_user(ux_app, "alice")  # populate the user dropdown
 
@@ -143,9 +139,7 @@ def test_axe_landing_and_new_user(
 @pytest.mark.ux
 @pytest.mark.a11y
 @pytest.mark.slow
-def test_axe_main_tabs_and_settings(
-    page: Page, live_server: str, ux_app: ModuleType
-) -> None:
+def test_axe_main_tabs_and_settings(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """The four top tabs (seeded corpus) + the Settings drawer."""
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)
@@ -201,7 +195,9 @@ def test_axe_main_tabs_and_settings(
 @pytest.mark.a11y
 @pytest.mark.slow
 def test_axe_compose_and_template_stubbed(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Drive analyze → Compose → Template (LLM stubbed) so the dynamically
@@ -229,9 +225,7 @@ def test_axe_compose_and_template_stubbed(
 @pytest.mark.ux
 @pytest.mark.a11y
 @pytest.mark.slow
-def test_axe_dashboard_console(
-    page: Page, live_server: str, ux_app: ModuleType
-) -> None:
+def test_axe_dashboard_console(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """Each /_dashboard tab (Tuning holds the `#tuneCandidate` textarea).
 
     Seeds a candidate so the auto-populated `#bsUser` / `#tuneUser`
@@ -259,9 +253,7 @@ def test_axe_dashboard_console(
             )
         elif tab == "tuning":
             dash.reveal_details_for(Dashboard.TUNE_USER)
-            page.wait_for_selector(
-                f"{Dashboard.TUNE_USER} option[value='alice']", state="attached"
-            )
+            page.wait_for_selector(f"{Dashboard.TUNE_USER} option[value='alice']", state="attached")
         found[f"dashboard:{tab}"] = _axe_serious(page)
 
     # Sprint 6.5 education — scan the ported #helpModal in its OPEN state. The tab

@@ -42,8 +42,12 @@ def _seed_skills(candidate_id: int, names: list[str]) -> list[int]:
         ids: list[int] = []
         for i, name in enumerate(names):
             sk = Skill(
-                candidate_id=candidate_id, name=name, display_order=i,
-                is_active=1, is_pending_review=0, source="imported",
+                candidate_id=candidate_id,
+                name=name,
+                display_order=i,
+                is_active=1,
+                is_pending_review=0,
+                source="imported",
             )
             s.add(sk)
             s.flush()
@@ -60,8 +64,7 @@ def _is_composition_post(resp: Response) -> bool:
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_corpus_skills_editor_add(page: Page, live_server: str,
-                                  ux_app: ModuleType) -> None:
+def test_corpus_skills_editor_add(page: Page, live_server: str, ux_app: ModuleType) -> None:
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)
     _seed_skills(cid, ["Python", "Kafka"])
@@ -85,7 +88,9 @@ def test_corpus_skills_editor_add(page: Page, live_server: str,
 @pytest.mark.ux
 @pytest.mark.slow
 def test_compose_skills_card_drop_persists(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     cid = seed_user(ux_app, "alice")
@@ -111,6 +116,6 @@ def test_compose_skills_card_drop_persists(
     # Away + back: the dropped skill returns marked excluded (real GET re-read).
     WizardTemplatePage(page, live_server).open()
     compose.reload()
-    expect(
-        page.locator(".compose-skill-row", has_text="Postgres")
-    ).to_have_class(re.compile(r"skill-excluded"))
+    expect(page.locator(".compose-skill-row", has_text="Postgres")).to_have_class(
+        re.compile(r"skill-excluded")
+    )

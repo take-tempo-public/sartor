@@ -26,31 +26,55 @@ _BOOTSTRAP = {
     "prompt_version": "2026-06-06.1",
     "jaccard_threshold": 0.75,
     "jd_count": 1,
-    "per_jd": [{
-        "jd_file": "jd1.txt", "run_id": "r1",
-        "clarification_questions": [
-            {"id": "q1", "text": "What was the scope of your ownership?", "kind": "scope_probe"},
-        ],
-    }],
+    "per_jd": [
+        {
+            "jd_file": "jd1.txt",
+            "run_id": "r1",
+            "clarification_questions": [
+                {
+                    "id": "q1",
+                    "text": "What was the scope of your ownership?",
+                    "kind": "scope_probe",
+                },
+            ],
+        }
+    ],
     "dedup": {
-        "bullets": {"cluster_count": 2, "clusters": [
-            {"representative": "Led a $5M platform migration",
-             "members": ["Led a $5M platform migration"], "jd_files": ["jd1.txt"], "size": 1},
-            {"representative": "Built CI/CD pipelines",
-             "members": ["Built CI/CD pipelines"], "jd_files": ["jd1.txt"], "size": 1},
-        ]},
-        "skills": {"cluster_count": 1, "clusters": [
-            {"representative": "Python", "members": ["Python"], "jd_files": ["jd1.txt"], "size": 1},
-        ]},
+        "bullets": {
+            "cluster_count": 2,
+            "clusters": [
+                {
+                    "representative": "Led a $5M platform migration",
+                    "members": ["Led a $5M platform migration"],
+                    "jd_files": ["jd1.txt"],
+                    "size": 1,
+                },
+                {
+                    "representative": "Built CI/CD pipelines",
+                    "members": ["Built CI/CD pipelines"],
+                    "jd_files": ["jd1.txt"],
+                    "size": 1,
+                },
+            ],
+        },
+        "skills": {
+            "cluster_count": 1,
+            "clusters": [
+                {
+                    "representative": "Python",
+                    "members": ["Python"],
+                    "jd_files": ["jd1.txt"],
+                    "size": 1,
+                },
+            ],
+        },
     },
     "grounding_signals": None,
 }
 
 
 @pytest.mark.ux
-def test_annotation_tab_save_and_collate(
-    page: Page, live_server: str, ux_app: ModuleType
-) -> None:
+def test_annotation_tab_save_and_collate(page: Page, live_server: str, ux_app: ModuleType) -> None:
     # The conftest injects a temp ANNOTATION_ROOT onto the live app config; seed the
     # bootstrap fixture under it so the already-running server thread finds it (the
     # diagnostics routes read current_app.config["ANNOTATION_ROOT"] per request).

@@ -67,7 +67,10 @@ def test_refresh_builds_sidecar(tmp_path):
 
 
 def test_search_returns_vector_units(tmp_path):
-    docs = [Document("a.py", "alpha beta gamma", "shaA"), Document("b.py", "delta epsilon zeta", "shaB")]
+    docs = [
+        Document("a.py", "alpha beta gamma", "shaA"),
+        Document("b.py", "delta epsilon zeta", "shaB"),
+    ]
     src = _make_source(tmp_path, provider=lambda: list(docs))
     src.refresh(None)
     results = list(src.search("alpha beta", Scope()))
@@ -94,7 +97,9 @@ def test_search_ranks_more_similar_first(tmp_path):
 
 def test_audience_resolver_applied(tmp_path):
     docs = [Document("readme.md", "alpha beta", "s")]
-    src = VectorSource(tmp_path, _fake_embedder, lambda _p: Audience.USER, document_provider=lambda: list(docs))
+    src = VectorSource(
+        tmp_path, _fake_embedder, lambda _p: Audience.USER, document_provider=lambda: list(docs)
+    )
     src.refresh(None)
     results = list(src.search("alpha", Scope()))
     assert results and all(u.audience is Audience.USER for u in results)
@@ -124,7 +129,9 @@ def test_top_k_caps_results(tmp_path):
 
 def test_min_score_floor_filters(tmp_path):
     # min_score above the max possible cosine (1.0 for normalized vectors) → drop all.
-    src = _make_source(tmp_path, provider=lambda: [Document("a.py", "alpha beta gamma", "s")], min_score=2.0)
+    src = _make_source(
+        tmp_path, provider=lambda: [Document("a.py", "alpha beta gamma", "s")], min_score=2.0
+    )
     src.refresh(None)
     assert list(src.search("alpha beta gamma", Scope())) == []
 
@@ -145,7 +152,9 @@ def test_incremental_reuse_only_reembeds_changed(tmp_path):
 def test_removed_document_drops_from_index(tmp_path):
     docs = [Document("a.py", "alpha beta", "s"), Document("b.py", "gamma delta", "s")]
     holder = {"docs": list(docs)}
-    src = VectorSource(tmp_path, _fake_embedder, _all_dev, document_provider=lambda: list(holder["docs"]))
+    src = VectorSource(
+        tmp_path, _fake_embedder, _all_dev, document_provider=lambda: list(holder["docs"])
+    )
     src.refresh(None)
     holder["docs"] = [docs[0]]  # b.py removed
     src.refresh(None)
@@ -155,7 +164,9 @@ def test_removed_document_drops_from_index(tmp_path):
 
 def test_multi_chunk_document_has_distinct_citations(tmp_path):
     body = "\n".join(f"line {i} alpha" for i in range(100))  # > chunk_lines → multiple windows
-    src = _make_source(tmp_path, provider=lambda: [Document("big.py", body, "s")], chunk_lines=40, chunk_overlap=10)
+    src = _make_source(
+        tmp_path, provider=lambda: [Document("big.py", body, "s")], chunk_lines=40, chunk_overlap=10
+    )
     src.refresh(None)
     results = list(src.search("alpha", Scope()))
     cites = [u.citation for u in results]

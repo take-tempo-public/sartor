@@ -40,6 +40,7 @@ def app_with_stubs(tmp_path, monkeypatch):
     db_file = tmp_path / "cl.sqlite"
 
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
@@ -57,12 +58,18 @@ def app_with_stubs(tmp_path, monkeypatch):
 
     # Stub generate() — returns empty cover_letter_content when
     # with_cover_letter is False (mirrors production behavior).
-    def _stub_generate(client, context_set, analysis, refinement_notes="",
-                       username="", run_id="", with_cover_letter=True):
+    def _stub_generate(
+        client,
+        context_set,
+        analysis,
+        refinement_notes="",
+        username="",
+        run_id="",
+        with_cover_letter=True,
+    ):
         return {
             "resume_content": "# Stub résumé\n\n## Summary\nText.",
-            "cover_letter_content":
-                "Stub cover letter body." if with_cover_letter else "",
+            "cover_letter_content": "Stub cover letter body." if with_cover_letter else "",
             "changes_made": ["x"],
             "proofread_notes": [],
         }
@@ -83,8 +90,9 @@ def app_with_stubs(tmp_path, monkeypatch):
         return str(out)
 
     # The dedicated cover-letter LLM call (β.5).
-    def _stub_cl_against(client, context_set, analysis, resume_content,
-                         refinement_notes="", username="", run_id=""):
+    def _stub_cl_against(
+        client, context_set, analysis, resume_content, refinement_notes="", username="", run_id=""
+    ):
         return {
             "cover_letter_content": "Focused cover letter for " + resume_content[:20],
             "proofread_notes": [],
@@ -97,8 +105,8 @@ def app_with_stubs(tmp_path, monkeypatch):
     # generate_cover_letter_against_resume is imported lazily inside
     # the route, so patch it at the module from which the route imports.
     import analyzer as _analyzer
-    monkeypatch.setattr(_analyzer, "generate_cover_letter_against_resume",
-                        _stub_cl_against)
+
+    monkeypatch.setattr(_analyzer, "generate_cover_letter_against_resume", _stub_cl_against)
 
     # Stub the Anthropic client.
     monkeypatch.setattr(bgen, "_get_client", lambda: object())
@@ -144,11 +152,14 @@ class TestGenerateOptOutDefault:
         client = _app.test_client()
 
         # No generate_cover_letter flag in the body → default is False
-        r = client.post("/api/generate", json={
-            "username": "alice",
-            "context_path": str(ctx_path),
-            "output_format": ".md",
-        })
+        r = client.post(
+            "/api/generate",
+            json={
+                "username": "alice",
+                "context_path": str(ctx_path),
+                "output_format": ".md",
+            },
+        )
         assert r.status_code == 200, r.get_data(as_text=True)
         body = r.get_json()
         # cover_letter_path is empty when no cover letter was produced
@@ -162,12 +173,15 @@ class TestGenerateOptOutDefault:
         _app, ctx_path = app_with_stubs
         client = _app.test_client()
 
-        r = client.post("/api/generate", json={
-            "username": "alice",
-            "context_path": str(ctx_path),
-            "output_format": ".md",
-            "generate_cover_letter": True,
-        })
+        r = client.post(
+            "/api/generate",
+            json={
+                "username": "alice",
+                "context_path": str(ctx_path),
+                "output_format": ".md",
+                "generate_cover_letter": True,
+            },
+        )
         assert r.status_code == 200, r.get_data(as_text=True)
         body = r.get_json()
         assert body["cover_letter_path"]  # non-empty
@@ -185,10 +199,13 @@ class TestGenerateCoverLetterRoute:
         _app, ctx_path = app_with_stubs
         client = _app.test_client()
 
-        r = client.post("/api/generate-cover-letter", json={
-            "username": "alice",
-            "context_path": str(ctx_path),
-        })
+        r = client.post(
+            "/api/generate-cover-letter",
+            json={
+                "username": "alice",
+                "context_path": str(ctx_path),
+            },
+        )
         assert r.status_code == 200, r.get_data(as_text=True)
         body = r.get_json()
         assert body["cover_letter_path"].endswith(".docx")
@@ -218,13 +235,19 @@ class TestGenerateCoverLetterRoute:
             session.add(cand)
             session.flush()
             app_row = Application(
-                candidate_id=cand.id, title="x", jd_text="...", jd_fingerprint="abcd",
+                candidate_id=cand.id,
+                title="x",
+                jd_text="...",
+                jd_fingerprint="abcd",
             )
             session.add(app_row)
             session.flush()
             run = ApplicationRun(
-                application_id=app_row.id, iteration=0, run_id="run123",
-                prompt_version="test", corpus_snapshot_json="{}",
+                application_id=app_row.id,
+                iteration=0,
+                run_id="run123",
+                prompt_version="test",
+                corpus_snapshot_json="{}",
                 generated_resume_md="# Generated résumé v1",  # résumé already persisted
             )
             session.add(run)
@@ -239,10 +262,13 @@ class TestGenerateCoverLetterRoute:
         ctx_path.write_text(json.dumps(ctx), encoding="utf-8")
 
         client = _app.test_client()
-        r = client.post("/api/generate-cover-letter", json={
-            "username": "alice",
-            "context_path": str(ctx_path),
-        })
+        r = client.post(
+            "/api/generate-cover-letter",
+            json={
+                "username": "alice",
+                "context_path": str(ctx_path),
+            },
+        )
         assert r.status_code == 200, r.get_data(as_text=True)
 
         # The cover-letter md landed on the run row; the résumé md is untouched.
@@ -266,10 +292,13 @@ class TestGenerateCoverLetterRoute:
         ctx_path.write_text(json.dumps(ctx), encoding="utf-8")
 
         client = _app.test_client()
-        r = client.post("/api/generate-cover-letter", json={
-            "username": "alice",
-            "context_path": str(ctx_path),
-        })
+        r = client.post(
+            "/api/generate-cover-letter",
+            json={
+                "username": "alice",
+                "context_path": str(ctx_path),
+            },
+        )
         assert r.status_code == 409
         body = r.get_json()
         assert body.get("needs_resume") is True
@@ -283,8 +312,11 @@ class TestGenerateCoverLetterRoute:
     def test_path_traversal_blocked(self, app_with_stubs):
         _app, _ctx_path = app_with_stubs
         client = _app.test_client()
-        r = client.post("/api/generate-cover-letter", json={
-            "username": "alice",
-            "context_path": "/etc/passwd",
-        })
+        r = client.post(
+            "/api/generate-cover-letter",
+            json={
+                "username": "alice",
+                "context_path": "/etc/passwd",
+            },
+        )
         assert r.status_code in (403, 404)

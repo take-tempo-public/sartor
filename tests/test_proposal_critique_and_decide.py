@@ -33,13 +33,24 @@ def _mock_call_llm_factory(captured: dict, response_text: str):
 
     Records the prompt + kwargs and returns a canned response string.
     """
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id,
-            system_prompt="", **kwargs):
+
+    def fake(
+        client,
+        prompt,
+        *,
+        cached_user_prefix,
+        call_kind,
+        username,
+        run_id,
+        system_prompt="",
+        **kwargs,
+    ):
         captured["prompt"] = prompt
         captured["system_prompt"] = system_prompt
         captured["model"] = kwargs.get("model")
         captured["call_kind"] = call_kind
         return response_text
+
     return fake
 
 
@@ -51,12 +62,14 @@ def _mock_call_llm_factory(captured: dict, response_text: str):
 class TestCritiqueProposalHelper:
     def test_assembles_prompt_with_all_inputs(self):
         captured: dict = {}
-        canned = json.dumps({
-            "verdict": "caution",
-            "notes": "Verb downgrade from 'Owned' to 'Contributed to' aligns with source.",
-            "concerns": ["minor scope-inflation residue: 'across the org' has no source"],
-            "suggested_revisions": [],
-        })
+        canned = json.dumps(
+            {
+                "verdict": "caution",
+                "notes": "Verb downgrade from 'Owned' to 'Contributed to' aligns with source.",
+                "concerns": ["minor scope-inflation residue: 'across the org' has no source"],
+                "suggested_revisions": [],
+            }
+        )
         with patch("analyzer._call_llm", _mock_call_llm_factory(captured, canned)):
             critique = critique_proposal(
                 None,
@@ -66,7 +79,9 @@ class TestCritiqueProposalHelper:
                 experience_context={
                     "company": "Polaris",
                     "official_title": "Senior PM",
-                    "start_date": "2022-09", "end_date": None, "location": "Remote",
+                    "start_date": "2022-09",
+                    "end_date": None,
+                    "location": "Remote",
                     "existing_bullets": ["Led 5-person team shipping the RAG eval framework."],
                 },
                 clarifications=[("Have you led customer interviews?", "Yes, weekly.")],
@@ -83,14 +98,18 @@ class TestCritiqueProposalHelper:
         assert "Have you led customer interviews?" in captured["prompt"]
         # Uses Haiku
         from analyzer import HAIKU_MODEL
+
         assert captured["model"] == HAIKU_MODEL
 
     def test_no_edit_path_says_so_in_prompt(self):
         captured: dict = {}
-        canned = json.dumps({
-            "verdict": "risky", "notes": "Fabricated specifics.",
-            "concerns": ["'24 clinicians' has no source"],
-        })
+        canned = json.dumps(
+            {
+                "verdict": "risky",
+                "notes": "Fabricated specifics.",
+                "concerns": ["'24 clinicians' has no source"],
+            }
+        )
         with patch("analyzer._call_llm", _mock_call_llm_factory(captured, canned)):
             critique_proposal(
                 None,
@@ -103,6 +122,7 @@ class TestCritiqueProposalHelper:
 
     def test_missing_required_key_triggers_validation_error(self):
         from analyzer import LLMResponseError
+
         captured: dict = {}
         # Response missing 'concerns'
         canned = json.dumps({"verdict": "good", "notes": "Looks fine."})
@@ -110,7 +130,8 @@ class TestCritiqueProposalHelper:
             with pytest.raises(LLMResponseError):
                 critique_proposal(
                     None,
-                    original_text="x", user_edited_text=None,
+                    original_text="x",
+                    user_edited_text=None,
                     subject_kind="bullet",
                     experience_context={"company": "X", "existing_bullets": []},
                 )
@@ -135,6 +156,7 @@ def b4_app(tmp_path, monkeypatch):
     monkeypatch.setenv("CORPUS_BACKED", "1")
     db_file = tmp_path / "b4.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
@@ -171,64 +193,90 @@ def _seed_b4(db_path: Path) -> dict[str, int]:
         session.add(c)
         session.flush()
         e = Experience(
-            candidate_id=c.id, company="Polaris",
-            start_date="2022-09", end_date=None, location="Remote",
+            candidate_id=c.id,
+            company="Polaris",
+            start_date="2022-09",
+            end_date=None,
+            location="Remote",
         )
         session.add(e)
         session.flush()
         official = ExperienceTitle(
-            experience_id=e.id, title="Senior PM",
-            is_official=1, is_pending_review=0, source="official",
+            experience_id=e.id,
+            title="Senior PM",
+            is_official=1,
+            is_pending_review=0,
+            source="official",
         )
         session.add(official)
         canonical = Bullet(
-            experience_id=e.id, text="Led 5-person eval framework team.",
-            display_order=0, is_active=1, is_pending_review=0,
-            source="primary:r.md", has_outcome=1,
+            experience_id=e.id,
+            text="Led 5-person eval framework team.",
+            display_order=0,
+            is_active=1,
+            is_pending_review=0,
+            source="primary:r.md",
+            has_outcome=1,
         )
         session.add(canonical)
         # The two pending proposals
         proposed_bullet = Bullet(
-            experience_id=e.id, text="Owned hospital ops customer interview cadence.",
-            display_order=1, is_active=1, is_pending_review=1,
-            source="llm_proposed:test_run", pattern_kind="car",
+            experience_id=e.id,
+            text="Owned hospital ops customer interview cadence.",
+            display_order=1,
+            is_active=1,
+            is_pending_review=1,
+            source="llm_proposed:test_run",
+            pattern_kind="car",
         )
         session.add(proposed_bullet)
         proposed_title = ExperienceTitle(
-            experience_id=e.id, title="Provider Workflows PM",
-            is_official=0, truthful_enough_to_use=0,
-            is_pending_review=1, source="llm_proposed:test_run",
+            experience_id=e.id,
+            title="Provider Workflows PM",
+            is_official=0,
+            truthful_enough_to_use=0,
+            is_pending_review=1,
+            source="llm_proposed:test_run",
         )
         session.add(proposed_title)
         session.flush()
 
         app_row = Application(
-            candidate_id=c.id, title="x",
+            candidate_id=c.id,
+            title="x",
             jd_text="JD: Senior PM, Provider Workflows. Hybrid Boston.",
             jd_fingerprint="abcd",
         )
         session.add(app_row)
         session.flush()
         run = ApplicationRun(
-            application_id=app_row.id, iteration=0, run_id="test_run",
-            prompt_version="2026-05-12.1", corpus_snapshot_json="{}",
+            application_id=app_row.id,
+            iteration=0,
+            run_id="test_run",
+            prompt_version="2026-05-12.1",
+            corpus_snapshot_json="{}",
         )
         session.add(run)
         session.flush()
 
         pr_bullet = ProposalReview(
-            application_run_id=run.id, bullet_id=proposed_bullet.id,
-            original_text=proposed_bullet.text, decision="pending",
+            application_run_id=run.id,
+            bullet_id=proposed_bullet.id,
+            original_text=proposed_bullet.text,
+            decision="pending",
         )
         pr_title = ProposalReview(
-            application_run_id=run.id, experience_title_id=proposed_title.id,
-            original_text=proposed_title.title, decision="pending",
+            application_run_id=run.id,
+            experience_title_id=proposed_title.id,
+            original_text=proposed_title.title,
+            decision="pending",
         )
         session.add_all([pr_bullet, pr_title])
         session.commit()
 
         return {
-            "candidate_id": c.id, "experience_id": e.id,
+            "candidate_id": c.id,
+            "experience_id": e.id,
             "canonical_bullet_id": canonical.id,
             "proposed_bullet_id": proposed_bullet.id,
             "proposed_title_id": proposed_title.id,
@@ -255,8 +303,10 @@ class TestCritiqueRoute:
             "notes": "Fabricates healthcare/clinical context.",
             "concerns": ["'hospital ops' invents a domain Casey's corpus doesn't support"],
         }
-        with patch("analyzer.critique_proposal", return_value=fake_critique), \
-             patch("blueprints.corpus.proposals._get_client", return_value=object()):
+        with (
+            patch("analyzer.critique_proposal", return_value=fake_critique),
+            patch("blueprints.corpus.proposals._get_client", return_value=object()),
+        ):
             client = b4_app.test_client()
             r = client.post(
                 f"/api/proposals/{ids['pr_bullet_id']}/critique",
@@ -270,6 +320,7 @@ class TestCritiqueRoute:
         # Re-read DB and verify llm_critique_json landed
         from db.models import ProposalReview
         from db.session import make_engine, make_session_factory
+
         engine = make_engine(tmp_path / "b4.sqlite")
         s = make_session_factory(engine)()
         try:
@@ -303,6 +354,7 @@ class TestDecideRoute:
         assert r.status_code == 200, r.get_json()
         from db.models import Bullet, ProposalReview
         from db.session import make_engine, make_session_factory
+
         engine = make_engine(tmp_path / "b4.sqlite")
         s = make_session_factory(engine)()
         try:
@@ -321,12 +373,15 @@ class TestDecideRoute:
         client = b4_app.test_client()
         r = client.post(
             f"/api/proposals/{ids['pr_bullet_id']}/decide",
-            json={"decision": "accept_edit",
-                  "user_edited_text": "Established weekly customer interview cadence."},
+            json={
+                "decision": "accept_edit",
+                "user_edited_text": "Established weekly customer interview cadence.",
+            },
         )
         assert r.status_code == 200
         from db.models import Bullet
         from db.session import make_engine, make_session_factory
+
         engine = make_engine(tmp_path / "b4.sqlite")
         s = make_session_factory(engine)()
         try:
@@ -347,6 +402,7 @@ class TestDecideRoute:
         assert r.status_code == 200
         from db.models import Bullet
         from db.session import make_engine, make_session_factory
+
         engine = make_engine(tmp_path / "b4.sqlite")
         s = make_session_factory(engine)()
         try:
@@ -367,6 +423,7 @@ class TestDecideRoute:
         assert r.status_code == 200
         from db.models import ExperienceTitle
         from db.session import make_engine, make_session_factory
+
         engine = make_engine(tmp_path / "b4.sqlite")
         s = make_session_factory(engine)()
         try:
@@ -388,6 +445,7 @@ class TestDecideRoute:
         assert r.status_code == 200
         from db.models import ExperienceTitle
         from db.session import make_engine, make_session_factory
+
         engine = make_engine(tmp_path / "b4.sqlite")
         s = make_session_factory(engine)()
         try:
@@ -445,6 +503,7 @@ class TestPromoteClarificationRoute:
         # Add a clarification
         from db.models import Clarification
         from db.session import make_engine, make_session_factory
+
         engine = make_engine(tmp_path / "b4.sqlite")
         s = make_session_factory(engine)()
         try:
@@ -464,8 +523,10 @@ class TestPromoteClarificationRoute:
         client = b4_app.test_client()
         r = client.post(
             f"/api/clarifications/{clar_id}/promote-to-bullet",
-            json={"experience_id": ids["experience_id"],
-                  "user_text": "Ran weekly customer interviews with the platform team."},
+            json={
+                "experience_id": ids["experience_id"],
+                "user_text": "Ran weekly customer interviews with the platform team.",
+            },
         )
         assert r.status_code == 200
         body = r.get_json()
@@ -475,6 +536,7 @@ class TestPromoteClarificationRoute:
         s = make_session_factory(engine)()
         try:
             from db.models import Bullet, ProposalReview
+
             new_b = s.query(Bullet).filter_by(id=body["bullet_id"]).first()
             assert new_b.is_pending_review == 1
             assert new_b.source == f"clarification:{clar_id}"
@@ -494,6 +556,7 @@ class TestPromoteClarificationRoute:
         ids = _seed_b4(tmp_path / "b4.sqlite")
         from db.models import Clarification
         from db.session import make_engine, make_session_factory
+
         engine = make_engine(tmp_path / "b4.sqlite")
         s = make_session_factory(engine)()
         try:
@@ -515,8 +578,10 @@ class TestPromoteClarificationRoute:
             "pattern_kind": "manual",
             "rationale": "Past-tense action verb; preserves all stated specifics.",
         }
-        with patch("analyzer.promote_clarification_to_bullet", return_value=fake_llm), \
-             patch("blueprints.corpus.proposals._get_client", return_value=object()):
+        with (
+            patch("analyzer.promote_clarification_to_bullet", return_value=fake_llm),
+            patch("blueprints.corpus.proposals._get_client", return_value=object()),
+        ):
             client = b4_app.test_client()
             r = client.post(
                 f"/api/clarifications/{clar_id}/promote-to-bullet",
@@ -542,6 +607,7 @@ class TestPromoteClarificationRoute:
         ids = _seed_b4(tmp_path / "b4.sqlite")
         from db.models import Candidate, Clarification, Experience
         from db.session import make_engine, make_session_factory
+
         engine = make_engine(tmp_path / "b4.sqlite")
         s = make_session_factory(engine)()
         try:
@@ -555,7 +621,9 @@ class TestPromoteClarificationRoute:
             # Alice's clarification
             clar = Clarification(
                 candidate_id=ids["candidate_id"],
-                question="?", answer="x", kind="manual",
+                question="?",
+                answer="x",
+                kind="manual",
             )
             s.add(clar)
             s.commit()

@@ -37,9 +37,11 @@ def _get_or_provision_candidate(
     education from configs/{user}.config). The caller owns the commit.
     """
     from db.models import Candidate
+
     candidate = session.query(Candidate).filter_by(username=safe_user).first()
     if candidate is None:
         from onboarding.corpus_import import import_candidate_from_config
+
         import_candidate_from_config(safe_user, session, configs_dir=configs_dir)  # add + flush
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
     return candidate

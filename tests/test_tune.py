@@ -32,9 +32,7 @@ def _record(fixture: str, rubric: str, score, status: str = "ok") -> dict:
 
 
 def _write_jsonl(path: Path, records: list[dict]) -> Path:
-    path.write_text(
-        "\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8"
-    )
+    path.write_text("\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8")
     return path
 
 
@@ -44,11 +42,14 @@ def _write_jsonl(path: Path, records: list[dict]) -> Path:
 
 
 def test_load_scores_groups_by_fixture_and_rubric(tmp_path: Path) -> None:
-    p = _write_jsonl(tmp_path / "r.jsonl", [
-        _record("pm-senior", "grounding", 4.8),
-        _record("pm-senior", "tone", 4.2),
-        _record("sre-mid-level", "grounding", 4.6),
-    ])
+    p = _write_jsonl(
+        tmp_path / "r.jsonl",
+        [
+            _record("pm-senior", "grounding", 4.8),
+            _record("pm-senior", "tone", 4.2),
+            _record("sre-mid-level", "grounding", 4.6),
+        ],
+    )
     scores = tune.load_scores(p)
     assert scores == {
         ("pm-senior", "grounding"): [4.8],
@@ -58,22 +59,28 @@ def test_load_scores_groups_by_fixture_and_rubric(tmp_path: Path) -> None:
 
 
 def test_load_scores_excludes_judge_error_and_non_ok(tmp_path: Path) -> None:
-    p = _write_jsonl(tmp_path / "r.jsonl", [
-        _record("pm-senior", "grounding", 4.8),
-        _record("pm-senior", "grounding", 0, status="judge_error"),
-        _record("pm-senior", "tone", 0.0, status="pipeline_error"),
-    ])
+    p = _write_jsonl(
+        tmp_path / "r.jsonl",
+        [
+            _record("pm-senior", "grounding", 4.8),
+            _record("pm-senior", "grounding", 0, status="judge_error"),
+            _record("pm-senior", "tone", 0.0, status="pipeline_error"),
+        ],
+    )
     scores = tune.load_scores(p)
     # judge_error (score 0) and pipeline_error are dropped, not averaged in.
     assert scores == {("pm-senior", "grounding"): [4.8]}
 
 
 def test_load_scores_keeps_multiple_rows_for_mean(tmp_path: Path) -> None:
-    p = _write_jsonl(tmp_path / "r.jsonl", [
-        _record("pm-senior", "grounding", 4.8),
-        _record("pm-senior", "grounding", 4.2),
-        _record("pm-senior", "grounding", 4.6),
-    ])
+    p = _write_jsonl(
+        tmp_path / "r.jsonl",
+        [
+            _record("pm-senior", "grounding", 4.8),
+            _record("pm-senior", "grounding", 4.2),
+            _record("pm-senior", "grounding", 4.6),
+        ],
+    )
     assert tune.load_scores(p) == {("pm-senior", "grounding"): [4.8, 4.2, 4.6]}
 
 
@@ -87,10 +94,13 @@ def test_load_scores_skips_blank_lines(tmp_path: Path) -> None:
 
 
 def test_load_scores_skips_non_numeric_score(tmp_path: Path) -> None:
-    p = _write_jsonl(tmp_path / "r.jsonl", [
-        _record("pm-senior", "grounding", None),
-        _record("pm-senior", "tone", 4.2),
-    ])
+    p = _write_jsonl(
+        tmp_path / "r.jsonl",
+        [
+            _record("pm-senior", "grounding", None),
+            _record("pm-senior", "tone", 4.2),
+        ],
+    )
     assert tune.load_scores(p) == {("pm-senior", "tone"): [4.2]}
 
 
@@ -111,9 +121,7 @@ def test_build_delta_table_computes_sign_and_sorts() -> None:
     candidate = {("pm-senior", "tone"): [4.7], ("a", "grounding"): [4.0]}
     rows = tune.build_delta_table(baseline, candidate)
     # Sorted by (fixture, rubric): ("a","grounding") then ("pm-senior","tone").
-    assert [(r.fixture, r.rubric) for r in rows] == [
-        ("a", "grounding"), ("pm-senior", "tone")
-    ]
+    assert [(r.fixture, r.rubric) for r in rows] == [("a", "grounding"), ("pm-senior", "tone")]
     tone = rows[1]
     assert tone.baseline_mean == 4.2
     assert tone.candidate_mean == 4.7
@@ -123,34 +131,26 @@ def test_build_delta_table_computes_sign_and_sorts() -> None:
 
 def test_build_delta_table_regression_at_boundary() -> None:
     # Exactly -REGRESSION_DELTA (0.5) counts as a regression (<=).
-    rows = tune.build_delta_table(
-        {("f", "grounding"): [4.8]}, {("f", "grounding"): [4.3]}
-    )
+    rows = tune.build_delta_table({("f", "grounding"): [4.8]}, {("f", "grounding"): [4.3]})
     assert rows[0].delta == pytest.approx(-0.5)
     assert rows[0].regressed is True
 
 
 def test_build_delta_table_just_above_boundary_is_not_regression() -> None:
-    rows = tune.build_delta_table(
-        {("f", "grounding"): [4.8]}, {("f", "grounding"): [4.4]}
-    )
+    rows = tune.build_delta_table({("f", "grounding"): [4.8]}, {("f", "grounding"): [4.4]})
     assert rows[0].delta == pytest.approx(-0.4)
     assert rows[0].regressed is False
 
 
 def test_build_delta_table_uses_means_across_runs() -> None:
-    rows = tune.build_delta_table(
-        {("f", "g"): [4.0, 4.0]}, {("f", "g"): [5.0, 4.0]}
-    )
+    rows = tune.build_delta_table({("f", "g"): [4.0, 4.0]}, {("f", "g"): [5.0, 4.0]})
     assert rows[0].baseline_mean == pytest.approx(4.0)
     assert rows[0].candidate_mean == pytest.approx(4.5)
     assert rows[0].delta == pytest.approx(0.5)
 
 
 def test_build_delta_table_one_sided_pairs_have_no_delta() -> None:
-    rows = tune.build_delta_table(
-        {("only_base", "g"): [4.0]}, {("only_cand", "g"): [4.0]}
-    )
+    rows = tune.build_delta_table({("only_base", "g"): [4.0]}, {("only_cand", "g"): [4.0]})
     by_fixture = {r.fixture: r for r in rows}
     assert by_fixture["only_base"].candidate_mean is None
     assert by_fixture["only_base"].delta is None
@@ -165,23 +165,19 @@ def test_build_delta_table_one_sided_pairs_have_no_delta() -> None:
 
 
 def test_format_delta_table_marks_regression() -> None:
-    rows = tune.build_delta_table(
-        {("f", "grounding"): [4.8]}, {("f", "grounding"): [4.2]}
-    )
+    rows = tune.build_delta_table({("f", "grounding"): [4.8]}, {("f", "grounding"): [4.2]})
     out = tune.format_delta_table(rows)
     assert "(REGRESSION)" in out
     assert "-0.60" in out
 
 
 def test_format_delta_table_marks_new_and_missing() -> None:
-    rows = tune.build_delta_table(
-        {("base_only", "g"): [4.0]}, {("cand_only", "g"): [4.0]}
-    )
+    rows = tune.build_delta_table({("base_only", "g"): [4.0]}, {("cand_only", "g"): [4.0]})
     out = tune.format_delta_table(rows)
-    assert "(new)" in out       # candidate-only pair
-    assert "(missing)" in out   # baseline-only pair
-    assert "n/a" in out         # ASCII placeholder for the absent mean
-    assert out.isascii()        # printed to stdout; must be Windows-console safe
+    assert "(new)" in out  # candidate-only pair
+    assert "(missing)" in out  # baseline-only pair
+    assert "n/a" in out  # ASCII placeholder for the absent mean
+    assert out.isascii()  # printed to stdout; must be Windows-console safe
 
 
 def test_format_delta_table_empty() -> None:
@@ -210,9 +206,14 @@ def test_main_returns_two_on_regression(tmp_path: Path) -> None:
 
 def test_main_returns_one_on_missing_file(tmp_path: Path, capsys) -> None:
     base = _write_jsonl(tmp_path / "b.jsonl", [_record("f", "grounding", 4.0)])
-    rc = tune.main([
-        "--baseline", str(base), "--candidate", str(tmp_path / "nope.jsonl"),
-    ])
+    rc = tune.main(
+        [
+            "--baseline",
+            str(base),
+            "--candidate",
+            str(tmp_path / "nope.jsonl"),
+        ]
+    )
     assert rc == 1
     assert "error:" in capsys.readouterr().out
 

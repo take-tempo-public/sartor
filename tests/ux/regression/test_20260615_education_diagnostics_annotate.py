@@ -39,8 +39,7 @@ _TABS = ["pipeline", "quality", "groundedness", "tuning", "annotate"]
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_every_dash_pane_has_help_icon(page: Page, live_server: str,
-                                       ux_app: ModuleType) -> None:
+def test_every_dash_pane_has_help_icon(page: Page, live_server: str, ux_app: ModuleType) -> None:
     """Each diagnostics tab carries an (i) with real dialog semantics and a
     non-empty accessible name — the meaning rides the glyph + label, not colour.
 
@@ -63,8 +62,9 @@ def test_every_dash_pane_has_help_icon(page: Page, live_server: str,
 @pytest.mark.ux
 @pytest.mark.slow
 @pytest.mark.parametrize("tab", ["pipeline", "groundedness", "annotate"])
-def test_dash_help_opens_and_restores_focus(page: Page, live_server: str,
-                                            ux_app: ModuleType, tab: str) -> None:
+def test_dash_help_opens_and_restores_focus(
+    page: Page, live_server: str, ux_app: ModuleType, tab: str
+) -> None:
     """A pane's (i) opens the ported #helpModal with the registered title and
     restores focus to the icon on close. The first-view auto-modal is suppressed
     for this test, so opening it via the (i) is independent of the localStorage
@@ -79,8 +79,11 @@ def test_dash_help_opens_and_restores_focus(page: Page, live_server: str,
     icon = dash.help_icon(tab)
     # The icon's accessible name carries the block title; the modal must show the
     # same title — a consistency check that never hardcodes copy.
-    expected = (page.get_attribute(Help.icon(dash._HELP_ID[tab]), "aria-label")
-                or "").removeprefix("Help: ").strip()
+    expected = (
+        (page.get_attribute(Help.icon(dash._HELP_ID[tab]), "aria-label") or "")
+        .removeprefix("Help: ")
+        .strip()
+    )
     assert expected, tab
 
     dash.open_help(tab)
@@ -99,8 +102,9 @@ def test_dash_help_opens_and_restores_focus(page: Page, live_server: str,
 @pytest.mark.ux
 @pytest.mark.slow
 @pytest.mark.show_tour
-def test_dash_explainer_autoopens_once_per_tab(page: Page, live_server: str,
-                                               ux_app: ModuleType) -> None:
+def test_dash_explainer_autoopens_once_per_tab(
+    page: Page, live_server: str, ux_app: ModuleType
+) -> None:
     """With the explainers opted in (nothing seeded), the Pipeline explainer
     auto-opens on first load, each other tab's auto-opens on its first click, and
     none re-fires (the cb_help_seen once-ever seam)."""
@@ -129,8 +133,9 @@ def test_dash_explainer_autoopens_once_per_tab(page: Page, live_server: str,
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_dash_verdict_legend_is_plain_language(page: Page, live_server: str,
-                                               ux_app: ModuleType) -> None:
+def test_dash_verdict_legend_is_plain_language(
+    page: Page, live_server: str, ux_app: ModuleType
+) -> None:
     """The annotate verdict legend keeps the contract codes but glosses each in
     lay terms. The legend lives in the (initially hidden) editor, so read its
     text_content rather than requiring it on screen."""
@@ -165,7 +170,8 @@ def test_dash_bootstrap_autoexpands_when_no_fixtures(
     # loadFixtures() runs on IIFE init, fetches the (empty) list, and opens the
     # <details>; the `open` attribute reflects regardless of pane visibility.
     page.wait_for_selector(
-        f"{Dashboard.ANN_BOOTSTRAP_SECTION}[open]", state="attached",
+        f"{Dashboard.ANN_BOOTSTRAP_SECTION}[open]",
+        state="attached",
         timeout=DEFAULT_TIMEOUT_MS,
     )
 

@@ -45,7 +45,9 @@ class TestBundledFiles:
         path = BUNDLED_DIR / filename
         assert path.exists(), f"Missing bundled template: {path}"
         # Sanity-check file size — empty / corrupt files have a known small footprint
-        assert path.stat().st_size > 5000, f"{filename} suspiciously small ({path.stat().st_size} bytes)"
+        assert path.stat().st_size > 5000, (
+            f"{filename} suspiciously small ({path.stat().st_size} bytes)"
+        )
 
     @pytest.mark.parametrize("filename", EXPECTED_FILES)
     def test_each_template_parses_cleanly(self, filename):
@@ -104,21 +106,25 @@ class TestSeedMigration:
             rows = session.query(PersonaTemplate).filter_by(source="bundled").all()
             assert len(rows) == 4
             names = sorted(r.name for r in rows)
-            assert names == sorted([
-                "Classic Single-Column",
-                "Modern Single-Column",
-                "Spacious (Career Changer / Junior)",
-                "Tech (ATS-optimized)",
-            ])
+            assert names == sorted(
+                [
+                    "Classic Single-Column",
+                    "Modern Single-Column",
+                    "Spacious (Career Changer / Junior)",
+                    "Tech (ATS-optimized)",
+                ]
+            )
             # Every bundled row has candidate_id=NULL (visible to all candidates)
             assert all(r.candidate_id is None for r in rows)
             paths = sorted(r.path for r in rows)
-            assert paths == sorted([
-                "personas/bundled/classic.docx",
-                "personas/bundled/modern.docx",
-                "personas/bundled/spacious.docx",
-                "personas/bundled/tech.docx",
-            ])
+            assert paths == sorted(
+                [
+                    "personas/bundled/classic.docx",
+                    "personas/bundled/modern.docx",
+                    "personas/bundled/spacious.docx",
+                    "personas/bundled/tech.docx",
+                ]
+            )
             session.close()
         finally:
             engine.dispose()

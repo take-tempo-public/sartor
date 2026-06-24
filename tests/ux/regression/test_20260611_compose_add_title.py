@@ -29,8 +29,8 @@ from ui_pages import (
 )
 
 _JD = "Senior Backend Engineer — Kubernetes latency at scale, Kafka, Postgres."
-_OFFICIAL = "Staff Engineer"   # seeded official title
-_ALT = "Principal Engineer"    # added in Compose
+_OFFICIAL = "Staff Engineer"  # seeded official title
+_ALT = "Principal Engineer"  # added in Compose
 
 
 def _is_composition_post(resp: Response) -> bool:
@@ -41,8 +41,9 @@ def _is_title_post(resp: Response) -> bool:
     return "/titles" in resp.url and resp.request.method == "POST"
 
 
-def _reach_compose(page: Page, live_server: str, ux_app: ModuleType,
-                   monkeypatch: pytest.MonkeyPatch) -> WizardComposePage:
+def _reach_compose(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> WizardComposePage:
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)  # seeds the official "Staff Engineer" title
     install_llm_stubs(ux_app, monkeypatch)
@@ -55,7 +56,9 @@ def _reach_compose(page: Page, live_server: str, ux_app: ModuleType,
 @pytest.mark.ux
 @pytest.mark.slow
 def test_add_title_then_pin_persists(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     compose = _reach_compose(page, live_server, ux_app, monkeypatch)

@@ -11,7 +11,9 @@ from pathlib import Path
 from hardening import save_iteration_context
 
 
-def _seed_parent(tmp_path: Path, iteration: int = 0, extras: dict | None = None) -> tuple[dict, str]:
+def _seed_parent(
+    tmp_path: Path, iteration: int = 0, extras: dict | None = None
+) -> tuple[dict, str]:
     """Build a minimal parent context dict and return (context, path_str).
 
     The parent file is what /api/generate would have loaded — typically the
@@ -20,13 +22,20 @@ def _seed_parent(tmp_path: Path, iteration: int = 0, extras: dict | None = None)
     parent: dict = {
         "timestamp": "2026-05-11T12:00:00",
         "candidate": {"name": "Alice"},
-        "resume": {"text": "original resume", "filename": "alice.docx",
-                   "format": ".docx", "sections": [], "path": ""},
+        "resume": {
+            "text": "original resume",
+            "filename": "alice.docx",
+            "format": ".docx",
+            "sections": [],
+            "path": "",
+        },
         "supplemental_resumes": [],
         "job_description": "JD",
         "deterministic_analysis": {
-            "jd_keywords": {}, "resume_keywords": {},
-            "keyword_overlap": {}, "ats_warnings": [],
+            "jd_keywords": {},
+            "resume_keywords": {},
+            "keyword_overlap": {},
+            "ats_warnings": [],
         },
         "iteration": iteration,
         "run_id": "abc123",
@@ -64,9 +73,12 @@ def test_save_iteration_context_increments_from_existing_iteration(tmp_path):
     parent, parent_path = _seed_parent(tmp_path, iteration=2)
 
     new_path = save_iteration_context(
-        parent_context=parent, parent_path=parent_path,
-        last_generated_resume="r3", last_generated_cover_letter="c3",
-        username="alice", base_dir=str(tmp_path),
+        parent_context=parent,
+        parent_path=parent_path,
+        last_generated_resume="r3",
+        last_generated_cover_letter="c3",
+        username="alice",
+        base_dir=str(tmp_path),
     )
     saved = json.loads(Path(new_path).read_text(encoding="utf-8"))
     assert saved["iteration"] == 3
@@ -76,9 +88,12 @@ def test_save_iteration_context_filename_carries_iter_suffix(tmp_path):
     parent, parent_path = _seed_parent(tmp_path, iteration=0)
 
     new_path = save_iteration_context(
-        parent_context=parent, parent_path=parent_path,
-        last_generated_resume="r", last_generated_cover_letter="c",
-        username="alice", base_dir=str(tmp_path),
+        parent_context=parent,
+        parent_path=parent_path,
+        last_generated_resume="r",
+        last_generated_cover_letter="c",
+        username="alice",
+        base_dir=str(tmp_path),
     )
     # Filename must encode the iteration so dashboards can sort/scan visually
     assert "_iter1.json" in Path(new_path).name
@@ -88,17 +103,24 @@ def test_save_iteration_context_consumes_edits(tmp_path):
     """edited_resume_text/edited_cover_letter_text must be cleared on the
     child — they fed the prompt that produced this generation; carrying them
     forward would cause double-application on the next iteration."""
-    parent, parent_path = _seed_parent(tmp_path, iteration=1, extras={
-        "edited_resume_text": "user typed this",
-        "edited_cover_letter_text": "user typed letter",
-        "last_generated_resume": "prior gen",
-        "last_generated_cover_letter": "prior letter",
-    })
+    parent, parent_path = _seed_parent(
+        tmp_path,
+        iteration=1,
+        extras={
+            "edited_resume_text": "user typed this",
+            "edited_cover_letter_text": "user typed letter",
+            "last_generated_resume": "prior gen",
+            "last_generated_cover_letter": "prior letter",
+        },
+    )
 
     new_path = save_iteration_context(
-        parent_context=parent, parent_path=parent_path,
-        last_generated_resume="new gen", last_generated_cover_letter="new letter",
-        username="alice", base_dir=str(tmp_path),
+        parent_context=parent,
+        parent_path=parent_path,
+        last_generated_resume="new gen",
+        last_generated_cover_letter="new letter",
+        username="alice",
+        base_dir=str(tmp_path),
     )
 
     saved = json.loads(Path(new_path).read_text(encoding="utf-8"))
@@ -109,16 +131,25 @@ def test_save_iteration_context_consumes_edits(tmp_path):
 
 
 def test_save_iteration_context_appends_iteration_note(tmp_path):
-    parent, parent_path = _seed_parent(tmp_path, iteration=0, extras={
-        "iteration_notes": [{"timestamp": "earlier", "action": "save_edits",
-                              "summary": "user edited resume"}],
-    })
+    parent, parent_path = _seed_parent(
+        tmp_path,
+        iteration=0,
+        extras={
+            "iteration_notes": [
+                {"timestamp": "earlier", "action": "save_edits", "summary": "user edited resume"}
+            ],
+        },
+    )
 
     new_path = save_iteration_context(
-        parent_context=parent, parent_path=parent_path,
-        last_generated_resume="r", last_generated_cover_letter="c",
-        username="alice", base_dir=str(tmp_path),
-        action="generate", summary="from edited baseline",
+        parent_context=parent,
+        parent_path=parent_path,
+        last_generated_resume="r",
+        last_generated_cover_letter="c",
+        username="alice",
+        base_dir=str(tmp_path),
+        action="generate",
+        summary="from edited baseline",
     )
 
     saved = json.loads(Path(new_path).read_text(encoding="utf-8"))
@@ -135,15 +166,22 @@ def test_save_iteration_context_appends_iteration_note(tmp_path):
 def test_save_iteration_context_preserves_clarifications(tmp_path):
     """Clarifications from prior iterations must accumulate across iterations
     so the LLM continues to see all confirmed candidate truths."""
-    parent, parent_path = _seed_parent(tmp_path, iteration=1, extras={
-        "clarification_questions": [{"id": "q1", "text": "Q?", "kind": "experience_probe"}],
-        "clarifications": {"q1": "Yes, used K8s in prod."},
-    })
+    parent, parent_path = _seed_parent(
+        tmp_path,
+        iteration=1,
+        extras={
+            "clarification_questions": [{"id": "q1", "text": "Q?", "kind": "experience_probe"}],
+            "clarifications": {"q1": "Yes, used K8s in prod."},
+        },
+    )
 
     new_path = save_iteration_context(
-        parent_context=parent, parent_path=parent_path,
-        last_generated_resume="r", last_generated_cover_letter="c",
-        username="alice", base_dir=str(tmp_path),
+        parent_context=parent,
+        parent_path=parent_path,
+        last_generated_resume="r",
+        last_generated_cover_letter="c",
+        username="alice",
+        base_dir=str(tmp_path),
     )
     saved = json.loads(Path(new_path).read_text(encoding="utf-8"))
     assert saved["clarifications"] == {"q1": "Yes, used K8s in prod."}
@@ -157,9 +195,12 @@ def test_save_iteration_context_does_not_mutate_parent(tmp_path):
     parent_iteration_before = parent["iteration"]
 
     save_iteration_context(
-        parent_context=parent, parent_path=parent_path,
-        last_generated_resume="r", last_generated_cover_letter="c",
-        username="alice", base_dir=str(tmp_path),
+        parent_context=parent,
+        parent_path=parent_path,
+        last_generated_resume="r",
+        last_generated_cover_letter="c",
+        username="alice",
+        base_dir=str(tmp_path),
     )
     assert parent["iteration"] == parent_iteration_before
     assert "last_generated_resume" not in parent
@@ -201,10 +242,12 @@ def test_save_iteration_context_caches_json_resume(tmp_path):
     parent, parent_path = _seed_parent(tmp_path, iteration=0)
 
     new_path = save_iteration_context(
-        parent_context=parent, parent_path=parent_path,
+        parent_context=parent,
+        parent_path=parent_path,
         last_generated_resume=_GEN_MARKDOWN,
         last_generated_cover_letter="cover letter body",
-        username="alice", base_dir=str(tmp_path),
+        username="alice",
+        base_dir=str(tmp_path),
     )
     saved = json.loads(Path(new_path).read_text(encoding="utf-8"))
 
@@ -215,10 +258,7 @@ def test_save_iteration_context_caches_json_resume(tmp_path):
     # Spot-check the structured fields a renderer reads.
     assert cached["basics"]["name"] == "Priya Nadar"
     assert cached["work"][0]["name"] == "Acme Corp"
-    assert any(
-        "inference latency" in h
-        for h in cached["work"][0].get("highlights", [])
-    )
+    assert any("inference latency" in h for h in cached["work"][0].get("highlights", []))
 
 
 def test_save_iteration_context_empty_resume_caches_empty_skeleton(tmp_path):
@@ -228,9 +268,12 @@ def test_save_iteration_context_empty_resume_caches_empty_skeleton(tmp_path):
     parent, parent_path = _seed_parent(tmp_path, iteration=0)
 
     new_path = save_iteration_context(
-        parent_context=parent, parent_path=parent_path,
-        last_generated_resume="", last_generated_cover_letter="",
-        username="alice", base_dir=str(tmp_path),
+        parent_context=parent,
+        parent_path=parent_path,
+        last_generated_resume="",
+        last_generated_cover_letter="",
+        username="alice",
+        base_dir=str(tmp_path),
     )
     saved = json.loads(Path(new_path).read_text(encoding="utf-8"))
 

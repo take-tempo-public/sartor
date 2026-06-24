@@ -42,13 +42,27 @@ _BULLET_RE = re.compile(r"^\s*[-*•]\s+(.+)$", re.MULTILINE)
 _SECTION_RE = re.compile(r"^##\s+(.+)$", re.MULTILINE)
 
 # Known ATS-friendly section labels (matches parser._infer_sections list).
-_KNOWN_SECTIONS = frozenset({
-    "summary", "objective", "experience", "employment", "work history",
-    "education", "skills", "certifications", "projects", "awards",
-    "publications", "references", "professional experience",
-    "technical skills", "core competencies", "professional summary",
-    "career highlights",
-})
+_KNOWN_SECTIONS = frozenset(
+    {
+        "summary",
+        "objective",
+        "experience",
+        "employment",
+        "work history",
+        "education",
+        "skills",
+        "certifications",
+        "projects",
+        "awards",
+        "publications",
+        "references",
+        "professional experience",
+        "technical skills",
+        "core competencies",
+        "professional summary",
+        "career highlights",
+    }
+)
 
 
 def run_ats_roundtrip(docx_path: str | Path, resume_content_md: str) -> dict:
@@ -133,16 +147,12 @@ def run_ats_roundtrip(docx_path: str | Path, resume_content_md: str) -> dict:
     missing_sections = [s for s in emitted_known if s.lower() not in recovered_lower]
     if missing_sections:
         findings["status"] = _escalate_status(findings["status"], "fail")
-        findings["notes"].append(
-            f"sections missing from recovered text: {missing_sections}"
-        )
+        findings["notes"].append(f"sections missing from recovered text: {missing_sections}")
 
     # Empty parse output is a fail
     if len(recovered_text.strip()) < 50:
         findings["status"] = _escalate_status(findings["status"], "fail")
-        findings["notes"].append(
-            f"recovered text suspiciously short ({len(recovered_text)} chars)"
-        )
+        findings["notes"].append(f"recovered text suspiciously short ({len(recovered_text)} chars)")
 
     if findings["status"] == "pass" and not findings["notes"]:
         findings["notes"].append("Round-trip clean — all bullets + sections recovered.")
@@ -168,6 +178,7 @@ def _count_list_bullet_paragraphs(docx_path: Path) -> int:
     """
     try:
         from docx import Document
+
         doc = Document(str(docx_path))
     except Exception as exc:
         logger.debug("Could not open .docx for structural bullet count: %s", exc)
@@ -182,7 +193,11 @@ def _count_list_bullet_paragraphs(docx_path: Path) -> int:
         # Word can also store list status as a direct numPr property without
         # the style being named "List Bullet". Check the underlying XML.
         pPr = paragraph._p.pPr
-        if pPr is not None and pPr.find("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}numPr") is not None:
+        if (
+            pPr is not None
+            and pPr.find("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}numPr")
+            is not None
+        ):
             count += 1
     return count
 

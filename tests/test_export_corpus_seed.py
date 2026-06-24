@@ -39,9 +39,14 @@ def _seed_full_candidate(session) -> None:
     )
 
     c = Candidate(
-        username="alex", name="Alex Chen", email="alex@example.com",
-        phone="555-0100", linkedin_url="https://lnkd.in/alex",
-        website_url="https://alex.dev", notes="n", profile_text="Platform SRE.",
+        username="alex",
+        name="Alex Chen",
+        email="alex@example.com",
+        phone="555-0100",
+        linkedin_url="https://lnkd.in/alex",
+        website_url="https://alex.dev",
+        notes="n",
+        profile_text="Platform SRE.",
     )
     session.add(c)
     session.flush()
@@ -51,51 +56,96 @@ def _seed_full_candidate(session) -> None:
     session.flush()
 
     e = Experience(
-        candidate_id=c.id, company="Polaris", location="Remote",
-        start_date="2022-09", end_date=None, display_order=0, summary="Backend.",
+        candidate_id=c.id,
+        company="Polaris",
+        location="Remote",
+        start_date="2022-09",
+        end_date=None,
+        display_order=0,
+        summary="Backend.",
     )
     session.add(e)
     session.flush()
 
     title = ExperienceTitle(
-        experience_id=e.id, title="Senior SRE", is_official=1,
-        truthful_enough_to_use=1, is_pending_review=0, source="official",
+        experience_id=e.id,
+        title="Senior SRE",
+        is_official=1,
+        truthful_enough_to_use=1,
+        is_pending_review=0,
+        source="official",
     )
     session.add(title)
     session.flush()
     session.add(ExperienceTitleTag(experience_title_id=title.id, tag_id=tag.id, confidence=1.0))
 
     active = Bullet(
-        experience_id=e.id, text="Cut p99 latency 40%.", display_order=0,
-        is_active=1, is_pending_review=0, source="primary:r.md",
-        pattern_kind="xyz", has_outcome=1,
+        experience_id=e.id,
+        text="Cut p99 latency 40%.",
+        display_order=0,
+        is_active=1,
+        is_pending_review=0,
+        source="primary:r.md",
+        pattern_kind="xyz",
+        has_outcome=1,
     )
     inactive = Bullet(
-        experience_id=e.id, text="Retired bullet.", display_order=1,
-        is_active=0, is_pending_review=0, source="primary:r.md",
-        pattern_kind=None, has_outcome=0,
+        experience_id=e.id,
+        text="Retired bullet.",
+        display_order=1,
+        is_active=0,
+        is_pending_review=0,
+        source="primary:r.md",
+        pattern_kind=None,
+        has_outcome=0,
     )
     session.add_all([active, inactive])
     session.flush()
     session.add(BulletTag(bullet_id=active.id, tag_id=tag.id, confidence=0.9))
 
     summary = SummaryItem(
-        candidate_id=c.id, text="SRE who ships reliability.", label="SRE",
-        display_order=0, is_active=1, is_pending_review=0, source="manual",
+        candidate_id=c.id,
+        text="SRE who ships reliability.",
+        label="SRE",
+        display_order=0,
+        is_active=1,
+        is_pending_review=0,
+        source="manual",
         has_outcome=0,
     )
     session.add(summary)
     session.flush()
     session.add(SummaryItemTag(summary_item_id=summary.id, tag_id=tag.id, confidence=1.0))
 
-    session.add(Skill(candidate_id=c.id, name="Python", category="language",
-                       proficiency="expert", years=6.0))
-    session.add(Education(candidate_id=c.id, institution="State U", degree="BS",
-                          field="CS", start_date="2014", end_date="2018",
-                          display_order=0, is_active=1, notes=None))
-    session.add(Certification(candidate_id=c.id, name="CKA", issuer="CNCF",
-                              issued="2021", expires="2024", display_order=0,
-                              is_active=1))
+    session.add(
+        Skill(
+            candidate_id=c.id, name="Python", category="language", proficiency="expert", years=6.0
+        )
+    )
+    session.add(
+        Education(
+            candidate_id=c.id,
+            institution="State U",
+            degree="BS",
+            field="CS",
+            start_date="2014",
+            end_date="2018",
+            display_order=0,
+            is_active=1,
+            notes=None,
+        )
+    )
+    session.add(
+        Certification(
+            candidate_id=c.id,
+            name="CKA",
+            issuer="CNCF",
+            issued="2021",
+            expires="2024",
+            display_order=0,
+            is_active=1,
+        )
+    )
     session.commit()
 
 
@@ -111,8 +161,14 @@ class TestExportSeed:
         assert seed["candidate"]["profile_text"] == "Platform SRE."
 
         # Every top-level collection present
-        for key in ("tags", "experiences", "summary_items", "skills",
-                    "educations", "certifications"):
+        for key in (
+            "tags",
+            "experiences",
+            "summary_items",
+            "skills",
+            "educations",
+            "certifications",
+        ):
             assert key in seed
 
         # Faithful snapshot: BOTH the active and the inactive bullet are present

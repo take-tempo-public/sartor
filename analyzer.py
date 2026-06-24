@@ -45,12 +45,19 @@ class LLMResponseError(Exception):
 # Required keys per call. _parse_or_retry uses these to detect shape drift
 # (e.g. the model returns valid JSON but omits a section) and trigger a retry.
 # Keep in sync with the JSON spec in analyze()/generate() prompts.
-ANALYZE_REQUIRED_KEYS = frozenset({
-    "essential_skills", "preferred_skills", "industry_keywords",
-    "hidden_qualities", "professional_vocabulary",
-    "comparison", "suggestions", "keyword_placement",
-    "overall_strategy",
-})
+ANALYZE_REQUIRED_KEYS = frozenset(
+    {
+        "essential_skills",
+        "preferred_skills",
+        "industry_keywords",
+        "hidden_qualities",
+        "professional_vocabulary",
+        "comparison",
+        "suggestions",
+        "keyword_placement",
+        "overall_strategy",
+    }
+)
 # Two-pass analyze (r1/analyze-split-retry): analyze() splits into a Haiku
 # extraction pass + a Sonnet synthesis pass whose outputs merge back into the
 # ANALYZE_REQUIRED_KEYS shape. These frozensets document each pass's slice; the
@@ -58,24 +65,42 @@ ANALYZE_REQUIRED_KEYS = frozenset({
 # are the parse-time enforcement. ats_improvements + ideal_resume_profile were
 # dropped here — unconsumed (verified across app.js / app.py / clarify /
 # generate / eval rubrics; they were produced but never read back).
-ANALYZE_EXTRACTION_REQUIRED_KEYS = frozenset({
-    "essential_skills", "preferred_skills", "industry_keywords",
-    "hidden_qualities", "professional_vocabulary", "keyword_placement",
-})
-ANALYZE_SYNTHESIS_REQUIRED_KEYS = frozenset({
-    "comparison", "suggestions", "overall_strategy",
-})
+ANALYZE_EXTRACTION_REQUIRED_KEYS = frozenset(
+    {
+        "essential_skills",
+        "preferred_skills",
+        "industry_keywords",
+        "hidden_qualities",
+        "professional_vocabulary",
+        "keyword_placement",
+    }
+)
+ANALYZE_SYNTHESIS_REQUIRED_KEYS = frozenset(
+    {
+        "comparison",
+        "suggestions",
+        "overall_strategy",
+    }
+)
 
-GENERATE_REQUIRED_KEYS = frozenset({
-    "resume_content", "cover_letter_content",
-    "changes_made", "proofread_notes",
-})
+GENERATE_REQUIRED_KEYS = frozenset(
+    {
+        "resume_content",
+        "cover_letter_content",
+        "changes_made",
+        "proofread_notes",
+    }
+)
 # Phase β.5 — résumé-only variant. /api/generate defaults here so the
 # common path doesn't pay for cover-letter tokens; /api/generate-cover-letter
 # produces the cover letter on demand against the finalized résumé.
-GENERATE_NO_CL_REQUIRED_KEYS = frozenset({
-    "resume_content", "changes_made", "proofread_notes",
-})
+GENERATE_NO_CL_REQUIRED_KEYS = frozenset(
+    {
+        "resume_content",
+        "changes_made",
+        "proofread_notes",
+    }
+)
 
 CLARIFY_REQUIRED_KEYS = frozenset({"questions", "reasoning"})
 
@@ -96,13 +121,21 @@ RECOMMEND_SUMMARIES_REQUIRED_KEYS = frozenset({"recommendation"})
 # from the LLM's selections. proposed_new_bullets and proposed_experience_titles
 # are always present in the response but may be empty arrays when the LLM has
 # no proposals to make.
-GENERATE_CORPUS_REQUIRED_KEYS = GENERATE_REQUIRED_KEYS | frozenset({
-    "selected_bullets", "proposed_new_bullets", "proposed_experience_titles",
-})
+GENERATE_CORPUS_REQUIRED_KEYS = GENERATE_REQUIRED_KEYS | frozenset(
+    {
+        "selected_bullets",
+        "proposed_new_bullets",
+        "proposed_experience_titles",
+    }
+)
 # Phase β.5 — corpus-mode résumé-only variant.
-GENERATE_CORPUS_NO_CL_REQUIRED_KEYS = GENERATE_NO_CL_REQUIRED_KEYS | frozenset({
-    "selected_bullets", "proposed_new_bullets", "proposed_experience_titles",
-})
+GENERATE_CORPUS_NO_CL_REQUIRED_KEYS = GENERATE_NO_CL_REQUIRED_KEYS | frozenset(
+    {
+        "selected_bullets",
+        "proposed_new_bullets",
+        "proposed_experience_titles",
+    }
+)
 
 # ---------------------------------------------------------------------------
 # Pydantic response models — validate _parse_or_retry output shape.
@@ -127,8 +160,10 @@ class HiddenQualityItem(BaseModel):
 
     model_config = ConfigDict(extra="allow")
     category: Literal[
-        "operating_context", "scope_of_ownership",
-        "stakeholder_gravity", "resilience",
+        "operating_context",
+        "scope_of_ownership",
+        "stakeholder_gravity",
+        "resilience",
     ]
     signal: str
 
@@ -154,6 +189,7 @@ class AnalyzeExtractionResponse(_LLMResponse):
     is the guardrail that keeps the two-pass split from regressing the
     `context_probe` machinery `clarify()` depends on.
     """
+
     essential_skills: Any
     preferred_skills: Any
     industry_keywords: Any
@@ -164,6 +200,7 @@ class AnalyzeExtractionResponse(_LLMResponse):
 
 class AnalyzeSynthesisResponse(_LLMResponse):
     """Pass 2 (Sonnet synthesis) shape — strategy only, no keyword extraction."""
+
     comparison: Any
     suggestions: Any
     overall_strategy: Any
@@ -186,8 +223,8 @@ class ClarifyResponse(_LLMResponse):
     questions: Any
     reasoning: Any
 
-    @model_validator(mode='after')
-    def enforce_composition_rules(self, info: ValidationInfo) -> 'ClarifyResponse':
+    @model_validator(mode="after")
+    def enforce_composition_rules(self, info: ValidationInfo) -> "ClarifyResponse":
         # Only enforce when the caller explicitly passes validation_context.
         # clarify() always passes it; clarify_iteration() does not (it has
         # different question kinds and composition rules).
@@ -198,9 +235,9 @@ class ClarifyResponse(_LLMResponse):
         questions = self.questions if isinstance(self.questions, list) else []
 
         # Rule 1: when hidden_qualities non-empty, at least one context_probe required.
-        if ctx.get('hidden_qualities_non_empty'):
-            kinds = {q.get('kind') for q in questions if isinstance(q, dict)}
-            if 'context_probe' not in kinds:
+        if ctx.get("hidden_qualities_non_empty"):
+            kinds = {q.get("kind") for q in questions if isinstance(q, dict)}
+            if "context_probe" not in kinds:
                 raise ValueError(
                     "hidden_qualities is non-empty but no context_probe question was generated. "
                     "Add at least one CONTEXT PROBE (kind='context_probe') that translates "
@@ -211,9 +248,9 @@ class ClarifyResponse(_LLMResponse):
         # Rule 2: ≥60% combined experience_probe + context_probe (prompt rule, enforced here).
         if questions:
             combined = sum(
-                1 for q in questions
-                if isinstance(q, dict)
-                and q.get('kind') in ('experience_probe', 'context_probe')
+                1
+                for q in questions
+                if isinstance(q, dict) and q.get("kind") in ("experience_probe", "context_probe")
             )
             required = math.ceil(len(questions) * 0.6)
             if combined < required:
@@ -287,7 +324,9 @@ PROMPT_VERSION = "2026-06-23.1"  # PV-3: + cover-letter worked OK/NOT-OK opener+
 # attribution. Bump THIS when AVATAR_SYSTEM_PROMPT changes (same commit). The avatar
 # persona is intentionally NOT in _BASE_SYSTEM_PROMPTS — the prompt-override / eval
 # machinery is résumé-scoped.
-AVATAR_PROMPT_VERSION = "2026-06-19.1"  # 7.8d: numbered resolving cites + cited-only footer + inline markdown
+AVATAR_PROMPT_VERSION = (
+    "2026-06-19.1"  # 7.8d: numbered resolving cites + cited-only footer + inline markdown
+)
 
 # --- Prompt-override primitive (eval tuning loop, v1.0.4) --------------------
 # Lets an eval run inject a CANDIDATE system prompt without editing the persona
@@ -358,6 +397,7 @@ def _emit_call_log(record: dict) -> None:
             f.write(json.dumps(record) + "\n")
     except Exception as exc:
         logger.warning("LLM telemetry write failed: %s", exc)
+
 
 # P6: Specialist persona — <50 tokens, real job title, domain vocabulary
 SYSTEM_PROMPT = """You are a seasoned hiring manager with a decade of HR and recruiting experience. \
@@ -692,13 +732,18 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
                     return int(str(v).strip().lstrip("eEbB"))
                 except (TypeError, ValueError):
                     return None
+
             for rec in recommendations:
                 if not isinstance(rec, dict):
                     continue
                 eid_int = _norm_id(rec.get("experience_id"))
                 if eid_int is None:
                     continue
-                bullet_ints = {bi for bi in (_norm_id(x) for x in (rec.get("bullet_ids") or [])) if bi is not None}
+                bullet_ints = {
+                    bi
+                    for bi in (_norm_id(x) for x in (rec.get("bullet_ids") or []))
+                    if bi is not None
+                }
                 rec_by_exp[eid_int] = bullet_ints
 
         use_recommendations = bool(rec_by_exp)
@@ -713,11 +758,9 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
                 exp_bullets = exp.get("bullets") or []
                 if use_recommendations:
                     effective = rec_by_exp.get(eid, set()) | added_ids | pinned_ids
-                    exp_bullets = [b for b in exp_bullets
-                                   if int(b.get("id") or 0) in effective]
+                    exp_bullets = [b for b in exp_bullets if int(b.get("id") or 0) in effective]
                 if excluded_ids:
-                    exp_bullets = [b for b in exp_bullets
-                                   if b.get("id") not in excluded_ids]
+                    exp_bullets = [b for b in exp_bullets if b.get("id") not in excluded_ids]
                 new_exp: CorpusExperience = {**exp, "bullets": exp_bullets}
                 new_corpus.append(new_exp)
             corpus = new_corpus
@@ -758,53 +801,65 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
                 ordered_exp: CorpusExperience = {**exp, "bullets": ordered_bullets}
                 reordered.append(ordered_exp)
             corpus = reordered
-        parts.append(_corpus_block(
-            corpus, iteration=iteration, pinned_ids=pinned_ids,
-            pinned_title_ids=pinned_title_ids,
-        ))
+        parts.append(
+            _corpus_block(
+                corpus,
+                iteration=iteration,
+                pinned_ids=pinned_ids,
+                pinned_title_ids=pinned_title_ids,
+            )
+        )
     else:
         resume_text, _ = _current_draft_text(context_set)
         resume_filename = context_set["resume"].get("filename", "primary")
-        parts.extend([
-            f'<resume filename="{resume_filename}" iteration="{iteration}">',
-            resume_text,
-            "</resume>",
-            _supplemental_block(context_set, iteration=iteration),
-        ])
+        parts.extend(
+            [
+                f'<resume filename="{resume_filename}" iteration="{iteration}">',
+                resume_text,
+                "</resume>",
+                _supplemental_block(context_set, iteration=iteration),
+            ]
+        )
 
-    parts.extend([
-        "<candidate_profile>",
-        f"Name: {candidate.get('name', '')}",
-        f"Email: {candidate.get('email', '')}",
-        f"Phone: {candidate.get('phone', '')}",
-        f"LinkedIn: {candidate.get('linkedin_url', '')}",
-        f"Website: {candidate.get('website_url', '')}",
-        f"Skills: {', '.join(candidate.get('skills', []))}",
-        f"Certifications: {', '.join(candidate.get('certifications', []))}",
-        f"Education: {candidate.get('education_summary', '')}",
-        f"Notes: {candidate.get('notes', '')}",
-        "</candidate_profile>",
-    ])
+    parts.extend(
+        [
+            "<candidate_profile>",
+            f"Name: {candidate.get('name', '')}",
+            f"Email: {candidate.get('email', '')}",
+            f"Phone: {candidate.get('phone', '')}",
+            f"LinkedIn: {candidate.get('linkedin_url', '')}",
+            f"Website: {candidate.get('website_url', '')}",
+            f"Skills: {', '.join(candidate.get('skills', []))}",
+            f"Certifications: {', '.join(candidate.get('certifications', []))}",
+            f"Education: {candidate.get('education_summary', '')}",
+            f"Notes: {candidate.get('notes', '')}",
+            "</candidate_profile>",
+        ]
+    )
 
     if online_profile:
-        parts.extend([
-            "",
-            "<candidate_online_profile>",
-            online_profile,
-            "</candidate_online_profile>",
-        ])
+        parts.extend(
+            [
+                "",
+                "<candidate_online_profile>",
+                online_profile,
+                "</candidate_online_profile>",
+            ]
+        )
 
     # PX-02: scraped LinkedIn / website / portfolio text (opt-in). Conditional,
     # so the empty path stays byte-identical to the pre-PX-02 prefix (eval
     # invariance). Tag + inclusion-condition are load-bearing for cache
     # stability — change them only alongside a PROMPT_VERSION bump.
     if web_presence:
-        parts.extend([
-            "",
-            "<candidate_web_presence>",
-            web_presence,
-            "</candidate_web_presence>",
-        ])
+        parts.extend(
+            [
+                "",
+                "<candidate_web_presence>",
+                web_presence,
+                "</candidate_web_presence>",
+            ]
+        )
 
     return "\n".join(parts)
 
@@ -852,7 +907,7 @@ def _corpus_block(
             title_pinned = ' pinned="true"' if t.get("id") in pinned_title_ids else ""
             parts.append(
                 f'    <eligible_title id="t{t["id"]}" official="{official}"{title_pinned}>'
-                f'{_attr_escape(t.get("title", ""))}</eligible_title>'
+                f"{_attr_escape(t.get('title', ''))}</eligible_title>"
             )
         for b in exp.get("bullets", []) or []:
             tags = ",".join(b.get("tags") or [])
@@ -861,7 +916,7 @@ def _corpus_block(
             parts.append(
                 f'    <bullet id="b{b["id"]}" tags="{tags}" '
                 f'has_outcome="{outcome}"{pinned_attr}>'
-                f'{_attr_escape(b.get("text", ""))}</bullet>'
+                f"{_attr_escape(b.get('text', ''))}</bullet>"
             )
         parts.append("  </experience>")
     parts.append("</career_corpus>")
@@ -898,7 +953,7 @@ def _supplemental_block(context_set: ContextSet, iteration: int = 0) -> str:
         if not supplements:
             return ""
         parts = [
-            f"<supplemental_resumes count=\"{len(supplements)}\">",
+            f'<supplemental_resumes count="{len(supplements)}">',
             "The candidate has the following additional resume(s) as supplemental source material.",
             "All job titles, bullet points, and experience from these files may be used.",
             "When roles overlap across resumes, synthesize the richest version — do not duplicate.",
@@ -909,7 +964,7 @@ def _supplemental_block(context_set: ContextSet, iteration: int = 0) -> str:
             text = r.get("text", "")
             if len(text) > MAX_SUPPLEMENTAL_CHARS:
                 text = text[:MAX_SUPPLEMENTAL_CHARS] + "\n[truncated]"
-            parts.append(f"<resume_{i} filename=\"{fname}\">")
+            parts.append(f'<resume_{i} filename="{fname}">')
             parts.append(text)
             parts.append(f"</resume_{i}>")
             parts.append("")
@@ -928,16 +983,18 @@ def _supplemental_block(context_set: ContextSet, iteration: int = 0) -> str:
     # render — keeps mypy happy and signals that `sections` is intentionally
     # unused in the historical-block prompt.
     for s in supplements:
-        historicals.append({
-            "filename": s.get("filename", ""),
-            "text": s.get("text", ""),
-        })
+        historicals.append(
+            {
+                "filename": s.get("filename", ""),
+                "text": s.get("text", ""),
+            }
+        )
 
     if not historicals:
         return ""
 
     parts = [
-        f"<historical_resumes count=\"{len(historicals)}\">",
+        f'<historical_resumes count="{len(historicals)}">',
         "These are EARLIER VERSIONS of the candidate's resumes provided as historical",
         "reference only. They are NOT the current draft. Use them only to surface",
         "specific facts (metrics, titles, dates, technologies) that the candidate had",
@@ -952,7 +1009,7 @@ def _supplemental_block(context_set: ContextSet, iteration: int = 0) -> str:
         text = h.get("text", "")
         if len(text) > MAX_SUPPLEMENTAL_CHARS:
             text = text[:MAX_SUPPLEMENTAL_CHARS] + "\n[truncated]"
-        parts.append(f"<historical_{i} filename=\"{fname}\">")
+        parts.append(f'<historical_{i} filename="{fname}">')
         parts.append(text)
         parts.append(f"</historical_{i}>")
         parts.append("")
@@ -1018,11 +1075,13 @@ def _call_llm_streaming(
     effective_model = model or SONNET_MODEL
     user_content: list[dict] = []
     if cached_user_prefix:
-        user_content.append({
-            "type": "text",
-            "text": cached_user_prefix,
-            "cache_control": {"type": "ephemeral"},
-        })
+        user_content.append(
+            {
+                "type": "text",
+                "text": cached_user_prefix,
+                "cache_control": {"type": "ephemeral"},
+            }
+        )
     user_content.append({"type": "text", "text": user_prompt})
 
     # Calls that omit system_prompt fall back to SYSTEM_PROMPT — resolved through
@@ -1033,7 +1092,9 @@ def _call_llm_streaming(
 
     logger.info(
         "LLM call starting — call=%s cached_prefix=%d chars, prompt=%d chars",
-        call_kind, len(cached_user_prefix), len(user_prompt),
+        call_kind,
+        len(cached_user_prefix),
+        len(user_prompt),
     )
     t0 = time.perf_counter()
     status = "ok"
@@ -1063,28 +1124,31 @@ def _call_llm_streaming(
         elapsed_ms = int((time.perf_counter() - t0) * 1000)
         usage = getattr(final, "usage", None) if final is not None else None
         stop_reason = getattr(final, "stop_reason", None) if final is not None else None
-        _emit_call_log({
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "username": username,
-            "run_id": run_id,
-            "call": call_kind,
-            "model": effective_model,
-            "prompt_version": effective_prompt_version(),
-            "input_tokens": getattr(usage, "input_tokens", 0),
-            "output_tokens": getattr(usage, "output_tokens", 0),
-            "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0),
-            "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0),
-            "latency_ms": elapsed_ms,
-            "stop_reason": stop_reason,
-            "status": status,
-        })
+        _emit_call_log(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "username": username,
+                "run_id": run_id,
+                "call": call_kind,
+                "model": effective_model,
+                "prompt_version": effective_prompt_version(),
+                "input_tokens": getattr(usage, "input_tokens", 0),
+                "output_tokens": getattr(usage, "output_tokens", 0),
+                "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0),
+                "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0),
+                "latency_ms": elapsed_ms,
+                "stop_reason": stop_reason,
+                "status": status,
+            }
+        )
 
     if stop_reason == "max_tokens":
         logger.warning(
             "LLM call hit MAX_TOKENS — call=%s output truncated at %d tokens. "
             "Downstream JSON parse will likely fail. Consider raising MAX_TOKENS "
             "or tightening the prompt's output_format spec.",
-            call_kind, final.usage.output_tokens,
+            call_kind,
+            final.usage.output_tokens,
         )
 
     logger.info(
@@ -1118,7 +1182,8 @@ def _call_llm(
     """
     final_text = ""
     for item in _call_llm_streaming(
-        client, user_prompt,
+        client,
+        user_prompt,
         cached_user_prefix=cached_user_prefix,
         call_kind=call_kind,
         username=username,
@@ -1184,7 +1249,8 @@ def _parse_or_retry_streaming(
     for attempt in range(max_attempts):
         accumulated = ""
         for item in _call_llm_streaming(
-            client, retry_prompt,
+            client,
+            retry_prompt,
             cached_user_prefix=cached_user_prefix,
             call_kind=current_kind,
             username=username,
@@ -1206,12 +1272,16 @@ def _parse_or_retry_streaming(
             if attempt + 1 >= max_attempts:
                 logger.error(
                     "LLM response validation failed after %d attempts — call=%s err=%s",
-                    max_attempts, call_kind, e,
+                    max_attempts,
+                    call_kind,
+                    e,
                 )
                 raise LLMResponseError(accumulated, str(e)) from e
             logger.warning(
                 "LLM response validation failed on attempt %d — call=%s err=%s, retrying",
-                attempt + 1, call_kind, e,
+                attempt + 1,
+                call_kind,
+                e,
             )
             yield ("retry", str(e))
             retry_prompt = (
@@ -1251,10 +1321,14 @@ def _parse_or_retry(
     silently degrades on bad output.
     """
     raw = _call_llm(
-        client, base_prompt,
+        client,
+        base_prompt,
         cached_user_prefix=cached_user_prefix,
-        call_kind=call_kind, username=username, run_id=run_id,
-        system_prompt=system_prompt, model=model,
+        call_kind=call_kind,
+        username=username,
+        run_id=run_id,
+        system_prompt=system_prompt,
+        model=model,
     )
     for attempt in range(max_attempts):
         try:
@@ -1274,12 +1348,16 @@ def _parse_or_retry(
             if attempt + 1 >= max_attempts:
                 logger.error(
                     "LLM response validation failed after %d attempts — call=%s err=%s",
-                    max_attempts, call_kind, e,
+                    max_attempts,
+                    call_kind,
+                    e,
                 )
                 raise LLMResponseError(raw, str(e)) from e
             logger.warning(
                 "LLM response validation failed on attempt %d — call=%s err=%s, retrying",
-                attempt + 1, call_kind, e,
+                attempt + 1,
+                call_kind,
+                e,
             )
             retry_prompt = (
                 f"{base_prompt}\n\n<retry_reason>Your previous response failed "
@@ -1288,10 +1366,14 @@ def _parse_or_retry(
                 f"fences, no commentary.</retry_reason>"
             )
             raw = _call_llm(
-                client, retry_prompt,
+                client,
+                retry_prompt,
                 cached_user_prefix=cached_user_prefix,
-                call_kind=f"{call_kind}_retry", username=username, run_id=run_id,
-                system_prompt=system_prompt, model=model,
+                call_kind=f"{call_kind}_retry",
+                username=username,
+                run_id=run_id,
+                system_prompt=system_prompt,
+                model=model,
             )
     raise LLMResponseError(raw, "exhausted retries")
 
@@ -1332,11 +1414,13 @@ def analyze(
     # writes the prompt-cache block that the later generate() call reads.
     prefix = _stable_user_prefix(context_set)
     extraction = _parse_or_retry(
-        client, _analyze_extraction_prompt(context_set),
+        client,
+        _analyze_extraction_prompt(context_set),
         cached_user_prefix=prefix,
         response_model=AnalyzeExtractionResponse,
         call_kind="analyze_extraction",
-        username=username, run_id=run_id,
+        username=username,
+        run_id=run_id,
         system_prompt=_resolve_system_prompt("EXTRACTION_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
     )
@@ -1349,11 +1433,13 @@ def analyze(
     # (strategy-only; ground in <extracted_signal>) lives in the user prompt,
     # after the cached prefix.
     synthesis = _parse_or_retry(
-        client, _analyze_synthesis_prompt(context_set, extraction),
+        client,
+        _analyze_synthesis_prompt(context_set, extraction),
         cached_user_prefix=prefix,
         response_model=AnalyzeSynthesisResponse,
         call_kind="analyze_synthesis",
-        username=username, run_id=run_id,
+        username=username,
+        run_id=run_id,
         # system_prompt + model default to SYSTEM_PROMPT + SONNET_MODEL in _call_llm
     )
     return {**extraction, **synthesis}
@@ -1371,9 +1457,9 @@ def _analyze_extraction_prompt(context_set: ContextSet) -> str:
     return f"""<task>Extract and classify the keyword and vocabulary signals in this job description. Output JSON only — no prose, no strategy, no positioning recommendations.</task>
 
 <deterministic_analysis>
-Keyword match score: {context_set['deterministic_analysis']['keyword_overlap']['match_score']}
-Keywords already matched (present in candidate's source material): {', '.join(context_set['deterministic_analysis']['keyword_overlap']['matched'][:20])}
-Keywords missing from candidate's source material: {', '.join(context_set['deterministic_analysis']['keyword_overlap']['missing_from_resume'][:20])}
+Keyword match score: {context_set["deterministic_analysis"]["keyword_overlap"]["match_score"]}
+Keywords already matched (present in candidate's source material): {", ".join(context_set["deterministic_analysis"]["keyword_overlap"]["matched"][:20])}
+Keywords missing from candidate's source material: {", ".join(context_set["deterministic_analysis"]["keyword_overlap"]["missing_from_resume"][:20])}
 </deterministic_analysis>
 
 <instructions>
@@ -1417,7 +1503,7 @@ def _analyze_synthesis_prompt(context_set: ContextSet, extraction: dict) -> str:
     # Tolerant of a bare-string item defensively — extraction validates the
     # typed shape, but the render must not KeyError if that ever changes.
     hq_lines: list[str] = []
-    for item in extraction.get('hidden_qualities', []):
+    for item in extraction.get("hidden_qualities", []):
         if isinstance(item, dict):
             hq_lines.append(f"- [{item.get('category', 'context')}] {item.get('signal', '')}")
         else:
@@ -1427,18 +1513,18 @@ def _analyze_synthesis_prompt(context_set: ContextSet, extraction: dict) -> str:
     return f"""<task>This is the STRATEGY pass of a two-pass analysis. An ATS scanner has already extracted the job description's keyword and vocabulary signals — they are given below as <extracted_signal>. Do NOT re-extract or re-list keywords. Produce ONLY the strategic positioning: where this candidate is strong, where they are weak, and what specific changes lift them to a callback. Ground every strength, gap, and suggestion in <extracted_signal>, the candidate's source material, or the deterministic analysis, and cite the specific signal by name.</task>
 
 <extracted_signal>
-Essential skills (from JD, required): {json.dumps(extraction.get('essential_skills', []))}
-Preferred skills (from JD, nice-to-have): {json.dumps(extraction.get('preferred_skills', []))}
-Industry keywords: {json.dumps(extraction.get('industry_keywords', []))}
+Essential skills (from JD, required): {json.dumps(extraction.get("essential_skills", []))}
+Preferred skills (from JD, nice-to-have): {json.dumps(extraction.get("preferred_skills", []))}
+Industry keywords: {json.dumps(extraction.get("industry_keywords", []))}
 Operating-context signals:
 {hidden_qualities_block}
-Professional vocabulary: {json.dumps(extraction.get('professional_vocabulary', []))}
-Keyword placement suggestions: {json.dumps(extraction.get('keyword_placement', []))}
+Professional vocabulary: {json.dumps(extraction.get("professional_vocabulary", []))}
+Keyword placement suggestions: {json.dumps(extraction.get("keyword_placement", []))}
 </extracted_signal>
 
 <deterministic_analysis>
-Keyword match score: {context_set['deterministic_analysis']['keyword_overlap']['match_score']}
-ATS warnings: {json.dumps(context_set['deterministic_analysis']['ats_warnings'])}
+Keyword match score: {context_set["deterministic_analysis"]["keyword_overlap"]["match_score"]}
+ATS warnings: {json.dumps(context_set["deterministic_analysis"]["ats_warnings"])}
 </deterministic_analysis>
 
 <instructions>
@@ -1486,11 +1572,13 @@ def analyze_streaming(
     yield ("phase", {"phase": "extraction"})
     extraction: dict | None = None
     for event_name, payload in _parse_or_retry_streaming(
-        client, _analyze_extraction_prompt(context_set),
+        client,
+        _analyze_extraction_prompt(context_set),
         cached_user_prefix=prefix,
         response_model=AnalyzeExtractionResponse,
         call_kind="analyze_extraction",
-        username=username, run_id=run_id,
+        username=username,
+        run_id=run_id,
         system_prompt=_resolve_system_prompt("EXTRACTION_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
     ):
@@ -1509,11 +1597,13 @@ def analyze_streaming(
     # Synthesis under the default SYSTEM_PROMPT (no override) so its cached prefix
     # matches generate()'s and reclaims the analyze→generate cache (see analyze()).
     for event_name, payload in _parse_or_retry_streaming(
-        client, _analyze_synthesis_prompt(context_set, extraction),
+        client,
+        _analyze_synthesis_prompt(context_set, extraction),
         cached_user_prefix=prefix,
         response_model=AnalyzeSynthesisResponse,
         call_kind="analyze_synthesis",
-        username=username, run_id=run_id,
+        username=username,
+        run_id=run_id,
     ):
         if event_name == "done" and isinstance(payload, dict):
             synthesis = payload
@@ -1602,7 +1692,11 @@ def _resolve_cited(answer: str, units: tuple[Unit, ...]) -> tuple[str, list[dict
 
     renumbered = _AVATAR_CITE_RE.sub(_sub, answer)
     sources: list[dict[str, object]] = [
-        {"n": new, "label": units[old - 1].citation.strip("[]"), "href": _citation_href(units[old - 1])}
+        {
+            "n": new,
+            "label": units[old - 1].citation.strip("[]"),
+            "href": _citation_href(units[old - 1]),
+        }
         for new, old in enumerate(order, start=1)
     ]
     return renumbered, sources
@@ -1640,7 +1734,7 @@ def avatar_answer_streaming(
         "Answer concisely and warmly in plain, natural sentences, grounded in the "
         "context above, citing each claim with the bracketed number of the unit it "
         "rests on ([1], [2], …) at the END of the sentence. If the context does not "
-        "cover it, say exactly \"I don't have that in my docs.\" and point to the "
+        'cover it, say exactly "I don\'t have that in my docs." and point to the '
         "nearest covered topic with its number."
     )
 
@@ -1706,7 +1800,7 @@ def clarify(
     missing_jd_keywords = overlap.get("missing_from_resume", [])[:20]
     candidate_skills = context_set.get("candidate", {}).get("skills", [])
 
-    hidden_qualities = analysis.get('hidden_qualities', [])
+    hidden_qualities = analysis.get("hidden_qualities", [])
     # Render each context signal as "- [category] signal". Tolerant of legacy
     # list[str] items from analyses produced before the hidden_qualities schema
     # change (an iteration can reload an older context file).
@@ -1721,13 +1815,13 @@ def clarify(
     prompt = f"""<task>Generate 3-5 targeted clarifying questions for the candidate.</task>
 
 <analyzer_output>
-Essential skills (from JD): {json.dumps(analysis.get('essential_skills', []))}
-Preferred skills (from JD): {json.dumps(analysis.get('preferred_skills', []))}
-Comparison strengths: {json.dumps(analysis.get('comparison', {}).get('strengths', []))}
-Comparison gaps: {json.dumps(analysis.get('comparison', {}).get('gaps', []))}
-Title alignment: {analysis.get('comparison', {}).get('title_alignment', '')}
-Keyword placements suggested: {json.dumps(analysis.get('keyword_placement', []))}
-Overall strategy: {analysis.get('overall_strategy', '')}
+Essential skills (from JD): {json.dumps(analysis.get("essential_skills", []))}
+Preferred skills (from JD): {json.dumps(analysis.get("preferred_skills", []))}
+Comparison strengths: {json.dumps(analysis.get("comparison", {}).get("strengths", []))}
+Comparison gaps: {json.dumps(analysis.get("comparison", {}).get("gaps", []))}
+Title alignment: {analysis.get("comparison", {}).get("title_alignment", "")}
+Keyword placements suggested: {json.dumps(analysis.get("keyword_placement", []))}
+Overall strategy: {analysis.get("overall_strategy", "")}
 </analyzer_output>
 
 <context_signals>
@@ -1770,7 +1864,8 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
     # and a compact per-call user message. Cache miss is cheap (~1K tokens
     # of input) and keeps the call focused.
     return _parse_or_retry(
-        client, prompt,
+        client,
+        prompt,
         cached_user_prefix="",
         response_model=ClarifyResponse,
         call_kind="clarify",
@@ -1904,7 +1999,8 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
     # compact per-call user message — no cached prefix benefit. The current
     # draft varies per iteration anyway, so a cached prefix wouldn't hit.
     return _parse_or_retry(
-        client, prompt,
+        client,
+        prompt,
         cached_user_prefix="",
         response_model=ClarifyResponse,
         call_kind="iterate_clarify",
@@ -2056,13 +2152,13 @@ def _build_generate_prompt(
     cover_letter_rules_block = _COVER_LETTER_RULES_BLOCK if with_cover_letter else ""
 
     refinement_target = (
-        "to both the resume and cover letter" if with_cover_letter
-        else "to the resume"
+        "to both the resume and cover letter" if with_cover_letter else "to the resume"
     )
 
     cover_letter_schema_line = (
         '"cover_letter_content": "The complete cover letter as plain text",\n  '
-        if with_cover_letter else ""
+        if with_cover_letter
+        else ""
     )
 
     cover_draft, _ = _current_cover_letter_draft(context_set) if with_cover_letter else ("", "")
@@ -2090,20 +2186,27 @@ def _build_generate_prompt(
         # opted-in role intros yields a byte-identical generate prompt → the
         # analyze→generate cache is never disturbed for non-users.
         _has_role_summary = any(
-            (e.get("summary") or "").strip()
-            for e in (context_set.get("career_corpus") or [])
+            (e.get("summary") or "").strip() for e in (context_set.get("career_corpus") or [])
         )
         summary_clause = (
-            "\n- An optional <summary> element — the candidate's CHOSEN intro line "
-            "for THIS role, verbatim ground truth. When present, open the role with it "
-            "as a one-line intro directly under the role heading (before its bullets), "
-            "reproducing the text faithfully. A role without a <summary> has no intro "
-            "line — do NOT invent one."
-        ) if _has_role_summary else ""
+            (
+                "\n- An optional <summary> element — the candidate's CHOSEN intro line "
+                "for THIS role, verbatim ground truth. When present, open the role with it "
+                "as a one-line intro directly under the role heading (before its bullets), "
+                "reproducing the text faithfully. A role without a <summary> has no intro "
+                "line — do NOT invent one."
+            )
+            if _has_role_summary
+            else ""
+        )
         summary_grounding = (
-            " A <summary> element's text is verbatim ground truth like a <bullet> — "
-            "reproduce it faithfully as the role's intro; never reword or invent it."
-        ) if _has_role_summary else ""
+            (
+                " A <summary> element's text is verbatim ground truth like a <bullet> — "
+                "reproduce it faithfully as the role's intro; never reword or invent it."
+            )
+            if _has_role_summary
+            else ""
+        )
         corpus_mode_block = f"""<corpus_mode>
 The candidate's experience pool is the <career_corpus> block above (not a free-text <resume>). Each <experience> carries:
 - A `dates` attribute — IMMUTABLE ground truth. Whichever title you use for an experience (an <eligible_title> or one you propose), its heading MUST reproduce that experience's exact date range. Never merge, shift, or harmonize ranges across experiences — even when their titles look similar, even when you reorder experiences for relevance, and even on a regeneration pass.
@@ -2204,11 +2307,11 @@ long line is malformed output regardless of how complete the text is.
 </output_rules>
 
 <analysis>
-Essential skills: {', '.join(analysis.get('essential_skills', []))}
-Missing keywords: {json.dumps(analysis.get('keyword_placement', []))}
-Suggestions: {json.dumps(analysis.get('suggestions', []))}
-Strategy: {analysis.get('overall_strategy', '')}
-Professional vocabulary: {', '.join(analysis.get('professional_vocabulary', []))}
+Essential skills: {", ".join(analysis.get("essential_skills", []))}
+Missing keywords: {json.dumps(analysis.get("keyword_placement", []))}
+Suggestions: {json.dumps(analysis.get("suggestions", []))}
+Strategy: {analysis.get("overall_strategy", "")}
+Professional vocabulary: {", ".join(analysis.get("professional_vocabulary", []))}
 </analysis>
 
 {clarifications_block}{cover_letter_draft_block}{corpus_mode_block}<resume_rules>
@@ -2253,7 +2356,8 @@ GROUNDING CHECK — apply this before writing every bullet:
 8. Ensure all content is ATS-compatible — no tables, columns, or special characters.
 </resume_rules>
 {cover_letter_rules_block}
-{f'''
+{
+        f'''
 <refinement_instructions>
 The user has reviewed the generated documents and provided the following adjustment instructions.
 Apply ALL of the following {refinement_target}.
@@ -2262,22 +2366,27 @@ Do NOT make any other changes beyond what is requested here.
 
 {refinement_notes}
 </refinement_instructions>
-''' if refinement_notes.strip() else ''}
+'''
+        if refinement_notes.strip()
+        else ""
+    }
 <output_format>
 Respond with valid JSON only. No markdown code fences. Use this exact structure:
 {{
   "resume_content": "The complete tailored resume. CRITICAL: use \\n (JSON newline escape) between every section, job entry, and bullet. Never collapse the resume into one long line. Example: '# Name\\nEmail | Phone\\n\\n## Summary\\nText.\\n\\n## Experience\\n\\n### Title — Company\\n- Bullet one\\n- Bullet two'",
   {cover_letter_schema_line}"changes_made": ["change1", "change2"],
-  "proofread_notes": ["Any grammar, spelling, or formatting issues found and fixed"]{extra_output_fields}
+  "proofread_notes": ["Any grammar, spelling, or formatting issues found and fixed"]{
+        extra_output_fields
+    }
 }}
 </output_format>"""
 
     if in_corpus_mode:
-        model_cls: type[BaseModel] = (GenerateCorpusResponse if with_cover_letter
-                    else GenerateCorpusNoCLResponse)
+        model_cls: type[BaseModel] = (
+            GenerateCorpusResponse if with_cover_letter else GenerateCorpusNoCLResponse
+        )
     else:
-        model_cls = (GenerateResponse if with_cover_letter
-                    else GenerateNoCLResponse)
+        model_cls = GenerateResponse if with_cover_letter else GenerateNoCLResponse
 
     return prompt, model_cls
 
@@ -2325,12 +2434,14 @@ def generate(
         legitimate source material (mirrors the clarification carve-out).
     """
     prompt, model_cls = _build_generate_prompt(
-        context_set, analysis,
+        context_set,
+        analysis,
         refinement_notes=refinement_notes,
         with_cover_letter=with_cover_letter,
     )
     result = _parse_or_retry(
-        client, prompt,
+        client,
+        prompt,
         cached_user_prefix=_stable_user_prefix(context_set),
         response_model=model_cls,
         call_kind="generate",
@@ -2366,12 +2477,14 @@ def generate_streaming(
     keep using `generate()`.
     """
     prompt, model_cls = _build_generate_prompt(
-        context_set, analysis,
+        context_set,
+        analysis,
         refinement_notes=refinement_notes,
         with_cover_letter=with_cover_letter,
     )
     for event in _parse_or_retry_streaming(
-        client, prompt,
+        client,
+        prompt,
         cached_user_prefix=_stable_user_prefix(context_set),
         response_model=model_cls,
         call_kind="generate",
@@ -2388,12 +2501,13 @@ def generate_streaming(
             yield event
 
 
-
-
 # β.5 — required keys for the focused cover-letter-only call below.
-COVER_LETTER_ONLY_REQUIRED_KEYS = frozenset({
-    "cover_letter_content", "proofread_notes",
-})
+COVER_LETTER_ONLY_REQUIRED_KEYS = frozenset(
+    {
+        "cover_letter_content",
+        "proofread_notes",
+    }
+)
 
 
 def generate_cover_letter_against_resume(
@@ -2476,7 +2590,7 @@ def generate_cover_letter_against_resume(
     # Symptom of the bug: cover-letter LLM received an empty <jd>
     # block, produced generic / off-target prose, and surfaced as a UI-
     # facing "no job description was attached to this request" complaint.
-    jd_excerpt = (context_set.get("job_description") or "")
+    jd_excerpt = context_set.get("job_description") or ""
     if isinstance(jd_excerpt, str):
         jd_excerpt = jd_excerpt[:6000]
 
@@ -2491,13 +2605,14 @@ def generate_cover_letter_against_resume(
 </jd>
 
 <analysis>
-Essential skills: {', '.join(analysis.get('essential_skills', []))}
-Strategy: {analysis.get('overall_strategy', '')}
-Professional vocabulary: {', '.join(analysis.get('professional_vocabulary', []))}
+Essential skills: {", ".join(analysis.get("essential_skills", []))}
+Strategy: {analysis.get("overall_strategy", "")}
+Professional vocabulary: {", ".join(analysis.get("professional_vocabulary", []))}
 </analysis>
 
 {_COVER_LETTER_RULES_BLOCK}
-{f'''
+{
+        f'''
 <refinement_instructions>
 The user has reviewed the cover letter and provided the following adjustment instructions.
 Apply ALL of the following to the cover letter.
@@ -2506,7 +2621,10 @@ Do NOT make any other changes beyond what is requested here.
 
 {refinement_notes}
 </refinement_instructions>
-''' if refinement_notes.strip() else ''}
+'''
+        if refinement_notes.strip()
+        else ""
+    }
 <output_format>
 Respond with valid JSON only. No markdown code fences. Use this exact structure:
 {{
@@ -2516,7 +2634,8 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 </output_format>"""
 
     return _parse_or_retry(
-        client, prompt,
+        client,
+        prompt,
         cached_user_prefix="",  # focused one-shot; cache benefit is small
         response_model=CoverLetterOnlyResponse,
         call_kind="generate_cover_letter",
@@ -2659,7 +2778,9 @@ def critique_proposal(
     clar_lines = []
     for q, a in (clarifications or [])[:30]:
         clar_lines.append(f"  Q: {q}\n  A: {a}")
-    clar_block = "\n\n".join(clar_lines) if clar_lines else "  (no relevant candidate clarifications)"
+    clar_block = (
+        "\n\n".join(clar_lines) if clar_lines else "  (no relevant candidate clarifications)"
+    )
 
     jd_block = jd_excerpt.strip() or "(no JD excerpt provided)"
 
@@ -2781,9 +2902,9 @@ def recommend_bullets(
 </jd>
 
 <analysis>
-Essential skills the JD names: {essential or '(none surfaced)'}
-Preferred skills: {preferred or '(none)'}
-Industry keywords: {keywords or '(none)'}
+Essential skills the JD names: {essential or "(none surfaced)"}
+Preferred skills: {preferred or "(none)"}
+Industry keywords: {keywords or "(none)"}
 </analysis>"""
 
     result = _parse_or_retry(
@@ -2811,6 +2932,7 @@ def _dedup_recommendations(result: dict, corpus: list[CorpusExperience]) -> None
     near-duplicate bullet ids per experience. Same-experience scope only —
     two experiences referring to the same achievement is rare but legal."""
     from hardening import bullet_jaccard
+
     text_by_id: dict[int, str] = {}
     has_outcome_by_id: dict[int, bool] = {}
     for exp in corpus or []:
@@ -2938,9 +3060,9 @@ def recommend_summaries(
 </jd>
 
 <analysis>
-Essential skills the JD names: {essential or '(none surfaced)'}
-Preferred skills: {preferred or '(none)'}
-Industry keywords: {keywords or '(none)'}
+Essential skills the JD names: {essential or "(none surfaced)"}
+Preferred skills: {preferred or "(none)"}
+Industry keywords: {keywords or "(none)"}
 </analysis>"""
 
     result = _parse_or_retry(
@@ -3028,9 +3150,7 @@ def _dedup_summary_recommendations(result: dict, items: list[dict]) -> None:
         text = text_by_id.get(sid, "")
         if not text:
             continue
-        is_dup = any(
-            bullet_jaccard(text, k) >= 0.75 for k in kept_texts
-        )
+        is_dup = any(bullet_jaccard(text, k) >= 0.75 for k in kept_texts)
         if is_dup:
             continue
         kept.append(alt)
@@ -3119,7 +3239,8 @@ def recommend_experience_summaries(
         except (TypeError, ValueError):
             continue
         items = [
-            it for it in (g.get("items") or [])
+            it
+            for it in (g.get("items") or [])
             if isinstance(it, dict) and (it.get("text") or "").strip()
         ]
         if items:
@@ -3131,12 +3252,14 @@ def recommend_experience_summaries(
     multi: list[dict] = []
     for g in groups:
         if len(g["items"]) == 1:
-            auto.append({
-                "experience_id": g["experience_id"],
-                "summary_item_id": int(g["items"][0].get("id", 0)),
-                "rationale": "Only variant available — no alternates to weigh.",
-                "alternates": [],
-            })
+            auto.append(
+                {
+                    "experience_id": g["experience_id"],
+                    "summary_item_id": int(g["items"][0].get("id", 0)),
+                    "rationale": "Only variant available — no alternates to weigh.",
+                    "alternates": [],
+                }
+            )
         else:
             multi.append(g)
 
@@ -3160,9 +3283,9 @@ def recommend_experience_summaries(
 </jd>
 
 <analysis>
-Essential skills the JD names: {essential or '(none surfaced)'}
-Preferred skills: {preferred or '(none)'}
-Industry keywords: {keywords or '(none)'}
+Essential skills the JD names: {essential or "(none surfaced)"}
+Preferred skills: {preferred or "(none)"}
+Industry keywords: {keywords or "(none)"}
 </analysis>"""
 
     result = _parse_or_retry(
@@ -3179,7 +3302,7 @@ Industry keywords: {keywords or '(none)'}
     # Normalize the LLM's recs: coerce ids, ensure alternates exists, drop
     # entries without a usable pick, then dedup alternates per experience.
     llm_recs: list[dict] = []
-    for rec in (result.get("recommendations") or []):
+    for rec in result.get("recommendations") or []:
         if not isinstance(rec, dict):
             continue
         try:
@@ -3215,7 +3338,7 @@ def _experience_summary_items_block(groups: list[dict]) -> str:
         if company:
             attrs += f' company="{escape(company)}"'
         lines.append(f"  <experience {attrs}>")
-        for it in (g.get("items") or []):
+        for it in g.get("items") or []:
             try:
                 sid = int(it.get("id", 0))
             except (TypeError, ValueError):
@@ -3250,7 +3373,7 @@ def _dedup_experience_summary_recommendations(result: dict, groups: list[dict]) 
         except (TypeError, ValueError):
             continue
         m: dict[int, str] = {}
-        for it in (g.get("items") or []):
+        for it in g.get("items") or []:
             try:
                 sid = int(it.get("id", 0))
             except (TypeError, ValueError):
@@ -3258,7 +3381,7 @@ def _dedup_experience_summary_recommendations(result: dict, groups: list[dict]) 
             m[sid] = (it.get("text") or "").strip()
         text_by_exp_id[eid] = m
 
-    for rec in (result.get("recommendations") or []):
+    for rec in result.get("recommendations") or []:
         try:
             eid = int(rec.get("experience_id"))
         except (TypeError, ValueError):
@@ -3272,7 +3395,7 @@ def _dedup_experience_summary_recommendations(result: dict, groups: list[dict]) 
 
         kept: list[dict] = []
         kept_texts: list[str] = [rec_text] if rec_text else []
-        for alt in (rec.get("alternates") or []):
+        for alt in rec.get("alternates") or []:
             try:
                 sid = int(alt.get("summary_item_id", 0))
             except (TypeError, ValueError):
@@ -3341,7 +3464,8 @@ def recommend_skills(
     """
     raw = context_set.get("skill_items") or []
     items = [
-        it for it in (list(raw) if isinstance(raw, list) else [])
+        it
+        for it in (list(raw) if isinstance(raw, list) else [])
         if isinstance(it, dict) and (it.get("name") or "").strip()
     ]
 
@@ -3349,10 +3473,12 @@ def recommend_skills(
     if len(items) == 0:
         return {"recommendation": {"skill_ids": [], "rationale": "No skills to order."}}
     if len(items) == 1:
-        return {"recommendation": {
-            "skill_ids": [int(items[0].get("id", 0))],
-            "rationale": "Only skill available — nothing to weigh.",
-        }}
+        return {
+            "recommendation": {
+                "skill_ids": [int(items[0].get("id", 0))],
+                "rationale": "Only skill available — nothing to weigh.",
+            }
+        }
 
     items_block = _skills_block(items)
     jd_value = context_set.get("jd_text", "")
@@ -3371,9 +3497,9 @@ def recommend_skills(
 </jd>
 
 <analysis>
-Essential skills the JD names: {essential or '(none surfaced)'}
-Preferred skills: {preferred or '(none)'}
-Industry keywords: {keywords or '(none)'}
+Essential skills the JD names: {essential or "(none surfaced)"}
+Preferred skills: {preferred or "(none)"}
+Industry keywords: {keywords or "(none)"}
 </analysis>"""
 
     result = _parse_or_retry(
@@ -3395,7 +3521,7 @@ Industry keywords: {keywords or '(none)'}
         rec = {}
     seen: set[int] = set()
     ordered: list[int] = []
-    for x in (rec.get("skill_ids") or []):
+    for x in rec.get("skill_ids") or []:
         try:
             sid = int(x)
         except (TypeError, ValueError):
@@ -3497,8 +3623,11 @@ def suggest_skills(
     essential = ", ".join(analysis.get("essential_skills", []) or [])
     preferred = ", ".join(analysis.get("preferred_skills", []) or [])
     existing_raw = context_set.get("existing_skill_names") or []
-    existing_list = [s for s in existing_raw if isinstance(s, str) and s.strip()] \
-        if isinstance(existing_raw, list) else []
+    existing_list = (
+        [s for s in existing_raw if isinstance(s, str) and s.strip()]
+        if isinstance(existing_raw, list)
+        else []
+    )
     existing = ", ".join(existing_list)
 
     user_prompt = f"""<task>Propose skills the JD wants AND the corpus evidences (grounded — evidence or nothing). Output JSON only.</task>
@@ -3506,12 +3635,12 @@ def suggest_skills(
 {corpus_block}
 
 <existing_skills>
-{existing or '(none)'}
+{existing or "(none)"}
 </existing_skills>
 
 <analysis>
-Essential skills the JD names: {essential or '(none surfaced)'}
-Preferred skills: {preferred or '(none)'}
+Essential skills the JD names: {essential or "(none surfaced)"}
+Preferred skills: {preferred or "(none)"}
 </analysis>"""
 
     result = _parse_or_retry(
@@ -3531,7 +3660,7 @@ Preferred skills: {preferred or '(none)'}
     existing_lower = {s.strip().lower() for s in existing_list}
     proposals: list[dict] = []
     seen: set[str] = set()
-    for p in (result.get("proposals") or []):
+    for p in result.get("proposals") or []:
         if not isinstance(p, dict):
             continue
         name = (p.get("name") or "").strip()

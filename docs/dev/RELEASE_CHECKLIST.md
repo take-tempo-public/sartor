@@ -723,8 +723,11 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       **Progress (2026-06-23, `chore/kit-phase1-pydantic-mypy`):** Phase 1 began — **`pydantic.mypy`
       enabled** (mypy green, no new dep). Commitment (2) exercised already: **ERA evaluated → 8/8
       false-positive on documentation prose → kept unenabled/warn-only** per design Decision 6, and the
-      **SQLAlchemy mypy plugin dropped** (`db/models.py` 2.0 native `Mapped[]` typing). `ruff format`
-      (161-file restyle) + `SIM`/`RUF` per-family triage still owed on their own Phase-1 branches. Row
+      **SQLAlchemy mypy plugin dropped** (`db/models.py` 2.0 native `Mapped[]` typing). **`ruff format`
+      landed next** (`chore/kit-phase1-ruff-format`, 2026-06-23): applied tree-wide (161 files),
+      proven prompt-inert (byte-identical prompt constants → no `PROMPT_VERSION` bump, no eval run),
+      and **hard-blocks day one** — gate wired in `ruff-changed.sh` + `[tool.ruff.format]`
+      (Decision 6 / KIT-6). `SIM`/`RUF` per-family triage is the **sole remaining Phase-1 item**. Row
       **stays open** (staged commitments in progress; no new ledger item).
 
 #### Resolved

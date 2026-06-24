@@ -30,6 +30,7 @@ from analyzer import (
 # effective_prompt_version()
 # --------------------------------------------------------------------------- #
 
+
 def test_effective_version_default_is_prompt_version():
     assert effective_prompt_version() == PROMPT_VERSION
 
@@ -79,6 +80,7 @@ def test_candidate_hash_is_order_independent():
 # _resolve_system_prompt() — the byte-identity guard
 # --------------------------------------------------------------------------- #
 
+
 def test_resolver_returns_identical_constant_outside_context():
     # `is` (identity), not just `==`: the exact same object is sent to the API,
     # which is what guarantees the prompt cache is unaffected on the default path.
@@ -102,6 +104,7 @@ def test_resolver_resets_after_context():
 # --------------------------------------------------------------------------- #
 # prompt_overrides() context manager
 # --------------------------------------------------------------------------- #
+
 
 def test_unknown_key_raises_value_error():
     with pytest.raises(ValueError, match="Unknown prompt override key"):
@@ -136,7 +139,8 @@ def test_registry_covers_every_named_system_prompt_constant():
     # the intent, so assert it explicitly rather than loosening the guard.
     deliberately_unregistered = {"AVATAR_SYSTEM_PROMPT"}
     module_prompts = {
-        n for n in dir(analyzer)
+        n
+        for n in dir(analyzer)
         if n.endswith("SYSTEM_PROMPT") and isinstance(getattr(analyzer, n), str)
     }
     # The avatar persona exists, but is intentionally kept out of the registry.
@@ -149,6 +153,7 @@ def test_registry_covers_every_named_system_prompt_constant():
 # --------------------------------------------------------------------------- #
 # Integration — through the real _call_llm_streaming via a fake client
 # --------------------------------------------------------------------------- #
+
 
 class _FakeUsage:
     input_tokens = 10
@@ -203,8 +208,11 @@ def _drive_call(monkeypatch, *, call_kind, system_prompt=""):
     logs: list[dict] = []
     monkeypatch.setattr(analyzer, "_emit_call_log", lambda rec: logs.append(rec))
     analyzer._call_llm(
-        _FakeClient(captured), "USER PROMPT",
-        call_kind=call_kind, username="u", run_id="r",
+        _FakeClient(captured),
+        "USER PROMPT",
+        call_kind=call_kind,
+        username="u",
+        run_id="r",
         system_prompt=system_prompt,
     )
     system_text = captured[-1]["system"][0]["text"]
@@ -230,13 +238,15 @@ def test_integration_named_override_flows_through(monkeypatch):
     # Mirrors what the clarify() call site does: pass the resolved named prompt.
     # Outside the context it's the identical baseline; inside, the candidate text.
     _, version_default = _drive_call(
-        monkeypatch, call_kind="clarify",
+        monkeypatch,
+        call_kind="clarify",
         system_prompt=_resolve_system_prompt("CLARIFY_SYSTEM_PROMPT"),
     )
     assert version_default == PROMPT_VERSION
     with prompt_overrides({"CLARIFY_SYSTEM_PROMPT": "CANDIDATE CLARIFY"}):
         system_text, version = _drive_call(
-            monkeypatch, call_kind="clarify",
+            monkeypatch,
+            call_kind="clarify",
             system_prompt=_resolve_system_prompt("CLARIFY_SYSTEM_PROMPT"),
         )
     assert system_text == "CANDIDATE CLARIFY"

@@ -67,9 +67,13 @@ def critique_proposal_route(proposal_id: int) -> ResponseReturnValue:
             experience = session.query(Experience).filter_by(id=bullet.experience_id).first()
         elif proposal.experience_title_id is not None:
             subject_kind = "experience_title"
-            title = session.query(ExperienceTitle).filter_by(
-                id=proposal.experience_title_id,
-            ).first()
+            title = (
+                session.query(ExperienceTitle)
+                .filter_by(
+                    id=proposal.experience_title_id,
+                )
+                .first()
+            )
             if title is None:
                 return jsonify({"error": "Referenced title missing"}), 404
             experience = session.query(Experience).filter_by(id=title.experience_id).first()
@@ -81,7 +85,8 @@ def critique_proposal_route(proposal_id: int) -> ResponseReturnValue:
 
         candidate = session.query(Candidate).filter_by(id=experience.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
@@ -91,7 +96,8 @@ def critique_proposal_route(proposal_id: int) -> ResponseReturnValue:
             None,
         )
         existing_bullets = [
-            b.text for b in sorted(experience.bullets, key=lambda x: x.display_order)
+            b.text
+            for b in sorted(experience.bullets, key=lambda x: x.display_order)
             if b.is_active and not b.is_pending_review
         ]
         experience_context = {
@@ -104,9 +110,13 @@ def critique_proposal_route(proposal_id: int) -> ResponseReturnValue:
         }
 
         clarifications = [
-            (c.question, c.answer) for c in session.query(Clarification).filter_by(
+            (c.question, c.answer)
+            for c in session.query(Clarification)
+            .filter_by(
                 candidate_id=candidate.id,
-            ).order_by(Clarification.created_at.desc()).limit(30)
+            )
+            .order_by(Clarification.created_at.desc())
+            .limit(30)
         ]
 
         # JD comes from the application this proposal's run belongs to
@@ -132,21 +142,25 @@ def critique_proposal_route(proposal_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Connection to AI service failed."}), 503
         except LLMResponseError as exc:
             logger.error("Critique response failed validation: %s", exc.validation_error)
-            return jsonify({
-                "error": "AI critique response was malformed.",
-                "detail": exc.validation_error,
-            }), 502
+            return jsonify(
+                {
+                    "error": "AI critique response was malformed.",
+                    "detail": exc.validation_error,
+                }
+            ), 502
 
         proposal.llm_critique_json = json.dumps(critique)
         if user_edited_text is not None:
             proposal.user_edited_text = user_edited_text
         session.commit()
 
-        return jsonify({
-            "proposal_id": proposal.id,
-            "subject_kind": subject_kind,
-            "critique": critique,
-        })
+        return jsonify(
+            {
+                "proposal_id": proposal.id,
+                "subject_kind": subject_kind,
+                "critique": critique,
+            }
+        )
     finally:
         session.close()
 
@@ -187,9 +201,11 @@ def decide_proposal_route(proposal_id: int) -> ResponseReturnValue:
     decision = (data.get("decision") or "").strip()
     user_edited_text = data.get("user_edited_text")
     if decision not in _VALID_DECISIONS:
-        return jsonify({
-            "error": f"decision must be one of: {sorted(_VALID_DECISIONS)}",
-        }), 400
+        return jsonify(
+            {
+                "error": f"decision must be one of: {sorted(_VALID_DECISIONS)}",
+            }
+        ), 400
     if decision == "accept_edit" and not (user_edited_text or "").strip():
         return jsonify({"error": "accept_edit requires non-empty user_edited_text"}), 400
 
@@ -200,10 +216,12 @@ def decide_proposal_route(proposal_id: int) -> ResponseReturnValue:
         if proposal is None:
             return jsonify({"error": "Proposal not found"}), 404
         if proposal.decision != "pending" and proposal.decision != decision:
-            return jsonify({
-                "error": "Proposal already decided",
-                "current_decision": proposal.decision,
-            }), 409
+            return jsonify(
+                {
+                    "error": "Proposal already decided",
+                    "current_decision": proposal.decision,
+                }
+            ), 409
 
         # Defense-in-depth: verify candidate ownership via the experience chain
         if proposal.bullet_id is not None:
@@ -214,9 +232,13 @@ def decide_proposal_route(proposal_id: int) -> ResponseReturnValue:
             subject_text_before = bullet.text
             subject_kind = "bullet"
         elif proposal.experience_title_id is not None:
-            title = session.query(ExperienceTitle).filter_by(
-                id=proposal.experience_title_id,
-            ).first()
+            title = (
+                session.query(ExperienceTitle)
+                .filter_by(
+                    id=proposal.experience_title_id,
+                )
+                .first()
+            )
             if title is None:
                 return jsonify({"error": "Referenced title missing"}), 404
             experience = session.query(Experience).filter_by(id=title.experience_id).first()
@@ -229,7 +251,8 @@ def decide_proposal_route(proposal_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Proposal references missing experience"}), 500
         candidate = session.query(Candidate).filter_by(id=experience.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
@@ -270,21 +293,25 @@ def decide_proposal_route(proposal_id: int) -> ResponseReturnValue:
 
         proposal.decision = decision
         proposal.decided_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        session.add(IterationLog(
-            application_run_id=proposal.application_run_id,
-            action=decision,
-            summary=(
-                f"{subject_kind} proposal {proposal.id}: "
-                f"{decision} (was: {subject_text_before[:60]!r})"
-            ),
-        ))
+        session.add(
+            IterationLog(
+                application_run_id=proposal.application_run_id,
+                action=decision,
+                summary=(
+                    f"{subject_kind} proposal {proposal.id}: "
+                    f"{decision} (was: {subject_text_before[:60]!r})"
+                ),
+            )
+        )
         session.commit()
 
-        return jsonify({
-            "proposal_id": proposal.id,
-            "decision": decision,
-            "subject_kind": subject_kind,
-        })
+        return jsonify(
+            {
+                "proposal_id": proposal.id,
+                "decision": decision,
+                "subject_kind": subject_kind,
+            }
+        )
     finally:
         session.close()
 
@@ -329,13 +356,19 @@ def promote_clarification_route(clarification_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Clarification not found"}), 404
         candidate = session.query(Candidate).filter_by(id=clarification.candidate_id).first()
         if candidate is None or not _safe_username(
-            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"],
+            candidate.username,
+            configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
-        experience = session.query(Experience).filter_by(
-            id=experience_id, candidate_id=candidate.id,
-        ).first()
+        experience = (
+            session.query(Experience)
+            .filter_by(
+                id=experience_id,
+                candidate_id=candidate.id,
+            )
+            .first()
+        )
         if experience is None:
             return jsonify({"error": "Experience not found for this candidate"}), 404
 
@@ -356,9 +389,7 @@ def promote_clarification_route(clarification_id: int) -> ResponseReturnValue:
                     question=clarification.question,
                     answer=clarification.answer,
                     target_company=experience.company,
-                    target_official_title=(
-                        official_title_row.title if official_title_row else ""
-                    ),
+                    target_official_title=(official_title_row.title if official_title_row else ""),
                     username=candidate.username,
                 )
             except anthropic.APIConnectionError as exc:
@@ -366,11 +397,16 @@ def promote_clarification_route(clarification_id: int) -> ResponseReturnValue:
                 return jsonify({"error": "Connection to AI service failed."}), 503
             except LLMResponseError as exc:
                 logger.error("Promote response validation failed: %s", exc.validation_error)
-                return jsonify({"error": "AI response malformed.",
-                                "detail": exc.validation_error}), 502
+                return jsonify(
+                    {"error": "AI response malformed.", "detail": exc.validation_error}
+                ), 502
             bullet_text = (llm_out.get("text") or "").strip()
             pattern_kind_raw = (llm_out.get("pattern_kind") or "").strip().lower()
-            pattern_kind = pattern_kind_raw if pattern_kind_raw in {"xyz", "star", "car", "manual"} else "manual"
+            pattern_kind = (
+                pattern_kind_raw
+                if pattern_kind_raw in {"xyz", "star", "car", "manual"}
+                else "manual"
+            )
             rationale = llm_out.get("rationale", "")
 
         if not bullet_text:
@@ -395,37 +431,50 @@ def promote_clarification_route(clarification_id: int) -> ResponseReturnValue:
         # candidate's most recent application_run (if any) for the FK so the
         # review flow can surface this proposal alongside other pending ones.
         from db.models import ApplicationRun
-        recent_run = session.query(ApplicationRun).join(
-            ApplicationRun.application,
-        ).filter_by(candidate_id=candidate.id).order_by(
-            ApplicationRun.created_at.desc(),
-        ).first()
+
+        recent_run = (
+            session.query(ApplicationRun)
+            .join(
+                ApplicationRun.application,
+            )
+            .filter_by(candidate_id=candidate.id)
+            .order_by(
+                ApplicationRun.created_at.desc(),
+            )
+            .first()
+        )
         if recent_run is not None:
-            session.add(ProposalReview(
-                application_run_id=recent_run.id,
-                bullet_id=new_bullet.id,
-                original_text=bullet_text,
-                decision="pending",
-            ))
-            session.add(IterationLog(
-                application_run_id=recent_run.id,
-                action="promote_bullet",
-                summary=(
-                    f"Promoted clarification {clarification.id} → "
-                    f"bullet {new_bullet.id} on experience {experience.id}"
-                ),
-            ))
+            session.add(
+                ProposalReview(
+                    application_run_id=recent_run.id,
+                    bullet_id=new_bullet.id,
+                    original_text=bullet_text,
+                    decision="pending",
+                )
+            )
+            session.add(
+                IterationLog(
+                    application_run_id=recent_run.id,
+                    action="promote_bullet",
+                    summary=(
+                        f"Promoted clarification {clarification.id} → "
+                        f"bullet {new_bullet.id} on experience {experience.id}"
+                    ),
+                )
+            )
 
         clarification.is_promoted_to_bullet = 1
         session.commit()
 
-        return jsonify({
-            "bullet_id": new_bullet.id,
-            "experience_id": experience.id,
-            "text": bullet_text,
-            "pattern_kind": pattern_kind,
-            "rationale": rationale,
-            "proposal_review_anchored_to_run_id": recent_run.id if recent_run else None,
-        })
+        return jsonify(
+            {
+                "bullet_id": new_bullet.id,
+                "experience_id": experience.id,
+                "text": bullet_text,
+                "pattern_kind": pattern_kind,
+                "rationale": rationale,
+                "proposal_review_anchored_to_run_id": recent_run.id if recent_run else None,
+            }
+        )
     finally:
         session.close()

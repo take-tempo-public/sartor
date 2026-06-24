@@ -18,8 +18,7 @@ from ui_pages import BasePage, CorpusPage, UserPickerPage
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_import_resume_button_label(page: Page, live_server: str,
-                                    ux_app: ModuleType) -> None:
+def test_import_resume_button_label(page: Page, live_server: str, ux_app: ModuleType) -> None:
     seed_user(ux_app, "alice")
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")

@@ -132,6 +132,15 @@ ignore = [
 "tests/**" = ["S101", "S105", "S106", "S108", "S607"]
 "evals/*" = ["S101"]
 
+[tool.ruff.format]
+# Kit-adoption Phase 1 (KIT-6): declare the adopted formatter style explicitly so the
+# `ruff format --check` gate (wired in .claude-plugin/hooks/ruff-changed.sh) is deterministic
+# across machines + ruff versions. These match ruff's current defaults — they pin the style,
+# they do not change formatter output. `line-ending` is left at the default ("auto", preserve
+# each file's existing ending) to avoid CRLF/LF churn on Windows clones.
+quote-style = "double"
+indent-style = "space"
+
 [tool.mypy]
 python_version = "3.10"
 # Kit-adoption Phase 1 (KIT-3/§4): the Pydantic mypy plugin teaches mypy the

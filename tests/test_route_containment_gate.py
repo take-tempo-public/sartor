@@ -177,7 +177,11 @@ def _route_decorator_url(node: ast.FunctionDef) -> str | None:
             continue
         func = dec.func
         if isinstance(func, ast.Attribute) and func.attr in _ROUTE_METHODS:
-            if dec.args and isinstance(dec.args[0], ast.Constant) and isinstance(dec.args[0].value, str):
+            if (
+                dec.args
+                and isinstance(dec.args[0], ast.Constant)
+                and isinstance(dec.args[0].value, str)
+            ):
                 return dec.args[0].value
             return ""
     return None
@@ -269,9 +273,7 @@ def test_every_fs_route_is_user_scoped() -> None:
     offenders = sorted(
         r.key
         for r in _all_routes()
-        if r.is_fs_touching
-        and not r.has_safe_username
-        and r.key not in SAFE_USERNAME_NOT_REQUIRED
+        if r.is_fs_touching and not r.has_safe_username and r.key not in SAFE_USERNAME_NOT_REQUIRED
     )
     assert not offenders, (
         f"FS-touching blueprint route(s) missing _safe_username: {offenders}. "
@@ -294,9 +296,7 @@ def test_no_stale_within_exemptions() -> None:
             stale.append(f"{key} (no longer an FS-touching route)")
         elif route.has_within:
             stale.append(f"{key} (now calls _within — exemption unnecessary)")
-    assert not stale, (
-        f"Stale _within exemption(s): {stale}. Remove from WITHIN_NOT_REQUIRED."
-    )
+    assert not stale, f"Stale _within exemption(s): {stale}. Remove from WITHIN_NOT_REQUIRED."
 
 
 def test_no_stale_safe_username_exemptions() -> None:

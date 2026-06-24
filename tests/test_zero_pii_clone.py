@@ -32,8 +32,23 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # Binary/opaque suffixes skipped by the key-shape text scan (a key cannot hide in
 # a .docx the way it could in a tracked .py/.md/.json/.config).
 _BINARY_SUFFIXES = frozenset(
-    {".docx", ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".woff", ".woff2",
-     ".ttf", ".otf", ".sqlite", ".pyc", ".zip", ".gz"}
+    {
+        ".docx",
+        ".pdf",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".ico",
+        ".woff",
+        ".woff2",
+        ".ttf",
+        ".otf",
+        ".sqlite",
+        ".pyc",
+        ".zip",
+        ".gz",
+    }
 )
 
 
@@ -42,7 +57,10 @@ def _git_ls_files(*paths: str) -> list[str]:
     if we're not inside a git working tree (CI quirk / detached snapshot)."""
     result = subprocess.run(  # noqa: S603 — trusted: literal git command + test-authored pathspecs
         ["git", "ls-files", *paths],
-        cwd=REPO_ROOT, capture_output=True, text=True, check=False,
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     if result.returncode != 0:
         pytest.skip("Not in a git working tree (CI quirk or detached snapshot)")
@@ -62,7 +80,8 @@ def test_only_synthetic_configs_tracked() -> None:
 def test_only_synthetic_resumes_tracked() -> None:
     """resumes/ tracks only the .gitkeep and the synthetic Casey Rivera fixture."""
     leaked = [
-        t for t in _git_ls_files("resumes/")
+        t
+        for t in _git_ls_files("resumes/")
         if t != "resumes/.gitkeep" and not t.startswith("resumes/testuser/")
     ]
     assert not leaked, f"Real résumé file(s) leaked into git tracking: {leaked}"
@@ -78,9 +97,9 @@ def test_no_real_eval_fixtures_tracked() -> None:
     """evals/fixtures/real/ may hold real PII — only its .gitkeep ships; the
     synthetic/ fixtures are auditably synthetic and fine."""
     leaked = [
-        t for t in _git_ls_files("evals/fixtures/")
-        if t != "evals/fixtures/real/.gitkeep"
-        and not t.startswith("evals/fixtures/synthetic/")
+        t
+        for t in _git_ls_files("evals/fixtures/")
+        if t != "evals/fixtures/real/.gitkeep" and not t.startswith("evals/fixtures/synthetic/")
     ]
     assert not leaked, f"Non-synthetic eval fixture(s) leaked into git tracking: {leaked}"
 
@@ -89,7 +108,8 @@ def test_only_bundled_personas_tracked() -> None:
     """personas/ ships the bundled templates + the shared cover-letter shell;
     per-user personas/<username>/ are PII and stay gitignored."""
     leaked = [
-        t for t in _git_ls_files("personas/")
+        t
+        for t in _git_ls_files("personas/")
         if t != "personas/cover_letter.html" and not t.startswith("personas/bundled/")
     ]
     assert not leaked, f"User persona file(s) leaked into git tracking: {leaked}"
@@ -157,9 +177,18 @@ def test_gitignore_pii_lines_present() -> None:
         if ln.strip() and not ln.strip().startswith("#")
     }
     required = {
-        ".api_key", "*.key", "*.pem", "*.p12", "*.crt",
-        "configs/*.config", "resumes/*", "output/*", "personas/*",
-        "evals/fixtures/real/*", "db/*.sqlite", "logs/",
+        ".api_key",
+        "*.key",
+        "*.pem",
+        "*.p12",
+        "*.crt",
+        "configs/*.config",
+        "resumes/*",
+        "output/*",
+        "personas/*",
+        "evals/fixtures/real/*",
+        "db/*.sqlite",
+        "logs/",
     }
     missing = sorted(required - lines)
     assert not missing, (

@@ -179,6 +179,7 @@ class ContextSet(_ContextSetRequired, total=False):
     # ran (or whose call failed) keep the prior full-corpus behavior.
     llm_recommendations: dict
 
+
 # Common English stop words to exclude from keyword extraction
 STOP_WORDS = frozenset(
     "a an the and or but in on at to for of is it that this with as by from are was "
@@ -191,11 +192,25 @@ STOP_WORDS = frozenset(
 
 # Standard ATS-friendly section headings
 ATS_HEADINGS = {
-    "summary", "professional summary", "objective", "career objective",
-    "experience", "professional experience", "work experience", "employment",
-    "work history", "education", "skills", "technical skills",
-    "core competencies", "certifications", "projects", "awards",
-    "publications", "references", "volunteer",
+    "summary",
+    "professional summary",
+    "objective",
+    "career objective",
+    "experience",
+    "professional experience",
+    "work experience",
+    "employment",
+    "work history",
+    "education",
+    "skills",
+    "technical skills",
+    "core competencies",
+    "certifications",
+    "projects",
+    "awards",
+    "publications",
+    "references",
+    "volunteer",
 }
 
 # Bullet-line detector. Permissive: matches `-`, `*`, `•`, or numbered
@@ -213,9 +228,9 @@ EXPERIENCE_HEADER_RE = re.compile(
 # currency, plain integers with optional `+`, and scale words. Tuned to
 # match the kinds of numbers candidates legitimately put on resumes.
 METRIC_RE = re.compile(
-    r"(?:\d+%"                                # percentages: 50%
-    r"|\$\s?\d[\d,]*(?:\.\d+)?[kKmMbB]?"      # currency: $2.4M, $500k
-    r"|\b\d[\d,]*\+?\b"                       # plain ints: 30+, 12000
+    r"(?:\d+%"  # percentages: 50%
+    r"|\$\s?\d[\d,]*(?:\.\d+)?[kKmMbB]?"  # currency: $2.4M, $500k
+    r"|\b\d[\d,]*\+?\b"  # plain ints: 30+, 12000
     r"|\b\d+(?:\.\d+)?\s?(?:k|m|b|million|billion|thousand|users|customers|clients|countries|teams?|reports|requests)\b"
     r")",
     re.IGNORECASE,
@@ -249,7 +264,8 @@ def bullet_token_set(text: str) -> frozenset[str]:
     the result is cheap to compare across bullets. Used by
     `bullet_jaccard()` and the corpus-duplicates clusterer (B1.2)."""
     return frozenset(
-        w for w in _DEDUP_TOKEN_RE.findall((text or "").lower())
+        w
+        for w in _DEDUP_TOKEN_RE.findall((text or "").lower())
         if w not in STOP_WORDS and len(w) > 2
     )
 
@@ -337,8 +353,7 @@ def check_ats_format(parsed_resume: dict) -> list[str]:
         )
     if text.count("\t") > 10:
         warnings.append(
-            "Many tab characters detected — may indicate column layout "
-            "that ATS systems misread"
+            "Many tab characters detected — may indicate column layout that ATS systems misread"
         )
 
     # Check resume length
@@ -474,9 +489,7 @@ def compute_top_third_density(generated_resume: str, jd_keywords: dict) -> dict:
             "density": 0.0,
         }
 
-    hits = sum(
-        1 for b in bullets if any(kw.lower() in b.lower() for kw in top3)
-    )
+    hits = sum(1 for b in bullets if any(kw.lower() in b.lower() for kw in top3))
     return {
         "top3_essentials": top3,
         "bullets_checked": len(bullets),
@@ -621,12 +634,47 @@ _ENTITY_ALIASES = {
 
 # Generic tech acronyms that are NOT named-entity fabrications — never flagged.
 # These are common vocabulary, not proper nouns a candidate could invent.
-_GENERIC_TECH_TERMS = frozenset({
-    "api", "apis", "sql", "ml", "ai", "ci", "cd", "ui", "ux", "qa",
-    "kpi", "kpis", "roi", "sla", "slas", "sdk", "cli", "http", "https",
-    "rest", "json", "xml", "csv", "pdf", "html", "css", "url", "urls",
-    "id", "ids", "io", "os", "db", "etl", "saas", "paas", "crud",
-})
+_GENERIC_TECH_TERMS = frozenset(
+    {
+        "api",
+        "apis",
+        "sql",
+        "ml",
+        "ai",
+        "ci",
+        "cd",
+        "ui",
+        "ux",
+        "qa",
+        "kpi",
+        "kpis",
+        "roi",
+        "sla",
+        "slas",
+        "sdk",
+        "cli",
+        "http",
+        "https",
+        "rest",
+        "json",
+        "xml",
+        "csv",
+        "pdf",
+        "html",
+        "css",
+        "url",
+        "urls",
+        "id",
+        "ids",
+        "io",
+        "os",
+        "db",
+        "etl",
+        "saas",
+        "paas",
+        "crud",
+    }
+)
 
 # Numeric specifics: percentages, currency, plain ints/decimals with optional
 # `~`/`+` and a scale suffix or word. One pattern (no alternation groups) so a
@@ -648,9 +696,9 @@ _NUMERIC_SPECIFIC_RE = re.compile(
 # against paraphrase false-positives.
 _ENTITY_CANDIDATE_RE = re.compile(
     r"\b(?:"
-    r"[A-Za-z]+[A-Z][A-Za-z0-9.+#]*"            # internal capital: PostgreSQL, gRPC
-    r"|[A-Za-z][A-Za-z.+#]*\d[A-Za-z0-9.+#]*"   # contains a digit: S3, EC2, k8s
-    r"|[A-Z]{2,6}"                               # acronym: AWS, GCP, SQL
+    r"[A-Za-z]+[A-Z][A-Za-z0-9.+#]*"  # internal capital: PostgreSQL, gRPC
+    r"|[A-Za-z][A-Za-z.+#]*\d[A-Za-z0-9.+#]*"  # contains a digit: S3, EC2, k8s
+    r"|[A-Z]{2,6}"  # acronym: AWS, GCP, SQL
     r")\b"
 )
 
@@ -832,11 +880,13 @@ def compute_fabricated_specifics(
                 bullet_flags.append(surface)
 
         if n_specifics:
-            per_bullet.append({
-                "bullet": body.strip()[:120],
-                "n_specifics": n_specifics,
-                "flagged": bullet_flags,
-            })
+            per_bullet.append(
+                {
+                    "bullet": body.strip()[:120],
+                    "n_specifics": n_specifics,
+                    "flagged": bullet_flags,
+                }
+            )
         for s in bullet_flags:
             if s not in flagged_samples and len(flagged_samples) < 10:
                 flagged_samples.append(s)
@@ -965,10 +1015,12 @@ def compute_date_grounding(
         if remaining[rng] > 0:
             remaining[rng] -= 1
         else:
-            result["flagged"].append({
-                "heading": m.group(0).replace("\t", "  ").strip()[:120],
-                "found": f"{rng[0]} – {rng[1]}",
-            })
+            result["flagged"].append(
+                {
+                    "heading": m.group(0).replace("\t", "  ").strip()[:120],
+                    "found": f"{rng[0]} – {rng[1]}",
+                }
+            )
     if result["flagged"]:
         result["status"] = "flag"
     return result
@@ -1146,11 +1198,16 @@ def summarize_recent_edits(context_set: ContextSet) -> str:
         after = str(after_raw).strip()
         if not after or before == after:
             continue
-        diff = list(difflib.unified_diff(
-            before.splitlines(), after.splitlines(),
-            fromfile=f"prior_{label}", tofile=f"edited_{label}",
-            lineterm="", n=2,
-        ))
+        diff = list(
+            difflib.unified_diff(
+                before.splitlines(),
+                after.splitlines(),
+                fromfile=f"prior_{label}",
+                tofile=f"edited_{label}",
+                lineterm="",
+                n=2,
+            )
+        )
         if not diff:
             continue
         # Cap at first ~60 diff lines — covers most bullet-level edits without
@@ -1282,11 +1339,13 @@ def save_iteration_context(
     child.pop("edited_cover_letter_text", None)
 
     notes: list[IterationNote] = list(child.get("iteration_notes") or [])
-    notes.append({
-        "timestamp": datetime.now().isoformat(),
-        "action": action,
-        "summary": summary or f"iteration {child['iteration']}",
-    })
+    notes.append(
+        {
+            "timestamp": datetime.now().isoformat(),
+            "action": action,
+            "summary": summary or f"iteration {child['iteration']}",
+        }
+    )
     child["iteration_notes"] = notes
 
     out_dir = Path(base_dir) / username

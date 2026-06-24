@@ -71,18 +71,11 @@ def export_seed(session: Session, *, candidate_username: str) -> dict[str, Any]:
         utc_now,
     )
 
-    candidate = (
-        session.query(Candidate).filter_by(username=candidate_username).first()
-    )
+    candidate = session.query(Candidate).filter_by(username=candidate_username).first()
     if candidate is None:
         raise ValueError(f"No candidate with username={candidate_username!r}")
 
-    tags = (
-        session.query(Tag)
-        .filter_by(candidate_id=candidate.id)
-        .order_by(Tag.id)
-        .all()
-    )
+    tags = session.query(Tag).filter_by(candidate_id=candidate.id).order_by(Tag.id).all()
     experiences = (
         session.query(Experience)
         .filter_by(candidate_id=candidate.id)
@@ -322,20 +315,26 @@ def main() -> int:
 
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
-        "--user", "--username", dest="user", required=True,
+        "--user",
+        "--username",
+        dest="user",
+        required=True,
         help="Candidate username to export.",
     )
     ap.add_argument(
-        "--out", default=None,
+        "--out",
+        default=None,
         help="Output path (must resolve under evals/fixtures/real/). "
-             "Default: evals/fixtures/real/<user>/seed.json",
+        "Default: evals/fixtures/real/<user>/seed.json",
     )
     ap.add_argument(
-        "--db", default=None,
+        "--db",
+        default=None,
         help="SQLite DB file to read from (default: the app's db/resume.sqlite).",
     )
     ap.add_argument(
-        "--stdout", action="store_true",
+        "--stdout",
+        action="store_true",
         help="Print the seed JSON to stdout instead of writing a file.",
     )
     args = ap.parse_args()

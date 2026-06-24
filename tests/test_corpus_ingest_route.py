@@ -27,6 +27,7 @@ def ingest_app(tmp_path, monkeypatch):
     """
     db_file = tmp_path / "ingest.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
@@ -37,6 +38,7 @@ def ingest_app(tmp_path, monkeypatch):
     app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
     from db.session import init_db
+
     init_db(db_file)
     return app
 
@@ -44,6 +46,7 @@ def ingest_app(tmp_path, monkeypatch):
 def _seed_candidate():
     from db.models import Candidate
     from db.session import get_session
+
     s = get_session()
     try:
         c = Candidate(username="alice", name="Alice")
@@ -72,14 +75,18 @@ class TestIngestResume:
     def test_ingests_md_into_corpus_as_pending(self, ingest_app):
         _seed_candidate()
         client = ingest_app.test_client()
-        with patch("onboarding.extract_experiences.extract_experiences",
-                   return_value=_FAKE_EXTRACT), \
-             patch("blueprints.corpus.curation._get_client", return_value=object()):
+        with (
+            patch("onboarding.extract_experiences.extract_experiences", return_value=_FAKE_EXTRACT),
+            patch("blueprints.corpus.curation._get_client", return_value=object()),
+        ):
             r = client.post(
                 "/api/users/alice/corpus/ingest-resume",
-                data={"file": (io.BytesIO(b"# Resume\n\n## Experience\n\n"
-                                          b"- Did things at Polaris"),
-                               "r.md")},
+                data={
+                    "file": (
+                        io.BytesIO(b"# Resume\n\n## Experience\n\n- Did things at Polaris"),
+                        "r.md",
+                    )
+                },
                 content_type="multipart/form-data",
             )
         assert r.status_code == 201, r.get_json()
@@ -88,6 +95,7 @@ class TestIngestResume:
 
         from db.models import Bullet, Experience
         from db.session import get_session
+
         s = get_session()
         try:
             exps = s.query(Experience).all()
@@ -121,13 +129,13 @@ class TestIngestResume:
         # doesn't error). Guards the 422-only-on-error carve-out.
         _seed_candidate()
         client = ingest_app.test_client()
-        with patch("onboarding.extract_experiences.extract_experiences",
-                   return_value=[]), \
-             patch("blueprints.corpus.curation._get_client", return_value=object()):
+        with (
+            patch("onboarding.extract_experiences.extract_experiences", return_value=[]),
+            patch("blueprints.corpus.curation._get_client", return_value=object()),
+        ):
             r = client.post(
                 "/api/users/alice/corpus/ingest-resume",
-                data={"file": (io.BytesIO(b"# Resume\n\nSummary only, no roles"),
-                               "r.md")},
+                data={"file": (io.BytesIO(b"# Resume\n\nSummary only, no roles"), "r.md")},
                 content_type="multipart/form-data",
             )
         assert r.status_code == 201, r.get_json()
@@ -149,19 +157,24 @@ class TestIngestResume:
         # A config-only user (no Candidate row) is provisioned on ingest —
         # importing a résumé IS the onboarding step, no separate import.
         client = ingest_app.test_client()
-        with patch("onboarding.extract_experiences.extract_experiences",
-                   return_value=_FAKE_EXTRACT), \
-             patch("blueprints.corpus.curation._get_client", return_value=object()):
+        with (
+            patch("onboarding.extract_experiences.extract_experiences", return_value=_FAKE_EXTRACT),
+            patch("blueprints.corpus.curation._get_client", return_value=object()),
+        ):
             r = client.post(
                 "/api/users/alice/corpus/ingest-resume",
-                data={"file": (io.BytesIO(b"# Resume\n\n## Experience\n\n"
-                                          b"- Did things at Polaris"),
-                               "r.md")},
+                data={
+                    "file": (
+                        io.BytesIO(b"# Resume\n\n## Experience\n\n- Did things at Polaris"),
+                        "r.md",
+                    )
+                },
                 content_type="multipart/form-data",
             )
         assert r.status_code == 201, r.get_json()
         from db.models import Candidate
         from db.session import get_session
+
         s = get_session()
         try:
             assert s.query(Candidate).filter_by(username="alice").first() is not None

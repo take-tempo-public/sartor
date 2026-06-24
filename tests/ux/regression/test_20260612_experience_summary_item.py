@@ -44,8 +44,11 @@ def _seed_two_intros(experience_id: int) -> list[int]:
         ids = []
         for i, text in enumerate(["Platform-scale framing.", "Growth-builder framing."]):
             si = ExperienceSummaryItem(
-                experience_id=experience_id, text=text,
-                display_order=i, is_active=1, source="manual",
+                experience_id=experience_id,
+                text=text,
+                display_order=i,
+                is_active=1,
+                source="manual",
             )
             s.add(si)
             s.flush()
@@ -67,8 +70,7 @@ def _is_composition_post(resp: Response) -> bool:
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_corpus_role_intro_editor_add(page: Page, live_server: str,
-                                      ux_app: ModuleType) -> None:
+def test_corpus_role_intro_editor_add(page: Page, live_server: str, ux_app: ModuleType) -> None:
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)
 
@@ -88,9 +90,9 @@ def test_corpus_role_intro_editor_add(page: Page, live_server: str,
     # refreshExperienceSummaries re-fetches after the POST; expect() auto-retries
     # until the new variant's textarea (the only one — the role started empty)
     # carries the added value.
-    expect(
-        page.locator(f"{Corpus.EXP_SUMMARY_SECTION} .summary-variant-text")
-    ).to_have_value("Owned the platform end-to-end.")
+    expect(page.locator(f"{Corpus.EXP_SUMMARY_SECTION} .summary-variant-text")).to_have_value(
+        "Owned the platform end-to-end."
+    )
 
 
 # -------------------------------------------------------------------
@@ -98,8 +100,9 @@ def test_corpus_role_intro_editor_add(page: Page, live_server: str,
 # -------------------------------------------------------------------
 
 
-def _reach_compose(page: Page, live_server: str, ux_app: ModuleType,
-                   monkeypatch: pytest.MonkeyPatch) -> WizardComposePage:
+def _reach_compose(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> WizardComposePage:
     cid = seed_user(ux_app, "alice")
     eid = seed_exp_with_bullets(cid)
     _seed_two_intros(eid)  # 2 variants → the toggle renders + recommend fires
@@ -113,7 +116,9 @@ def _reach_compose(page: Page, live_server: str, ux_app: ModuleType,
 @pytest.mark.ux
 @pytest.mark.slow
 def test_compose_role_intros_toggle_defaults_and_persists(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     compose = _reach_compose(page, live_server, ux_app, monkeypatch)
@@ -145,8 +150,15 @@ def _seed_two_candidate_summaries(candidate_id: int) -> None:
     s = get_session()
     try:
         for i, text in enumerate(["Platform IC positioning.", "People-leader positioning."]):
-            s.add(SummaryItem(candidate_id=candidate_id, text=text,
-                              display_order=i, is_active=1, source="manual"))
+            s.add(
+                SummaryItem(
+                    candidate_id=candidate_id,
+                    text=text,
+                    display_order=i,
+                    is_active=1,
+                    source="manual",
+                )
+            )
         s.commit()
     finally:
         s.close()
@@ -155,7 +167,9 @@ def _seed_two_candidate_summaries(candidate_id: int) -> None:
 @pytest.mark.ux
 @pytest.mark.slow
 def test_positioning_pin_preserves_title_pin(
-    page: Page, live_server: str, ux_app: ModuleType,
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Regression for the pre-existing clobber (fixed this branch): pinning a
@@ -163,8 +177,8 @@ def test_positioning_pin_preserves_title_pin(
     positioning-pin save now routes through _collectCompositionState(), so the
     title pin (and bullet_order, role intros) survive the same POST."""
     cid = seed_user(ux_app, "alice")
-    seed_exp_with_bullets(cid)              # official "Staff Engineer"
-    _seed_two_candidate_summaries(cid)      # positioning card renders
+    seed_exp_with_bullets(cid)  # official "Staff Engineer"
+    _seed_two_candidate_summaries(cid)  # positioning card renders
     install_llm_stubs(ux_app, monkeypatch)
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
@@ -188,4 +202,5 @@ def test_positioning_pin_preserves_title_pin(
     compose.reload()
     assert compose.title_is_selected("Principal Engineer"), "title pin was clobbered"
     expect(page.locator(".positioning-variant").nth(1)).to_have_class(
-        re.compile(r"positioning-chosen"))
+        re.compile(r"positioning-chosen")
+    )

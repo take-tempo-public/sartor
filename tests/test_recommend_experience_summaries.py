@@ -23,6 +23,7 @@ import pytest
 class TestShortCircuit:
     def test_no_groups_returns_empty(self):
         from analyzer import recommend_experience_summaries
+
         result = recommend_experience_summaries(
             client=object(),  # never called
             context_set={"experience_summary_items": []},
@@ -33,21 +34,31 @@ class TestShortCircuit:
         """A role with exactly one variant is auto-picked deterministically;
         a role with zero (or blank-only) variants is omitted. No LLM call."""
         from analyzer import recommend_experience_summaries
+
         result = recommend_experience_summaries(
             client=object(),
-            context_set={"experience_summary_items": [
-                {"experience_id": 5, "company": "Acme",
-                 "items": [{"id": 9, "text": "Led X.", "has_outcome": True}]},
-                {"experience_id": 6, "company": "Beta", "items": []},
-                {"experience_id": 7, "company": "Gamma",
-                 "items": [{"id": 11, "text": "   "}]},
-            ]},
+            context_set={
+                "experience_summary_items": [
+                    {
+                        "experience_id": 5,
+                        "company": "Acme",
+                        "items": [{"id": 9, "text": "Led X.", "has_outcome": True}],
+                    },
+                    {"experience_id": 6, "company": "Beta", "items": []},
+                    {"experience_id": 7, "company": "Gamma", "items": [{"id": 11, "text": "   "}]},
+                ]
+            },
         )
-        assert result == {"recommendations": [
-            {"experience_id": 5, "summary_item_id": 9,
-             "rationale": "Only variant available — no alternates to weigh.",
-             "alternates": []},
-        ]}
+        assert result == {
+            "recommendations": [
+                {
+                    "experience_id": 5,
+                    "summary_item_id": 9,
+                    "rationale": "Only variant available — no alternates to weigh.",
+                    "alternates": [],
+                },
+            ]
+        }
 
     def test_multi_variant_role_calls_llm_and_merges_with_auto(self):
         """One role has a real choice (2 variants) → the LLM fires once; a
@@ -55,21 +66,36 @@ class TestShortCircuit:
         from analyzer import recommend_experience_summaries
 
         def _fake_parse_or_retry(*_a, **_k):
-            return {"recommendations": [
-                {"experience_id": 5, "summary_item_id": 91,
-                 "rationale": "best fit", "alternates": [
-                     {"summary_item_id": 92, "rationale": "second"}]},
-            ]}
+            return {
+                "recommendations": [
+                    {
+                        "experience_id": 5,
+                        "summary_item_id": 91,
+                        "rationale": "best fit",
+                        "alternates": [{"summary_item_id": 92, "rationale": "second"}],
+                    },
+                ]
+            }
 
-        ctx = {"experience_summary_items": [
-            {"experience_id": 5, "company": "Acme", "items": [
-                {"id": 91, "text": "Owned platform scale across teams."},
-                {"id": 92, "text": "Drove growth experiments end to end."},
-            ]},
-            {"experience_id": 6, "company": "Beta", "items": [
-                {"id": 80, "text": "Sole variant."},
-            ]},
-        ]}
+        ctx = {
+            "experience_summary_items": [
+                {
+                    "experience_id": 5,
+                    "company": "Acme",
+                    "items": [
+                        {"id": 91, "text": "Owned platform scale across teams."},
+                        {"id": 92, "text": "Drove growth experiments end to end."},
+                    ],
+                },
+                {
+                    "experience_id": 6,
+                    "company": "Beta",
+                    "items": [
+                        {"id": 80, "text": "Sole variant."},
+                    ],
+                },
+            ]
+        }
         with patch("analyzer._parse_or_retry", _fake_parse_or_retry):
             result = recommend_experience_summaries(client=object(), context_set=ctx)
         recs = {r["experience_id"]: r for r in result["recommendations"]}
@@ -81,34 +107,59 @@ class TestShortCircuit:
 class TestBlock:
     def test_groups_variants_under_experience(self):
         from analyzer import _experience_summary_items_block
-        block = _experience_summary_items_block([
-            {"experience_id": 5, "company": "Acme & Co", "items": [
-                {"id": 9, "text": "Led <platform> scale.", "label": "scale",
-                 "has_outcome": True},
-                {"id": 10, "text": "Built team."},
-            ]},
-        ])
+
+        block = _experience_summary_items_block(
+            [
+                {
+                    "experience_id": 5,
+                    "company": "Acme & Co",
+                    "items": [
+                        {
+                            "id": 9,
+                            "text": "Led <platform> scale.",
+                            "label": "scale",
+                            "has_outcome": True,
+                        },
+                        {"id": 10, "text": "Built team."},
+                    ],
+                },
+            ]
+        )
         assert '<experience id="5" company="Acme &amp; Co">' in block
-        assert ('<summary_item id="9" label="scale" has_outcome="true">'
-                'Led &lt;platform&gt; scale.</summary_item>') in block
+        assert (
+            '<summary_item id="9" label="scale" has_outcome="true">'
+            "Led &lt;platform&gt; scale.</summary_item>"
+        ) in block
         assert '<summary_item id="10">Built team.</summary_item>' in block
 
 
 class TestDedup:
     def test_drops_near_duplicate_alternate_per_experience(self):
         from analyzer import _dedup_experience_summary_recommendations
-        groups = [{"experience_id": 5, "items": [
-            {"id": 9, "text": "led platform scale program across teams"},
-            {"id": 10, "text": "mentored five junior engineers"},
-            {"id": 11, "text": "led platform scale program across teams"},
-        ]}]
-        result = {"recommendations": [
-            {"experience_id": 5, "summary_item_id": 9, "alternates": [
-                {"summary_item_id": 9},   # echo of recommendation → dropped
-                {"summary_item_id": 10},  # distinct → kept
-                {"summary_item_id": 11},  # near-dup of 9 → dropped
-            ]},
-        ]}
+
+        groups = [
+            {
+                "experience_id": 5,
+                "items": [
+                    {"id": 9, "text": "led platform scale program across teams"},
+                    {"id": 10, "text": "mentored five junior engineers"},
+                    {"id": 11, "text": "led platform scale program across teams"},
+                ],
+            }
+        ]
+        result = {
+            "recommendations": [
+                {
+                    "experience_id": 5,
+                    "summary_item_id": 9,
+                    "alternates": [
+                        {"summary_item_id": 9},  # echo of recommendation → dropped
+                        {"summary_item_id": 10},  # distinct → kept
+                        {"summary_item_id": 11},  # near-dup of 9 → dropped
+                    ],
+                },
+            ]
+        }
         _dedup_experience_summary_recommendations(result, groups)
         assert [a["summary_item_id"] for a in result["recommendations"][0]["alternates"]] == [10]
 
@@ -124,12 +175,14 @@ def recommend_app(tmp_path, monkeypatch):
 
     db_file = tmp_path / "recexpsum.sqlite"
     import db.session as db_session_mod
+
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
 
     from app import create_app
     from config import Config
+
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)  # ensure_dirs() makes configs/resumes/output
     output_dir = cfg.output_dir
@@ -140,6 +193,7 @@ def recommend_app(tmp_path, monkeypatch):
     monkeypatch.setattr("blueprints.applications._get_client", lambda: object())
 
     from db.session import init_db
+
     init_db(db_file)
     return types.SimpleNamespace(app=app), output_dir
 
@@ -156,13 +210,15 @@ def _seed(output_dir):
         ExperienceSummaryItem,
     )
     from db.session import get_session
+
     session = get_session()
     try:
         c = Candidate(username="casey", name="Casey Rivera")
         session.add(c)
         session.flush()
         a = Application(
-            candidate_id=c.id, title="Senior PM",
+            candidate_id=c.id,
+            title="Senior PM",
             jd_text="Senior PM building AI platforms.",
             jd_fingerprint="f" * 16,
         )
@@ -172,14 +228,25 @@ def _seed(output_dir):
         e2 = Experience(candidate_id=c.id, company="Beta", start_date="2018-01")
         session.add_all([e1, e2])
         session.flush()
-        session.add_all([
-            ExperienceSummaryItem(experience_id=e1.id, text="Platform-scale framing.",
-                                  display_order=0, is_active=1),
-            ExperienceSummaryItem(experience_id=e1.id, text="Growth-builder framing.",
-                                  display_order=1, is_active=1),
-            ExperienceSummaryItem(experience_id=e2.id, text="Sole role intro.",
-                                  display_order=0, is_active=1),
-        ])
+        session.add_all(
+            [
+                ExperienceSummaryItem(
+                    experience_id=e1.id,
+                    text="Platform-scale framing.",
+                    display_order=0,
+                    is_active=1,
+                ),
+                ExperienceSummaryItem(
+                    experience_id=e1.id,
+                    text="Growth-builder framing.",
+                    display_order=1,
+                    is_active=1,
+                ),
+                ExperienceSummaryItem(
+                    experience_id=e2.id, text="Sole role intro.", display_order=0, is_active=1
+                ),
+            ]
+        )
         session.commit()
         cid, aid, e1id = c.id, a.id, e1.id
     finally:
@@ -206,10 +273,16 @@ class TestRoute:
             # e1 (2 variants) + e2 (1 variant) staged; jd_text present.
             assert {g["experience_id"] for g in groups} == {e1id, e1id + 1}
             assert context_set.get("jd_text", "").startswith("Senior PM")
-            return {"recommendations": [
-                {"experience_id": e1id, "summary_item_id": 1,
-                 "rationale": "fits", "alternates": []},
-            ]}
+            return {
+                "recommendations": [
+                    {
+                        "experience_id": e1id,
+                        "summary_item_id": 1,
+                        "rationale": "fits",
+                        "alternates": [],
+                    },
+                ]
+            }
 
         with patch("analyzer.recommend_experience_summaries", _stub):
             client = _app.app.test_client()
@@ -223,6 +296,7 @@ class TestRoute:
         assert body["recommendations"][0]["experience_id"] == e1id
 
         import json
+
         ctx = json.loads(open(ctx_path, encoding="utf-8").read())
         assert "llm_experience_summary_recommendations" in ctx
         assert "experience_summary_items" not in ctx  # transient stripped
@@ -241,6 +315,5 @@ class TestRoute:
         _app, output_dir = recommend_app
         _cid, aid, _e1id, _ = _seed(output_dir)
         client = _app.app.test_client()
-        r = client.post(
-            f"/api/applications/{aid}/recommend-experience-summaries", json={})
+        r = client.post(f"/api/applications/{aid}/recommend-experience-summaries", json={})
         assert r.status_code == 400

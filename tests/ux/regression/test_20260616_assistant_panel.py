@@ -28,10 +28,16 @@ def _fake_avatar(client, question, context, *, allow_dev=False, username="", run
         {
             "answer": "callback tailors your resume in six guided steps [1][2].",
             "citations": [
-                {"n": 1, "label": "using-callback",
-                 "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/using-callback.md"},
-                {"n": 2, "label": "tailoring-a-resume",
-                 "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/tailoring-a-resume.md"},
+                {
+                    "n": 1,
+                    "label": "using-callback",
+                    "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/using-callback.md",
+                },
+                {
+                    "n": 2,
+                    "label": "tailoring-a-resume",
+                    "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/tailoring-a-resume.md",
+                },
             ],
             "truncated": False,
             "allow_dev": allow_dev,
@@ -65,14 +71,12 @@ def test_assistant_panel_streams_cited_answer(
     # The streamed answer accumulates into the answer div (textContent is unaffected
     # by any CSS transform, so an exact substring match on the JS-set text is safe).
     page.wait_for_function(
-        "() => document.getElementById('assistantAnswer')"
-        ".textContent.includes('six guided steps')",
+        "() => document.getElementById('assistantAnswer').textContent.includes('six guided steps')",
         timeout=DEFAULT_TIMEOUT_MS,
     )
     # The numbered "Sources" key lands in its own #assistantSources block on `done`.
     page.wait_for_function(
-        "() => document.getElementById('assistantSources')"
-        ".textContent.includes('using-callback')",
+        "() => document.getElementById('assistantSources').textContent.includes('using-callback')",
         timeout=DEFAULT_TIMEOUT_MS,
     )
     # The inline [n] citations re-render as clickable GitHub links (7.8d / Scheme B).

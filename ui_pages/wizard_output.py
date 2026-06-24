@@ -11,9 +11,7 @@ from ui_pages.selectors import Output
 
 class WizardOutputPage(BasePage):
     def wait_loaded(self) -> WizardOutputPage:
-        self.page.wait_for_selector(
-            Output.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS
-        )
+        self.page.wait_for_selector(Output.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
         return self
 
     def download_resume_button(self) -> Locator:
@@ -34,12 +32,8 @@ class WizardOutputPage(BasePage):
             return False
         btn.click()
         try:
-            self.page.wait_for_selector(
-                Output.COVER_TAB_ACTIVE, timeout=DEFAULT_TIMEOUT_MS
-            )
+            self.page.wait_for_selector(Output.COVER_TAB_ACTIVE, timeout=DEFAULT_TIMEOUT_MS)
         except PWTimeout:
             self.page.click(Output.COVER_TAB)
-        self.page.wait_for_selector(
-            Output.COVER_PREVIEW, state="visible", timeout=LLM_TIMEOUT_MS
-        )
+        self.page.wait_for_selector(Output.COVER_PREVIEW, state="visible", timeout=LLM_TIMEOUT_MS)
         return True

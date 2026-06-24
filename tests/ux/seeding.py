@@ -14,15 +14,16 @@ import json
 from types import ModuleType
 
 
-def write_user_config(ux_app: ModuleType, username: str,
-                      name: str | None = None, email: str | None = None) -> None:
+def write_user_config(
+    ux_app: ModuleType, username: str, name: str | None = None, email: str | None = None
+) -> None:
     """Write a non-empty config — `_load_config` treats an empty dict as
     'user not found' (404), so a realistic config keeps GET /config a 200,
     matching an onboarded user."""
-    config = {"name": name or username.title(),
-              "email": email or f"{username}@example.com"}
+    config = {"name": name or username.title(), "email": email or f"{username}@example.com"}
     (ux_app.app.config["CONFIGS_DIR"] / f"{username}.config").write_text(
-        json.dumps(config), encoding="utf-8")
+        json.dumps(config), encoding="utf-8"
+    )
 
 
 def seed_candidate(username: str = "alice", name: str | None = None) -> int:
@@ -53,43 +54,68 @@ def seed_exp_with_bullets(candidate_id: int, company: str = "Acme") -> int:
     s = get_session()
     try:
         e = Experience(
-            candidate_id=candidate_id, company=company,
-            start_date="2021-01", display_order=0,
+            candidate_id=candidate_id,
+            company=company,
+            start_date="2021-01",
+            display_order=0,
         )
         s.add(e)
         s.flush()
-        s.add(ExperienceTitle(
-            experience_id=e.id, title="Staff Engineer",
-            is_official=1, is_pending_review=0, source="official",
-        ))
-        s.add(Bullet(
-            experience_id=e.id,
-            text="Reduced Kubernetes latency 40% across 12 services",
-            display_order=0, is_active=1, is_pending_review=0,
-            source="manual", has_outcome=1,
-        ))
-        s.add(Bullet(
-            experience_id=e.id, text="Attended weekly syncs",
-            display_order=1, is_active=1, is_pending_review=0,
-            source="manual", has_outcome=0,
-        ))
+        s.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="Staff Engineer",
+                is_official=1,
+                is_pending_review=0,
+                source="official",
+            )
+        )
+        s.add(
+            Bullet(
+                experience_id=e.id,
+                text="Reduced Kubernetes latency 40% across 12 services",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=1,
+            )
+        )
+        s.add(
+            Bullet(
+                experience_id=e.id,
+                text="Attended weekly syncs",
+                display_order=1,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=0,
+            )
+        )
         s.commit()
         return e.id
     finally:
         s.close()
 
 
-def seed_application(candidate_id: int, title: str = "Senior PM @ Foo",
-                     company: str = "Foo Inc", jd_text: str = "Long JD text.",
-                     status: str = "draft") -> int:
+def seed_application(
+    candidate_id: int,
+    title: str = "Senior PM @ Foo",
+    company: str = "Foo Inc",
+    jd_text: str = "Long JD text.",
+    status: str = "draft",
+) -> int:
     from db.models import Application
     from db.session import get_session
 
     s = get_session()
     try:
         a = Application(
-            candidate_id=candidate_id, title=title, company=company,
-            jd_text=jd_text, status=status,
+            candidate_id=candidate_id,
+            title=title,
+            company=company,
+            jd_text=jd_text,
+            status=status,
             jd_fingerprint=hashlib.sha256(jd_text.encode()).hexdigest()[:16],
         )
         s.add(a)
@@ -99,18 +125,25 @@ def seed_application(candidate_id: int, title: str = "Senior PM @ Foo",
         s.close()
 
 
-def seed_run(application_id: int, iteration: int = 0, run_id: str = "uxrun0000001",
-             generated_resume_md: str | None = None,
-             generated_cover_letter_md: str | None = None,
-             persona_template_id: int | None = None) -> int:
+def seed_run(
+    application_id: int,
+    iteration: int = 0,
+    run_id: str = "uxrun0000001",
+    generated_resume_md: str | None = None,
+    generated_cover_letter_md: str | None = None,
+    persona_template_id: int | None = None,
+) -> int:
     from db.models import ApplicationRun
     from db.session import get_session
 
     s = get_session()
     try:
         r = ApplicationRun(
-            application_id=application_id, iteration=iteration, run_id=run_id,
-            prompt_version="2026-05-12.1", corpus_snapshot_json="{}",
+            application_id=application_id,
+            iteration=iteration,
+            run_id=run_id,
+            prompt_version="2026-05-12.1",
+            corpus_snapshot_json="{}",
             generated_resume_md=generated_resume_md,
             generated_cover_letter_md=generated_cover_letter_md,
             persona_template_id=persona_template_id,
@@ -130,9 +163,12 @@ def bundled_persona_id() -> int:
 
     s = get_session()
     try:
-        p = (s.query(PersonaTemplate)
-             .filter(PersonaTemplate.candidate_id.is_(None))
-             .order_by(PersonaTemplate.id).first())
+        p = (
+            s.query(PersonaTemplate)
+            .filter(PersonaTemplate.candidate_id.is_(None))
+            .order_by(PersonaTemplate.id)
+            .first()
+        )
         assert p is not None, "no bundled personas seeded by migration"
         return p.id
     finally:
@@ -149,17 +185,18 @@ def bundled_persona_id_by_path(path: str) -> int:
 
     s = get_session()
     try:
-        p = (s.query(PersonaTemplate)
-             .filter(PersonaTemplate.candidate_id.is_(None),
-                     PersonaTemplate.path == path).first())
+        p = (
+            s.query(PersonaTemplate)
+            .filter(PersonaTemplate.candidate_id.is_(None), PersonaTemplate.path == path)
+            .first()
+        )
         assert p is not None, f"no bundled persona seeded for path={path!r}"
         return p.id
     finally:
         s.close()
 
 
-def write_context_file(ux_app: ModuleType, username: str, filename: str,
-                       payload: dict) -> str:
+def write_context_file(ux_app: ModuleType, username: str, filename: str, payload: dict) -> str:
     """Write a context_*.json under OUTPUT_DIR/<user>/; return the abs path."""
     user_dir = ux_app.app.config["OUTPUT_DIR"] / username
     user_dir.mkdir(parents=True, exist_ok=True)
