@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse hook on Bash: when a `git commit` is about to run, run ruff
-# on the staged Python files. Block the commit if ruff reports issues.
+# (lint + format check) on the staged Python files. Block the commit if ruff
+# reports lint issues OR any staged file is not ruff-formatted.
 # Skips if no Python files are staged.
 
 INPUT=$(cat)
@@ -17,11 +18,21 @@ if [ -z "$STAGED" ]; then
   exit 0
 fi
 
-# Run ruff against the staged files. Stream output to stderr so the user sees it.
+# Run ruff lint against the staged files. Stream output to stderr so the user sees it.
 if ! python -m ruff check $STAGED 1>&2; then
   echo "" >&2
   echo "BLOCKED (ruff-changed): ruff reported issues on staged Python files." >&2
   echo "Fix them (or auto-fix many: python -m ruff check --fix), re-stage, then re-commit." >&2
+  exit 2
+fi
+
+# Kit-adoption Phase 1 (KIT-6 — hard-block unambiguous gates day one): also require
+# staged Python to be ruff-formatted. `ruff format --check` is non-mutating; it exits
+# non-zero when a file would be reformatted.
+if ! python -m ruff format --check $STAGED 1>&2; then
+  echo "" >&2
+  echo "BLOCKED (ruff-changed): staged Python files are not ruff-formatted." >&2
+  echo "Run: python -m ruff format <files>  (or: python -m ruff format .), re-stage, then re-commit." >&2
   exit 2
 fi
 

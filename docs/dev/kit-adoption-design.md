@@ -133,9 +133,23 @@ wired **[M]**; ruff `ERA` **[M]**; ruff `SIM`/`RUF` (land per-family if noisy) *
 > unenabled (revisit only if that core gains a warn-only lane). (2) **SQLAlchemy mypy plugin dropped** —
 > `db/models.py` uses native SQLAlchemy 2.0 typing (`DeclarativeBase` + `Mapped[...]` + `mapped_column`),
 > for which `sqlalchemy.ext.mypy.plugin` is deprecated/unneeded; only `pydantic.mypy` applies. **Still
-> owed in Phase 1 (own branches):** `ruff format` (the 161-file restyle — it explodes the codebase's
-> hand-packed collection literals; owner approves the style on its branch) and `SIM`/`RUF` per-family
-> triage (228 hits, of which 117 are RUF001–003 ambiguous-unicode false-positives to ignore).
+> owed in Phase 1 (own branch):** `SIM`/`RUF` per-family triage (228 hits, of which 117 are
+> RUF001–003 ambiguous-unicode false-positives to ignore). (`ruff format` landed on its own branch —
+> see the next note.)
+
+> **Phase 1 progress — second branch `chore/kit-phase1-ruff-format` (2026-06-23, owner-confirmed
+> style).** Landed: **`ruff format` applied tree-wide** — 161 of 217 files reformatted (56 already
+> clean), pure formatter output (hand-packed collection literals exploded one item per line; no hand
+> edits). Proven **prompt-inert**: every `analyzer.py` prompt constant + the `PROMPT_VERSION` /
+> `AVATAR_PROMPT_VERSION` *value* + the `_BASE_SYSTEM_PROMPTS` registry are byte-identical pre/post
+> (sha256 dump-diff, 31 entries, zero differences) — ruff format never edits inside string literals,
+> so **no `PROMPT_VERSION` bump and no paid eval run**. The gate is **wired + hard-blocks day one**
+> (Decision 6 / KIT-6): `pyproject.toml` `[tool.ruff.format]` declares the style
+> (`quote-style`/`indent-style`; matches defaults so output is unchanged), and
+> `.claude-plugin/hooks/ruff-changed.sh` now runs `ruff format --check` on staged Python alongside
+> `ruff check`; `.git-blame-ignore-revs` lists the reformat commit so blame skips it. Gate green:
+> ruff check . ✓ · mypy (227) ✓ · pytest 1391 passed. **Phase 1 now has one item left:** the
+> `SIM`/`RUF` per-family triage named above.
 
 **Phase 2 — Strictness ratchet** (~3–5 sessions; this is WS-2-full made concrete): ruff `ANN`
 **[M+J]**; ruff `D` + pinned `google` pydocstyle convention **[M+J]**; `interrogate` coverage

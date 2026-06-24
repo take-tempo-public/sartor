@@ -13,6 +13,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Kit-adoption Phase 1 — ruff format (`chore/kit-phase1-ruff-format`, 2026-06-23)
+
+Second implementation branch of the agent-coding-practices kit-adoption arc (kit-adoption-design.md
+§4 Phase 1). Applies the `ruff format` auto-formatter tree-wide and wires it as a commit-time gate.
+Style/tooling only — **no product code, dependency, prompt, route, or version change**;
+`PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched (proven byte-identical).
+
+**Changed**
+- Applied `python -m ruff format .` across the tree — **161 of 217 files** reformatted (56 already
+  clean). Pure formatter output: hand-packed collection literals (`frozenset({...})`) exploded one
+  item per line, type annotations / comprehensions reflowed, blank-line normalization. No hand edits.
+- `.claude-plugin/hooks/ruff-changed.sh` — the pre-commit `ruff` hook now also runs
+  `ruff format --check` on staged Python and blocks an unformatted commit (KIT-6 "hard-block
+  unambiguous gates day one"), alongside the existing `ruff check`.
+- `pyproject.toml` `[tool.ruff.format]` — declares the adopted formatter style
+  (`quote-style = "double"`, `indent-style = "space"`; matches ruff defaults, so reformat output is
+  unchanged) so the gate is deterministic across machines + ruff versions.
+
+**Added**
+- `.git-blame-ignore-revs` — lists the reformat commit so `git blame` (and GitHub) skip the
+  mass-formatting noise.
+
+**Verification** — prompt constants proven byte-identical via a sha256 dump-diff (31 entries: every
+`*_SYSTEM_PROMPT`, the `_BASE_SYSTEM_PROMPTS` registry, `_COVER_LETTER_RULES_BLOCK`, both version
+strings — zero differences); gate green: `ruff check .` ok · `mypy .` (227 files) ok · `pytest` 1391
+passed. No eval run (provably prompt-inert).
+
 ### Kit-adoption Phase 1 — Pydantic-aware mypy (`chore/kit-phase1-pydantic-mypy`, 2026-06-23)
 
 First implementation branch of the agent-coding-practices kit-adoption arc (kit-adoption-design.md §4
