@@ -190,6 +190,27 @@ no_implicit_reexport = true
 module = ["docx", "docx.*", "pdfplumber", "pdfplumber.*", "markdown", "markdown.*", "bs4", "bs4.*"]
 ignore_missing_imports = true
 
+# Kit-adoption Phase 2 #2 (KIT-6 ratchet / KIT-7 end-state): mypy --strict +
+# warn_unreachable on the deterministic, LLM-free leaf modules — the first rung of the
+# per-module --strict ratchet (kit-adoption-design.md §4/§6). `strict` is NOT a per-module
+# option (mypy.options.PER_MODULE_OPTIONS), so the strict preset is spelled out as its
+# per-module-capable component flags. The global config stays permissive; these three block.
+# Tighten module-by-module toward the Decision-7 end-state (strict everywhere except
+# tests/ evals/ scripts/ db/migrations/versions).
+[[tool.mypy.overrides]]
+module = ["scraper", "json_resume", "pdf_render"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+check_untyped_defs = true
+warn_return_any = true
+strict_equality = true
+extra_checks = true
+warn_unreachable = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

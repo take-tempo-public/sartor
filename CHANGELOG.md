@@ -13,6 +13,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Kit-adoption Phase 2 #2 — mypy `--strict` on leaf modules (`chore/kit-phase2-mypy-strict-leaves`, 2026-06-24)
+
+Second implementation branch of the agent-coding-practices kit-adoption arc **Phase 2** (the
+strictness ratchet — kit-adoption-design.md §4; Decision KIT-6 "ratchet-then-block" + KIT-7
+named-exempt end-state). Brings the first three modules to full mypy `--strict` + `warn_unreachable`
+via a per-module override — the **first rung** of the module-by-module `--strict` ratchet toward the
+§6 exit criterion. Tooling-config + one type-annotation only — **no product behavior, dependency,
+prompt, route, or version change**; `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched.
+
+**Changed**
+- `pyproject.toml` `[[tool.mypy.overrides]]`: new per-module block tightening `scraper`,
+  `json_resume`, `pdf_render` (the deterministic, LLM-free P1-Hardening leaves) to the `--strict`
+  preset + `warn_unreachable`. `strict` is **not** a per-module-settable option
+  (`mypy.options.PER_MODULE_OPTIONS`), so the preset is spelled out as its per-module-capable
+  component flags (`disallow_untyped_defs`, `disallow_incomplete_defs`, `disallow_untyped_calls`,
+  `disallow_untyped_decorators`, `disallow_any_generics`, `disallow_subclassing_any`,
+  `check_untyped_defs`, `warn_return_any`, `strict_equality`, `extra_checks`) + `warn_unreachable`.
+  The global mypy config stays permissive; these three modules now block.
+- `scraper.py`: `fetch_profile_content(config: dict)` → `dict[str, Any]` (the one
+  `disallow_any_generics` hit — keys are `str`, values heterogeneous, so `dict[str, Any]` is the
+  honest minimal type; not bare `Any`, so `ANN401` does not flag it) + `from typing import Any`.
+  `json_resume.py` and `pdf_render.py` were already `--strict`-clean (0 changes). The three leaves
+  are pure (stdlib / 3rd-party imports only, no intra-project calls) → strict treatment surfaced no
+  cross-module cascade.
+
+**Verification** — `ruff check .` clean tree-wide · `ruff format --check` (217 files) ok ·
+`mypy .` (227 files) ok · `pytest` **1390 passed / 1 known-flaky** (the tracked Compose-load UX race
+`test_20260604_bullet_drag_reorder::test_pointer_drag_reorders` — intermittent on both this branch
+and the clean tree, **not code-caused**: this branch touches no Compose/`app.js` code; see
+RELEASE_CHECKLIST carry-forward ledger #3). No eval run (no prompt change). Per-module tracking:
+3 production modules now at full strict; the rest remain permissive (no override = permissive).
+Remaining Phase 2: `D` + google pydocstyle, `interrogate` coverage gate, larger-module `--strict`
+(`analyzer.py` / `applications.py`) — each its own later branch.
+
 ### Kit-adoption Phase 2 #1 — enable ruff `ANN` (`chore/kit-phase2-ruff-ann`, 2026-06-24)
 
 First implementation branch of the agent-coding-practices kit-adoption arc **Phase 2** (the
