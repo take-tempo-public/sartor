@@ -13,6 +13,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Agent-coding-practices kit-adoption — evaluation + planning record (`docs/kit-adoption-arc`, 2026-06-23)
+
+Docs-only. Persisted the settled evaluation of the lichen `agent-coding-practices-kit` handoff
+(8 decisions; full faithful adoption, "implement + flag promotable") so it doesn't live only in
+the session. **No code, config, dependency, or version change** — this is the planning record;
+the implementation phases are scheduled separately and thread `feat/portable-enforcement-core`
+(8.7) + WS-2-full.
+
+**Added**
+- `docs/dev/kit-adoption-design.md` — canonical evaluation, the 8 decisions + rationale, the
+  5-phase sequenced arc, the temporal map, and the strict-ratchet exit criterion.
+- `docs/dev/decisions.md` — a thin architectural-decision index (one line + pointer per
+  decision), seeded with the 8 kit decisions + the enforcement-portability SPLIT backfill.
+
+**Changed**
+- `docs/dev/RELEASE_ARC.md` — recurring workstreams: tied WS-2-full to the arc + added the
+  kit-adoption workstream bullet.
+- `docs/dev/RELEASE_CHECKLIST.md` — folded the kit's gates + skills/hooks coherence into the 8.7
+  `feat/portable-enforcement-core` item; added one Carry-forward ledger row for the staged
+  commitments (open count 8 → 9).
+
 ### v1.0.8 correction sprint — cover-letter tone (`fix/window-findings-tone`, Sprint 8.6, PV-3)
 
 The second 8.6 sub-branch: **PV-3 cover-letter tone tune** — the only `PROMPT_VERSION`-bumping
