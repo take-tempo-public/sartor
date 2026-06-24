@@ -1106,10 +1106,24 @@ Then: `chore/version-bump-v1.0.8`.
 **Recurring / continuing workstreams:**
 - **WS-2-full — strict typing ratchet.** Continue PV-4 (delivered in v1.0.8): mypy
   toward `strict = true` (per-module ratchet) + model the `context_set` contract as a
-  typed spine. Builds on the v1.0.8 blueprint split.
+  typed spine. Builds on the v1.0.8 blueprint split. **Now Phase 2 of the kit-adoption
+  arc** — the ratchet end-state + finite exit criterion are settled (strict everywhere
+  except `tests/`/`evals/`/`scripts/`/`db/migrations/versions`; see
+  [`kit-adoption-design.md`](kit-adoption-design.md) §6).
 - **WS-3 — recurring test-suite engineering-design pass.** Periodic review of the
   ~955-test suite (redundancy, slow tests, coverage gaps, fixture dup). Define cadence
   + what "good" looks like.
+- **Agent-coding-practices kit adoption** (captured 2026-06-23,
+  [`kit-adoption-design.md`](kit-adoption-design.md)) — adopt the lichen
+  `agent-coding-practices-kit` (context / docs / strict-typing + the
+  `context-structure-review` skill). Eight decisions settled
+  ([`decisions.md`](decisions.md) KIT-1…8; full faithful adoption, "implement + flag
+  promotable" — Callback is the donor, not a blank canary). **Threads existing work
+  rather than standing alone:** the strict ratchet **is** WS-2-full above; the
+  mechanizable gates fold into `feat/portable-enforcement-core` (8.7 — local pre-commit
+  now, CI-blocking when the remote lands); the spectree request-boundary + OpenAPI
+  emission can begin pre-public; Fumadocs renders the spec post-8.7. Real cost = the mypy
+  `--strict` ratchet + the ~30-endpoint spectree boundary; the rest is reconcile-don't-build.
 
 *(WS-1 (the monolith split) and the doc-grounded assistant are **not** here — they
 moved **pre-public** into v1.0.8 and v1.0.7 respectively, so v1.1.0 ships with both.)*
