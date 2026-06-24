@@ -6,6 +6,7 @@ Used to pull portfolio/LinkedIn content for LLM context.
 
 import logging
 import re
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
@@ -68,7 +69,7 @@ def fetch_url_content(url: str) -> str:
     return text
 
 
-def fetch_profile_content(config: dict) -> str:
+def fetch_profile_content(config: dict[str, Any]) -> str:
     """Fetch all profile URLs from a user config and combine content."""
     parts = []
 

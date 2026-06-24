@@ -198,6 +198,29 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > format --check (217) ✓ · mypy (227) ✓ · pytest 1391 passed. **Remaining Phase 2: `D` + google
 > pydocstyle, `interrogate` coverage gate, mypy `--strict` — each its own later branch.**
 
+> **Phase 2 #2 — mypy `--strict` on leaf modules (`chore/kit-phase2-mypy-strict-leaves`, 2026-06-24).**
+> First rung of the module-by-module `--strict` ratchet: a new per-module `[[tool.mypy.overrides]]`
+> block brings `scraper`, `json_resume`, `pdf_render` — the deterministic, LLM-free P1-Hardening
+> leaves — to the full `--strict` preset + `warn_unreachable`, while the global mypy config stays
+> permissive. **Config gotcha:** `strict` is **not** in `mypy.options.PER_MODULE_OPTIONS`, so it
+> can't be set inside an override; the preset is spelled out as its per-module-capable component
+> flags (`disallow_untyped_defs` / `disallow_incomplete_defs` / `disallow_untyped_calls` /
+> `disallow_untyped_decorators` / `disallow_any_generics` / `disallow_subclassing_any` /
+> `check_untyped_defs` / `warn_return_any` / `strict_equality` / `extra_checks`) + `warn_unreachable`.
+> The three leaves are pure (stdlib / 3rd-party imports only, no intra-project calls), so strict
+> treatment surfaced **no cross-module cascade** — only one `disallow_any_generics` hit
+> (`scraper.fetch_profile_content(config: dict)` → `dict[str, Any]`); the other two were already
+> strict-clean. **Per-module tracking (this family): 3 production modules at full strict, the rest
+> still permissive (no override = permissive); the ratchet tightens module-by-module toward the §6
+> exit criterion.** The committed `mypy .` gate is the per-module block (Decision-6 — once the
+> override lands, any strict regression in these three fails the gate). No prompt edited → no
+> `PROMPT_VERSION` bump, no eval run. Gate green: ruff check . ✓ · ruff format --check (217) ✓ ·
+> mypy (227) ✓ · pytest 1390 passed / 1 known-flaky (the tracked Compose-load UX race
+> `test_pointer_drag_reorders` — intermittent on both this branch + the clean tree, not code-caused;
+> RELEASE_CHECKLIST ledger #3). **Remaining Phase 2: `D` + google pydocstyle, `interrogate`
+> coverage gate, larger-module `--strict` (`analyzer.py` / `applications.py`) — each its own later
+> branch.**
+
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by
 blueprint, each reconciled with `_safe_username`/`_within` + the PX-29 containment gate **[M+J]**;

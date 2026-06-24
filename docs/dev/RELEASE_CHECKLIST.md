@@ -630,6 +630,18 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       suite ran clean (**1391 passed**, 0 failed, incl. the UX tier). This branch adds type annotations
       only (`git diff` touched no Compose/`app.js`/`wizard` code), so a clean datapoint banked toward the
       resolve bar; class still **watch**.
+      **Update (2026-06-24, `chore/kit-phase2-mypy-strict-leaves` gate):** the **load-race** member
+      recurred — `test_20260604_bullet_drag_reorder.py::test_pointer_drag_reorders` `IndexError` on
+      `compose.bullet_texts()[0]` (bullets not yet rendered); full suite **1390 passed / 1 failed**.
+      Investigated rather than assumed: stashing this branch's diff and running the test on the clean tree
+      **passed** (1/1), then with the diff restored it ran **4 passed / 1 failed across 5 isolated runs** —
+      i.e. **intermittent on both trees**, confirming the race (not deterministic). This branch is
+      mypy-config + one runtime-inert annotation (`scraper` `dict`→`dict[str, Any]`) + docs — no
+      Compose/`app.js`/`wizard` code touched (`git diff` confirmed), so **not code-caused**. This is the
+      `test_pointer_drag_reorders` member (distinct from the `test_keyboard_reorder_persists_and_reset_reverts`
+      member seen on the pydantic/PV-3 gates) of the same Compose-*load* race the 8.5 `.compose-experience-card`
+      fix did not cover → still **watch**, resolve bar still unmet (the race FIRED this session — no clean
+      datapoint banked), reinforces "not converging," strengthens the retry-policy option for PX-25.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -757,8 +769,18 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       case-by-case + one targeted `# noqa` (the SQLAlchemy `connect`-event DBAPI boundary). ANN
       hard-blocks day one (Decision-6 — unambiguous) and now carries **no production override (the §6
       exit shape for this family)**. No prompt edited → no `PROMPT_VERSION` bump, no eval run; gate green
-      (ruff/format/mypy/pytest 1391). Row **stays open** — commitments (1)/(2)'s remaining **Phase-2
-      ratchet** (`D` + google pydocstyle, `interrogate` coverage gate, mypy `--strict`) + (3)'s
+      (ruff/format/mypy/pytest 1391). **Phase 2 #2 (2026-06-24, `chore/kit-phase2-mypy-strict-leaves`):**
+      commitment (1)'s **mypy `--strict` ratchet seeded** — a per-module `[[tool.mypy.overrides]]` block
+      brings the first leaves (`scraper`/`json_resume`/`pdf_render`, the deterministic LLM-free
+      P1-Hardening modules) to full `--strict` + `warn_unreachable`; `strict` isn't per-module-settable
+      (`mypy.options.PER_MODULE_OPTIONS`) so the preset is enumerated as its component flags. One
+      `disallow_any_generics` hit fixed (`scraper` `dict` → `dict[str, Any]`); the other two were already
+      strict-clean. Establishes the per-module override pattern + tracking surface the larger modules
+      reuse — **3 production modules at full strict, the rest permissive**; the committed `mypy .` gate is
+      the per-module block. No prompt/dep/version change; gate green (ruff/format ✓, mypy 227 ✓, pytest
+      1390 + the tracked Compose-load flaky — not code-caused, ledger #3 above). Row
+      **stays open** — commitments (1)/(2)'s remaining **Phase-2 ratchet** (`D` + google pydocstyle,
+      `interrogate` coverage gate, larger-module `--strict` for `analyzer.py`/`applications.py`) + (3)'s
       skills/hooks coherence (8.7) are the remaining work; no new ledger item.
 
 #### Resolved
