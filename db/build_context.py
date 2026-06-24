@@ -30,6 +30,7 @@ from analyzer import PROMPT_VERSION
 from db.models import (
     Application,
     ApplicationRun,
+    Bullet,
     Candidate,
     Certification,
     Education,
@@ -393,7 +394,7 @@ def score_corpus_bullet(
     return 2.0 * ess_overlap + 1.0 * jd_overlap + 1.5 * tag_hits + (1.5 if has_outcome else 0.0)
 
 
-def _bullet_tag_values(bullet) -> list[str]:
+def _bullet_tag_values(bullet: Bullet) -> list[str]:
     """Normalized tag values linked to a bullet (empty if none)."""
     out: list[str] = []
     for link in getattr(bullet, "tag_links", []) or []:

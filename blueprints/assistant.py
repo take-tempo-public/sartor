@@ -26,11 +26,12 @@ from __future__ import annotations
 import logging
 import re
 import uuid
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 
 import anthropic
 from flask import Blueprint, Response, current_app, jsonify, request
+from flask.typing import ResponseReturnValue
 
 import analyzer
 from recall import (
@@ -191,7 +192,7 @@ def _build_sources(session_turns: list) -> list:
 
 
 @assistant_bp.route("/ask", methods=["POST"])
-def ask():
+def ask() -> ResponseReturnValue:
     """Answer one question over the committed wiki + code at HEAD, streamed + cited.
 
     Security: `username` is sanitized via `_safe_username` (the only user-supplied value
@@ -214,9 +215,10 @@ def ask():
     # discipline only when one is supplied (a provided-but-unknown user is still a 400).
     safe_user = ""
     if username:
-        safe_user = _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
-        if not safe_user:
+        resolved = _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
+        if not resolved:
             return jsonify({"error": "Invalid or unknown user"}), 400
+        safe_user = resolved
 
     sources = _build_sources(session_turns)
     scope = Scope(
@@ -229,7 +231,7 @@ def ask():
     client = _get_client()
     run_id = uuid.uuid4().hex[:12]
 
-    def stream():
+    def stream() -> Iterator[str]:
         try:
             for kind, payload in analyzer.avatar_answer_streaming(
                 client,

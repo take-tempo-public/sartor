@@ -53,7 +53,7 @@ from web_infra import (
 )
 
 if TYPE_CHECKING:
-    from db.models import Candidate
+    from db.models import Candidate, PersonaTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ templates_bp = Blueprint("templates", __name__)
 # --- Persona serializers (moved with the seam) ---
 
 
-def _persona_dict(template) -> dict:
+def _persona_dict(template: PersonaTemplate) -> dict:
     """Serialize a persona_template row for the API response."""
     return {
         "id": template.id,
@@ -78,7 +78,7 @@ def _persona_dict(template) -> dict:
     }
 
 
-def _persona_dicts_safe(templates) -> list[dict]:
+def _persona_dicts_safe(templates: list[PersonaTemplate]) -> list[dict]:
     """Serialize a list of persona_template rows, skipping (and logging)
     any row that fails serialization.
 

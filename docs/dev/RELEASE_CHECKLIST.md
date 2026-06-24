@@ -626,6 +626,10 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       touched), so **not code-caused**. The class keeps spawning **new** members/modes (now ≥4: pin-state,
       bullet-load, `.compose-row.recommended` load-timeout, title-add) → reinforces "not converging";
       resolve bar still unmet; strengthens the retry-policy option for PX-25.
+      **Update (2026-06-24, `chore/kit-phase2-ruff-ann` gate):** the class did **not recur** — the full
+      suite ran clean (**1391 passed**, 0 failed, incl. the UX tier). This branch adds type annotations
+      only (`git diff` touched no Compose/`app.js`/`wizard` code), so a clean datapoint banked toward the
+      resolve bar; class still **watch**.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -745,9 +749,17 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       `SIM`/`RUF` triage landed — `SIM`+`RUF` families enabled whole, 117 ambiguous-unicode + SIM905
       ignored (no prompt string edited → no `PROMPT_VERSION` bump), RUF059 carved out in `tests/**`, and
       the 110 real hits fixed (41 auto + 32 hand + 1 `# noqa`); all enabled families hard-block day one.
-      ERA stays rejected (warn-only-forever). Row **stays open** — commitments (1)/(2)'s **Phase-2
-      strictness ratchet** (`ANN`/`D`/`interrogate`/mypy `--strict`) + (3)'s skills/hooks coherence (8.7)
-      are the remaining work; no new ledger item.
+      ERA stays rejected (warn-only-forever). **Phase 2 began (2026-06-24, `chore/kit-phase2-ruff-ann`):**
+      the **`ANN` (flake8-annotations) family enabled whole** — the production surface was small + even
+      (60 hits / 18 files; `analyzer.py` 2, `applications.py` 5, neither deferred), so `ANN` landed
+      **complete across the production tree in one branch**: 60 hits hand-fixed (0 safe autofixes), the
+      Decision-7 exempt set carved (`tests/**`/`evals/*`/net-new `scripts/**`), `ANN401` (11) typed
+      case-by-case + one targeted `# noqa` (the SQLAlchemy `connect`-event DBAPI boundary). ANN
+      hard-blocks day one (Decision-6 — unambiguous) and now carries **no production override (the §6
+      exit shape for this family)**. No prompt edited → no `PROMPT_VERSION` bump, no eval run; gate green
+      (ruff/format/mypy/pytest 1391). Row **stays open** — commitments (1)/(2)'s remaining **Phase-2
+      ratchet** (`D` + google pydocstyle, `interrogate` coverage gate, mypy `--strict`) + (3)'s
+      skills/hooks coherence (8.7) are the remaining work; no new ledger item.
 
 #### Resolved
 

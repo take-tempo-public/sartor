@@ -36,7 +36,7 @@ class LLMResponseError(Exception):
     validation error so callers can surface both to logs and to the user.
     """
 
-    def __init__(self, raw: str, validation_error: str):
+    def __init__(self, raw: str, validation_error: str) -> None:
         self.raw = raw
         self.validation_error = validation_error
         super().__init__(f"LLM response failed validation: {validation_error}")
@@ -1028,7 +1028,7 @@ class _StreamDone:
 
     __slots__ = ("stop_reason", "text")
 
-    def __init__(self, text: str, stop_reason: str | None):
+    def __init__(self, text: str, stop_reason: str | None) -> None:
         self.text = text
         self.stop_reason = stop_reason
 

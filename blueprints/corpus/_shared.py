@@ -17,10 +17,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from db.models import Candidate, Experience
+    from sqlalchemy.orm import Session
+
+    from db.models import (
+        Candidate,
+        Experience,
+        ExperienceSummaryItem,
+        Skill,
+        SummaryItem,
+    )
 
 
-def _experience_summary_dict(exp) -> dict:
+def _experience_summary_dict(exp: Experience) -> dict:
     """Compact experience row for the Career Corpus list view."""
     official = next((t for t in exp.titles if t.is_official), None)
     active_bullets = [b for b in exp.bullets if b.is_active]
@@ -40,7 +48,7 @@ def _experience_summary_dict(exp) -> dict:
     }
 
 
-def _tag_list(tag_links) -> list[dict]:
+def _tag_list(tag_links: list) -> list[dict]:
     """Serialize a bullet/title's tag_links (each carries .tag) for the UI."""
     out = []
     for link in tag_links:
@@ -58,7 +66,7 @@ def _tag_list(tag_links) -> list[dict]:
     return sorted(out, key=lambda d: d["value"])
 
 
-def _experience_detail_dict(exp) -> dict:
+def _experience_detail_dict(exp: Experience) -> dict:
     """Full experience payload for the inline expand view."""
     titles = sorted(exp.titles, key=lambda t: (0 if t.is_official else 1, t.id))
     bullets = sorted(
@@ -104,7 +112,7 @@ def _experience_detail_dict(exp) -> dict:
 
 
 def _load_experience_for_candidate(
-    session,
+    session: Session,
     experience_id: int,
 ) -> tuple[Experience | None, Candidate | None]:
     """Look up an Experience + its candidate. Returns (exp, candidate) or
@@ -119,7 +127,7 @@ def _load_experience_for_candidate(
     return exp, candidate
 
 
-def _summary_item_to_dict(s) -> dict:
+def _summary_item_to_dict(s: SummaryItem) -> dict:
     """Shared response shape for SummaryItem routes."""
     return {
         "id": s.id,
@@ -136,7 +144,7 @@ def _summary_item_to_dict(s) -> dict:
     }
 
 
-def _experience_summary_item_to_dict(s) -> dict:
+def _experience_summary_item_to_dict(s: ExperienceSummaryItem) -> dict:
     """Shared response shape for ExperienceSummaryItem routes."""
     return {
         "id": s.id,
@@ -153,7 +161,7 @@ def _experience_summary_item_to_dict(s) -> dict:
     }
 
 
-def _skill_to_dict(s, tags: list | None = None) -> dict:
+def _skill_to_dict(s: Skill, tags: list | None = None) -> dict:
     """Shared response shape for Skill routes."""
     return {
         "id": s.id,

@@ -127,6 +127,15 @@ select = [
     # standard too; the documented noise is carved out in `ignore` below.
     "SIM",  # flake8-simplify
     "RUF",  # ruff-specific rules
+    # Kit-adoption Phase 2, first sub-item (KIT-6/KIT-7, design §4 "Strictness ratchet"):
+    # the ANN (flake8-annotations) family lands whole across production — "add the family
+    # to select, fix the real hits, exempt the Decision-7 set". ANN is unambiguous, so it
+    # hard-blocks day one (Decision-6 — not warn→block ratcheted), same as SIM/RUF in
+    # Phase 1. The Decision-7 exempt set (tests/ evals/ scripts/ db/migrations) is carved
+    # out in per-file-ignores below; production carries no ANN override (the §6 exit shape
+    # for this family). ANN401 (any-type) is handled case-by-case at the call site, not by
+    # a blanket family ignore.
+    "ANN",  # flake8-annotations
 ]
 ignore = [
     "E501",  # line too long — many lines in prompts intentionally long
@@ -144,8 +153,13 @@ ignore = [
 # RUF059 (unused unpacked variable) is an idiomatic tuple-unpack in tests
 # (`app, run = make_app()` ignoring one half) — a context false-positive, on par
 # with the existing S-family test carve-outs below. Production code stays covered.
-"tests/**" = ["S101", "S105", "S106", "S108", "S607", "RUF059"]
-"evals/*" = ["S101"]
+# ANN (flake8-annotations) is the Decision-7 / KIT-7 strictness-exempt set — test,
+# eval, and script scaffolding is not held to the production annotation bar (the
+# ratchet's named end-state exempts exactly these four trees; db/migrations/versions
+# is already fully extend-excluded above). Production carries no ANN override.
+"tests/**" = ["S101", "S105", "S106", "S108", "S607", "RUF059", "ANN"]
+"evals/*" = ["S101", "ANN"]
+"scripts/**" = ["ANN"]
 
 [tool.ruff.format]
 # Kit-adoption Phase 1 (KIT-6): declare the adopted formatter style explicitly so the

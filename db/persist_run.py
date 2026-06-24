@@ -412,7 +412,7 @@ def _persist_proposed_titles(
 # ---------------------------------------------------------------------------
 
 
-def _strip_id_prefix(raw: Any, expected_prefix: str) -> int | None:
+def _strip_id_prefix(raw: object, expected_prefix: str) -> int | None:
     """Convert prompt-shaped IDs like 'e3' or 't12' or 'b41' into ints.
 
     Also accepts bare integers in case the LLM drops the prefix. Returns None

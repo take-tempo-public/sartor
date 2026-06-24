@@ -11,6 +11,7 @@ from typing import Any
 
 import docx
 import pdfplumber
+from docx.document import Document
 from docx.oxml.ns import qn
 from docx.table import Table, _Cell
 from docx.text.paragraph import Paragraph
@@ -38,7 +39,7 @@ def parse_resume(filepath: str) -> dict:
     }
 
 
-def _iter_block_items(parent: Any) -> Iterator[Any]:
+def _iter_block_items(parent: Document | _Cell) -> Iterator[Any]:
     """Yield Paragraph and Table children of `parent` in document order.
 
     `Document.paragraphs` skips anything inside a table, so a résumé laid out
@@ -77,7 +78,7 @@ def _parse_docx(path: Path) -> tuple[str, list]:
         else:
             current_section["content"].append(text)
 
-    def _walk(parent: Any) -> None:
+    def _walk(parent: Document | _Cell) -> None:
         for block in _iter_block_items(parent):
             if isinstance(block, Paragraph):
                 _handle_paragraph(block)

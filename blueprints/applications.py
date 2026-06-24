@@ -41,7 +41,7 @@ import re
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import anthropic
 from flask import Blueprint, current_app, jsonify, request
@@ -49,6 +49,11 @@ from flask.typing import ResponseReturnValue
 
 from blueprints.corpus import _skill_to_dict, _tag_list
 from web_infra import _error_detail_payload, _get_client, _safe_username, _within
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+
+    from db.models import Application, ApplicationRun
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +71,9 @@ applications_bp = Blueprint("applications", __name__)
 _VALID_APP_STATUSES = frozenset({"draft", "submitted", "interview", "rejected", "withdrawn"})
 
 
-def _application_summary_dict(app_row, runs, pending_proposal_count: int) -> dict:
+def _application_summary_dict(
+    app_row: Application, runs: list[ApplicationRun], pending_proposal_count: int
+) -> dict:
     """Compact application row for the Applications tab list view."""
     latest_run = runs[-1] if runs else None
     return {
@@ -515,9 +522,17 @@ def update_application_meta(application_id: int) -> ResponseReturnValue:
 # ---------------------------------------------------------------------------
 
 
-def _load_application_owned(session, application_id: int):
+def _load_application_owned(session: Session, application_id: int) -> tuple:
     """(app_row, candidate) for an application, or (None, None). Runs the
-    standard _safe_username defense on the owning candidate."""
+    standard _safe_username defense on the owning candidate.
+
+    Return is a bare ``tuple`` by design: the two slots are correlated (both set
+    or both ``None``), which the type system can't express across the callers'
+    ``app_row, candidate = ...; if app_row is None: ...`` unpack-then-check
+    pattern. A precise ``tuple[Application | None, Candidate | None]`` would force
+    a None-narrowing change at ~10 call sites — a separate None-safety pass, out
+    of scope for the ANN annotation branch (the call-site contract was already
+    untyped before ``session`` was typed)."""
     from db.models import Application, Candidate
 
     app_row = session.query(Application).filter_by(id=application_id).first()
@@ -531,7 +546,7 @@ def _load_application_owned(session, application_id: int):
     return app_row, candidate
 
 
-def _latest_analysis_essentials(app_row) -> set[str]:
+def _latest_analysis_essentials(app_row: Application) -> set[str]:
     """essential_skills from the application's most recent run, lowercased."""
     runs = sorted(app_row.runs, key=lambda r: r.iteration)
     for r in reversed(runs):

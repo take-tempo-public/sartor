@@ -9,12 +9,18 @@ candidate. DB imports stay lazy in-function.
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 from flask import current_app, jsonify, request
 from flask.typing import ResponseReturnValue
 
 from blueprints.corpus._bp import corpus_bp
 from web_infra import _safe_username
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+
+    from db.models import Tag
 
 
 def _normalize_tag_value(s: str) -> str:
@@ -91,7 +97,7 @@ def suggest_tags(username: str) -> ResponseReturnValue:
 # ---------------------------------------------------------------------------
 
 
-def _find_or_create_tag(session, candidate_id: int, kind: str, value: str):
+def _find_or_create_tag(session: Session, candidate_id: int, kind: str, value: str) -> Tag:
     """Return the Tag for (candidate, kind, normalized value), creating it
     if absent. Follows the merged_into alias chain so links always point at
     the canonical tag."""
@@ -125,7 +131,7 @@ def _find_or_create_tag(session, candidate_id: int, kind: str, value: str):
     return tag
 
 
-def _tag_link_target(session, kind: str, subject_id: int):
+def _tag_link_target(session: Session, kind: str, subject_id: int) -> tuple:
     """Resolve a bullet/title subject to (subject, candidate, LinkModel,
     fk_name) or (None, None, None, None)."""
     from db.models import (
@@ -141,12 +147,15 @@ def _tag_link_target(session, kind: str, subject_id: int):
 
     link_model: type
     # Skills are candidate-level — no Experience hop, candidate resolved directly.
+    # A distinct local `skill` keeps `subject` (below) purely the experience-scoped
+    # Bullet | ExperienceTitle union, so the now-typed `session` body stays mypy-clean.
     if kind == "skill":
-        subject = session.query(Skill).filter_by(id=subject_id).first()
-        if subject is None:
+        skill = session.query(Skill).filter_by(id=subject_id).first()
+        if skill is None:
             return None, None, None, None
-        candidate = session.query(Candidate).filter_by(id=subject.candidate_id).first()
-        return subject, candidate, SkillTag, "skill_id"
+        candidate = session.query(Candidate).filter_by(id=skill.candidate_id).first()
+        return skill, candidate, SkillTag, "skill_id"
+    subject: Bullet | ExperienceTitle | None
     if kind == "bullet":
         subject = session.query(Bullet).filter_by(id=subject_id).first()
         link_model, fk = BulletTag, "bullet_id"

@@ -24,6 +24,7 @@ from datetime import datetime
 from pathlib import Path
 
 from flask import Blueprint, abort, render_template, request
+from flask.typing import ResponseReturnValue
 
 from web_infra import _is_localhost_request
 
@@ -914,7 +915,7 @@ def _baseline_health(records: list[dict], baseline: dict) -> dict:
 
 
 @dashboard_bp.before_request
-def _localhost_guard():
+def _localhost_guard() -> None:
     """Same posture as the rest of the app: localhost-only by host check.
 
     Consumes the shared `web_infra._is_localhost_request` (Sprint 8.3a) rather
@@ -939,7 +940,7 @@ def _tune_prompt_choices() -> list[dict]:
 
 
 @dashboard_bp.route("/", methods=["GET"])
-def index():
+def index() -> ResponseReturnValue:
     """Render the dashboard with optional filters from query string."""
     since = request.args.get("since", "")
     user = request.args.get("user", "")

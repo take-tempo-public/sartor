@@ -38,11 +38,16 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+
+    from db.models import Experience
 
 
 def build_json_resume_from_corpus(
-    session,
+    session: Session,
     candidate_id: int,
     *,
     application_id: int | None = None,
@@ -303,7 +308,7 @@ def _read_summary_choices(ctx: dict[str, Any]) -> tuple[int | None, int | None]:
     rec_block = ctx.get("llm_summary_recommendation") or {}
     rec = rec_block.get("recommendation") if isinstance(rec_block, dict) else None
 
-    def _coerce(val: Any) -> int | None:
+    def _coerce(val: str | int | float | None) -> int | None:
         try:
             return int(val) if val is not None else None
         except (TypeError, ValueError):
@@ -335,7 +340,7 @@ def _read_title_choices(ctx: dict[str, Any]) -> dict[int, int]:
 
 
 def _resolve_chosen_summary_text(
-    session,
+    session: Session,
     candidate_id: int,
     *,
     pinned_id: int | None,
@@ -404,7 +409,7 @@ def _read_experience_summary_choices(ctx: dict[str, Any]) -> tuple[bool, dict[in
 
 
 def _resolve_chosen_experience_summary_text(
-    session,
+    session: Session,
     experience_id: int,
     item_id: int | None,
 ) -> str:
@@ -461,21 +466,21 @@ def _read_recommendations_by_experience(
     return out
 
 
-def _official_title_text(exp: Any) -> str | None:
+def _official_title_text(exp: Experience) -> str | None:
     for t in exp.titles or []:
         if t.is_official:
             return t.title
     return None
 
 
-def _first_title_text(exp: Any) -> str | None:
+def _first_title_text(exp: Experience) -> str | None:
     for t in exp.titles or []:
         if t.title:
             return t.title
     return None
 
 
-def _pinned_title_text(exp: Any, pinned_id: int | None) -> str | None:
+def _pinned_title_text(exp: Experience, pinned_id: int | None) -> str | None:
     """feat/compose-add-title — the user's per-JD title pick for this experience,
     when it's still an eligible (is_official OR truthful_enough_to_use) title of
     this experience. Returns None when unset / stale / ineligible so the caller
@@ -578,7 +583,7 @@ def resolve_skill_selection(
 
 
 def _collect_skills(
-    session: Any,
+    session: Session,
     candidate_id: int,
     *,
     pinned: set[int] | None = None,

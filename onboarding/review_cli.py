@@ -93,7 +93,7 @@ class ReviewSession:
     every experience-level action so partial progress survives a Ctrl-C.
     """
 
-    def __init__(self, session: Session, candidate: Candidate):
+    def __init__(self, session: Session, candidate: Candidate) -> None:
         self.session = session
         self.candidate = candidate
         self.accepted = 0
