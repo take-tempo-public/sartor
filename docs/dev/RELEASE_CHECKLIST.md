@@ -612,6 +612,20 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       (no `.py`/frontend touched), so **not code-caused** — the same Compose-*load* race the 8.5
       `.compose-experience-card` fix did not cover (matches the PV-3 update). Still **watch**; resolve bar
       still unmet.
+      **Update (2026-06-24, `chore/kit-phase1-ruff-format` gate — backfilled):** the class did **not
+      recur** — the full suite ran clean on **both** runs that session (**1391 passed**, 0 failed, incl.
+      the UX tier). `ruff format` is style-only (no Compose/recommend code), so two clean runs banked
+      toward the resolve bar. _(This datapoint was surfaced but left unfiled by the ruff-format closing
+      agent — folded in here by the next branch's pre-close sweep, per W-1 carry-forward discipline.)_
+      **Update (2026-06-24, `chore/kit-phase1-sim-ruf-triage` gate):** a **new member** of the class
+      surfaced — [`tests/ux/regression/test_20260611_compose_add_title.py`](../../tests/ux/regression/test_20260611_compose_add_title.py)`::test_add_title_then_pin_persists`
+      failed **once** in the full suite (`title_texts() == []` — the just-added title hadn't rendered, a
+      **title-add load** race, distinct from every prior member's mode), full suite **1390 passed / 1
+      failed**, then **passed clean on isolated re-run** (1/1, 9.42 s). This branch is lint-config +
+      mechanical cleanup only (`git diff --name-only` confirmed **no** Compose/`app.js`/`wizard` file
+      touched), so **not code-caused**. The class keeps spawning **new** members/modes (now ≥4: pin-state,
+      bullet-load, `.compose-row.recommended` load-timeout, title-add) → reinforces "not converging";
+      resolve bar still unmet; strengthens the retry-policy option for PX-25.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -727,8 +741,13 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       landed next** (`chore/kit-phase1-ruff-format`, 2026-06-23): applied tree-wide (161 files),
       proven prompt-inert (byte-identical prompt constants → no `PROMPT_VERSION` bump, no eval run),
       and **hard-blocks day one** — gate wired in `ruff-changed.sh` + `[tool.ruff.format]`
-      (Decision 6 / KIT-6). `SIM`/`RUF` per-family triage is the **sole remaining Phase-1 item**. Row
-      **stays open** (staged commitments in progress; no new ledger item).
+      (Decision 6 / KIT-6). **Phase 1 COMPLETE (2026-06-24, `chore/kit-phase1-sim-ruf-triage`):** the
+      `SIM`/`RUF` triage landed — `SIM`+`RUF` families enabled whole, 117 ambiguous-unicode + SIM905
+      ignored (no prompt string edited → no `PROMPT_VERSION` bump), RUF059 carved out in `tests/**`, and
+      the 110 real hits fixed (41 auto + 32 hand + 1 `# noqa`); all enabled families hard-block day one.
+      ERA stays rejected (warn-only-forever). Row **stays open** — commitments (1)/(2)'s **Phase-2
+      strictness ratchet** (`ANN`/`D`/`interrogate`/mypy `--strict`) + (3)'s skills/hooks coherence (8.7)
+      are the remaining work; no new ledger item.
 
 #### Resolved
 

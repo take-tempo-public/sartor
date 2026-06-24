@@ -151,6 +151,25 @@ wired **[M]**; ruff `ERA` **[M]**; ruff `SIM`/`RUF` (land per-family if noisy) *
 > ruff check . ✓ · mypy (227) ✓ · pytest 1391 passed. **Phase 1 now has one item left:** the
 > `SIM`/`RUF` per-family triage named above.
 
+> **Phase 1 progress — third branch `chore/kit-phase1-sim-ruf-triage` (2026-06-24, owner-confirmed).
+> Phase 1 is now COMPLETE.** Landed: the **`SIM` + `RUF` families enabled whole** (`select += ["SIM",
+> "RUF"]` — forward-protective, "add the family to select" per §4) with the documented noise carved
+> out. Of the 228 raw hits: **117 ambiguous-unicode (RUF001/2/3) ignored** (em-dash/smart-quotes in
+> prompt + UI copy — the exact Decision-6 "known-noisy heuristic stays ignored" case; crucially this
+> means **no prompt string is edited**, so `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` stay untouched and
+> no eval run is owed); **SIM905 ignored** (1 hit — the `hardening.STOP_WORDS` compact `.split()`, whose
+> fix is a strictly-worse ~110-element literal); **RUF059 carved out in `tests/**`** (18 hits —
+> idiomatic unused tuple-unpack, matching the existing S-family test carve-outs). The remaining **110
+> were fixed**: 41 auto (`ruff check --fix`, no `--unsafe-fixes` — RUF100 unused-noqa ×33, SIM300 ×3,
+> RUF022 ×3, RUF023 ×1 on `analyzer._StreamDone.__slots__` (prompt-inert), SIM114 ×1) + 32 by hand
+> (SIM115 ×16 → `Path(...).read_text/write_text`, RUF012 ×7 → `ClassVar[...]`, SIM117 ×4 combined-`with`,
+> SIM105 ×4 → `contextlib.suppress`) + 1 `# noqa: RUF022` on `db/models.py:__all__` (preserves the
+> curated domain grouping). All enabled families **hard-block day one** via the existing
+> `ruff-changed.sh` `ruff check` arm (Decision 6 — these are unambiguous, not ratcheted). **ERA stays
+> rejected** (warn-only-forever; not re-proposed). Gate green: ruff check . ✓ · ruff format --check (217)
+> ✓ · mypy (227) ✓ · pytest 1390 passed + 1 flaky (Compose load-race, passes isolated). **Phase 1 done;
+> next kit work is Phase 2 (strictness ratchet) at owner direction.**
+
 **Phase 2 — Strictness ratchet** (~3–5 sessions; this is WS-2-full made concrete): ruff `ANN`
 **[M+J]**; ruff `D` + pinned `google` pydocstyle convention **[M+J]**; `interrogate` coverage
 gate at measured-current, ratcheted up **[M]**; mypy `--strict` + `warn_unreachable`, per-module

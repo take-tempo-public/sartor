@@ -253,7 +253,7 @@ def build_bootstrap_document(
         reps_md = "\n".join(f"- {c['representative']}" for c in bullet_clusters)
         try:
             grounding = grounding_fn(reps_md, [corpus_source])
-        except Exception:  # noqa: BLE001
+        except Exception:
             # Grounding is an OPTIONAL enhancement. A scorer failure — a drifted
             # dependency, a failed model download, or the [eval-grounding] extras
             # not installed — must NEVER discard the completed (and paid)
@@ -379,7 +379,7 @@ def run_pipeline_over_jd_texts(
             clar = clarify(client, context, analysis, username=username_tag, run_id=run_id)
             clar_questions = clar.get("questions", [])
             clar_reasoning = clar.get("reasoning", "")
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("Clarify failed for %s, continuing without it: %s", jd_name, exc)
 
         _emit("generating", jd_file=jd_name, index=index, total=total)
@@ -544,7 +544,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Deferred imports: keep them off the module's import surface and only pay for
     # them when actually running (not when a test imports a helper).
-    from evals.runner import _get_client  # noqa: PLC0415
+    from evals.runner import _get_client
 
     client = _get_client()
     with seeded_session(seed) as (session, seed_username):
@@ -552,7 +552,7 @@ def main(argv: list[str] | None = None) -> int:
 
     grounding_fn: GroundingFn | None = None
     if args.grounding_signals:
-        from evals.grounding_signals import run_grounding_signals  # noqa: PLC0415
+        from evals.grounding_signals import run_grounding_signals
 
         grounding_fn = run_grounding_signals
 

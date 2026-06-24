@@ -155,10 +155,10 @@ def init_db(db_path: Path | str | None = None) -> bool:
 
 __all__ = [
     "DEFAULT_DB_PATH",
+    "get_engine",
+    "get_session",
+    "get_session_factory",
+    "init_db",
     "make_engine",
     "make_session_factory",
-    "get_engine",
-    "get_session_factory",
-    "get_session",
-    "init_db",
 ]

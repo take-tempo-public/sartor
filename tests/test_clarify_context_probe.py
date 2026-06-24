@@ -9,6 +9,7 @@ No LLM calls — all tests mock at the _call_llm boundary.
 """
 
 import json
+from typing import ClassVar
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -86,7 +87,7 @@ class TestCombinedCompositionRule:
     # All tests in this class pass validation_context (enforcement is opt-in —
     # only fires when the caller explicitly provides context, so clarify_iteration
     # with its different kind set isn't affected).
-    _ctx = {"hidden_qualities_non_empty": False}
+    _ctx: ClassVar[dict] = {"hidden_qualities_non_empty": False}
 
     def test_passes_at_60_percent_combined(self):
         """Exactly 60% combined (3/5) → passes."""
@@ -169,17 +170,19 @@ class TestParseOrRetryValidationContext:
             return raw_bad
 
         client = MagicMock()
-        with patch.object(analyzer, "_call_llm", side_effect=fake_call_llm):
-            with pytest.raises(LLMResponseError):
-                _parse_or_retry(
-                    client,
-                    "prompt text",
-                    cached_user_prefix="",
-                    response_model=ClarifyResponse,
-                    call_kind="clarify",
-                    username="testuser",
-                    run_id="abc",
-                    validation_context={"hidden_qualities_non_empty": True},
-                )
+        with (
+            patch.object(analyzer, "_call_llm", side_effect=fake_call_llm),
+            pytest.raises(LLMResponseError),
+        ):
+            _parse_or_retry(
+                client,
+                "prompt text",
+                cached_user_prefix="",
+                response_model=ClarifyResponse,
+                call_kind="clarify",
+                username="testuser",
+                run_id="abc",
+                validation_context={"hidden_qualities_non_empty": True},
+            )
         # max_attempts=2: initial call + one retry
         assert call_count["n"] == 2

@@ -9,6 +9,7 @@ Covers:
 
 import json
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -363,7 +364,7 @@ class TestGenerateDateGrounding:
     headings surface as proofread_notes warnings + a date_grounding field.
     Warn-only — the route still returns 200 and the resume is untouched."""
 
-    CORPUS = [
+    CORPUS: ClassVar[list[dict]] = [
         {
             "id": 1,
             "company": "Acme",

@@ -941,7 +941,7 @@ class Engagement(Base):
     )
 
 
-__all__ = [
+__all__ = [  # noqa: RUF022 — curated domain grouping (Core / Career assets / …), not alphabetical
     "Base",
     "utc_now",
     # Core

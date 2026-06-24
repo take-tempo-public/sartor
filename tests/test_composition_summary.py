@@ -20,6 +20,7 @@ guard the bullet overrides use.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -194,14 +195,14 @@ class TestGetCompositionSummary:
             pinned_summary_id=None,  # will set below
         )
         # Seed with a pin on variant[1] AND a recommendation on variant[0]
-        ctx = json.loads(open(ctx_path, encoding="utf-8").read())
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         ctx["composition_overrides"] = {
             "pinned": [],
             "excluded": [],
             "added": [],
             "pinned_summary_id": vids[1],
         }
-        open(ctx_path, "w", encoding="utf-8").write(json.dumps(ctx))
+        Path(ctx_path).write_text(json.dumps(ctx), encoding="utf-8")
 
         client = _app.app.test_client()
         r = client.get(
@@ -252,7 +253,7 @@ class TestPostComposition:
         body = r.get_json()
         assert body["pinned_summary_id"] == vids[2]
 
-        ctx = json.loads(open(ctx_path, encoding="utf-8").read())
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         assert ctx["composition_overrides"]["pinned_summary_id"] == vids[2]
 
     def test_null_clears_pin(self, composition_app):
@@ -309,5 +310,5 @@ class TestPostComposition:
             },
         )
         assert r.status_code == 200
-        ctx = json.loads(open(ctx_path, encoding="utf-8").read())
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         assert "pinned_summary_id" not in ctx["composition_overrides"]

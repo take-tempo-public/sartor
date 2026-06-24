@@ -11,6 +11,7 @@ Mirrors test_recommend_summaries.py but for the batched, per-role variant:
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -297,7 +298,7 @@ class TestRoute:
 
         import json
 
-        ctx = json.loads(open(ctx_path, encoding="utf-8").read())
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         assert "llm_experience_summary_recommendations" in ctx
         assert "experience_summary_items" not in ctx  # transient stripped
         assert "jd_text" not in ctx

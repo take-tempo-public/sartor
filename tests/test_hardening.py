@@ -4,6 +4,8 @@ These functions must remain LLM-free and produce stable output for given input.
 """
 
 import json
+from pathlib import Path
+from typing import ClassVar
 
 from hardening import (
     assemble_source_union,
@@ -469,7 +471,7 @@ class TestContextSetClarificationFields:
         without errors and produce equivalent JSON."""
         ctx = self._base_context()
         path = save_context_set(ctx, "alice", str(tmp_path))
-        loaded = json.loads(open(path, encoding="utf-8").read())
+        loaded = json.loads(Path(path).read_text(encoding="utf-8"))
         # No clarification fields should sneak in
         assert "clarifications" not in loaded
         assert "clarification_questions" not in loaded
@@ -489,7 +491,7 @@ class TestContextSetClarificationFields:
         ]
         ctx["clarifications"] = {"q1": "Briefly in 2024."}
         path = save_context_set(ctx, "alice", str(tmp_path))
-        loaded = json.loads(open(path, encoding="utf-8").read())
+        loaded = json.loads(Path(path).read_text(encoding="utf-8"))
         assert loaded["clarification_questions"][0]["kind"] == "experience_probe"
         assert loaded["clarifications"]["q1"] == "Briefly in 2024."
 
@@ -498,7 +500,10 @@ class TestComputeTopThirdDensity:
     _BULLETS = (
         "- Led cloud migration\n- Wrote python automation scripts\n- Managed kubernetes clusters\n"
     )
-    _JD_KW: dict = {"keywords": {"kubernetes": 5, "cloud": 4, "python": 3}, "total_unique": 3}
+    _JD_KW: ClassVar[dict] = {
+        "keywords": {"kubernetes": 5, "cloud": 4, "python": 3},
+        "total_unique": 3,
+    }
 
     def test_empty_resume_returns_zero(self):
         out = compute_top_third_density("", self._JD_KW)
@@ -580,7 +585,7 @@ class TestComputeQuantificationRate:
 class TestComputeDateGrounding:
     """KW6 guard: heading date ranges must trace to the corpus (warn-only)."""
 
-    CORPUS = [
+    CORPUS: ClassVar[list[dict]] = [
         {"id": 1, "company": "Acme", "start_date": "2024-01", "end_date": None},
         {"id": 2, "company": "Acme", "start_date": "2016-01", "end_date": "2018-12"},
         {"id": 3, "company": "Acme", "start_date": "2012-01", "end_date": "2016-12"},

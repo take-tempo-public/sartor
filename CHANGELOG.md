@@ -13,6 +13,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Kit-adoption Phase 1 — SIM/RUF ruff triage (`chore/kit-phase1-sim-ruf-triage`, 2026-06-24)
+
+Final implementation branch of the agent-coding-practices kit-adoption arc Phase 1
+(kit-adoption-design.md §4; Decision-6 "ratchet-then-block"). Enables the `flake8-simplify` (`SIM`)
++ `ruff`-specific (`RUF`) lint families whole, fixes the real hits, and ignores the documented noise.
+Tooling-config + mechanical-cleanup only — **no product behavior, dependency, prompt, route, or
+version change**; `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched (no prompt string was edited —
+the ambiguous-unicode hits inside prompt text are *ignored*, not rewritten).
+
+**Changed**
+- `pyproject.toml` `[tool.ruff.lint]`: `select += ["SIM", "RUF"]` (whole-family, forward-protective);
+  `ignore += ["RUF001", "RUF002", "RUF003"]` (117 ambiguous-unicode false-positives — em-dashes /
+  smart-quotes in prompt + UI copy, the documented Decision-6 noise) `+ ["SIM905"]` (the
+  `hardening.STOP_WORDS` compact `.split()` constant — the fix explodes it into a ~110-element literal);
+  `per-file-ignores["tests/**"] += ["RUF059"]` (idiomatic unused-tuple-unpack in tests, matching the
+  existing S-family test carve-outs).
+- Auto-fixed 41 hits via `ruff check --fix` (no `--unsafe-fixes`): **RUF100** unused-noqa ×33, **SIM300**
+  yoda-conditions ×3, **RUF022** unsorted-`__all__` ×3, **RUF023** unsorted-`__slots__` ×1
+  (`analyzer._StreamDone` — prompt-inert), **SIM114** if-with-same-arms ×1.
+- Hand-fixed 32 real hits: **SIM115** open-without-context-manager ×16 → `Path(...).read_text/write_text`
+  (all in tests); **RUF012** mutable-class-default ×7 → `ClassVar[...]` (6 test data tables + one
+  `ui_pages` lookup dict); **SIM117** nested-`with` ×4 → combined; **SIM105** suppressible-exception ×4 →
+  `contextlib.suppress`; **RUF022** ×1 → `# noqa: RUF022` on `db/models.py` `__all__` (preserves the
+  curated domain grouping a flat sort would scatter).
+
+**Verification** — `ruff check .` clean tree-wide · `ruff format --check` (217 files) ok · `mypy .`
+(227 files) ok · `pytest` **1390 passed / 1 flaky** (`test_add_title_then_pin_persists`, the tracked
+Compose-wizard load-race class — passed clean on isolated re-run; diff touches no Compose/frontend code).
+No eval run (no prompt change). **Closes kit-adoption Phase 1.**
+
 ### Kit-adoption Phase 1 — ruff format (`chore/kit-phase1-ruff-format`, 2026-06-23)
 
 Second implementation branch of the agent-coding-practices kit-adoption arc (kit-adoption-design.md

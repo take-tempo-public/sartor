@@ -132,9 +132,12 @@ def test_no_secret_files_tracked() -> None:
     offenders = []
     for path in _git_ls_files():
         name = path.rsplit("/", 1)[-1]
-        if name == ".api_key" or name == ".env" or name.startswith(".env."):
-            offenders.append(path)
-        elif name.endswith(secret_suffixes):
+        if (
+            name == ".api_key"
+            or name == ".env"
+            or name.startswith(".env.")
+            or name.endswith(secret_suffixes)
+        ):
             offenders.append(path)
     assert not offenders, f"Secret-shaped file(s) tracked: {offenders}"
 

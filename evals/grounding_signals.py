@@ -94,7 +94,7 @@ def _ensure_minicheck_nltk_data() -> None:
     missing. Dev-only tooling; mirrors the implicit HuggingFace weight download
     above (NLTK is not a sanctioned-egress library — see test_egress_allowlist).
     """
-    import nltk  # noqa: PLC0415
+    import nltk
 
     try:
         nltk.data.find("tokenizers/punkt_tab")

@@ -13,6 +13,7 @@ When `context_set["career_corpus"]` is populated:
 from __future__ import annotations
 
 import json
+from typing import ClassVar
 from unittest.mock import patch
 
 import pytest
@@ -358,9 +359,11 @@ class TestGenerateDispatch:
             "proofread_notes": [],
         }
         captured: dict = {}
-        with patch("analyzer._call_llm", _mock_llm_call(captured, incomplete_response)):
-            with pytest.raises(LLMResponseError) as excinfo:
-                generate(None, ctx, analysis, username="u", run_id="r")
+        with (
+            patch("analyzer._call_llm", _mock_llm_call(captured, incomplete_response)),
+            pytest.raises(LLMResponseError) as excinfo,
+        ):
+            generate(None, ctx, analysis, username="u", run_id="r")
         assert "selected_bullets" in str(excinfo.value.validation_error)
 
 
@@ -551,7 +554,7 @@ class TestCoverLetterWorkedExamples:
     fix (AGENTS.md). Assert on the scaffold tokens, NOT the example sentences,
     so finalizing the wording never churns this test."""
 
-    _ANALYSIS: dict = {}
+    _ANALYSIS: ClassVar[dict] = {}
 
     def test_block_contains_worked_examples_section(self):
         block = _COVER_LETTER_RULES_BLOCK

@@ -126,15 +126,17 @@ class TestCritiqueProposalHelper:
         captured: dict = {}
         # Response missing 'concerns'
         canned = json.dumps({"verdict": "good", "notes": "Looks fine."})
-        with patch("analyzer._call_llm", _mock_call_llm_factory(captured, canned)):
-            with pytest.raises(LLMResponseError):
-                critique_proposal(
-                    None,
-                    original_text="x",
-                    user_edited_text=None,
-                    subject_kind="bullet",
-                    experience_context={"company": "X", "existing_bullets": []},
-                )
+        with (
+            patch("analyzer._call_llm", _mock_call_llm_factory(captured, canned)),
+            pytest.raises(LLMResponseError),
+        ):
+            critique_proposal(
+                None,
+                original_text="x",
+                user_edited_text=None,
+                subject_kind="bullet",
+                experience_context={"company": "X", "existing_bullets": []},
+            )
 
 
 # ---------------------------------------------------------------------------
