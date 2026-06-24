@@ -15,7 +15,10 @@ import docx
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.oxml.numbering import CT_NumPr
 from docx.shared import Inches, Pt
+from docx.text.paragraph import Paragraph
+from docx.text.run import Run
 
 # Matches any common bullet prefix used by LLMs:
 # -, *, •, –, —, ·, ◆, ●, ▪, ›, ‣
@@ -330,7 +333,7 @@ def _write_cover_letter_docx(
     doc.save(str(path))
 
 
-def _add_inline_runs(paragraph, text: str, base_bold: bool = False) -> None:
+def _add_inline_runs(paragraph: Paragraph, text: str, base_bold: bool = False) -> None:
     """Parse inline **bold** and *italic* markers and add styled runs.
 
     Handles: ***bold+italic***, **bold**, *italic*, and plain text segments.
@@ -356,7 +359,7 @@ def _add_inline_runs(paragraph, text: str, base_bold: bool = False) -> None:
                 run.bold = True
 
 
-def _extract_list_numPr(doc: "docx.document.Document"):
+def _extract_list_numPr(doc: "docx.document.Document") -> CT_NumPr | None:
     """Return a deep copy of the numPr element from the first List Paragraph, or None."""
     for p in doc.paragraphs:
         if p.style and p.style.name == "List Paragraph":
@@ -381,7 +384,7 @@ def _clear_body(doc: "docx.document.Document") -> None:
             body.remove(child)
 
 
-def _apply_numPr(paragraph, numPr_template) -> None:
+def _apply_numPr(paragraph: Paragraph, numPr_template: CT_NumPr) -> None:
     """Attach list numbering properties to a paragraph element."""
     pPr = paragraph._element.find(qn("w:pPr"))
     if pPr is None:
@@ -401,7 +404,7 @@ def _apply_numPr(paragraph, numPr_template) -> None:
 # the corresponding markdown elements.
 
 
-def _capture_proto(p) -> dict:
+def _capture_proto(p: Paragraph) -> dict:
     """Capture a paragraph's formatting into a serializable prototype.
 
     Captures alignment, vertical spacing, tab stops, and the primary run's
@@ -480,7 +483,7 @@ def _capture_template_styles(doc: "docx.document.Document") -> dict:
     return styles
 
 
-def _apply_para_proto(p, proto: dict | None) -> None:
+def _apply_para_proto(p: Paragraph, proto: dict | None) -> None:
     """Apply paragraph-level formatting from a proto. Skips runs."""
     if not proto:
         return
@@ -494,7 +497,7 @@ def _apply_para_proto(p, proto: dict | None) -> None:
         p.paragraph_format.tab_stops.add_tab_stop(Pt(pos_pt), alignment=align)
 
 
-def _apply_run_proto(run, proto: dict | None) -> None:
+def _apply_run_proto(run: Run, proto: dict | None) -> None:
     """Apply run-level formatting (bold, font size) from a proto."""
     if not proto:
         return
@@ -504,7 +507,7 @@ def _apply_run_proto(run, proto: dict | None) -> None:
         run.font.size = Pt(proto["run_size_pt"])
 
 
-def _add_inline_runs_with_proto(paragraph, text: str, proto: dict | None) -> None:
+def _add_inline_runs_with_proto(paragraph: Paragraph, text: str, proto: dict | None) -> None:
     """Like _add_inline_runs but also applies the proto's run-level format
     to every emitted run as a baseline (inline ** / * still wins over base bold).
     Tab characters in `text` are preserved; the paragraph's tab stops handle them.

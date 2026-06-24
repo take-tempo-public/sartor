@@ -13,6 +13,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Kit-adoption Phase 2 #1 — enable ruff `ANN` (`chore/kit-phase2-ruff-ann`, 2026-06-24)
+
+First implementation branch of the agent-coding-practices kit-adoption arc **Phase 2** (the
+strictness ratchet — kit-adoption-design.md §4; Decision KIT-6 "ratchet-then-block" + KIT-7
+exempt set). Enables the `flake8-annotations` (`ANN`) lint family whole across the production
+tree, fixes every real hit by hand, and carves the Decision-7 exempt set. Tooling-config +
+type-annotation only — **no product behavior, dependency, prompt, route, or version change**;
+`PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched (no prompt string was edited; annotations
+are runtime-inert, so generation output is byte-identical).
+
+**Changed**
+- `pyproject.toml` `[tool.ruff.lint]`: `select += ["ANN"]` (whole-family, forward-protective —
+  ANN is unambiguous, so it hard-blocks day one via `ruff-changed.sh`, not warn→block
+  ratcheted). `per-file-ignores += "ANN"` for the Decision-7 strictness-exempt set:
+  `tests/**`, `evals/*`, and a net-new `scripts/**` entry (`db/migrations/versions` is already
+  fully `extend-exclude`d). Production carries **no** ANN override — the §6 exit-criterion shape
+  for this rule family.
+- Hand-annotated **60 production violations across 18 files** (ruff's ANN autofix is
+  `--unsafe-fixes`-only — none used, per Phase-1 discipline): SSE `stream`/`worker` inner-fns
+  → `Iterator[str]` / `None` (`blueprints/diagnostics|analysis|generation|assistant.py`); route
+  handlers → `ResponseReturnValue`; serializers/loaders → the `db.models` row types + `Session`
+  (via `TYPE_CHECKING` blocks); docx plumbing → `Paragraph` / `Run` / `CT_NumPr`
+  (`generator.py`, `parser.py`).
+- **`ANN401`** (11 any-type hits) handled case-by-case (no blanket family ignore): typed the
+  typeable (`session: Session`, `client: Anthropic`, `exp: Experience`, `raw: object`,
+  `val: str | int | float | None`, `parent: Document | _Cell`); one **targeted `# noqa: ANN401`**
+  on `db/session.py`'s SQLAlchemy `connect`-event listener (DBAPI / pool objects are dynamically
+  typed at that boundary by design).
+- Minor typing-driven, behavior-preserving body touches surfaced by the now-checked bodies:
+  `_load_application_owned` / `_tag_link_target` return a bare `tuple` (their slots are
+  correlated/polymorphic — precise typing would force an out-of-scope None-narrowing pass at the
+  call sites); `_tag_link_target` uses a distinct `skill` local so `subject` is a clean
+  `Bullet | ExperienceTitle` union; `blueprints/assistant.ask()` keeps `safe_user` a plain `str`
+  via a `resolved` temp (a latent `str | None` surfaced once `ask()` gained a return type).
+
+**Verification** — `ruff check .` clean tree-wide · `ruff format --check` (217 files) ok ·
+`mypy .` (227 files) ok · `pytest` **1391 passed** (the tracked Compose-wizard load-race class
+passed clean this run). No eval run (no prompt change). Phase 2 sub-items `D` / `interrogate` /
+mypy `--strict` remain (each its own later branch).
+
 ### Kit-adoption Phase 1 — SIM/RUF ruff triage (`chore/kit-phase1-sim-ruf-triage`, 2026-06-24)
 
 Final implementation branch of the agent-coding-practices kit-adoption arc Phase 1

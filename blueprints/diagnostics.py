@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Iterator
 from pathlib import Path
 
 from flask import Blueprint, Response, current_app, jsonify, request
@@ -417,7 +418,7 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
     bootstrap_path = fixture_dir / "bootstrap.json"
     ann_path = fixture_dir / "annotations.json"
 
-    def stream():
+    def stream() -> Iterator[str]:
         import queue as _queue
         import threading
 
@@ -425,7 +426,7 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
         sentinel = object()
         result: dict = {}
 
-        def worker():
+        def worker() -> None:
             try:
                 result["gs"] = run_grounding_signals(reps_md, [corpus_source])
             except ImportError as exc:
@@ -644,7 +645,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
 
     client = _get_client()
 
-    def stream():
+    def stream() -> Iterator[str]:
         import queue as _queue
         import threading
 
@@ -654,7 +655,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
         sentinel = object()
         result: dict = {}
 
-        def worker():
+        def worker() -> None:
             try:
                 init_db()
                 session = get_session()
@@ -864,7 +865,7 @@ def eval_run_stream() -> ResponseReturnValue:
 
     from evals.runner import run_suite
 
-    def stream():
+    def stream() -> Iterator[str]:
         import queue as _queue
         import threading
 
@@ -872,7 +873,7 @@ def eval_run_stream() -> ResponseReturnValue:
         sentinel = object()
         result: dict = {}
 
-        def worker():
+        def worker() -> None:
             try:
                 result["res"] = run_suite(
                     suite=suite,
@@ -1026,10 +1027,10 @@ def tune_run_stream() -> ResponseReturnValue:
         except (OSError, json.JSONDecodeError, ValueError) as exc:
             return jsonify({"error": "Could not load seed.json", "detail": str(exc)}), 400
 
-    from evals.runner import run_suite
+    from evals.runner import EvalRunResult, run_suite
     from evals.tune import build_delta_table, format_delta_table, load_scores
 
-    def stream():
+    def stream() -> Iterator[str]:
         import queue as _queue
         import threading
         from dataclasses import asdict
@@ -1038,7 +1039,7 @@ def tune_run_stream() -> ResponseReturnValue:
         sentinel = object()
         result: dict = {}
 
-        def _run(phase: str, overrides_map: dict[str, str] | None):
+        def _run(phase: str, overrides_map: dict[str, str] | None) -> EvalRunResult:
             return run_suite(
                 suite=suite,
                 subset=subset,
@@ -1051,7 +1052,7 @@ def tune_run_stream() -> ResponseReturnValue:
                 ),
             )
 
-        def worker():
+        def worker() -> None:
             try:
                 result["baseline"] = _run("baseline", None)
                 result["candidate"] = _run("candidate", overrides)

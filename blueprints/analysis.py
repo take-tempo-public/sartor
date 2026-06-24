@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 
@@ -184,7 +185,7 @@ def _run_analysis_corpus_backed_streaming(
 
     client = _get_client()
 
-    def stream():
+    def stream() -> Iterator[str]:
         try:
             analysis: dict | None = None
             for event_kind, payload in analyze_streaming(

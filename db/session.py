@@ -35,8 +35,12 @@ def _db_url(db_path: Path | str | None = None) -> str:
     return f"sqlite:///{Path(db_path).as_posix()}"
 
 
+# _set_sqlite_pragmas is a SQLAlchemy connect-event listener: its dbapi_connection /
+# _connection_record args are raw DBAPI / pool objects, dynamically typed (Any) at the
+# pool boundary by design — hence the targeted ANN401 suppression (Decision-7 spirit:
+# type what's typeable, suppress only the genuinely dynamic boundary).
 @event.listens_for(Engine, "connect")
-def _set_sqlite_pragmas(dbapi_connection: Any, _connection_record: Any) -> None:
+def _set_sqlite_pragmas(dbapi_connection: Any, _connection_record: Any) -> None:  # noqa: ANN401
     """Turn on FK enforcement and WAL on every new connection.
 
     SQLite defaults: foreign_keys=OFF, journal_mode=DELETE. Both are the wrong

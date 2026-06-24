@@ -33,6 +33,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 from typing import cast
@@ -291,7 +292,7 @@ def _apply_chosen_summary(context_set: dict) -> None:
     rec_block = context_set.get("llm_summary_recommendation") or {}
     rec = rec_block.get("recommendation") if isinstance(rec_block, dict) else None
 
-    def _coerce(val) -> int | None:
+    def _coerce(val: str | int | float | None) -> int | None:
         try:
             return int(val) if val is not None else None
         except (TypeError, ValueError):
@@ -904,7 +905,7 @@ def run_generation_stream() -> ResponseReturnValue:
     client = _get_client()
     run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
 
-    def stream():
+    def stream() -> Iterator[str]:
         try:
             result: dict | None = None
             for event_kind, payload in generate_streaming(

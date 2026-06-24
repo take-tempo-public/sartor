@@ -177,6 +177,27 @@ overrides keep green, tightened module-by-module toward the Decision-7 end-state
 big item; `analyzer.py` (3,648 lines) and `applications.py` (1,847) are each likely their own
 tightening branch. **Tracked by a per-module coverage surface + the §6 exit criterion.**
 
+> **Phase 2 #1 — `ANN` enabled (`chore/kit-phase2-ruff-ann`, 2026-06-24).** `select += ["ANN"]`;
+> the Decision-7 exempt set carved in `per-file-ignores` (`tests/**`, `evals/*`, net-new
+> `scripts/**`; `db/migrations/versions` already extend-excluded). The measured production
+> surface was small + even — **60 hits across 18 files**, no monster module (`analyzer.py` 2,
+> `applications.py` 5, so neither needed deferral) — so `ANN` landed **complete across the whole
+> production tree in one branch**. All 60 **hand-fixed** (0 safe autofixes — ANN's autofix is
+> `--unsafe-fixes`-only, unused per Phase-1 discipline): SSE `stream`/`worker` →
+> `Iterator[str]`/`None`, routes → `ResponseReturnValue`, serializers/loaders → the `db.models`
+> row types + `Session` (via `TYPE_CHECKING` blocks), docx plumbing → `Paragraph`/`Run`/`CT_NumPr`.
+> **`ANN401`** (11) typed case-by-case (`Session`/`Anthropic`/`Experience`/`object`/concrete
+> unions) + one **targeted `# noqa: ANN401`** on the SQLAlchemy `connect`-event listener (DBAPI /
+> pool objects are dynamically typed at that boundary). A few typing-driven, behavior-preserving
+> body touches followed (bare-`tuple` returns where slots are correlated/polymorphic; one
+> `subject` union split; one `safe_user` `resolved` temp) — all surfaced because annotating a
+> body makes mypy check it. **Per-module tracking (this family): `ANN` now blocks everywhere
+> except the Decision-7 exempt set — full production coverage, the §6 exit-criterion shape for
+> `ANN`.** Hard-blocks day one via `ruff-changed.sh` (Decision-6 — unambiguous, not ratcheted).
+> No prompt edited → no `PROMPT_VERSION` bump, no eval run. Gate green: ruff check . ✓ · ruff
+> format --check (217) ✓ · mypy (227) ✓ · pytest 1391 passed. **Remaining Phase 2: `D` + google
+> pydocstyle, `interrogate` coverage gate, mypy `--strict` — each its own later branch.**
+
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by
 blueprint, each reconciled with `_safe_username`/`_within` + the PX-29 containment gate **[M+J]**;

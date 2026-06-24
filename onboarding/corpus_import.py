@@ -28,7 +28,7 @@ import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.orm import Session
 
@@ -43,6 +43,9 @@ from db.models import (
     Skill,
 )
 from db.session import get_session, init_db
+
+if TYPE_CHECKING:
+    from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
 
@@ -452,7 +455,7 @@ def ingest_one_resume(
     candidate_id: int,
     session: Session,
     *,
-    client: Any,
+    client: Anthropic,
     username: str,
     is_primary: bool = False,
     dry_run: bool = False,
