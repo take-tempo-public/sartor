@@ -16,6 +16,7 @@ not fetched from a CDN.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from collections import Counter, defaultdict
@@ -362,10 +363,8 @@ def _pareto_data(eval_records: list[dict]) -> dict:
     for r in eval_records:
         run_id = r.get("run_id")
         if run_id and "cost_usd" in r and run_id not in cost_by_run:
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 cost_by_run[run_id] = float(r["cost_usd"])
-            except (TypeError, ValueError):
-                pass
 
     points = []
     for r in composite_records:
@@ -934,7 +933,7 @@ def _tune_prompt_choices() -> list[dict]:
     keeps this read-only blueprint's import surface light; analyzer is already loaded by
     app.py before any request reaches here.
     """
-    import analyzer  # noqa: PLC0415
+    import analyzer
 
     return [{"name": name, "text": text} for name, text in analyzer._BASE_SYSTEM_PROMPTS.items()]
 

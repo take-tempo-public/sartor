@@ -136,7 +136,7 @@ def _make_embedder() -> Embedder | None:
         return None
     try:
         model = StaticModel.from_pretrained(str(_VECTOR_MODEL_DIR))
-    except Exception as exc:  # noqa: BLE001 - any load failure → tier inactive, never a crash
+    except Exception as exc:
         logger.warning(
             "could not load vector model from %s; S3 tier disabled: %s", _VECTOR_MODEL_DIR, exc
         )
@@ -248,7 +248,7 @@ def ask():
             yield _sse(
                 "error", {"error": f"Assistant connection failed: {exc}", "http_status": 502}
             )
-        except Exception as exc:  # noqa: BLE001 - terminal SSE error frame, never a 500 page
+        except Exception as exc:
             logger.exception("avatar stream failed")
             yield _sse("error", {"error": str(exc), "http_status": 500})
 

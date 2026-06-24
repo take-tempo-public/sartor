@@ -26,6 +26,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 from pathlib import Path
@@ -308,10 +309,9 @@ def main() -> int:
     # the run AFTER the seed had already been written (window-8.5-findings EV-3).
     # Force UTF-8 on our streams before argparse or any print runs.
     for _stream in (sys.stdout, sys.stderr):
-        try:
+        # suppress on a non-reconfigurable stream (e.g. piped)
+        with contextlib.suppress(AttributeError, ValueError):
             _stream.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
-        except (AttributeError, ValueError):  # non-reconfigurable stream (e.g. piped)
-            pass
 
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(

@@ -11,6 +11,7 @@ Two test surfaces:
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -276,7 +277,7 @@ class TestRecommendSummaryRoute:
         # and the transient summary_items + jd_text were stripped
         import json
 
-        ctx = json.loads(open(ctx_path, encoding="utf-8").read())
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         assert "llm_summary_recommendation" in ctx
         assert ctx["llm_summary_recommendation"]["recommendation"]["rationale"].startswith(
             "Strong AI"

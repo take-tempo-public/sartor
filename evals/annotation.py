@@ -870,17 +870,17 @@ def main(argv: list[str] | None = None) -> int:
 
 
 __all__ = [
+    "ALLOWED_FAILED_RULES",
     "ANNOTATION_SCHEMA_VERSION",
+    "DEFAULT_MIN_SCORES",
     "SUPPORTED_ANNOTATION_SCHEMA_VERSIONS",
     "VERDICTS",
-    "ALLOWED_FAILED_RULES",
-    "DEFAULT_MIN_SCORES",
-    "validate_annotations",
-    "load_annotations",
     "build_annotation_template",
-    "collate_expected",
     "build_improvement_brief",
+    "collate_expected",
+    "load_annotations",
     "pick_anchor_jd",
+    "validate_annotations",
 ]
 
 

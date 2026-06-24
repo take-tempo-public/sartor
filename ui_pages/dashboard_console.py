@@ -7,6 +7,8 @@ shared right-hand drawer with that tile's detail. Selectors live in
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from playwright.sync_api import Locator
 
 from ui_pages.base import DEFAULT_TIMEOUT_MS, BasePage
@@ -34,7 +36,7 @@ class DashboardConsolePage(BasePage):
     # The console carries its own PORT of the help primitive; each tab's
     # (i)-circle and its #helpModal reuse the wizard's ids/classes, so the shared
     # `Help` selectors apply. Maps the tab name to its help block id.
-    _HELP_ID = {
+    _HELP_ID: ClassVar[dict[str, str]] = {
         "pipeline": "dashPipeline",
         "quality": "dashQuality",
         "groundedness": "dashGroundedness",

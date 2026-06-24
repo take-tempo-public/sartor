@@ -261,33 +261,33 @@ def decide_proposal_route(proposal_id: int) -> ResponseReturnValue:
         # invariant visible to the type checker.
         if decision == "accept_original":
             if subject_kind == "bullet":
-                assert bullet is not None  # noqa: S101 — invariant from branch above
+                assert bullet is not None
                 bullet.is_pending_review = 0
             else:  # experience_title
-                assert title is not None  # noqa: S101
+                assert title is not None
                 title.is_pending_review = 0
                 title.truthful_enough_to_use = 1
         elif decision == "accept_edit":
-            assert user_edited_text is not None  # noqa: S101 — validated above
+            assert user_edited_text is not None
             edit = user_edited_text.strip()
             if subject_kind == "bullet":
-                assert bullet is not None  # noqa: S101
+                assert bullet is not None
                 bullet.text = edit
                 bullet.is_pending_review = 0
                 proposal.user_edited_text = edit
             else:
-                assert title is not None  # noqa: S101
+                assert title is not None
                 title.title = edit
                 title.is_pending_review = 0
                 title.truthful_enough_to_use = 1
                 proposal.user_edited_text = edit
         else:  # reject
             if subject_kind == "bullet":
-                assert bullet is not None  # noqa: S101
+                assert bullet is not None
                 bullet.is_active = 0
                 bullet.is_pending_review = 0
             else:
-                assert title is not None  # noqa: S101
+                assert title is not None
                 title.is_pending_review = 0
                 # Non-eligible already; nothing to set on the title row
 

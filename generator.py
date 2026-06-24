@@ -140,7 +140,7 @@ def generate_resume(
     try:
         sidecar = _Path(str(path)).with_suffix(".jsonresume.json")
         sidecar.write_text(_json.dumps(json_doc, indent=2, ensure_ascii=False), encoding="utf-8")
-    except Exception as exc:  # noqa: BLE001 — non-blocking sidecar
+    except Exception as exc:
         import logging
 
         logging.getLogger(__name__).warning(

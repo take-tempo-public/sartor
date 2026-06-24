@@ -26,7 +26,7 @@ import sys
 import time
 import uuid
 from collections.abc import Callable
-from contextlib import ExitStack
+from contextlib import ExitStack, suppress
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -216,7 +216,7 @@ def _build_context_from_seed(
     ContextSet is used). The deferred import keeps the default file-based path's
     import surface unchanged.
     """
-    from db.build_context import build_context_set_from_db  # noqa: PLC0415
+    from db.build_context import build_context_set_from_db
 
     context, _application, _run = build_context_set_from_db(
         session,
@@ -344,7 +344,7 @@ def _score_distinctiveness(
         if result.get("score") is not None:
             result["score"] = float(result["score"])
         return result
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("_score_distinctiveness failed: %s", exc)
         return {"score": None, "summary": "judge_error"}
 
@@ -675,8 +675,8 @@ def _run_iteration_phase(
     """
     # Local imports to avoid import-time cost when the iteration phase is
     # never exercised (most fixtures don't have scenarios).
-    from analyzer import LLMResponseError  # noqa: PLC0415
-    from hardening import compute_iteration_signals, summarize_recent_edits  # noqa: PLC0415
+    from analyzer import LLMResponseError
+    from hardening import compute_iteration_signals, summarize_recent_edits
 
     scenarios = fixture["expected"].get("iteration_scenarios") or []
     if not scenarios:
@@ -726,9 +726,9 @@ def _run_iteration_phase(
     # treats them as established truths it must build on, not re-ask.
     # cast() avoids a structural-vs-nominal mismatch when the analyzer's
     # questions arrive as plain dicts but the TypedDict expects ClarificationQuestion.
-    from typing import cast as _cast  # noqa: PLC0415
+    from typing import cast as _cast
 
-    from hardening import ClarificationQuestion  # noqa: PLC0415
+    from hardening import ClarificationQuestion
 
     if clarify_questions:
         iter_context["clarification_questions"] = _cast(
@@ -776,7 +776,7 @@ def _run_iteration_phase(
     except LLMResponseError as exc:
         iter_status = "pipeline_error"
         iter_error = exc.validation_error
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         iter_status = "pipeline_error"
         iter_error = str(exc)
 
@@ -814,7 +814,7 @@ def _run_iteration_phase(
     try:
         grade = _grade(client, rubric_path, payload)
         grade.setdefault("status", "ok")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         grade = {"score": None, "reasons": [str(exc)], "status": "judge_error"}
 
     return {
@@ -1029,7 +1029,7 @@ def run_suite(
                     )
                     clarify_questions = clarify_result.get("questions", [])
                     clarify_reasoning = clarify_result.get("reasoning", "")
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     # Non-fatal: degrade to score=None for the clarification
                     # rubric while still running generate + the other rubrics.
                     clarify_error = str(exc)
@@ -1148,7 +1148,7 @@ def run_suite(
 
             grounding_signals_data: dict | None = None
             if grounding_signals:
-                from evals.grounding_signals import run_grounding_signals  # noqa: PLC0415
+                from evals.grounding_signals import run_grounding_signals
 
                 grounding_signals_data = run_grounding_signals(
                     result.get("resume_content", ""),
@@ -1500,10 +1500,9 @@ def main(argv: list[str] | None = None) -> int:
     # any non-cp1252 progress char don't raise UnicodeEncodeError under a cp1252
     # console. Mirrors scripts/export_corpus_seed.py + capture_screenshots.py.
     for _stream in (sys.stdout, sys.stderr):
-        try:
+        # suppress on a non-reconfigurable stream (e.g. piped)
+        with suppress(AttributeError, ValueError):
             _stream.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
-        except (AttributeError, ValueError):  # non-reconfigurable stream (e.g. piped)
-            pass
 
     logging.basicConfig(
         level=logging.INFO,

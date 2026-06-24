@@ -255,7 +255,7 @@ class VectorSource:
             return []
         try:
             qvec = np.asarray(self._embedder([query]), dtype=np.float32)
-        except Exception as exc:  # noqa: BLE001 - a degraded tier returns [], never breaks the turn
+        except Exception as exc:
             logger.warning("vector query embedding failed: %s", exc)
             return []
         if qvec.ndim != 2 or qvec.shape[0] != 1 or qvec.shape[1] != index.dim:

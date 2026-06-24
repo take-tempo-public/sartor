@@ -7,6 +7,8 @@ when no eval results exist (graceful degradation).
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import pytest
 
 from dashboard.routes import (
@@ -713,7 +715,7 @@ class TestRunTrace:
 
 
 class TestBaselineHealth:
-    _BASELINE = {
+    _BASELINE: ClassVar[dict] = {
         "baseline_id": "v1.0.2_test",
         "prompt_version": "2026-05-24.4",
         "fixtures": {

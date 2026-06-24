@@ -405,7 +405,7 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
                 run_id="grounding-backfill",
             )
             corpus_source = (ctx["resume"]["text"] or "").strip()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("Grounding backfill: could not read corpus from seed for %s: %s", slug, exc)
         return jsonify({"error": "Could not read corpus from seed.json", "detail": str(exc)}), 500
     if not corpus_source:
@@ -430,7 +430,7 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
                 result["gs"] = run_grounding_signals(reps_md, [corpus_source])
             except ImportError as exc:
                 result["import_error"] = exc
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 result["error"] = exc
             finally:
                 events.put(sentinel)
@@ -676,12 +676,12 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
                     # failure must never discard the (paid) pipeline output.
                     try:
                         result["seed"] = export_seed(session, candidate_username=safe_user)
-                    except Exception as exc:  # noqa: BLE001
+                    except Exception as exc:
                         logger.warning("Could not export seed.json for %s: %s", safe_user, exc)
                         result["seed"] = None
                 finally:
                     session.close()
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 result["error"] = exc
             finally:
                 events.put(sentinel)
@@ -882,7 +882,7 @@ def eval_run_stream() -> ResponseReturnValue:
                     grounding_signals=grounding_signals,
                     progress=lambda ev, payload: events.put(("progress", ev, payload)),
                 )
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 result["error"] = exc
             finally:
                 events.put(sentinel)
@@ -1055,7 +1055,7 @@ def tune_run_stream() -> ResponseReturnValue:
             try:
                 result["baseline"] = _run("baseline", None)
                 result["candidate"] = _run("candidate", overrides)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 result["error"] = exc
             finally:
                 events.put(sentinel)

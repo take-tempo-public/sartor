@@ -1026,7 +1026,7 @@ class _StreamDone:
     that don't care about streaming chunks can drain via `_call_llm` below.
     """
 
-    __slots__ = ("text", "stop_reason")
+    __slots__ = ("stop_reason", "text")
 
     def __init__(self, text: str, stop_reason: str | None):
         self.text = text

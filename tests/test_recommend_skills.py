@@ -12,6 +12,7 @@ skills for a JD — mirrors recommend_summaries (Haiku, id-only, short-circuit o
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -207,7 +208,7 @@ class TestRoute:
 
         import json
 
-        ctx = json.loads(open(ctx_path, encoding="utf-8").read())
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         assert "llm_skill_recommendations" in ctx
         assert "skill_items" not in ctx  # transient stripped
         assert "jd_text" not in ctx

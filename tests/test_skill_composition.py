@@ -12,6 +12,7 @@ apply helper (Sprint 6.6).
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -122,7 +123,7 @@ class TestGetComposition:
         _app, output_dir = comp_app
         _cid, aid, ids, ctx_path = _seed(output_dir)
         # Write a recommendation + exclusion referencing the real seeded ids.
-        ctx = json.loads(open(ctx_path, encoding="utf-8").read())
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         ctx["llm_skill_recommendations"] = {
             "recommendation": {"skill_ids": [ids["Kubernetes"], ids["Python"]]},
         }
@@ -156,7 +157,7 @@ class TestPostComposition:
             },
         )
         assert r.status_code == 200, r.get_data(as_text=True)
-        ctx = json.loads(open(ctx_path, encoding="utf-8").read())
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         ov = ctx["composition_overrides"]
         assert ov["pinned_skill_ids"] == [ids["Go"]]
         assert ov["excluded_skill_ids"] == [ids["Python"]]
@@ -168,7 +169,7 @@ class TestPostComposition:
         client = _app.app.test_client()
         r = client.post(f"/api/applications/{aid}/composition", json={"context_path": ctx_path})
         assert r.status_code == 200
-        ov = json.loads(open(ctx_path, encoding="utf-8").read())["composition_overrides"]
+        ov = json.loads(Path(ctx_path).read_text(encoding="utf-8"))["composition_overrides"]
         # Byte-identical default path: no skill keys persisted.
         assert "pinned_skill_ids" not in ov
         assert "excluded_skill_ids" not in ov

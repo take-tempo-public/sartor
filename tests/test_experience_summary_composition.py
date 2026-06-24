@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -109,7 +110,7 @@ class TestGetComposition:
         _cid, aid, eid, vids, ctx_path = _seed(output_dir)
         # Rewrite the context with a recommendation + a per-role pick (eid/vids
         # aren't known until after _seed returns).
-        ctx = json.loads(open(ctx_path, encoding="utf-8").read())
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         ctx["llm_experience_summary_recommendations"] = {
             "recommendations": [
                 {
@@ -124,7 +125,7 @@ class TestGetComposition:
             "use_experience_summaries": True,
             "chosen_experience_summary_ids": {str(eid): vids[0]},
         }
-        open(ctx_path, "w", encoding="utf-8").write(json.dumps(ctx))
+        Path(ctx_path).write_text(json.dumps(ctx), encoding="utf-8")
         client = _app.app.test_client()
         r = client.get(f"/api/applications/{aid}/composition?context_path={ctx_path}")
         assert r.status_code == 200, r.get_data(as_text=True)
@@ -169,7 +170,7 @@ class TestPostComposition:
             },
         )
         assert r.status_code == 200, r.get_data(as_text=True)
-        ctx = json.loads(open(ctx_path, encoding="utf-8").read())
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         ov = ctx["composition_overrides"]
         assert ov["use_experience_summaries"] is True
         assert ov["chosen_experience_summary_ids"] == {str(eid): vids[0]}
@@ -190,7 +191,7 @@ class TestPostComposition:
             },
         )
         assert r.status_code == 200, r.get_data(as_text=True)
-        ctx = json.loads(open(ctx_path, encoding="utf-8").read())
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         assert ctx["composition_overrides"]["chosen_experience_summary_ids"] == {str(eid): 0}
 
     def test_foreign_experience_rejected(self, comp_app):

@@ -121,15 +121,30 @@ select = [
     "B",    # flake8-bugbear
     "UP",   # pyupgrade
     "S",    # flake8-bandit (security)
+    # Kit-adoption Phase 1 final item (KIT-6 / design §4): the SIM + RUF families
+    # land whole — "add the family to select, fix the real hits, ignore the noise"
+    # (Decision-6 ratchet-then-block). Whole-family select holds future code to the
+    # standard too; the documented noise is carved out in `ignore` below.
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific rules
 ]
 ignore = [
     "E501",  # line too long — many lines in prompts intentionally long
     "S101",  # use of assert (pytest needs this)
     "B008",  # function call in default arg (Flask convention)
+    # SIM/RUF triage noise (Decision-6 "known-noisy heuristic stays ignored"):
+    "RUF001",  # ambiguous-unicode in strings — em-dash/smart-quotes in prompt+UI copy, intentional
+    "RUF002",  # ambiguous-unicode in docstrings — same
+    "RUF003",  # ambiguous-unicode in comments — same
+    "SIM905",  # split-static-string — hardening.STOP_WORDS is a deliberately compact space-delimited
+               # constant; the fix explodes it into a ~110-element literal (strictly worse)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S105", "S106", "S108", "S607"]
+# RUF059 (unused unpacked variable) is an idiomatic tuple-unpack in tests
+# (`app, run = make_app()` ignoring one half) — a context false-positive, on par
+# with the existing S-family test carve-outs below. Production code stays covered.
+"tests/**" = ["S101", "S105", "S106", "S108", "S607", "RUF059"]
 "evals/*" = ["S101"]
 
 [tool.ruff.format]

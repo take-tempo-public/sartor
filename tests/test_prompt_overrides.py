@@ -107,9 +107,11 @@ def test_resolver_resets_after_context():
 
 
 def test_unknown_key_raises_value_error():
-    with pytest.raises(ValueError, match="Unknown prompt override key"):
-        with prompt_overrides({"NOT_A_REAL_PROMPT": "x"}):
-            pass
+    with (
+        pytest.raises(ValueError, match="Unknown prompt override key"),
+        prompt_overrides({"NOT_A_REAL_PROMPT": "x"}),
+    ):
+        pass
 
 
 def test_empty_and_none_overrides_are_noops():

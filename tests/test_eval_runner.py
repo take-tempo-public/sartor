@@ -91,9 +91,9 @@ class TestPassThreshold:
     def test_classification_at_boundary(self):
         from evals.runner import PASS_THRESHOLD
 
-        assert 4.0 >= PASS_THRESHOLD
-        assert 3.9 < PASS_THRESHOLD
-        assert 4.1 >= PASS_THRESHOLD
+        assert PASS_THRESHOLD <= 4.0
+        assert PASS_THRESHOLD > 3.9
+        assert PASS_THRESHOLD <= 4.1
 
 
 class TestGradeCoercion:
