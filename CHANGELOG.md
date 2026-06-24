@@ -13,6 +13,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Kit-adoption Phase 1 — Pydantic-aware mypy (`chore/kit-phase1-pydantic-mypy`, 2026-06-23)
+
+First implementation branch of the agent-coding-practices kit-adoption arc (kit-adoption-design.md §4
+Phase 1; owner-selected "lint+typing wins, defer format" subset). Tooling-config only — **no product
+code, dependency, prompt, route, or version change**; `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` untouched.
+
+**Changed**
+- `pyproject.toml` `[tool.mypy]`: enabled the `pydantic.mypy` plugin so mypy understands the analyzer
+  Pydantic response models' generated `__init__`/validator signatures. The plugin ships inside the
+  already-present `pydantic` dependency — **no new dependency**. mypy stays green ("no issues found in
+  227 source files").
+
+**Notes — two Phase-1 items evaluated and rejected for this codebase (recorded in
+`docs/dev/kit-adoption-design.md` §4):**
+- **ruff `ERA` (commented-out-code) NOT enabled** — all 8 `ERA001` hits are false positives on
+  legitimate documentation prose (JSON-shape examples, TypedDict shape docs, `# Section (name)`
+  dividers). This is the case Decision 6 (KIT-6) marks *warn-only forever*; enabling it blocking would
+  clutter docs and block future prose comments, with no advisory lane until the 8.7 pre-commit core.
+- **SQLAlchemy mypy plugin NOT enabled** — `db/models.py` uses native SQLAlchemy 2.0 typing
+  (`DeclarativeBase` + `Mapped[...]` + `mapped_column`), for which `sqlalchemy.ext.mypy.plugin` is
+  deprecated/unneeded.
+
+Deferred to their own Phase-1 branches: `ruff format` (161-file restyle) and `SIM`/`RUF` per-family triage.
+
 ### Agent-coding-practices kit-adoption — evaluation + planning record (`docs/kit-adoption-arc`, 2026-06-23)
 
 Docs-only. Persisted the settled evaluation of the lichen `agent-coding-practices-kit` handoff

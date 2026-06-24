@@ -134,6 +134,13 @@ ignore = [
 
 [tool.mypy]
 python_version = "3.10"
+# Kit-adoption Phase 1 (KIT-3/§4): the Pydantic mypy plugin teaches mypy the
+# analyzer response models' generated __init__/validator signatures. Ships inside
+# the existing `pydantic` dep — no new dependency. The legacy SQLAlchemy mypy
+# plugin is deliberately NOT enabled: db/models.py uses native 2.0 typing
+# (DeclarativeBase + Mapped[...] + mapped_column), for which that plugin is
+# deprecated/unneeded. See docs/dev/kit-adoption-design.md §4.
+plugins = ["pydantic.mypy"]
 strict_optional = true
 ignore_missing_imports = true
 follow_imports = "silent"
