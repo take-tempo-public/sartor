@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import anthropic
 from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, model_validator
@@ -426,7 +426,7 @@ LOG_DIR = Path(__file__).parent / "logs"
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
 
 
-def _emit_call_log(record: dict) -> None:
+def _emit_call_log(record: dict[str, Any]) -> None:
     """Append one JSON line to logs/llm_calls.jsonl. Best-effort — never raise."""
     try:
         LOG_DIR.mkdir(exist_ok=True)
@@ -746,7 +746,10 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
                     pinned_title_ids.add(int(v))
                 except (TypeError, ValueError):
                     continue
-        recommendations = context_set.get("llm_recommendations") or {}
+        # Typed `object` (not the TypedDict's `dict`) so the list branch below
+        # stays reachable: persisted JSON keys llm_recommendations by experience-id
+        # string (a dict) OR ships it as a list, and both shapes are dispatched.
+        recommendations: object = context_set.get("llm_recommendations") or {}
         # `recommendations` is keyed by experience-id string when persisted
         # from JSON; coerce both shapes (dict or list) into per-exp sets.
         rec_by_exp: dict[int, set[int]] = {}
@@ -1111,7 +1114,7 @@ def _call_llm_streaming(
     helper's caching + telemetry machinery. Defaults to SONNET_MODEL.
     """
     effective_model = model or SONNET_MODEL
-    user_content: list[dict] = []
+    user_content: list[dict[str, Any]] = []
     if cached_user_prefix:
         user_content.append(
             {
@@ -1344,8 +1347,8 @@ def _parse_or_retry(
     max_attempts: int = 2,
     system_prompt: str = "",
     model: str | None = None,
-    validation_context: dict | None = None,
-) -> dict:
+    validation_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Parse an LLM JSON response, retrying once with the validation error appended on parse failure or missing required keys.
 
     The cached_user_prefix is byte-identical across attempts so the retry
@@ -1380,7 +1383,7 @@ def _parse_or_retry(
             # widening tolerance for the one quirky case we observe.
             data = json.loads(_strip_fences(raw), strict=False)
             response_model.model_validate(data, context=validation_context)
-            return data
+            return cast("dict[str, Any]", data)
         except (json.JSONDecodeError, ValidationError) as e:
             if attempt + 1 >= max_attempts:
                 logger.error(
@@ -1420,7 +1423,7 @@ def analyze(
     context_set: ContextSet,
     username: str = "",
     run_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """Call 1: Analysis & Strategy — two-pass split (r1/analyze-split-retry).
 
     Pass 1 (Haiku 4.5, EXTRACTION_SYSTEM_PROMPT): extracts the JD keyword/
@@ -1527,7 +1530,7 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 </instructions>"""
 
 
-def _analyze_synthesis_prompt(context_set: ContextSet, extraction: dict) -> str:
+def _analyze_synthesis_prompt(context_set: ContextSet, extraction: dict[str, Any]) -> str:
     """Build the Pass 2 (synthesis) user prompt — Sonnet target.
 
     Receives Pass 1's extraction output as <extracted_signal> so the strategist
@@ -1607,7 +1610,7 @@ def analyze_streaming(
     prefix = _stable_user_prefix(context_set)
 
     yield ("phase", {"phase": "extraction"})
-    extraction: dict | None = None
+    extraction: dict[str, Any] | None = None
     for event_name, payload in _parse_or_retry_streaming(
         client,
         _analyze_extraction_prompt(context_set),
@@ -1630,7 +1633,7 @@ def analyze_streaming(
         raise LLMResponseError("", "extraction phase ended without a parsed result")
 
     yield ("phase", {"phase": "synthesis"})
-    synthesis: dict | None = None
+    synthesis: dict[str, Any] | None = None
     # Synthesis under the default SYSTEM_PROMPT (no override) so its cached prefix
     # matches generate()'s and reclaims the analyze→generate cache (see analyze()).
     for event_name, payload in _parse_or_retry_streaming(
@@ -1805,10 +1808,10 @@ def avatar_answer_streaming(
 def clarify(
     client: anthropic.Anthropic,
     context_set: ContextSet,
-    analysis: dict,
+    analysis: dict[str, Any],
     username: str = "",
     run_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """Optional interview step between analyze() and generate().
 
     Generates 3-5 targeted questions based on the analyzer's output:
@@ -1920,15 +1923,15 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
 def clarify_iteration(
     client: anthropic.Anthropic,
     context_set: ContextSet,
-    analysis: dict,
+    analysis: dict[str, Any],
     current_resume_text: str,
     current_cover_letter_text: str,
     recent_edits_summary: str,
-    deterministic_signals: dict,
-    prior_clarifications: list[dict],
+    deterministic_signals: dict[str, Any],
+    prior_clarifications: list[dict[str, Any]],
     username: str = "",
     run_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """Iteration-aware variant of clarify().
 
     Generates 3-5 questions targeting weaknesses in the CURRENT iteration's
@@ -1968,7 +1971,10 @@ def clarify_iteration(
     # those gaps still inform what the JD wants — items missing from the
     # current draft remain valid probes.
     comparison = analysis.get("comparison", {}) or {}
-    overlap = (context_set.get("deterministic_analysis", {}) or {}).get("keyword_overlap", {}) or {}
+    # The defensive `or {}` chain is dead under the ContextSet TypedDict (which
+    # types this access as always-truthy), but persisted context JSON can be
+    # partial or null at runtime, so the fallback is deliberately retained.
+    overlap = (context_set.get("deterministic_analysis", {}) or {}).get("keyword_overlap", {}) or {}  # type: ignore[unreachable]
 
     # Cover letter is included as compact context, not the focus — interview
     # questions almost always target the resume because that's where source
@@ -2139,7 +2145,7 @@ WORKED EXAMPLES — the opener and the close are where this voice most often sli
 
 def _build_generate_prompt(
     context_set: ContextSet,
-    analysis: dict,
+    analysis: dict[str, Any],
     refinement_notes: str = "",
     with_cover_letter: bool = True,
 ) -> tuple[str, type[BaseModel]]:
@@ -2432,12 +2438,12 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 def generate(
     client: anthropic.Anthropic,
     context_set: ContextSet,
-    analysis: dict,
+    analysis: dict[str, Any],
     refinement_notes: str = "",
     username: str = "",
     run_id: str = "",
     with_cover_letter: bool = True,
-) -> dict:
+) -> dict[str, Any]:
     """Call 2: Generation.
 
     Produces tailored resume content and (optionally) a cover letter.
@@ -2494,7 +2500,7 @@ def generate(
 def generate_streaming(
     client: anthropic.Anthropic,
     context_set: ContextSet,
-    analysis: dict,
+    analysis: dict[str, Any],
     refinement_notes: str = "",
     username: str = "",
     run_id: str = "",
@@ -2551,12 +2557,12 @@ COVER_LETTER_ONLY_REQUIRED_KEYS = frozenset(
 def generate_cover_letter_against_resume(
     client: anthropic.Anthropic,
     context_set: ContextSet,
-    analysis: dict,
+    analysis: dict[str, Any],
     resume_content: str,
     refinement_notes: str = "",
     username: str = "",
     run_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """Phase β.5 — focused cover-letter call against a finalized résumé.
 
     Used by /api/generate-cover-letter after the user has run a résumé
@@ -2685,7 +2691,7 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
 SCOPE_CHECK_MODEL = "claude-haiku-4-5-20251001"
 
 
-def check_refinement_scope(client: anthropic.Anthropic, note: str) -> dict:
+def check_refinement_scope(client: anthropic.Anthropic, note: str) -> dict[str, Any]:
     """Classify whether a refinement note is within allowed document-editing scope.
 
     Uses Haiku — binary classification doesn't need Sonnet reasoning depth.
@@ -2724,7 +2730,7 @@ Respond with valid JSON only — no markdown, no explanation outside the JSON:
             raw = raw.split("\n", 1)[1]
         if raw.endswith("```"):
             raw = raw.rsplit("```", 1)[0]
-        return json.loads(raw.strip())
+        return cast("dict[str, Any]", json.loads(raw.strip()))
     except Exception as e:
         # Fail open — scope check failure must never block refinement
         logger.warning("scope check failed, failing open: %s", e)
@@ -2774,12 +2780,12 @@ def critique_proposal(
     original_text: str,
     user_edited_text: str | None,
     subject_kind: str,  # "bullet" or "experience_title"
-    experience_context: dict,
+    experience_context: dict[str, Any],
     clarifications: list[tuple[str, str]] | None = None,
     jd_excerpt: str = "",
     username: str = "",
     run_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """Critique a user edit to an LLM-proposed bullet or title.
 
     Uses Haiku — proposal critique is structured rubric application, not
@@ -2899,7 +2905,7 @@ def recommend_bullets(
     *,
     username: str = "",
     run_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """Pick the 3-7 most-relevant bullets per experience for this JD.
 
     Haiku call — structured selection, not reasoning-depth work. Fires
@@ -2965,7 +2971,7 @@ Industry keywords: {keywords or "(none)"}
     return result
 
 
-def _dedup_recommendations(result: dict, corpus: list[CorpusExperience]) -> None:
+def _dedup_recommendations(result: dict[str, Any], corpus: list[CorpusExperience]) -> None:
     """Mutate result['recommendations'][i]['bullet_ids'] in place to drop near-duplicate bullet ids per experience.
 
     Same-experience scope only — two experiences referring to the same
@@ -3047,7 +3053,7 @@ def recommend_summaries(
     *,
     username: str = "",
     run_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """β.6b — pick the best SummaryItem variant for this JD.
 
     Haiku call, mirroring recommend_bullets. Caller stages the active
@@ -3067,7 +3073,7 @@ def recommend_summaries(
     # context_set is a TypedDict; `summary_items` is a transient key the
     # route stashes, so it's typed as object. Coerce defensively.
     items_raw = context_set.get("summary_items") or []
-    items: list[dict] = list(items_raw) if isinstance(items_raw, list) else []
+    items: list[dict[str, Any]] = list(items_raw) if isinstance(items_raw, list) else []
     items = [it for it in items if (it.get("text") or "").strip()]  # ignore blank rows
 
     # Short-circuit — no LLM needed when the answer is trivial
@@ -3125,7 +3131,7 @@ Industry keywords: {keywords or "(none)"}
     return result
 
 
-def _summary_items_block(items: list[dict]) -> str:
+def _summary_items_block(items: list[dict[str, Any]]) -> str:
     """XML-format the candidate's SummaryItem variants for the prompt.
 
     Mirrors `_corpus_block`'s shape conventions: numeric ids only, no
@@ -3154,7 +3160,7 @@ def _summary_items_block(items: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _dedup_summary_recommendations(result: dict, items: list[dict]) -> None:
+def _dedup_summary_recommendations(result: dict[str, Any], items: list[dict[str, Any]]) -> None:
     """Mutate result['alternates'] in place to drop entries that are near-restatements of the recommendation (or of each other).
 
     Jaccard ≥ 0.75 on the variant text, same threshold as bullets.
@@ -3181,7 +3187,7 @@ def _dedup_summary_recommendations(result: dict, items: list[dict]) -> None:
         rec_id = None
     rec_text = text_by_id.get(rec_id, "") if rec_id is not None else ""
 
-    kept: list[dict] = []
+    kept: list[dict[str, Any]] = []
     kept_texts: list[str] = [rec_text] if rec_text else []
     for alt in result.get("alternates", []) or []:
         try:
@@ -3247,7 +3253,7 @@ def recommend_experience_summaries(
     *,
     username: str = "",
     run_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """B.4 — pick the best per-role intro variant for this JD, batched.
 
     One Haiku call covering every role that has a real choice (mirrors
@@ -3273,7 +3279,7 @@ def recommend_experience_summaries(
     raw = context_set.get("experience_summary_items") or []
     groups_in = list(raw) if isinstance(raw, list) else []
 
-    groups: list[dict] = []
+    groups: list[dict[str, Any]] = []
     for g in groups_in:
         if not isinstance(g, dict):
             continue
@@ -3291,8 +3297,8 @@ def recommend_experience_summaries(
 
     # Deterministic auto-pick for single-variant roles (no LLM); collect
     # multi-variant roles for the one batched call.
-    auto: list[dict] = []
-    multi: list[dict] = []
+    auto: list[dict[str, Any]] = []
+    multi: list[dict[str, Any]] = []
     for g in groups:
         if len(g["items"]) == 1:
             auto.append(
@@ -3344,7 +3350,7 @@ Industry keywords: {keywords or "(none)"}
     )
     # Normalize the LLM's recs: coerce ids, ensure alternates exists, drop
     # entries without a usable pick, then dedup alternates per experience.
-    llm_recs: list[dict] = []
+    llm_recs: list[dict[str, Any]] = []
     for rec in result.get("recommendations") or []:
         if not isinstance(rec, dict):
             continue
@@ -3364,7 +3370,7 @@ Industry keywords: {keywords or "(none)"}
     return {"recommendations": auto + result["recommendations"]}
 
 
-def _experience_summary_items_block(groups: list[dict]) -> str:
+def _experience_summary_items_block(groups: list[dict[str, Any]]) -> str:
     """XML-format the per-role ExperienceSummaryItem variants for the prompt.
 
     Groups variants under one <experience> each — mirrors _summary_items_block
@@ -3404,7 +3410,9 @@ def _experience_summary_items_block(groups: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _dedup_experience_summary_recommendations(result: dict, groups: list[dict]) -> None:
+def _dedup_experience_summary_recommendations(
+    result: dict[str, Any], groups: list[dict[str, Any]]
+) -> None:
     """Mutate each recommendation's 'alternates' in place to drop entries that are near-restatements of that role's recommendation (or of each other).
 
     Jaccard ≥ 0.75 on variant text, per-experience scope — same threshold as
@@ -3439,7 +3447,7 @@ def _dedup_experience_summary_recommendations(result: dict, groups: list[dict]) 
             rec_id = None
         rec_text = text_by_id.get(rec_id, "") if rec_id is not None else ""
 
-        kept: list[dict] = []
+        kept: list[dict[str, Any]] = []
         kept_texts: list[str] = [rec_text] if rec_text else []
         for alt in rec.get("alternates") or []:
             try:
@@ -3494,7 +3502,7 @@ def recommend_skills(
     *,
     username: str = "",
     run_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """B.5 — order (and lightly curate) the candidate's skills for this JD.
 
     Haiku call, mirroring recommend_summaries. The caller stages the active,
@@ -3580,7 +3588,7 @@ Industry keywords: {keywords or "(none)"}
     return {"recommendation": rec}
 
 
-def _skills_block(items: list[dict]) -> str:
+def _skills_block(items: list[dict[str, Any]]) -> str:
     """XML-format the candidate's canonical skills for the prompt.
 
     Numeric ids only; name as the element body, optional category + tags as
@@ -3646,7 +3654,7 @@ def suggest_skills(
     *,
     username: str = "",
     run_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """B.5 — propose NEW canonical skills the JD wants AND the corpus evidences.
 
     Haiku, grounded generator. The caller stages `context_set["career_corpus"]`
@@ -3706,7 +3714,7 @@ Preferred skills: {preferred or "(none)"}
     # against each other. Belt-and-suspenders: the route also enforces the
     # (candidate, name) unique constraint before inserting.
     existing_lower = {s.strip().lower() for s in existing_list}
-    proposals: list[dict] = []
+    proposals: list[dict[str, Any]] = []
     seen: set[str] = set()
     for p in result.get("proposals") or []:
         if not isinstance(p, dict):
@@ -3758,7 +3766,7 @@ def promote_clarification_to_bullet(
     target_official_title: str = "",
     username: str = "",
     run_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """Convert a clarification Q&A into a proposed bullet candidate.
 
     Returns a dict with `text`, `pattern_kind`, and `rationale`. The caller

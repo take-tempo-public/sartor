@@ -461,6 +461,43 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > coverage gate (baseline/setup branch) + larger-module mypy `--strict` (`analyzer.py`, the prompt
 > home — sha256 ceremony owed there).**
 
+> **Phase 2 #2 ratchet — rung 3, `analyzer.py` (`chore/kit-phase2-mypy-strict-analyzer`, 2026-06-25).**
+> Third rung — the prompt-home large module (~3,800 LOC; the sole LLM-call site). Added `"analyzer"` to
+> the strict override's `module` list — now `["scraper", "json_resume", "pdf_render",
+> "blueprints.applications", "analyzer"]` — and extended the block comment to a **third cohort**.
+> **This closes the larger-module `--strict` commitment** (rung 1 = the leaves, rung 2 =
+> `applications.py`; `analyzer.py` was the only large module left). **Same key insight as rung 2 —
+> NOT the feared heavy branch:** `ANN` (Phase-2 #1) had pre-typed the whole call graph, so `--strict`
+> + `warn_unreachable` surfaced **no `disallow_untyped_calls`/`disallow_untyped_defs` cascade** — only
+> **47 errors, ~91% mechanical**: **43 bare-generic `type-arg`** (parametrized `dict[str, Any]` /
+> `list[dict[str, Any]]` — all JSON-object dicts with string keys), **2 `no-any-return`**
+> (`cast("dict[str, Any]", …)` on `_parse_or_retry`'s validated `data` + `check_refinement_scope`'s
+> `json.loads`, runtime no-ops; `cast` added to `from typing import`), and **2 `warn_unreachable`** —
+> the only non-mechanical judgment calls. **The 2 unreachable resolutions:** (1) the `elif
+> isinstance(recommendations, list)` branch in `_stable_user_prefix` was dead because the `ContextSet`
+> TypedDict types `llm_recommendations` as bare `dict` → widened the local to `recommendations: object`
+> so both documented dispatch branches (persisted JSON ships it dict-keyed-by-exp-id OR as a list) stay
+> reachable — **zero runtime change**; (2) `clarify_iteration`'s `(...).get("keyword_overlap", {}) or
+> {}` final fallback is dead because the all-required TypedDict types the chain always-truthy, but
+> persisted context JSON can be partial/null at runtime → kept the deliberate `or {}` defense behind a
+> scoped `# type: ignore[unreachable]` with a comment (removing it would be a behavior change, out of
+> scope for a typing rung). Measured read-only **before** editing
+> (`python -m mypy --strict --warn-unreachable analyzer.py` = 47); whole-tree `mypy .` (227) green
+> after. **PROMPT-SAFE the GOTCHA-4 way (sha256, NOT grep-0):** unlike `applications.py`, `analyzer.py`
+> IS the prompt home, so the grep-0 shortcut doesn't apply — dumped sha256 of all **15** prompt
+> constants (the 11 `_BASE_SYSTEM_PROMPTS` values + `AVATAR_SYSTEM_PROMPT` + `_COVER_LETTER_RULES_BLOCK`
+> + `PROMPT_VERSION` + `AVATAR_PROMPT_VERSION`) HEAD-vs-branch → **byte-identical** (also re-verified
+> after `ruff format` wrapped one long signature), so no `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` bump,
+> no eval. No dep/version/hook change. Gate: ruff ✓ · ruff format --check (217) ✓ · mypy (227) ✓ ·
+> pytest — the ledger #3 Compose bullet-load race **fired on the pre-commit run** (**1389 passed / 2
+> failed**: `test_keyboard_reorder_persists_and_reset_reverts` + `test_pointer_drag_reorders`), both
+> **passed clean isolated** (1/1, 2/2); an earlier same-session full run on the **identical** code was
+> clean (1391/0) — the same-code fire-then-clean alternation is itself proof of code-independence (the
+> branch is annotations + config + docs, runtime-inert for Compose). **Per-module tracking: 5
+> production modules now at full strict; the rest permissive. Remaining Phase 2: only the `interrogate`
+> coverage gate (baseline/setup branch) — the larger-module mypy `--strict` commitment is now
+> COMPLETE.**
+
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by
 blueprint, each reconciled with `_safe_username`/`_within` + the PX-29 containment gate **[M+J]**;

@@ -728,6 +728,22 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       Compose/`app.js`/`wizard` code), so **not code-caused**. The race FIRED → no clean datapoint
       banked; resolve bar still unmet, class **not converging**, continues to strengthen the
       **retry-policy** option for PX-25.
+      **Update (2026-06-25, `chore/kit-phase2-mypy-strict-analyzer` gate):** **a same-session, same-code
+      fire-then-clean** — the strongest within-branch code-independence datapoint to date. The first full
+      run was **clean (1391 passed / 0)**, incl. the UX tier; the authoritative **pre-commit re-run of
+      the byte-identical tree** then **fired the bullet-load pair**
+      [`test_20260604_bullet_drag_reorder.py`](../../tests/ux/regression/test_20260604_bullet_drag_reorder.py)`::test_keyboard_reorder_persists_and_reset_reverts`
+      **and** `::test_pointer_drag_reorders` (both `IndexError` on `compose.bullet_texts()`, bullets
+      unrendered), **1389 passed / 2 failed** — then **both passed clean run individually isolated**
+      (`test_keyboard_reorder` 1/1; `test_pointer_drag_reorders` 2/2; together-in-file they still raced
+      1-of-2, the intermittent-in-isolation signature). Two full runs of the SAME tree (no edit between)
+      yielding clean-then-2-fail is direct proof the outcome is **not code-caused** — and this branch is
+      the mypy `--strict` rung for `analyzer.py` (type annotations + 2 `cast` + 1 widened local + 1
+      scoped `# type: ignore` + the `pyproject.toml` override), provably runtime-inert (15 prompt
+      constants sha256-byte-identical; `git diff` touched no Compose/`app.js`/`wizard` code). Resolve bar
+      unmet (the race FIRED on the authoritative run); class **still not converging**, materially
+      strengthens the **retry-policy** option for PX-25 (a same-tree run-to-run flip is exactly what a
+      wait-only fix struggles to close).
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -991,6 +1007,28 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       ledger #3 Compose load-race fired a two-member pair, both passed clean isolated 2/2,
       code-independent). No new ledger item. **Remaining Phase 2: `interrogate` coverage gate +
       larger-module `--strict` (`analyzer.py`, the prompt home).**
+      **Phase 2 #2 ratchet — rung 3 (2026-06-25, `chore/kit-phase2-mypy-strict-analyzer`):**
+      commitment (1)'s mypy `--strict` ratchet took its **third rung** — added `analyzer.py` (~3,800
+      LOC, the prompt-home module + sole LLM-call site) to the strict override roster (now
+      `scraper`/`json_resume`/`pdf_render`/`blueprints.applications`/`analyzer`). **This COMPLETES the
+      larger-module `--strict` commitment** (`analyzer.py` was the only large module left after rung 2's
+      `applications.py`). Same story as rung 2 — `ANN` had pre-typed the call graph, so `--strict` +
+      `warn_unreachable` surfaced **no untyped-call cascade** — only **47 errors, ~91% mechanical** (43
+      bare-generic `type-arg` → `dict[str, Any]`/`list[dict[str, Any]]`; 2 `no-any-return` → `cast`).
+      The 2 `warn_unreachable` were the only judgment calls: one local widened to `object` to keep a
+      documented dict-or-list dispatch branch live (zero runtime change); one deliberate `or {}`
+      malformed-JSON defense kept behind a scoped `# type: ignore[unreachable]` (TypedDict types it
+      always-truthy, but persisted JSON can be partial — not removed on a typing-only branch). **5
+      production modules now at full strict, the rest permissive.** **PROMPT-SAFE the GOTCHA-4 way
+      (sha256, not grep-0 — `analyzer.py` IS the prompt home):** the 15 prompt constants
+      sha256-byte-identical pre/post (re-verified after `ruff format`) → no `PROMPT_VERSION` bump, no
+      eval. No dep/version/hook change; gate: ruff/format ✓ 217, mypy 227 ✓, pytest — the ledger #3
+      Compose bullet-load race **fired on the pre-commit run** (**1389 passed / 2 failed**:
+      `test_keyboard_reorder_persists_and_reset_reverts` + `test_pointer_drag_reorders`), both **passed
+      clean isolated**; an earlier same-session full run on the **identical** code was clean (1391/0) —
+      same-code fire-then-clean = code-independent (see ledger #3). No new ledger item. **Remaining
+      Phase 2: only the `interrogate` coverage gate — the larger-module `--strict` commitment is now
+      COMPLETE.**
 
 #### Resolved
 
