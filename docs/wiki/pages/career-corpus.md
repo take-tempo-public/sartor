@@ -14,8 +14,9 @@ imported. It's yours, it stays on your machine, and it's never shared between
 users.
 
 ## Building it
-Import a résumé and callback extracts your experience for you; you can also add
-experiences by hand, or mix both. Each experience holds one or more **titles** (one
+Import a résumé and callback extracts your experience for you (see
+[[importing-your-experience]]); you can also add experiences by hand, or mix both.
+Each experience holds one or more **titles** (one
 official, optional alternates) plus its **bullets**, and you can **tag** things to
 organize them.
 

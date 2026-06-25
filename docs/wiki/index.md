@@ -84,6 +84,24 @@ pass, not a code ingest (see [`log.md`](log.md)).
 - [`pages/candidate-memory.md`](pages/candidate-memory.md) — the clarification Q&A
   callback keeps across applications and why outcome-rich answers matter.
 
+The Sprint-8.6a `docs/assistant-wiki-coverage` pass added the how-to guides the in-app
+assistant draws on (same `audience: user` content pass; `.last_ingest_sha` unchanged):
+
+- [`pages/importing-your-experience.md`](pages/importing-your-experience.md) — getting
+  your history in: import a résumé, pull from online profiles, or add by hand.
+- [`pages/cover-letters.md`](pages/cover-letters.md) — generating an optional cover
+  letter to match the job and the résumé you just tailored.
+- [`pages/editing-and-refining.md`](pages/editing-and-refining.md) — editing a generated
+  résumé in place and asking callback to refine it.
+- [`pages/downloading-your-documents.md`](pages/downloading-your-documents.md) — the
+  output formats (Word / PDF / Markdown), the PDF/Chromium note, downloading with edits.
+- [`pages/managing-users.md`](pages/managing-users.md) — using callback with more than
+  one person: adding, switching, and per-user data isolation.
+- [`pages/using-the-assistant.md`](pages/using-the-assistant.md) — the built-in,
+  doc-grounded assistant: how to ask it, Dev mode, and what it can / can't answer.
+- [`pages/troubleshooting.md`](pages/troubleshooting.md) — where errors show up and the
+  common ones (Chromium-for-PDF, API key, the date-check note).
+
 ## Wiki infrastructure
 
 - [`SCHEMA.md`](SCHEMA.md) — wiki conventions, the one grounding rule, the

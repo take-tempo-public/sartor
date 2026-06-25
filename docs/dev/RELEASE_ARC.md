@@ -984,7 +984,12 @@ Then: `chore/version-bump-v1.0.7`.
   editing/refining, cover letters, multi-user, import mechanics, troubleshooting, the assistant
   itself). Content, not code — runs **after** the test-window findings settle the post-split
   route surface and **before** the public prep, so v1.1.0 ships a well-informed avatar; pairs
-  with the 8.6 `/wiki-ingest`. Possibly multi-branch.
+  with the 8.6 `/wiki-ingest`. Possibly multi-branch. **AUTHORED 2026-06-25**
+  (`docs/assistant-wiki-coverage`): the all-7-topics first branch landed — 7 `audience: user`
+  pages (downloads · editing/refining · cover letters · multi-user · import · troubleshooting ·
+  the assistant), each grounded + per-page author≠auditor audited (6 clean / 1 re-anchored);
+  content pass, `.last_ingest_sha` unchanged; clears the assistant doc-coverage ledger item
+  (open count 9 → 8).
 
 ### Pre-public prep (2026-06-15 — moved up from Phase 5 so "all work is done by v1.0.8")
 

@@ -41,11 +41,12 @@ Choose your output format and click **Generate**. callback writes the final,
 tailored résumé — usually 30–60 seconds.
 
 ## Step 6 — Preview, edit & download
-Your finished résumé appears in an editable preview. Fix wording in place — those
-edits become the starting point for your next iteration. **Editing here changes the
-document text only; it does not change your [[career-corpus]].** Download when
-ready, and generate an editable **cover letter** from the same job and résumé if
-you want one.
+Your finished résumé appears in an editable preview. Fix wording in place (see
+[[editing-and-refining]]) — those edits become the starting point for your next
+iteration. **Editing here changes the document text only; it does not change your
+[[career-corpus]].** Download when ready (see [[downloading-your-documents]]), and
+generate an editable **cover letter** from the same job and résumé if you want one
+(see [[cover-letters]]).
 
 Everything callback writes stays **grounded in your real history** — see
 [`../overview.md`](../overview.md). Back to [[using-callback]].

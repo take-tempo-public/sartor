@@ -421,3 +421,65 @@ only `[[backlink]]`/`[[links]]` "dangles" are literal syntax mentions in `SCHEMA
 **Gate:** `ruff` ✓ · `mypy` ✓ (190 files) · `pytest` 1311 passed + the 1 known intermittent
 UX-tier flake (`test_positioning_pin_preserves_title_pin`, passes clean isolated — docs-only
 branch, not code-caused). **Loop invariant held: reviewable diff, no auto-commit.**
+
+## 2026-06-25 — content pass: assistant how-to coverage (`docs/assistant-wiki-coverage`)
+
+**Mode: hand-authored content pass — NOT a code ingest / diff pass** (Sprint 8.6a). The
+second authoring INTO the `audience: user` section (after the 2026-06-14 Sprint-6.5 education
+pass), filling the doc-grounded assistant's "woefully uninformed" coverage gap: only the 6
+Sprint-6.5 `user`-tier pages existed, and the avatar gates retrieval **strictly by audience**
+(`blueprints/assistant.py` `Scope` — a `user`-scoped turn reaches only `audience: user`
+pages), so the how-to questions below hit "I don't have that in my docs." Like the 2026-06-09
+and 2026-06-14 content passes, this is a *content* pass: it does **not** advance
+`.last_ingest_sha` (that checkpoint tracks the last **code** ingest, per [`SCHEMA.md`](SCHEMA.md)
+"Source model").
+
+**Pages created (7, `audience: user`):** [`downloading-your-documents`](pages/downloading-your-documents.md),
+[`editing-and-refining`](pages/editing-and-refining.md), [`cover-letters`](pages/cover-letters.md),
+[`managing-users`](pages/managing-users.md), [`importing-your-experience`](pages/importing-your-experience.md),
+[`troubleshooting`](pages/troubleshooting.md), [`using-the-assistant`](pages/using-the-assistant.md)
+(the owner-chosen **all-7-topics** scope — dedicated deep-dive pages even for the 3 topics the
+wizard/corpus pages already mentioned briefly; those existing pages gained reciprocal
+`[[backlinks]]`, not rewrites). Each grounds in the shipped UI (`templates/index.html` ids +
+`static/app.js` / `static/assistant.js` functions) and the deterministic/LLM backend
+(`blueprints/generation.py`, `blueprints/users.py`, `blueprints/corpus/curation.py`,
+`blueprints/assistant.py`, `analyzer.py`, `web_infra/clients.py`, `pdf_render.py`); the
+no-fabrication promise defers to [`overview.md`](overview.md) (D5).
+
+**Wiki meta updated.** [`index.md`](index.md) gained the 7 pages under "User-facing education"
+(an 8.6a sub-note); `[[backlinks]]` reconciled bidirectionally — the hub
+[`using-callback`](pages/using-callback.md) "The guides" now lists all 11 guides, and
+[`tailoring-a-resume`](pages/tailoring-a-resume.md) Step 6 + [`career-corpus`](pages/career-corpus.md)
+"Building it" splice the new how-to backlinks. No `pages/` page carries a per-page source-SHA
+marker (`SCHEMA.md` stamps only the audience tag), so only the content changed.
+
+**`.last_ingest_sha` deliberately LEFT at `35616579b866568042434f01401d366c477d6fac`** (the
+v1.0.7 pre-tag code checkpoint). The branch changes **no code**, so no dev-tier page drifts;
+the consolidated `/wiki-ingest` code-keyed re-anchor (the post-blueprint-split
+`app.py`→`blueprints/` route cites) stays the scheduled 8.6 / later pass, not this content
+pass.
+
+**Authoring + verification.** Authored with the established pattern (the 2026-06-13 cold
+ingest): one author per page, then a **separate** adversarial grounding auditor per page
+(author ≠ auditor; the `/wiki-audit` discipline, reproduced as 7 read-only
+`wiki-grounding-auditor` agents). **6 pages CLEAN; 1 DRIFTED cite caught + re-anchored** —
+[`importing-your-experience`](pages/importing-your-experience.md) cited
+`analyzer.extract_experiences`, but the function lives at `onboarding.extract_experiences`
+(imported by `blueprints/corpus/curation.py:ingest_resume_to_corpus`); the "deterministic
+ingest" wording was also corrected (the ingest delegates a Haiku extraction). The
+highest-risk page ([`troubleshooting`](pages/troubleshooting.md)) was bounded to **verified**
+failure modes only — Chromium-for-PDF (`pdf_render.py` + [`../install.md`](../install.md)),
+the API-key/`.api_key` lookup (`web_infra/clients.py:_get_client`), and the warn-only
+date-check note (`blueprints/generation.py:_check_date_grounding`); the unverified
+"grounding-abort discards work" idea was **dropped** (the date check is warn-only, never
+blocks the generate flow).
+
+**`/wiki-lint`: PASS — 0 ERROR.** 36 `pages/` ↔ `index.md` agree both ways (the 7 new pages
+listed); every `[[backlink]]` resolves to an existing slug; no orphans (every new page has an
+inbound link from the `using-callback` hub); `.last_ingest_sha` unchanged (content pass — no
+staleness regression). **Gate:** `ruff` ✓ · `mypy` ✓ (228 files); the full UX `pytest` suite
+was not re-run for this docs-only branch (owner direction) — no `.py` touched, and
+`tests/test_wiki_source.py` is `tmp_path`-only (the real pages don't affect it); the directly
+relevant `test_wiki_source` + `test_recall` (28) ran green. Per the
+[`../../CHANGELOG.md`](../../CHANGELOG.md) scope rule, this content pass is recorded here (the
+wiki's own changelog), not in CHANGELOG.
