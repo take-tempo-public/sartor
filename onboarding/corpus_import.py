@@ -250,6 +250,7 @@ def _normalize(s: str) -> str:
 
 
 def _iter_context_files(username: str) -> list[Path]:
+    """Return the sorted ``context_*.json`` files under ``OUTPUT_DIR/<username>`` (empty if the dir is absent)."""
     user_dir = OUTPUT_DIR / username
     if not user_dir.exists():
         return []
@@ -792,6 +793,7 @@ def _make_isolated_session(db_path: Path | str) -> Session:
 
 
 def _format_report(report: ImportReport, *, dry_run: bool) -> str:
+    """Render an ``ImportReport`` as the printable CLI summary (prefixed ``[DRY-RUN]`` when ``dry_run``)."""
     prefix = "[DRY-RUN] " if dry_run else ""
     lines = [
         f"{prefix}Candidate id={report.candidate_id} "

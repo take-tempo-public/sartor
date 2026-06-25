@@ -148,6 +148,7 @@ def main() -> None:
     ):
 
         def _open_browser() -> None:
+            """Best-effort open the app URL in a browser (logs and ignores any failure)."""
             try:
                 webbrowser.open("http://localhost:5000")
             except Exception as exc:  # best-effort; the URL is already printed

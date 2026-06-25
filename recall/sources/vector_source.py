@@ -305,10 +305,12 @@ class VectorSource:
 
     @property
     def _embeddings_path(self) -> Path:
+        """Path to the embeddings sidecar within the resolved index dir."""
         return self._index_dir / _EMBEDDINGS_FILE
 
     @property
     def _chunks_path(self) -> Path:
+        """Path to the chunk-metadata sidecar within the resolved index dir."""
         return self._index_dir / _CHUNKS_FILE
 
     def _cache_key(self) -> tuple[str, int] | None:

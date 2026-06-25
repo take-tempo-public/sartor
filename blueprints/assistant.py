@@ -145,6 +145,7 @@ def _make_embedder() -> Embedder | None:
         return None
 
     def _embed(texts: Sequence[str]) -> np.ndarray:
+        """Encode ``texts`` into an L2-normalized float32 embedding matrix."""
         matrix = np.asarray(model.encode(list(texts)), dtype=np.float32)
         if matrix.ndim == 1:
             matrix = matrix.reshape(1, -1)
@@ -235,6 +236,7 @@ def ask() -> ResponseReturnValue:
     run_id = uuid.uuid4().hex[:12]
 
     def stream() -> Iterator[str]:
+        """SSE generator: stream the assistant's avatar answer events to the client."""
         try:
             for kind, payload in analyzer.avatar_answer_streaming(
                 client,

@@ -419,6 +419,7 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
     ann_path = fixture_dir / "annotations.json"
 
     def stream() -> Iterator[str]:
+        """SSE generator: stream grounding-signal scoring progress, then the terminal result/error event."""
         import queue as _queue
         import threading
 
@@ -427,6 +428,7 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
         result: dict = {}
 
         def worker() -> None:
+            """Thread target: run grounding signals over the corpus; stash the result/error and signal done."""
             try:
                 result["gs"] = run_grounding_signals(reps_md, [corpus_source])
             except ImportError as exc:
@@ -646,6 +648,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
     client = _get_client()
 
     def stream() -> Iterator[str]:
+        """SSE generator: stream the annotation-bootstrap pipeline's progress, then the terminal event."""
         import queue as _queue
         import threading
 
@@ -656,6 +659,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
         result: dict = {}
 
         def worker() -> None:
+            """Thread target: run the bootstrap pipeline in a fresh DB session; stash result/error and signal done."""
             try:
                 init_db()
                 session = get_session()
@@ -866,6 +870,7 @@ def eval_run_stream() -> ResponseReturnValue:
     from evals.runner import run_suite
 
     def stream() -> Iterator[str]:
+        """SSE generator: stream the eval-suite run's progress, then the terminal result/error event."""
         import queue as _queue
         import threading
 
@@ -874,6 +879,7 @@ def eval_run_stream() -> ResponseReturnValue:
         result: dict = {}
 
         def worker() -> None:
+            """Thread target: run the eval suite; stash the result/error and signal done."""
             try:
                 result["res"] = run_suite(
                     suite=suite,
@@ -1031,6 +1037,7 @@ def tune_run_stream() -> ResponseReturnValue:
     from evals.tune import build_delta_table, format_delta_table, load_scores
 
     def stream() -> Iterator[str]:
+        """SSE generator: stream the baseline-then-candidate tuning run's progress, then the terminal event."""
         import queue as _queue
         import threading
         from dataclasses import asdict
@@ -1040,6 +1047,7 @@ def tune_run_stream() -> ResponseReturnValue:
         result: dict = {}
 
         def _run(phase: str, overrides_map: dict[str, str] | None) -> EvalRunResult:
+            """Run the suite for one ``phase`` (with optional ``overrides_map``), emitting phase-tagged progress."""
             return run_suite(
                 suite=suite,
                 subset=subset,
@@ -1053,6 +1061,7 @@ def tune_run_stream() -> ResponseReturnValue:
             )
 
         def worker() -> None:
+            """Thread target: run baseline then candidate; stash results/error and signal done."""
             try:
                 result["baseline"] = _run("baseline", None)
                 result["candidate"] = _run("candidate", overrides)

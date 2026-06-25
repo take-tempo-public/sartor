@@ -340,6 +340,7 @@ def _synthesize_resume_markdown(
 
 
 def _pick_official_title(titles: Iterable[ExperienceTitle]) -> str:
+    """Return the official title; failing that the first truthful-enough one; failing that ``""``."""
     for t in titles:
         if t.is_official:
             return t.title

@@ -272,6 +272,7 @@ def build_json_resume_from_corpus(
 
 
 def _empty_document() -> dict[str, Any]:
+    """Return an empty JSON Resume document skeleton (``$schema`` plus empty top-level sections)."""
     from json_resume import SCHEMA_URI
 
     return {
@@ -314,6 +315,7 @@ def _read_summary_choices(ctx: dict[str, Any]) -> tuple[int | None, int | None]:
     rec = rec_block.get("recommendation") if isinstance(rec_block, dict) else None
 
     def _coerce(val: str | int | float | None) -> int | None:
+        """Coerce ``val`` to ``int``, or ``None`` if it is None or non-numeric."""
         try:
             return int(val) if val is not None else None
         except (TypeError, ValueError):
@@ -362,6 +364,7 @@ def _resolve_chosen_summary_text(
     from db.models import SummaryItem
 
     def _lookup(sid: int | None) -> str | None:
+        """Return the active ``SummaryItem`` text for ``sid`` (scoped to this candidate), or ``None``."""
         if sid is None:
             return None
         row = (
@@ -484,6 +487,7 @@ def _read_recommendations_by_experience(
 
 
 def _official_title_text(exp: Experience) -> str | None:
+    """Return this experience's official title text, or ``None`` if it has none."""
     for t in exp.titles or []:
         if t.is_official:
             return t.title
@@ -491,6 +495,7 @@ def _official_title_text(exp: Experience) -> str | None:
 
 
 def _first_title_text(exp: Experience) -> str | None:
+    """Return this experience's first non-empty title text, or ``None``."""
     for t in exp.titles or []:
         if t.title:
             return t.title
@@ -525,6 +530,7 @@ def _read_skill_overrides(
         return set(), set(), []
 
     def _id_set(key: str) -> set[int]:
+        """Coerce the int-like values under ``key`` in the overrides into a ``set[int]`` (skipping non-numeric)."""
         out: set[int] = set()
         for x in ov.get(key) or []:
             try:

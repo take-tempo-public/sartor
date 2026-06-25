@@ -69,6 +69,8 @@ class DeterministicAnalysisBlock(TypedDict):
 
 
 class _ContextSetRequired(TypedDict):
+    """The always-present keys of ``ContextSet`` (its optional keys live in the ``total=False`` subclass)."""
+
     timestamp: str
     candidate: CandidateInfo
     resume: ResumeInfo

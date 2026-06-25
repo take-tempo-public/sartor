@@ -65,7 +65,7 @@ Verified against `main` at capture (2026-06-23). Legend: ✅ done/exceeded · �
 | Doc-drift detection | wiki-freshness hook + `/wiki-self-update` | ✅ exceeds |
 | "Why not what" comments | Cultural norm (D5 cite-don't-restate); not *enforced* | 🟡 |
 | No commented-out code (ruff `ERA`) | `ERA` not in ruff `select` — evaluated 2026-06-23: 8/8 hits false-positive → stays warn-only per Decision 6 (§4 progress note) | 🟡 |
-| Docstring coverage (ruff `D` / `interrogate`) | `D` not selected; no `interrogate` | ❌ |
+| Docstring coverage (ruff `D` / `interrogate`) | `D` blocks tree-wide (§6 exit); `interrogate` floor-lock gate at `fail-under = 99` (100% production baseline) | ✅ |
 | Generated reference docs | none | ❌ (see Decision 2) |
 | OpenAPI from Flask | none | ❌ (see Decisions 1, 2) |
 | DoD checklist + PR template | `RELEASE_CHECKLIST` + AGENTS.md close-out + a rich PR template already exist | 🟡 reconcile |
@@ -497,6 +497,34 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > production modules now at full strict; the rest permissive. Remaining Phase 2: only the `interrogate`
 > coverage gate (baseline/setup branch) — the larger-module mypy `--strict` commitment is now
 > COMPLETE.**
+>
+> **Progress (2026-06-25, `chore/kit-phase2-interrogate`):** Phase 2 #4 — the `interrogate`
+> docstring-**coverage** floor-lock gate — LANDED, the **final Phase 2 implementation sub-item**.
+> `interrogate>=1.7,<2.0` added to the `dev` extra (a real new dependency → CHANGELOG); a new
+> `[tool.interrogate]` block scopes to production (KIT-7 exempt set excluded; `ui_pages/**` IN,
+> matching the `D` surface; single-underscore semiprivate helpers excluded for coherence with `D`'s
+> public-only scope, so a helper-only module like `web_infra/` contributes zero counted symbols) and
+> records `fail-under = 99`. The gate is a **pytest floor-lock ratchet**
+> (`tests/test_docstring_coverage_gate.py`, mirroring `test_route_containment_gate.py`): it re-runs
+> the bare interrogate CLI via subprocess (single source of truth = `[tool.interrogate]`; no
+> `import interrogate`, so no mypy/stub coupling and robust to API drift) and asserts exit 0; skips
+> when interrogate is absent (default `pytest` stays green), has teeth in CI. KIT-6 "warn-start": the
+> floor locks measured-current; "ratchet up later" = raise `fail-under` in a future branch.
+> interrogate surfaced two undocumented public classes (`onboarding`'s `Color` + `ExtractResponse`)
+> that google's `D101` blind-spots (attribute-only / pydantic-model classes); both were documented,
+> taking production coverage 99.5% → **100%**, so `fail-under = 99` locks a fully-documented baseline
+> with ~1 pt headroom (not a brittle exact 100). Owner-directed add-on: a docstring-only pass documented
+> the **50** below-public-bar internals interrogate surfaces at maximal scope (`_`-helpers / nested
+> SSE-worker closures / private methods, ~20 files; maximal-scope coverage now 100% too) + the 5 empty
+> `tests/**/__init__.py` markers — the gate stays public-API-scoped (ignore flags unchanged; KIT-7 keeps
+> `tests/` D-exempt). `analyzer.py` re-verified PROMPT-SAFE (15 constants sha256-identical).
+> No prompt/route/version change → no eval. Teeth
+> verified (floor temporarily 100 vs 99.5% → red, green again at 99). Gate: ruff ✓ · ruff format
+> --check (218) ✓ · mypy (228) ✓ · pytest. **Phase 2 of the kit-adoption arc is now COMPLETE** —
+> `ANN` (#1) + mypy `--strict` larger-module (#2) + `D` (#3) + `interrogate` (#4) all landed. The §6
+> `--strict`-family exit (`app.py`, the rest of `blueprints/**`, `db/`, `hardening.py`, `parser.py`,
+> `generator.py`, …) remains a longer post-public ratchet, and (3)'s skills/hooks-packaging coherence
+> rides 8.7 `feat/portable-enforcement-core`.
 
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by

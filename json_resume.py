@@ -128,6 +128,7 @@ def md_to_json_resume(markdown: str) -> dict[str, Any]:
 
 
 def _find_first_h2_index(lines: list[str]) -> int:
+    """Return the index of the first ``##`` heading line, or ``len(lines)`` if none."""
     for i, line in enumerate(lines):
         if _H2_RE.match(line):
             return i
@@ -205,6 +206,7 @@ def _parse_header(lines: list[str], doc: dict[str, Any]) -> None:
 
 
 def _network_from_url(url: str) -> str:
+    """Map a profile URL to its JSON Resume network label (LinkedIn/GitHub/Twitter/Mastodon, else ``"Website"``)."""
     u = url.lower()
     if "linkedin.com" in u:
         return "LinkedIn"
@@ -229,6 +231,7 @@ def _username_from_url(url: str) -> str:
 
 
 def _parse_section(title: str, body: list[str], doc: dict[str, Any]) -> None:
+    """Dispatch one résumé section (``title`` + ``body`` lines) into the JSON Resume ``doc`` by its mapped key."""
     key = _SECTION_MAP.get(title.strip().lower())
     if key == "_summary":
         doc["basics"]["summary"] = _collapse_paragraph(body)

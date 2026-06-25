@@ -65,6 +65,7 @@ def _parse_docx(path: Path) -> tuple[str, list]:
     seen_cells: set[int] = set()
 
     def _handle_paragraph(para: Paragraph) -> None:
+        """Append a paragraph's text, starting a new section when its style is a Heading."""
         nonlocal current_section
         text = para.text.strip()
         if not text:
@@ -79,6 +80,7 @@ def _parse_docx(path: Path) -> tuple[str, list]:
             current_section["content"].append(text)
 
     def _walk(parent: Document | _Cell) -> None:
+        """Recurse over ``parent``'s block items — paragraphs and (deduped) table cells."""
         for block in _iter_block_items(parent):
             if isinstance(block, Paragraph):
                 _handle_paragraph(block)

@@ -29,6 +29,7 @@ _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
 
 def _tokens(text: str) -> set[str]:
+    """Lowercase ``text`` and return its set of alphanumeric word tokens."""
     return set(_TOKEN_RE.findall(text.lower()))
 
 

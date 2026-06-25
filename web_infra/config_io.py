@@ -21,6 +21,7 @@ from werkzeug.utils import secure_filename
 
 
 def _load_config(username: str, *, configs_dir: Path) -> dict:
+    """Read ``configs/<user>.config`` and return the parsed dict; sanitizes the username at the helper (PX-21), returning ``{}`` for an unsafe or missing config."""
     # Sanitize here, not only at the call site: secure_filename strips ../ and
     # other traversal sequences, so the config read is contained to configs_dir
     # even when a caller passes raw input (PX-21). An unsafe-empty or missing
@@ -35,6 +36,7 @@ def _load_config(username: str, *, configs_dir: Path) -> dict:
 
 
 def _save_config(username: str, config: dict, *, configs_dir: Path) -> None:
+    """Write ``config`` to ``configs/<user>.config``; sanitizes the username at the helper (PX-21) and raises ``ValueError`` if it sanitizes to empty."""
     # Mirror _load_config: sanitize at the helper so the write is contained to
     # configs_dir regardless of the caller (PX-21). An all-stripped username
     # (e.g. "...") is rejected rather than written as a junk ".config" — every
