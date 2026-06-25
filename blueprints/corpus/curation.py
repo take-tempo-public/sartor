@@ -52,6 +52,7 @@ def _find_root(parent: dict[int, int], x: int) -> int:
 
 @corpus_bp.route("/api/upload", methods=["POST"])
 def upload_resume() -> ResponseReturnValue:
+    """Save an uploaded resume into the user's resumes directory and record it as latest."""
     username = request.form.get("username", "")
     if not username:
         return jsonify({"error": "Username required"}), 400
@@ -93,6 +94,7 @@ def upload_resume() -> ResponseReturnValue:
 
 @corpus_bp.route("/api/users/<username>/resumes", methods=["GET"])
 def list_resumes(username: str) -> ResponseReturnValue:
+    """List the resume files in one user's resumes directory."""
     # _safe_username sanitizes + confirms the user exists, scoping the listing to
     # a known candidate's RESUMES_DIR (Sprint 8.3f — was the raw route `username`;
     # the one corpus FS route that reached the filesystem without the _safe_username

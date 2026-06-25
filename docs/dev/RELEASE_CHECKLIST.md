@@ -836,6 +836,20 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       `config.py`); no dep/version/hook change; gate green (ruff/format ✓, mypy 227 ✓, pytest 1390 +
       the tracked Compose-load flaky — a **new member** `test_happy_path_through_template_preview`
       `experience_card_count()==0`, passed clean isolated, ledger #3). No new ledger item.
+      **Phase 2 #3 ratchet — unit 4 (2026-06-25, `chore/kit-phase2-ruff-d-blueprints`):** drained the
+      **small-blueprints trio** — documented `blueprints/users.py` (4) + `blueprints/generation.py` (1) +
+      `blueprints/corpus/curation.py` (2) and removed their three `per-file-ignores` entries (**ratchet
+      9 → 6**; `hardening.py` + 6 `recall/` modules + `config.py` + the trio now at full `D`, **17
+      modules still waived**). All 7 hits were **D103** on **Flask route handlers** (`list_users`/
+      `create_user`/`get_config`/`update_config` · `download_file` · `upload_resume`/`list_resumes`),
+      each given a single-line google-style summary of the HTTP action (matching the already-documented
+      siblings `fetch_profile`/`download_edited`/`list_corpus_duplicates`); the edits were anchored
+      **inside** each body (not the `@…route` decorator) so `route-security-lint` saw no route in the
+      diff and the guards stayed byte-identical. PROMPT-SAFE (no prompt constants in the three route
+      modules); no dep/version/hook change; gate green (ruff/format ✓, mypy 227 ✓, pytest **1391
+      passed** — the ledger #3 Compose load-race did **not** fire this run, clean full suite). No new
+      ledger item. Remaining `D` ratchet units (smallest first): `onboarding/` (14) · `analyzer.py`
+      (16) · `db/models.py` (20) · last `ui_pages/**` (89).
 
 #### Resolved
 
