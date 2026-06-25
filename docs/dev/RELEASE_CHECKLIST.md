@@ -669,6 +669,16 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       `.compose-row.recommended` load-timeout, title-add, happy-path experience-card-load); resolve bar
       unmet (the race FIRED — no clean datapoint banked); reinforces "not converging," strengthens the
       retry-policy option for PX-25.
+      **Update (2026-06-25, `chore/kit-phase2-ruff-d-onboarding` gate):** the **bullet-load** member
+      recurred — [`tests/ux/regression/test_20260604_bullet_drag_reorder.py`](../../tests/ux/regression/test_20260604_bullet_drag_reorder.py)`::test_keyboard_reorder_persists_and_reset_reverts`
+      failed **once** in the full suite (`IndexError` — `compose.bullet_texts()` empty, the bullets
+      hadn't rendered), full suite **1390 passed / 1 failed**, then **passed clean on isolated re-run**
+      (1/1, 10.23 s). This branch is ruff-D ratchet (`onboarding/` docstrings + `pyproject.toml`
+      ratchet block) only (`git diff` touched no Compose/`app.js`/`wizard` code), so **not
+      code-caused**. A **named** member (not new); the race FIRED → no clean datapoint banked; still
+      not converging, still strengthens the retry-policy option for PX-25. Note the immediately prior
+      branch (blueprints, 2026-06-25) banked a *clean* full-suite datapoint — so the class continues to
+      alternate fire/clean run-to-run, the signature of an intermittent load race.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -850,6 +860,24 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       passed** — the ledger #3 Compose load-race did **not** fire this run, clean full suite). No new
       ledger item. Remaining `D` ratchet units (smallest first): `onboarding/` (14) · `analyzer.py`
       (16) · `db/models.py` (20) · last `ui_pages/**` (89).
+      **Phase 2 #3 ratchet — unit 5 (2026-06-25, `chore/kit-phase2-ruff-d-onboarding`):** drained the
+      **`onboarding/` trio** — documented `onboarding/review_cli.py` (10) + `corpus_import.py` (2) +
+      `extract_experiences.py` (2) and removed their three `per-file-ignores` entries (**ratchet 6 →
+      3**; `hardening.py` + 6 `recall/` modules + `config.py` + the small-blueprints trio + the
+      `onboarding/` trio now at full `D`, **14 modules still waived**). 14 hits spanning every prior
+      genre at once (1 D107 `__init__` + 8 D102 `ReviewSession` methods + D102 `ImportReport.merge` +
+      2 D103 `main`s + 2 D101 TypedDicts), each given a single-line google-style summary inserted as
+      the first body line. **First ratchet unit where a documented module also holds an LLM prompt
+      constant** — `EXTRACT_EXPERIENCES_SYSTEM_PROMPT` (`extract_experiences.py:69-90`); `onboarding/`
+      is **not** in the deterministic-boundary exempt set, so it may legitimately hold LLM calls +
+      prompts. None of the 14 symbols is the prompt string, and PROMPT-SAFE was **proven not
+      asserted**: sha256 byte-identical pre/post (`268b76…ecd1aa2`, len 2553) + a `git diff` that
+      never enters the 69-90 block → no `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` bump, no eval run. No
+      dep/version/hook change; gate green (ruff/format ✓, mypy 227 ✓, pytest **1390 passed / 1 flaky**
+      — the ledger #3 Compose load-race fired this run, **bullet-load mode**
+      `test_20260604_bullet_drag_reorder`, passed clean on isolated re-run → confirmed flake, ledger
+      #3). No new ledger item. Remaining `D` ratchet units (smallest first): `analyzer.py` (16) ·
+      `db/models.py` (20) · last `ui_pages/**` (89).
 
 #### Resolved
 

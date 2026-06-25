@@ -89,6 +89,7 @@ class ImportReport:
     errors: list[str] = field(default_factory=list)
 
     def merge(self, other: ImportReport) -> None:
+        """Add another report's counts into this one (combining per-file sub-reports)."""
         self.skills_created += other.skills_created
         self.skills_skipped += other.skills_skipped
         self.certifications_created += other.certifications_created
@@ -822,6 +823,7 @@ def _format_report(report: ImportReport, *, dry_run: bool) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point: import legacy file-based PII into the SQLite corpus."""
     parser = argparse.ArgumentParser(
         description="Import legacy file-based PII into the SQLite corpus.",
     )
