@@ -13,7 +13,10 @@ LLM_TIMEOUT_MS = 120_000
 
 
 class BasePage:
+    """Shared navigation primitives every wizard/console POM inherits."""
+
     def __init__(self, page: Page, base_url: str) -> None:
+        """Bind the Playwright page and the injected base URL."""
         self.page = page
         self.base_url = base_url.rstrip("/")
 
@@ -25,6 +28,7 @@ class BasePage:
 
     # --- wizard rail -------------------------------------------------------
     def rail_step(self, step: int) -> Locator:
+        """Return the rail button locator for a wizard step."""
         return self.page.locator(Wizard.step_button(step))
 
     def rail_step_enabled(self, step: int) -> bool:

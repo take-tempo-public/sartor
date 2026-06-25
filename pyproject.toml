@@ -169,14 +169,15 @@ ignore = [
 "evals/*" = ["S101", "ANN", "D"]
 "scripts/**" = ["ANN", "D"]
 
-# Kit-adoption Phase 2 #3 — D missing-docstring ratchet (KIT-6/§6). These production
-# modules are not yet documented; each entry waives ONLY the missing-docstring codes
-# (D101/D102/D103/D105/D107) so the CONTENT rules (D205/D209/...) still apply. The list
-# SHRINKS as modules are documented branch-by-branch; the §6 exit criterion is reached
-# when it is empty (then D blocks everywhere outside the exempt set above). Only
-# `ui_pages/**` remains — the 12-file Playwright POM (89 symbols), the LAST and LARGEST
-# unit, reserved for its own dedicated branch that reaches the §6 exit.
-"ui_pages/**" = ["D101", "D102", "D103", "D105", "D107"]
+# Kit-adoption Phase 2 #3 — D missing-docstring ratchet (KIT-6/§6): COMPLETE.
+# Each production module was documented branch-by-branch and dropped from this block;
+# the last unit (`ui_pages/**`, the 12-file Playwright POM, 89 symbols) drained on
+# `chore/kit-phase2-ruff-d-ui-pages`, emptying the ratchet. The §6 exit criterion for
+# the D family is now met: D — including the missing-docstring codes (D101/D102/D103/
+# D105/D107) — blocks EVERYWHERE outside the KIT-7 exempt set declared above
+# (tests/** · evals/* · scripts/** · db/migrations/versions). No per-module D waiver
+# remains; re-introduce one here only if a new module is added that cannot be
+# documented in the same branch (it then becomes a tracked ratchet entry again).
 
 [tool.ruff.lint.pydocstyle]
 # Kit-adoption Phase 2 #3: pin the google docstring convention. Narrows the D family to

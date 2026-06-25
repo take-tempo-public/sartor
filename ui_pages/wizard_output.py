@@ -10,14 +10,19 @@ from ui_pages.selectors import Output
 
 
 class WizardOutputPage(BasePage):
+    """Page Object for Step 6 — the WYSIWYG output preview and downloads."""
+
     def wait_loaded(self) -> WizardOutputPage:
+        """Wait for the Output panel to be visible."""
         self.page.wait_for_selector(Output.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
         return self
 
     def download_resume_button(self) -> Locator:
+        """Return the 'Download résumé' button locator."""
         return self.page.locator(Output.DOWNLOAD_RESUME)
 
     def preview_frame(self) -> FrameLocator:
+        """Return the output-preview iframe's frame locator."""
         return self.page.frame_locator(Output.PREVIEW_FRAME)
 
     def preview_body(self) -> Locator:

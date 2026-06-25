@@ -14,6 +14,8 @@ from __future__ import annotations
 
 
 class UserPicker:
+    """Selectors for the landing user-picker panel."""
+
     PANEL = "#panelUser"
     SELECT = "#userSelect"
     NEW_USER_LINK = "text=New user"
@@ -83,6 +85,8 @@ class LiveRegion:
 
 
 class TopTabs:
+    """Selectors for the top-bar section tabs (Corpus/Tailor/Personas/Memory)."""
+
     CORPUS = "#topTabCorpus"
     TAILOR = "#topTabTailor"
     PERSONAS = "#topTabPersonas"
@@ -90,6 +94,8 @@ class TopTabs:
 
 
 class Corpus:
+    """Selectors for the Career Corpus tab."""
+
     PANEL = "#panelCorpus"
     EXPERIENCE_LIST = "#corpusExperienceList"
     CARD = "#corpusExperienceList .corpus-card"
@@ -111,6 +117,8 @@ class Corpus:
 
 
 class Wizard:
+    """Selectors for the tailoring wizard (Steps 1-6) panels and controls."""
+
     RAIL = "#wizardRail"
     PANEL_ANALYSIS = "#panelAnalysis"
     JD_TEXT = "#jdText"
@@ -153,10 +161,13 @@ class Wizard:
 
     @staticmethod
     def step_button(step: int) -> str:
+        """Return the rail-button selector for a wizard step."""
         return f"button.wizard-step[data-wstep='{step}']"
 
 
 class PriorApps:
+    """Selectors for the Prior Applications panel and detail modal."""
+
     PANEL = "#panelApplications"
     LIST = "#applicationsList"
     MODAL = "#appDetailModal"
@@ -169,18 +180,24 @@ class PriorApps:
 
     @staticmethod
     def card(app_id: int) -> str:
+        """Return the card selector for an application id."""
         return f"#app-card-{app_id}"
 
     @staticmethod
     def card_company(app_id: int) -> str:
+        """Return the company-field selector within an application card."""
         return f"#app-card-{app_id} .application-card-company"
 
 
 class Personas:
+    """Selectors for the Personas tab."""
+
     PANEL = "#panelPersonas"
 
 
 class Memory:
+    """Selectors for the Memory tab."""
+
     PANEL = "#panelMemory"
 
 
@@ -234,6 +251,8 @@ class Onboarding:
 
 
 class Output:
+    """Selectors for the Step-6 output panel (preview + downloads)."""
+
     PANEL = "#panelOutput"
     PREVIEW_BLOCK = "#outputPreviewBlock"
     PREVIEW_FRAME = "#outputPreviewFrame"
@@ -265,18 +284,22 @@ class Dashboard:
 
     @staticmethod
     def tab(name: str) -> str:
+        """Return the selector for a dashboard tab by name."""
         return f".dash-tab[data-tab='{name}']"
 
     @staticmethod
     def pane(name: str) -> str:
+        """Return the selector for a dashboard pane by name."""
         return f".dash-pane[data-pane='{name}']"
 
     @staticmethod
     def pane_active(name: str) -> str:
+        """Return the active-pane selector for a dashboard pane by name."""
         return f".dash-pane[data-pane='{name}'].active"
 
     @staticmethod
     def tile(detail: str) -> str:
+        """Return the tile selector bound to a detail block."""
         return f".tile[data-detail='{detail}']"
 
     # --- per-tab education (Sprint 6.5 feat/education-diagnostics-annotate) ---
@@ -316,6 +339,8 @@ class Dashboard:
 
 
 class Compose:
+    """Selectors for the Step-3 compose surface (bullets, titles, role intros)."""
+
     LIST = "#composeList"
     EXPERIENCE_CARD = "#composeList .compose-experience-card"
     # The visible (résumé-bound) bullet container; carries data-exp-id and

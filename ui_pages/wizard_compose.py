@@ -15,6 +15,8 @@ from ui_pages.selectors import Compose, Wizard
 
 
 class WizardComposePage(BasePage):
+    """Page Object for Step 3 — fit-ranked bullets with drag/keyboard reorder."""
+
     def open(self) -> WizardComposePage:
         """Enter Compose from the analysis panel via 'Skip to Compose →'.
 
@@ -64,12 +66,14 @@ class WizardComposePage(BasePage):
         return self
 
     def continue_to_template(self) -> None:
+        """Click 'Save and continue to Template' and wait for the Template panel."""
         self.page.click(Wizard.SAVE_CONTINUE_TEMPLATE)
         self.page.wait_for_selector(
             Wizard.PANEL_TEMPLATE, state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
 
     def experience_card_count(self) -> int:
+        """Return the number of rendered experience cards."""
         return self.page.locator(Compose.EXPERIENCE_CARD).count()
 
     # --- titles (feat/compose-add-title) -----------------------------------
@@ -118,6 +122,7 @@ class WizardComposePage(BasePage):
 
     # --- per-role intros (B.4, Sprint 6.6) ---------------------------------
     def role_intros_toggle(self) -> Locator:
+        """Return the 'Add role intros' toggle locator."""
         return self.page.locator(Compose.ROLE_INTROS_TOGGLE)
 
     def enable_role_intros(self) -> None:
@@ -153,16 +158,20 @@ class WizardComposePage(BasePage):
         )
 
     def has_custom_order(self) -> bool:
+        """Whether the first bullet list carries a saved custom order."""
         return self._bullet_list().get_attribute("data-custom-order") == "true"
 
     # --- reorder affordances (both autosave) -------------------------------
     def move_down(self, text: str) -> None:
+        """Click the 'Move bullet down' button on the row matching `text`."""
         self._row(text).get_by_role("button", name=Compose.MOVE_DOWN_LABEL).click()
 
     def move_up(self, text: str) -> None:
+        """Click the 'Move bullet up' button on the row matching `text`."""
         self._row(text).get_by_role("button", name=Compose.MOVE_UP_LABEL).click()
 
     def reset_order(self) -> None:
+        """Click the first card's reset-order control."""
         self.page.locator(Compose.EXPERIENCE_CARD).first.locator(Compose.RESET_ORDER).click()
 
     def drag_below(self, src_text: str, target_text: str) -> None:

@@ -9,7 +9,10 @@ from ui_pages.selectors import Wizard
 
 
 class WizardGeneratePage(BasePage):
+    """Page Object for Step 5 — generate the documents (+ Step-6 refine note)."""
+
     def generate(self) -> None:
+        """Click Generate and wait for the output preview to render."""
         self.page.click(Wizard.GENERATE_BUTTON)
         self.page.wait_for_selector(
             Wizard.OUTPUT_PREVIEW_BLOCK, state="visible", timeout=LLM_TIMEOUT_MS

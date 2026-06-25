@@ -393,6 +393,36 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > unit (89), reserved for its own dedicated branch that reaches the §6 exit (block empty → `D`
 > blocks everywhere outside the KIT-7 exempt set).
 
+> **Phase 2 #3 ratchet — unit 8, `ui_pages/**` drained — RATCHET COMPLETE / §6 EXIT for `D`
+> (`chore/kit-phase2-ruff-d-ui-pages`, 2026-06-25).** The LAST and LARGEST unit, and the one that
+> **empties the ratchet block** → the **§6 exit criterion for the `D` family is reached**: with no
+> per-module `D` waiver left, `D` (including the missing-docstring codes D101/D102/D103/D105/D107)
+> blocks EVERYWHERE outside the KIT-7 exempt set (`tests/**` · `evals/*` · `scripts/**` ·
+> `db/migrations/versions`). Documented all **89 D-flagged symbols across the 12-file Playwright
+> Page-Object-Model** — 20 D101 (the POM page classes + `selectors.py` registry classes), 68 D102
+> (page-action + selector-builder methods), 1 D107 (`base.BasePage.__init__`) — with single-line
+> google summaries naming the surface each POM/selector drives (the units 1–7 google-style exemplars
+> + the already-documented `ui_pages` siblings set the house style). **Pure-mechanical, zero GOTCHA-4
+> risk:** `ui_pages/` is a test driver, so the prompt-constant grep
+> `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|anthropic|_call_llm)` over the 12 files returned
+> **0** — no prompt to perturb, no sha256 dump needed (unlike unit 7's prompt-home proof). Removed the
+> single `"ui_pages/**"` `per-file-ignores` line **and** rewrote the ratchet-block comment to record
+> the exit (so a future reader sees why no ratchet entry remains). **§6-exit proof:** with
+> `per-file-ignores` fully cleared, `ruff check . --select D101,D102,D103,D105,D107` reports 1417
+> hits — **all in `tests/` (1406) · `scripts/` (10) · `evals/` (1)**, zero in any production module
+> or `ui_pages`; the committed `ruff check .` stays green. PROMPT-SAFE (docstrings ≠ prompt
+> constants; grep-0 confirms none here) → no `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` bump, no eval
+> run. No dep/version/`ruff-changed.sh` change (bare `ruff check` inherits `select`). Gate green:
+> ruff check ✓ · ruff format --check (217) ✓ · mypy (227) ✓ · pytest **1390 passed / 1 flaky** — the
+> ledger #3 Compose **bullet-load** race
+> (`test_20260604_bullet_drag_reorder::test_pointer_drag_reorders`, `bullet_texts()[0]` IndexError)
+> fired in the full suite and again **1/2 on isolated re-run** → confirmed code-independent flake
+> (branch touches no Compose/frontend code; docstrings are runtime-inert), ledger #3. **Per-module
+> tracking: the ruff-`D` ratchet is COMPLETE — every production module is at full `D`; the
+> `per-file-ignores` `D` block is empty (only the permanent KIT-7 exempt set remains). Remaining
+> Phase 2: the `interrogate` coverage gate (not installed → baseline/setup branch) + larger-module
+> mypy `--strict` (`analyzer.py` / `applications.py`) — each its own later branch.**
+
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by
 blueprint, each reconciled with `_safe_username`/`_within` + the PX-29 containment gate **[M+J]**;
