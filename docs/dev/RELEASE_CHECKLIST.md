@@ -650,6 +650,14 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       touched no Compose/`app.js`/`wizard` code), so **not code-caused**. First time **two** members of the
       class fired in the same run — further "not converging" evidence; resolve bar unmet (no clean datapoint
       banked); strengthens the retry-policy option for PX-25.
+      **Update (2026-06-24, `chore/kit-phase2-ruff-d-recall` gate):** the **title-add** member **recurred** —
+      `test_20260611_compose_add_title.py::test_add_title_then_pin_persists` `title_texts() == []` (the
+      just-added title hadn't rendered — the same title-add load mode first seen on the `sim-ruf-triage`
+      gate above), full suite **1390 passed / 1 failed**, then **passed clean on isolated re-run** (1/1,
+      11.4 s). This branch is ruff-D ratchet (`recall/` docstrings + `pyproject.toml` ratchet block) only
+      (`git diff` touched no Compose/`app.js`/`wizard` code), so **not code-caused**. Second observed firing
+      of the title-add member; resolve bar unmet (the race FIRED — no clean datapoint banked); reinforces
+      "not converging," strengthens the retry-policy option for PX-25.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -799,6 +807,14 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       mypy 227 ✓, pytest). Row **stays open** — the remaining `D` ratchet (drain the 27 modules),
       `interrogate` coverage gate, larger-module `--strict` (`analyzer.py`/`applications.py`), + (3)'s
       skills/hooks coherence (8.7) are the remaining work; no new ledger item.
+      **Phase 2 #3 ratchet — unit 2 (2026-06-24, `chore/kit-phase2-ruff-d-recall`):** drained the
+      **`recall/` batch** — documented the 6 `recall/` modules (`memory_source`/`models`/`sources/{git_grep,
+      session,vector,wiki}_source`; all 6 hits were constructor docstrings, 5×`__init__` D107 + 1×
+      `Unit.__post_init__` D105) and removed their six `per-file-ignores` entries (**ratchet 16 → 10**;
+      `hardening.py` + 6 `recall/` modules now at full `D`, **21 modules still waived**). PROMPT-SAFE
+      (no prompt constants in `recall/`); no dep/version/hook change; gate green (ruff/format ✓, mypy 227
+      ✓, pytest 1390 + the tracked Compose-load flaky — title-add member `test_add_title_then_pin_persists`
+      recurred, passed clean isolated, ledger #3). No new ledger item.
 
 #### Resolved
 

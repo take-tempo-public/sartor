@@ -30,6 +30,7 @@ class SessionSource:
     """
 
     def __init__(self, source_id: str = "session") -> None:
+        """Start an empty session source; turns arrive via `observe`."""
         self.source_id = source_id
         self._units: tuple[Unit, ...] = ()
         self._backing = InMemorySource(source_id, ())

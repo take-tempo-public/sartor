@@ -186,12 +186,6 @@ ignore = [
 "blueprints/users.py" = ["D101", "D102", "D103", "D105", "D107"]
 "blueprints/generation.py" = ["D101", "D102", "D103", "D105", "D107"]
 "blueprints/corpus/curation.py" = ["D101", "D102", "D103", "D105", "D107"]
-"recall/memory_source.py" = ["D101", "D102", "D103", "D105", "D107"]
-"recall/models.py" = ["D101", "D102", "D103", "D105", "D107"]
-"recall/sources/git_grep_source.py" = ["D101", "D102", "D103", "D105", "D107"]
-"recall/sources/session_source.py" = ["D101", "D102", "D103", "D105", "D107"]
-"recall/sources/vector_source.py" = ["D101", "D102", "D103", "D105", "D107"]
-"recall/sources/wiki_source.py" = ["D101", "D102", "D103", "D105", "D107"]
 
 [tool.ruff.lint.pydocstyle]
 # Kit-adoption Phase 2 #3: pin the google docstring convention. Narrows the D family to

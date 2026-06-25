@@ -249,6 +249,25 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > (drain the 27, ~26 branches/units — ui_pages is the big one), `interrogate` coverage gate,
 > larger-module `--strict` (`analyzer.py` / `applications.py`) — each its own later branch.**
 
+> **Phase 2 #3 ratchet — unit 2, `recall/` batch drained (`chore/kit-phase2-ruff-d-recall`,
+> 2026-06-24).** Second rung of the `D` missing-docstring ratchet: documented the **6 `recall/`
+> modules** (`memory_source` · `models` · `sources/{git_grep,session,vector,wiki}_source`) and
+> removed their six entries from the `per-file-ignores` ratchet block (**16 → 10 entries**).
+> All 6 hits were **constructor docstrings** — five `__init__` (D107) + one `Unit.__post_init__`
+> (D105); each got a single-line prose docstring matching the modules' existing
+> `refresh`/`search`/`observe` style (no `Args:` section — google doesn't require one and it
+> would diverge from the local style). Measured the true debt by **bypassing the ratchet**:
+> `ruff check recall/ --select D --config "lint.per-file-ignores={}"` (the inverse-list ratchet
+> means a plain `ruff check recall/` reports 0 — the waiver hides it; clearing per-file-ignores
+> exposes the real count). PROMPT-SAFE (no prompt constants in `recall/`, not `analyzer.py` → no
+> sha256 dump, no `PROMPT_VERSION` bump, no eval). No dep/version/`ruff-changed.sh` change. Gate
+> green: ruff check ✓ · ruff format --check (217) ✓ · mypy (227) ✓ · pytest 1390 passed / 1
+> known-flaky (ledger #3 Compose-load race — title-add member `test_add_title_then_pin_persists`
+> recurred, passed clean isolated; branch touches no Compose code). **Per-module tracking: `hardening.py` +
+> the 6 `recall/` modules at full `D`; 21 modules still carry the missing-docstring waiver.**
+> Remaining ratchet units (smallest first): `config.py` (6) · small-blueprints trio (7) ·
+> `onboarding/` (14) · `db/models.py` (20) · `analyzer.py` (16) · last `ui_pages/**` (89).
+
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by
 blueprint, each reconciled with `_safe_username`/`_within` + the PX-29 containment gate **[M+J]**;

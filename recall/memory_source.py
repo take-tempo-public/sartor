@@ -36,6 +36,7 @@ class InMemorySource:
     """A `Source` over a fixed set of `Unit`s, ranked by query-token overlap."""
 
     def __init__(self, source_id: str, units: Iterable[Unit]) -> None:
+        """Snapshot `units` into an immutable tuple, tagged with `source_id`."""
         self.source_id = source_id
         self._units: tuple[Unit, ...] = tuple(units)
 

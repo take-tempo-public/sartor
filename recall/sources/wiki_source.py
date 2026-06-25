@@ -55,6 +55,7 @@ class WikiSource:
         ingest_sha_path: Path,
         audience_for_page: Callable[[str, str], Audience],
     ) -> None:
+        """Bind the wiki dir and provenance-sha path, then build the initial page index."""
         self._wiki_dir = wiki_dir
         self._ingest_sha_path = ingest_sha_path
         self._audience_for_page = audience_for_page
