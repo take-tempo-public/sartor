@@ -315,6 +315,35 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > modules still carry the missing-docstring waiver.** Remaining ratchet units (smallest
 > first): `onboarding/` (14) · `analyzer.py` (16) · `db/models.py` (20) · last `ui_pages/**` (89).
 
+> **Phase 2 #3 ratchet — unit 5, `onboarding/` trio drained
+> (`chore/kit-phase2-ruff-d-onboarding`, 2026-06-25).** Fifth rung of the `D` missing-docstring
+> ratchet: documented the **3 `onboarding/` modules** (`review_cli.py` · `corpus_import.py` ·
+> `extract_experiences.py`) and removed their three entries from the `per-file-ignores` ratchet
+> block (**6 → 3 entries**). 14 hits spanning every prior genre at once: `review_cli.py` (10 —
+> 1 D107 `__init__` + 8 D102 `ReviewSession` methods + 1 D103 `main`), `corpus_import.py` (2 —
+> D102 `ImportReport.merge` + D103 `main`), `extract_experiences.py` (2 — D101 on the
+> `ExtractedBullet` / `ExtractedExperience` TypedDicts). Each got a single-line google-style
+> summary inserted as the first body line (above any leading comment) so surrounding logic stays
+> byte-identical. **NEW gotcha vs the prior units (all of which were prompt-free):** this is the
+> first ratchet unit where a documented module **also holds an LLM prompt constant** —
+> `EXTRACT_EXPERIENCES_SYSTEM_PROMPT` at `extract_experiences.py:69-90`, passed to
+> `analyzer._parse_or_retry(system_prompt=…)` at `:134`. `onboarding/` is **not** in the
+> deterministic-boundary exempt set (`hardening`/`parser`/`generator`/`scraper`/`json_resume`/
+> `corpus_to_json_resume`/`pdf_render`), so it may legitimately hold LLM calls + prompts. None of
+> the 14 documented symbols **is** the prompt string, so docstrings can't touch it — but proven,
+> not asserted: sha256 of the constant byte-identical pre/post
+> (`268b76229e24fec6744343f971b567d17b62f812bd2515062eec90039ecd1aa2`, len 2553) + a
+> `git diff` that never enters the 69-90 block ⇒ no `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` bump,
+> no eval. Measured the true debt by bypassing the ratchet
+> (`--config "lint.per-file-ignores={}"`; a plain `ruff check` reports 0). No dep/version change.
+> Gate green: ruff check ✓ · ruff format --check (217) ✓ · mypy (227) ✓ · pytest 1390 passed / 1
+> flaky — the ledger #3 Compose load-race **did** fire this run (bullet-load mode,
+> `test_20260604_bullet_drag_reorder`); passed on isolated re-run → confirmed flake, not a
+> regression. **Per-module tracking: `hardening.py` + the 6 `recall/` modules + `config.py` + the
+> small-blueprints trio + the `onboarding/` trio at full `D`; 3 entries / 14 modules still carry
+> the missing-docstring waiver.** Remaining ratchet units (smallest first): `analyzer.py` (16) ·
+> `db/models.py` (20) · last `ui_pages/**` (89).
+
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by
 blueprint, each reconciled with `_safe_username`/`_within` + the PX-29 containment gate **[M+J]**;

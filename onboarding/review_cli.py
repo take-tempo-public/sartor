@@ -94,6 +94,7 @@ class ReviewSession:
     """
 
     def __init__(self, session: Session, candidate: Candidate) -> None:
+        """Initialize a review session with per-run action counters zeroed."""
         self.session = session
         self.candidate = candidate
         self.accepted = 0
@@ -120,6 +121,7 @@ class ReviewSession:
     # -- Display --
 
     def show_experience(self, exp: Experience, idx: int, total: int) -> None:
+        """Print one experience block — header, titles, and bullets — to the terminal."""
         print()
         print(f"{Color.HEADER}{'═' * 70}{Color.RESET}")
         print(
@@ -161,6 +163,7 @@ class ReviewSession:
     # -- Top-level prompt --
 
     def prompt_action(self) -> str:
+        """Prompt for and return the top-level per-experience action key."""
         print(
             f"\n  {Color.PROMPT}Action:{Color.RESET} "
             f"[{Color.BOLD}a{Color.RESET}]ccept all  "
@@ -175,6 +178,7 @@ class ReviewSession:
     # -- Action handlers --
 
     def accept_all(self, exp: Experience) -> None:
+        """Mark every title and bullet on the experience reviewed, then commit."""
         for t in exp.titles:
             t.is_pending_review = 0
         for b in exp.bullets:
@@ -186,6 +190,7 @@ class ReviewSession:
         )
 
     def drop_experience(self, exp: Experience) -> None:
+        """Confirm, then permanently delete the experience and all its bullets."""
         confirm = (
             input(
                 f"  {Color.WARN}Delete experience '{exp.company}' and all its bullets? "
@@ -203,10 +208,12 @@ class ReviewSession:
         print(f"  {Color.ERROR}✗ Dropped.{Color.RESET}")
 
     def skip(self) -> None:
+        """Leave the current experience pending and bump the skip counter."""
         self.skipped += 1
         print(f"  {Color.DIM}Skipped — will remain pending.{Color.RESET}")
 
     def review_bullets(self, exp: Experience) -> None:
+        """Drill into the experience's pending bullets, accepting or editing each."""
         active = [b for b in exp.bullets if b.is_active]
         if not active:
             print(f"  {Color.DIM}(no active bullets){Color.RESET}")
@@ -261,6 +268,7 @@ class ReviewSession:
                 continue
 
     def edit_fields(self, exp: Experience) -> None:
+        """Edit the experience's company, location, dates, or title, then commit."""
         print(
             f"  Edit which? "
             f"[{Color.BOLD}c{Color.RESET}]ompany  "
@@ -301,6 +309,7 @@ class ReviewSession:
     # -- Main loop --
 
     def run(self) -> int:
+        """Run the interactive review loop over all pending experiences."""
         pending = self.pending_experiences()
         total = len(pending)
         if total == 0:
@@ -391,6 +400,7 @@ def iter_pending_experiences(session: Session, candidate_id: int) -> Iterator[Ex
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point: interactively review one user's pending experiences."""
     parser = argparse.ArgumentParser(
         description="Walk through LLM-extracted experiences and bullets interactively."
     )

@@ -38,12 +38,16 @@ logger = logging.getLogger(__name__)
 
 
 class ExtractedBullet(TypedDict, total=False):
+    """One résumé bullet extracted by the LLM — verbatim text plus suggested tags."""
+
     text: str
     suggested_tags: list[str]
     has_outcome: bool
 
 
 class ExtractedExperience(TypedDict, total=False):
+    """One job/role extracted by the LLM — company, dates, title, and bullets."""
+
     company: str
     location: str
     start_date: str  # YYYY-MM
