@@ -101,6 +101,30 @@ Remaining Phase 2: `D` + google pydocstyle, `interrogate` coverage gate, larger-
   ledger #3 Compose load-race, passed clean isolated 2/2). Remaining Phase 2: `interrogate`
   coverage gate + larger-module `--strict` (`analyzer.py`).
 
+- **Rung 3 — `analyzer.py`** (`chore/kit-phase2-mypy-strict-analyzer`, 2026-06-25): the final
+  *larger-module* rung adds `analyzer.py` (~3,800 LOC — the prompt-home module and the sole LLM-call
+  site) to the strict override roster, **completing the larger-module `--strict` commitment** (the
+  three leaves landed rung 1, `applications.py` rung 2). Clean for the same reason as rung 2: Phase-2
+  #1 (`ANN`) had pre-typed the whole call graph, so `--strict` + `warn_unreachable` surfaced **no
+  `disallow_untyped_calls` cascade** — only **47 errors**, ~91% mechanical: 43 bare-generic `type-arg`
+  → parametrized (`dict[str, Any]` / `list[dict[str, Any]]`), 2 `no-any-return` →
+  `cast("dict[str, Any]", …)` (runtime no-ops), and 2 `warn_unreachable` — one a `ContextSet`-TypedDict
+  always-truthy artifact on a deliberate `or {}` persisted-JSON defense (kept behind a scoped
+  `# type: ignore[unreachable]`), the other fixed by widening one local to `object` so a documented
+  dict-or-list branch stays live (no runtime change). The strict roster is now
+  `scraper`/`json_resume`/`pdf_render`/`blueprints.applications`/`analyzer`. **PROMPT-SAFE the GOTCHA-4
+  way** (analyzer.py is the prompt home, so the module's grep-0 shortcut doesn't apply): the 15 prompt
+  constants (11 `_BASE_SYSTEM_PROMPTS` values + `AVATAR_SYSTEM_PROMPT` + `_COVER_LETTER_RULES_BLOCK` +
+  `PROMPT_VERSION` + `AVATAR_PROMPT_VERSION`) were sha256-proven byte-identical pre/post → no
+  `PROMPT_VERSION` bump, no eval. Gate: ruff ✓ · ruff format --check ✓ 217 · mypy ✓ 227 · pytest — the
+  ledger #3 Compose bullet-load race **fired on the pre-commit run** (**1389 passed / 2 failed**:
+  `test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts` +
+  `::test_pointer_drag_reorders`), both **passed clean isolated** (1/1, 2/2); an earlier same-session
+  full run on the **identical** code was clean (1391/0) — the same-code fire-then-clean alternation is
+  itself proof the branch (annotations + config + docs, runtime-inert for Compose) is **not
+  code-caused**. Remaining Phase 2: the `interrogate` coverage gate (the larger-module `--strict`
+  commitment is now complete).
+
 ### Kit-adoption Phase 2 #1 — enable ruff `ANN` (`chore/kit-phase2-ruff-ann`, 2026-06-24)
 
 First implementation branch of the agent-coding-practices kit-adoption arc **Phase 2** (the
