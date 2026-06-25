@@ -160,8 +160,9 @@ def _render_pdf_from_json(
     docx_template_path: str | None,
     output_pdf_path: Path,
 ) -> None:
-    """Render the JSON Resume document to PDF via the persona's HTML
-    companion. The companion is the .html sibling of the .docx template
+    """Render the JSON Resume document to PDF via the persona's HTML companion.
+
+    The companion is the .html sibling of the .docx template
     (e.g. `personas/bundled/classic.docx` → `personas/bundled/classic.html`).
 
     Falls back to the bundled Classic HTML template if the resolved
@@ -508,8 +509,9 @@ def _apply_run_proto(run: Run, proto: dict | None) -> None:
 
 
 def _add_inline_runs_with_proto(paragraph: Paragraph, text: str, proto: dict | None) -> None:
-    """Like _add_inline_runs but also applies the proto's run-level format
-    to every emitted run as a baseline (inline ** / * still wins over base bold).
+    """Like _add_inline_runs but also applies the proto's run-level format to every emitted run.
+
+    The proto format acts as a baseline (inline ** / * still wins over base bold).
     Tab characters in `text` are preserved; the paragraph's tab stops handle them.
     """
     segments = _INLINE_RE.split(text)
@@ -539,8 +541,9 @@ def _write_docx(
     path: Path,
     template_path: str | None = None,
 ) -> None:
-    """Write LLM content to .docx, using the original file as a style template
-    when it is a .docx. Falls back to clean built-in defaults otherwise.
+    """Write LLM content to .docx, using the original file as a style template when it is a .docx.
+
+    Falls back to clean built-in defaults otherwise.
 
     When a template is supplied, paragraph formatting (alignment, run sizes,
     tab stops) is captured per-role from the template and applied to the

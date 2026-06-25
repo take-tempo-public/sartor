@@ -262,7 +262,8 @@ def bullet_token_set(text: str) -> frozenset[str]:
 
     Lowercase, drop stopwords + tokens <3 chars. Returns a frozenset so
     the result is cheap to compare across bullets. Used by
-    `bullet_jaccard()` and the corpus-duplicates clusterer (B1.2)."""
+    `bullet_jaccard()` and the corpus-duplicates clusterer (B1.2).
+    """
     return frozenset(
         w
         for w in _DEDUP_TOKEN_RE.findall((text or "").lower())
@@ -272,7 +273,9 @@ def bullet_token_set(text: str) -> frozenset[str]:
 
 def bullet_jaccard(a: str, b: str) -> float:
     """Jaccard similarity between two bullet texts on `bullet_token_set`.
-    Returns 0.0 when both are empty (degenerate)."""
+
+    Returns 0.0 when both are empty (degenerate).
+    """
     sa = bullet_token_set(a)
     sb = bullet_token_set(b)
     if not sa and not sb:
@@ -460,8 +463,7 @@ def compute_specificity_density(resume_text: str) -> dict:
 
 
 def compute_top_third_density(generated_resume: str, jd_keywords: dict) -> dict:
-    """Ratio of the first 3 bullets in the first experience section that contain
-    the JD's top 3 essentials.
+    """Ratio of the first 3 bullets in the first experience section that contain the JD's top 3 essentials.
 
     A high density (1.0) means the candidate leads with role-critical keywords
     where recruiters are most likely to look. Low density signals that the LLM
@@ -753,9 +755,11 @@ def _source_numeric_index(source_texts: list[str]) -> dict[str, list[float]]:
 
 
 def _numeric_grounded(kind: str, val: float, source_nums: dict[str, list[float]]) -> bool:
-    """Tolerant membership: is `val` (of `kind`) within the conservative band of
-    any same-kind source value? year/count are cross-checked so the same digit
-    string classified differently on each side doesn't false-flag."""
+    """Tolerant membership: is `val` (of `kind`) within the conservative band of any same-kind source value?
+
+    year/count are cross-checked so the same digit string classified
+    differently on each side doesn't false-flag.
+    """
     candidate_kinds = [kind]
     if kind in ("year", "count"):
         candidate_kinds = ["year", "count"]
@@ -775,9 +779,11 @@ def _normalize_entity(token: str) -> str:
 
 
 def _source_entity_set(source_texts: list[str]) -> set[str]:
-    """Every alias-normalized token in the source union. Broad on purpose: an
-    entity is flagged only when absent from the ENTIRE source union, which keeps
-    precision high (few false fabrication flags)."""
+    """Every alias-normalized token in the source union.
+
+    Broad on purpose: an entity is flagged only when absent from the ENTIRE
+    source union, which keeps precision high (few false fabrication flags).
+    """
     tokens: set[str] = set()
     for txt in source_texts:
         for raw in _SOURCE_TOKEN_RE.findall(txt or ""):

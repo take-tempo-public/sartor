@@ -461,10 +461,11 @@ def ingest_one_resume(
     dry_run: bool = False,
     report: ImportReport | None = None,
 ) -> ImportReport:
-    """Parse + Haiku-extract a single resume file and insert/merge its
-    experiences as `is_pending_review=1`. Shared by the CLI importer's
-    per-file loop AND the live `/api/users/<u>/corpus/ingest-resume`
-    route so the merge-as-alternate-title behavior never forks.
+    """Parse and Haiku-extract a single resume file, inserting/merging its experiences as `is_pending_review=1`.
+
+    Shared by the CLI importer's per-file loop AND the live
+    `/api/users/<u>/corpus/ingest-resume` route so the
+    merge-as-alternate-title behavior never forks.
 
     The caller owns session lifecycle + commit; this only flushes (when
     not dry_run) so it composes inside both call sites.
@@ -631,8 +632,7 @@ def _merge_into_existing_experience(
     session: Session,
     report: ImportReport,
 ) -> None:
-    """A subsequent file produced the same (company, start_date). Treat its
-    extraction as alternate framing material:
+    """Merge a duplicate (company, start_date) file into an existing experience as alternate framing material.
 
     - If the new title text doesn't already exist on this experience, add it
       as an alternate (is_official=0, truthful_enough_to_use=1, is_pending_review=1).

@@ -28,9 +28,11 @@ from enum import Enum
 
 
 class Tier(str, Enum):
-    """Source family a `Unit` came from. Values match the S1…S5 labels in
-    `docs/dev/memory-architecture.md` §"Tiers". Stage 0 implements no real
-    tier; these name the slots the 7.5/7.6 sources fill."""
+    """Source family a `Unit` came from, matching the S1…S5 labels in memory-architecture.md.
+
+    Values match `docs/dev/memory-architecture.md` §"Tiers". Stage 0 implements no real
+    tier; these name the slots the 7.5/7.6 sources fill.
+    """
 
     WIKI = "S1"  # committed docs/wiki synthesis (answer-shaped prose)
     GIT = "S2"  # files on disk + `git grep` (native path:line citation)
@@ -40,9 +42,11 @@ class Tier(str, Enum):
 
 
 class Audience(str, Enum):
-    """The access/disclosure tag carried by every `Unit`. Path-derived per the
-    wiki SCHEMA's blanket rules (code / docs/dev / evals → `dev`; user-facing
-    docs → `user`). The `Scope` toggle decides which a caller may see."""
+    """The access/disclosure tag carried by every `Unit`.
+
+    Path-derived per the wiki SCHEMA's blanket rules (code / docs/dev / evals → `dev`;
+    user-facing docs → `user`). The `Scope` toggle decides which a caller may see.
+    """
 
     USER = "user"
     DEV = "dev"

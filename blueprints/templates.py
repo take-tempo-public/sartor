@@ -79,8 +79,7 @@ def _persona_dict(template: PersonaTemplate) -> dict:
 
 
 def _persona_dicts_safe(templates: list[PersonaTemplate]) -> list[dict]:
-    """Serialize a list of persona_template rows, skipping (and logging)
-    any row that fails serialization.
+    """Serialize a list of persona_template rows, skipping (and logging) any row that fails serialization.
 
     Rationale (2026-05-27 handoff §4): the user reported
     `GET /api/users/<u>/personas 500` across several smoke rounds.
@@ -239,9 +238,7 @@ def _resolve_default_persona_template_path(
 
 
 def _latest_generated_resume_md(candidate_id: int) -> str | None:
-    """Most recent non-empty generated_resume_md across a candidate's
-    application runs (Workstream C preview). None when the user hasn't
-    generated yet."""
+    """Return the most recent non-empty generated_resume_md across a candidate's application runs. None when the user hasn't generated yet."""
     from db.models import Application, ApplicationRun
     from db.session import get_session
 
@@ -279,9 +276,7 @@ def _json_resume_has_content(doc: dict) -> bool:
 
 
 def _preview_placeholder_html(html_path: Path) -> str:
-    """Self-contained HTML for the Step 6 iframe when this application
-    has no LLM recommendations yet (recommend_bullets either hasn't run
-    or failed).
+    """Return self-contained HTML for the Step 6 iframe when this application has no LLM recommendations yet.
 
     Per user requirement (2026-05-26): the preview must show
     "what will be produced," not "the un-curated full corpus." When
@@ -342,8 +337,7 @@ def _preview_placeholder_html(html_path: Path) -> str:
 
 
 def _cover_letter_placeholder_html() -> str:
-    """Self-contained HTML for the Step 6 cover-letter iframe when no cover
-    letter has been generated yet (résumé-only generation, or pre-generate).
+    """Return self-contained HTML for the Step 6 cover-letter iframe when no cover letter has been generated yet.
 
     Mirrors `_preview_placeholder_html` — an honest empty-state instead of a
     blank frame.
@@ -378,10 +372,10 @@ def _cover_letter_placeholder_html() -> str:
 
 
 def _inline_persona_css(html_str: str, html_path: Path) -> str:
-    """Replace `<link rel="stylesheet" href="*.css">` with an inline
-    `<style>` block so the response is fully self-contained — iframes
-    load it without resolving relative CSS against the / route.
-    Best-effort: missing CSS file is logged and left as-is."""
+    """Replace `<link rel="stylesheet" href="*.css">` with an inline `<style>` block so the response is fully self-contained.
+
+    Best-effort: missing CSS file is logged and left as-is.
+    """
     css_path = html_path.with_suffix(".css")
     if not css_path.exists():
         return html_str
@@ -486,9 +480,7 @@ _PAGED_PREVIEW_INJECTION = """
 
 
 def _inject_paged_polyfill(html_str: str) -> str:
-    """Append paged.js + a small init script before `</body>` so the
-    preview iframe renders content as discrete Letter-sized pages —
-    real page boundaries, not a scroll-height estimate.
+    """Append paged.js + a small init script before `</body>` so the preview iframe renders discrete Letter-sized pages.
 
     Paged.js is bundled as `/static/vendor/paged.polyfill.js` (MIT,
     v0.4.3). The script auto-polyfills CSS @page rules. The init
@@ -658,8 +650,7 @@ def upload_user_persona(username: str) -> ResponseReturnValue:
 
 @templates_bp.route("/api/personas/<int:persona_id>", methods=["GET"])
 def get_persona(persona_id: int) -> ResponseReturnValue:
-    """Return one persona row's metadata. Accessible to anyone (bundled +
-    owned both readable for preview UI)."""
+    """Return one persona row's metadata (bundled + owned both readable for preview UI)."""
     from db.models import PersonaTemplate
     from db.session import get_session, init_db
 
@@ -783,9 +774,7 @@ def download_persona(persona_id: int) -> ResponseReturnValue:
 
 @templates_bp.route("/api/personas/<int:persona_id>/preview", methods=["POST"])
 def preview_persona_with_resume(persona_id: int) -> ResponseReturnValue:
-    """Render the user's latest generated resume through this persona
-    template and stream the real .docx (Workstream C #6). Honest artifact
-    reuse via generate_resume — no separate rendering engine.
+    """Render the user's latest generated resume through this persona template and stream the real .docx (Workstream C #6).
 
     Body: {username}. Touches the filesystem (writes + streams a .docx),
     so both _safe_username and _within guards apply.
@@ -844,9 +833,7 @@ def preview_persona_with_resume(persona_id: int) -> ResponseReturnValue:
 
 @templates_bp.route("/api/applications/<int:application_id>/preview", methods=["GET"])
 def preview_application_html(application_id: int) -> ResponseReturnValue:
-    """Render the candidate's résumé corpus + application-scoped overrides
-    as a self-contained HTML page (Phase β.4 / β.6 — corpus-direct live
-    preview).
+    """Render the candidate's résumé corpus + application-scoped overrides as a self-contained HTML page (corpus-direct live preview).
 
     Query params:
       template_id  — persona to render through. If omitted, falls back
@@ -1007,8 +994,7 @@ def preview_application_html(application_id: int) -> ResponseReturnValue:
 
 @templates_bp.route("/api/applications/<int:application_id>/cover-letter-preview", methods=["GET"])
 def preview_cover_letter_html(application_id: int) -> ResponseReturnValue:
-    """Render the application's generated cover letter as a styled,
-    self-contained business-letter HTML page (v1.0.5 — Step 6 redesign).
+    """Render the application's generated cover letter as a styled, self-contained business-letter HTML page (v1.0.5 — Step 6 redesign).
 
     The cover-letter analogue of `preview_application_html`. Unlike the
     résumé preview (which renders the candidate's corpus through a persona
@@ -1109,8 +1095,7 @@ def preview_cover_letter_html(application_id: int) -> ResponseReturnValue:
 
 @templates_bp.route("/api/users/<string:username>/preview", methods=["GET"])
 def preview_candidate_html(username: str) -> ResponseReturnValue:
-    """Render the candidate's résumé corpus as a self-contained HTML page
-    WITHOUT an application in scope (pre-application preview).
+    """Render the candidate's résumé corpus as a self-contained HTML page without an application in scope (pre-application preview).
 
     Same shape as the application-scoped preview, but with no
     `application_id` → no composition_overrides, no recommended summary,

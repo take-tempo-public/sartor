@@ -263,8 +263,7 @@ def get_application(application_id: int) -> ResponseReturnValue:
 
 
 def _build_resume_state(safe_user: str, runs_sorted: list) -> dict:
-    """Package the state the frontend needs to resume a prior application into
-    the wizard at its FURTHEST step with data (#4 robustness).
+    """Package the frontend state needed to resume a prior application at its furthest wizard step.
 
     Picks the most-recent run carrying resumable state (a generated résumé in
     the DB, or a discoverable on-disk context file), pairs it with the context
@@ -523,8 +522,7 @@ def update_application_meta(application_id: int) -> ResponseReturnValue:
 
 
 def _load_application_owned(session: Session, application_id: int) -> tuple:
-    """(app_row, candidate) for an application, or (None, None). Runs the
-    standard _safe_username defense on the owning candidate.
+    """Return (app_row, candidate) for an application, or (None, None), after _safe_username defense.
 
     Return is a bare ``tuple`` by design: the two slots are correlated (both set
     or both ``None``), which the type system can't express across the callers'
@@ -532,7 +530,8 @@ def _load_application_owned(session: Session, application_id: int) -> tuple:
     pattern. A precise ``tuple[Application | None, Candidate | None]`` would force
     a None-narrowing change at ~10 call sites — a separate None-safety pass, out
     of scope for the ANN annotation branch (the call-site contract was already
-    untyped before ``session`` was typed)."""
+    untyped before ``session`` was typed).
+    """
     from db.models import Application, Candidate
 
     app_row = session.query(Application).filter_by(id=application_id).first()
@@ -564,8 +563,10 @@ def _latest_analysis_essentials(app_row: Application) -> set[str]:
 
 
 def _read_composition_overrides(context_path: str) -> tuple[set[int], set[int]]:
-    """(pinned, excluded) bullet-id sets from a context file, validated to
-    live under OUTPUT_DIR. Empty sets when absent/invalid."""
+    """Return (pinned, excluded) bullet-id sets from a context file validated under OUTPUT_DIR.
+
+    Empty sets when absent/invalid.
+    """
     if not context_path:
         return set(), set()
     cp = Path(context_path)
@@ -580,11 +581,12 @@ def _read_composition_overrides(context_path: str) -> tuple[set[int], set[int]]:
 
 
 def _read_bullet_order(context_path: str) -> dict[int, list[int]]:
-    """feat/bullet-drag-reorder — per-experience explicit bullet order from a
-    context file's `composition_overrides.bullet_order`, validated within
-    OUTPUT_DIR. Maps experience-id → ordered `[bullet_id, ...]`. Empty dict when
+    """Return per-experience explicit bullet order from a context file's `composition_overrides.bullet_order`.
+
+    Maps experience-id → ordered `[bullet_id, ...]`. Validated within OUTPUT_DIR. Empty dict when
     absent/invalid. Keys and ids are coerced to int (JSON persists keys as
-    strings); malformed entries are skipped, not fatal."""
+    strings); malformed entries are skipped, not fatal.
+    """
     if not context_path:
         return {}
     cp = Path(context_path)
@@ -606,11 +608,12 @@ def _read_bullet_order(context_path: str) -> dict[int, list[int]]:
 
 
 def _read_title_overrides(context_path: str) -> dict[int, int]:
-    """feat/compose-add-title — per-experience pinned title from a context
-    file's `composition_overrides.pinned_title_ids`, validated within OUTPUT_DIR.
-    Maps experience-id → chosen ExperienceTitle id. Empty dict when absent/invalid.
-    Keys and ids are coerced to int (JSON persists keys as strings); malformed
-    entries are skipped, not fatal."""
+    """Return per-experience pinned title from a context file's `composition_overrides.pinned_title_ids`.
+
+    Maps experience-id → chosen ExperienceTitle id. Validated within OUTPUT_DIR.
+    Empty dict when absent/invalid. Keys and ids are coerced to int (JSON persists keys as strings);
+    malformed entries are skipped, not fatal.
+    """
     if not context_path:
         return {}
     cp = Path(context_path)
@@ -634,15 +637,16 @@ def _read_title_overrides(context_path: str) -> dict[int, int]:
 def _read_experience_summary_overrides(
     context_path: str,
 ) -> tuple[dict[int, dict], dict[int, int], bool]:
-    """B.4 (Sprint 6.6) — per-role intro state from a context file:
-        (recs_by_exp, chosen_by_exp, use_experience_summaries)
+    """B.4: Return per-role intro state (recs_by_exp, chosen_by_exp, use_experience_summaries) from a context file.
+
     - recs_by_exp: experience-id → {summary_item_id, rationale, alternates}
       from `llm_experience_summary_recommendations.recommendations`.
     - chosen_by_exp: experience-id → chosen ExperienceSummaryItem id from
       `composition_overrides.chosen_experience_summary_ids`.
     - use_experience_summaries: the "Add role intros" toggle state.
     _within-gated by OUTPUT_DIR. Returns ({}, {}, False) on read/parse failure
-    so the route degrades to "no role intros" rather than 500ing."""
+    so the route degrades to "no role intros" rather than 500ing.
+    """
     empty: tuple[dict[int, dict], dict[int, int], bool] = ({}, {}, False)
     if not context_path:
         return empty
@@ -682,11 +686,12 @@ def _read_experience_summary_overrides(
 def _read_skill_composition(
     context_path: str,
 ) -> tuple[set[int], set[int], list[int], list[int] | None]:
-    """B.5 (Sprint 6.6) — skill curation state from a context file:
-        (pinned_skill_ids, excluded_skill_ids, skill_order, recommended_ids)
+    """B.5: Return skill curation state (pinned_ids, excluded_ids, order, recommended_ids) from a context file.
+
     Reuses the deterministic corpus readers. _within-gated by OUTPUT_DIR;
     returns empties / None on read/parse failure so the Compose UI degrades to
-    the default (all active+approved skills) rather than 500ing."""
+    the default (all active+approved skills) rather than 500ing.
+    """
     from corpus_to_json_resume import _read_skill_overrides, _read_skill_recommendations
 
     empty: tuple[set[int], set[int], list[int], list[int] | None] = (set(), set(), [], None)
@@ -745,9 +750,11 @@ def _read_summary_overrides(
 def _read_recommendations_and_added(
     context_path: str,
 ) -> tuple[set[int], dict[int, dict]]:
-    """(added bullet-id set, recommendations dict keyed by experience id).
+    """Return (added bullet-id set, recommendations dict keyed by experience id) from a context file.
+
     Reads `composition_overrides.added` and `llm_recommendations` from the
-    context file. Empty / {} when absent. _within-gated by OUTPUT_DIR."""
+    context file. Empty / {} when absent. _within-gated by OUTPUT_DIR.
+    """
     if not context_path:
         return set(), {}
     cp = Path(context_path)
@@ -1144,15 +1151,16 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
 
 @applications_bp.route("/api/applications/<int:application_id>/composition", methods=["POST"])
 def save_application_composition(application_id: int) -> ResponseReturnValue:
-    """Persist pin/exclude/add overrides into the application's context file
-    so the next generate() honors them. Body:
-        {context_path, pinned[], excluded[], added[]}
+    """Persist pin/exclude/add overrides into the application's context file so the next generate() honors them.
+
+    Body: {context_path, pinned[], excluded[], added[]}
     `added` (Workstream I) is bullet ids the user pulled in via the
     per-experience drawer; combined with `llm_recommendations` at
     prompt-build time to form the effective corpus the LLM sees.
     Writes back in place (same pattern as /api/answer-clarifications).
     Filesystem + ownership: _safe_username is enforced inside
-    _load_application_owned; _within gates context_path."""
+    _load_application_owned; _within gates context_path.
+    """
     from db.session import get_session, init_db
 
     data = request.json or {}
@@ -1431,9 +1439,7 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
 
 @applications_bp.route("/api/applications/<int:application_id>/recommend", methods=["POST"])
 def recommend_application_bullets(application_id: int) -> ResponseReturnValue:
-    """Workstream H: pick 3-7 bullets/experience via Haiku and stash them
-    on the context file as `llm_recommendations`, so the Compose UI can
-    render only the curated set by default.
+    """Workstream H: pick 3-7 bullets/experience via Haiku and stash them on the context file as `llm_recommendations`.
 
     Body: {context_path}. Fired by the frontend right after a successful
     /api/analyze; the route is also re-runnable (overwrites the field).
@@ -1657,9 +1663,9 @@ def recommend_application_summary(application_id: int) -> ResponseReturnValue:
     "/api/applications/<int:application_id>/recommend-experience-summaries", methods=["POST"]
 )
 def recommend_application_experience_summaries(application_id: int) -> ResponseReturnValue:
-    """B.4 (Sprint 6.6) — pick the best per-role intro variant for each role,
-    batched. Mirrors recommend_application_summary: one Haiku call (via
-    analyzer.recommend_experience_summaries), persists to
+    """B.4: Pick the best per-role intro variant for each role via one batched Haiku call.
+
+    Mirrors recommend_application_summary (analyzer.recommend_experience_summaries), persists to
     context_set["llm_experience_summary_recommendations"]. Fires from the
     Compose step when the user turns on "Add role intros"; re-runnable
     (overwrites the field). Short-circuits without an LLM call when no role
@@ -1781,9 +1787,9 @@ def recommend_application_experience_summaries(application_id: int) -> ResponseR
 
 @applications_bp.route("/api/applications/<int:application_id>/recommend-skills", methods=["POST"])
 def recommend_application_skills(application_id: int) -> ResponseReturnValue:
-    """B.5 (Sprint 6.6) — order (and lightly curate) the candidate's skills for
-    this JD via Haiku (analyzer.recommend_skills); persist to
-    context["llm_skill_recommendations"]. Fired from the Compose step;
+    """B.5: Order and lightly curate the candidate's skills for this JD via Haiku (analyzer.recommend_skills).
+
+    Persists to context["llm_skill_recommendations"]. Fired from the Compose step;
     re-runnable (overwrites the field). Selects only from the candidate's
     active, approved skills, so a pending/inactive skill can never be
     recommended. Short-circuits without an LLM call for 0 or 1 skills.
@@ -1880,9 +1886,9 @@ def recommend_application_skills(application_id: int) -> ResponseReturnValue:
 
 @applications_bp.route("/api/applications/<int:application_id>/suggest-skills", methods=["POST"])
 def suggest_application_skills(application_id: int) -> ResponseReturnValue:
-    """B.5 (Sprint 6.6) — propose NEW canonical skills the JD wants AND the
-    candidate's corpus evidences (analyzer.suggest_skills, grounded). Each
-    proposal is inserted as a PENDING Skill (source='llm_proposed',
+    """B.5: Propose NEW canonical skills the JD wants and the candidate's corpus evidences (grounded).
+
+    Each proposal is inserted as a PENDING Skill (source='llm_proposed',
     is_pending_review=1) for the user to approve/deny; pending skills never
     reach the recommend set, the preview, or the generate prompt until
     approved — the human gate is the grounding backstop. Re-runnable; existing

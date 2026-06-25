@@ -131,8 +131,11 @@ def create_summary_item(username: str) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/summaries/<int:summary_id>", methods=["PUT"])
 def update_summary_item(summary_id: int) -> ResponseReturnValue:
-    """Update a SummaryItem. Body accepts: text, label, has_outcome,
-    is_pending_review, display_order. Ownership check via _safe_username."""
+    """Update a SummaryItem.
+
+    Body accepts: text, label, has_outcome, is_pending_review, display_order.
+    Ownership check via _safe_username.
+    """
     from db.models import Candidate, SummaryItem
     from db.session import get_session, init_db
 
@@ -181,9 +184,11 @@ def update_summary_item(summary_id: int) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/summaries/<int:summary_id>", methods=["DELETE"])
 def delete_summary_item(summary_id: int) -> ResponseReturnValue:
-    """Soft-retire a SummaryItem (is_active=0). Mirrors bullet delete
-    semantics — composition_overrides may reference this id from past
-    applications so a hard-delete would orphan them."""
+    """Soft-retire a SummaryItem (is_active=0).
+
+    Mirrors bullet delete semantics — composition_overrides may reference this id from
+    past applications so a hard-delete would orphan them.
+    """
     from db.models import Candidate, SummaryItem
     from db.session import get_session, init_db
 

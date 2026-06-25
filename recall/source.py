@@ -26,8 +26,11 @@ from recall.models import Scope, Unit
 
 @runtime_checkable
 class Source(Protocol):
-    """A retrieval tier. `search` returns ranked, provenance-stamped `Unit`s for
-    a query within a `Scope`; `refresh` brings the tier's index up to a sha."""
+    """A retrieval tier with ranked provenance-stamped search and incremental refresh.
+
+    `search` returns ranked, provenance-stamped `Unit`s for a query within a `Scope`;
+    `refresh` brings the tier's index up to a sha.
+    """
 
     source_id: str
 

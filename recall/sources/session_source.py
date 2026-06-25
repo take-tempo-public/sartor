@@ -23,9 +23,11 @@ from recall.models import Audience, Scope, Tier, Unit
 
 
 class SessionSource:
-    """A `Source` over the current conversation's turns, growing as the avatar
-    observes them. `refresh` is a no-op (no derived index); `search` delegates to a
-    backing `InMemorySource` rebuilt on each `observe`."""
+    """A `Source` over the current conversation's turns, growing as the avatar observes them.
+
+    `refresh` is a no-op (no derived index); `search` delegates to a backing
+    `InMemorySource` rebuilt on each `observe`.
+    """
 
     def __init__(self, source_id: str = "session") -> None:
         self.source_id = source_id
@@ -59,6 +61,8 @@ class SessionSource:
         return None
 
     def search(self, query: str, scope: Scope) -> Sequence[Unit]:
-        """Rank held turns by query-token overlap (via the backing source). Scope is
-        filtered centrally by `assemble()`."""
+        """Rank held turns by query-token overlap via the backing source.
+
+        Scope is filtered centrally by `assemble()`.
+        """
         return self._backing.search(query, scope)

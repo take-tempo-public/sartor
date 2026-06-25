@@ -31,9 +31,10 @@ logger = logging.getLogger(__name__)
 
 
 class LLMResponseError(Exception):
-    """Raised when an LLM response fails JSON parsing or required-key validation
-    after the retry budget is exhausted. Carries the raw response and the
-    validation error so callers can surface both to logs and to the user.
+    """Raised when an LLM response fails JSON parsing or required-key validation after the retry budget is exhausted.
+
+    Carries the raw response and the validation error so callers can surface
+    both to logs and to the user.
     """
 
     def __init__(self, raw: str, validation_error: str) -> None:
@@ -1018,8 +1019,9 @@ def _supplemental_block(context_set: ContextSet, iteration: int = 0) -> str:
 
 
 class _StreamDone:
-    """Sentinel yielded as the LAST item of `_call_llm_streaming`. Carries
-    the accumulated text plus the stop_reason from the final message so
+    """Sentinel yielded as the LAST item of `_call_llm_streaming`.
+
+    Carries the accumulated text plus the stop_reason from the final message so
     parse/retry logic can decide what to do next.
 
     Distinguishable from text-chunk yields by isinstance check; callers
@@ -1175,10 +1177,10 @@ def _call_llm(
     system_prompt: str = "",
     model: str | None = None,
 ) -> str:
-    """Non-streaming wrapper — drain `_call_llm_streaming` and return the
-    accumulated text. Preserves the existing call signature for all callers
-    that don't need token-level streaming; new SSE routes use the underlying
-    generator directly.
+    """Non-streaming wrapper — drain `_call_llm_streaming` and return the accumulated text.
+
+    Preserves the existing call signature for all callers that don't need
+    token-level streaming; new SSE routes use the underlying generator directly.
     """
     final_text = ""
     for item in _call_llm_streaming(
@@ -1308,8 +1310,7 @@ def _parse_or_retry(
     model: str | None = None,
     validation_context: dict | None = None,
 ) -> dict:
-    """Parse an LLM JSON response, retrying once with the validation error
-    appended on parse failure or missing required keys.
+    """Parse an LLM JSON response, retrying once with the validation error appended on parse failure or missing required keys.
 
     The cached_user_prefix is byte-identical across attempts so the retry
     hits Anthropic's prompt cache (only the per-call base_prompt + retry
@@ -2106,9 +2107,10 @@ def _build_generate_prompt(
     refinement_notes: str = "",
     with_cover_letter: bool = True,
 ) -> tuple[str, type[BaseModel]]:
-    """Build the generate-prompt + the matching response_model for the
-    expected JSON output. Shared by `generate()` and `generate_streaming()`
-    so the prompt template lives in one place. Returns (prompt, response_model).
+    """Build the generate-prompt + the matching response_model for the expected JSON output.
+
+    Shared by `generate()` and `generate_streaming()` so the prompt template
+    lives in one place. Returns (prompt, response_model).
 
     Mirrors `_analyze_prompt` — extracted 2026-05-26 to support the R2
     streaming path without duplicating ~80 lines of conditional prompt
@@ -2928,9 +2930,11 @@ Industry keywords: {keywords or "(none)"}
 
 
 def _dedup_recommendations(result: dict, corpus: list[CorpusExperience]) -> None:
-    """Mutate result['recommendations'][i]['bullet_ids'] in place to drop
-    near-duplicate bullet ids per experience. Same-experience scope only —
-    two experiences referring to the same achievement is rare but legal."""
+    """Mutate result['recommendations'][i]['bullet_ids'] in place to drop near-duplicate bullet ids per experience.
+
+    Same-experience scope only — two experiences referring to the same
+    achievement is rare but legal.
+    """
     from hardening import bullet_jaccard
 
     text_by_id: dict[int, str] = {}
@@ -3087,8 +3091,10 @@ Industry keywords: {keywords or "(none)"}
 
 def _summary_items_block(items: list[dict]) -> str:
     """XML-format the candidate's SummaryItem variants for the prompt.
+
     Mirrors `_corpus_block`'s shape conventions: numeric ids only, no
-    free-form metadata that the LLM might echo back into a bullet."""
+    free-form metadata that the LLM might echo back into a bullet.
+    """
     from xml.sax.saxutils import escape
 
     lines = ["<summary_items>"]
@@ -3113,13 +3119,14 @@ def _summary_items_block(items: list[dict]) -> str:
 
 
 def _dedup_summary_recommendations(result: dict, items: list[dict]) -> None:
-    """Mutate result['alternates'] in place to drop entries that are
-    near-restatements of the recommendation (or of each other). Jaccard
-    ≥ 0.75 on the variant text, same threshold as bullets.
+    """Mutate result['alternates'] in place to drop entries that are near-restatements of the recommendation (or of each other).
+
+    Jaccard ≥ 0.75 on the variant text, same threshold as bullets.
 
     The recommendation itself is preserved — the LLM's top pick is the
     user's primary surface and we don't touch it. Only alternates get
-    trimmed."""
+    trimmed.
+    """
     from hardening import bullet_jaccard
 
     text_by_id: dict[int, str] = {}
@@ -3213,8 +3220,8 @@ def recommend_experience_summaries(
     active ExperienceSummaryItem variants on
     `context_set["experience_summary_items"]` as a list of
     {experience_id, company, items: [{id, text, label, has_outcome}]}.
-    Returns:
 
+    Returns:
         {"recommendations": [
             {"experience_id": int, "summary_item_id": int,
              "rationale": str, "alternates": [...]},
@@ -3323,8 +3330,10 @@ Industry keywords: {keywords or "(none)"}
 
 def _experience_summary_items_block(groups: list[dict]) -> str:
     """XML-format the per-role ExperienceSummaryItem variants for the prompt.
+
     Groups variants under one <experience> each — mirrors _summary_items_block
-    + _corpus_block conventions (numeric ids only, escaped text)."""
+    + _corpus_block conventions (numeric ids only, escaped text).
+    """
     from xml.sax.saxutils import escape
 
     lines = ["<experience_summaries>"]
@@ -3360,10 +3369,11 @@ def _experience_summary_items_block(groups: list[dict]) -> str:
 
 
 def _dedup_experience_summary_recommendations(result: dict, groups: list[dict]) -> None:
-    """Mutate each recommendation's 'alternates' in place to drop entries that
-    are near-restatements of that role's recommendation (or of each other).
+    """Mutate each recommendation's 'alternates' in place to drop entries that are near-restatements of that role's recommendation (or of each other).
+
     Jaccard ≥ 0.75 on variant text, per-experience scope — same threshold as
-    bullets/summaries. The recommendation itself is preserved."""
+    bullets/summaries. The recommendation itself is preserved.
+    """
     from hardening import bullet_jaccard
 
     text_by_exp_id: dict[int, dict[int, str]] = {}
@@ -3535,9 +3545,11 @@ Industry keywords: {keywords or "(none)"}
 
 
 def _skills_block(items: list[dict]) -> str:
-    """XML-format the candidate's canonical skills for the prompt. Numeric ids
-    only; name as the element body, optional category + tags as attributes —
-    mirrors _summary_items_block's conventions."""
+    """XML-format the candidate's canonical skills for the prompt.
+
+    Numeric ids only; name as the element body, optional category + tags as
+    attributes — mirrors _summary_items_block's conventions.
+    """
     from xml.sax.saxutils import escape
 
     lines = ["<skills>"]
@@ -3770,8 +3782,10 @@ _BASE_SYSTEM_PROMPTS: dict[str, str] = {
 
 
 def _resolve_system_prompt(name: str) -> str:
-    """Return the active text for a persona-constant `name`: the candidate
-    override when one is in scope, else the baseline constant (the identical
-    object -> default-path byte-identity). `name` must be a registry key.
+    """Return the active text for a persona-constant `name`.
+
+    The candidate override when one is in scope, else the baseline constant
+    (the identical object -> default-path byte-identity). `name` must be a
+    registry key.
     """
     return (_prompt_overrides.get() or {}).get(name, _BASE_SYSTEM_PROMPTS[name])

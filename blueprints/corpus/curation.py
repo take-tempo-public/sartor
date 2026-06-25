@@ -40,8 +40,10 @@ logger = logging.getLogger(__name__)
 
 
 def _find_root(parent: dict[int, int], x: int) -> int:
-    """Union-find path-compression helper used by the corpus-duplicates
-    clusterer. Mutates `parent` to flatten the chain as it goes."""
+    """Union-find path-compression helper used by the corpus-duplicates clusterer.
+
+    Mutates `parent` to flatten the chain as it goes.
+    """
     while parent[x] != x:
         parent[x] = parent[parent[x]]
         x = parent[x]
@@ -114,10 +116,11 @@ def list_resumes(username: str) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/users/<username>/duplicates", methods=["GET"])
 def list_corpus_duplicates(username: str) -> ResponseReturnValue:
-    """Workstream B1.2: cluster near-duplicate bullets in the candidate's
-    corpus (Jaccard ≥ 0.75 on `hardening.bullet_token_set`). Returns
-    clusters per experience so the Library "Duplicates" surface can offer
-    keep-one-soft-retire-others merging.
+    """Workstream B1.2: cluster near-duplicate bullets in the candidate's corpus.
+
+    Uses Jaccard >= 0.75 on `hardening.bullet_token_set`; returns clusters per
+    experience so the Library "Duplicates" surface can offer keep-one-soft-retire-others
+    merging.
 
     DB-only (no filesystem); _safe_username scopes the candidate. The
     cluster threshold is configurable via ?threshold=0.75.
@@ -238,16 +241,16 @@ def list_corpus_duplicates(username: str) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/users/<username>/corpus/ingest-resume", methods=["POST"])
 def ingest_resume_to_corpus(username: str) -> ResponseReturnValue:
-    """Workstream D: the repurposed RESUME panel. Save an uploaded resume
-    under resumes/{user}/, Haiku-extract its experiences, and merge them
-    into the candidate's corpus as is_pending_review=1 (the Career Corpus
-    pending banner then surfaces them for review).
+    """Workstream D: save an uploaded resume, extract its experiences, and merge into corpus.
+
+    Saves under resumes/{user}/, Haiku-extracts experiences, and merges them as
+    is_pending_review=1 (the Career Corpus pending banner then surfaces them for review).
 
     Reuses onboarding.corpus_import.ingest_one_resume so the
     merge-as-alternate-title behavior is identical to the CLI importer.
     One Haiku call per upload (~$0.01-0.03, costs API credit).
 
-    Touches the filesystem (saves the upload) → _safe_username + _within.
+    Touches the filesystem (saves the upload) -> _safe_username + _within.
     """
     from db.session import get_session, init_db
     from onboarding.corpus_import import ImportReport, ingest_one_resume
@@ -320,8 +323,9 @@ def ingest_resume_to_corpus(username: str) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/bullets/<int:bullet_id>/accept", methods=["POST"])
 def accept_bullet(bullet_id: int) -> ResponseReturnValue:
-    """Clear is_pending_review on one bullet — the GUI affordance for
-    accepting an LLM-extracted bullet during the onboarding review flow.
+    """Clear is_pending_review on one bullet.
+
+    GUI affordance for accepting an LLM-extracted bullet during the onboarding review flow.
     """
     from db.models import Bullet, Candidate, Experience
     from db.session import get_session, init_db
@@ -384,9 +388,10 @@ def accept_experience_title(title_id: int) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/experiences/<int:experience_id>/accept-all", methods=["POST"])
 def accept_experience_all(experience_id: int) -> ResponseReturnValue:
-    """Bulk-accept: clears is_pending_review on every title + active
-    bullet under one experience. Used by the "ACCEPT EXPERIENCE" button
-    in the GUI onboarding review flow."""
+    """Bulk-accept: clears is_pending_review on every title + active bullet under one experience.
+
+    Used by the "ACCEPT EXPERIENCE" button in the GUI onboarding review flow.
+    """
     from db.models import Bullet, ExperienceTitle
     from db.session import get_session, init_db
 
@@ -432,11 +437,12 @@ def accept_experience_all(experience_id: int) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/users/<username>/accept-all-pending", methods=["POST"])
 def accept_all_pending(username: str) -> ResponseReturnValue:
-    """Corpus-wide bulk-accept: clears is_pending_review on every title +
-    active bullet across all of the candidate's experiences. Drives the
-    "Accept all pending" button in the onboarding banner (KW2) — senior
+    """Corpus-wide bulk-accept: clears is_pending_review on all titles + bullets.
+
+    Drives the "Accept all pending" button in the onboarding banner (KW2) — senior
     résumés have many roles, and accepting role-by-role is tedious. The
-    per-experience accept-all route still covers the by-role case."""
+    per-experience accept-all route still covers the by-role case.
+    """
     from db.models import Bullet, Candidate, Experience, ExperienceTitle
     from db.session import get_session, init_db
 

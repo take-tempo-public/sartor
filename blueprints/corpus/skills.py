@@ -151,9 +151,12 @@ def create_skill(username: str) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/skills/<int:skill_id>", methods=["PUT"])
 def update_skill(skill_id: int) -> ResponseReturnValue:
-    """Update a Skill. Body accepts: name, category, proficiency, years,
-    display_order, is_pending_review (set false to approve an llm_proposed
-    skill). Ownership check via _safe_username on the owning candidate."""
+    """Update a Skill.
+
+    Body accepts: name, category, proficiency, years, display_order, is_pending_review
+    (set false to approve an llm_proposed skill). Ownership check via _safe_username on
+    the owning candidate.
+    """
     from db.models import Candidate, Skill
     from db.session import get_session, init_db
 
@@ -221,10 +224,12 @@ def update_skill(skill_id: int) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/skills/<int:skill_id>", methods=["DELETE"])
 def delete_skill(skill_id: int) -> ResponseReturnValue:
-    """Remove a skill. A never-approved suggestion (pending + source
-    'llm_proposed') is hard-deleted so its name frees the unique slot for
-    future re-evaluation. An approved skill is soft-retired (is_active=0) —
-    composition_overrides from past applications may reference its id."""
+    """Remove a skill.
+
+    A never-approved suggestion (pending + source 'llm_proposed') is hard-deleted so its
+    name frees the unique slot for future re-evaluation. An approved skill is soft-retired
+    (is_active=0) — composition_overrides from past applications may reference its id.
+    """
     from db.models import Candidate, Skill
     from db.session import get_session, init_db
 

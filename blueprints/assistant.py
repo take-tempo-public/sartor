@@ -94,9 +94,10 @@ _DEV_PATH_PREFIXES = (
 
 
 def _wiki_audience(stem: str, raw_text: str) -> Audience:
-    """A wiki page's audience = its own `**Audience:**` tag (the canonical, drift-proof
-    parse target per SCHEMA), defaulting to `dev` when a page carries no tag (safe — it
-    never over-discloses to a user-scoped turn)."""
+    """Return a wiki page's audience from its `**Audience:**` SCHEMA tag, defaulting to `dev` when absent.
+
+    The `dev` default is safe — it never over-discloses to a user-scoped turn.
+    """
     match = _AUDIENCE_TAG_RE.search(raw_text[:1000])
     if match:
         return Audience.USER if match.group(1).lower() == "user" else Audience.DEV
@@ -104,9 +105,10 @@ def _wiki_audience(stem: str, raw_text: str) -> Audience:
 
 
 def _path_audience(path: str) -> Audience:
-    """A code/doc path's audience = the SCHEMA blanket path→audience rules
-    (docs/wiki/SCHEMA.md): code + dev docs → `dev`; a few named user docs → `user`;
-    everything else → `dev` (safe default)."""
+    """Return a code/doc path's audience using the SCHEMA blanket path→audience rules.
+
+    Code + dev docs → `dev`; a few named user docs → `user`; everything else → `dev` (safe default).
+    """
     p = path.replace("\\", "/")
     if p.endswith(".py") or any(p.startswith(prefix) for prefix in _DEV_PATH_PREFIXES):
         return Audience.DEV
@@ -116,12 +118,11 @@ def _path_audience(path: str) -> Audience:
 
 
 def _make_embedder() -> Embedder | None:
-    """Load the model2vec static model from the local sidecar dir and return an
-    L2-normalizing batch embedder, or None when the model isn't downloaded yet (→ the
-    S3 tier stays inactive). model2vec is imported lazily HERE — the heavy, HuggingFace-
-    coupled embedder is confined to this wiring layer + the build script so `recall/`
-    stays embedder-agnostic and extractable. Cached per process: the model load is the
-    cost; the per-query encode is a cheap static lookup.
+    """Load the model2vec static model and return an L2-normalizing batch embedder, or None if absent.
+
+    model2vec is imported lazily here — the heavy, HuggingFace-coupled embedder is confined to
+    this wiring layer + the build script so `recall/` stays embedder-agnostic and extractable.
+    Cached per process: the model load is the cost; the per-query encode is a cheap static lookup.
     """
     global _EMBEDDER, _EMBEDDER_LOADED
     if _EMBEDDER_LOADED:
@@ -157,8 +158,10 @@ def _make_embedder() -> Embedder | None:
 
 
 def _enabled_tiers(sources: Sequence[object]) -> frozenset[Tier]:
-    """The tiers a turn may surface — the free Stage-1 set, plus S3 only when the vector
-    source is actually active (model + index both present)."""
+    """Return the tiers a turn may surface: the free Stage-1 set, plus S3 when the vector source is active.
+
+    S3 is added only when both the model and index are present.
+    """
     tiers = {Tier.WIKI, Tier.GIT, Tier.SESSION}
     if any(isinstance(s, VectorSource) for s in sources):
         tiers.add(Tier.VECTOR)

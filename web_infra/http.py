@@ -23,7 +23,9 @@ logger = logging.getLogger(__name__)
 
 
 def _sse(event: str, payload: dict) -> str:
-    """Format a Server-Sent Event line block. SSE protocol requires:
+    r"""Format a Server-Sent Event line block.
+
+    SSE protocol requires:
     `event: <name>\\ndata: <line>\\n\\n` with the trailing blank line.
     Multi-line data values aren't used here so a single data line suffices.
     """

@@ -344,7 +344,7 @@ def _entry_from_chunk(chunk: list[str], kind: str) -> dict[str, Any]:
 
 
 def _split_h3_header(text: str) -> tuple[str, str, str, str]:
-    """Split `Company, Position\\tStart – End` (or variants) into 4 strings.
+    r"""Split `Company, Position\\tStart – End` (or variants) into 4 strings.
 
     Returns (name, position, start, end). Any field may be empty.
     Tolerates: TAB separator before date; ", " separator between
