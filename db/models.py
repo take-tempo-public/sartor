@@ -32,7 +32,7 @@ def utc_now() -> str:
 
 
 class Base(DeclarativeBase):
-    pass
+    """Declarative base for all corpus and candidate-memory ORM models."""
 
 
 # ---------------------------------------------------------------------------
@@ -41,6 +41,8 @@ class Base(DeclarativeBase):
 
 
 class Candidate(Base):
+    """The account root — one row per username; parent of every corpus, application, and memory entity."""
+
     __tablename__ = "candidate"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -85,6 +87,8 @@ class Candidate(Base):
 
 
 class Experience(Base):
+    """One job or role in the candidate's history; parent of its titles, bullets, and per-role intro variants."""
+
     __tablename__ = "experience"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -122,6 +126,8 @@ class Experience(Base):
 
 
 class ExperienceTitle(Base):
+    """A title variant for an Experience — official, user-added, or LLM-proposed (at most one is_official per role)."""
+
     __tablename__ = "experience_title"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -158,6 +164,8 @@ class ExperienceTitle(Base):
 
 
 class Bullet(Base):
+    """One achievement bullet under an Experience — the core tailorable corpus item (active/pending, tagged, with metrics)."""
+
     __tablename__ = "bullet"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -231,6 +239,8 @@ class Tag(Base):
 
 
 class BulletTag(Base):
+    """Tag join table linking a Bullet to a Tag, with a match-confidence weight."""
+
     __tablename__ = "bullet_tag"
 
     bullet_id: Mapped[int] = mapped_column(
@@ -246,6 +256,8 @@ class BulletTag(Base):
 
 
 class ExperienceTitleTag(Base):
+    """Tag join table linking an ExperienceTitle to a Tag, with a match-confidence weight."""
+
     __tablename__ = "experience_title_tag"
 
     experience_title_id: Mapped[int] = mapped_column(
@@ -261,6 +273,8 @@ class ExperienceTitleTag(Base):
 
 
 class BulletMetric(Base):
+    """A structured metric (count, currency, percent, duration, or scope) extracted verbatim from a Bullet."""
+
     __tablename__ = "bullet_metric"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -548,6 +562,8 @@ class SkillTag(Base):
 
 
 class Education(Base):
+    """One education entry — institution, degree, field, and dates."""
+
     __tablename__ = "education"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -565,6 +581,8 @@ class Education(Base):
 
 
 class Certification(Base):
+    """One professional certification — name, issuer, and issued/expiry dates."""
+
     __tablename__ = "certification"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -580,6 +598,8 @@ class Certification(Base):
 
 
 class Project(Base):
+    """One project entry — name, description, optional URL, and dates."""
+
     __tablename__ = "project"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -596,6 +616,8 @@ class Project(Base):
 
 
 class Publication(Base):
+    """One publication entry — title, venue, optional URL, and publish date."""
+
     __tablename__ = "publication"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -616,6 +638,8 @@ class Publication(Base):
 
 
 class PersonaTemplate(Base):
+    """A résumé .docx style template — bundled with the app (NULL candidate_id) or user-uploaded."""
+
     __tablename__ = "persona_template"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -651,6 +675,8 @@ class PersonaTemplate(Base):
 
 
 class PersonaTemplateTag(Base):
+    """Tag join table linking a PersonaTemplate to a role/domain Tag."""
+
     __tablename__ = "persona_template_tag"
 
     persona_template_id: Mapped[int] = mapped_column(
@@ -670,6 +696,8 @@ class PersonaTemplateTag(Base):
 
 
 class Application(Base):
+    """One job application (Job Item) — the target JD, its fingerprint, status, and iteration runs."""
+
     __tablename__ = "application"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -708,6 +736,8 @@ class Application(Base):
 
 
 class ApplicationRun(Base):
+    """One generate/iterate run of an Application — the frozen corpus snapshot plus every generated and edited artifact."""
+
     __tablename__ = "application_run"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -809,6 +839,8 @@ class ApplicationBullet(Base):
 
 
 class ProposalReview(Base):
+    """Audit + feedback record for one LLM-proposed bullet or title edit and the user's accept/reject decision."""
+
     __tablename__ = "proposal_review"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -889,6 +921,8 @@ class Clarification(Base):
 
 
 class ClarificationTag(Base):
+    """Tag join table linking a Clarification to a Tag, with a match-confidence weight."""
+
     __tablename__ = "clarification_tag"
 
     clarification_id: Mapped[int] = mapped_column(
@@ -904,6 +938,8 @@ class ClarificationTag(Base):
 
 
 class IterationLog(Base):
+    """One human-readable audit entry recording an action taken during an ApplicationRun."""
+
     __tablename__ = "iteration_log"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -918,6 +954,8 @@ class IterationLog(Base):
 
 
 class Engagement(Base):
+    """One funnel-telemetry event for a candidate (and optional application) — opened, edited, abandoned, or submitted."""
+
     __tablename__ = "engagement"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

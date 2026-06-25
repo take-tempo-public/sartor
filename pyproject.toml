@@ -174,11 +174,10 @@ ignore = [
 # (D101/D102/D103/D105/D107) so the CONTENT rules (D205/D209/...) still apply. The list
 # SHRINKS as modules are documented branch-by-branch; the §6 exit criterion is reached
 # when it is empty (then D blocks everywhere outside the exempt set above). `ui_pages/**`
-# is the 12-file Playwright POM — 53% of the remaining debt; its eventual branch is the
-# large one. hardening.py was documented in this branch → deliberately absent here.
+# is the 12-file Playwright POM — the bulk of the remaining debt; its eventual branch is
+# the large one. hardening.py was documented in this branch → deliberately absent here.
 "ui_pages/**" = ["D101", "D102", "D103", "D105", "D107"]
 "analyzer.py" = ["D101", "D102", "D103", "D105", "D107"]
-"db/models.py" = ["D101", "D102", "D103", "D105", "D107"]
 
 [tool.ruff.lint.pydocstyle]
 # Kit-adoption Phase 2 #3: pin the google docstring convention. Narrows the D family to

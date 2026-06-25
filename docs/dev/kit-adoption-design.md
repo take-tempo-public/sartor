@@ -344,6 +344,29 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > the missing-docstring waiver.** Remaining ratchet units (smallest first): `analyzer.py` (16) ·
 > `db/models.py` (20) · last `ui_pages/**` (89).
 
+> **Phase 2 #3 ratchet — unit 6, `db/models.py` drained
+> (`chore/kit-phase2-ruff-d-models`, 2026-06-25).** Sixth rung of the `D` missing-docstring
+> ratchet: documented `db/models.py` (all **20 D101 hits — every undocumented ORM class**,
+> `Base` + `Candidate` … `Engagement`) and removed its entry from the `per-file-ignores` ratchet
+> block (**3 → 2 entries**). The prompt-free, single-genre analogue of the unit-1 `hardening.py`
+> TypedDict pass — pure-D101, and the 10 model classes already documented (`Tag`, `Skill`, the
+> `SummaryItem` family, `Clarification`, …) set the house style: single-line descriptive
+> noun-phrase summaries, no `Args:`. `Base`'s bare `pass` body was replaced by its docstring (the
+> only deleted line; PIE790 is not in `select`, so a redundant `pass` would not lint either way).
+> **PROMPT-SAFE the easy way (GOTCHA-4 grep-first):** `db/models.py` is pure SQLAlchemy, so a grep
+> for `(_PROMPT|_RULES_BLOCK|PROMPT_VERSION|SYSTEM_PROMPT|AVATAR_)` returns **0** — no prompt
+> constant exists to perturb, so no sha256 dump is needed and there is no `PROMPT_VERSION`/
+> `AVATAR_PROMPT_VERSION` bump, no eval run. Measured the true debt by bypassing the ratchet
+> (`--config "lint.per-file-ignores={}"`). No dep/version/hook change. Gate green: ruff check ✓ ·
+> ruff format --check (217) ✓ · mypy (227) ✓ · pytest 1389 passed / 2 flaky — the ledger #3
+> Compose load-race fired its **strongest datapoint yet** (two members at once: bullet-load
+> `test_20260604_bullet_drag_reorder` + title-add `test_20260611_compose_add_title`; the latter
+> measured at 4/6 passing isolated, ~33 % fail, and passing on a `git stash`'d clean tree — both
+> proven flaky and code-independent, ledger #3). **Per-module tracking: `db/models.py` now at full
+> `D`; 2 entries / 13 modules still carry the missing-docstring waiver** (`analyzer.py` + the
+> 12-file `ui_pages/**` glob). Remaining ratchet units (smallest first): `analyzer.py` (16 —
+> GOTCHA-4 territory, holds the 16 prompt constants → sha256-prove them) · last `ui_pages/**` (89).
+
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by
 blueprint, each reconciled with `_safe_username`/`_within` + the PX-29 containment gate **[M+J]**;
