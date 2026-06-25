@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 class CandidateInfo(TypedDict):
+    """Candidate identity, contact, and profile fields, sourced from the user config."""
+
     name: str
     email: str
     phone: str
@@ -40,6 +42,8 @@ class CandidateInfo(TypedDict):
 
 
 class ResumeInfo(TypedDict):
+    """The candidate's primary résumé — parsed text, format, and section structure."""
+
     format: str
     sections: list[dict]
     text: str
@@ -48,12 +52,16 @@ class ResumeInfo(TypedDict):
 
 
 class SupplementalResume(TypedDict):
+    """One additional résumé folded in alongside the primary as reference material."""
+
     filename: str
     text: str
     sections: list[dict]
 
 
 class DeterministicAnalysisBlock(TypedDict):
+    """Deterministic (non-LLM) JD/résumé keyword analysis attached to every context_set."""
+
     jd_keywords: dict
     resume_keywords: dict
     keyword_overlap: dict
@@ -70,6 +78,8 @@ class _ContextSetRequired(TypedDict):
 
 
 class CorpusBullet(TypedDict, total=False):
+    """One corpus bullet eligible for selection into a tailored résumé."""
+
     id: int
     text: str
     tags: list[str]
@@ -78,12 +88,16 @@ class CorpusBullet(TypedDict, total=False):
 
 
 class CorpusEligibleTitle(TypedDict, total=False):
+    """One job title a candidate may legitimately claim for an experience."""
+
     id: int
     title: str
     is_official: bool
 
 
 class CorpusExperience(TypedDict, total=False):
+    """One work experience (company + role span) with its eligible titles and bullets."""
+
     id: int
     company: str
     location: str
@@ -99,6 +113,8 @@ class CorpusExperience(TypedDict, total=False):
 
 
 class ClarificationQuestion(TypedDict, total=False):
+    """One interview-style question the clarifier surfaces to fill a résumé gap."""
+
     id: str
     text: str
     target_gap: str
@@ -106,12 +122,16 @@ class ClarificationQuestion(TypedDict, total=False):
 
 
 class IterationNote(TypedDict, total=False):
+    """One append-only audit entry recording a step in the generate/iterate loop."""
+
     timestamp: str
     action: str  # "generate" | "save_edits" | "iterate_clarify" | "answer_iteration"
     summary: str
 
 
 class ContextSet(_ContextSetRequired, total=False):
+    """The JSON contract passed between every pipeline stage (analyze → clarify → generate → iterate)."""
+
     # Added by app.py after analyze(); not present at build_context_set time
     llm_analysis: dict
     run_id: str

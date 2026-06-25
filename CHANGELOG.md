@@ -13,6 +13,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Kit-adoption Phase 2 #3 — ruff `D` (pydocstyle/google) enabled + first ratchet rung (`chore/kit-phase2-ruff-d`, 2026-06-24)
+
+Third implementation branch of the agent-coding-practices kit-adoption arc **Phase 2** (the
+strictness ratchet — kit-adoption-design.md §4; Decision KIT-6 "ratchet-then-block" + KIT-7
+named-exempt end-state). Enables the ruff `D` (pydocstyle) family with the **google** convention.
+The docstring-**content** rules block tree-wide; the **missing-docstring** rules ratchet per-module
+(first documented module: `hardening.py`). Tooling-config + docstrings only — **no product behavior,
+dependency, prompt, route, or version change**; `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched
+(docstrings are not prompt constants — the analyzer prompt-constant sha256 dump is byte-identical
+pre/post, so no eval run is owed).
+
+**Changed**
+- `pyproject.toml`: `select += "D"`; new `[tool.ruff.lint.pydocstyle] convention = "google"` (narrows
+  D to google's subset + silences the D203/D211 + D212/D213 conflicts). `per-file-ignores`: `"D"`
+  added to the three exempt entries (`tests/**`, `evals/*`, `scripts/**`); a new **D missing-docstring
+  ratchet block** waives only `D101/D102/D103/D105/D107` on the 27 not-yet-documented production
+  modules (16 entries; `ui_pages/**` is the 12-file POM glob) — the content rules still apply to them.
+  The list shrinks branch-by-branch toward the §6 exit criterion (empty → D blocks everywhere outside
+  the exempt set).
+- Docstring-content sweep across the production tree (39 files, docstrings only): 105 safe autofixes
+  (D209/D411/D412) + 143 hand fixes (D205 blank-line-after-summary ×139, D301 raw-string ×3, D415
+  terminal-period ×1) so the content rules pass tree-wide. `D205` has no safe autofix in ruff 0.15.12.
+- `hardening.py`: documented its 10 public TypedDict classes (`CandidateInfo` … `ContextSet` — the
+  `context_set` JSON contract between pipeline stages) → the module is now fully `D`-clean and the
+  google-style reference for later ratchet branches.
+- `.git-blame-ignore-revs`: the mechanical content-sweep commit (`6ee0be1`) added so blame skips it.
+
+**Gate:** ruff check ✓ · ruff format --check (217) ✓ · mypy (227) ✓ · pytest. No new dependency
+(ruff already present); no version bump (lint config only); the `ruff-changed` hook needs no edit
+(`ruff check` inherits `select`). `D` hard-blocks day one (KIT-6 — unambiguous, not warn→block).
+
 ### Kit-adoption Phase 2 #2 — mypy `--strict` on leaf modules (`chore/kit-phase2-mypy-strict-leaves`, 2026-06-24)
 
 Second implementation branch of the agent-coding-practices kit-adoption arc **Phase 2** (the

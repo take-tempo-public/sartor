@@ -221,6 +221,34 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > coverage gate, larger-module `--strict` (`analyzer.py` / `applications.py`) — each its own later
 > branch.**
 
+> **Phase 2 #3 — ruff `D` (pydocstyle/google) enabled + first ratchet rung
+> (`chore/kit-phase2-ruff-d`, 2026-06-24).** `select += ["D"]` +
+> `[tool.ruff.lint.pydocstyle] convention = "google"`. Two-kind family, handled per its shape:
+> the **content** rules (D205/D209/D301/D4xx) are mechanical → swept tree-wide so they block
+> everywhere day one (their §6 shape — no per-module deferral); the **missing-docstring** rules
+> (the only codes that appear: D101/D102/D103/D105/D107) **ratchet per-module** via a new
+> `per-file-ignores` block. **GOTCHA — ruff has no per-file `select`/un-ignore**, only per-file
+> *ignore*, so a per-module ratchet of a globally-selected rule must list the **not-yet-done**
+> modules (the inverse of the mypy `--strict` override, which lists the **done** modules); the
+> list **shrinks** as modules are documented → §6 exit = block empty. 16 entries cover the 27
+> undocumented files; `ui_pages/**` is a safe directory glob (closed 12-file POM, **53% of the
+> remaining docstring debt** — its branch is the large one), but `recall/`/`onboarding/`/
+> `blueprints/` use **per-file** (those trees hold already-clean files a dir-glob would
+> over-exempt). **Measured (production, google):** 416 D total — content 248 (105 safe autofix
+> D209/D411/D412; **143 hand** — D205 is **100% hand-fix in ruff 0.15.12**, the handoff's
+> "~240 auto" estimate was wrong) + missing-docstring 168/28 files. **No D100/D104/D106** (google
+> doesn't enable module/package docstrings) and **no D401** imperative-mood churn (not in the
+> google subset). **First documented module: `hardening.py`** — its 10 D101 hits were its 10
+> public TypedDict classes (`CandidateInfo` … `ContextSet`, the `context_set` contract); now fully
+> `D`-clean + the google-style reference. PROMPT-SAFE (docstrings ≠ prompt constants; analyzer
+> prompt-constant sha256 byte-identical pre/post → no `PROMPT_VERSION` bump, no eval). `D`
+> hard-blocks day one (KIT-6); no `ruff-changed.sh` edit (inherits `select`); no dep/version change.
+> Gate green: ruff check ✓ · ruff format --check (217) ✓ · mypy (227) ✓ · pytest. **Per-module
+> tracking (this family): hardening.py at full `D`; 27 modules still carry the missing-docstring
+> waiver; content rules block tree-wide.** **Remaining Phase 2: the rest of the `D` ratchet
+> (drain the 27, ~26 branches/units — ui_pages is the big one), `interrogate` coverage gate,
+> larger-module `--strict` (`analyzer.py` / `applications.py`) — each its own later branch.**
+
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by
 blueprint, each reconciled with `_safe_username`/`_within` + the PX-29 containment gate **[M+J]**;
