@@ -706,6 +706,17 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       Compose rendering (the prompt constants were proven byte-identical), so **not code-caused**.
       The race FIRED → no clean datapoint banked; the recurring multi-member firings keep the class
       **not converging** and reinforce the **retry-policy** option for PX-25.
+      **Update (2026-06-25, `chore/kit-phase2-ruff-d-ui-pages` gate):** the **bullet-load** member
+      recurred — [`test_20260604_bullet_drag_reorder.py`](../../tests/ux/regression/test_20260604_bullet_drag_reorder.py)`::test_pointer_drag_reorders`
+      (`IndexError` on `compose.bullet_texts()[0]`, bullets unrendered) failed **once** in the full
+      suite (**1390 passed / 1 failed**), then ran **1 passed / 1 failed across 2 isolated runs** —
+      **intermittent in isolation**, the defining property of the race (and the same
+      `test_pointer_drag_reorders` member, with the same fail-in-isolation signature, characterized on
+      the `chore/kit-phase2-mypy-strict-leaves` gate). This branch is ruff-D ratchet (`ui_pages/**` POM
+      docstrings + the `pyproject.toml` ratchet-block comment) only — docstrings on a Playwright POM are
+      runtime-inert and cannot affect Compose rendering (`git diff` touched no Compose/`app.js`/`wizard`
+      code), so **not code-caused**. The race FIRED → no clean datapoint banked; resolve bar unmet,
+      class still **not converging**, continues to strengthen the **retry-policy** option for PX-25.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -936,6 +947,23 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       pair, both proven flaky and code-independent; see ledger #3). No new ledger item. **Remaining
       `D` ratchet: the single `ui_pages/**` unit (89) — the LAST/LARGEST, its own dedicated branch,
       which reaches the §6 exit (block empty → `D` blocks everywhere outside the KIT-7 exempt set).**
+      **Phase 2 #3 ratchet — unit 8 (2026-06-25, `chore/kit-phase2-ruff-d-ui-pages`) — RATCHET
+      COMPLETE / §6 EXIT for `D`:** drained the **LAST + LARGEST** unit, `ui_pages/**` — documented
+      all **89 symbols across the 12-file Playwright POM** (20 D101 POM/registry classes + 68 D102
+      page/selector methods + 1 D107 `BasePage.__init__`) with single-line google summaries, removed
+      the sole `"ui_pages/**"` `per-file-ignores` line, and rewrote the ratchet-block comment to record
+      the exit (**ratchet 1 → 0 — block empty**). The §6 exit criterion for the `D` family is now met:
+      `D` (incl. the missing-docstring codes) blocks **everywhere outside the KIT-7 exempt set**
+      (`tests/`/`evals/`/`scripts/`/`db/migrations/versions`); §6-exit proof = a
+      cleared-`per-file-ignores` `--select D101..D107` over the whole tree = 1417 hits, all in
+      `tests/`(1406)/`scripts/`(10)/`evals/`(1), zero in production or `ui_pages`. **Pure-mechanical,
+      zero GOTCHA-4 risk** — `ui_pages/` is a test driver, prompt-constant grep = 0 (no sha256 needed).
+      PROMPT-SAFE → no `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` bump, no eval; no dep/version/hook
+      change; gate green (ruff/format ✓, mypy 227 ✓, pytest **1390 passed / 1 flaky** — the ledger #3
+      Compose bullet-load race `test_pointer_drag_reorders` (`bullet_texts()[0]` IndexError) fired in
+      the full suite + **1/2 on isolated re-run** → confirmed flake, see ledger #3). **No new ledger
+      item. ruff-`D` ratchet COMPLETE; remaining Phase 2 = `interrogate` coverage gate + larger-module
+      `--strict` (`analyzer.py`/`applications.py`).**
 
 #### Resolved
 

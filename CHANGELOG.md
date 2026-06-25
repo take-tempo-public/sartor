@@ -39,6 +39,13 @@ pre/post, so no eval run is owed).
   `context_set` JSON contract between pipeline stages) → the module is now fully `D`-clean and the
   google-style reference for later ratchet branches.
 - `.git-blame-ignore-revs`: the mechanical content-sweep commit (`6ee0be1`) added so blame skips it.
+- **Ratchet COMPLETE — §6 exit for `D`** (`chore/kit-phase2-ruff-d-ui-pages`, 2026-06-25): units 2–8
+  drained the remaining production modules branch-by-branch (`recall/` · `config.py` ·
+  small-blueprints trio · `onboarding/` trio · `db/models.py` · `analyzer.py` · `ui_pages/**`), so the
+  missing-docstring ratchet block is now **empty**. `D` (incl. `D101/D102/D103/D105/D107`) blocks
+  **everywhere outside the KIT-7 exempt set** (`tests/**` · `evals/*` · `scripts/**` ·
+  `db/migrations/versions`). `ui_pages/**` — the 12-file Playwright Page-Object-Model, 89 symbols —
+  was the last + largest unit; docstrings only across every unit (no dependency/version/prompt change).
 
 **Gate:** ruff check ✓ · ruff format --check (217) ✓ · mypy (227) ✓ · pytest. No new dependency
 (ruff already present); no version bump (lint config only); the `ruff-changed` hook needs no edit

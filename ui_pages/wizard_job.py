@@ -7,6 +7,8 @@ from ui_pages.selectors import TopTabs, Wizard
 
 
 class WizardJobPage(BasePage):
+    """Page Object for Step 1 — paste the JD and run Analyze."""
+
     def open(self) -> WizardJobPage:
         """Switch to the Tailor tab and select wizard Step 1."""
         self.page.click(TopTabs.TAILOR)
@@ -15,6 +17,7 @@ class WizardJobPage(BasePage):
         return self
 
     def fill_jd(self, jd_text: str) -> WizardJobPage:
+        """Fill the job-description textarea."""
         self.page.fill(Wizard.JD_TEXT, jd_text)
         return self
 
@@ -31,6 +34,7 @@ class WizardJobPage(BasePage):
         return self
 
     def continue_to_clarify(self) -> None:
+        """Click 'Continue to Clarify' and wait for the Clarify panel."""
         self.page.click(Wizard.CONTINUE_TO_CLARIFY)
         self.page.wait_for_selector(
             Wizard.PANEL_CLARIFY, state="visible", timeout=DEFAULT_TIMEOUT_MS

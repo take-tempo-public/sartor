@@ -7,12 +7,16 @@ from ui_pages.selectors import UserPicker
 
 
 class UserPickerPage(BasePage):
+    """Page Object for the landing user-picker panel."""
+
     def options(self) -> list[str]:
+        """Return the usernames currently in the picker dropdown."""
         return self.page.eval_on_selector_all(
             f"{UserPicker.SELECT} option", "els => els.map(e => e.value)"
         )
 
     def select(self, username: str) -> None:
+        """Select an existing user and wait for the dropdown to reflect it."""
         self.page.wait_for_selector(UserPicker.SELECT, timeout=DEFAULT_TIMEOUT_MS)
         self.page.select_option(UserPicker.SELECT, username)
         self.page.wait_for_function(
@@ -22,6 +26,7 @@ class UserPickerPage(BasePage):
         )
 
     def create(self, username: str, name: str, email: str = "") -> None:
+        """Open the new-user form, fill it, and submit to create the user."""
         self.page.click(UserPicker.NEW_USER_LINK)
         self.page.wait_for_selector(UserPicker.NEW_USERNAME, state="visible")
         self.page.fill(UserPicker.NEW_USERNAME, username)
@@ -36,6 +41,7 @@ class UserPickerPage(BasePage):
         )
 
     def select_or_create(self, username: str, name: str, email: str = "") -> None:
+        """Select the user if present, otherwise create it."""
         if username in self.options():
             self.select(username)
         else:
