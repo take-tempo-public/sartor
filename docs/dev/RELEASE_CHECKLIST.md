@@ -658,6 +658,17 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       (`git diff` touched no Compose/`app.js`/`wizard` code), so **not code-caused**. Second observed firing
       of the title-add member; resolve bar unmet (the race FIRED — no clean datapoint banked); reinforces
       "not converging," strengthens the retry-policy option for PX-25.
+      **Update (2026-06-24, `chore/kit-phase2-ruff-d-config` gate):** a **new member** of the class
+      surfaced — [`tests/ux/flows/test_happy_path_stubbed.py`](../../tests/ux/flows/test_happy_path_stubbed.py)`::test_happy_path_through_template_preview`
+      failed **once** in the full suite (`assert compose.experience_card_count() >= 1` → 0 — the
+      experience card hadn't rendered, a Compose-*load* race in the **happy-path flow**, distinct from
+      every prior named member), full suite **1390 passed / 1 failed**, then **passed clean on isolated
+      re-run** (1/1, 6.79 s). This branch is ruff-D ratchet (`config.py` docstrings + `pyproject.toml`
+      ratchet block) only (`git diff` touched no Compose/`app.js`/`wizard` code), so **not code-caused**.
+      The class keeps spawning **new** members/modes (now ≥5: pin-state, bullet-load,
+      `.compose-row.recommended` load-timeout, title-add, happy-path experience-card-load); resolve bar
+      unmet (the race FIRED — no clean datapoint banked); reinforces "not converging," strengthens the
+      retry-policy option for PX-25.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -815,6 +826,16 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       (no prompt constants in `recall/`); no dep/version/hook change; gate green (ruff/format ✓, mypy 227
       ✓, pytest 1390 + the tracked Compose-load flaky — title-add member `test_add_title_then_pin_persists`
       recurred, passed clean isolated, ledger #3). No new ledger item.
+      **Phase 2 #3 ratchet — unit 3 (2026-06-24, `chore/kit-phase2-ruff-d-config`):** drained
+      **`config.py`** — documented the typed `Config` frozen dataclass and removed its
+      `per-file-ignores` entry (**ratchet 10 → 9**; `hardening.py` + 6 `recall/` modules + `config.py`
+      now at full `D`, **20 modules still waived**). All 6 hits were **D102** on the six derived-root
+      `@property` accessors (`configs_dir`/`resumes_dir`/`output_dir`/`annotation_root`/`personas_dir`/
+      `bundled_personas_dir`), each given a single-line google-style docstring (the class/module
+      docstrings + the two real methods were already documented). PROMPT-SAFE (no prompt constants in
+      `config.py`); no dep/version/hook change; gate green (ruff/format ✓, mypy 227 ✓, pytest 1390 +
+      the tracked Compose-load flaky — a **new member** `test_happy_path_through_template_preview`
+      `experience_card_count()==0`, passed clean isolated, ledger #3). No new ledger item.
 
 #### Resolved
 
