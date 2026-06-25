@@ -423,6 +423,44 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > Phase 2: the `interrogate` coverage gate (not installed → baseline/setup branch) + larger-module
 > mypy `--strict` (`analyzer.py` / `applications.py`) — each its own later branch.**
 
+> **Phase 2 #2 ratchet — rung 2, `blueprints.applications` (`chore/kit-phase2-mypy-strict-applications`,
+> 2026-06-25).** Second rung of the per-module mypy `--strict` ratchet (the first since the three
+> pure leaves seeded it in #2): added `"blueprints.applications"` to the existing strict override's
+> `module` list — now `["scraper", "json_resume", "pdf_render", "blueprints.applications"]` — and
+> rewrote the block comment so the roster reads as the general §6 tracking surface recording **two
+> cohorts**: the deterministic LLM-free leaves (rung 1) and the first **non-leaf route/seam** module
+> (rung 2). **Key insight (why the larger module was NOT the feared heavy branch):** `applications.py`
+> is ~2,100 LOC and calls across seams + into `analyzer`, yet `--strict` + `warn_unreachable` surfaced
+> **no `disallow_untyped_calls`/`disallow_untyped_defs` cascade** — because Phase-2 #1 (`ANN`) had
+> already annotated every production `def`, so the only remaining strict surface was **13 errors**:
+> **12 bare-generic `type-arg`** (parametrized, predominantly value-type `dict[str, Any]`; one
+> `list[ApplicationRun]`) + **1 `no-any-return`** (`_parse_ats_status` → `cast("str | None", …)`, a
+> runtime no-op; `cast` added to the existing `from typing import` line). Measured the surface
+> read-only **before** editing with `python -m mypy --strict --warn-unreachable blueprints/applications.py`
+> (the exact override preset — note plain `--strict` omits `warn_unreachable`, so include it to match)
+> = 13; confirmed identical after the override + fixes via the authoritative whole-tree `mypy .` (227,
+> green — no delta beyond the mapped 13). **GOTCHA carried from the leaves:** `strict` is still not a
+> per-module option, so the preset stays spelled-out as component flags (reused the rung-1 block
+> verbatim). **The one judgment call — `_load_application_owned` → `tuple[Any, Any]`, not the precise
+> type:** `disallow_any_generics` only requires the generic be *parametrized*, and `--strict` does NOT
+> include `disallow_any_explicit`, so `tuple[Any, Any]` passes while preserving the untyped
+> unpack-then-check contract exactly; the precise `tuple[Application | None, Candidate | None]` would
+> force a None-narrowing change at its **9 in-module callers** (+ 2 permissive `templates.py` ones) — a
+> separate None-safety pass the `ANN` branch already deferred and the docstring documents, out of
+> scope for a one-module typing rung. **PROMPT-SAFE the easy way (GOTCHA-4 grep-first):**
+> `blueprints/applications.py` holds no prompt constants — a grep for
+> `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)` matched only docstrings +
+> `anthropic` exception types (the prompts live in `analyzer.py`; this module *calls* `analyzer.recommend_*`),
+> so no sha256 dump, no `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` bump, no eval. No dep/version/hook
+> change. Gate green: ruff ✓ · ruff format --check (217) ✓ · mypy (227) ✓ · pytest **1389 passed / 2
+> flaky** — the ledger #3 Compose load-race fired a two-member pair
+> (`test_keyboard_reorder_persists_and_reset_reverts` + `test_no_recommendations_order_persists_on_reload`,
+> both `bullet_texts()[0]` IndexError); both passed clean on isolated re-run (2/2) → confirmed flake,
+> code-independent (branch is annotations + mypy-config only, runtime-inert). **Per-module tracking: 4
+> production modules now at full strict; the rest permissive. Remaining Phase 2: the `interrogate`
+> coverage gate (baseline/setup branch) + larger-module mypy `--strict` (`analyzer.py`, the prompt
+> home — sha256 ceremony owed there).**
+
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by
 blueprint, each reconciled with `_safe_username`/`_within` + the PX-29 containment gate **[M+J]**;
