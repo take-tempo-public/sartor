@@ -12,6 +12,10 @@
   <!-- Chart.js 4.4.0 (MIT), vendored locally (no runtime CDN; see SECURITY.md
        bundled-assets). No Python charting dep; charts lazy-init on detail-open. -->
   <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+  <!-- Shared help-modal primitive (opener + cb_help_seen: seam), used by both
+       the wizard and this console. Classic script (no defer) so window.cbOpenHelpModal
+       et al. exist before the inline help IIFE below runs. -->
+  <script src="{{ url_for('static', filename='help-modal.js') }}"></script>
   <style>
     /* Dashboard-specific layout, built on the cb-* tokens from style.css.
        Everything is scoped under .cb-dash so it never fights wizard rules. */
@@ -800,9 +804,10 @@
   }
 
   // ---- In-app help (Sprint 6.5, feat/education-diagnostics-annotate) ----
-  // A dashboard-local PORT of the wizard's help primitive (static/app.js
-  // openHelpModal / _HELP_REGISTRY). The console never loads app.js, so the
-  // opener + registry live here. Reuses the shared #helpModal element, the
+  // The console never loads app.js, so its help REGISTRY (_DASH_HELP) lives
+  // here. The opener + localStorage seam are shared with the wizard via the
+  // small static/help-modal.js leaf (loaded in <head>, NOT app.js) — see the
+  // help-opener-dedup refactor. Reuses the shared #helpModal element, the
   // .cb-modal/.help-info CSS in style.css, AND the cb_help_seen: localStorage
   // prefix — so the tests/ux/conftest.py `_TOUR_STOP_BLOCKS` seeding suppresses
   // these auto-modals across the UX suite. Each tab carries a one-line summary
@@ -873,53 +878,18 @@
     pipeline: 'dashPipeline', quality: 'dashQuality', groundedness: 'dashGroundedness',
     tuning: 'dashTuning', annotate: 'dashAnnotate',
   };
-  var _HELP_SEEN_PREFIX = 'cb_help_seen:';
-  // localStorage seam — wrapped so a disabled/throwing store never breaks the
-  // console. Unreadable store reads as "not seen"; a failed write just means the
-  // explainer may re-show (harmless). Mirrors app.js _helpSeen/_markHelpSeen.
-  function _dashSeen(id) {
-    try { return window.localStorage.getItem(_HELP_SEEN_PREFIX + id) === '1'; }
-    catch (e) { return false; }
-  }
-  function _markDashSeen(id) {
-    try { window.localStorage.setItem(_HELP_SEEN_PREFIX + id, '1'); }
-    catch (e) { /* storage unavailable — non-fatal */ }
-  }
-  // Byte-faithful port of app.js openHelpModal: Esc closes, Tab focus-trap,
-  // backdrop/[data-help-dismiss] click-away, aria-expanded toggle, focus restored
-  // to the trigger (null-trigger safe for the auto-open). The keydown listener is
-  // added per-open and REMOVED in cleanup so it never leaks a Tab-trap across
-  // tab switches.
+  // Seam + opener are shared with the wizard via static/help-modal.js (loaded in
+  // <head> before this IIFE). These thin wrappers keep the console's call sites +
+  // names (_dashSeen / _markDashSeen / openDashHelp) stable; _DASH_HELP stays
+  // local. The cb_help_seen: prefix lives in the shared leaf, so the UX suite's
+  // _TOUR_STOP_BLOCKS seeding still suppresses these auto-modals.
+  function _dashSeen(id) { return window.cbHelpSeen(id); }
+  function _markDashSeen(id) { window.cbMarkHelpSeen(id); }
+  // Resolve this console's registry entry, then delegate to the shared opener
+  // (Esc closes, Tab focus-trap, click-away, aria toggle, focus restore — all
+  // null-trigger safe). An unknown id yields undefined → the shared opener no-ops.
   function openDashHelp(id, trigger) {
-    var modal = document.getElementById('helpModal');
-    var entry = _DASH_HELP[id];
-    if (!modal || !entry) return;
-    var titleEl = document.getElementById('helpModalTitle');
-    var bodyEl = document.getElementById('helpModalBody');
-    if (titleEl) titleEl.textContent = entry.title;
-    if (bodyEl) bodyEl.textContent = entry.body;
-    var focusable = modal.querySelectorAll('button');
-    var closeBtn = document.getElementById('btnCloseHelp');
-    var dismissers = Array.prototype.slice.call(modal.querySelectorAll('[data-help-dismiss]'));
-    function cleanup() {
-      modal.classList.add('hidden');
-      modal.removeEventListener('keydown', onKey);
-      dismissers.forEach(function (b) { b.removeEventListener('click', cleanup); });
-      if (trigger && typeof trigger.setAttribute === 'function') trigger.setAttribute('aria-expanded', 'false');
-      if (trigger && typeof trigger.focus === 'function') trigger.focus();
-    }
-    function onKey(e) {
-      if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
-      if (e.key !== 'Tab' || focusable.length === 0) return;
-      var first = focusable[0], last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    }
-    dismissers.forEach(function (b) { b.addEventListener('click', cleanup); });
-    modal.addEventListener('keydown', onKey);
-    if (trigger && typeof trigger.setAttribute === 'function') trigger.setAttribute('aria-expanded', 'true');
-    modal.classList.remove('hidden');
-    if (closeBtn) closeBtn.focus();
+    window.cbOpenHelpModal(_DASH_HELP[id], trigger);
   }
   // Auto-open a tab's explainer once-ever. MUST return early on _dashSeen BEFORE
   // opening (the suppression contract conftest relies on), and never stack on an
