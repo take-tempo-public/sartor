@@ -26,16 +26,18 @@ from the calls to the AI that does the writing. (See
 ## Your first run, end to end
 
 1. **Add yourself as a user** and **import a résumé.** callback builds your first
-   career corpus from it, so you don't start from a blank page. An ATS-friendly
-   résumé (plain text, clear month/year dates) reads best.
+   career corpus from it, so you don't start from a blank page (see
+   [[importing-your-experience]]). An ATS-friendly résumé (plain text, clear
+   month/year dates) reads best.
 2. **Review your [[career-corpus]].** Everything starts as *pending review*;
    accept items one at a time, by role, or all at once. Reviewing sharpens future
    résumés.
 3. **Tailor to a job.** Paste the job description and let callback analyze it
    against your corpus — see [[tailoring-a-resume]] for the six steps.
 4. **Pick a template and generate.** Choose how it looks (see
-   [[resume-templates]]), generate, preview, edit in place, and download — plus an
-   optional cover letter.
+   [[resume-templates]]), generate, preview, edit in place (see
+   [[editing-and-refining]]), and download (see [[downloading-your-documents]]) —
+   plus an optional cover letter (see [[cover-letters]]).
 
 Anything callback learns about you along the way is kept in your
 [[candidate-memory]].
@@ -51,6 +53,13 @@ aren't walked through onboarding again.
 ## The guides
 
 - [[tailoring-a-resume]] — the six-step Tailor wizard.
+- [[importing-your-experience]] — getting your history in: import, online profiles, by hand.
 - [[career-corpus]] — the pool of experience callback writes from.
 - [[resume-templates]] — how your résumé looks.
+- [[cover-letters]] — generating a cover letter to match.
+- [[editing-and-refining]] — editing a draft and refining it.
+- [[downloading-your-documents]] — formats and saving your files.
+- [[managing-users]] — using callback with more than one person.
 - [[candidate-memory]] — what callback remembers across applications.
+- [[using-the-assistant]] — the built-in assistant that answers from these guides.
+- [[troubleshooting]] — when something goes wrong.
