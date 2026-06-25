@@ -86,6 +86,7 @@ class GitGrepSource:
         *,
         max_results: int = 20,
     ) -> None:
+        """Bind the source to `repo_root` and a path-to-`Audience` classifier."""
         self._repo_root = repo_root
         self._audience_for_path = audience_for_path
         self._max_results = max_results

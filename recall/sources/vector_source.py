@@ -119,6 +119,7 @@ class VectorSource:
         chunk_lines: int = 40,
         chunk_overlap: int = 10,
     ) -> None:
+        """Bind the sidecar dir, embedder, and classifier; validate the chunk window."""
         if chunk_lines <= 0:
             raise ValueError("chunk_lines must be positive")
         if not 0 <= chunk_overlap < chunk_lines:

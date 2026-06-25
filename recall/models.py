@@ -72,6 +72,7 @@ class Unit:
     score: float = 0.0
 
     def __post_init__(self) -> None:
+        """Reject an uncitable unit: empty `text` or `citation` raises `ValueError`."""
         if not self.text.strip():
             raise ValueError("Unit.text must be non-empty — a unit carries a quotable fact.")
         if not self.citation.strip():
