@@ -106,6 +106,7 @@ def _parse_date(s: str) -> datetime | None:
 
 
 def _filter_calls(records: list[dict], since: str, user: str, model: str) -> list[dict]:
+    """Filter LLM-call ``records`` by date floor (``since``), ``user``, and ``model``."""
     floor = _parse_date(since)
     out = []
     for r in records:
@@ -774,6 +775,7 @@ def _run_trace(records: list[dict]) -> dict:
         return {"has_data": False, "latest": None, "runs": []}
 
     def _run_ts(calls: list[dict]) -> str:
+        """Return the latest timestamp among a run's ``calls`` (``""`` if none)."""
         return max((c.get("timestamp", "") for c in calls), default="")
 
     runs_sorted = sorted(by_run.items(), key=lambda kv: _run_ts(kv[1]), reverse=True)

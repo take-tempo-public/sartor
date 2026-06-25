@@ -744,6 +744,22 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       unmet (the race FIRED on the authoritative run); class **still not converging**, materially
       strengthens the **retry-policy** option for PX-25 (a same-tree run-to-run flip is exactly what a
       wait-only fix struggles to close).
+      **Update (2026-06-25, `chore/kit-phase2-interrogate` gate):** across **two** full-suite runs on
+      this branch, **two different members** fired — run 1 the **title-load** member
+      `test_20260611_compose_add_title.py::test_add_title_then_pin_persists` (`title_texts()==[]`), run 2
+      (authoritative) the **bullet-load** member
+      `test_20260611_compose_order_no_recommendations.py::test_no_recommendations_order_persists_on_reload`
+      (`bullet_texts()[0]` IndexError) — each **1392 passed / 1 failed**. A **CLEAN isolated datapoint is
+      banked** AND a **methodology finding** surfaced: re-running the run-2 member isolated *immediately
+      after the 5-min suite* failed **2/2** (alarming, since this branch is docstrings + tooling config —
+      runtime-inert for Compose) — but that was a **time-ordering / resource-contention artifact**: a
+      `git stash -u` to pristine HEAD then passed it **2/2**, and the restored branch passed it **4/4**
+      once the box settled. So a flaky UX member can fail *consistently in isolation* under post-suite
+      load — **interleave branch↔HEAD and let the box settle before concluding code-causation.**
+      Code-independence reconfirmed (branch 4/4 + HEAD 2/2 isolated; `git diff` pure docstring insertions;
+      `analyzer.py` 15 prompt constants sha256-identical). Class **still not converging** (now title-load
+      AND no-recommendations-bullet-load members), continues to strengthen the **retry-policy** option for
+      PX-25.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -1029,6 +1045,27 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       same-code fire-then-clean = code-independent (see ledger #3). No new ledger item. **Remaining
       Phase 2: only the `interrogate` coverage gate — the larger-module `--strict` commitment is now
       COMPLETE.**
+      **Phase 2 #4 — `interrogate` docstring-coverage floor-lock gate (2026-06-25,
+      `chore/kit-phase2-interrogate`):** the **final Phase 2 implementation sub-item** LANDED. New
+      `interrogate>=1.7,<2.0` dev dep + `[tool.interrogate]` block (production scope = KIT-7 exempt set
+      excluded, `ui_pages/**` in, single-underscore semiprivate helpers excluded for `D`-coherence;
+      `fail-under = 99`) + `tests/test_docstring_coverage_gate.py` — a **pytest floor-lock ratchet**
+      mirroring `test_route_containment_gate.py` (subprocess re-run of the bare interrogate CLI, single
+      source of truth = `[tool.interrogate]`, skip-when-absent so default `pytest` stays green / teeth in
+      CI, teeth = ≥250 of 417 symbols scanned). interrogate surfaced two undocumented public classes
+      (`onboarding`'s `Color` + `ExtractResponse`) that google's `D101` blind-spots (attribute-only /
+      pydantic); documenting them took public-API coverage 99.5% → **100%**, so `fail-under = 99` locks a
+      fully-documented baseline with ~1 pt headroom (not a brittle exact 100). Owner-directed add-on: a
+      docstring-only pass documented the **50** below-public-bar internals (`_`-helpers / nested
+      SSE-worker closures / private methods, ~20 files; maximal-scope coverage now 100% too) + the 5
+      empty `tests/**/__init__.py` markers — the gate stays public-API-scoped (KIT-7 keeps `tests/`
+      D-exempt; no per-function test docstrings). `analyzer.py` re-verified PROMPT-SAFE (15 constants
+      sha256-identical). No prompt/route/version change → no eval; teeth verified (floor 100 vs 99.5% →
+      red, green again at 99); gate ruff/format ✓ 218, mypy 228 ✓, pytest. **Phase 2 of the kit-adoption arc is COMPLETE** (#1 `ANN` + #2 mypy
+      `--strict` larger-module + #3 `D` + #4 `interrogate`). **Row STAYS OPEN** — the §6 `--strict`-family
+      exit (`app.py`, the rest of `blueprints/**`, `db/`, `hardening.py`, `parser.py`, `generator.py`, …
+      a longer post-public ratchet) + (3)'s skills/hooks-packaging coherence at 8.7
+      `feat/portable-enforcement-core` are the remaining kit work; no new ledger item.
 
 #### Resolved
 

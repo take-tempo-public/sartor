@@ -148,6 +148,8 @@ GENERATE_CORPUS_NO_CL_REQUIRED_KEYS = GENERATE_NO_CL_REQUIRED_KEYS | frozenset(
 
 
 class _LLMResponse(BaseModel):
+    """Permissive base model for raw LLM JSON responses (extra keys allowed before typed coercion)."""
+
     model_config = ConfigDict(extra="allow")
 
 
@@ -766,6 +768,7 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
             # despite the prompt rule; strip before int(). See the
             # matching defense in app.py:recommend_application_bullets.
             def _norm_id(v: object) -> int | None:
+                """Coerce ``v`` to an int id, stripping any ``e``/``b`` prefix the LLM may echo; ``None`` if non-numeric."""
                 if v is None:
                     return None
                 try:
@@ -1070,6 +1073,7 @@ class _StreamDone:
     __slots__ = ("stop_reason", "text")
 
     def __init__(self, text: str, stop_reason: str | None) -> None:
+        """Store the final streamed ``text`` and the model's ``stop_reason``."""
         self.text = text
         self.stop_reason = stop_reason
 
@@ -1727,6 +1731,7 @@ def _resolve_cited(answer: str, units: tuple[Unit, ...]) -> tuple[str, list[dict
     remap = {old: new for new, old in enumerate(order, start=1)}
 
     def _sub(m: re.Match[str]) -> str:
+        """Renumber one ``[n]`` citation marker via ``remap`` (unmapped markers left unchanged)."""
         old = int(m.group(1))
         return f"[{remap[old]}]" if old in remap else m.group(0)
 

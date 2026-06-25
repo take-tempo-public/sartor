@@ -289,6 +289,7 @@ def _apply_chosen_summary(context_set: dict) -> None:
     rec = rec_block.get("recommendation") if isinstance(rec_block, dict) else None
 
     def _coerce(val: str | int | float | None) -> int | None:
+        """Coerce ``val`` to ``int``, or ``None`` if it is None or non-numeric."""
         try:
             return int(val) if val is not None else None
         except (TypeError, ValueError):
@@ -896,6 +897,7 @@ def run_generation_stream() -> ResponseReturnValue:
     run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
 
     def stream() -> Iterator[str]:
+        """SSE generator: stream the résumé-generation events to the client."""
         try:
             result: dict | None = None
             for event_kind, payload in generate_streaming(

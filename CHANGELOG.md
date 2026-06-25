@@ -13,6 +13,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Kit-adoption Phase 2 #4 — `interrogate` docstring-coverage floor-lock gate (`chore/kit-phase2-interrogate`, 2026-06-25)
+
+Fourth and final implementation sub-item of the agent-coding-practices kit-adoption arc **Phase 2**
+(the strictness ratchet — kit-adoption-design.md §4/§6; Decision KIT-6 "measured-current /
+warn-start" + KIT-7 named-exempt scope). Adds a docstring-**coverage** gate via **interrogate** (a
+NEW dev dependency), shaped as a **pytest floor-lock ratchet** mirroring
+`tests/test_route_containment_gate.py`: today's measured production coverage is recorded as
+`[tool.interrogate].fail-under` and the gate asserts `coverage >= floor` — green today (forces no
+new docstrings; KIT-6 "lock the gain, don't force new work"), red only on a regression below the
+floor. It is the aggregate-% companion to the ruff-`D` family (which gates per-symbol docstring
+*presence*) and runs inside the standard `pytest` gate — no new hook, no `.claude/settings.json`
+change, no governance-hooks-gate change. **No product behavior, prompt, route, or version change**;
+`PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched (no prompt constant touched → no eval run owed).
+
+**Changed**
+- `pyproject.toml`: new `interrogate>=1.7,<2.0` dev dependency in `[project.optional-dependencies].dev`;
+  new `[tool.interrogate]` block recording the floor (`fail-under = 99`), the production-only scope
+  (`exclude` = the KIT-7 exempt set `tests`/`evals`/`scripts`/`db/migrations` + data/build dirs), and
+  the ignore flags chosen to keep the metric coherent with the ruff-`D` google scope
+  (`ignore-module`/`ignore-magic`/`ignore-private`/`ignore-semiprivate`/`ignore-nested-functions`/
+  `ignore-overloaded-functions`/`ignore-init-method`; `@property` accessors COUNT —
+  `ignore-property-decorators = false` — to match the D102 treatment of `config.py`'s derived-root
+  properties). Single-underscore helpers are semiprivate and excluded, so a helper-only module like
+  `web_infra/` contributes zero counted symbols by design.
+- `tests/test_docstring_coverage_gate.py` (new): the floor-lock gate. Re-runs the bare interrogate
+  CLI via subprocess (single source of truth = `[tool.interrogate]`; no `import interrogate`, so no
+  mypy/stub coupling and robust to interrogate API drift) and asserts exit 0. Skips gracefully when
+  interrogate is not installed (mirrors the `tests/ux/conftest.py` Chromium skip-guard) so default
+  `pytest` stays green without dev-extras; has teeth in CI. Teeth assertions: the scan names core
+  production modules and covers a non-trivial symbol surface (≥ 250 of the current 417). `ui_pages/**`
+  is IN scope (matching the surface the ruff-`D` family covers, its ratchet unit 8).
+- `onboarding/review_cli.py`, `onboarding/extract_experiences.py` (docstrings only): documented the two
+  public classes `Color` and `ExtractResponse` that interrogate surfaced at adoption — genuine gaps
+  that ruff-`D`/google's D101 does not flag (attribute-only / pydantic-model classes). Documenting them
+  took public-API production coverage from 99.5% to **100%**, so the recorded floor (`fail-under = 99`)
+  locks a fully-documented baseline with ~1 pt of headroom against incidental churn (not a brittle 100).
+- Owner-directed documentation pass (docstrings only, no behavior change): documented the **50**
+  below-public-bar internal symbols interrogate surfaces at *maximal* scope (single-underscore helpers,
+  nested SSE/worker closures, and private methods across ~20 production files — `analyzer.py`,
+  `blueprints/**`, `parser.py`, `json_resume.py`, `corpus_to_json_resume.py`, `dashboard/`, `recall/`,
+  `web_infra/`, `onboarding/`, `ui_pages/`), taking *maximal*-scope production coverage (all ignore
+  flags off) to **100%** as well. The interrogate **gate stays public-API-scoped** (ignore flags
+  unchanged, coherent with ruff-`D`) — these docstrings are a quality pass, not a gate-scope change.
+  `analyzer.py` re-verified **PROMPT-SAFE** (all 15 prompt constants sha256 byte-identical vs HEAD).
+  Also added module docstrings to the 5 empty `tests/**/__init__.py` package markers; KIT-7 keeps
+  `tests/` D-exempt, so no per-function test docstrings were added.
+
+**Gate:** ruff check ✓ · ruff format --check (218) ✓ · mypy (228) ✓ · pytest. New dependency
+(interrogate) added → CHANGELOG updated (charter D-1 / AGENTS.md "What NOT to do"). No version bump
+(tooling config + one test + a docstring-only pass: 2 public-class fixes + 50 internal helpers + 5 test
+`__init__` modules); the `ruff-changed` hook needs no edit (the gate is the standard `pytest` arm).
+Teeth verified: with `fail-under` temporarily at 100 vs 99.5% actual the
+floor-lock test went red, then green again at the locked floor. KIT-6 "warn-start": the floor locks
+today's coverage; "ratchet up later" = raise `fail-under` in a future branch. **Phase 2 of the
+kit-adoption arc is now COMPLETE** (only the 8.7 skills/hooks-coherence remainder rides on).
+
 ### Kit-adoption Phase 2 #3 — ruff `D` (pydocstyle/google) enabled + first ratchet rung (`chore/kit-phase2-ruff-d`, 2026-06-24)
 
 Third implementation branch of the agent-coding-practices kit-adoption arc **Phase 2** (the

@@ -42,6 +42,8 @@ logger = logging.getLogger(__name__)
 
 
 class Color:
+    """ANSI escape codes for the review CLI's terminal styling."""
+
     RESET = "\x1b[0m"
     BOLD = "\x1b[1m"
     DIM = "\x1b[2m"
@@ -114,6 +116,7 @@ class ReviewSession:
 
     @staticmethod
     def _is_pending(exp: Experience) -> bool:
+        """True if any of the experience's titles or bullets is still pending review."""
         if any(t.is_pending_review for t in exp.titles):
             return True
         return any(b.is_pending_review for b in exp.bullets)
@@ -356,6 +359,7 @@ class ReviewSession:
         return 0
 
     def _print_summary(self) -> None:
+        """Print the end-of-review summary (accepted / dropped / skipped counts)."""
         print()
         print(f"{Color.HEADER}{'═' * 70}{Color.RESET}")
         print(f"{Color.HEADER}Review summary for {self.candidate.username}{Color.RESET}")

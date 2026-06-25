@@ -40,6 +40,7 @@ class WizardComposePage(BasePage):
         return self
 
     def _wait_loaded(self) -> None:
+        """Wait until the Compose panel and its card tree have rendered (a sound 'compose ready' signal)."""
         self.page.wait_for_selector(
             Wizard.PANEL_COMPOSE, state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
@@ -78,6 +79,7 @@ class WizardComposePage(BasePage):
 
     # --- titles (feat/compose-add-title) -----------------------------------
     def _first_card(self) -> Locator:
+        """Locator for the first real experience card (excludes the positioning card)."""
         # The β.6c positioning card also carries `.compose-experience-card`, so
         # exclude it — `_first_card` is only ever about a real experience card.
         return self.page.locator(f"{Compose.EXPERIENCE_CARD}:not(.positioning-card)").first
@@ -144,9 +146,11 @@ class WizardComposePage(BasePage):
 
     # --- first experience's visible bullet list ----------------------------
     def _bullet_list(self) -> Locator:
+        """Locator for the first experience's visible bullet list."""
         return self.page.locator(Compose.BULLET_LIST).first
 
     def _row(self, text: str) -> Locator:
+        """Locator for the bullet row in the first list whose text matches ``text``."""
         return self._bullet_list().locator(f":scope > {Compose.ROW}", has_text=text)
 
     def bullet_texts(self) -> list[str]:

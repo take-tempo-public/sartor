@@ -186,6 +186,7 @@ def _run_analysis_corpus_backed_streaming(
     client = _get_client()
 
     def stream() -> Iterator[str]:
+        """SSE generator: stream the corpus-backed analyze events to the client."""
         try:
             analysis: dict | None = None
             for event_kind, payload in analyze_streaming(

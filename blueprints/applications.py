@@ -1517,6 +1517,7 @@ def recommend_application_bullets(application_id: int) -> ResponseReturnValue:
             # one bad row doesn't 500 the whole recommend run with
             # ValueError: invalid literal for int().
             def _to_int(v: object) -> int | None:
+                """Coerce ``v`` to an int id, stripping any ``e``/``b`` prefix the LLM may echo; ``None`` if non-numeric."""
                 if v is None:
                     return None
                 s = str(v).strip().lstrip("eEbB")

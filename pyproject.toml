@@ -69,6 +69,7 @@ dev = [
     "mypy>=1.10,<2.0",
     "pyyaml>=6.0,<7.0",
     "types-requests>=2.31",
+    "interrogate>=1.7,<2.0",  # KIT-6 docstring-coverage floor-lock gate (Phase 2 final sub-item)
 ]
 # Offline grounding signal scorers for --grounding-signals eval runs.
 # torch is NOT listed here because it requires a platform-specific wheel
@@ -193,6 +194,35 @@ convention = "google"
 # each file's existing ending) to avoid CRLF/LF churn on Windows clones.
 quote-style = "double"
 indent-style = "space"
+
+[tool.interrogate]
+# Kit-adoption Phase 2 final sub-item (KIT-6 measured-current / KIT-7 exempt set; design §4/§6).
+# Docstring-coverage FLOOR, locked at today's measured production coverage: green now (forces
+# no new docstrings — KIT-6 "lock the gain, don't force new work"), blocks only a regression
+# below `fail-under`. This is the aggregate-% companion to the ruff-`D` family (which gates
+# per-symbol missing docstrings); it catches a module-scale regression that could slip under D's
+# per-file ratchet. A bare `python -m interrogate -c pyproject.toml .` reproduces the pytest gate
+# (tests/test_docstring_coverage_gate.py re-runs this exact config and asserts exit 0).
+# Ratchet up later = raise `fail-under` in a future branch; never lower it. `fail-under` is the
+# MEASURED % floored minus a small headroom (NOT an exact float — an exact floor trips on
+# incidental symbol churn).
+fail-under = 99
+# Production-only scope: the KIT-7 exempt set (tests/ evals/ scripts/ db/migrations) excluded,
+# plus data/build noise (mirrors [tool.ruff] extend-exclude above). `ui_pages/**` stays IN scope
+# to match the surface the ruff-`D` family covers (ratchet unit 8).
+exclude = ["tests", "evals", "scripts", "db/migrations", "configs", "resumes", "output", "logs", "build", ".venv", "__pycache__", "setup.py"]
+# Coherence with the ruff-`D` google scope: google omits module docstrings (no D100) and does not
+# treat magics/privates as public API. `@property` accessors are COUNTED
+# (ignore-property-decorators = false) to match the D102 treatment of config.py's derived-root
+# properties.
+ignore-module = true
+ignore-magic = true
+ignore-private = true
+ignore-semiprivate = true
+ignore-nested-functions = true
+ignore-overloaded-functions = true
+ignore-init-method = true
+ignore-property-decorators = false
 
 [tool.mypy]
 python_version = "3.10"

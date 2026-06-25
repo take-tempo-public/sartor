@@ -66,6 +66,8 @@ EXTRACT_REQUIRED_KEYS = frozenset({"experiences"})
 
 
 class ExtractResponse(BaseModel):
+    """Permissive response schema for the experience-extraction LLM call (extra keys allowed)."""
+
     model_config = ConfigDict(extra="allow")
     experiences: Any
 
@@ -193,6 +195,7 @@ def _normalize_experience(raw: dict) -> ExtractedExperience:
 
 
 def _normalize_bullet(raw: dict) -> ExtractedBullet:
+    """Normalize a raw bullet dict into an ``ExtractedBullet`` (clean text, tags, derived outcome flag)."""
     text = _clean_str(raw.get("text"))
     return {
         "text": text,
@@ -202,6 +205,7 @@ def _normalize_bullet(raw: dict) -> ExtractedBullet:
 
 
 def _clean_str(value: object) -> str:
+    """Return ``value`` stripped if it is a ``str``, else ``""``."""
     return value.strip() if isinstance(value, str) else ""
 
 
