@@ -679,6 +679,21 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       not converging, still strengthens the retry-policy option for PX-25. Note the immediately prior
       branch (blueprints, 2026-06-25) banked a *clean* full-suite datapoint — so the class continues to
       alternate fire/clean run-to-run, the signature of an intermittent load race.
+      **Update (2026-06-25, `chore/kit-phase2-ruff-d-models` gate):** the **strongest firing yet**. The
+      full suite (**1389 passed / 2 failed**) fired **two** members at once — bullet-load
+      [`test_20260604_bullet_drag_reorder.py`](../../tests/ux/regression/test_20260604_bullet_drag_reorder.py)`::test_keyboard_reorder_persists_and_reset_reverts`
+      (`IndexError`, bullets unrendered) **and** title-add
+      [`test_20260611_compose_add_title.py`](../../tests/ux/regression/test_20260611_compose_add_title.py)`::test_add_title_then_pin_persists`
+      (`title_texts() == []`) — only the **second** two-members-in-one-run observation (first was 8.3f).
+      Characterized the title-add member directly: it **failed on the branch tree but PASSED on a
+      `git stash`'d clean (== main) tree**, then — changes restored — ran **4 passed / 2 failed across 6
+      isolated runs** (~33 % fail), the highest isolated rate recorded. This branch is ruff-D ratchet
+      (`db/models.py` ORM-class docstrings + `pyproject.toml` ratchet block) only — a docstring on a
+      SQLAlchemy model cannot affect Compose rendering, and the intermittent 4/6 with the changes
+      present **proves** code-independence (a real break fails all 6), so **not code-caused**. The race
+      FIRED → no clean datapoint banked; two members + a ~33 % isolated rate make this the strongest
+      "not converging" datapoint and materially strengthen the **retry-policy** option for PX-25 (a
+      broader compose-load wait alone may not suffice at this rate).
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -878,6 +893,21 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       `test_20260604_bullet_drag_reorder`, passed clean on isolated re-run → confirmed flake, ledger
       #3). No new ledger item. Remaining `D` ratchet units (smallest first): `analyzer.py` (16) ·
       `db/models.py` (20) · last `ui_pages/**` (89).
+      **Phase 2 #3 ratchet — unit 6 (2026-06-25, `chore/kit-phase2-ruff-d-models`):** drained
+      **`db/models.py`** — gave all **20 D101 undocumented ORM classes** (`Base` + `Candidate` …
+      `Engagement`) a single-line google-style docstring (the prompt-free analogue of the unit-1
+      `hardening.py` TypedDict pass; the 10 already-documented model classes set the house style) and
+      removed its `per-file-ignores` entry (**ratchet 3 → 2**; `db/models.py` now at full `D`, **13
+      modules still waived** — `analyzer.py` + the 12-file `ui_pages/**` glob). `Base`'s bare `pass`
+      was replaced by the docstring (the only deleted line; PIE790 not in select, so lint-neutral
+      either way). **PROMPT-SAFE the easy way** — `db/models.py` is pure SQLAlchemy: a grep for
+      `(_PROMPT|_RULES_BLOCK|PROMPT_VERSION|SYSTEM_PROMPT|AVATAR_)` returned **0**, so no prompt
+      constant exists to perturb → no `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` bump, no eval run
+      (GOTCHA-4 grep-first discipline; sha256 unneeded with 0 matches). No dep/version/hook change;
+      gate green (ruff/format ✓, mypy 227 ✓, pytest **1389 passed / 2 flaky** — the ledger #3 Compose
+      load-race fired its strongest datapoint yet, two members at once, both proven flaky and
+      code-independent; see ledger #3). No new ledger item. Remaining `D` ratchet units (smallest
+      first): `analyzer.py` (16, GOTCHA-4 — holds 16 prompt constants) · last `ui_pages/**` (89).
 
 #### Resolved
 
