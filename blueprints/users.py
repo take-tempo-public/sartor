@@ -74,6 +74,7 @@ def index() -> ResponseReturnValue:
 
 @users_bp.route("/api/users", methods=["GET"])
 def list_users() -> ResponseReturnValue:
+    """List the usernames of all saved candidate configs."""
     configs_dir = current_app.config["CONFIGS_DIR"]
     users = [p.stem for p in configs_dir.glob("*.config")]
     return jsonify(users)
@@ -81,6 +82,7 @@ def list_users() -> ResponseReturnValue:
 
 @users_bp.route("/api/users", methods=["POST"])
 def create_user() -> ResponseReturnValue:
+    """Create a user: write a default profile config and seed their resumes directory."""
     data = request.json
     username = data.get("username", "").strip()
     if not username:
@@ -109,6 +111,7 @@ def create_user() -> ResponseReturnValue:
 
 @users_bp.route("/api/users/<username>/config", methods=["GET"])
 def get_config(username: str) -> ResponseReturnValue:
+    """Return one user's saved profile config (404 if the user is unknown)."""
     if not secure_filename(username):
         return jsonify({"error": "Invalid username"}), 400
     config = _load_config(username, configs_dir=current_app.config["CONFIGS_DIR"])
@@ -119,6 +122,7 @@ def get_config(username: str) -> ResponseReturnValue:
 
 @users_bp.route("/api/users/<username>/config", methods=["PUT"])
 def update_config(username: str) -> ResponseReturnValue:
+    """Validate and persist one user's full profile config."""
     if not secure_filename(username):
         return jsonify({"error": "Invalid username"}), 400
     config = request.json

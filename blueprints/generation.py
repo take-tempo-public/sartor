@@ -1214,6 +1214,7 @@ def run_generate_cover_letter() -> ResponseReturnValue:
 
 @generation_bp.route("/api/download/<path:filepath>")
 def download_file(filepath: str) -> ResponseReturnValue:
+    """Stream a generated output file as an attachment, contained to OUTPUT_DIR."""
     full_path = Path(filepath)
     if not full_path.exists():
         return jsonify({"error": "File not found"}), 404
