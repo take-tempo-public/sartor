@@ -268,6 +268,27 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > Remaining ratchet units (smallest first): `config.py` (6) · small-blueprints trio (7) ·
 > `onboarding/` (14) · `db/models.py` (20) · `analyzer.py` (16) · last `ui_pages/**` (89).
 
+> **Phase 2 #3 ratchet — unit 3, `config.py` drained (`chore/kit-phase2-ruff-d-config`,
+> 2026-06-24).** Third rung of the `D` missing-docstring ratchet: documented `config.py` (the
+> typed `Config` frozen dataclass) and removed its entry from the `per-file-ignores` ratchet
+> block (**10 → 9 entries**). All 6 hits were **D102 (undocumented-public-method)** on the six
+> derived-root `@property` accessors (`configs_dir` · `resumes_dir` · `output_dir` ·
+> `annotation_root` · `personas_dir` · `bundled_personas_dir`); each got a single-line
+> google-style docstring (noun phrase + the `<base>/…` path, no `Args:`/`Returns:` — matching
+> the module's existing `ensure_dirs`/`as_flask_config` style). The class + module docstrings +
+> the two real methods were already documented (no D101/D103/D105/D107). Measured the true debt
+> by bypassing the ratchet: `ruff check config.py --select D101,D102,D103,D105,D107 --config
+> "lint.per-file-ignores={}" --statistics` (a plain `ruff check config.py` reports 0 — the
+> inverse-list waiver hides it). PROMPT-SAFE (`config.py` holds no prompt constants, not
+> `analyzer.py` → no sha256 dump, no `PROMPT_VERSION` bump, no eval). No dep/version/
+> `ruff-changed.sh` change. Gate green: ruff check ✓ · ruff format --check (217) ✓ · mypy (227)
+> ✓ · pytest 1390 passed / 1 known-flaky (ledger #3 Compose load-race — a **new member**,
+> `test_happy_path_through_template_preview` `experience_card_count()==0`, passed clean isolated
+> 1/1; branch touches no Compose code). **Per-module tracking: `hardening.py` + the 6 `recall/`
+> modules + `config.py` at full `D`; 20 modules still carry the missing-docstring waiver.**
+> Remaining ratchet units (smallest first): small-blueprints trio (7) · `onboarding/` (14) ·
+> `analyzer.py` (16) · `db/models.py` (20) · last `ui_pages/**` (89).
+
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by
 blueprint, each reconciled with `_safe_username`/`_within` + the PX-29 containment gate **[M+J]**;

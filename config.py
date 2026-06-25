@@ -45,18 +45,22 @@ class Config:
     # --- Derived roots (mirror the app.py module globals exactly) ---
     @property
     def configs_dir(self) -> Path:
+        """The per-user config directory (`<base>/configs`)."""
         return self.base_dir / "configs"
 
     @property
     def resumes_dir(self) -> Path:
+        """The uploaded-résumé directory (`<base>/resumes`)."""
         return self.base_dir / "resumes"
 
     @property
     def output_dir(self) -> Path:
+        """The generated-artifact directory (`<base>/output`)."""
         return self.base_dir / "output"
 
     @property
     def annotation_root(self) -> Path:
+        """The annotation/bootstrap write surface (`<base>/evals/fixtures/real`)."""
         # The only directory the annotation/bootstrap write surface touches; equal
         # to evals.annotation.ALLOWED_ROOT / evals.bootstrap.ALLOWED_ROOT. Created
         # lazily by its writers today (NOT by ensure_dirs) — see app.py:75-80.
@@ -64,10 +68,12 @@ class Config:
 
     @property
     def personas_dir(self) -> Path:
+        """The persona/template directory (`<base>/personas`)."""
         return self.base_dir / "personas"
 
     @property
     def bundled_personas_dir(self) -> Path:
+        """The shipped default-persona directory (`<personas>/bundled`)."""
         return self.personas_dir / "bundled"
 
     def ensure_dirs(self) -> None:
