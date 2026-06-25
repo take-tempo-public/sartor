@@ -114,8 +114,10 @@ class GitGrepSource:
             return None
 
     def refresh(self, since_sha: str | None) -> None:
-        """Cache the repo HEAD sha for provenance stamping. There is no index to
-        build — `git grep` reads the working tree live on each `search`."""
+        """Cache the repo HEAD sha for provenance stamping.
+
+        There is no index to build — `git grep` reads the working tree live on each `search`.
+        """
         result = self._run_git(["rev-parse", "HEAD"])
         if result is not None and result.returncode == 0:
             self._head_sha = result.stdout.strip()
@@ -131,8 +133,10 @@ class GitGrepSource:
         return max(salient, key=len) if salient else ""
 
     def search(self, query: str, scope: Scope) -> Sequence[Unit]:
-        """Return up to `max_results` `path:line` Units matching the query's salient
-        token (case-insensitive). No match → `[]`; a git error → `[]` + a warning."""
+        """Return up to `max_results` `path:line` Units matching the query's salient token.
+
+        Matching is case-insensitive. No match → `[]`; a git error → `[]` + a warning.
+        """
         token = self._query_token(query)
         if not token:
             return []

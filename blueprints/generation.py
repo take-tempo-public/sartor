@@ -81,8 +81,7 @@ generation_bp = Blueprint("generation", __name__)
 
 
 def _persist_run_persona(application_run_id: int, persona_template_id: int) -> None:
-    """Record which persona template the user generated with on the run
-    (audit; the column exists but was always NULL before Workstream C)."""
+    """Record which persona template the user generated with on the run (audit; the column exists but was always NULL before Workstream C)."""
     from db.models import ApplicationRun
     from db.session import get_session
 
@@ -208,9 +207,7 @@ def _persist_corpus_generation_to_db(
 
 
 def _check_date_grounding(context_set: ContextSet, result: dict) -> dict | None:
-    """KW6 guard: flag generated heading date ranges that don't trace to the
-    corpus (altered or duplicated — the iteration regenerate has been observed
-    "reconciling" one experience's range onto another while re-sequencing).
+    """KW6 guard: flag generated heading date ranges that don't trace to the corpus (altered or duplicated date ranges).
 
     Warn-only by design: appends a plain-language note per flagged heading to
     `result["proofread_notes"]` (already rendered by the preview UI) and returns
@@ -262,8 +259,7 @@ def _check_date_grounding(context_set: ContextSet, result: dict) -> dict | None:
 
 
 def _apply_chosen_summary(context_set: dict) -> None:
-    """β.6d — patch context_set["candidate"]["profile_text"] in-place
-    with the chosen SummaryItem variant's text.
+    """β.6d — patch context_set["candidate"]["profile_text"] in-place with the chosen SummaryItem variant's text.
 
     Priority chain (first match wins):
       1. composition_overrides.pinned_summary_id  (user's explicit pin)
@@ -336,10 +332,7 @@ def _apply_chosen_summary(context_set: dict) -> None:
 
 
 def _apply_chosen_experience_summaries(context_set: dict) -> None:
-    """B.4 (Sprint 6.6) — patch each career_corpus experience's `summary`
-    in-place with the user's chosen ExperienceSummaryItem variant text, so the
-    chosen per-role intro reaches the generated résumé (WYSIWYG). Mirrors
-    _apply_chosen_summary, but per-experience and OPT-IN with NO auto-fallback.
+    """B.4 (Sprint 6.6) — patch each career_corpus experience's `summary` in-place with the chosen ExperienceSummaryItem variant text (WYSIWYG; OPT-IN, no auto-fallback).
 
     Gated on composition_overrides.use_experience_summaries (the explicit
     "Add role intros" toggle). For each experience named in
@@ -413,11 +406,7 @@ def _apply_chosen_experience_summaries(context_set: dict) -> None:
 
 
 def _apply_recommended_skills(context_set: dict) -> None:
-    """B.5 (Sprint 6.6) — reorder / filter context_set["candidate"]["skills"]
-    to the curated set for this application, so the LLM-authored download
-    surfaces the recommend_skills ordering + the user's pin/drop/reorder.
-    Mirrors _apply_chosen_experience_summaries: an in-memory patch before the
-    LLM sees the context.
+    """B.5 (Sprint 6.6) — reorder / filter context_set["candidate"]["skills"] to the curated set for this application (in-memory patch before the LLM sees the context).
 
     The effective ordered set is computed by resolve_skill_selection from
     ctx["llm_skill_recommendations"] + composition_overrides
@@ -427,7 +416,8 @@ def _apply_recommended_skills(context_set: dict) -> None:
     No-op when there's no recommendation AND no skill overrides → the
     candidate's skills list (and the generate prompt's Skills line) stays
     byte-identical. Only meaningful in corpus mode (needs an application_id
-    whose candidate owns the Skill rows)."""
+    whose candidate owns the Skill rows).
+    """
     candidate_block = context_set.get("candidate") or {}
     app_id = context_set.get("application_id")
     if app_id is None:

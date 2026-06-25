@@ -115,9 +115,10 @@ def _load_experience_for_candidate(
     session: Session,
     experience_id: int,
 ) -> tuple[Experience | None, Candidate | None]:
-    """Look up an Experience + its candidate. Returns (exp, candidate) or
-    (None, None) when not found. Defense-in-depth helper used by every
-    route that mutates an experience-scoped row."""
+    """Look up an Experience + its candidate, returning (None, None) when not found.
+
+    Defense-in-depth helper used by every route that mutates an experience-scoped row.
+    """
     from db.models import Candidate, Experience
 
     exp = session.query(Experience).filter_by(id=experience_id).first()

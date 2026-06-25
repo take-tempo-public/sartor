@@ -15,9 +15,11 @@ class CorpusPage(BasePage):
         return self
 
     def wait_for_cards(self) -> CorpusPage:
-        """Wait for the (async) corpus render to produce at least one card.
+        """Wait for the async corpus render to produce at least one card.
+
         Times out if cards never appear — which is exactly the silent
-        render-failure this guards against."""
+        render-failure this guards against.
+        """
         self.page.wait_for_selector(Corpus.CARD, timeout=DEFAULT_TIMEOUT_MS)
         return self
 
@@ -66,7 +68,9 @@ class CorpusPage(BasePage):
         )
 
     def intro_texts(self) -> list[str]:
-        """The intro variant textareas' values (not inner text — they're
-        <textarea>, so the text lives in .value)."""
+        """Return the intro variant textareas' values (not inner text).
+
+        They're <textarea> elements, so the text lives in .value.
+        """
         locs = self.page.locator(f"{Corpus.EXP_SUMMARY_SECTION} .summary-variant-text")
         return [locs.nth(i).input_value() for i in range(locs.count())]

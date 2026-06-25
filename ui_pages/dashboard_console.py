@@ -90,8 +90,10 @@ class DashboardConsolePage(BasePage):
 
     # --- candidate-username dropdowns (Sprint 6.3 #20-dropdown) --------------
     def reveal_details_for(self, selector: str) -> None:
-        """Open the <details> ancestor of a control so it renders + is
-        interactable (#bsUser / #tuneUser live inside collapsed sections)."""
+        """Open the <details> ancestor of a control so it renders and is interactable.
+
+        #bsUser / #tuneUser live inside collapsed sections.
+        """
         self.page.locator(selector).evaluate(
             "el => { const d = el.closest('details'); if (d) d.open = true; }"
         )

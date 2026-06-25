@@ -95,9 +95,11 @@ class WikiSource:
         self._pages = tuple(pages)
 
     def search(self, query: str, scope: Scope) -> Sequence[Unit]:
-        """Return at most one `Unit` per page — the highest-token-overlap paragraph —
-        best-first by overlap (stable `citation` tiebreak). Pages with zero overlap are
-        dropped. Scope is filtered centrally by `assemble()`."""
+        """Return at most one `Unit` per page — the highest-token-overlap paragraph.
+
+        Results are best-first by overlap (stable `citation` tiebreak). Pages with zero
+        overlap are dropped. Scope is filtered centrally by `assemble()`.
+        """
         wanted = _tokens(query)
         scored: list[Unit] = []
         for page in self._pages:

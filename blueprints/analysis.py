@@ -498,9 +498,7 @@ def run_clarify() -> ResponseReturnValue:
 
 
 def _persist_clarifications_to_memory(context_set: ContextSet, answered: dict[str, str]) -> int:
-    """Mirror answered clarifications into the cross-application candidate-memory
-    table (`clarification`) — the live write path the memory panel reads
-    (`/api/users/<u>/clarifications`) and promote-to-bullet consumes (KW7 / B.8).
+    """Mirror answered clarifications into the candidate-memory table (`clarification`) for memory-panel reads.
 
     Additive upsert scoped to this application, keyed on
     (candidate_id, origin_application_id, normalized question). Re-submitting

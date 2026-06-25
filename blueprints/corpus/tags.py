@@ -24,9 +24,11 @@ if TYPE_CHECKING:
 
 
 def _normalize_tag_value(s: str) -> str:
-    """Canonical tag form: lowercase, trimmed, non-alphanumerics → single
-    hyphens (e.g. "AI / ML" → "ai-ml"). Mirrors the normalization the
-    plan's Tag schema specifies; display_value keeps the user's casing."""
+    """Canonical tag form: lowercase, trimmed, non-alphanumerics collapsed to single hyphens.
+
+    Example: "AI / ML" -> "ai-ml". Mirrors the normalization the plan's Tag schema
+    specifies; display_value keeps the user's casing.
+    """
     s = (s or "").strip().lower()
     out = re.sub(r"[^a-z0-9]+", "-", s)
     return out.strip("-")
@@ -98,9 +100,10 @@ def suggest_tags(username: str) -> ResponseReturnValue:
 
 
 def _find_or_create_tag(session: Session, candidate_id: int, kind: str, value: str) -> Tag:
-    """Return the Tag for (candidate, kind, normalized value), creating it
-    if absent. Follows the merged_into alias chain so links always point at
-    the canonical tag."""
+    """Return the Tag for (candidate, kind, normalized value), creating it if absent.
+
+    Follows the merged_into alias chain so links always point at the canonical tag.
+    """
     from db.models import Tag
 
     norm = _normalize_tag_value(value)
@@ -132,8 +135,10 @@ def _find_or_create_tag(session: Session, candidate_id: int, kind: str, value: s
 
 
 def _tag_link_target(session: Session, kind: str, subject_id: int) -> tuple:
-    """Resolve a bullet/title subject to (subject, candidate, LinkModel,
-    fk_name) or (None, None, None, None)."""
+    """Resolve a bullet/title subject to (subject, candidate, LinkModel, fk_name).
+
+    Returns (None, None, None, None) when the subject is not found.
+    """
     from db.models import (
         Bullet,
         BulletTag,
@@ -172,9 +177,11 @@ def _tag_link_target(session: Session, kind: str, subject_id: int) -> tuple:
 
 
 def _link_tag_route(subject_kind: str, subject_id: int) -> ResponseReturnValue:
-    """Shared body for POST .../tags. DB-only — no filesystem access, so
-    the _within() guard does not apply; _safe_username still gates the
-    candidate the row belongs to."""
+    """Shared body for POST .../tags routes.
+
+    DB-only — no filesystem access, so the _within() guard does not apply;
+    _safe_username still gates the candidate the row belongs to.
+    """
     from db.session import get_session, init_db
 
     data = request.json or {}

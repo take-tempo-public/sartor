@@ -42,8 +42,10 @@ logger = logging.getLogger(__name__)
 
 @corpus_bp.route("/api/users/<username>/experiences", methods=["GET"])
 def list_experiences(username: str) -> ResponseReturnValue:
-    """Return the candidate's experiences in display order (newest-first by
-    start_date). Used by the Career Corpus tab's timeline."""
+    """Return the candidate's experiences in newest-first display order.
+
+    Used by the Career Corpus tab's timeline.
+    """
     from db.models import Candidate, Experience
     from db.session import get_session, init_db
 
@@ -386,8 +388,10 @@ def update_bullet(bullet_id: int) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/bullets/<int:bullet_id>", methods=["DELETE"])
 def delete_bullet(bullet_id: int) -> ResponseReturnValue:
-    """Soft-retire a bullet (is_active=0). Hard-delete refused because
-    application_bullet rows have NO cascade on bullet_id."""
+    """Soft-retire a bullet (is_active=0).
+
+    Hard-delete refused because application_bullet rows have NO cascade on bullet_id.
+    """
     from db.models import Bullet, Candidate, Experience
     from db.session import get_session, init_db
 
@@ -534,9 +538,11 @@ def create_experience_summary(experience_id: int) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/experience-summaries/<int:item_id>", methods=["PUT"])
 def update_experience_summary(item_id: int) -> ResponseReturnValue:
-    """Update an ExperienceSummaryItem. Body accepts: text, label,
-    has_outcome, is_pending_review, display_order. Ownership:
-    item → experience → candidate → _safe_username."""
+    """Update an ExperienceSummaryItem.
+
+    Body accepts: text, label, has_outcome, is_pending_review, display_order.
+    Ownership: item -> experience -> candidate -> _safe_username.
+    """
     from db.models import Candidate, Experience, ExperienceSummaryItem
     from db.session import get_session, init_db
 
@@ -588,9 +594,11 @@ def update_experience_summary(item_id: int) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/experience-summaries/<int:item_id>", methods=["DELETE"])
 def delete_experience_summary(item_id: int) -> ResponseReturnValue:
-    """Soft-retire an ExperienceSummaryItem (is_active=0). Mirrors bullet
-    delete semantics — composition_overrides may reference this id from past
-    applications so a hard-delete would orphan them."""
+    """Soft-retire an ExperienceSummaryItem (is_active=0).
+
+    Mirrors bullet delete semantics — composition_overrides may reference this id from past
+    applications so a hard-delete would orphan them.
+    """
     from db.models import Candidate, Experience, ExperienceSummaryItem
     from db.session import get_session, init_db
 
@@ -761,9 +769,11 @@ def update_experience_title(title_id: int) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/experience-titles/<int:title_id>", methods=["DELETE"])
 def delete_experience_title(title_id: int) -> ResponseReturnValue:
-    """Mark a title as non-eligible. Doesn't hard-delete the row because
-    application_run_title FKs reference it for audit (and our model uses
-    CASCADE there — we don't want to lose historical run choices)."""
+    """Mark a title as non-eligible.
+
+    Doesn't hard-delete the row because application_run_title FKs reference it for audit
+    (and our model uses CASCADE there — we don't want to lose historical run choices).
+    """
     from db.models import Candidate, Experience, ExperienceTitle
     from db.session import get_session, init_db
 

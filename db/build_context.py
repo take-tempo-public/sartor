@@ -350,8 +350,10 @@ def _pick_official_title(titles: Iterable[ExperienceTitle]) -> str:
 
 
 def _summarize_educations(educations: list[Education]) -> str:
-    """One-line summary matching the legacy `config.education_summary` shape
-    so downstream code reading it as a single string keeps working."""
+    """Build a one-line summary matching the legacy `config.education_summary` shape so downstream code keeps working.
+
+    Downstream code reads this as a single string.
+    """
     if not educations:
         return ""
     return "; ".join(ed.institution for ed in educations)
@@ -372,8 +374,9 @@ def score_corpus_bullet(
     jd_kw: set[str],
     essential: set[str] | None = None,
 ) -> float:
-    """Deterministic fit score for one bullet against a JD (P1 hardening —
-    no LLM). Higher = better fit. Used by the iteration-0 pre-filter AND
+    """Score one bullet's fit against a JD deterministically (P1 hardening — no LLM).
+
+    Higher = better fit. Used by the iteration-0 pre-filter AND
     the Compose-step composition endpoint so ranking is consistent.
 
     - essential-skill word overlap is weighted highest (2.0)

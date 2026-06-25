@@ -1,4 +1,4 @@
-"""ORM models for the career corpus + candidate memory.
+r"""ORM models for the career corpus + candidate memory.
 
 See `C:\\Users\\iam\\.claude\\plans\\rosy-chasing-pinwheel.md` for the design.
 Stable enums use CHECK constraints; free-text fields (tag values, bullet
@@ -356,9 +356,7 @@ class SummaryItem(Base):
 
 
 class SummaryItemTag(Base):
-    """Tag join table for SummaryItem. Mirrors BulletTag exactly so the
-    tag-composer UI and corpus-tag operations can treat both kinds
-    identically."""
+    """Tag join table for SummaryItem, mirroring BulletTag exactly so the tag-composer UI and corpus-tag operations can treat both kinds identically."""
 
     __tablename__ = "summary_item_tag"
 
@@ -444,8 +442,7 @@ class ExperienceSummaryItem(Base):
 
 
 class ExperienceSummaryItemTag(Base):
-    """Tag join table for ExperienceSummaryItem. Mirrors SummaryItemTag
-    exactly so corpus-tag operations treat all corpus items identically."""
+    """Tag join table for ExperienceSummaryItem, mirroring SummaryItemTag exactly so corpus-tag operations treat all corpus items identically."""
 
     __tablename__ = "experience_summary_item_tag"
 
@@ -529,12 +526,12 @@ class Skill(Base):
 
 
 class SkillTag(Base):
-    """Tag join table for Skill. Mirrors BulletTag exactly so corpus-tag
-    operations treat skills like every other taggable corpus item.
+    """Tag join table for Skill, mirroring BulletTag exactly so corpus-tag operations treat skills like every other taggable corpus item.
 
     Distinct from a Tag of kind='skill' (which tags bullets/titles with a
     skill keyword): this links a Skill ROW to any-kind tags so the matcher
-    can reason about the skill itself."""
+    can reason about the skill itself.
+    """
 
     __tablename__ = "skill_tag"
 

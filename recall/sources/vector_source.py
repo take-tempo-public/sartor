@@ -71,8 +71,10 @@ DocumentProvider = Callable[[], Iterable[Document]]
 
 @dataclass(frozen=True, slots=True)
 class _Chunk:
-    """One indexed chunk: its `path:line` citation, text, source path, sha, and a
-    content hash (the reuse key that keeps rebuilds incremental)."""
+    """One indexed chunk: citation, text, source path, sha, and a content hash.
+
+    The content hash is the reuse key that keeps rebuilds incremental.
+    """
 
     citation: str
     text: str
@@ -154,7 +156,8 @@ class VectorSource:
         Line-windows are deliberately format-agnostic (code and prose alike) so the
         substrate stays generic. Each chunk cites `path:<1-based start line>`, unique
         within a file (so RRF's `(source_id, citation)` dedup never collapses two
-        distinct chunks)."""
+        distinct chunks).
+        """
         step = self._chunk_lines - self._chunk_overlap
         chunks: list[_Chunk] = []
         for doc in documents:
@@ -183,15 +186,18 @@ class VectorSource:
 
         Lets a rebuild skip re-embedding unchanged chunks (the $0 incremental path). A
         missing/corrupt/inconsistent sidecar yields an empty map → full re-embed, never
-        a crash."""
+        a crash.
+        """
         loaded = self._load_index(use_cache=False)
         if loaded is None:
             return {}
         return {chunk.content_hash: loaded.embeddings[i] for i, chunk in enumerate(loaded.chunks)}
 
     def _embed_chunks(self, chunks: Sequence[_Chunk], reuse: dict[str, np.ndarray]) -> np.ndarray:
-        """Embed `chunks`, reusing cached rows for unchanged content. Returns an
-        (len(chunks), dim) float32 matrix aligned to `chunks`."""
+        """Embed `chunks`, reusing cached rows for unchanged content.
+
+        Returns an (len(chunks), dim) float32 matrix aligned to `chunks`.
+        """
         if not chunks:
             return np.empty((0, 0), dtype=np.float32)
         missing = {c.content_hash: c.text for c in chunks if c.content_hash not in reuse}
@@ -216,8 +222,10 @@ class VectorSource:
         return np.asarray(rows, dtype=np.float32)
 
     def _write_sidecar(self, chunks: Sequence[_Chunk], embeddings: np.ndarray) -> None:
-        """Persist the rebuilt index (embeddings + parallel chunk metadata) and drop
-        the process cache so the next `search` reloads the fresh sidecar."""
+        """Persist the rebuilt index (embeddings + parallel chunk metadata).
+
+        Drops the process cache so the next `search` reloads the fresh sidecar.
+        """
         self._index_dir.mkdir(parents=True, exist_ok=True)
         np.save(self._embeddings_path, embeddings)
         payload = {
@@ -287,8 +295,11 @@ class VectorSource:
 
     @staticmethod
     def index_exists(index_dir: Path) -> bool:
-        """True when a built sidecar is present — the cheap activation check the wiring
-        layer uses to decide whether the S3 tier is ready (model + index both present)."""
+        """Return True when a built sidecar is present.
+
+        The cheap activation check the wiring layer uses to decide whether the S3 tier
+        is ready (model + index both present).
+        """
         return (index_dir / _EMBEDDINGS_FILE).exists()
 
     @property
@@ -311,7 +322,8 @@ class VectorSource:
         """Load the sidecar (chunks + embeddings), or None if absent/corrupt/inconsistent.
 
         Process-cached by `(dir, mtime)` so per-request searches don't reload; the cache
-        invalidates automatically when a rebuild rewrites `embeddings.npy`."""
+        invalidates automatically when a rebuild rewrites `embeddings.npy`.
+        """
         key = self._cache_key()
         if key is None:
             return None

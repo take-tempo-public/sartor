@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 class CandidateInfo(TypedDict):
+    """Candidate identity, contact, and profile fields, sourced from the user config."""
+
     name: str
     email: str
     phone: str
@@ -40,6 +42,8 @@ class CandidateInfo(TypedDict):
 
 
 class ResumeInfo(TypedDict):
+    """The candidate's primary résumé — parsed text, format, and section structure."""
+
     format: str
     sections: list[dict]
     text: str
@@ -48,12 +52,16 @@ class ResumeInfo(TypedDict):
 
 
 class SupplementalResume(TypedDict):
+    """One additional résumé folded in alongside the primary as reference material."""
+
     filename: str
     text: str
     sections: list[dict]
 
 
 class DeterministicAnalysisBlock(TypedDict):
+    """Deterministic (non-LLM) JD/résumé keyword analysis attached to every context_set."""
+
     jd_keywords: dict
     resume_keywords: dict
     keyword_overlap: dict
@@ -70,6 +78,8 @@ class _ContextSetRequired(TypedDict):
 
 
 class CorpusBullet(TypedDict, total=False):
+    """One corpus bullet eligible for selection into a tailored résumé."""
+
     id: int
     text: str
     tags: list[str]
@@ -78,12 +88,16 @@ class CorpusBullet(TypedDict, total=False):
 
 
 class CorpusEligibleTitle(TypedDict, total=False):
+    """One job title a candidate may legitimately claim for an experience."""
+
     id: int
     title: str
     is_official: bool
 
 
 class CorpusExperience(TypedDict, total=False):
+    """One work experience (company + role span) with its eligible titles and bullets."""
+
     id: int
     company: str
     location: str
@@ -99,6 +113,8 @@ class CorpusExperience(TypedDict, total=False):
 
 
 class ClarificationQuestion(TypedDict, total=False):
+    """One interview-style question the clarifier surfaces to fill a résumé gap."""
+
     id: str
     text: str
     target_gap: str
@@ -106,12 +122,16 @@ class ClarificationQuestion(TypedDict, total=False):
 
 
 class IterationNote(TypedDict, total=False):
+    """One append-only audit entry recording a step in the generate/iterate loop."""
+
     timestamp: str
     action: str  # "generate" | "save_edits" | "iterate_clarify" | "answer_iteration"
     summary: str
 
 
 class ContextSet(_ContextSetRequired, total=False):
+    """The JSON contract passed between every pipeline stage (analyze → clarify → generate → iterate)."""
+
     # Added by app.py after analyze(); not present at build_context_set time
     llm_analysis: dict
     run_id: str
@@ -262,7 +282,8 @@ def bullet_token_set(text: str) -> frozenset[str]:
 
     Lowercase, drop stopwords + tokens <3 chars. Returns a frozenset so
     the result is cheap to compare across bullets. Used by
-    `bullet_jaccard()` and the corpus-duplicates clusterer (B1.2)."""
+    `bullet_jaccard()` and the corpus-duplicates clusterer (B1.2).
+    """
     return frozenset(
         w
         for w in _DEDUP_TOKEN_RE.findall((text or "").lower())
@@ -272,7 +293,9 @@ def bullet_token_set(text: str) -> frozenset[str]:
 
 def bullet_jaccard(a: str, b: str) -> float:
     """Jaccard similarity between two bullet texts on `bullet_token_set`.
-    Returns 0.0 when both are empty (degenerate)."""
+
+    Returns 0.0 when both are empty (degenerate).
+    """
     sa = bullet_token_set(a)
     sb = bullet_token_set(b)
     if not sa and not sb:
@@ -460,8 +483,7 @@ def compute_specificity_density(resume_text: str) -> dict:
 
 
 def compute_top_third_density(generated_resume: str, jd_keywords: dict) -> dict:
-    """Ratio of the first 3 bullets in the first experience section that contain
-    the JD's top 3 essentials.
+    """Ratio of the first 3 bullets in the first experience section that contain the JD's top 3 essentials.
 
     A high density (1.0) means the candidate leads with role-critical keywords
     where recruiters are most likely to look. Low density signals that the LLM
@@ -753,9 +775,11 @@ def _source_numeric_index(source_texts: list[str]) -> dict[str, list[float]]:
 
 
 def _numeric_grounded(kind: str, val: float, source_nums: dict[str, list[float]]) -> bool:
-    """Tolerant membership: is `val` (of `kind`) within the conservative band of
-    any same-kind source value? year/count are cross-checked so the same digit
-    string classified differently on each side doesn't false-flag."""
+    """Tolerant membership: is `val` (of `kind`) within the conservative band of any same-kind source value?
+
+    year/count are cross-checked so the same digit string classified
+    differently on each side doesn't false-flag.
+    """
     candidate_kinds = [kind]
     if kind in ("year", "count"):
         candidate_kinds = ["year", "count"]
@@ -775,9 +799,11 @@ def _normalize_entity(token: str) -> str:
 
 
 def _source_entity_set(source_texts: list[str]) -> set[str]:
-    """Every alias-normalized token in the source union. Broad on purpose: an
-    entity is flagged only when absent from the ENTIRE source union, which keeps
-    precision high (few false fabrication flags)."""
+    """Every alias-normalized token in the source union.
+
+    Broad on purpose: an entity is flagged only when absent from the ENTIRE
+    source union, which keeps precision high (few false fabrication flags).
+    """
     tokens: set[str] = set()
     for txt in source_texts:
         for raw in _SOURCE_TOKEN_RE.findall(txt or ""):

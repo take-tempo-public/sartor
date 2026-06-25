@@ -66,8 +66,7 @@ _KNOWN_SECTIONS = frozenset(
 
 
 def run_ats_roundtrip(docx_path: str | Path, resume_content_md: str) -> dict:
-    """Parse the generated .docx back through parser.py and diff against
-    what the generator was asked to emit.
+    """Parse the generated .docx back through parser.py and diff against what the generator was asked to emit.
 
     Returns a findings dict with a status verdict (pass/warning/fail) and
     counts/notes for human inspection. Never raises — even when parser.py
@@ -170,8 +169,9 @@ def _escalate_status(current: str, candidate: str) -> str:
 
 
 def _count_list_bullet_paragraphs(docx_path: Path) -> int:
-    """Count paragraphs styled as 'List Bullet' (or any list style) in the
-    .docx XML. This is the structural-bullet path — what an ATS sees when
+    """Count paragraphs styled as 'List Bullet' (or any list style) in the .docx XML.
+
+    This is the structural-bullet path — what an ATS sees when
     it parses paragraph numPr rather than raw text.
 
     Returns 0 if python-docx can't open the file (defensive — never raise).

@@ -26,8 +26,10 @@ from recall.models import Audience, Scope, Unit
 
 
 def allowed_audiences(scope: Scope) -> frozenset[Audience]:
-    """The audience tags `scope` may surface: `user` always, `dev` only when the
-    toggle is on."""
+    """Return the audience tags `scope` may surface.
+
+    `user` is always included; `dev` is included only when the toggle is on.
+    """
     if scope.allow_dev:
         return frozenset({Audience.USER, Audience.DEV})
     return frozenset({Audience.USER})
@@ -39,6 +41,8 @@ def within_scope(unit: Unit, scope: Scope) -> bool:
 
 
 def filter_units(units: Iterable[Unit], scope: Scope) -> list[Unit]:
-    """Drop every `Unit` that exceeds `scope` (over-audience or disabled tier),
-    preserving the input order of the survivors."""
+    """Drop every `Unit` that exceeds `scope`, preserving survivor order.
+
+    Units are dropped when they exceed the audience gate or belong to a disabled tier.
+    """
     return [unit for unit in units if within_scope(unit, scope)]

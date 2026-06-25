@@ -136,6 +136,14 @@ select = [
     # for this family). ANN401 (any-type) is handled case-by-case at the call site, not by
     # a blanket family ignore.
     "ANN",  # flake8-annotations
+    # Kit-adoption Phase 2 #3 (KIT-6 ratchet / KIT-7 end-state, design §4/§6): the D
+    # (pydocstyle) family. CONTENT rules (D205/D209/D301/D4xx) block tree-wide day one;
+    # the MISSING-DOCSTRING rules (D101/D102/D103/D105/D107) ratchet per-module via the
+    # per-file-ignores ratchet block below — that list shrinks as modules are documented
+    # until only the KIT-7 exempt set remains (the §6 exit criterion). The google
+    # convention (below) narrows D to its subset + silences the D203/D211 + D212/D213
+    # conflicts. hardening.py is the first fully-documented module → not in the ratchet.
+    "D",    # pydocstyle
 ]
 ignore = [
     "E501",  # line too long — many lines in prompts intentionally long
@@ -157,9 +165,39 @@ ignore = [
 # eval, and script scaffolding is not held to the production annotation bar (the
 # ratchet's named end-state exempts exactly these four trees; db/migrations/versions
 # is already fully extend-excluded above). Production carries no ANN override.
-"tests/**" = ["S101", "S105", "S106", "S108", "S607", "RUF059", "ANN"]
-"evals/*" = ["S101", "ANN"]
-"scripts/**" = ["ANN"]
+"tests/**" = ["S101", "S105", "S106", "S108", "S607", "RUF059", "ANN", "D"]
+"evals/*" = ["S101", "ANN", "D"]
+"scripts/**" = ["ANN", "D"]
+
+# Kit-adoption Phase 2 #3 — D missing-docstring ratchet (KIT-6/§6). These production
+# modules are not yet documented; each entry waives ONLY the missing-docstring codes
+# (D101/D102/D103/D105/D107) so the CONTENT rules (D205/D209/...) still apply. The list
+# SHRINKS as modules are documented branch-by-branch; the §6 exit criterion is reached
+# when it is empty (then D blocks everywhere outside the exempt set above). `ui_pages/**`
+# is the 12-file Playwright POM — 53% of the remaining debt; its eventual branch is the
+# large one. hardening.py was documented in this branch → deliberately absent here.
+"ui_pages/**" = ["D101", "D102", "D103", "D105", "D107"]
+"analyzer.py" = ["D101", "D102", "D103", "D105", "D107"]
+"db/models.py" = ["D101", "D102", "D103", "D105", "D107"]
+"config.py" = ["D101", "D102", "D103", "D105", "D107"]
+"onboarding/review_cli.py" = ["D101", "D102", "D103", "D105", "D107"]
+"onboarding/corpus_import.py" = ["D101", "D102", "D103", "D105", "D107"]
+"onboarding/extract_experiences.py" = ["D101", "D102", "D103", "D105", "D107"]
+"blueprints/users.py" = ["D101", "D102", "D103", "D105", "D107"]
+"blueprints/generation.py" = ["D101", "D102", "D103", "D105", "D107"]
+"blueprints/corpus/curation.py" = ["D101", "D102", "D103", "D105", "D107"]
+"recall/memory_source.py" = ["D101", "D102", "D103", "D105", "D107"]
+"recall/models.py" = ["D101", "D102", "D103", "D105", "D107"]
+"recall/sources/git_grep_source.py" = ["D101", "D102", "D103", "D105", "D107"]
+"recall/sources/session_source.py" = ["D101", "D102", "D103", "D105", "D107"]
+"recall/sources/vector_source.py" = ["D101", "D102", "D103", "D105", "D107"]
+"recall/sources/wiki_source.py" = ["D101", "D102", "D103", "D105", "D107"]
+
+[tool.ruff.lint.pydocstyle]
+# Kit-adoption Phase 2 #3: pin the google docstring convention. Narrows the D family to
+# google's subset and silences the mutually-exclusive D203/D211 + D212/D213 pairs (so D
+# never self-conflicts). Required whenever "D" is in select.
+convention = "google"
 
 [tool.ruff.format]
 # Kit-adoption Phase 1 (KIT-6): declare the adopted formatter style explicitly so the

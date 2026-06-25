@@ -44,9 +44,10 @@ class InMemorySource:
         return None
 
     def search(self, query: str, scope: Scope) -> Sequence[Unit]:
-        """Return held units whose text shares at least one token with `query`,
-        ranked best-first by overlap count (with a stable `citation` tiebreak so
-        the order is deterministic). Scope is filtered centrally by `assemble()`.
+        """Return held units ranked best-first by query-token overlap count.
+
+        Uses a stable `citation` tiebreak so the order is deterministic.
+        Scope is filtered centrally by `assemble()`.
         """
         wanted = _tokens(query)
         scored: list[Unit] = []

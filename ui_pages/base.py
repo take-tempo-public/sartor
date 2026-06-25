@@ -28,8 +28,10 @@ class BasePage:
         return self.page.locator(Wizard.step_button(step))
 
     def rail_step_enabled(self, step: int) -> bool:
-        """A rail step is reachable when its button is enabled (the wizard
-        toggles `disabled` on unreachable steps)."""
+        """Check whether a rail step is reachable (its button is enabled).
+
+        The wizard toggles `disabled` on unreachable steps.
+        """
         return self.rail_step(step).is_enabled()
 
     def goto_step(self, step: int) -> None:

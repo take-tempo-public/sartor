@@ -642,6 +642,14 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       member seen on the pydantic/PV-3 gates) of the same Compose-*load* race the 8.5 `.compose-experience-card`
       fix did not cover → still **watch**, resolve bar still unmet (the race FIRED this session — no clean
       datapoint banked), reinforces "not converging," strengthens the retry-policy option for PX-25.
+      **Update (2026-06-24, `chore/kit-phase2-ruff-d` gate):** **two** members fired together in one full
+      run (**2 failed / 1389 passed**) — `test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts`
+      (the `bullet_texts()[0]` load member) **and** `test_20260612_experience_summary_item.py::test_positioning_pin_preserves_title_pin`
+      (the original `.compose-row.recommended` / pin-state member) — then **both passed clean on a single
+      isolated re-run** (2/2, 14.9 s). This branch is ruff-D lint-config + docstrings only (`git diff`
+      touched no Compose/`app.js`/`wizard` code), so **not code-caused**. First time **two** members of the
+      class fired in the same run — further "not converging" evidence; resolve bar unmet (no clean datapoint
+      banked); strengthens the retry-policy option for PX-25.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -778,9 +786,18 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       strict-clean. Establishes the per-module override pattern + tracking surface the larger modules
       reuse — **3 production modules at full strict, the rest permissive**; the committed `mypy .` gate is
       the per-module block. No prompt/dep/version change; gate green (ruff/format ✓, mypy 227 ✓, pytest
-      1390 + the tracked Compose-load flaky — not code-caused, ledger #3 above). Row
-      **stays open** — commitments (1)/(2)'s remaining **Phase-2 ratchet** (`D` + google pydocstyle,
-      `interrogate` coverage gate, larger-module `--strict` for `analyzer.py`/`applications.py`) + (3)'s
+      1390 + the tracked Compose-load flaky — not code-caused, ledger #3 above). **Phase 2 #3
+      (2026-06-24, `chore/kit-phase2-ruff-d`):** the **ruff `D` (pydocstyle/google) family enabled** —
+      content rules (D205/D209/…) swept tree-wide so they block everywhere (105 safe autofix + 143 hand;
+      D205 is 100% hand-fix in ruff 0.15.12), missing-docstring rules (D101/D102/D103/D105/D107) ratchet
+      per-module via a new `per-file-ignores` block (ruff has no per-file `select`, so the block lists the
+      **not-yet-done** modules — inverse of the mypy override — and shrinks toward the §6 exit). First
+      documented module `hardening.py` (its 10 public TypedDict classes = the `context_set` contract).
+      16 ratchet entries cover the 27 undocumented files (`ui_pages/**` = 53% of the debt, the big later
+      branch). PROMPT-SAFE (analyzer prompt-constant sha256 byte-identical → no `PROMPT_VERSION` bump, no
+      eval run); `D` hard-blocks day one (KIT-6); no dep/version/hook change; gate green (ruff/format ✓,
+      mypy 227 ✓, pytest). Row **stays open** — the remaining `D` ratchet (drain the 27 modules),
+      `interrogate` coverage gate, larger-module `--strict` (`analyzer.py`/`applications.py`), + (3)'s
       skills/hooks coherence (8.7) are the remaining work; no new ledger item.
 
 #### Resolved

@@ -16,9 +16,11 @@ from ui_pages.selectors import Compose, Wizard
 
 class WizardComposePage(BasePage):
     def open(self) -> WizardComposePage:
-        """First entry from the analysis panel via 'Skip to Compose →', which
-        fires recommend_bullets so the curated set renders (and a saved custom
-        order displays — the no-recommendations fallback re-sorts by score)."""
+        """Enter Compose from the analysis panel via 'Skip to Compose →'.
+
+        Fires recommend_bullets so the curated set renders (and a saved custom
+        order displays — the no-recommendations fallback re-sorts by score).
+        """
         self.page.wait_for_selector(
             Wizard.SKIP_TO_COMPOSE, state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
@@ -27,8 +29,10 @@ class WizardComposePage(BasePage):
         return self
 
     def reload(self) -> WizardComposePage:
-        """Re-enter Compose via the rail (re-fetches GET /composition);
-        recommendations already persisted, so this is the reload-equivalent."""
+        """Re-enter Compose via the rail (re-fetches GET /composition).
+
+        Recommendations already persisted, so this is the reload-equivalent.
+        """
         self.goto_step(3)
         self._wait_loaded()
         return self
@@ -51,8 +55,10 @@ class WizardComposePage(BasePage):
         self.page.wait_for_selector(Compose.EXPERIENCE_CARD, timeout=DEFAULT_TIMEOUT_MS)
 
     def wait_cards(self) -> WizardComposePage:
-        """Wait for compose cards to render (used after a clarify-submit
-        lands on Compose, e.g. the screenshot script's full-flow path)."""
+        """Wait for compose cards to render after a clarify-submit lands on Compose.
+
+        Used e.g. by the screenshot script's full-flow path.
+        """
         self.page.wait_for_selector(Wizard.PANEL_COMPOSE, state="visible", timeout=LLM_TIMEOUT_MS)
         self.page.wait_for_selector(Compose.EXPERIENCE_CARD, timeout=LLM_TIMEOUT_MS)
         return self
@@ -81,9 +87,11 @@ class WizardComposePage(BasePage):
         )
 
     def add_title(self, title: str) -> None:
-        """Open the '+ Add title' modal on the first card, submit `title`, and
-        wait for the reloaded composition to render it (writes a sourced,
-        eligible corpus row via POST /api/experiences/<id>/titles)."""
+        """Open the '+ Add title' modal on the first card and submit `title`.
+
+        Waits for the reloaded composition to render it (writes a sourced,
+        eligible corpus row via POST /api/experiences/<id>/titles).
+        """
         self._first_card().locator(Compose.ADD_TITLE_BTN).click()
         self.page.fill(Compose.FORM_MODAL_TITLE_INPUT, title)
         self.page.click(Compose.FORM_MODAL_SUBMIT)
@@ -113,9 +121,11 @@ class WizardComposePage(BasePage):
         return self.page.locator(Compose.ROLE_INTROS_TOGGLE)
 
     def enable_role_intros(self) -> None:
-        """Turn on the application-level 'Add role intros' toggle and wait for
-        the per-role picker to surface + a role to default to its (stubbed)
-        recommendation — the deterministic 'applied' signal."""
+        """Turn on the 'Add role intros' toggle and wait for the per-role picker.
+
+        Waits for a role to default to its (stubbed) recommendation — the
+        deterministic 'applied' signal.
+        """
         self.role_intros_toggle().check()
         self.page.wait_for_selector(
             Compose.ROLE_INTRO_CHOSEN, state="visible", timeout=DEFAULT_TIMEOUT_MS
@@ -156,10 +166,12 @@ class WizardComposePage(BasePage):
         self.page.locator(Compose.EXPERIENCE_CARD).first.locator(Compose.RESET_ORDER).click()
 
     def drag_below(self, src_text: str, target_text: str) -> None:
-        """Pointer-path reorder via dispatched native HTML5 DnD with a shared
-        DataTransfer (Playwright's `drag_to` is unreliable for native DnD).
-        `clientY` is set into the lower half of the target row so the list's
-        `dragover` handler drops the source after it."""
+        """Reorder via dispatched native HTML5 DnD with a shared DataTransfer.
+
+        Playwright's `drag_to` is unreliable for native DnD. `clientY` is set
+        into the lower half of the target row so the list's `dragover` handler
+        drops the source after it.
+        """
         src = self._row(src_text)
         target_box = self._row(target_text).bounding_box()
         assert target_box is not None

@@ -102,8 +102,7 @@ class ReviewSession:
         self.edited = 0
 
     def pending_experiences(self) -> list[Experience]:
-        """Experiences belonging to this candidate that have any pending title
-        or bullet. Ordered newest-first."""
+        """Return experiences belonging to this candidate that have any pending title or bullet, ordered newest-first."""
         stmt = (
             select(Experience)
             .where(Experience.candidate_id == self.candidate.id)
@@ -369,8 +368,10 @@ class ReviewSession:
 
 
 def iter_pending_experiences(session: Session, candidate_id: int) -> Iterator[Experience]:
-    """Read-only helper for callers who want to iterate pending experiences
-    without the interactive loop (used by tests and any future automation)."""
+    """Yield pending experiences for a candidate without running the interactive loop.
+
+    Read-only helper used by tests and any future automation.
+    """
     stmt = (
         select(Experience)
         .where(Experience.candidate_id == candidate_id)

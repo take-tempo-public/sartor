@@ -17,7 +17,9 @@ class WizardGeneratePage(BasePage):
 
     def refine(self, note: str, delay: int = 8) -> bool:
         """Type a refine note if the refinement input is present (post-generate).
-        Returns False when it isn't visible, so the caller can proceed."""
+
+        Returns False when it isn't visible, so the caller can proceed.
+        """
         try:
             self.page.wait_for_selector(
                 Wizard.REFINEMENT_INPUT, state="visible", timeout=DEFAULT_TIMEOUT_MS

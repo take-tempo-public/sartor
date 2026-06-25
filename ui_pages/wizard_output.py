@@ -26,7 +26,9 @@ class WizardOutputPage(BasePage):
 
     def generate_cover_letter(self) -> bool:
         """Click '+ Generate cover letter' and wait for the CL preview.
-        Returns False when the button is absent (nothing to capture)."""
+
+        Returns False when the button is absent (nothing to capture).
+        """
         btn = self.page.locator(Output.GENERATE_COVER)
         if btn.count() == 0:
             return False

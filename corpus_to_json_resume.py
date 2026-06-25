@@ -1,6 +1,7 @@
-"""Build a JSON Resume v1.0 document directly from the candidate's
-corpus (Candidate + Experience + Bullet + SummaryItem rows), applying
-composition_overrides if a context file is in scope.
+"""Build a JSON Resume v1.0 document directly from the candidate's corpus.
+
+Assembles from Candidate + Experience + Bullet + SummaryItem rows,
+applying composition_overrides if a context file is in scope.
 
 Why this exists
 ---------------
@@ -53,10 +54,10 @@ def build_json_resume_from_corpus(
     application_id: int | None = None,
     context_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Return a JSON Resume v1.0 dict assembled from the candidate's
-    corpus, applying composition_overrides (read from `context_path`)
-    when supplied. SQLAlchemy session is the caller's responsibility —
-    we don't open or close it.
+    """Return a JSON Resume v1.0 dict assembled from the candidate's corpus.
+
+    Applies composition_overrides (read from `context_path`) when supplied.
+    SQLAlchemy session is the caller's responsibility — we don't open or close it.
 
     Args:
         session: An open SQLAlchemy session.
@@ -286,9 +287,11 @@ def _empty_document() -> dict[str, Any]:
 
 
 def _read_context_file(context_path: str | Path | None) -> dict[str, Any]:
-    """Load a context_*.json file off disk. Returns {} on any failure
-    (missing path, bad JSON, IO error) — callers fall through to the
-    "no overrides" path."""
+    """Load a context_*.json file off disk.
+
+    Returns {} on any failure (missing path, bad JSON, IO error) — callers
+    fall through to the "no overrides" path.
+    """
     if not context_path:
         return {}
     cp = Path(context_path)
@@ -302,8 +305,10 @@ def _read_context_file(context_path: str | Path | None) -> dict[str, Any]:
 
 
 def _read_summary_choices(ctx: dict[str, Any]) -> tuple[int | None, int | None]:
-    """Return (pinned_summary_id, recommended_summary_id) from a loaded
-    context dict. Either or both can be None."""
+    """Return (pinned_summary_id, recommended_summary_id) from a loaded context dict.
+
+    Either or both can be None.
+    """
     overrides = ctx.get("composition_overrides") or {}
     rec_block = ctx.get("llm_summary_recommendation") or {}
     rec = rec_block.get("recommendation") if isinstance(rec_block, dict) else None
@@ -324,9 +329,11 @@ def _read_summary_choices(ctx: dict[str, Any]) -> tuple[int | None, int | None]:
 
 
 def _read_title_choices(ctx: dict[str, Any]) -> dict[int, int]:
-    """feat/compose-add-title — return {experience_id: pinned_title_id} from a
-    loaded context dict's `composition_overrides.pinned_title_ids`. Empty when
-    absent/invalid; keys and ids coerced to int (JSON persists keys as strings)."""
+    """Return {experience_id: pinned_title_id} from the context dict (feat/compose-add-title).
+
+    Reads `composition_overrides.pinned_title_ids`. Empty when absent/invalid;
+    keys and ids coerced to int (JSON persists keys as strings).
+    """
     overrides = ctx.get("composition_overrides") or {}
     raw = overrides.get("pinned_title_ids") if isinstance(overrides, dict) else None
     out: dict[int, int] = {}
@@ -347,9 +354,11 @@ def _resolve_chosen_summary_text(
     recommended_id: int | None,
     fallback_text: str,
 ) -> tuple[str, str]:
-    """Walk the priority chain (pin > recommendation > first-active >
-    fallback). Returns (text, source) where source is one of
-    "pinned" | "recommended" | "first_active" | "candidate_default" | "none"."""
+    """Walk the priority chain (pin > recommendation > first-active > fallback).
+
+    Returns (text, source) where source is one of
+    "pinned" | "recommended" | "first_active" | "candidate_default" | "none".
+    """
     from db.models import SummaryItem
 
     def _lookup(sid: int | None) -> str | None:
@@ -389,10 +398,12 @@ def _resolve_chosen_summary_text(
 
 
 def _read_experience_summary_choices(ctx: dict[str, Any]) -> tuple[bool, dict[int, int]]:
-    """B.4 — return (use_experience_summaries, {experience_id: item_id}) from a
-    loaded context dict's `composition_overrides`. The toggle gates whether the
-    per-role picks are applied; keys/ids are coerced to int (JSON persists keys
-    as strings). Absent / invalid → (False, {})."""
+    """Return (use_experience_summaries, {experience_id: item_id}) from the context dict (B.4).
+
+    Reads `composition_overrides`. The toggle gates whether the per-role picks
+    are applied; keys/ids are coerced to int (JSON persists keys as strings).
+    Absent / invalid → (False, {}).
+    """
     overrides = ctx.get("composition_overrides") or {}
     if not isinstance(overrides, dict):
         return False, {}
@@ -413,10 +424,12 @@ def _resolve_chosen_experience_summary_text(
     experience_id: int,
     item_id: int | None,
 ) -> str:
-    """B.4 — return the chosen ExperienceSummaryItem's text for a role, or ""
-    when none is chosen / the variant is missing / inactive / belongs to a
-    different role. OPT-IN: NO fallback to the legacy Experience.summary (it
-    lives on as a backfilled variant, surfaced only when explicitly chosen)."""
+    """Return the chosen ExperienceSummaryItem's text for a role, or "" (B.4).
+
+    Returns "" when none is chosen / the variant is missing / inactive / belongs
+    to a different role. OPT-IN: NO fallback to the legacy Experience.summary (it
+    lives on as a backfilled variant, surfaced only when explicitly chosen).
+    """
     if item_id is None:
         return ""
     from db.models import ExperienceSummaryItem
@@ -434,8 +447,10 @@ def _resolve_chosen_experience_summary_text(
 def _read_bullet_overrides(
     ctx: dict[str, Any],
 ) -> tuple[set[int], set[int], set[int]]:
-    """Return (pinned, excluded, added) bullet-id sets from a loaded
-    context dict's composition_overrides. Empty sets when absent."""
+    """Return (pinned, excluded, added) bullet-id sets from composition_overrides.
+
+    Empty sets when absent.
+    """
     ov = ctx.get("composition_overrides") or {}
     if not isinstance(ov, dict):
         return set(), set(), set()
@@ -450,7 +465,9 @@ def _read_recommendations_by_experience(
     ctx: dict[str, Any],
 ) -> dict[int, set[int]]:
     """Return {experience_id: {bullet_ids}} from ctx["llm_recommendations"].
-    Empty when no recommendations exist (caller falls back to all-active)."""
+
+    Empty when no recommendations exist (caller falls back to all-active).
+    """
     rec_map = ctx.get("llm_recommendations") or {}
     if not isinstance(rec_map, dict):
         return {}
@@ -481,10 +498,13 @@ def _first_title_text(exp: Experience) -> str | None:
 
 
 def _pinned_title_text(exp: Experience, pinned_id: int | None) -> str | None:
-    """feat/compose-add-title — the user's per-JD title pick for this experience,
-    when it's still an eligible (is_official OR truthful_enough_to_use) title of
-    this experience. Returns None when unset / stale / ineligible so the caller
-    falls through to the official-or-first default (non-pinned output unchanged)."""
+    """Return the user's per-JD title pick for this experience (feat/compose-add-title).
+
+    Only returned when the pick is still an eligible (is_official OR
+    truthful_enough_to_use) title of this experience. Returns None when unset /
+    stale / ineligible so the caller falls through to the official-or-first
+    default (non-pinned output unchanged).
+    """
     if pinned_id is None:
         return None
     for t in exp.titles or []:
@@ -496,8 +516,10 @@ def _pinned_title_text(exp: Experience, pinned_id: int | None) -> str | None:
 def _read_skill_overrides(
     ctx: dict[str, Any],
 ) -> tuple[set[int], set[int], list[int]]:
-    """B.5 — (pinned, excluded, skill_order) skill-id curation from a loaded
-    context's composition_overrides. Empty sets / list when absent."""
+    """Return (pinned, excluded, skill_order) skill-id curation from composition_overrides (B.5).
+
+    Empty sets / list when absent.
+    """
     ov = ctx.get("composition_overrides") or {}
     if not isinstance(ov, dict):
         return set(), set(), []
@@ -521,10 +543,12 @@ def _read_skill_overrides(
 
 
 def _read_skill_recommendations(ctx: dict[str, Any]) -> list[int] | None:
-    """B.5 — ordered recommended skill ids from ctx["llm_skill_recommendations"]
-    .recommendation.skill_ids. None when no recommendation has been run (caller
-    falls back to all active+approved skills); an empty recommendation also maps
-    to None so a degenerate run never blanks the skills section."""
+    """Return ordered recommended skill ids from ctx["llm_skill_recommendations"] (B.5).
+
+    Reads .recommendation.skill_ids. None when no recommendation has been run
+    (caller falls back to all active+approved skills); an empty recommendation
+    also maps to None so a degenerate run never blanks the skills section.
+    """
     block = ctx.get("llm_skill_recommendations")
     if not isinstance(block, dict):
         return None
@@ -591,14 +615,14 @@ def _collect_skills(
     skill_order: list[int] | tuple[int, ...] | None = None,
     rec_ids: list[int] | None = None,
 ) -> list[dict[str, Any]]:
-    """Return JSON Resume skills[] for the candidate, curated + ordered for
-    this application (B.5).
+    """Return JSON Resume skills[] for the candidate, curated and ordered for this application (B.5).
 
     The universe is the candidate's active, approved Skill rows in
     display_order; pending (is_pending_review=1) and retired (is_active=0)
     skills never appear. recommend_skills ordering + pin/drop/reorder overrides
     are applied via resolve_skill_selection. With no recommendation and no
-    overrides this is simply every active, approved skill in display order."""
+    overrides this is simply every active, approved skill in display order.
+    """
     from db.models import Skill
 
     rows = (
@@ -620,8 +644,10 @@ def _collect_skills(
 
 
 def _username_from_linkedin(url: str) -> str:
-    """Pull the LinkedIn handle from a profile URL. Best-effort; falls
-    back to the empty string on unexpected formats."""
+    """Pull the LinkedIn handle from a profile URL.
+
+    Best-effort; falls back to the empty string on unexpected formats.
+    """
     if not url:
         return ""
     if "/in/" in url:

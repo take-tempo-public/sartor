@@ -26,9 +26,12 @@ class UserPicker:
 
 
 class Forms:
-    """Cross-surface form conventions (Sprint 6.3 #21). The required-field
-    marker is a reusable class shared by the new-user form, the openFormModal
-    modals, and the diagnostics dropdowns — one handle for all of them."""
+    """Cross-surface form conventions (Sprint 6.3 #21).
+
+    The required-field marker is a reusable class shared by the new-user form,
+    the openFormModal modals, and the diagnostics dropdowns — one handle for
+    all of them.
+    """
 
     REQUIRED_MARKER = ".required-marker"
     REQUIRED_LEGEND = ".form-required-legend"
@@ -36,11 +39,13 @@ class Forms:
 
 class Help:
     """Reusable in-app help primitive (Sprint 6.5 feat/help-pattern-component).
+
     ONE shared #helpModal whose title/body swap per block; a `.help-info`
     (i)-circle is injected into each registered `.cb-panel` header and re-opens
     that block's modal. The welcome block also auto-opens once-ever on first
     view (default-suppressed in the UX suite — see the `_help_welcome_default_seen`
-    fixture + the `show_welcome` marker)."""
+    fixture + the `show_welcome` marker).
+    """
 
     MODAL = "#helpModal"
     MODAL_TITLE = "#helpModalTitle"
@@ -57,18 +62,22 @@ class Help:
 
 
 class Header:
-    """Top-bar wordmark (`.cb-wordmark`) — clicking it routes home (#23):
-    deselects the user and returns to the default Tailor landing tab."""
+    """Top-bar wordmark (`.cb-wordmark`) — clicking it routes home (#23).
+
+    Deselects the user and returns to the default Tailor landing tab.
+    """
 
     TOPBAR = "#cbTopbar"
     WORDMARK = ".cb-wordmark"
 
 
 class LiveRegion:
-    """The shell's screen-reader announcer (`_announce()` in app.js writes here at
-    every meaningful async completion — analysis ready, generation done, edits
-    saved). A polite, atomic sr-only region; its content is assertable via
-    `to_contain_text` (sr-only ≠ hidden for text assertions). F-expa11y-08."""
+    """The shell's screen-reader announcer (`_announce()` in app.js).
+
+    Writes here at every meaningful async completion — analysis ready, generation
+    done, edits saved. A polite, atomic sr-only region; its content is assertable
+    via `to_contain_text` (sr-only ≠ hidden for text assertions). F-expa11y-08.
+    """
 
     ANNOUNCER = "#srAnnounce"
 
@@ -176,11 +185,13 @@ class Memory:
 
 
 class Assistant:
-    """The doc-grounded assistant (Sprint 7.5, feat/doc-assistant) — relocated
-    from an in-shell collapsible `<details>` panel to a fixed top-bar magnifier
-    pill (`#assistantPill`) that opens a floating `.cb-modal` (`#assistantModal`)
-    via `openAssistantModal()`. Backed by POST /api/assistant/ask (SSE). JS in
-    `static/assistant.js`."""
+    """The doc-grounded assistant (Sprint 7.5, feat/doc-assistant).
+
+    Relocated from an in-shell collapsible `<details>` panel to a fixed top-bar
+    magnifier pill (`#assistantPill`) that opens a floating `.cb-modal`
+    (`#assistantModal`) via `openAssistantModal()`. Backed by POST
+    /api/assistant/ask (SSE). JS in `static/assistant.js`.
+    """
 
     OPEN_PILL = "#assistantPill"  # the top-bar magnifier that opens the modal
     MODAL = "#assistantModal"
@@ -196,8 +207,11 @@ class Assistant:
 
 
 class Settings:
-    """The right-slide Settings drawer (Workstream B1.3) — opened from the
-    header pill; profile/config fields live inside (`#cfgName` … `#cfgNotes`)."""
+    """The right-slide Settings drawer (Workstream B1.3).
+
+    Opened from the header pill; profile/config fields live inside
+    (`#cfgName` … `#cfgNotes`).
+    """
 
     OPEN_PILL = "#settingsPill"
     DRAWER = "#settingsDrawer"
@@ -208,10 +222,13 @@ class Settings:
 
 
 class Onboarding:
-    """The shared empty-corpus CTA (`_renderCorpusEmptyCTA`) rendered into a
-    read-only tab (Memory / Personas / Applications) when the selected user has
-    no corpus material yet. The Corpus tab itself shows its toolbar instead
-    (see Corpus.IMPORT_BUTTON_NAME), so both import and manual CRUD are open."""
+    """The shared empty-corpus CTA (`_renderCorpusEmptyCTA`).
+
+    Rendered into a read-only tab (Memory / Personas / Applications) when the
+    selected user has no corpus material yet. The Corpus tab itself shows its
+    toolbar instead (see Corpus.IMPORT_BUTTON_NAME), so both import and manual
+    CRUD are open.
+    """
 
     CTA_NAME = "Go to Career corpus"
 
@@ -229,9 +246,12 @@ class Output:
 
 
 class Dashboard:
-    """The /_dashboard diagnostics console. data-tab / data-pane / data-detail
-    are structural attributes the console JS depends on (tab routing +
-    detail-panel population) — stable handles, not styling aliases."""
+    """The /_dashboard diagnostics console.
+
+    data-tab / data-pane / data-detail are structural attributes the console JS
+    depends on (tab routing + detail-panel population) — stable handles, not
+    styling aliases.
+    """
 
     ROOT = ".cb-dash"
     TABS = ".dash-tab"
