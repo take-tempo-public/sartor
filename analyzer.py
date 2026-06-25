@@ -38,6 +38,7 @@ class LLMResponseError(Exception):
     """
 
     def __init__(self, raw: str, validation_error: str) -> None:
+        """Store the raw LLM response and the validation error for callers to surface."""
         self.raw = raw
         self.validation_error = validation_error
         super().__init__(f"LLM response failed validation: {validation_error}")
@@ -170,6 +171,8 @@ class HiddenQualityItem(BaseModel):
 
 
 class AnalyzeResponse(_LLMResponse):
+    """Full merged `analyze()` output — the combined two-pass `ANALYZE_REQUIRED_KEYS` shape."""
+
     essential_skills: Any
     preferred_skills: Any
     industry_keywords: Any
@@ -208,6 +211,8 @@ class AnalyzeSynthesisResponse(_LLMResponse):
 
 
 class GenerateResponse(_LLMResponse):
+    """`generate()` output with cover letter — the `GENERATE_REQUIRED_KEYS` shape."""
+
     resume_content: Any
     cover_letter_content: Any
     changes_made: Any
@@ -215,17 +220,28 @@ class GenerateResponse(_LLMResponse):
 
 
 class GenerateNoCLResponse(_LLMResponse):
+    """Résumé-only `generate()` output (β.5 default) — the `GENERATE_NO_CL_REQUIRED_KEYS` shape."""
+
     resume_content: Any
     changes_made: Any
     proofread_notes: Any
 
 
 class ClarifyResponse(_LLMResponse):
+    """`clarify()` / `clarify_iteration()` output — the `CLARIFY_REQUIRED_KEYS` shape."""
+
     questions: Any
     reasoning: Any
 
     @model_validator(mode="after")
     def enforce_composition_rules(self, info: ValidationInfo) -> "ClarifyResponse":
+        """Enforce clarify()'s question-composition rules when validation_context is passed.
+
+        Rule 1: when hidden_qualities is non-empty, at least one context_probe is
+        required. Rule 2: ≥60% combined experience_probe + context_probe. clarify()
+        always passes the context; clarify_iteration() does not (different question
+        kinds and rules), so for it this validator is a no-op.
+        """
         # Only enforce when the caller explicitly passes validation_context.
         # clarify() always passes it; clarify_iteration() does not (it has
         # different question kinds and composition rules).
@@ -266,49 +282,69 @@ class ClarifyResponse(_LLMResponse):
 
 
 class RecommendResponse(_LLMResponse):
+    """`recommend_bullets()` output — the `RECOMMEND_REQUIRED_KEYS` shape."""
+
     recommendations: Any
 
 
 class RecommendSummariesResponse(_LLMResponse):
+    """`recommend_summaries()` output — the `RECOMMEND_SUMMARIES_REQUIRED_KEYS` shape."""
+
     recommendation: Any
 
 
 class RecommendExperienceSummariesResponse(_LLMResponse):
+    """`recommend_experience_summaries()` output — per-experience summary picks."""
+
     recommendations: Any
 
 
 class RecommendSkillsResponse(_LLMResponse):
+    """`recommend_skills()` output — the curated skill-section recommendation."""
+
     recommendation: Any
 
 
 class SuggestSkillsResponse(_LLMResponse):
+    """`suggest_skills()` output — proposed new skills for human approve/deny."""
+
     proposals: Any
 
 
 class GenerateCorpusResponse(GenerateResponse):
+    """Corpus-mode `generate()` with cover letter — the `GENERATE_CORPUS_REQUIRED_KEYS` shape."""
+
     selected_bullets: Any
     proposed_new_bullets: Any
     proposed_experience_titles: Any
 
 
 class GenerateCorpusNoCLResponse(GenerateNoCLResponse):
+    """Corpus-mode résumé-only `generate()` — the `GENERATE_CORPUS_NO_CL_REQUIRED_KEYS` shape."""
+
     selected_bullets: Any
     proposed_new_bullets: Any
     proposed_experience_titles: Any
 
 
 class CoverLetterOnlyResponse(_LLMResponse):
+    """`generate_cover_letter_against_resume()` output — cover letter + proofread notes."""
+
     cover_letter_content: Any
     proofread_notes: Any
 
 
 class CritiqueResponse(_LLMResponse):
+    """`critique_proposal()` output — the structured verdict on a proposed bullet."""
+
     verdict: Any
     notes: Any
     concerns: Any
 
 
 class PromoteBulletResponse(_LLMResponse):
+    """`promote_clarification_to_bullet()` output — promoted bullet text + pattern kind."""
+
     text: Any
     pattern_kind: Any
 

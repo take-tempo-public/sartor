@@ -367,6 +367,32 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > 12-file `ui_pages/**` glob). Remaining ratchet units (smallest first): `analyzer.py` (16 —
 > GOTCHA-4 territory, holds the 16 prompt constants → sha256-prove them) · last `ui_pages/**` (89).
 
+> **Phase 2 #3 ratchet — unit 7, `analyzer.py` drained
+> (`chore/kit-phase2-ruff-d-analyzer`, 2026-06-25).** Seventh rung — the GOTCHA-4
+> prompt-home unit. Documented `analyzer.py`'s 16 D-flagged symbols and removed its entry
+> from the `per-file-ignores` ratchet block (**2 → 1 entry**). **Clarification of the two
+> easily-conflated "16"s:** the 16 *D-flagged symbols* are **14 D101 Pydantic response-model
+> classes** (`AnalyzeResponse`/`GenerateResponse`/`ClarifyResponse`/`Recommend*`/`GenerateCorpus*`/
+> `CoverLetterOnlyResponse`/`CritiqueResponse`/`PromoteBulletResponse`) **+ 1 D102** (the
+> `ClarifyResponse.enforce_composition_rules` validator) **+ 1 D107** (`LLMResponseError.__init__`)
+> — a DIFFERENT set from the module's prompt-string constants. The response models got single-line
+> google summaries naming which call's `_parse_or_retry` shape each validates (the `*_REQUIRED_KEYS`
+> frozensets above each model are the source); three siblings (`HiddenQualityItem`,
+> `AnalyzeExtractionResponse`, `AnalyzeSynthesisResponse`) were already the in-file exemplars.
+> **PROMPT-SAFE (GOTCHA-4 done the hard way):** docstrings on Pydantic classes never touch a
+> `NAME = """…"""` literal, but `analyzer.py` IS the prompt home, so proved it — sha256 of every
+> prompt constant (the 11 `_BASE_SYSTEM_PROMPTS` registry values + `AVATAR_SYSTEM_PROMPT` +
+> `_COVER_LETTER_RULES_BLOCK`) + both version strings, HEAD vs branch → **byte-identical** (diff
+> empty); no `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` bump, no eval run. No dep/version/hook change.
+> Gate green: ruff check ✓ · ruff format --check (217) ✓ · mypy (227) ✓ · pytest 1389 passed / 2
+> flaky — the ledger #3 Compose load-race fired a **new member pair** (title-add
+> `test_add_title_then_pin_persists` + no-recommendations-order
+> `test_no_recommendations_order_persists_on_reload`), both passing isolated (2/2) → confirmed
+> flake, code-independent (branch touches no Compose code). **Per-module tracking: `analyzer.py`
+> now at full `D`; 1 entry / 12-file `ui_pages/**` glob is all that remains** — the LAST/LARGEST
+> unit (89), reserved for its own dedicated branch that reaches the §6 exit (block empty → `D`
+> blocks everywhere outside the KIT-7 exempt set).
+
 **Phase 3 — Request-boundary typing + OpenAPI** (~4–6 sessions): pick is settled (spectree,
 Decision 1); convert ~30 endpoints to parse `request.json` into Pydantic models, blueprint by
 blueprint, each reconciled with `_safe_username`/`_within` + the PX-29 containment gate **[M+J]**;
