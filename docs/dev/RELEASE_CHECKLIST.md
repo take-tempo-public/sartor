@@ -694,6 +694,18 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       FIRED → no clean datapoint banked; two members + a ~33 % isolated rate make this the strongest
       "not converging" datapoint and materially strengthen the **retry-policy** option for PX-25 (a
       broader compose-load wait alone may not suffice at this rate).
+      **Update (2026-06-25, `chore/kit-phase2-ruff-d-analyzer` gate):** a **new member pair** fired
+      together in the full suite (**1389 passed / 2 failed**) — title-add
+      [`test_20260611_compose_add_title.py`](../../tests/ux/regression/test_20260611_compose_add_title.py)`::test_add_title_then_pin_persists`
+      (`title_texts() == []`) **and** no-recommendations-order
+      [`test_20260611_compose_order_no_recommendations.py`](../../tests/ux/regression/test_20260611_compose_order_no_recommendations.py)`::test_no_recommendations_order_persists_on_reload`
+      (`IndexError`, bullets unrendered) — the **third** two-members-in-one-run observation, and the
+      first pairing title-add with the no-recommendations-order member. Both **passed clean on an
+      isolated re-run** (2/2, 16.5 s). This branch is ruff-D ratchet (`analyzer.py` docstrings +
+      `pyproject.toml` ratchet block) only — a docstring on a Pydantic response model cannot affect
+      Compose rendering (the prompt constants were proven byte-identical), so **not code-caused**.
+      The race FIRED → no clean datapoint banked; the recurring multi-member firings keep the class
+      **not converging** and reinforce the **retry-policy** option for PX-25.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -908,6 +920,22 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       load-race fired its strongest datapoint yet, two members at once, both proven flaky and
       code-independent; see ledger #3). No new ledger item. Remaining `D` ratchet units (smallest
       first): `analyzer.py` (16, GOTCHA-4 — holds 16 prompt constants) · last `ui_pages/**` (89).
+      **Phase 2 #3 ratchet — unit 7 (2026-06-25, `chore/kit-phase2-ruff-d-analyzer`):** drained
+      **`analyzer.py`** — the GOTCHA-4 prompt-home unit. Documented its **16 D-flagged symbols**
+      (**14 D101** Pydantic response-model classes + **1 D102** the `ClarifyResponse` composition
+      validator + **1 D107** `LLMResponseError.__init__`) with single-line google summaries naming
+      which call's `_parse_or_retry` shape each validates, and removed its `per-file-ignores` entry
+      (**ratchet 2 → 1**; `analyzer.py` now at full `D`, **only the 12-file `ui_pages/**` glob
+      waived**). The 16 D-flagged symbols are a DIFFERENT set from the module's prompt-string
+      constants (schema/validation classes vs `NAME = """…"""` literals — docstrings never touch the
+      latter). **PROMPT-SAFE proven the hard way** — `analyzer.py` IS the prompt home, so sha256'd
+      every prompt constant (the 11 `_BASE_SYSTEM_PROMPTS` registry values + `AVATAR_SYSTEM_PROMPT` +
+      `_COVER_LETTER_RULES_BLOCK`) + both version strings, HEAD vs branch → **byte-identical** → no
+      `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` bump, no eval run. No dep/version/hook change; gate
+      green (ruff/format ✓, mypy 227 ✓, pytest **1389 passed / 2 flaky** — a new ledger #3 member
+      pair, both proven flaky and code-independent; see ledger #3). No new ledger item. **Remaining
+      `D` ratchet: the single `ui_pages/**` unit (89) — the LAST/LARGEST, its own dedicated branch,
+      which reaches the §6 exit (block empty → `D` blocks everywhere outside the KIT-7 exempt set).**
 
 #### Resolved
 
