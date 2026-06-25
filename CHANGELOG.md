@@ -85,6 +85,22 @@ RELEASE_CHECKLIST carry-forward ledger #3). No eval run (no prompt change). Per-
 Remaining Phase 2: `D` + google pydocstyle, `interrogate` coverage gate, larger-module `--strict`
 (`analyzer.py` / `applications.py`) — each its own later branch.
 
+- **Rung 2 — `blueprints.applications`** (`chore/kit-phase2-mypy-strict-applications`, 2026-06-25):
+  the next rung adds `blueprints.applications` (~2,100 LOC — the first **non-leaf route/seam**
+  module) to the same strict override roster. Clean for a different reason than the pure leaves:
+  Phase-2 #1 (`ANN`) had already annotated its whole call graph, so `--strict` + `warn_unreachable`
+  surfaced **no `disallow_untyped_calls` cascade** — only **13 errors**, all mechanical (12
+  bare-generic `type-arg` → parametrized, predominantly `dict[str, Any]`; 1 `no-any-return` →
+  `cast("str | None", …)`, a runtime no-op). `_load_application_owned` stays `tuple[Any, Any]`
+  (parametrized for `disallow_any_generics`; the precise `tuple[Application|None, Candidate|None]`
+  would force a None-narrowing change at its 9 in-module callers — a deferred None-safety pass, out
+  of scope for a typing rung; the docstring records this). The strict roster is now
+  `scraper`/`json_resume`/`pdf_render`/`blueprints.applications`. PROMPT-SAFE (no prompt constants
+  in the module — grep-0; the `anthropic` refs are exception types). No prompt/dep/version change;
+  gate green (ruff/format ✓ 217, mypy ✓ 227, pytest **1389 passed / 2 known-flaky** — both the
+  ledger #3 Compose load-race, passed clean isolated 2/2). Remaining Phase 2: `interrogate`
+  coverage gate + larger-module `--strict` (`analyzer.py`).
+
 ### Kit-adoption Phase 2 #1 — enable ruff `ANN` (`chore/kit-phase2-ruff-ann`, 2026-06-24)
 
 First implementation branch of the agent-coding-practices kit-adoption arc **Phase 2** (the

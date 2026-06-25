@@ -214,15 +214,20 @@ no_implicit_reexport = true
 module = ["docx", "docx.*", "pdfplumber", "pdfplumber.*", "markdown", "markdown.*", "bs4", "bs4.*"]
 ignore_missing_imports = true
 
-# Kit-adoption Phase 2 #2 (KIT-6 ratchet / KIT-7 end-state): mypy --strict +
-# warn_unreachable on the deterministic, LLM-free leaf modules — the first rung of the
-# per-module --strict ratchet (kit-adoption-design.md §4/§6). `strict` is NOT a per-module
-# option (mypy.options.PER_MODULE_OPTIONS), so the strict preset is spelled out as its
-# per-module-capable component flags. The global config stays permissive; these three block.
-# Tighten module-by-module toward the Decision-7 end-state (strict everywhere except
-# tests/ evals/ scripts/ db/migrations/versions).
+# Kit-adoption Phase 2 #2 (KIT-6 ratchet / KIT-7 end-state): the per-module --strict ratchet
+# roster (kit-adoption-design.md §4/§6) — every module listed here is at full `mypy --strict` +
+# warn_unreachable while the global config stays permissive. `strict` is NOT a per-module option
+# (mypy.options.PER_MODULE_OPTIONS), so the strict preset is spelled out as its per-module-capable
+# component flags. This list IS the §6 tracking surface; it GROWS module-by-module toward the
+# Decision-7 end-state (strict everywhere except tests/ evals/ scripts/ db/migrations/versions).
+# Two cohorts so far:
+#   - rung 1 (scraper/json_resume/pdf_render) — the deterministic, LLM-free P1-Hardening leaves;
+#     pure (no intra-project calls), so strict surfaced no cross-module cascade.
+#   - rung 2 (blueprints.applications) — the FIRST non-leaf route/seam module. It was clean for a
+#     different reason: Phase-2 #1 (ruff ANN) had already annotated its whole call graph, so strict
+#     surfaced only bare-generic `type-arg` + one `no-any-return` — NOT an untyped-call cascade.
 [[tool.mypy.overrides]]
-module = ["scraper", "json_resume", "pdf_render"]
+module = ["scraper", "json_resume", "pdf_render", "blueprints.applications"]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 disallow_untyped_calls = true

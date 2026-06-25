@@ -41,7 +41,7 @@ import re
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import anthropic
 from flask import Blueprint, current_app, jsonify, request
@@ -73,7 +73,7 @@ _VALID_APP_STATUSES = frozenset({"draft", "submitted", "interview", "rejected", 
 
 def _application_summary_dict(
     app_row: Application, runs: list[ApplicationRun], pending_proposal_count: int
-) -> dict:
+) -> dict[str, Any]:
     """Compact application row for the Applications tab list view."""
     latest_run = runs[-1] if runs else None
     return {
@@ -262,7 +262,7 @@ def get_application(application_id: int) -> ResponseReturnValue:
         session.close()
 
 
-def _build_resume_state(safe_user: str, runs_sorted: list) -> dict:
+def _build_resume_state(safe_user: str, runs_sorted: list[ApplicationRun]) -> dict[str, Any]:
     """Package the frontend state needed to resume a prior application at its furthest wizard step.
 
     Picks the most-recent run carrying resumable state (a generated résumé in
@@ -287,7 +287,7 @@ def _build_resume_state(safe_user: str, runs_sorted: list) -> dict:
     for r in reversed(runs_sorted):
         resume_md = r.edited_resume_text or r.generated_resume_md or ""
         ctx_path = _find_context_path_for_run(safe_user, r.id)
-        ctx_data: dict | None = None
+        ctx_data: dict[str, Any] | None = None
         if ctx_path:
             try:
                 ctx_data = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
@@ -355,7 +355,7 @@ def _parse_ats_status(blob: str | None) -> str | None:
     if not blob:
         return None
     try:
-        return json.loads(blob).get("status")
+        return cast("str | None", json.loads(blob).get("status"))
     except (json.JSONDecodeError, AttributeError):
         return None
 
@@ -521,16 +521,18 @@ def update_application_meta(application_id: int) -> ResponseReturnValue:
 # ---------------------------------------------------------------------------
 
 
-def _load_application_owned(session: Session, application_id: int) -> tuple:
+def _load_application_owned(session: Session, application_id: int) -> tuple[Any, Any]:
     """Return (app_row, candidate) for an application, or (None, None), after _safe_username defense.
 
-    Return is a bare ``tuple`` by design: the two slots are correlated (both set
-    or both ``None``), which the type system can't express across the callers'
-    ``app_row, candidate = ...; if app_row is None: ...`` unpack-then-check
-    pattern. A precise ``tuple[Application | None, Candidate | None]`` would force
-    a None-narrowing change at ~10 call sites — a separate None-safety pass, out
-    of scope for the ANN annotation branch (the call-site contract was already
-    untyped before ``session`` was typed).
+    Slots are typed ``Any`` (``tuple[Any, Any]``) by design — parametrized only to
+    satisfy mypy ``--strict``'s ``disallow_any_generics`` while preserving the
+    untyped unpack-then-check contract exactly. The two slots are correlated (both
+    set or both ``None``), which the type system can't express across the callers'
+    ``app_row, candidate = ...; if app_row is None: ...`` pattern. The precise
+    ``tuple[Application | None, Candidate | None]`` would force a None-narrowing
+    change at ~10 call sites — a separate None-safety pass, out of scope for a
+    typing-ratchet branch (the call-site contract was already untyped before
+    ``session`` was typed under ANN).
     """
     from db.models import Application, Candidate
 
@@ -636,7 +638,7 @@ def _read_title_overrides(context_path: str) -> dict[int, int]:
 
 def _read_experience_summary_overrides(
     context_path: str,
-) -> tuple[dict[int, dict], dict[int, int], bool]:
+) -> tuple[dict[int, dict[str, Any]], dict[int, int], bool]:
     """B.4: Return per-role intro state (recs_by_exp, chosen_by_exp, use_experience_summaries) from a context file.
 
     - recs_by_exp: experience-id → {summary_item_id, rationale, alternates}
@@ -647,7 +649,7 @@ def _read_experience_summary_overrides(
     _within-gated by OUTPUT_DIR. Returns ({}, {}, False) on read/parse failure
     so the route degrades to "no role intros" rather than 500ing.
     """
-    empty: tuple[dict[int, dict], dict[int, int], bool] = ({}, {}, False)
+    empty: tuple[dict[int, dict[str, Any]], dict[int, int], bool] = ({}, {}, False)
     if not context_path:
         return empty
     cp = Path(context_path)
@@ -659,7 +661,7 @@ def _read_experience_summary_overrides(
         return empty
 
     rec_block = ctx.get("llm_experience_summary_recommendations") or {}
-    recs_by_exp: dict[int, dict] = {}
+    recs_by_exp: dict[int, dict[str, Any]] = {}
     if isinstance(rec_block, dict):
         for rec in rec_block.get("recommendations") or []:
             if not isinstance(rec, dict):
@@ -711,7 +713,7 @@ def _read_skill_composition(
 
 def _read_summary_overrides(
     context_path: str,
-) -> tuple[dict | None, int | None]:
+) -> tuple[dict[str, Any] | None, int | None]:
     """β.6c — (summary_recommendation, pinned_summary_id) from the context.
 
     summary_recommendation is the dict persisted by
@@ -749,7 +751,7 @@ def _read_summary_overrides(
 
 def _read_recommendations_and_added(
     context_path: str,
-) -> tuple[set[int], dict[int, dict]]:
+) -> tuple[set[int], dict[int, dict[str, Any]]]:
     """Return (added bullet-id set, recommendations dict keyed by experience id) from a context file.
 
     Reads `composition_overrides.added` and `llm_recommendations` from the
@@ -765,7 +767,7 @@ def _read_recommendations_and_added(
     except (json.JSONDecodeError, OSError):
         return set(), {}
     added = set(int(x) for x in ((ctx.get("composition_overrides") or {}).get("added") or []))
-    rec_by_exp: dict[int, dict] = {}
+    rec_by_exp: dict[int, dict[str, Any]] = {}
     for k, v in (ctx.get("llm_recommendations") or {}).items():
         try:
             eid = int(k)
@@ -1524,7 +1526,7 @@ def recommend_application_bullets(application_id: int) -> ResponseReturnValue:
                     logger.warning("recommend: dropping unparseable id %r", v)
                     return None
 
-            by_exp: dict[str, dict] = {}
+            by_exp: dict[str, dict[str, Any]] = {}
             for rec in result.get("recommendations", []) or []:
                 eid_int = _to_int(rec.get("experience_id"))
                 if eid_int is None:

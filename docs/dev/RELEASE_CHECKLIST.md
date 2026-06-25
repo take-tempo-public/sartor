@@ -717,6 +717,17 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       runtime-inert and cannot affect Compose rendering (`git diff` touched no Compose/`app.js`/`wizard`
       code), so **not code-caused**. The race FIRED → no clean datapoint banked; resolve bar unmet,
       class still **not converging**, continues to strengthen the **retry-policy** option for PX-25.
+      **Update (2026-06-25, `chore/kit-phase2-mypy-strict-applications` gate):** a **two-member**
+      firing — `test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts`
+      (a **new** bullet-load member of this file, distinct from the prior `test_pointer_drag_reorders`)
+      **and** `test_20260611_compose_order_no_recommendations.py::test_no_recommendations_order_persists_on_reload`
+      (recurred), both `compose.bullet_texts()[0]` IndexError / bullets-unrendered, failed in the full
+      suite (**1389 passed / 2 failed**); **both passed clean on isolated re-run (2/2, 17.7 s)**. This
+      branch is the mypy `--strict` rung for `blueprints.applications` (type annotations + one `cast` +
+      the `pyproject.toml` override) — provably runtime-inert (`git diff` touched no
+      Compose/`app.js`/`wizard` code), so **not code-caused**. The race FIRED → no clean datapoint
+      banked; resolve bar still unmet, class **not converging**, continues to strengthen the
+      **retry-policy** option for PX-25.
       **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
       a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
       *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
@@ -964,6 +975,22 @@ _Open count: 9 — at the top of the ~8–10 reduction-sprint threshold, but the
       the full suite + **1/2 on isolated re-run** → confirmed flake, see ledger #3). **No new ledger
       item. ruff-`D` ratchet COMPLETE; remaining Phase 2 = `interrogate` coverage gate + larger-module
       `--strict` (`analyzer.py`/`applications.py`).**
+      **Phase 2 #2 ratchet — rung 2 (2026-06-25, `chore/kit-phase2-mypy-strict-applications`):**
+      commitment (1)'s mypy `--strict` ratchet took its **second rung** — added
+      `blueprints.applications` (~2,100 LOC, the first **non-leaf route/seam** module) to the strict
+      override roster (now `scraper`/`json_resume`/`pdf_render`/`blueprints.applications`). The feared
+      "heavy" larger-module branch wasn't: Phase-2 #1 (`ANN`) had already typed its whole call graph,
+      so `--strict` + `warn_unreachable` surfaced **no untyped-call cascade** — only **13 mechanical
+      errors** (12 bare-generic `type-arg` → parametrized, mostly `dict[str, Any]`; 1 `no-any-return`
+      → `cast`). `_load_application_owned` kept as `tuple[Any, Any]` (parametrized for
+      `disallow_any_generics`; the precise typed tuple would force a None-narrowing change at its 9
+      in-module callers — a deferred None-safety pass, out of scope for a typing rung; docstring
+      records it). **4 production modules now at full strict, the rest permissive.** PROMPT-SAFE (no
+      prompt constants in the module — grep-0, prompts live in `analyzer.py`); no dep/version/hook
+      change; gate green (ruff/format ✓ 217, mypy 227 ✓, pytest **1389 passed / 2 flaky** — the
+      ledger #3 Compose load-race fired a two-member pair, both passed clean isolated 2/2,
+      code-independent). No new ledger item. **Remaining Phase 2: `interrogate` coverage gate +
+      larger-module `--strict` (`analyzer.py`, the prompt home).**
 
 #### Resolved
 
