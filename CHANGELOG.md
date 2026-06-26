@@ -13,6 +13,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Help-opener de-duplication — shared `static/help-modal.js` leaf (`refactor/help-opener-dedup`, 2026-06-25)
+
+A v1.0.8 reduction-sprint branch closing carry-forward ledger #7. The wizard's help-modal opener
+`openHelpModal` (`static/app.js`) and the self-contained diagnostics console's ported `openDashHelp`
+(`dashboard/templates/dashboard.html`) were byte-identical logic plus a duplicated `cb_help_seen:`
+localStorage seam. Extracted the single implementation into a NEW shared **leaf** module both pages
+load — which does **not** make the console load `app.js` (the leaf is loaded like `style.css` / the
+vendored chart bundle it already pulls), so the console's self-containment is preserved. **No
+product behavior, prompt, route, dep, or version change**; `PROMPT_VERSION` / `AVATAR_PROMPT_VERSION`
+untouched (frontend-only → no eval run owed).
+
+**Changed**
+- `static/help-modal.js` (new): the shared primitive — `window.cbOpenHelpModal(entry, triggerEl)`
+  (opens the shared `#helpModal` for an already-resolved `{title, body}`; Esc / Tab focus-trap /
+  `[data-help-dismiss]` click-away / `aria-expanded` toggle / focus-restore, all null-trigger safe)
+  plus the `cb_help_seen:` seam (`cbHelpSeen` / `cbMarkHelpSeen` / `CB_HELP_SEEN_PREFIX`). ES5,
+  exposed as `window` globals (no JS build step in the repo; the dashboard inline JS is not an ES
+  module).
+- `static/app.js`: `openHelpModal` / `_helpSeen` / `_markHelpSeen` reduced to thin wrappers that
+  resolve `_HELP_REGISTRY` (kept local) and delegate to the shared globals. Signatures, callers,
+  `_HELP_REGISTRY`, `_initHelp`, and all tour logic unchanged.
+- `dashboard/templates/dashboard.html`: `openDashHelp` / `_dashSeen` / `_markDashSeen` reduced to
+  thin wrappers over `_DASH_HELP` (kept local); the stale "opener lives here" comment refreshed to
+  reflect the shared leaf (registry stays local; console still never loads `app.js`).
+- `templates/index.html` + `dashboard/templates/dashboard.html`: load the leaf as a classic
+  `<script>` (no `defer`) **before** `app.js` (index) and in the dashboard `<head>` **before** the
+  inline help IIFE, so the shared globals exist at parse time.
+
+**Gate:** ruff check ✓ · ruff format --check ✓ · mypy ✓ (228) · pytest ✓ (1324) · UX help/dashboard
++ axe tiers ✓ (25). Public function names, DOM ids (`#helpModal` / `#help-icon-*`), and the
+`cb_help_seen:` keys are all unchanged → zero test-code changes (the `_TOUR_STOP_BLOCKS` suppression
+contract still holds). Carry-forward ledger #7 → Resolved (open count 8 → 7).
+
 ### Kit-adoption Phase 2 #4 — `interrogate` docstring-coverage floor-lock gate (`chore/kit-phase2-interrogate`, 2026-06-25)
 
 Fourth and final implementation sub-item of the agent-coding-practices kit-adoption arc **Phase 2**

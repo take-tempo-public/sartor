@@ -1632,64 +1632,19 @@ const _HELP_REGISTRY = {
   },
 };
 
-const _HELP_SEEN_PREFIX = 'cb_help_seen:';
+// The localStorage seam and the opener itself now live in the shared
+// static/help-modal.js leaf (loaded before this file). These thin wrappers keep
+// the in-app call sites + names (_helpSeen / _markHelpSeen / openHelpModal)
+// stable while the single implementation is shared with the self-contained
+// diagnostics console, which cannot load this file.
+function _helpSeen(blockId) { return window.cbHelpSeen(blockId); }
+function _markHelpSeen(blockId) { window.cbMarkHelpSeen(blockId); }
 
-// localStorage seam — wrapped so a disabled/throwing store (private mode, quota,
-// file:// origin) never breaks the app. An unreadable store reads as "not seen";
-// a failed write means the welcome may re-show, which is harmless.
-function _helpSeen(blockId) {
-  try { return window.localStorage.getItem(_HELP_SEEN_PREFIX + blockId) === '1'; }
-  catch (_e) { return false; }
-}
-function _markHelpSeen(blockId) {
-  try { window.localStorage.setItem(_HELP_SEEN_PREFIX + blockId, '1'); }
-  catch (_e) { /* storage unavailable — non-fatal */ }
-}
-
-// THE reusable opener. Factored from openDiagnosticsModal's a11y posture (Esc
-// closes, Tab focus-trap, backdrop click-away, focus restored to the trigger)
-// so every help block shares one implementation. triggerEl may be null (the
-// first-view auto-open has no trigger) — the focus/aria restore guards for that.
+// Resolve this page's registry entry, then delegate to the shared opener.
+// triggerEl may be null (the first-view auto-open has no trigger). An unknown
+// blockId yields undefined → the shared opener no-ops, matching the old guard.
 function openHelpModal(blockId, triggerEl) {
-  const modal = document.getElementById('helpModal');
-  const entry = _HELP_REGISTRY[blockId];
-  if (!modal || !entry) return;
-
-  const titleEl = document.getElementById('helpModalTitle');
-  const bodyEl = document.getElementById('helpModalBody');
-  if (titleEl) titleEl.textContent = entry.title;
-  if (bodyEl) bodyEl.textContent = entry.body;
-
-  const focusable = modal.querySelectorAll('button');
-  const closeBtn = document.getElementById('btnCloseHelp');
-
-  const cleanup = () => {
-    modal.classList.add('hidden');
-    modal.removeEventListener('keydown', onKey);
-    dismissers.forEach(b => b.removeEventListener('click', cleanup));
-    if (triggerEl && typeof triggerEl.setAttribute === 'function') {
-      triggerEl.setAttribute('aria-expanded', 'false');
-    }
-    if (triggerEl && typeof triggerEl.focus === 'function') triggerEl.focus();
-  };
-
-  const onKey = (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
-    if (e.key !== 'Tab' || focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-  };
-
-  const dismissers = Array.from(modal.querySelectorAll('[data-help-dismiss]'));
-  dismissers.forEach(b => b.addEventListener('click', cleanup));
-  modal.addEventListener('keydown', onKey);
-  if (triggerEl && typeof triggerEl.setAttribute === 'function') {
-    triggerEl.setAttribute('aria-expanded', 'true');
-  }
-  modal.classList.remove('hidden');
-  if (closeBtn) closeBtn.focus();
+  window.cbOpenHelpModal(_HELP_REGISTRY[blockId], triggerEl);
 }
 
 // Inject the (i)-circle (+ optional inline short-form) into each registered
