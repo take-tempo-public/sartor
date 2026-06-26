@@ -5114,6 +5114,14 @@ let _composeUseRoleIntros = false;
 async function loadComposition() {
   const list = document.getElementById('composeList');
   if (!list) return;
+  // Test-observability settle signal (no product behavior; nothing reads it).
+  // Cleared here at entry — BEFORE the /composition fetch opens — so the marker
+  // is absent for a render pass's entire in-flight duration, and the auto-
+  // recommend re-render cascade (each pass re-enters loadComposition) clears it
+  // again every pass. It is re-set only after the final synchronous append
+  // below, so a *stably present* marker proves the terminal render was reached.
+  // Consumed by ui_pages/wizard_compose.py::_wait_settled (Compose flaky-class fix).
+  list.removeAttribute('data-compose-ready');
   _setLoadingPlaceholder(list, 'Scoring corpus against this job…');
   if (_composeApplicationId == null) {
     _setLoadingPlaceholder(list, 'Run ANALYZE first.');
@@ -5181,6 +5189,8 @@ async function loadComposition() {
   // — it competed for attention with the bullet-curation work and didn't
   // pay for its real estate. The preview lives in Step 4 (Template) and
   // Step 6 (Output) where it's clearly relevant.
+  // Terminal render reached — re-set the settle marker cleared at entry (above).
+  list.setAttribute('data-compose-ready', '1');
 }
 
 // PX-22: load a preview iframe WITHOUT adding a joint session-history entry, so

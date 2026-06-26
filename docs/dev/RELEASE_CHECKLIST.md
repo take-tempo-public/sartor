@@ -487,7 +487,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Open count: 8 — at the top of the ~8–10 reduction-sprint threshold, but the two newest items self-clear imminently (the `_resolve_*` duplicate at 8.3e, the `list_resumes` hardening at 8.3f), so no standalone reduction sprint is needed yet; re-evaluate at 8.3g if no items have drained. **Triaged 2026-06-20 (7.9 ledger capture):** each item below carries a **→ integrate at 8.x** target mapping it to an already-scheduled v1.0.8 sprint, so the ledger drains without new standalone branches. **`chore/ledger-reduction` (8.0) ran 2026-06-21** and cleared the **CONTRIBUTING-drift + pytest-socket `UserWarning`** pair (both now under Resolved), dropping the open count 10→8. **`refactor/app-blueprints-generation` (8.3c) added one item** — the `_resolve_persona_*` transitional duplicate (→ clears at 8.3e) — bumping 8→9. **`refactor/app-blueprints-corpus` (8.3d) added one item** — the pre-existing `list_resumes` raw-username observation surfaced while moving the route (owner chose to track it 2026-06-22, → 8.3f); its shared `_tag_list`/`_skill_to_dict` used the legal `app.py → blueprint` import (no transitional duplicate) — bumping 9→10. **`refactor/app-blueprints-templates` (8.3e) ran 2026-06-22** — RESOLVED the `_resolve_persona_*` duplicate (now under Resolved) and ADDED the `_load_application_owned` transitional duplicate (→ clears at 8.3f); net open count unchanged at **10**. **`refactor/app-blueprints-applications` (8.3f) ran 2026-06-22** — RESOLVED both the `_load_application_owned` transitional duplicate and the `list_resumes` raw-username hardening (both now under Resolved), dropping the open count **10→8**. **`refactor/app-blueprints-users-config` (8.3g) ran 2026-06-22** — no ledger item added or cleared: the seam introduced **no transitional duplicate** (the `web_infra` config-io/provisioning helpers already existed) and **no new observation**; help-opener (#7) still targets 8.3h as scheduled. **`refactor/app-blueprints-diagnostics` (8.3h) ran 2026-06-22** — the **seventh and last** domain seam (`app.py` → zero routes; the transitional local-helper block + path globals retired): **no ledger item added or cleared** — no transitional duplicate, and help-opener (#7) was **reviewed and deferred** (owner kept the last seam a pure route move → #7 re-targeted to a dedicated help-refactor branch). Open count holds at **8**. **Re-evaluated at 8.3g (as the threshold note required): open count holds at 8** — the four remaining targeted items all drain on already-scheduled sprints (8.5 / 8.6a / 8.7) and the citation viewer stays deferred, so no standalone reduction sprint is needed. Net drain from here: 8.5 clears the S3-eval + grounding-metric pair · 8.7 clears portable-core + link-checker + flaky-UX · 8.3f clears the `list_resumes` raw-username hardening **and** the `_load_application_owned` duplicate · 8.3 clears help-opener · 8.6a clears assistant doc-coverage · the citation viewer stays deferred → by v1.1.0 the ledger is ~2 items. **`eval/live-shakedown-labels` (8.5) ran 2026-06-23** — RESOLVED the **S3 vector tier** item (judge-scored before/after → KEEP) and ADDED the **E2E walkthrough + R2-live remainder** (deferred at close-out, owner-decided, → runs against `main` before 8.6); net open count **unchanged at 8**. The **grounding-metric** item stays open but is now precisely blocked on **EV-1** (the minicheck unpinned-git-dep drift the shakedown surfaced) — its L1/L2 labels move to 8.6 PV-2 after that fix. The 8.5 window's other findings (EV-1/2/3 + S3-1) live in [`window-8.5-findings.md`](window-8.5-findings.md), which 8.6 (`fix/window-findings-*`) burns wholesale. **`fix/window-findings-grounding` (8.6, first sub-branch) ran 2026-06-23** — burned the grounding slice (EV-1/2/3 + S3-1, all window-doc findings, **not** ledger rows) and applied the 8.5 flaky-UX stabilization annotation (now **watch**-to-resolve). **No open ledger row cleared or added:** the **grounding-metric** item stays open (its PV-2 calibration is owner-gated — EV-1 is fixed but the manual annotation labels are still owed); the **flaky-UX** item stays open in watch. Open count holds at **8**. **`docs/kit-adoption-arc` (2026-06-23) ADDED one item** — the agent-coding-practices kit-adoption staged commitments (one consolidated home for the strict-ratchet exit criterion + gate-hardness ratchet-then-block + skills/hooks coherence; → [`kit-adoption-design.md`](kit-adoption-design.md)); open count **8 → 9**, still under the ~8–10 reduction threshold. **`chore/kit-phase1-pydantic-mypy` (2026-06-23)** — Phase 1's first kit-adoption branch (`pydantic.mypy` enabled; ERA + SQLAlchemy plugin evaluated-and-rejected); added/cleared no ledger row, so open count **holds at 9** (the subsequent kit Phase-1/Phase-2 branches likewise added/cleared no ledger row). **`docs/assistant-wiki-coverage` (8.6a) ran 2026-06-25** — RESOLVED the **Assistant doc-coverage** item (7 `audience: user` how-to pages authored — all-7-topics scope; `index.md` + bidirectional backlinks reconciled; per-page author≠auditor grounding audit = 6 CLEAN + 1 re-anchored; content pass, `.last_ingest_sha` unchanged), dropping the open count **9 → 8**. **`refactor/help-opener-dedup` (v1.0.8 reduction sprint) ran 2026-06-25** — RESOLVED the **Help-opener duplication** item (#7): the wizard/console help opener + `cb_help_seen:` seam extracted into the shared leaf `static/help-modal.js` (`window.cbOpenHelpModal` + seam globals); `openHelpModal`/`openDashHelp` become thin wrappers over their own (still-local) registries, so public names + DOM ids + localStorage keys are unchanged → zero test-code changes, and the console still never loads `app.js`. Dropping the open count **8 → 7**._
+_Open count: 6 — below the ~8–10 reduction-sprint threshold. **Triaged 2026-06-20 (7.9 ledger capture):** each item below carries a **→ integrate at 8.x** target mapping it to an already-scheduled v1.0.8 sprint, so the ledger drains without new standalone branches. **`chore/ledger-reduction` (8.0) ran 2026-06-21** and cleared the **CONTRIBUTING-drift + pytest-socket `UserWarning`** pair (both now under Resolved), dropping the open count 10→8. **`refactor/app-blueprints-generation` (8.3c) added one item** — the `_resolve_persona_*` transitional duplicate (→ clears at 8.3e) — bumping 8→9. **`refactor/app-blueprints-corpus` (8.3d) added one item** — the pre-existing `list_resumes` raw-username observation surfaced while moving the route (owner chose to track it 2026-06-22, → 8.3f); its shared `_tag_list`/`_skill_to_dict` used the legal `app.py → blueprint` import (no transitional duplicate) — bumping 9→10. **`refactor/app-blueprints-templates` (8.3e) ran 2026-06-22** — RESOLVED the `_resolve_persona_*` duplicate (now under Resolved) and ADDED the `_load_application_owned` transitional duplicate (→ clears at 8.3f); net open count unchanged at **10**. **`refactor/app-blueprints-applications` (8.3f) ran 2026-06-22** — RESOLVED both the `_load_application_owned` transitional duplicate and the `list_resumes` raw-username hardening (both now under Resolved), dropping the open count **10→8**. **`refactor/app-blueprints-users-config` (8.3g) ran 2026-06-22** — no ledger item added or cleared: the seam introduced **no transitional duplicate** (the `web_infra` config-io/provisioning helpers already existed) and **no new observation**; help-opener (#7) still targets 8.3h as scheduled. **`refactor/app-blueprints-diagnostics` (8.3h) ran 2026-06-22** — the **seventh and last** domain seam (`app.py` → zero routes; the transitional local-helper block + path globals retired): **no ledger item added or cleared** — no transitional duplicate, and help-opener (#7) was **reviewed and deferred** (owner kept the last seam a pure route move → #7 re-targeted to a dedicated help-refactor branch). Open count holds at **8**. **Re-evaluated at 8.3g (as the threshold note required): open count holds at 8** — the four remaining targeted items all drain on already-scheduled sprints (8.5 / 8.6a / 8.7) and the citation viewer stays deferred, so no standalone reduction sprint is needed. Net drain from here: 8.5 clears the S3-eval + grounding-metric pair · 8.7 clears portable-core + link-checker + flaky-UX · 8.3f clears the `list_resumes` raw-username hardening **and** the `_load_application_owned` duplicate · 8.3 clears help-opener · 8.6a clears assistant doc-coverage · the citation viewer stays deferred → by v1.1.0 the ledger is ~2 items. **`eval/live-shakedown-labels` (8.5) ran 2026-06-23** — RESOLVED the **S3 vector tier** item (judge-scored before/after → KEEP) and ADDED the **E2E walkthrough + R2-live remainder** (deferred at close-out, owner-decided, → runs against `main` before 8.6); net open count **unchanged at 8**. The **grounding-metric** item stays open but is now precisely blocked on **EV-1** (the minicheck unpinned-git-dep drift the shakedown surfaced) — its L1/L2 labels move to 8.6 PV-2 after that fix. The 8.5 window's other findings (EV-1/2/3 + S3-1) live in [`window-8.5-findings.md`](window-8.5-findings.md), which 8.6 (`fix/window-findings-*`) burns wholesale. **`fix/window-findings-grounding` (8.6, first sub-branch) ran 2026-06-23** — burned the grounding slice (EV-1/2/3 + S3-1, all window-doc findings, **not** ledger rows) and applied the 8.5 flaky-UX stabilization annotation (now **watch**-to-resolve). **No open ledger row cleared or added:** the **grounding-metric** item stays open (its PV-2 calibration is owner-gated — EV-1 is fixed but the manual annotation labels are still owed); the **flaky-UX** item stays open in watch. Open count holds at **8**. **`docs/kit-adoption-arc` (2026-06-23) ADDED one item** — the agent-coding-practices kit-adoption staged commitments (one consolidated home for the strict-ratchet exit criterion + gate-hardness ratchet-then-block + skills/hooks coherence; → [`kit-adoption-design.md`](kit-adoption-design.md)); open count **8 → 9**, still under the ~8–10 reduction threshold. **`chore/kit-phase1-pydantic-mypy` (2026-06-23)** — Phase 1's first kit-adoption branch (`pydantic.mypy` enabled; ERA + SQLAlchemy plugin evaluated-and-rejected); added/cleared no ledger row, so open count **holds at 9** (the subsequent kit Phase-1/Phase-2 branches likewise added/cleared no ledger row). **`docs/assistant-wiki-coverage` (8.6a) ran 2026-06-25** — RESOLVED the **Assistant doc-coverage** item (7 `audience: user` how-to pages authored — all-7-topics scope; `index.md` + bidirectional backlinks reconciled; per-page author≠auditor grounding audit = 6 CLEAN + 1 re-anchored; content pass, `.last_ingest_sha` unchanged), dropping the open count **9 → 8**. **`refactor/help-opener-dedup` (v1.0.8 reduction sprint) ran 2026-06-25** — RESOLVED the **Help-opener duplication** item (#7): the wizard/console help opener + `cb_help_seen:` seam extracted into the shared leaf `static/help-modal.js` (`window.cbOpenHelpModal` + seam globals); `openHelpModal`/`openDashHelp` become thin wrappers over their own (still-local) registries, so public names + DOM ids + localStorage keys are unchanged → zero test-code changes, and the console still never loads `app.js`. Dropping the open count **8 → 7**. **`fix/compose-ux-stabilization` (2026-06-26) ran** — RESOLVED the **Flaky Compose-UX race class** item (#3): the **test-infra** causes (5 members) via a `data-compose-ready` settle marker + settle-aware POM, AND **a real rare server-side title-pin race the 6th member was catching** — `save_application_composition` now self-heals a transient title-eligibility miss (rollback + fresh-snapshot re-read before 400), proven by a deterministic miss-then-hit unit test (the live race is unreproducible). Empirical support: positioning **400/400** with the fix (was ~0.37%), full `pytest` ✓ (1394). Dropping the open count **7 → 6**._
 
 - [ ] **In-app rendered citation viewer (deferred)** — the avatar's numbered citations
       (Sprint 7.8d, `feat/avatar-citation-format`) link to their source **on GitHub** (wiki
@@ -514,256 +514,6 @@ _Open count: 8 — at the top of the ~8–10 reduction-sprint threshold, but the
       _(deferred: v1.0.8 stream, 2026-06-23, `eval/live-shakedown-labels`.)_
       **→ Integrate before/with 8.6:** the walkthrough generates findings the 8.6 correction
       sprint burns — run it before 8.6 planning settles the post-split route surface.
-
-- [ ] **Flaky UX test — `test_positioning_pin_preserves_title_pin`** — surfaced
-      2026-06-13 on the docs-only `docs/flag-plugin-activation-v1.0.7` branch:
-      [`tests/ux/regression/test_20260612_experience_summary_item.py`](../../tests/ux/regression/test_20260612_experience_summary_item.py)`::test_positioning_pin_preserves_title_pin`
-      failed **once** in a full-suite run, then **passed on isolated re-run** — an
-      intermittent UX-tier race (Playwright timing/selector), **pre-existing and not
-      code-caused** (the same `main` code passed 1169/1169 twice the same day). Deferred:
-      stabilize in a dedicated UX-tier pass (likely a missing settle/`to_be_visible`
-      before the pin assertion); **not a release blocker.** _(discovered: v1.0.6 stream.)_
-      **Update (2026-06-15):** did not recur across the v1.0.6 gate runs (1197/1197,
-      1204/1204, 1212/1212) or the v1.0.7 governance-extraction gate; still deferred for a
-      dedicated UX-tier stabilization pass.
-      **Update (2026-06-16, `design/self-documenting-loop` gate):** a **second** UX-tier test of
-      the **same intermittent-race class** surfaced —
-      [`tests/ux/regression/test_20260613_skill_corpus_item.py`](../../tests/ux/regression/test_20260613_skill_corpus_item.py)`::test_compose_skills_card_drop_persists`
-      failed **once** in the full suite (Playwright `wait_for_selector` timeout on
-      `.compose-row.recommended`), then **passed on isolated re-run** (9.37s). The branch was
-      **docs-only** (no `.py`/frontend touched — `git status` confirmed), so it is **not
-      code-caused**. The deferred UX-tier stabilization pass now covers **≥2** flaky tests of this
-      class (still one ledger item; not a release blocker).
-      **Update (2026-06-16, `px/v107-band` gate):** neither recurred — the full suite ran
-      clean (1290 passed) on the docs-only 7.8 branch; still deferred.
-      **Update (2026-06-19, `fix/assistant-runs-without-user` gate):**
-      `test_compose_skills_card_drop_persists` recurred **once** in the full suite (Playwright
-      `wait_for_selector` timeout on `.compose-row.recommended`), then **passed clean on
-      isolated re-run** (36s). The branch touched only the assistant route/client (unrelated to
-      the Compose wizard), so **not code-caused**; still deferred for the UX-tier stabilization pass.
-      **Update (2026-06-20, `chore/version-bump-v1.0.7` gate):**
-      `test_positioning_pin_preserves_title_pin` recurred **once** in the full suite (Playwright
-      `wait_for_selector` timeout on `.compose-row.recommended`), then **passed clean on isolated
-      re-run** (7.92 s). This branch is **docs-only** (no `.py`/frontend touched), so **not
-      code-caused**; both flakes of this class remain deferred to the UX-tier stabilization pass.
-      **Update (2026-06-21, `refactor/app-factory-and-infra` 8.3a gate):** recurred **once** in
-      the full suite (same `wait_for_selector` timeout on `.compose-row.recommended`), then
-      **passed clean on isolated re-run** (7.75 s). 8.3a is a backend factory/infra refactor (no
-      Compose-wizard/recommend code touched), so **not code-caused** — 3rd observed recurrence of
-      this class, strengthening the "tiny stabilization right before 8.5" option.
-      **Update (2026-06-22, `refactor/app-blueprints-applications` 8.3f gate):** a **third member**
-      of this class surfaced —
-      [`tests/ux/regression/test_20260611_compose_order_no_recommendations.py`](../../tests/ux/regression/test_20260611_compose_order_no_recommendations.py)`::test_no_recommendations_order_persists_on_reload`
-      timed out once in the full suite (`wait_for_selector` on `#panelCompose` visibility, 15 s),
-      then **passed clean both on isolated re-run** (8.27 s) **and run as a group with its
-      compose-sibling UX regressions** (6/6). 8.3f is a pure backend route move (the recommend/suggest
-      routes moved to `blueprints/applications.py`; URLs byte-identical; the compose flow is exercised
-      end-to-end through the UX stubs), so **not code-caused** — the class now spans **≥3** Compose-wizard
-      timing races. The "tiny stabilization right before 8.5" option grows more warranted.
-      **Update (2026-06-22, `refactor/app-blueprints-users-config` 8.3g gate):** the class did **not
-      recur** — the full suite (incl. the UX tier) ran **1359 passed, 0 failed** on the first run, no
-      Compose-wizard timeout. 8.3g touches no Compose/recommend code (users/config seam), so this is
-      neutral evidence; the stabilization option still stands for 8.5/8.7.
-      **Update (2026-06-22, `refactor/app-blueprints-diagnostics` 8.3h gate):** the class did **not
-      recur** on the authoritative full run (**1359 passed, 0 failed**, incl. the UX tier). (Note: an
-      *earlier* 8.3h full run showed 14 UX fails, but those were a **real** systemic harness break from
-      this branch's app.py-global removal — the `stubs.py` `_get_client` patch target + an
-      `ANNOTATION_ROOT` monkeypatch — not the flaky class; fixed, then the full suite ran clean.) 8.3h
-      touches no Compose/recommend code, so this is neutral evidence for the flaky class; the
-      stabilization option still stands for 8.5/8.7.
-      **Update (2026-06-23, `test/keep-ledger-guards` 8.4 gate):** the class did **not recur** —
-      the UX tier ran **69 passed, 0 failed** (`pytest -m ux`, 160 s) plus 1314 non-ux. 8.4 adds
-      only guard tests + 3 behavior-identical route hardenings (no Compose/recommend code), so
-      neutral evidence; the stabilization option still stands for 8.5/8.7.
-      **Update (2026-06-23, `eval/live-shakedown-labels` 8.5 — STABILIZATION APPLIED):** the "tiny
-      stabilization right before 8.5" option was **executed on 8.5**, targeting this class's root
-      cause directly: `ui_pages/wizard_compose.py:_wait_loaded()` now settles on
-      `.compose-experience-card` (always rendered) instead of `.compose-row.recommended` (absent on
-      no-recommendations fixtures — the exact `wait_for_selector` timeout every update above cites).
-      20/20 stabilization loop + full suite **1383 passed** clean (CHANGELOG `[Unreleased]` →
-      8.5 Fixed). _Status: **watch** — the fix is in; resolve to **Resolved** after a few clean 8.6
-      gate runs confirm no recurrence. (Annotation only — not a count change.)_
-      **Update (2026-06-23, `fix/window-findings-grounding` 8.6 gate):** first post-fix full-suite
-      gate run on 8.6 — UX tier clean (see the branch's gate); one clean run banked toward the
-      "a few clean runs" resolve bar. Still **watch** (one run is not yet "a few").
-      **Update (2026-06-23, `fix/window-findings-tone` 8.6 PV-3):** the **commit gate** ran
-      **1391 passed** clean incl. the UX tier (one clean run banked). The follow-up **fold-in gate**
-      (the runner.py cp1252 fix) then surfaced a **recurrence** — a *distinct* member of the class:
-      `tests/ux/regression/test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts`
-      `IndexError` on `compose.bullet_texts()[0]` (bullets not yet rendered) — which **passed clean on
-      isolated re-run** (2/2). PV-3 touches no Compose/bullet/reorder code, so **not code-caused**, but
-      it shows the `.compose-experience-card` stabilization (8.5) did **not** cover this second
-      Compose-*load* race (the prior fix targeted `.compose-row.recommended` waits). Net: still
-      **watch**, and the "clean runs" tally is **reset** — the class is not converging, so the eventual
-      PX-25 "UX tier as a required CI gate" will need either a broader compose-load wait or a retry policy.
-      **Update (2026-06-23, `docs/kit-adoption-arc` gate):** `test_positioning_pin_preserves_title_pin`
-      recurred **once** in the full suite (1391 collected → 1390 passed) — but a **different failure
-      mode** than every prior update: `assert compose.title_is_selected("Principal Engineer")` "title
-      pin was clobbered" (a **pin-state** race), **not** the `.compose-row.recommended` /
-      `.compose-experience-card` *load*-timeout the 8.5 fix targeted. **Passed clean on isolated re-run**
-      (1/1, 8.14 s). This branch is **docs-only** (markdown; no `.py`/frontend — `git diff` confirmed),
-      so **not code-caused**. New evidence: the class spans a **pin-state** race the 8.5 load-wait
-      stabilization does **not** cover → reinforces "not converging," resolve bar still unmet, strengthens
-      the retry-policy option for PX-25.
-      **Update (2026-06-23, `chore/kit-phase1-pydantic-mypy` gate):** the **load-race** member recurred —
-      `test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts` `IndexError`
-      on `compose.bullet_texts()[0]` (bullets not yet rendered); full suite **1390 passed / 1 failed**,
-      then **passed clean on isolated re-run** (1/1, 8.35 s). This branch is **mypy-config + docs only**
-      (no `.py`/frontend touched), so **not code-caused** — the same Compose-*load* race the 8.5
-      `.compose-experience-card` fix did not cover (matches the PV-3 update). Still **watch**; resolve bar
-      still unmet.
-      **Update (2026-06-24, `chore/kit-phase1-ruff-format` gate — backfilled):** the class did **not
-      recur** — the full suite ran clean on **both** runs that session (**1391 passed**, 0 failed, incl.
-      the UX tier). `ruff format` is style-only (no Compose/recommend code), so two clean runs banked
-      toward the resolve bar. _(This datapoint was surfaced but left unfiled by the ruff-format closing
-      agent — folded in here by the next branch's pre-close sweep, per W-1 carry-forward discipline.)_
-      **Update (2026-06-24, `chore/kit-phase1-sim-ruf-triage` gate):** a **new member** of the class
-      surfaced — [`tests/ux/regression/test_20260611_compose_add_title.py`](../../tests/ux/regression/test_20260611_compose_add_title.py)`::test_add_title_then_pin_persists`
-      failed **once** in the full suite (`title_texts() == []` — the just-added title hadn't rendered, a
-      **title-add load** race, distinct from every prior member's mode), full suite **1390 passed / 1
-      failed**, then **passed clean on isolated re-run** (1/1, 9.42 s). This branch is lint-config +
-      mechanical cleanup only (`git diff --name-only` confirmed **no** Compose/`app.js`/`wizard` file
-      touched), so **not code-caused**. The class keeps spawning **new** members/modes (now ≥4: pin-state,
-      bullet-load, `.compose-row.recommended` load-timeout, title-add) → reinforces "not converging";
-      resolve bar still unmet; strengthens the retry-policy option for PX-25.
-      **Update (2026-06-24, `chore/kit-phase2-ruff-ann` gate):** the class did **not recur** — the full
-      suite ran clean (**1391 passed**, 0 failed, incl. the UX tier). This branch adds type annotations
-      only (`git diff` touched no Compose/`app.js`/`wizard` code), so a clean datapoint banked toward the
-      resolve bar; class still **watch**.
-      **Update (2026-06-24, `chore/kit-phase2-mypy-strict-leaves` gate):** the **load-race** member
-      recurred — `test_20260604_bullet_drag_reorder.py::test_pointer_drag_reorders` `IndexError` on
-      `compose.bullet_texts()[0]` (bullets not yet rendered); full suite **1390 passed / 1 failed**.
-      Investigated rather than assumed: stashing this branch's diff and running the test on the clean tree
-      **passed** (1/1), then with the diff restored it ran **4 passed / 1 failed across 5 isolated runs** —
-      i.e. **intermittent on both trees**, confirming the race (not deterministic). This branch is
-      mypy-config + one runtime-inert annotation (`scraper` `dict`→`dict[str, Any]`) + docs — no
-      Compose/`app.js`/`wizard` code touched (`git diff` confirmed), so **not code-caused**. This is the
-      `test_pointer_drag_reorders` member (distinct from the `test_keyboard_reorder_persists_and_reset_reverts`
-      member seen on the pydantic/PV-3 gates) of the same Compose-*load* race the 8.5 `.compose-experience-card`
-      fix did not cover → still **watch**, resolve bar still unmet (the race FIRED this session — no clean
-      datapoint banked), reinforces "not converging," strengthens the retry-policy option for PX-25.
-      **Update (2026-06-24, `chore/kit-phase2-ruff-d` gate):** **two** members fired together in one full
-      run (**2 failed / 1389 passed**) — `test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts`
-      (the `bullet_texts()[0]` load member) **and** `test_20260612_experience_summary_item.py::test_positioning_pin_preserves_title_pin`
-      (the original `.compose-row.recommended` / pin-state member) — then **both passed clean on a single
-      isolated re-run** (2/2, 14.9 s). This branch is ruff-D lint-config + docstrings only (`git diff`
-      touched no Compose/`app.js`/`wizard` code), so **not code-caused**. First time **two** members of the
-      class fired in the same run — further "not converging" evidence; resolve bar unmet (no clean datapoint
-      banked); strengthens the retry-policy option for PX-25.
-      **Update (2026-06-24, `chore/kit-phase2-ruff-d-recall` gate):** the **title-add** member **recurred** —
-      `test_20260611_compose_add_title.py::test_add_title_then_pin_persists` `title_texts() == []` (the
-      just-added title hadn't rendered — the same title-add load mode first seen on the `sim-ruf-triage`
-      gate above), full suite **1390 passed / 1 failed**, then **passed clean on isolated re-run** (1/1,
-      11.4 s). This branch is ruff-D ratchet (`recall/` docstrings + `pyproject.toml` ratchet block) only
-      (`git diff` touched no Compose/`app.js`/`wizard` code), so **not code-caused**. Second observed firing
-      of the title-add member; resolve bar unmet (the race FIRED — no clean datapoint banked); reinforces
-      "not converging," strengthens the retry-policy option for PX-25.
-      **Update (2026-06-24, `chore/kit-phase2-ruff-d-config` gate):** a **new member** of the class
-      surfaced — [`tests/ux/flows/test_happy_path_stubbed.py`](../../tests/ux/flows/test_happy_path_stubbed.py)`::test_happy_path_through_template_preview`
-      failed **once** in the full suite (`assert compose.experience_card_count() >= 1` → 0 — the
-      experience card hadn't rendered, a Compose-*load* race in the **happy-path flow**, distinct from
-      every prior named member), full suite **1390 passed / 1 failed**, then **passed clean on isolated
-      re-run** (1/1, 6.79 s). This branch is ruff-D ratchet (`config.py` docstrings + `pyproject.toml`
-      ratchet block) only (`git diff` touched no Compose/`app.js`/`wizard` code), so **not code-caused**.
-      The class keeps spawning **new** members/modes (now ≥5: pin-state, bullet-load,
-      `.compose-row.recommended` load-timeout, title-add, happy-path experience-card-load); resolve bar
-      unmet (the race FIRED — no clean datapoint banked); reinforces "not converging," strengthens the
-      retry-policy option for PX-25.
-      **Update (2026-06-25, `chore/kit-phase2-ruff-d-onboarding` gate):** the **bullet-load** member
-      recurred — [`tests/ux/regression/test_20260604_bullet_drag_reorder.py`](../../tests/ux/regression/test_20260604_bullet_drag_reorder.py)`::test_keyboard_reorder_persists_and_reset_reverts`
-      failed **once** in the full suite (`IndexError` — `compose.bullet_texts()` empty, the bullets
-      hadn't rendered), full suite **1390 passed / 1 failed**, then **passed clean on isolated re-run**
-      (1/1, 10.23 s). This branch is ruff-D ratchet (`onboarding/` docstrings + `pyproject.toml`
-      ratchet block) only (`git diff` touched no Compose/`app.js`/`wizard` code), so **not
-      code-caused**. A **named** member (not new); the race FIRED → no clean datapoint banked; still
-      not converging, still strengthens the retry-policy option for PX-25. Note the immediately prior
-      branch (blueprints, 2026-06-25) banked a *clean* full-suite datapoint — so the class continues to
-      alternate fire/clean run-to-run, the signature of an intermittent load race.
-      **Update (2026-06-25, `chore/kit-phase2-ruff-d-models` gate):** the **strongest firing yet**. The
-      full suite (**1389 passed / 2 failed**) fired **two** members at once — bullet-load
-      [`test_20260604_bullet_drag_reorder.py`](../../tests/ux/regression/test_20260604_bullet_drag_reorder.py)`::test_keyboard_reorder_persists_and_reset_reverts`
-      (`IndexError`, bullets unrendered) **and** title-add
-      [`test_20260611_compose_add_title.py`](../../tests/ux/regression/test_20260611_compose_add_title.py)`::test_add_title_then_pin_persists`
-      (`title_texts() == []`) — only the **second** two-members-in-one-run observation (first was 8.3f).
-      Characterized the title-add member directly: it **failed on the branch tree but PASSED on a
-      `git stash`'d clean (== main) tree**, then — changes restored — ran **4 passed / 2 failed across 6
-      isolated runs** (~33 % fail), the highest isolated rate recorded. This branch is ruff-D ratchet
-      (`db/models.py` ORM-class docstrings + `pyproject.toml` ratchet block) only — a docstring on a
-      SQLAlchemy model cannot affect Compose rendering, and the intermittent 4/6 with the changes
-      present **proves** code-independence (a real break fails all 6), so **not code-caused**. The race
-      FIRED → no clean datapoint banked; two members + a ~33 % isolated rate make this the strongest
-      "not converging" datapoint and materially strengthen the **retry-policy** option for PX-25 (a
-      broader compose-load wait alone may not suffice at this rate).
-      **Update (2026-06-25, `chore/kit-phase2-ruff-d-analyzer` gate):** a **new member pair** fired
-      together in the full suite (**1389 passed / 2 failed**) — title-add
-      [`test_20260611_compose_add_title.py`](../../tests/ux/regression/test_20260611_compose_add_title.py)`::test_add_title_then_pin_persists`
-      (`title_texts() == []`) **and** no-recommendations-order
-      [`test_20260611_compose_order_no_recommendations.py`](../../tests/ux/regression/test_20260611_compose_order_no_recommendations.py)`::test_no_recommendations_order_persists_on_reload`
-      (`IndexError`, bullets unrendered) — the **third** two-members-in-one-run observation, and the
-      first pairing title-add with the no-recommendations-order member. Both **passed clean on an
-      isolated re-run** (2/2, 16.5 s). This branch is ruff-D ratchet (`analyzer.py` docstrings +
-      `pyproject.toml` ratchet block) only — a docstring on a Pydantic response model cannot affect
-      Compose rendering (the prompt constants were proven byte-identical), so **not code-caused**.
-      The race FIRED → no clean datapoint banked; the recurring multi-member firings keep the class
-      **not converging** and reinforce the **retry-policy** option for PX-25.
-      **Update (2026-06-25, `chore/kit-phase2-ruff-d-ui-pages` gate):** the **bullet-load** member
-      recurred — [`test_20260604_bullet_drag_reorder.py`](../../tests/ux/regression/test_20260604_bullet_drag_reorder.py)`::test_pointer_drag_reorders`
-      (`IndexError` on `compose.bullet_texts()[0]`, bullets unrendered) failed **once** in the full
-      suite (**1390 passed / 1 failed**), then ran **1 passed / 1 failed across 2 isolated runs** —
-      **intermittent in isolation**, the defining property of the race (and the same
-      `test_pointer_drag_reorders` member, with the same fail-in-isolation signature, characterized on
-      the `chore/kit-phase2-mypy-strict-leaves` gate). This branch is ruff-D ratchet (`ui_pages/**` POM
-      docstrings + the `pyproject.toml` ratchet-block comment) only — docstrings on a Playwright POM are
-      runtime-inert and cannot affect Compose rendering (`git diff` touched no Compose/`app.js`/`wizard`
-      code), so **not code-caused**. The race FIRED → no clean datapoint banked; resolve bar unmet,
-      class still **not converging**, continues to strengthen the **retry-policy** option for PX-25.
-      **Update (2026-06-25, `chore/kit-phase2-mypy-strict-applications` gate):** a **two-member**
-      firing — `test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts`
-      (a **new** bullet-load member of this file, distinct from the prior `test_pointer_drag_reorders`)
-      **and** `test_20260611_compose_order_no_recommendations.py::test_no_recommendations_order_persists_on_reload`
-      (recurred), both `compose.bullet_texts()[0]` IndexError / bullets-unrendered, failed in the full
-      suite (**1389 passed / 2 failed**); **both passed clean on isolated re-run (2/2, 17.7 s)**. This
-      branch is the mypy `--strict` rung for `blueprints.applications` (type annotations + one `cast` +
-      the `pyproject.toml` override) — provably runtime-inert (`git diff` touched no
-      Compose/`app.js`/`wizard` code), so **not code-caused**. The race FIRED → no clean datapoint
-      banked; resolve bar still unmet, class **not converging**, continues to strengthen the
-      **retry-policy** option for PX-25.
-      **Update (2026-06-25, `chore/kit-phase2-mypy-strict-analyzer` gate):** **a same-session, same-code
-      fire-then-clean** — the strongest within-branch code-independence datapoint to date. The first full
-      run was **clean (1391 passed / 0)**, incl. the UX tier; the authoritative **pre-commit re-run of
-      the byte-identical tree** then **fired the bullet-load pair**
-      [`test_20260604_bullet_drag_reorder.py`](../../tests/ux/regression/test_20260604_bullet_drag_reorder.py)`::test_keyboard_reorder_persists_and_reset_reverts`
-      **and** `::test_pointer_drag_reorders` (both `IndexError` on `compose.bullet_texts()`, bullets
-      unrendered), **1389 passed / 2 failed** — then **both passed clean run individually isolated**
-      (`test_keyboard_reorder` 1/1; `test_pointer_drag_reorders` 2/2; together-in-file they still raced
-      1-of-2, the intermittent-in-isolation signature). Two full runs of the SAME tree (no edit between)
-      yielding clean-then-2-fail is direct proof the outcome is **not code-caused** — and this branch is
-      the mypy `--strict` rung for `analyzer.py` (type annotations + 2 `cast` + 1 widened local + 1
-      scoped `# type: ignore` + the `pyproject.toml` override), provably runtime-inert (15 prompt
-      constants sha256-byte-identical; `git diff` touched no Compose/`app.js`/`wizard` code). Resolve bar
-      unmet (the race FIRED on the authoritative run); class **still not converging**, materially
-      strengthens the **retry-policy** option for PX-25 (a same-tree run-to-run flip is exactly what a
-      wait-only fix struggles to close).
-      **Update (2026-06-25, `chore/kit-phase2-interrogate` gate):** across **two** full-suite runs on
-      this branch, **two different members** fired — run 1 the **title-load** member
-      `test_20260611_compose_add_title.py::test_add_title_then_pin_persists` (`title_texts()==[]`), run 2
-      (authoritative) the **bullet-load** member
-      `test_20260611_compose_order_no_recommendations.py::test_no_recommendations_order_persists_on_reload`
-      (`bullet_texts()[0]` IndexError) — each **1392 passed / 1 failed**. A **CLEAN isolated datapoint is
-      banked** AND a **methodology finding** surfaced: re-running the run-2 member isolated *immediately
-      after the 5-min suite* failed **2/2** (alarming, since this branch is docstrings + tooling config —
-      runtime-inert for Compose) — but that was a **time-ordering / resource-contention artifact**: a
-      `git stash -u` to pristine HEAD then passed it **2/2**, and the restored branch passed it **4/4**
-      once the box settled. So a flaky UX member can fail *consistently in isolation* under post-suite
-      load — **interleave branch↔HEAD and let the box settle before concluding code-causation.**
-      Code-independence reconfirmed (branch 4/4 + HEAD 2/2 isolated; `git diff` pure docstring insertions;
-      `analyzer.py` 15 prompt constants sha256-identical). Class **still not converging** (now title-load
-      AND no-recommendations-bullet-load members), continues to strengthen the **retry-policy** option for
-      PX-25.
-      **→ Integrate (revised 2026-06-23):** the stabilization is **landed** (8.5); this is no longer
-      a pending stabilization task — it is now a **watch-to-resolve** item. The PX-25 "UX tier as a
-      *required* CI gate" prerequisite (8.7) is satisfied once a few clean 8.6 runs close this out.
-      Not a standalone branch.
 
 - [ ] **Grounding / hallucination metric — calibrated layers (B)** — the deterministic
       label-free **L0** slice shipped (`eval/grounding-metric-l0`:
@@ -1040,6 +790,32 @@ _Open count: 8 — at the top of the ~8–10 reduction-sprint threshold, but the
       `feat/portable-enforcement-core` are the remaining kit work; no new ledger item.
 
 #### Resolved
+
+- [x] **Flaky Compose-UX race class — and a real server-side title-pin race it was catching** —
+      **DONE 2026-06-26 on `fix/compose-ux-stabilization` (v1.0.8 reduction sprint).** The recurring
+      Compose-wizard UX-test class (~25 logged recurrences) had **two distinct causes**, surfaced by
+      chasing the last ~1%: **(1) test-timing (5 of 6 members)** — entering Compose runs
+      `loadComposition()` (`static/app.js`), which fires up to 3 background `recommend-*` calls each
+      re-running it (`_clearChildren(#composeList)` + rebuild); the `ui_pages/wizard_compose.py`
+      read-helpers did raw queries with no wait and read `#composeList` mid-teardown → IndexError /
+      `[]` / stale. **(2) a real, rare server-side race (the 6th member,
+      `test_positioning_pin_preserves_title_pin`)** — the test was catching an actual bug: the client
+      sends the title pin in every `/composition` POST, but `save_application_composition`'s
+      title-eligibility validation could intermittently not see a just-added title (pooled SQLite +
+      WAL read-snapshot visibility), 400, and drop the pin. **Fixes:** (server) self-heal a transient
+      eligibility miss — `session.rollback()` + fresh-snapshot re-read before 400 (a genuinely
+      stale/foreign id still 400s), covered by a deterministic miss-then-hit unit test
+      `test_post_self_heals_transient_title_visibility_miss`; (test-infra) a `data-compose-ready`
+      marker on `#composeList` (cleared at `loadComposition()` entry, set after the final synchronous
+      append) + `_wait_settled()` (networkidle drain + marker-stable) gating every read/action POM
+      helper + new `wait_skills_card()`/`drop_skill()`/`pin_positioning_variant()`.
+      `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` untouched; no new dependency. **Validation:** the
+      server self-heal is proven by the deterministic unit test — the live race is **unreproducible**
+      (it masked under three separate instrumentation attempts, a Heisenbug); empirical support:
+      positioning **400/400** with the fix (was ~0.37% / 2-in-544), the other 5 members **30/30** +
+      group **10/10**, full `pytest` ✓ (1394), ruff/format/mypy (228) ✓. _(discovered: v1.0.6
+      stream; the 8.5 `.compose-experience-card` stabilization covered only the load-timeout mode;
+      fully resolved here, incl. the underlying server race.)_ Open count **7 → 6**.
 
 - [x] **Help-opener duplication** — **DONE 2026-06-25 on `refactor/help-opener-dedup` (v1.0.8
       reduction sprint).** Extracted the byte-identical help-modal opener + the `cb_help_seen:`

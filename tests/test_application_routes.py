@@ -830,6 +830,51 @@ class TestCompositionTitlePin:
         assert r.status_code == 400
         assert "eligible" in r.get_json()["error"]
 
+    def test_post_self_heals_transient_title_visibility_miss(self, app_app, tmp_path, monkeypatch):
+        """Best-effort self-heal for the rare server-side visibility race
+        (carry-forward ledger #3, positioning-pin clobber): a just-added title can
+        be transiently unseen by this request's read snapshot (pooled SQLite +
+        WAL), which would 400 and drop a pin the client sent correctly. The
+        handler ends the read txn and re-reads with a fresh snapshot before
+        rejecting, so a transient miss self-heals. The live race resists
+        reproduction; this proves the heal LOGIC deterministically by making
+        eligible_titles_for miss once then hit (simulating the stale-then-fresh
+        read)."""
+        import json
+
+        import db.build_context as build_context_mod
+
+        cid = _seed_candidate()
+        eid, _off, alt = _seed_exp_with_two_titles(cid)
+        aid = _seed_application(cid)
+        ctx = self._ctx(tmp_path, aid)
+
+        real_eligible = build_context_mod.eligible_titles_for
+        calls = {"n": 0}
+
+        def flaky_eligible(exp):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return []  # transient miss: title not yet visible to this snapshot
+            return real_eligible(exp)  # fresh re-read sees it
+
+        monkeypatch.setattr(build_context_mod, "eligible_titles_for", flaky_eligible)
+
+        client = app_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={
+                "context_path": str(ctx),
+                "pinned": [],
+                "excluded": [],
+                "pinned_title_ids": {str(eid): alt},
+            },
+        )
+        assert r.status_code == 200, r.get_json()  # self-healed, not 400
+        assert calls["n"] >= 2, "expected a fresh-snapshot re-read after the miss"
+        saved = json.loads(ctx.read_text(encoding="utf-8"))
+        assert saved["composition_overrides"]["pinned_title_ids"] == {str(eid): alt}
+
     def test_resync_brings_added_title_into_frozen_snapshot(self, app_app, tmp_path):
         """The generate snapshot is frozen at analyze; pinning a title re-syncs
         eligible_titles from the DB so a post-analyze title reaches generate."""
