@@ -193,14 +193,16 @@ def test_positioning_pin_preserves_title_pin(
     assert compose.title_is_selected("Principal Engineer")
 
     # Pin a candidate positioning variant — the save path that used to clobber
-    # the title pin. Click the 2nd (non-chosen) positioning row.
+    # the title pin. Click the 2nd (non-chosen) positioning row. Routed through
+    # the settle-aware POM so the _collectCompositionState() read lands on the
+    # terminal render (not a mid-cascade DOM that would drop the title pin).
     with page.expect_response(_is_composition_post):
-        page.locator(".positioning-variant").nth(1).click()
+        compose.pin_positioning_variant(1)
 
     # Away + back: the title pin survives (and the summary pin persisted too).
     WizardTemplatePage(page, live_server).open()
     compose.reload()
     assert compose.title_is_selected("Principal Engineer"), "title pin was clobbered"
-    expect(page.locator(".positioning-variant").nth(1)).to_have_class(
+    expect(page.locator(Compose.POSITIONING_VARIANT).nth(1)).to_have_class(
         re.compile(r"positioning-chosen")
     )

@@ -1298,12 +1298,13 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
         from db.models import Experience, ExperienceSummaryItem, Skill
 
         resynced_titles: dict[str, Any] = {}
+        cand_id = candidate.id  # capture before any self-heal rollback (below)
         for eid_str, tid in pinned_title_ids.items():
             exp = (
                 session.query(Experience)
                 .filter_by(
                     id=int(eid_str),
-                    candidate_id=candidate.id,
+                    candidate_id=cand_id,
                 )
                 .first()
             )
@@ -1311,9 +1312,28 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 return jsonify({"error": f"experience {eid_str} not found for this candidate"}), 400
             eligible = eligible_titles_for(exp)
             if tid not in {t["id"] for t in eligible}:
-                return jsonify(
-                    {"error": f"title {tid} is not an eligible title of experience {eid_str}"}
-                ), 400
+                # Best-effort self-heal for a rare server-side visibility race
+                # (carry-forward ledger #3, the positioning-pin clobber): a title
+                # the client just added + pinned can intermittently be unseen by
+                # THIS request's read snapshot (pooled SQLite + WAL), which would
+                # 400 and drop the pin even though the client sent it correctly.
+                # End the current read transaction and re-read with a fresh
+                # snapshot before rejecting — a transient-visibility miss then
+                # self-heals, while a genuinely stale/foreign id (still ineligible
+                # after a guaranteed-fresh read) still 400s. The race resists
+                # reproduction, so the heal path is covered by a deterministic
+                # miss-then-hit unit test, not an end-to-end repro.
+                session.rollback()
+                exp = (
+                    session.query(Experience)
+                    .filter_by(id=int(eid_str), candidate_id=cand_id)
+                    .first()
+                )
+                eligible = eligible_titles_for(exp) if exp is not None else []
+                if tid not in {t["id"] for t in eligible}:
+                    return jsonify(
+                        {"error": f"title {tid} is not an eligible title of experience {eid_str}"}
+                    ), 400
             resynced_titles[eid_str] = eligible
 
         # B.4 — validate each per-role intro pick is an active

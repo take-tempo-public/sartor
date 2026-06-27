@@ -29,6 +29,7 @@ from ui_pages import (
     WizardJobPage,
     WizardTemplatePage,
 )
+from ui_pages.selectors import Compose
 
 _JD = "Senior Backend Engineer — Kubernetes, Kafka, Postgres at scale."
 
@@ -105,17 +106,19 @@ def test_compose_skills_card_drop_persists(
 
     # Skills card renders a row per active skill (the auto-fired recommend-skills
     # stub returns all three, so has_recommendation settles + no refire loop).
-    expect(page.locator(".skills-card")).to_be_visible()
-    expect(page.locator(".compose-skill-row")).to_have_count(3)
+    # wait_skills_card() settles the re-render cascade first (flaky-class fix).
+    compose.wait_skills_card()
+    expect(page.locator(Compose.SKILL_ROW)).to_have_count(3)
 
     # Drop one skill → debounced /composition POST persists excluded_skill_ids.
-    target = page.locator(".compose-skill-row", has_text="Postgres")
+    # drop_skill() settles before resolving the row, so the node can't detach
+    # under a late cascade between resolve and click.
     with page.expect_response(_is_composition_post):
-        target.locator(".skill-drop").click()
+        compose.drop_skill("Postgres")
 
     # Away + back: the dropped skill returns marked excluded (real GET re-read).
     WizardTemplatePage(page, live_server).open()
     compose.reload()
-    expect(page.locator(".compose-skill-row", has_text="Postgres")).to_have_class(
+    expect(page.locator(Compose.SKILL_ROW, has_text="Postgres")).to_have_class(
         re.compile(r"skill-excluded")
     )

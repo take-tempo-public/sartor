@@ -8,7 +8,7 @@ persistence round-trip.
 
 from __future__ import annotations
 
-from playwright.sync_api import Locator
+from playwright.sync_api import Locator, expect
 
 from ui_pages.base import DEFAULT_TIMEOUT_MS, LLM_TIMEOUT_MS, BasePage
 from ui_pages.selectors import Compose, Wizard
@@ -40,22 +40,53 @@ class WizardComposePage(BasePage):
         return self
 
     def _wait_loaded(self) -> None:
-        """Wait until the Compose panel and its card tree have rendered (a sound 'compose ready' signal)."""
+        """Wait until the Compose panel and its terminal card tree have rendered.
+
+        Delegates to :meth:`_wait_settled`, which rides out the auto-recommend
+        re-render cascade. The old implementation waited only for the first
+        ``.compose-experience-card`` to appear — i.e. the *initial* render — and a
+        subsequent read raced the cascade's teardown (the flaky-class root cause).
+        """
+        self._wait_settled()
+
+    def _wait_settled(self) -> None:
+        """Wait until ``#composeList`` reached its terminal render.
+
+        Two coupled signals, because the auto-recommend cascade has an async part
+        the DOM marker can't see:
+
+        1. ``networkidle`` drains the in-flight recommend POSTs. On open, the
+           positioning / skills / role cards each fire a background ``recommend-*``
+           whose success RE-RUNS ``loadComposition()``; that POST is a separate
+           XHR, so if it outran the marker-stability window below, ``open()`` would
+           settle on the INITIAL render and the recommend's re-render would fire
+           late — during a later action — re-rendering a title list as unpinned and
+           letting the next save clobber the pin (the positioning-pin race).
+        2. ``data-compose-ready`` stability. ``loadComposition()`` (static/app.js)
+           clears the marker on ``#composeList`` at entry (before its fetch) and
+           sets it after the final synchronous append, so requiring it PRESENT and
+           STABLE across consecutive samples proves the terminal synchronous render
+           completed (skipping the present->absent->present flip between passes).
+        """
         self.page.wait_for_selector(
             Wizard.PANEL_COMPOSE, state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
         self.page.wait_for_load_state("networkidle")
-        # `loadComposition()` (static/app.js) sets a loading placeholder, awaits
-        # the /composition fetch, then `_clearChildren` + synchronously appends
-        # the whole card tree (positioning + skills + experience cards) in one
-        # tick — there is no awaited gap mid-render, so a rendered card is a
-        # sound "compose ready" signal. Wait on `.compose-experience-card`, NOT a
-        # `.recommended` bullet row: a recommended row only exists when recommend
-        # marks a bullet, which the no-recommendations fixtures deliberately do
-        # not — so the old wait raced on an element that may never appear (the
-        # flaky-class root cause). A card always renders when the composition has
-        # ≥1 experience. (Matches `wait_cards()`.)
-        self.page.wait_for_selector(Compose.EXPERIENCE_CARD, timeout=DEFAULT_TIMEOUT_MS)
+        interval_ms = 50
+        needed = 3
+        stable = 0
+        for _ in range(DEFAULT_TIMEOUT_MS // interval_ms):
+            if self.page.locator(Compose.READY).count() == 1:
+                stable += 1
+                if stable >= needed:
+                    return
+            else:
+                stable = 0
+            self.page.wait_for_timeout(interval_ms)
+        raise AssertionError(
+            f"#composeList never reached a stable data-compose-ready state "
+            f"within {DEFAULT_TIMEOUT_MS}ms"
+        )
 
     def wait_cards(self) -> WizardComposePage:
         """Wait for compose cards to render after a clarify-submit lands on Compose.
@@ -74,23 +105,27 @@ class WizardComposePage(BasePage):
         )
 
     def experience_card_count(self) -> int:
-        """Return the number of rendered experience cards."""
+        """Return the number of rendered experience cards (waits for the render to settle)."""
+        self._wait_settled()
         return self.page.locator(Compose.EXPERIENCE_CARD).count()
 
     # --- titles (feat/compose-add-title) -----------------------------------
     def _first_card(self) -> Locator:
-        """Locator for the first real experience card (excludes the positioning card)."""
+        """Locator for the first real experience card (excludes the positioning card).
+
+        Settles the compose render first, so callers never resolve a card a late
+        auto-recommend cascade is about to tear down.
+        """
+        self._wait_settled()
         # The β.6c positioning card also carries `.compose-experience-card`, so
         # exclude it — `_first_card` is only ever about a real experience card.
         return self.page.locator(f"{Compose.EXPERIENCE_CARD}:not(.positioning-card)").first
 
     def title_texts(self) -> list[str]:
-        """Eligible title texts on the first experience card."""
-        return (
-            self._first_card()
-            .locator(f"{Compose.TITLE_LIST} {Compose.ROW} {Compose.ROW_TEXT}")
-            .all_inner_texts()
-        )
+        """Eligible title texts on the first experience card (settled + present)."""
+        rows = self._first_card().locator(f"{Compose.TITLE_LIST} {Compose.ROW} {Compose.ROW_TEXT}")
+        expect(rows.first).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
+        return rows.all_inner_texts()
 
     def add_title(self, title: str) -> None:
         """Open the '+ Add title' modal on the first card and submit `title`.
@@ -101,11 +136,13 @@ class WizardComposePage(BasePage):
         self._first_card().locator(Compose.ADD_TITLE_BTN).click()
         self.page.fill(Compose.FORM_MODAL_TITLE_INPUT, title)
         self.page.click(Compose.FORM_MODAL_SUBMIT)
-        # loadComposition() re-renders; wait for the new title row to appear.
+        # The submit triggers a full loadComposition() re-render cascade; wait for
+        # the concrete new title row to land, then settle so a follow-up read sees
+        # the terminal (post-cascade) DOM.
         self._first_card().locator(f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=title).wait_for(
             state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
-        self.page.wait_for_load_state("networkidle")
+        self._wait_settled()
 
     def select_title(self, text: str) -> None:
         """Check the radio of the title row matching `text` (first card)."""
@@ -114,13 +151,27 @@ class WizardComposePage(BasePage):
         ).check()
 
     def title_is_selected(self, text: str) -> bool:
-        """Whether the title row matching `text` (first card) is the chosen one."""
-        return (
+        """Whether the title row matching `text` (first card) is the chosen one (settled)."""
+        radio = (
             self._first_card()
             .locator(f"{Compose.TITLE_LIST} {Compose.ROW}", has_text=text)
             .locator(Compose.TITLE_RADIO)
-            .is_checked()
         )
+        expect(radio).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
+        return radio.is_checked()
+
+    # --- positioning (candidate-summary) card (β.6c) -----------------------
+    def pin_positioning_variant(self, index: int) -> None:
+        """Pin the positioning (candidate-summary) variant at `index` (settles first).
+
+        The positioning pin routes through `_collectCompositionState()` (app.js),
+        which reads the WHOLE override set (title pins, bullet order, role intros)
+        off the DOM and POSTs it wholesale — so the click must land on the terminal
+        render, or a mid-cascade DOM clobbers a sibling pin (the
+        title-pin-clobber race this regression guards).
+        """
+        self._wait_settled()
+        self.page.locator(Compose.POSITIONING_VARIANT).nth(index).click()
 
     # --- per-role intros (B.4, Sprint 6.6) ---------------------------------
     def role_intros_toggle(self) -> Locator:
@@ -130,23 +181,49 @@ class WizardComposePage(BasePage):
     def enable_role_intros(self) -> None:
         """Turn on the 'Add role intros' toggle and wait for the per-role picker.
 
-        Waits for a role to default to its (stubbed) recommendation — the
-        deterministic 'applied' signal.
+        Settles before toggling (so a prior load's cascade can't tear the toggle
+        out underfoot) and after (the toggle fires a `loadComposition()` re-render
+        via `_maybeFireRecommendExperienceSummaries`), with the chosen role-intro
+        variant as the deterministic 'applied' signal in between.
         """
+        self._wait_settled()
         self.role_intros_toggle().check()
         self.page.wait_for_selector(
             Compose.ROLE_INTRO_CHOSEN, state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
+        self._wait_settled()
 
     def chosen_intro_texts(self) -> list[str]:
-        """Text of every chosen role-intro variant (visual order)."""
+        """Text of every chosen role-intro variant (visual order), settled."""
+        self._wait_settled()
         return self.page.locator(
             f"{Compose.ROLE_INTRO_CHOSEN} {Compose.ROW_TEXT}"
         ).all_inner_texts()
 
+    # --- skills card (B.5, Sprint 6.6) -------------------------------------
+    def wait_skills_card(self) -> None:
+        """Wait until the candidate-level Skills card reached its terminal render (settled)."""
+        self._wait_settled()
+        expect(self.page.locator(Compose.SKILLS_CARD)).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
+
+    def drop_skill(self, name: str) -> None:
+        """Drop (hide) the skill row matching `name`.
+
+        Settles first so the row node is attached when clicked — closing the
+        resolve-then-click detachment race against the auto-recommend cascade.
+        """
+        self._wait_settled()
+        self.page.locator(Compose.SKILL_ROW, has_text=name).locator(Compose.SKILL_DROP).click()
+
     # --- first experience's visible bullet list ----------------------------
     def _bullet_list(self) -> Locator:
-        """Locator for the first experience's visible bullet list."""
+        """Locator for the first experience's visible bullet list (settles first).
+
+        The settle here is inherited by every caller (`_row`, `bullet_texts`,
+        `has_custom_order`, `move_*`, `drag_below`), so they read/act against the
+        terminal post-cascade DOM.
+        """
+        self._wait_settled()
         return self.page.locator(Compose.BULLET_LIST).first
 
     def _row(self, text: str) -> Locator:
@@ -154,12 +231,10 @@ class WizardComposePage(BasePage):
         return self._bullet_list().locator(f":scope > {Compose.ROW}", has_text=text)
 
     def bullet_texts(self) -> list[str]:
-        """Visible bullet texts in DOM (visual) order."""
-        return (
-            self._bullet_list()
-            .locator(f":scope > {Compose.ROW} {Compose.ROW_TEXT}")
-            .all_inner_texts()
-        )
+        """Visible bullet texts in DOM (visual) order (settled + present)."""
+        rows = self._bullet_list().locator(f":scope > {Compose.ROW} {Compose.ROW_TEXT}")
+        expect(rows.first).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
+        return rows.all_inner_texts()
 
     def has_custom_order(self) -> bool:
         """Whether the first bullet list carries a saved custom order."""
@@ -175,7 +250,8 @@ class WizardComposePage(BasePage):
         self._row(text).get_by_role("button", name=Compose.MOVE_UP_LABEL).click()
 
     def reset_order(self) -> None:
-        """Click the first card's reset-order control."""
+        """Click the first card's reset-order control (settles first)."""
+        self._wait_settled()
         self.page.locator(Compose.EXPERIENCE_CARD).first.locator(Compose.RESET_ORDER).click()
 
     def drag_below(self, src_text: str, target_text: str) -> None:

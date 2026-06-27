@@ -365,6 +365,9 @@ class Compose:
     # openFormModal field input + submit (shared add-title / add-bullet modal).
     FORM_MODAL_TITLE_INPUT = "#formModal_title"
     FORM_MODAL_SUBMIT = "#formModalSubmit"
+    # β.6c — candidate-level positioning (summary) card variants on compose.
+    POSITIONING_VARIANT = ".positioning-variant"
+    POSITIONING_CHOSEN = ".positioning-variant.positioning-chosen"
     # B.4 (Sprint 6.6) — "Add role intros" opt-in toggle + the per-role intro
     # picker rendered inside each compose card.
     ROLE_INTROS_TOGGLE = "#composeRoleIntrosToggle"
@@ -373,3 +376,13 @@ class Compose:
     ROLE_INTRO_CHOSEN = ".role-intro-variant.role-intro-chosen"
     # add-intro modal text field (openFormModal id = #formModal_<fieldname>).
     FORM_MODAL_TEXT_INPUT = "#formModal_text"
+    # B.5 (Sprint 6.6) — candidate-level Skills card on the compose surface.
+    SKILLS_CARD = "#composeList .skills-card"
+    SKILL_ROW = ".compose-skill-row"
+    SKILL_DROP = ".skill-drop"
+    # Settle signal: loadComposition() (static/app.js) clears this on #composeList
+    # at entry (before its fetch) and sets it after the final synchronous append,
+    # so a *stably present* marker proves the auto-recommend re-render cascade
+    # reached its terminal render. Consumed by WizardComposePage._wait_settled —
+    # the deterministic fix for the Compose flaky-test class.
+    READY = "#composeList[data-compose-ready]"

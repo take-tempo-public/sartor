@@ -13,6 +13,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Compose UX flaky-test class stabilized + a real server-side title-pin race fixed (`fix/compose-ux-stabilization`, 2026-06-26)
+
+A v1.0.8 reduction-sprint branch closing carry-forward ledger #3 — the recurring flaky Compose-wizard
+UX-test class (~25 logged recurrences). Chasing the last ~1% surfaced **two distinct causes**:
+
+1. **Test-timing (5 of the 6 members).** Entering Compose runs `loadComposition()`, which fires up to 3
+   background `recommend-*` calls, each re-running `loadComposition()` (a full `#composeList` teardown +
+   rebuild); the Playwright page-object read-helpers did raw queries with no wait and read the DOM
+   mid-rebuild. The 8.5 partial fix (waiting on `.compose-experience-card`) only proved the *initial*
+   render, not the terminal one.
+2. **A real, rare server-side race (the 6th member, `test_positioning_pin_preserves_title_pin`).** The
+   flaky test was catching an actual bug, not a harness artifact: the client sends the title pin
+   correctly in every `/composition` POST, but the save's title-eligibility validation could
+   intermittently not see a just-added title (pooled SQLite + WAL read-snapshot visibility), return
+   400, and drop the pin — so a user pinning a title then quickly pinning a positioning variant could
+   rarely lose the title pin. The race resists reproduction (it vanished under every instrumentation
+   attempt — a Heisenbug), so it's fixed defensively and validated by a deterministic unit test rather
+   than an end-to-end repro.
+
+`PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched; no new dependency.
+
+**Fixed**
+- **Server-side (real bug):** `blueprints/applications.py` `save_application_composition` now self-heals
+  a transient title-eligibility miss — on a miss it ends the read transaction (`session.rollback()`)
+  and re-reads with a fresh snapshot before returning 400, so a momentarily-invisible just-added title
+  is no longer dropped; a genuinely stale/foreign id still 400s. Covered by a deterministic
+  miss-then-hit unit test (`test_post_self_heals_transient_title_visibility_miss`).
+- **Test-infra (the flaky class):** all 6 members —
+  `test_positioning_pin_preserves_title_pin`, `test_keyboard_reorder_persists_and_reset_reverts` /
+  `test_pointer_drag_reorders`, `test_add_title_then_pin_persists`,
+  `test_no_recommendations_order_persists_on_reload`, `test_compose_skills_card_drop_persists`,
+  `test_happy_path_through_template_preview`.
+
+**Changed**
+- `static/app.js`: `loadComposition()` clears a `data-compose-ready` attribute on `#composeList` at
+  entry (before its `/composition` fetch) and sets it after the final synchronous append — a *stably
+  present* marker proves the auto-recommend re-render cascade reached its terminal render. Two
+  non-behavioral lines (a `data-` attribute no code/CSS reads → byte-identical render/save/prompt).
+- `ui_pages/wizard_compose.py`: new `_wait_settled()` (drains in-flight recommend POSTs via
+  `networkidle`, then waits for the marker present + stable across 3×50ms samples); `_wait_loaded()`
+  delegates to it; the read-helpers (`bullet_texts` / `title_texts` / `title_is_selected` /
+  `experience_card_count` / `chosen_intro_texts`) and action helpers (`reset_order` / `add_title` /
+  `drag_below` / `move_*` / `select_title` / `enable_role_intros`, via the `_first_card` /
+  `_bullet_list` anchors or explicit calls) settle first; new `wait_skills_card()` / `drop_skill()` /
+  `pin_positioning_variant()`.
+- `ui_pages/selectors.py`: add `Compose.SKILLS_CARD` / `SKILL_ROW` / `SKILL_DROP` / `READY` /
+  `POSITIONING_VARIANT` / `POSITIONING_CHOSEN`.
+- `tests/ux/regression/test_20260613_skill_corpus_item.py` + `…/test_20260612_experience_summary_item.py`:
+  use the new POM helpers (close the resolve-then-click + raw-positioning-click windows).
+
+**Validation:** the server self-heal is proven by a deterministic miss-then-hit unit test (the live
+race is unreproducible — it masked under three separate instrumentation attempts). Supporting empirical
+evidence: the previously-flaky positioning test ran **400/400** with the fix (it was ~0.37%, 2-in-544,
+before); the other 5 members **30/30** each + group **10/10**; full `pytest -m ux` ✓ (69) and full
+`pytest` ✓ (1394). Gate: ruff ✓ · ruff format --check ✓ · mypy ✓ (228). Carry-forward ledger #3 →
+Resolved (open count 7 → 6).
+
 ### Help-opener de-duplication — shared `static/help-modal.js` leaf (`refactor/help-opener-dedup`, 2026-06-25)
 
 A v1.0.8 reduction-sprint branch closing carry-forward ledger #7. The wizard's help-modal opener
