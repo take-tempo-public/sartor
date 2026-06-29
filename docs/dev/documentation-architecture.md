@@ -134,6 +134,8 @@ to update the README when v1.0.8 ships" from vigilance into machinery. Live exam
 
 ## Recommendations / sequencing
 
+> **Scheduled as the v1.0.9 "Documentation & docs-site" epic** — [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.9 owns the authoritative sequence, branch names, and the v1.0.8-tail policy; this section is the *rationale*. _(RELEASE_ARC and this doc mutually reference — co-merge `docs/release-arc-v1.0.9` with this branch at the top of v1.0.9 to keep both links live.)_
+
 Status: the **README front door is shipped** (this branch — the L1 flagship + the ICP ladder +
 the two C-0 corrections + the `DOC-STATUS` examples). The rest is proposed, in order:
 
