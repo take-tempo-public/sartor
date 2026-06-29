@@ -21,7 +21,7 @@
 | v1.0.6 | Walkthrough polish + knowledge substrate + corpus completion | No (internal until v1.1.0) | E2E-walkthrough-driven UX polish (Sprints 6.1–6.5) + the **WS-4 LLM-wiki substrate** (front-loaded; before the 6.5 sweep) + corpus-item completers (**B.4** ExperienceSummaryItem, **B.5** Skill-as-Corpus-Item) + **B.8 Part 1** (outcome capture). **Tagged 2026-06-15** — all §Phase 4.5 tag criteria met; the E2E re-walk verification pass was waived as non-blocking for this internal tag (tracked to v1.0.7); gate green incl. `pytest -m ux`. See **Phase 4.5**. |
 | v1.0.7 | The app knows itself | No (internal until v1.1.0) | The autonomous self-documenting/self-tuning wiki loop + the doc-grounded **assistant** (Haiku, reuses the user's key) + pre-public hardening (grounding-calibration B · cover-letter tuning). **Not yet tagged.** See **Phase 4.7**. |
 | v1.0.8 | Monolith → blueprints (WS-1) | No (internal until v1.1.0) | Decompose the 8,251-LOC / 93-route `app.py` into Flask blueprints (dedicated structural epic); **absorbs the type-annotation scan** (WS-2 increment 1). Public ships on clean blueprints. **Not yet tagged.** See **Phase 4.8**. |
-| v1.0.9 | Documentation & docs-site | No (internal until v1.1.0) | All product documentation + the hosted **Fumadocs** site, authored on **settled v1.0.8 code**: README ICP-ladder (built) + dev-home depth pass + wiki content pass + Fumadocs adapter/deploy + the doc-merge-gate CI. Docs land here, **NOT v1.0.8**. Strategy: [`documentation-architecture.md`](documentation-architecture.md). **Not yet started.** See **Phase 4.9**. |
+| v1.0.9 | Docs, docs-site & type hardening | No (internal until v1.1.0) | The final pre-public polish epic. **Docs:** README ICP-ladder + design doc + this schedule landed in the 2026-06-29 session; dev-home depth + wiki content pass + Fumadocs adapter/deploy (+ Layer-B API spec) + doc-merge-gate CI remain. **Type hardening:** complete the `mypy --strict` ratchet so strict typing holds for all non-test code (WS-2-full's strict half, pulled pre-public — ~146 mechanical errors / 18 modules + roster 51 already-clean). Strategy: [`documentation-architecture.md`](documentation-architecture.md). See **Phase 4.9**. |
 | v1.1.0 | Public release | **Yes** | **Tag owned by the user** — the public cut of the complete product (assistant + self-documenting wiki + clean blueprints + documentation & docs-site). GitHub push is part of this event |
 
 **Versioning model (2026-06-08).** The **patch digit is an epic** — a bounded set of
@@ -1088,6 +1088,15 @@ Sequence (each its own branch, in dependency order):
    extending `block-merge-to-main` + `wiki-lint`. **Last**, because merge=publish only
    matters once the site exists.
 
+**Type hardening (pulled pre-public into v1.0.9 — owner 2026-06-29).** Complete the
+`mypy --strict` ratchet to the §6 end-state so strict typing can be claimed for all
+non-test code. Empirically measured 2026-06-29: **146 errors across 18 of 69 production
+modules** (the other 51 are already strict-clean → free to roster; 5 already rostered).
+Concentrated — `dashboard/routes.py` (36) + `hardening.py` (32) = ~47%; the rest ≤14 each;
+predominantly mechanical (`dict`/`list` → parameterized). Runs as its own module-by-module
+ratchet branches (independent of the doc branches; can interleave). The typed `context_set`
+spine (WS-2-full's other half) stays **post-public** — not needed to claim strict typing.
+
 ---
 
 ## Phase 5 — Public release (v1.1.0)
@@ -1167,7 +1176,10 @@ Sequence (each its own branch, in dependency order):
   typed spine. Builds on the v1.0.8 blueprint split. **Now Phase 2 of the kit-adoption
   arc** — the ratchet end-state + finite exit criterion are settled (strict everywhere
   except `tests/`/`evals/`/`scripts/`/`db/migrations/versions`; see
-  [`kit-adoption-design.md`](kit-adoption-design.md) §6).
+  [`kit-adoption-design.md`](kit-adoption-design.md) §6). **Split 2026-06-29 (owner):**
+  the **`--strict` ratchet completion is pulled pre-public into v1.0.9** (to claim strict
+  typing at launch — see §Phase 4.9); only the **typed `context_set` spine** remains
+  post-public here.
 - **WS-3 — recurring test-suite engineering-design pass.** Periodic review of the
   ~955-test suite (redundancy, slow tests, coverage gaps, fixture dup). Define cadence
   + what "good" looks like.
