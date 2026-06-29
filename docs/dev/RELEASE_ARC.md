@@ -1053,9 +1053,19 @@ Then: `chore/version-bump-v1.0.8`.
 > **v1.0.8 tail vs v1.0.9 (owner-confirmed 2026-06-29):** only walk-through / bug-fix-
 > *coupled* doc corrections (fix code + its doc together) and the routine pre-tag wiki
 > *freshness* reconcile ride v1.0.8. The doc-architecture set below is **all v1.0.9**.
-> **Reconcile owed:** the earlier "PV-2 grounding-calibration *may spill to v1.0.9*"
-> note (§4.8 + the Carry-forward ledger) now needs a non-docs home — v1.0.9 is
-> docs-dedicated; PV-2 stays owner-gated in v1.0.8 or takes its own slot. *Owner to confirm.*
+> **Scheduling reconcile (2026-06-29, owner-directed):**
+> - **PV-2 grounding-calibration → v1.0.8** (not v1.0.9 — it's eval/code, not docs). Its
+>   manual groundedness-annotation pass runs on the **same clean-corpus rebuild** as the
+>   v1.0.8 E2E walkthrough (adjacent session, distinct output). Fold the stale "may spill
+>   to v1.0.9" refs in §4.8 + the Carry-forward ledger into the v1.0.8 close-out.
+> - **Fumadocs renders the HTTP-API spec (Layer B) — IN v1.0.9 scope** (owner-confirmed).
+>   So **spectree** (the OpenAPI-emitting request boundary; kit Decisions 1/2a) is its
+>   **dependency**, **pulled pre-public into v1.0.8** (code, route-boundary, post-blueprint-
+>   split) — it must land before branch #4 below.
+> - **paged.js engine replacement (B.13) → pulled pre-public** from §Post-public. A render-
+>   engine project (**design-spike first**); preview-fidelity only (PDF is Playwright-native,
+>   unaffected). Off both the v1.0.8 blueprint theme and the v1.0.9 docs theme → **owner to
+>   slot its own pre-public sprint.**
 
 Sequence (each its own branch, in dependency order):
 1. **`docs/readme-icp-ladder`** — MERGE the new README front door + the
@@ -1071,7 +1081,8 @@ Sequence (each its own branch, in dependency order):
    (content pass — does **not** advance `.last_ingest_sha`).
 4. **`docs/fumadocs-site`** — the projection adapter (L1 + Purpose/Audience/Authoritative-for
    frontmatter → MDX tree), `meta.json` from the ICP ladder + audience tags,
-   deploy-on-merge-to-`main`.
+   deploy-on-merge-to-`main`; **+ renders the HTTP-API reference (Layer B) from the OpenAPI
+   spec spectree emits** (dependency: spectree, pulled into v1.0.8 — see the reconcile note above).
 5. **`ci/doc-merge-gate`** — the doc gates (link-integrity / frontmatter+audience /
    D5 single-home / cite-resolution / wiki-freshness) + the `DOC-STATUS`-trigger check,
    extending `block-merge-to-main` + `wiki-lint`. **Last**, because merge=publish only
@@ -1135,10 +1146,11 @@ Sequence (each its own branch, in dependency order):
 > decided when we arrive; items may pull earlier if circumstances change.
 
 **1.1.1 (first post-public epic) — candidates:**
-- **paged.js engine replacement (B.13)** — replace the end-of-life in-browser
-  paged.js v0.4.x pagination engine (the v1.0.5 fix only *contained* its throws; PDF
-  uses Playwright natively and is unaffected). A real render-engine project →
-  **design-spike first** (fidelity + constraints + replacement choice).
+- **paged.js engine replacement (B.13)** — **PULLED PRE-PUBLIC 2026-06-29 (owner) →
+  §Phase 4.9 scheduling reconcile; owner to slot its pre-public sprint.** Replace the
+  end-of-life in-browser paged.js v0.4.x pagination engine (the v1.0.5 fix only
+  *contained* its throws; PDF uses Playwright natively and is unaffected). A real
+  render-engine project → **design-spike first** (fidelity + constraints + replacement choice).
 - **Local + alternative LLM providers** — a **provider abstraction** so users pick
   **local** (Ollama / llama.cpp) or **alternative** (OpenAI / Gemini / …) models, not
   just Anthropic. Strong local-first/privacy fit (local = nothing leaves the machine).
@@ -1167,9 +1179,11 @@ Sequence (each its own branch, in dependency order):
   promotable" — Callback is the donor, not a blank canary). **Threads existing work
   rather than standing alone:** the strict ratchet **is** WS-2-full above; the
   mechanizable gates fold into `feat/portable-enforcement-core` (8.7 — local pre-commit
-  now, CI-blocking when the remote lands); the spectree request-boundary + OpenAPI
-  emission can begin pre-public; Fumadocs renders the spec post-8.7. Real cost = the mypy
-  `--strict` ratchet + the ~30-endpoint spectree boundary; the rest is reconcile-don't-build.
+  now, CI-blocking when the remote lands); the **spectree request-boundary + OpenAPI
+  emission is pulled pre-public into v1.0.8** (2026-06-29 owner — it's the v1.0.9 Fumadocs
+  Layer-B dependency; see §Phase 4.9), and **Fumadocs renders the spec in v1.0.9**. Real
+  cost = the mypy `--strict` ratchet (post-public) + the ~30-endpoint spectree boundary
+  (now v1.0.8); the rest is reconcile-don't-build.
 
 *(WS-1 (the monolith split) and the doc-grounded assistant are **not** here — they
 moved **pre-public** into v1.0.8 and v1.0.7 respectively, so v1.1.0 ships with both.)*
