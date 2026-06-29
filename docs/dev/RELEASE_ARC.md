@@ -21,7 +21,8 @@
 | v1.0.6 | Walkthrough polish + knowledge substrate + corpus completion | No (internal until v1.1.0) | E2E-walkthrough-driven UX polish (Sprints 6.1–6.5) + the **WS-4 LLM-wiki substrate** (front-loaded; before the 6.5 sweep) + corpus-item completers (**B.4** ExperienceSummaryItem, **B.5** Skill-as-Corpus-Item) + **B.8 Part 1** (outcome capture). **Tagged 2026-06-15** — all §Phase 4.5 tag criteria met; the E2E re-walk verification pass was waived as non-blocking for this internal tag (tracked to v1.0.7); gate green incl. `pytest -m ux`. See **Phase 4.5**. |
 | v1.0.7 | The app knows itself | No (internal until v1.1.0) | The autonomous self-documenting/self-tuning wiki loop + the doc-grounded **assistant** (Haiku, reuses the user's key) + pre-public hardening (grounding-calibration B · cover-letter tuning). **Not yet tagged.** See **Phase 4.7**. |
 | v1.0.8 | Monolith → blueprints (WS-1) | No (internal until v1.1.0) | Decompose the 8,251-LOC / 93-route `app.py` into Flask blueprints (dedicated structural epic); **absorbs the type-annotation scan** (WS-2 increment 1). Public ships on clean blueprints. **Not yet tagged.** See **Phase 4.8**. |
-| v1.1.0 | Public release | **Yes** | **Tag owned by the user** — the public cut of the complete product (assistant + self-documenting wiki + clean blueprints). GitHub push is part of this event |
+| v1.0.9 | Docs, docs-site & type hardening | No (internal until v1.1.0) | The final pre-public polish epic. **Docs:** README ICP-ladder + design doc + this schedule landed in the 2026-06-29 session; dev-home depth + wiki content pass + Fumadocs adapter/deploy (+ Layer-B API spec) + doc-merge-gate CI remain. **Type hardening:** complete the `mypy --strict` ratchet so strict typing holds for all non-test code (WS-2-full's strict half, pulled pre-public — ~146 mechanical errors / 18 modules + roster 51 already-clean). Strategy: [`documentation-architecture.md`](documentation-architecture.md). See **Phase 4.9**. |
+| v1.1.0 | Public release | **Yes** | **Tag owned by the user** — the public cut of the complete product (assistant + self-documenting wiki + clean blueprints + documentation & docs-site). GitHub push is part of this event |
 
 **Versioning model (2026-06-08).** The **patch digit is an epic** — a bounded set of
 one-branch-per-session sprints (1.0.6, 1.0.7, 1.0.8 …; ≤10 before a bump). The
@@ -1038,6 +1039,66 @@ Then: `chore/version-bump-v1.0.8`.
 
 ---
 
+## Phase 4.9 — Documentation & docs-site (v1.0.9)
+
+> **Inserted 2026-06-29 (owner direction): a dedicated pre-public DOCUMENTATION epic
+> between v1.0.8 and v1.1.0.** ALL product documentation — including the hosted
+> **Fumadocs** site — lands here, authored against **settled v1.0.8 code**, so v1.1.0
+> ships with a complete, published doc set. Publishing strategy:
+> [`documentation-architecture.md`](documentation-architecture.md) (the L0–L3 layered
+> source chain · the three-audience ICP ladder as the nav spine · Fumadocs as an L3
+> projection of `main`, merge=publish · the `DOC-STATUS` flag convention · recursive
+> grounding). **Blocked by:** v1.0.8 tag. **Blocks:** v1.1.0.
+>
+> **v1.0.8 tail vs v1.0.9 (owner-confirmed 2026-06-29):** only walk-through / bug-fix-
+> *coupled* doc corrections (fix code + its doc together) and the routine pre-tag wiki
+> *freshness* reconcile ride v1.0.8. The doc-architecture set below is **all v1.0.9**.
+> **Scheduling reconcile (2026-06-29, owner-directed):**
+> - **PV-2 grounding-calibration → v1.0.8** (not v1.0.9 — it's eval/code, not docs). Its
+>   manual groundedness-annotation pass runs on the **same clean-corpus rebuild** as the
+>   v1.0.8 E2E walkthrough (adjacent session, distinct output). Fold the stale "may spill
+>   to v1.0.9" refs in §4.8 + the Carry-forward ledger into the v1.0.8 close-out.
+> - **Fumadocs renders the HTTP-API spec (Layer B) — IN v1.0.9 scope** (owner-confirmed).
+>   So **spectree** (the OpenAPI-emitting request boundary; kit Decisions 1/2a) is its
+>   **dependency**, **pulled pre-public into v1.0.8** (code, route-boundary, post-blueprint-
+>   split) — it must land before branch #4 below.
+> - **paged.js engine replacement (B.13) → pulled pre-public** from §Post-public. A render-
+>   engine project (**design-spike first**); preview-fidelity only (PDF is Playwright-native,
+>   unaffected). Off both the v1.0.8 blueprint theme and the v1.0.9 docs theme → **owner to
+>   slot its own pre-public sprint.**
+
+Sequence (each its own branch, in dependency order):
+1. **`docs/readme-icp-ladder`** — MERGE the new README front door + the
+   [`documentation-architecture.md`](documentation-architecture.md) design doc (already
+   built off the 8.x line — commits `323bf6c` + `996d1c9`; rebase onto the v1.0.8 tag
+   first). Reconcile its governance `DOC-STATUS` flags now that v1.0.8 closed PX-19/PX-20.
+2. **`docs/dev-home-depth` (WS-B)** — verify the dev-tier homes (`system-model` /
+   `memory-architecture` / `architecture`) carry the depth the README hooks into,
+   against settled v1.0.8 code; the 2026-06 architecture digest is the checklist.
+   (WS-E unification is already in the design doc — confirm only.)
+3. **`docs/wiki-content-pass`** — ICP-ladder `audience: user` pages + `overview.md`
+   refresh + `llms.txt`; a bounded `/wiki-self-update` so L2 is fresh for the site
+   (content pass — does **not** advance `.last_ingest_sha`).
+4. **`docs/fumadocs-site`** — the projection adapter (L1 + Purpose/Audience/Authoritative-for
+   frontmatter → MDX tree), `meta.json` from the ICP ladder + audience tags,
+   deploy-on-merge-to-`main`; **+ renders the HTTP-API reference (Layer B) from the OpenAPI
+   spec spectree emits** (dependency: spectree, pulled into v1.0.8 — see the reconcile note above).
+5. **`ci/doc-merge-gate`** — the doc gates (link-integrity / frontmatter+audience /
+   D5 single-home / cite-resolution / wiki-freshness) + the `DOC-STATUS`-trigger check,
+   extending `block-merge-to-main` + `wiki-lint`. **Last**, because merge=publish only
+   matters once the site exists.
+
+**Type hardening (pulled pre-public into v1.0.9 — owner 2026-06-29).** Complete the
+`mypy --strict` ratchet to the §6 end-state so strict typing can be claimed for all
+non-test code. Empirically measured 2026-06-29: **146 errors across 18 of 69 production
+modules** (the other 51 are already strict-clean → free to roster; 5 already rostered).
+Concentrated — `dashboard/routes.py` (36) + `hardening.py` (32) = ~47%; the rest ≤14 each;
+predominantly mechanical (`dict`/`list` → parameterized). Runs as its own module-by-module
+ratchet branches (independent of the doc branches; can interleave). The typed `context_set`
+spine (WS-2-full's other half) stays **post-public** — not needed to claim strict typing.
+
+---
+
 ## Phase 5 — Public release (v1.1.0)
 
 **Blocked until v1.0.8 tagged. The v1.1.0 tag is owned by the user** — the public cut of the **complete** product: the assistant + self-documenting wiki (v1.0.7) on **clean blueprints** (v1.0.8). There is no external deadline; completeness and polish gate the tag, not a clock.
@@ -1094,10 +1155,11 @@ Then: `chore/version-bump-v1.0.8`.
 > decided when we arrive; items may pull earlier if circumstances change.
 
 **1.1.1 (first post-public epic) — candidates:**
-- **paged.js engine replacement (B.13)** — replace the end-of-life in-browser
-  paged.js v0.4.x pagination engine (the v1.0.5 fix only *contained* its throws; PDF
-  uses Playwright natively and is unaffected). A real render-engine project →
-  **design-spike first** (fidelity + constraints + replacement choice).
+- **paged.js engine replacement (B.13)** — **PULLED PRE-PUBLIC 2026-06-29 (owner) →
+  §Phase 4.9 scheduling reconcile; owner to slot its pre-public sprint.** Replace the
+  end-of-life in-browser paged.js v0.4.x pagination engine (the v1.0.5 fix only
+  *contained* its throws; PDF uses Playwright natively and is unaffected). A real
+  render-engine project → **design-spike first** (fidelity + constraints + replacement choice).
 - **Local + alternative LLM providers** — a **provider abstraction** so users pick
   **local** (Ollama / llama.cpp) or **alternative** (OpenAI / Gemini / …) models, not
   just Anthropic. Strong local-first/privacy fit (local = nothing leaves the machine).
@@ -1114,7 +1176,10 @@ Then: `chore/version-bump-v1.0.8`.
   typed spine. Builds on the v1.0.8 blueprint split. **Now Phase 2 of the kit-adoption
   arc** — the ratchet end-state + finite exit criterion are settled (strict everywhere
   except `tests/`/`evals/`/`scripts/`/`db/migrations/versions`; see
-  [`kit-adoption-design.md`](kit-adoption-design.md) §6).
+  [`kit-adoption-design.md`](kit-adoption-design.md) §6). **Split 2026-06-29 (owner):**
+  the **`--strict` ratchet completion is pulled pre-public into v1.0.9** (to claim strict
+  typing at launch — see §Phase 4.9); only the **typed `context_set` spine** remains
+  post-public here.
 - **WS-3 — recurring test-suite engineering-design pass.** Periodic review of the
   ~955-test suite (redundancy, slow tests, coverage gaps, fixture dup). Define cadence
   + what "good" looks like.
@@ -1126,9 +1191,11 @@ Then: `chore/version-bump-v1.0.8`.
   promotable" — Callback is the donor, not a blank canary). **Threads existing work
   rather than standing alone:** the strict ratchet **is** WS-2-full above; the
   mechanizable gates fold into `feat/portable-enforcement-core` (8.7 — local pre-commit
-  now, CI-blocking when the remote lands); the spectree request-boundary + OpenAPI
-  emission can begin pre-public; Fumadocs renders the spec post-8.7. Real cost = the mypy
-  `--strict` ratchet + the ~30-endpoint spectree boundary; the rest is reconcile-don't-build.
+  now, CI-blocking when the remote lands); the **spectree request-boundary + OpenAPI
+  emission is pulled pre-public into v1.0.8** (2026-06-29 owner — it's the v1.0.9 Fumadocs
+  Layer-B dependency; see §Phase 4.9), and **Fumadocs renders the spec in v1.0.9**. Real
+  cost = the mypy `--strict` ratchet (post-public) + the ~30-endpoint spectree boundary
+  (now v1.0.8); the rest is reconcile-don't-build.
 
 *(WS-1 (the monolith split) and the doc-grounded assistant are **not** here — they
 moved **pre-public** into v1.0.8 and v1.0.7 respectively, so v1.1.0 ships with both.)*
