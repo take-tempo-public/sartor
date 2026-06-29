@@ -21,7 +21,8 @@
 | v1.0.6 | Walkthrough polish + knowledge substrate + corpus completion | No (internal until v1.1.0) | E2E-walkthrough-driven UX polish (Sprints 6.1–6.5) + the **WS-4 LLM-wiki substrate** (front-loaded; before the 6.5 sweep) + corpus-item completers (**B.4** ExperienceSummaryItem, **B.5** Skill-as-Corpus-Item) + **B.8 Part 1** (outcome capture). **Tagged 2026-06-15** — all §Phase 4.5 tag criteria met; the E2E re-walk verification pass was waived as non-blocking for this internal tag (tracked to v1.0.7); gate green incl. `pytest -m ux`. See **Phase 4.5**. |
 | v1.0.7 | The app knows itself | No (internal until v1.1.0) | The autonomous self-documenting/self-tuning wiki loop + the doc-grounded **assistant** (Haiku, reuses the user's key) + pre-public hardening (grounding-calibration B · cover-letter tuning). **Not yet tagged.** See **Phase 4.7**. |
 | v1.0.8 | Monolith → blueprints (WS-1) | No (internal until v1.1.0) | Decompose the 8,251-LOC / 93-route `app.py` into Flask blueprints (dedicated structural epic); **absorbs the type-annotation scan** (WS-2 increment 1). Public ships on clean blueprints. **Not yet tagged.** See **Phase 4.8**. |
-| v1.1.0 | Public release | **Yes** | **Tag owned by the user** — the public cut of the complete product (assistant + self-documenting wiki + clean blueprints). GitHub push is part of this event |
+| v1.0.9 | Documentation & docs-site | No (internal until v1.1.0) | All product documentation + the hosted **Fumadocs** site, authored on **settled v1.0.8 code**: README ICP-ladder (built) + dev-home depth pass + wiki content pass + Fumadocs adapter/deploy + the doc-merge-gate CI. Docs land here, **NOT v1.0.8**. Strategy: [`documentation-architecture.md`](documentation-architecture.md). **Not yet started.** See **Phase 4.9**. |
+| v1.1.0 | Public release | **Yes** | **Tag owned by the user** — the public cut of the complete product (assistant + self-documenting wiki + clean blueprints + documentation & docs-site). GitHub push is part of this event |
 
 **Versioning model (2026-06-08).** The **patch digit is an epic** — a bounded set of
 one-branch-per-session sprints (1.0.6, 1.0.7, 1.0.8 …; ≤10 before a bump). The
@@ -1035,6 +1036,46 @@ Then: `chore/version-bump-v1.0.8`.
 - **Carry-forward ledger drained** (the 2026-06-20 7.9 triage): the `chore/ledger-reduction`
   (8.0) hygiene pair cleared and the `docs/assistant-wiki-coverage` (8.6a) doc sprint authored,
   so by the public cut the open ledger is down to ~the deferred in-app citation viewer.
+
+---
+
+## Phase 4.9 — Documentation & docs-site (v1.0.9)
+
+> **Inserted 2026-06-29 (owner direction): a dedicated pre-public DOCUMENTATION epic
+> between v1.0.8 and v1.1.0.** ALL product documentation — including the hosted
+> **Fumadocs** site — lands here, authored against **settled v1.0.8 code**, so v1.1.0
+> ships with a complete, published doc set. Publishing strategy:
+> [`documentation-architecture.md`](documentation-architecture.md) (the L0–L3 layered
+> source chain · the three-audience ICP ladder as the nav spine · Fumadocs as an L3
+> projection of `main`, merge=publish · the `DOC-STATUS` flag convention · recursive
+> grounding). **Blocked by:** v1.0.8 tag. **Blocks:** v1.1.0.
+>
+> **v1.0.8 tail vs v1.0.9 (owner-confirmed 2026-06-29):** only walk-through / bug-fix-
+> *coupled* doc corrections (fix code + its doc together) and the routine pre-tag wiki
+> *freshness* reconcile ride v1.0.8. The doc-architecture set below is **all v1.0.9**.
+> **Reconcile owed:** the earlier "PV-2 grounding-calibration *may spill to v1.0.9*"
+> note (§4.8 + the Carry-forward ledger) now needs a non-docs home — v1.0.9 is
+> docs-dedicated; PV-2 stays owner-gated in v1.0.8 or takes its own slot. *Owner to confirm.*
+
+Sequence (each its own branch, in dependency order):
+1. **`docs/readme-icp-ladder`** — MERGE the new README front door + the
+   [`documentation-architecture.md`](documentation-architecture.md) design doc (already
+   built off the 8.x line — commits `323bf6c` + `996d1c9`; rebase onto the v1.0.8 tag
+   first). Reconcile its governance `DOC-STATUS` flags now that v1.0.8 closed PX-19/PX-20.
+2. **`docs/dev-home-depth` (WS-B)** — verify the dev-tier homes (`system-model` /
+   `memory-architecture` / `architecture`) carry the depth the README hooks into,
+   against settled v1.0.8 code; the 2026-06 architecture digest is the checklist.
+   (WS-E unification is already in the design doc — confirm only.)
+3. **`docs/wiki-content-pass`** — ICP-ladder `audience: user` pages + `overview.md`
+   refresh + `llms.txt`; a bounded `/wiki-self-update` so L2 is fresh for the site
+   (content pass — does **not** advance `.last_ingest_sha`).
+4. **`docs/fumadocs-site`** — the projection adapter (L1 + Purpose/Audience/Authoritative-for
+   frontmatter → MDX tree), `meta.json` from the ICP ladder + audience tags,
+   deploy-on-merge-to-`main`.
+5. **`ci/doc-merge-gate`** — the doc gates (link-integrity / frontmatter+audience /
+   D5 single-home / cite-resolution / wiki-freshness) + the `DOC-STATUS`-trigger check,
+   extending `block-merge-to-main` + `wiki-lint`. **Last**, because merge=publish only
+   matters once the site exists.
 
 ---
 
