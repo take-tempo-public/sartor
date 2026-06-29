@@ -13,6 +13,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### README rebuilt as a three-audience front door (`docs/readme-icp-ladder`, 2026-06-29)
+
+The README is restructured around a cumulative three-audience ladder — job seeker →
+coach/headhunter → developer (`one → many → extend`) — and brought under the project's
+doc disciplines: a `Purpose / Audience / Authoritative-for` header, a documentation map,
+and single-home / cite-don't-restate (it owns the pitch + the ladder; everything else
+links to its canonical doc, with volatile facts linked out so the auto-published front
+door can't drift). Two C-0 honesty corrections fold in: the governance status is flagged
+as having two boundary gates owed (scheduled v1.0.8), and the egress claim is upgraded to
+"machine-verified" by `tests/test_egress_allowlist.py`. No new dependency; `PROMPT_VERSION`
+/ `AVATAR_PROMPT_VERSION` untouched.
+
+**Changed**
+- `README.md` — full rewrite as the product front door; clone URL corrected to
+  `github.com/take-tempo-public/callback`; `DOC-STATUS` freshness markers added.
+
+**Added**
+- `docs/dev/documentation-architecture.md` — the documentation publishing strategy that
+  the README front door embodies (the layered L0–L3 source chain, Fumadocs-as-projection,
+  the merge=publish gate, the `DOC-STATUS` convention). Dev-internal.
+
 ### Compose UX flaky-test class stabilized + a real server-side title-pin race fixed (`fix/compose-ux-stabilization`, 2026-06-26)
 
 A v1.0.8 reduction-sprint branch closing carry-forward ledger #3 — the recurring flaky Compose-wizard
