@@ -648,8 +648,25 @@
             <input type="file" id="corpusIngestFile" accept=".docx,.pdf,.md" class="hidden" onchange="uploadFile(this.files[0])">
             <button class="cb-btn cb-bg-orange" onclick="loadCorpusDuplicates()">Find duplicates</button>
             <span class="edit-hint" id="corpusCount">0 experiences</span>
+            <label class="corpus-show-retired">
+              <input type="checkbox" id="corpusShowRetired" onchange="toggleCorpusRetired(this.checked)">
+              Show retired
+            </label>
           </div>
           <div id="ingestResult" class="edit-hint" aria-live="polite"></div>
+          <!-- P1 — possible duplicate roles surfaced after import. Populated by
+               refreshMergeSuggestions(); each card offers Merge / Keep separate. -->
+          <div id="mergeSuggestionsSection" class="hidden">
+            <div class="corpus-section-header">
+              <div class="corpus-section-title">Possible duplicate roles</div>
+            </div>
+            <div class="edit-hint" style="margin-bottom:8px">
+              These look like the same job imported more than once. Merge to keep
+              one role (the extra title becomes an alternate; the corpus dates are
+              kept), or keep them separate.
+            </div>
+            <div id="mergeSuggestionsList"></div>
+          </div>
           <div id="duplicatesSection" class="hidden">
             <div class="corpus-section-header">
               <div class="corpus-section-title">Near-duplicate bullets</div>

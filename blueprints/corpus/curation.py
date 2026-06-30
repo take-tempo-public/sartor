@@ -34,7 +34,8 @@ from web_infra import (
 )
 
 if TYPE_CHECKING:
-    from db.models import Candidate
+    from db.models import Candidate, Experience
+    from onboarding.experience_match import ExperienceLike
 
 logger = logging.getLogger(__name__)
 
@@ -237,6 +238,159 @@ def list_corpus_duplicates(username: str) -> ResponseReturnValue:
                 "cluster_count": cluster_count,
             }
         )
+    finally:
+        session.close()
+
+
+# ---------------------------------------------------------------------------
+# Role-level duplicate detection (merge suggestions)
+# ---------------------------------------------------------------------------
+
+
+def _experience_like(exp: Experience) -> ExperienceLike:
+    """Build the pure-value scoring view from an Experience (live rows only)."""
+    from onboarding.experience_match import ExperienceLike
+
+    return ExperienceLike(
+        company=exp.company,
+        start_date=exp.start_date,
+        end_date=exp.end_date,
+        titles=tuple(t.title for t in exp.titles if t.is_active),
+        bullets=tuple(b.text for b in exp.bullets if b.is_active),
+    )
+
+
+def _suggestion_side(exp: Experience) -> dict:
+    """Compact one experience for the merge-suggestion card (live titles/bullets)."""
+    active_titles = sorted(
+        (t for t in exp.titles if t.is_active),
+        key=lambda t: (0 if t.is_official else 1, t.id),
+    )
+    official = next((t for t in active_titles if t.is_official), None)
+    fallback = active_titles[0].title if active_titles else None
+    return {
+        "id": exp.id,
+        "company": exp.company,
+        "start_date": exp.start_date,
+        "end_date": exp.end_date,
+        "official_title": official.title if official else fallback,
+        "titles": [t.title for t in active_titles],
+        "bullet_count": sum(1 for b in exp.bullets if b.is_active),
+    }
+
+
+@corpus_bp.route("/api/users/<username>/corpus/merge-suggestions", methods=["GET"])
+def list_merge_suggestions(username: str) -> ResponseReturnValue:
+    """Surface experience pairs that look like the SAME role for a merge/keep-separate decision.
+
+    Deterministic (no LLM): scores every experience pair on company/title/dates/
+    bullets via onboarding.experience_match and returns the SIMILAR-band pairs the
+    importer's exact-match auto-merge can't catch (e.g. drifted dates), minus any
+    the user already dismissed. DB-only; _safe_username scopes the candidate.
+
+    `exp_in_corpus` is the lower-id (older / canonical) role — the merge target
+    whose dates are kept; `exp_other` is the more recently imported duplicate.
+    """
+    from db.models import Candidate, Experience, MergeDismissal
+    from db.session import get_session, init_db
+    from onboarding.experience_match import score_experiences, shared_bullet_count
+
+    safe_user = _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({"suggestions": [], "count": 0, "needs_onboarding": True})
+        experiences = (
+            session.query(Experience)
+            .filter_by(candidate_id=candidate.id)
+            .order_by(Experience.start_date.desc(), Experience.id.desc())
+            .all()
+        )
+        dismissed = {
+            (d.exp_a_id, d.exp_b_id)
+            for d in session.query(MergeDismissal).filter_by(candidate_id=candidate.id)
+        }
+        likes = {e.id: _experience_like(e) for e in experiences}
+        suggestions: list[dict] = []
+        for i in range(len(experiences)):
+            for j in range(i + 1, len(experiences)):
+                a, b = experiences[i], experiences[j]
+                pair = (min(a.id, b.id), max(a.id, b.id))
+                if pair in dismissed:
+                    continue
+                result = score_experiences(likes[a.id], likes[b.id])
+                if result.band != "SIMILAR":
+                    continue
+                corpus_exp, other_exp = (a, b) if a.id < b.id else (b, a)
+                suggestions.append(
+                    {
+                        "exp_a_id": pair[0],
+                        "exp_b_id": pair[1],
+                        "score": result.score,
+                        "matched_signals": list(result.matched_signals),
+                        "shared_bullet_count": shared_bullet_count(
+                            likes[a.id].bullets, likes[b.id].bullets
+                        ),
+                        "exp_in_corpus": _suggestion_side(corpus_exp),
+                        "exp_other": _suggestion_side(other_exp),
+                    }
+                )
+        suggestions.sort(key=lambda s: s["score"], reverse=True)
+        return jsonify({"suggestions": suggestions, "count": len(suggestions)})
+    finally:
+        session.close()
+
+
+@corpus_bp.route("/api/users/<username>/corpus/merge-suggestions/dismiss", methods=["POST"])
+def dismiss_merge_suggestion(username: str) -> ResponseReturnValue:
+    """Record a 'keep separate' decision for an experience pair so it stops surfacing.
+
+    Pair is stored order-normalized (lower id first) and is idempotent. DB-only;
+    _safe_username scopes the candidate and both experiences are ownership-checked.
+    """
+    from db.models import Candidate, Experience, MergeDismissal
+    from db.session import get_session, init_db
+
+    safe_user = _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown user"}), 400
+    data = request.json or {}
+    a_raw, b_raw = data.get("exp_a_id"), data.get("exp_b_id")
+    if not isinstance(a_raw, int) or not isinstance(b_raw, int) or a_raw == b_raw:
+        return jsonify({"error": "exp_a_id and exp_b_id (distinct ints) required"}), 400
+    lo, hi = sorted((a_raw, b_raw))
+
+    init_db()
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=safe_user).first()
+        if candidate is None:
+            return jsonify({"error": "Unknown candidate"}), 404
+        owned = {
+            e.id
+            for e in session.query(Experience)
+            .filter(Experience.candidate_id == candidate.id, Experience.id.in_([lo, hi]))
+            .all()
+        }
+        if lo not in owned or hi not in owned:
+            return jsonify({"error": "Experience not found for this candidate"}), 404
+        existing = (
+            session.query(MergeDismissal)
+            .filter_by(candidate_id=candidate.id, exp_a_id=lo, exp_b_id=hi)
+            .first()
+        )
+        if existing is None:
+            session.add(MergeDismissal(candidate_id=candidate.id, exp_a_id=lo, exp_b_id=hi))
+            session.commit()
+        return jsonify({"dismissed": True, "exp_a_id": lo, "exp_b_id": hi})
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 

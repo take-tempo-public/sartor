@@ -138,6 +138,11 @@ class ExperienceTitle(Base):
     is_official: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     truthful_enough_to_use: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_pending_review: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Soft-retire flag (parity with Bullet.is_active): 1 = live, 0 = retired.
+    # Retired titles are hidden from the corpus unless include_retired is set,
+    # and never reach generation. Kept (not hard-deleted) because
+    # application_run_title / proposal_review FKs reference titles for audit.
+    is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     source: Mapped[str] = mapped_column(
         String, nullable=False
     )  # 'official' | 'user_added' | 'llm_proposed:<run_id>'
@@ -294,6 +299,36 @@ class BulletMetric(Base):
             "metric_kind IN ('count', 'currency', 'percent', 'duration', 'scope')",
             name="ck_bullet_metric_kind",
         ),
+    )
+
+
+class MergeDismissal(Base):
+    """A candidate's 'keep separate' decision for a pair of similar experiences.
+
+    Records that the user reviewed two experiences the merge-suggestion scan
+    flagged as possible duplicate roles and chose to keep them distinct, so the
+    scan stops re-surfacing the pair. The pair is stored order-normalized
+    (exp_a_id < exp_b_id) and uniqued, so a dismissal is idempotent regardless of
+    which side the UI sends first. Cascades away if either experience is deleted.
+    """
+
+    __tablename__ = "merge_dismissal"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_id: Mapped[int] = mapped_column(
+        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False
+    )
+    exp_a_id: Mapped[int] = mapped_column(
+        ForeignKey("experience.id", ondelete="CASCADE"), nullable=False
+    )
+    exp_b_id: Mapped[int] = mapped_column(
+        ForeignKey("experience.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
+
+    __table_args__ = (
+        UniqueConstraint("candidate_id", "exp_a_id", "exp_b_id", name="uq_merge_dismissal_pair"),
+        Index("ix_merge_dismissal_candidate", "candidate_id"),
     )
 
 

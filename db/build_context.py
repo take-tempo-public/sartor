@@ -196,16 +196,18 @@ def build_context_set_from_db(
 def eligible_titles_for(exp: Experience) -> list[CorpusEligibleTitle]:
     """Eligible titles for one experience, in snapshot order.
 
-    Eligible = ``is_official=1 OR truthful_enough_to_use=1`` (the same filter the
-    Compose GET and the generate snapshot use). Ordered official-first then by id.
-    The single source of truth for the corpus snapshot's title set: reused by the
-    analyze-time payload build (`_build_career_corpus_payload`) and the
-    composition-save re-sync in `app.py`, so the two can never drift.
+    Eligible = ``is_active=1 AND (is_official=1 OR truthful_enough_to_use=1)`` (the
+    same filter the Compose GET and the generate snapshot use). Ordered
+    official-first then by id. The single source of truth for the corpus
+    snapshot's title set: reused by the analyze-time payload build
+    (`_build_career_corpus_payload`) and the composition-save re-sync in
+    `app.py`, so the two can never drift. Retired titles (is_active=0) are hard-
+    excluded so a retired title can never reach a generated résumé.
     """
     eligible: list[CorpusEligibleTitle] = [
         {"id": t.id, "title": t.title, "is_official": bool(t.is_official)}
         for t in exp.titles
-        if t.is_official or t.truthful_enough_to_use
+        if t.is_active and (t.is_official or t.truthful_enough_to_use)
     ]
     eligible.sort(key=lambda t: (not t["is_official"], t["id"]))
     return eligible

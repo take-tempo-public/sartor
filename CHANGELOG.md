@@ -13,6 +13,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Corpus import: similar-role merge suggestions + retire-hidden-by-default + persistent busy cue (`fix/corpus-import-and-curation-ux`, 2026-06-29)
+
+Four corpus-building UX problems surfaced during e2e testing:
+
+1. **Duplicate roles on import (P1).** The importer matched existing roles on an
+   exact `(company, start_date)` key, so any date/company drift forked the same
+   job into a new experience and split its bullets. Added a deterministic
+   similarity scorer (company/title/dates/bullets → EXACT/SIMILAR/DISTINCT — pure
+   stdlib, no LLM, inside the C-6 hardening boundary) and a post-import "possible
+   duplicate roles" review card: the user **merges** (the extra title becomes an
+   alternate, bullets combine + dedup, the **corpus dates are kept**) or **keeps
+   separate** (persisted, so it stops re-surfacing). The importer's exact-match
+   auto-merge is unchanged — only fuzzy matches ask.
+2. **No persistent busy cue (P2).** Long actions (ingest / analyze / generate /
+   cover letter) now raise a persistent flashing "working…" banner (vs the 2.4s
+   toast) and disable the in-progress control, so the user doesn't click around
+   mid-call.
+3. **Couldn't truly remove an alternate title (P3) + retired clutter (P4).**
+   "Delete" on a title was a soft-retire that left it visible as an `ALT` row.
+   Retired titles **and** bullets are now hidden by default and shown only when
+   the new "Show retired" checkbox is ticked (each with a RESTORE action);
+   generation hard-excludes retired items. Soft-retire is kept (no hard-delete) —
+   `application_run_title` / `proposal_review` FKs reference the rows for audit.
+
+`PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched; no new dependency (stdlib
+`difflib` only). Two migrations, both FK-cascade-safe (plain `add_column` /
+`create_table`, never a batch recreate of a parent table).
+
+**Added**
+- `onboarding/experience_match.py` — deterministic experience-similarity scorer.
+- `ExperienceTitle.is_active` (migration `0011`) + the `merge_dismissal` table
+  (migration `0012`).
+- Routes: `GET /api/users/<u>/corpus/merge-suggestions`,
+  `POST /api/experiences/<id>/merge`,
+  `POST /api/users/<u>/corpus/merge-suggestions/dismiss`.
+- Frontend: "possible duplicate roles" review card, global "Show retired"
+  toggle + RESTORE actions, persistent busy banner (`_setBusy`).
+- Tests: `tests/test_experience_match.py`, `tests/test_corpus_merge_and_retire.py`,
+  `tests/ux/regression/test_20260629_corpus_retire_and_busy.py`.
+
+**Changed**
+- `blueprints/corpus/experiences.py` — title `DELETE` soft-retires via `is_active`;
+  title/bullet `PUT` accept `is_active` for restore; the experience detail route
+  honors `?include_retired=1`.
+- `blueprints/corpus/_shared.py` — `_experience_detail_dict` hides retired rows by
+  default; `title_count` is active-only.
+- `db/build_context.py` — `eligible_titles_for` hard-gates on `is_active` so a
+  retired title can never reach a generated résumé.
+- `static/app.js` / `static/style.css` / `templates/index.html` — corpus UX, busy
+  banner, import summary now surfaces `alternate_titles_created`.
+
+**Fixed**
+- Import no longer silently forks the same role across drifted dates/titles.
+- Retired titles/bullets no longer linger in the corpus view.
+
 ### README rebuilt as a three-audience front door (`docs/readme-icp-ladder`, 2026-06-29)
 
 The README is restructured around a cumulative three-audience ladder — job seeker →

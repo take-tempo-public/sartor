@@ -378,60 +378,74 @@ async function uploadFile(file) {
   fd.append('file', file);
 
   setStatus('INGESTING');
+  // P2 — persistent busy banner + disable the import control so the user can't
+  // re-trigger a second ingest (or wander off) while this ~20-40s call runs.
+  _setBusy(true, `Importing ${file.name} and extracting your experience`);
+  const ingestInput = document.getElementById('corpusIngestFile');
+  if (ingestInput) ingestInput.disabled = true;
   if (out) out.textContent = `Extracting experiences from ${file.name}… (AI, ~$0.02)`;
-  let res;
   try {
-    res = await fetch(
-      `/api/users/${encodeURIComponent(currentUser)}/corpus/ingest-resume`,
-      { method: 'POST', body: fd },
-    );
-  } catch (e) {
-    return reportError('Corpus ingest', 'Upload request failed', e.message);
-  }
-  const data = await res.json().catch(() => ({}));
-  const errs = data.errors || [];
-  if (!res.ok) {
-    if (out) out.textContent = '';
-    return reportError(
-      'Corpus ingest', data.error || 'Ingest failed', errs.join('; ') || data.detail,
-    );
-  }
-  const made = data.experiences_created || 0;
-  const merged = data.experiences_merged || 0;
-  const bullets = data.bullets_created || 0;
+    let res;
+    try {
+      res = await fetch(
+        `/api/users/${encodeURIComponent(currentUser)}/corpus/ingest-resume`,
+        { method: 'POST', body: fd },
+      );
+    } catch (e) {
+      return reportError('Corpus ingest', 'Upload request failed', e.message);
+    }
+    const data = await res.json().catch(() => ({}));
+    const errs = data.errors || [];
+    if (!res.ok) {
+      if (out) out.textContent = '';
+      return reportError(
+        'Corpus ingest', data.error || 'Ingest failed', errs.join('; ') || data.detail,
+      );
+    }
+    const made = data.experiences_created || 0;
+    const merged = data.experiences_merged || 0;
+    const bullets = data.bullets_created || 0;
+    const altTitles = data.alternate_titles_created || 0;
 
-  // Honesty: a 2xx with nothing extracted is NOT a success. Tell the user
-  // plainly and don't fire the green toast — otherwise the status pill reads
-  // "ready" over an empty corpus (the exact "did it do anything?" confusion).
-  if (made + merged === 0) {
-    setStatus('NO EXPERIENCES FOUND');
+    // Honesty: a 2xx with nothing extracted is NOT a success. Tell the user
+    // plainly and don't fire the green toast — otherwise the status pill reads
+    // "ready" over an empty corpus (the exact "did it do anything?" confusion).
+    if (made + merged === 0) {
+      setStatus('NO EXPERIENCES FOUND');
+      if (out) {
+        out.textContent =
+          `No experiences could be read from ${file.name}. ` +
+          (errs.length
+            ? errs.join('; ')
+            : 'Make sure it’s a text résumé (not a scanned image) with ' +
+              'month/year dates on each role.');
+      }
+      _toast('No experiences found in résumé', true);
+      return;
+    }
+
+    setStatus('READY');
     if (out) {
       out.textContent =
-        `No experiences could be read from ${file.name}. ` +
-        (errs.length
-          ? errs.join('; ')
-          : 'Make sure it’s a text résumé (not a scanned image) with ' +
-            'month/year dates on each role.');
+        `Added ${made} experience(s), ${merged} merged into existing roles, ` +
+        `${altTitles} alternate title(s), ${bullets} bullet(s) — now pending review below.`;
     }
-    _toast('No experiences found in résumé', true);
-    return;
+    _toast('Resume ingested into corpus');
+    // Render the new cards in place — the user is already on the Career Corpus
+    // tab, so a "refetch next visit" flag isn't enough (the old bug: status said
+    // ready but the list never updated). refreshCorpus() always refetches and
+    // resets _corpusLoadedForUser itself.
+    await refreshCorpus();
+    // P1 — surface any "possible duplicate roles" the import created (same job,
+    // drifted dates/title) so the user can merge or keep separate.
+    await refreshMergeSuggestions();
+    // KW3: first successful import → explain the corpus + what to do next. The
+    // user is on the Career corpus tab, so re-open lives on panelCorpus's (i).
+    _maybeFireTourStop('panelCorpus', document.getElementById('help-icon-panelCorpus'));
+  } finally {
+    _setBusy(false);
+    if (ingestInput) ingestInput.disabled = false;
   }
-
-  setStatus('READY');
-  if (out) {
-    out.textContent =
-      `Added ${made} experience(s), ${merged} merged, ${bullets} bullet(s) — ` +
-      `now pending review below.`;
-  }
-  _toast('Resume ingested into corpus');
-  // Render the new cards in place — the user is already on the Career Corpus
-  // tab, so a "refetch next visit" flag isn't enough (the old bug: status said
-  // ready but the list never updated). refreshCorpus() always refetches and
-  // resets _corpusLoadedForUser itself.
-  await refreshCorpus();
-  // KW3: first successful import → explain the corpus + what to do next. The
-  // user is on the Career corpus tab, so re-open lives on panelCorpus's (i).
-  _maybeFireTourStop('panelCorpus', document.getElementById('help-icon-panelCorpus'));
 }
 
 function setOutputFormat(fmt, btn) {
@@ -512,6 +526,7 @@ async function runAnalysis() {
   if (!jd) return alert('Paste a job description');
 
   setStatus('ANALYZING');
+  _setBusy(true, 'Analyzing the job description');
   document.getElementById('btnAnalyze').disabled = true;
   _resetClarifyUI();
   // Surface the in-flight state inside panelAnalysis: show the pending
@@ -672,6 +687,7 @@ async function runAnalysis() {
   } catch (e) {
     reportError('Analyze', 'Analysis request failed', e.message);
   } finally {
+    _setBusy(false);
     document.getElementById('btnAnalyze').disabled = false;
     // Always clear the in-flight placeholder even if analyze errored —
     // leaving the streamed-tokens view up after a failure would be misleading.
@@ -1069,6 +1085,7 @@ async function runGeneration() {
   _maybeFireTourStop('tourGenerating', null);  // KW3: first Generate click
 
   setStatus('GENERATING');
+  _setBusy(true, 'Generating your tailored résumé');
   document.getElementById('btnGenerate').disabled = true;
 
   // Build the streaming pending UI — same shape as runAnalysis(): a
@@ -1204,6 +1221,7 @@ async function runGeneration() {
   } catch (e) {
     reportError('Generate', 'Generation request failed', e.message);
   } finally {
+    _setBusy(false);
     document.getElementById('btnGenerate').disabled = false;
     // Always hide the pending placeholder — leaving the streamed-tokens
     // view up after success or failure would be misleading.
@@ -1264,6 +1282,7 @@ async function runGenerateCoverLetter() {
   if (!lastContextPath) return alert('Generate the résumé first');
   _maybeFireTourStop('tourCoverLetter', null);  // KW3: first cover-letter
   setStatus('GENERATING COVER LETTER');
+  _setBusy(true, 'Generating your cover letter');
   const gen = document.getElementById('btnGenerateCover');
   if (gen) gen.disabled = true;
   try {
@@ -1306,6 +1325,7 @@ async function runGenerateCoverLetter() {
   } catch (e) {
     reportError('Cover letter', 'Cover letter request failed', e.message);
   } finally {
+    _setBusy(false);
     if (gen) gen.disabled = false;
   }
 }
@@ -2730,6 +2750,10 @@ document.querySelectorAll('.panel-header').forEach(header => {
 
 let _corpusLoadedForUser = '';
 let _corpusExperiences = [];
+// P4 — when true, the corpus detail fetch includes retired (is_active=0) titles
+// + bullets so the user can review/restore them. Default off: retired items are
+// invisible unless this box is ticked.
+let _corpusShowRetired = false;
 
 function switchTopTab(name, btn) {
   document.querySelectorAll('.top-tab-btn').forEach(b => {
@@ -2802,6 +2826,7 @@ async function refreshCorpus() {
   _corpusLoadedForUser = currentUser;
   _renderCorpusList();
   _refreshOnboardingBanner();  // fire-and-forget; reads fresh _corpusExperiences
+  refreshMergeSuggestions();   // fire-and-forget; hides itself when none found
 }
 
 // β.6e — Summary variants editor. Lives at the top of the Career
@@ -3469,8 +3494,9 @@ async function _loadCorpusDetail(experienceId) {
   if (!body) return;
   _setLoadingPlaceholder(body, 'Loading…');
   let res;
+  const q = _corpusShowRetired ? '?include_retired=1' : '';
   try {
-    res = await fetch(`/api/experiences/${experienceId}`);
+    res = await fetch(`/api/experiences/${experienceId}${q}`);
   } catch (e) {
     _setLoadingPlaceholder(body, 'Network error.');
     return;
@@ -3560,7 +3586,8 @@ function _renderTitleSection(expId, titles) {
 }
 
 function _renderTitleRow(expId, title) {
-  const row = _el('div', { className: 'corpus-row', id: `title-row-${title.id}` });
+  const retired = title.is_active === false;
+  const row = _el('div', { className: 'corpus-row' + (retired ? ' retired' : ''), id: `title-row-${title.id}` });
   const input = _el('input', { className: 'corpus-row-input', value: title.title });
   input.addEventListener('change', () =>
     _putJson(`/api/experience-titles/${title.id}`, { title: input.value })
@@ -3575,6 +3602,9 @@ function _renderTitleRow(expId, title) {
   if (title.is_pending_review) {
     row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
   }
+  if (retired) {
+    row.appendChild(_el('span', { className: 'corpus-row-flag retired', textContent: 'RETIRED' }));
+  }
   // Tag chips — Career Corpus parity with the Compose step. Tags
   // already exist on the detail payload via _experience_detail_dict;
   // _renderTagChips wires add/remove inline against the existing
@@ -3583,6 +3613,19 @@ function _renderTitleRow(expId, title) {
   _renderTagChips(tagWrap, 'title', title.id, title.tags || []);
   row.appendChild(tagWrap);
   const actions = _el('div', { className: 'corpus-row-actions' });
+  if (retired) {
+    const restore = _el('button', { className: 'corpus-action-btn', textContent: 'RESTORE' });
+    restore.onclick = async () => {
+      try {
+        await _putJson(`/api/experience-titles/${title.id}`, { is_active: true });
+        await _reloadCorpusCard(expId);
+        _toast('Title restored');
+      } catch (e) { _toast('Failed: ' + e.message, true); }
+    };
+    actions.appendChild(restore);
+    row.appendChild(actions);
+    return row;
+  }
   if (title.is_pending_review) {
     const accept = _el('button', { className: 'corpus-action-btn', textContent: 'ACCEPT' });
     accept.onclick = async () => {
@@ -3606,9 +3649,9 @@ function _renderTitleRow(expId, title) {
     };
     actions.appendChild(setOfficial);
   }
-  const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'DELETE' });
+  const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'RETIRE' });
   del.onclick = async () => {
-    if (!confirm('Mark this title non-eligible? Audit row will remain.')) return;
+    if (!confirm('Retire this title? It is hidden unless you tick "Show retired", and won’t be used in new résumés.')) return;
     try {
       await _deleteJson(`/api/experience-titles/${title.id}`);
       await _reloadCorpusCard(expId);
@@ -3637,7 +3680,8 @@ function _renderBulletSection(expId, bullets) {
 }
 
 function _renderBulletRow(expId, bullet) {
-  const row = _el('div', { className: 'corpus-row', id: `bullet-row-${bullet.id}` });
+  const retired = bullet.is_active === false;
+  const row = _el('div', { className: 'corpus-row' + (retired ? ' retired' : ''), id: `bullet-row-${bullet.id}` });
   const input = _el('textarea', { className: 'corpus-row-input' });
   input.rows = 2;
   input.value = bullet.text;
@@ -3662,6 +3706,9 @@ function _renderBulletRow(expId, bullet) {
   if (bullet.is_pending_review) {
     row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
   }
+  if (retired) {
+    row.appendChild(_el('span', { className: 'corpus-row-flag retired', textContent: 'RETIRED' }));
+  }
   // Tag chips — Career Corpus parity with the Compose step. Tags
   // already ride on the detail payload (_experience_detail_dict),
   // _renderTagChips wires add/remove inline against the existing
@@ -3670,6 +3717,19 @@ function _renderBulletRow(expId, bullet) {
   _renderTagChips(tagWrap, 'bullet', bullet.id, bullet.tags || []);
   row.appendChild(tagWrap);
   const actions = _el('div', { className: 'corpus-row-actions' });
+  if (retired) {
+    const restore = _el('button', { className: 'corpus-action-btn', textContent: 'RESTORE' });
+    restore.onclick = async () => {
+      try {
+        await _putJson(`/api/bullets/${bullet.id}`, { is_active: true });
+        await _reloadCorpusCard(expId);
+        _toast('Bullet restored');
+      } catch (e) { _toast('Failed: ' + e.message, true); }
+    };
+    actions.appendChild(restore);
+    row.appendChild(actions);
+    return row;
+  }
   if (bullet.is_pending_review) {
     const accept = _el('button', { className: 'corpus-action-btn', textContent: 'ACCEPT' });
     accept.onclick = async () => {
@@ -3684,7 +3744,7 @@ function _renderBulletRow(expId, bullet) {
   }
   const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'RETIRE' });
   del.onclick = async () => {
-    if (!confirm('Soft-retire this bullet? It stays in the audit log but stops appearing in new applications.')) return;
+    if (!confirm('Retire this bullet? It is hidden unless you tick "Show retired", and won’t appear in new résumés.')) return;
     try {
       await _deleteJson(`/api/bullets/${bullet.id}`);
       await _reloadCorpusCard(expId);
@@ -3766,6 +3826,131 @@ async function _reloadCorpusCard(expId) {
   await refreshCorpusSummaryFor(expId);
 }
 
+// P4 — global "Show retired" toggle. Re-renders every currently-expanded card
+// with (or without) retired titles + bullets. Default off, so retired items are
+// never visible unless the user explicitly opts in here.
+function toggleCorpusRetired(checked) {
+  _corpusShowRetired = !!checked;
+  document.querySelectorAll('.corpus-card.expanded').forEach(card => {
+    const expId = parseInt(card.dataset.experienceId, 10);
+    if (!Number.isNaN(expId)) _loadCorpusDetail(expId);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// P1 — possible-duplicate-roles review (merge suggestions)
+// ---------------------------------------------------------------------------
+
+// Fetch + render the "possible duplicate roles" cards. Called after an import
+// and on corpus load. Hidden entirely when the server scan finds none.
+async function refreshMergeSuggestions() {
+  const section = document.getElementById('mergeSuggestionsSection');
+  const listEl = document.getElementById('mergeSuggestionsList');
+  if (!section || !listEl || !currentUser) return;
+  let data;
+  try {
+    const res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/corpus/merge-suggestions`);
+    if (!res.ok) { section.classList.add('hidden'); return; }
+    data = await res.json();
+  } catch {
+    section.classList.add('hidden');
+    return;
+  }
+  const suggestions = data.suggestions || [];
+  _clearChildren(listEl);
+  if (suggestions.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+  suggestions.forEach(s => listEl.appendChild(_renderMergeSuggestion(s)));
+  section.classList.remove('hidden');
+}
+
+function _renderMergeSuggestion(s) {
+  const card = _el('div', { className: 'merge-suggestion' });
+  const fmt = (e) =>
+    `${e.company || '(no company)'} · ${e.official_title || '(no title)'}  ` +
+    `(${e.start_date} — ${e.end_date || 'current'})`;
+  const pair = _el('div', { className: 'merge-suggestion-pair' });
+  pair.appendChild(_el('div', { className: 'merge-suggestion-side',
+    textContent: fmt(s.exp_in_corpus) + '  — in corpus' }));
+  pair.appendChild(_el('div', { className: 'merge-suggestion-side',
+    textContent: fmt(s.exp_other) + '  — just imported' }));
+  card.appendChild(pair);
+  const signals = (s.matched_signals || []).join(', ') || 'similar';
+  const n = s.shared_bullet_count || 0;
+  card.appendChild(_el('div', { className: 'merge-suggestion-meta',
+    textContent: `Match: ${signals} · ${n} shared bullet${n === 1 ? '' : 's'}` }));
+  const actions = _el('div', { className: 'merge-suggestion-actions' });
+  const merge = _el('button', { className: 'cb-btn cb-bg-teal', textContent: 'Merge into one' });
+  merge.onclick = () => _doMerge(s.exp_in_corpus.id, s.exp_other.id);
+  const keep = _el('button', { className: 'cb-btn', textContent: 'Keep separate' });
+  keep.onclick = () => _dismissMerge(s.exp_a_id, s.exp_b_id);
+  actions.appendChild(merge);
+  actions.appendChild(keep);
+  card.appendChild(actions);
+  return card;
+}
+
+// Merge the source role into the in-corpus target (which keeps its dates).
+async function _doMerge(targetId, sourceId) {
+  if (!confirm(
+    'Merge these into one role? The extra title becomes an alternate, the ' +
+    'bullets combine (duplicates dropped), and the corpus dates are kept.')) return;
+  try {
+    await _postJson(`/api/experiences/${targetId}/merge`, { source_id: sourceId });
+    _toast('Roles merged');
+    await refreshCorpus();
+    await refreshMergeSuggestions();
+  } catch (e) {
+    _toast('Merge failed: ' + e.message, true);
+  }
+}
+
+// Record a "keep separate" decision so the pair stops being suggested.
+async function _dismissMerge(expA, expB) {
+  try {
+    await _postJson(
+      `/api/users/${encodeURIComponent(currentUser)}/corpus/merge-suggestions/dismiss`,
+      { exp_a_id: expA, exp_b_id: expB });
+    await refreshMergeSuggestions();
+  } catch (e) {
+    _toast('Failed: ' + e.message, true);
+  }
+}
+
+// P2 — persistent "working…" banner for long actions (ingest / analyze /
+// generate). Unlike _toast (2.4s auto-hide), this stays until _setBusy(false),
+// so a user who scrolls away still sees the app is busy and not to click around.
+function _setBusy(on, label) {
+  let bar = document.getElementById('_busyBanner');
+  if (on) {
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = '_busyBanner';
+      bar.className = 'cb-busy-banner';
+      bar.setAttribute('role', 'status');
+      bar.setAttribute('aria-live', 'polite');
+      const dot = document.createElement('span');
+      dot.className = 'cb-busy-dot';
+      dot.setAttribute('aria-hidden', 'true');
+      const text = document.createElement('span');
+      text.className = 'cb-busy-text';
+      bar.appendChild(dot);
+      bar.appendChild(text);
+      document.body.appendChild(bar);
+    }
+    bar.querySelector('.cb-busy-text').textContent =
+      (label || 'Working…') + ' — please wait, don’t navigate away.';
+    bar.classList.add('show');
+    document.body.classList.add('cb-busy');
+  } else if (bar) {
+    bar.classList.remove('show');
+    document.body.classList.remove('cb-busy');
+  }
+}
+
 async function refreshCorpusSummaryFor(expId) {
   const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
   if (!res.ok) return;
@@ -3790,7 +3975,7 @@ async function refreshCorpusSummaryFor(expId) {
 }
 
 async function deleteExperience(expId) {
-  if (!confirm('Soft-retire this entire experience? All its bullets become inactive. Audit rows remain.')) return;
+  if (!confirm('Retire this entire experience? All its bullets become inactive and it drops out of new résumés. You can restore them via "Show retired".')) return;
   try {
     const r = await _deleteJson(`/api/experiences/${expId}`);
     _toast(`Retired ${r.retired_bullets} bullet(s)`);
