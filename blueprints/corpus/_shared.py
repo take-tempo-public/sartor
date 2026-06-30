@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 def _experience_summary_dict(exp: Experience) -> dict:
     """Compact experience row for the Career Corpus list view."""
     official = next((t for t in exp.titles if t.is_official), None)
+    active_titles = [t for t in exp.titles if t.is_active]
     active_bullets = [b for b in exp.bullets if b.is_active]
     pending_bullets = [b for b in active_bullets if b.is_pending_review]
     return {
@@ -42,7 +43,7 @@ def _experience_summary_dict(exp: Experience) -> dict:
         "display_order": exp.display_order,
         "summary": exp.summary,
         "official_title": official.title if official else None,
-        "title_count": len(exp.titles),
+        "title_count": len(active_titles),
         "bullet_count_active": len(active_bullets),
         "bullet_count_pending": len(pending_bullets),
     }
@@ -66,11 +67,19 @@ def _tag_list(tag_links: list) -> list[dict]:
     return sorted(out, key=lambda d: d["value"])
 
 
-def _experience_detail_dict(exp: Experience) -> dict:
-    """Full experience payload for the inline expand view."""
-    titles = sorted(exp.titles, key=lambda t: (0 if t.is_official else 1, t.id))
+def _experience_detail_dict(exp: Experience, *, include_retired: bool = False) -> dict:
+    """Full experience payload for the inline expand view.
+
+    Retired titles + bullets (is_active=0) are excluded by default so the corpus
+    only ever shows live rows; pass ``include_retired=True`` (the route's
+    ?include_retired=1) to surface them for the "show retired" toggle.
+    """
+    titles = sorted(
+        (t for t in exp.titles if include_retired or t.is_active),
+        key=lambda t: (0 if t.is_official else 1, t.id),
+    )
     bullets = sorted(
-        (b for b in exp.bullets if b.is_active),
+        (b for b in exp.bullets if include_retired or b.is_active),
         key=lambda b: b.display_order,
     )
     return {
@@ -85,6 +94,7 @@ def _experience_detail_dict(exp: Experience) -> dict:
             {
                 "id": t.id,
                 "title": t.title,
+                "is_active": bool(t.is_active),
                 "is_official": bool(t.is_official),
                 "truthful_enough_to_use": bool(t.truthful_enough_to_use),
                 "is_pending_review": bool(t.is_pending_review),

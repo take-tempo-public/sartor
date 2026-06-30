@@ -153,9 +153,13 @@ def create_experience(username: str) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/experiences/<int:experience_id>", methods=["GET"])
 def get_experience(experience_id: int) -> ResponseReturnValue:
-    """Return one experience with all titles + active bullets."""
+    """Return one experience with its live titles + bullets.
+
+    Retired rows are hidden unless ?include_retired=1 (the "show retired" toggle).
+    """
     from db.session import get_session, init_db
 
+    include_retired = request.args.get("include_retired") in ("1", "true", "yes")
     init_db()
     session = get_session()
     try:
@@ -164,7 +168,7 @@ def get_experience(experience_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Experience not found"}), 404
         if not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
             return jsonify({"error": "Candidate validation failed"}), 403
-        return jsonify(_experience_detail_dict(exp))
+        return jsonify(_experience_detail_dict(exp, include_retired=include_retired))
     finally:
         session.close()
 
@@ -243,6 +247,134 @@ def delete_experience(experience_id: int) -> ResponseReturnValue:
         retired = session.query(Bullet).filter_by(experience_id=exp.id).update({"is_active": 0})
         session.commit()
         return jsonify({"retired_bullets": retired, "experience_id": exp.id})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@corpus_bp.route("/api/experiences/<int:target_id>/merge", methods=["POST"])
+def merge_experience(target_id: int) -> ResponseReturnValue:
+    """Fold a source experience into a target, treating them as one role.
+
+    Body: {source_id (int)}. The target is the role already in the corpus — it
+    KEEPS its company + dates. The source's distinct titles become alternates on
+    the target (never a second official); the source's distinct bullets move over
+    (deduped on normalized text); then the emptied source experience is deleted.
+
+    Refused with 409 if the source is referenced by any application / audit row
+    (application_run_title / application_bullet / proposal_review) — a merge would
+    orphan or cascade-wipe run history. Corpus-building (the merge use case) has
+    none of these. DB-only.
+    """
+    from db.models import (
+        ApplicationBullet,
+        ApplicationRunTitle,
+        Experience,
+        ProposalReview,
+    )
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    source_id = data.get("source_id")
+    if not isinstance(source_id, int):
+        return jsonify({"error": "source_id (int) is required"}), 400
+    if source_id == target_id:
+        return jsonify({"error": "Cannot merge an experience into itself"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        target, target_cand = _load_experience_for_candidate(session, target_id)
+        if target is None or target_cand is None:
+            return jsonify({"error": "Target experience not found"}), 404
+        if not _safe_username(target_cand.username, configs_dir=current_app.config["CONFIGS_DIR"]):
+            return jsonify({"error": "Candidate validation failed"}), 403
+        source = session.query(Experience).filter_by(id=source_id).first()
+        if source is None:
+            return jsonify({"error": "Source experience not found"}), 404
+        if source.candidate_id != target.candidate_id:
+            return jsonify({"error": "Experiences belong to different candidates"}), 403
+
+        source_title_ids = [t.id for t in source.titles]
+        source_bullet_ids = [b.id for b in source.bullets]
+        refs = (
+            session.query(ApplicationRunTitle)
+            .filter(ApplicationRunTitle.experience_id == source.id)
+            .count()
+        )
+        if source_title_ids:
+            refs += (
+                session.query(ApplicationRunTitle)
+                .filter(ApplicationRunTitle.experience_title_id.in_(source_title_ids))
+                .count()
+            )
+            refs += (
+                session.query(ProposalReview)
+                .filter(ProposalReview.experience_title_id.in_(source_title_ids))
+                .count()
+            )
+        if source_bullet_ids:
+            refs += (
+                session.query(ApplicationBullet)
+                .filter(ApplicationBullet.bullet_id.in_(source_bullet_ids))
+                .count()
+            )
+            refs += (
+                session.query(ProposalReview)
+                .filter(ProposalReview.bullet_id.in_(source_bullet_ids))
+                .count()
+            )
+        if refs:
+            return (
+                jsonify(
+                    {
+                        "error": (
+                            "This role is used in an application's history; merge is "
+                            "only available before it's been used in a tailored resume."
+                        )
+                    }
+                ),
+                409,
+            )
+
+        def _norm(s: str) -> str:
+            return " ".join(s.lower().split())
+
+        # Move the source's DISTINCT titles onto the target as alternates; drop
+        # duplicate framings. Removing from source.titles orphans the row; an
+        # append to target re-parents it (so only true duplicates are deleted).
+        existing_title_text = {t.title for t in target.titles}
+        for st in list(source.titles):
+            source.titles.remove(st)
+            if st.title not in existing_title_text:
+                st.is_official = 0  # the target keeps its own official title
+                target.titles.append(st)
+                existing_title_text.add(st.title)
+
+        # Move the source's DISTINCT bullets onto the target (deduped on text).
+        existing_bullet_norm = {_norm(b.text) for b in target.bullets}
+        next_order = max((b.display_order for b in target.bullets), default=-1) + 1
+        for sb in list(source.bullets):
+            source.bullets.remove(sb)
+            if _norm(sb.text) not in existing_bullet_norm:
+                sb.display_order = next_order
+                next_order += 1
+                target.bullets.append(sb)
+                existing_bullet_norm.add(_norm(sb.text))
+
+        # Preserve the at-least-one-official intent if the target lost its way.
+        if not any(t.is_official for t in target.titles):
+            promotable = sorted((t for t in target.titles if t.is_active), key=lambda t: t.id)
+            if promotable:
+                promotable[0].is_official = 1
+
+        # Source's collections are now empty; delete just the source row.
+        session.delete(source)
+        session.commit()
+        session.refresh(target)
+        return jsonify(_experience_detail_dict(target))
     except Exception:
         session.rollback()
         raise
@@ -365,6 +497,8 @@ def update_bullet(bullet_id: int) -> ResponseReturnValue:
             bullet.has_outcome = 1 if data["has_outcome"] else 0
         if "display_order" in data and isinstance(data["display_order"], int):
             bullet.display_order = data["display_order"]
+        if "is_active" in data:
+            bullet.is_active = 1 if data["is_active"] else 0  # restore a retired bullet
 
         session.commit()
         session.refresh(bullet)
@@ -744,6 +878,13 @@ def update_experience_title(title_id: int) -> ResponseReturnValue:
             title.is_official = new_official
         if "truthful_enough_to_use" in data:
             title.truthful_enough_to_use = 1 if data["truthful_enough_to_use"] else 0
+        if "is_active" in data:
+            # Restore (true) re-eligibles the title unless the caller also pins
+            # truthful_enough_to_use explicitly; retire (false) just hides it.
+            new_active = 1 if data["is_active"] else 0
+            title.is_active = new_active
+            if new_active and "truthful_enough_to_use" not in data:
+                title.truthful_enough_to_use = 1
         if "notes" in data:
             title.notes = (data.get("notes") or "").strip() or None
 
@@ -753,6 +894,7 @@ def update_experience_title(title_id: int) -> ResponseReturnValue:
             {
                 "id": title.id,
                 "title": title.title,
+                "is_active": bool(title.is_active),
                 "is_official": bool(title.is_official),
                 "truthful_enough_to_use": bool(title.truthful_enough_to_use),
                 "is_pending_review": bool(title.is_pending_review),
@@ -769,10 +911,12 @@ def update_experience_title(title_id: int) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/experience-titles/<int:title_id>", methods=["DELETE"])
 def delete_experience_title(title_id: int) -> ResponseReturnValue:
-    """Mark a title as non-eligible.
+    """Soft-retire a title (is_active=0) and clear its eligibility flags.
 
-    Doesn't hard-delete the row because application_run_title FKs reference it for audit
-    (and our model uses CASCADE there — we don't want to lose historical run choices).
+    Retired titles are hidden from the corpus unless ?include_retired=1 and never
+    reach generation; restore via PUT {is_active: true}. We retire rather than
+    hard-delete because application_run_title / proposal_review FKs reference the
+    row for audit (CASCADE / SET NULL) — a hard delete would lose run history.
     """
     from db.models import Candidate, Experience, ExperienceTitle
     from db.session import get_session, init_db
@@ -793,6 +937,7 @@ def delete_experience_title(title_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
 
+        title.is_active = 0
         title.is_official = 0
         title.truthful_enough_to_use = 0
         title.is_pending_review = 0
@@ -800,6 +945,7 @@ def delete_experience_title(title_id: int) -> ResponseReturnValue:
         return jsonify(
             {
                 "id": title.id,
+                "is_active": False,
                 "is_official": False,
                 "truthful_enough_to_use": False,
             }
