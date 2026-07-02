@@ -97,8 +97,8 @@ class Experience(Base):
     )
     company: Mapped[str] = mapped_column(String, nullable=False)
     location: Mapped[str | None] = mapped_column(String)
-    start_date: Mapped[str] = mapped_column(String, nullable=False)  # YYYY-MM
-    end_date: Mapped[str | None] = mapped_column(String)  # NULL = current
+    start_date: Mapped[str] = mapped_column(String, nullable=False)  # YYYY-MM or YYYY
+    end_date: Mapped[str | None] = mapped_column(String)  # YYYY-MM / YYYY; NULL = current
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     summary: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)

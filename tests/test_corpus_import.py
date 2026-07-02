@@ -415,6 +415,45 @@ class TestInsertOrMergeExperience:
         assert len(exp.bullets) == 1
         assert exp.bullets[0].source == "primary:primary.md"
 
+    def test_role_summary_becomes_summary_item_not_bullet(self, db_session):
+        """Walkthrough F2: an imported role intro lands as a pending-review
+        ExperienceSummaryItem (the live role-intro path), NOT a bullet. Also
+        exercises F3 (a bare-YYYY start date is kept verbatim)."""
+        from db.models import Bullet, ExperienceSummaryItem
+
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        _insert_or_merge_experience(
+            {
+                "company": "Acme",
+                "start_date": "2020",  # year-only (F3)
+                "candidate_inferred_title": "PM",
+                "summary": "Owned the platform roadmap for a 3-team org.",
+                "bullets": [{"text": "Shipped V2.", "has_outcome": False}],
+            },
+            c.id,
+            source_filename="primary.md",
+            is_primary_file=True,
+            session=db_session,
+            dry_run=False,
+            report=report,
+        )
+        db_session.flush()
+        exp = db_session.query(Experience).filter_by(candidate_id=c.id).one()
+        assert exp.start_date == "2020"  # F3: kept verbatim, not blanked
+
+        variants = (
+            db_session.query(ExperienceSummaryItem).filter_by(experience_id=exp.id).all()
+        )
+        assert [v.text for v in variants] == ["Owned the platform roadmap for a 3-team org."]
+        assert variants[0].source == "imported"
+        assert variants[0].is_pending_review == 1
+        # The intro must NOT have leaked into bullets.
+        bullet_texts = [
+            b.text for b in db_session.query(Bullet).filter_by(experience_id=exp.id)
+        ]
+        assert bullet_texts == ["Shipped V2."]
+
     def test_second_file_with_same_company_dates_adds_alternate_title(self, db_session):
         c = self._make_candidate(db_session)
         report = ImportReport()

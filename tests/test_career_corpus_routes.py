@@ -222,9 +222,22 @@ class TestCreateExperience:
         client = corpus_app.test_client()
         r = client.post(
             "/api/users/alice/experiences",
-            json={"company": "X", "start_date": "2023-01", "end_date": "2024"},
+            json={"company": "X", "start_date": "2023-01", "end_date": "June 2024"},
         )
         assert r.status_code == 400
+
+    def test_accepts_year_only_dates(self, corpus_app):
+        """Walkthrough F3: bare YYYY start/end dates are valid and stored verbatim."""
+        _seed_candidate()
+        client = corpus_app.test_client()
+        r = client.post(
+            "/api/users/alice/experiences",
+            json={"company": "X", "start_date": "2020", "end_date": "2023"},
+        )
+        assert r.status_code == 201, r.get_json()
+        body = r.get_json()
+        assert body["start_date"] == "2020"
+        assert body["end_date"] == "2023"
 
     def test_missing_candidate_is_auto_provisioned(self, corpus_app):
         # A config-only user (no Candidate row) is provisioned on the first
@@ -303,7 +316,7 @@ class TestUpdateExperience:
         cid = _seed_candidate()
         eid = _seed_experience(cid)
         client = corpus_app.test_client()
-        r = client.put(f"/api/experiences/{eid}", json={"start_date": "2024"})
+        r = client.put(f"/api/experiences/{eid}", json={"start_date": "not-a-date"})
         assert r.status_code == 400
 
 

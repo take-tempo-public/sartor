@@ -4003,9 +4003,9 @@ async function openCorpusAddExperience() {
     fields: [
       { name: 'company',    label: 'Company',    type: 'text', required: true },
       { name: 'start_date', label: 'Start',      type: 'text', required: true,
-        placeholder: 'YYYY-MM', pattern: '\\d{4}-\\d{2}' },
+        placeholder: 'YYYY-MM or YYYY', pattern: '\\d{4}(-\\d{2})?' },
       { name: 'end_date',   label: 'End',        type: 'text',
-        placeholder: 'YYYY-MM (blank = current)', pattern: '\\d{4}-\\d{2}' },
+        placeholder: 'YYYY-MM / YYYY (blank = current)', pattern: '\\d{4}(-\\d{2})?' },
       { name: 'location',   label: 'Location',   type: 'text', placeholder: 'Remote / NYC / ...' },
       { name: 'summary',    label: 'Summary',    type: 'textarea',
         placeholder: 'Optional one-line context for this stint.' },

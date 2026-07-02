@@ -97,12 +97,47 @@ class TestNormalizeExperience:
         exp = _normalize_experience(
             {
                 "company": "Acme",
-                "start_date": "2020",  # not YYYY-MM
+                "start_date": "March 2020",  # not YYYY-MM nor a bare YYYY
                 "candidate_inferred_title": "PM",
                 "bullets": [{"text": "x", "suggested_tags": []}],
             }
         )
         assert exp["company"] == ""  # sentinel — caller should drop
+
+    def test_accepts_year_only_start_date(self):
+        """Walkthrough F3: a bare YYYY is a valid date (kept, stored verbatim)."""
+        exp = _normalize_experience(
+            {
+                "company": "Acme",
+                "start_date": "2020",
+                "end_date": "2023",
+                "candidate_inferred_title": "PM",
+                "bullets": [{"text": "Shipped it.", "suggested_tags": []}],
+            }
+        )
+        assert exp["company"] == "Acme"
+        assert exp["start_date"] == "2020"  # not blanked, not coerced to 2020-01
+        assert exp["end_date"] == "2023"
+
+    def test_captures_role_summary_separately_from_bullets(self):
+        """Walkthrough F2: a role-intro paragraph rides on `summary`, not `bullets`."""
+        exp = _normalize_experience(
+            {
+                "company": "Acme",
+                "start_date": "2020-01",
+                "candidate_inferred_title": "PM",
+                "summary": "Owned the platform roadmap for a 3-team org.",
+                "bullets": [{"text": "Shipped V2.", "suggested_tags": []}],
+            }
+        )
+        assert exp["summary"] == "Owned the platform roadmap for a 3-team org."
+        assert [b["text"] for b in exp["bullets"]] == ["Shipped V2."]
+
+    def test_summary_none_when_absent(self):
+        exp = _normalize_experience(
+            {"company": "Acme", "start_date": "2020-01", "candidate_inferred_title": "PM"}
+        )
+        assert exp["summary"] is None
 
     def test_drops_experience_with_missing_company(self):
         exp = _normalize_experience(

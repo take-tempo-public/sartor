@@ -13,6 +13,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.8 walkthrough remediation — Branch 5: corpus import — year-only dates + role summaries (`fix/corpus-import`, 2026-07-01)
+
+- **Year-only work dates accepted (F3 → also fixes much of F1).** The extractor and
+  the manual add/edit-experience routes required `YYYY-MM` and **dropped** any role
+  whose date was a bare year. Résumés that list years only lost those roles — and
+  because the extraction prompt was told to omit undated roles, the model tended to
+  lump their bullets under the one role it could date ("every bullet in one job").
+  A bare `YYYY` is now valid across the extraction normalizer (`_DATE_RE`), the
+  extraction prompt, both backend validations (create + update), and the frontend
+  patterns. Year-only dates are stored **verbatim** (JSON Resume renders the date
+  string as-is; nothing parses it as `%Y-%m`).
+- **Role summaries import as role intros, not bullets (F2).** A résumé's role
+  intro/scope paragraph was extracted as a bullet. Extraction now has a dedicated
+  `summary` field (with a prompt rule separating an intro paragraph from achievement
+  bullets), and import turns it into a pending-review **`ExperienceSummaryItem`** —
+  the live role-intro path the Compose "Add role intros" picker and the résumé
+  render actually read — plus the denormalized `Experience.summary` column for
+  parity with the manual add route. Deduped across re-imports/merges.
+- **F1 residual.** True LLM mis-grouping on unusually formatted résumés isn't fully
+  deterministic; the existing post-import similar-role merge suggestions remain the
+  cleanup path for that.
+
+The extraction prompt lives in `onboarding/` (not the `PROMPT_VERSION`-tracked
+generation personas) and isn't eval-gated, so no version bump / eval run. Tests:
+`tests/test_extract_experiences.py` (year-only accepted; summary captured separately
+from bullets) and `tests/test_corpus_import.py` (import summary → `ExperienceSummaryItem`,
+not a bullet; year-only kept verbatim).
+
 ### v1.0.8 walkthrough remediation — Branch 4: inline bullet edit/approve + Compose UX (`feat/compose-inline-approve`, 2026-07-01)
 
 Frontend-only (CSS/JS); no `PROMPT_VERSION` change, no new dependency:
