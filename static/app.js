@@ -6834,7 +6834,9 @@ function _renderTemplatePickList() {
     row.tabIndex = 0;
 
     const nameRow = _el('div', { className: 'template-mini-name' });
-    nameRow.appendChild(_el('span', { textContent: p.name }));
+    // The name truncates (…) so a long owned filename can't shove the ATS /
+    // MINE badges outside the row (walkthrough B1). Badges stay pinned right.
+    nameRow.appendChild(_el('span', { className: 'template-mini-label', textContent: p.name }));
     // ATS-safety badge. All 4 v1.0.0-curated bundled templates are
     // ATS-safe by construction (single column, plain bullets, no
     // tables / icons / sidebars). Owned uploads are marked

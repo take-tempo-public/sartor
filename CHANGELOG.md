@@ -13,6 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.8 walkthrough remediation — Branch 1: Step-4 template picker polish (`fix/preview-template-bugs`, 2026-07-01)
+
+First slice of the pre-tag walkthrough-remediation epic. Two Step-4 template-picker fixes:
+
+1. **Template-card badge overflow (B1).** A long owned-template filename pushed the
+   `ATS` / `MINE` badges outside the card and triggered a horizontal scrollbar. The
+   template name now truncates with an ellipsis (`.template-mini-label`: `flex:1;
+   min-width:0`) and the two badges are pinned non-shrinking (`flex:0 0 auto`), so they
+   always stay inside the row.
+2. **Confusing picker copy (B4).** The Step-4 hint ("…the preview shows pages just as
+   they'll print. Same content, different typography and layout.") read ambiguously.
+   Reworded to state plainly that the résumé content stays the same and the template
+   only changes how it looks (fonts, spacing, layout).
+
+Frontend-only (CSS/HTML/JS); `PROMPT_VERSION` untouched; no new dependency. Full suite
+green (1418 passed). Remaining walkthrough items (preview fidelity, edit-backprop,
+generation quality, corpus import, prior-apps retire, Sartor rename, …) follow as
+their own branches per the epic plan.
+
 ### Corpus import: similar-role merge suggestions + retire-hidden-by-default + persistent busy cue (`fix/corpus-import-and-curation-ux`, 2026-06-29)
 
 Four corpus-building UX problems surfaced during e2e testing:
