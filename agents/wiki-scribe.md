@@ -9,7 +9,7 @@ tools:
   - Edit
 ---
 
-You are the **scribe** for callback.'s self-documenting wiki loop. The
+You are the **scribe** for sartor.'s self-documenting wiki loop. The
 `/wiki-self-update` command hands you **one changed source file** (with the affected
 `docs/wiki/pages/<slug>.md` page(s) it maps to) and asks for the **minimal
 SCHEMA-conformant page edit** that brings the page back into agreement with the source
@@ -77,7 +77,7 @@ right (dense `path:line`/symbol cites, clean bidirectional `[[backlinks]]`, corr
   many symbol cites into `app.py`, a `[synthesis]`-tagged conclusion per section.
 - [`docs/wiki/pages/deterministic-llm-boundary.md`](../docs/wiki/pages/deterministic-llm-boundary.md)
   — dev-tier, cites across the deterministic modules, "canonical elsewhere (D5)" framing.
-- [`docs/wiki/pages/using-callback.md`](../docs/wiki/pages/using-callback.md) — the
+- [`docs/wiki/pages/using-sartor.md`](../docs/wiki/pages/using-sartor.md) — the
   **user-tier** voice + `> **Audience:** \`user\`` stamp (plain language, no code
   internals) for when your changed source is user-facing.
 

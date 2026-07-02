@@ -1,4 +1,4 @@
-# Feature Nursery — callback.
+# Feature Nursery — sartor.
 
 > **Purpose:** a tracked holding bed for *possible future features* — "good idea,
 > not now." Each entry is a 1–3 sentence what/why plus value/effort/risk tags and a

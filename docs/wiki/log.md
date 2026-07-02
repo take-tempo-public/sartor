@@ -204,7 +204,7 @@ education copy this branch ships. Like the 2026-06-09 excellence-walk pass, this
 code-keyed refresh is deferred to a later `chore/wiki-refresh` / the version-bump branch, and
 leaving the checkpoint at `93a34b9` keeps the freshness reminder correctly flagging it.
 
-**Pages created (5, `audience: user`):** `using-callback` (the first-run hub),
+**Pages created (5, `audience: user`):** `using-sartor` (the first-run hub),
 `tailoring-a-resume`, `career-corpus`, `resume-templates`, `candidate-memory`. Each mirrors
 the in-app `_HELP_REGISTRY` copy (`static/app.js`) and the wizard surfaces in
 `templates/index.html`; plain-language, no technical background assumed.
@@ -213,7 +213,7 @@ the in-app `_HELP_REGISTRY` copy (`static/app.js`) and the wizard surfaces in
 its "Reserved / planned" note flipped from *reserved* to *authored*; [`SCHEMA.md`](SCHEMA.md)
 "Audience tag" + "Status" updated (the `user`-tier set is now [`overview.md`](overview.md) +
 these five); [`overview.md`](overview.md) gained a one-line "new here?" pointer to
-`using-callback`. `[[backlinks]]` reconciled bidirectionally among the five (hub ↔ guides).
+`using-sartor`. `[[backlinks]]` reconciled bidirectionally among the five (hub ↔ guides).
 
 **Verification.** Every `[[backlink]]` resolves to an existing page slug (the five new guides
 + the cross-links among them); the only relative links out are to [`overview.md`](overview.md),
@@ -266,7 +266,7 @@ primitive (`#helpModal` + `openHelpModal` + `_HELP_REGISTRY` + `_initHelp`), per
 `_fireWizardTourStop`), the dashboard's PORT of that primitive (`#helpModal` + `_DASH_HELP` +
 `openDashHelp` + `_maybeFireDashHelp`), and the rewritten dashboard annotate / empty-state copy —
 plus #17's one-sentence eval-stack pointer in the `dashQuality` help body. The `audience: user`
-education guides ([`using-callback`](pages/using-callback.md), …) were already authored in the
+education guides ([`using-sartor`](pages/using-sartor.md), …) were already authored in the
 2026-06-14 content pass and were **not** re-touched (D5 — content pass, not a code key). The
 `../../ui_pages/{dashboard_console,selectors}.py` changes in range are Playwright POM / selector
 test infrastructure — no wiki page describes that layer, so no page change.
@@ -448,7 +448,7 @@ no-fabrication promise defers to [`overview.md`](overview.md) (D5).
 
 **Wiki meta updated.** [`index.md`](index.md) gained the 7 pages under "User-facing education"
 (an 8.6a sub-note); `[[backlinks]]` reconciled bidirectionally — the hub
-[`using-callback`](pages/using-callback.md) "The guides" now lists all 11 guides, and
+[`using-sartor`](pages/using-sartor.md) "The guides" now lists all 11 guides, and
 [`tailoring-a-resume`](pages/tailoring-a-resume.md) Step 6 + [`career-corpus`](pages/career-corpus.md)
 "Building it" splice the new how-to backlinks. No `pages/` page carries a per-page source-SHA
 marker (`SCHEMA.md` stamps only the audience tag), so only the content changed.
@@ -476,7 +476,7 @@ blocks the generate flow).
 
 **`/wiki-lint`: PASS — 0 ERROR.** 36 `pages/` ↔ `index.md` agree both ways (the 7 new pages
 listed); every `[[backlink]]` resolves to an existing slug; no orphans (every new page has an
-inbound link from the `using-callback` hub); `.last_ingest_sha` unchanged (content pass — no
+inbound link from the `using-sartor` hub); `.last_ingest_sha` unchanged (content pass — no
 staleness regression). **Gate:** `ruff` ✓ · `mypy` ✓ (228 files); the full UX `pytest` suite
 was not re-run for this docs-only branch (owner direction) — no `.py` touched, and
 `tests/test_wiki_source.py` is `tmp_path`-only (the real pages don't affect it); the directly

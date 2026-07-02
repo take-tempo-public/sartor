@@ -1400,3 +1400,51 @@ class TestUpdateMeta:
         _seed_candidate()
         r = app_app.app.test_client().put("/api/applications/99999/meta", json={"company": "X"})
         assert r.status_code == 404
+
+
+class TestRetireApplication:
+    """Walkthrough J1 — soft-retire / restore + hide-by-default in the list."""
+
+    def test_summary_dict_carries_is_active(self, app_app):
+        cid = _seed_candidate()
+        _seed_application(cid)
+        body = app_app.app.test_client().get("/api/users/alice/applications").get_json()
+        assert body[0]["is_active"] is True
+
+    def test_retire_hides_from_default_list_shows_with_include_retired(self, app_app):
+        cid = _seed_candidate()
+        keep = _seed_application(cid, title="Keep")
+        drop = _seed_application(cid, title="Drop", jd_text="Different JD")
+        client = app_app.app.test_client()
+
+        r = client.delete(f"/api/applications/{drop}")
+        assert r.status_code == 200
+        assert r.get_json() == {"id": drop, "is_active": False}
+
+        # Default list hides the retired one.
+        default = client.get("/api/users/alice/applications").get_json()
+        assert [a["id"] for a in default] == [keep]
+
+        # include_retired surfaces it, flagged.
+        withret = client.get(
+            "/api/users/alice/applications?include_retired=1"
+        ).get_json()
+        ids = {a["id"]: a["is_active"] for a in withret}
+        assert ids == {keep: True, drop: False}
+
+    def test_restore_unretires(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        client.delete(f"/api/applications/{aid}")
+
+        r = client.post(f"/api/applications/{aid}/restore")
+        assert r.status_code == 200
+        assert r.get_json() == {"id": aid, "is_active": True}
+        # Back in the default list.
+        default = client.get("/api/users/alice/applications").get_json()
+        assert [a["id"] for a in default] == [aid]
+
+    def test_retire_404_for_unknown_id(self, app_app):
+        _seed_candidate()
+        assert app_app.app.test_client().delete("/api/applications/99999").status_code == 404

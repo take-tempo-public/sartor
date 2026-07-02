@@ -19,10 +19,10 @@ recommended** so applicant-tracking systems (the software many employers use to
 read résumés) can parse yours cleanly. Bundled templates are read-only.
 
 ## Your own templates
-You can upload your own `.docx` for callback to reuse as a template — it's scoped to
+You can upload your own `.docx` for sartor to reuse as a template — it's scoped to
 your user, and you can rename or delete the ones you uploaded. You can do this on
 the Résumé templates tab or right inside Step 4 of [[tailoring-a-resume]].
 
 ## Choosing one
 In Step 4 the preview shows the pages exactly as they'll print, so you can compare
-the look before you generate. See [[using-callback]] for the whole flow.
+the look before you generate. See [[using-sartor]] for the whole flow.

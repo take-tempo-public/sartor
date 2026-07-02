@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>callback.</title>
+  <title>sartor.</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -17,15 +17,15 @@
        announcement waits for the SR to finish current speech. -->
   <div id="srAnnounce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- callback. top bar — wordmark + controls row, app-context row.
+  <!-- sartor. top bar — wordmark + controls row, app-context row.
        Replaces the LCARS elbow + title block (feat/release-visual-ia).
        Legacy IDs (iterationPill, statusPill, diagnosticsPill, settingsPill)
        are preserved so app.js bindings keep working. -->
   <header class="cb-topbar" id="cbTopbar">
     <div class="cb-topbar-row">
-      <a href="#" class="cb-wordmark" aria-label="callback, home"
+      <a href="#" class="cb-wordmark" aria-label="sartor, home"
          title="Return to the start" onclick="goHome(); return false;">
-        <span class="ch">c</span><span class="ch">a</span><span class="ch">l</span><span class="ch">l</span><span class="ch">b</span><span class="ch">a</span><span class="ch">c</span><span class="ch">k</span><span class="cb-dot" aria-hidden="true"></span>
+        <span class="ch">s</span><span class="ch">a</span><span class="ch">r</span><span class="ch">t</span><span class="ch">o</span><span class="ch">r</span><span class="cb-dot" aria-hidden="true"></span>
       </a>
       <span class="cb-grow"></span>
       <div class="cb-pill cb-iter-pill hidden" id="iterationPill"
@@ -147,6 +147,11 @@
             <option value="rejected">Rejected</option>
             <option value="withdrawn">Withdrawn</option>
           </select>
+          <label class="applications-show-retired">
+            <input type="checkbox" id="applicationsShowRetired"
+                   onchange="toggleApplicationsRetired(this.checked)">
+            Show retired
+          </label>
         </div>
         <div id="applicationsList" class="application-list">
           <div class="corpus-empty-experience">Loading…</div>
@@ -923,7 +928,7 @@
       <h2 id="assistantModalTitle" class="cb-modal-title">Ask the assistant</h2>
       <div class="cb-modal-body">
         <p id="assistantModalIntro" class="edit-hint" style="margin-top:0">
-          Ask how callback. works or how to use it, and I'll answer from the
+          Ask how sartor. works or how to use it, and I'll answer from the
           project's own docs and code — with citations, so I show my sources.
           Tick Dev mode for technical detail.
         </p>
@@ -944,7 +949,7 @@
              hazard); hidden by askAssistant() once the first answer streams in. -->
         <div id="assistantEmptyState" style="margin-top:0.75rem;">
           <p class="edit-hint" style="margin:0 0 0.5rem">
-            I explain how callback. works and how to use it. I answer only from the
+            I explain how sartor. works and how to use it. I answer only from the
             project's committed docs and code, with citations — I'm not the résumé
             writer, and I won't touch your private resumes or configs.
           </p>
@@ -967,7 +972,7 @@
         <div id="assistantSources" class="edit-hint" style="margin-top:0.5rem;"></div>
         <p class="edit-hint" id="assistantReportHint" style="margin-top:0.75rem">
           Something missing from the docs?
-          <a href="https://github.com/amodal1/callback/issues" target="_blank" rel="noopener">Report it on the project's GitHub</a>.
+          <a href="https://github.com/take-tempo-public/sartor/issues" target="_blank" rel="noopener">Report it on the project's GitHub</a>.
         </p>
       </div>
       <div class="modal-actions">
@@ -1145,7 +1150,7 @@
     </div>
   </aside>
 
-  <!-- callback. floating status strip — viewport-bottom sticky element
+  <!-- sartor. floating status strip — viewport-bottom sticky element
        that mirrors statusPill state and surfaces the active wizard step.
        Pulses during active phases (analysis, recommend, generate). -->
   <div class="cb-statusbar" id="cbStatusbar" aria-hidden="true">

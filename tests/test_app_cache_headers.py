@@ -1,6 +1,6 @@
 """Cache-header contract for the Flask shell.
 
-callback. is a local-first dev tool. Browsers must always revalidate
+sartor. is a local-first dev tool. Browsers must always revalidate
 the HTML shell and never reuse stale `/static/*` JS/CSS — otherwise
 a UI change ships but the user still sees the previous build until
 they manually hard-reload. We've hit this footgun twice; these tests

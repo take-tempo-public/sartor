@@ -96,7 +96,7 @@ def create_app(config: Config | None = None) -> Flask:
     return app
 
 
-# Module-level WSGI / console-script (`callback = app:main`) / back-compat handle.
+# Module-level WSGI / console-script (`sartor = app:main`) / back-compat handle.
 # Every route attaches via a blueprint inside `register_blueprints` (called by the
 # factory), so a freshly-built `create_app(...)` in a test carries the full route
 # map — there are no longer any module-level `@app.route` handlers to miss.
@@ -112,7 +112,7 @@ def _should_open_browser(werkzeug_run_main: str | None, no_browser: str | None) 
     Opening in the child re-popped a browser window on every restart (the
     "stray windows" bug); open only when this is NOT the reload child. The
     non-debug single process (also unset) likewise opens once. Honors the
-    ``CALLBACK_NO_BROWSER=1`` opt-out for headless / remote / CI runs.
+    ``SARTOR_NO_BROWSER=1`` opt-out for headless / remote / CI runs.
     """
     if no_browser == "1":
         return False
@@ -122,17 +122,17 @@ def _should_open_browser(werkzeug_run_main: str | None, no_browser: str | None) 
 def main() -> None:
     """Launch the Flask app on http://localhost:5000.
 
-    Entry point for the `callback` console script registered in
+    Entry point for the `sartor` console script registered in
     `pyproject.toml [project.scripts]`. Equivalent to `python app.py`
     for users who installed via `pip install -e .` or `pip install
-    callback`.
+    sartor`.
 
     Set `FLASK_DEBUG=0` in the environment to disable Flask's
     reloader + verbose error pages (see SECURITY.md for rationale).
-    Set `CALLBACK_NO_BROWSER=1` to skip the auto-open (headless / remote
+    Set `SARTOR_NO_BROWSER=1` to skip the auto-open (headless / remote
     / CI runs where launching a browser is unwanted).
     """
-    print("\n  callback. — http://localhost:5000\n")
+    print("\n  sartor. — http://localhost:5000\n")
     debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"
 
     # Auto-open the user's default browser so `python app.py` lands them
@@ -144,7 +144,7 @@ def main() -> None:
     # delays the open until the server is listening; it runs as a daemon so it
     # never holds the interpreter open on shutdown.
     if _should_open_browser(
-        os.environ.get("WERKZEUG_RUN_MAIN"), os.environ.get("CALLBACK_NO_BROWSER")
+        os.environ.get("WERKZEUG_RUN_MAIN"), os.environ.get("SARTOR_NO_BROWSER")
     ):
 
         def _open_browser() -> None:

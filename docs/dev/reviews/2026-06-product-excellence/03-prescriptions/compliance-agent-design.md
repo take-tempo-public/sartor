@@ -4,7 +4,7 @@ evidence_sha: c6e0437
 graduation: docs/governance/compliance-agent.md + .claude-plugin spec (v1.0.7 pilot)
 ---
 
-# Compliance-agent design — callback.
+# Compliance-agent design — sartor.
 
 > A witness for the Regulation function. The compliance agent reads the
 > project's governance, history, and provenance and **emits a ranked drift

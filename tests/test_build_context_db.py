@@ -322,6 +322,23 @@ class TestBuildContextSetFromDb:
         assert ctx["resume"]["format"] == "md"
         assert "Casey Tester" in ctx["resume"]["text"]
 
+    def test_corpus_mode_suppresses_ats_warnings(self, db_session):
+        """Walkthrough G1: no ATS heading/length warnings on the corpus synthesis.
+
+        The synthesized 'résumé' is a structured projection (not an uploaded doc,
+        not the final deliverable), so the legacy uploaded-résumé ATS-format
+        warnings don't apply and would only confuse.
+        """
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        ctx, _app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text="Senior PM role at Foo\nResponsibilities here.",
+            run_id="ats0000warn00",
+        )
+        assert ctx["deterministic_analysis"]["ats_warnings"] == []
+
     def test_online_profile_text_flows_into_candidate_block(self, db_session):
         """PX-02: the cached scrape (Candidate.online_profile_text) reaches the
         ContextSet candidate block — a DISTINCT channel from profile_text (the

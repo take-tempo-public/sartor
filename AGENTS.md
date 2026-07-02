@@ -1,4 +1,4 @@
-# callback. — AI agent contract
+# sartor. — AI agent contract
 
 > **Purpose:** the universal contract that any AI coding agent (Claude
 > Code, Cursor, Codex, Continue, Aider, etc.) reads before making
@@ -47,7 +47,7 @@ The project follows the [10 Principles framework](https://jdforsythe.github.io/1
 Full system + module map in [`docs/architecture.md`](docs/architecture.md). Quick orientation:
 
 - **All LLM calls live in `analyzer.py`.** Sonnet 4.6 for heavy reasoning (`analyze`, `clarify`, `iterate_clarify`, `generate`, `generate_cover_letter`); Haiku 4.5 for structured selection (`recommend`, `recommend_summary`, `critique_proposal`, `extract_experiences`).
-- **`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py` are deterministic** — no LLM calls allowed. The P1 Hardening boundary (canonical rule: charter **C-6**).
+- **`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py`, `docx_to_persona_html.py` are deterministic** — no LLM calls allowed. The P1 Hardening boundary (canonical rule: charter **C-6**).
 - **`context_set` is the JSON contract** between every pipeline stage. Each `/api/generate` writes a NEW timestamped child file via `hardening.save_iteration_context()`; the `parent_context_path` chain is the iteration audit trail.
 - **`PROMPT_VERSION` in `analyzer.py`** must bump in the SAME commit when any prompt changes, so eval telemetry attributes scores correctly (a charter discipline rule — [`docs/governance/charter.md`](docs/governance/charter.md), C-0 / D-4).
 
@@ -163,6 +163,6 @@ Dashboard for trends + heatmap + failure-mode clustering: visit `http://localhos
 - Do not skip `_safe_username()` / `_within()` on any new route touching the filesystem.
 - Do not commit real personal data: `evals/fixtures/real/`, `configs/*.config` (except `example.config`), `resumes/`, `output/`.
 - Do not add features or refactor beyond what was asked — minimal targeted edits only.
-- Do not call an LLM from `hardening.py`, `parser.py`, `scraper.py`, `generator.py`, `pdf_render.py`, `json_resume.py`, or `corpus_to_json_resume.py` — those are deterministic by design.
+- Do not call an LLM from `hardening.py`, `parser.py`, `scraper.py`, `generator.py`, `pdf_render.py`, `json_resume.py`, `corpus_to_json_resume.py`, or `docx_to_persona_html.py` — those are deterministic by design.
 - Do not introduce a new dependency without adding it to `pyproject.toml` AND updating `CHANGELOG.md`.
 - Do not bypass the `route-security-lint`, `require-feature-branch`, or `ruff-changed` PreToolUse hooks without explicit authorization documented in the commit message.

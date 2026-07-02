@@ -5,7 +5,7 @@ life. Feedback and help are welcome. *(posture directive)*
 - this is close, but needs wording massage. This isn't a personal project and "you know i'll like get around to it when i'm not busy and stuff"
 - this is an open source project executed with the best of intentions including significant effort in diligence, but no guarantees. if issues are raised, i'll try to get to them as soon as possible. if you're a dev or savvy with a coding agent, the app includes a support agent who can help you understand whatver it knows about itself (including how it works, what it's been, what it hopes to be, and how it tries to respect the user). it's more than just transparent, it's had effort put into sourcing and describing any part of itself.
 
-**C-1. Local and yours.** callback. runs locally on the user's machine;
+**C-1. Local and yours.** sartor. runs locally on the user's machine;
 all user artifacts stay on the user's disk, under the user's control,
 never uploaded; there is no hosted service. Sharing one installation
 among the people who share a machine (a partner, a household) is

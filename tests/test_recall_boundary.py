@@ -1,7 +1,7 @@
 """Architectural boundary test for the `recall/` Memory substrate.
 
 `recall/` is the reusable, refactor-immune Memory substrate: by hard rule it must
-NEVER import `app.py`, `analyzer.py`, the callback DB models, Flask, or any LLM
+NEVER import `app.py`, `analyzer.py`, the sartor DB models, Flask, or any LLM
 client — it depends only on the stdlib (Stage 0). That rule
 (`docs/dev/memory-architecture.md` §"Reuse boundary / extraction contract") is
 what makes the v1.0.8 blueprint split a *move*, not a rewrite, and future
@@ -27,7 +27,7 @@ _FORBIDDEN_ROOTS = frozenset(
     {
         "app",  # the Flask app + routes
         "analyzer",  # all LLM calls
-        "db",  # callback DB models / session / context builder
+        "db",  # sartor DB models / session / context builder
         "flask",  # recall/ is framework-agnostic
         "anthropic",  # recall/ is LLM-free (charter C-6 determinism boundary)
     }
@@ -115,10 +115,10 @@ def test_recall_imports_only_stdlib():
 #
 # The concrete tiers (S1 wiki, S2 git grep, S5-P1 session) live in `recall/sources/`,
 # but they must stay PROJECT-AGNOSTIC — roots + the audience resolver are injected, so
-# no module here may hardcode a callback path or audience rule. The import boundary
+# no module here may hardcode a sartor path or audience rule. The import boundary
 # above can't catch that (the coupling would be a string literal, not an import). This
 # guard walks every string literal that is NOT a docstring (prose may reference design
-# docs freely) and rejects callback-specific path/symbol fragments. The day a tier
+# docs freely) and rejects sartor-specific path/symbol fragments. The day a tier
 # needs `"docs/wiki"` baked in, it belongs in the wiring layer, not the substrate.
 
 SOURCES_DIR = RECALL_DIR / "sources"
@@ -163,7 +163,7 @@ def test_recall_sources_subpackage_present():
 
 
 def test_recall_sources_no_hardcoded_roots():
-    """No `recall/sources/*.py` CODE literal contains a callback-specific path/symbol —
+    """No `recall/sources/*.py` CODE literal contains a sartor-specific path/symbol —
     the tiers stay generic; project bindings live in the wiring layer."""
     offenders: dict[str, set[str]] = {}
     for path in sorted(SOURCES_DIR.rglob("*.py")):
@@ -180,7 +180,7 @@ def test_recall_sources_no_hardcoded_roots():
         if hits:
             offenders[path.relative_to(REPO_ROOT).as_posix()] = hits
     assert not offenders, (
-        f"recall/sources/ hardcoded a callback-specific path/symbol: {offenders}. "
+        f"recall/sources/ hardcoded a sartor-specific path/symbol: {offenders}. "
         "The tiers must stay project-agnostic — inject roots + the audience resolver "
         "from the wiring layer (blueprints/assistant.py), don't bake them into recall/."
     )

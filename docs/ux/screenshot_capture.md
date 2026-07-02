@@ -52,7 +52,7 @@ state so the screenshots will age well.
 
 ## Filename convention
 
-All screenshots land in `c:/Dev/callback/docs/screenshots/`
+All screenshots land in `c:/Dev/sartor/docs/screenshots/`
 (create the directory if missing).
 
 Pattern: `<doc-stem>_<step-id>_<short-name>.png`
@@ -83,7 +83,7 @@ when Claude does the insertion pass.
   panels, and any visible Human Gate #1 indicator.
 - **Insertion site:** README.md, "The wizard at a glance" §,
   after the ASCII block (line ~109).
-- **Alt-text draft:** *"callback.'s six-step wizard with Step 1
+- **Alt-text draft:** *"sartor.'s six-step wizard with Step 1
   active. The wizard rail at the top shows step progression;
   the right panel shows the analysis output that the user
   reviews at Human Gate #1 before deciding whether to enter

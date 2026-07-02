@@ -1,9 +1,9 @@
-# Installing callback.
+# Installing sartor.
 
 > **Purpose:** end-to-end install guide for users on Windows, macOS,
 > or Linux. The minimum-friction path to a running app + first
 > generated résumé.
-> **Audience:** humans installing callback. for the first time.
+> **Audience:** humans installing sartor. for the first time.
 > **Authoritative for:** OS-specific install steps, the Playwright
 > Chromium download step, what gets downloaded & why, API-key setup,
 > troubleshooting.
@@ -25,7 +25,7 @@
   breakdown; budget guards are documented in
   [`SECURITY.md`](../SECURITY.md).
 - **A modern browser** (Chrome / Edge / Firefox / Safari).
-  callback. runs as a local Flask app you access in your browser.
+  sartor. runs as a local Flask app you access in your browser.
 
 **Optional — only if you want PDF output:** **~150 MB of free disk space** for
 the Chromium binary Playwright downloads (`python -m playwright install
@@ -61,7 +61,7 @@ committed. On Linux, Chromium may also need a few system libraries (`libnss3`,
 never export PDF, you can skip it.
 
 **Optional — the quality / grounding eval stack (most users never need this).**
-callback. ships an offline *eval harness* that grades whether the AI invented
+sartor. ships an offline *eval harness* that grades whether the AI invented
 anything. Turning on its grounding scorers downloads **~3.2 GB** of model
 weights (a small NLI model plus a larger fact-checking model) on first use,
 cached permanently after. This is a **developer / power-user** feature — it
@@ -85,8 +85,8 @@ extras, sizes, and licensing) live in
 
 3. **Clone the repo and navigate into it:**
    ```cmd
-   git clone https://github.com/amodal1/callback C:\Dev\callback
-   cd C:\Dev\callback
+   git clone https://github.com/take-tempo-public/sartor C:\Dev\sartor
+   cd C:\Dev\sartor
    ```
 
 4. **Install dependencies:**
@@ -141,8 +141,8 @@ extras, sizes, and licensing) live in
 
 3. **Clone and enter the repo:**
    ```bash
-   git clone https://github.com/amodal1/callback ~/callback
-   cd ~/callback
+   git clone https://github.com/take-tempo-public/sartor ~/sartor
+   cd ~/sartor
    ```
 
 4. **Install dependencies:**
@@ -195,8 +195,8 @@ extras, sizes, and licensing) live in
 
 2. **Clone and enter the repo:**
    ```bash
-   git clone https://github.com/amodal1/callback ~/callback
-   cd ~/callback
+   git clone https://github.com/take-tempo-public/sartor ~/sartor
+   cd ~/sartor
    ```
 
 3. **Install dependencies:**

@@ -35,18 +35,18 @@ graduation: none
 
 ### Cluster 1 — Purpose & identity
 
-**Q1. In your own words — not vision.md's — what is callback. when it's
+**Q1. In your own words — not vision.md's — what is sartor. when it's
 *finished*? What's the moment it earns its keep for a user?**
 
-> callback is a replacement for maintaining word documents that get copy and
+> sartor is a replacement for maintaining word documents that get copy and
 > pasted into new word documents and edited for each job from one document to
-> another. callback uses canonical resumes to source career history,
+> another. sartor uses canonical resumes to source career history,
 > experience, skills, and summaries to elucidate roles. It harvests from what
 > you've already captured in unstructured documents and creates a grounding
 > body of your professional experience, and uses that to generate job
 > description resumes — helping the user to put their best foot forward when
 > creating resumes that are largely screened by ai in ATS systems and
-> scrutinized by humans to identify strong candidates. callback tries to
+> scrutinized by humans to identify strong candidates. sartor tries to
 > reduce the document to document work, assist in building strong job
 > appropriate resumes in ATS and human friendly formats that are grounded in
 > real experience, and helping the user to source experience and skills not
@@ -58,14 +58,14 @@ graduation: none
 > will be continuing iterations as we polish and refine. I would hope that
 > the entire codebase is fairly stable with bugfixes and small feature
 > sprints after v2.x.x. **It earns its keep by getting a user an interview
-> for a job where callback wrote the resume.**
+> for a job where sartor wrote the resume.**
 
 **Q2. What would make you kill the project entirely?**
 
 > if the llms could not be grounded well enough to do their jobs
 > effectively. superseded by other open projects that do what we do better.
 
-**Q3. Five years out, which is callback.? (a) maintained tool, (b) portfolio
+**Q3. Five years out, which is sartor.? (a) maintained tool, (b) portfolio
 exhibit, (c) seedbed for extracted systems, (d) other.**
 
 > a+b+c (for the beginning, then a digest and test bed for those systems)
@@ -175,7 +175,7 @@ happened? What feedback channel is acceptable?**
 ## Signals (load-bearing facts not currently in repo docs)
 
 - S1: Success-defining outcome metric: **an interview from a
-  callback-written resume** (Q1, Q8).
+  sartor-written resume** (Q1, Q8).
 - S2: Kill conditions exist and are respected: grounding infeasibility;
   superseded by better open projects (Q2).
 - S3: Five-year identity: tool + portfolio + seedbed, with seedbed becoming
@@ -295,7 +295,7 @@ internal, and horizon.**
 *(Interviewer note: a sub-question was carried to Round 2 and resolved
 there as out of scope.)*
 
-**Q24. Extracted system's relationship back to callback.: dependency or
+**Q24. Extracted system's relationship back to sartor.: dependency or
 frozen copy?**
 
 > hopefully re-introduced and replace later, but not necessary. depends on
@@ -385,7 +385,7 @@ C1–C11, arc misalignments A1–A7, absences M1–M8, badge research — see
 - **R2-2 (T2, T6, C2, C5) — Tenancy + business channel.** A coach with 10
   clients on one machine: 10 users (multi-tenant — three docs say never) or
   one operator with 10 corpora? Whose consent governs a client's data? Does
-  the coach use case ship in callback. at all? Does "one person, one
+  the coach use case ship in sartor. at all? Does "one person, one
   machine, one job at a time" survive as the identity sentence?
 - **R2-3 (T4, C4) — ATS-safety flag.** vision.md: "ATS-safety is the
   product"; non-ATS templates "don't ship." For exec/referral: do non-ATS
@@ -396,7 +396,7 @@ C1–C11, arc misalignments A1–A7, absences M1–M8, badge research — see
   flow). Which constraints land where, and what is the amendment ceremony?
 - **R2-5 (T9, A1, M3, C6) — Written tag evidence + success measures.**
   Should these become WRITTEN v1.1.0 criteria: N real applications with
-  zero release-blocking bugs; ≥1 interview from a callback-written resume;
+  zero release-blocking bugs; ≥1 interview from a sartor-written resume;
   tuning/annotation loop exercised by you with at-a-glance metrics? Which
   are hard gates vs weighed evidence (interviews depend on the market)?
   Does vision.md gain the outcome-level goal, and do the 90-day measures
@@ -416,7 +416,7 @@ C1–C11, arc misalignments A1–A7, absences M1–M8, badge research — see
   v1.1.0: fallback posture (response promise, triage cadence, hours), and
   should a minimal GitHub-ops item be added to Phase 5?
 - **R2-9 (A6, Q15) — Explainability bar.** What artifact closes Q15: a
-  user-facing "how callback grounds, clarifies, tunes" page; a lay metrics
+  user-facing "how sartor grounds, clarifies, tunes" page; a lay metrics
   legend in diagnostics; a comprehension walkthrough with a non-technical
   reader? Written tag criterion at v1.0.6 or v1.0.7?
 - **R2-10 (A5) — Governance→assistant wiring.** Should the v1.0.7
@@ -461,13 +461,13 @@ SECURITY.md three — remains a doc-consistency fix for the charter.)
 **R2-2 — Tenancy: single-tenant stands; multi-client use is out of scope.**
 
 > The tool doesn't do those things. Customers may do these things with
-> callback … but the data relationship is between the headhunter/resume
+> sartor … but the data relationship is between the headhunter/resume
 > specialist and their clients. … i don't need [the project] involved and
 > [it] should seek to stay out of those situations.
 
 Resolution: "one person, one machine, one job at a time" survives as the
 identity sentence. What operators do with open tooling on their own
-machines is their own data relationship; callback. neither builds nor
+machines is their own data relationship; sartor. neither builds nor
 documents a multi-client mode, deliberately. The owner further directed
 that external context surfaced in Q4 remain entirely unreferenced in
 project artifacts (see redaction note). T2/C2/C5 **closed**.
@@ -521,16 +521,16 @@ as-arc (post-public; epoch decided on arrival). T3/C3/A3 **direction set**.
 > project to run through and test set-up, and build template containers,
 > build out Github CI...
 
-Resolution: callback.'s v1.1.0 GitHub integration is agent-station's canary
+Resolution: sartor.'s v1.1.0 GitHub integration is agent-station's canary
 project — GitHub-ops infrastructure (CI build-out, template containers,
 set-up flow) gets built as part of that run. Conformance to CONTRIBUTING's
 identity pathway (GITHUB_TOKEN → GitHub App, no per-agent PATs) noted as an
-open design detail for that build, not a callback. blocker. T8/C9/A4
+open design detail for that build, not a sartor. blocker. T8/C9/A4
 **direction set**.
 
 **R2-9 — Explainability bar:**
 
-> a user-facing "how callback. grounds, clarifies, and tunes" page (the
+> a user-facing "how sartor. grounds, clarifies, and tunes" page (the
 > wiki's reserved user section), a lay metrics legend in diagnostics, and
 > the plans we already have in place for the diagnostics page. 1.0.7
 
@@ -550,8 +550,8 @@ feeds a prescription.
 
 **R2-11 — Multi-agent stance: update the docs to the real model.**
 
-> This session is inside claude code building callback. those guidances are
-> for callback. but we have already moved to multi-agent since that
+> This session is inside claude code building sartor. those guidances are
+> for sartor. but we have already moved to multi-agent since that
 > writing. we should clean that up and update our multi-agent stance and
 > documentation
 

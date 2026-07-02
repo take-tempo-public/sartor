@@ -1,6 +1,6 @@
-# Performance history — callback.
+# Performance history — sartor.
 
-> **Purpose:** the portfolio-grade narrative of callback.'s pipeline-performance
+> **Purpose:** the portfolio-grade narrative of sartor.'s pipeline-performance
 > work — what was slow, what we tried, what each experiment yielded, and how we
 > proved it without trading away output quality. Written to be *presented*:
 > every number traces to committed telemetry.
@@ -19,7 +19,7 @@
 
 ## TL;DR — the headline
 
-callback.'s critical path is a chain of LLM calls (analyze → clarify → generate).
+sartor.'s critical path is a chain of LLM calls (analyze → clarify → generate).
 `analyze` started as a **90-second opaque wall**. Over four weeks we cut the core
 pipeline **~27% in wall-clock and ~20% in cost**, turned the worst wait into a
 live progress experience, and **recovered the most important quality rubric from

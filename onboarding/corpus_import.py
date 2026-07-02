@@ -39,6 +39,7 @@ from db.models import (
     Clarification,
     Education,
     Experience,
+    ExperienceSummaryItem,
     ExperienceTitle,
     Skill,
 )
@@ -522,6 +523,42 @@ def _resolve_api_key(explicit: str | None) -> str | None:
     return None
 
 
+def _add_imported_summary_variant(
+    experience_id: int, summary_text: str, *, session: Session
+) -> bool:
+    """Add an imported role-intro paragraph as a pending-review ExperienceSummaryItem.
+
+    The live role-intro path reads ExperienceSummaryItem variants (chosen per JD);
+    the legacy `Experience.summary` column is not surfaced. So an imported role
+    intro must land here to be usable — NOT as a bullet (walkthrough F2). Skips if
+    an identical variant text already exists on the role (idempotent across
+    re-imports / merges). Returns True when a row was added.
+    """
+    text = summary_text.strip()
+    if not text:
+        return False
+    existing = {
+        row[0].strip()
+        for row in session.query(ExperienceSummaryItem.text).filter(
+            ExperienceSummaryItem.experience_id == experience_id
+        )
+    }
+    if text in existing:
+        return False
+    session.add(
+        ExperienceSummaryItem(
+            experience_id=experience_id,
+            text=text,
+            display_order=len(existing),
+            is_active=1,
+            is_pending_review=1,
+            source="imported",
+            has_outcome=0,
+        )
+    )
+    return True
+
+
 def _insert_or_merge_experience(
     exp: Mapping[str, Any],
     candidate_id: int,
@@ -581,16 +618,24 @@ def _insert_or_merge_experience(
         return
 
     # Net-new experience: create + official title + bullets.
+    # A role INTRO paragraph (if the résumé had one) becomes a pending-review
+    # ExperienceSummaryItem below — the live role-intro path — NOT a bullet
+    # (walkthrough F2). `summary` also lands on the denormalized column for parity
+    # with the manual add-experience route.
+    summary_text = (exp.get("summary") or "").strip()
     experience_row = Experience(
         candidate_id=candidate_id,
         company=company,
         location=exp.get("location") or None,
         start_date=start_date,
         end_date=exp.get("end_date"),
-        summary=None,
+        summary=summary_text or None,
     )
     session.add(experience_row)
     session.flush()  # need experience_row.id for FKs
+
+    if summary_text:
+        _add_imported_summary_variant(experience_row.id, summary_text, session=session)
 
     if title_text:
         session.add(
@@ -681,6 +726,12 @@ def _merge_into_existing_experience(
                 )
             )
             report.alternate_titles_created += 1
+
+    # A role intro from the merged file becomes an additional pending intro
+    # variant if not already present — a role summary, never a bullet (F2).
+    summary_text = (exp.get("summary") or "").strip()
+    if summary_text:
+        _add_imported_summary_variant(existing.id, summary_text, session=session)
 
     source_value = f"supplemental:{source_filename}"
     # Dedup on normalized text only (lowercased + whitespace-collapsed).

@@ -6,7 +6,7 @@ mirror the LLM-emitted shapes documented in the analyzer prompt
 during this branch's normalizer iterations.
 
 The parser is intentionally forgiving — missing sections produce
-empty arrays, malformed lines land under meta.callback.unparsed
+empty arrays, malformed lines land under meta.sartor.unparsed
 rather than raising.
 """
 
@@ -26,7 +26,7 @@ class TestEmpty:
         assert doc["basics"] == {}
         assert doc["work"] == []
         assert doc["skills"] == []
-        assert doc["meta"]["callback"]["version"] == "1.0"
+        assert doc["meta"]["sartor"]["version"] == "1.0"
 
     def test_whitespace_only_returns_skeleton(self):
         doc = md_to_json_resume("   \n\n   \n")
@@ -64,7 +64,7 @@ class TestHeaderBlock:
         assert any("janedoe" in p["username"] for p in profiles)
 
     def test_separator_dot_middle(self):
-        # callback.'s preferred contact separator is "·"
+        # sartor.'s preferred contact separator is "·"
         md = (
             "# Casey Rivera\n"
             "Principal Product Designer\n"
@@ -288,7 +288,7 @@ class TestCertifications:
 
 
 # ---------------------------------------------------------------------
-# Unknown sections → meta.callback.unparsed
+# Unknown sections → meta.sartor.unparsed
 # ---------------------------------------------------------------------
 
 
@@ -296,7 +296,7 @@ class TestUnknownSections:
     def test_unknown_section_goes_to_unparsed(self):
         md = "# Jane Doe\n\n## Hobbies and Other Things\nLong-distance cycling.\n"
         doc = md_to_json_resume(md)
-        unparsed = doc["meta"]["callback"]["unparsed"]
+        unparsed = doc["meta"]["sartor"]["unparsed"]
         assert len(unparsed) == 1
         assert unparsed[0]["section"] == "Hobbies and Other Things"
         assert "cycling" in unparsed[0]["raw"]
@@ -361,7 +361,7 @@ class TestRealisticFull:
         assert doc["education"][0]["institution"] == "Polytechnic Institute of Test"
 
         # No unparsed content
-        assert doc["meta"]["callback"]["unparsed"] == []
+        assert doc["meta"]["sartor"]["unparsed"] == []
 
     def test_idempotent_on_re_parse(self):
         """Parsing the same markdown twice produces identical structure."""

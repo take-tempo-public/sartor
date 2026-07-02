@@ -83,12 +83,12 @@ def test_done_payload_carries_citations_and_flags(monkeypatch):
         {
             "n": 1,
             "label": "generation-and-grounding",
-            "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/generation-and-grounding.md",
+            "href": "https://github.com/take-tempo-public/sartor/blob/main/docs/wiki/pages/generation-and-grounding.md",
         },
         {
             "n": 2,
             "label": "analyzer.py:353",
-            "href": "https://github.com/amodal1/callback/blob/" + "a" * 40 + "/analyzer.py#L353",
+            "href": "https://github.com/take-tempo-public/sartor/blob/" + "a" * 40 + "/analyzer.py#L353",
         },
     ]
     assert payload["truncated"] is True
@@ -260,7 +260,7 @@ def test_l1_carries_the_locked_voice_clauses():
 
 def test_banned_tell_scanner_flags_overpromise_and_performed():
     not_ok = (
-        "callback. keeps the output ATS-safe so it reaches a human.",
+        "sartor. keeps the output ATS-safe so it reaches a human.",
         "I'd rather be straight with you than guess.",
         "That sounds exhausting — but you're in the right place!",
         "Great question! Happy to help.",
@@ -275,7 +275,7 @@ def test_banned_tell_scanner_flags_overpromise_and_performed():
 
 
 def test_no_url_scanner_flags_links_in_output():
-    assert _scan_urls("Report it at https://github.com/amodal1/callback/issues")
+    assert _scan_urls("Report it at https://github.com/take-tempo-public/sartor/issues")
     assert _scan_urls("see github.com/x")
     assert _scan_urls("You can report this on the project's GitHub.") == []
 
@@ -296,14 +296,14 @@ def test_assistant_microcopy_brand_mark_and_github_link():
     # Plain-languaged intro + empty-state scope line landed. (ASCII-only substrings —
     # the line also contains "résumé", but asserting non-ASCII trips source-encoding
     # mismatches on Windows; the brand-mark/link checks below are what matter here.)
-    assert "how callback. works" in html
+    assert "how sartor. works" in html
     assert "won't touch your private resumes or configs" in html
     # The real repo issues URL is the SINGLE source of the link (the model never
     # emits a URL — it only states the behavior; cf. test_no_url_scanner_*).
-    assert html.count("https://github.com/amodal1/callback/issues") == 1
+    assert html.count("https://github.com/take-tempo-public/sartor/issues") == 1
     # Brand mark casing: never the wrong forms anywhere in the shell.
     assert "CallBack" not in html
-    assert "Callback." not in html
+    assert "Sartor." not in html
 
 
 def test_answer_node_is_not_a_live_region():
@@ -343,21 +343,21 @@ def test_sources_block_is_not_a_live_region():
 def test_citation_href_wiki_code_symbol_and_no_sha():
     wiki, code = _two_units()
     assert analyzer._citation_href(wiki) == (
-        "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/generation-and-grounding.md"
+        "https://github.com/take-tempo-public/sartor/blob/main/docs/wiki/pages/generation-and-grounding.md"
     )
     # code path:line pins the provenance sha so the line is exact
     assert analyzer._citation_href(code) == (
-        "https://github.com/amodal1/callback/blob/" + "a" * 40 + "/analyzer.py#L353"
+        "https://github.com/take-tempo-public/sartor/blob/" + "a" * 40 + "/analyzer.py#L353"
     )
     # path:symbol → file at the pinned sha, no #L anchor
     sym = Unit("def foo(): ...", Tier.GIT, "git", "analyzer.py:foo", Audience.DEV, "b" * 40)
     assert analyzer._citation_href(sym) == (
-        "https://github.com/amodal1/callback/blob/" + "b" * 40 + "/analyzer.py"
+        "https://github.com/take-tempo-public/sartor/blob/" + "b" * 40 + "/analyzer.py"
     )
     # empty sha (pre-ingest sentinel) → falls back to main
     nosha = Unit("x = 1", Tier.GIT, "git", "app.py:5", Audience.DEV, "")
     assert (
-        analyzer._citation_href(nosha) == "https://github.com/amodal1/callback/blob/main/app.py#L5"
+        analyzer._citation_href(nosha) == "https://github.com/take-tempo-public/sartor/blob/main/app.py#L5"
     )
 
 

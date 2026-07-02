@@ -65,7 +65,7 @@ the rulebook is [`docs/wiki/SCHEMA.md`](../docs/wiki/SCHEMA.md).
    **minimal SCHEMA-conformant page edit** from the source **at HEAD** + the named exemplars
    ([`route-surface`](../docs/wiki/pages/route-surface.md),
    [`deterministic-llm-boundary`](../docs/wiki/pages/deterministic-llm-boundary.md),
-   [`using-callback`](../docs/wiki/pages/using-callback.md)), holding the one grounding rule.
+   [`using-sartor`](../docs/wiki/pages/using-sartor.md)), holding the one grounding rule.
    It edits the page and hands back a one-line summary of what changed and which source
    line(s) ground it. It does **not** grade itself or touch index/log/checkpoint.
 

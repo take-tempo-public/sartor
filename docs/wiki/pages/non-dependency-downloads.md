@@ -18,7 +18,7 @@
 ## (a) To run the basic tool
 
 1. **Python 3.10+** — the interpreter (supports 3.10–3.13).
-2. **`git` + a repo clone** — callback. ships no end-user PyPI wheel; you clone and
+2. **`git` + a repo clone** — sartor. ships no end-user PyPI wheel; you clone and
    `pip install -e .`.
 3. **A headless Chromium binary** (~150 MB, one-time) via
    `python -m playwright install chromium` — **the single biggest non-pip download for

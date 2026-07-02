@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>callback. — diagnostics</title>
+  <title>sartor. — diagnostics</title>
   <!-- Progressive-enhancement flag: set before paint so JS-on styling (hidden
        panes / detail store) applies without a flash. JS-off → everything stacks. -->
   <script>document.documentElement.className += ' js';</script>
@@ -178,7 +178,7 @@
 </head>
 <body class="cb-dash">
 
-<h1>callback. <span class="sub">— diagnostics console</span></h1>
+<h1>sartor. <span class="sub">— diagnostics console</span></h1>
 <p class="meta">Read-only observability for the LLM pipeline. Telemetry from
   <code class="short">logs/llm_calls.jsonl</code> + <code class="short">evals/results/*.jsonl</code>.
   Click any tile to expand its detail.</p>
@@ -840,7 +840,7 @@
     },
     dashGroundedness: {
       title: 'Groundedness — the no-invention check',
-      body: 'Groundedness is callback’s core promise made measurable: the L0 '
+      body: 'Groundedness is sartor’s core promise made measurable: the L0 '
         + 'metric flags specifics (numbers, named tools, dates) that appear in a '
         + 'generated résumé but not in the candidate’s source material. The '
         + 'grounding box — the 0–5 score, the fabricated-specifics rate, and the '
@@ -1086,7 +1086,7 @@
 })();
 </script>
 
-<!-- ===== Eval runner: shared SSE streamer (window.callbackEval.run) + Quality-tab control ===== -->
+<!-- ===== Eval runner: shared SSE streamer (window.sartorEval.run) + Quality-tab control ===== -->
 <script>
 (function () {
   function parseSse(buffer, onEvent) {
@@ -1153,7 +1153,7 @@
       }
     });
   }
-  window.callbackEval = { run: run, stream: stream, parseSse: parseSse };
+  window.sartorEval = { run: run, stream: stream, parseSse: parseSse };
 
   // ---- Quality-tab "Run eval" control ----
   var btn = document.getElementById('evalRunBtn');
@@ -1181,11 +1181,11 @@
 })();
 </script>
 
-<!-- ===== Tuning tab: candidate-vs-baseline A/B (reuses window.callbackEval.stream) ===== -->
+<!-- ===== Tuning tab: candidate-vs-baseline A/B (reuses window.sartorEval.stream) ===== -->
 <script>
 (function () {
   var btn = document.getElementById('tuneRunBtn');
-  if (!btn || !window.callbackEval) return;
+  if (!btn || !window.sartorEval) return;
   var PROMPTS = {{ tune_prompts | tojson }};
   var byName = {};
   var sel = document.getElementById('tuneConstant');
@@ -1239,7 +1239,7 @@
     btn.disabled = true;
     deltaEl.hidden = true; promote.hidden = true;
     prog.textContent = 'Starting A/B — baseline then candidate… (paid Sonnet/Haiku)';
-    window.callbackEval.stream('/api/tune/run', params, function (ev, p) {
+    window.sartorEval.stream('/api/tune/run', params, function (ev, p) {
       if (ev === '_closed') { btn.disabled = false; return; }
       if (ev === 'delta') {
         deltaEl.hidden = false; deltaEl.textContent = p.table || '(no delta)';
@@ -1421,9 +1421,9 @@
     runBtn.textContent = 'Run this fixture (real --seed)';
     var prog = el('div', 'annotate-progress'); prog.setAttribute('role', 'status'); prog.setAttribute('aria-live', 'polite');
     runBtn.addEventListener('click', function () {
-      if (!window.callbackEval) { prog.textContent = 'Eval runner unavailable.'; return; }
+      if (!window.sartorEval) { prog.textContent = 'Eval runner unavailable.'; return; }
       if (!window.confirm('Run the eval for fixture "' + state.slug + '" now?\n\nThis makes paid Sonnet + Haiku API calls (~$0.30) against this fixture\'s corpus and takes a few minutes.')) return;
-      window.callbackEval.run(
+      window.sartorEval.run(
         { suite: 'real', subset: 'full', fixture: state.slug, slug: state.slug, username: state.candidate, grounding_signals: false },
         prog, runBtn,
         function () { prog.textContent += ' Reload the Quality tab to see the scored run.'; },

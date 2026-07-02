@@ -122,7 +122,7 @@ Override scope is the named system-prompt constants only, not the dynamic user-p
 ## Two entry points, one core
 
 `run_suite` is the importable core; `main` is the CLI wrapper. The same core also backs the
-localhost `POST /api/eval/run` console route, which passes a `progress` callback to stream
+localhost `POST /api/eval/run` console route, which passes a `progress` sartor to stream
 per-fixture/per-rubric milestones to the browser dashboard; the default `progress=None` path
 makes every `_emit` a no-op so the written bytes are unchanged `[synthesis]`
 ([`evals/runner.py:run_suite`](../../../evals/runner.py)).

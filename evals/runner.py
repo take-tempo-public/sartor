@@ -1,4 +1,4 @@
-"""callback. eval harness.
+"""sartor. eval harness.
 
 Loads synthetic and/or real fixtures, runs the full analyze + generate
 pipeline against each, dispatches per-rubric grading via Claude Haiku,
@@ -100,7 +100,7 @@ REGRESSION_DELTA = float(os.environ.get("REGRESSION_DELTA", "0.5"))
 
 logger = logging.getLogger(__name__)
 
-# A coarse progress callback: (event_name, payload) → None. Optional everywhere;
+# A coarse progress sartor: (event_name, payload) → None. Optional everywhere;
 # the default `run_suite` path passes None and every emit is a no-op, so the
 # written JSONL bytes are unchanged. The console SSE route passes one to stream
 # per-fixture/per-rubric progress to the browser.
@@ -1509,7 +1509,7 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     )
 
-    ap = argparse.ArgumentParser(description="callback. eval harness")
+    ap = argparse.ArgumentParser(description="sartor. eval harness")
     ap.add_argument(
         "--suite",
         choices=["synthetic", "real", "all", "anchor", "exploration"],

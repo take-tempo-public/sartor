@@ -30,6 +30,6 @@ def test_non_debug_single_process_opens() -> None:
 
 
 def test_no_browser_optout_never_opens() -> None:
-    # CALLBACK_NO_BROWSER=1 wins regardless of process role.
+    # SARTOR_NO_BROWSER=1 wins regardless of process role.
     assert _should_open_browser(None, "1") is False
     assert _should_open_browser("true", "1") is False

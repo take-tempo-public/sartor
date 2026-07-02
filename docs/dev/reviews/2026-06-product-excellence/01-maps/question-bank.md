@@ -4,7 +4,7 @@ evidence_sha: c6e0437
 graduation: none (rubric portions are v1.0.7 governance candidates)
 ---
 
-# Assessment question bank — callback. (2026-06 product-excellence review)
+# Assessment question bank — sartor. (2026-06 product-excellence review)
 
 > Phase 2 artifact. Candidate questions arrive from the eight domain guides;
 > additional questions are minted from the interview record's assessment leads
@@ -35,7 +35,7 @@ graduation: none (rubric portions are v1.0.7 governance candidates)
 | ID | Question | Charter trace | Where to look | Source |
 |---|---|---|---|---|
 | QB-vision-01 | Does any public-facing vision doc **tier** its self-imposed constraints by enforceability (machine-inviolable vs negotiable-default), or are all ~12 presented as one uniform "won't-cross" set? | C-0, C-8(brief), C-1, C-6 | `vision.md:76-175` "Self-imposed constraints" | guide Q1 / brief-C8 |
-| QB-vision-02 | Is "an interview from a callback-written resume" stated anywhere as a **success criterion**, not only as a deferred v2 "Mark sent" feature? | P-4, M-1, C-6(success-loop) | `vision.md:46-72`; `PRODUCT_SHAPE §4 L133-139` | guide Q2 / brief-C6 |
+| QB-vision-02 | Is "an interview from a sartor-written resume" stated anywhere as a **success criterion**, not only as a deferred v2 "Mark sent" feature? | P-4, M-1, C-6(success-loop) | `vision.md:46-72`; `PRODUCT_SHAPE §4 L133-139` | guide Q2 / brief-C6 |
 | QB-vision-03 | Does the ATS framing carry the charter's escape hatch (edit the produced document for non-ATS needs), or is it stated categorically with no hatch? | C-5 | `vision.md:57-63, 250-259` | guide Q3 / brief-C4 |
 | QB-vision-04 | Is the Corpus-Item ladder still the load-bearing thesis after Phase 4.5 (converging vs re-dispositioned), and does `vision.md` Learnings agree with `PRODUCT_SHAPE`'s current disposition, or do they drift? | P-6, S-2 | `PRODUCT_SHAPE.md:31-42, 410-417, §10`; `vision.md:222-229` | guide Q4 / map-DEBUFF-2 |
 | QB-vision-05 | Where would portfolio polish (A-4 "whoa, robust") tempt a vision claim in **absolute register** resting on LLM behavior ("never invents", "always grounded" as a guarantee vs mechanism+effort)? | C-0, C-3, A-4 | `vision.md:75-149` constraints; system-model "one law" | guide Q5 |
@@ -151,8 +151,8 @@ graduation: none (rubric portions are v1.0.7 governance candidates)
 
 | Cut candidate | Origin | One-line reason |
 |---|---|---|
-| "Should callback. ship an opt-in PII-scrubbed quality-export channel?" | brief-C1/M1; interview Q9 | RECANTED at R2-1 ("the docs are right, it's not worth it"); the no-telemetry promise stands unqualified — no charter clause supports a question, decided. |
-| "Does callback. support a coach/headhunter multi-client mode?" | brief-C2/C5/M5; interview Q4 | RULED out of scope at R2-2; single-tenant multi-client deliberately neither built nor documented — no charter clause to assess against. |
+| "Should sartor. ship an opt-in PII-scrubbed quality-export channel?" | brief-C1/M1; interview Q9 | RECANTED at R2-1 ("the docs are right, it's not worth it"); the no-telemetry promise stands unqualified — no charter clause supports a question, decided. |
+| "Does sartor. support a coach/headhunter multi-client mode?" | brief-C2/C5/M5; interview Q4 | RULED out of scope at R2-2; single-tenant multi-client deliberately neither built nor documented — no charter clause to assess against. |
 | "Should non-ATS templates ship bundled behind a visible flag?" | brief-C4/M8; tension T4 | RULED categorical at R2-3 (ATS-safe all the time; user edits the produced doc) — the only residual (escape-hatch wording) is already QB-vision-03; the flag-semantics question is decided. |
 | "Vendor Chart.js / fix the CDN load." | AL-4 / PX-01 | Already RULED (fix v1.0.6); prescription decided. Reframed as verify-landed inside QB-sec-04 — no separate decide-question. |
 | "Re-wire the dead profile/website scrape." | AL-5 / PX-02 | Already RULED (re-wire v1.0.6); decided. Verify-landed folded into QB-sec-04. |

@@ -337,6 +337,65 @@ class TestGenerateDispatch:
             generate(None, ctx, analysis, username="u", run_id="r")
         assert "the candidate has CHOSEN it for this application" in captured["prompt"]
 
+    # -- v1.0.8 walkthrough generation-quality (PROMPT_VERSION 2026-07-01.1) --
+
+    _ANALYSIS: ClassVar[dict] = {
+        "essential_skills": [],
+        "keyword_placement": [],
+        "suggestions": [],
+        "overall_strategy": "",
+        "professional_vocabulary": [],
+    }
+    _FAKE: ClassVar[dict] = {
+        "resume_content": "x",
+        "cover_letter_content": "y",
+        "changes_made": [],
+        "proofread_notes": [],
+        "selected_bullets": [],
+        "proposed_new_bullets": [],
+        "proposed_experience_titles": [],
+    }
+
+    def _run(self, ctx):
+        captured: dict = {}
+        with patch("analyzer._call_llm", _mock_llm_call(captured, self._FAKE)):
+            generate(None, ctx, self._ANALYSIS, username="u", run_id="r")
+        return captured["prompt"]
+
+    def test_corpus_prompt_has_per_role_coverage_rule(self):
+        """C1: the corpus prompt forbids leaving a role that HAS bullets empty."""
+        prompt = self._run(_make_corpus_context())
+        assert "COVERAGE" in prompt
+        assert "never zero a role out" in prompt.lower()
+
+    def test_grounding_check_forbids_tenure_fabrication(self):
+        """E5: the grounding check names the invented '10 years' tenure failure."""
+        prompt = self._run(_make_corpus_context())
+        assert "10 years of end-to-end product ownership" in prompt
+        assert "NEVER assert a years-of-experience" in prompt
+
+    def test_refine_injects_current_resume_draft_only_when_edited(self):
+        """E2: iteration>0 with edits carries the draft (so edits survive refine);
+        iteration 0 does not (byte-identical default path)."""
+        assert "<current_resume_draft>" not in self._run(_make_corpus_context())
+
+        ctx = _make_corpus_context()
+        ctx["iteration"] = 1
+        ctx["edited_resume_text"] = "# Jane\n## Experience\n### Polaris\n- My hand-added bullet."
+        prompt = self._run(ctx)
+        assert "<current_resume_draft>" in prompt
+        assert "My hand-added bullet." in prompt
+
+    def test_multi_role_clarification_attribution(self):
+        """H1: a clarification answer spanning multiple roles must split per role."""
+        ctx = _make_corpus_context()
+        ctx["clarification_questions"] = [
+            {"id": "q1", "kind": "context_probe", "text": "Where did you lead teams?"}
+        ]
+        ctx["clarifications"] = {"q1": "At Polaris and at Acme I led delivery teams."}
+        prompt = self._run(ctx)
+        assert "ATTRIBUTE each part to ITS role" in prompt
+
     def test_corpus_response_missing_selected_bullets_raises(self, monkeypatch):
         """When career_corpus is set, the response MUST include selected_bullets
         + proposed_new_bullets + proposed_experience_titles. Missing any of these

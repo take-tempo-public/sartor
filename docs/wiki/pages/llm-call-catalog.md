@@ -1,7 +1,7 @@
 # LLM call catalog
 
 > **Audience:** `dev`
-> **Concept:** the full set of LLM call kinds callback. makes, which model tier each routes to (Sonnet 4.6 = heavy reasoning; Haiku 4.5 = structured selection), and the two-pass analyze (Haiku extraction → Sonnet synthesis) that anchors the analyze→generate cache.
+> **Concept:** the full set of LLM call kinds sartor. makes, which model tier each routes to (Sonnet 4.6 = heavy reasoning; Haiku 4.5 = structured selection), and the two-pass analyze (Haiku extraction → Sonnet synthesis) that anchors the analyze→generate cache.
 > **Sources:** [`analyzer.py`](../../../analyzer.py), [`onboarding/extract_experiences.py`](../../../onboarding/extract_experiences.py), [`architecture.md` §"LLM routing + cost"](../../architecture.md), [`llm-routing.mmd`](../../diagrams/llm-routing.mmd), [`pipeline.mmd`](../../diagrams/pipeline.mmd).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 

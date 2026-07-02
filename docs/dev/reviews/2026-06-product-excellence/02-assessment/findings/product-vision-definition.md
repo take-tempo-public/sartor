@@ -15,7 +15,7 @@ graduation: none
 
 ## Domain verdict
 
-callback. *knows what it is* at the level of instinct: the identity is
+sartor. *knows what it is* at the level of instinct: the identity is
 crisp and refreshingly non-marketing, the no-invention thesis is
 load-bearing across every doc, and `system-model.md` is a genuinely
 strong self-model that a skeptical engineer (A-4) can navigate. The gap
@@ -43,7 +43,7 @@ cloner reads.
 - **charter-trace:** C-0, C-1, C-6 (brief C8)
 - **question-refs:** QB-vision-01
 - **evidence:** `vision.md:75-77@c6e0437` ("Self-imposed constraints …
-  These are the lines callback. won't cross") then seven sub-sections
+  These are the lines sartor. won't cross") then seven sub-sections
   (`vision.md:81-174`) — local-first, open-standards, minimal-deps,
   determinism boundary, no-invention, auditable-iterations — all under
   one uniform header with no enforceability label.
@@ -100,7 +100,7 @@ cloner reads.
   `PRODUCT_SHAPE.md:133-139@c6e0437` still labels "Mark sent + outcome"
   a "(Future v2)" feature and `PRODUCT_SHAPE.md:458-459` "no … signal
   today. v2."
-- **finding:** P-4/M-1 elevate "an interview from a callback-written
+- **finding:** P-4/M-1 elevate "an interview from a sartor-written
   resume" to *the* success measure — and it is the product's literal
   name. No public-facing vision doc states it as a success criterion;
   it surfaces only as a deferred-v2 feature. Worse, the deferral is now
@@ -123,7 +123,7 @@ cloner reads.
   `vision.md:42` "The scope is narrow on purpose: one person, one
   machine, one job at a time."; `vision.md:81` header "Local-first,
   single-tenant"; `vision.md:278-280` "Multi-user / multi-tenant —
-  callback. is single-tenant by design. Adding auth would change the
+  sartor. is single-tenant by design. Adding auth would change the
   threat model fundamentally; we won't." Counter-evidence the app is
   multi-profile: `app.py:180 list_users()`; `templates/index.html:74`
   `userSelect` dropdown.
@@ -283,7 +283,7 @@ cloner reads.
 
 ### F-vision-A1 — Crisp non-marketing identity sentence (BOOST candidate, confirmed)
 - **disposition:** BOOST · **leverage:** P3 · **charter-trace:** P-1, P-2, C-0
-- **evidence:** `vision.md:3-7@c6e0437` "callback. answers one question,
+- **evidence:** `vision.md:3-7@c6e0437` "sartor. answers one question,
   honestly: 'What résumé and (optional) cover letter should I send for
   this specific job?'"; the ordered three goals `vision.md:48-72`.
 - **finding:** The product-map / domain-guide BOOST candidate (crisp,

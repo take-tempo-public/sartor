@@ -1,4 +1,4 @@
-# callback. — Release arc: v1.0.2 → v1.1.0
+# sartor. — Release arc: v1.0.2 → v1.1.0
 
 > **Written:** 2026-05-28 planning session
 > **Status:** approved — executing phase by phase
@@ -134,7 +134,7 @@ Update `_load_baseline_scores` in `runner.py` to read schema_version 3. Run 5 ba
 
 ---
 
-#### `eval/callback-metrics` ← after PR gate confirmed
+#### `eval/sartor-metrics` ← after PR gate confirmed
 
 - `evals/rubrics/callback_likelihood.md`: recruiter-persona Haiku judge (200-person company, 80 résumés, 7-second skim, 1–5 scale)
 - `hardening.py _post_generation_metrics()`: 3 new deterministic metrics:
@@ -151,7 +151,7 @@ Update `_load_baseline_scores` in `runner.py` to read schema_version 3. Run 5 ba
 - Alembic migration: add `sent_at TEXT`, `outcome_at TEXT`, `notes TEXT` to `application`
 - Expand `status` CHECK: add `offer | accepted | rejected | no_response`; rename `closed` → `withdrawn` (backfill)
 - `db/models.py`: update `Application` model
-- Minimal UI: "Got callback" / "Got rejection" / "No response" outcome buttons in Prior Applications panel; auto-set `sent_at` when status → `submitted`
+- Minimal UI: "Got sartor" / "Got rejection" / "No response" outcome buttons in Prior Applications panel; auto-set `sent_at` when status → `submitted`
 
 ---
 
@@ -203,7 +203,7 @@ Schema correction to align the DB with the canonical status semantics above.
 
 ---
 
-#### `eval/pareto-dashboard` ← after callback-metrics (needs eval_composite)
+#### `eval/pareto-dashboard` ← after sartor-metrics (needs eval_composite)
 
 New Pareto frontier panel at top of `/_dashboard`:
 - X = wall-clock latency (log scale); Y = eval_composite (0–5)
@@ -217,7 +217,7 @@ New Pareto frontier panel at top of `/_dashboard`:
 ### v1.0.2 tag criteria
 
 - All 25 `followup.md` checklist items checked
-- schema_version 3 baseline live; anchor/exploration split live; Promptfoo YAML running; PR gate confirmed on dry-run; callback rubric + metrics live; applications tracker shipped; Pareto frontier visible
+- schema_version 3 baseline live; anchor/exploration split live; Promptfoo YAML running; PR gate confirmed on dry-run; sartor rubric + metrics live; applications tracker shipped; Pareto frontier visible
 - `ruff + mypy + pytest` green
 
 ---
@@ -386,7 +386,7 @@ This phase carries the product redesign **and** the polished home for the Phase 
 | Branch | Depends on | Key work |
 |---|---|---|
 | `feat/grounding-scorers-in-console` ✓ DONE (merged `bc29a07`, 2026-06-06) | annotation-tab | Opt-in grounding on the browser bootstrap + a "Score grounding" backfill route (`POST /api/annotation/fixture/<u>/<slug>/score`); browser bootstraps now snapshot a `seed.json` via `scripts.export_corpus_seed.export_seed` (the source the backfill scores against via `seeded_session`, and the file collate's `--seed` run-command already assumed but never produced). Missing `[eval-grounding]` extras or any scoring failure degrades to un-scored + a streamed `warning` — never a 500. No `PROMPT_VERSION` bump. |
-| `feat/run-eval-from-console` ✓ DONE (merged `3a91bea`, 2026-06-07) | grounding-scorers | Extracted a `run_suite(...)` core from `runner.main()` (`EvalRunResult` return + optional `progress` callback; default path byte-identical, mirrors `bootstrap.py`'s `main`/`run_pipeline_over_jd_texts` split) + a localhost SSE `POST /api/eval/run`. "Run eval" control on the Quality tab (suite/subset/grounding + cost-band `confirm()` consent + reload); collate's copy-the-command dead-end replaced with a visible command **and** a "Run this fixture" button. Closes the mandatory CLI hop in the loop. No `PROMPT_VERSION` bump. **`run_suite` is the precondition `feat/tuning-tab-ab` consumes.** |
+| `feat/run-eval-from-console` ✓ DONE (merged `3a91bea`, 2026-06-07) | grounding-scorers | Extracted a `run_suite(...)` core from `runner.main()` (`EvalRunResult` return + optional `progress` sartor; default path byte-identical, mirrors `bootstrap.py`'s `main`/`run_pipeline_over_jd_texts` split) + a localhost SSE `POST /api/eval/run`. "Run eval" control on the Quality tab (suite/subset/grounding + cost-band `confirm()` consent + reload); collate's copy-the-command dead-end replaced with a visible command **and** a "Run this fixture" button. Closes the mandatory CLI hop in the loop. No `PROMPT_VERSION` bump. **`run_suite` is the precondition `feat/tuning-tab-ab` consumes.** |
 | `feat/tuning-tab-ab` ✓ DONE (merged `812e6bb`, feature `5f708f7`, 2026-06-07) | run-eval-from-console | Replaced the Tuning stub with a real in-browser A/B: pick an `analyzer._BASE_SYSTEM_PROMPTS` constant, draft/paste a candidate, run baseline+candidate evals via a dedicated localhost SSE `POST /api/tune/run` (drives `run_suite` twice + `analyzer.prompt_overrides()`), delta rendered with `evals/tune.py` (`load_scores`/`build_delta_table`/`format_delta_table`). Mirrors `/api/eval/run`'s contract incl. optional corpus-seed mode. **Promote stays the agent's job** — no route edits `analyzer.py`. No `PROMPT_VERSION` bump; no new dep. |
 | `docs/tuning-loop-discoverability` ✓ DONE (merged `8c6cb7d`, 2026-06-07) | tuning-tab-ab | In-app diagnostics-modal/pill/settings copy advertises the now-interactive loop; the in-browser console-loop walkthrough lands in `evals/README.md` (the dev-doc home) with `walkthrough.md` carrying only a flag + link to it; `GROUNDING_METRIC.md` "B (deferred)" note updated to note the label-producing loop is now browser-driven. Docs only. |
 
@@ -485,7 +485,7 @@ the v1.0.5 walk's `#1–#24` (the user's own numbering; KW11/KW12 unused).
 **KW3 detail — new-user first-run modal sequence** (new users only: empty corpus →
 first successful ingest; graceful fade-in, closes on click-away). Each stop fires
 once on first view and is re-openable via its (i)-circle (KW10):
-- **First run:** welcome to callback — a career-experience manager that tracks +
+- **First run:** welcome to sartor — a career-experience manager that tracks +
   manages your career data (not locked in a file you hand-edit per job); what the app
   does from the user's view; point to **Add new user** to start.
 - **On add-user:** import a résumé to start; your initial career corpus is derived
@@ -1188,7 +1188,7 @@ spine (WS-2-full's other half) stays **post-public** — not needed to claim str
   `agent-coding-practices-kit` (context / docs / strict-typing + the
   `context-structure-review` skill). Eight decisions settled
   ([`decisions.md`](decisions.md) KIT-1…8; full faithful adoption, "implement + flag
-  promotable" — Callback is the donor, not a blank canary). **Threads existing work
+  promotable" — Sartor is the donor, not a blank canary). **Threads existing work
   rather than standing alone:** the strict ratchet **is** WS-2-full above; the
   mechanizable gates fold into `feat/portable-enforcement-core` (8.7 — local pre-commit
   now, CI-blocking when the remote lands); the **spectree request-boundary + OpenAPI

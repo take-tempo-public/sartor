@@ -1,4 +1,4 @@
-# Product shape — callback.
+# Product shape — sartor.
 
 > **Purpose:** the architectural intent. The unified Corpus Item pattern,
 > the v1 → v2 sequencing ladder, the locked-in technology choices
@@ -287,8 +287,8 @@ specific shape.
 
 **Extension namespace.** Our corpus-only fields (tags, scores,
 is_active, variants, has_outcome) live under
-`meta.callback.{ext_fields}` so the JSON still validates against the
-standard schema. Themes that don't know about callback. extensions
+`meta.sartor.{ext_fields}` so the JSON still validates against the
+standard schema. Themes that don't know about sartor. extensions
 ignore them; our own renderer reads them.
 
 **Markdown becomes a render target, not the source of truth:**
@@ -650,7 +650,7 @@ acceptance criteria / target version**.
   Playwright's native `page.pdf()`) throws internally on certain content
   shapes: `Cannot read getBoundingClientRect of null` (async, from its
   un-`catch`-ed `await preview()`) and `node.getAttribute is not a function`
-  (sync, from an off-chain layout callback). `feat/template-pagination`
+  (sync, from an off-chain layout sartor). `feat/template-pagination`
   (v1.0.5) **contained** both — the injection in `app.py`
   (`_PAGED_PREVIEW_INJECTION`) drives `preview()` itself with `try/catch` +
   `.catch()` and narrowly swallows the two known paged-origin throws — so the

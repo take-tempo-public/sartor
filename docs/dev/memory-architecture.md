@@ -1,6 +1,6 @@
 # Memory architecture — the `recall/` substrate + the avatar
 
-> **Purpose:** the design for callback's **Memory** function as a first-class,
+> **Purpose:** the design for sartor's **Memory** function as a first-class,
 > modular subsystem — a reusable retrieval/memory substrate (`recall/`) that
 > *feeds* a small-LLM (Haiku) "avatar" which answers user + dev questions from
 > the system's own knowledge, with citations.
@@ -22,7 +22,7 @@
 > §Phase 4.5 / §4.7 for sequencing.
 > **Provenance:** distilled from the 2026-06-09 evaluation of Midas-style
 > local agent memory (no-LLM ingest, source-turn recall, importance-over-
-> recency forgetting) against callback's needs.
+> recency forgetting) against sartor's needs.
 
 ---
 
@@ -81,11 +81,11 @@
   résumés. Public surface: `Unit(text, tier, source_id, path|line|page,
   audience, sha, score)`, `Source.refresh(since_sha) / search(query, scope)`,
   `Scope`, `Context`, and one entry point `recall.assemble(query, scope) -> Context`.
-- **Project wiring (callback config).** Source roots (`docs/wiki`, repo HEAD,
+- **Project wiring (sartor config).** Source roots (`docs/wiki`, repo HEAD,
   `db/`), the **path→audience** tag rules, enabled tiers, the persona, and the
   `.last_ingest_sha` binding. This is all that changes to point the substrate at
   a different project.
-- **The avatar (callback Operation surface).** A Flask SSE chat route + the
+- **The avatar (sartor Operation surface).** A Flask SSE chat route + the
   Haiku call: question + mode → `recall.assemble()` → prompt(persona, context)
   → cited answer. The **only** LLM in the stack — `recall/` is entirely
   deterministic (even the embedder is a static lookup), so the P1 boundary holds
@@ -228,7 +228,7 @@ agents build against (the way [`../../AGENTS.md`](../../AGENTS.md) governs):
   specifics are injected via config, never imported by `recall/`.
 - **Dependency rule (hard):** `recall/` may import stdlib + light libs, **never**
   [`../../app.py`](../../app.py), [`../../analyzer.py`](../../analyzer.py), or the
-  callback DB models. This mirrors the P1 determinism boundary the repo already
+  sartor DB models. This mirrors the P1 determinism boundary the repo already
   enforces with hooks, and is a candidate for its own boundary-lint.
 - **Extraction readiness:** lifting `recall/` into a standalone package should be
   **packaging only** — *if* the boundary above stays clean. Every PR touching the

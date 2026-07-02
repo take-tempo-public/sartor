@@ -13,7 +13,7 @@ graduation: none (rubric portions are v1.0.7 governance candidates)
 
 ## 1. What mastery means here
 
-For callback., the eval/grounding/tuning system is not back-office QA — it is
+For sartor., the eval/grounding/tuning system is not back-office QA — it is
 **product surface and exhibit #1**. Three charter clauses make it load-bearing:
 
 - **C-3 — grounded synthesis is the feature.** Mastery is keeping the LLM
@@ -26,7 +26,7 @@ For callback., the eval/grounding/tuning system is not back-office QA — it is
   legibility to a non-coding power user (A-2), not just correctness of internals.
 - **M-2 — the v1.1.0 tag evidence** requires the loop "exercised end-to-end by
   the owner with metrics readable at a glance," plus a lay metrics legend and a
-  user-facing "how callback. grounds, clarifies, and tunes" page (v1.0.7).
+  user-facing "how sartor. grounds, clarifies, and tunes" page (v1.0.7).
 - **A-2 / A-4** — power users tune without writing code; engineers reading the
   repo should think "whoa, this is robust." The eval/tuning loop is named the
   first of three A-4 exhibits.

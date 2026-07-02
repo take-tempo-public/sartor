@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to callback. are documented here.
+All notable changes to sartor. are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -12,6 +12,213 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased]
+
+### Product rename: Callback → Sartor (`rename/callback-to-sartor`, 2026-07-02)
+
+Renamed the product from **Callback** to **Sartor** across the whole repo — brand
+mark (the lowercase `sartor.` wordmark, incl. the letter-split masthead spans),
+package/CLI name (`pyproject.toml`), the Claude Code plugin + namespace
+(`/callback:*` → `/sartor:*`, `.claude-plugin/*`, `.claude/settings.json`, agents +
+commands), the JSON Resume `meta.callback.*` → `meta.sartor.*` extension key, UI help
+text, docs, wiki (`using-callback.md` → `using-sartor.md`), governance, and the
+`AVATAR_SYSTEM_PROMPT` brand mark (`AVATAR_PROMPT_VERSION` → `2026-07-02.1`).
+
+**Guarded false positives — "callback" is also a recruiting term** (the product name
+is a pun on getting a call-back/interview). Left untouched: `callback_likelihood` /
+`callback_weights` (eval), "generate a callback", "the callback signal/funnel",
+"callbacks", `callback-worthy`, and Chart.js's `callback:` tick formatter — all the
+recruiting/generic-JS uses. GitHub URLs point to `github.com/take-tempo-public/sartor`
+(the résumé `PROMPT_VERSION` was untouched — the main personas carry no brand mark).
+
+`[HUMAN]` follow-ups (not done here): rename the GitHub repo + registries + trademark
+clearance (in-app URLs 404 until the repo rename); rename the working directory
+`Dev/callback` → `Dev/sartor` (the code is path-agnostic, so no in-repo change needed);
+and reload + re-trust the Claude Code marketplace to pick up the `sartor:*` namespace.
+
+### v1.0.8 walkthrough remediation — Branch 8: generation quality (`fix/generation-quality`, 2026-07-01)
+
+The hardest slice — generation correctness. `PROMPT_VERSION` → `2026-07-01.1`.
+
+Deterministic / frontend (no eval):
+- **C3 — cover-letter text leaking into the résumé.** A new deterministic
+  `hardening.strip_cover_letter_block` drops any block starting at a "Dear …" /
+  "To Whom It May Concern" salutation from `resume_content` (a résumé body never
+  contains one), applied right after `generate()` in `run_generation`. This stops
+  the stray cover letter that appeared at the bottom of the résumé editor + download
+  and inflated length past two pages.
+- **E4 — user blocked from correcting a hallucination.** The Haiku refinement
+  scope-check flagged corrections as "changing facts" and the frontend *blocked*
+  them. Now it **flags but never blocks**: the concern is surfaced as a
+  confirm-to-proceed prompt, and the user can always proceed.
+
+Prompt changes (`PROMPT_VERSION` bump; each conditional so the iteration-0 /
+no-clarification path is unchanged):
+- **C1/C2 — older roles came out with no bullets.** The corpus payload carries every
+  role's bullets and `md_to_json_resume` parses them fine, so the LLM was dropping
+  them. Added a **COVERAGE rule**: every experience that has corpus bullets must
+  contribute at least one to `resume_content` — never leave a role title-only when
+  bullets exist.
+- **E2 — refine clobbered manual fixes.** In corpus mode `_stable_user_prefix` never
+  emitted the current draft, so a refine re-derived from the corpus and discarded
+  edits. A conditional `<current_resume_draft>` block (iteration>0 + edits) now feeds
+  the edited draft in with an evolve-don't-rebuild instruction.
+- **E5 — invented "10 years of…" tenure re-appearing.** Added a grounding-check
+  worked example forbidding fabricated years-of-experience/ownership figures in the
+  summary and making a prior removal binding.
+- **H1 — a multi-role clarification answer mashed into one bullet.** The
+  clarifications block now instructs the model to attribute each role's content to
+  its own experience and never merge two roles into one bullet.
+
+Tests: prompt-structure assertions (`tests/test_corpus_mode_prompt.py`), the C3
+stripper (`tests/test_hardening.py`), and a grounding eval run (see
+`evals/TUNING_LOG.md`). C1/E2 are corpus-mode-only (not exercised by the synthetic
+suite) — validated structurally + owner E2E.
+
+### v1.0.8 walkthrough remediation — Branch 7: retire / restore prior applications (`feat/prior-applications-retire`, 2026-07-01)
+
+The Prior Applications list grew unbounded with no way to hide poor examples or
+abandoned drafts (walkthrough J1 / E3 cleanup half). Added a soft-retire flag,
+mirroring the corpus `ExperienceTitle.is_active` pattern (migration 0011):
+
+- **`application.is_active`** column (migration `0013`, native `ADD COLUMN` — no
+  batch recreate, since `application` is a parent of `application_run`; no backfill,
+  everything starts active).
+- **Routes:** `DELETE /api/applications/<id>` soft-retires (kept, not hard-deleted —
+  runs + audit survive); `POST /api/applications/<id>/restore` reverses it. Both are
+  DB-only with an ownership guard (`_safe_username`).
+- **List:** `list_applications` hides retired rows by default; `?include_retired=1`
+  returns them; the summary payload carries `is_active`.
+- **UI:** a "Show retired" toggle in the Prior Applications tab, a `Retire` action on
+  each card (`Restore` on retired cards), a `RETIRED` chip, and dimmed retired cards.
+  The native checkbox gets the same `appearance:auto` override as the corpus one.
+
+This also closes the deferred cleanup half of E3 (deserted résumés/applications).
+Note: collapsing *resolved* applications (interview/rejected/withdrawn) into a
+grouped section was considered but deferred — retire + the existing status filter
+already tame the "too many to see" problem. Tests: `tests/test_application_routes.py`
+(`TestRetireApplication`: retire hides + `include_retired` surfaces, restore, summary
+`is_active`, 404).
+
+### v1.0.8 walkthrough remediation — Branch 6: no legacy ATS advice in corpus mode (`fix/analyze-corpus-advice`, 2026-07-01)
+
+Analyze (Step 1) showed "No standard ATS section headings detected…" and "Resume is
+quite long (N words). Consider trimming to 1-2 pages…" even though there is no
+uploaded résumé — the content is synthesized from the corpus (walkthrough G1).
+`db.build_context` ran `check_ats_format` on the corpus synthesis with an always-empty
+`sections` list (so the heading warning always fired) against the *whole* corpus (so
+the length warning always fired) — both legacy artifacts of the old uploaded-résumé
+flow. The corpus synthesis is a structured projection, not the final deliverable, so
+those warnings are suppressed in corpus mode; the meaningful JD keyword-overlap signal
+is unchanged, and ATS formatting is still judged on the rendered output
+(preview/download). Test: `tests/test_build_context_db.py` asserts corpus-mode
+`ats_warnings == []`.
+
+### v1.0.8 walkthrough remediation — Branch 5: corpus import — year-only dates + role summaries (`fix/corpus-import`, 2026-07-01)
+
+- **Year-only work dates accepted (F3 → also fixes much of F1).** The extractor and
+  the manual add/edit-experience routes required `YYYY-MM` and **dropped** any role
+  whose date was a bare year. Résumés that list years only lost those roles — and
+  because the extraction prompt was told to omit undated roles, the model tended to
+  lump their bullets under the one role it could date ("every bullet in one job").
+  A bare `YYYY` is now valid across the extraction normalizer (`_DATE_RE`), the
+  extraction prompt, both backend validations (create + update), and the frontend
+  patterns. Year-only dates are stored **verbatim** (JSON Resume renders the date
+  string as-is; nothing parses it as `%Y-%m`).
+- **Role summaries import as role intros, not bullets (F2).** A résumé's role
+  intro/scope paragraph was extracted as a bullet. Extraction now has a dedicated
+  `summary` field (with a prompt rule separating an intro paragraph from achievement
+  bullets), and import turns it into a pending-review **`ExperienceSummaryItem`** —
+  the live role-intro path the Compose "Add role intros" picker and the résumé
+  render actually read — plus the denormalized `Experience.summary` column for
+  parity with the manual add route. Deduped across re-imports/merges.
+- **F1 residual.** True LLM mis-grouping on unusually formatted résumés isn't fully
+  deterministic; the existing post-import similar-role merge suggestions remain the
+  cleanup path for that.
+
+The extraction prompt lives in `onboarding/` (not the `PROMPT_VERSION`-tracked
+generation personas) and isn't eval-gated, so no version bump / eval run. Tests:
+`tests/test_extract_experiences.py` (year-only accepted; summary captured separately
+from bullets) and `tests/test_corpus_import.py` (import summary → `ExperienceSummaryItem`,
+not a bullet; year-only kept verbatim).
+
+### v1.0.8 walkthrough remediation — Branch 4: inline bullet edit/approve + Compose UX (`feat/compose-inline-approve`, 2026-07-01)
+
+Frontend-only (CSS/JS); no `PROMPT_VERSION` change, no new dependency:
+
+- **Edit + approve a proposed bullet inline (D3).** A pending-review bullet in the
+  Compose step now carries **EDIT** and **APPROVE** actions next to its `PENDING`
+  flag. EDIT opens the bullet for editing and `PUT`s the new text to the corpus;
+  APPROVE clears the pending flag via `POST /api/bullets/<id>/accept` — both the
+  same routes the Career Corpus tab uses. The user no longer has to leave the
+  tailor flow, edit in the Corpus tab, and come back for a proposed change to stick.
+- **Role-intros checkbox alignment (I1).** The "Add role intros" native checkbox
+  was hit by the global `input { flex:1; padding }` rule and stretched across the
+  row (label wrapping asymmetrically). Added the `appearance:auto; flex:0 0 auto`
+  override (mirrors `.corpus-show-retired input`).
+- **Pending banner fades at zero (I2).** Retiring the last pending bullet/title
+  now refreshes the corpus pending-review banner (accept already did; retire
+  didn't), so it correctly transitions to the "ready" state instead of lingering
+  on stale "Accept all pending" copy.
+
+### v1.0.8 walkthrough remediation — Branch 3: edits reach the preview + refine overlay + back-nav (`fix/edit-backprop`, 2026-07-01)
+
+Deterministic (no LLM, no `PROMPT_VERSION` change, no eval):
+
+- **Edits now show in the styled preview (D1/D2).** The Step-6 preview iframe serves
+  the cached `last_generated_json_resume` (WYSIWYG). `/api/save-edits` now recomputes
+  that cache from the edited résumé markdown via the same deterministic path the
+  download uses (`_normalize_markdown` → `md_to_json_resume`), and the frontend
+  refreshes the preview iframe after a successful save — so a typed edit appears in
+  the styled preview immediately, with zero LLM cost. Cover-letter-only edits leave
+  the résumé cache untouched.
+- **Refine shows the working overlay (E1).** `submitRefinement` now raises the
+  persistent `_setBusy` banner while the refine regenerates (mirrors `runGeneration`),
+  instead of only flipping a status label — no more dead-looking ~30-60s wait.
+- **Back-navigation is discoverable (E3).** The wizard step rail read as a passive
+  progress bar; reachable steps now carry a "Go to step N: <label>" tooltip so users
+  find the click-to-go-back affordance. (The deserted-résumé cleanup half of E3 lands
+  with the Prior-Applications retire work.)
+
+Tests: `tests/test_app_iteration.py` — `/api/save-edits` recomputes
+`last_generated_json_resume` (equals `md_to_json_resume(_normalize_markdown(edit))`,
+carries the edit's name) and a cover-only edit leaves it untouched.
+
+### v1.0.8 walkthrough remediation — Branch 2: faithful preview for uploaded templates (`feat/docx-html-companion`, 2026-07-01)
+
+The live preview renders a résumé through a persona's `.html` + `.css` **companion**
+(the sibling of the `.docx`). Only the 4 bundled personas shipped companions, so an
+uploaded `.docx` template silently fell back to Classic — every uploaded template
+previewed as Classic 1-column even though the `.docx` **download** was faithful
+(walkthrough B2 / B3 / Step-6 #4).
+
+- **New deterministic module `docx_to_persona_html.py`** (charter C-6, no LLM,
+  no new dependency): reads an uploaded `.docx` with python-docx and reconstructs
+  the same typography knobs the bundled templates are built from
+  (`TypographyPreset` — font family/size, margins, name/heading/job sizes, heading
+  treatment: uppercase / small-caps / underline / color, line spacing), then emits
+  a companion `.html` (a byte-for-byte copy of the `classic.html` Jinja2 skeleton
+  with only the CSS `href` swapped) + a `.css` (Classic's ATS-safe single-column
+  structure, re-typed with the uploaded template's own typography) + a
+  `<stem>.persona.json` fidelity sidecar.
+- **Honest fidelity ceiling.** python-docx can't represent multi-column sections,
+  tables, text boxes, or floating images; those sources are marked
+  `layout_fidelity: "typography_only"` and rendered single-column with the source's
+  fonts/colors/margins — which is exactly what the `.docx` download's `_write_docx`
+  produces, so preview and download stay mutually consistent. Never fabricates a
+  layout it can't deliver.
+- **Wiring.** Companions are generated eagerly on upload (`upload_user_persona`,
+  best-effort — a failure logs and still 201s, falling back to Classic as before)
+  and lazily on first preview / PDF render for personas uploaded before this shipped
+  (`preview_application_html`, `generator._render_pdf_from_json`). Idempotent
+  (mtime-cached).
+- **Spacious page-break.** Added `page-break-after: avoid` to the Spacious
+  letterhead so paged.js stops occasionally orphaning the header on page 1
+  (walkthrough Preview #2). Pagination of long résumés should be confirmed visually.
+
+Tests: `tests/test_docx_to_persona_html.py` (round-trip extraction vs each
+`TypographyPreset`; emit + skeleton-contract parity; fidelity fallback on tables;
+`html_template_path_for` now resolves the companion so the preview stops falling
+back to Classic). `PROMPT_VERSION` untouched; no new dependency.
 
 ### v1.0.8 walkthrough remediation — Branch 1: Step-4 template picker polish (`fix/preview-template-bugs`, 2026-07-01)
 
@@ -101,7 +308,7 @@ as having two boundary gates owed (scheduled v1.0.8), and the egress claim is up
 
 **Changed**
 - `README.md` — full rewrite as the product front door; clone URL corrected to
-  `github.com/take-tempo-public/callback`; `DOC-STATUS` freshness markers added.
+  `github.com/take-tempo-public/sartor`; `DOC-STATUS` freshness markers added.
 
 **Added**
 - `docs/dev/documentation-architecture.md` — the documentation publishing strategy that
@@ -735,7 +942,7 @@ refactor) that clears two carry-forward ledger items. **No code/prompt change** 
   described the pre-Sprint-7.1 layout (`.claude-plugin/` "holds the project's commands, agents,
   and hook scripts", plus stale "Step 5 / 8 / 9 of the OSS migration" references). It now
   documents the actual layout — commands/subagents in the repo-root `commands/` / `agents/`
-  loading namespaced via the local `callback-tools` marketplace; only hooks + manifest +
+  loading namespaced via the local `sartor-tools` marketplace; only hooks + manifest +
   marketplace in `.claude-plugin/` — and points to README → Claude Code Plugin for the full
   catalog instead of re-listing entries.
 - **pytest-socket `UserWarning ×2` silenced.** Added one message-scoped `filterwarnings` ignore
@@ -1161,7 +1368,7 @@ The doc-grounded assistant no longer requires a user to be selected before it wi
 answer. Its answer is **project-global** — grounded in the committed wiki + code at
 HEAD, identical for every user — so gating it behind user-selection was an artifact
 of the per-user route pattern, and it blocked the assistant at exactly the first-run
-moment ("how does callback. work?") a brand-new visitor benefits from it most. Route +
+moment ("how does sartor. work?") a brand-new visitor benefits from it most. Route +
 client behavior only; no prompt, dependency, or migration change; `PROMPT_VERSION` and
 `AVATAR_PROMPT_VERSION` unchanged.
 
@@ -1200,7 +1407,7 @@ No new dependency, no migration.
   never "reaches a human" or "improves your chances"), no performed honesty/empathy, and a
   connect-the-capability-to-the-concern move on reassurance-fishing instead of predicting outcomes.
 - **Readable citations:** answers now read as natural sentences with the source in clean
-  single square brackets at the end of the sentence (`[using-callback]`, `[analyzer.py:49]`),
+  single square brackets at the end of the sentence (`[using-sartor]`, `[analyzer.py:49]`),
   rather than `[[…]]` mid-sentence — easier for non-technical readers. The "Sources:" footer
   strips the double brackets to match.
 - **Microcopy (`templates/index.html`, `static/assistant.js`):** plain-languaged intro ("I show
@@ -1229,7 +1436,7 @@ unchanged.
   each reload — so editing files popped a new window each time ("5–6 windows per
   session"). A new pure `app._should_open_browser()` opens **exactly once** — in
   the persistent supervisor / non-debug single process, never in the reload
-  child — and still honors `CALLBACK_NO_BROWSER=1`.
+  child — and still honors `SARTOR_NO_BROWSER=1`.
 - **Slow application load (#3):** selecting a user loaded the prior-applications
   list with `1 + 2N` SQL queries (lazy `Application.runs` per row + a per-app
   pending `ProposalReview` count), so it slowed as a user accrued applications.
@@ -1371,7 +1578,7 @@ vector tier stays out (Sprint 7.6, eval-gated).
   `<details>` with a dev-mode toggle, reusing the existing `_consumeSSE` SSE helper.
 - **Guards:** the `recall/sources/` tiers stay project-agnostic — a new
   `test_recall_sources_no_hardcoded_roots` guard in
-  [`tests/test_recall_boundary.py`](tests/test_recall_boundary.py) rejects callback-specific
+  [`tests/test_recall_boundary.py`](tests/test_recall_boundary.py) rejects sartor-specific
   path literals (the import-boundary test can't see string literals). `blueprints/assistant.py`
   is added to the PX-08 egress allowlist (it constructs the Anthropic client). `subprocess`
   in `GitGrepSource` carries justified `# noqa: S603, S607` (fixed argv, no shell, local git).
@@ -1381,7 +1588,7 @@ vector tier stays out (Sprint 7.6, eval-gated).
 
 ### Added — the Memory substrate skeleton (`feat/recall-skeleton`, Sprint 7.4)
 
-The first piece of callback's **Memory** function as a first-class subsystem: a new
+The first piece of sartor's **Memory** function as a first-class subsystem: a new
 deterministic `recall/` Python package — the **Stage 0 skeleton** of the reusable
 retrieval/assembly substrate the doc-grounded avatar (7.5) and the self-documenting wiki
 loop build on. It defines the *seams* only — the public types + the two cross-cutting
@@ -1422,7 +1629,7 @@ governance surface, composing the read-only-subagent pattern + the witness-comma
 **Dev-harness only — no product code/route/LLM-call/dep; `PROMPT_VERSION` unchanged at
 `2026-06-13.1`; no migration.**
 
-- **New [`/callback:compliance-witness`](commands/compliance-witness.md)** — the
+- **New [`/sartor:compliance-witness`](commands/compliance-witness.md)** — the
   orchestrator command: resolves the pinned sha (`--since <sha>` or the last release tag),
   delegates the read to the model-pinned `compliance-witness` subagent via `Task`, applies a
   **flag cap (default 12, `--cap N`)**, renders the findings-register table (stable id ·
@@ -1431,7 +1638,7 @@ governance surface, composing the read-only-subagent pattern + the witness-comma
   (clean / needs attention), and **appends a dated counts-per-tier line to
   [`docs/governance/compliance-log.md`](docs/governance/compliance-log.md)**. Its only writes
   are the report surface + that log append — it **never commits, never blocks**.
-- **New [`callback:compliance-witness`](agents/compliance-witness.md)** (Sonnet, read-only
+- **New [`sartor:compliance-witness`](agents/compliance-witness.md)** (Sonnet, read-only
   `Read`/`Grep`/`Glob`/`Bash` — `Bash` is read-only git only) — re-derives every cited line
   at the pinned sha, finds **pairwise drift** (two named sources disagree, or one C-0
   categorical lacks the by-construction enforcement the charter requires), ranks against the
@@ -1456,16 +1663,16 @@ cost-aware Claude Code dev-harness loop — "the docs track the code without a h
 while a human stays at the spend boundary and the commit boundary. **Dev-harness only — no
 product code/route/LLM-call/dep; `PROMPT_VERSION` unchanged at `2026-06-13.1`; no migration.**
 
-- **New [`/callback:wiki-self-update`](commands/wiki-self-update.md)** — the orchestrator
+- **New [`/sartor:wiki-self-update`](commands/wiki-self-update.md)** — the orchestrator
   command: resolves the `.last_ingest_sha`→HEAD diff, **surfaces cost before spending** and
   enforces a per-run page cap (default 8, `--cap N`), delegates per-page synthesis to the
   `wiki-scribe` subagent and per-page grounding audit to the separate `wiki-grounding-auditor`
-  subagent (author ≠ auditor), runs [`/callback:wiki-lint`](commands/wiki-lint.md) as the
+  subagent (author ≠ auditor), runs [`/sartor:wiki-lint`](commands/wiki-lint.md) as the
   deterministic gate, advances the checkpoint, logs, and **presents a reviewable diff — it
   never auto-commits.**
-- **New [`callback:wiki-scribe`](agents/wiki-scribe.md)** (Haiku, `Read`/`Grep`/`Glob`/`Edit`)
+- **New [`sartor:wiki-scribe`](agents/wiki-scribe.md)** (Haiku, `Read`/`Grep`/`Glob`/`Edit`)
   — minimal SCHEMA-conformant per-page synthesis from the source at HEAD + named exemplar pages.
-- **New [`callback:wiki-grounding-auditor`](agents/wiki-grounding-auditor.md)** (Haiku,
+- **New [`sartor:wiki-grounding-auditor`](agents/wiki-grounding-auditor.md)** (Haiku,
   read-only `Read`/`Grep`/`Glob`) — adversarial quote-match of each cite/`[synthesis]` claim
   against source at HEAD → SUPPORTED / DRIFTED / UNSUPPORTED; the read-only tool grant *is* the
   "never silently rewrite committed history" enforcement.
@@ -1479,7 +1686,7 @@ product code/route/LLM-call/dep; `PROMPT_VERSION` unchanged at `2026-06-13.1`; n
 
 ### Added — governance extraction: one canonical rules home (`feat/governance-extraction`, Sprint 7.2)
 
-Lifts callback.'s *binding* governance rules out of the six descriptive docs they were tangled
+Lifts sartor.'s *binding* governance rules out of the six descriptive docs they were tangled
 into and into **one canonical home**, `docs/governance/` — the "extract, don't register-in-place"
 decision of record (F-gov-05). Each rule is now stated **once**; each source doc keeps its prose
 and gains a pointer back. Docs + hook-script only: **no product code, route, or LLM call;
@@ -1526,25 +1733,25 @@ Makes the dormant Claude Code plugin's **10 commands + 6 subagents** invocable �
 only the 10 hooks loaded (hand-wired in `.claude/settings.json`), while the commands/agents
 were never registered (no marketplace, no install). Dev-harness only — no product code,
 route, LLM call, prompt (`PROMPT_VERSION` unchanged at `2026-06-13.1`), dependency, or
-migration. Unblocks the v1.0.7 self-documenting loop (`/callback:wiki-*`) and compliance
+migration. Unblocks the v1.0.7 self-documenting loop (`/sartor:wiki-*`) and compliance
 pilot.
 
 - **New [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json)** — a local
-  `callback-tools` marketplace listing the `callback` plugin (`source: "."`).
+  `sartor-tools` marketplace listing the `sartor` plugin (`source: "."`).
 - **[`.claude-plugin/plugin.json`](.claude-plugin/plugin.json)** — `name`
-  `resume-optimizer → callback`; `version` `0.1.0 → 1.0.6` (lockstep with `pyproject.toml`).
+  `resume-optimizer → sartor`; `version` `0.1.0 → 1.0.6` (lockstep with `pyproject.toml`).
   The 10 command + 6 agent `.md` files **moved out of `.claude-plugin/` to the plugin root**
   (`commands/`, `agents/`): Claude Code reserves `.claude-plugin/` for
   `plugin.json`/`marketplace.json` and **silently skips any components nested inside it**, so
   the manifest relies on the default root-level scan (no `commands`/`agents` path-overrides).
   No `hooks` key.
-- **`.claude/settings.json`** — added `extraKnownMarketplaces` (`callback-tools`, directory
-  source) + `enabledPlugins` (`callback@callback-tools`). The existing **hooks block is
+- **`.claude/settings.json`** — added `extraKnownMarketplaces` (`sartor-tools`, directory
+  source) + `enabledPlugins` (`sartor@sartor-tools`). The existing **hooks block is
   untouched** — the security/quality hooks stay wired here, deliberately *not* migrated into
   the plugin manifest. The tool-agnostic-enforcement question (git-hooks/CI vs Claude
   plugin) is an explicit agenda item deferred to the v1.0.7 governance pass (see
   [`RELEASE_CHECKLIST.md`](docs/dev/RELEASE_CHECKLIST.md) tracked-deferred).
-- Commands now load **namespaced** as `/callback:<name>`; subagents as `callback:<name>`.
+- Commands now load **namespaced** as `/sartor:<name>`; subagents as `sartor:<name>`.
 - **Docs corrected to match reality:** command/agent path references repointed from
   `.claude-plugin/commands|agents/` to the root-level `commands/`/`agents/` across `CLAUDE.md`
   (Skill catalog + a new Subagent catalog, namespaced names), `README.md` (plugin section +
@@ -1660,7 +1867,7 @@ authors the new-user first-run tour, mirrored INTO the WS-4 wiki's reserved user
   walked through onboarding. Each stop fires once (reusing the `cb_help_seen:` localStorage
   seam) and is re-openable from the nearest section's (i); wizard stops fire only when the
   panel is actually on screen (visibility-guarded).
-- **Wiki** — five new `audience: user` guides under `docs/wiki/pages/` (`using-callback`
+- **Wiki** — five new `audience: user` guides under `docs/wiki/pages/` (`using-sartor`
   hub + tailoring / corpus / templates / memory), mirrored by the in-app copy. Recorded in
   [`docs/wiki/log.md`](docs/wiki/log.md) (a content pass — `.last_ingest_sha` unchanged).
 - **Tests** — new `tests/ux/regression/test_20260614_education_help.py` (every panel's icon
@@ -1771,7 +1978,7 @@ the public-facing security / governance docs with what the tool actually does.
   unchanged. Corroborated by the PX-08 egress allowlist gate.
 - **PX-05 — disclosure channel repointed** (`F-sec-11`, P1 / S-1). Conduct / vulnerability
   reports routed to a stale `Cooksey/resume` GitHub advisories inbox; corrected to the canonical
-  `amodal1/callback` in `CODE_OF_CONDUCT.md` and `.github/ISSUE_TEMPLATE/config.yml`.
+  `amodal1/sartor` in `CODE_OF_CONDUCT.md` and `.github/ISSUE_TEMPLATE/config.yml`.
 - **PX-07 — human SLAs softened** (`F-qe-rel-08` / `F-sec-07`; charter D-4 + P-3). The hard
   "5 business days / 30 days" promises in `SECURITY.md` and `CODE_OF_CONDUCT.md` are reworded to
   best-effort intent (no guaranteed timeline) for a solo project. Machine gates unchanged.
@@ -1986,7 +2193,7 @@ Front-end only — SPA tab routing over one existing read endpoint
 Front-end only — no LLM call, no `PROMPT_VERSION` bump, no new dependency, no
 route (pure client-side SPA navigation), no migration.
 
-- **The `callback.` wordmark now routes home.** It was an inert `<a href="#">`
+- **The `sartor.` wordmark now routes home.** It was an inert `<a href="#">`
   with no handler — once a user was selected (and the wizard or another tab
   engaged) there was no way back to the landing state. A new public `goHome()`
   clears the selected user via `onUserSelect()`'s no-user branch (hides the flow
@@ -2597,7 +2804,7 @@ irreversible **promote** (edit the constant + bump `PROMPT_VERSION` + log
   suite/subset/grounding controls + an optional real-seed disclosure, a 2×-cost
   `confirm()` gate (~$0.20 smoke / ~$0.60 full), phased progress, and the rendered
   delta table + a manual-promote reminder. The shared SSE streamer is generalized to
-  `window.callbackEval.stream(url, params, onEvent)` (the eval-run control now rides
+  `window.sartorEval.stream(url, params, onEvent)` (the eval-run control now rides
   it too). The `dashboard/routes.py` index passes `tune_prompts` (read-only use of
   `analyzer._BASE_SYSTEM_PROMPTS`) for the picker + prefill.
 
@@ -2612,7 +2819,7 @@ no new dependency.
 - **`evals.runner.run_suite(...)`** — the eval orchestration is extracted from
   `runner.main()` into an importable core taking structured args (`suite`,
   `subset`, `fixture_name`, `seed_data`, `prompt_overrides_map`,
-  `grounding_signals`, `out_dir`, `client`) plus an optional `progress` callback,
+  `grounding_signals`, `out_dir`, `client`) plus an optional `progress` sartor,
   returning an `EvalRunResult`. `main()` is now a thin argparse wrapper. The
   no-flag default path is **byte-identical** (empty overrides are a no-op,
   `progress=None` makes every emit a no-op, the analyze→generate cache and the
@@ -2668,13 +2875,13 @@ No new dependency; no `PROMPT_VERSION` bump (deterministic, no prompt change).
 
 ### Added — auto-open the default browser on launch (`feat/auto-open-browser`)
 
-`python app.py` (and the `callback` console script) now opens
+`python app.py` (and the `sartor` console script) now opens
 `http://localhost:5000` in the user's default browser once the server is
 listening, so they land straight on the app instead of copying the URL by hand.
 A short daemon `Timer` defers the open until the socket is up; under Flask's
 reloader (`FLASK_DEBUG=1`, the default) the open fires only in the serving child
 (`WERKZEUG_RUN_MAIN=true`) so there's no double tab; and the call is wrapped so a
-missing browser can never crash startup. Set `CALLBACK_NO_BROWSER=1` to skip it
+missing browser can never crash startup. Set `SARTOR_NO_BROWSER=1` to skip it
 on headless / remote / CI runs.
 
 ### Changed — retire the broken "legacy import" onboarding; the corpus self-provisions (`fix/retire-legacy-import-onboarding`)
@@ -2786,7 +2993,7 @@ reuses the existing `analyze`/`clarify`/`generate` primitives unchanged).
     `bootstrap.json` + the pasted JDs. Paid (Sonnet/Haiku) + slow (~70s/JD).
 - **`evals/bootstrap.py`** — `run_pipeline_over_jds` refactored to delegate to a
   new `run_pipeline_over_jd_texts` (in-memory `(name, text)` JD pairs + an optional
-  `progress` callback), so the browser wrapper needs no JD temp files. CLI path is
+  `progress` sartor), so the browser wrapper needs no JD temp files. CLI path is
   behavior-preserving.
 - **Annotate tab UI** (`dashboard/templates/dashboard.html`) on the cb-* tokens:
   bootstrap wrapper sub-panel → fixture picker → per-cluster verdict editor
@@ -3323,7 +3530,7 @@ change. `PROMPT_VERSION` `2026-05-24.4` → `2026-06-01.4`.
 ## [1.0.2] — 2026-05-30
 
 Eval apparatus stream — internal tooling establishing the regression floor
-and callback-quality measurement layer before v1.0.3 R1 prompt engineering.
+and sartor-quality measurement layer before v1.0.3 R1 prompt engineering.
 No user-facing pipeline changes; `PROMPT_VERSION` unchanged at `2026-05-24.4`.
 
 Nine branches merged since v1.0.1 (newest first):
@@ -3395,13 +3602,13 @@ Nine branches merged since v1.0.1 (newest first):
   `offer | accepted | rejected | no_response`; backfills `closed → withdrawn`.
 - **`app.py`** — auto-stamps `sent_at` on `submitted` transition;
   `outcome_at` on any outcome transition; summary dict exposes both timestamps.
-- **`static/app.js`** — `submitted` cards gain inline "Got callback /
+- **`static/app.js`** — `submitted` cards gain inline "Got sartor /
   Got rejection / No response" action buttons calling
   `PUT /api/applications/<id>/status`.
 - 8 new tests covering timestamp stamping, new valid statuses, and rejection
   of the removed `closed` value.
 
-### Added — Callback-likelihood rubric + post-generation metrics (`eval/callback-metrics`)
+### Added — Callback-likelihood rubric + post-generation metrics (`eval/sartor-metrics`)
 
 - **`evals/rubrics/callback_likelihood.md`** — Haiku judge with a senior
   in-house recruiter persona (200-person company, 80 résumés, 7-second skim,
@@ -3700,7 +3907,7 @@ the user had paid for at least one `/api/generate` and afterwards
 reflected the last-GENERATED résumé even as the corpus kept changing.
 This commit breaks that coupling and tightens the surrounding surface.
 
-- **`corpus_to_json_resume.build_json_resume_from_corpus(session, candidate_id, *, application_id=None, context_path=None)`** — new module that builds a JSON Resume v1.0 document directly from `Candidate` + `Experience` + `Bullet` + `SummaryItem` rows. Resolves the chosen SummaryItem variant through the priority chain pinned > recommended > first-active > `Candidate.profile_text` and applies `composition_overrides` (pin / exclude / added, `pinned_summary_id`) + `llm_recommendations` from `context_path` when present. Corpus-only fields (chosen variant id, `summary_source`, `bullet_overrides_active`) live under `meta.callback.*` so themes that don't know about callback. extensions ignore them. 18 new tests in `tests/test_corpus_to_json_resume.py` pin the resolution chain, the bullet override math, the soft-retire skip behavior, and the empty-document fallback.
+- **`corpus_to_json_resume.build_json_resume_from_corpus(session, candidate_id, *, application_id=None, context_path=None)`** — new module that builds a JSON Resume v1.0 document directly from `Candidate` + `Experience` + `Bullet` + `SummaryItem` rows. Resolves the chosen SummaryItem variant through the priority chain pinned > recommended > first-active > `Candidate.profile_text` and applies `composition_overrides` (pin / exclude / added, `pinned_summary_id`) + `llm_recommendations` from `context_path` when present. Corpus-only fields (chosen variant id, `summary_source`, `bullet_overrides_active`) live under `meta.sartor.*` so themes that don't know about sartor. extensions ignore them. 18 new tests in `tests/test_corpus_to_json_resume.py` pin the resolution chain, the bullet override math, the soft-retire skip behavior, and the empty-document fallback.
 - **`/api/applications/<id>/preview` refactored** — now reads from the corpus builder instead of locating a sidecar. Drops the 409 `needs_generate` path entirely; the preview works before any generate has run. Accepts an optional `context_path` query param (validated under `OUTPUT_DIR` via `_within`) so composition state shapes the preview output.
 - **`/api/users/<u>/preview` added** — the same render pipeline scoped to a user without an application. Answers the "let me see how my résumé looks through Classic / Modern" question from the Library / pre-application flow. 409 surfaces `needs_onboarding=true` when a config exists but no candidate row.
 - **`_inline_persona_css` extracted** — pulls the `<link rel="stylesheet">` inlining out of the preview route body so the two preview routes share it. `_latest_jsonresume_sidecar` removed; nothing in `app.py` reads sidecars anymore.

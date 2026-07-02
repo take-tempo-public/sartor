@@ -43,7 +43,6 @@ from hardening import (
     CorpusBullet,
     CorpusEligibleTitle,
     CorpusExperience,
-    check_ats_format,
     compute_keyword_overlap,
     extract_keywords,
 )
@@ -118,7 +117,14 @@ def build_context_set_from_db(
     jd_keywords = extract_keywords(jd_text)
     resume_keywords = extract_keywords(resume_text)
     overlap = compute_keyword_overlap(resume_keywords, jd_keywords)
-    ats_warnings = check_ats_format({"text": resume_text, "sections": []})
+    # Walkthrough G1: no ATS-format warnings in corpus mode. `check_ats_format`
+    # was designed for an UPLOADED résumé; here the "résumé" is a synthesized
+    # projection of the whole corpus (structured by construction, and NOT the
+    # final 1-2 page deliverable), so its "no standard headings" (sections were
+    # always []) and "too long" advice were misleading legacy leftovers. ATS
+    # formatting is judged on the rendered output (preview/download); the JD
+    # keyword-overlap signal above is the meaningful pre-generation ATS cue.
+    ats_warnings: list[str] = []
 
     jd_fingerprint = hashlib.sha256(jd_text.encode("utf-8")).hexdigest()[:16]
     application = Application(

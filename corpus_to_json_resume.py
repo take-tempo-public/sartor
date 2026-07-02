@@ -31,7 +31,7 @@ Used by:
 
 The output validates against the standard JSON Resume v1.0 schema.
 Our corpus-only fields (chosen variant id, summary source, etc.) live
-under `meta.callback.*` so themes that don't know about callback.
+under `meta.sartor.*` so themes that don't know about sartor.
 extensions just ignore them.
 """
 
@@ -62,7 +62,7 @@ def build_json_resume_from_corpus(
     Args:
         session: An open SQLAlchemy session.
         candidate_id: The Candidate.id to render.
-        application_id: Optional — written into meta.callback.application_id
+        application_id: Optional — written into meta.sartor.application_id
             so the rendered HTML knows which application it belongs to.
             Has no effect on resolution; that's `context_path`'s job.
         context_path: Optional path to a context_*.json file on disk
@@ -81,7 +81,7 @@ def build_json_resume_from_corpus(
         "education":    [],   # not modeled in the DB yet (v1.1+)
         "certificates": [],   # same
         "projects":     [],   # same
-        "meta":         {"callback": {...}, "language": "en-US"},
+        "meta":         {"sartor": {...}, "language": "en-US"},
       }
     """
     from db.models import Candidate, Experience
@@ -237,7 +237,7 @@ def build_json_resume_from_corpus(
         "certificates": [],
         "projects": [],
         "meta": {
-            "callback": {
+            "sartor": {
                 "version": "1.0",
                 "candidate_id": candidate.id,
                 "application_id": application_id,
@@ -283,7 +283,7 @@ def _empty_document() -> dict[str, Any]:
         "skills": [],
         "certificates": [],
         "projects": [],
-        "meta": {"callback": {"version": "1.0"}, "language": "en-US"},
+        "meta": {"sartor": {"version": "1.0"}, "language": "en-US"},
     }
 
 

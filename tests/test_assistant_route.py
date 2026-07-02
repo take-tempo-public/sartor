@@ -26,12 +26,12 @@ def _stub_avatar(client, question, context, *, allow_dev=False, username="", run
                 {
                     "n": 1,
                     "label": "overview",
-                    "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/overview.md",
+                    "href": "https://github.com/take-tempo-public/sartor/blob/main/docs/wiki/pages/overview.md",
                 },
                 {
                     "n": 2,
                     "label": "analyzer.py:353",
-                    "href": "https://github.com/amodal1/callback/blob/abc123/analyzer.py#L353",
+                    "href": "https://github.com/take-tempo-public/sartor/blob/abc123/analyzer.py#L353",
                 },
             ],
             "truncated": False,

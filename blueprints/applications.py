@@ -14,6 +14,8 @@ helpers (`_application_summary_dict`, `_build_resume_state`,
     PUT    /api/applications/<id>/status                        update_application_status
     PUT    /api/applications/<id>/notes                         update_application_notes
     PUT    /api/applications/<id>/meta                          update_application_meta
+    DELETE /api/applications/<id>                               retire_application
+    POST   /api/applications/<id>/restore                       restore_application
     GET    /api/applications/<id>/composition                   get_application_composition
     POST   /api/applications/<id>/composition                   save_application_composition
     POST   /api/applications/<id>/recommend                     recommend_application_bullets
@@ -87,6 +89,7 @@ def _application_summary_dict(
         "updated_at": app_row.updated_at,
         "sent_at": app_row.sent_at,
         "outcome_at": app_row.outcome_at,
+        "is_active": bool(app_row.is_active),
         "iteration_count": len(runs),
         "latest_iteration": latest_run.iteration if latest_run else 0,
         "latest_run_id": latest_run.run_id if latest_run else None,
@@ -102,6 +105,9 @@ def list_applications(username: str) -> ResponseReturnValue:
     `?status=interview` or `?status=interview,rejected`) narrows to those
     lifecycle statuses — the programmatic query surface for the B.8
     outcome-learning layer. Unknown statuses → 400.
+
+    Retired applications (`is_active=0`, walkthrough J1) are hidden by default;
+    `?include_retired=1` returns them too (for the "show retired" toggle).
     """
     from sqlalchemy import func
     from sqlalchemy.orm import selectinload
@@ -144,6 +150,9 @@ def list_applications(username: str) -> ResponseReturnValue:
             )
             if wanted_statuses:
                 query = query.filter(Application.status.in_(wanted_statuses))
+            include_retired = request.args.get("include_retired") in ("1", "true", "yes")
+            if not include_retired:
+                query = query.filter(Application.is_active == 1)
             rows = query.order_by(Application.updated_at.desc()).all()
 
             # Pending-proposal counts in ONE grouped query over every run id
@@ -444,6 +453,52 @@ def update_application_status(application_id: int) -> ResponseReturnValue:
         raise
     finally:
         session.close()
+
+
+def _set_application_active(application_id: int, active: int) -> ResponseReturnValue:
+    """Shared retire/restore body: flip application.is_active with an ownership guard.
+
+    DB-only (no filesystem access), so `_safe_username` on the owning candidate is
+    the containment guard; the route touches no user path.
+    """
+    from db.models import Application, Candidate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        app_row = session.query(Application).filter_by(id=application_id).first()
+        if app_row is None:
+            return jsonify({"error": "Application not found"}), 404
+        candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
+        if candidate is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
+            return jsonify({"error": "Candidate validation failed"}), 403
+        app_row.is_active = active
+        session.commit()
+        return jsonify({"id": app_row.id, "is_active": bool(active)})
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@applications_bp.route("/api/applications/<int:application_id>", methods=["DELETE"])
+def retire_application(application_id: int) -> ResponseReturnValue:
+    """Soft-retire an application (is_active=0) — walkthrough J1.
+
+    Hidden from the Prior Applications list unless 'show retired' is on. Kept (not
+    hard-deleted) so its runs + audit trail survive; POST /restore reverses it.
+    """
+    return _set_application_active(application_id, 0)
+
+
+@applications_bp.route("/api/applications/<int:application_id>/restore", methods=["POST"])
+def restore_application(application_id: int) -> ResponseReturnValue:
+    """Un-retire a soft-retired application (is_active=1) — the RESTORE action (J1)."""
+    return _set_application_active(application_id, 1)
 
 
 @applications_bp.route("/api/applications/<int:application_id>/notes", methods=["PUT"])

@@ -82,7 +82,7 @@ The privacy/security substance at c6e0437 is strong and largely matches the char
 - leverage: P2
 - charter-trace: E-2 (REUSE lint), D-5
 - question_refs: QB-sec-06
-- evidence: LICENSE is MIT only ("Copyright (c) 2026 callback. contributors"). tests/ux/a11y/vendor/axe.min.js header is MPL-2.0 (Deque Systems, axe v4.10.2). No LICENSES/ tree, no .reuse/REUSE.toml, no SPDX headers (tree scan: none). static/vendor/paged.polyfill.js is MIT (header preserved).
+- evidence: LICENSE is MIT only ("Copyright (c) 2026 sartor. contributors"). tests/ux/a11y/vendor/axe.min.js header is MPL-2.0 (Deque Systems, axe v4.10.2). No LICENSES/ tree, no .reuse/REUSE.toml, no SPDX headers (tree scan: none). static/vendor/paged.polyfill.js is MIT (header preserved).
 - finding: Upstream headers are preserved (good, D-5), but the repo does not machine-declare the mixed-license reality - a REUSE lint (the named E-2 badge) would flag the MPL-2.0 asset under an MIT-only declaration, and PX-01's vendored Chart.js will add a third license to declare. Mastery here is an SPDX/REUSE manifest, not just preserved headers. P2 because it blocks a badge, not the tag, and harms no user.
 - coordinate: v1.0.6 (declare Chart.js's license in the same vendor change)
 
@@ -118,7 +118,7 @@ The privacy/security substance at c6e0437 is strong and largely matches the char
 
 ### A-3 - pyproject version string lags the in-flight epic (cosmetic)
 - disposition: WATCH | leverage: P3 | charter-trace: D-5
-- evidence/finding: pyproject.toml:7 version = "1.0.5" while the tree is mid-v1.0.6 (CHANGELOG.md [Unreleased] + v1.0.6 sprint entries). The cold-install sandbox reported callback 1.0.5. Harmless for a not-yet-public tool; flag only so the v1.1.0 tag pass bumps it deliberately rather than discovering staleness at release.
+- evidence/finding: pyproject.toml:7 version = "1.0.5" while the tree is mid-v1.0.6 (CHANGELOG.md [Unreleased] + v1.0.6 sprint entries). The cold-install sandbox reported sartor 1.0.5. Harmless for a not-yet-public tool; flag only so the v1.1.0 tag pass bumps it deliberately rather than discovering staleness at release.
 
 ### A-4 - Cold-setup smoke result (provenance for the verdict)
 - disposition: KEEP | leverage: P2 | charter-trace: M-2 (fresh-clone first-run), A-1

@@ -86,7 +86,7 @@ app = create_app()                               # WSGI / console-script / back-
 - **Import-time side effects move into the factory.** Importing `app` no longer mkdirs or
   reads env; `create_app()` does, when called.
 - **The module-level `app = create_app()` is retained** — it is the WSGI entry and the
-  `pyproject.toml [project.scripts] callback` console target. This is standard in exemplary
+  `pyproject.toml [project.scripts] sartor` console target. This is standard in exemplary
   Flask apps (it is *not* a compromise of the factory pattern).
 - **`main()` + `_should_open_browser` stay in `app.py`** (`app.py:8238-8297`); the bind line
   `app.run(debug=debug_mode, port=5000)` (`:8293`) gains **`host="127.0.0.1"`** — see PX-19

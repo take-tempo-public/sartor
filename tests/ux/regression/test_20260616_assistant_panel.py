@@ -21,22 +21,22 @@ from ui_pages.selectors import Assistant
 
 
 def _fake_avatar(client, question, context, *, allow_dev=False, username="", run_id=""):
-    yield ("chunk", "callback tailors your resume ")
+    yield ("chunk", "sartor tailors your resume ")
     yield ("chunk", "in six guided steps [1][2].")
     yield (
         "done",
         {
-            "answer": "callback tailors your resume in six guided steps [1][2].",
+            "answer": "sartor tailors your resume in six guided steps [1][2].",
             "citations": [
                 {
                     "n": 1,
-                    "label": "using-callback",
-                    "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/using-callback.md",
+                    "label": "using-sartor",
+                    "href": "https://github.com/take-tempo-public/sartor/blob/main/docs/wiki/pages/using-sartor.md",
                 },
                 {
                     "n": 2,
                     "label": "tailoring-a-resume",
-                    "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/tailoring-a-resume.md",
+                    "href": "https://github.com/take-tempo-public/sartor/blob/main/docs/wiki/pages/tailoring-a-resume.md",
                 },
             ],
             "truncated": False,
@@ -76,7 +76,7 @@ def test_assistant_panel_streams_cited_answer(
     )
     # The numbered "Sources" key lands in its own #assistantSources block on `done`.
     page.wait_for_function(
-        "() => document.getElementById('assistantSources').textContent.includes('using-callback')",
+        "() => document.getElementById('assistantSources').textContent.includes('using-sartor')",
         timeout=DEFAULT_TIMEOUT_MS,
     )
     # The inline [n] citations re-render as clickable GitHub links (7.8d / Scheme B).

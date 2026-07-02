@@ -8,7 +8,7 @@
 
 ### Front door
 
-- [`overview.md`](overview.md) — what callback. is and how the whole system is shaped
+- [`overview.md`](overview.md) — what sartor. is and how the whole system is shaped
   (seeded from, and deferring to, [`../system-model.md`](../system-model.md)).
 
 ### From the excellence walk (ingested by `wiki/ingest-excellence-walk`, WS-4a step 4)
@@ -73,16 +73,16 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
 `audience: user` — plain-language guides that mirror the in-app help; a content
 pass, not a code ingest (see [`log.md`](log.md)).
 
-- [`pages/using-callback.md`](pages/using-callback.md) — the first-run guide: what
-  callback does, the path through your first résumé, the in-app “i” help; the hub.
+- [`pages/using-sartor.md`](pages/using-sartor.md) — the first-run guide: what
+  sartor does, the path through your first résumé, the in-app “i” help; the hub.
 - [`pages/tailoring-a-resume.md`](pages/tailoring-a-resume.md) — the six-step Tailor
   wizard, from pasting a job to download + cover letter.
 - [`pages/career-corpus.md`](pages/career-corpus.md) — the pool of experience
-  callback writes from; pending-review and how reviewing helps.
+  sartor writes from; pending-review and how reviewing helps.
 - [`pages/resume-templates.md`](pages/resume-templates.md) — what templates control,
   the bundled ATS-safe set, and uploading your own `.docx`.
 - [`pages/candidate-memory.md`](pages/candidate-memory.md) — the clarification Q&A
-  callback keeps across applications and why outcome-rich answers matter.
+  sartor keeps across applications and why outcome-rich answers matter.
 
 The Sprint-8.6a `docs/assistant-wiki-coverage` pass added the how-to guides the in-app
 assistant draws on (same `audience: user` content pass; `.last_ingest_sha` unchanged):
@@ -92,10 +92,10 @@ assistant draws on (same `audience: user` content pass; `.last_ingest_sha` uncha
 - [`pages/cover-letters.md`](pages/cover-letters.md) — generating an optional cover
   letter to match the job and the résumé you just tailored.
 - [`pages/editing-and-refining.md`](pages/editing-and-refining.md) — editing a generated
-  résumé in place and asking callback to refine it.
+  résumé in place and asking sartor to refine it.
 - [`pages/downloading-your-documents.md`](pages/downloading-your-documents.md) — the
   output formats (Word / PDF / Markdown), the PDF/Chromium note, downloading with edits.
-- [`pages/managing-users.md`](pages/managing-users.md) — using callback with more than
+- [`pages/managing-users.md`](pages/managing-users.md) — using sartor with more than
   one person: adding, switching, and per-user data isolation.
 - [`pages/using-the-assistant.md`](pages/using-the-assistant.md) — the built-in,
   doc-grounded assistant: how to ask it, Dev mode, and what it can / can't answer.

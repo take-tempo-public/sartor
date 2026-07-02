@@ -1,4 +1,4 @@
-# Architecture — callback.
+# Architecture — sartor.
 
 > **Purpose:** developer-facing architecture overview. The system
 > diagram, the module map, the DB schema, and the LLM routing table.
@@ -20,7 +20,7 @@
 
 ## System overview
 
-callback. is a local-first Flask app that tailors résumés and
+sartor. is a local-first Flask app that tailors résumés and
 optional cover letters to specific job descriptions. The
 pipeline is **two-or-more LLM calls in sequence**, each gated by
 a human review or curation step:
@@ -42,7 +42,7 @@ a human review or curation step:
 Full sequence diagram: [`docs/diagrams/pipeline.mmd`](diagrams/pipeline.mmd).
 
 ```mermaid
-%% Pipeline of one full callback. apply-run.
+%% Pipeline of one full sartor. apply-run.
 %%
 %% Shows the LLM calls that can fire across a single application,
 %% the Flask route that triggers each, and which model is used.
@@ -199,7 +199,7 @@ purpose. Code that belongs elsewhere goes elsewhere.
 | [`db/session.py`](../db/session.py) | SQLAlchemy engine + session factory; Alembic migration runner | `init_db()`, `get_session()` | Business logic |
 | [`db/build_context.py`](../db/build_context.py) | DB-backed `build_context_set` variant; bullet scorer | `score_corpus_bullet()`, `_bullet_tag_values()` | Route handlers |
 | [`dashboard/`](../dashboard/) | Read-only Flask blueprint at `/_dashboard` for eval results, cost cards, failure-mode heatmap | `dashboard_bp` | LLM calls, mutation |
-| [`recall/`](../recall/) | **Memory substrate** (Stages 1–2): deterministic, provenance-stamped retrieval + assembly that *feeds* the doc-grounded avatar. Core is stdlib-only; refactor-immune (`tests/test_recall_boundary.py` enforces the boundary). `recall/sources/` adds the generic, injected `WikiSource` (S1) / `GitGrepSource` (S2) / `SessionSource` (S5-P1) / `VectorSource` (S3 static-embedding semantic search — brute-force cosine over a rebuildable sidecar; the one tier that imports `numpy`, embedder injected) tiers | `Unit`, `Source`, `Scope`, `Context`, `assemble()`, `WikiSource`, `GitGrepSource`, `SessionSource`, `VectorSource` | LLM calls, `app.py`/`analyzer`/DB/Flask imports, **`model2vec`** (the embedder is injected — it lives in the wiring layer so the substrate stays embedder-agnostic + extractable), callback-specific paths baked into the tiers (injected by the wiring layer) |
+| [`recall/`](../recall/) | **Memory substrate** (Stages 1–2): deterministic, provenance-stamped retrieval + assembly that *feeds* the doc-grounded avatar. Core is stdlib-only; refactor-immune (`tests/test_recall_boundary.py` enforces the boundary). `recall/sources/` adds the generic, injected `WikiSource` (S1) / `GitGrepSource` (S2) / `SessionSource` (S5-P1) / `VectorSource` (S3 static-embedding semantic search — brute-force cosine over a rebuildable sidecar; the one tier that imports `numpy`, embedder injected) tiers | `Unit`, `Source`, `Scope`, `Context`, `assemble()`, `WikiSource`, `GitGrepSource`, `SessionSource`, `VectorSource` | LLM calls, `app.py`/`analyzer`/DB/Flask imports, **`model2vec`** (the embedder is injected — it lives in the wiring layer so the substrate stays embedder-agnostic + extractable), sartor-specific paths baked into the tiers (injected by the wiring layer) |
 | [`blueprints/`](../blueprints/) | Flask route modules split out of the `app.py` monolith (born 7.5; the v1.0.8 split target). Domain seams extracted so far (v1.0.8): `analysis.py` (8.3b), `generation.py` (8.3c), `corpus/` (8.3d — a 42-route sub-package: `experiences`/`summaries`/`skills`/`tags`/`curation`/`proposals` on one `corpus_bp`, serializers in `_shared.py`), `templates.py` (8.3e — 11 persona-template + live-preview routes; the canonical home of the `_resolve_persona_*` resolvers, which `generation.py` imports; LLM-free, so not on the egress allowlist), `applications.py` (8.3f — 13 application-tracker + per-application Compose routes; the canonical home of `_load_application_owned`, which `templates.py` imports; on the egress allowlist — `anthropic` error types in the recommend/suggest bodies), `users.py` (8.3g — 6 user/config routes: the SPA shell + user/config CRUD + the PX-02 profile scrape; config-io/security/provisioning helpers from `web_infra`; LLM-free, so not on the egress allowlist), `diagnostics.py` (8.3h — the 9 annotation/bootstrap/eval/tune routes incl. 5 SSE; reads `ANNOTATION_ROOT` from `current_app.config`; LLM-free at this layer — the paid work is delegated to `evals.runner`/`evals.bootstrap`/`evals.grounding_signals`, so not on the egress allowlist). **The split is complete (8.3h): all 93 routes live on a domain blueprint and `app.py` carries zero `@app.route` handlers.** Each seam registers with no `url_prefix` (URLs byte-identical), reads paths from `current_app.config`, imports the shared `web_infra` helpers, and never imports `app.py`. `assistant.py` = the doc-grounded assistant's SSE route (`POST /api/assistant/ask`) + the callback wiring (source roots + SCHEMA audience rules) binding the generic `recall.sources` tiers; it also builds the `model2vec` embedder (lazy, process-cached) and adds the S3 `VectorSource` **"on when available"** (model + index present). The avatar LLM call itself stays in `analyzer.py`; the vector index is built offline by `scripts/build_vector_index.py` into the gitignored `db/vector_index/` sidecar | `assistant_bp` | the LLM call (that is `analyzer.avatar_answer_streaming`); importing `app.py` |
 | [`evals/runner.py`](../evals/runner.py) | LLM eval harness — synthetic + real fixtures, 0.0-5.0 rubric scoring | `run_suite()`, `_load_baseline_scores()` | Production paths |
 | [`scripts/perf_baseline.py`](../scripts/perf_baseline.py) | Release-cycle tool: print p50/p90 latency percentiles from `logs/llm_calls.jsonl` as a before/after snapshot for perf interventions (R2 streaming, R3 schema trim, R1 split). Not part of the runtime. | CLI only — `python -m scripts.perf_baseline [--since N] [--log path]` | Production import |

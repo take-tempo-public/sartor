@@ -1,6 +1,6 @@
 # Managing users — adding and switching
 
-> **Purpose:** the user-facing explanation of using callback with more than one person
+> **Purpose:** the user-facing explanation of using sartor with more than one person
 > on a machine — adding a user, switching between them, and how each person's data
 > stays separate.
 > **Audience:** `user` — no technical background assumed.
@@ -11,17 +11,17 @@
 
 ---
 
-callback supports more than one person on the same machine. Each user is a separate
+sartor supports more than one person on the same machine. Each user is a separate
 profile with its own corpus, résumés, and settings.
 
 ## Adding a user
 Use the user dropdown at the top of the app and choose **New user**. Fill in your name
-and contact details and create the profile — callback sets up your own space and starts
+and contact details and create the profile — sartor sets up your own space and starts
 your first [[career-corpus]] when you import a résumé (see
 [[importing-your-experience]]).
 
 ## Switching users
-Pick a different name from the same dropdown to switch. callback loads that person's
+Pick a different name from the same dropdown to switch. sartor loads that person's
 profile — their corpus, their settings, their tailored applications — and leaves yours
 untouched.
 
@@ -30,4 +30,4 @@ Each user's information is kept apart and **never shared between users** — the
 promise the [[career-corpus]] and [[candidate-memory]] pages make. It all stays on this
 machine.
 
-See [[using-callback]] for the whole first run.
+See [[using-sartor]] for the whole first run.

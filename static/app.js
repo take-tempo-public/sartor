@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitRefinement(); }
   });
 
-  // callback. top bar — drop a soft shadow once scrolled past 4px. Cheap
+  // sartor. top bar — drop a soft shadow once scrolled past 4px. Cheap
   // affordance that says "this bar is anchored above the scroll surface."
   // Idempotent: harmless if #cbTopbar isn't in the DOM.
   const cbBar = document.getElementById('cbTopbar');
@@ -1513,14 +1513,14 @@ function openSettingsDrawer() {
 const _HELP_REGISTRY = {
   // ---- Tailor tab -------------------------------------------------------
   panelUser: {
-    title: 'Welcome to callback',
-    body: "callback tailors your résumé to a specific job from a career corpus "
+    title: 'Welcome to sartor',
+    body: "sartor tailors your résumé to a specific job from a career corpus "
       + 'it builds out of your past résumés — nothing is locked in a file you '
       + 'hand-edit per application. Select a user to begin, or add a new one to '
       + 'import your first résumé. Every section has an “i” you can click for a '
       + 'quick explanation.',
     short: 'Select a user to begin, or add a new one to import your first résumé.',
-    tip: 'About callback',
+    tip: 'About sartor',
     welcome: true,
   },
   panelApplications: {
@@ -1535,14 +1535,14 @@ const _HELP_REGISTRY = {
   panelJD: {
     title: 'Step 1 — Job description',
     body: 'Paste the full text of the job you’re applying for, then click '
-      + 'Analyze. callback reads the posting and weighs it against your career '
+      + 'Analyze. sartor reads the posting and weighs it against your career '
       + 'corpus to find the experience that fits this role best. The numbered '
       + 'steps along the top let you move back and forward at any time.',
     tip: 'Step 1 — Job description',
   },
   panelAnalysis: {
     title: 'Step 1 — Analysis',
-    body: 'This is callback’s read of the job — the themes it found and how '
+    body: 'This is sartor’s read of the job — the themes it found and how '
       + 'your experience lines up. From here you can answer a few clarifying '
       + 'questions next (recommended — it usually sharpens the result) or skip '
       + 'straight to composing the résumé.',
@@ -1550,7 +1550,7 @@ const _HELP_REGISTRY = {
   },
   panelClarify: {
     title: 'Step 2 — Clarify',
-    body: 'Optional, but worth it. callback asks a few short questions to draw '
+    body: 'Optional, but worth it. sartor asks a few short questions to draw '
       + 'out real experience your résumé didn’t spell out and to pin down '
       + 'anything vague. Your answers become new candidate bullet points (added '
       + 'to your corpus to accept now or review later) and keep the résumé '
@@ -1559,7 +1559,7 @@ const _HELP_REGISTRY = {
   },
   panelCompose: {
     title: 'Step 3 — Compose',
-    body: 'Here’s the résumé callback proposes for this job: the title it chose '
+    body: 'Here’s the résumé sartor proposes for this job: the title it chose '
       + 'for each role and the bullet points it selected and ordered, including '
       + 'any new ones from your clarifying answers. Pin a bullet to force-include '
       + 'it, exclude ones you don’t want, or open “find more” to pull others from '
@@ -1572,13 +1572,13 @@ const _HELP_REGISTRY = {
     body: 'Your selected content is loaded — now choose how it looks. Pick a '
       + 'template on the left and the preview shows the pages exactly as they’ll '
       + 'print: same words, different typography and layout. You can also upload '
-      + 'your own .docx for callback to reuse (ATS-safe templates strongly '
+      + 'your own .docx for sartor to reuse (ATS-safe templates strongly '
       + 'recommended). Click Generate when you’re happy with the look.',
     tip: 'Step 4 — Template',
   },
   panelGenerate: {
     title: 'Step 5 — Generate',
-    body: 'Choose your output format and click Generate. callback writes the '
+    body: 'Choose your output format and click Generate. sartor writes the '
       + 'final, tailored résumé from the content and template you picked. This '
       + 'usually takes about 30–60 seconds.',
     tip: 'Step 5 — Generate',
@@ -1596,7 +1596,7 @@ const _HELP_REGISTRY = {
   // ---- Career corpus / Templates / Memory tabs -------------------------
   panelCorpus: {
     title: 'Your career corpus',
-    body: 'Your career corpus is the pool of experience callback draws from when '
+    body: 'Your career corpus is the pool of experience sartor draws from when '
       + 'it writes a tailored résumé — the roles and bullet points it built from '
       + 'the résumé you imported. Everything starts as “pending review”: accept '
       + 'items one at a time, by role, or all at once. Reviewing and accepting '
@@ -1610,13 +1610,13 @@ const _HELP_REGISTRY = {
     body: 'Templates control how your résumé looks — typography, spacing, and '
       + 'layout — without changing a word of the content. A few ATS-friendly '
       + 'templates ship with the app, and you can upload your own .docx for '
-      + 'callback to reuse as a template. ATS-safe templates are strongly '
+      + 'sartor to reuse as a template. ATS-safe templates are strongly '
       + 'recommended so applicant-tracking systems can read your résumé cleanly.',
     tip: 'Résumé templates',
   },
   panelMemory: {
     title: 'Candidate memory',
-    body: 'Candidate memory keeps the questions callback asked during “Clarify” '
+    body: 'Candidate memory keeps the questions sartor asked during “Clarify” '
       + 'and the answers you gave, across every application. Answers with '
       + 'concrete numbers and outcomes make the strongest new résumé bullets, so '
       + 'they’re highlighted here. Nothing is shared between users.',
@@ -1628,16 +1628,16 @@ const _HELP_REGISTRY = {
   // by the nearest section’s (i) for later reference (see _maybeFireTourStop).
   tourAddUser: {
     title: 'Add yourself as a user',
-    body: 'Start by importing a résumé — callback builds your first career '
+    body: 'Start by importing a résumé — sartor builds your first career '
       + 'corpus from it, so you don’t have to type everything in by hand. An '
       + 'ATS-friendly résumé (plain text, clear month/year dates) works best; '
-      + 'callback does its best with other formats. You can add your name and '
+      + 'sartor does its best with other formats. You can add your name and '
       + 'contact details now or later.',
     tip: 'Adding a user',
   },
   tourGenerating: {
     title: 'Generating your résumé',
-    body: 'callback is writing your tailored résumé now — this usually takes '
+    body: 'sartor is writing your tailored résumé now — this usually takes '
       + '30–60 seconds. When it’s done you’ll get a live preview you can edit '
       + 'and download, plus the option to generate a matching, editable cover '
       + 'letter.',
@@ -1645,7 +1645,7 @@ const _HELP_REGISTRY = {
   },
   tourCoverLetter: {
     title: 'Your cover letter',
-    body: 'callback drafts a cover letter from the same job and résumé. Like the '
+    body: 'sartor drafts a cover letter from the same job and résumé. Like the '
       + 'résumé preview, it’s editable in place — adjust the wording, then '
       + 'download. Generating it again rewrites it from scratch.',
     tip: 'Cover letter',
@@ -1927,6 +1927,10 @@ async function _saveEdits(edits) {
       return false;
     }
     _announce('Edits saved as baseline for the next iteration.');
+    // Walkthrough D1/D2: the styled preview serves the cached JSON Resume, which
+    // /api/save-edits just recomputed from the edited markdown — refresh the
+    // iframe so the edit shows immediately (no regenerate needed).
+    if (edits.resumeEdited) _refreshOutputPreview();
     return true;
   } catch (e) {
     alert('Saving edits failed: ' + e.message);
@@ -1990,17 +1994,32 @@ async function submitRefinement() {
     const check = await checkRes.json();
 
     if (!check.valid) {
-      entry.status = 'rejected';
-      entry.reason = check.reason || 'Outside allowed scope.';
-      _renderRefinementHistory();
-      setStatus('REFINEMENT REJECTED');
-      return;
+      // Walkthrough E4: FLAG, but never BLOCK. Correcting a hallucinated "fact"
+      // (e.g. an invented "10 years of…" leap) is exactly what the user needs to
+      // do — the scope check must not prevent it. Surface the concern and let the
+      // user decide whether to proceed.
+      const reason = check.reason || 'This may change facts rather than just wording.';
+      const proceed = confirm(
+        `Heads up — this looks like it may change facts, not just wording:\n\n`
+        + `${reason}\n\nThat's your call. Proceed with this refinement anyway?`,
+      );
+      if (!proceed) {
+        entry.status = 'rejected';
+        entry.reason = reason;
+        _renderRefinementHistory();
+        setStatus('REFINEMENT CANCELED');
+        return;
+      }
+      // User chose to proceed despite the flag — fall through to generate.
     }
 
     // Step 2: generate with accepted notes only
     entry.status = 'applied';
     _renderRefinementHistory();
     setStatus('REFINING');
+    // Walkthrough E1: show the persistent working overlay while the refine
+    // regenerates (mirrors runGeneration), not just the status label.
+    _setBusy(true, 'Refining your résumé');
 
     const acceptedNotes = refinementHistory
       .filter(e => e.status === 'applied')
@@ -2038,6 +2057,7 @@ async function submitRefinement() {
     _renderRefinementHistory();
     reportError('Refine', 'Refinement request failed', e.message);
   } finally {
+    _setBusy(false);
     document.getElementById('btnRefinement').disabled = false;
     document.getElementById('btnGenerate').disabled = false;
   }
@@ -2646,7 +2666,7 @@ function _announce(text) {
 
 // Sentence-case a short status string ('GENERATION COMPLETE' → 'Generation
 // complete'). Kept here because every setStatus() call passes ALL CAPS
-// from the LCARS era; the callback. chrome uses sentence case.
+// from the LCARS era; the sartor. chrome uses sentence case.
 function _toSentence(s) {
   if (!s) return '';
   const lower = s.toLowerCase();
@@ -2655,7 +2675,7 @@ function _toSentence(s) {
 
 function setStatus(text) {
   const pill = document.getElementById('statusPill');
-  // .cb-status-text is the dedicated label child of the callback. status
+  // .cb-status-text is the dedicated label child of the sartor. status
   // pill. The whole pill was migrated from .cb-pill to .cb-status in
   // feat/release-visual-ia, so this element is always present.
   const textEl = pill.querySelector('.cb-status-text');
@@ -3655,6 +3675,7 @@ function _renderTitleRow(expId, title) {
     try {
       await _deleteJson(`/api/experience-titles/${title.id}`);
       await _reloadCorpusCard(expId);
+      await _refreshOnboardingBanner();  // I2: fade the pending banner at 0 pending
       _toast('Title retired');
     } catch (e) { _toast('Failed: ' + e.message, true); }
   };
@@ -3748,6 +3769,9 @@ function _renderBulletRow(expId, bullet) {
     try {
       await _deleteJson(`/api/bullets/${bullet.id}`);
       await _reloadCorpusCard(expId);
+      // Walkthrough I2: retiring the last pending bullet must fade the pending
+      // banner — accept already refreshed it, retire didn't.
+      await _refreshOnboardingBanner();
       _toast('Bullet retired');
     } catch (e) { _toast('Failed: ' + e.message, true); }
   };
@@ -3991,9 +4015,9 @@ async function openCorpusAddExperience() {
     fields: [
       { name: 'company',    label: 'Company',    type: 'text', required: true },
       { name: 'start_date', label: 'Start',      type: 'text', required: true,
-        placeholder: 'YYYY-MM', pattern: '\\d{4}-\\d{2}' },
+        placeholder: 'YYYY-MM or YYYY', pattern: '\\d{4}(-\\d{2})?' },
       { name: 'end_date',   label: 'End',        type: 'text',
-        placeholder: 'YYYY-MM (blank = current)', pattern: '\\d{4}-\\d{2}' },
+        placeholder: 'YYYY-MM / YYYY (blank = current)', pattern: '\\d{4}(-\\d{2})?' },
       { name: 'location',   label: 'Location',   type: 'text', placeholder: 'Remote / NYC / ...' },
       { name: 'summary',    label: 'Summary',    type: 'textarea',
         placeholder: 'Optional one-line context for this stint.' },
@@ -4484,6 +4508,13 @@ function _renderDuplicateExp(exp) {
 // Phase D.3 — Applications list (within the APPLICATION tab)
 // ===============================================================
 
+// Walkthrough J1 — retired applications are hidden unless this is on.
+let _applicationsShowRetired = false;
+function toggleApplicationsRetired(checked) {
+  _applicationsShowRetired = !!checked;
+  refreshApplications();
+}
+
 async function refreshApplications() {
   const list = document.getElementById('applicationsList');
   const countEl = document.getElementById('applicationsCount');
@@ -4499,7 +4530,10 @@ async function refreshApplications() {
   _setLoadingPlaceholder(list, 'Loading…');
   let res;
   try {
-    const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : '';
+    const params = new URLSearchParams();
+    if (statusFilter) params.set('status', statusFilter);
+    if (_applicationsShowRetired) params.set('include_retired', '1');
+    const qs = params.toString() ? `?${params.toString()}` : '';
     res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/applications${qs}`);
   } catch (e) {
     _setLoadingPlaceholder(list, 'Network error.');
@@ -4544,7 +4578,11 @@ function _renderApplicationsList(apps) {
 }
 
 function _renderApplicationCard(app) {
-  const card = _el('div', { className: 'application-card', id: `app-card-${app.id}` });
+  const retired = app.is_active === false;
+  const card = _el('div', {
+    className: 'application-card' + (retired ? ' retired' : ''),
+    id: `app-card-${app.id}`,
+  });
   const header = _el('div', { className: 'application-card-header' });
   header.appendChild(_el('div', { className: 'application-card-title', textContent: app.title }));
   if (app.company) {
@@ -4558,6 +4596,9 @@ function _renderApplicationCard(app) {
     className: `app-status-chip status-${chipStatus}`,
     textContent: (chipStatus === 'submitted' ? 'NO RESPONSE' : chipStatus).replace('_', ' ').toUpperCase(),
   }));
+  if (retired) {
+    meta.appendChild(_el('span', { className: 'app-status-chip status-retired', textContent: 'RETIRED' }));
+  }
   const iterText = `${app.iteration_count} iter${app.iteration_count === 1 ? '' : 's'}`;
   meta.appendChild(_el('span', { className: 'application-card-iter', textContent: iterText }));
   if (app.pending_proposals > 0) {
@@ -4602,8 +4643,48 @@ function _renderApplicationCard(app) {
     ]));
   }
 
+  // Walkthrough J1 — retire (hide) a poor/deserted application, or restore one.
+  const adminRow = _el('div', { className: 'application-admin-row' });
+  if (retired) {
+    const restore = _el('button', { className: 'app-admin-btn', textContent: 'Restore' });
+    restore.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (await _setApplicationRetired(app.id, false)) refreshApplications();
+    });
+    adminRow.appendChild(restore);
+  } else {
+    const retire = _el('button', { className: 'app-admin-btn retire', textContent: 'Retire' });
+    retire.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('Retire this application? It is hidden unless you tick "Show retired". '
+        + 'Its iteration history is kept.')) return;
+      if (await _setApplicationRetired(app.id, true)) refreshApplications();
+    });
+    adminRow.appendChild(retire);
+  }
+  card.appendChild(adminRow);
+
   card.onclick = () => _showApplicationDetail(app.id);
   return card;
+}
+
+// Walkthrough J1 — soft-retire (DELETE) / restore (POST) a prior application.
+// Returns true on success so the caller can refresh the list.
+async function _setApplicationRetired(appId, retire) {
+  try {
+    const res = retire
+      ? await fetch(`/api/applications/${appId}`, { method: 'DELETE' })
+      : await fetch(`/api/applications/${appId}/restore`, { method: 'POST' });
+    if (!res.ok) {
+      _toast(retire ? 'Retire failed' : 'Restore failed', true);
+      return false;
+    }
+    _toast(retire ? 'Application retired' : 'Application restored');
+    return true;
+  } catch (e) {
+    _toast((retire ? 'Retire' : 'Restore') + ' failed: ' + e.message, true);
+    return false;
+  }
 }
 
 // PUT a lifecycle status for an application; toasts on failure. Shared by
@@ -5217,6 +5298,13 @@ function _wizardRender() {
     btn.classList.toggle('done', isDone);
     btn.classList.toggle('upcoming', isUpcoming);
     btn.disabled = !_wizardReachable(s);
+    // Walkthrough E3: the rail reads as a passive progress bar, so back-nav went
+    // unnoticed. A tooltip on reachable steps announces they're clickable.
+    const _lbl = btn.querySelector('.wizard-label');
+    const _lblText = (_lbl && _lbl.textContent) ? _lbl.textContent : `Step ${s}`;
+    if (btn.disabled) btn.removeAttribute('title');
+    else btn.title = isActive ? `You're on step ${s}: ${_lblText}`
+                              : `Go to step ${s}: ${_lblText}`;
     // Swap the number for ✓ on done steps; restore the digit otherwise.
     // The original digit is read from data-wstep so we don't need to
     // store it separately. aria-hidden on the glyph keeps SR users on
@@ -6146,7 +6234,7 @@ function _renderComposeCard(exp) {
   const hintWrap = _el('div', { className: 'compose-order-hint-wrap' });
   hintWrap.appendChild(_el('span', {
     className: 'compose-order-hint',
-    textContent: "Bullets are ranked by callback's AI by fit to this job. "
+    textContent: "Bullets are ranked by sartor's AI by fit to this job. "
       + 'Drag to reorder — your order shapes the final résumé.',
   }));
   const info = _el('button', { className: 'compose-order-info', textContent: 'i' });
@@ -6425,12 +6513,58 @@ function _renderBulletRow_compose(b, opts = {}) {
     meta.appendChild(_el('span', {
       className: 'corpus-row-flag pending', textContent: 'PENDING',
     }));
+    // Walkthrough D3: edit + approve a proposed bullet INLINE in the tailor flow
+    // (both persist straight to the corpus via the same routes the Corpus tab
+    // uses), so the user never has to leave Compose to keep a proposed change.
+    const editBtn = _el('button', {
+      className: 'corpus-action-btn', textContent: 'EDIT',
+    });
+    editBtn.onclick = () => _editComposeBullet(b, row);
+    const approveBtn = _el('button', {
+      className: 'corpus-action-btn', textContent: 'APPROVE',
+    });
+    approveBtn.onclick = async () => {
+      try {
+        await _postJson(`/api/bullets/${b.id}/accept`, {});
+        b.is_pending_review = false;
+        meta.querySelector('.corpus-row-flag.pending')?.remove();
+        editBtn.remove();
+        approveBtn.remove();
+        await _refreshOnboardingBanner();
+        _toast('Bullet approved — saved to your corpus');
+      } catch (e) { _toast('Approve failed: ' + e.message, true); }
+    };
+    meta.appendChild(editBtn);
+    meta.appendChild(approveBtn);
   }
   const tagWrap = _el('span', { className: 'tag-chip-wrap' });
   _renderTagChips(tagWrap, 'bullet', b.id, b.tags || []);
   meta.appendChild(tagWrap);
   row.appendChild(meta);
   return row;
+}
+
+// Walkthrough D3 — edit a proposed (pending-review) bullet from the Compose step.
+// PUT /api/bullets/<id> persists the new text to the corpus (same route the
+// Career Corpus tab uses); the row updates in place. Approval is a separate click.
+async function _editComposeBullet(b, row) {
+  const result = await openFormModal({
+    title: 'EDIT BULLET',
+    subtitle: 'Edit this proposed bullet. Your change saves to your career corpus.',
+    submitLabel: 'SAVE',
+    fields: [
+      { name: 'text', label: 'Bullet', type: 'textarea', required: true,
+        defaultValue: b.text },
+    ],
+    onSubmit: async (v) => {
+      await _putJson(`/api/bullets/${b.id}`, { text: v.text.trim() });
+    },
+  });
+  if (!result) return;
+  b.text = result.text.trim();
+  const txt = row.querySelector('.row-text');
+  if (txt) txt.textContent = b.text;
+  _toast('Bullet saved to corpus');
 }
 
 function _refreshComposeRow(row) {

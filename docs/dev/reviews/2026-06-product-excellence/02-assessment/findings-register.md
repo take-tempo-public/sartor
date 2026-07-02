@@ -7,7 +7,7 @@ graduation: none
 # Findings register — 2026-06 product-excellence review
 
 > Master register for the eight-domain product-excellence assessment of
-> **callback.** Severity anchor: the SIGNED Product Charter
+> **sartor.** Severity anchor: the SIGNED Product Charter
 > (`../00-interview/product-charter.md`). All evidence pinned at
 > `c6e0437`. Honors C-0 claims discipline (mechanism-and-effort language;
 > no absolutes about LLM behavior).
@@ -64,7 +64,7 @@ graduation: none
 | F-sec-05 | oss-sec/privacy | Route containment dense, unit-tested, build-time-guarded | KEEP | P1 | CONFIRMED | v1.0.8 | C-1, S-1, D-5 | _safe_username 82x/_within 59x; 9 tests pass; block-secrets blocks key shapes + key files |
 | F-sec-06 | oss-sec/privacy | Fresh hostile clone carries zero real PII and zero secrets | KEEP | P1 | CONFIRMED | - | S-1, C-1, D-5 | .gitignore broad ignores; synthetic fixtures only; zero key-shapes across full history |
 | F-sec-07 | oss-sec/privacy | Two human-response SLAs survive at the pin (D-4 softening pending) | FIX | P1 | CONFIRMED | v1.0.7 pre-public | D-4, P-3 | SECURITY.md:134-135; CODE_OF_CONDUCT.md:15 |
-| F-sec-11 | oss-sec/privacy | CODE_OF_CONDUCT routes vuln/conduct reports to the WRONG repo (stale channel) | FIX | P1 | CONFIRMED | E-2 / v1.0.7 | E-2, P-3, S-1 | COC:13 Cooksey/resume vs amodal1/callback everywhere; also ISSUE_TEMPLATE/config.yml |
+| F-sec-11 | oss-sec/privacy | CODE_OF_CONDUCT routes vuln/conduct reports to the WRONG repo (stale channel) | FIX | P1 | CONFIRMED | E-2 / v1.0.7 | E-2, P-3, S-1 | COC:13 Cooksey/resume vs amodal1/sartor everywhere; also ISSUE_TEMPLATE/config.yml |
 | F-docs-01 | docs/wiki | SECURITY.md asserts a JD-URL egress class the code lacks; 3 public docs disagree | FIX | P1 | CONFIRMED | v1.0.6 PX-03 | C-2, C-2(iv), C-0, P-3, S-1 | SECURITY.md 3 classes vs vision/README 2; jd_url provenance only |
 | F-docs-02 | docs/wiki | SECURITY.md:85 "No external CDN is loaded at runtime" false at the pin | FIX | P1 | CONFIRMED | v1.0.6 PX-01 | C-2, C-2(i), C-0, P-3, S-1 | SECURITY.md:85 + no-CSP row vs dashboard.html:15 |
 | F-docs-03 | docs/wiki | "The LLM cannot invent facts" — flat C-0-barred absolute owner flagged overstated | FIX | P1 | CONFIRMED | - | C-0, C-3, A-4, P-3 | vision.md:50, overview.md:19/26, llms.txt:4 (line anchors drift); R2-4.2/R2-4.4 |

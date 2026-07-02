@@ -1,6 +1,6 @@
 """JSON Resume v1.0 intermediate format — canonical structured shape.
 
-Per docs/PRODUCT_SHAPE.md §6.4, callback. adopts JSON Resume v1.0
+Per docs/PRODUCT_SHAPE.md §6.4, sartor. adopts JSON Resume v1.0
 (jsonresume.org) as the canonical intermediate between the LLM's
 markdown emit and the downstream renderers (.md, .docx, .pdf, HTML).
 
@@ -13,16 +13,16 @@ no LLM call.
 Reference schema: https://jsonresume.org/schema/
 
 Our corpus-specific fields (tags, scores, has_outcome, is_active,
-variants) live under `meta.callback.*` so the resulting document
+variants) live under `meta.sartor.*` so the resulting document
 still validates against the standard JSON Resume schema; themes that
-don't know about callback. extensions ignore them, our own renderers
+don't know about sartor. extensions ignore them, our own renderers
 read them.
 
 Design constraints
 ------------------
 - Best-effort and forgiving. Missing sections produce empty arrays
   rather than KeyErrors. Malformed lines fall through to
-  `meta.callback.unparsed` so nothing is silently dropped.
+  `meta.sartor.unparsed` so nothing is silently dropped.
 - Deterministic: same markdown in → same JSON out. No LLM, no
   network, no clock dependencies.
 - Idempotent: re-parsing the markdown derived from emitting this
@@ -59,7 +59,7 @@ _H3_RE = re.compile(r"^###\s+(.+?)\s*$")
 _BULLET_RE = re.compile(r"^-\s+(.+?)\s*$")
 
 # Skills section item separator — sentence-case skill names, separated
-# by ` · ` (callback. brand), `, `, or one-per-line bullets.
+# by ` · ` (sartor. brand), `, `, or one-per-line bullets.
 _SKILLS_SPLIT_RE = re.compile(r"\s*[·•|,]\s+")
 
 # Map h2 title text → JSON Resume top-level key. Lowercased for matching.
@@ -87,7 +87,7 @@ def md_to_json_resume(markdown: str) -> dict[str, Any]:
 
     Best-effort: missing or malformed sections produce empty arrays;
     nothing is silently dropped (unparseable content lands under
-    `meta.callback.unparsed`).
+    `meta.sartor.unparsed`).
     """
     doc: dict[str, Any] = {
         "$schema": SCHEMA_URI,
@@ -98,7 +98,7 @@ def md_to_json_resume(markdown: str) -> dict[str, Any]:
         "certificates": [],
         "projects": [],
         "meta": {
-            "callback": {
+            "sartor": {
                 "version": "1.0",
                 "unparsed": [],
             },
@@ -248,9 +248,9 @@ def _parse_section(title: str, body: list[str], doc: dict[str, Any]) -> None:
     elif key in {"publications", "awards", "languages", "interests", "volunteer", "references"}:
         doc[key] = _parse_simple_list(body, name_key="name")
     else:
-        # Unknown section — log under meta.callback.unparsed so nothing
+        # Unknown section — log under meta.sartor.unparsed so nothing
         # is silently dropped, but don't crash.
-        doc["meta"]["callback"]["unparsed"].append(
+        doc["meta"]["sartor"]["unparsed"].append(
             {
                 "section": title,
                 "raw": "\n".join(body).strip(),

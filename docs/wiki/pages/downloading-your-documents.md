@@ -17,7 +17,7 @@ format you choose. If you also generated a cover letter (see [[cover-letters]]),
 downloads the same way, from its own tab.
 
 ## Choosing a format
-callback can write your document as **Word (`.docx`)**, **PDF**, or **Markdown
+sartor can write your document as **Word (`.docx`)**, **PDF**, or **Markdown
 (`.md`)**. You pick the résumé format back in **Step 5** before generating, and the
 cover letter has its own format buttons in Step 6. Word is the safe default for most
 applications; Markdown is plain text you can paste anywhere.

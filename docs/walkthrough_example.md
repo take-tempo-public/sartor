@@ -89,7 +89,7 @@ the bullet count per experience, opens the Helix card, and sees
 the Kafka bullet rendered. No edits needed.
 
 > **Lesson:** the corpus is one-time work. The same import will
-> power every future application Priya runs through callback.
+> power every future application Priya runs through sartor.
 
 ---
 

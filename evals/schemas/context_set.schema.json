@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/amodal1/callback/evals/schemas/context_set.schema.json",
+  "$id": "https://github.com/take-tempo-public/sartor/evals/schemas/context_set.schema.json",
   "title": "Resume Optimizer Context Set",
   "description": "The structured payload built by hardening.build_context_set() and consumed by analyzer.analyze() and analyzer.generate(). Saved per-run as output/{user}/context_{timestamp}.json.",
   "type": "object",

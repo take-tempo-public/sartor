@@ -8,7 +8,7 @@
   promoted into git with the rest of excellence-walk/ on 2026-06-08.)
 -->
 
-# callback. — v1.0.5 walk-through → sprint plan (working copy)
+# sartor. — v1.0.5 walk-through → sprint plan (working copy)
 
 > **Status:** SUPERSEDED (2026-06-10). Folded into `RELEASE_ARC.md` §Phase 4.5 +
 > `RELEASE_CHECKLIST.md` on 2026-06-08 — **plan from those, not this file.**

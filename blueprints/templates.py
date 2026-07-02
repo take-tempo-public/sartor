@@ -424,7 +424,7 @@ _PAGED_PREVIEW_INJECTION = """
   // set BEFORE the polyfill `<script>` executes (it reads PagedConfig on load).
   window.PagedConfig = { auto: false };
   // Belt-and-suspenders for the paged.js paths the awaited preview() promise
-  // below does NOT cover. paged.js can throw from an internal layout callback
+  // below does NOT cover. paged.js can throw from an internal layout sartor
   // that isn't on the chain we `.catch()` — either as a stray async rejection
   // or a synchronous throw inside a requestAnimationFrame / event handler. The
   // two listeners swallow ONLY paged-origin throws (by message or by the
@@ -484,7 +484,7 @@ def _inject_paged_polyfill(html_str: str) -> str:
 
     Paged.js is bundled as `/static/vendor/paged.polyfill.js` (MIT,
     v0.4.3). The script auto-polyfills CSS @page rules. The init
-    callback postMessages the rendered page count to the parent
+    sartor postMessages the rendered page count to the parent
     frame so the wizard toolbar can show "Page N of M" accurately.
 
     The PDF render path does NOT go through this helper —
@@ -628,6 +628,14 @@ def upload_user_persona(username: str) -> ResponseReturnValue:
         if not _within(target, personas_dir):
             return jsonify({"error": "Invalid persona path"}), 403
         file.save(str(target))
+
+        # Generate the HTML+CSS preview companion so the live preview renders the
+        # uploaded template's OWN typography instead of silently falling back to
+        # Classic (walkthrough B2/B3). Best-effort — a failure logs + still 201s,
+        # and the preview route falls back to Classic exactly as before.
+        from docx_to_persona_html import generate_companion
+
+        generate_companion(target)
 
         display_name = (request.form.get("name") or Path(safe_name).stem).strip()
         relative_path = f"personas/{safe_user}/{safe_name}"
@@ -918,6 +926,14 @@ def preview_application_html(application_id: int) -> ResponseReturnValue:
         from pdf_render import html_template_path_for
 
         html_path = html_template_path_for(docx_template_path)
+        if html_path is None:
+            # Lazily generate the HTML+CSS companion for a persona uploaded before
+            # companion generation shipped, so its preview reflects the uploaded
+            # template's typography instead of falling back to Classic (B2/B3).
+            from docx_to_persona_html import generate_companion
+
+            companion = generate_companion(docx_template_path)
+            html_path = companion[0] if companion else None
         if html_path is None:
             html_path = current_app.config["BUNDLED_PERSONAS_DIR"] / "classic.html"
             if not html_path.exists():

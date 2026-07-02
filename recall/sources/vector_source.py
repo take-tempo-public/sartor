@@ -11,7 +11,7 @@ eval gate at owner direction (Stage-1 lexical retrieval tested too literal); see
 **audience resolver**, and (for builds) the **document provider** are all injected, so
 this module hardcodes no project path, no audience rule, and — crucially — no embedding
 model. The embedder is a plain `Callable[[Sequence[str]], ndarray]`, so the substrate
-stays model-agnostic and extractable: callback wires `model2vec` in the project layer
+stays model-agnostic and extractable: sartor wires `model2vec` in the project layer
 (`blueprints/assistant.py` + `scripts/build_vector_index.py`), but `recall/` never
 imports it. The one third-party import here is **`numpy`** (the brute-force cosine + the
 `.npy` sidecar) — a *light lib*, the single sanctioned step past Stage-0's stdlib-only

@@ -1,12 +1,12 @@
-# Callback
+# Sartor
 
-> **Purpose:** the product front door — what Callback is, who it's for, and where to go deeper. Also the home page the hosted docs site renders.
+> **Purpose:** the product front door — what Sartor is, who it's for, and where to go deeper. Also the home page the hosted docs site renders.
 > **Audience:** `user` — the one place all three audiences (job seeker · coach · developer) meet; routes developers onward to the dev-tier homes.
 > **Authoritative for:** the product positioning, the three-audience cumulative ladder, and at-a-glance orientation + the documentation map. Everything else is **cited**; the linked canonical home governs on conflict.
 
 > Tailor a résumé — and an optional cover letter — to **one** specific job, on your own machine, without inventing anything about the candidate.
 
-**Callback** is a local-first web app that takes a single job description and a person's real career history, then produces a tailored draft — by *discovering* what's true about them (including real experience left off the résumé, surfaced through a short interview in their own words) and *phrasing* it for the posting. It runs on your laptop and calls the Claude API for the reasoning; nothing else leaves your machine. It produces documents — it never submits an application or sends an email.
+**Sartor** is a local-first web app that takes a single job description and a person's real career history, then produces a tailored draft — by *discovering* what's true about them (including real experience left off the résumé, surfaced through a short interview in their own words) and *phrasing* it for the posting. It runs on your laptop and calls the Claude API for the reasoning; nothing else leaves your machine. It produces documents — it never submits an application or sends an email.
 
 The core discipline: **the LLM discovers and phrases — it does not invent.** No fabricated titles, numbers, or dates. A grounding check in the prompt plus a deterministic "witness" metric measure how much of the output traces back to real material. That's a *mechanism and a constraint*, **not** a guarantee a language model can never hallucinate — the full rationale lives in [`vision.md`](vision.md).
 
@@ -27,9 +27,9 @@ The core discipline: **the LLM discovers and phrases — it does not invent.** N
 
 ---
 
-## What Callback does
+## What Sartor does
 
-Generic AI résumé tools pad a history with claims that fall apart in an interview, and emit formats that automated résumé screeners (ATS) choke on. Callback is the opposite bet:
+Generic AI résumé tools pad a history with claims that fall apart in an interview, and emit formats that automated résumé screeners (ATS) choke on. Sartor is the opposite bet:
 
 - **It only asserts what's true.** It discovers real, undocumented experience — in the candidate's own words — then rewrites and synthesizes toward the job, without inventing.
 - **It's ATS-safe by default.** Bundled templates are single-column, plain-bullet, standard-font. Non-ATS-safe templates were retired.
@@ -40,7 +40,7 @@ Generic AI résumé tools pad a history with claims that fall apart in an interv
 
 ## Who it's for
 
-Callback does one thing — tailor the right résumé for one posting — but three audiences build on each other, each adding one capability to the tier below:
+Sartor does one thing — tailor the right résumé for one posting — but three audiences build on each other, each adding one capability to the tier below:
 
 ```
   Job seeker      Tailor YOUR résumé to one job, grounded in your real history.
@@ -48,7 +48,7 @@ Callback does one thing — tailor the right résumé for one posting — but th
          └─ + Dev   EXTEND or TUNE what both experience — new features, better grounding.
 ```
 
-Each tier gets everything the tier above it does. A coach is a job seeker with many career files and the tools to run them; a developer makes Callback better at the job seeker's and the coach's work, or adds new capabilities to it.
+Each tier gets everything the tier above it does. A coach is a job seeker with many career files and the tools to run them; a developer makes Sartor better at the job seeker's and the coach's work, or adds new capabilities to it.
 
 | You are… | You build on… | …and add | Section |
 |---|---|---|---|
@@ -74,7 +74,7 @@ A sequence of small, inspectable stages — full sequence + diagrams in [`docs/a
 
 **Two required human gates** bracket the work; the clarification interviews between them are optional and cheap. **Discover, don't invent:** output is grounded in the union of (corpus + clarifying answers + the candidate's own typed edits); a grounding check and a deterministic witness metric measure that it holds — see [`generation-and-grounding`](docs/wiki/pages/generation-and-grounding.md) and [`docs/dev/GROUNDING_METRIC.md`](docs/dev/GROUNDING_METRIC.md).
 
-**Model routing** (canonical: [`docs/architecture.md`](docs/architecture.md) · [`llm-call-catalog`](docs/wiki/pages/llm-call-catalog.md)): heavy reasoning (analyze, clarify, generate, cover letter) runs on **Claude Sonnet**; structured selection (recommend, extract, critique) and the docs assistant run on **Claude Haiku**. Callback's tailoring uses the **hosted Claude API only** — no fine-tuned generation model, nothing trained on your data. "Tuning" here means *prompt, eval, and retrieval* tuning, never model fine-tuning.
+**Model routing** (canonical: [`docs/architecture.md`](docs/architecture.md) · [`llm-call-catalog`](docs/wiki/pages/llm-call-catalog.md)): heavy reasoning (analyze, clarify, generate, cover letter) runs on **Claude Sonnet**; structured selection (recommend, extract, critique) and the docs assistant run on **Claude Haiku**. Sartor's tailoring uses the **hosted Claude API only** — no fine-tuned generation model, nothing trained on your data. "Tuning" here means *prompt, eval, and retrieval* tuning, never model fine-tuning.
 
 ---
 
@@ -114,7 +114,7 @@ A sequence of small, inspectable stages — full sequence + diagrams in [`docs/a
 
 ## For developers
 
-**Everything the job seeker and coach experience — and the ability to change it.** Callback is deliberately **two things at once**: a working résumé product, *and* a testbed for reusable, substrate-independent capacities (memory, governance, grounding, evaluation) engineered to be importable beyond this app. A developer doesn't use Callback for a different purpose; you make it better at the other two's purposes, add new ones, or lift a capacity out. The canonical write-up is [`docs/system-model.md`](docs/system-model.md).
+**Everything the job seeker and coach experience — and the ability to change it.** Sartor is deliberately **two things at once**: a working résumé product, *and* a testbed for reusable, substrate-independent capacities (memory, governance, grounding, evaluation) engineered to be importable beyond this app. A developer doesn't use Sartor for a different purpose; you make it better at the other two's purposes, add new ones, or lift a capacity out. The canonical write-up is [`docs/system-model.md`](docs/system-model.md).
 
 **One discipline, applied recursively.** "Discover/cite; never assert beyond source" governs the résumé generator, the doc-assistant avatar, *and this documentation itself* (the wiki may not assert beyond its cited sources; every fact has one home). The same `user`/`dev` audience plane the assistant gates disclosure on is the plane this documentation's navigation gates on — one mechanism, two consumers.
 
@@ -125,7 +125,7 @@ A sequence of small, inspectable stages — full sequence + diagrams in [`docs/a
 
 **Extend — add new capability the other two then use:**
 - the **Corpus Item** pattern — add new curatable kinds (same shape powers bullets, summaries, skills) — see [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md);
-- the **memory substrate** (`recall/`): hybrid retrieval (lexical `git grep` + curated wiki + session buffer + static-embedding semantic), fused with Reciprocal Rank Fusion, every retrieved unit carrying a mandatory `path:line` / `[[wiki]]` citation — behind a **machine-enforced extraction boundary** (an AST test fails the build if `recall/` imports the app or a Callback-specific literal leaks into a retrieval tier, so "reusable substrate" is *enforced*, not narrated). See [`docs/dev/memory-architecture.md`](docs/dev/memory-architecture.md), [`deterministic-llm-boundary`](docs/wiki/pages/deterministic-llm-boundary.md);
+- the **memory substrate** (`recall/`): hybrid retrieval (lexical `git grep` + curated wiki + session buffer + static-embedding semantic), fused with Reciprocal Rank Fusion, every retrieved unit carrying a mandatory `path:line` / `[[wiki]]` citation — behind a **machine-enforced extraction boundary** (an AST test fails the build if `recall/` imports the app or a Sartor-specific literal leaks into a retrieval tier, so "reusable substrate" is *enforced*, not narrated). See [`docs/dev/memory-architecture.md`](docs/dev/memory-architecture.md), [`deterministic-llm-boundary`](docs/wiki/pages/deterministic-llm-boundary.md);
 - a deterministic core with **every LLM call quarantined to one module**, and **typed contracts as the seams between pillars** — pydantic is in the control loop (`model_validator`s enforce semantic rules; a validation failure is fed back as a structured retry), and frozen `Unit`/`Scope`/`Context` are the substrate's interface;
 - new ATS-safe templates; the **JSON Resume v1.0** open intermediate; a roadmap **provider abstraction** at the single LLM boundary (local / alternative models).
 
@@ -160,14 +160,14 @@ Pointers to the canonical homes; depth lives there, not here.
 ## Install
 
 ```bash
-git clone https://github.com/take-tempo-public/callback
-cd callback
+git clone https://github.com/take-tempo-public/sartor
+cd sartor
 pip install -e .
 python -m playwright install chromium     # optional — one-time ~150 MB, only for PDF output
 export ANTHROPIC_API_KEY=your-key-here     # or put it in a .api_key file at the repo root
 python app.py
 ```
-Then open `http://localhost:5000`. Full setup (Windows/macOS/Linux), cost guidance, and troubleshooting: [`docs/install.md`](docs/install.md). Cap spend via [Anthropic usage limits](https://console.anthropic.com/settings/limits) — Callback has no built-in budget guard.
+Then open `http://localhost:5000`. Full setup (Windows/macOS/Linux), cost guidance, and troubleshooting: [`docs/install.md`](docs/install.md). Cap spend via [Anthropic usage limits](https://console.anthropic.com/settings/limits) — Sartor has no built-in budget guard.
 
 ---
 

@@ -15,7 +15,7 @@
 
 ## The reframe — this is attribution, not open-world factuality
 
-"Hallucination" in callback. has a narrow, *checkable* meaning, unlike general
+"Hallucination" in sartor. has a narrow, *checkable* meaning, unlike general
 LLM factuality. It is **faithfulness/attribution**: does each claim in the
 generated résumé have support in the candidate's ground-truth corpus? We own
 the reference set, so every claim is verifiable against a **closed** source —

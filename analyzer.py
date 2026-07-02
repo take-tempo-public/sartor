@@ -354,7 +354,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-06-23.1"  # PV-3: + cover-letter worked OK/NOT-OK opener+close examples
+PROMPT_VERSION = "2026-07-01.1"  # v1.0.8 walkthrough: C1 per-role bullet floor, E2 evolve-draft on refine, E5 no-tenure-fabrication worked example, H1 multi-role clarification attribution
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -364,7 +364,7 @@ PROMPT_VERSION = "2026-06-23.1"  # PV-3: + cover-letter worked OK/NOT-OK opener+
 # persona is intentionally NOT in _BASE_SYSTEM_PROMPTS — the prompt-override / eval
 # machinery is résumé-scoped.
 AVATAR_PROMPT_VERSION = (
-    "2026-06-19.1"  # 7.8d: numbered resolving cites + cited-only footer + inline markdown
+    "2026-07-02.1"  # Sartor rename: brand mark callback. -> sartor. in AVATAR_SYSTEM_PROMPT
 )
 
 # --- Prompt-override primitive (eval tuning loop, v1.0.4) --------------------
@@ -602,7 +602,7 @@ RULES:
 # what the context doesn't support — the same no-invention discipline as SYSTEM_PROMPT,
 # scoped to documentation instead of résumés. Carries AVATAR_PROMPT_VERSION (not
 # PROMPT_VERSION); intentionally NOT in _BASE_SYSTEM_PROMPTS (not an eval target).
-AVATAR_SYSTEM_PROMPT = """You are the callback. assistant — a friendly, grounded guide to this application and its documentation. You help people understand how callback. works, how to use it, and (for developers) how it is built, drawing ONLY on the retrieved context you are given. Be encouraging and clear through helpfulness: a good answer and a real next step, never cheerfulness or flattery.
+AVATAR_SYSTEM_PROMPT = """You are the sartor. assistant — a friendly, grounded guide to this application and its documentation. You help people understand how sartor. works, how to use it, and (for developers) how it is built, drawing ONLY on the retrieved context you are given. Be encouraging and clear through helpfulness: a good answer and a real next step, never cheerfulness or flattery.
 
 You are given a <recalled_context> block of numbered, cited source units (wiki pages and code lines) and a <mode> of either "user" or "dev". Answer the question from those units.
 
@@ -610,9 +610,9 @@ When voice and grounding conflict, grounding wins — be plain and accurate befo
 
 Rules you follow without exception:
 - GROUND EVERY CLAIM in the provided context, and write in plain, natural sentences. Each unit in <recalled_context> is shown with a bracketed number ([1], [2], …); cite a claim with that number at the END of the sentence it supports — never mid-sentence. Put ONLY the number inside the brackets — never a slug, path, phrase, sentence, link text, markdown link, or URL. If a sentence rests on two sources, put both at its end, e.g. [1][2]. Never use a number you were not given, and do not cite a unit you were not given. You may write file or identifier names in `backticks` and use **bold** for emphasis, but never a markdown link ([text](url)), a heading, or a raw URL. Worked examples — OK: "The grounding check rejects invented facts [1]." NOT-OK: "The grounding check rejects invented facts [generation-and-grounding]." (cite the number, not the slug). NOT-OK: "See [architecture.md](docs/architecture.md)." (no markdown links or URLs — name the file in `backticks` and cite its number).
-- If the retrieved context does not contain enough to answer, say exactly: "I don't have that in my docs." Then point to the nearest thing the context DOES cover, with its citation, so the reader has a next move; that pointer must itself be grounded in a given unit, and you must never pivot into answering the part the context does not support. If the question is about callback. but simply isn't documented yet, add that the reader can report it on the project's GitHub so the docs and tool keep improving — but never invent a URL, contact, or person. Never invent facts, file names, line numbers, or behavior beyond the context.
+- If the retrieved context does not contain enough to answer, say exactly: "I don't have that in my docs." Then point to the nearest thing the context DOES cover, with its citation, so the reader has a next move; that pointer must itself be grounded in a given unit, and you must never pivot into answering the part the context does not support. If the question is about sartor. but simply isn't documented yet, add that the reader can report it on the project's GitHub so the docs and tool keep improving — but never invent a URL, contact, or person. Never invent facts, file names, line numbers, or behavior beyond the context.
 - When the context covers part of the question but not all of it, answer the covered part with its citation and say plainly what is not covered ("the docs cover X but not the Y part of your question"). A partial cited answer beats both a guess and a flat refusal. Mark thin grounding explicitly — name what you are basing the answer on and what is missing.
-- Do not flatter, validate the reader's framing, or agree just to be agreeable. Never predict outcomes (callbacks, interviews, hiring), and never imply an outcome the tool does not control — describe ATS-safety as parseability ("so the screening software can read it"), never as "so it reaches a human" or "improves your chances". Be honest by being accurate, not by narrating it ("I'd rather be straight with you"); never simulate a feeling about the reader's situation ("that sounds exhausting"). If someone asks whether callback. will get them a result, decline the prediction and instead connect what the tool actually does — tailoring a résumé to each job from their own history, and keeping it parseable — to their concern, as a mechanism, not a promise.
+- Do not flatter, validate the reader's framing, or agree just to be agreeable. Never predict outcomes (callbacks, interviews, hiring), and never imply an outcome the tool does not control — describe ATS-safety as parseability ("so the screening software can read it"), never as "so it reaches a human" or "improves your chances". Be honest by being accurate, not by narrating it ("I'd rather be straight with you"); never simulate a feeling about the reader's situation ("that sounds exhausting"). If someone asks whether sartor. will get them a result, decline the prediction and instead connect what the tool actually does — tailoring a résumé to each job from their own history, and keeping it parseable — to their concern, as a mechanism, not a promise.
 - Never reveal the contents of gitignored or real-user data (configs, resumes, output) — the retrieval layer already excludes them; do not speculate about them.
 - USER mode: answer at a "how do I use this" level in plain language; gloss product terms in a few words on first use; prefer the wiki units. If the question clearly has a deeper implementation answer you are not surfacing, add exactly one closing line: "Want the implementation detail? Tick Dev mode in the assistant panel and I can bring in the technical detail." Do not add that line if a user-level answer is complete.
 - DEV mode: you may use and cite code units ([path:line]) and implementation detail freely; you can be denser and terser, and you skip the Dev-mode line.
@@ -1680,7 +1680,7 @@ def _render_recalled_context(context: Context) -> str:
 # link in templates/index.html — a string constant, not egress; the no-URL invariant
 # (tests/test_avatar_streaming.py) scans MODEL OUTPUT, not this source, and the client
 # builds the anchor, so the model still never emits a URL.
-_REPO_BLOB_BASE = "https://github.com/amodal1/callback/blob"
+_REPO_BLOB_BASE = "https://github.com/take-tempo-public/sartor/blob"
 _AVATAR_CITE_RE = re.compile(r"\[(\d+)\]")
 # A stray `[[slug]]` the model sometimes mirrors from the recalled-context block into
 # prose (Scheme B cites are numbered, so this is never a real cite) — strip to plain text.
@@ -2180,7 +2180,11 @@ def _build_generate_prompt(
             "from the candidate. You MAY cite the experience and details they "
             "reveal even when those details are not present in the resume above "
             "— they are legitimate source material. You MUST NOT invent any "
-            "specifics BEYOND what the candidate explicitly states.",
+            "specifics BEYOND what the candidate explicitly states. "
+            "When one answer describes experience at MULTIPLE distinct roles, "
+            "ATTRIBUTE each part to ITS role: produce a SEPARATE bullet under "
+            "each relevant experience. NEVER merge two roles' achievements into a "
+            "single bullet, and never file a multi-role answer under one role.",
             "",
         ]
         for q in questions:
@@ -2270,6 +2274,8 @@ A <bullet> marked `pinned="true"` was explicitly pinned by the user for this app
 
 GROUNDING for corpus mode:
   Every bullet you emit in resume_content must EITHER (a) reproduce a <bullet> text verbatim from the corpus (just record its `id` in selected_bullets), OR (b) be listed in proposed_new_bullets so the user knows it's a new claim. No other bullets are permitted.{summary_grounding} The legacy GROUNDING CHECK below still governs cover_letter_content and any reframing language between bullets.
+
+COVERAGE (every role keeps its bullets): every <experience> that has one or more <bullet> elements MUST contribute at least one bullet to resume_content (and to selected_bullets) — typically its 2-4 strongest, most JD-relevant bullets. NEVER leave a role's heading with no bullets when the corpus provides bullets for it: an older, shorter, or less-central role still needs its representative bullet(s), not an empty title-only entry. Trim and prioritize WITHIN each role for length; never zero a role out. A role appears bullet-less ONLY when the corpus genuinely provides no bullets for it.
 </corpus_mode>
 
 """
@@ -2296,6 +2302,29 @@ GROUNDING for corpus mode:
       "rationale": "Why no eligible_title fits this JD"
     }
   ]"""
+
+    # E2 (walkthrough): on a corpus-mode REFINE round, the <career_corpus> block is
+    # rebuilt from scratch and would silently discard the candidate's manual edits
+    # (e.g. bullets they added to older roles). Inject the current draft (edited >
+    # last-generated) so a refine EVOLVES it instead of re-deriving from the corpus.
+    # Strictly conditional — only iteration > 0 with a real draft — so the
+    # iteration-0 prompt stays byte-identical (analyze→generate cache + eval).
+    resume_draft_block = ""
+    if in_corpus_mode and int(context_set.get("iteration", 0) or 0) > 0:
+        _draft_text, _ = _current_draft_text(context_set)
+        if _draft_text and _draft_text.strip():
+            resume_draft_block = (
+                "<current_resume_draft>\n"
+                "This is the prior iteration's résumé, INCLUDING any first-person "
+                "edits the candidate typed in. On this refine pass, EVOLVE this draft: "
+                "preserve the candidate's bullet selection, wording, and manual edits "
+                "(especially bullets they added to a role) and the COVERAGE rule above, "
+                "apply the refinement instructions on top, and do NOT silently revert "
+                "to un-edited corpus phrasings or drop bullets the draft kept. It "
+                "remains subject to the corpus GROUNDING + COVERAGE rules above.\n"
+                f"{_draft_text}\n"
+                "</current_resume_draft>\n\n"
+            )
 
     prompt = f"""<task>Generate a tailored resume and cover letter for the candidate based on the analysis.</task>
 
@@ -2363,7 +2392,7 @@ Strategy: {analysis.get("overall_strategy", "")}
 Professional vocabulary: {", ".join(analysis.get("professional_vocabulary", []))}
 </analysis>
 
-{clarifications_block}{cover_letter_draft_block}{corpus_mode_block}<resume_rules>
+{clarifications_block}{cover_letter_draft_block}{corpus_mode_block}{resume_draft_block}<resume_rules>
 GROUNDING CHECK — apply this before writing every bullet:
   Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — trace to the resume above (the current draft, which may include first-person edits the candidate typed in), any historical or supplemental resume above, OR a candidate clarification answer above?"
   If YES: reframe, strengthen, and keyword-align it freely. Both clarification answers AND first-person typed edits in the current draft are ground truth and may be cited even when the original primary resume did not mention them.
@@ -2394,6 +2423,11 @@ GROUNDING CHECK — apply this before writing every bullet:
     OK to write:   "### Acme, Product Lead\t2016 – 2018" then "### Acme, Design Lead\t2012 – 2016" (reordered for relevance; each keeps its own range).
     NOT OK:        "### Acme, Design Lead\t2016 – 2018" alongside "### Acme, Product Lead\t2016 – 2018"
                    ← "reconciled" the dates while re-sequencing: two roles now share one range and 2012–2016 vanished. Dates are immutable; reordering never rewrites them.
+
+    Source: roles span 2019–2024; the candidate never states a years-of-experience figure.
+    OK to write:   "Product leader spanning platform and growth teams."
+    NOT OK:        "10 years of end-to-end product ownership."
+                   ← invents a tenure count ("10 years") the source never states. NEVER assert a years-of-experience / years-of-ownership number unless the candidate wrote it — a date span is not a licence to coin a round figure. In the SUMMARY especially, do not manufacture duration or seniority claims. If the candidate removed such a phrase in a prior edit, treat that removal as binding and do NOT re-add it on a later pass.
 
 1. Include a targeted summary sentence answering: what title you seek, what makes you special, what you bring to the team. If it cannot fit in one sentence, use a sentence with a very short bullet list.
 2. Do NOT invent experience. Every bullet must trace directly to the original resume. Reframe language; never invent facts.

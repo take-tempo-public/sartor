@@ -14,7 +14,7 @@
    - Facts VERIFIED against pyproject.toml + docs/install.md + CONTRIBUTING.md.
 -->
 
-# callback. — what you actually have to download, and why
+# sartor. — what you actually have to download, and why
 
 *Everything you must obtain that `pip install`-ing the declared dependencies does
 **not** hand you. The ordinary Python packages (Flask, the Anthropic SDK, Pydantic,
@@ -25,7 +25,7 @@ credential — split by what you're trying to run.*
 ## (a) To run the basic tool
 
 1. **Python 3.10+** — the interpreter; the whole app is Python (supports 3.10–3.13).
-2. **`git` + the repo clone** — callback. isn't shipped as a PyPI wheel for end
+2. **`git` + the repo clone** — sartor. isn't shipped as a PyPI wheel for end
    users; you `git clone` it and `pip install -e .` from the clone.
 3. **A headless Chromium binary** *(~150 MB, one-time)* — fetched by
    `python -m playwright install chromium`. **The single biggest non-pip download

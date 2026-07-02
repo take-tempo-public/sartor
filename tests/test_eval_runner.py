@@ -355,7 +355,7 @@ class TestGroundednessComposite:
 
 class TestRunSuite:
     """The importable core extracted from main(): structured args + an optional
-    progress callback + an EvalRunResult return. main() is now a thin wrapper, and
+    progress sartor + an EvalRunResult return. main() is now a thin wrapper, and
     the no-flag default path forwards nothing extra (the byte-identical guarantee)."""
 
     def test_main_delegates_to_run_suite(self, monkeypatch):
@@ -465,8 +465,8 @@ class TestRunSuite:
         # Default (no-override) path stamps the real PROMPT_VERSION, not candidate:<hash>.
         assert all(not str(r["prompt_version"]).startswith("candidate:") for r in grounding)
 
-    def test_run_suite_progress_callback_fires(self, tmp_path, monkeypatch):
-        """The optional progress callback is invoked with (event, payload) at the
+    def test_run_suite_progress_sartor_fires(self, tmp_path, monkeypatch):
+        """The optional progress sartor is invoked with (event, payload) at the
         documented milestones; the default (None) path stays a no-op."""
         import evals.runner as runner
         from evals.runner import run_suite

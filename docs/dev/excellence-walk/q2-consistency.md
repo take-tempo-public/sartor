@@ -12,7 +12,7 @@
      dashboard.routes), 2026-06-07. Counts are proxies; flagged where inferred.
 -->
 
-# callback. — is the code consistent?
+# sartor. — is the code consistent?
 
 ## The headline
 

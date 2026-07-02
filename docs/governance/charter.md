@@ -1,6 +1,6 @@
-# Constitution — callback.
+# Constitution — sartor.
 
-> **Purpose:** the single canonical home for callback.'s *binding* governance —
+> **Purpose:** the single canonical home for sartor.'s *binding* governance —
 > the constitutional clauses (C-0…C-6), the defaults (D-1…D-6), the parallel-session
 > working model (W-1/W-2), and the amendment ceremony. Each rule is stated **once**,
 > here; the descriptive docs that used to carry it now keep their prose and point back.
@@ -18,7 +18,7 @@
 
 ## What this is
 
-This is the constitution callback. is built and audited against. It graduated
+This is the constitution sartor. is built and audited against. It graduated
 (Sprint 7.2, v1.0.7) from the SIGNED Product Charter that governed the 2026-06
 product-excellence review
 ([`../dev/reviews/2026-06-product-excellence/00-interview/product-charter.md`](../dev/reviews/2026-06-product-excellence/00-interview/product-charter.md))
@@ -71,7 +71,7 @@ reworded to mechanism-and-effort in v1.0.6 (**PX-09**): `vision.md` goal 1 + "Gr
 mechanism, not a guarantee", and the wiki overview / `llms.txt` copy. Cited as
 corrected; not re-fixed.]*
 
-**C-1 — Local and yours.** callback. is a local tool under the control of a single
+**C-1 — Local and yours.** sartor. is a local tool under the control of a single
 unauthenticated user; all user artifacts stay on the user's disk, never uploaded; there
 is no hosted service. The loopback bind is the construction that makes this categorical
 true. *[src: charter C-1; `../../vision.md` "Local-first, single-tenant"; `../../SECURITY.md`
@@ -98,7 +98,7 @@ phantom third JD-URL egress class corrected to the two-class enumeration (**PX-0
 huggingface.co) is a sanctioned power-user opt-in under D-6, not a third egress class —
 **F-sec-10**.]*
 
-**C-3 — Grounding mechanisms; grounded synthesis is the feature.** callback. works to
+**C-3 — Grounding mechanisms; grounded synthesis is the feature.** sartor. works to
 keep the LLM grounded in real experience through stated mechanisms — grounding rules in
 the prompts (with worked OK/NOT-OK examples), clarifying questions that extend ground
 truth, human review at each step, corpus approval of LLM-generated bullets, and a
@@ -121,7 +121,7 @@ submitting them. *[src: charter C-4; `../../vision.md` goal 3 + P8 Human Gates;
 bullet-reorder alternative (**F-expa11y-07**), live-region announcements
 (**F-expa11y-08**), manual-promote annotation contract (**F-eval-06**).]*
 
-**C-5 — Everything callback. ships is ATS-safe.** All bundled templates are
+**C-5 — Everything sartor. ships is ATS-safe.** All bundled templates are
 single-column, plain-bullet, standard-font; non-ATS templates are retired. Users who
 want non-ATS output edit the document they produced. This categorical is enforceable on
 shipped-template properties (a deterministic domain under C-0). *[src: charter C-5;
@@ -259,7 +259,7 @@ manual-audit promise.]*
 
 ## The 10 Principles backbone (frozen)
 
-callback. follows the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/);
+sartor. follows the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/);
 the codebase is annotated with principle references (P1, P2, P5, P6, P8, P9). Five are
 **load-bearing** and are frozen here as part of the constitution — a change that
 conflicts with one of these usually loses. The descriptive write-up (with code anchors)

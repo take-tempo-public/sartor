@@ -6,7 +6,7 @@
 > **Authoritative design:** [`../docs/dev/memory-architecture.md`](../docs/dev/memory-architecture.md).
 > This README is the package contract; the design doc is the why.
 
-`recall/` is callback's **Memory** function made first-class: a reusable,
+`recall/` is sartor's **Memory** function made first-class: a reusable,
 deterministic retrieval/assembly layer that *feeds* a small-LLM "avatar" with
 **cited source units**. Retrieval is a *feed*, not an end — the substrate
 assembles a bounded, cited `Context`; the avatar (a separate, later module) is
@@ -48,7 +48,7 @@ registered via config.
 ## The hard dependency rule (refactor-immune)
 
 `recall/` may import **stdlib only** (Stage 0). It must **never** import `app.py`,
-`analyzer.py`, the callback DB models, or Flask — mirroring the P1 / charter-C-6
+`analyzer.py`, the sartor DB models, or Flask — mirroring the P1 / charter-C-6
 determinism boundary. This is what makes the v1.0.8 blueprint split a *move*, not
 a rewrite, and future extraction packaging-only. The rule is enforced by
 [`../tests/test_recall_boundary.py`](../tests/test_recall_boundary.py) (an AST

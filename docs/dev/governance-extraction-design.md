@@ -20,7 +20,7 @@
 
 ## 0. What this is, in one paragraph
 
-The 2026-06 product-excellence review named the **"mixed-doc crux"**: callback.'s
+The 2026-06 product-excellence review named the **"mixed-doc crux"**: sartor.'s
 prescriptive *governance* rules (security gate, `PROMPT_VERSION` discipline, the
 deterministic/LLM boundary, branch conventions, the ruff+mypy+pytest bar, API-key
 rules, the v1→v2 ladder, the sign-off gate) are tangled into six *descriptive* docs.
