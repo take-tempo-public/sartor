@@ -10,8 +10,11 @@ the read-only `dashboard/`); this module is the thin composition root — the
 moved to the blueprints + the leaf `web_infra` package across Sprints 8.3a–h).
 """
 
+import argparse
 import logging
 import os
+import subprocess
+import sys
 import threading
 import webbrowser
 
@@ -119,20 +122,89 @@ def _should_open_browser(werkzeug_run_main: str | None, no_browser: str | None) 
     return werkzeug_run_main != "true"
 
 
-def main() -> None:
-    """Launch the Flask app on http://localhost:5000.
+def _run_setup() -> int:
+    """One-time post-install bootstrap: Chromium (PDF) + the vector index (recall).
 
-    Entry point for the `sartor` console script registered in
-    `pyproject.toml [project.scripts]`. Equivalent to `python app.py`
-    for users who installed via `pip install -e .` or `pip install
-    sartor`.
-
-    Set `FLASK_DEBUG=0` in the environment to disable Flask's
-    reloader + verbose error pages (see SECURITY.md for rationale).
-    Set `SARTOR_NO_BROWSER=1` to skip the auto-open (headless / remote
-    / CI runs where launching a browser is unwanted).
+    `pip install sartor` fetches neither — they are large runtime downloads (the
+    Chromium binary ~150 MB into the OS user cache; the model2vec model ~30 MB
+    into a local sidecar) — so a fresh install would hit a cryptic error the first
+    time it renders a PDF or the assistant does semantic recall. `sartor --setup`
+    does both up front. Idempotent; safe to re-run. Returns a process exit code.
+    Both steps run as subprocesses of THIS interpreter so the right venv is used.
     """
-    print("\n  sartor. — http://localhost:5000\n")
+    steps: list[tuple[str, list[str]]] = [
+        (
+            "Chromium for PDF output (~150 MB, one-time)",
+            [sys.executable, "-m", "playwright", "install"]
+            + (["--with-deps"] if sys.platform.startswith("linux") else [])
+            + ["chromium"],
+        ),
+        (
+            "the semantic-recall vector index (~30 MB model, one-time)",
+            [sys.executable, "-m", "scripts.build_vector_index"],
+        ),
+    ]
+    ok = True
+    for i, (label, cmd) in enumerate(steps, start=1):
+        print(f"  [{i}/{len(steps)}] Installing {label}…")
+        try:
+            subprocess.run(cmd, check=True)  # noqa: S603 — fixed, trusted argv (sys.executable + literals)
+        except (subprocess.CalledProcessError, OSError) as exc:
+            ok = False
+            print(
+                f"      ! failed: {exc}\n        retry manually: {' '.join(cmd)}",
+                file=sys.stderr,
+            )
+    if ok:
+        print("\n  Setup complete. Run `sartor` to start.\n")
+        return 0
+    print(
+        "\n  Setup finished with warnings (above). `sartor` still runs; PDF export /"
+        " semantic recall may be degraded until resolved.\n",
+        file=sys.stderr,
+    )
+    return 1
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Console entry point for `sartor` (and `python app.py`).
+
+    Default (no flags) is unchanged: serve the app on http://localhost:5000 and
+    auto-open a browser. Flags:
+      `--setup`       one-time bootstrap (Chromium + vector index), then exit
+      `--host`/`--port`  bind override (the container passes `--host 0.0.0.0`)
+      `--no-browser`  skip the auto-open (alias for `SARTOR_NO_BROWSER=1`)
+
+    Set `FLASK_DEBUG=0` to disable Flask's reloader + verbose error pages (see
+    SECURITY.md). The default host stays loopback-only (127.0.0.1) per PX-19.
+    """
+    parser = argparse.ArgumentParser(
+        prog="sartor",
+        description="Local-first résumé + cover-letter tailor — runs a local web app.",
+    )
+    parser.add_argument(
+        "--setup",
+        action="store_true",
+        help="one-time bootstrap: install Chromium (PDF) + build the recall index, then exit",
+    )
+    parser.add_argument(
+        "--host",
+        default=app.config.get("HOST", "127.0.0.1"),
+        help="bind host (default 127.0.0.1, loopback only; a container passes 0.0.0.0 and "
+        "maps -p 127.0.0.1:5000:5000)",
+    )
+    parser.add_argument("--port", type=int, default=5000, help="bind port (default 5000)")
+    parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="do not auto-open a browser (same as SARTOR_NO_BROWSER=1)",
+    )
+    args = parser.parse_args(argv)
+
+    if args.setup:
+        raise SystemExit(_run_setup())
+
+    print(f"\n  sartor. — http://localhost:{args.port}\n")
     debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"
 
     # Auto-open the user's default browser so `python app.py` lands them
@@ -143,14 +215,13 @@ def main() -> None:
     # open in the supervisor / single process — exactly once. A short Timer
     # delays the open until the server is listening; it runs as a daemon so it
     # never holds the interpreter open on shutdown.
-    if _should_open_browser(
-        os.environ.get("WERKZEUG_RUN_MAIN"), os.environ.get("SARTOR_NO_BROWSER")
-    ):
+    no_browser = "1" if args.no_browser else os.environ.get("SARTOR_NO_BROWSER")
+    if _should_open_browser(os.environ.get("WERKZEUG_RUN_MAIN"), no_browser):
 
         def _open_browser() -> None:
             """Best-effort open the app URL in a browser (logs and ignores any failure)."""
             try:
-                webbrowser.open("http://localhost:5000")
+                webbrowser.open(f"http://localhost:{args.port}")
             except Exception as exc:  # best-effort; the URL is already printed
                 logger.debug("Could not auto-open browser: %s", exc)
 
@@ -158,11 +229,12 @@ def main() -> None:
         opener.daemon = True
         opener.start()
 
-    # PX-19: bind loopback only. The host comes from the injected Config
-    # (Config.host default "127.0.0.1"), so the dev server is never reachable off
-    # the local machine — matching the localhost-only posture SECURITY.md commits
-    # to. (A third silent-flip vector is `SERVER_NAME`; leave it unset locally.)
-    app.run(host=app.config.get("HOST", "127.0.0.1"), debug=debug_mode, port=5000)
+    # PX-19: default host is loopback only (Config.host = "127.0.0.1"), so the dev
+    # server is never reachable off the local machine — matching the localhost-only
+    # posture SECURITY.md commits to. `--host 0.0.0.0` (used only by the container,
+    # which then maps -p 127.0.0.1:5000:5000 on the host) is the sole exception.
+    # (A third silent-flip vector is `SERVER_NAME`; leave it unset locally.)
+    app.run(host=args.host, debug=debug_mode, port=args.port)
 
 
 if __name__ == "__main__":

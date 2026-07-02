@@ -1,0 +1,58 @@
+name: Container image (GHCR)
+
+# Build + push the Sartor container to GitHub Container Registry on a version tag.
+# The image is the batteries-included distribution path (Chromium + vector index
+# baked in) — the recommended way to run Sartor without a local Python setup.
+#
+# Prereqs (one-time, [HUMAN]): the repo must live at github.com/take-tempo-public/sartor
+# (image namespace below) and — after the first push — the GHCR package should be
+# linked to the repo + set public in the repo's Packages settings. No secrets
+# needed; GITHUB_TOKEN authenticates the push.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    name: Build + push (amd64 + arm64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # arm64 emulation so mac / Apple-Silicon users get a native image too.
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image tags + labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/take-tempo-public/sartor
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build + push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

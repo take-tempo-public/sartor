@@ -302,8 +302,8 @@ def test_assistant_microcopy_brand_mark_and_github_link():
     # emits a URL — it only states the behavior; cf. test_no_url_scanner_*).
     assert html.count("https://github.com/take-tempo-public/sartor/issues") == 1
     # Brand mark casing: never the wrong forms anywhere in the shell.
-    assert "CallBack" not in html
-    assert "Sartor." not in html
+    assert "Sartor" not in html  # capitalized brand (also catches "Sartor.")
+    assert "SARTOR" not in html  # all-caps
 
 
 def test_answer_node_is_not_a_live_region():
