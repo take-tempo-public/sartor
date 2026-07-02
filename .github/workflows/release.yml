@@ -1,0 +1,76 @@
+name: Release (PyPI)
+
+# Build the wheel + sdist on a version tag and publish to PyPI via OIDC Trusted
+# Publishing (no stored token). One-time [HUMAN] setup is documented in
+# docs/install.md (PyPI → project → Publishing → add this repo/workflow/env).
+#
+# !! GATED !! The wheel does NOT yet ship the app's data dirs (templates/ ·
+# static/ · personas/ · docs/wiki), so a plain `pip install sartor` would 500 on
+# the first page load. The `publish` job FAILS FAST on purpose until that
+# packaging follow-up lands (docs/dev/RELEASE_CHECKLIST.md "Carry-forward"). The
+# `build` job still runs so packaging stays exercised. Delete the "GATE" step once
+# a fresh-venv `pip install <wheel>` + `sartor` actually serves a page.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build + verify sdist/wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Build sdist + wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Tag matches pyproject version
+        if: github.event_name == 'push'
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VER=$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          echo "tag=$TAG  pyproject=$VER"
+          if [ "$TAG" != "$VER" ]; then
+            echo "::error::git tag v$TAG does not match pyproject version $VER"; exit 1
+          fi
+
+      - name: Console-script smoke (import + entry point resolve)
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install dist/*.whl
+          /tmp/smoke/bin/sartor --help
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI (Trusted Publishing)
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # OIDC — no PyPI token stored in the repo
+    steps:
+      - name: GATE — wheel not yet installable (delete when the packaging follow-up lands)
+        run: |
+          echo "::error::PyPI publishing is GATED: the wheel does not ship templates/ static/ personas/ docs/wiki, so 'pip install sartor' would fail at runtime. Complete the wheel-packaging follow-up (docs/dev/RELEASE_CHECKLIST.md Carry-forward), verify a fresh-venv wheel install actually serves a page, then delete this step."
+          exit 1
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@release/v1

@@ -13,6 +13,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Packaging: container image + `sartor --setup` + PyPI workflow (`feat/packaging-publish`, 2026-07-02)
+
+Distribution surface for shipping Sartor beyond a git clone.
+
+- **`sartor --setup`** — one-time post-install bootstrap in `app.py:main()` (now
+  argparse-driven): installs Chromium for PDF (`python -m playwright install
+  chromium`, `--with-deps` on Linux) and builds the semantic-recall vector index
+  (`python -m scripts.build_vector_index`), then exits. Also adds `--host` / `--port`
+  (so the container can bind `0.0.0.0` while the default stays loopback-only per
+  PX-19) and `--no-browser`. Default (no-flag) behavior is unchanged.
+- **Container** — `Dockerfile` (Docker- and Podman-compatible) + `.dockerignore`.
+  `python:3.13-slim`, editable install so Flask resolves `templates/` · `static/` ·
+  `personas/` under `/app`, Chromium + the vector index **baked in**, non-root user,
+  `CMD ["sartor","--host","0.0.0.0"]`. `.github/workflows/docker.yml` builds + pushes
+  a multi-arch (amd64 + arm64) image to `ghcr.io/take-tempo-public/sartor` on a tag.
+- **PyPI** — `.github/workflows/release.yml` builds the wheel + publishes via OIDC
+  **Trusted Publishing** (no stored token), with a tag↔version guard and a wheel
+  smoke. The `publish` job is **intentionally gated (fails fast)**: the wheel does
+  not yet ship the app's data dirs (`templates/` · `static/` · `personas/` ·
+  `docs/wiki`), so `pip install sartor` would 500 at runtime — the fix is a tracked
+  follow-up (see `RELEASE_CHECKLIST.md`), and the gate is removed once a fresh-venv
+  wheel install actually serves a page.
+- **Packaging fix:** added `scripts*` to the wheel's packaged modules — it is
+  imported at runtime (`blueprints/diagnostics.py` → `scripts.export_corpus_seed`;
+  `sartor --setup` → `scripts.build_vector_index`) but was previously omitted, so it
+  only worked from an editable clone.
+
+Docs: install paths (source + container + `sartor --setup`) in `README.md` +
+`docs/install.md`, incl. the one-time `[HUMAN]` PyPI Trusted-Publisher + GHCR setup.
+Tests: `tests/test_cli_setup.py`. No new runtime dependency.
+
 ### Product rename: Callback → Sartor (`rename/callback-to-sartor`, 2026-07-02)
 
 Renamed the product from **Callback** to **Sartor** across the whole repo — brand

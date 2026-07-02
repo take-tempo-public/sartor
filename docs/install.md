@@ -37,6 +37,71 @@ lives in your OS user cache (`%LOCALAPPDATA%\ms-playwright` on Windows,
 
 ---
 
+## Run in a container (Docker or Podman)
+
+The container is the lowest-friction path — Chromium (PDF) and the semantic-recall
+index are **baked into the image**, so you need nothing but an API key. The same
+image runs under Docker or Podman:
+
+```bash
+# Docker
+docker run -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
+  ghcr.io/take-tempo-public/sartor
+# Podman (identical)
+podman run -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
+  ghcr.io/take-tempo-public/sartor
+```
+
+`-p 127.0.0.1:5000:5000` keeps Sartor loopback-only on your machine (the app binds
+`0.0.0.0` **inside** the container only). Open `http://localhost:5000`.
+
+**Persisting your data.** Your corpus DB and generated files live under `/app`
+inside the container; mount volumes to keep them across runs:
+
+```bash
+docker run -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
+  -v sartor-db:/app/db -v sartor-configs:/app/configs \
+  -v sartor-resumes:/app/resumes -v sartor-output:/app/output \
+  -v sartor-personas:/app/personas \
+  ghcr.io/take-tempo-public/sartor
+```
+
+(Mounting a fresh `/app/db` shadows the baked recall index; the assistant falls
+back to its lexical tier, and `docker exec … sartor --setup` rebuilds it into the
+volume if you want the semantic tier back.)
+
+## First-run setup for a source install (`sartor --setup`)
+
+If you installed from source, run the one-time bootstrap instead of the manual
+Chromium step:
+
+```bash
+sartor --setup   # installs Chromium for PDF + builds the semantic-recall index
+```
+
+It is idempotent (safe to re-run) and prints what it's doing. `sartor --host` /
+`--port` override the bind address; `sartor --no-browser` skips the auto-open.
+
+## Maintainer: publishing (one-time `[HUMAN]` setup)
+
+The repo ships two release workflows that fire on a version tag (`vX.Y.Z`):
+
+- **`.github/workflows/docker.yml`** — builds + pushes the multi-arch image to
+  `ghcr.io/take-tempo-public/sartor`. After the first push, link the GHCR package
+  to the repo and set it public (repo → Packages).
+- **`.github/workflows/release.yml`** — builds the wheel and publishes to PyPI via
+  **Trusted Publishing** (OIDC, no stored token). One-time: on
+  [pypi.org](https://pypi.org) → your project → *Publishing* → add a GitHub
+  publisher (repo `take-tempo-public/sartor`, workflow `release.yml`, environment
+  `pypi`). **This job is intentionally gated** until the wheel ships the app's data
+  dirs (see the tracked packaging follow-up); until then use the container or a
+  source install.
+
+To cut a release: bump `version` in `pyproject.toml`, commit, then
+`git tag vX.Y.Z && git push --tags`.
+
+---
+
 <a name="what-gets-downloaded"></a>
 ## What gets downloaded & why
 

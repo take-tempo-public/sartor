@@ -159,15 +159,32 @@ Pointers to the canonical homes; depth lives there, not here.
 
 ## Install
 
+**From source (works today):**
+
 ```bash
 git clone https://github.com/take-tempo-public/sartor
 cd sartor
 pip install -e .
-python -m playwright install chromium     # optional — one-time ~150 MB, only for PDF output
+sartor --setup                             # one-time: Chromium (PDF) + the recall index
 export ANTHROPIC_API_KEY=your-key-here     # or put it in a .api_key file at the repo root
-python app.py
+sartor                                      # (or: python app.py)
 ```
-Then open `http://localhost:5000`. Full setup (Windows/macOS/Linux), cost guidance, and troubleshooting: [`docs/install.md`](docs/install.md). Cap spend via [Anthropic usage limits](https://console.anthropic.com/settings/limits) — Sartor has no built-in budget guard.
+
+**Container (Docker or Podman) — batteries included** (Chromium + recall index baked in):
+
+```bash
+docker run -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
+  ghcr.io/take-tempo-public/sartor            # podman run … works identically
+```
+
+Then open `http://localhost:5000`. `sartor --setup` replaces the manual
+`python -m playwright install chromium` step (it also builds the semantic-recall
+index). A **`pip install sartor` / `uvx sartor`** path is planned once the wheel
+ships its data files (tracked follow-up). Full setup (Windows/macOS/Linux),
+container data-persistence, cost guidance, and troubleshooting:
+[`docs/install.md`](docs/install.md). Cap spend via
+[Anthropic usage limits](https://console.anthropic.com/settings/limits) — Sartor
+has no built-in budget guard.
 
 ---
 

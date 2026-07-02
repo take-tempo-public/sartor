@@ -1,0 +1,45 @@
+# Keep the image lean and PII-free. The build COPYies everything else so the
+# editable install can resolve templates/ · static/ · personas/ · docs/wiki/ and
+# bake the vector index from the source tree.
+
+# VCS + local tooling
+.git
+.github
+.gitignore
+.claude
+.claude-plugin
+CLAUDE.local.md
+
+# Tests, evals, and heavy dev-doc archives (not needed at runtime; recall reads
+# docs/wiki/, which is NOT excluded).
+tests
+evals
+docs/dev/reviews
+docs/dev/excellence-walk
+
+# Python / build caches + artifacts
+__pycache__
+**/__pycache__
+*.py[cod]
+.mypy_cache
+.ruff_cache
+.pytest_cache
+build
+dist
+*.egg-info
+.venv
+venv
+
+# User data / PII — MUST NOT be baked into a published image (all gitignored too)
+configs
+resumes
+output
+logs
+# Exclude user-uploaded persona dirs, but KEEP the bundled templates the app ships.
+personas/*/
+!personas/bundled/
+db/*.sqlite
+db/vector_index
+.api_key
+*.pem
+*.key
