@@ -528,6 +528,16 @@ def save_edits() -> ResponseReturnValue:
     saved_cover = False
     if edited_resume.strip():
         context_set["edited_resume_text"] = edited_resume
+        # WYSIWYG (walkthrough D1/D2): recompute the cached JSON Resume the preview
+        # route serves so the styled preview reflects the edit immediately — same
+        # deterministic path the download uses (normalize → md_to_json_resume), no
+        # LLM, no iteration advance. Preview == the future download of these edits.
+        from generator import _normalize_markdown
+        from json_resume import md_to_json_resume
+
+        context_set["last_generated_json_resume"] = md_to_json_resume(
+            _normalize_markdown(edited_resume)
+        )
         saved_resume = True
     if edited_cover_letter.strip():
         context_set["edited_cover_letter_text"] = edited_cover_letter

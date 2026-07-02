@@ -1927,6 +1927,10 @@ async function _saveEdits(edits) {
       return false;
     }
     _announce('Edits saved as baseline for the next iteration.');
+    // Walkthrough D1/D2: the styled preview serves the cached JSON Resume, which
+    // /api/save-edits just recomputed from the edited markdown — refresh the
+    // iframe so the edit shows immediately (no regenerate needed).
+    if (edits.resumeEdited) _refreshOutputPreview();
     return true;
   } catch (e) {
     alert('Saving edits failed: ' + e.message);
@@ -2001,6 +2005,9 @@ async function submitRefinement() {
     entry.status = 'applied';
     _renderRefinementHistory();
     setStatus('REFINING');
+    // Walkthrough E1: show the persistent working overlay while the refine
+    // regenerates (mirrors runGeneration), not just the status label.
+    _setBusy(true, 'Refining your résumé');
 
     const acceptedNotes = refinementHistory
       .filter(e => e.status === 'applied')
@@ -2038,6 +2045,7 @@ async function submitRefinement() {
     _renderRefinementHistory();
     reportError('Refine', 'Refinement request failed', e.message);
   } finally {
+    _setBusy(false);
     document.getElementById('btnRefinement').disabled = false;
     document.getElementById('btnGenerate').disabled = false;
   }
@@ -5217,6 +5225,13 @@ function _wizardRender() {
     btn.classList.toggle('done', isDone);
     btn.classList.toggle('upcoming', isUpcoming);
     btn.disabled = !_wizardReachable(s);
+    // Walkthrough E3: the rail reads as a passive progress bar, so back-nav went
+    // unnoticed. A tooltip on reachable steps announces they're clickable.
+    const _lbl = btn.querySelector('.wizard-label');
+    const _lblText = (_lbl && _lbl.textContent) ? _lbl.textContent : `Step ${s}`;
+    if (btn.disabled) btn.removeAttribute('title');
+    else btn.title = isActive ? `You're on step ${s}: ${_lblText}`
+                              : `Go to step ${s}: ${_lblText}`;
     // Swap the number for ✓ on done steps; restore the digit otherwise.
     // The original digit is read from data-wstep so we don't need to
     // store it separately. aria-hidden on the glyph keeps SR users on

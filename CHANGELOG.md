@@ -13,6 +13,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.8 walkthrough remediation — Branch 3: edits reach the preview + refine overlay + back-nav (`fix/edit-backprop`, 2026-07-01)
+
+Deterministic (no LLM, no `PROMPT_VERSION` change, no eval):
+
+- **Edits now show in the styled preview (D1/D2).** The Step-6 preview iframe serves
+  the cached `last_generated_json_resume` (WYSIWYG). `/api/save-edits` now recomputes
+  that cache from the edited résumé markdown via the same deterministic path the
+  download uses (`_normalize_markdown` → `md_to_json_resume`), and the frontend
+  refreshes the preview iframe after a successful save — so a typed edit appears in
+  the styled preview immediately, with zero LLM cost. Cover-letter-only edits leave
+  the résumé cache untouched.
+- **Refine shows the working overlay (E1).** `submitRefinement` now raises the
+  persistent `_setBusy` banner while the refine regenerates (mirrors `runGeneration`),
+  instead of only flipping a status label — no more dead-looking ~30-60s wait.
+- **Back-navigation is discoverable (E3).** The wizard step rail read as a passive
+  progress bar; reachable steps now carry a "Go to step N: <label>" tooltip so users
+  find the click-to-go-back affordance. (The deserted-résumé cleanup half of E3 lands
+  with the Prior-Applications retire work.)
+
+Tests: `tests/test_app_iteration.py` — `/api/save-edits` recomputes
+`last_generated_json_resume` (equals `md_to_json_resume(_normalize_markdown(edit))`,
+carries the edit's name) and a cover-only edit leaves it untouched.
+
 ### v1.0.8 walkthrough remediation — Branch 2: faithful preview for uploaded templates (`feat/docx-html-companion`, 2026-07-01)
 
 The live preview renders a résumé through a persona's `.html` + `.css` **companion**

@@ -208,6 +208,41 @@ class TestSaveEditsRoute:
         # An iteration_note must be appended for audit
         assert any(n["action"] == "save_edits" for n in saved.get("iteration_notes", []))
 
+    def test_resume_edit_recomputes_cached_json_resume(self, app_client):
+        """Walkthrough D1/D2: a résumé edit refreshes the cached JSON Resume the
+        preview route serves so the styled preview reflects the edit (WYSIWYG),
+        deterministically (no generate). Must equal md_to_json_resume(normalize)."""
+        from generator import _normalize_markdown
+        from json_resume import md_to_json_resume
+
+        client, context_path, _ = app_client
+        edited = "# Jordan Vega\n\n## Experience\n\n### Acme — Engineer\n\n- Shipped the thing\n"
+        resp = client.post(
+            "/api/save-edits",
+            json={"context_path": str(context_path), "edited_resume": edited},
+        )
+        assert resp.status_code == 200
+
+        saved = json.loads(context_path.read_text(encoding="utf-8"))
+        cached = saved["last_generated_json_resume"]
+        assert cached == md_to_json_resume(_normalize_markdown(edited))
+        assert cached["basics"]["name"] == "Jordan Vega"  # the edit reached the doc
+
+    def test_cover_letter_only_edit_does_not_touch_cached_resume(self, app_client):
+        """A cover-letter-only edit must not recompute the résumé's cached JSON."""
+        client, context_path, _ = app_client
+        before = json.loads(context_path.read_text(encoding="utf-8")).get(
+            "last_generated_json_resume"
+        )
+        client.post(
+            "/api/save-edits",
+            json={"context_path": str(context_path), "edited_cover_letter": "LETTER"},
+        )
+        after = json.loads(context_path.read_text(encoding="utf-8")).get(
+            "last_generated_json_resume"
+        )
+        assert after == before
+
     def test_persists_both_edits(self, app_client):
         client, context_path, _ = app_client
         resp = client.post(
