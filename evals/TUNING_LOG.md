@@ -2629,3 +2629,32 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    observed was a paren-wrap of `AVATAR_PROMPT_VERSION = "..."  # long comment` (value
    identical). Prove it cheaply with a constants dump-diff rather than a paid synthetic
    run; only bump PROMPT_VERSION when a template's bytes actually change.
+
+---
+
+## v1.0.8 walkthrough generation quality — 2026-07-01 — `2026-06-23.1` → `2026-07-01.1`
+
+1. **What changed?** Branch 8 of the v1.0.8 walkthrough epic, in `analyzer.py`
+   (`_build_generate_prompt`): (E5) a grounding-check worked example forbidding
+   fabricated years-of-experience/ownership figures ("10 years of end-to-end product
+   ownership") in the summary and making a prior removal binding — shared with the
+   legacy path, so the synthetic suite exercises it; (C1) a corpus-mode COVERAGE rule
+   requiring every experience with corpus bullets to contribute ≥1 bullet
+   (corpus-only); (E2) a conditional `<current_resume_draft>` block on corpus refine
+   rounds (corpus-only, iteration>0); (H1) multi-role clarification attribution
+   (conditional block). Each is strictly conditional so the iteration-0 /
+   no-clarification prompt is unchanged.
+2. **Why?** Walkthrough findings: older roles came out bullet-less (C1 — LLM dropping
+   them despite the payload carrying every bullet and `md_to_json_resume` parsing all),
+   a refine clobbered manual edits in corpus mode (E2 — `_stable_user_prefix` never
+   emitted the draft), and an invented "10 years…" summary claim kept reappearing (E5).
+3. **Result?** Grounding smoke (`--suite synthetic --subset smoke`, `2026-07-01.1`):
+   **3 pass / 0 fail, gate exit 0** — pm-senior grounding **4.8** (fabricated_specifics
+   0.00), sre-mid-level **4.2**, data-scientist-junior pass. No regression > 0.5 vs the
+   committed baseline. Cost ~$0.12/fixture. The E5 grounding tightening held/strengthened
+   grounding rather than over-restricting.
+4. **Learned?** A MORE-restrictive grounding worked example (forbidding a specific
+   fabrication class) is safe for the grounding rubric — it doesn't cause the model to
+   over-omit legitimate content. Corpus-mode-only prompt changes (C1/E2) are NOT
+   exercised by the synthetic suite (it runs the legacy path); validate them with
+   prompt-structure unit tests + owner E2E rather than a paid corpus run.

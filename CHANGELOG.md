@@ -13,6 +13,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.8 walkthrough remediation — Branch 8: generation quality (`fix/generation-quality`, 2026-07-01)
+
+The hardest slice — generation correctness. `PROMPT_VERSION` → `2026-07-01.1`.
+
+Deterministic / frontend (no eval):
+- **C3 — cover-letter text leaking into the résumé.** A new deterministic
+  `hardening.strip_cover_letter_block` drops any block starting at a "Dear …" /
+  "To Whom It May Concern" salutation from `resume_content` (a résumé body never
+  contains one), applied right after `generate()` in `run_generation`. This stops
+  the stray cover letter that appeared at the bottom of the résumé editor + download
+  and inflated length past two pages.
+- **E4 — user blocked from correcting a hallucination.** The Haiku refinement
+  scope-check flagged corrections as "changing facts" and the frontend *blocked*
+  them. Now it **flags but never blocks**: the concern is surfaced as a
+  confirm-to-proceed prompt, and the user can always proceed.
+
+Prompt changes (`PROMPT_VERSION` bump; each conditional so the iteration-0 /
+no-clarification path is unchanged):
+- **C1/C2 — older roles came out with no bullets.** The corpus payload carries every
+  role's bullets and `md_to_json_resume` parses them fine, so the LLM was dropping
+  them. Added a **COVERAGE rule**: every experience that has corpus bullets must
+  contribute at least one to `resume_content` — never leave a role title-only when
+  bullets exist.
+- **E2 — refine clobbered manual fixes.** In corpus mode `_stable_user_prefix` never
+  emitted the current draft, so a refine re-derived from the corpus and discarded
+  edits. A conditional `<current_resume_draft>` block (iteration>0 + edits) now feeds
+  the edited draft in with an evolve-don't-rebuild instruction.
+- **E5 — invented "10 years of…" tenure re-appearing.** Added a grounding-check
+  worked example forbidding fabricated years-of-experience/ownership figures in the
+  summary and making a prior removal binding.
+- **H1 — a multi-role clarification answer mashed into one bullet.** The
+  clarifications block now instructs the model to attribute each role's content to
+  its own experience and never merge two roles into one bullet.
+
+Tests: prompt-structure assertions (`tests/test_corpus_mode_prompt.py`), the C3
+stripper (`tests/test_hardening.py`), and a grounding eval run (see
+`evals/TUNING_LOG.md`). C1/E2 are corpus-mode-only (not exercised by the synthetic
+suite) — validated structurally + owner E2E.
+
 ### v1.0.8 walkthrough remediation — Branch 7: retire / restore prior applications (`feat/prior-applications-retire`, 2026-07-01)
 
 The Prior Applications list grew unbounded with no way to hide poor examples or

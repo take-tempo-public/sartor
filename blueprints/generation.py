@@ -670,6 +670,13 @@ def run_generation() -> ResponseReturnValue:
             }
         ), 502
 
+    # C3 guardrail: strip any cover-letter block that leaked into the résumé
+    # markdown before it is saved / rendered (deterministic; no-op when clean).
+    from hardening import strip_cover_letter_block
+
+    if isinstance(result.get("resume_content"), str):
+        result["resume_content"] = strip_cover_letter_block(result["resume_content"])
+
     safe_user = _safe_username(username, configs_dir=configs_dir) if username else None
     if not safe_user:
         # Fall back to extracting username from context path (it's OUTPUT_DIR/username/file)

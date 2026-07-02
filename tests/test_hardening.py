@@ -21,8 +21,33 @@ from hardening import (
     compute_verb_diversity,
     extract_keywords,
     save_context_set,
+    strip_cover_letter_block,
     validate_config,
 )
+
+
+class TestStripCoverLetterBlock:
+    """Walkthrough C3 — cover-letter text that leaked into resume_content is dropped."""
+
+    def test_strips_from_dear_salutation_onward(self):
+        md = "# Jane\n## Experience\n- Shipped V2\n\nDear Hiring Manager,\nI am excited…\nSincerely,\nJane"
+        assert strip_cover_letter_block(md) == "# Jane\n## Experience\n- Shipped V2\n"
+
+    def test_strips_to_whom_it_may_concern(self):
+        md = "# Jane\n- A bullet\n\nTo Whom It May Concern:\nBody text."
+        assert strip_cover_letter_block(md) == "# Jane\n- A bullet\n"
+
+    def test_noop_on_clean_resume(self):
+        md = "# Jane\n## Experience\n### Acme\n- Led a team\n- Shipped V2\n"
+        assert strip_cover_letter_block(md) == md
+
+    def test_does_not_strip_dear_inside_a_bullet(self):
+        # "Dear" mid-line (not a salutation line) is left alone.
+        md = "# Jane\n- Wrote to Dear Leader Corp about pricing\n"
+        assert strip_cover_letter_block(md) == md
+
+    def test_empty_input(self):
+        assert strip_cover_letter_block("") == ""
 
 
 class TestExtractKeywords:

@@ -401,6 +401,33 @@ def check_ats_format(parsed_resume: dict) -> list[str]:
     return warnings
 
 
+# A résumé never opens a block with a letter salutation. When one appears in
+# resume_content, cover-letter text leaked into the résumé (walkthrough C3) — the
+# salutation marks where the résumé ends and the stray letter begins.
+_COVER_LETTER_SALUTATION_RE = re.compile(
+    r"^\s{0,3}#{0,6}\s*(?:dear\s+[^\n]{0,60}|to whom it may concern)\s*[,:]?\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def strip_cover_letter_block(resume_md: str) -> str:
+    """Drop a cover-letter block accidentally appended to a résumé's markdown.
+
+    Deterministic (no LLM). A résumé body never contains a "Dear …" /
+    "To Whom It May Concern" salutation, so when one appears the text from that
+    salutation onward is a stray cover letter (walkthrough C3: cover-letter content
+    leaked into resume_content, inflating length and pushing older roles' bullets
+    off the page). Returns the input unchanged when no salutation is present.
+    """
+    if not resume_md:
+        return resume_md
+    match = _COVER_LETTER_SALUTATION_RE.search(resume_md)
+    if match is None:
+        return resume_md
+    logger.warning("Stripped a cover-letter block leaked into resume_content (C3).")
+    return resume_md[: match.start()].rstrip() + "\n"
+
+
 def compute_verb_diversity(resume_text: str) -> dict:
     """Measure leading-verb variety across resume bullets.
 

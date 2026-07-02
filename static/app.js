@@ -1994,11 +1994,23 @@ async function submitRefinement() {
     const check = await checkRes.json();
 
     if (!check.valid) {
-      entry.status = 'rejected';
-      entry.reason = check.reason || 'Outside allowed scope.';
-      _renderRefinementHistory();
-      setStatus('REFINEMENT REJECTED');
-      return;
+      // Walkthrough E4: FLAG, but never BLOCK. Correcting a hallucinated "fact"
+      // (e.g. an invented "10 years of…" leap) is exactly what the user needs to
+      // do — the scope check must not prevent it. Surface the concern and let the
+      // user decide whether to proceed.
+      const reason = check.reason || 'This may change facts rather than just wording.';
+      const proceed = confirm(
+        `Heads up — this looks like it may change facts, not just wording:\n\n`
+        + `${reason}\n\nThat's your call. Proceed with this refinement anyway?`,
+      );
+      if (!proceed) {
+        entry.status = 'rejected';
+        entry.reason = reason;
+        _renderRefinementHistory();
+        setStatus('REFINEMENT CANCELED');
+        return;
+      }
+      // User chose to proceed despite the flag — fall through to generate.
     }
 
     // Step 2: generate with accepted notes only
