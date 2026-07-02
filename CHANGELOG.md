@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.8 walkthrough remediation — Branch 7: retire / restore prior applications (`feat/prior-applications-retire`, 2026-07-01)
+
+The Prior Applications list grew unbounded with no way to hide poor examples or
+abandoned drafts (walkthrough J1 / E3 cleanup half). Added a soft-retire flag,
+mirroring the corpus `ExperienceTitle.is_active` pattern (migration 0011):
+
+- **`application.is_active`** column (migration `0013`, native `ADD COLUMN` — no
+  batch recreate, since `application` is a parent of `application_run`; no backfill,
+  everything starts active).
+- **Routes:** `DELETE /api/applications/<id>` soft-retires (kept, not hard-deleted —
+  runs + audit survive); `POST /api/applications/<id>/restore` reverses it. Both are
+  DB-only with an ownership guard (`_safe_username`).
+- **List:** `list_applications` hides retired rows by default; `?include_retired=1`
+  returns them; the summary payload carries `is_active`.
+- **UI:** a "Show retired" toggle in the Prior Applications tab, a `Retire` action on
+  each card (`Restore` on retired cards), a `RETIRED` chip, and dimmed retired cards.
+  The native checkbox gets the same `appearance:auto` override as the corpus one.
+
+This also closes the deferred cleanup half of E3 (deserted résumés/applications).
+Note: collapsing *resolved* applications (interview/rejected/withdrawn) into a
+grouped section was considered but deferred — retire + the existing status filter
+already tame the "too many to see" problem. Tests: `tests/test_application_routes.py`
+(`TestRetireApplication`: retire hides + `include_retired` surfaces, restore, summary
+`is_active`, 404).
+
 ### v1.0.8 walkthrough remediation — Branch 6: no legacy ATS advice in corpus mode (`fix/analyze-corpus-advice`, 2026-07-01)
 
 Analyze (Step 1) showed "No standard ATS section headings detected…" and "Resume is

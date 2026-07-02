@@ -1800,6 +1800,54 @@ textarea:focus-visible {
     rgba(248,113,113,0.10) 100%);
   border-color: rgba(248,113,113,0.32);
 }
+/* Walkthrough J1 — retired (soft-deleted) prior application: dimmed card + chip. */
+.app-status-chip.status-retired {
+  color: var(--fg-3);
+  background: var(--grad-btn);
+  border-color: var(--border);
+}
+.application-card.retired {
+  opacity: 0.55;
+}
+.application-card.retired:hover {
+  opacity: 0.8;
+}
+.application-admin-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.app-admin-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg-2);
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.app-admin-btn:hover { border-color: var(--border-2); color: var(--fg-1); }
+.app-admin-btn.retire:hover { border-color: var(--danger); color: var(--danger); }
+/* Native checkbox override — same fix as .corpus-show-retired input (I1 family). */
+.applications-show-retired {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--fg-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.applications-show-retired input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  min-width: 0;
+  padding: 0;
+  cursor: pointer;
+}
 
 .outcome-action-row {
   display: flex;

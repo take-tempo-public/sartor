@@ -755,6 +755,11 @@ class Application(Base):
     sent_at: Mapped[str | None] = mapped_column(String)
     outcome_at: Mapped[str | None] = mapped_column(String)
     notes: Mapped[str | None] = mapped_column(String)
+    # Soft-retire flag (walkthrough J1): 1 = live, 0 = retired. Retired
+    # applications are hidden from the Prior Applications list unless
+    # include_retired is set. Kept (not hard-deleted) so their runs + audit
+    # trail survive — same rationale as ExperienceTitle.is_active (migration 0011).
+    is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     candidate: Mapped[Candidate] = relationship(back_populates="applications")
     runs: Mapped[list[ApplicationRun]] = relationship(

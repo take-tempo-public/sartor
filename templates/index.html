@@ -147,6 +147,11 @@
             <option value="rejected">Rejected</option>
             <option value="withdrawn">Withdrawn</option>
           </select>
+          <label class="applications-show-retired">
+            <input type="checkbox" id="applicationsShowRetired"
+                   onchange="toggleApplicationsRetired(this.checked)">
+            Show retired
+          </label>
         </div>
         <div id="applicationsList" class="application-list">
           <div class="corpus-empty-experience">Loading…</div>

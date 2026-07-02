@@ -4496,6 +4496,13 @@ function _renderDuplicateExp(exp) {
 // Phase D.3 — Applications list (within the APPLICATION tab)
 // ===============================================================
 
+// Walkthrough J1 — retired applications are hidden unless this is on.
+let _applicationsShowRetired = false;
+function toggleApplicationsRetired(checked) {
+  _applicationsShowRetired = !!checked;
+  refreshApplications();
+}
+
 async function refreshApplications() {
   const list = document.getElementById('applicationsList');
   const countEl = document.getElementById('applicationsCount');
@@ -4511,7 +4518,10 @@ async function refreshApplications() {
   _setLoadingPlaceholder(list, 'Loading…');
   let res;
   try {
-    const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : '';
+    const params = new URLSearchParams();
+    if (statusFilter) params.set('status', statusFilter);
+    if (_applicationsShowRetired) params.set('include_retired', '1');
+    const qs = params.toString() ? `?${params.toString()}` : '';
     res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/applications${qs}`);
   } catch (e) {
     _setLoadingPlaceholder(list, 'Network error.');
@@ -4556,7 +4566,11 @@ function _renderApplicationsList(apps) {
 }
 
 function _renderApplicationCard(app) {
-  const card = _el('div', { className: 'application-card', id: `app-card-${app.id}` });
+  const retired = app.is_active === false;
+  const card = _el('div', {
+    className: 'application-card' + (retired ? ' retired' : ''),
+    id: `app-card-${app.id}`,
+  });
   const header = _el('div', { className: 'application-card-header' });
   header.appendChild(_el('div', { className: 'application-card-title', textContent: app.title }));
   if (app.company) {
@@ -4570,6 +4584,9 @@ function _renderApplicationCard(app) {
     className: `app-status-chip status-${chipStatus}`,
     textContent: (chipStatus === 'submitted' ? 'NO RESPONSE' : chipStatus).replace('_', ' ').toUpperCase(),
   }));
+  if (retired) {
+    meta.appendChild(_el('span', { className: 'app-status-chip status-retired', textContent: 'RETIRED' }));
+  }
   const iterText = `${app.iteration_count} iter${app.iteration_count === 1 ? '' : 's'}`;
   meta.appendChild(_el('span', { className: 'application-card-iter', textContent: iterText }));
   if (app.pending_proposals > 0) {
@@ -4614,8 +4631,48 @@ function _renderApplicationCard(app) {
     ]));
   }
 
+  // Walkthrough J1 — retire (hide) a poor/deserted application, or restore one.
+  const adminRow = _el('div', { className: 'application-admin-row' });
+  if (retired) {
+    const restore = _el('button', { className: 'app-admin-btn', textContent: 'Restore' });
+    restore.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (await _setApplicationRetired(app.id, false)) refreshApplications();
+    });
+    adminRow.appendChild(restore);
+  } else {
+    const retire = _el('button', { className: 'app-admin-btn retire', textContent: 'Retire' });
+    retire.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('Retire this application? It is hidden unless you tick "Show retired". '
+        + 'Its iteration history is kept.')) return;
+      if (await _setApplicationRetired(app.id, true)) refreshApplications();
+    });
+    adminRow.appendChild(retire);
+  }
+  card.appendChild(adminRow);
+
   card.onclick = () => _showApplicationDetail(app.id);
   return card;
+}
+
+// Walkthrough J1 — soft-retire (DELETE) / restore (POST) a prior application.
+// Returns true on success so the caller can refresh the list.
+async function _setApplicationRetired(appId, retire) {
+  try {
+    const res = retire
+      ? await fetch(`/api/applications/${appId}`, { method: 'DELETE' })
+      : await fetch(`/api/applications/${appId}/restore`, { method: 'POST' });
+    if (!res.ok) {
+      _toast(retire ? 'Retire failed' : 'Restore failed', true);
+      return false;
+    }
+    _toast(retire ? 'Application retired' : 'Application restored');
+    return true;
+  } catch (e) {
+    _toast((retire ? 'Retire' : 'Restore') + ' failed: ' + e.message, true);
+    return false;
+  }
 }
 
 // PUT a lifecycle status for an application; toasts on failure. Shared by
