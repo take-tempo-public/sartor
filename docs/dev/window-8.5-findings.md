@@ -22,7 +22,8 @@
 ## Boundaries (do not violate when filling this in)
 
 - **PII-free.** Finding text describes behavior, never résumé/JD content. The raw
-  run evidence stays in `C:\Dev\sartor-e2e` / gitignored `evals/fixtures/real/`.
+  run evidence stays in the separate E2E clone (memory `project-e2e-instance-location`)
+  / gitignored `evals/fixtures/real/`.
 - **Observe, don't fix.** Each row is a triaged observation. Fixes are 8.6.
 - **One row per finding**, numbered. Walkthrough findings keep the `KW#` prefix;
   eval/annotation findings use `EV#`; S3 verdict is a single `S3` note.
@@ -37,7 +38,7 @@ survivable) · **Low** (copy/polish). Bucket: **8.6** (correction sprint) · **8
 
 **Status: DEFERRED (owner decision, 2026-06-23).** The E2E user+dev walkthrough (R2
 verified live) is the one 8.5 generation deliverable not yet run — it is owner-manual in
-`C:\Dev\sartor-e2e`. Per the close-out decision, 8.5's completed work (flaky fix, S3
+the separate E2E clone (memory `project-e2e-instance-location`). Per the close-out decision, 8.5's completed work (flaky fix, S3
 verdict, the PV-1 shakedown findings) merges now; the walkthrough is carried forward as a
 tracked 8.5-remainder item (RELEASE_CHECKLIST 8.5 + Carry-forward ledger). It can be run
 against `main` (the decomposed code is already there) using

@@ -150,8 +150,8 @@ extras, sizes, and licensing) live in
 
 3. **Clone the repo and navigate into it:**
    ```cmd
-   git clone https://github.com/take-tempo-public/sartor C:\Dev\sartor
-   cd C:\Dev\sartor
+   git clone https://github.com/take-tempo-public/sartor
+   cd sartor
    ```
 
 4. **Install dependencies:**

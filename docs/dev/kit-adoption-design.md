@@ -12,8 +12,8 @@
 > (§4), the temporal map onto the existing roadmap (§5), and the ratchet exit
 > criterion (§6). On conflict with an older plan, this doc governs for the
 > kit-adoption scope only. Decision index: [`decisions.md`](decisions.md).
-> **Source of record (read-only, outside this repo):** the kit lives at
-> `C:\Dev\lichen\projects\agent-coding-practices-kit\` — `markdown-for-llm-apps.md`
+> **Source of record (read-only, outside this repo):** the agent-coding-practices
+> kit (path in local machine notes) — `markdown-for-llm-apps.md`
 > (context), `doc-discipline-for-coding-agents.md` (docs),
 > `strict-typing-and-style.md` (typing), and `context-structure-review/`. The
 > handoff that seeded this evaluation is a Sartor-trimmed synthesis of those.

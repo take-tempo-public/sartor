@@ -15,8 +15,8 @@
 
 ## Where this runs + where evidence lives
 
-- **Run it in the separate clone `C:\Dev\sartor-e2e`** (user `cooksey`), against a
-  real corpus — NOT the main `C:\Dev\sartor` repo. Run evidence (screenshots,
+- **Run it in the separate E2E clone** (user `cooksey`; memory `project-e2e-instance-location`), against a
+  real corpus — NOT this main repo. Run evidence (screenshots,
   notes, `output/`) **stays in that clone**; it is **never** committed to the main
   repo (memory `project-e2e-instance-location`). Only the *triaged, PII-free* finding
   text is carried back into `window-8.5-findings.md`.
@@ -36,7 +36,7 @@ on this walk (fixes are 8.6).
 
 ## Pre-flight
 
-- [ ] `git -C C:\Dev\sartor-e2e log --oneline -1` is at (or rebased onto) the 8.4 merge
+- [ ] In the E2E clone, `git log --oneline -1` is at (or rebased onto) the 8.4 merge
       `1f69f9c` or this 8.5 branch.
 - [ ] `python app.py` starts clean; browser opens **once** (the 7.8b reloader fix); no
       stray windows on reload.

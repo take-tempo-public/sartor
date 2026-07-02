@@ -1,10 +1,10 @@
 ---
 type: ux-audit
 audited_docs:
-  - c:/Dev/sartor/README.md
-  - c:/Dev/sartor/docs/install.md
-  - c:/Dev/sartor/docs/walkthrough.md
-  - c:/Dev/sartor/vision.md
+  - README.md
+  - docs/install.md
+  - docs/walkthrough.md
+  - vision.md
 commit_sha: b593bbb51590e3681ed8341c8c2a348bf81c3b13
 date: 2026-05-25
 auditor: ux-onboarding-designer

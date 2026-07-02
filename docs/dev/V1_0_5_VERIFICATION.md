@@ -54,9 +54,10 @@ corpus, and validate the install path (risk-register D.4) at the same time.
 
 ```powershell
 # 0. Stop the original server first — both bind :5000 (app.run port is hardcoded).
-git clone C:\Dev\sartor C:\Dev\sartor-clean
-cd C:\Dev\sartor-clean
-Copy-Item C:\Dev\sartor\.api_key .\.api_key
+#    Run from INSIDE your working clone; this creates a sibling throwaway `sartor-clean`.
+git clone . ..\sartor-clean
+Copy-Item .\.api_key ..\sartor-clean\.api_key
+cd ..\sartor-clean
 python app.py            # → http://localhost:5000  (fresh DB created on first request)
 ```
 
@@ -79,7 +80,7 @@ Notes (verified on a machine that already builds/runs the app):
   `%USERPROFILE%\.cache\huggingface\` (outside any repo; shared; one-time).
 - A committed **`testuser`** fixture (synthetic "Casey Rivera") is present — ignore
   it for real-corpus testing; create your own user.
-- To tear down: delete `C:\Dev\sartor-clean`. Self-contained; touches nothing in
+- To tear down: delete the `sartor-clean` sibling folder. Self-contained; touches nothing in
   your original clone (the HF model cache survives, by design).
 
 ---

@@ -330,7 +330,7 @@ Guard side (deterministic, warn-only — no LLM output is ever mutated):
 
 KW6 (Sprint 6.0 kickoff walk, HIGH · output integrity — the core no-invention
 value prop). Reproduced from the e2e instance's saved chain
-(`sartor-e2e/output/cooksey/`): corpus dates correct; **fresh generation
+(in the separate E2E clone; memory `project-e2e-instance-location`): corpus dates correct; **fresh generation
 correct**; the **iteration-1 regenerate** reordered experiences by JD relevance
 and rewrote one Intel role's range 2012–2016 → 2016–2018, duplicating the
 adjacent role's range while 2012–2016 vanished — unprompted by any

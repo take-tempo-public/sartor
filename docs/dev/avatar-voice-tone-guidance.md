@@ -233,7 +233,7 @@ And — equally important — the things **explicitly NOT banned**, to prevent o
 - **Intro line:** today's "committed wiki + code at HEAD" is dev jargon for the user audience; plain-language it, lead with what it does plus "I show my sources."
 - **Loading:** keep "Thinking…" (correct: -ing + ellipsis, immediate, on-brand); optionally "Searching the docs…" before the first token.
 - **Client error:** replace raw `"Error: HTTP 500"` and the blocking `alert('Select a user first')` with calm, blame-free, in-voice copy — and crucially, **a transport error is a distinct state from the grounded refusal** ("I couldn't run the search" vs. "I looked, it's not in the docs"). Never show the refusal string on a network error.
-- **Brand mark:** the lowercase **"sartor." with the trailing period** must appear in every new string — never "Sartor", "CallBack", or "Sartor.".
+- **Brand mark:** the lowercase **"sartor." with the trailing period** must appear in every new string — never "Sartor", "SARTOR", "sartor" (no period), or "Sartor.".
 
 **Sources.** Kinneret Yifrah, *Microcopy: The Complete Guide*; UX Writing Hub resources; NN/g, "Microcontent" and empty-state guidance; Mailchimp / Shopify Polaris content guidelines on UI strings.
 
@@ -358,7 +358,7 @@ One scope note up front, because it changes who owns what. The package is four d
 
 #### Q4. How direct should an unwelcome-but-true answer be?
 
-**The question.** The brief says: if the docs say something the user may not want to hear, say it plainly and kindly. Confirm the calibration — when a user asks something whose honest answer is a limitation ("can callback. guarantee my resume passes ATS?"), does the avatar lead with the limit, or lead with what the tool *does* do and then state the limit?
+**The question.** The brief says: if the docs say something the user may not want to hear, say it plainly and kindly. Confirm the calibration — when a user asks something whose honest answer is a limitation ("can sartor. guarantee my resume passes ATS?"), does the avatar lead with the limit, or lead with what the tool *does* do and then state the limit?
 
 **Why it matters.** This shapes the ordering pattern in L1 for limit-bearing answers and gives draft 4 a worked OK/NOT-OK pair. It is the practical form of "honest first." It also fixes a specific over-promise boundary: the honest capability is *parseability* ("keeps the output ATS-safe so the parser can read it"), never a downstream outcome ("so it reaches a human" / "improves your chances"). vision.md frames ATS-safety strictly as parseability and deliberately does not promise the resume reaches a person — rounding it up to a human-contact outcome is the friendlier-sounding bluff P0 bans. Draft 4 should carry this as a GATE-FAIL exemplar.
 
@@ -897,7 +897,7 @@ your citations support."
 - Icon: magnifier (no face → no uncanny valley; reads as "look-up").
 - Name: "the sartor. assistant" (role label, never a human name / mascot).
 - Brand mark: lowercase "sartor." WITH the trailing period. Never "Sartor",
-  "CallBack", "Sartor." — check EVERY new string.
+  "SARTOR", "sartor" (no period), "Sartor." — check EVERY new string.
 ```
 
 ---
@@ -1026,7 +1026,7 @@ python -m pytest -m ux        # Playwright UX tier; skips cleanly if Chromium ab
 
 **6.2 — Deterministic tone checks (LLM-free, $0, belong in `tests/test_avatar_streaming.py`, run on the gate).** Over recorded/replayed answers, assert:
 - zero exclamation marks; zero banned-cheer phrases (Section 5 DON'T list), including the over-promise tells ("reaches a human", "improves your chances"), performed-honesty ("I'd rather be straight"), and performed-empathy ("that sounds exhausting") substrings;
-- brand mark matches `sartor\.` exactly — never "Sartor" / "CallBack" / "Sartor." with no period or wrong case;
+- brand mark matches `sartor\.` exactly — never "Sartor" / "SARTOR" / "Sartor." with no period or wrong case;
 - the refusal string matches **byte-for-byte across `analyzer.py:532` and `analyzer.py:1566`** (this doubles as the L4 sync check);
 - the L5 upsell, when present, is verbatim;
 - sentence count / length within the soft ceiling;

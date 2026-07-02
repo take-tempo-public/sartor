@@ -52,7 +52,7 @@ state so the screenshots will age well.
 
 ## Filename convention
 
-All screenshots land in `c:/Dev/sartor/docs/screenshots/`
+All screenshots land in `docs/screenshots/`
 (create the directory if missing).
 
 Pattern: `<doc-stem>_<step-id>_<short-name>.png`
