@@ -174,6 +174,15 @@ def _render_pdf_from_json(
     html_template: Path | None = None
     if docx_template_path:
         html_template = html_template_path_for(docx_template_path)
+        if html_template is None:
+            # Lazily generate the companion so a PDF of an uploaded template
+            # honors its own typography instead of falling back to Classic
+            # (walkthrough B2 — mirrors the live-preview route). Deterministic.
+            from docx_to_persona_html import generate_companion
+
+            companion = generate_companion(docx_template_path)
+            if companion is not None:
+                html_template = companion[0]
 
     if html_template is None:
         # Fallback: bundled Classic. The path resolves relative to the

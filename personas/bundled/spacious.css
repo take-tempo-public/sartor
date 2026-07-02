@@ -52,6 +52,11 @@ body {
   padding: 28px 0 22px 0;
   margin-bottom: 18px;
   border-bottom: 1px solid var(--rule);
+  /* Keep the letterhead with the first section — spacious's generous header
+     padding + 1.5 line-spacing made paged.js occasionally break right below the
+     header, orphaning it on page 1 (walkthrough Preview #2). */
+  page-break-after: avoid;
+  break-after: avoid;
 }
 .resume-header h1.name {
   margin: 0;

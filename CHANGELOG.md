@@ -13,6 +13,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.8 walkthrough remediation — Branch 2: faithful preview for uploaded templates (`feat/docx-html-companion`, 2026-07-01)
+
+The live preview renders a résumé through a persona's `.html` + `.css` **companion**
+(the sibling of the `.docx`). Only the 4 bundled personas shipped companions, so an
+uploaded `.docx` template silently fell back to Classic — every uploaded template
+previewed as Classic 1-column even though the `.docx` **download** was faithful
+(walkthrough B2 / B3 / Step-6 #4).
+
+- **New deterministic module `docx_to_persona_html.py`** (charter C-6, no LLM,
+  no new dependency): reads an uploaded `.docx` with python-docx and reconstructs
+  the same typography knobs the bundled templates are built from
+  (`TypographyPreset` — font family/size, margins, name/heading/job sizes, heading
+  treatment: uppercase / small-caps / underline / color, line spacing), then emits
+  a companion `.html` (a byte-for-byte copy of the `classic.html` Jinja2 skeleton
+  with only the CSS `href` swapped) + a `.css` (Classic's ATS-safe single-column
+  structure, re-typed with the uploaded template's own typography) + a
+  `<stem>.persona.json` fidelity sidecar.
+- **Honest fidelity ceiling.** python-docx can't represent multi-column sections,
+  tables, text boxes, or floating images; those sources are marked
+  `layout_fidelity: "typography_only"` and rendered single-column with the source's
+  fonts/colors/margins — which is exactly what the `.docx` download's `_write_docx`
+  produces, so preview and download stay mutually consistent. Never fabricates a
+  layout it can't deliver.
+- **Wiring.** Companions are generated eagerly on upload (`upload_user_persona`,
+  best-effort — a failure logs and still 201s, falling back to Classic as before)
+  and lazily on first preview / PDF render for personas uploaded before this shipped
+  (`preview_application_html`, `generator._render_pdf_from_json`). Idempotent
+  (mtime-cached).
+- **Spacious page-break.** Added `page-break-after: avoid` to the Spacious
+  letterhead so paged.js stops occasionally orphaning the header on page 1
+  (walkthrough Preview #2). Pagination of long résumés should be confirmed visually.
+
+Tests: `tests/test_docx_to_persona_html.py` (round-trip extraction vs each
+`TypographyPreset`; emit + skeleton-contract parity; fidelity fallback on tables;
+`html_template_path_for` now resolves the companion so the preview stops falling
+back to Classic). `PROMPT_VERSION` untouched; no new dependency.
+
 ### v1.0.8 walkthrough remediation — Branch 1: Step-4 template picker polish (`fix/preview-template-bugs`, 2026-07-01)
 
 First slice of the pre-tag walkthrough-remediation epic. Two Step-4 template-picker fixes:
