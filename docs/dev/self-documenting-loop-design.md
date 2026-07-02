@@ -224,8 +224,8 @@ number is a §H knob.)
 
 - **`CLAUDE.md`** "Skill catalog" + "Subagent catalog" and **`README.md`** plugin section —
   register `/wiki-self-update` + the two subagents (the 7.1 activation pattern: components
-  live at the plugin root `commands/`/`agents/`, default scan, namespaced `/callback:…` and
-  `callback:…`).
+  live at the plugin root `commands/`/`agents/`, default scan, namespaced `/sartor:…` and
+  `sartor:…`).
 - **[`docs/wiki/SCHEMA.md`](../wiki/SCHEMA.md)** "Ops" — add `/wiki-self-update` to the named
   ops (currently read/query/ingest/lint/audit) and note the bounded-checkpoint trigger.
 - **[`docs/dev/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md)** — add the pre-tag "run
@@ -345,8 +345,8 @@ green but **does not prove the loop.** `feat/` therefore adds, beyond the gate:
 - **Hook witness check.** `wiki-freshness-reminder.sh` still always-exit-0 and silent under
   the sentinel; only the message tiers at the threshold. Hand-test with byte-correct JSON via
   a `python json.dumps` heredoc (not `echo`), per the project's hook-testing lesson.
-- **Registration check.** The command + two subagents surface as `/callback:…` /
-  `callback:…` (the 7.1 activation contract) — verifiable only on a human reload.
+- **Registration check.** The command + two subagents surface as `/sartor:…` /
+  `sartor:…` (the 7.1 activation contract) — verifiable only on a human reload.
 
 ---
 

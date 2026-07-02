@@ -1,4 +1,4 @@
-# Documentation architecture — how callback.'s docs are organized & published
+# Documentation architecture — how sartor.'s docs are organized & published
 
 > **Purpose:** the documentation *publishing strategy* — the layered source chain, the
 > three-audience navigation spine, the Fumadocs projection, the merge=publish gate, and the
@@ -20,7 +20,7 @@
 
 ## Context
 
-callback. is adding a **hosted Fumadocs site**, generated from `main` on each merge. That
+sartor. is adding a **hosted Fumadocs site**, generated from `main` on each merge. That
 raises a design question with one right answer under the project's existing disciplines:
 **Fumadocs must be a projection of the governed corpus, never a second source of truth.**
 This doc states the layering, the navigation spine, the sourcing mechanism, and the gates so

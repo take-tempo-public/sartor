@@ -11,8 +11,8 @@
 
 ---
 
-callback has a built-in assistant — a friendly guide to how the app works and how to use
-it. It answers **only from callback's own documentation**, so what it tells you is
+sartor has a built-in assistant — a friendly guide to how the app works and how to use
+it. It answers **only from sartor's own documentation**, so what it tells you is
 grounded, not guessed.
 
 ## Asking a question
@@ -21,15 +21,15 @@ Click the **magnifier** icon in the top bar to open the assistant, type your que
 answers are the same for everyone, and it never reads your private data.
 
 ## What it can answer
-It draws on these how-to pages and the rest of callback's wiki. If something isn't
+It draws on these how-to pages and the rest of sartor's wiki. If something isn't
 documented, it says so plainly — "I don't have that in my docs" — rather than making
 something up, and points you to the nearest thing it does cover. Each answer ends with
 **numbered sources** you can click to read the original.
 
 ## Dev mode
 There's a **Dev mode** tick-box for the technically curious: turn it on and the
-assistant will also draw on the code and explain how callback is built, not just how to
+assistant will also draw on the code and explain how sartor is built, not just how to
 use it. Leave it off for plain how-to answers.
 
-The assistant is grounded the same way everything callback writes is — see
-[[using-callback]].
+The assistant is grounded the same way everything sartor writes is — see
+[[using-sartor]].

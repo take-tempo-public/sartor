@@ -90,9 +90,9 @@ Inside `build_json_resume_from_corpus`:
   a stable ranking. An empty/degenerate recommendation maps to `None` so it never
   blanks the section.
 
-callback-specific resolution state (`chosen_summary_id`, `summary_source`,
+sartor-specific resolution state (`chosen_summary_id`, `summary_source`,
 `use_experience_summaries`, `skill_curation_active`, …) is stamped under
-`meta.callback.*` so standard JSON Resume themes ignore it.
+`meta.sartor.*` so standard JSON Resume themes ignore it.
 
 ## Where the curated context_set comes from
 

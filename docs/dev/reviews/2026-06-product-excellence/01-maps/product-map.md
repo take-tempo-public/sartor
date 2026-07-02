@@ -4,7 +4,7 @@ evidence_sha: c6e0437
 graduation: none (rubric portions are v1.0.7 governance candidates)
 ---
 
-# Product map — callback.
+# Product map — sartor.
 
 > The terrain for the 2026-06 product-excellence review. Built read-only from
 > git history (399 commits, init `ce150e0` 2026-04-10 → pin `c6e0437`
@@ -25,7 +25,7 @@ in-flight era). Dates are commit dates.
 |---|---|---|---|
 | **Genesis** | 2026-04-10 → 05-06 (`ce150e0`..`v0.2.0`) | 48 | Multi-resume source, source-selection whitelist, eval-docs + model review. The pre-product prototype. |
 | **The v1.0.0/v1.0.1 build-out** | 05-06 → 05-28 (`v0.2.0`..`v1.0.1`) | 162 | The single largest era — the corpus/wizard product takes shape; the UI redesign largely lands; the security gate, deterministic/LLM boundary, and `context_set` contract solidify. v1.0.1 = "solid app," tagged `49f2ac9`. |
-| **Eval apparatus (v1.0.2)** | 05-28 → 05-30 (`v1.0.1`..`v1.0.2`) | 31 | Pydantic response models, schema_v3 baseline, anchor/exploration split, Promptfoo + PR gate, callback rubric + deterministic metrics, applications tracker, Pareto dashboard. Tagged `2398f4e`. |
+| **Eval apparatus (v1.0.2)** | 05-28 → 05-30 (`v1.0.1`..`v1.0.2`) | 31 | Pydantic response models, schema_v3 baseline, anchor/exploration split, Promptfoo + PR gate, sartor rubric + deterministic metrics, applications tracker, Pareto dashboard. Tagged `2398f4e`. |
 | **R1 Phase 2 (v1.0.3)** | 05-30 → 06-02 (`v1.0.2`..`v1.0.3`) | 26 | Analyze quality recovery (typed `hidden_qualities`, parse-time `context_probe`) then the two-pass split for speed (≤72s) via `analyze-split-cache-reclaim`. Tagged `59b6d9c`. |
 | **Eval tuning loop (v1.0.4)** | 06-02 (`v1.0.3`..`v1.0.4`) | 19 | Prompt-override primitive, corpus-seed export, bootstrap engine, annotation contract, `/tune-from-annotations`. Internal/dev tooling. Tagged `072e290`. |
 | **UI/UX redesign + console (v1.0.5)** | 06-02 → 06-07 (`v1.0.4`..`v1.0.5`) | 50 | WYSIWYG, Step-6 redesign, cover-letter formats, prior-app resume, bullet drag-reorder, Playwright UX suite, template pagination, L0 grounding metric, the tabbed diagnostics+tuning+annotation console + the "finish the faceplate" browser-driven loop. Establishes the `cb-*` design system. Tagged `2e3e110`. |

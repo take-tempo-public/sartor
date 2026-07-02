@@ -1,4 +1,4 @@
-# callback.
+# sartor.
 
 > A local-first app that tailors your résumé — and, optionally, a cover letter — to a
 > specific job, **grounded in what's actually true about you, not invented**. It reads
@@ -14,7 +14,7 @@ canonical docs below win.
 ## Wiki
 
 - [Wiki index](docs/wiki/index.md): one-line summary of every wiki page
-- [System overview](docs/wiki/overview.md): what callback. is and how the system is shaped
+- [System overview](docs/wiki/overview.md): what sartor. is and how the system is shaped
 - [Wiki SCHEMA](docs/wiki/SCHEMA.md): wiki conventions, the grounding rule, the source model
 
 ## Core docs
@@ -22,7 +22,7 @@ canonical docs below win.
 - [System model](docs/system-model.md): the canonical seven-functions self-model + the one-way dependency law
 - [Architecture](docs/architecture.md): module map + the deterministic / LLM-routing boundary
 - [Product shape](docs/PRODUCT_SHAPE.md): the corpus-item model + the v1 → v2 ladder
-- [Vision](vision.md): product intent and the constraints callback. holds itself to
+- [Vision](vision.md): product intent and the constraints sartor. holds itself to
 - [README](README.md): user-facing overview
 
 ## Contributor contract

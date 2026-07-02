@@ -1,6 +1,6 @@
 # Wiki SCHEMA — conventions for `docs/wiki/`
 
-> **Purpose:** the rulebook for callback.'s committed LLM-wiki — what each file is
+> **Purpose:** the rulebook for sartor.'s committed LLM-wiki — what each file is
 > for, how pages are written and grounded, and how the wiki stays honest against the
 > code. It governs the wiki; it is **not** a second copy of the project's rules.
 > **Audience:** any human or LLM agent reading, querying, or ingesting into the wiki.
@@ -42,7 +42,7 @@ wiki only **cites** them:
 - [`../../CLAUDE.md`](../../CLAUDE.md) — Claude-Code-specific overrides (hooks, the
   plan-mode workflow, the skill catalog).
 - [`../../vision.md`](../../vision.md) + the 10 Principles — the product north-star:
-  what callback. is *for* and what it must never do.
+  what sartor. is *for* and what it must never do.
 
 The wiki does not restate these. **On any conflict, the canonical docs win** and the
 wiki is the thing that is wrong (file it back via a `/wiki-*` op once those land).
@@ -103,7 +103,7 @@ access plane) — referenced, not restated (D5).
 | `README.md`, `docs/install.md`, `docs/walkthrough*.md`, `vision.md`, wiki `overview.md` | `user` |
 
 [`overview.md`](overview.md) (the front door) plus the five Sprint-6.5 education guides
-under `pages/` (`using-callback`, `tailoring-a-resume`, `career-corpus`,
+under `pages/` (`using-sartor`, `tailoring-a-resume`, `career-corpus`,
 `resume-templates`, `candidate-memory`) are the `user`-tier pages — authored INTO the
 wiki by `feat/education-tailor-corpus-wizard`. Infra files (`index.md`, `log.md`, this
 `SCHEMA.md`, `.last_ingest_sha`) are wiki meta, not retrieval Units, and are **not**

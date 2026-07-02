@@ -13,7 +13,7 @@ graduation: none
 
 ## Domain verdict
 
-callback. has a genuinely strong a11y *foundation* built as design, not
+sartor. has a genuinely strong a11y *foundation* built as design, not
 afterthought: a disciplined `_announce()` live-region, a keyboard bullet-reorder
 alternative pinned by a "must-pass a11y floor" regression test, modal
 focus-trap/Escape/focus-return, and a vendored dependency-free axe gate that
@@ -90,7 +90,7 @@ yet FIX-able.
   **ACCESSIBILITY.md as an honest status page** plus a one-time NVDA walkthrough.
   At the pin the status page does not exist, so the charter's chosen way of being
   honest about a11y (state what is machine-checked, what was NVDA-walked, what is
-  not covered) has no home. This is the C-0-aligned artifact: it lets callback.
+  not covered) has no home. This is the C-0-aligned artifact: it lets sartor.
   describe mechanism-and-effort instead of making (or implying) a conformance
   claim. Low-cost, P1 because it is a named pre-public a11y deliverable and the
   natural place to disclose F-expa11y-01/04/05's known gaps.

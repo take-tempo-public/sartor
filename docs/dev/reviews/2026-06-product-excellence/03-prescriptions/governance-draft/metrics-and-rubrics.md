@@ -4,7 +4,7 @@ evidence_sha: c6e0437
 graduation: docs/governance/metrics.md (v1.0.7)
 ---
 
-# Metrics & Rubrics — callback. governance draft
+# Metrics & Rubrics — sartor. governance draft
 
 > The quantified success criteria `vision.md` lacks (M-2 made testable), the
 > deterministic product metrics that should ride every eval, and the
@@ -33,7 +33,7 @@ already a named, sequenced, release-blocking task set, so this *tracks* the
 work, not re-flags it).
 
 **SC-1 — The 10-application matrix.** ≥10 real applications submitted via
-callback. with **zero release-blocking bugs**, spanning, as a coverage
+sartor. with **zero release-blocking bugs**, spanning, as a coverage
 matrix: ≥3 with a clarify round · ≥2 iterating after first generate · ≥2
 cover letters · ≥2 distinct templates · both output formats · ≥1 prior-app
 reuse. The Application rows + `parent_context_path` chains are the audit
@@ -57,7 +57,7 @@ hand-tailored resume (recorded with provenance, not a standing SLA). Both
 unbuilt at the pin (F-expa11y-10 WATCH).
 
 **SC-4 — Explainability artifacts (v1.0.7).** Three shipped: the user-facing
-"how callback. grounds, clarifies, and tunes" wiki page; a **lay metrics
+"how sartor. grounds, clarifies, and tunes" wiki page; a **lay metrics
 legend** in diagnostics; the planned diagnostics improvements. At the pin the
 lay legend is unwritten and console copy is dev-register (F-expa11y-04 /
 F-eval-03; S-3 is the owner's weakest area); ACCESSIBILITY.md as an
@@ -66,7 +66,7 @@ pin). "Shipped" = the file exists and a non-coding power user (A-2) can read
 it.
 
 **SC-5 — Interviews: weighed, not gating.** ≥1 interview from a
-callback-written resume is a written criterion **weighed as evidence, not a
+sartor-written resume is a written criterion **weighed as evidence, not a
 hard gate** (M-1; the reviewer's split, accepted in sign-off).
 Market-dependent and, by C-2/T-A, unobservable in aggregate — only the
 user's own instance captures the local outcome (F-vision-03 confirms

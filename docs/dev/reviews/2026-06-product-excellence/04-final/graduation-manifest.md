@@ -7,7 +7,7 @@ graduation: self (the integration plan of record)
 
 # Graduation manifest — making the review canonical
 
-> How the 2026-06 product-excellence review becomes part of callback.
+> How the 2026-06 product-excellence review becomes part of sartor.
 > Two output classes, two fates: the **evidence archive** merges as-is to a
 > permanent home; the **durable doctrine** graduates into canonical docs via
 > normal one-branch-per-item dev sessions, with the review as the cited

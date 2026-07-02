@@ -4,7 +4,7 @@ evidence_sha: c6e0437
 graduation: docs/dev/RELEASE_ARC.md post-public section (owner-integrated)
 ---
 
-# Post-1.1.0 timeline overlay — callback.
+# Post-1.1.0 timeline overlay — sartor.
 
 > **PROPOSAL — `docs/dev/RELEASE_ARC.md` remains authoritative until the owner
 > integrates this via a normal dev branch.** This is a *delta* on the arc's
@@ -66,7 +66,7 @@ CODE_OF_CONDUCT.md still ship hard 5-day / 30-day SLAs — to be softened to
 best-effort wording, *not* re-promised on a faster clock). The disclosure
 channel itself must first be corrected (**F-sec-11**, CONFIRMED: COC and
 `.github/ISSUE_TEMPLATE/config.yml` route reports to the stale `Cooksey/resume`
-repo, not `amodal1/callback`) — that correction is a v1.0.7 pre-public item, and
+repo, not `amodal1/sartor`) — that correction is a v1.0.7 pre-public item, and
 this lane *inherits* the corrected channel.
 
 - **Entry gate:** v1.1.0 tagged **and** the E-2 machine-badge set committed
@@ -138,15 +138,15 @@ gap by giving each a **mechanism-based entry gate** (what makes it ripe) and an
 
 | Incubant (W-4) | Entry gate (ripe to extract) | Exit signal (graduated) |
 |---|---|---|
-| **recall / memory → product** | The only one with a stated readiness condition today (`memory-architecture.md`, per F-gov-08); extract when the `recall/` package's staged build is eval-passing **and** a second project needs it. | `recall/` lives as its own repo/package; callback. consumes it as a dependency; the re-introduction friction (W-4) is logged. |
-| **governance rulebook + compliance agent → product** | After the v1.0.7 governance extraction lands one canonical constitution (**F-gov-05**, KEEP) **and** the compliance agent has a standing pilot (Lane 4). | The rulebook + agent run against a *second* repo; callback. becomes one of its monitored projects. |
-| **LLM-wiki + self-documenting loop → inside the memory product** | After the v1.0.7 self-documenting loop runs autonomous/bounded/cost-aware and the wiki cold-ingest proves out (WS-4b). | The loop is a `recall/`-internal capability, not a callback.-local skill set. |
-| **doc-grounded assistant → product within the operator stack** | After v1.0.7 ships the assistant answering from the wiki with citations (Haiku, user's key). | The assistant generalizes across the operator stack; callback. is one consumer. |
+| **recall / memory → product** | The only one with a stated readiness condition today (`memory-architecture.md`, per F-gov-08); extract when the `recall/` package's staged build is eval-passing **and** a second project needs it. | `recall/` lives as its own repo/package; sartor. consumes it as a dependency; the re-introduction friction (W-4) is logged. |
+| **governance rulebook + compliance agent → product** | After the v1.0.7 governance extraction lands one canonical constitution (**F-gov-05**, KEEP) **and** the compliance agent has a standing pilot (Lane 4). | The rulebook + agent run against a *second* repo; sartor. becomes one of its monitored projects. |
+| **LLM-wiki + self-documenting loop → inside the memory product** | After the v1.0.7 self-documenting loop runs autonomous/bounded/cost-aware and the wiki cold-ingest proves out (WS-4b). | The loop is a `recall/`-internal capability, not a sartor.-local skill set. |
+| **doc-grounded assistant → product within the operator stack** | After v1.0.7 ships the assistant answering from the wiki with citations (Haiku, user's key). | The assistant generalizes across the operator stack; sartor. is one consumer. |
 | **grounding-metric three-tier pattern → still research** | **No extraction gate — research, per W-4.** Becomes extractable only if the v1.0.7 PV-2 calibration (**F-eval-02**, CONFIRMED: real loop never exercised, L1/L2 uncalibrated at the pin) yields a transferable, calibrated detector. | N/A until research matures; tracked as research, not scheduled extraction. |
 
 - **Per-system entry gate:** as tabled — each is a *mechanism* (a passing build,
   a second consumer, a proven loop), never a calendar date or an owner promise.
-- **Per-system exit signal:** the system runs *outside* callback. and callback.
+- **Per-system exit signal:** the system runs *outside* sartor. and sartor.
   consumes it back (W-4's "re-introduction is hoped for but friction-dependent"
   — the friction is logged, not promised away).
 

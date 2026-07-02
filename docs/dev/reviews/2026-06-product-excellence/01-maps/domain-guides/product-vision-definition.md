@@ -6,7 +6,7 @@ graduation: none (rubric portions are v1.0.7 governance candidates)
 
 # Domain Guide — Product vision & definition
 
-> The lens for whether callback. *knows what it is*, states it
+> The lens for whether sartor. *knows what it is*, states it
 > falsifiably, and holds that statement consistently across the docs a
 > reader meets. The charter ([product-charter.md](../../00-interview/product-charter.md))
 > is the severity anchor; this guide reads the public vision docs against
@@ -68,7 +68,7 @@ diagnosis, not a slogan.
   default-negotiable). This is the single largest vision-doc divergence
   from the signed charter.
 - **Success-metric absence (brief C6).** Interviews (P-4/M-1) appear in
-  vision as Goal framing only via "callback." the name; the
+  vision as Goal framing only via "sartor." the name; the
   outcome loop is documented as a *deferred v2 feature*
   (`docs/PRODUCT_SHAPE.md:133-139`, "Mark sent"), never as a stated
   success criterion. The charter elevates it; the public docs do not yet.
@@ -113,7 +113,7 @@ evidence.
 1. Does any public-facing vision doc tier its self-imposed constraints by
    enforceability (machine-inviolable vs negotiable-default), or are they
    presented as one uniform "won't-cross" set?
-2. Is "an interview from a callback-written resume" stated anywhere as a
+2. Is "an interview from a sartor-written resume" stated anywhere as a
    *success criterion* (not only as a deferred v2 "Mark sent" feature)?
 3. Does the ATS framing carry the charter's escape hatch (edit the
    produced document for non-ATS needs), or is it stated categorically

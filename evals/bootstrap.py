@@ -470,7 +470,7 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     )
 
-    ap = argparse.ArgumentParser(description="callback. corpus bootstrap engine")
+    ap = argparse.ArgumentParser(description="sartor. corpus bootstrap engine")
     ap.add_argument(
         "--seed",
         required=True,

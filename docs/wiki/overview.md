@@ -1,6 +1,6 @@
-# callback. — system overview
+# sartor. — system overview
 
-> **Purpose:** the wiki's front door — a one-page orientation to what callback. is and
+> **Purpose:** the wiki's front door — a one-page orientation to what sartor. is and
 > how the whole system is shaped. The **canonical** statement of the system model (the
 > seven functions, the one law, the Product/Work split, the full "Where it lives" file
 > map) is [`../system-model.md`](../system-model.md); this page presents it at the
@@ -15,7 +15,7 @@
 
 ## What it is
 
-callback. is a local-first app that tailors your résumé — and, optionally, a cover
+sartor. is a local-first app that tailors your résumé — and, optionally, a cover
 letter — to a specific job, **grounded in what's actually true about you, not
 invented**. You paste in a job description; it reads the posting, asks a few sharp
 questions, helps you choose which of your real accomplishments fit, then writes a
@@ -30,7 +30,7 @@ prompt enforces that rule and a witness metric measures whether it held — a co
 the model, not a guarantee about every output. That single constraint shapes the entire
 design, and it recurs at every scale of the system.
 
-> **New to the app?** [`pages/using-callback.md`](pages/using-callback.md) walks you
+> **New to the app?** [`pages/using-sartor.md`](pages/using-sartor.md) walks you
 > through your first run — add a user, import a résumé, tailor to a job, and download.
 
 ## Two subjects: the Product and the Work

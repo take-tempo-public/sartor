@@ -14,7 +14,7 @@ graduation: none
 
 ## Domain verdict
 
-callback. has a genuinely strong quality core: a py3.11-3.13 CI matrix with
+sartor. has a genuinely strong quality core: a py3.11-3.13 CI matrix with
 least-privilege permissions, a real alembic-to-head migration test, a
 provenance-traced perf baseline with real-corpus columns, and the standout
 an eval-quality regression gate that exits non-zero on a rubric drop > 0.5.

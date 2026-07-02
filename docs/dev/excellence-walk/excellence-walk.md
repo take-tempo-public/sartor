@@ -233,7 +233,7 @@ excellence walk:
 - **Status:** RECURRING / future. Define cadence + what "good" looks like.
 
 ### WS-4 — LLM-wiki knowledge architecture (ACTIVE — design)
-- **What:** adopt the Karpathy LLM-wiki pattern for callback. — a committed,
+- **What:** adopt the Karpathy LLM-wiki pattern for sartor. — a committed,
   human-browseable + LLM-queryable `docs/wiki/` layer (codebase variant: git
   HEAD as source, diff-driven ingest) with `ingest/query/lint` ops as Claude
   Code skills, + a root `llms.txt`. See the **Q4 WORKING / WS-4 design sketch**

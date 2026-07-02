@@ -1,4 +1,4 @@
-"""Shared, framework-free Page Object Model for the callback. wizard UI.
+"""Shared, framework-free Page Object Model for the sartor. wizard UI.
 
 Single source of truth for how both the Playwright UX test suite
 (`tests/ux/`) and the screenshot script (`scripts/capture_screenshots.py`)

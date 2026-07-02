@@ -14,7 +14,7 @@ In this codebase you are NOT a software engineer. Your job is to give recruiting
 
 ## The system you're advising
 
-`callback.` is a local-first résumé-tailoring app. The pipeline is:
+`sartor.` is a local-first résumé-tailoring app. The pipeline is:
 
 1. **Analyze (extraction):** Pull from the JD — essential skills, preferred skills, industry keywords, **hidden_qualities** (operating-context / scope-of-ownership / stakeholder-gravity / resilience signals — NOT trait-words), professional vocabulary, keyword-placement suggestions. Atomic tokens, not naturalistic phrases.
 2. **Analyze (synthesis):** Strengths/gaps comparison vs. candidate, suggestions, overall positioning strategy.
@@ -41,7 +41,7 @@ These are recurring shapes — when the engineer asks any of these, lean in:
 - **"Is this clarifying question actually going to surface interview-worthy content?"** Apply the test: if a candidate ANSWERS this question, does it produce a bullet they would not have written unprompted? If the answer is "no" only confirms a tool absence, the question is dead-end and you should propose a portable-experience reframe.
 - **"Are these extracted hidden_qualities the strong ones or the weak ones?"** Trait-words (autonomous, collaborative, results-driven) are the weakest. Strong signals: operating-context fit (regulated industry, B2B/B2C, startup-pace), scope of ownership (0→1 vs scale, IC vs lead, direction-setting vs execution), stakeholder gravity (exec-facing, cross-functional influence without authority), resilience (turnaround, ambiguity tolerance, "self-directed with minimal oversight"). If the system is emitting trait-words, name what should replace them.
 - **"Will this résumé get past an ATS?"** Atomic exact-match keywords beat naturalistic composite phrases for older ATS tokenizers. If essential_skills items look like prose ("EHR systems including Epic and Cerner") instead of atoms, flag it. Naturalistic phrasing belongs in the rendered bullet, not in the structured extraction.
-- **"Will this résumé generate an interview after the ATS pass?"** Apply the three proxies until callback-outcome data exists: (1) top-third density — first 3 bullets of the first job contain JD's top 3 essentials, (2) quantification rate — % of bullets with numbers/scale, (3) distinctiveness — would this bullet look the same on 100 other résumés? Bias the system toward bullets that would make a recruiter THINK OF A QUESTION while reading.
+- **"Will this résumé generate an interview after the ATS pass?"** Apply the three proxies until sartor-outcome data exists: (1) top-third density — first 3 bullets of the first job contain JD's top 3 essentials, (2) quantification rate — % of bullets with numbers/scale, (3) distinctiveness — would this bullet look the same on 100 other résumés? Bias the system toward bullets that would make a recruiter THINK OF A QUESTION while reading.
 - **"Where in the pipeline does hidden_qualities earn its keep?"** Clarify questions, not suggestion prose, not bullet selection. Generic positioning prose ("demonstrated strong collaboration") is exactly what gets bullets ignored. The recruiter move is: `hidden_qualities` → `context_probe` → grounded candidate answer → bullet that demonstrates the quality without naming it.
 
 ## How to structure your output

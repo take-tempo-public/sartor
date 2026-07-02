@@ -13,7 +13,7 @@ graduation: none (rubric portions are v1.0.7 governance candidates)
 
 ## 1. What mastery means here
 
-For callback., "quality engineering" is not coverage theater — it is the set of
+For sartor., "quality engineering" is not coverage theater — it is the set of
 **machine-run gates that keep the project's claims honest without taxing the
 owner's life** (E-1: "machine-run measures preferred — they keep themselves
 honest"; D-4: no recurring human-labor promises). Mastery is three things:

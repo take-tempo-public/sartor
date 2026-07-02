@@ -1,4 +1,4 @@
-# Using callback. — screen-by-screen walkthrough
+# Using sartor. — screen-by-screen walkthrough
 
 By the end of this doc you'll know what each of the six wizard steps does, what it costs, and what to look for before you click forward.
 
@@ -16,7 +16,7 @@ By the end of this doc you'll know what each of the six wizard steps does, what 
 > [`README.md`](../README.md) (overview + Doc Map),
 > [`docs/install.md`](install.md) (install + first-run),
 > [`docs/architecture.md`](architecture.md) (code-level system view),
-> [`vision.md`](../vision.md) (why callback. exists).
+> [`vision.md`](../vision.md) (why sartor. exists).
 
 ---
 
@@ -71,7 +71,7 @@ flowchart LR
 **Legend:** blue = LLM call fires here · green = deterministic
 (no LLM) · amber = human review gate · purple-dashed = optional path.
 
-callback.'s design rule is *LLM only for fuzzy work*; everything
+sartor.'s design rule is *LLM only for fuzzy work*; everything
 else (parsing, rendering, file I/O) is plain Python you can trace
 line-by-line. The diagram's green nodes are the parts you can
 debug without paying for an API call.
@@ -164,7 +164,7 @@ your existing `.docx`, `.pdf`, or `.md` résumé.
 deterministically (no LLM) to extract text, then one Haiku 4.5
 call to `extract_experiences()` parses the text into structured
 experiences, titles, and bullets. Haiku 4.5 is Anthropic's small +
-fast model — callback. uses it for selection and parsing; the
+fast model — sartor. uses it for selection and parsing; the
 larger Sonnet 4.6 model handles writing. Cost: ~$0.02. The result
 writes to `db/resume.sqlite` as the canonical corpus.
 
@@ -307,7 +307,7 @@ variants picker; a tag-chip filter for bullets.
   fit a length-limited résumé, earlier bullets carry more weight
   than later ones. So the order you set here is a real lever on
   the final document, not just the on-screen list. The default is
-  callback's AI fit-ranking; **"Reset to AI ranking"** restores it
+  sartor's AI fit-ranking; **"Reset to AI ranking"** restores it
   per experience. A bullet you add from the drawer *after*
   ordering lands at the end, flagged "newly added — drag to
   reposition," so your existing order is never silently disturbed.
@@ -367,7 +367,7 @@ templates use single-column layouts with standard fonts and no
 inline `<code>` chips or sidebar layouts. The two retired templates
 (Compact, Hybrid Tech) failed ATS testing — they're documented in
 [`CHANGELOG.md`](../CHANGELOG.md) for v1.0.0. Uploaded templates
-show an "ATS · unverified" badge because callback. can't
+show an "ATS · unverified" badge because sartor. can't
 introspect arbitrary user `.docx` files.
 
 **Verify before continuing:**
@@ -485,7 +485,7 @@ never use.
 
 ## If something goes wrong mid-wizard
 
-callback. writes a new `context_*.json` file at every state
+sartor. writes a new `context_*.json` file at every state
 change, so almost nothing you do is destructive.
 
 - **You closed the browser tab partway through.** Reopen
@@ -538,7 +538,7 @@ generated document came to exist. Re-run any iteration with the
 - [`SECURITY.md`](../SECURITY.md) — what stays on your machine
   vs. what goes over the wire.
 - [`vision.md`](../vision.md) — the "why this exists" page.
-- [`evals/README.md`](../evals/README.md) — **for maintainers:** callback. ships a
+- [`evals/README.md`](../evals/README.md) — **for maintainers:** sartor. ships a
   local **diagnostics & tuning console** at `/_dashboard` (localhost-only) where you
   can **tune the system's own LLM prompts** — run evals, A/B a candidate prompt
   against the baseline, and annotate generated bullets, all in the browser. The

@@ -5,9 +5,9 @@ License**, matching this project's overall license (see `LICENSE` at the
 repo root).
 
 ```
-MIT License — callback. bundled templates
+MIT License — sartor. bundled templates
 
-Copyright (c) 2026 callback. contributors
+Copyright (c) 2026 sartor. contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

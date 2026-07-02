@@ -1,6 +1,6 @@
-# Vision — callback.
+# Vision — sartor.
 
-callback. answers one question, honestly:
+sartor. answers one question, honestly:
 
 > *"What résumé and (optional) cover letter should I send for
 > this specific job?"*
@@ -10,12 +10,12 @@ large language model (Anthropic's Claude, here); **ATS** =
 applicant tracking system (résumé-parsing software employers run
 on incoming files).
 
-> **Purpose:** the high-level guide to what callback. is, what
+> **Purpose:** the high-level guide to what sartor. is, what
 > it isn't, and the self-imposed constraints that shape every
 > decision. The "why" behind the architecture and the product
 > shape.
 > **Audience:** humans evaluating whether to use or contribute
-> to callback.; LLM agents proposing significant changes who
+> to sartor.; LLM agents proposing significant changes who
 > need to check their proposal against the project's stance.
 > **Authoritative for:** the product's intent, the 10 Principles
 > grounding, the open / standards / minimal-dependencies stance,
@@ -42,7 +42,7 @@ template generator. The scope is narrow on purpose: one
 person, one machine, one job at a time.
 
 "One person, one machine, one job at a time" is the *unit of
-work*, not an exclusion of readers. callback. admits a
+work*, not an exclusion of readers. sartor. admits a
 continuum of audiences: the everyday job-seeker; the **power
 user** who reads the diagnostics and tunes prompts; the
 **developer / builder** who extends it; and — the reason
@@ -65,13 +65,13 @@ Three goals, in order of priority:
    the LLM can't invent.
 
 2. **ATS-safe output by default.** Most applications are
-   parsed by software before any human sees them. callback.
+   parsed by software before any human sees them. sartor.
    ships templates that are single-column, plain-bullet, in
    standard fonts, with no tables / text boxes / icons / sidebars.
    Templates that *aren't* ATS-safe are retired — even when
    they look prettier. The escape hatch is the user's, not the
    tool's: anyone who wants a non-ATS design edits the document
-   callback. produced. See
+   sartor. produced. See
    [`docs/PRODUCT_SHAPE.md §5.3`](docs/PRODUCT_SHAPE.md) for
    the bundled-template curation rationale.
 
@@ -86,7 +86,7 @@ Three goals, in order of priority:
 
 ## Self-imposed constraints
 
-These are the lines callback. won't cross, even when crossing
+These are the lines sartor. won't cross, even when crossing
 them would be convenient. Together they define what kind of
 software this is.
 
@@ -100,7 +100,7 @@ software this is.
 ### Local-first, single-tenant
 
 "Single-tenant" here is a **threat-model boundary, not a product
-value**: callback. trusts exactly one unauthenticated user — the
+value**: sartor. trusts exactly one unauthenticated user — the
 person who owns the machine — and leans on the OS for access
 control. Local *multi-profile* support (several candidates on one
 machine, via `list_users()`) is convenience inside that single
@@ -123,7 +123,7 @@ trust boundary; it is not multi-tenancy.
 - **JSON Resume v1.0** as the canonical intermediate. The LLM
   emits Markdown; a deterministic post-pass lifts it into JSON
   Resume; renderers consume the JSON Resume. This means
-  callback.'s structured candidate data is portable to any
+  sartor.'s structured candidate data is portable to any
   jsonresume.org-compatible tool.
 - **Standard fonts only** in the bundled templates: Arial,
   Calibri, Georgia, Helvetica, Roboto, Times New Roman. No
@@ -203,10 +203,10 @@ step.
 
 ## Principles backbone
 
-callback. follows the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/).
+sartor. follows the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/).
 The codebase is annotated with principle references (P1, P2,
 P5, P6, P8, P9) where they apply. Five principles are
-load-bearing for callback. specifically:
+load-bearing for sartor. specifically:
 
 - **P1 Hardening** — deterministic Python for mechanical
   work, LLM only for fuzzy reasoning. Drives the file
@@ -237,7 +237,7 @@ discovered as we built. Updated as new learnings land.
 
 ### The Corpus Item asymmetry (v1.0 unified pattern)
 
-The first version of callback. treated `Bullet` as the only
+The first version of sartor. treated `Bullet` as the only
 first-class curatable element — it had its own table, variants,
 tags, scores, pin-per-application logic, and a Haiku
 `recommend_bullets` LLM call. Everything else (summaries,
@@ -337,4 +337,4 @@ Continue, Aider, etc.) reading this file to propose changes:
 - Document new learnings in the **Learnings + direction**
   section above as they emerge. This file should grow over
   the project's lifetime — it's the running record of why
-  callback. looks the way it does.
+  sartor. looks the way it does.

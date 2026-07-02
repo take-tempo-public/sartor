@@ -1,4 +1,4 @@
-"""THE selector registry for the callback. UI.
+"""THE selector registry for the sartor. UI.
 
 One place to edit on any reskin (the first-class redesign-resilience
 requirement, decided 2026-06-04). Prefer stable IDs and ARIA roles. Where a

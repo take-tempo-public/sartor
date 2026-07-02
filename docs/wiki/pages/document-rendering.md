@@ -59,8 +59,8 @@ markdown into a JSON Resume v1.0 dict. It is best-effort and forgiving: a header
 block (everything before the first `##`) becomes `basics` (name, email/phone/URL
 detected by regex, profiles classified by host); `##` sections dispatch through
 `_SECTION_MAP` to `work`/`education`/`skills`/etc. Unknown sections are NOT dropped —
-they land under `meta.callback.unparsed` so nothing is silently lost. callback.-specific
-fields live under `meta.callback.*` so the doc still validates against the standard
+they land under `meta.sartor.unparsed` so nothing is silently lost. sartor.-specific
+fields live under `meta.sartor.*` so the doc still validates against the standard
 schema [`json_resume.py:md_to_json_resume`](../../../json_resume.py). This is the
 JSON contract the renderers consume — distinct from the pipeline's `context_set`
 (see [[context-set-contract]]).

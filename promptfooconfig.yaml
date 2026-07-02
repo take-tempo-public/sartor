@@ -1,4 +1,4 @@
-# Promptfoo configuration for callback. anchor fixtures.
+# Promptfoo configuration for sartor. anchor fixtures.
 #
 # Wraps the 3 anchor-v1 fixtures against the generate call so CI can produce
 # a side-by-side diff table on prompt-change PRs.
@@ -11,7 +11,7 @@
 # Fixtures: evals/anchors/anchor-v1/fixtures/
 # Gate: regression > 0.5 on any rubric vs baseline_v1.json = blocked
 
-description: "callback. anchor-v1 fixture eval"
+description: "sartor. anchor-v1 fixture eval"
 
 providers:
   - id: anthropic:claude-sonnet-4-6

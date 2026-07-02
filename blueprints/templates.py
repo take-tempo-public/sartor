@@ -424,7 +424,7 @@ _PAGED_PREVIEW_INJECTION = """
   // set BEFORE the polyfill `<script>` executes (it reads PagedConfig on load).
   window.PagedConfig = { auto: false };
   // Belt-and-suspenders for the paged.js paths the awaited preview() promise
-  // below does NOT cover. paged.js can throw from an internal layout callback
+  // below does NOT cover. paged.js can throw from an internal layout sartor
   // that isn't on the chain we `.catch()` — either as a stray async rejection
   // or a synchronous throw inside a requestAnimationFrame / event handler. The
   // two listeners swallow ONLY paged-origin throws (by message or by the
@@ -484,7 +484,7 @@ def _inject_paged_polyfill(html_str: str) -> str:
 
     Paged.js is bundled as `/static/vendor/paged.polyfill.js` (MIT,
     v0.4.3). The script auto-polyfills CSS @page rules. The init
-    callback postMessages the rendered page count to the parent
+    sartor postMessages the rendered page count to the parent
     frame so the wizard toolbar can show "Page N of M" accurately.
 
     The PDF render path does NOT go through this helper —

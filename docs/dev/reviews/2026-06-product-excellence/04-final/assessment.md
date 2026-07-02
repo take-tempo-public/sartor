@@ -5,7 +5,7 @@ drift_checked_against: a0a1cb2
 graduation: docs/dev/reviews/2026-06-product-excellence/ (archived with the review)
 ---
 
-# Honest final assessment - callback. product-excellence review
+# Honest final assessment - sartor. product-excellence review
 
 > The capstone of the eight-domain review (ask #7). Evidence pinned at
 > `c6e0437`; drift checked against current `main` (`a0a1cb2`, 15 commits
@@ -18,7 +18,7 @@ graduation: docs/dev/reviews/2026-06-product-excellence/ (archived with the revi
 
 ## Overall verdict
 
-callback. is on a credible track to be both functionally serious and a
+sartor. is on a credible track to be both functionally serious and a
 portfolio piece - but it is not there yet, and the gap is concentrated in
 one place: the project makes categorical promises faster than it builds the
 machines that keep them honest. The craft is real. The persistence spine,

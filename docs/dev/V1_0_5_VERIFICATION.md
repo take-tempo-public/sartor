@@ -54,9 +54,9 @@ corpus, and validate the install path (risk-register D.4) at the same time.
 
 ```powershell
 # 0. Stop the original server first — both bind :5000 (app.run port is hardcoded).
-git clone C:\Dev\callback C:\Dev\callback-clean
-cd C:\Dev\callback-clean
-Copy-Item C:\Dev\callback\.api_key .\.api_key
+git clone C:\Dev\sartor C:\Dev\sartor-clean
+cd C:\Dev\sartor-clean
+Copy-Item C:\Dev\sartor\.api_key .\.api_key
 python app.py            # → http://localhost:5000  (fresh DB created on first request)
 ```
 
@@ -68,7 +68,7 @@ Notes (verified on a machine that already builds/runs the app):
   work, no benefit here.
 - **Grounding stack is the only thing missing** (`torch`, `transformers`,
   `minicheck`). Install it **into your existing Python, by name** (installing
-  `-e ".[eval-grounding]"` from the clone would repoint your editable `callback`
+  `-e ".[eval-grounding]"` from the clone would repoint your editable `sartor`
   at the clone):
   ```powershell
   python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
@@ -79,7 +79,7 @@ Notes (verified on a machine that already builds/runs the app):
   `%USERPROFILE%\.cache\huggingface\` (outside any repo; shared; one-time).
 - A committed **`testuser`** fixture (synthetic "Casey Rivera") is present — ignore
   it for real-corpus testing; create your own user.
-- To tear down: delete `C:\Dev\callback-clean`. Self-contained; touches nothing in
+- To tear down: delete `C:\Dev\sartor-clean`. Self-contained; touches nothing in
   your original clone (the HF model cache survives, by design).
 
 ---
@@ -120,9 +120,9 @@ application; or use an existing app):
 - [ ] No `offer` / `accepted` / `no_response` statuses appear anywhere (removed in
       migration 0007).
 
-## A2. Eval apparatus — `eval/pydantic-response-models`, `eval/baseline-v1-0-2`, `eval/anchor-and-pr-gate`, `eval/callback-metrics`, `eval/pareto-dashboard`, `eval/grounding-signals` — 💲
+## A2. Eval apparatus — `eval/pydantic-response-models`, `eval/baseline-v1-0-2`, `eval/anchor-and-pr-gate`, `eval/sartor-metrics`, `eval/pareto-dashboard`, `eval/grounding-signals` — 💲
 
-- [ ] **Anchor suite + schema v3 + callback metrics + composite:**
+- [ ] **Anchor suite + schema v3 + sartor metrics + composite:**
       `python evals/runner.py --suite anchor --subset smoke` runs clean. Inspect
       the newest `evals/results/*.jsonl`: records carry `schema_version: 3`,
       `suite: "anchor"`, `anchor_version`, `phase_latencies_ms`,

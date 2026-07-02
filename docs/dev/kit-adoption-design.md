@@ -2,7 +2,7 @@
 
 > **Purpose:** the settled evaluation + sequenced plan for adopting the lichen
 > `agent-coding-practices-kit` (context / documentation / strict-typing practices +
-> the `context-structure-review` skill) into callback. Produced as an
+> the `context-structure-review` skill) into sartor. Produced as an
 > **evaluation** (no code changed); this doc is the durable record the
 > implementation branches execute against, so they re-decide nothing.
 > **Audience:** the owner (Robert) reviewing the plan, and any agent implementing a
@@ -16,7 +16,7 @@
 > `C:\Dev\lichen\projects\agent-coding-practices-kit\` — `markdown-for-llm-apps.md`
 > (context), `doc-discipline-for-coding-agents.md` (docs),
 > `strict-typing-and-style.md` (typing), and `context-structure-review/`. The
-> handoff that seeded this evaluation is a Callback-trimmed synthesis of those.
+> handoff that seeded this evaluation is a Sartor-trimmed synthesis of those.
 
 ---
 
@@ -26,24 +26,24 @@ The lichen kit is three practices — **context** (what the agent loads) → **d
 (what it records) → **types** (what it can't get wrong) — sharing one premise (structure,
 docs, and types are *inputs to agent reliability*, not hygiene) and one method (**mechanism,
 not instruction**: judgment lives in AGENTS.md/skills, the mechanizable subset lives in
-blocking gates). The handoff framed Callback as a greenfield "canary" whose AGENTS.md needs
-*seeding*. It isn't: Callback is a mature v1.0.7 repo that already practices ~60% of the kit,
+blocking gates). The handoff framed Sartor as a greenfield "canary" whose AGENTS.md needs
+*seeding*. It isn't: Sartor is a mature v1.0.7 repo that already practices ~60% of the kit,
 often better than the kit describes (governance charter, hooks-as-mechanism, the AGENTS.md
 `@import` design, the self-documenting wiki). So adoption is **reconcile + close specific
-deltas + flag what's promotable to `amodal-open`** — not author-from-zero. Callback is the
+deltas + flag what's promotable to `amodal-open`** — not author-from-zero. Sartor is the
 **donor**, not the blank canary.
 
 ---
 
 ## 1. The frame (canary → donor)
 
-The kit's stated end-goal (its §5) is an adoption arc: settle the conventions on Callback (the
+The kit's stated end-goal (its §5) is an adoption arc: settle the conventions on Sartor (the
 "canary"), then promote them to a shared `amodal-open` location later repos inherit. The
 correction this evaluation makes: for the governance philosophy, the hook model, the
-`@import` instruction-file design, and the wiki doc-drift loop, **Callback already holds the
-best-in-class version** — so the shared layer is *extracted from* Callback, and only the
+`@import` instruction-file design, and the wiki doc-drift loop, **Sartor already holds the
+best-in-class version** — so the shared layer is *extracted from* Sartor, and only the
 genuinely-missing pieces (strict typing, request-boundary parsing, doc generation) are
-*imported from* the kit. Framing chosen (Decision-framing, 2026-06-23): **implement Callback's
+*imported from* the kit. Framing chosen (Decision-framing, 2026-06-23): **implement Sartor's
 deltas now + flag promotable practices as we go** (don't build the shared layer yet). The
 promotable shortlist is §7.
 
@@ -54,7 +54,7 @@ promotable shortlist is §7.
 Verified against `main` at capture (2026-06-23). Legend: ✅ done/exceeded · 🟡 partial ·
 ❌ gap.
 
-| Kit ask | Callback today | |
+| Kit ask | Sartor today | |
 |---|---|---|
 | Exclude aggressively (ignore surface) | `.gitignore` covers `.venv`/caches/build/secrets/PII; pip-based, no lockfile to exclude | ✅ |
 | One canonical instruction file | `AGENTS.md` canonical (168 lines) + `CLAUDE.md` (190) `@import`s it | ✅ exceeds |
@@ -79,9 +79,9 @@ Verified against `main` at capture (2026-06-23). Legend: ✅ done/exceeded · �
 | Worktree isolation / explicit staging / re-read | branch discipline + concurrent-agent-worktree practice; no `decisions/` dir | ✅ mostly |
 
 **Structural mismatches in the handoff (revisions of record):** (1) `uv` assumption is wrong —
-Callback is pip/setuptools; translate commands (Decision 8 = out of scope). (2) greenfield
+Sartor is pip/setuptools; translate commands (Decision 8 = out of scope). (2) greenfield
 framing inverted (§1). (3) don't flatten `CLAUDE.md` to "Follow ./AGENTS.md" — the `@import`
-design is better. (4) PR-template/DoD assume a PR-review workflow; Callback merges locally —
+design is better. (4) PR-template/DoD assume a PR-review workflow; Sartor merges locally —
 fold DoD into existing checklists. (5) doc-drift SaaS (Dosu/DeepDocs) redundant with the wiki
 loop. (6) `pydantic-settings` is low-value churn (`config.py` already typed). (7) markdown
 oversized-file gate is a future-guard, not a current fix.
@@ -94,7 +94,7 @@ oversized-file gate is a future-guard, not a current fix.
 |---|---|---|---|
 | 1 | Flask validation + OpenAPI extension | **spectree** | Least invasive to the 8.3 factory + PX-29 containment gate; Pydantic-native; rendered docs artifact is identical to apiflask's once fed to Fumadocs, and the lighter touch signals better judgment than importing a public-API framework onto an internal seam |
 | 2a | HTTP API docs (Layer B) | **Generate from OpenAPI** → Fumadocs (later) | One source of truth; can't drift; spectree emits the spec for free |
-| 2b | Python code reference (Layer C) | **Skip the generated site** | Callback is an app, not a library; the wiki + recall + assistant already navigate internals better than a signature dump. Keep docstrings + the coverage gate |
+| 2b | Python code reference (Layer C) | **Skip the generated site** | Sartor is an app, not a library; the wiki + recall + assistant already navigate internals better than a signature dump. Keep docstrings + the coverage gate |
 | 3 | Gate vehicle | **Fold kit gates into `feat/portable-enforcement-core`**; stand up the local pre-commit half **now** (no remote needed), CI-blocking flips on at 8.7 | The tool-agnostic-enforcement decision was already DECIDED (SPLIT, 2026-06-15) and scheduled at 8.7 — the kit's Gate 1 *is* that branch; don't build a parallel pre-commit track |
 | 4 | ADRs | **Thin `decisions.md` index** over existing records | Closes the "no single chronological decision log" gap with zero duplication or competing home (cite-don't-restate / D5) |
 | 5 | `context-structure-review` packaging | **Committed plugin skill in a root `skills/` dir** | `.claude/skills/` is gitignored → unshipped/unpromotable. Root `skills/` mirrors the `commands/`/`agents/` convention, stays close to the kit format for easy upstream sync, and is committed + promotable |
@@ -102,7 +102,7 @@ oversized-file gate is a future-guard, not a current fix.
 | 7 | mypy `--strict` end-state | **Strict everywhere except a named exempt set** (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`) | Professional default; named + justified exemptions satisfy "audit the escape hatches"; gives the ratchet a finite finish line |
 | 8 | `uv` migration | **Out of scope** | Stay pip/setuptools; translate the kit's commands |
 
-Full rationale for Decisions 1, 2, 3, and 5 (the ones that turned on Callback-specific facts —
+Full rationale for Decisions 1, 2, 3, and 5 (the ones that turned on Sartor-specific facts —
 Fumadocs consuming OpenAPI, the latent-CI/no-remote state, the component packaging) is in the
 conversation of record; the one-line "why" above is the durable summary.
 
@@ -559,7 +559,7 @@ The kit-adoption arc is **not free-floating** — it overlays planned work:
 - **WS-2-full (recurring):** the Phase 2 strict ratchet *is* WS-2-full; the full strict
   end-state lands across the v1.0.8 tail → 1.1.x.
 - **Post-8.7 (separate project):** Fumadocs renders the OpenAPI spec + the wiki markdown into
-  the public docs site (`callback-docs.taketempo.com`).
+  the public docs site (`sartor-docs.taketempo.com`).
 
 ---
 
@@ -581,7 +581,7 @@ because it's tracked*. A strict ratchet with no tracking + no finish line is how
 
 ## 7. Promotable to `amodal-open` (the "flag" half of the framing)
 
-Extraction candidates — practices Callback already does best, to seed the shared layer later
+Extraction candidates — practices Sartor already does best, to seed the shared layer later
 (do **not** build the shared layer in this arc):
 
 - The **governance philosophy** (charter C-0…C-6 / D-1…D-6 / W-1 + amendment ceremony).

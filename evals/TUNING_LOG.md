@@ -330,7 +330,7 @@ Guard side (deterministic, warn-only — no LLM output is ever mutated):
 
 KW6 (Sprint 6.0 kickoff walk, HIGH · output integrity — the core no-invention
 value prop). Reproduced from the e2e instance's saved chain
-(`callback-e2e/output/cooksey/`): corpus dates correct; **fresh generation
+(`sartor-e2e/output/cooksey/`): corpus dates correct; **fresh generation
 correct**; the **iteration-1 regenerate** reordered experiences by JD relevance
 and rewrote one Intel role's range 2012–2016 → 2016–2018, duplicating the
 adjacent role's range while 2012–2016 vanished — unprompted by any
@@ -543,7 +543,7 @@ structurally a Haiku sweet spot. Hypothesis: Haiku holds `clarification_quality`
 Canaries flat: grounding ds 4.70 / pm 4.70 / sre 4.74 (no hidden-quality leak into generate); tone
 medians unchanged (pm `tone` 4.00 is generate-side noise — clarify does **not** feed generate in the
 synthetic eval, so any tone/ats/keyword movement grades the unchanged `generate` path). Other rubrics
-(Haiku `.4` / Sonnet `.3`): ats ds 4.20/4.40, pm 4.30/4.36, sre 4.68/4.60; callback ds 4.42/4.54,
+(Haiku `.4` / Sonnet `.3`): ats ds 4.20/4.40, pm 4.30/4.36, sre 4.68/4.60; sartor ds 4.42/4.54,
 pm 4.20/4.18, sre 4.42/4.45; keyword ds 4.20/4.30, pm 4.12/4.20, sre 4.44/4.46 — all within noise.
 
 ### What we learned
@@ -1087,7 +1087,7 @@ To be populated after the post-R1.2 eval run. The expectation is:
 
 ### Open questions / future tuning targets
 
-- **Quality proxies beyond evals** — the recruiter named three measurable proxies usable before we have callback-outcome data: (1) **top-third density** (first 3 bullets of first job contain JD's top 3 essentials?), (2) **quantification rate** (% of bullets with a number / %, $, scale indicator), (3) **distinctiveness** ("would this bullet look the same on 100 other résumés?"). All three are deterministic, computable from generated output, and addressable without prompt changes — surface them as `deterministic_metrics` on eval records in a follow-up.
+- **Quality proxies beyond evals** — the recruiter named three measurable proxies usable before we have sartor-outcome data: (1) **top-third density** (first 3 bullets of first job contain JD's top 3 essentials?), (2) **quantification rate** (% of bullets with a number / %, $, scale indicator), (3) **distinctiveness** ("would this bullet look the same on 100 other résumés?"). All three are deterministic, computable from generated output, and addressable without prompt changes — surface them as `deterministic_metrics` on eval records in a follow-up.
 - **Hidden qualities propagation beyond clarify** — the recruiter flagged that hidden_qualities should drive clarify questions but NOT suggestion prose or bullet selection ("demonstrated strong collaboration" in suggestion prose is exactly what gets bullets ignored). Today we don't surface hidden_qualities to generate() at all; that's correctly skipping the middle layer. Verify nothing regresses on `tone` (which would be the canary if generate started absorbing them indirectly).
 - **`recommend_bullets` quality** — Haiku selection on bullets uses essential_skills + preferred_skills + industry_keywords from extraction. With the atomic rule landed, the matching surface should improve (more individual tokens to match against bullet text). Watch the eval suite's grounding + keyword_coverage rubrics for evidence; if no improvement, the bullet-text → keyword match may need its own atomic normalization step.
 
@@ -2262,7 +2262,7 @@ All in one commit with the `AVATAR_PROMPT_VERSION` bump (`analyzer.py:290`):
   L1 and L2 (no reword — owner Q9 recommended path).
 - **Citation readability (owner-requested mid-pass)** — inline citations now read as natural
   sentences with the source in clean **SINGLE** square brackets at the **END** of the sentence
-  it supports (`[using-callback]`, `[analyzer.py:49]`), never `[[…]]` mid-sentence; only the slug
+  it supports (`[using-sartor]`, `[analyzer.py:49]`), never `[[…]]` mid-sentence; only the slug
   or path:line goes inside the brackets (no phrase-wrapping). The `#assistantStatus` Sources
   footer strips the `[[ ]]` to match. Owner rationale: `[[path:line]]` mid-sentence is hard for
   non-technical readers.
@@ -2293,7 +2293,7 @@ screen-reader a11y defect (per-token announcement of a live region).
 - **Live §6.3 spot-check** (real Haiku, 12 scenarios × both modes, in-process through the real
   `recall.assemble` path): voice axes **clean** — friendly-guide tone with **zero** exclamation /
   cheer openers, refusal-as-doorway + the GitHub rung firing correctly with **no fabricated URL
-  in any answer**, the connect-to-concern move on "will callback get me the interview?" (declined
+  in any answer**, the connect-to-concern move on "will sartor get me the interview?" (declined
   the prediction, connected tailoring + parseability, explicitly disclaimed the outcome), ATS
   framed strictly as parseability, and the **access plane held** (zero DEV-audience units in every
   user-mode turn; #4a routes user→refuse-redirect vs dev→cited dashboard answer).

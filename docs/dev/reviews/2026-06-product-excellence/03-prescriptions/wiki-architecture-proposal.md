@@ -4,7 +4,7 @@ evidence_sha: c6e0437
 graduation: docs/wiki/ planning + docs/dev/ (v1.0.7 / WS-4b)
 ---
 
-# Wiki architecture proposal — callback.
+# Wiki architecture proposal — sartor.
 
 > Discovery-brief ask #8. Evaluates the committed `docs/wiki/` against its
 > own [`SCHEMA.md`](../../../docs/wiki/SCHEMA.md), then proposes
@@ -89,7 +89,7 @@ decision #2; RELEASE_ARC §Phase 4.5). Proposal:
 - **Reserve the user-facing section now, in `index.md`, as a named slot.**
   RELEASE_ARC §Phase 4.5 already directs WS-4b to "reserve a user-facing
   section that Sprint 6.5 authors into"; the M-2 v1.0.7 criterion names the
-  user-facing *"how callback. grounds, clarifies, and tunes"* page
+  user-facing *"how sartor. grounds, clarifies, and tunes"* page
   explicitly. That slot should appear in `index.md` as a reserved entry
   today so the obligation is visible and the assistant has a stable retrieval
   target. This page is also the natural home for S-3 — the owner's

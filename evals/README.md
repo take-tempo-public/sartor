@@ -1,4 +1,4 @@
-# callback. — Eval Harness
+# sartor. — Eval Harness
 
 A regression-detection system for the project's two-call LLM pipeline. Runs the full `analyze()` + `generate()` flow against fixture inputs with known properties, grades each output against rubrics, and writes results as JSONL for the dashboard and CI.
 
@@ -178,7 +178,7 @@ The same orchestration is importable as `evals.runner.run_suite(...)` (returning
 `EvalRunResult`) — `main()` above is a thin argparse wrapper over it, and the
 console's localhost `POST /api/eval/run` route (the **Run eval** button on the
 `/_dashboard` Quality tab, plus the Annotate tab's **Run this fixture** button)
-calls the same core with a `progress` callback so the browser can stream
+calls the same core with a `progress` sartor so the browser can stream
 per-fixture/per-rubric progress. The no-flag default path is byte-identical whether
 reached via the CLI or the route.
 
@@ -710,7 +710,7 @@ irreversible step that stays a human/agent's job:
 4. **Run eval** *(Quality tab → "Run eval"; also the Annotate "Run this fixture"
    button)* — a localhost SSE `POST /api/eval/run` calls the importable
    `evals.runner.run_suite` core (see [How the runner works](#how-the-runner-works))
-   with a `progress` callback so the browser streams per-fixture/per-rubric progress.
+   with a `progress` sartor so the browser streams per-fixture/per-rubric progress.
    Suite/subset/grounding controls + a cost-band `confirm()` consent gate. **Paid.**
 5. **A/B a candidate** *(Tuning tab)* — pick an `analyzer._BASE_SYSTEM_PROMPTS`
    constant ("Load current text" prefills the baseline), edit/paste a candidate, and

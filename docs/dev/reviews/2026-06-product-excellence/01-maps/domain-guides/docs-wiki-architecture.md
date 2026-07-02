@@ -14,7 +14,7 @@ graduation: none (rubric portions are v1.0.7 governance candidates)
 
 ## 1. What mastery means here
 
-callback. makes an unusual promise: P-3 says the project puts "effort into
+sartor. makes an unusual promise: P-3 says the project puts "effort into
 sourcing and describing every part of itself," and ships a doc-grounded support
 agent (v1.0.7) that can explain "how it works, what it's been, what it hopes to
 be." That promise turns documentation from a courtesy into a **load-bearing

@@ -1,4 +1,4 @@
-# Contributing to callback.
+# Contributing to sartor.
 
 > **Purpose:** how to propose changes — quick start, branch and commit
 > conventions, the local dev loop, what kinds of contributions are
@@ -13,7 +13,7 @@
 > [`docs/architecture.md`](docs/architecture.md) (system + modules),
 > [`SECURITY.md`](SECURITY.md) (threat model).
 
-Thanks for your interest. callback. tailors a résumé and (optionally) a cover letter to one specific job at a time, using a deterministic Python core and the Claude API for fuzzy reasoning. It is intentionally small — most contributions should *make it more deterministic*, not less.
+Thanks for your interest. sartor. tailors a résumé and (optionally) a cover letter to one specific job at a time, using a deterministic Python core and the Claude API for fuzzy reasoning. It is intentionally small — most contributions should *make it more deterministic*, not less.
 
 The guiding philosophy is the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/). Read [`vision.md`](vision.md) before proposing significant changes; skim [`docs/architecture.md`](docs/architecture.md) for the pipeline diagram + module map.
 
@@ -23,7 +23,7 @@ The guiding philosophy is the [10 Principles framework](https://jdforsythe.githu
 
 ```bash
 git clone <your-fork-url>
-cd callback
+cd sartor
 pip install -e ".[dev]"
 
 # One-time: download the Chromium binary Playwright needs for PDF
@@ -98,9 +98,9 @@ CI runs `ruff` + `mypy` + `pytest` on every PR. Add the `eval` label to also run
 
 ## Working with the Claude Code plugin
 
-The project ships a Claude Code plugin (`callback`). The pieces live in three places:
+The project ships a Claude Code plugin (`sartor`). The pieces live in three places:
 
-- **Slash commands** in repo-root [`commands/`](commands/) and **subagents** in repo-root [`agents/`](agents/) — they load as the `callback` plugin via a bundled local marketplace (`callback-tools`), declared by the `extraKnownMarketplaces` + `enabledPlugins` entries committed in `.claude/settings.json`. Because they load as a plugin they appear **namespaced**: commands as `/callback:<name>`, subagents as `callback:<name>`.
+- **Slash commands** in repo-root [`commands/`](commands/) and **subagents** in repo-root [`agents/`](agents/) — they load as the `sartor` plugin via a bundled local marketplace (`sartor-tools`), declared by the `extraKnownMarketplaces` + `enabledPlugins` entries committed in `.claude/settings.json`. Because they load as a plugin they appear **namespaced**: commands as `/sartor:<name>`, subagents as `sartor:<name>`.
 - **Hooks** in [`.claude-plugin/hooks/`](.claude-plugin/hooks/) — wired **directly** in the same `.claude/settings.json` (path-referenced, not plugin-discovered), so they stay independent of the marketplace loader.
 - The plugin **manifest** + local **marketplace** definition live in [`.claude-plugin/`](.claude-plugin/) (`plugin.json` + `marketplace.json`).
 
@@ -236,7 +236,7 @@ Sensitive issues should go through GitHub Security Advisories — see [`SECURITY
 The plugin's subagents currently act under your local `gh auth` identity, with `Co-Authored-By:` trailers attributing assistant work. If this project ever grows to need scheduled or multi-agent autonomy, the pathway is:
 
 1. **GitHub Actions with built-in `GITHUB_TOKEN`** for scheduled jobs (no secrets to manage)
-2. **A scoped GitHub App** ("callback. Bot") for distinct-identity automation
+2. **A scoped GitHub App** ("sartor. Bot") for distinct-identity automation
 
 Per-agent personal access tokens or separate user accounts are explicitly *not* the recommended path. See the agent definitions in `agents/` for the current personas and their permissions.
 

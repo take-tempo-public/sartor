@@ -8,7 +8,7 @@ tools:
   - Glob
 ---
 
-You draft a single candidate system-prompt edit for callback.'s eval tuning
+You draft a single candidate system-prompt edit for sartor.'s eval tuning
 loop. The `/tune-from-annotations` command gives you an `improvement_brief.md`
 (produced deterministically by `evals/annotation.py` from a human-annotated
 bootstrap) and the name of one persona constant to tune. You return the **full

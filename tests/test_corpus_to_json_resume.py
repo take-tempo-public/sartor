@@ -19,7 +19,7 @@ Behaviors pinned down here:
     - First-active SummaryItem is next
     - Candidate.profile_text is the final fallback
     - Soft-retired (is_active=0) variants are skipped on every step
-    - The chosen source is reported in meta.callback.summary_source
+    - The chosen source is reported in meta.sartor.summary_source
 
   Work history
     - All experiences in start_date desc, id desc order
@@ -31,7 +31,7 @@ Behaviors pinned down here:
 
   Defensive shape
     - Empty / unknown candidate returns the empty document skeleton
-    - meta.callback carries the correlation fields the preview needs
+    - meta.sartor carries the correlation fields the preview needs
 """
 
 from __future__ import annotations
@@ -237,8 +237,8 @@ class TestSummaryResolution:
             context_path=ctx,
         )
         assert doc["basics"]["summary"] == "Pin variant."
-        assert doc["meta"]["callback"]["summary_source"] == "pinned"
-        assert doc["meta"]["callback"]["chosen_summary_id"] == pin_id
+        assert doc["meta"]["sartor"]["summary_source"] == "pinned"
+        assert doc["meta"]["sartor"]["chosen_summary_id"] == pin_id
 
     def test_recommendation_wins_when_no_pin(self, session, tmp_path):
         from corpus_to_json_resume import build_json_resume_from_corpus
@@ -257,7 +257,7 @@ class TestSummaryResolution:
             context_path=ctx,
         )
         assert doc["basics"]["summary"] == "Rec variant."
-        assert doc["meta"]["callback"]["summary_source"] == "recommended"
+        assert doc["meta"]["sartor"]["summary_source"] == "recommended"
 
     def test_first_active_variant_when_no_application_choice(self, session):
         from corpus_to_json_resume import build_json_resume_from_corpus
@@ -267,7 +267,7 @@ class TestSummaryResolution:
         doc = build_json_resume_from_corpus(session, cid)
         # First-active variant takes precedence over profile_text fallback
         assert doc["basics"]["summary"] == "First active."
-        assert doc["meta"]["callback"]["summary_source"] == "first_active"
+        assert doc["meta"]["sartor"]["summary_source"] == "first_active"
 
     def test_profile_text_when_no_variants(self, session):
         from corpus_to_json_resume import build_json_resume_from_corpus
@@ -275,7 +275,7 @@ class TestSummaryResolution:
         cid = _seed_candidate(session, profile_text="Only profile_text.")
         doc = build_json_resume_from_corpus(session, cid)
         assert doc["basics"]["summary"] == "Only profile_text."
-        assert doc["meta"]["callback"]["summary_source"] == "candidate_default"
+        assert doc["meta"]["sartor"]["summary_source"] == "candidate_default"
 
     def test_retired_variant_skipped(self, session, tmp_path):
         from corpus_to_json_resume import build_json_resume_from_corpus
@@ -563,7 +563,7 @@ class TestExperienceSummary:
         for w in doc["work"]:
             assert "summary" not in w
 
-    def test_meta_callback_records_opt_in_state(self, session, tmp_path):
+    def test_meta_sartor_records_opt_in_state(self, session, tmp_path):
         from corpus_to_json_resume import build_json_resume_from_corpus
 
         cid = _seed_candidate(session)
@@ -577,17 +577,17 @@ class TestExperienceSummary:
             },
         )
         doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
-        cb = doc["meta"]["callback"]
+        cb = doc["meta"]["sartor"]
         assert cb["use_experience_summaries"] is True
         assert cb["chosen_experience_summary_ids"] == {str(eid): sid}
 
 
 # -------------------------------------------------------------------
-# Meta / callback envelope
+# Meta / sartor envelope
 # -------------------------------------------------------------------
 
 
-class TestMetaCallback:
+class TestMetaSartor:
     def test_application_id_round_trips(self, session):
         from corpus_to_json_resume import build_json_resume_from_corpus
 
@@ -597,8 +597,8 @@ class TestMetaCallback:
             cid,
             application_id=42,
         )
-        assert doc["meta"]["callback"]["application_id"] == 42
-        assert doc["meta"]["callback"]["candidate_id"] == cid
+        assert doc["meta"]["sartor"]["application_id"] == 42
+        assert doc["meta"]["sartor"]["candidate_id"] == cid
 
     def test_bullet_overrides_active_flag(self, session, tmp_path):
         from corpus_to_json_resume import build_json_resume_from_corpus
@@ -618,7 +618,7 @@ class TestMetaCallback:
             cid,
             context_path=ctx,
         )
-        assert doc["meta"]["callback"]["bullet_overrides_active"] is True
+        assert doc["meta"]["sartor"]["bullet_overrides_active"] is True
 
     def test_no_overrides_false(self, session):
         from corpus_to_json_resume import build_json_resume_from_corpus
@@ -626,7 +626,7 @@ class TestMetaCallback:
         cid = _seed_candidate(session)
         _seed_experience(session, cid, bullets=("X.",))
         doc = build_json_resume_from_corpus(session, cid)
-        assert doc["meta"]["callback"]["bullet_overrides_active"] is False
+        assert doc["meta"]["sartor"]["bullet_overrides_active"] is False
 
     def test_missing_context_path_is_safe(self, session):
         """Bogus path is silently ignored — builder falls through to
@@ -794,7 +794,7 @@ class TestSkills:
             },
         )
         doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
-        cb = doc["meta"]["callback"]
+        cb = doc["meta"]["sartor"]
         assert cb["skill_curation_active"] is True
         assert cb["recommended_skill_ids"] == [py]
 
@@ -804,4 +804,4 @@ class TestSkills:
         cid = _seed_candidate(session)
         _seed_skill(session, cid, "Python", display_order=0)
         doc = build_json_resume_from_corpus(session, cid)
-        assert doc["meta"]["callback"]["skill_curation_active"] is False
+        assert doc["meta"]["sartor"]["skill_curation_active"] is False

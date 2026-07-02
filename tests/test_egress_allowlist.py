@@ -1,7 +1,7 @@
 """Network-egress falsifiability gate — PX-08 (F-qe-rel-02 P0, F-sec-01) / G-2.
 
 The 2026-06 product-excellence review (release-pass-plan.md §2 "G-2"; prescriptions.md
-now-v1.0.6 band) makes charter claim **C-2** machine-falsifiable: callback. opens an
+now-v1.0.6 band) makes charter claim **C-2** machine-falsifiable: sartor. opens an
 outbound socket to exactly TWO sanctioned destination classes —
 
   1. the configured LLM provider host ``api.anthropic.com`` (the ``anthropic`` SDK), and

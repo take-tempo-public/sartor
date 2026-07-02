@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitRefinement(); }
   });
 
-  // callback. top bar — drop a soft shadow once scrolled past 4px. Cheap
+  // sartor. top bar — drop a soft shadow once scrolled past 4px. Cheap
   // affordance that says "this bar is anchored above the scroll surface."
   // Idempotent: harmless if #cbTopbar isn't in the DOM.
   const cbBar = document.getElementById('cbTopbar');
@@ -1513,14 +1513,14 @@ function openSettingsDrawer() {
 const _HELP_REGISTRY = {
   // ---- Tailor tab -------------------------------------------------------
   panelUser: {
-    title: 'Welcome to callback',
-    body: "callback tailors your résumé to a specific job from a career corpus "
+    title: 'Welcome to sartor',
+    body: "sartor tailors your résumé to a specific job from a career corpus "
       + 'it builds out of your past résumés — nothing is locked in a file you '
       + 'hand-edit per application. Select a user to begin, or add a new one to '
       + 'import your first résumé. Every section has an “i” you can click for a '
       + 'quick explanation.',
     short: 'Select a user to begin, or add a new one to import your first résumé.',
-    tip: 'About callback',
+    tip: 'About sartor',
     welcome: true,
   },
   panelApplications: {
@@ -1535,14 +1535,14 @@ const _HELP_REGISTRY = {
   panelJD: {
     title: 'Step 1 — Job description',
     body: 'Paste the full text of the job you’re applying for, then click '
-      + 'Analyze. callback reads the posting and weighs it against your career '
+      + 'Analyze. sartor reads the posting and weighs it against your career '
       + 'corpus to find the experience that fits this role best. The numbered '
       + 'steps along the top let you move back and forward at any time.',
     tip: 'Step 1 — Job description',
   },
   panelAnalysis: {
     title: 'Step 1 — Analysis',
-    body: 'This is callback’s read of the job — the themes it found and how '
+    body: 'This is sartor’s read of the job — the themes it found and how '
       + 'your experience lines up. From here you can answer a few clarifying '
       + 'questions next (recommended — it usually sharpens the result) or skip '
       + 'straight to composing the résumé.',
@@ -1550,7 +1550,7 @@ const _HELP_REGISTRY = {
   },
   panelClarify: {
     title: 'Step 2 — Clarify',
-    body: 'Optional, but worth it. callback asks a few short questions to draw '
+    body: 'Optional, but worth it. sartor asks a few short questions to draw '
       + 'out real experience your résumé didn’t spell out and to pin down '
       + 'anything vague. Your answers become new candidate bullet points (added '
       + 'to your corpus to accept now or review later) and keep the résumé '
@@ -1559,7 +1559,7 @@ const _HELP_REGISTRY = {
   },
   panelCompose: {
     title: 'Step 3 — Compose',
-    body: 'Here’s the résumé callback proposes for this job: the title it chose '
+    body: 'Here’s the résumé sartor proposes for this job: the title it chose '
       + 'for each role and the bullet points it selected and ordered, including '
       + 'any new ones from your clarifying answers. Pin a bullet to force-include '
       + 'it, exclude ones you don’t want, or open “find more” to pull others from '
@@ -1572,13 +1572,13 @@ const _HELP_REGISTRY = {
     body: 'Your selected content is loaded — now choose how it looks. Pick a '
       + 'template on the left and the preview shows the pages exactly as they’ll '
       + 'print: same words, different typography and layout. You can also upload '
-      + 'your own .docx for callback to reuse (ATS-safe templates strongly '
+      + 'your own .docx for sartor to reuse (ATS-safe templates strongly '
       + 'recommended). Click Generate when you’re happy with the look.',
     tip: 'Step 4 — Template',
   },
   panelGenerate: {
     title: 'Step 5 — Generate',
-    body: 'Choose your output format and click Generate. callback writes the '
+    body: 'Choose your output format and click Generate. sartor writes the '
       + 'final, tailored résumé from the content and template you picked. This '
       + 'usually takes about 30–60 seconds.',
     tip: 'Step 5 — Generate',
@@ -1596,7 +1596,7 @@ const _HELP_REGISTRY = {
   // ---- Career corpus / Templates / Memory tabs -------------------------
   panelCorpus: {
     title: 'Your career corpus',
-    body: 'Your career corpus is the pool of experience callback draws from when '
+    body: 'Your career corpus is the pool of experience sartor draws from when '
       + 'it writes a tailored résumé — the roles and bullet points it built from '
       + 'the résumé you imported. Everything starts as “pending review”: accept '
       + 'items one at a time, by role, or all at once. Reviewing and accepting '
@@ -1610,13 +1610,13 @@ const _HELP_REGISTRY = {
     body: 'Templates control how your résumé looks — typography, spacing, and '
       + 'layout — without changing a word of the content. A few ATS-friendly '
       + 'templates ship with the app, and you can upload your own .docx for '
-      + 'callback to reuse as a template. ATS-safe templates are strongly '
+      + 'sartor to reuse as a template. ATS-safe templates are strongly '
       + 'recommended so applicant-tracking systems can read your résumé cleanly.',
     tip: 'Résumé templates',
   },
   panelMemory: {
     title: 'Candidate memory',
-    body: 'Candidate memory keeps the questions callback asked during “Clarify” '
+    body: 'Candidate memory keeps the questions sartor asked during “Clarify” '
       + 'and the answers you gave, across every application. Answers with '
       + 'concrete numbers and outcomes make the strongest new résumé bullets, so '
       + 'they’re highlighted here. Nothing is shared between users.',
@@ -1628,16 +1628,16 @@ const _HELP_REGISTRY = {
   // by the nearest section’s (i) for later reference (see _maybeFireTourStop).
   tourAddUser: {
     title: 'Add yourself as a user',
-    body: 'Start by importing a résumé — callback builds your first career '
+    body: 'Start by importing a résumé — sartor builds your first career '
       + 'corpus from it, so you don’t have to type everything in by hand. An '
       + 'ATS-friendly résumé (plain text, clear month/year dates) works best; '
-      + 'callback does its best with other formats. You can add your name and '
+      + 'sartor does its best with other formats. You can add your name and '
       + 'contact details now or later.',
     tip: 'Adding a user',
   },
   tourGenerating: {
     title: 'Generating your résumé',
-    body: 'callback is writing your tailored résumé now — this usually takes '
+    body: 'sartor is writing your tailored résumé now — this usually takes '
       + '30–60 seconds. When it’s done you’ll get a live preview you can edit '
       + 'and download, plus the option to generate a matching, editable cover '
       + 'letter.',
@@ -1645,7 +1645,7 @@ const _HELP_REGISTRY = {
   },
   tourCoverLetter: {
     title: 'Your cover letter',
-    body: 'callback drafts a cover letter from the same job and résumé. Like the '
+    body: 'sartor drafts a cover letter from the same job and résumé. Like the '
       + 'résumé preview, it’s editable in place — adjust the wording, then '
       + 'download. Generating it again rewrites it from scratch.',
     tip: 'Cover letter',
@@ -2666,7 +2666,7 @@ function _announce(text) {
 
 // Sentence-case a short status string ('GENERATION COMPLETE' → 'Generation
 // complete'). Kept here because every setStatus() call passes ALL CAPS
-// from the LCARS era; the callback. chrome uses sentence case.
+// from the LCARS era; the sartor. chrome uses sentence case.
 function _toSentence(s) {
   if (!s) return '';
   const lower = s.toLowerCase();
@@ -2675,7 +2675,7 @@ function _toSentence(s) {
 
 function setStatus(text) {
   const pill = document.getElementById('statusPill');
-  // .cb-status-text is the dedicated label child of the callback. status
+  // .cb-status-text is the dedicated label child of the sartor. status
   // pill. The whole pill was migrated from .cb-pill to .cb-status in
   // feat/release-visual-ia, so this element is always present.
   const textEl = pill.querySelector('.cb-status-text');
@@ -6234,7 +6234,7 @@ function _renderComposeCard(exp) {
   const hintWrap = _el('div', { className: 'compose-order-hint-wrap' });
   hintWrap.appendChild(_el('span', {
     className: 'compose-order-hint',
-    textContent: "Bullets are ranked by callback's AI by fit to this job. "
+    textContent: "Bullets are ranked by sartor's AI by fit to this job. "
       + 'Drag to reorder — your order shapes the final résumé.',
   }));
   const info = _el('button', { className: 'compose-order-info', textContent: 'i' });

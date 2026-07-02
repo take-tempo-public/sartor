@@ -11,12 +11,12 @@
 
 ---
 
-A cover letter is **optional** — callback writes one only if you ask. You generate it in
+A cover letter is **optional** — sartor writes one only if you ask. You generate it in
 **Step 6**, after your résumé is ready, from the same job posting and your finalized
 résumé.
 
 ## Generating it
-On the **Cover letter** tab, click **Generate**. callback writes a letter that draws on
+On the **Cover letter** tab, click **Generate**. sartor writes a letter that draws on
 the job and the résumé you just tailored, so it stays consistent with the document
 you're sending and **grounded in your real history** — never invented. It's quicker than
 generating a résumé.

@@ -12,7 +12,7 @@ graduation: none (rubric portions are v1.0.7 governance candidates)
 
 ## 1. What mastery means here
 
-For callback., experience-and-a11y mastery is not generic WCAG conformance —
+For sartor., experience-and-a11y mastery is not generic WCAG conformance —
 the charter is explicit that **no conformance claim, no tag gate, no recurring
 manual-audit promise** is made (E-2). Mastery is instead three concrete things,
 each charter-anchored:

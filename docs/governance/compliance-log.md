@@ -28,6 +28,6 @@
   (the 7.2 plan row flipped to `[x]`/DONE on this branch); the witness surfaced, the human
   decided. Per the design's Arc, a passing pilot graduates the witness toward the standing
   pre-tag companion at v1.1.x.
-- **Note:** first run; the registered `/callback:compliance-witness` surfaces on the next
+- **Note:** first run; the registered `/sartor:compliance-witness` surfaces on the next
   Claude Code reload — this pilot reproduced the Sonnet subagent in-session (the
   registered Task-delegated path is contract-identical).

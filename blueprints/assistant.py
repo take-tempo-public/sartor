@@ -1,6 +1,6 @@
 """The doc-grounded assistant — the project-wiring + SSE route layer (Sprint 7.5).
 
-This is the **Operation surface** of callback's Memory function: a Flask SSE chat route
+This is the **Operation surface** of sartor's Memory function: a Flask SSE chat route
 that turns a question into a cited answer. It is the thin glue between three layers,
 owning none of their logic:
 
@@ -9,7 +9,7 @@ owning none of their logic:
   * the single Haiku LLM call (`analyzer.avatar_answer_streaming` — charter C-6 keeps
     every model call in `analyzer.py`).
 
-What lives *here* is the **callback-specific wiring** the substrate is too generic to
+What lives *here* is the **sartor-specific wiring** the substrate is too generic to
 hold: the source roots (`docs/wiki`, the repo HEAD), the SCHEMA `**Audience:**` /
 path→audience rules that classify each `Unit` (`docs/wiki/SCHEMA.md` blanket rules), and
 the request/SSE plumbing. The generic source tiers are injected from `recall.sources`
@@ -73,7 +73,7 @@ _EMBEDDER: Embedder | None = None
 _EMBEDDER_LOADED = False
 
 
-# --- callback-specific audience bindings (the wiring the substrate can't hold) ------
+# --- sartor-specific audience bindings (the wiring the substrate can't hold) ------
 #
 # These encode the wiki SCHEMA's audience boundary (docs/wiki/SCHEMA.md "Audience tag")
 # and are injected into the generic recall.sources tiers. They live HERE, not in
@@ -170,7 +170,7 @@ def _enabled_tiers(sources: Sequence[object]) -> frozenset[Tier]:
 
 
 def _build_sources(session_turns: list) -> list:
-    """Construct the retrieval tiers bound to callback's roots + audience rules.
+    """Construct the retrieval tiers bound to sartor's roots + audience rules.
 
     Built per request (cheap: ~30 small wiki files + one `git rev-parse`; the vector
     tier loads its prebuilt sidecar once, process-cached) so live wiki edits are picked

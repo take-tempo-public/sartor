@@ -19,7 +19,7 @@ Why Chromium-via-Playwright:
 Why not WeasyPrint:
   - GTK3 + Pango required on Windows/macOS. Acceptable for a hosted
     product; awkward for a local-first single-tenant dev tool that
-    users install via `pip install callback`.
+    users install via `pip install sartor`.
 
 Render pipeline:
   json_resume_doc + persona_html_template + persona_css

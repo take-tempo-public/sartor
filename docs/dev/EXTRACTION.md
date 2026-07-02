@@ -1,6 +1,6 @@
 # Extraction playbook — when an incubated system graduates to a product
 
-> **Purpose:** the good-practice contract for callback.'s seedbed posture (charter
+> **Purpose:** the good-practice contract for sartor.'s seedbed posture (charter
 > P-6/W-4): how to incubate a system in-repo, and the *observable* event that says
 > "extract now" — never a feeling. Written under C-0 (mechanisms and effort, no
 > absolutes about LLM behavior, no marketing register).
@@ -58,11 +58,11 @@ effort-language everywhere else).
   not committed**; the landed in-place evidence is `run_suite()`. Readiness is
   *specified*, not yet *measurable against code*.
 - **Extraction gate:** boundary-lint green on the committed package **+** a second
-  consumer imports `recall.assemble()` without touching callback internals — cannot fire
+  consumer imports `recall.assemble()` without touching sartor internals — cannot fire
   until the package + its lint exist.
 - **Harvest moment:** post-v1.1.0 — Stage 0/1 ship inside v1.0.7; physical extraction is
   "packaging only" once boundary-clean holds across N cycles.
-- **Relationship:** **dependency** (W-4 intent: recall → product). callback. becomes a
+- **Relationship:** **dependency** (W-4 intent: recall → product). sartor. becomes a
   consumer; the seam is already a contract built for this.
 
 ### (b) governance rulebook + compliance agent
@@ -97,7 +97,7 @@ effort-language everywhere else).
 - **Coupling to host:** the wiki is committed (`docs/wiki/`, git-as-engine; the
   cite/backlink/synthesis convention genuinely practiced, F-docs-07); the loop is the
   `/wiki-*` ops + the freshness witness. W-4 places this **inside the memory product** —
-  its host is really (a), not callback. directly.
+  its host is really (a), not sartor. directly.
 - **Readiness signal:** trigger-language (F-gov-08). The sentinel honesty (F-docs-08:
   `.last_ingest_sha` left at sentinel, no false code-pass claim) is a working maturity
   *seam*, but no readiness *condition* is written.
@@ -106,7 +106,7 @@ effort-language everywhere else).
   merge `a0a1cb2`: 16 code pages cold-ingested) and rot-detection has run.
 - **Harvest moment:** folded into the memory-product harvest, post-v1.1.0.
 - **Post-extraction relationship:** **dependency on the memory product** (it travels
-  *inside* recall). callback. consumes its own wiki through the same substrate it would
+  *inside* recall). sartor. consumes its own wiki through the same substrate it would
   consume any project's.
 
 ### (d) doc-grounded assistant (operator stack)

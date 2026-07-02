@@ -1,4 +1,4 @@
-"""`recall/` — callback's reusable Memory substrate (Stage 0 skeleton, Sprint 7.4).
+"""`recall/` — sartor's reusable Memory substrate (Stage 0 skeleton, Sprint 7.4).
 
 The deterministic retrieval/assembly layer that *feeds* the doc-grounded avatar
 (7.5) and the self-documenting wiki loop: hybrid retrieval over a common `Source`

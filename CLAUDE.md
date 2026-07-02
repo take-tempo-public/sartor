@@ -1,4 +1,4 @@
-# callback. — Claude Code specifics
+# sartor. — Claude Code specifics
 
 > **Purpose:** Claude-Code-specific overrides and tool integrations.
 > The universal AI agent contract — branch conventions, security
@@ -69,16 +69,16 @@ enforces rules 2 and 4.
 
 ### Plugin commands + agents + hooks
 
-This project ships a Claude Code plugin (`callback`): the manifest +
+This project ships a Claude Code plugin (`sartor`): the manifest +
 local marketplace live in [`.claude-plugin/`](.claude-plugin/),
 commands in [`commands/`](commands/), and subagents in
 [`agents/`](agents/). Commands, subagents, and hooks are listed in
 [`README.md`](README.md#claude-code-plugin).
-**Activation:** the commands + subagents load as the `callback`
-plugin via the local `callback-tools` marketplace
+**Activation:** the commands + subagents load as the `sartor`
+plugin via the local `sartor-tools` marketplace
 (`extraKnownMarketplaces` + `enabledPlugins` committed in
 [`.claude/settings.json`](.claude/settings.json)), so they appear
-namespaced (`/callback:…`, `callback:…`). The **hooks are wired
+namespaced (`/sartor:…`, `sartor:…`). The **hooks are wired
 directly in the same `settings.json`** — deliberately not in the
 plugin manifest, pending the tool-agnostic-enforcement decision
 slated for the v1.0.7 governance pass (see README). Important
@@ -101,44 +101,44 @@ hooks for any agent writing code here:
 ### Skill catalog
 
 The plugin's slash commands load **namespaced under the plugin
-name** (`/callback:<command>`) once the `callback-tools`
+name** (`/sartor:<command>`) once the `sartor-tools`
 marketplace + `enabledPlugins` entry in
 [`.claude/settings.json`](.claude/settings.json) are active (on a
 fresh clone this is a one-time marketplace-trust + reload). Prefer
 them over reinventing the workflow inline:
 
-- `/callback:eval` — run the eval harness against synthetic or
+- `/sartor:eval` — run the eval harness against synthetic or
   real fixtures.
-- `/callback:replay` — re-run `generate()` on a saved
+- `/sartor:replay` — re-run `generate()` on a saved
   `context_*.json`.
-- `/callback:prompt-tune` — A/B test a `SYSTEM_PROMPT` edit
+- `/sartor:prompt-tune` — A/B test a `SYSTEM_PROMPT` edit
   against the eval suite.
-- `/callback:tune-from-annotations` — read an
+- `/sartor:tune-from-annotations` — read an
   `improvement_brief.md`, draft a candidate via the
-  `callback:tune-drafter` subagent, A/B it against the
+  `sartor:tune-drafter` subagent, A/B it against the
   `--suite real` fixture (+ anchor canary), promote on approval.
-- `/callback:bench` — aggregate `logs/llm_calls.jsonl` for cache
+- `/sartor:bench` — aggregate `logs/llm_calls.jsonl` for cache
   hit rate, latency, cost.
-- `/callback:inspect-context` — pretty-print + schema-validate a
+- `/sartor:inspect-context` — pretty-print + schema-validate a
   saved `context_set`.
-- `/callback:wiki-ingest` — compile changed sources into
+- `/sartor:wiki-ingest` — compile changed sources into
   `docs/wiki/` pages (diff-driven off `.last_ingest_sha`;
   sentinel or `--full` = a full cold pass); advances the
   checkpoint, appends to `log.md`.
-- `/callback:wiki-query` — answer a question from the wiki with
+- `/sartor:wiki-query` — answer a question from the wiki with
   `[[citations]]`; offer to file the answer back as a page.
-- `/callback:wiki-lint` — severity-tiered drift/coverage report
+- `/sartor:wiki-lint` — severity-tiered drift/coverage report
   on the wiki (periodic + pre-release gate).
-- `/callback:wiki-audit` — fact-check one wiki page against its
+- `/sartor:wiki-audit` — fact-check one wiki page against its
   cited sources.
-- `/callback:wiki-self-update` — the self-documenting wiki loop:
+- `/sartor:wiki-self-update` — the self-documenting wiki loop:
   a bounded, cost-aware Haiku diff-pass that delegates per-page
-  synthesis to `callback:wiki-scribe` + per-page grounding audit
-  to `callback:wiki-grounding-auditor`, runs `/callback:wiki-lint`,
+  synthesis to `sartor:wiki-scribe` + per-page grounding audit
+  to `sartor:wiki-grounding-auditor`, runs `/sartor:wiki-lint`,
   advances the checkpoint, and presents a reviewable diff (never
   commits). Bounded-checkpoint trigger (close-out / pre-tag).
-- `/callback:compliance-witness` — read-only governance drift
-  witness: delegates the read to the `callback:compliance-witness`
+- `/sartor:compliance-witness` — read-only governance drift
+  witness: delegates the read to the `sartor:compliance-witness`
   subagent (Sonnet) at a pinned sha, caps the flags (default 12,
   `--cap N`), renders a findings-register table + a gate verdict
   (clean / needs attention), appends to `docs/governance/compliance-log.md`.
@@ -149,42 +149,42 @@ each command's full definition.
 
 ### Subagent catalog
 
-The plugin's subagents load namespaced as `callback:<name>`.
+The plugin's subagents load namespaced as `sartor:<name>`.
 Delegate to them rather than doing the work inline:
 
-- `callback:eval-judge` (Haiku) — grade one (artifact × rubric)
+- `sartor:eval-judge` (Haiku) — grade one (artifact × rubric)
   → strict JSON verdict; used by the eval harness + interactive
   grading.
-- `callback:prompt-archaeologist` — trace an eval regression to
+- `sartor:prompt-archaeologist` — trace an eval regression to
   the prompt rule that caused it and propose a minimal
   unified-diff fix (does NOT apply it).
-- `callback:tune-drafter` — read-only: draft a full candidate
+- `sartor:tune-drafter` — read-only: draft a full candidate
   system-prompt constant from an `improvement_brief.md` for the
-  `/callback:tune-from-annotations` A/B.
-- `callback:headhunter` — recruiter-domain check when a clarify
+  `/sartor:tune-from-annotations` A/B.
+- `sartor:headhunter` — recruiter-domain check when a clarify
   question / suggestion / rubric outcome reads "technically
   correct but unlikely to generate a callback."
-- `callback:git-flow` — autonomous git workflow under the
+- `sartor:git-flow` — autonomous git workflow under the
   project's branch/commit conventions.
-- `callback:ux-onboarding-designer` — audit user-facing docs
+- `sartor:ux-onboarding-designer` — audit user-facing docs
   from a first-time-user lens → sequenced rewrite ladder.
-- `callback:wiki-scribe` (Haiku) — synthesize one changed source
+- `sartor:wiki-scribe` (Haiku) — synthesize one changed source
   into its affected `docs/wiki/` page(s): minimal SCHEMA-conformant
-  edit, `Read`/`Grep`/`Glob`/`Edit` only. The `/callback:wiki-self-update`
+  edit, `Read`/`Grep`/`Glob`/`Edit` only. The `/sartor:wiki-self-update`
   per-page synthesis worker (does NOT grade itself, advance the
   checkpoint, or commit).
-- `callback:wiki-grounding-auditor` (Haiku) — read-only
+- `sartor:wiki-grounding-auditor` (Haiku) — read-only
   (`Read`/`Grep`/`Glob`) adversarial grounding audit of one wiki
   page the scribe wrote: quote-match cites/`[synthesis]` claims
   against source at HEAD → SUPPORTED / DRIFTED / UNSUPPORTED.
   Author ≠ auditor; never edits.
-- `callback:compliance-witness` (Sonnet) — read-only
+- `sartor:compliance-witness` (Sonnet) — read-only
   (`Read`/`Grep`/`Glob`/`Bash` — read-only git) governance drift
   read: at a pinned sha, finds where two sources disagree (or a
   C-0 categorical lacks by-construction backing) → ranked
   FLAG / WATCH / AFFIRM flags. Cites, never asserts; the tool grant
   (no `Edit`/`Write`/`Task`) is the enforcement. The
-  `/callback:compliance-witness` reader.
+  `/sartor:compliance-witness` reader.
 
 See [`agents/`](agents/) for each
 subagent's full definition.

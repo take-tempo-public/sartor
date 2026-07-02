@@ -126,11 +126,11 @@ master prescription set; this addendum is the immediate-action copy.)
 ### PX-05 — Fix the disclosure channel pointing at the WRONG repo
 - **Finding:** F-sec-11 (CONFIRMED, P1) — `CODE_OF_CONDUCT.md:13` routes
   conduct/vulnerability reports to a stale `Cooksey/resume` channel while
-  every other doc uses `amodal1/callback`; `.github/ISSUE_TEMPLATE/
+  every other doc uses `amodal1/sartor`; `.github/ISSUE_TEMPLATE/
   config.yml` likely carries the same stale target. This is an S-1
   (PII/security) item: a real report could go to a dead or wrong inbox.
 - **Fix:** correct the repo/owner reference in CODE_OF_CONDUCT.md and the
-  issue-template config to the canonical `amodal1/callback`; confirm the
+  issue-template config to the canonical `amodal1/sartor`; confirm the
   GitHub Private Vulnerability Reporting target once the repo is public.
 - **Size:** trivial docs. **Landing:** v1.0.6 doc batch.
 

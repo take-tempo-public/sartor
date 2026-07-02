@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
 
 import docx_to_persona_html as d
@@ -106,7 +107,7 @@ def test_detect_layout_fidelity_flags_tables(tmp_path) -> None:
     """A .docx with a table is not single-column-representable → typography_only."""
     doc = Document()
     p = doc.add_paragraph()
-    p.alignment = 1  # center → name role
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER  # name role
     run = p.add_run("Casey Rivera")
     run.font.size = Pt(18)
     doc.add_table(rows=2, cols=2)

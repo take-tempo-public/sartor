@@ -7,7 +7,7 @@ graduation: none
 # Verification log — 2026-06 product-excellence review
 
 > Adversarial verification of every **P0/P1** finding in the eight-domain
-> assessment of **callback.** For each: the verifier re-derived all cited
+> assessment of **sartor.** For each: the verifier re-derived all cited
 > evidence at `c6e0437`, attempted falsification, recorded
 > counter-evidence, and (where the attempt landed) a revised claim. Honors
 > C-0 claims discipline — checks were static git/grep/AST or sandboxed
@@ -192,7 +192,7 @@ graduation: none
 - **Counter-evidence:** none — held on every axis. One texture nuance: SECURITY.md "We aim to respond" (partial softener) vs COC "will respond" (firmer), but D-4 targets the day-count SLAs regardless and names this very promise. Severity anchor solid (D-4 + P-3).
 
 ### F-sec-11 — CODE_OF_CONDUCT routes vuln/conduct reports to the WRONG repo — **CONFIRMED**
-- **Tried:** re-derived COC:13 (Cooksey/resume advisories) and all amodal1/callback refs at the pin; tested whether Cooksey/resume is canonical (pyproject name/author/urls all amodal1/callback -> stale provenance); tested redundancy (grepped the findings dir for Cooksey/wrong-repo/disclosure-channel — zero; F-sec-07 cites COC:15 not :13; F-sec-09 never flags the wrong repo -> genuinely additive); tested severity vs P-3 and the FIX security tier; checked git remotes + SECURITY.md's own channel (repo-relative/correct, unlike COC).
+- **Tried:** re-derived COC:13 (Cooksey/resume advisories) and all amodal1/sartor refs at the pin; tested whether Cooksey/resume is canonical (pyproject name/author/urls all amodal1/sartor -> stale provenance); tested redundancy (grepped the findings dir for Cooksey/wrong-repo/disclosure-channel — zero; F-sec-07 cites COC:15 not :13; F-sec-09 never flags the wrong repo -> genuinely additive); tested severity vs P-3 and the FIX security tier; checked git remotes + SECURITY.md's own channel (repo-relative/correct, unlike COC).
 - **Counter-evidence:** none weakening — found scope-broadening counter-evidence that strengthens: the same broken URL also appears at .github/ISSUE_TEMPLATE/config.yml:4 (New-Issue contact-links banner, arguably more prominent) and :7 routes Discussions to Cooksey/resume; stale Cooksey/resume provenance also persists in .claude-plugin/plugin.json:8 and evals/schemas/context_set.schema.json:3. P1/FIX consistent. Trace holds (E-2 PVR precondition, P-3, S-1). One non-load-bearing caveat: could not network-verify the 404 (sandbox), but the dispositive fact is it's not the canonical repo.
 
 ---

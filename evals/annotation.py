@@ -797,7 +797,7 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     )
 
-    ap = argparse.ArgumentParser(description="callback. eval annotation contract")
+    ap = argparse.ArgumentParser(description="sartor. eval annotation contract")
     ap.add_argument(
         "--bootstrap",
         required=True,

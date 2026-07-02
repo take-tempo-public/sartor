@@ -24,17 +24,17 @@ from ui_pages.selectors import Assistant
 def _fake_avatar(client, question, context, *, allow_dev=False, username="", run_id=""):
     # The route passes an empty username when no user is selected; the avatar is
     # anonymous by construction (username default ""), so the stub ignores it.
-    yield ("chunk", "callback tailors your resume ")
+    yield ("chunk", "sartor tailors your resume ")
     yield ("chunk", "in six guided steps [1].")
     yield (
         "done",
         {
-            "answer": "callback tailors your resume in six guided steps [1].",
+            "answer": "sartor tailors your resume in six guided steps [1].",
             "citations": [
                 {
                     "n": 1,
-                    "label": "using-callback",
-                    "href": "https://github.com/amodal1/callback/blob/main/docs/wiki/pages/using-callback.md",
+                    "label": "using-sartor",
+                    "href": "https://github.com/take-tempo-public/sartor/blob/main/docs/wiki/pages/using-sartor.md",
                 },
             ],
             "truncated": False,
@@ -61,7 +61,7 @@ def test_assistant_answers_without_user_selected(
     page.wait_for_selector(Assistant.OPEN_PILL, state="visible")
     page.click(Assistant.OPEN_PILL)  # the top-bar magnifier is always present
     page.wait_for_selector(Assistant.MODAL, state="visible")
-    page.fill(Assistant.QUESTION, "How does callback work?")
+    page.fill(Assistant.QUESTION, "How does sartor work?")
     page.click(Assistant.ASK_BUTTON)
 
     # With the gate gone, the streamed answer renders (the old gate would instead have
@@ -71,6 +71,6 @@ def test_assistant_answers_without_user_selected(
         timeout=DEFAULT_TIMEOUT_MS,
     )
     page.wait_for_function(
-        "() => document.getElementById('assistantSources').textContent.includes('using-callback')",
+        "() => document.getElementById('assistantSources').textContent.includes('using-sartor')",
         timeout=DEFAULT_TIMEOUT_MS,
     )

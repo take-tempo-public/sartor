@@ -17,7 +17,7 @@ graduation: docs/dev/RELEASE_CHECKLIST.md additions (v1.0.7)
 
 ## 1. The shape of a release pass
 
-callback. uses an **epic-per-patch-digit** model: v1.0.6 / v1.0.7 / v1.0.8
+sartor. uses an **epic-per-patch-digit** model: v1.0.6 / v1.0.7 / v1.0.8
 are internal epics; **v1.1.0 is the owner-owned public tag**. A "release
 pass" here is not a manual audit — under E-1/D-4 the standing work is done
 by gates that keep themselves honest; the human pass is **one-time, scoped
@@ -92,7 +92,7 @@ only where it enforces a stated claim.
 | **Lockfile + Dependabot** | E-2 reproducibility + supply-chain freshness | committed lockfile + `.github/dependabot.yml` (pip + actions) | small | v1.1.0 |
 | **OpenSSF Scorecard** | E-2 supply-chain posture (surfaces the least-privilege `permissions: contents: read` already in `ci.yml`) | `.github/workflows/scorecard.yml` (read-only, scheduled); README badge | small | v1.1.0 |
 | **REUSE / SPDX** | E-2 + D-5 license honesty — machine-declares vendored **axe-core MPL-2.0** + Chart.js alongside the MIT core (F-sec-08; axe today prose-only) | `REUSE.toml` + `LICENSES/` + SPDX headers; `reuse lint` in `quality` | small-med | v1.1.0 |
-| **PVR** | E-2 one-time disclosure channel; pairs with the F-sec-11 wrong-repo fix so reports reach `amodal1/callback` | GitHub repo setting + SECURITY.md pointer; **one-time, no SLA** (D-4) | trivial | v1.1.0 |
+| **PVR** | E-2 one-time disclosure channel; pairs with the F-sec-11 wrong-repo fix so reports reach `amodal1/sartor` | GitHub repo setting + SECURITY.md pointer; **one-time, no SLA** (D-4) | trivial | v1.1.0 |
 
 Sequencing note: REUSE should land in the **same pass that vendors Chart.js
 (PX-01, v1.0.6)** so both vendored assets' licenses are declared together

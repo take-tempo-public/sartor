@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "callback"
+name = "sartor"
 version = "1.0.7"
 description = "Local-first résumé + cover-letter tailor for one specific job at a time. Powered by the Claude API; your data stays on your machine."
 readme = "README.md"
@@ -91,16 +91,16 @@ eval-grounding = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/amodal1/callback"
-Repository = "https://github.com/amodal1/callback"
-Issues = "https://github.com/amodal1/callback/issues"
-Changelog = "https://github.com/amodal1/callback/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/take-tempo-public/sartor"
+Repository = "https://github.com/take-tempo-public/sartor"
+Issues = "https://github.com/take-tempo-public/sartor/issues"
+Changelog = "https://github.com/take-tempo-public/sartor/blob/main/CHANGELOG.md"
 
 [project.scripts]
-# `callback` launches the Flask app on http://localhost:5000 (same as
+# `sartor` launches the Flask app on http://localhost:5000 (same as
 # `python app.py`). The shim lets `pip install -e .` users run the
 # tool without a clone-relative invocation.
-callback = "app:main"
+sartor = "app:main"
 
 [tool.setuptools]
 py-modules = ["app", "analyzer", "config", "hardening", "generator", "parser", "scraper"]

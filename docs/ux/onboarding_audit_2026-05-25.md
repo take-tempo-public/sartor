@@ -1,10 +1,10 @@
 ---
 type: ux-audit
 audited_docs:
-  - c:/Dev/callback/README.md
-  - c:/Dev/callback/docs/install.md
-  - c:/Dev/callback/docs/walkthrough.md
-  - c:/Dev/callback/vision.md
+  - c:/Dev/sartor/README.md
+  - c:/Dev/sartor/docs/install.md
+  - c:/Dev/sartor/docs/walkthrough.md
+  - c:/Dev/sartor/vision.md
 commit_sha: b593bbb51590e3681ed8341c8c2a348bf81c3b13
 date: 2026-05-25
 auditor: ux-onboarding-designer
@@ -12,7 +12,7 @@ auditor: ux-onboarding-designer
 
 # UX onboarding audit — 2026-05-25
 
-A first-time user can install callback. and complete a generation, but the path between "app is running" and "first useful résumé" is overloaded with jargon (corpus, context_set, grounding, ATS, Sonnet/Haiku, paged.js) introduced before it's earned, and the cost framing flips between "$0.05–$0.10" (README short band), "$0.05–$0.30" (install), and "$0.30–$0.50" (README long band) without a single canonical anchor. **The single highest-leverage improvement is to write one canonical "what one application costs and why" paragraph in README.md and link to it from install.md and walkthrough.md** — that single anchor resolves three downstream readability issues, sets honest expectations before the user even opens the wizard, and aligns the cost-conscious mental model the rest of the doc set already assumes.
+A first-time user can install sartor. and complete a generation, but the path between "app is running" and "first useful résumé" is overloaded with jargon (corpus, context_set, grounding, ATS, Sonnet/Haiku, paged.js) introduced before it's earned, and the cost framing flips between "$0.05–$0.10" (README short band), "$0.05–$0.30" (install), and "$0.30–$0.50" (README long band) without a single canonical anchor. **The single highest-leverage improvement is to write one canonical "what one application costs and why" paragraph in README.md and link to it from install.md and walkthrough.md** — that single anchor resolves three downstream readability issues, sets honest expectations before the user even opens the wizard, and aligns the cost-conscious mental model the rest of the doc set already assumes.
 
 Adjacent to that, the doc set has no synthetic worked example. A new user has to imagine what a JD-plus-corpus run actually feels like from prose alone. The Rewrite Ladder treats both as B1.
 
@@ -65,11 +65,11 @@ Target: 10 screenshots. The five P0 captures (hero + Corpus import + Step 1 pre-
 
 **README.md:3** — jargon-first-use
 > "... deterministic Python tools handle all mechanical work; the LLM handles analysis and writing."
-Fix: "LLM" appears here for the first time in the whole doc set's entry-point doc, and README never defines it (the term is used five times). Spell it out on first use: "... the LLM (large language model — Anthropic's Claude, in callback.'s case) handles analysis and writing." BECAUSE the README is the first doc a candidate reads, and LLM is exactly the kind of "every technologist knows it" abbreviation that excludes the career-changer / junior-candidate audience callback. is trying to serve.
+Fix: "LLM" appears here for the first time in the whole doc set's entry-point doc, and README never defines it (the term is used five times). Spell it out on first use: "... the LLM (large language model — Anthropic's Claude, in sartor.'s case) handles analysis and writing." BECAUSE the README is the first doc a candidate reads, and LLM is exactly the kind of "every technologist knows it" abbreviation that excludes the career-changer / junior-candidate audience sartor. is trying to serve.
 
 **README.md:5** — passive-voice-in-teaching-moment
 > "Runs locally. LLM calls to Anthropic (without a proxy that would force API billing without monthly credits)"
-Fix: rewrite as direct second-person: "callback. runs on your machine. Every LLM call hits Anthropic's API directly — there's no callback.-operated proxy, so your Anthropic billing reflects your real usage, not a markup." BECAUSE the parenthetical's double-negative ("without a proxy that would force ... without monthly credits") forces the reader to unpack two negations before they land on the actual benefit.
+Fix: rewrite as direct second-person: "sartor. runs on your machine. Every LLM call hits Anthropic's API directly — there's no sartor.-operated proxy, so your Anthropic billing reflects your real usage, not a markup." BECAUSE the parenthetical's double-negative ("without a proxy that would force ... without monthly credits") forces the reader to unpack two negations before they land on the actual benefit.
 
 **README.md:75–77** — cost-not-set
 > "Résumé only, no iteration, no clarify — ~$0.05 – $0.10 / Résumé + clarify + 1-2 refine iterations — ~$0.15 – $0.25 / Full loop with iterate-clarify + multiple refines + cover letter — ~$0.30 – $0.50"
@@ -77,15 +77,15 @@ Fix: this is the canonical cost paragraph and it needs to be the canonical cost 
 
 **README.md:99** — jargon-first-use
 > "A single application moves through six steps. The first three are corpus + analysis (cheap or free)."
-Fix: "corpus" appears here for the first time without a definition. Before this sentence, insert: "Your **corpus** is the pool of every bullet, summary, and experience you've ever written — callback. mines it for what fits this specific JD. (Imported once, reused across every application.)" BECAUSE "corpus" is core vocabulary the reader will encounter eight more times before reaching the walkthrough's definition site.
+Fix: "corpus" appears here for the first time without a definition. Before this sentence, insert: "Your **corpus** is the pool of every bullet, summary, and experience you've ever written — sartor. mines it for what fits this specific JD. (Imported once, reused across every application.)" BECAUSE "corpus" is core vocabulary the reader will encounter eight more times before reaching the walkthrough's definition site.
 
 **README.md:102** — jargon-first-use
 > "1. Job + Analyze    — paste JD, run analyze; LLM reports skill match + ATS warnings"
-Fix: "JD" and "ATS" both first appear here, both undefined in README. Spell them out on first use: "paste the job description (JD), run analyze; the LLM reports skill match + ATS (applicant tracking system — résumé-parsing software employers run on incoming files) warnings." BECAUSE these are job-search abbreviations that feel universal to professional users but are invisible to the early-career and career-changer candidates callback. wants to help; the walkthrough defines them at line 28, but the README is read first and stands alone.
+Fix: "JD" and "ATS" both first appear here, both undefined in README. Spell them out on first use: "paste the job description (JD), run analyze; the LLM reports skill match + ATS (applicant tracking system — résumé-parsing software employers run on incoming files) warnings." BECAUSE these are job-search abbreviations that feel universal to professional users but are invisible to the early-career and career-changer candidates sartor. wants to help; the walkthrough defines them at line 28, but the README is read first and stands alone.
 
 **README.md:111** — buried-decision
 > "Two human review gates are required: the post-analyze review (step 1→2) and the post-generation refinement (step 6)."
-Fix: pull this up as its own subsection heading ("### The two human review gates") above the ASCII wizard block. BECAUSE the gates are the most load-bearing UX claim in the whole product (callback. is the kind of tool that pauses for you to think) and burying them in a paragraph after the step diagram inverts the priority.
+Fix: pull this up as its own subsection heading ("### The two human review gates") above the ASCII wizard block. BECAUSE the gates are the most load-bearing UX claim in the whole product (sartor. is the kind of tool that pauses for you to think) and burying them in a paragraph after the step diagram inverts the priority.
 
 **docs/install.md:23–24** — cost-not-set
 > "The first generation is ~$0.05–$0.30 in API spend; budget guards documented in [`SECURITY.md`](../../SECURITY.md)."
@@ -100,16 +100,16 @@ Fix: the install doc's "First-run walkthrough" subsection should be teaching-voi
 Fix: drop the commit SHA — a first-time user has no use for it. Rewrite as: "Rare. If you hit this on current `main`, file an issue with the `detail:` field attached. We added tolerance for the common case (`strict=False` JSON parsing) but new failure modes occasionally surface." BECAUSE referencing a commit hash in a user-facing troubleshooting entry signals "this doc was written for developers" and is exactly the kind of thing that erodes trust in the user-facing docs.
 
 **docs/walkthrough.md:1** — missing-rationale
-> "# Using callback. — screen-by-screen walkthrough"
+> "# Using sartor. — screen-by-screen walkthrough"
 Fix: under the H1, before the Purpose/Audience block, add a one-sentence orienting line: "By the end of this doc you'll know what each of the six wizard steps does, what it costs, and what to look for before you click forward." BECAUSE the existing Purpose block is reference-voiced ("Authoritative for: the canonical step-by-step user flow ...") and doesn't tell a first-time reader what they'll get from reading it.
 
 **docs/walkthrough.md:62–63** — jargon-first-use
 > "**Legend:** blue = LLM call fires here · green = deterministic (no LLM) · amber = human review gate · purple-dashed = optional path."
-Fix: "deterministic (no LLM)" is the first place the reader is asked to internalize this distinction without any pre-context for why it matters. Add a sentence: "callback.'s design rule is *LLM only for fuzzy work*; everything else (parsing, rendering, file I/O) is plain Python you can trace line-by-line." BECAUSE deterministic-vs-fuzzy is the single most important conceptual frame in the whole product, and it deserves more than a legend gloss on first introduction.
+Fix: "deterministic (no LLM)" is the first place the reader is asked to internalize this distinction without any pre-context for why it matters. Add a sentence: "sartor.'s design rule is *LLM only for fuzzy work*; everything else (parsing, rendering, file I/O) is plain Python you can trace line-by-line." BECAUSE deterministic-vs-fuzzy is the single most important conceptual frame in the whole product, and it deserves more than a legend gloss on first introduction.
 
 **docs/walkthrough.md:151** — jargon-first-use
 > "**Under the hood:** [`/api/upload`](../../app.py) runs `parser.py` deterministically (no LLM) to extract text, then one Haiku 4.5 call to `extract_experiences()` parses the text into structured experiences ..."
-Fix: "Haiku 4.5" first-use needs a parenthetical: "Haiku 4.5 (Anthropic's small + fast model — callback. uses it for selection and parsing; the larger Sonnet model handles writing)". Same for "Sonnet 4.6" at line 178. BECAUSE the model names are mentioned eight times across the walkthrough but the cost / latency / role distinction is never explicitly drawn until the reader has already seen both names multiple times.
+Fix: "Haiku 4.5" first-use needs a parenthetical: "Haiku 4.5 (Anthropic's small + fast model — sartor. uses it for selection and parsing; the larger Sonnet model handles writing)". Same for "Sonnet 4.6" at line 178. BECAUSE the model names are mentioned eight times across the walkthrough but the cost / latency / role distinction is never explicitly drawn until the reader has already seen both names multiple times.
 
 **docs/walkthrough.md:170** — paragraph-bloat
 > "**Latency:** ~30–60s. This is the slowest call in the pipeline; it reads the JD plus your full master résumé plus any supplemental documents (LinkedIn scrape, portfolio URLs if you opted in)."
@@ -124,7 +124,7 @@ Fix: this is good — keep it. But add a one-line consequence: "If a question fe
 Fix: vision.md is the highest-priority doc for "should I use this" decisions and currently has zero acronym definitions. On each first-use site, add a parenthetical: "LLM (large language model)" at :31; "ATS (applicant tracking system — résumé-parsing software employers run on incoming files)" at :52; "JD (job description)" at :262. Alternative pattern: add a one-line acronym block under the H1 before the body, the way `docs/walkthrough.md:28` already does. BECAUSE vision.md is where a career-changer evaluator decides whether the project is for them; tripping over three undefined abbreviations in the first half-screen of reading is a high-cost trust hit on exactly the wrong audience.
 
 **vision.md:23–25** — reference-voice-where-teaching-voice-belongs
-> "callback. answers one question, honestly: 'What résumé and (optional) cover letter should I send for this specific job?'"
+> "sartor. answers one question, honestly: 'What résumé and (optional) cover letter should I send for this specific job?'"
 Fix: this is the strongest opening sentence in the whole doc set — keep it verbatim. But the surrounding "Audience: humans evaluating whether to use or contribute" Purpose block is reference-voiced and reads cold before the punch. Move the one-question quote above the Purpose block as the literal first content after the H1. BECAUSE the punch belongs on the first screen the reader sees, not after they've scrolled past a Purpose/Audience metadata block.
 
 **vision.md:256–264** — step-skipped
@@ -156,7 +156,7 @@ Decision points a first-time user must navigate, in chronological wizard order.
 
 ## Worked Example Specification
 
-callback. would benefit from one synthetic worked example threaded through the walkthrough — a single fictional candidate and JD that anchor every step's prose with a concrete instance. Specs only below; the prose is out of scope for this audit.
+sartor. would benefit from one synthetic worked example threaded through the walkthrough — a single fictional candidate and JD that anchor every step's prose with a concrete instance. Specs only below; the prose is out of scope for this audit.
 
 ### Synthetic JD shape
 
@@ -219,7 +219,7 @@ Reasons for a separate file over inline interleaving: keeps the canonical walkth
 | Anthropic API returns 4xx/5xx mid-call | no |
 | Network drop during the 30–60s analyze or generate call | no |
 | Anthropic rate-limit hit (429) | no |
-| Anthropic monthly budget cap hit | no — budget guidance points to console.anthropic.com but the *symptom* in callback. is undocumented |
+| Anthropic monthly budget cap hit | no — budget guidance points to console.anthropic.com but the *symptom* in sartor. is undocumented |
 | Mid-wizard tab close (does state persist?) | no — implicit in `context_set` files but never said |
 | Re-opening the app and continuing yesterday's wizard | no — never explained |
 | Parser fails on imported résumé (bad PDF, scanned PDF, complex .docx) | no |
@@ -230,7 +230,7 @@ Reasons for a separate file over inline interleaving: keeps the canonical walkth
 
 ### Priority order
 
-1. **Anthropic API errors (rate-limit, 4xx/5xx, network drop):** the most likely failure for an active user. callback. needs at least one paragraph in `install.md#troubleshooting` covering *what the user sees* in the UI when an API call fails partway through (current behavior: opaque error toast or no feedback). Tier 1.
+1. **Anthropic API errors (rate-limit, 4xx/5xx, network drop):** the most likely failure for an active user. sartor. needs at least one paragraph in `install.md#troubleshooting` covering *what the user sees* in the UI when an API call fails partway through (current behavior: opaque error toast or no feedback). Tier 1.
 2. **Mid-wizard state recovery (tab close, re-open tomorrow):** the most likely surprise for a returning user. The `context_set` audit trail makes recovery genuinely robust, but the doc never says so. One paragraph in `walkthrough.md`. Tier 1.
 3. **Parser failure on imported résumé:** the most likely first-impression failure (Setup step). At least a sentence in `walkthrough.md#setup` saying "if extraction looks wrong, edit experiences/bullets manually in the Corpus tab." Tier 2.
 4. **Linux Playwright system-deps fallback:** a known sharp edge on Ubuntu LTS. A concrete `apt install` line (or pointer to Playwright's own fallback CLI) in `install.md#linux`. Tier 2.

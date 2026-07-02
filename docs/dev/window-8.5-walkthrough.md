@@ -15,8 +15,8 @@
 
 ## Where this runs + where evidence lives
 
-- **Run it in the separate clone `C:\Dev\callback-e2e`** (user `cooksey`), against a
-  real corpus — NOT the main `C:\Dev\callback` repo. Run evidence (screenshots,
+- **Run it in the separate clone `C:\Dev\sartor-e2e`** (user `cooksey`), against a
+  real corpus — NOT the main `C:\Dev\sartor` repo. Run evidence (screenshots,
   notes, `output/`) **stays in that clone**; it is **never** committed to the main
   repo (memory `project-e2e-instance-location`). Only the *triaged, PII-free* finding
   text is carried back into `window-8.5-findings.md`.
@@ -36,7 +36,7 @@ on this walk (fixes are 8.6).
 
 ## Pre-flight
 
-- [ ] `git -C C:\Dev\callback-e2e log --oneline -1` is at (or rebased onto) the 8.4 merge
+- [ ] `git -C C:\Dev\sartor-e2e log --oneline -1` is at (or rebased onto) the 8.4 merge
       `1f69f9c` or this 8.5 branch.
 - [ ] `python app.py` starts clean; browser opens **once** (the 7.8b reloader fix); no
       stray windows on reload.
@@ -71,7 +71,7 @@ anything that regressed vs v1.0.7. Specifics to verify on the split:
 - [ ] Open via the **top-bar magnifier** (`#assistantPill` → `#assistantModal`); answers
       stream with **numbered footnote citations** that resolve to a "Sources" key and link
       to GitHub (scheme B, 7.8d).
-- [ ] Works **with no user selected** (7.8c) — ask "how does callback. work?" first-run.
+- [ ] Works **with no user selected** (7.8c) — ask "how does sartor. work?" first-run.
 - [ ] Ask several "how do I…" questions (downloads, editing, cover letters, multi-user,
       import, troubleshooting). **Expect refusals / thin answers** — the wiki only has ~6
       `audience: user` pages today; every such gap is a finding for **8.6a**

@@ -1,10 +1,10 @@
 {
-  "name": "callback",
-  "description": "Workflow plugin for the callback. resume-optimizer Flask app: eval-harness + observability slash commands and grading/tuning subagents. Deterministic security/quality hooks ship in this directory but are wired via .claude/settings.json (see README).",
+  "name": "sartor",
+  "description": "Workflow plugin for the sartor. resume-optimizer Flask app: eval-harness + observability slash commands and grading/tuning subagents. Deterministic security/quality hooks ship in this directory but are wired via .claude/settings.json (see README).",
   "version": "1.0.6",
   "author": {
     "name": "Cooksey"
   },
-  "homepage": "https://github.com/amodal1/callback",
+  "homepage": "https://github.com/take-tempo-public/sartor",
   "license": "MIT"
 }

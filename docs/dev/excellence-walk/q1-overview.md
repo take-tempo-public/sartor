@@ -13,13 +13,13 @@
      import ecological vocabulary (no soil / metabolism / fauna). Plain, literal.
 -->
 
-# callback. — what it is, and how it's built
+# sartor. — what it is, and how it's built
 
 *An overview for someone meeting the project for the first time.*
 
 ## What it is
 
-callback. is a local-first app that tailors your résumé — and, if you want, a
+sartor. is a local-first app that tailors your résumé — and, if you want, a
 cover letter — to a specific job, **without inventing anything about you**. You
 paste in a job description; it reads the posting, asks you a few sharp questions,
 helps you choose which of your real accomplishments fit, then writes a tailored
@@ -68,7 +68,7 @@ stands on its own.
   automated checks that block unsafe changes (leaked secrets, missing security
   guards, edits on the wrong branch) and a release discipline that gates what ships.
 - **Governance** — the north-star the whole thing answers to: a written vision and
-  a set of principles stating what callback. is *for* and what it must never do.
+  a set of principles stating what sartor. is *for* and what it must never do.
   Everything else is measured against this. *(Honestly: this is the one layer that
   is deliberately **prescribed** rather than emergent — it's the human intent the
   rest is held to.)*

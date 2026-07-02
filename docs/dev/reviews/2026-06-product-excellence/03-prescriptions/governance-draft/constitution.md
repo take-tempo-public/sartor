@@ -4,9 +4,9 @@ evidence_sha: c6e0437
 graduation: docs/governance/charter.md (v1.0.7)
 ---
 
-# Constitution — callback. (draft for `docs/governance/charter.md`)
+# Constitution — sartor. (draft for `docs/governance/charter.md`)
 
-> **What this is.** The constitutional draft for callback., written *as*
+> **What this is.** The constitutional draft for sartor., written *as*
 > the v1.0.7 input to `docs/governance/charter.md` — the single canonical
 > Governance home into which the rule-bearing clauses now scattered across
 > six docs consolidate. This is a **citation map, not a rewrite**: each
@@ -68,7 +68,7 @@ C-0 (signed); enforced against existing docs by **F-vision-02**, **F-docs-03**
 — "the LLM cannot invent facts" is a barred absolute at `vision.md:50`,
 `overview.md:26`, `llms.txt:4`, to be reworded to mechanism-and-effort.]*
 
-**C-1 — Local and yours.** callback. is a local tool under the control of a
+**C-1 — Local and yours.** sartor. is a local tool under the control of a
 single unauthenticated user; all user artifacts stay on the user's disk,
 never uploaded; there is no hosted service. The loopback bind is the
 construction that makes this categorical true. *[src: charter C-1; `vision.md`
@@ -100,7 +100,7 @@ huggingface.co) is a sanctioned power-user opt-in under D-6, not a third
 egress class — **F-sec-10**.]*
 
 **C-3 — Grounding mechanisms; grounded synthesis is the feature.**
-callback. works to keep the LLM grounded in real experience through stated
+sartor. works to keep the LLM grounded in real experience through stated
 mechanisms — grounding rules in the prompts (with worked OK/NOT-OK
 examples), clarifying questions that extend ground truth, human review at
 each step, corpus approval of LLM-generated bullets, and a candidate memory.
@@ -123,7 +123,7 @@ protect: keyboard bullet-reorder alternative (**F-expa11y-07**), live-region
 announcements (**F-expa11y-08**), manual-promote annotation contract
 (**F-eval-06**).]*
 
-**C-5 — Everything callback. ships is ATS-safe.** All bundled templates are
+**C-5 — Everything sartor. ships is ATS-safe.** All bundled templates are
 single-column, plain-bullet, standard-font; non-ATS templates are retired.
 Users who want non-ATS output edit the document they produced. This
 categorical is enforceable on shipped-template properties (a deterministic

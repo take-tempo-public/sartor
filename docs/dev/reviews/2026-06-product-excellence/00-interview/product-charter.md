@@ -4,7 +4,7 @@ evidence_sha: c6e0437
 graduation: docs/governance/charter.md (v1.0.7, on owner approval)
 ---
 
-# Product Charter — callback.
+# Product Charter — sartor.
 
 > Distilled from the discovery interview
 > ([interview-record.md](interview-record.md)). v0.2 incorporates an
@@ -20,9 +20,9 @@ graduation: docs/governance/charter.md (v1.0.7, on owner approval)
 > This document is the severity rubric for the entire review: a gap is a
 > gap only if it blocks something stated here.
 
-## Preamble — what callback. is
+## Preamble — what sartor. is
 
-**P-1.** callback. replaces the copy-paste-and-edit lifecycle of Word-doc
+**P-1.** sartor. replaces the copy-paste-and-edit lifecycle of Word-doc
 resumes. It harvests career history, experience, skills, and summaries
 from the unstructured documents a user already has, builds a grounded
 corpus of their professional experience, and generates job-specific
@@ -49,14 +49,14 @@ obligation that consumes its owner. *(posture directive; charter-review
 notes 2026-06-12)*
 
 **P-4.** It earns its keep **when a user gets an interview for a job
-where callback. wrote the resume.** Interviews are the reward and the
+where sartor. wrote the resume.** Interviews are the reward and the
 measure. *(Q1, Q8)*
 
 **P-5.** Kill conditions the owner respects: the LLMs cannot be grounded
 well enough to do the job effectively; or the project is superseded by
 open projects that do this better. *(Q2)*
 
-**P-6.** Horizon: five years out, callback. is a maintained tool real
+**P-6.** Horizon: five years out, sartor. is a maintained tool real
 people use, a portfolio exhibit, and — at first — a seedbed whose
 incubated systems graduate outward, after which it becomes a digest and
 test bed for them. Post-v2.x.x the codebase is intended to be fairly
@@ -78,7 +78,7 @@ guarantee."
 *Each is owner-voiced or machine-enforceable. Amendment mechanics are
 proposed at the end (⚠).*
 
-**C-1. Local and yours.** callback. is a tool that is **local and under
+**C-1. Local and yours.** sartor. is a tool that is **local and under
 the control of a single unauthenticated user.** All user artifacts stay
 on the user's disk, under the user's control, never uploaded; there is no
 hosted service. The program leaks nothing outside itself; the machine and
@@ -98,7 +98,7 @@ Because the destination set is enumerable, this clause is
 machine-verifiable — and **was verified at `c6e0437`**: every LLM call
 routes to the configured provider; no analytics, error reporting, or
 phone-home exists; fonts and paged.js are vendored. By the same
-enumeration, callback. cannot submit applications or send anything on the
+enumeration, sartor. cannot submit applications or send anything on the
 user's behalf — no such destination exists. Four code/doc realities,
 **all ruled 2026-06-12**:
 - **(i) RULED — fix, v1.0.6.** The diagnostics dashboard loads Chart.js
@@ -117,7 +117,7 @@ user's behalf — no such destination exists. Four code/doc realities,
   SECURITY.md/vision/README to the two-class enumeration.
 
 **C-3. Grounding mechanisms; grounded synthesis is the feature.**
-callback. does its best to keep the LLM grounded in real experience:
+sartor. does its best to keep the LLM grounded in real experience:
 grounding rules in the prompts 📄 *(with worked OK/NOT-OK examples — repo
 detail)*; clarifying questions that extend ground truth into undocumented
 areas; human review at each step; corpus approvals for LLM-generated
@@ -134,8 +134,8 @@ Q1)*
 every step — because it's the user's information; the user can edit
 anything before using it. *(Q1, R2-3)*
 
-**C-5. Everything callback. ships is ATS-safe.** All the time. Users who
-want non-ATS output edit the document they produced — callback. doesn't
+**C-5. Everything sartor. ships is ATS-safe.** All the time. Users who
+want non-ATS output edit the document they produced — sartor. doesn't
 need to solve every problem. 📄 *Mechanics: single-column, plain-bullet,
 standard-font bundled templates; non-ATS templates retired.* *(R2-3)*
 
@@ -234,7 +234,7 @@ Q14)*
 submission into application systems. User-facing application systems do
 not accept structured formats even though their back-ends digest into
 them — an industry breakage confirmed by prior research. That is why
-callback. standardizes on JSON Resume internally and plans to integrate
+sartor. standardizes on JSON Resume internally and plans to integrate
 industry-standard descriptors for resume data into that format: clean
 implied structure today, ready if a direct path ever opens. *(Q6;
 charter-review notes)*
@@ -262,20 +262,20 @@ observe its own aggregate success. *(Q8, R2-1; charter-review notes)*
 
 **M-2.** v1.1.0 tag evidence (written, self-imposed criteria): *(Q17,
 R2-5 "perfect"/"yes", R2-6)*
-- ≥10 real applications submitted via callback. with zero
+- ≥10 real applications submitted via sartor. with zero
   release-blocking bugs, spanning: ≥3 with a clarify round, ≥2 with
   iteration after first generate, ≥2 with cover letters, ≥2 distinct
   templates, both output formats, ≥1 prior-app resume reuse.
 - The tuning/annotation loop exercised end-to-end by the owner with
   metrics readable at a glance.
-- ≥1 interview from a callback-written resume — written criterion,
+- ≥1 interview from a sartor-written resume — written criterion,
   ⚠ weighed as evidence rather than a hard gate (market-dependent; this
   split was the reviewer's framing, accepted in your "perfect" — confirm).
 - Two first-run bars: fresh-clone skip-clarify smoke < 5 min; full
   clarify-inclusive first run ~15 min, quality evidenced by an
   owner-blind comparison against a hand-tailored resume.
 - Explainability artifacts shipped (v1.0.7 criterion): the user-facing
-  "how callback. grounds, clarifies, and tunes" wiki page; a lay metrics
+  "how sartor. grounds, clarifies, and tunes" wiki page; a lay metrics
   legend in diagnostics; the planned diagnostics improvements. *(R2-9)*
 
 **M-3.** 90-day post-public hopes (not gates; largely unobservable by
@@ -299,7 +299,7 @@ build time: it is how the assistant is tuned, managed, and bounded.
 *(Q19, Q21, Q22e, R2-10)*
 
 **W-3.** Maintenance: agent-station (build starting the week after
-2026-06-12) runs post-public operations; callback.'s v1.1.0 GitHub
+2026-06-12) runs post-public operations; sartor.'s v1.1.0 GitHub
 integration is its canary project — set-up flow, template containers,
 GitHub CI build-out. Owner budget: a couple hours/week of planning and
 agent management. *(Q18, R2-8)*

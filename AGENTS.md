@@ -1,4 +1,4 @@
-# callback. — AI agent contract
+# sartor. — AI agent contract
 
 > **Purpose:** the universal contract that any AI coding agent (Claude
 > Code, Cursor, Codex, Continue, Aider, etc.) reads before making

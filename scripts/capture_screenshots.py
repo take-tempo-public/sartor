@@ -425,7 +425,7 @@ def main() -> int:
     docx_path = TMP / "priya_master.docx"
 
     print("=" * 70)
-    print("callback. screenshot capture")
+    print("sartor. screenshot capture")
     print("=" * 70)
     print(f"App URL:     {APP_URL}")
     print(f"Demo user:   {DEMO_USER}")

@@ -15,7 +15,7 @@ graduation: none (rubric portions are v1.0.7 governance candidates)
 This domain is the charter's **Working model** (W-1..W-4) plus **E-1** and
 the **amendment ceremony**. Mastery is not "more process" — the owner's own
 verdict is that ceremony has *net-accelerated* the work by removing thrash
-(interview Q19/S15). Mastery here means three things specific to callback.:
+(interview Q19/S15). Mastery here means three things specific to sartor.:
 
 - **The written governance matches the practiced one.** W-1/R2-11 is explicit:
   multi-altitude parallelism is the real model and the serial-session framing
