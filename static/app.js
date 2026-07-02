@@ -3663,6 +3663,7 @@ function _renderTitleRow(expId, title) {
     try {
       await _deleteJson(`/api/experience-titles/${title.id}`);
       await _reloadCorpusCard(expId);
+      await _refreshOnboardingBanner();  // I2: fade the pending banner at 0 pending
       _toast('Title retired');
     } catch (e) { _toast('Failed: ' + e.message, true); }
   };
@@ -3756,6 +3757,9 @@ function _renderBulletRow(expId, bullet) {
     try {
       await _deleteJson(`/api/bullets/${bullet.id}`);
       await _reloadCorpusCard(expId);
+      // Walkthrough I2: retiring the last pending bullet must fade the pending
+      // banner — accept already refreshed it, retire didn't.
+      await _refreshOnboardingBanner();
       _toast('Bullet retired');
     } catch (e) { _toast('Failed: ' + e.message, true); }
   };
@@ -6440,12 +6444,58 @@ function _renderBulletRow_compose(b, opts = {}) {
     meta.appendChild(_el('span', {
       className: 'corpus-row-flag pending', textContent: 'PENDING',
     }));
+    // Walkthrough D3: edit + approve a proposed bullet INLINE in the tailor flow
+    // (both persist straight to the corpus via the same routes the Corpus tab
+    // uses), so the user never has to leave Compose to keep a proposed change.
+    const editBtn = _el('button', {
+      className: 'corpus-action-btn', textContent: 'EDIT',
+    });
+    editBtn.onclick = () => _editComposeBullet(b, row);
+    const approveBtn = _el('button', {
+      className: 'corpus-action-btn', textContent: 'APPROVE',
+    });
+    approveBtn.onclick = async () => {
+      try {
+        await _postJson(`/api/bullets/${b.id}/accept`, {});
+        b.is_pending_review = false;
+        meta.querySelector('.corpus-row-flag.pending')?.remove();
+        editBtn.remove();
+        approveBtn.remove();
+        await _refreshOnboardingBanner();
+        _toast('Bullet approved — saved to your corpus');
+      } catch (e) { _toast('Approve failed: ' + e.message, true); }
+    };
+    meta.appendChild(editBtn);
+    meta.appendChild(approveBtn);
   }
   const tagWrap = _el('span', { className: 'tag-chip-wrap' });
   _renderTagChips(tagWrap, 'bullet', b.id, b.tags || []);
   meta.appendChild(tagWrap);
   row.appendChild(meta);
   return row;
+}
+
+// Walkthrough D3 — edit a proposed (pending-review) bullet from the Compose step.
+// PUT /api/bullets/<id> persists the new text to the corpus (same route the
+// Career Corpus tab uses); the row updates in place. Approval is a separate click.
+async function _editComposeBullet(b, row) {
+  const result = await openFormModal({
+    title: 'EDIT BULLET',
+    subtitle: 'Edit this proposed bullet. Your change saves to your career corpus.',
+    submitLabel: 'SAVE',
+    fields: [
+      { name: 'text', label: 'Bullet', type: 'textarea', required: true,
+        defaultValue: b.text },
+    ],
+    onSubmit: async (v) => {
+      await _putJson(`/api/bullets/${b.id}`, { text: v.text.trim() });
+    },
+  });
+  if (!result) return;
+  b.text = result.text.trim();
+  const txt = row.querySelector('.row-text');
+  if (txt) txt.textContent = b.text;
+  _toast('Bullet saved to corpus');
 }
 
 function _refreshComposeRow(row) {

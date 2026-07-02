@@ -13,6 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.8 walkthrough remediation — Branch 4: inline bullet edit/approve + Compose UX (`feat/compose-inline-approve`, 2026-07-01)
+
+Frontend-only (CSS/JS); no `PROMPT_VERSION` change, no new dependency:
+
+- **Edit + approve a proposed bullet inline (D3).** A pending-review bullet in the
+  Compose step now carries **EDIT** and **APPROVE** actions next to its `PENDING`
+  flag. EDIT opens the bullet for editing and `PUT`s the new text to the corpus;
+  APPROVE clears the pending flag via `POST /api/bullets/<id>/accept` — both the
+  same routes the Career Corpus tab uses. The user no longer has to leave the
+  tailor flow, edit in the Corpus tab, and come back for a proposed change to stick.
+- **Role-intros checkbox alignment (I1).** The "Add role intros" native checkbox
+  was hit by the global `input { flex:1; padding }` rule and stretched across the
+  row (label wrapping asymmetrically). Added the `appearance:auto; flex:0 0 auto`
+  override (mirrors `.corpus-show-retired input`).
+- **Pending banner fades at zero (I2).** Retiring the last pending bullet/title
+  now refreshes the corpus pending-review banner (accept already did; retire
+  didn't), so it correctly transitions to the "ready" state instead of lingering
+  on stale "Accept all pending" copy.
+
 ### v1.0.8 walkthrough remediation — Branch 3: edits reach the preview + refine overlay + back-nav (`fix/edit-backprop`, 2026-07-01)
 
 Deterministic (no LLM, no `PROMPT_VERSION` change, no eval):

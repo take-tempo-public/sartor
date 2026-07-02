@@ -3313,7 +3313,20 @@ input:focus, select:focus, textarea:focus {
   font-weight: 500;
   color: var(--fg-0);
 }
-.compose-role-intros-label input { cursor: pointer; }
+/* Override the global `input { flex:1; padding:8px 14px; border }` rule so the
+   native checkbox renders at its normal size instead of stretching across the
+   row / wrapping the label asymmetrically (walkthrough I1). Mirrors
+   .corpus-show-retired input. */
+.compose-role-intros-label input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  min-width: 0;
+  padding: 0;
+  cursor: pointer;
+}
 .compose-role-intro {
   margin-top: 10px;
 }
