@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.8 walkthrough remediation — Branch 6: no legacy ATS advice in corpus mode (`fix/analyze-corpus-advice`, 2026-07-01)
+
+Analyze (Step 1) showed "No standard ATS section headings detected…" and "Resume is
+quite long (N words). Consider trimming to 1-2 pages…" even though there is no
+uploaded résumé — the content is synthesized from the corpus (walkthrough G1).
+`db.build_context` ran `check_ats_format` on the corpus synthesis with an always-empty
+`sections` list (so the heading warning always fired) against the *whole* corpus (so
+the length warning always fired) — both legacy artifacts of the old uploaded-résumé
+flow. The corpus synthesis is a structured projection, not the final deliverable, so
+those warnings are suppressed in corpus mode; the meaningful JD keyword-overlap signal
+is unchanged, and ATS formatting is still judged on the rendered output
+(preview/download). Test: `tests/test_build_context_db.py` asserts corpus-mode
+`ats_warnings == []`.
+
 ### v1.0.8 walkthrough remediation — Branch 5: corpus import — year-only dates + role summaries (`fix/corpus-import`, 2026-07-01)
 
 - **Year-only work dates accepted (F3 → also fixes much of F1).** The extractor and
