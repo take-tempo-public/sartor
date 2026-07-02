@@ -3573,6 +3573,16 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;              /* allow the label child to shrink + truncate */
+}
+/* The template name truncates so it can't push the ATS / MINE badges out of
+   the row (walkthrough B1: a long owned filename overflowed rightward). */
+.template-mini-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .template-mini-row.selected .template-mini-name::before {
   content: '✓';
@@ -3584,6 +3594,8 @@ input:focus, select:focus, textarea:focus {
   font-size: 9.5px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .template-mini-source.owned { color: var(--brand); }
 
@@ -3598,6 +3610,8 @@ input:focus, select:focus, textarea:focus {
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   margin-left: 4px;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .template-mini-ats.safe {
   color: var(--success);
