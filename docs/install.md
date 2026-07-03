@@ -84,21 +84,27 @@ It is idempotent (safe to re-run) and prints what it's doing. `sartor --host` /
 
 ## Maintainer: publishing (one-time `[HUMAN]` setup)
 
-The repo ships two release workflows that fire on a version tag (`vX.Y.Z`):
+Two workflows do the release automatically on a version tag (`vX.Y.Z`):
+[`docker.yml`](../.github/workflows/docker.yml) builds + pushes the multi-arch
+image to `ghcr.io/take-tempo-public/sartor`; [`release.yml`](../.github/workflows/release.yml)
+builds the wheel and publishes to PyPI via **Trusted Publishing** (OIDC, no
+stored token). A maintainer only does the console setup CI can't do, then pushes
+the tag:
 
-- **`.github/workflows/docker.yml`** — builds + pushes the multi-arch image to
-  `ghcr.io/take-tempo-public/sartor`. After the first push, link the GHCR package
-  to the repo and set it public (repo → Packages).
-- **`.github/workflows/release.yml`** — builds the wheel and publishes to PyPI via
-  **Trusted Publishing** (OIDC, no stored token). One-time: on
-  [pypi.org](https://pypi.org) → your project → *Publishing* → add a GitHub
-  publisher (repo `take-tempo-public/sartor`, workflow `release.yml`, environment
-  `pypi`). **This job is intentionally gated** until the wheel ships the app's data
-  dirs (see the tracked packaging follow-up); until then use the container or a
-  source install.
-
-To cut a release: bump `version` in `pyproject.toml`, commit, then
-`git tag vX.Y.Z && git push --tags`.
+1. **GitHub** — create org + repo `take-tempo-public/sartor` (the image namespace,
+   the PyPI publisher, and the in-app citation URLs all key off it).
+2. **PyPI** — [pypi.org](https://pypi.org) → *Your account → Publishing* → add a
+   pending publisher: project `sartor`, owner `take-tempo-public`, repo `sartor`,
+   workflow `release.yml`, environment `pypi`. Then in the GitHub repo →
+   *Settings → Environments* → create the `pypi` environment.
+3. **GHCR** — after the first image push, set the package public and link it to the
+   repo (org → Packages → package settings).
+4. **Un-gate PyPI** — the `release.yml` publish job is intentionally gated (a `GATE`
+   step) until the wheel ships the app's data dirs. Fix that packaging follow-up,
+   verify a fresh-venv `pip install <wheel>` serves a page, then delete the `GATE`
+   step. Until then, ship via the container or a source install.
+5. **Each release (recurring)** — bump `version` in `pyproject.toml`, commit/merge,
+   then `git tag vX.Y.Z && git push --tags`. The tag fires both workflows.
 
 ---
 
