@@ -32,26 +32,39 @@ own branch with owner sign-off.
 
 ## Method
 
-Standard multi-agent, budget-bound (Max 5x): 8 survey finders (sonnet/haiku)
-→ 2 scribes → adversarial verification of every P0/P1 finding (refute-framed,
-main-loop ratification) → prescriptions with a 2-judge band panel
-(Throughput-Value + Stability-Risk lenses; CONTESTED on >1-band spread).
-Deviation from the 2026-06 review's 3-judge panel is deliberate (budget) and
-documented in [`prescriptions.md`](prescriptions.md). Finders carried a
-shared exclusion brief (the 8 open carry-forward ledger items + PX-01..36)
-to avoid re-reporting tracked work, and a PII prohibition (paths citable,
-content never, for `evals/fixtures/real/`, `configs/`, `resumes/`, `output/`).
+Standard multi-agent, budget-bound (Max 5x): 8 survey finders (5 sonnet +
+3 haiku, shared exclusion brief) → orchestrator-drafted findings files →
+adversarial verification of every P0/P1 finding (3 sonnet verifiers,
+refute-framed, mixed-area batches, main-loop ratification against primary
+evidence) → prescriptions with a 2-judge band panel (Throughput-Value +
+Stability-Risk lenses + orchestrator tiebreak; CONTESTED on >1-band spread —
+none occurred). Finders carried the 8 open carry-forward ledger items +
+PX-01..36 as a dedup brief, and a PII prohibition (paths citable, content
+never, for `evals/fixtures/real/`, `configs/`, `resumes/`, `output/`).
+
+**Method deviations from the 2026-06 review, all budget-driven and
+documented in place:** 2 band judges instead of 3
+([`prescriptions.md`](prescriptions.md) preamble); the planned scribe stage
+was cut (the orchestrator held all finder output in context and wrote the
+findings files directly — no fidelity loss, ~240k tokens saved); one finder
+(A2 session-tax) returned a degenerate structured-output stub and was
+re-run as a standalone agent. Verification materially changed the record:
+1 finding REFUTED outright (F-run-01), 9 WEAKENED (including the headline
+P0's serial-execution premise — hooks run in parallel), and one claim
+escalated (F-tci-05: the 3.10 floor is actively broken, not just untested).
+One measurement dispute (F-tci-01) was resolved by an idle re-measurement
+recorded in the [`verification-log.md`](verification-log.md) addendum.
 
 ## Stage status
 
 | Stage | Status |
 |---|---|
-| 1 — setup (branch, pin, scaffold, exclusion brief) | IN PROGRESS |
-| 2 — survey (8 finders) | pending |
-| 3 — draft (findings files + register rows) | pending |
-| 4 — verify (P0/P1 adversarial) | pending |
-| 5 — prescribe (PX-37+, banding) | pending |
-| 6 — seal (consistency check, CHANGELOG, ledger) | pending |
+| 1 — setup (branch, pin, scaffold, exclusion brief) | complete (ccddb9a) |
+| 2 — survey (8 finders + 1 re-run) | complete — 43 findings |
+| 3 — draft (findings files + register rows) | complete (b016efb) |
+| 4 — verify (P0/P1 adversarial, 14 verdicts) | complete — 4 CONFIRMED / 9 WEAKENED / 1 REFUTED |
+| 5 — prescribe (PX-37..56, banding) | complete — 20 rows, 0 CONTESTED |
+| 6 — seal (consistency check, CHANGELOG, ledger) | complete |
 
 ## Files
 

@@ -15,7 +15,11 @@ graduation: none
 > axis. The **verdict** column carries the adversarial verification result
 > for every P0/P1 finding (`-` for P2/P3, which were not adversarially
 > re-verified). **WEAKENED** findings keep their place but MUST be read with
-> the revised claim in [`verification-log.md`](verification-log.md).
+> the revised claim in [`verification-log.md`](verification-log.md) — the
+> headline number or severity was trimmed even though the substance survived.
+> One finding (**F-run-01**, split-analyze adoption) was REFUTED outright at
+> verification — its row is dropped and the id retired; the falsification
+> record stays in the log.
 >
 > Per-finding detail lives in [`findings/<area>.md`](findings/); per-verdict
 > detail in [`verification-log.md`](verification-log.md).
@@ -26,20 +30,19 @@ graduation: none
 
 | F-id | Domain | Title | Disp. | Lev. | Verdict | Coordinate | Charter trace | Evidence (one-line) |
 |---|---|---|---|---|---|---|---|---|
-| F-adx-01 | process-dx | 5 serial PreToolUse hooks cost ~10.9s measured per Edit/Write (process-spawn tax) | FIX | P0 | pending | v1.0.9 | C-1, E-2 | .claude/settings.json:12-38; per-hook timings measured on-machine |
-| F-adx-02 | process-dx | Hook timeouts (5s) too close to measured runtime (3.5s) — silent gate-failure risk | WATCH | P1 | pending | v1.0.9 | C-1 | settings.json:17-21,26-30 vs measured block-secrets 3.481s |
-| F-adx-06 | process-dx | CLAUDE.md skill+subagent catalogs (47% of file) duplicate harness auto-injection | FIX | P1 | pending | new-branch: chore/claude-md-catalog-trim @ v1.1.0-gate | D-5 | CLAUDE.md:101-190 vs harness-injected skill/agent listings |
-| F-adx-07 | process-dx | 16 memory files (~79KB) log completed work already durable in RELEASE_CHECKLIST | FIX | P1 | pending | new-branch: chore/memory-consolidation @ v1.1.0-gate | D-5, W-1 | memory/reference-app-blueprints-*.md + kit-phase*.md vs RELEASE_CHECKLIST.md:82,612-765 |
-| F-run-01 | runtime | Split analyze adoption 40% — 60% of calls bypass the two-pass optimization | FIX | P1 | pending | v1.0.9 | P-9, D-4 | llm_calls.jsonl: 195 analyze vs 78 split pairs; PERFORMANCE_HISTORY:197-204 |
-| F-run-02 | runtime | Generate cache-miss rate 38% across mixed prompt versions | WATCH | P1 | pending | v1.1.0-gate | C-6, D-4 | llm_calls.jsonl by prompt_version: 0% hit pre-2026-06-01.3, ~100% after |
-| F-run-03 | runtime | Analyze p95 latency 126s vs documented 67s target (25 calls >60s) | WATCH | P1 | pending | v1.1.0-gate | D-4 | llm_calls.jsonl 2026-05-24.4 rows 86-122s; PERFORMANCE_HISTORY:75-100 |
-| F-run-06 | runtime | Compose route N+1: per-experience lazy bullets/titles + per-bullet tags | FIX | P1 | pending | v1.0.9 | C-6 | blueprints/applications.py:898-903,913,916,965 |
-| F-doc-01 | docs-wiki | PRODUCT_SHAPE claims app.py "6,290-LOC / 75-route" — false at HEAD (241 ln, ~0 routes) | FIX | P1 | pending | v1.0.9 | D-5 | PRODUCT_SHAPE.md:720 vs app.py (241 lines, 2 decorator hits) |
-| F-doc-07 | docs-wiki | Wiki 119 commits + 337 files behind; blueprint split unrecorded | FIX | P1 | pending | 8.6 /wiki-ingest (scheduled) | D-5 | .last_ingest_sha 3561657; route-surface.md:13 "93 routes" vs 101 actual |
-| F-doc-10 | docs-wiki | D-5 cite-don't-restate discipline HOLDING across the drift (47 sources → 1 page) | KEEP | P1 | pending | 8.6 /wiki-ingest | D-5 | wiki/log.md:322-331; SCHEMA.md:33-48 |
-| F-tci-01 | tests-ci | No fast test lane; 4.9% of tests consume ~95% of the 309s suite; CONTRIBUTING double-runs ux | FIX | P1 | pending | new-branch: docs/fast-test-lane | - | pyproject:285-297 (no addopts); CONTRIBUTING.md:88-89; measured 0.46s vs 18.3s |
-| F-tci-04 | tests-ci | No CI concurrency group — force-pushes run stale matrix jobs to completion | FIX | P1 | pending | v1.1.0-gate | - | ci.yml:1-67 (no concurrency block) |
-| F-tci-05 | tests-ci | Python 3.10 floor untested: requires-python >=3.10, matrix 3.11-3.13 | FIX | P1 | pending | v1.1.0-gate | E-2 | pyproject:11,18-21 vs ci.yml:19 |
+| F-adx-01 | process-dx | 5 PreToolUse hooks on every Edit/Write; per-call tax ≈ slowest hook ~3.5-4s (parallel exec; 10.9s serial sum WEAKENED) | FIX | P0 | **WEAKENED** | v1.0.9 | C-1, E-2 | .claude/settings.json:12-38; per-hook timings measured twice (finder + verifier) |
+| F-adx-02 | process-dx | Hook timeouts (5s) too close to measured runtime (warm spikes to 3.4s) — silent gate-failure risk | WATCH | P1 | CONFIRMED | v1.0.9 | C-1 | settings.json:43-45,48-50 (per-hook timeout: 5) vs re-measured 2.1-3.4s warm |
+| F-adx-06 | process-dx | CLAUDE.md skill+subagent catalogs (47% of file) largely paraphrase harness auto-injection; 2 entries carry unique facts | FIX | P1 | **WEAKENED** | new-branch: chore/claude-md-catalog-trim @ v1.1.0-gate | D-5 | CLAUDE.md:101-190 vs commands/agents frontmatter diff (19/21 subset-paraphrases) |
+| F-adx-07 | process-dx | 16 memory files (~79KB) log completed work; ≥3 carry unique reusable recipes — selective consolidation | FIX | P1 | **WEAKENED** | new-branch: chore/memory-consolidation @ v1.1.0-gate | D-5, W-1 | memory/reference-app-blueprints-*.md + kit-phase*.md vs RELEASE_CHECKLIST.md:82,612-765 |
+| F-run-02 | runtime | Generate cache misses 37% all-time — RESOLVED legacy artifact; last 30 days 100% hit | WATCH | P1 | **WEAKENED** | v1.1.0-gate | C-6, D-4 | llm_calls.jsonl: 92/249 all-time vs 0 misses since 2026-06-02 |
+| F-run-03 | runtime | Analyze latency: split-era p95 84.6s vs unvalidated synthetic 67s target (126s figure was pre-split legacy) | WATCH | P1 | **WEAKENED** | v1.1.0-gate | D-4 | llm_calls.jsonl split pairs per run_id n=78: p50 69.7s, p95 84.6s; PERFORMANCE_HISTORY:98-100 caveat |
+| F-run-06 | runtime | Compose route N+1: per-experience lazy bullets/titles + per-bullet AND per-title tag loads | FIX | P1 | CONFIRMED | v1.0.9 | C-6 | blueprints/applications.py:899-906,913,916,965,~978; db/models.py has zero eager-load config |
+| F-doc-01 | docs-wiki | PRODUCT_SHAPE claims app.py "6,290-LOC / 75-route" — false at HEAD (241 ln, 0 routes; +2 dead line-range cites) | FIX | P1 | CONFIRMED | v1.0.9 | D-5 | PRODUCT_SHAPE.md:720 (blame 2026-06-08, pre-completion; doc edited post-completion without reconciling), :186,:481 |
+| F-doc-07 | docs-wiki | Wiki 119 commits + 337 files behind; route-surface.md claims 93 routes in app.py vs reality 0 app.py + 99 blueprints + 1 dashboard = 100 | FIX | P1 | **WEAKENED** | 8.6 /wiki-ingest (scheduled) | D-5 | .last_ingest_sha 3561657; route-surface.md:13; ratifier re-count 0/99/1 |
+| F-doc-10 | docs-wiki | D-5 discipline: design sound, but "holding" evidence predates the blueprint split; 1 page materially false | KEEP | P1 | **WEAKENED** | 8.6 /wiki-ingest | D-5 | wiki/log.md:322-331 (2026-06-16) vs 8.3a-h merges (2026-06-21/22); route-surface.md |
+| F-tci-01 | tests-ci | No documented fast test lane; CONTRIBUTING double-runs ux tier; <15s/20× projection wrong (fixture cost dominates) | FIX | P1 | **WEAKENED** | new-branch: docs/fast-test-lane | - | CONTRIBUTING.md:88-89; measured fast lane 294.57s under load (idle re-measure in log addendum) |
+| F-tci-04 | tests-ci | No CI concurrency group — latent gap; repo's local-merge workflow rarely triggers the waste scenario | FIX | P1 | **WEAKENED** | v1.1.0-gate | - | ci.yml:5-7 (main-only triggers), no concurrency: in any workflow; 0 PR-merge commits in 191 merges |
+| F-tci-05 | tests-ci | Python 3.10 floor actively broken: unconditional `import tomllib` (3.11+) fails collection — not just untested | FIX | P1 | CONFIRMED | v1.1.0-gate | E-2 | pyproject:11,18 vs ci.yml:19; tests/test_docstring_coverage_gate.py:47 (escalation in log) |
 | F-adx-03 | process-dx | plugin.json version 1.0.6 stale vs pyproject 1.0.7 and v1.0.8-era tree | FIX | P2 | - | v1.0.9 | C-0 | .claude-plugin/plugin.json:4 vs pyproject.toml:7 |
 | F-adx-04 | process-dx | settings.local.json: ~9 dead pre-rename path entries + 6 one-shot debug payloads | DEBUFF | P2 | - | new-branch: chore/prune-settings-local @ v1.0.9 | C-1 | settings.local.json:24-29,48-53 (stale), :8-11,38-40 (one-off) |
 | F-adx-05 | process-dx | Subagent model pins mix dated snapshots (Haiku) vs undated aliases (Sonnet) | FIX | P2 | - | v1.0.9 | D-4 | agents/eval-judge.md:4 vs agents/git-flow.md:4 |
@@ -58,7 +61,7 @@ graduation: none
 | F-doc-09 | docs-wiki | DOC-STATUS convention: 16 markers placed, zero enforcement gate | FIX | P2 | - | v1.0.9 CI merge-gate item #4 (scheduled) | D-5 | documentation-architecture.md:105-119,162; git grep = 16 |
 | F-doc-11 | docs-wiki | Symbol-keyed cites survive drift; bare line numbers don't — enforce universally | BOOST | P2 | - | 8.6 /wiki-ingest lint pass | - | wiki/log.md:345-349; SCHEMA.md:68-69 |
 | F-tci-02 | tests-ci | _imported_roots() AST walker triplicated across 3 boundary-gate tests | FIX | P2 | - | v1.0.9 | D-5 | test_construction_boundary.py:40-51; test_web_infra_is_leaf.py:21-31; test_recall_boundary.py:50-65 |
-| F-tci-03 | tests-ci | UX tier repeats app reload + SQLite + server + context on all 67 tests | WATCH | P2 | - | v1.1.0-gate | - | tests/ux/conftest.py:22-101 (only _browser session-scoped) |
+| F-tci-03 | tests-ci | UX tier repeats app reload + SQLite + server + context on all 67 tests; fixture cost likely suite-wide (see F-tci-01 log) | WATCH | P2 | - | v1.1.0-gate | - | tests/ux/conftest.py:22-101 (only _browser session-scoped) |
 | F-tci-06 | tests-ci | eval-smoke job duplicates quality's pip-install boilerplate | FIX | P2 | - | post-v1.1.0 | - | ci.yml:24-28 vs :52-56 |
 | F-tci-07 | tests-ci | fail-fast disabled in quality matrix (see-all-failures trade-off) | WATCH | P2 | - | post-v1.1.0 | - | ci.yml:16-17 |
 | F-tci-08 | tests-ci | arm64 docker rides QEMU with no measurement or deferral rationale | WATCH | P2 | - | post-v1.1.0 | - | docker.yml:28-30,53 |
@@ -70,6 +73,7 @@ graduation: none
 | F-tci-10 | tests-ci | Release artifacts: no retention policy (90-day default) | WATCH | P3 | - | post-v1.1.0 | - | release.yml:53-56 |
 | F-tci-11 | tests-ci | No Windows CI runner — KEEP Linux-only pre-public, revisit on user feedback | KEEP | P3 | - | post-public | - | ci.yml:15; window-8.5 EV-3 note |
 
-**Counts:** 43 findings — 1×P0, 13×P1, 23×P2, 6×P3. Dispositions: 26 FIX,
-10 WATCH, 3 KEEP, 3 BOOST, 1 DEBUFF. Simplification (delete/merge/shrink)
-flagged on 14 rows.
+**Counts:** 42 findings on the register (1×P0, 12×P1, 23×P2, 6×P3) + 1
+REFUTED-and-dropped (F-run-01). Dispositions: 25 FIX, 10 WATCH, 3 KEEP,
+3 BOOST, 1 DEBUFF. Verification: 4 CONFIRMED, 9 WEAKENED, 1 REFUTED.
+Simplification (delete/merge/shrink) flagged on 14 rows.
