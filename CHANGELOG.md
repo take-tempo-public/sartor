@@ -13,6 +13,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Model upgrade: Sonnet 4.6 → Sonnet 5 for the heavy-reasoning calls (`chore/upgrade-sonnet-5-model`, 2026-07-05)
+
+Upgraded the Sonnet-tier LLM calls (analyze/synthesis, generate, cover letter,
+clarify_iteration) from `claude-sonnet-4-6` to `claude-sonnet-5`. The Haiku-tier
+calls are unchanged — **Haiku 4.5 (`claude-haiku-4-5-20251001`) is still the
+latest Haiku; there is no Haiku 5.**
+
+- **`analyzer.py`** — `SONNET_MODEL = "claude-sonnet-5"`. The streaming call now
+  sends `thinking={"type": "disabled"}` on the Sonnet path. Sonnet 5 turns
+  **adaptive thinking on by default** when `thinking` is omitted (4.6 ran
+  thinking-off); left implicit, that would spend part of the 8192-token
+  `MAX_TOKENS` budget on reasoning (risking a `max_tokens` truncation of the
+  JSON payload), add latency before the streamed resume, and drift eval scores.
+  Behavior is thus held identical to 4.6. Adopting adaptive thinking is a
+  separate, eval-gated change. Haiku calls are untouched.
+- **`hardening.py`** — added a `claude-sonnet-5` entry to `MODEL_PRICING`
+  ($3/$15 in/out, standard rate — identical to 4.6; an intro discount of
+  $2/$10 runs through 2026-08-31 but the durable rate is used to keep cost
+  tracking stable). The `claude-sonnet-4-6` entry is **retained** so historical
+  `llm_calls.jsonl` records keep costing correctly.
+- **Eval + config provenance** — `evals/runner.py` `MODEL_SNAPSHOTS["sonnet"]`
+  and the `promptfooconfig.yaml` provider now name `claude-sonnet-5`.
+- **Docs** — `docs/architecture.md` and the two `docs/wiki/` cite lines
+  (`deterministic-llm-boundary`, `llm-call-catalog`) updated to the new string.
+
+`PROMPT_VERSION` is **not** bumped: no prompt text changed, and the model is an
+independent telemetry axis already recorded per call (`model` in
+`llm_calls.jsonl`, `MODEL_SNAPSHOTS` in eval results). Tests: added a
+`claude-sonnet-5` case to `TestCallCost`. No new dependency. Recommended before
+release: run `python evals/runner.py --suite synthetic` to confirm no rubric
+regression on the new model.
+
 ### Packaging: container image + `sartor --setup` + PyPI workflow (`feat/packaging-publish`, 2026-07-02)
 
 Distribution surface for shipping Sartor beyond a git clone.

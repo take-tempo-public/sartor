@@ -619,11 +619,16 @@ Rules you follow without exception:
 - Be concise: 2–5 sentences, or a short list when genuinely clearer. Plain, natural prose; put citations in single square brackets at the END of the sentence they support — no preamble, no restating the question, no cheer openers, no trailing recaps."""
 
 # Model selection rationale:
-#   - Sonnet 4.6 for analyze() and generate(): the work needs reasoning depth
+#   - Sonnet 5 for analyze() and generate(): the work needs reasoning depth
 #     for JD analysis and instruction-following on the long generate prompt
 #     (~3K tokens of resume_rules + cover_letter_rules + output_format).
-#     Same per-token price as older Sonnet versions; the newer revision has
-#     better structured-output adherence and grounding behavior.
+#     Same standard per-token price as Sonnet 4.6 ($3/$15 in/out; an intro
+#     discount of $2/$10 runs through 2026-08-31), with better coding/agentic
+#     and structured-output behavior. Sonnet 5 turns adaptive thinking ON by
+#     default when `thinking` is omitted (4.6 ran thinking-off); the streaming
+#     call below sends `thinking={"type": "disabled"}` on the Sonnet path to
+#     preserve the pipeline's established thinking-off behavior — see the note
+#     there. Adopting adaptive thinking is a separate, eval-gated change.
 #   - clarify() uses Haiku 4.5 as of 2026-06-01 (r1/clarify-model-trial). The
 #     prior note parked it on Sonnet "until the rubrics clear 4.0 stably";
 #     post-R1-split they do (clarification_quality floor ds 4.20 / pm 4.26 /
@@ -642,13 +647,13 @@ Rules you follow without exception:
 #   - Opus is intentionally not used: ~5x the cost of Sonnet without a
 #     proportional win on this workload. Reserve for future debugging
 #     sessions if grounding regressions resist prompt-tightening.
-SONNET_MODEL = "claude-sonnet-4-6"
-HAIKU_MODEL = "claude-haiku-4-5-20251001"
+SONNET_MODEL = "claude-sonnet-5"
+HAIKU_MODEL = "claude-haiku-4-5-20251001"  # still the latest Haiku — no Haiku 5
 # Backward-compat alias — historical code uses MODEL as the default Sonnet handle.
 # New code should reference SONNET_MODEL / HAIKU_MODEL explicitly.
 MODEL = SONNET_MODEL
 # Per-call output cap. analyze() returns a comprehensive JSON with 10+ keyed
-# sections; Sonnet 4.6 is more verbose than older Sonnet 4 was and routinely
+# sections; Sonnet 5 (thinking disabled, per SONNET_MODEL note) routinely
 # uses 4–6K tokens on detail-rich real inputs. 8192 leaves headroom without
 # inviting runaway output. _call_llm logs a warning on stop_reason="max_tokens"
 # so truncation surfaces as a clear telemetry signal, not a silent JSON parse
@@ -1146,18 +1151,30 @@ def _call_llm_streaming(
     final = None
     chunks: list[str] = []
     try:
-        with client.messages.stream(
-            model=effective_model,
-            max_tokens=MAX_TOKENS,
-            system=[
+        # Claude Sonnet 5 enables adaptive thinking by default when `thinking`
+        # is omitted (Sonnet 4.6 ran thinking-off). Preserve the pipeline's
+        # thinking-off behavior explicitly on the Sonnet path: adaptive thinking
+        # would spend part of the MAX_TOKENS budget on reasoning (risking a
+        # max_tokens truncation of the JSON payload), add latency before the
+        # streamed resume reaches the user, and drift eval scores. Haiku calls
+        # are unaffected (Haiku 4.5's default is unchanged), so the param is not
+        # sent there. Toggling `thinking` invalidates only the messages cache
+        # tier, and the value is constant per call, so prompt caching is intact.
+        stream_kwargs: dict[str, Any] = {
+            "model": effective_model,
+            "max_tokens": MAX_TOKENS,
+            "system": [
                 {
                     "type": "text",
                     "text": effective_system,
                     "cache_control": {"type": "ephemeral"},
                 }
             ],
-            messages=[{"role": "user", "content": user_content}],  # type: ignore[typeddict-item]
-        ) as stream:
+            "messages": [{"role": "user", "content": user_content}],
+        }
+        if effective_model == SONNET_MODEL:
+            stream_kwargs["thinking"] = {"type": "disabled"}
+        with client.messages.stream(**stream_kwargs) as stream:
             for delta in stream.text_stream:
                 chunks.append(delta)
                 yield delta
@@ -2392,7 +2409,9 @@ Strategy: {analysis.get("overall_strategy", "")}
 Professional vocabulary: {", ".join(analysis.get("professional_vocabulary", []))}
 </analysis>
 
-{clarifications_block}{cover_letter_draft_block}{corpus_mode_block}{resume_draft_block}<resume_rules>
+{clarifications_block}{cover_letter_draft_block}{corpus_mode_block}{
+        resume_draft_block
+    }<resume_rules>
 GROUNDING CHECK — apply this before writing every bullet:
   Ask: "Does this specific claim — including every number, technology, title, company, and timeframe — trace to the resume above (the current draft, which may include first-person edits the candidate typed in), any historical or supplemental resume above, OR a candidate clarification answer above?"
   If YES: reframe, strengthen, and keyword-align it freely. Both clarification answers AND first-person typed edits in the current draft are ground truth and may be cited even when the original primary resume did not mention them.

@@ -416,6 +416,19 @@ class TestCallCost:
             "cache_creation_input_tokens": 0,
             "cache_read_input_tokens": 0,
         }
+        # 1M input @ $3/M = $3.00. Sonnet 4.6 is retained in MODEL_PRICING so
+        # historical llm_calls.jsonl records keep costing correctly.
+        assert compute_call_cost(record) == 3.0
+
+    def test_known_sonnet5_record(self):
+        # Guards the active Sonnet model against the unknown-model → 0.0 path.
+        record = {
+            "model": "claude-sonnet-5",
+            "input_tokens": 1_000_000,
+            "output_tokens": 0,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+        }
         # 1M input @ $3/M = $3.00
         assert compute_call_cost(record) == 3.0
 

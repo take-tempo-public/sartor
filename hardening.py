@@ -259,8 +259,19 @@ METRIC_RE = re.compile(
 )
 
 # Pricing per million tokens (USD). Source: anthropic.com pricing as of
-# 2026-05-09. Update via PR (and bump CHANGELOG.md) when prices change.
+# 2026-07-05. Update via PR (and bump CHANGELOG.md) when prices change.
+# Sonnet 4.6 is retained because historical llm_calls.jsonl records reference
+# it and compute_call_cost() looks pricing up per-record by model name.
+# Sonnet 5 uses standard $3/$15 (identical to 4.6); an intro discount of
+# $2/$10 in/out runs through 2026-08-31 — the durable rate is used here to
+# keep cost tracking stable and conservative rather than re-staling on Sept 1.
 MODEL_PRICING: dict[str, dict[str, float]] = {
+    "claude-sonnet-5": {
+        "in": 3.00,
+        "out": 15.00,
+        "cache_write": 3.75,
+        "cache_read": 0.30,
+    },
     "claude-sonnet-4-6": {
         "in": 3.00,
         "out": 15.00,
