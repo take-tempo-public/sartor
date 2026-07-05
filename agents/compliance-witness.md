@@ -1,7 +1,7 @@
 ---
 name: compliance-witness
 description: Use to produce a governance drift report. Reads governance docs, RELEASE_ARC, CHANGELOG, git history, and wiki provenance at a pinned sha; identifies where two sources disagree or a C-0 categorical lacks by-construction backing; outputs ranked drift flags. Does NOT edit anything.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools:
   - Read
   - Grep

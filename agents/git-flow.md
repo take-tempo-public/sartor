@@ -1,7 +1,7 @@
 ---
 name: git-flow
 description: Use when a git workflow task needs autonomous execution under the project's conventions — branch creation, conventional commits, PR opening, merging. Honors CLAUDE.md rules (kebab-case branches, --no-ff merges, never --no-verify, never --force). Asks for explicit confirmation before push, PR, or merge to main.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools:
   - Bash
   - Read

@@ -37,6 +37,11 @@ latest Haiku; there is no Haiku 5.**
   and the `promptfooconfig.yaml` provider now name `claude-sonnet-5`.
 - **Docs** — `docs/architecture.md` and the two `docs/wiki/` cite lines
   (`deterministic-llm-boundary`, `llm-call-catalog`) updated to the new string.
+- **Plugin subagents** — the six Sonnet-pinned `agents/*.md` frontmatter
+  entries (`compliance-witness`, `git-flow`, `prompt-archaeologist`,
+  `tune-drafter`, `headhunter`, `ux-onboarding-designer`) bumped to
+  `claude-sonnet-5`, closing the model-version-drift the 2026-07 efficiency
+  review flagged. The three Haiku-pinned subagents are unchanged.
 
 `PROMPT_VERSION` is **not** bumped: no prompt text changed, and the model is an
 independent telemetry axis already recorded per call (`model` in

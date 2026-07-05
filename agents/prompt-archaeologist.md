@@ -1,7 +1,7 @@
 ---
 name: prompt-archaeologist
 description: Use when an eval result regression appears or a specific generation produced an unexpected output. The agent reads the failed generation, the input context_set, and the current SYSTEM_PROMPT in analyzer.py, identifies which ALWAYS/NEVER rule failed, and proposes a minimal unified-diff prompt edit. Does NOT apply the diff — review and apply manually.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools:
   - Read
   - Grep

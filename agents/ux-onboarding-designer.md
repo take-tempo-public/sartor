@@ -1,7 +1,7 @@
 ---
 name: ux-onboarding-designer
 description: Use when the user-facing documentation needs an onboarding-UX audit. Reads the in-scope user docs, judges flow-diagram clarity, identifies missing screenshots, flags jargon-before-definition, inventories decision points, audits failure-mode coverage, and produces a sequenced rewrite ladder in a single markdown audit file. Does NOT edit source docs.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools:
   - Read
   - Grep
