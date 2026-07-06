@@ -1451,6 +1451,52 @@ function _showEditModal(triggerEl) {
   });
 }
 
+// Refinement scope warning — the in-app modal that replaces the browser-native
+// confirm() when /api/validate-refinement flags a note as possibly fact-changing.
+// Mirrors _showEditModal's a11y posture (Esc closes, focus trap, focus restored
+// to the trigger, backdrop dismiss). Resolves 'proceed' or 'cancel'. It FLAGS,
+// never BLOCKS — the user may be correcting a fabricated fact.
+function _showRefinementScopeModal(reason, triggerEl) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('refinementScopeModal');
+    if (!modal) { resolve('cancel'); return; }
+    const body = document.getElementById('refinementScopeBody');
+    if (body) body.textContent = reason || 'This may change facts rather than just wording.';
+    const buttons = Array.from(modal.querySelectorAll('[data-modal-dismiss]'));
+    const focusable = modal.querySelectorAll('button[data-modal-dismiss]');
+
+    const cleanup = (action) => {
+      modal.classList.add('hidden');
+      modal.removeEventListener('keydown', onKey);
+      buttons.forEach(b => b.removeEventListener('click', onClick));
+      const backdrop = modal.querySelector('.cb-modal-backdrop');
+      if (backdrop) backdrop.removeEventListener('click', onClick);
+      if (triggerEl && typeof triggerEl.focus === 'function') triggerEl.focus();
+      resolve(action || 'cancel');
+    };
+    const onClick = (e) => {
+      cleanup(e.currentTarget?.getAttribute?.('data-modal-dismiss') || 'cancel');
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); cleanup('cancel'); return; }
+      if (e.key !== 'Tab' || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+
+    buttons.forEach(b => b.addEventListener('click', onClick));
+    const backdrop = modal.querySelector('.cb-modal-backdrop');
+    if (backdrop) backdrop.addEventListener('click', onClick);
+    modal.addEventListener('keydown', onKey);
+    modal.classList.remove('hidden');
+    // Default focus on Cancel (the safer default — proceeding may change facts).
+    const cancelBtn = document.getElementById('btnRefineCancelScope');
+    if (cancelBtn) cancelBtn.focus();
+  });
+}
+
 // Diagnostics modal — a thin launcher for the /_dashboard blueprint.
 // The dashboard is served by this same Flask process, so there is no
 // server to "start"; the modal just gives a labelled, keyboard-safe
@@ -2035,11 +2081,8 @@ async function submitRefinement() {
       // do — the scope check must not prevent it. Surface the concern and let the
       // user decide whether to proceed.
       const reason = check.reason || 'This may change facts rather than just wording.';
-      const proceed = confirm(
-        `Heads up — this looks like it may change facts, not just wording:\n\n`
-        + `${reason}\n\nThat's your call. Proceed with this refinement anyway?`,
-      );
-      if (!proceed) {
+      const choice = await _showRefinementScopeModal(reason, document.getElementById('btnRefinement'));
+      if (choice !== 'proceed') {
         entry.status = 'rejected';
         entry.reason = reason;
         _renderRefinementHistory();

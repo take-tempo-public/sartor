@@ -839,6 +839,30 @@
     </div>
   </div>
 
+  <!-- Refinement scope warning — the in-app replacement for the browser-native
+       confirm() that used to fire when a refinement looked like it might change
+       facts (not just wording). Same .cb-modal shell as editModal so it reads as
+       one of the app's own modals, not an off-format OS dialog. FLAGS, never
+       BLOCKS (the user may legitimately be correcting a fabricated fact). -->
+  <div id="refinementScopeModal" class="cb-modal hidden" role="dialog" aria-modal="true"
+       aria-labelledby="refinementScopeTitle" aria-describedby="refinementScopeBody">
+    <div class="cb-modal-backdrop" data-modal-dismiss="cancel"></div>
+    <div class="cb-modal-content" role="document">
+      <h2 id="refinementScopeTitle" class="cb-modal-title">Heads up — this may change facts</h2>
+      <p id="refinementScopeBody" class="cb-modal-body">
+        This refinement looks like it may change facts, not just wording.
+      </p>
+      <p class="cb-modal-body" style="opacity:0.75">
+        That's your call — if you're correcting something inaccurate, go ahead. New
+        or changed claims stay grounded in your corpus and clarifications.
+      </p>
+      <div class="modal-actions">
+        <button class="cb-btn cb-bg-amber" id="btnRefineProceed" data-modal-dismiss="proceed">Proceed anyway</button>
+        <button class="cb-btn cb-bg-blue" id="btnRefineCancelScope" data-modal-dismiss="cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Diagnostics modal — links to the read-only /_dashboard blueprint
        (telemetry + eval results). The dashboard is served by this same
        Flask process; localhost-only by its own host-header guard. -->

@@ -13,6 +13,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: refinement scope warning is an in-app modal, not a native browser confirm (`fix/refinement-and-loopback`, 2026-07-06)
+
+Preview #3: when a refinement looked like it might change facts (via
+`/api/validate-refinement`), `submitRefinement()` fired a browser-native
+`confirm()` — an OS dialog in a different visual format from every other modal in
+the app, which read as jarring and untrustworthy.
+
+- **`templates/index.html` + `static/app.js`** — new `refinementScopeModal` using
+  the same `.cb-modal` shell as `editModal`, driven by a promise-based
+  `_showRefinementScopeModal()` helper that mirrors `_showEditModal`'s a11y posture
+  (focus trap, Esc-to-cancel, backdrop dismiss, focus restored to the trigger).
+  `submitRefinement()` now awaits it instead of `confirm()`. Still FLAGS-not-BLOCKS
+  (correcting a fabricated fact is a legitimate refinement), and reminds the user
+  that changed claims stay grounded in their corpus + clarifications.
+- **Tests** — `tests/ux/regression/test_20260706_refinement_scope_modal.py` drives
+  the modal helper directly (LLM-free): reason shown in-modal, Cancel → `'cancel'`,
+  Proceed → `'proceed'`.
+- Deterministic UI-only change; no LLM/prompt changes, `PROMPT_VERSION` unchanged.
+
+> **Note on scope.** The deeper items from the same plan — surgical (non-rewrite)
+> refinement, deterministic assembly at Generate, and the loop-back-to-Compose for
+> newly-generated content — are a larger, coupled re-architecture that depends on a
+> Compose-authored *frozen composition* object (not yet built). They are deferred to
+> a dedicated effort; the app is fully usable after the render-fidelity + richness
+> branches.
+
 ### Fix: generation richness — rich bullets across every role, metrics surfaced, real Summary + Skills (`fix/generation-richness`, 2026-07-06)
 
 Second branch of the remediation, targeting "weak first-generation bullets/summaries."
