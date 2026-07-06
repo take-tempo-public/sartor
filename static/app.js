@@ -206,6 +206,42 @@ function _resetIterationState() {
   if (rh) { rh.classList.add('hidden'); rh.textContent = ''; }
 }
 
+// Start a fresh JD tailoring run for the CURRENT user — no browser refresh.
+// Clears the in-flight application state (JD text, analysis, clarify,
+// composition selections, generated docs, preview) and snaps the wizard back
+// to Step 1. The selected user + their corpus are untouched; the next ANALYZE
+// opens a brand-new server-side application, so nothing from the prior run
+// leaks forward. Fixes the "no way to start over without a browser refresh" gap.
+function startNewTailoring() {
+  if (!currentUser) { _toast('Select a user first.', true); return; }
+  // 1. Clear the Step-1 inputs + analysis view.
+  const jd = document.getElementById('jdText');
+  if (jd) jd.value = '';
+  const ac = document.getElementById('analysisContent');
+  if (ac) ac.replaceChildren();
+  document.getElementById('analysisPending')?.classList.add('hidden');
+  document.getElementById('analysisActions')?.classList.add('hidden');
+  const btnA = document.getElementById('btnAnalyze');
+  if (btnA) btnA.disabled = false;
+  // 2. Reset clarify + iteration/refinement/generated state (existing helpers).
+  _resetClarifyUI();
+  _resetIterationState();
+  // 3. Drop the server handles so forward-gating re-locks Steps 2–6 until the
+  //    new JD is analyzed / generated.
+  lastContextPath = '';
+  lastResumePath = '';
+  lastCoverLetterPath = '';
+  lastTemplatePath = '';
+  // 4. Clear the Step-6 preview editor so no stale document lingers (it is a
+  //    contenteditable surface read via innerText — see _readEditorText).
+  const preview = document.getElementById('resumePreview');
+  if (preview) preview.innerText = '';
+  // 5. Back to Step 1 (wizardInit resets _wizardStep, re-renders, re-locks).
+  wizardInit();
+  setStatus('READY');
+  _toast('Started a new tailoring run.');
+}
+
 // Wordmark / logo click → route home: clear the selected user (onUserSelect's
 // no-user branch hides the flow panels, re-locks the picker open, resets
 // iteration state) and snap back to the landing tab so "home" is the same view
@@ -5243,6 +5279,8 @@ const _WIZARD_STEP_LABELS = {
 function wizardInit() {
   const rail = document.getElementById('wizardRail');
   if (rail) rail.classList.remove('hidden');
+  // Reveal the "Start new tailoring" action alongside the rail.
+  document.getElementById('wizardRailActions')?.classList.remove('hidden');
   _wizardStep = 1;
   _wizardRender();
   _wizardStampHistory(1);  // PX-22: baseline history entry so Back from step 2 lands on step 1

@@ -1033,6 +1033,20 @@ textarea:focus-visible {
   background: var(--border-2);
   border-radius: 2px;
 }
+/* Start-new-tailoring action, right-aligned under the wizard rail. Quiet
+   secondary weight — it discards the current run, so it should read as a
+   deliberate choice, not compete with the step buttons. */
+.wizard-rail-actions {
+  display: flex;
+  justify-content: flex-end;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 6px 24px 0;
+}
+.wizard-rail-actions .cb-btn {
+  font-size: 12px;
+  padding: 3px 12px;
+}
 .wizard-step {
   background: transparent;
   color: var(--fg-2);

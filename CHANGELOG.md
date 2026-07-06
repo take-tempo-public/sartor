@@ -13,6 +13,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: single render engine — download == preview, and section titles never silently drop (`fix/single-render-engine`, 2026-07-06)
+
+First branch of the preview/download-fidelity remediation. The `.docx` download
+was a **second, divergent renderer**: it parsed the résumé markdown itself and
+emitted any `## heading` verbatim, while the on-screen preview + PDF render the
+`md_to_json_resume()` structured document through the persona HTML template. The
+two disagreed on both styling and *content* — a résumé titled "Professional
+Summary" / "Core Competencies" (what plain Word imports produce) rendered those
+sections in the `.docx` but dropped them from the preview (they fell to
+`meta.sartor.unparsed`).
+
+- **`generator.py`** — replaced the markdown-walking `_write_docx()` with
+  `_write_docx_from_json_resume()`, which consumes the SAME `json_doc` the
+  preview/PDF use and walks it in `personas/bundled/classic.html`'s section order
+  (header → summary → experience → skills → certifications → education →
+  projects). Persona typography capture (`_capture_template_styles`, list
+  numbering, per-role protos) is unchanged — only the content *source* moved from
+  a raw markdown parse to the structured document. Result: **download == preview
+  by construction**; a non-canonically-titled section can no longer appear in one
+  surface and vanish from the other.
+- **`json_resume.py`** — widened `_SECTION_MAP` with the common heading aliases
+  ("Professional Summary", "Summary of Qualifications", "Professional
+  Experience", "Work History", "Technical Skills", "Core Competencies", "Areas of
+  Expertise", …) so those sections land in the canonical JSON Resume fields
+  instead of `meta.sartor.unparsed`. Purely widening — can only rescue a title
+  that would otherwise be dropped.
+- **`db/ats_roundtrip.py`** — the round-trip section-presence check now compares
+  on the canonical `_SECTION_MAP` key, so the audit agrees with the
+  now-canonicalizing writer instead of flagging equivalent headings as "missing."
+- **UI** — added a **"↻ Start new tailoring"** action under the wizard rail
+  (`startNewTailoring()` in `static/app.js`, revealed by `wizardInit()`): clears
+  the in-flight run (JD, analysis, clarify, composition, generated docs, preview)
+  and returns to Step 1 for the same user without a browser refresh. The next
+  ANALYZE opens a fresh application. Corpus untouched.
+- **Tests** — `tests/test_render_parity.py` pins both invariants: the JSON Resume
+  sidecar (download's source) equals `md_to_json_resume()` (preview's source),
+  every preview bullet/summary/skill appears in the generated `.docx`, and the
+  writer emits canonical headings regardless of the source's titles.
+- Deterministic-only change (no LLM calls touched); `PROMPT_VERSION` unchanged.
+
 ### Model upgrade: Sonnet 4.6 → Sonnet 5 for the heavy-reasoning calls (`chore/upgrade-sonnet-5-model`, 2026-07-05)
 
 Upgraded the Sonnet-tier LLM calls (analyze/synthesis, generate, cover letter,

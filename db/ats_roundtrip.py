@@ -141,9 +141,22 @@ def run_ats_roundtrip(docx_path: str | Path, resume_content_md: str) -> dict:
     # should appear in the recovered text. Custom headings outside the known
     # set are allowed but not checked (the parser doesn't recognize them as
     # sections anyway).
+    #
+    # Compare on the CANONICAL JSON-Resume key, not the raw label: the .docx
+    # writer renders from md_to_json_resume() and canonicalizes headings (e.g.
+    # "Professional Experience" → "Experience", "Core Competencies" → "Skills").
+    # Diffing raw labels would flag those equivalent sections as "missing" even
+    # though the content survived — so normalize both sides through the same
+    # _SECTION_MAP the renderer uses.
+    from json_resume import _SECTION_MAP
+
+    def _canon(label: str) -> str:
+        key = label.strip().lower()
+        return _SECTION_MAP.get(key, key)
+
     emitted_known = [s for s in emitted_sections if s.lower() in _KNOWN_SECTIONS]
-    recovered_lower = {s.lower() for s in recovered_sections}
-    missing_sections = [s for s in emitted_known if s.lower() not in recovered_lower]
+    recovered_canon = {_canon(s) for s in recovered_sections}
+    missing_sections = [s for s in emitted_known if _canon(s) not in recovered_canon]
     if missing_sections:
         findings["status"] = _escalate_status(findings["status"], "fail")
         findings["notes"].append(f"sections missing from recovered text: {missing_sections}")

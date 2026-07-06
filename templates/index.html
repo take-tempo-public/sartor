@@ -187,6 +187,16 @@
       <button class="wizard-step" data-wstep="6" onclick="wizardGoTo(6)"><span class="wizard-num">6</span><span class="wizard-label">Download</span></button>
     </nav>
 
+    <!-- Start-over affordance: clears the current run and returns to Step 1 for
+         the SAME user without a browser refresh (the next ANALYZE opens a fresh
+         application). Revealed alongside the rail in wizardInit(). -->
+    <div class="wizard-rail-actions hidden" id="wizardRailActions">
+      <button class="cb-btn cb-bg-amber" id="btnNewTailoring" onclick="startNewTailoring()"
+              title="Clear this run and start a fresh job-description tailoring for the current user — your saved corpus is untouched">
+        ↻ Start new tailoring
+      </button>
+    </div>
+
     <!-- (Workstream B1: the "Corpus" wizard step is retired. Adding
          resumes to the corpus now lives in the CAREER CORPUS tab via
          the + DROP RESUME button + dropzone. The wizard starts at

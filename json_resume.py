@@ -63,21 +63,81 @@ _BULLET_RE = re.compile(r"^-\s+(.+?)\s*$")
 _SKILLS_SPLIT_RE = re.compile(r"\s*[·•|,]\s+")
 
 # Map h2 title text → JSON Resume top-level key. Lowercased for matching.
+#
+# Aliases matter for FIDELITY, not just tidiness: any h2 title NOT in this map
+# lands in `meta.sartor.unparsed` and is silently dropped from the HTML/PDF
+# preview (the `.docx` writer now renders from this same parse, so an off-map
+# heading would drop from BOTH — still consistent, but the user loses their
+# Summary/Skills). A résumé that titles its sections "Professional Summary" or
+# "Core Competencies" (very common) must map to the canonical keys so the
+# content survives. Additions here are purely widening — they can only rescue a
+# title that would otherwise be dropped, never re-route a canonical one.
 _SECTION_MAP = {
+    # — Summary —
     "summary": "_summary",
+    "professional summary": "_summary",
+    "summary of qualifications": "_summary",
+    "career summary": "_summary",
+    "executive summary": "_summary",
+    "profile": "_summary",
+    "professional profile": "_summary",
+    "about": "_summary",
+    "about me": "_summary",
+    "objective": "_summary",
+    # — Experience —
     "experience": "work",
     "work experience": "work",
+    "professional experience": "work",
+    "relevant experience": "work",
+    "work history": "work",
     "employment": "work",
+    "employment history": "work",
+    "career history": "work",
+    # — Skills —
     "skills": "skills",
+    "technical skills": "skills",
+    "core competencies": "skills",
+    "core skills": "skills",
+    "key skills": "skills",
+    "areas of expertise": "skills",
+    "competencies": "skills",
+    "technical expertise": "skills",
+    "technical proficiencies": "skills",
+    "proficiencies": "skills",
+    "skills & expertise": "skills",
+    "skills and expertise": "skills",
+    "expertise": "skills",
+    # — Education —
     "education": "education",
+    "education & training": "education",
+    "education and training": "education",
+    "academic background": "education",
+    # — Certifications —
     "certifications": "certificates",
     "certificates": "certificates",
+    "certification": "certificates",
+    "licenses & certifications": "certificates",
+    "licenses and certifications": "certificates",
+    "credentials": "certificates",
+    # — Projects —
     "projects": "projects",
+    "key projects": "projects",
+    "selected projects": "projects",
+    "notable projects": "projects",
+    # — Other standard sections —
     "publications": "publications",
+    "selected publications": "publications",
     "awards": "awards",
+    "awards & honors": "awards",
+    "awards and honors": "awards",
+    "honors & awards": "awards",
+    "honors and awards": "awards",
     "languages": "languages",
     "interests": "interests",
     "volunteer": "volunteer",
+    "volunteering": "volunteer",
+    "volunteer experience": "volunteer",
+    "community involvement": "volunteer",
     "references": "references",
 }
 
