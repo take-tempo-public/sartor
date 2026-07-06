@@ -100,7 +100,7 @@ is the failure mode this section exists to prevent.
 ### Document generation
 
 - Always pass `template_path` (original `.docx`) to `generate_resume()` when output is docx.
-- `_write_docx()` opens the original as a style template — never call `docx.Document()` on blank.
+- `_write_docx_from_json_resume()` renders the SAME `md_to_json_resume()` doc the preview/PDF use (so download == preview) and opens the persona `.docx` as a style template — never call `docx.Document()` on blank when a template exists.
 - `BULLET_RE` in `generator.py` normalizes all bullet variants.
 
 ### LLM prompts

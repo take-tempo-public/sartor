@@ -120,6 +120,10 @@ class Wizard:
     """Selectors for the tailoring wizard (Steps 1-6) panels and controls."""
 
     RAIL = "#wizardRail"
+    # "↻ Start new tailoring" — clears the current run back to Step 1 without a
+    # browser refresh. Revealed alongside the rail once the wizard engages.
+    RAIL_ACTIONS = "#wizardRailActions"
+    NEW_TAILORING_BUTTON = "#btnNewTailoring"
     PANEL_ANALYSIS = "#panelAnalysis"
     JD_TEXT = "#jdText"
     ANALYZE_BUTTON = "#btnAnalyze"

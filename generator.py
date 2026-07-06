@@ -10,6 +10,7 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import docx
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
@@ -53,8 +54,8 @@ def _normalize_markdown(content: str) -> str:
     """Re-inject newlines lost when an LLM emits markdown as one line.
 
     P1 Hardening — deterministic Python repairs LLM formatting drift so
-    every downstream renderer (markdown export, .docx writer, the
-    template-style heading dispatch in `_write_docx`) sees the structural
+    every downstream consumer (markdown export and `md_to_json_resume`,
+    which the .docx / .pdf / HTML renderers all parse) sees the structural
     markers on their own lines. Conservative by design: only inserts
     newlines around unambiguous markdown markers, never inside running
     text.
@@ -120,11 +121,10 @@ def generate_resume(
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Normalize before every renderer — _write_docx parses content
-    # line-by-line and dispatches heading styles only on lines that
-    # begin with a marker, and md_to_json_resume relies on the same
-    # structural assumptions. A smushed payload would render as one
-    # giant paragraph in either path.
+    # Normalize before parsing — md_to_json_resume relies on the structural
+    # markers (headings, bullets) sitting on their own lines; a smushed payload
+    # would collapse into one giant section. Every renderer (.md, .docx, .pdf,
+    # HTML preview) then flows from this single json_doc, so they cannot diverge.
     content = _normalize_markdown(content)
     json_doc = md_to_json_resume(content)
 
@@ -136,7 +136,12 @@ def generate_resume(
         _render_pdf_from_json(json_doc, template_path, path)
     else:
         path = out_dir / f"resume_{ts}.docx"
-        _write_docx(content, path, template_path=template_path)
+        # D3 (single source of truth): the .docx renders from the SAME
+        # JSON Resume `json_doc` the preview/PDF use, so DOWNLOAD == PREVIEW.
+        # (Previously the .docx parsed the raw markdown itself — a second,
+        # divergent engine that emitted off-map `## headings` the preview
+        # silently dropped and matched neither the preview nor the source.)
+        _write_docx_from_json_resume(json_doc, path, template_path=template_path)
 
     # JSON Resume sidecar — best-effort. Parsing is deterministic and
     # tested; realistic failure modes are disk-write issues.
@@ -305,8 +310,8 @@ def _write_cover_letter_docx(
         Every line is a plain Normal paragraph; the date / addressee / salutation
         flow inline as tight stacked paragraphs (no boxed block).
 
-    Distinct from `_write_docx` (the résumé's role-based writer) because the
-    cover letter has no name / heading / job-row roles to capture — it is plain
+    Distinct from `_write_docx_from_json_resume` (the résumé's structured writer)
+    because the cover letter has no name / heading / job-row roles — it is plain
     dense paragraphs. Incidental markdown markers (`#`, bullets) are stripped to
     plain text so a stray heading never renders as a banner. Deterministic — no LLM.
     """
@@ -545,26 +550,72 @@ def _add_inline_runs_with_proto(paragraph: Paragraph, text: str, proto: dict | N
             _apply_run_proto(run, proto)
 
 
-def _write_docx(
-    content: str,
+def _contact_line_items(basics: dict[str, Any]) -> list[str]:
+    """Assemble the contact line EXACTLY as `classic.html` does.
+
+    Order: email · phone · profile URLs (scheme-stripped) · website. Keeping
+    this identical to the template's header block (personas/bundled/classic.html)
+    is what makes the .docx contact line match the on-screen preview.
+    """
+    items: list[str] = []
+    if basics.get("email"):
+        items.append(str(basics["email"]))
+    if basics.get("phone"):
+        items.append(str(basics["phone"]))
+    for profile in basics.get("profiles") or []:
+        url = str(profile.get("url", ""))
+        items.append(url.replace("https://", "").replace("http://", ""))
+    if basics.get("url"):
+        items.append(str(basics["url"]).replace("https://", "").replace("http://", ""))
+    return [i for i in items if i]
+
+
+def _date_range(start: str | None, end: str | None) -> str:
+    """Render a `Start – End` date range (en-dash), tolerating either side missing."""
+    start = (start or "").strip()
+    end = (end or "").strip()
+    if start and end:
+        return f"{start} – {end}"
+    return start or end
+
+
+def _entry_header_text(name: str, position: str, start: str | None, end: str | None) -> str:
+    r"""Reassemble a `Company, Position\tStart – End` job/degree header line.
+
+    The TAB lets the persona's captured right tab stop right-align the date,
+    matching the template's job-header layout; with no template the tab falls
+    back to a default stop.
+    """
+    left = ", ".join(part for part in (name, position) if part)
+    dates = _date_range(start, end)
+    return f"{left}\t{dates}" if dates else left
+
+
+def _write_docx_from_json_resume(
+    json_doc: dict[str, Any],
     path: Path,
     template_path: str | None = None,
 ) -> None:
-    """Write LLM content to .docx, using the original file as a style template when it is a .docx.
+    """Write a JSON Resume document to .docx — the single, non-divergent writer.
 
-    Falls back to clean built-in defaults otherwise.
+    D3 (single source of truth): this consumes the SAME `json_doc`
+    (`md_to_json_resume()` output) that the HTML preview and PDF render, and
+    walks it in `classic.html`'s section order (header → summary → experience →
+    skills → certifications → education → projects). Because the content source
+    is the structured document — not a second markdown parse — DOWNLOAD ==
+    PREVIEW by construction, and a non-canonically-titled Summary/Skills can no
+    longer render in one surface but vanish from the other.
 
-    When a template is supplied, paragraph formatting (alignment, run sizes,
-    tab stops) is captured per-role from the template and applied to the
-    matching markdown elements. Roles: name (`# `), subtitle/contact (lines
-    after `# ` and before the first `## `), section_heading (`## `), job_title
-    (`### `, with right tab stop preserved if the template has one),
-    job_subtitle (the line directly after `### `), bullet (`-` etc.).
+    Persona fidelity is unchanged: when a `.docx` template is supplied, per-role
+    typography (alignment, run sizes, tab stops, list numbering) is still
+    captured via `_capture_template_styles` and applied through the same
+    `_apply_para_proto` / `_add_inline_runs_with_proto` helpers the old writer
+    used. Falls back to clean built-in defaults otherwise. Deterministic — no LLM.
     """
     tp = Path(template_path) if template_path else None
     use_template = bool(tp and tp.exists() and tp.suffix.lower() == ".docx")
 
-    if use_template:
+    if use_template and tp is not None:
         doc = docx.Document(str(tp))
         styles = _capture_template_styles(doc)
         orig_numPr = _extract_list_numPr(doc)
@@ -582,106 +633,162 @@ def _write_docx(
             section.left_margin = Inches(0.85)
             section.right_margin = Inches(0.85)
 
-    # State for "header zone" tracking: lines after `# ` and before first `## `
-    # get the centered subtitle/contact treatment from the template.
-    in_header = False
-    header_subline = 0  # 0 = subtitle slot, 1+ = contact slot
-    last_was_job_title = False
-
-    for line in content.split("\n"):
-        stripped = line.strip()
-
-        if not stripped:
-            # Skip blank markdown lines — the template's per-paragraph
-            # space_before/space_after provide the visual rhythm. Emitting an
-            # empty paragraph here would double the gap between every heading
-            # and its body content.
-            continue
-
-        # ── # Name ────────────────────────────────────────────────────────
-        if stripped.startswith("# "):
-            text = stripped[2:]
-            p = doc.add_paragraph()
-            if use_template and "name" in styles:
-                _apply_para_proto(p, styles["name"])
-                _add_inline_runs_with_proto(p, text, styles["name"])
-            else:
-                _add_inline_runs(p, text, base_bold=True)
-                for run in p.runs:
-                    run.font.size = Pt(16)
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            in_header = True
-            header_subline = 0
-            last_was_job_title = False
-
-        # ── ## Section heading ────────────────────────────────────────────
-        elif stripped.startswith("## "):
-            text = stripped[3:]
-            p = doc.add_paragraph()
-            if use_template and "section_heading" in styles:
-                _apply_para_proto(p, styles["section_heading"])
-                _add_inline_runs_with_proto(p, text, styles["section_heading"])
-            else:
-                _add_inline_runs(p, text, base_bold=True)
-                for run in p.runs:
-                    run.font.size = Pt(13)
-                p.paragraph_format.space_after = Pt(2)
-            in_header = False
-            last_was_job_title = False
-
-        # ── ### Job title / company / role line ───────────────────────────
-        elif stripped.startswith("### "):
-            text = stripped[4:]
-            p = doc.add_paragraph()
-            if use_template and "job_title" in styles:
-                _apply_para_proto(p, styles["job_title"])
-                _add_inline_runs_with_proto(p, text, styles["job_title"])
-            else:
-                _add_inline_runs(p, text, base_bold=True)
-                if not use_template:
-                    for run in p.runs:
-                        run.font.size = Pt(11)
-            in_header = False
-            last_was_job_title = True
-
-        # ── Bullet point ──────────────────────────────────────────────────
-        elif BULLET_RE.match(stripped):
-            text = BULLET_RE.sub("", stripped)
-            if use_template and orig_numPr is not None:
-                p = doc.add_paragraph(style="List Paragraph")
-                _apply_numPr(p, orig_numPr)
-                for run in list(p.runs):
-                    run._element.getparent().remove(run._element)
-                _add_inline_runs(p, text)
-            else:
-                p = doc.add_paragraph(style="List Bullet")
-                for run in list(p.runs):
-                    run._element.getparent().remove(run._element)
-                _add_inline_runs(p, text)
-            in_header = False
-            last_was_job_title = False
-
-        # ── Plain body text — context-sensitive ───────────────────────────
+    # ── Per-role emitters (mirror the old writer's per-marker formatting) ──
+    def emit_name(text: str) -> None:
+        p = doc.add_paragraph()
+        if use_template and "name" in styles:
+            _apply_para_proto(p, styles["name"])
+            _add_inline_runs_with_proto(p, text, styles["name"])
         else:
-            p = doc.add_paragraph()
-            if in_header and use_template:
-                # First plain line under # → subtitle; subsequent → contact
-                role = "subtitle" if header_subline == 0 else "contact"
-                proto = styles.get(role) or styles.get("contact") or styles.get("subtitle")
+            _add_inline_runs(p, text, base_bold=True)
+            for run in p.runs:
+                run.font.size = Pt(16)
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    def emit_header_line(text: str, is_contact: bool) -> None:
+        p = doc.add_paragraph()
+        if use_template:
+            role = "contact" if is_contact else "subtitle"
+            proto = styles.get(role) or styles.get("contact") or styles.get("subtitle")
+            _apply_para_proto(p, proto)
+            _add_inline_runs_with_proto(p, text, proto)
+        else:
+            _add_inline_runs(p, text)
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    def emit_section_heading(text: str) -> None:
+        p = doc.add_paragraph()
+        if use_template and "section_heading" in styles:
+            _apply_para_proto(p, styles["section_heading"])
+            _add_inline_runs_with_proto(p, text, styles["section_heading"])
+        else:
+            _add_inline_runs(p, text, base_bold=True)
+            for run in p.runs:
+                run.font.size = Pt(13)
+            p.paragraph_format.space_after = Pt(2)
+
+    def emit_entry_header(text: str) -> None:
+        p = doc.add_paragraph()
+        if use_template and "job_title" in styles:
+            _apply_para_proto(p, styles["job_title"])
+            _add_inline_runs_with_proto(p, text, styles["job_title"])
+        else:
+            _add_inline_runs(p, text, base_bold=True)
+            if not use_template:
+                for run in p.runs:
+                    run.font.size = Pt(11)
+
+    def emit_entry_summary(text: str) -> None:
+        p = doc.add_paragraph()
+        if use_template and "job_subtitle" in styles:
+            _apply_para_proto(p, styles["job_subtitle"])
+            _add_inline_runs_with_proto(p, text, styles["job_subtitle"])
+        else:
+            proto = styles.get("body") if use_template else None
+            if proto:
                 _apply_para_proto(p, proto)
-                _add_inline_runs_with_proto(p, stripped, proto)
-                header_subline += 1
-            elif last_was_job_title and use_template and "job_subtitle" in styles:
-                _apply_para_proto(p, styles["job_subtitle"])
-                _add_inline_runs_with_proto(p, stripped, styles["job_subtitle"])
-                last_was_job_title = False
+                _add_inline_runs_with_proto(p, text, proto)
             else:
-                proto = styles.get("body") if use_template else None
-                if proto:
-                    _apply_para_proto(p, proto)
-                    _add_inline_runs_with_proto(p, stripped, proto)
-                else:
-                    _add_inline_runs(p, stripped)
-                last_was_job_title = False
+                _add_inline_runs(p, text)
+
+    def emit_body(text: str) -> None:
+        p = doc.add_paragraph()
+        proto = styles.get("body") if use_template else None
+        if proto:
+            _apply_para_proto(p, proto)
+            _add_inline_runs_with_proto(p, text, proto)
+        else:
+            _add_inline_runs(p, text)
+
+    def emit_bullet(text: str) -> None:
+        if use_template and orig_numPr is not None:
+            p = doc.add_paragraph(style="List Paragraph")
+            _apply_numPr(p, orig_numPr)
+        else:
+            p = doc.add_paragraph(style="List Bullet")
+        for run in list(p.runs):
+            run._element.getparent().remove(run._element)
+        _add_inline_runs(p, text)
+
+    # ── Walk the document in classic.html's section order ─────────────────
+    basics: dict[str, Any] = json_doc.get("basics") or {}
+    if basics.get("name"):
+        emit_name(str(basics["name"]))
+    if basics.get("label"):
+        emit_header_line(str(basics["label"]), is_contact=False)
+    contact_items = _contact_line_items(basics)
+    if contact_items:
+        emit_header_line(" · ".join(contact_items), is_contact=True)
+
+    summary = basics.get("summary")
+    if summary:
+        emit_section_heading("Summary")
+        for para in str(summary).split("\n\n"):
+            para = para.strip()
+            if para:
+                emit_body(para)
+
+    work = json_doc.get("work") or []
+    if work:
+        emit_section_heading("Experience")
+        for job in work:
+            emit_entry_header(
+                _entry_header_text(
+                    str(job.get("name") or ""),
+                    str(job.get("position") or ""),
+                    job.get("startDate"),
+                    job.get("endDate"),
+                )
+            )
+            if job.get("summary"):
+                emit_entry_summary(str(job["summary"]))
+            for h in job.get("highlights") or []:
+                emit_bullet(str(h))
+
+    skills = json_doc.get("skills") or []
+    if skills:
+        emit_section_heading("Skills")
+        if any(s.get("keywords") for s in skills):
+            for s in skills:
+                keywords = ", ".join(str(k) for k in (s.get("keywords") or []))
+                label = str(s.get("name") or "")
+                emit_bullet(f"**{label}:** {keywords}" if keywords else label)
+        else:
+            line = " · ".join(str(s.get("name") or "") for s in skills if s.get("name"))
+            if line:
+                emit_body(line)
+
+    certificates = json_doc.get("certificates") or []
+    if certificates:
+        emit_section_heading("Certifications")
+        for c in certificates:
+            if c.get("name"):
+                emit_bullet(str(c["name"]))
+
+    education = json_doc.get("education") or []
+    if education:
+        emit_section_heading("Education")
+        for ed in education:
+            emit_entry_header(
+                _entry_header_text(
+                    str(ed.get("institution") or ""),
+                    str(ed.get("area") or ""),
+                    ed.get("startDate"),
+                    ed.get("endDate"),
+                )
+            )
+            if ed.get("score"):
+                emit_body(str(ed["score"]))
+
+    projects = json_doc.get("projects") or []
+    if projects:
+        emit_section_heading("Projects")
+        for proj in projects:
+            if proj.get("name"):
+                emit_entry_header(str(proj["name"]))
+            if proj.get("description"):
+                emit_entry_summary(str(proj["description"]))
+            for h in proj.get("highlights") or []:
+                emit_bullet(str(h))
 
     doc.save(str(path))
