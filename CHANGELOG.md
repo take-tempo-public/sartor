@@ -50,6 +50,30 @@ independent telemetry axis already recorded per call (`model` in
 release: run `python evals/runner.py --suite synthetic` to confirm no rubric
 regression on the new model.
 
+### 2026-07 efficiency review — witness-only archive (`review/2026-07-efficiency`, 2026-07-03)
+
+Four-area efficiency/optimization review (agent-process & governance DX ·
+runtime performance & reliability · docs & wiki processes · tests/CI &
+gates), pinned at `4196d0c`, mirroring the 2026-06 excellence-review
+formats. Report-and-prescribe only — no code, hook, config, or prompt
+changes ride this branch.
+
+- **Archive:** `docs/dev/reviews/2026-07-efficiency/` — 42-row findings
+  register (every P0/P1 adversarially verified: 4 CONFIRMED, 9 WEAKENED,
+  1 REFUTED-and-dropped), per-area findings files with a measured
+  LLM-telemetry appendix (2,955 calls, $35.14 tracked), a verification log
+  (incl. an idle re-measurement that resolved a contested test-lane
+  number), and 20 banded prescriptions (PX-37..PX-56; 2-judge panel +
+  orchestrator tiebreak; 0 CONTESTED).
+- **Headliners:** Edit/Write hook process-spawn tax measured ~3.5–4s per
+  call (consolidation → PX-37); the Python 3.10 floor is actively broken
+  (`import tomllib` fails collection) — PX-42 banded before the first PyPI
+  tag; wiki 119 commits behind its checkpoint (PX-41 rides the scheduled
+  8.6 ingest); a documented fast test lane halves the inner loop
+  (309s → 163s, measured idle).
+- **Ledger:** one aggregate carry-forward row; the stale "Open count: 7"
+  header corrected per F-doc-02 (post-merge count: 10 — see the ledger head-note).
+
 ### Packaging: container image + `sartor --setup` + PyPI workflow (`feat/packaging-publish`, 2026-07-02)
 
 Distribution surface for shipping Sartor beyond a git clone.
