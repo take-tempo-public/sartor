@@ -858,6 +858,41 @@ _Open count: 10 — AT the top of the ~8–10 reduction-sprint threshold. Most 2
       are landed or explicitly re-dispositioned.
       _(added: 2026-07-03, `review/2026-07-efficiency`; open count 8 → 9.)_
 
+- [ ] **Generation-experience re-architecture — deferred remainder (the "unusable"
+      remediation)** — an owner-driven remediation (2026-07-06) landed **3 branches on
+      `main`**: `fix/single-render-engine` (download == preview == import; non-canonical
+      section titles rescued; "Start new tailoring" reset), `fix/generation-richness`
+      (anti-starvation bullet floor + generous/metric-first RECOMMEND + two-sentence
+      Summary + first-class Skills + corpus-grounding carve-out; `PROMPT_VERSION`
+      `2026-07-06.1`; robert corpus roles-with-bullets **3/8 → 8/8**), and
+      `fix/refinement-and-loopback` (in-app refinement-scope modal replacing the native
+      `confirm()`). **Still owed** — the deeper vision the owner signed off on, deferred
+      because it is large + coupled and depends on a **Compose-authored frozen composition
+      object not yet built**: (a) Compose authors + freezes the full approved composition
+      (bullets + summary + skills + order); (b) **Generate = deterministic assembly** of
+      that composition (no LLM for the résumé body; cover letter stays LLM); (c) **surgical
+      refinement** (not a full regenerate) + **loop-back-to-Compose** for any newly-generated
+      content, with a "why you're here" banner (owner decision D1/D6); (d) **in-app WYSIWYG
+      editing** (edits ARE the document; edit == download); (e) **clarifications persist to
+      the corpus** for reuse on future JDs. Full design + owner decisions in the plan file
+      `~/.claude/plans/this-has-become-unusable-compressed-lightning.md`.
+      _(added: 2026-07-06, generation-experience remediation; open count 9 → 10.)_
+      **→ Integrate as a dedicated re-architecture sprint** (fresh session) — the render +
+      richness fixes already make the app usable; sequence: frozen-composition → assemble →
+      surgical-refine/loop-back → WYSIWYG → clarifications→corpus.
+
+- [ ] **Recurring flaky Compose-UX under full-suite concurrency** — a *different* Compose
+      Playwright test failed on each full-suite run of the 2026-07-06 remediation and
+      **passed in isolation**: `test_20260612_experience_summary_item.py::test_positioning_pin_preserves_title_pin`
+      (Branch 2 run) and `test_20260611_compose_order_no_recommendations.py::test_no_recommendations_order_persists_on_reload`
+      (Branch 3 run). Neither is caused by the branch's changes (analyzer/prompt; a UI modal).
+      Same timing class as the earlier resolved Compose-UX race — now a **pattern** (2 distinct
+      tests). Needs a stabilization pass (settle-marker / serialize / bounded-retry the compose
+      UX tier). _(added: 2026-07-06, generation-experience remediation; open count 10 → 11 —
+      **over the ~8–10 ceiling; a reduction sprint is now due**.)_
+      **→ Integrate with the re-architecture sprint** (the compose surface is reworked there
+      anyway) **or a standalone test-infra stabilization**, whichever comes first.
+
 #### Resolved
 
 - [x] **Flaky Compose-UX race class — and a real server-side title-pin race it was catching** —
