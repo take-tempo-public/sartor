@@ -22,6 +22,7 @@ from analyzer import (
     _COVER_LETTER_RULES_BLOCK,
     GENERATE_CORPUS_REQUIRED_KEYS,
     GENERATE_REQUIRED_KEYS,
+    RECOMMEND_SYSTEM_PROMPT,
     _build_generate_prompt,
     _corpus_block,
     _stable_user_prefix,
@@ -396,6 +397,26 @@ class TestGenerateDispatch:
         prompt = self._run(ctx)
         assert "ATTRIBUTE each part to ITS role" in prompt
 
+    def test_summary_rule_asks_for_two_sentences(self):
+        """Richness: the weak one-sentence summary rule is replaced by a targeted
+        two-sentence positioning paragraph."""
+        prompt = self._run(_make_corpus_context())
+        assert "TWO-SENTENCE positioning" in prompt
+
+    def test_skills_section_is_a_required_rule(self):
+        """Richness: a `## Skills` section is now an explicit rule, not just an
+        example heading — the fix for 'no skills in any preview'."""
+        prompt = self._run(_make_corpus_context())
+        assert "## Skills" in prompt
+        assert "Skills are short noun phrases" in prompt
+
+    def test_corpus_grounding_blesses_summary_and_skills(self):
+        """The corpus verbatim-bullet grounding must explicitly NOT suppress the
+        Summary paragraph and Skills list (previously they read as forbidden
+        'other bullets' and the model dropped them)."""
+        prompt = self._run(_make_corpus_context())
+        assert "are NOT resume bullets and are EXPECTED sections" in prompt
+
     def test_corpus_response_missing_selected_bullets_raises(self, monkeypatch):
         """When career_corpus is set, the response MUST include selected_bullets
         + proposed_new_bullets + proposed_experience_titles. Missing any of these
@@ -495,6 +516,67 @@ class TestCorpusEffectiveSetFilter:
         ctx["composition_overrides"] = {"pinned": [100], "excluded": [], "added": []}
         prefix = _stable_user_prefix(ctx)
         assert 'pinned="true"' in prefix
+
+    def test_unrecommended_role_keeps_its_bullets_not_starved(self):
+        """Anti-starvation floor: when recommendations exist for SOME roles, a role
+        with NO curation signal (no recommendation, pin, or added) keeps its active
+        bullets instead of collapsing to a title-only entry — the fix for the
+        reported '1 weak bullet per role' / empty-role bug. Recommended roles still
+        narrow; un-recommended roles pass through so generate's COVERAGE rule can
+        pick their strongest. This also aligns generate with the Compose preview,
+        which already keeps all active bullets for an un-recommended role."""
+        ctx = _make_corpus_context()
+        # A SECOND experience that will NOT be recommended.
+        ctx["career_corpus"].append(
+            {
+                "id": 2,
+                "company": "Vega",
+                "location": "",
+                "start_date": "2019-01",
+                "end_date": "2022-08",
+                "eligible_titles": [{"id": 20, "title": "PM", "is_official": True}],
+                "bullets": [
+                    {
+                        "id": 200,
+                        "text": "Shipped mobile app to 1M users.",
+                        "tags": [],
+                        "has_outcome": True,
+                        "source": "primary:r.md",
+                    },
+                    {
+                        "id": 201,
+                        "text": "Ran discovery interviews.",
+                        "tags": [],
+                        "has_outcome": False,
+                        "source": "primary:r.md",
+                    },
+                ],
+            }
+        )
+        # Recommend ONLY exp 1 (bullet 100); exp 2 gets no recommendation at all.
+        ctx["llm_recommendations"] = {"1": {"bullet_ids": [100], "rationale": "x"}}
+        prefix = _stable_user_prefix(ctx)
+        # Exp 1 (curated) still narrows to its recommendation.
+        assert "Led 5-person team." in prefix
+        assert "Defined roadmap." not in prefix
+        # Exp 2 (no signal) survives in full — never starved to title-only.
+        assert "Shipped mobile app to 1M users." in prefix
+        assert "Ran discovery interviews." in prefix
+
+
+class TestRecommendPromptGenerous:
+    """The Compose recommender must be generous + metric-first and never zero
+    out a role — the fix for '1 weak bullet per role, metrics dropped'."""
+
+    def test_recommend_is_generous_and_metric_first(self):
+        assert "Be generous, not stingy" in RECOMMEND_SYSTEM_PROMPT
+        assert "Never zero out a role" in RECOMMEND_SYSTEM_PROMPT
+        assert "has_outcome" in RECOMMEND_SYSTEM_PROMPT  # metric preference
+
+    def test_recommend_drops_stingy_language(self):
+        # The old "down to 1 / soft ceiling / recruiters skim" stinginess is gone.
+        assert "down to 1" not in RECOMMEND_SYSTEM_PROMPT
+        assert "soft ceiling" not in RECOMMEND_SYSTEM_PROMPT
 
 
 class TestBulletOrderHonored:

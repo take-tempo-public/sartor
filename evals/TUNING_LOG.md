@@ -2658,3 +2658,50 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    over-omit legitimate content. Corpus-mode-only prompt changes (C1/E2) are NOT
    exercised by the synthetic suite (it runs the legacy path); validate them with
    prompt-structure unit tests + owner E2E rather than a paid corpus run.
+
+---
+
+## Generation richness — 2026-07-06 — `fix/generation-richness` — `2026-07-01.1` → `2026-07-06.1`
+
+1. **What changed?**
+   - **Code-side anti-starvation floor** (`analyzer.py:_stable_user_prefix`): the
+     recommendation narrowing became PER-ROLE. A role with a curation signal
+     (recommendation / pin / added) still narrows to that set; a role with NO signal
+     now keeps its active bullets instead of being filtered to empty. This makes
+     generate agree with the Compose preview (`corpus_to_json_resume`, which already
+     kept all active bullets for un-recommended roles). Corpus-only.
+   - **`RECOMMEND_SYSTEM_PROMPT`** softened: generous 3-6/role, STRONGLY prefer
+     `has_outcome="true"` metric bullets, "Never zero out a role" — replacing the old
+     "down to 1 / soft ceiling / recruiters skim" stinginess. Corpus-only.
+   - **Summary** (resume_rule #1, shared): one-sentence → a targeted TWO-SENTENCE
+     positioning paragraph. **Skills** (resume_rule #9, shared): explicit `## Skills`
+     section rule (previously only an example heading). **Grounding carve-out**
+     (corpus mode): the Summary paragraph + Skills list are declared NOT resume bullets
+     and EXPECTED sections, so the verbatim-bullet rule stops suppressing them.
+2. **Why?** Owner report: corpus generation produced ~1 bullet for most roles, dropped
+   metric bullets, and emitted no Summary/Skills. Root cause: `recommend_bullets`
+   under-picked / omitted roles, and the code-side narrowing then STARVED every
+   un-recommended role BEFORE generate saw it — so the v1.0.8 C1 COVERAGE floor (a
+   prompt rule) was moot (a starved role "genuinely has no bullets"). The one-sentence
+   summary rule, the missing skills-section rule, and the verbatim-bullet grounding
+   suppressed Summary/Skills.
+3. **Result?**
+   - **Deterministic** (robert E2E context `context_20260706_122956.json`, no API):
+     roles reaching generate with ≥1 bullet **3/8 → 8/8**; total bullets to generate
+     **11 → 24**. Five roles were previously reaching generate empty.
+   - **Real `generate()`** (robert corpus, Sonnet 5, `2026-07-06.1`): **8/8 roles with
+     bullets, 24 bullets, 16 metric-bearing**, a 2-sentence Summary, and a populated
+     `## Skills` section.
+   - **Grounding smoke** (`--suite synthetic --subset smoke`, `2026-07-06.1`):
+     **3 pass / 0 fail, gate exit 0** — pm-senior grounding **4.6** (fabricated_specifics
+     0.00), sre-mid-level **4.6** (0.13). The Summary/Skills grounding carve-out did NOT
+     loosen grounding on the legacy path. Cost ~$0.13/fixture.
+4. **Learned?** A prompt-side COVERAGE floor cannot restore bullets a CODE-side
+   narrowing already stripped — the selection filter and the coverage rule must agree,
+   and the cheapest way to keep them agreeing is to make generate's narrowing identical
+   to the preview's (`corpus_to_json_resume`). Blessing non-bullet sections
+   (Summary/Skills) inside corpus grounding is safe (grounding held at 4.6). The
+   corpus-side changes (floor + RECOMMEND + grounding carve-out) are still not covered by
+   the synthetic suite; a deterministic before/after count on a saved context + one real
+   corpus `generate()` is a cheaper, more representative check for the owner's actual
+   flow than a paid synthetic run.

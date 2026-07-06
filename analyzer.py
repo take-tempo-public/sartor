@@ -354,7 +354,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-07-01.1"  # v1.0.8 walkthrough: C1 per-role bullet floor, E2 evolve-draft on refine, E5 no-tenure-fabrication worked example, H1 multi-role clarification attribution
+PROMPT_VERSION = "2026-07-06.1"  # richness: code-side anti-starvation bullet floor (never zero a role), generous+metric-first RECOMMEND, two-sentence Summary, first-class Skills section + corpus-mode grounding carve-out
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -805,8 +805,26 @@ def _stable_user_prefix(context_set: ContextSet) -> str:
                 eid = int(raw_eid)
                 exp_bullets = exp.get("bullets") or []
                 if use_recommendations:
-                    effective = rec_by_exp.get(eid, set()) | added_ids | pinned_ids
-                    exp_bullets = [b for b in exp_bullets if int(b.get("id") or 0) in effective]
+                    # Per-role narrowing that never STARVES a role. A role the
+                    # user or recommend_bullets actually curated is narrowed to
+                    # that curated set; a role with NO curation signal at all
+                    # keeps its active bullets, so it can never collapse to a
+                    # title-only "weak summary" (the reported bug) just because
+                    # recommend_bullets under-picked or omitted it. This also
+                    # makes generate agree with the Compose preview
+                    # (corpus_to_json_resume), which already keeps all active
+                    # bullets for an un-recommended role — previously generate
+                    # dropped them, so the résumé was thinner than the preview.
+                    exp_bullet_ids = {int(b.get("id") or 0) for b in exp_bullets}
+                    exp_signal = (
+                        rec_by_exp.get(eid, set())
+                        | (added_ids & exp_bullet_ids)
+                        | (pinned_ids & exp_bullet_ids)
+                    )
+                    if exp_signal:
+                        exp_bullets = [
+                            b for b in exp_bullets if int(b.get("id") or 0) in exp_signal
+                        ]
                 if excluded_ids:
                     exp_bullets = [b for b in exp_bullets if b.get("id") not in excluded_ids]
                 new_exp: CorpusExperience = {**exp, "bullets": exp_bullets}
@@ -2290,7 +2308,7 @@ When none of an experience's <eligible_title> elements fits the JD's framing, yo
 A <bullet> marked `pinned="true"` was explicitly pinned by the user for this application. You MUST include every pinned bullet's id in `selected_bullets` (the user has decided it belongs). Bullets the user excluded are already removed from the corpus above.
 
 GROUNDING for corpus mode:
-  Every bullet you emit in resume_content must EITHER (a) reproduce a <bullet> text verbatim from the corpus (just record its `id` in selected_bullets), OR (b) be listed in proposed_new_bullets so the user knows it's a new claim. No other bullets are permitted.{summary_grounding} The legacy GROUNDING CHECK below still governs cover_letter_content and any reframing language between bullets.
+  Every bullet you emit in resume_content must EITHER (a) reproduce a <bullet> text verbatim from the corpus (just record its `id` in selected_bullets), OR (b) be listed in proposed_new_bullets so the user knows it's a new claim. No other bullets are permitted.{summary_grounding} The `## Summary` positioning paragraph and the `## Skills` list are NOT resume bullets and are EXPECTED sections: write the Summary as grounded reframing (governed by the legacy GROUNDING CHECK below) and populate Skills from the candidate's skills in <candidate_profile> — neither is a corpus <bullet> and neither needs a bullet id. The legacy GROUNDING CHECK below still governs cover_letter_content and any reframing language between bullets.
 
 COVERAGE (every role keeps its bullets): every <experience> that has one or more <bullet> elements MUST contribute at least one bullet to resume_content (and to selected_bullets) — typically its 2-4 strongest, most JD-relevant bullets. NEVER leave a role's heading with no bullets when the corpus provides bullets for it: an older, shorter, or less-central role still needs its representative bullet(s), not an empty title-only entry. Trim and prioritize WITHIN each role for length; never zero a role out. A role appears bullet-less ONLY when the corpus genuinely provides no bullets for it.
 </corpus_mode>
@@ -2448,7 +2466,7 @@ GROUNDING CHECK — apply this before writing every bullet:
     NOT OK:        "10 years of end-to-end product ownership."
                    ← invents a tenure count ("10 years") the source never states. NEVER assert a years-of-experience / years-of-ownership number unless the candidate wrote it — a date span is not a licence to coin a round figure. In the SUMMARY especially, do not manufacture duration or seniority claims. If the candidate removed such a phrase in a prior edit, treat that removal as binding and do NOT re-add it on a later pass.
 
-1. Include a targeted summary sentence answering: what title you seek, what makes you special, what you bring to the team. If it cannot fit in one sentence, use a sentence with a very short bullet list.
+1. Open with a `## Summary` section: a targeted TWO-SENTENCE positioning paragraph answering what role you're aiming for, what makes you distinctive, and the concrete value you bring. Lead with the strongest, most JD-relevant framing. Keep it grounded (see the GROUNDING CHECK) — never manufacture a years-of-experience or seniority claim the source does not state.
 2. Do NOT invent experience. Every bullet must trace directly to the original resume. Reframe language; never invent facts.
 3. Metrics: surface numbers that exist in the original. If a bullet has no metric, use qualitative scope and impact language — do not fabricate a number to fill the gap.
 4. Prioritize keywords from the job description. Integrate them into existing bullets naturally; do not create new bullets to house keywords.
@@ -2456,6 +2474,7 @@ GROUNDING CHECK — apply this before writing every bullet:
 6. Strengthen verb choices: replace weak or repeated verbs with strong, varied, industry-specific action verbs.
 7. Preserve the original resume's section structure and ordering.
 8. Ensure all content is ATS-compatible — no tables, columns, or special characters.
+9. Include a `## Skills` section: a compact list of the candidate's most JD-relevant skills and competencies, drawn from the Skills line in <candidate_profile> and the skills evidenced across their experience, prioritizing the job's essential requirements. Skills are short noun phrases, not achievement claims; the no-invention rule still applies — list only skills the candidate actually has.
 </resume_rules>
 {cover_letter_rules_block}
 {
@@ -2934,11 +2953,13 @@ Existing canonical bullets for this experience:
 
 RECOMMEND_SYSTEM_PROMPT = """You are helping a candidate curate a tailored resume for ONE specific job. The candidate's full bullet corpus is given as <career_corpus> XML; the job is given as <jd>. You see the analyst's prior breakdown of the JD in <analysis> when present.
 
-Your one task: for EACH experience in the corpus, pick 3-7 bullets that best fit THIS JD. Optimize for: relevance to JD requirements, variety (don't pick three bullets that say the same thing), measurable outcomes when present, and recency where signal-equivalent.
+Your one task: for EACH experience in the corpus, pick the 3-6 bullets that best fit THIS JD. Optimize for: relevance to JD requirements, variety (don't pick three bullets that say the same thing), and measurable outcomes. When a bullet carries a metric or concrete result (`has_outcome="true"`), STRONGLY prefer it — a quantified achievement almost always earns its place over a vaguer one, so a JD-relevant metric bullet should rarely be left out.
 
-NEVER invent bullets. NEVER reword bullets — return only ids from the corpus. If an experience has fewer than 3 strong fits, return as few as you genuinely recommend (down to 1); don't pad.
+NEVER invent bullets. NEVER reword bullets — return only ids from the corpus.
 
-**Quality over quantity.** The 3-7 range is a soft ceiling, not a target. Stop including bullets the moment the next-best pick would be a clear step down from your previous one. If 4 bullets are obviously strong and the 5th would be middling, return 4. If only 3 clear the bar, return 3. Adding bullet #6 only makes sense if it would noticeably strengthen the résumé over not adding it. A short list of clearly-strong bullets always beats a long list with weak tail picks — recruiters skim, so every bullet present must earn its place.
+**Be generous, not stingy.** This is the candidate's content-review surface — they want to SEE their strong material and trim it themselves. Aim for 3-6 bullets per role, and include a bullet whenever it adds distinct, JD-relevant value. Prefer offering one bullet too many over one too few: the user can exclude what they don't want, but they cannot resurface what you never surfaced. Return fewer than 3 for a role ONLY when it genuinely has fewer than 3 relevant bullets.
+
+**Never zero out a role.** Every experience with ANY plausibly JD-relevant bullet MUST appear with its best-fitting bullets — even an older or less-central role usually has one transferable bullet worth surfacing. Omit an experience only when NONE of its bullets fit this JD at all. When in doubt, include the role with its 1-2 strongest bullets rather than dropping it.
 
 **No near-duplicates.** The corpus often contains multiple phrasings of the same achievement (different resumes wrote the same accomplishment differently). NEVER select more than one bullet describing the same achievement. When two bullets read as near-restatements of each other, pick the single strongest phrasing (prefer the one with measurable outcomes, then the more specific verb set) and skip the rest. A safety pass downstream removes any leaked duplicates, but you should not produce them in the first place.
 
@@ -2954,7 +2975,7 @@ Output JSON only, this exact shape:
   ]
 }
 
-Skip experiences whose bullets don't fit at all (omit them from the array entirely; don't return empty bullet_ids). Use the numeric ids only — do NOT prefix with "b" or "e"."""
+Omit an experience from the array ONLY when NONE of its bullets fit this JD at all (don't return empty bullet_ids). Use the numeric ids only — do NOT prefix with "b" or "e"."""
 
 
 def recommend_bullets(
