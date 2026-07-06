@@ -1,7 +1,7 @@
 ---
 name: tune-drafter
 description: Use during the /tune-from-annotations loop to draft a candidate prompt edit from an improvement_brief.md. The agent reads the brief and the current text of one analyzer._BASE_SYSTEM_PROMPTS constant, then returns the FULL candidate constant text with only the targeted change — for the override primitive's --prompt-overrides JSON. It is read-only: it never edits analyzer.py, never writes files, never bumps PROMPT_VERSION. The orchestrating command writes the temp JSON and runs the A/B; promotion is a separate, user-gated step.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools:
   - Read
   - Grep

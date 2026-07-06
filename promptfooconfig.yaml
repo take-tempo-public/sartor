@@ -7,14 +7,14 @@
 #   npx promptfoo eval
 #   npx promptfoo eval --no-cache
 #
-# Provider: Anthropic claude-sonnet-4-6 (mirrors MODEL_SNAPSHOTS in runner.py)
+# Provider: Anthropic claude-sonnet-5 (mirrors MODEL_SNAPSHOTS in runner.py)
 # Fixtures: evals/anchors/anchor-v1/fixtures/
 # Gate: regression > 0.5 on any rubric vs baseline_v1.json = blocked
 
 description: "sartor. anchor-v1 fixture eval"
 
 providers:
-  - id: anthropic:claude-sonnet-4-6
+  - id: anthropic:claude-sonnet-5
     config:
       max_tokens: 4096
 

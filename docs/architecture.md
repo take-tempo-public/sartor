@@ -520,7 +520,7 @@ graph LR
 Latency data from real production usage in
 [`docs/dev/perf/PERF_ANALYZE.md`](dev/perf/PERF_ANALYZE.md).
 
-**Sonnet 4.6** (`claude-sonnet-4-6`) handles heavy reasoning:
+**Sonnet 5** (`claude-sonnet-5`) handles heavy reasoning:
 `analyze_synthesis`, `iterate_clarify`, `generate`,
 `generate_cover_letter`. These calls produce large JSON
 responses. `analyze` is now a **two-pass** call — a Haiku

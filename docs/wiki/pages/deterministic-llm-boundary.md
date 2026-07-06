@@ -64,7 +64,7 @@ funnel, not of each caller.
 
 Model selection is also centralized. The funnel resolves
 `effective_model = model or SONNET_MODEL` —
-[`analyzer.py:SONNET_MODEL`](../../../analyzer.py) (`"claude-sonnet-4-6"`) is the
+[`analyzer.py:SONNET_MODEL`](../../../analyzer.py) (`"claude-sonnet-5"`) is the
 default; a caller opts a cheap structured call into
 [`analyzer.py:HAIKU_MODEL`](../../../analyzer.py)
 (`"claude-haiku-4-5-20251001"`) by passing `model=HAIKU_MODEL`. Sonnet carries

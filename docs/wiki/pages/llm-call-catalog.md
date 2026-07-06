@@ -14,7 +14,7 @@ an optional `model` arg that **defaults to `SONNET_MODEL`** — the resolution
 `effective_model = model or SONNET_MODEL` lives in
 [`analyzer.py:_call_llm_streaming`](../../../analyzer.py), which the non-streaming
 [`analyzer.py:_call_llm`](../../../analyzer.py) wraps. The two model constants are
-[`analyzer.py:SONNET_MODEL`](../../../analyzer.py) (`"claude-sonnet-4-6"`) and
+[`analyzer.py:SONNET_MODEL`](../../../analyzer.py) (`"claude-sonnet-5"`) and
 [`analyzer.py:HAIKU_MODEL`](../../../analyzer.py) (`"claude-haiku-4-5-20251001"`).
 A call is Sonnet when it passes **no** `model=` (the default); it is Haiku when it
 explicitly passes `model=HAIKU_MODEL` `[synthesis]`. The legacy `MODEL` alias still

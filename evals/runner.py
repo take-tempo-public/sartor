@@ -79,7 +79,7 @@ ANCHOR_DIR = EVALS_DIR / "anchors" / "anchor-v1"
 WEIGHTS_PATH = EVALS_DIR / "callback_weights.json"
 
 MODEL_SNAPSHOTS = {
-    "sonnet": "claude-sonnet-4-6",
+    "sonnet": "claude-sonnet-5",
     "haiku_judge": "claude-haiku-4-5-20251001",
 }
 
