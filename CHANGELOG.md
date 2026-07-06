@@ -13,6 +13,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: generation richness — rich bullets across every role, metrics surfaced, real Summary + Skills (`fix/generation-richness`, 2026-07-06)
+
+Second branch of the remediation, targeting "weak first-generation bullets/summaries."
+Corpus generation was collapsing most roles to a title-only "weak summary," dropping
+metric bullets, and emitting no Summary/Skills.
+
+- **`analyzer.py` — code-side anti-starvation floor.** `_stable_user_prefix`'s
+  recommendation narrowing is now PER-ROLE: a role the user or `recommend_bullets`
+  curated still narrows to that set, but a role with **no** curation signal keeps its
+  active bullets instead of being filtered to empty. Previously any role
+  `recommend_bullets` under-picked or omitted reached generate with **zero** bullets —
+  so the v1.0.8 COVERAGE rule ("every role keeps its bullets") was moot because the
+  bullets were already stripped. This also makes generate agree with the Compose
+  preview (`corpus_to_json_resume` already kept all active bullets for un-recommended
+  roles). On the owner's `robert` corpus: roles reaching generate with bullets **3/8 →
+  8/8**, total bullets **11 → 24**.
+- **`analyzer.py` — generous, metric-first RECOMMEND.** `RECOMMEND_SYSTEM_PROMPT` now
+  targets 3-6 bullets/role, STRONGLY prefers `has_outcome` metric bullets, and never
+  zeroes out a role — replacing the old "down to 1 / soft ceiling" stinginess that
+  starved the Compose card.
+- **`analyzer.py` — first-class Summary + Skills.** Resume rule #1 asks for a
+  two-sentence positioning Summary (was one sentence); new rule #9 requires a `## Skills`
+  section; and the corpus-mode grounding now explicitly declares the Summary paragraph +
+  Skills list as EXPECTED non-bullet sections, so the verbatim-bullet rule no longer
+  suppresses them.
+- `PROMPT_VERSION` `2026-07-01.1` → `2026-07-06.1`.
+- **Validation.** Grounding smoke (`--suite synthetic --subset smoke`): 3 pass / 0 fail,
+  grounding 4.6, `fabricated_specifics` ≤ 0.13 — the Summary/Skills carve-out did not
+  loosen grounding. Real `generate()` on `robert`: 8/8 roles, 24 bullets (16 with
+  metrics), 2-sentence Summary, Skills section. New corpus-mode unit tests pin the
+  anti-starvation floor + the generous-RECOMMEND + Summary/Skills prompt rules.
+
 ### Fix: single render engine — download == preview, and section titles never silently drop (`fix/single-render-engine`, 2026-07-06)
 
 First branch of the preview/download-fidelity remediation. The `.docx` download
