@@ -50,43 +50,30 @@ class WizardComposePage(BasePage):
         self._wait_settled()
 
     def _wait_settled(self) -> None:
-        """Wait until ``#composeList`` reached its terminal render.
+        """Wait until ``#composeList`` reached its terminal render (deterministic).
 
-        Two coupled signals, because the auto-recommend cascade has an async part
-        the DOM marker can't see:
+        The settle gate is ``Compose.SETTLED`` — ``data-compose-ready`` PRESENT and
+        ``data-compose-bg-pending`` ABSENT.  ``loadComposition()`` (static/app.js)
+        clears ``data-compose-ready`` at entry (before its fetch) and re-sets it after
+        the final synchronous append; every reload-firing background call (the
+        auto-recommend / draft-summary / gap-fill / role-recommend cascade AND the
+        user-action pin/accept/review/add reloads) increments a
+        ``data-compose-bg-pending`` counter attribute as its first synchronous
+        statement — BEFORE that marker is re-set — and decrements it in a ``finally``.
 
-        1. ``networkidle`` drains the in-flight recommend POSTs. On open, the
-           positioning / skills / role cards each fire a background ``recommend-*``
-           whose success RE-RUNS ``loadComposition()``; that POST is a separate
-           XHR, so if it outran the marker-stability window below, ``open()`` would
-           settle on the INITIAL render and the recommend's re-render would fire
-           late — during a later action — re-rendering a title list as unpinned and
-           letting the next save clobber the pin (the positioning-pin race).
-        2. ``data-compose-ready`` stability. ``loadComposition()`` (static/app.js)
-           clears the marker on ``#composeList`` at entry (before its fetch) and
-           sets it after the final synchronous append, so requiring it PRESENT and
-           STABLE across consecutive samples proves the terminal synchronous render
-           completed (skipping the present->absent->present flip between passes).
+        So the ONLY state with the marker present and the counter absent is the true
+        terminal render with no reload queued or in flight: a single deterministic
+        ``wait_for_selector`` on that combined condition replaces the old
+        ``networkidle`` + hand-rolled marker-stability poll, which could settle on a
+        non-terminal render in the window between a firing pass and its reload (the
+        Compose flaky-test class — e.g. the positioning-pin clobber).  ``networkidle``
+        is kept as a cheap pre-drain of unrelated in-flight XHRs.
         """
         self.page.wait_for_selector(
             Wizard.PANEL_COMPOSE, state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
         self.page.wait_for_load_state("networkidle")
-        interval_ms = 50
-        needed = 3
-        stable = 0
-        for _ in range(DEFAULT_TIMEOUT_MS // interval_ms):
-            if self.page.locator(Compose.READY).count() == 1:
-                stable += 1
-                if stable >= needed:
-                    return
-            else:
-                stable = 0
-            self.page.wait_for_timeout(interval_ms)
-        raise AssertionError(
-            f"#composeList never reached a stable data-compose-ready state "
-            f"within {DEFAULT_TIMEOUT_MS}ms"
-        )
+        self.page.wait_for_selector(Compose.SETTLED, state="attached", timeout=DEFAULT_TIMEOUT_MS)
 
     def wait_cards(self) -> WizardComposePage:
         """Wait for compose cards to render after a clarify-submit lands on Compose.

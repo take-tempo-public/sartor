@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: deterministic Compose settle gate — stop the flaky-UX class (`fix/compose-settle-bg-reload`, 2026-07-06)
+
+A reduction-sprint knock-down of the carry-forward "recurring flaky Compose-UX" ledger item.
+**Test-observability only** — no product behavior change, no prompt bytes, no `PROMPT_VERSION` bump.
+
+- **Root cause** — the Compose (Step 3) auto-recommend/draft cascade fires background POSTs that
+  each re-run `loadComposition()` on success; the `data-compose-ready` settle marker is re-set at
+  the END of each synchronous render, but a background reload (the Phase-3 deferred
+  `/draft-gap-fill` most visibly) lands *later*, so the POM's `_wait_settled` — a one-shot
+  `networkidle` + a hand-rolled 3×50 ms marker-stability poll — could settle on a non-terminal
+  render and race the re-render (the positioning-pin clobber).
+- **Fix (settle-marker, not serialize)** — a `data-compose-bg-pending` counter attribute on
+  `#composeList` ([`static/app.js`](static/app.js)), incremented as the first synchronous statement
+  of every `loadComposition()`-on-success reload site (the 5 auto-cascade `_fire*` **and** the 6
+  user-action pin/suggest/review/accept/add reloads) so it is present before the marker is re-set,
+  and decremented in a `finally` so a failed POST still balances (no stuck attribute → no hang).
+- **Deterministic gate** — `_wait_settled` ([`ui_pages/wizard_compose.py`](ui_pages/wizard_compose.py))
+  now waits on `#composeList[data-compose-ready]:not([data-compose-bg-pending])`
+  ([`Compose.SETTLED`](ui_pages/selectors.py)) — the only state that is the true terminal render
+  with no reload queued — replacing the stability poll with a single `wait_for_selector`.
+- **Regression test** — `tests/ux/regression/test_20260706_compose_settle_bg_reload.py` slow-stubs
+  the gap-fill draft so its reload is reliably in flight, then asserts the counter fires and the
+  settle blocks until it drains. The two previously-flaky members + the gap-fill tests passed
+  **18/18** across 3 stability re-runs; full `pytest -m ux` (77) and the whole suite (1535) green.
+
 ### Chore: pin ruff + add a whole-tree `ruff format --check` CI gate (`chore/ruff-format-pin`, 2026-07-06)
 
 A reduction-sprint knock-down of the carry-forward "ruff-format-drift" ledger item.
