@@ -498,7 +498,16 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       company-term cleaning + coverage reframe) · F-02 résumé import
       creates no Skill rows — **F-02 DONE 2026-07-07 (`fix/ux-f02-import-skill-rows`)**
       · F-11 eval harness scores the fallback LLM `generate`
-      path, not the frozen-composition assembly the UI ships · F-24/25/26
+      path, not the frozen-composition assembly the UI ships — **DONE 2026-07-07**
+      (`fix/eval-f11-frozen-assembly`: new `evals/runner.py --mode assemble` path
+      drives the SAME Compose → freeze → assemble product path —
+      `recommend_bullets`/`recommend_summaries` (Haiku) → `freeze_approved_composition`
+      → the deterministic assembler, zero résumé-body LLM calls, cover letter stays a
+      real Sonnet call — so corpus-backed runs score the shipped assembled document;
+      every JSONL record carries `eval_mode`, assemble-mode scores are exempt from the
+      `baseline_v1.json` regression gate (different population); legacy `--mode generate`
+      path byte-identical/unchanged. Unblocks ledger row "Eval baseline stale vs
+      production model (Sonnet 5)" below to proceed) · F-24/25/26
       install.md `[dev]`/`--setup` gaps + `pyproject.toml` `py-modules` omission
       (overlaps the PyPI-wheel item below — fix together). Screenshot evidence
       (gitignored, local): `output/ux-review-2026-07-screenshots/` + its MANIFEST.md.
@@ -857,6 +866,11 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       Sonnet-5 / `2026-07-01.1` baseline (schema bump per the RELEASE_ARC
       `eval/baseline-*` procedure) so future regression checks have a same-model
       reference. _(discovered: v1.0.8 stream, 2026-07-05, `chore/upgrade-sonnet-5-model`.)_
+      **`fix/eval-f11-frozen-assembly` (2026-07-07) landed the corpus-backed
+      `--mode assemble` eval path this refresh was scheduled after — the fresh
+      Sonnet-5 baseline capture is now UNBLOCKED** (still open: no capture run yet;
+      when it runs, decide whether to seed a `generate`-mode-only baseline or a
+      split baseline covering both `eval_mode` populations).
       **→ Integrate before the next eval-gated sprint / first PyPI tag** — low
       effort (one eval run + a committed JSON), but do it before leaning on the
       regression gate again.

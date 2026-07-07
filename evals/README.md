@@ -213,6 +213,7 @@ Key implementation details:
 | `--out-dir PATH` | Override the default `evals/results/` output location. |
 | `--prompt-overrides PATH` | Inject a candidate system prompt for this run only (A/B a prompt without editing `analyzer.py`). See [Candidate prompt overrides](#candidate-prompt-overrides---prompt-overrides) below. |
 | `--seed PATH` | Build each fixture's context from a corpus `seed.json` via `build_context_set_from_db` (in-memory SQLite import) instead of the fixture's resume file. The fixture's `jd.txt` + `expected.json` still drive grading. Omit for the byte-identical file-based path. See [Corpus-backed runs](#corpus-backed-runs---seed) below. |
+| `--mode generate\|assemble` | `generate` (default) is the historical `analyzer.generate()` LLM path, byte-identical to before. `assemble` scores the deterministically-ASSEMBLED résumé body instead — REQUIRES `--seed`. See [Assembled runs](#assembled-runs---mode-assemble-f-11) below. |
 
 ### Exit codes
 
@@ -397,6 +398,52 @@ Semantics:
 This is the runner half of the v1.0.4 corpus-backed eval loop; the multi-JD
 bootstrap that drives many JDs against one seed builds on top of it
 (`eval/bootstrap-engine`).
+
+### Assembled runs (`--mode assemble`, F-11)
+
+On the UI happy path, corpus-mode `/api/generate` assembles the résumé body
+**deterministically** from the frozen `approved_composition`
+(`blueprints/generation.py`'s `_frozen_composition` gate — zero résumé-body LLM
+calls). The default eval path (`--mode generate`, unchanged) always calls
+`analyzer.generate()` instead, so it scores the fallback/legacy LLM path, not
+the assembled document users actually download
+([`40-friction-register.md` F-11](../docs/dev/reviews/2026-07-ux-review/40-friction-register.md)).
+
+`--mode assemble` (REQUIRES `--seed` — frozen-composition assembly needs a real
+corpus, not a file-parsed résumé) drives the SAME Compose → freeze → assemble
+path the product uses:
+
+```bash
+python evals/runner.py --suite synthetic --subset smoke \
+    --seed evals/fixtures/real/<name>/seed.json --mode assemble
+```
+
+1. `analyzer.recommend_bullets` / `recommend_summaries` (Haiku — the exact
+   functions the `/recommend` + `/recommend-summary` routes call) populate
+   `llm_recommendations` / `llm_summary_recommendation` on the context, mirroring
+   Compose's auto-fired recommend cascade. Skill curation is left at its
+   documented product default (no `recommend-skills` call → all active,
+   approved skills — the same fallback `build_json_resume_from_corpus` uses
+   with no recommendation), not an eval shortcut.
+2. `corpus_to_json_resume.freeze_approved_composition` — the exact function
+   Compose's Save-and-continue calls — resolves + freezes the composition.
+3. `blueprints.generation._assemble_from_frozen_composition` — the exact
+   function `/api/generate` calls once a composition is frozen — assembles it.
+   Zero résumé-body LLM calls. The cover letter stays a real Sonnet call
+   (`generate_cover_letter_against_resume`), matching the legacy `generate()`
+   call's own cover-letter-included default so the `tone` rubric still has
+   material to grade.
+
+Every JSONL record this run writes carries `"eval_mode": "assemble"` (default
+runs carry `"eval_mode": "generate"`) — mirrors how `prompt_version` / `suite`
+attribute records, so the dashboard/baseline tooling can split the two
+content-generation populations. **Assemble-mode scores are never compared
+against `baseline_v1.json`** (measured on the `generate`-mode population):
+`baseline_comparison` is always `null` and assemble-mode scores never feed the
+regression-gate `exit_code` — a sub-`PASS_THRESHOLD` score still counts via
+`n_fail`, but a *delta* against the generate-mode baseline never fires. The
+`analyze`/`clarify` stages run unchanged in both modes. Omitting `--mode` (or
+passing `--mode generate`) leaves the historical path **byte-identical**.
 
 ---
 
@@ -799,6 +846,7 @@ Each line in `evals/results/{timestamp}.jsonl` (schema_version 2):
 | `failed_rules` | Machine-friendly slugs from the rubric's vocabulary. Useful for grepping across many runs |
 | `status` | `ok` (graded successfully), `judge_error` (judge response unparseable), `pipeline_error` (analyze/generate threw) |
 | `prompt_version` | The `analyzer.PROMPT_VERSION` at run time. Lets the dashboard's score-over-time chart attribute regressions to a specific prompt revision. |
+| `eval_mode` | `"generate"` (default — `analyzer.generate()`, the LLM path) or `"assemble"` (F-11 — the deterministic Compose → freeze → assemble path). See [Assembled runs](#assembled-runs---mode-assemble-f-11). `assemble`-mode records always carry `baseline_comparison: null` and are excluded from the regression gate. |
 | `run_id` | 12-hex UUID shared by the analyze + generate calls that produced this output. Match against `logs/llm_calls.jsonl` to find the specific LLM calls behind any graded result. |
 | `deterministic_metrics.verb_diversity` | Unique leading verbs / total bullets in generated resume. See `hardening.compute_verb_diversity`. |
 | `deterministic_metrics.specificity_density` | Fraction of bullets containing at least one quantifier. See `hardening.compute_specificity_density`. |
