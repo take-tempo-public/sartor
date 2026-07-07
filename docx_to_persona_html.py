@@ -98,8 +98,7 @@ def _run_color_hex(run: Run) -> str | None:
 
 def _has_right_tab(paragraph: Paragraph) -> bool:
     return any(
-        t.alignment == WD_TAB_ALIGNMENT.RIGHT
-        for t in (paragraph.paragraph_format.tab_stops or [])
+        t.alignment == WD_TAB_ALIGNMENT.RIGHT for t in (paragraph.paragraph_format.tab_stops or [])
     )
 
 
@@ -206,8 +205,8 @@ def extract_persona_style(docx_path: str | Path) -> dict[str, Any]:
                 if size_pt:
                     knobs["heading_pt"] = size_pt
                 text = p.text.strip()
-                knobs["heading_uppercase"] = bool(text) and text == text.upper() and any(
-                    c.isalpha() for c in text
+                knobs["heading_uppercase"] = (
+                    bool(text) and text == text.upper() and any(c.isalpha() for c in text)
                 )
                 if run0 is not None:
                     knobs["heading_small_caps"] = bool(run0.font.small_caps)
@@ -266,7 +265,7 @@ def _build_css(knobs: dict[str, Any]) -> str:
  * Deterministic output of docx_to_persona_html.generate_companion - do not
  * hand-edit; re-uploading the .docx regenerates it. Single-column + ATS-safe
  * (mirrors classic.css) re-typed with the uploaded template's typography.
- * layout_fidelity: {knobs.get('layout_fidelity', 'full')}
+ * layout_fidelity: {knobs.get("layout_fidelity", "full")}
  */
 
 @page {{ size: letter; margin: {m}; }}
@@ -290,17 +289,17 @@ html, body {{
 }}
 
 .resume-header {{
-  text-align: {knobs.get('name_align', 'center')};
+  text-align: {knobs.get("name_align", "center")};
   margin-bottom: 20px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--rule);
 }}
-.resume-header .name {{ font-size: {_fmt_pt(knobs.get('name_pt', 22.0))}pt; font-weight: 600; letter-spacing: 0.5pt; margin-bottom: 2pt; }}
-.resume-header .label {{ font-size: {_fmt_pt(knobs.get('subtitle_pt', 11.0))}pt; color: var(--fg-1); margin-bottom: 4pt; font-weight: 400; }}
-.resume-header .contact {{ font-size: {_fmt_pt(knobs.get('contact_pt', 9.5))}pt; color: var(--fg-2); letter-spacing: 0.1pt; }}
+.resume-header .name {{ font-size: {_fmt_pt(knobs.get("name_pt", 22.0))}pt; font-weight: 600; letter-spacing: 0.5pt; margin-bottom: 2pt; }}
+.resume-header .label {{ font-size: {_fmt_pt(knobs.get("subtitle_pt", 11.0))}pt; color: var(--fg-1); margin-bottom: 4pt; font-weight: 400; }}
+.resume-header .contact {{ font-size: {_fmt_pt(knobs.get("contact_pt", 9.5))}pt; color: var(--fg-2); letter-spacing: 0.1pt; }}
 
 h2 {{
-  font-size: {_fmt_pt(knobs.get('heading_pt', 12.0))}pt;
+  font-size: {_fmt_pt(knobs.get("heading_pt", 12.0))}pt;
   font-weight: 600;
   color: var(--fg-0);
   text-transform: {heading_transform};
@@ -319,7 +318,7 @@ section:first-of-type h2 {{ margin-top: 8px; }}
 
 .job, .degree, .project {{ margin-bottom: 14px; page-break-inside: avoid; }}
 .job-header, .degree-header {{ display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 2pt; }}
-.job-title, .degree-header h3 {{ font-size: {_fmt_pt(knobs.get('job_title_pt', 11.0))}pt; font-weight: 600; color: var(--fg-0); }}
+.job-title, .degree-header h3 {{ font-size: {_fmt_pt(knobs.get("job_title_pt", 11.0))}pt; font-weight: 600; color: var(--fg-0); }}
 .job-title .company, .degree-header .institution {{ font-weight: 600; }}
 .job-title .position, .degree-header .area {{ font-weight: 400; color: var(--fg-1); }}
 .job-title .sep, .degree-header .sep {{ color: var(--fg-2); margin-right: 2pt; }}
@@ -350,9 +349,7 @@ def _build_html(css_filename: str) -> str:
     return skeleton.replace('href="classic.css"', f'href="{css_filename}"')
 
 
-def generate_companion(
-    docx_path: str | Path, *, force: bool = False
-) -> tuple[Path, Path] | None:
+def generate_companion(docx_path: str | Path, *, force: bool = False) -> tuple[Path, Path] | None:
     """Write `<stem>.html` + `<stem>.css` next to an uploaded persona `.docx`.
 
     Returns `(html_path, css_path)`, or None if the .docx can't be read (the

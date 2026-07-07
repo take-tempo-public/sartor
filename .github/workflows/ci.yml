@@ -35,6 +35,12 @@ jobs:
       - name: Ruff (lint)
         run: ruff check .
 
+      # Whole-tree format gate — catches committed format drift that `ruff check` (lint) does
+      # NOT (the commit hook only checks STAGED files). Deterministic because ruff is exact-pinned
+      # in pyproject.toml's dev extra; the two are one inseparable fix (chore/ruff-format-pin).
+      - name: Ruff (format check)
+        run: ruff format --check .
+
       - name: Mypy (type-check)
         run: mypy .
 

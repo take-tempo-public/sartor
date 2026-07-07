@@ -88,7 +88,9 @@ def test_done_payload_carries_citations_and_flags(monkeypatch):
         {
             "n": 2,
             "label": "analyzer.py:353",
-            "href": "https://github.com/take-tempo-public/sartor/blob/" + "a" * 40 + "/analyzer.py#L353",
+            "href": "https://github.com/take-tempo-public/sartor/blob/"
+            + "a" * 40
+            + "/analyzer.py#L353",
         },
     ]
     assert payload["truncated"] is True
@@ -357,7 +359,8 @@ def test_citation_href_wiki_code_symbol_and_no_sha():
     # empty sha (pre-ingest sentinel) → falls back to main
     nosha = Unit("x = 1", Tier.GIT, "git", "app.py:5", Audience.DEV, "")
     assert (
-        analyzer._citation_href(nosha) == "https://github.com/take-tempo-public/sartor/blob/main/app.py#L5"
+        analyzer._citation_href(nosha)
+        == "https://github.com/take-tempo-public/sartor/blob/main/app.py#L5"
     )
 
 
