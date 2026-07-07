@@ -493,8 +493,9 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       UX review ([`docs/dev/reviews/2026-07-ux-review/`](reviews/2026-07-ux-review/README.md))
       landed 27 code-verified findings with a pre-sequenced wave plan
       ([`50-oss-polish-plan.md`](reviews/2026-07-ux-review/50-oss-polish-plan.md)).
-      **Wave 0 (P0, launch blockers):** F-01 keyword-score deflation (company name +
-      boilerplate counted as "missing", `hardening.py` overlap) · F-02 résumé import
+      **Wave 0 (P0, launch blockers):** F-01 keyword-score deflation — **DONE 2026-07-07**
+      (`fix/ux-review-wave0-keyword-score`: boilerplate stoplist + forgive-absence
+      company-term cleaning + coverage reframe) · F-02 résumé import
       creates no Skill rows · F-11 eval harness scores the fallback LLM `generate`
       path, not the frozen-composition assembly the UI ships · F-24/25/26
       install.md `[dev]`/`--setup` gaps + `pyproject.toml` `py-modules` omission
@@ -872,6 +873,13 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       window; PX-52 defers post-public. This row closes when all 20 PX rows
       are landed or explicitly re-dispositioned.
       _(added: 2026-07-03, `review/2026-07-efficiency`; open count 8 → 9.)_
+      **→ Update (2026-07-07, big-push Phase 0, `chore/px-staleness-reverify`):** the 7
+      flagged-stale prescriptions (PX-38/39/43/45/47/51/55) were re-verified at HEAD — all 7
+      PARTIALLY_STALE with revised scopes (verdicts harvested in-session; dispositions NOT yet
+      written into the archive). That branch holds one unmerged doc commit (`6071478`, gen-exp
+      §6 marker reconcile); the Phase-0 remainder (archive dispositions + RELEASE_ARC scope
+      brief) is still owed. Also noted: MEMORY.md index ~19.2KB vs the 17.1KB soft target —
+      fold a completed-cluster consolidation into the PX-46 owner-gated memory review.
 
 - [ ] **Generation-experience re-architecture — LATER-branch remainder** — the CORE
       re-architecture (the "unusable" remediation's deeper vision) SHIPPED on

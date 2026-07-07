@@ -244,6 +244,53 @@ STOP_WORDS = frozenset(
     "while who whom why you your i me my he him his she her they their our its".split()
 )
 
+# JD hiring-administrivia that is never a résumé keyword: process words,
+# qualifier words, package/logistics words (F-01). Dropped from the JD
+# keyword universe in compute_keyword_overlap so boilerplate neither
+# matches nor counts as "missing". Curated; tests pin representative
+# members, not the whole list.
+JD_BOILERPLATE_WORDS = frozenset(
+    "hiring hire hires seeking looking join apply applicants application "
+    "candidate candidates role position responsibilities requirements "
+    "qualifications preferred required must nice plus benefits compensation "
+    "salary equity perks bonus remote onsite hybrid opportunity opportunities "
+    "employer employment equal company mission culture values offer offers "
+    "years ability strong track record serving drive driving".split()
+)
+
+# Words that disqualify a capitalized JD-header sequence from being read as
+# the hiring company: job-title vocabulary shares the header zone with the
+# company line. extract_company_terms fails OPEN (returns fewer terms) — a
+# missed company name just leaves the score at prior behavior.
+_TITLE_NOUNS = frozenset(
+    "engineer engineers engineering developer developers manager managers "
+    "director directors analyst analysts architect architects designer "
+    "designers scientist scientists specialist specialists consultant "
+    "consultants administrator administrators lead leads intern interns "
+    "coordinator coordinators recruiter recruiters senior staff principal "
+    "junior sre devops".split()
+)
+
+# Generic header noise never accepted as (part of) a company term.
+_COMPANY_NOISE = frozenset("us we our you your the a an this team careers job jobs".split())
+
+# One capitalized word, optionally followed by up to two more (company names
+# are short: "Lattice Cloud", "Bain & Company"). [ \t] only — a company
+# candidate never spans lines.
+_CAP_SEQ = r"[A-Z][A-Za-z0-9&.+-]*(?:[ \t]+(?:&[ \t]+)?[A-Z][A-Za-z0-9&.+-]*){0,2}"
+
+# Company-position signals: "About X" / "Join X" / "Why X" / "at X" anywhere;
+# "X is|runs|builds…" or "X — location" at line start.
+_COMPANY_PATTERNS = (
+    re.compile(rf"\b(?:About|Join|Why)[ \t]+({_CAP_SEQ})"),
+    re.compile(rf"\bat[ \t]+({_CAP_SEQ})"),
+    re.compile(
+        rf"^({_CAP_SEQ})[ \t]+(?:is|runs|builds|provides|operates|develops|delivers|offers)\b",
+        re.MULTILINE,
+    ),
+    re.compile(rf"^({_CAP_SEQ})[ \t]*[—–-]+[ \t]", re.MULTILINE),
+)
+
 # Standard ATS-friendly section headings
 ATS_HEADINGS = {
     "summary",
@@ -371,21 +418,86 @@ def extract_keywords(text: str, top_n: int = 50) -> dict:
     }
 
 
-def compute_keyword_overlap(resume_kw: dict, jd_kw: dict) -> dict:
-    """Compare keyword sets between resume and JD. Pure set math."""
+def extract_company_terms(jd_text: str) -> frozenset[str]:
+    """Best-effort deterministic detection of the hiring company's name(s).
+
+    Conservative by construction (F-01): a term must show a company-position
+    signal — a header-zone line ("Lattice Cloud — Remote"), or a pattern like
+    "About X" / "at X" / "X is|runs|builds…" — mere capitalization is never
+    enough, so duty-bullet proper nouns (Kubernetes, Prometheus) are not
+    captured. Candidates containing job-title vocabulary or JD boilerplate
+    are rejected outright (title lines share the header zone with the
+    company line). Returns lowercased terms; any miss simply leaves the
+    score at prior behavior (fail-open).
+    """
+    if not jd_text:
+        return frozenset()
+    candidates: set[str] = set()
+    for pattern in _COMPANY_PATTERNS:
+        for match in pattern.finditer(jd_text):
+            candidates.add(match.group(1))
+    # Header zone: a line that IS a short capitalized sequence (the classic
+    # company-name-on-its-own-line header). Title lines are caught by the
+    # _TITLE_NOUNS rejection below.
+    header_lines = [ln.strip() for ln in jd_text.splitlines() if ln.strip()][:4]
+    for line in header_lines:
+        if re.fullmatch(_CAP_SEQ, line):
+            candidates.add(line)
+    terms: set[str] = set()
+    for cand in candidates:
+        raw_words = [w.lower().strip(".,") for w in cand.split()]
+        raw_words = [w for w in raw_words if w and w != "&"]
+        if any(w in _TITLE_NOUNS or w in JD_BOILERPLATE_WORDS for w in raw_words):
+            continue
+        words = [w for w in raw_words if w not in _COMPANY_NOISE and w not in STOP_WORDS]
+        if not words:
+            continue
+        terms.add(" ".join(words))
+    return frozenset(terms)
+
+
+def compute_keyword_overlap(
+    resume_kw: dict,
+    jd_kw: dict,
+    *,
+    company_terms: frozenset[str] = frozenset(),
+) -> dict:
+    """Compare keyword sets between resume and JD. Pure set math.
+
+    F-01 cleaning before scoring: JD_BOILERPLATE_WORDS never count (matched
+    or missing) — matching "hiring" is not signal; a keyword touching
+    `company_terms` (the hiring company, per extract_company_terms) is
+    forgiven when absent from the resume but still credited when present
+    (a Databricks engineer applying to Databricks keeps the match).
+    `excluded_terms` reports what was cleaned, for transparency.
+    """
     resume_set = set(resume_kw.get("keywords", {}).keys())
     jd_set = set(jd_kw.get("keywords", {}).keys())
 
-    matched = resume_set & jd_set
-    missing = jd_set - resume_set
-    extra = resume_set - jd_set
+    company_words = {w for term in company_terms for w in term.split()} - (
+        _COMPANY_NOISE | STOP_WORDS
+    )
 
-    score = len(matched) / max(len(jd_set), 1)
+    def _boilerplate(kw: str) -> bool:
+        return all(w in JD_BOILERPLATE_WORDS for w in kw.split())
+
+    def _company(kw: str) -> bool:
+        return kw in company_terms or bool(set(kw.split()) & company_words)
+
+    jd_scored = {kw for kw in jd_set if not _boilerplate(kw)}
+    matched = resume_set & jd_scored
+    missing = {kw for kw in jd_scored - resume_set if not _company(kw)}
+    extra = resume_set - jd_set
+    excluded = (jd_set - jd_scored) | {kw for kw in jd_scored - resume_set if _company(kw)}
+
+    denominator = len(matched) + len(missing)
+    score = len(matched) / max(denominator, 1)
 
     return {
         "matched": sorted(matched),
         "missing_from_resume": sorted(missing),
         "only_in_resume": sorted(extra),
+        "excluded_terms": sorted(excluded),
         "match_score": round(score, 2),
         "jd_keyword_count": len(jd_set),
         "resume_keyword_count": len(resume_set),

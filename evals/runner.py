@@ -63,6 +63,7 @@ from hardening import (  # noqa: E402
     compute_specificity_density,
     compute_top_third_density,
     compute_verb_diversity,
+    extract_company_terms,
     extract_keywords,
 )
 from parser import parse_resume  # noqa: E402
@@ -185,7 +186,11 @@ def _build_context(fixture: dict) -> ContextSet:
     }
     jd_keywords = extract_keywords(fixture["jd"])
     resume_keywords = extract_keywords(parsed["text"])
-    overlap = compute_keyword_overlap(resume_keywords, jd_keywords)
+    overlap = compute_keyword_overlap(
+        resume_keywords,
+        jd_keywords,
+        company_terms=extract_company_terms(fixture["jd"]),
+    )
     ats_warnings = check_ats_format(parsed)
     return build_context_set(
         fixture["jd"],

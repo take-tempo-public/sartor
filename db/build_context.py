@@ -44,6 +44,7 @@ from hardening import (
     CorpusEligibleTitle,
     CorpusExperience,
     compute_keyword_overlap,
+    extract_company_terms,
     extract_keywords,
 )
 
@@ -116,7 +117,11 @@ def build_context_set_from_db(
 
     jd_keywords = extract_keywords(jd_text)
     resume_keywords = extract_keywords(resume_text)
-    overlap = compute_keyword_overlap(resume_keywords, jd_keywords)
+    overlap = compute_keyword_overlap(
+        resume_keywords,
+        jd_keywords,
+        company_terms=extract_company_terms(jd_text),
+    )
     # Walkthrough G1: no ATS-format warnings in corpus mode. `check_ats_format`
     # was designed for an UPLOADED résumé; here the "résumé" is a synthesized
     # projection of the whole corpus (structured by construction, and NOT the

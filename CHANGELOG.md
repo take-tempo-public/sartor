@@ -13,6 +13,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: keyword score no longer graded on the company name + JD boilerplate (`fix/ux-review-wave0-keyword-score`, 2026-07-07)
+
+UX-review Wave 0, F-01 ([`40-friction-register.md`](docs/dev/reviews/2026-07-ux-review/40-friction-register.md)) —
+the highest-leverage P0: a strong SRE-to-SRE match scored **18%** because the hiring company's
+own name ("lattice cloud") and hiring boilerplate ("hiring", "serving") counted as keywords
+missing from the résumé. Deterministic fix (`hardening.py` — charter C-6, no LLM, no
+`PROMPT_VERSION` bump, no new dependency):
+
+- **`JD_BOILERPLATE_WORDS`** — hiring-administrivia (process / qualifier / package /
+  arrangement words) is dropped from the JD keyword universe inside `compute_keyword_overlap`:
+  matching "hiring" is not signal, missing it is not a deficit.
+- **`extract_company_terms(jd_text)`** — conservative deterministic company detection
+  (header-zone "X — location" lines + "About X" / "at X" / "X is|runs|builds…" patterns);
+  job-title vocabulary disqualifies a candidate term, so duty-bullet proper nouns
+  (Kubernetes, Prometheus) are never captured; fail-open on any miss.
+- **Forgive-absence scoring** — a company term absent from the résumé leaves both the missing
+  list and the denominator; when present it still counts as matched (a Databricks engineer
+  applying to Databricks keeps the credit). New `excluded_terms` key reports what was cleaned
+  (also added to `evals/schemas/context_set.schema.json`).
+- Company terms are passed at the two overlap call sites — `db/build_context.py` (corpus mode)
+  and `evals/runner.py` (the eval harness stays on the live code path). Compose bullet ordering
+  and corpus-snapshot selection intentionally keep the raw JD keywords (`extract_keywords`
+  unchanged).
+- **Analyze-screen reframe** (`static/app.js`): "Keyword Match Score" → "JD Keyword Coverage"
+  plus a one-line explainer; "Keywords Missing From Resume" → "Keywords You Could Add".
+- Tests: company-term detection, cleaning semantics, and a fixture regression asserting the
+  SRE fixture's company/boilerplate never appear in the missing list and the cleaned score
+  strictly exceeds the raw-overlap before-state.
+
 ### Fix: deterministic Compose settle gate — stop the flaky-UX class (`fix/compose-settle-bg-reload`, 2026-07-06)
 
 A reduction-sprint knock-down of the carry-forward "recurring flaky Compose-UX" ledger item.
