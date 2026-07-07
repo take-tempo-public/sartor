@@ -858,28 +858,27 @@ _Open count: 10 — AT the top of the ~8–10 reduction-sprint threshold. Most 2
       are landed or explicitly re-dispositioned.
       _(added: 2026-07-03, `review/2026-07-efficiency`; open count 8 → 9.)_
 
-- [ ] **Generation-experience re-architecture — deferred remainder (the "unusable"
-      remediation)** — an owner-driven remediation (2026-07-06) landed **3 branches on
-      `main`**: `fix/single-render-engine` (download == preview == import; non-canonical
-      section titles rescued; "Start new tailoring" reset), `fix/generation-richness`
-      (anti-starvation bullet floor + generous/metric-first RECOMMEND + two-sentence
-      Summary + first-class Skills + corpus-grounding carve-out; `PROMPT_VERSION`
-      `2026-07-06.1`; robert corpus roles-with-bullets **3/8 → 8/8**), and
-      `fix/refinement-and-loopback` (in-app refinement-scope modal replacing the native
-      `confirm()`). **Still owed** — the deeper vision the owner signed off on, deferred
-      because it is large + coupled and depends on a **Compose-authored frozen composition
-      object not yet built**: (a) Compose authors + freezes the full approved composition
-      (bullets + summary + skills + order); (b) **Generate = deterministic assembly** of
-      that composition (no LLM for the résumé body; cover letter stays LLM); (c) **surgical
-      refinement** (not a full regenerate) + **loop-back-to-Compose** for any newly-generated
-      content, with a "why you're here" banner (owner decision D1/D6); (d) **in-app WYSIWYG
-      editing** (edits ARE the document; edit == download); (e) **clarifications persist to
-      the corpus** for reuse on future JDs. Full design + owner decisions in the plan file
-      `~/.claude/plans/this-has-become-unusable-compressed-lightning.md`.
-      _(added: 2026-07-06, generation-experience remediation; open count 9 → 10.)_
-      **→ Integrate as a dedicated re-architecture sprint** (fresh session) — the render +
-      richness fixes already make the app usable; sequence: frozen-composition → assemble →
-      surgical-refine/loop-back → WYSIWYG → clarifications→corpus.
+- [ ] **Generation-experience re-architecture — LATER-branch remainder** — the CORE
+      re-architecture (the "unusable" remediation's deeper vision) SHIPPED on
+      `fix/compose-frozen-composition` (2026-07-06, one cohesive branch, Phases 1–4):
+      (1) Compose authors + FREEZES the approved composition — the resolved
+      `approved_composition` JSON-Resume snapshot (Phase 1); (2) Compose authors the
+      2-sentence positioning summary (Sonnet — Phase 2) + GROUNDED gap-fill bullets
+      (Sonnet accept/retire + a resolver pending-leak guard — Phase 3); (3) **Generate =
+      deterministic assembly** of the frozen composition — ZERO résumé-body LLM calls;
+      cover letter stays LLM; legacy + `--suite synthetic` byte-identical (Phase 4);
+      preview == assemble == download by construction; a corpus-mode Refine routes BACK
+      to Compose (minimal loop-back with a banner). `PROMPT_VERSION 2026-07-06.1 → .3`.
+      Durable design + as-built record:
+      [`generation-experience-rearchitecture.md`](generation-experience-rearchitecture.md).
+      **Still owed (each its own LATER branch, per that doc §4/§6):** (a) **surgical
+      refinement** — a scoped single-item change / grounded re-phrasing (not the current
+      route-to-Compose) + the richer loop-back-with-accept/retire banner; (b) **in-app
+      WYSIWYG editing** as source of truth (D4 — edits ARE the document); (c)
+      **clarifications persist to the corpus** for cross-JD reuse (D5); (d) a "Regenerate
+      gap-fill" affordance (needs a `retired_gap_fill_keys` set).
+      _(added: 2026-07-06; **CORE DONE 2026-07-06 on `fix/compose-frozen-composition`**;
+      re-scoped from "whole vision owed" to the LATER-branch remainder above.)_
 
 - [ ] **Recurring flaky Compose-UX under full-suite concurrency** — a *different* Compose
       Playwright test failed on each full-suite run of the 2026-07-06 remediation and
@@ -892,6 +891,24 @@ _Open count: 10 — AT the top of the ~8–10 reduction-sprint threshold. Most 2
       **over the ~8–10 ceiling; a reduction sprint is now due**.)_
       **→ Integrate with the re-architecture sprint** (the compose surface is reworked there
       anyway) **or a standalone test-infra stabilization**, whichever comes first.
+      _(update 2026-07-06, `fix/compose-frozen-composition`: Phase 3 adds ONE
+      `/draft-gap-fill` POST + reload per compose load — marginally more concurrency load
+      on this class; the summary-draft test flaked once then passed on re-run under the
+      full 76-test load, passes in isolation. Two SEPARATE pre-existing Compose bugs were
+      fixed here as a side effect of running the full UX tier: `wizard_compose.reset_order`
+      used `EXPERIENCE_CARD.first` (now resolves to the always-present positioning card →
+      timeout; fixed to `_first_card()`), and `#composeSummaryDraft` had no a11y label
+      (axe; fixed with `aria-label`). Both confirmed failing on clean HEAD `53e8238`.)_
+
+- [ ] **Local ruff-0.15.12 `ruff format --check` drift on 5 UNTOUCHED files** —
+      `docx_to_persona_html.py` + `tests/test_application_routes.py` +
+      `test_avatar_streaming.py` + `test_corpus_import.py` + `test_docx_to_persona_html.py`
+      re-format under the installed ruff 0.15.12 though no branch touched them — a
+      ruff-version/style artifact, not real drift. The `ruff-changed` commit hook only checks
+      STAGED files, so it doesn't block commits (staged files are formatted individually), but
+      the whole-tree `ruff format --check .` close-out gate flags them. **Decide:** pin ruff
+      to the CI version, or a one-time `ruff format .` sweep in its own branch.
+      _(added: 2026-07-06, `fix/compose-frozen-composition`; carried from the prior handoff.)_
 
 #### Resolved
 
