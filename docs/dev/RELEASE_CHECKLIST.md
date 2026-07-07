@@ -540,6 +540,13 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       _(discovered: v1.0.8 stream, 2026-07-02, `feat/packaging-publish`; open count 7 → 8.)_
       **→ Integrate as its own branch before the first PyPI tag** — the container +
       `sartor --setup` ship now; the wheel path is intentionally gated until this lands.
+      **Residual follow-ups (2026-07-07, `fix/packaging-install` close-out):** (i)
+      `[tool.ruff] target-version` + `[tool.mypy] python_version` still say py310 — bump to
+      3.11 alongside the new `requires-python` floor in a dedicated pass (deferred to avoid an
+      unplanned whole-tree UP-rule autofix diff); (ii) on a bare `pip install sartor && sartor`
+      run, `Config.base_dir`'s default and `dashboard/routes.py`'s `PROJECT_ROOT` resolve into
+      `site-packages/` (user data + telemetry would land there) — pre-existing characteristic,
+      revisit before public docs advertise the bare-wheel path as a user journey.
 
 - [ ] **In-app rendered citation viewer (deferred)** — the avatar's numbered citations
       (Sprint 7.8d, `feat/avatar-citation-format`) link to their source **on GitHub** (wiki
@@ -611,6 +618,11 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       when the git remote/CI activates — leave. **Note (8.2, 2026-06-21):** the
       `route-security-lint` widen (PX-21) kept the hook a self-contained bash script with no new
       coupling, so it stays migration-friendly for this lift.
+      **Note (Train 1, 2026-07-07):** `block-merge-to-main` false-positives on READ-ONLY
+      `git merge-base` invocations (its `git merge` pattern lacks a boundary against
+      `merge-base`) and resolves HEAD in the hook's own cwd rather than the caller's worktree,
+      so it fires from any worktree while the main checkout sits on `main` — fix both when
+      lifting it into the portable core.
 
 - [ ] **Periodic cross-document link / cite checker** — none exists or is planned. `wiki-lint`
       is `docs/wiki/`-scoped (`[[backlinks]]` + `path:line` existence only), so the
