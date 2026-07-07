@@ -2053,6 +2053,17 @@ async function submitRefinement() {
   const note = input.value.trim();
   if (!note || !lastContextPath) return;
 
+  // Phase 4 — in corpus mode the résumé is a DETERMINISTIC assembly of the
+  // Compose-approved composition; there is no résumé-body LLM to re-run. A
+  // refinement therefore routes the user BACK to Compose to adjust + re-approve
+  // content, which regenerates deterministically (the design's minimal loop-back;
+  // richer surgical refine is a later branch). Legacy (file-based) refine keeps
+  // the LLM regenerate below.
+  if (_composeApplicationId != null) {
+    _routeRefinementToCompose(note);
+    return;
+  }
+
   // Edit gate: handle in-progress preview edits before the refinement call
   // so the user's typed changes feed the next generation rather than being
   // silently discarded by the regenerate-from-context path.
@@ -2140,6 +2151,43 @@ async function submitRefinement() {
     document.getElementById('btnRefinement').disabled = false;
     document.getElementById('btnGenerate').disabled = false;
   }
+}
+
+// Phase 4 — the corpus-mode refinement loop-back: stash the note, navigate to
+// Compose (which re-runs loadComposition and renders the banner from the flag),
+// and let the user adjust + Save-and-continue to regenerate deterministically.
+function _routeRefinementToCompose(note) {
+  const input = document.getElementById('refinementInput');
+  if (input) input.value = '';
+  _composeLoopbackNote = note;
+  wizardGoTo(3);
+  setStatus('BACK TO COMPOSE');
+  _announce('Refinement moved to Compose — adjust your content there, then continue.');
+}
+
+// The explaining banner shown at the top of Compose after a loop-back. Rendered
+// from _composeLoopbackNote inside loadComposition so it survives the auto-
+// recommend re-render cascade; dismissing clears the flag.
+function _renderComposeLoopbackBanner() {
+  const banner = _el('div', { className: 'compose-loopback-banner' });
+  banner.appendChild(_el('div', {
+    className: 'compose-loopback-title',
+    textContent: 'Adjust your content here, then regenerate',
+  }));
+  banner.appendChild(_el('div', {
+    className: 'compose-loopback-body',
+    textContent:
+      'Your résumé is assembled from the content you approve here — there is no '
+      + 'separate rewrite step. Make your change (bullets, summary, skills) and '
+      + 'Save and continue to regenerate.'
+      + (_composeLoopbackNote ? ` You asked: “${_composeLoopbackNote}”` : ''),
+  }));
+  const dismiss = _el('button', {
+    className: 'btn-secondary btn-sm compose-loopback-dismiss', textContent: 'Got it',
+  });
+  dismiss.onclick = () => { _composeLoopbackNote = null; banner.remove(); };
+  banner.appendChild(dismiss);
+  return banner;
 }
 
 // ---- Iteration interview (post-generation clarifying questions) ----------
@@ -5462,6 +5510,19 @@ window.addEventListener('popstate', _onWizardPopState);
 // ===============================================================
 
 let _composeApplicationId = null;
+// Phase 4 — when a refinement loops the user back to Compose (corpus mode has no
+// résumé-body LLM to re-run), this holds their note so loadComposition can render
+// an explaining banner until dismissed. Null = no pending loop-back.
+let _composeLoopbackNote = null;
+// Generation-experience re-architecture — which application we've already
+// auto-fired the summary draft for, so a legitimately-empty draft (no JD facts)
+// can't re-loop the Sonnet call on every re-render. Reset when the app changes.
+let _draftSummaryFiredForApp = null;
+// Phase 3 — which application we've already auto-fired the gap-fill draft for.
+// Same latch as the summary: a legitimately-empty draft (no uncovered
+// requirements) can't re-loop the Sonnet call on every re-render. The server
+// has_gap_fill (key presence) is the durable belt to this session-only latch.
+let _gapFillFiredForApp = null;
 // B.4 — whether the "Add role intros" toggle is on for the loaded application.
 let _composeUseRoleIntros = false;
 
@@ -5497,17 +5558,38 @@ async function loadComposition() {
   }
   const data = await res.json();
   _clearChildren(list);
+  // Phase 4 — a refinement in corpus mode loops back here (no résumé-body LLM to
+  // re-run); render an explaining banner from the flag so it survives the
+  // auto-recommend re-render cascade until the user dismisses it.
+  if (_composeLoopbackNote != null) list.appendChild(_renderComposeLoopbackBanner());
   // β.6c — Positioning card renders first, above the experience cards.
   // Shows the candidate's SummaryItem variants with the recommendation
   // (if any) flagged and the user's pin (if any) marking the chosen one.
   // Auto-fires recommend-summary in the background when there's no
   // recommendation yet and the candidate has 2+ variants.
   const summary = data.summary || {};
-  if ((summary.variants || []).length > 0) {
-    list.appendChild(_renderPositioningCard(summary));
-    if (!summary.has_recommendation && (summary.variants || []).length > 1) {
-      _fireRecommendSummary();
-    }
+  // Positioning card is ALWAYS present in Compose — it authors the tailored
+  // 2-sentence summary (D2). Renders the editable draft + any saved variants.
+  // Always-present also keeps the draft textarea available so it rides along on
+  // every composition save (the POST rebuilds overrides wholesale — an absent
+  // textarea would drop a persisted draft).
+  list.appendChild(_renderPositioningCard(summary));
+  // D2 — auto-author the summary once on arrival: draft the 2-sentence
+  // positioning paragraph (Sonnet) when none exists yet, else opportunistically
+  // recommend a saved variant. One background call per pass so the re-render
+  // cascade converges; the draft fires at most once per application.
+  // Tracks whether a ctx-writing background call (summary draft/recommend, skills
+  // recommend) fires THIS pass. Gap-fill defers until none does, so two routes
+  // never read-modify-write the same context file at once (the clobber that would
+  // drop summary_text / recommendations).
+  let bgDraftFiring = false;
+  if (!summary.has_draft && _draftSummaryFiredForApp !== _composeApplicationId) {
+    _draftSummaryFiredForApp = _composeApplicationId;
+    bgDraftFiring = true;
+    _fireDraftSummary(false);
+  } else if (!summary.has_recommendation && (summary.variants || []).length > 1) {
+    bgDraftFiring = true;
+    _fireRecommendSummary();
   }
   // B.5 — Skills card. Candidate-level (like Positioning), rendered above the
   // experience cards. Surfaces the curated/ordered skills with pin/drop +
@@ -5517,6 +5599,7 @@ async function loadComposition() {
   if ((skills.items || []).length > 0 || (skills.pending || []).length > 0) {
     list.appendChild(_renderSkillsCard(skills));
     if (!skills.has_recommendation && (skills.items || []).length > 1) {
+      bgDraftFiring = true;
       _fireRecommendSkills();
     }
   }
@@ -5532,6 +5615,17 @@ async function loadComposition() {
     e => ((e.summary || {}).variants || []).length > 0);
   if (anyRoleVariants) list.appendChild(_renderRoleIntrosToggle(_composeUseRoleIntros));
   data.experiences.forEach(exp => list.appendChild(_renderComposeCard(exp)));
+  // Phase 3 — auto-author gap-fill bullets once on arrival (D2): grounded
+  // proposals for JD requirements the corpus doesn't cover. DEFERRED to a pass
+  // where no other background draft/recommend is firing (bgDraftFiring), because
+  // each does a read-modify-write on the SAME context file — firing gap-fill
+  // concurrently would clobber summary_text / recommendations. The convergence
+  // cascade fires it a pass later; has_gap_fill (key presence) then flips true
+  // (even with zero proposals) so it fires at most once and never re-loops.
+  if (!bgDraftFiring && !data.has_gap_fill && _gapFillFiredForApp !== _composeApplicationId) {
+    _gapFillFiredForApp = _composeApplicationId;
+    _fireDraftGapFill();
+  }
   if (anyRoleVariants) {
     // Show/hide the per-role pickers + default each opted-in role to the AI's
     // recommendation. Then opportunistically fire the per-role recommend (one
@@ -5633,6 +5727,59 @@ async function _fireRecommendSummary() {
   }
 }
 
+// Generation-experience re-architecture — draft/redraft the 2-sentence
+// positioning summary (Sonnet) at Compose, then refresh so the editable draft
+// shows. `force` just repaints the placeholder for an explicit Regenerate; the
+// route always overwrites composition_overrides.summary_text.
+async function _fireDraftSummary(force) {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  if (force) {
+    const el = document.getElementById('composeSummaryDraft');
+    if (el) el.placeholder = 'Drafting your summary…';
+  }
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/draft-summary`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context_path: lastContextPath }) },
+    );
+    if (res.ok) loadComposition();
+  } catch {
+    // Non-blocking — the user can Regenerate or type their own summary.
+  }
+}
+
+// Phase 3 — auto-author gap-fill bullets (Sonnet). Fires once on Compose arrival
+// (guarded by _gapFillFiredForApp + the server has_gap_fill flag); reloads so the
+// per-role "Suggested for this JD" lanes render. Non-blocking on failure.
+async function _fireDraftGapFill() {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/draft-gap-fill`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context_path: lastContextPath }) },
+    );
+    if (res.ok) loadComposition();
+  } catch {
+    // Non-blocking — gap-fill is an optional enhancement over the corpus set.
+  }
+}
+
+// Retire the drafted summary: clear it locally + persist (the empty value drops
+// summary_text from composition_overrides on the wholesale rebuild), so the
+// frozen doc falls back to the candidate's saved positioning.
+async function _retireDraftSummary() {
+  const el = document.getElementById('composeSummaryDraft');
+  if (el) { el.value = ''; el.dataset.edited = 'false'; }
+  try {
+    await _postComposition(_collectCompositionState());
+    _toast('Summary draft retired — falls back to your saved positioning.');
+  } catch (e) {
+    _toast('Retire failed: ' + e.message, true);
+  }
+}
+
 // β.6c — Positioning card. Sits above the experience cards in Step 3.
 // One variant chosen per application (either the LLM's recommendation
 // or a user pin). Clicking a non-chosen variant pins it; clicking the
@@ -5647,13 +5794,50 @@ function _renderPositioningCard(summary) {
 
   card.appendChild(_el('div', {
     className: 'edit-hint', style: 'margin-top:4px',
-    textContent: 'Which summary variant frames you for this JD. '
-      + 'Click a variant to pin it for this application; '
-      + 'click the pinned one again to unpin and accept the recommendation.',
+    textContent: 'Your tailored two-sentence summary for this job. Edit it '
+      + 'directly, or Regenerate a fresh draft. It freezes when you continue.',
   }));
 
+  // Generation-experience re-architecture — the drafted 2-sentence positioning
+  // summary is the primary content of this card (authored ONCE at Compose).
+  // Editable; rides along on every composition save via _collectCompositionState.
+  const draft = _el('textarea', { className: 'positioning-draft', id: 'composeSummaryDraft' });
+  // a11y: the textarea has only a placeholder + an adjacent hint (no <label for>),
+  // which axe flags "Form elements must have labels" — name it explicitly.
+  draft.setAttribute('aria-label', 'Tailored two-sentence positioning summary');
+  draft.rows = 3;
+  draft.value = summary.drafted_text || '';
+  draft.placeholder = summary.has_draft ? '' : 'Drafting your summary…';
+  draft.dataset.edited = summary.drafted_edited ? 'true' : 'false';
+  draft.oninput = () => { draft.dataset.edited = 'true'; _scheduleCompositionSave(); };
+  card.appendChild(draft);
+
+  const actions = _el('div', {
+    className: 'positioning-draft-actions', style: 'margin-top:6px;display:flex;gap:8px',
+  });
+  const regen = _el('button', {
+    className: 'btn-secondary positioning-draft-regen', textContent: 'Regenerate',
+  });
+  regen.onclick = () => _fireDraftSummary(true);
+  actions.appendChild(regen);
+  const retire = _el('button', {
+    className: 'btn-secondary positioning-draft-retire', textContent: 'Retire',
+  });
+  retire.title = 'Clear this draft and fall back to your saved positioning';
+  retire.onclick = () => _retireDraftSummary();
+  actions.appendChild(retire);
+  card.appendChild(actions);
+
+  // Optional: pin one of the candidate's saved SummaryItem variants as the
+  // source the next Regenerate reframes from.
   const variants = summary.variants || [];
-  variants.forEach(v => card.appendChild(_renderPositioningVariant(v, summary.chosen_id)));
+  if (variants.length > 0) {
+    card.appendChild(_el('div', {
+      className: 'edit-hint', style: 'margin-top:8px',
+      textContent: 'Or pin one of your saved summary variants as the source:',
+    }));
+    variants.forEach(v => card.appendChild(_renderPositioningVariant(v, summary.chosen_id)));
+  }
   return card;
 }
 
@@ -5983,6 +6167,55 @@ async function _reviewPendingSkill(skillId, approve) {
   }
 }
 
+// Phase 3 — one "Suggested for this JD" gap-fill proposal row (Accept / Retire).
+// Mirrors _renderPendingSkillRow. The proposal is transient text keyed by `key`
+// until accepted; accept creates a pending Bullet folded into this application's
+// composition, retire drops it.
+function _renderGapFillRow(expId, p) {
+  const row = _el('div', { className: 'compose-row gap-fill-row' });
+  row.dataset.key = p.key;
+  const text = _el('div', { className: 'row-text' });
+  text.appendChild(_el('span', { className: 'gap-fill-text', textContent: p.text }));
+  if (p.requirement) {
+    text.appendChild(_el('div', {
+      className: 'gap-fill-requirement',
+      textContent: 'Covers: ' + p.requirement,
+      style: 'color:var(--fg-2);font-size:0.85em;margin-top:2px;',
+    }));
+  }
+  row.appendChild(text);
+  const meta = _el('div', { className: 'row-meta' });
+  const accept = _el('button', {
+    className: 'btn-secondary btn-sm gap-fill-accept', textContent: 'Accept',
+  });
+  accept.onclick = () => _decideGapFill(p.key, 'accept');
+  meta.appendChild(accept);
+  const retire = _el('button', {
+    className: 'btn-secondary btn-sm gap-fill-retire', textContent: 'Retire',
+  });
+  retire.onclick = () => _decideGapFill(p.key, 'retire');
+  meta.appendChild(retire);
+  row.appendChild(meta);
+  return row;
+}
+
+// Accept (creates a pending Bullet + folds it into this application's composition)
+// or retire (drops the transient proposal). Reloads composition on success.
+async function _decideGapFill(key, decision) {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/gap-fill-decide`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context_path: lastContextPath, key, decision }) },
+    );
+    if (res.ok) loadComposition();
+    else _toast('Could not update the suggested bullet.', true);
+  } catch {
+    _toast('Network error updating the suggested bullet.', true);
+  }
+}
+
 // ============================================================
 // B.4 (Sprint 6.6) — per-role intro picker (Compose step)
 // ============================================================
@@ -6289,12 +6522,13 @@ function _renderComposeCard(exp) {
   // → bullets).
   card.appendChild(_renderComposeRoleIntro(exp));
 
-  // Bullets split into visible (recommended/pinned/added) + drawer (rest).
+  // Bullets split into visible (recommended/pinned/added/accepted-gap-fill) +
+  // drawer (rest). Phase 3 — an accepted gap-fill bullet joins the visible set.
   const visible = (exp.bullets || []).filter(
-    b => b.recommended || b.pinned || b.added,
+    b => b.recommended || b.pinned || b.added || b.accepted_generated,
   );
   const hidden = (exp.bullets || []).filter(
-    b => !(b.recommended || b.pinned || b.added),
+    b => !(b.recommended || b.pinned || b.added || b.accepted_generated),
   );
   // Fallback when no LLM recommendations exist (call failed or returned
   // empty for this experience): pick 3-7 bullets by score with a
@@ -6407,6 +6641,26 @@ function _renderComposeCard(exp) {
       card.appendChild(toggle);
       card.appendChild(drawer);
     }
+  }
+
+  // Phase 3 — "Suggested for this JD" gap-fill lane: grounded bullet proposals
+  // for JD requirements this résumé doesn't yet cover. Accept → a pending Bullet
+  // joins this application's composition; Retire → dropped. Mirrors the Skills
+  // pending lane.
+  const gapFill = exp.gap_fill_proposals || [];
+  if (gapFill.length) {
+    const lane = _el('div', { className: 'gap-fill-lane' });
+    lane.appendChild(_el('div', {
+      className: 'compose-exp-section-title', textContent: 'Suggested for this JD',
+    }));
+    lane.appendChild(_el('div', {
+      className: 'edit-hint',
+      textContent: 'Grounded in your experience — accept to add to this résumé, or '
+        + 'retire to drop. Accepted bullets are yours to keep or approve into your '
+        + 'corpus later.',
+    }));
+    gapFill.forEach(p => lane.appendChild(_renderGapFillRow(exp.id, p)));
+    card.appendChild(lane);
   }
   return card;
 }
@@ -6688,12 +6942,19 @@ function _collectCompositionState() {
   const pinned = [];
   const excluded = [];
   const added = [];
+  // Phase 3 — accepted gap-fill bullet ids ride along on EVERY save. The POST
+  // rebuilds composition_overrides wholesale (and freezes on continue), so an
+  // omitted field would drop the accepted bullet from the composition + the
+  // frozen snapshot. The accept route seeds them into ctx; the GET re-surfaces
+  // them as b.accepted_generated; this re-sends them so the rebuild preserves them.
+  const accepted_generated_bullet_ids = [];
   document.querySelectorAll('#composeList .compose-row').forEach(row => {
     const b = row._bulletState;
     if (!b) return;
     if (b.pinned) pinned.push(b.id);
     if (b.excluded) excluded.push(b.id);
     if (b.added) added.push(b.id);
+    if (b.accepted_generated) accepted_generated_bullet_ids.push(b.id);
   });
   const bullet_order = {};
   document.querySelectorAll('#composeList .compose-bullet-list').forEach(list => {
@@ -6719,14 +6980,24 @@ function _collectCompositionState() {
       pinned_title_ids[expId] = Number(checked.value);
     }
   });
+  // Generation-experience re-architecture — the drafted 2-sentence positioning
+  // summary rides along on every save (the POST rebuilds overrides wholesale, so
+  // a bullet/skill save would otherwise clobber it). Absent card → omit (nothing
+  // to preserve yet). An empty value intentionally drops it (Retire).
+  const draftEl = document.getElementById('composeSummaryDraft');
+  const summaryFields = draftEl
+    ? { summary_text: draftEl.value.trim(), summary_text_edited: draftEl.dataset.edited === 'true' }
+    : {};
   return {
     pinned, excluded, added, bullet_order, pinned_title_ids,
+    accepted_generated_bullet_ids,
     // B.4 — per-role intro toggle + picks ride along on every save so a bullet/
     // title save never clobbers them (the POST rebuilds overrides wholesale).
     ..._collectExperienceSummaryState(),
     // B.5 — skill curation (pin/drop/reorder) likewise rides along on every
     // save so it survives a bullet/title/summary save.
     ..._collectSkillState(),
+    ...summaryFields,
   };
 }
 
@@ -6870,7 +7141,10 @@ async function saveCompositionThenNext() {
   if (_composeSaveTimer) { clearTimeout(_composeSaveTimer); _composeSaveTimer = null; }
   const state = _collectCompositionState();
   try {
-    await _postComposition(state);
+    // Generation-experience re-architecture — Save-and-continue FREEZES the
+    // approved composition (the single content contract downstream renders). The
+    // debounced autosave omits `freeze`, so only this explicit action snapshots.
+    await _postComposition({ ...state, freeze: true });
     _toast(`Composition saved (${state.pinned.length} pinned, ${state.added.length} added, ${state.excluded.length} excluded)`);
   } catch (e) {
     _toast('Save failed: ' + e.message, true);

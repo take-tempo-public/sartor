@@ -53,6 +53,7 @@ def build_json_resume_from_corpus(
     *,
     application_id: int | None = None,
     context_path: str | Path | None = None,
+    context_data: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return a JSON Resume v1.0 dict assembled from the candidate's corpus.
 
@@ -71,6 +72,10 @@ def build_json_resume_from_corpus(
             and llm_summary_recommendation / llm_recommendations are read
             from it and applied. When absent, the function falls back to
             "all active bullets" and "first-active summary variant".
+        context_data: Optional already-loaded context dict. When provided it is
+            used instead of reading `context_path` off disk — the freeze path
+            passes the in-memory context so it sees overrides not yet written
+            back to the file.
 
     The output has the structure JSON Resume themes expect:
       {
@@ -92,21 +97,39 @@ def build_json_resume_from_corpus(
         # Empty document so themes don't crash on missing keys
         return _empty_document()
 
-    ctx = _read_context_file(context_path)
+    # `context_data` (an already-loaded context dict) short-circuits the disk
+    # read — used by the freeze path so it sees in-memory overrides not yet
+    # written back to the file. Absent → read from context_path as before.
+    ctx = context_data if context_data is not None else _read_context_file(context_path)
 
-    # ---- Resolve the chosen summary variant ----
+    # ---- Resolve the chosen summary text ----
+    # Generation-experience re-architecture: a Compose-drafted/edited summary
+    # (composition_overrides.summary_text) is the highest-priority source — it is
+    # the reviewed, frozen 2-sentence positioning paragraph. Absent → the legacy
+    # variant chain (pin > recommendation > first-active > profile_text).
     pinned_summary_id, recommended_summary_id = _read_summary_choices(ctx)
-    chosen_summary_text, summary_source = _resolve_chosen_summary_text(
-        session,
-        candidate.id,
-        pinned_id=pinned_summary_id,
-        recommended_id=recommended_summary_id,
-        fallback_text=candidate.profile_text or "",
-    )
+    drafted_summary_text, drafted_summary_edited = _read_summary_text_override(ctx)
+    if drafted_summary_text:
+        chosen_summary_text = drafted_summary_text
+        summary_source = "edited" if drafted_summary_edited else "drafted"
+    else:
+        chosen_summary_text, summary_source = _resolve_chosen_summary_text(
+            session,
+            candidate.id,
+            pinned_id=pinned_summary_id,
+            recommended_id=recommended_summary_id,
+            fallback_text=candidate.profile_text or "",
+        )
 
     # ---- Read bullet pin/exclude/added overrides ----
     pin_bullets, ex_bullets, add_bullets = _read_bullet_overrides(ctx)
     rec_by_exp = _read_recommendations_by_experience(ctx)
+    # Generation-experience re-architecture: explicit per-role bullet order
+    # (composition_overrides.bullet_order) + accepted gap-fill bullet ids
+    # (composition_overrides.accepted_generated_bullet_ids). Both empty on the
+    # default path → output byte-identical.
+    bullet_order = _read_bullet_order_choices(ctx)
+    accepted_generated_ids = _read_accepted_generated_bullet_ids(ctx)
     # feat/compose-add-title — per-experience title pin (experience_id → title_id)
     title_choices = _read_title_choices(ctx)
     # B.4 (Sprint 6.6) — per-role intro opt-in toggle + per-role picks
@@ -157,6 +180,9 @@ def build_json_resume_from_corpus(
         .all()
     )
     work: list[dict[str, Any]] = []
+    # Order-aligned provenance for the frozen composition (meta.sartor): for each
+    # emitted work[] entry, the ids behind its resolved text.
+    work_provenance: list[dict[str, Any]] = []
     for exp in experiences:
         entry: dict[str, Any] = {}
         if exp.company:
@@ -165,11 +191,13 @@ def build_json_resume_from_corpus(
             entry["location"] = exp.location
         # feat/compose-add-title — the user's per-JD pin wins (when still
         # eligible); otherwise official preferred, then first eligible.
+        pinned_title_id = title_choices.get(exp.id)
         title_text = (
-            _pinned_title_text(exp, title_choices.get(exp.id))
+            _pinned_title_text(exp, pinned_title_id)
             or _official_title_text(exp)
             or _first_title_text(exp)
         )
+        title_id = _resolve_title_id(exp, pinned_title_id)
         if title_text:
             entry["position"] = title_text
         if exp.start_date:
@@ -180,6 +208,7 @@ def build_json_resume_from_corpus(
         # turned on the "Add role intros" toggle AND chose a variant for THIS
         # role. No auto-fallback to the legacy exp.summary — it lives on as a
         # backfilled ExperienceSummaryItem variant, surfaced only when chosen.
+        role_intro_id: int | None = None
         if use_experience_summaries:
             role_intro = _resolve_chosen_experience_summary_text(
                 session,
@@ -188,18 +217,40 @@ def build_json_resume_from_corpus(
             )
             if role_intro:
                 entry["summary"] = role_intro
+                role_intro_id = chosen_experience_summary_ids.get(exp.id)
 
-        # Highlights: active bullets, with pin/exclude/added applied.
-        # If a context file with llm_recommendations exists for this
-        # experience, restrict to the effective set:
-        #     (recommended ∪ added ∪ pinned) − excluded
-        # Otherwise show all active bullets minus the excluded ones.
+        # Highlights: active bullets, with pin/exclude/added + accepted-generated
+        # (gap-fill) applied. If a context file with llm_recommendations exists
+        # for this experience, restrict to the effective set:
+        #     (recommended ∪ added ∪ pinned ∪ accepted_generated) − excluded
+        # Otherwise show all active bullets minus the excluded ones. Ordered by
+        # the user's explicit composition_overrides.bullet_order when present
+        # (listed ids first, then the rest by display_order) so the frozen doc
+        # matches generate's ordering (analyzer._stable_user_prefix); absent →
+        # display_order, byte-identical to the pre-reorder default.
         rec_ids = rec_by_exp.get(exp.id)
+        order = bullet_order.get(exp.id)
+        # Pending-leak guard (Phase 3): an accepted gap-fill bullet is is_active=1
+        # AND is_pending_review=1. It must render in THIS application (its id is in
+        # accepted_generated_ids) but must NOT leak into other apps' default
+        # all-active render. Mirrors the skills guard in _collect_skills
+        # (is_pending_review=0). Non-pending active bullets are unaffected, so the
+        # default (no gap-fill) render stays byte-identical.
+        active_bullets = [
+            b
+            for b in exp.bullets
+            if b.is_active and (not b.is_pending_review or b.id in accepted_generated_ids)
+        ]
+        if order:
+            rank = {bid: i for i, bid in enumerate(order)}
+            active_bullets.sort(
+                key=lambda b: (rank.get(b.id, len(rank)), b.display_order or 0, b.id)
+            )
+        else:
+            active_bullets.sort(key=lambda b: (b.display_order or 0, b.id))
         highlights: list[str] = []
-        for b in sorted(
-            (b for b in exp.bullets if b.is_active),
-            key=lambda b: (b.display_order or 0, b.id),
-        ):
+        highlight_ids: list[int] = []
+        for b in active_bullets:
             if b.id in ex_bullets:
                 continue
             include = (
@@ -207,18 +258,28 @@ def build_json_resume_from_corpus(
                 or b.id in rec_ids
                 or b.id in pin_bullets
                 or b.id in add_bullets
+                or b.id in accepted_generated_ids
             )
             if include and b.text:
                 highlights.append(b.text)
+                highlight_ids.append(b.id)
         if highlights:
             entry["highlights"] = highlights
 
         # Only emit experience if there's something meaningful in it.
         if entry.get("name") or entry.get("position") or highlights:
             work.append(entry)
+            work_provenance.append(
+                {
+                    "experience_id": exp.id,
+                    "title_id": title_id,
+                    "role_intro_id": role_intro_id,
+                    "highlight_ids": highlight_ids,
+                }
+            )
 
     # ---- Assemble skills[] ----
-    skills = _collect_skills(
+    skills, skill_ids = _collect_skills(
         session,
         candidate.id,
         pinned=skill_pinned,
@@ -252,17 +313,66 @@ def build_json_resume_from_corpus(
                 }
                 if use_experience_summaries
                 else {},
-                "bullet_overrides_active": bool(pin_bullets or ex_bullets or add_bullets),
+                "bullet_overrides_active": bool(
+                    pin_bullets or ex_bullets or add_bullets or accepted_generated_ids
+                ),
                 # B.5 — whether per-JD skill curation was applied + the
                 # recommend_skills ordering it was seeded from.
                 "skill_curation_active": bool(
                     skill_rec_ids is not None or skill_pinned or skill_excluded or skill_order
                 ),
                 "recommended_skill_ids": skill_rec_ids or [],
+                # Generation-experience re-architecture — order-aligned provenance
+                # for the frozen composition contract: which ids produced each
+                # resolved text. Consumed by deterministic assemble + D6 corpus
+                # enrichment; ignored by JSON Resume themes.
+                "work_provenance": work_provenance,
+                "skill_ids": skill_ids,
+                "accepted_generated_bullet_ids": sorted(accepted_generated_ids),
             },
             "language": "en-US",
         },
     }
+    return doc
+
+
+def freeze_approved_composition(
+    session: Session,
+    candidate_id: int,
+    *,
+    application_id: int | None = None,
+    context_path: str | Path | None = None,
+    context_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return the FROZEN approved-composition document for an application.
+
+    Generation-experience re-architecture: the single content contract. It IS the
+    resolved JSON-Resume document build_json_resume_from_corpus already produces
+    (resolved bullet / summary / skills text in final order + a meta.sartor
+    provenance block) — captured as a value snapshot so a later edit to a corpus
+    row can't retroactively change an approved application, and so every
+    downstream surface (template preview, deterministic assemble, preview,
+    download) renders THIS without re-resolving. Written by the Compose "Save and
+    continue" (freeze) path into context["approved_composition"].
+
+    Thin, deterministic wrapper: stamps `meta.sartor.frozen = True` so consumers
+    can distinguish a frozen snapshot from a live corpus-direct render. Pure (no
+    time / randomness) — the enclosing context file already carries the timestamp.
+    """
+    doc = build_json_resume_from_corpus(
+        session,
+        candidate_id,
+        application_id=application_id,
+        context_path=context_path,
+        context_data=context_data,
+    )
+    meta = doc.setdefault("meta", {})
+    if not isinstance(meta, dict):  # defensive; build_* always emits a dict
+        meta = {}
+        doc["meta"] = meta
+    sartor_meta = meta.setdefault("sartor", {})
+    if isinstance(sartor_meta, dict):
+        sartor_meta["frozen"] = True
     return doc
 
 
@@ -464,6 +574,59 @@ def _read_bullet_overrides(
     )
 
 
+def _read_bullet_order_choices(ctx: dict[str, Any]) -> dict[int, list[int]]:
+    """Return {experience_id: [bullet_id, ...]} explicit order from composition_overrides.bullet_order.
+
+    Empty when absent/invalid; keys and ids coerced to int (JSON persists keys as
+    strings). Mirrors analyzer._stable_user_prefix so the corpus-direct render and
+    generate agree on per-role bullet order.
+    """
+    ov = ctx.get("composition_overrides") or {}
+    raw = ov.get("bullet_order") if isinstance(ov, dict) else None
+    out: dict[int, list[int]] = {}
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            try:
+                out[int(k)] = [int(x) for x in (v or [])]
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
+def _read_summary_text_override(ctx: dict[str, Any]) -> tuple[str, bool]:
+    """Return (summary_text, summary_text_edited) from composition_overrides.
+
+    The Compose-drafted/edited 2-sentence positioning summary. ("", False) when
+    absent/blank so the caller falls through to the SummaryItem variant chain.
+    """
+    ov = ctx.get("composition_overrides") or {}
+    if not isinstance(ov, dict):
+        return "", False
+    text = ov.get("summary_text")
+    if not isinstance(text, str) or not text.strip():
+        return "", False
+    return text.strip(), bool(ov.get("summary_text_edited"))
+
+
+def _read_accepted_generated_bullet_ids(ctx: dict[str, Any]) -> set[int]:
+    """Return the set of ACCEPTED gap-fill bullet ids from composition_overrides.
+
+    Empty when absent. These are Bullet rows (source='llm_proposed:<hash>') the
+    user accepted at Compose; the resolver folds them into the per-role effective
+    set like corpus bullets.
+    """
+    ov = ctx.get("composition_overrides") or {}
+    if not isinstance(ov, dict):
+        return set()
+    out: set[int] = set()
+    for x in ov.get("accepted_generated_bullet_ids") or []:
+        try:
+            out.add(int(x))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def _read_recommendations_by_experience(
     ctx: dict[str, Any],
 ) -> dict[int, set[int]]:
@@ -515,6 +678,26 @@ def _pinned_title_text(exp: Experience, pinned_id: int | None) -> str | None:
     for t in exp.titles or []:
         if t.id == pinned_id and (t.is_official or t.truthful_enough_to_use):
             return t.title
+    return None
+
+
+def _resolve_title_id(exp: Experience, pinned_id: int | None) -> int | None:
+    """Return the ExperienceTitle id whose text the resolver emits (pin > official > first).
+
+    Mirrors _pinned_title_text / _official_title_text / _first_title_text so the
+    frozen composition's provenance title_id names the SAME title the resolved
+    `position` came from. None when the experience has no usable title.
+    """
+    if pinned_id is not None:
+        for t in exp.titles or []:
+            if t.id == pinned_id and (t.is_official or t.truthful_enough_to_use):
+                return t.id
+    for t in exp.titles or []:
+        if t.is_official:
+            return t.id
+    for t in exp.titles or []:
+        if t.title:
+            return t.id
     return None
 
 
@@ -620,14 +803,16 @@ def _collect_skills(
     excluded: set[int] | None = None,
     skill_order: list[int] | tuple[int, ...] | None = None,
     rec_ids: list[int] | None = None,
-) -> list[dict[str, Any]]:
-    """Return JSON Resume skills[] for the candidate, curated and ordered for this application (B.5).
+) -> tuple[list[dict[str, Any]], list[int]]:
+    """Return (JSON Resume skills[], ordered skill ids) for the candidate, curated for this application (B.5).
 
     The universe is the candidate's active, approved Skill rows in
     display_order; pending (is_pending_review=1) and retired (is_active=0)
     skills never appear. recommend_skills ordering + pin/drop/reorder overrides
     are applied via resolve_skill_selection. With no recommendation and no
-    overrides this is simply every active, approved skill in display order.
+    overrides this is simply every active, approved skill in display order. The
+    second element is the same ids in the same order (provenance for the frozen
+    composition's meta.sartor.skill_ids).
     """
     from db.models import Skill
 
@@ -646,7 +831,8 @@ def _collect_skills(
         excluded=set(excluded or ()),
         skill_order=list(skill_order or ()),
     )
-    return [{"name": name_by_id[sid]} for sid in ordered if sid in name_by_id]
+    valid_ids = [sid for sid in ordered if sid in name_by_id]
+    return [{"name": name_by_id[sid]} for sid in valid_ids], valid_ids
 
 
 def _username_from_linkedin(url: str) -> str:

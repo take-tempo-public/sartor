@@ -13,6 +13,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feature: Compose authors + freezes the composition; Generate becomes deterministic (`fix/compose-frozen-composition`, 2026-07-06)
+
+The generation-experience re-architecture (Option B — one cohesive branch). North
+star: **NO SURPRISES** — content is authored + approved ONCE at Compose, frozen, then
+rendered deterministically by every downstream surface. What you see is what you
+download. `PROMPT_VERSION 2026-07-06.1 → 2026-07-06.3`. Full design + decision record:
+[`docs/dev/generation-experience-rearchitecture.md`](docs/dev/generation-experience-rearchitecture.md).
+
+- **Frozen `approved_composition` contract (Phase 1)** — `corpus_to_json_resume` is the
+  sole producer of a resolved JSON-Resume snapshot (honors `bullet_order`, folds
+  `accepted_generated_bullet_ids`, resolves `summary_text`, emits `meta.sartor`
+  provenance); `freeze_approved_composition()` stamps it on Compose "Save and continue".
+- **Compose authors the 2-sentence positioning summary (Phase 2)** — a dedicated Sonnet
+  `draft_positioning_summary` (grounded, editable, retire-able) fires once on Compose
+  arrival, replacing the summary the résumé LLM used to write.
+- **Compose authors gap-fill bullets (Phase 3)** — a Sonnet `draft_gap_fill_bullets`
+  proposes GROUNDED bullets for JD requirements the corpus doesn't cover, shown as a
+  per-role "Suggested for this JD" accept/retire lane; ACCEPT creates a pending `Bullet`
+  folded into this application's composition, RETIRE drops it. A resolver **pending-leak
+  guard** keeps a pending+active bullet from rendering in other applications (mirrors the
+  skills guard); this also stops any pre-existing pending+active bullet (e.g. a
+  promoted-clarification bullet) from leaking into every all-active render.
+- **Generate becomes deterministic (Phase 4)** — in corpus mode, `/api/generate`
+  (+ streaming) ASSEMBLE the frozen `approved_composition` (ZERO résumé-body LLM calls)
+  instead of calling `generate()`; the résumé renders directly from the doc, so
+  **preview == assemble == download** by construction. The **cover letter stays an LLM
+  call**; **legacy (file-based) mode is byte-identical**, so `--suite synthetic` is
+  unchanged. A corpus-mode Refine now routes BACK to Compose (minimal loop-back) with an
+  explaining banner instead of an LLM full-regenerate. New deterministic helpers:
+  `json_resume.json_resume_to_markdown`, `generator.generate_resume_from_json_resume`.
+- **Also folded in** (two pre-existing branch bugs, confirmed on clean HEAD): a
+  `ui_pages/wizard_compose.reset_order` helper fix (used `EXPERIENCE_CARD.first`, which now
+  resolves to the always-present positioning card) and an `aria-label` on
+  `#composeSummaryDraft` (axe "form elements must have labels").
+- **Deferred to LATER branches:** surgical (non-rewrite) refinement + the richer
+  loop-back-with-accept/retire banner; WYSIWYG-as-source (D4); clarifications→corpus
+  persistence (D5); a "Regenerate gap-fill" affordance.
+
 ### Fix: refinement scope warning is an in-app modal, not a native browser confirm (`fix/refinement-and-loopback`, 2026-07-06)
 
 Preview #3: when a refinement looked like it might change facts (via

@@ -2705,3 +2705,45 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    the synthetic suite; a deterministic before/after count on a saved context + one real
    corpus `generate()` is a cheaper, more representative check for the owner's actual
    flow than a paid synthetic run.
+
+---
+
+## Compose-frozen-composition — 2026-07-06 — `fix/compose-frozen-composition` — `2026-07-06.1` → `2026-07-06.3`
+
+1. **What changed?** The generation-experience re-architecture (Phases 1–4):
+   - Two NEW **Compose-time** drafting prompts + calls in `analyzer.py`:
+     `DRAFT_SUMMARY_SYSTEM_PROMPT` + `draft_positioning_summary` (Sonnet, Phase 2,
+     `.1 → .2`) and `DRAFT_GAP_FILL_SYSTEM_PROMPT` + `draft_gap_fill_bullets` (Sonnet,
+     Phase 3, `.2 → .3`). Both are grounded (evidence-or-nothing / no-invention) and
+     registered in `_BASE_SYSTEM_PROMPTS`. They fire once on Compose arrival — they are
+     NOT part of the analyze→generate prompt chain.
+   - **Phase 4:** in corpus mode, `generate()` is no longer called for the résumé body —
+     `/api/generate` deterministically assembles the frozen `approved_composition`
+     (`_assemble_from_frozen_composition` + `generate_resume_from_json_resume`). The cover
+     letter still calls `generate_cover_letter_against_resume`.
+2. **Why?** Owner's "no surprises" vision: author + approve content ONCE at Compose, then
+   render it deterministically. The summary + gap-fill move OUT of the résumé LLM to
+   reviewable Compose-time drafts.
+3. **Result? (byte-identity, NOT a paid eval run):** the generate prompt template is
+   UNCHANGED, so the legacy (file-based) `--suite synthetic` path is byte-identical —
+   proven **deterministically by unit tests** rather than a paid run:
+   `test_corpus_mode_prompt.py::TestGapFillPromptInvariance` (the gap-fill keys don't
+   perturb `_stable_user_prefix`) + `test_deterministic_generate.py` (a legacy context
+   still calls `generate()`; a corpus context makes ZERO `generate`/`generate_streaming`
+   calls). The `PROMPT_VERSION` bumps are attribution-only. **Live replay DONE** on the REAL
+   robert corpus (`../sartor-e2e/output/robert/context_20260706_122956.json` + a read-only
+   copy of the robert DB): froze the composition deterministically (8 roles / 34 bullets),
+   drove the real `/api/generate` (`.md`), and confirmed **0 new `generate`/`generate_streaming`
+   records in `logs/llm_calls.jsonl`**, `download == json_resume_to_markdown(frozen)`, and
+   `resume_preview == frozen serialization` (a real robert bullet survived into the download).
+   The frozen doc there had NO drafted summary / curated skills (the context predated Phases
+   2–3), so those sections were empty — the résumé BODY assembled correctly, which is the
+   Phase-4 invariant. A summary + gap-fill Sonnet smoke on robert (real API via the Compose
+   flow) is a nice-to-have, not a blocker.
+4. **Learned?** Moving a section OUT of the résumé LLM to a dedicated Compose-time draft
+   (a new per-call prompt) does NOT touch the analyze→generate cache or the synthetic eval
+   as long as the generate prompt bytes are unchanged — assert that with a
+   `_stable_user_prefix`-invariance unit test instead of paying for a synthetic run. Once
+   corpus-mode generate is deterministic, the synthetic suite (legacy-only) stops covering
+   the corpus path entirely — the representative check is the deterministic assemble test
+   (zero-LLM + download == frozen doc), not an eval score.

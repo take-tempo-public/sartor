@@ -372,6 +372,16 @@ class Compose:
     # β.6c — candidate-level positioning (summary) card variants on compose.
     POSITIONING_VARIANT = ".positioning-variant"
     POSITIONING_CHOSEN = ".positioning-variant.positioning-chosen"
+    # Generation-experience re-architecture — the Compose-drafted 2-sentence
+    # positioning summary (editable) + its Regenerate/Retire actions.
+    POSITIONING_DRAFT = "#composeSummaryDraft"
+    POSITIONING_DRAFT_REGEN = ".positioning-draft-regen"
+    POSITIONING_DRAFT_RETIRE = ".positioning-draft-retire"
+    # Phase 3 — per-role "Suggested for this JD" gap-fill lane (Accept/Retire).
+    GAP_FILL_LANE = ".gap-fill-lane"
+    GAP_FILL_ROW = ".gap-fill-row"
+    GAP_FILL_ACCEPT = ".gap-fill-accept"
+    GAP_FILL_RETIRE = ".gap-fill-retire"
     # B.4 (Sprint 6.6) — "Add role intros" opt-in toggle + the per-role intro
     # picker rendered inside each compose card.
     ROLE_INTROS_TOGGLE = "#composeRoleIntrosToggle"

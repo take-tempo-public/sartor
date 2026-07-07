@@ -804,6 +804,57 @@ def _read_summary_overrides(
     )
 
 
+def _read_summary_draft(context_path: str) -> tuple[str, bool]:
+    """Return (summary_text, summary_text_edited) — the Compose-drafted 2-sentence positioning summary.
+
+    ("", False) when absent / unreadable. _within-gated by OUTPUT_DIR. Delegates
+    to corpus_to_json_resume._read_summary_text_override so the read matches the
+    resolver that freezes it.
+    """
+    from corpus_to_json_resume import _read_summary_text_override
+
+    if not context_path:
+        return "", False
+    cp = Path(context_path)
+    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        return "", False
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return "", False
+    return _read_summary_text_override(ctx)
+
+
+def _read_gap_fill(context_path: str) -> tuple[list[dict[str, Any]], bool, set[int]]:
+    """Return (gap_fill_proposals, has_gap_fill, accepted_generated_bullet_ids).
+
+    Phase 3: the transient Compose gap-fill proposals; whether the draft has run
+    (has_gap_fill = key PRESENCE, not list non-emptiness, so a zero-proposal draft
+    still stops the auto-fire loop); and the set of accepted gap-fill Bullet ids for
+    this application. ([], False, set()) when absent / unreadable. _within-gated by
+    OUTPUT_DIR.
+    """
+    if not context_path:
+        return [], False, set()
+    cp = Path(context_path)
+    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        return [], False, set()
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return [], False, set()
+    has_gap_fill = "llm_gap_fill_proposals" in ctx
+    raw = ctx.get("llm_gap_fill_proposals")
+    proposals = [p for p in raw if isinstance(p, dict)] if isinstance(raw, list) else []
+    accepted = {
+        int(x)
+        for x in (
+            (ctx.get("composition_overrides") or {}).get("accepted_generated_bullet_ids") or []
+        )
+    }
+    return proposals, has_gap_fill, accepted
+
+
 def _read_recommendations_and_added(
     context_path: str,
 ) -> tuple[set[int], dict[int, dict[str, Any]]]:
@@ -875,6 +926,18 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
         # card at the top with the LLM's pick flagged + any user pin
         # overriding it.
         summary_recommendation, pinned_summary_id = _read_summary_overrides(ctx_path)
+        # Generation-experience re-architecture — the Compose-drafted 2-sentence
+        # positioning summary + edited flag, so the Positioning card can render
+        # the editable draft alongside the variant picker.
+        drafted_summary_text, drafted_summary_edited = _read_summary_draft(ctx_path)
+        # Phase 3 — transient gap-fill proposals + the accepted-gap-fill bullet ids
+        # for this application; has_gap_fill (key presence) drives the auto-fire latch.
+        gap_fill_proposals, has_gap_fill, accepted_generated_ids = _read_gap_fill(ctx_path)
+        gap_fill_by_exp: dict[int, list[dict[str, Any]]] = {}
+        for _gp in gap_fill_proposals:
+            _geid = _gp.get("experience_id")
+            if isinstance(_geid, int):
+                gap_fill_by_exp.setdefault(_geid, []).append(_gp)
         # feat/compose-add-title — per-experience title pin (experience_id →
         # ExperienceTitle id). Drives the title radio's selected state and the
         # per-experience chosen_title_id below.
@@ -933,6 +996,9 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                         "excluded": b.id in excluded,
                         "recommended": b.id in rec_ids,
                         "added": b.id in added,
+                        # Phase 3 — an accepted gap-fill bullet renders in the
+                        # visible set for THIS application (pending-leak guarded).
+                        "accepted_generated": b.id in accepted_generated_ids,
                     }
                 )
             scored_bullets.sort(
@@ -1044,7 +1110,8 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                     }
                 )
 
-            if scored_bullets or titles or role_summary_variants:
+            exp_gap_fill = gap_fill_by_exp.get(exp.id, [])
+            if scored_bullets or titles or role_summary_variants or exp_gap_fill:
                 out.append(
                     {
                         "id": exp.id,
@@ -1068,6 +1135,8 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                             "chosen_id": exp_chosen_id,
                             "has_recommendation": exp_rec_id is not None,
                         },
+                        # Phase 3 — per-role gap-fill proposals (accept/retire lane).
+                        "gap_fill_proposals": exp_gap_fill,
                     }
                 )
         # β.6c — Positioning block. Variants come from the candidate's
@@ -1183,12 +1252,20 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                 "application_id": application_id,
                 "experiences": out,
                 "any_recommendations": any(e["has_recommendations"] for e in out),
+                # Phase 3 — key presence flips this true after the first draft
+                # (even with zero proposals), so the auto-fire latch never re-loops.
+                "has_gap_fill": has_gap_fill,
                 "summary": {
                     "variants": summary_variants,
                     "recommended_id": rec_id,
                     "pinned_id": pinned_summary_id,
                     "chosen_id": chosen_summary_id,
                     "has_recommendation": rec_id is not None,
+                    # Generation-experience re-architecture — the Compose-drafted
+                    # 2-sentence positioning summary the user reviews/edits/retires.
+                    "drafted_text": drafted_summary_text,
+                    "drafted_edited": drafted_summary_edited,
+                    "has_draft": bool(drafted_summary_text),
                 },
                 # B.4 — the "Add role intros" toggle state for this application.
                 "use_experience_summaries": use_experience_summaries,
@@ -1320,6 +1397,24 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
             skill_order_in = [int(x) for x in skill_order_raw]
         except (TypeError, ValueError):
             return jsonify({"error": "skill_order ids must be integers"}), 400
+
+    # Generation-experience re-architecture — Compose-authored content that
+    # freezes into the approved composition. summary_text = the drafted/edited
+    # 2-sentence positioning summary; accepted_generated_bullet_ids = gap-fill
+    # Bullet rows the user accepted. Each omitted when empty so the default path
+    # stays byte-identical. `freeze` (the Save-and-continue action, not the
+    # debounced autosave) triggers writing the resolved approved_composition
+    # snapshot — the single content contract every downstream surface renders.
+    summary_text_raw = data.get("summary_text")
+    if summary_text_raw is not None and not isinstance(summary_text_raw, str):
+        return jsonify({"error": "summary_text must be a string"}), 400
+    summary_text_in = (summary_text_raw or "").strip()
+    summary_text_edited_in = bool(data.get("summary_text_edited"))
+    try:
+        accepted_generated_in = [int(x) for x in (data.get("accepted_generated_bullet_ids") or [])]
+    except (TypeError, ValueError):
+        return jsonify({"error": "accepted_generated_bullet_ids must be integer ids"}), 400
+    freeze = bool(data.get("freeze"))
 
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
@@ -1478,6 +1573,14 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
             overrides["excluded_skill_ids"] = skill_excluded_in
         if skill_order_in:
             overrides["skill_order"] = skill_order_in
+        # Generation-experience re-architecture — Compose-authored content
+        # (each omitted when empty → default path byte-identical).
+        if summary_text_in:
+            overrides["summary_text"] = summary_text_in
+            if summary_text_edited_in:
+                overrides["summary_text_edited"] = True
+        if accepted_generated_in:
+            overrides["accepted_generated_bullet_ids"] = accepted_generated_in
         ctx["composition_overrides"] = overrides
 
         # feat/compose-add-title — generate reads the FROZEN career_corpus
@@ -1492,6 +1595,21 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 key = str(eid) if eid is not None else None
                 if key is not None and key in resynced_titles:
                     exp_entry["eligible_titles"] = resynced_titles[key]
+
+        # Generation-experience re-architecture — on the explicit "Save and
+        # continue" (freeze), capture the resolved approved-composition snapshot
+        # (the single content contract every downstream surface renders). Passes
+        # the in-memory ctx (with the just-rebuilt overrides) so the snapshot
+        # reflects THIS save; only on freeze so the debounced autosave stays cheap.
+        if freeze:
+            from corpus_to_json_resume import freeze_approved_composition
+
+            ctx["approved_composition"] = freeze_approved_composition(
+                session,
+                candidate.id,
+                application_id=application_id,
+                context_data=ctx,
+            )
 
         cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
         return jsonify(
@@ -1508,6 +1626,10 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 "pinned_skill_ids": skill_pinned_in,
                 "excluded_skill_ids": skill_excluded_in,
                 "skill_order": skill_order_in,
+                "summary_text": summary_text_in,
+                "summary_text_edited": summary_text_edited_in,
+                "accepted_generated_bullet_ids": accepted_generated_in,
+                "frozen": bool(freeze),
             }
         )
     finally:
@@ -1733,6 +1855,443 @@ def recommend_application_summary(application_id: int) -> ResponseReturnValue:
                 **result,
             }
         )
+    finally:
+        session.close()
+
+
+def _career_facts_synopsis(corpus: object) -> str:
+    """A compact, grounded roles-and-companies synopsis for summary drafting.
+
+    Reads the frozen career_corpus payload (official-or-first title + company +
+    span, up to 8 roles, with up to 2 bullets each) — enough to ground a
+    positioning summary without dumping the whole corpus into the prompt.
+    """
+    if not isinstance(corpus, list):
+        return ""
+    lines: list[str] = []
+    for exp in corpus[:8]:
+        if not isinstance(exp, dict):
+            continue
+        company = (exp.get("company") or "").strip()
+        titles = exp.get("eligible_titles") or []
+        title = ""
+        for t in titles:
+            if isinstance(t, dict) and t.get("is_official"):
+                title = (t.get("title") or "").strip()
+                break
+        if not title and titles and isinstance(titles[0], dict):
+            title = (titles[0].get("title") or "").strip()
+        span = (
+            f"{(exp.get('start_date') or '').strip()}–{(exp.get('end_date') or 'present').strip()}"
+        )
+        header = " ".join(
+            p for p in [title, f"@ {company}" if company else "", f"({span})"] if p
+        ).strip()
+        if header:
+            lines.append(header)
+        for b in (exp.get("bullets") or [])[:2]:
+            if isinstance(b, dict) and (b.get("text") or "").strip():
+                lines.append(f"  • {b['text'].strip()}")
+    return "\n".join(lines)
+
+
+@applications_bp.route("/api/applications/<int:application_id>/draft-summary", methods=["POST"])
+def draft_application_summary(application_id: int) -> ResponseReturnValue:
+    """Generation-experience re-architecture — draft a JD-tailored 2-sentence positioning summary at Compose (Sonnet).
+
+    The summary is authored ONCE at Compose (D2), reviewed/edited/retired by the
+    user, and frozen into the approved composition. This route stages the
+    candidate's current positioning (chosen variant -> profile_text) + a compact
+    career synopsis + the JD, calls analyzer.draft_positioning_summary, and
+    persists the result into composition_overrides.summary_text (edited=False, a
+    fresh draft). Re-runnable (Regenerate overwrites). The analyzer short-circuits
+    without an LLM call when there's no JD.
+
+    Body: {context_path}. Filesystem + ownership: _safe_username via
+    _load_application_owned; _within gates context_path.
+    """
+    from analyzer import LLMResponseError, draft_positioning_summary
+    from corpus_to_json_resume import _read_summary_choices, _resolve_chosen_summary_text
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        # Source positioning = the candidate's current chosen summary (pin >
+        # recommendation > first-active > profile_text) — NOT any prior draft, so
+        # Regenerate reframes the real positioning, never a draft-of-a-draft.
+        pinned_id, rec_id = _read_summary_choices(ctx)
+        source_text, _src = _resolve_chosen_summary_text(
+            session,
+            candidate.id,
+            pinned_id=pinned_id,
+            recommended_id=rec_id,
+            fallback_text=candidate.profile_text or "",
+        )
+
+        # Stage transient inputs for the LLM call; strip before persisting.
+        ctx["summary_source_text"] = source_text
+        ctx["career_facts"] = _career_facts_synopsis(ctx.get("career_corpus"))
+        ctx["jd_text"] = app_row.jd_text
+        run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
+        try:
+            result = draft_positioning_summary(
+                _get_client(),
+                ctx,
+                username=candidate.username,
+                run_id=run_id,
+            )
+        except anthropic.APIConnectionError as exc:
+            logger.error("Draft-summary: Anthropic connection error: %s", exc)
+            return jsonify({"error": "AI service connection failed"}), 503
+        except LLMResponseError as exc:
+            logger.error("Draft-summary: malformed LLM response: %s", exc.validation_error)
+            return jsonify(
+                {
+                    "error": "AI summary draft was malformed",
+                    "detail": str(exc.validation_error),
+                }
+            ), 502
+
+        drafted = str(result.get("summary") or "").strip()
+        # Persist into composition_overrides.summary_text (fresh draft → not edited).
+        overrides = ctx.get("composition_overrides")
+        if not isinstance(overrides, dict):
+            overrides = {}
+        overrides.pop("summary_text_edited", None)
+        if drafted:
+            overrides["summary_text"] = drafted
+        else:
+            overrides.pop("summary_text", None)
+        ctx["composition_overrides"] = overrides
+
+        for transient in ("summary_source_text", "career_facts", "jd_text"):
+            ctx.pop(transient, None)
+        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        return jsonify(
+            {
+                "application_id": application_id,
+                "summary_text": drafted,
+                "summary_text_edited": False,
+            }
+        )
+    finally:
+        session.close()
+
+
+def _coerce_experience_id(raw: object) -> int | None:
+    """Coerce an LLM-returned experience id (int, "42", or the "e42" corpus form) to int, else None."""
+    if isinstance(raw, bool):
+        return None
+    if isinstance(raw, int):
+        return raw
+    if isinstance(raw, str):
+        digits = raw.strip().lstrip("eEbB")
+        return int(digits) if digits.isdigit() else None
+    return None
+
+
+@applications_bp.route("/api/applications/<int:application_id>/draft-gap-fill", methods=["POST"])
+def draft_application_gap_fill(application_id: int) -> ResponseReturnValue:
+    """Generation-experience re-architecture Phase 3 — draft GROUNDED gap-fill bullets at Compose (Sonnet).
+
+    For JD essential / preferred requirements the existing corpus does not surface,
+    draft NEW resume bullets that reframe the candidate's real evidence, each
+    attached to the experience where that evidence lives. The result is a set of
+    TRANSIENT proposals stashed on ctx["llm_gap_fill_proposals"] (a top-level
+    context key, like llm_recommendations) — NOT yet Bullet rows. The user then
+    ACCEPTs (-> a pending Bullet + composition_overrides.accepted_generated_bullet_ids)
+    or RETIREs (dropped) each via /gap-fill-decide. Auto-fires once per application
+    on Compose arrival (D2); the analyzer short-circuits without an LLM call when
+    there's no corpus or no JD. The key is ALWAYS written (even []) so the GET's
+    has_gap_fill flag flips and the auto-fire never re-loops.
+
+    Body: {context_path}. Filesystem + ownership: _safe_username via
+    _load_application_owned; _within gates context_path.
+    """
+    import hashlib
+
+    from analyzer import LLMResponseError, draft_gap_fill_bullets
+    from db.models import Experience
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        # Stage the JD transiently for the LLM call; strip before persisting.
+        ctx["jd_text"] = app_row.jd_text
+        run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
+        try:
+            result = draft_gap_fill_bullets(
+                _get_client(),
+                ctx,
+                username=candidate.username,
+                run_id=run_id,
+            )
+        except anthropic.APIConnectionError as exc:
+            logger.error("Draft-gap-fill: Anthropic connection error: %s", exc)
+            return jsonify({"error": "AI service connection failed"}), 503
+        except LLMResponseError as exc:
+            logger.error("Draft-gap-fill: malformed LLM response: %s", exc.validation_error)
+            return jsonify(
+                {
+                    "error": "AI gap-fill draft was malformed",
+                    "detail": str(exc.validation_error),
+                }
+            ), 502
+
+        # Normalize route-side (the analyzer stays session-free): keep only
+        # proposals targeting an experience this candidate owns, coerce
+        # pattern_kind into the Bullet CHECK set, compute a stable accept/retire
+        # key (doubles as Bullet.source), and drop dups.
+        cand_exp_ids = {
+            e.id for e in session.query(Experience).filter_by(candidate_id=candidate.id)
+        }
+        valid_kinds = {"xyz", "star", "car", "manual"}
+        normalized: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for p in result.get("proposals") or []:
+            if not isinstance(p, dict):
+                continue
+            text = (p.get("text") or "").strip()
+            eid = _coerce_experience_id(p.get("experience_id"))
+            if not text or eid is None or eid not in cand_exp_ids:
+                continue
+            key = hashlib.sha256(f"{eid}|{text}".encode()).hexdigest()[:12]
+            if key in seen:
+                continue
+            seen.add(key)
+            pk = (p.get("pattern_kind") or "").strip().lower()
+            normalized.append(
+                {
+                    "key": key,
+                    "experience_id": eid,
+                    "text": text,
+                    "pattern_kind": pk if pk in valid_kinds else "manual",
+                    "requirement": (p.get("requirement") or "").strip(),
+                    "evidence": p.get("evidence"),
+                    "rationale": (p.get("rationale") or "").strip(),
+                }
+            )
+
+        ctx.pop("jd_text", None)
+        ctx["llm_gap_fill_proposals"] = normalized
+        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        return jsonify(
+            {
+                "application_id": application_id,
+                "proposals": normalized,
+                "has_gap_fill": True,
+            }
+        )
+    finally:
+        session.close()
+
+
+@applications_bp.route("/api/applications/<int:application_id>/gap-fill-decide", methods=["POST"])
+def gap_fill_decide(application_id: int) -> ResponseReturnValue:
+    """Phase 3 — accept or retire ONE gap-fill proposal.
+
+    ACCEPT: create a real Bullet (source='llm_proposed:<key>', is_pending_review=1)
+    on the proposal's experience, fold its id into
+    composition_overrides.accepted_generated_bullet_ids (so the resolver renders it
+    for THIS application only — the pending-leak guard keeps it out of others), and
+    record a pending ProposalReview keyed to the iteration-0 ApplicationRun
+    (ctx["application_run_id"]). RETIRE: drop the transient proposal — no Bullet is
+    ever created. Idempotent on the Bullet.source key, so a double-accept or a
+    crash-then-retry never duplicates. If the ctx write later fails, the guard makes
+    the bullet inert (renders nowhere), so no compensating delete is needed.
+
+    Body: {context_path, key, decision}. decision in {"accept","retire"}.
+    Filesystem + ownership: _safe_username via _load_application_owned; _within
+    gates context_path.
+    """
+    from db.models import Bullet, Experience, IterationLog, ProposalReview
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    key = (data.get("key") or "").strip()
+    decision = (data.get("decision") or "").strip().lower()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+    if not key:
+        return jsonify({"error": "key required"}), 400
+    if decision not in ("accept", "retire"):
+        return jsonify({"error": "decision must be 'accept' or 'retire'"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        raw_proposals = ctx.get("llm_gap_fill_proposals")
+        proposals: list[Any] = raw_proposals if isinstance(raw_proposals, list) else []
+        remaining = [p for p in proposals if not (isinstance(p, dict) and p.get("key") == key)]
+
+        if decision == "retire":
+            # Drop the transient proposal; no Bullet row exists pre-accept.
+            # Idempotent: a missing key is already-gone -> 200.
+            ctx["llm_gap_fill_proposals"] = remaining
+            cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+            return jsonify({"application_id": application_id, "key": key, "retired": True})
+
+        # decision == "accept"
+        overrides = ctx.get("composition_overrides")
+        if not isinstance(overrides, dict):
+            overrides = {}
+        accepted_ids = [int(x) for x in (overrides.get("accepted_generated_bullet_ids") or [])]
+
+        source = f"llm_proposed:{key}"
+        # Idempotency keyed on the row's source, NOT list membership: a re-accept
+        # (or a crash between commit and ctx write) reuses the existing Bullet.
+        existing = (
+            session.query(Bullet)
+            .join(Experience, Bullet.experience_id == Experience.id)
+            .filter(Experience.candidate_id == candidate.id, Bullet.source == source)
+            .first()
+        )
+        if existing is not None:
+            if existing.id not in accepted_ids:
+                accepted_ids.append(existing.id)
+            overrides["accepted_generated_bullet_ids"] = accepted_ids
+            ctx["composition_overrides"] = overrides
+            ctx["llm_gap_fill_proposals"] = remaining
+            cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+            return jsonify(
+                {
+                    "application_id": application_id,
+                    "key": key,
+                    "accepted_bullet_id": existing.id,
+                    "accepted_generated_bullet_ids": accepted_ids,
+                }
+            )
+
+        proposal = next((p for p in proposals if isinstance(p, dict) and p.get("key") == key), None)
+        if proposal is None:
+            return jsonify({"error": "Unknown or stale proposal key"}), 404
+
+        exp = (
+            session.query(Experience)
+            .filter_by(id=proposal.get("experience_id"), candidate_id=candidate.id)
+            .first()
+        )
+        if exp is None:
+            return jsonify({"error": "Proposal targets an unknown experience"}), 400
+
+        text = (proposal.get("text") or "").strip()
+        pk = (proposal.get("pattern_kind") or "manual").strip().lower()
+        if pk not in ("xyz", "star", "car", "manual"):
+            pk = "manual"
+        last_order = session.query(Bullet).filter_by(experience_id=exp.id).count()
+        bullet = Bullet(
+            experience_id=exp.id,
+            text=text,
+            display_order=last_order,
+            is_active=1,
+            is_pending_review=1,
+            source=source,
+            pattern_kind=pk,
+            has_outcome=0,
+        )
+        session.add(bullet)
+        session.flush()
+
+        accepted_ids.append(bullet.id)
+        overrides["accepted_generated_bullet_ids"] = accepted_ids
+        ctx["composition_overrides"] = overrides
+        ctx["llm_gap_fill_proposals"] = remaining
+
+        run_pk = ctx.get("application_run_id")
+        if isinstance(run_pk, int):
+            session.add(
+                ProposalReview(
+                    application_run_id=run_pk,
+                    bullet_id=bullet.id,
+                    original_text=text,
+                    decision="pending",
+                )
+            )
+            session.add(
+                IterationLog(
+                    application_run_id=run_pk,
+                    action="accept_gap_fill",
+                    summary=f"Accepted gap-fill bullet {bullet.id} on experience {exp.id}",
+                )
+            )
+
+        # Commit the DB row FIRST; if the ctx write then fails, the bullet is inert
+        # (the resolver pending-leak guard renders it nowhere until its id is in
+        # accepted_generated_bullet_ids), so no compensating delete is needed.
+        session.commit()
+        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        return jsonify(
+            {
+                "application_id": application_id,
+                "key": key,
+                "accepted_bullet_id": bullet.id,
+                "accepted_generated_bullet_ids": accepted_ids,
+            }
+        )
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 

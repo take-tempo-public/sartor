@@ -3314,6 +3314,51 @@ input:focus, select:focus, textarea:focus {
   color: var(--brand);
   letter-spacing: -0.2px;
 }
+/* Generation-experience re-architecture — the editable drafted 2-sentence
+   positioning summary + its Regenerate/Retire actions. */
+.positioning-draft {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 60px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.positioning-draft-actions button {
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+/* Phase 3 — "Suggested for this JD" gap-fill lane inside each experience card.
+   A subtle top divider sets the grounded proposals apart from the corpus bullets
+   above; the rows reuse .compose-row so they read as the same kind of item. */
+.gap-fill-lane {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-2);
+}
+.gap-fill-row .gap-fill-text {
+  line-height: 1.45;
+}
+/* Phase 4 — the refinement loop-back banner at the top of Compose. A soft brand
+   callout that explains why the user landed back here from Generate. */
+.compose-loopback-banner {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--brand);
+  border-left: 3px solid var(--brand);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #20212e 0%, #1a1b27 100%);
+}
+.compose-loopback-title {
+  font-weight: 600;
+  color: var(--brand);
+  margin-bottom: 4px;
+}
+.compose-loopback-body {
+  font-size: 0.9rem;
+  color: var(--fg-1);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
 .positioning-variant {
   cursor: pointer;
   position: relative;
