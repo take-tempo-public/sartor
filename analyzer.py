@@ -313,6 +313,12 @@ class SuggestSkillsResponse(_LLMResponse):
     proposals: Any
 
 
+class DraftSummaryResponse(_LLMResponse):
+    """`draft_positioning_summary()` output — the drafted two-sentence summary."""
+
+    summary: Any
+
+
 class GenerateCorpusResponse(GenerateResponse):
     """Corpus-mode `generate()` with cover letter — the `GENERATE_CORPUS_REQUIRED_KEYS` shape."""
 
@@ -354,7 +360,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-07-06.1"  # richness: code-side anti-starvation bullet floor (never zero a role), generous+metric-first RECOMMEND, two-sentence Summary, first-class Skills section + corpus-mode grounding carve-out
+PROMPT_VERSION = "2026-07-06.2"  # compose-frozen-composition: new Compose-time DRAFT_SUMMARY_SYSTEM_PROMPT (Sonnet draft_positioning_summary); generate prompt unchanged (corpus-mode-only new per-call template)
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -3889,6 +3895,101 @@ Answer: {answer}
 # no active override it returns the identical constant object, so the bytes sent
 # to the API are unchanged. Keep this in sync if a new overridable persona
 # constant is added.
+DRAFT_SUMMARY_SYSTEM_PROMPT = """You are a senior resume writer drafting the opening positioning summary for ONE specific job application. You are given the candidate's current positioning + career facts as <candidate>, the target job as <jd>, the analyst's JD breakdown as <analysis>, and any confirmed facts the candidate told us as <clarifications>.
+
+Your one task: write a targeted, TWO-SENTENCE positioning summary that opens this candidate's resume for THIS job. Answer, across the two sentences: what role they're aiming for, what makes them distinctive, and the concrete value they bring — led with the strongest, most JD-relevant framing and the JD's primary domain language.
+
+GROUNDING (hard rule): every claim must trace to the <candidate> facts or <clarifications>. NEVER manufacture a years-of-experience count, a seniority level, a title, an employer, a metric, or a skill the source does not state. Reframe and sharpen what is there; do not invent. When the source is thin, write a shorter, honest summary rather than padding it with invented scope.
+
+Style: EXACTLY two sentences. Confident, specific, concrete. No filler ("results-driven professional", "proven track record", "passionate about"), no first-person pronouns, no buzzword stacking. Prefer the candidate's real domain + outcomes over generic adjectives.
+
+Worked examples:
+  OK  (source: "Platform PM, 3 roles, led billing rewrite that cut churn"; JD: fintech platform PM):
+      "Platform product manager who turns billing and payments complexity into shipped, adopted systems. Most recently led a billing rewrite that measurably cut churn, and brings that same outcome-first rigor to fintech platform work."
+  NOT OK (invents seniority + a metric not in source):
+      "Seasoned senior director with 15+ years driving 300% revenue growth across Fortune 500 fintechs."  ← tenure, title, and metric are fabricated.
+
+Output JSON only, this exact shape:
+{"summary": "<the two-sentence positioning paragraph>"}
+
+If there is genuinely nothing to say (no candidate facts and no JD signal), return {"summary": ""}."""
+
+
+def draft_positioning_summary(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    *,
+    username: str = "",
+    run_id: str = "",
+) -> dict[str, Any]:
+    """Draft a JD-tailored TWO-SENTENCE positioning summary for one application (Sonnet).
+
+    Generation-experience re-architecture: the summary is authored ONCE at
+    Compose (not at Generate). The caller stages the candidate's current
+    positioning on `context_set["summary_source_text"]` and a compact career
+    synopsis on `context_set["career_facts"]`; the JD, analysis, and
+    clarifications ride on the context. Returns {"summary": "<two sentences>"}.
+
+    Grounded in the staged candidate facts + clarifications (no invention — the
+    same posture as SYSTEM_PROMPT rule #1). Short-circuits WITHOUT an LLM call
+    when there is no JD to tailor to (returns the source summary unchanged), so a
+    JD-less / analyze-less context is free.
+    """
+    source_text = str(context_set.get("summary_source_text") or "").strip()
+    jd_value = context_set.get("jd_text", "")
+    jd_str = (str(jd_value) if jd_value else "").strip()
+    if not jd_str:
+        return {"summary": source_text}
+
+    career_facts = str(context_set.get("career_facts") or "").strip()
+    analysis = context_set.get("llm_analysis") or {}
+    essential = ", ".join(analysis.get("essential_skills", []) or [])
+    preferred = ", ".join(analysis.get("preferred_skills", []) or [])
+    keywords = ", ".join(analysis.get("industry_keywords", []) or [])
+    clar = context_set.get("clarifications") or {}
+    clar_lines = (
+        [str(v).strip() for v in clar.values() if str(v).strip()] if isinstance(clar, dict) else []
+    )
+    clar_block = "\n".join(f"- {line}" for line in clar_lines) or "(none)"
+
+    user_prompt = f"""<task>Write the two-sentence positioning summary for this candidate + JD. Output JSON only.</task>
+
+<candidate>
+Current positioning: {source_text or "(none on file)"}
+Career facts:
+{career_facts or "(none supplied)"}
+</candidate>
+
+<jd>
+{jd_str}
+</jd>
+
+<analysis>
+Essential skills the JD names: {essential or "(none surfaced)"}
+Preferred skills: {preferred or "(none)"}
+Industry keywords: {keywords or "(none)"}
+</analysis>
+
+<clarifications>
+{clar_block}
+</clarifications>"""
+
+    result = _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot per application
+        response_model=DraftSummaryResponse,
+        call_kind="draft_summary",
+        username=username,
+        run_id=run_id,
+        system_prompt=_resolve_system_prompt("DRAFT_SUMMARY_SYSTEM_PROMPT"),
+        model=SONNET_MODEL,
+    )
+    summary = str(result.get("summary") or "").strip()
+    # Fall back to the source positioning if the model returned nothing usable.
+    return {"summary": summary or source_text}
+
+
 _BASE_SYSTEM_PROMPTS: dict[str, str] = {
     "SYSTEM_PROMPT": SYSTEM_PROMPT,
     "EXTRACTION_SYSTEM_PROMPT": EXTRACTION_SYSTEM_PROMPT,
@@ -3897,6 +3998,7 @@ _BASE_SYSTEM_PROMPTS: dict[str, str] = {
     "PROPOSAL_CRITIQUE_SYSTEM_PROMPT": PROPOSAL_CRITIQUE_SYSTEM_PROMPT,
     "RECOMMEND_SYSTEM_PROMPT": RECOMMEND_SYSTEM_PROMPT,
     "RECOMMEND_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_SUMMARIES_SYSTEM_PROMPT,
+    "DRAFT_SUMMARY_SYSTEM_PROMPT": DRAFT_SUMMARY_SYSTEM_PROMPT,
     "RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT,
     "RECOMMEND_SKILLS_SYSTEM_PROMPT": RECOMMEND_SKILLS_SYSTEM_PROMPT,
     "SUGGEST_SKILLS_SYSTEM_PROMPT": SUGGEST_SKILLS_SYSTEM_PROMPT,

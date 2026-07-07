@@ -3314,6 +3314,19 @@ input:focus, select:focus, textarea:focus {
   color: var(--brand);
   letter-spacing: -0.2px;
 }
+/* Generation-experience re-architecture — the editable drafted 2-sentence
+   positioning summary + its Regenerate/Retire actions. */
+.positioning-draft {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 60px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.positioning-draft-actions button {
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
 .positioning-variant {
   cursor: pointer;
   position: relative;

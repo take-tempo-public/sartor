@@ -5462,6 +5462,10 @@ window.addEventListener('popstate', _onWizardPopState);
 // ===============================================================
 
 let _composeApplicationId = null;
+// Generation-experience re-architecture — which application we've already
+// auto-fired the summary draft for, so a legitimately-empty draft (no JD facts)
+// can't re-loop the Sonnet call on every re-render. Reset when the app changes.
+let _draftSummaryFiredForApp = null;
 // B.4 — whether the "Add role intros" toggle is on for the loaded application.
 let _composeUseRoleIntros = false;
 
@@ -5503,11 +5507,21 @@ async function loadComposition() {
   // Auto-fires recommend-summary in the background when there's no
   // recommendation yet and the candidate has 2+ variants.
   const summary = data.summary || {};
-  if ((summary.variants || []).length > 0) {
-    list.appendChild(_renderPositioningCard(summary));
-    if (!summary.has_recommendation && (summary.variants || []).length > 1) {
-      _fireRecommendSummary();
-    }
+  // Positioning card is ALWAYS present in Compose — it authors the tailored
+  // 2-sentence summary (D2). Renders the editable draft + any saved variants.
+  // Always-present also keeps the draft textarea available so it rides along on
+  // every composition save (the POST rebuilds overrides wholesale — an absent
+  // textarea would drop a persisted draft).
+  list.appendChild(_renderPositioningCard(summary));
+  // D2 — auto-author the summary once on arrival: draft the 2-sentence
+  // positioning paragraph (Sonnet) when none exists yet, else opportunistically
+  // recommend a saved variant. One background call per pass so the re-render
+  // cascade converges; the draft fires at most once per application.
+  if (!summary.has_draft && _draftSummaryFiredForApp !== _composeApplicationId) {
+    _draftSummaryFiredForApp = _composeApplicationId;
+    _fireDraftSummary(false);
+  } else if (!summary.has_recommendation && (summary.variants || []).length > 1) {
+    _fireRecommendSummary();
   }
   // B.5 — Skills card. Candidate-level (like Positioning), rendered above the
   // experience cards. Surfaces the curated/ordered skills with pin/drop +
@@ -5633,6 +5647,42 @@ async function _fireRecommendSummary() {
   }
 }
 
+// Generation-experience re-architecture — draft/redraft the 2-sentence
+// positioning summary (Sonnet) at Compose, then refresh so the editable draft
+// shows. `force` just repaints the placeholder for an explicit Regenerate; the
+// route always overwrites composition_overrides.summary_text.
+async function _fireDraftSummary(force) {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  if (force) {
+    const el = document.getElementById('composeSummaryDraft');
+    if (el) el.placeholder = 'Drafting your summary…';
+  }
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/draft-summary`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context_path: lastContextPath }) },
+    );
+    if (res.ok) loadComposition();
+  } catch {
+    // Non-blocking — the user can Regenerate or type their own summary.
+  }
+}
+
+// Retire the drafted summary: clear it locally + persist (the empty value drops
+// summary_text from composition_overrides on the wholesale rebuild), so the
+// frozen doc falls back to the candidate's saved positioning.
+async function _retireDraftSummary() {
+  const el = document.getElementById('composeSummaryDraft');
+  if (el) { el.value = ''; el.dataset.edited = 'false'; }
+  try {
+    await _postComposition(_collectCompositionState());
+    _toast('Summary draft retired — falls back to your saved positioning.');
+  } catch (e) {
+    _toast('Retire failed: ' + e.message, true);
+  }
+}
+
 // β.6c — Positioning card. Sits above the experience cards in Step 3.
 // One variant chosen per application (either the LLM's recommendation
 // or a user pin). Clicking a non-chosen variant pins it; clicking the
@@ -5647,13 +5697,47 @@ function _renderPositioningCard(summary) {
 
   card.appendChild(_el('div', {
     className: 'edit-hint', style: 'margin-top:4px',
-    textContent: 'Which summary variant frames you for this JD. '
-      + 'Click a variant to pin it for this application; '
-      + 'click the pinned one again to unpin and accept the recommendation.',
+    textContent: 'Your tailored two-sentence summary for this job. Edit it '
+      + 'directly, or Regenerate a fresh draft. It freezes when you continue.',
   }));
 
+  // Generation-experience re-architecture — the drafted 2-sentence positioning
+  // summary is the primary content of this card (authored ONCE at Compose).
+  // Editable; rides along on every composition save via _collectCompositionState.
+  const draft = _el('textarea', { className: 'positioning-draft', id: 'composeSummaryDraft' });
+  draft.rows = 3;
+  draft.value = summary.drafted_text || '';
+  draft.placeholder = summary.has_draft ? '' : 'Drafting your summary…';
+  draft.dataset.edited = summary.drafted_edited ? 'true' : 'false';
+  draft.oninput = () => { draft.dataset.edited = 'true'; _scheduleCompositionSave(); };
+  card.appendChild(draft);
+
+  const actions = _el('div', {
+    className: 'positioning-draft-actions', style: 'margin-top:6px;display:flex;gap:8px',
+  });
+  const regen = _el('button', {
+    className: 'btn-secondary positioning-draft-regen', textContent: 'Regenerate',
+  });
+  regen.onclick = () => _fireDraftSummary(true);
+  actions.appendChild(regen);
+  const retire = _el('button', {
+    className: 'btn-secondary positioning-draft-retire', textContent: 'Retire',
+  });
+  retire.title = 'Clear this draft and fall back to your saved positioning';
+  retire.onclick = () => _retireDraftSummary();
+  actions.appendChild(retire);
+  card.appendChild(actions);
+
+  // Optional: pin one of the candidate's saved SummaryItem variants as the
+  // source the next Regenerate reframes from.
   const variants = summary.variants || [];
-  variants.forEach(v => card.appendChild(_renderPositioningVariant(v, summary.chosen_id)));
+  if (variants.length > 0) {
+    card.appendChild(_el('div', {
+      className: 'edit-hint', style: 'margin-top:8px',
+      textContent: 'Or pin one of your saved summary variants as the source:',
+    }));
+    variants.forEach(v => card.appendChild(_renderPositioningVariant(v, summary.chosen_id)));
+  }
   return card;
 }
 
@@ -6719,6 +6803,14 @@ function _collectCompositionState() {
       pinned_title_ids[expId] = Number(checked.value);
     }
   });
+  // Generation-experience re-architecture — the drafted 2-sentence positioning
+  // summary rides along on every save (the POST rebuilds overrides wholesale, so
+  // a bullet/skill save would otherwise clobber it). Absent card → omit (nothing
+  // to preserve yet). An empty value intentionally drops it (Retire).
+  const draftEl = document.getElementById('composeSummaryDraft');
+  const summaryFields = draftEl
+    ? { summary_text: draftEl.value.trim(), summary_text_edited: draftEl.dataset.edited === 'true' }
+    : {};
   return {
     pinned, excluded, added, bullet_order, pinned_title_ids,
     // B.4 — per-role intro toggle + picks ride along on every save so a bullet/
@@ -6727,6 +6819,7 @@ function _collectCompositionState() {
     // B.5 — skill curation (pin/drop/reorder) likewise rides along on every
     // save so it survives a bullet/title/summary save.
     ..._collectSkillState(),
+    ...summaryFields,
   };
 }
 
@@ -6870,7 +6963,10 @@ async function saveCompositionThenNext() {
   if (_composeSaveTimer) { clearTimeout(_composeSaveTimer); _composeSaveTimer = null; }
   const state = _collectCompositionState();
   try {
-    await _postComposition(state);
+    // Generation-experience re-architecture — Save-and-continue FREEZES the
+    // approved composition (the single content contract downstream renders). The
+    // debounced autosave omits `freeze`, so only this explicit action snapshots.
+    await _postComposition({ ...state, freeze: true });
     _toast(`Composition saved (${state.pinned.length} pinned, ${state.added.length} added, ${state.excluded.length} excluded)`);
   } catch (e) {
     _toast('Save failed: ' + e.message, true);

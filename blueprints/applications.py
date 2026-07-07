@@ -804,6 +804,27 @@ def _read_summary_overrides(
     )
 
 
+def _read_summary_draft(context_path: str) -> tuple[str, bool]:
+    """Return (summary_text, summary_text_edited) — the Compose-drafted 2-sentence positioning summary.
+
+    ("", False) when absent / unreadable. _within-gated by OUTPUT_DIR. Delegates
+    to corpus_to_json_resume._read_summary_text_override so the read matches the
+    resolver that freezes it.
+    """
+    from corpus_to_json_resume import _read_summary_text_override
+
+    if not context_path:
+        return "", False
+    cp = Path(context_path)
+    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        return "", False
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return "", False
+    return _read_summary_text_override(ctx)
+
+
 def _read_recommendations_and_added(
     context_path: str,
 ) -> tuple[set[int], dict[int, dict[str, Any]]]:
@@ -875,6 +896,10 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
         # card at the top with the LLM's pick flagged + any user pin
         # overriding it.
         summary_recommendation, pinned_summary_id = _read_summary_overrides(ctx_path)
+        # Generation-experience re-architecture — the Compose-drafted 2-sentence
+        # positioning summary + edited flag, so the Positioning card can render
+        # the editable draft alongside the variant picker.
+        drafted_summary_text, drafted_summary_edited = _read_summary_draft(ctx_path)
         # feat/compose-add-title — per-experience title pin (experience_id →
         # ExperienceTitle id). Drives the title radio's selected state and the
         # per-experience chosen_title_id below.
@@ -1189,6 +1214,11 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                     "pinned_id": pinned_summary_id,
                     "chosen_id": chosen_summary_id,
                     "has_recommendation": rec_id is not None,
+                    # Generation-experience re-architecture — the Compose-drafted
+                    # 2-sentence positioning summary the user reviews/edits/retires.
+                    "drafted_text": drafted_summary_text,
+                    "drafted_edited": drafted_summary_edited,
+                    "has_draft": bool(drafted_summary_text),
                 },
                 # B.4 — the "Add role intros" toggle state for this application.
                 "use_experience_summaries": use_experience_summaries,
@@ -1776,6 +1806,147 @@ def recommend_application_summary(application_id: int) -> ResponseReturnValue:
             {
                 "application_id": application_id,
                 **result,
+            }
+        )
+    finally:
+        session.close()
+
+
+def _career_facts_synopsis(corpus: object) -> str:
+    """A compact, grounded roles-and-companies synopsis for summary drafting.
+
+    Reads the frozen career_corpus payload (official-or-first title + company +
+    span, up to 8 roles, with up to 2 bullets each) — enough to ground a
+    positioning summary without dumping the whole corpus into the prompt.
+    """
+    if not isinstance(corpus, list):
+        return ""
+    lines: list[str] = []
+    for exp in corpus[:8]:
+        if not isinstance(exp, dict):
+            continue
+        company = (exp.get("company") or "").strip()
+        titles = exp.get("eligible_titles") or []
+        title = ""
+        for t in titles:
+            if isinstance(t, dict) and t.get("is_official"):
+                title = (t.get("title") or "").strip()
+                break
+        if not title and titles and isinstance(titles[0], dict):
+            title = (titles[0].get("title") or "").strip()
+        span = (
+            f"{(exp.get('start_date') or '').strip()}–{(exp.get('end_date') or 'present').strip()}"
+        )
+        header = " ".join(
+            p for p in [title, f"@ {company}" if company else "", f"({span})"] if p
+        ).strip()
+        if header:
+            lines.append(header)
+        for b in (exp.get("bullets") or [])[:2]:
+            if isinstance(b, dict) and (b.get("text") or "").strip():
+                lines.append(f"  • {b['text'].strip()}")
+    return "\n".join(lines)
+
+
+@applications_bp.route("/api/applications/<int:application_id>/draft-summary", methods=["POST"])
+def draft_application_summary(application_id: int) -> ResponseReturnValue:
+    """Generation-experience re-architecture — draft a JD-tailored 2-sentence positioning summary at Compose (Sonnet).
+
+    The summary is authored ONCE at Compose (D2), reviewed/edited/retired by the
+    user, and frozen into the approved composition. This route stages the
+    candidate's current positioning (chosen variant -> profile_text) + a compact
+    career synopsis + the JD, calls analyzer.draft_positioning_summary, and
+    persists the result into composition_overrides.summary_text (edited=False, a
+    fresh draft). Re-runnable (Regenerate overwrites). The analyzer short-circuits
+    without an LLM call when there's no JD.
+
+    Body: {context_path}. Filesystem + ownership: _safe_username via
+    _load_application_owned; _within gates context_path.
+    """
+    from analyzer import LLMResponseError, draft_positioning_summary
+    from corpus_to_json_resume import _read_summary_choices, _resolve_chosen_summary_text
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        # Source positioning = the candidate's current chosen summary (pin >
+        # recommendation > first-active > profile_text) — NOT any prior draft, so
+        # Regenerate reframes the real positioning, never a draft-of-a-draft.
+        pinned_id, rec_id = _read_summary_choices(ctx)
+        source_text, _src = _resolve_chosen_summary_text(
+            session,
+            candidate.id,
+            pinned_id=pinned_id,
+            recommended_id=rec_id,
+            fallback_text=candidate.profile_text or "",
+        )
+
+        # Stage transient inputs for the LLM call; strip before persisting.
+        ctx["summary_source_text"] = source_text
+        ctx["career_facts"] = _career_facts_synopsis(ctx.get("career_corpus"))
+        ctx["jd_text"] = app_row.jd_text
+        run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
+        try:
+            result = draft_positioning_summary(
+                _get_client(),
+                ctx,
+                username=candidate.username,
+                run_id=run_id,
+            )
+        except anthropic.APIConnectionError as exc:
+            logger.error("Draft-summary: Anthropic connection error: %s", exc)
+            return jsonify({"error": "AI service connection failed"}), 503
+        except LLMResponseError as exc:
+            logger.error("Draft-summary: malformed LLM response: %s", exc.validation_error)
+            return jsonify(
+                {
+                    "error": "AI summary draft was malformed",
+                    "detail": str(exc.validation_error),
+                }
+            ), 502
+
+        drafted = str(result.get("summary") or "").strip()
+        # Persist into composition_overrides.summary_text (fresh draft → not edited).
+        overrides = ctx.get("composition_overrides")
+        if not isinstance(overrides, dict):
+            overrides = {}
+        overrides.pop("summary_text_edited", None)
+        if drafted:
+            overrides["summary_text"] = drafted
+        else:
+            overrides.pop("summary_text", None)
+        ctx["composition_overrides"] = overrides
+
+        for transient in ("summary_source_text", "career_facts", "jd_text"):
+            ctx.pop(transient, None)
+        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        return jsonify(
+            {
+                "application_id": application_id,
+                "summary_text": drafted,
+                "summary_text_edited": False,
             }
         )
     finally:

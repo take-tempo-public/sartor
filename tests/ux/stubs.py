@@ -142,6 +142,16 @@ def fake_recommend_summaries(
         session.close()
 
 
+def fake_draft_positioning_summary(
+    client: Any, ctx: Any, username: str = "", run_id: str = ""
+) -> dict[str, Any]:
+    """Generation-experience re-architecture — return a deterministic 2-sentence
+    positioning summary so the Compose positioning card's auto-draft flips
+    `has_draft` (stopping the re-fire loop, exactly like fake_recommend_summaries)
+    without a real Sonnet call. DB-free — the text is fixed."""
+    return {"summary": "Stubbed positioning summary, sentence one. Sentence two here."}
+
+
 def fake_recommend_experience_summaries(
     client: Any, ctx: Any, username: str = "", run_id: str = ""
 ) -> dict[str, Any]:
@@ -366,6 +376,7 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(applications_bp_mod, "_get_client", lambda: None)
     monkeypatch.setattr(analyzer, "recommend_bullets", fake_recommend_bullets)
     monkeypatch.setattr(analyzer, "recommend_summaries", fake_recommend_summaries)
+    monkeypatch.setattr(analyzer, "draft_positioning_summary", fake_draft_positioning_summary)
     monkeypatch.setattr(
         analyzer, "recommend_experience_summaries", fake_recommend_experience_summaries
     )
