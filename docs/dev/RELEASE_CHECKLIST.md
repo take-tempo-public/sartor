@@ -496,7 +496,8 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       **Wave 0 (P0, launch blockers):** F-01 keyword-score deflation — **DONE 2026-07-07**
       (`fix/ux-review-wave0-keyword-score`: boilerplate stoplist + forgive-absence
       company-term cleaning + coverage reframe) · F-02 résumé import
-      creates no Skill rows · F-11 eval harness scores the fallback LLM `generate`
+      creates no Skill rows — **F-02 DONE 2026-07-07 (`fix/ux-f02-import-skill-rows`)**
+      · F-11 eval harness scores the fallback LLM `generate`
       path, not the frozen-composition assembly the UI ships · F-24/25/26
       install.md `[dev]`/`--setup` gaps + `pyproject.toml` `py-modules` omission
       (overlaps the PyPI-wheel item below — fix together). Screenshot evidence

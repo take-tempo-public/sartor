@@ -442,6 +442,7 @@ async function uploadFile(file) {
     const merged = data.experiences_merged || 0;
     const bullets = data.bullets_created || 0;
     const altTitles = data.alternate_titles_created || 0;
+    const skillsFound = data.skills_created || 0;
 
     // Honesty: a 2xx with nothing extracted is NOT a success. Tell the user
     // plainly and don't fire the green toast — otherwise the status pill reads
@@ -464,7 +465,8 @@ async function uploadFile(file) {
     if (out) {
       out.textContent =
         `Added ${made} experience(s), ${merged} merged into existing roles, ` +
-        `${altTitles} alternate title(s), ${bullets} bullet(s) — now pending review below.`;
+        `${altTitles} alternate title(s), ${bullets} bullet(s), ` +
+        `${skillsFound} skill(s) — now pending review below.`;
     }
     _toast('Resume ingested into corpus');
     // Render the new cards in place — the user is already on the Career Corpus

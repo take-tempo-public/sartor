@@ -24,6 +24,7 @@ from onboarding import corpus_import
 from onboarding.corpus_import import (
     ImportReport,
     _insert_or_merge_experience,
+    _insert_pending_skills,
     _iter_resume_files,
     import_candidate_from_config,
     import_clarifications_from_output,
@@ -626,4 +627,140 @@ class TestInsertOrMergeExperience:
             report=report,
         )
         assert report.experiences_created == 0
+
+
+# ---------------------------------------------------------------------------
+# _insert_pending_skills (F-02: résumé import creates pending skills)
+# ---------------------------------------------------------------------------
+
+
+class TestInsertPendingSkills:
+    def _make_candidate(self, db_session, username="frank"):
+        c = Candidate(username=username, name="Test")
+        db_session.add(c)
+        db_session.flush()
+        return c
+
+    def test_creates_pending_skills_with_imported_source(self, db_session):
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        _insert_pending_skills(
+            ["Python", "Kubernetes"],
+            c.id,
+            session=db_session,
+            dry_run=False,
+            report=report,
+        )
+        db_session.flush()
+        assert report.skills_created == 2
+        assert report.skills_skipped == 0
+        rows = (
+            db_session.query(Skill).filter_by(candidate_id=c.id).order_by(Skill.display_order).all()
+        )
+        assert [r.name for r in rows] == ["Python", "Kubernetes"]
+        assert all(r.is_pending_review == 1 and r.is_active == 1 for r in rows)
+        # source is DB-CHECK-limited (ck_skill_source) to manual|imported|llm_proposed;
+        # 'imported' is the same value the config-Skills importer and the
+        # legacy-row alembic backfill use.
+        assert all(r.source == "imported" for r in rows)
+
+    def test_case_insensitive_dedup_against_existing_skill(self, db_session):
+        c = self._make_candidate(db_session)
+        db_session.add(Skill(candidate_id=c.id, name="python", is_active=1, is_pending_review=0))
+        db_session.flush()
+        report = ImportReport()
+        _insert_pending_skills(
+            ["PYTHON", "Rust"],
+            c.id,
+            session=db_session,
+            dry_run=False,
+            report=report,
+        )
+        db_session.flush()
+        assert report.skills_created == 1
+        assert report.skills_skipped == 1
+        names = [r.name for r in db_session.query(Skill).filter_by(candidate_id=c.id)]
+        assert sorted(names) == ["Rust", "python"]
+
+    def test_dedup_within_same_extraction_batch(self, db_session):
+        """The LLM returning near-duplicates in one response doesn't create two rows."""
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        _insert_pending_skills(
+            ["Python", "python", "PYTHON"],
+            c.id,
+            session=db_session,
+            dry_run=False,
+            report=report,
+        )
+        db_session.flush()
+        assert report.skills_created == 1
+        assert db_session.query(Skill).filter_by(candidate_id=c.id).count() == 1
+
+    def test_reimport_idempotent_across_calls(self, db_session):
+        """Calling twice (simulating a re-import) never duplicates a pending row."""
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        _insert_pending_skills(
+            ["Python"],
+            c.id,
+            session=db_session,
+            dry_run=False,
+            report=report,
+        )
+        db_session.flush()
+        report2 = ImportReport()
+        _insert_pending_skills(
+            ["Python"],
+            c.id,
+            session=db_session,
+            dry_run=False,
+            report=report2,
+        )
+        db_session.flush()
+        assert report2.skills_created == 0
+        assert report2.skills_skipped == 1
+        assert db_session.query(Skill).filter_by(candidate_id=c.id).count() == 1
+
+    def test_blank_and_non_string_entries_ignored(self, db_session):
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        _insert_pending_skills(
+            ["  ", "", "Java"],
+            c.id,
+            session=db_session,
+            dry_run=False,
+            report=report,
+        )
+        db_session.flush()
+        assert report.skills_created == 1
+        names = [r.name for r in db_session.query(Skill).filter_by(candidate_id=c.id)]
+        assert names == ["Java"]
+
+    def test_dry_run_does_not_persist(self, db_session):
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        _insert_pending_skills(
+            ["Python", "Python", "Go"],
+            c.id,
+            session=db_session,
+            dry_run=True,
+            report=report,
+        )
+        # Counters update but nothing in DB
+        assert report.skills_created == 2  # deduped within the batch, nothing persisted
+        assert db_session.query(Skill).count() == 0
+
+    def test_empty_list_is_a_no_op(self, db_session):
+        c = self._make_candidate(db_session)
+        report = ImportReport()
+        _insert_pending_skills(
+            [],
+            c.id,
+            session=db_session,
+            dry_run=False,
+            report=report,
+        )
+        assert report.skills_created == 0
+        assert db_session.query(Skill).count() == 0
         assert db_session.query(Experience).count() == 0

@@ -71,30 +71,33 @@ class ExtractResponse(BaseModel):
 
     model_config = ConfigDict(extra="allow")
     experiences: Any
+    skills: Any = None
 
 
 EXTRACT_EXPERIENCES_SYSTEM_PROMPT = """You are a resume parser converting unstructured resume text into a structured career corpus.
 
-Your job: identify each distinct job/role the candidate has held and extract the company, dates, role title, and bullets EXACTLY as written. You preserve the candidate's voice and the literal text of each bullet — you do not rewrite, expand, or summarize.
+Your job: identify each distinct job/role the candidate has held and extract the company, dates, role title, and bullets EXACTLY as written. You also collect the flat list of skills the résumé names explicitly. You preserve the candidate's voice and the literal text of each bullet — you do not rewrite, expand, or summarize.
 
-OUTPUT SHAPE: JSON object with one key, "experiences", whose value is an array. Each experience is an object with these fields:
-- "company" (string, required) — the employer/organization name
-- "location" (string, optional) — city/state if shown
-- "start_date" (string, required) — "YYYY-MM", or just "YYYY" when only the year is shown (year-only is fine — many résumés list years only)
-- "end_date" (string or null) — "YYYY-MM", "YYYY", or null for current/ongoing
-- "candidate_inferred_title" (string, required) — ONE title that best describes the role as the candidate wrote it. If multiple titles appear (promotions within the same company over time), pick the most recent / highest. Alternate framings will be added later by the user.
-- "summary" (string or null, optional) — the role's INTRO / SCOPE paragraph if one appears under the title (a prose sentence or two describing the role, team, or mandate — NOT an achievement). This is distinct from bullets. If the role has no intro paragraph, use null. Do NOT put this text in "bullets".
-- "suggested_role_tags" (array of strings) — 1-3 short lowercase hyphenated tags from this controlled vocabulary when applicable: pm, ic-design, design-mgmt, eng-mgmt, sre, ai-product, ai-research, spatial, physical-compute, marketing, sales, ops, founder, generalist. Use what fits; don't invent.
-- "bullets" (array) — each bullet is an object:
-    - "text" (string, required) — VERBATIM text from the resume. Strip leading bullet glyphs (•, -, *) and surrounding whitespace, but preserve every word, number, and punctuation mark inside.
-    - "suggested_tags" (array of strings) — 0-3 short tags identifying domains/skills/tech mentioned (e.g. "kubernetes", "leadership", "user-research"). Lowercase, hyphenated.
+OUTPUT SHAPE: JSON object with two keys:
+- "experiences" — array of objects, each with these fields:
+  - "company" (string, required) — the employer/organization name
+  - "location" (string, optional) — city/state if shown
+  - "start_date" (string, required) — "YYYY-MM", or just "YYYY" when only the year is shown (year-only is fine — many résumés list years only)
+  - "end_date" (string or null) — "YYYY-MM", "YYYY", or null for current/ongoing
+  - "candidate_inferred_title" (string, required) — ONE title that best describes the role as the candidate wrote it. If multiple titles appear (promotions within the same company over time), pick the most recent / highest. Alternate framings will be added later by the user.
+  - "summary" (string or null, optional) — the role's INTRO / SCOPE paragraph if one appears under the title (a prose sentence or two describing the role, team, or mandate — NOT an achievement). This is distinct from bullets. If the role has no intro paragraph, use null. Do NOT put this text in "bullets".
+  - "suggested_role_tags" (array of strings) — 1-3 short lowercase hyphenated tags from this controlled vocabulary when applicable: pm, ic-design, design-mgmt, eng-mgmt, sre, ai-product, ai-research, spatial, physical-compute, marketing, sales, ops, founder, generalist. Use what fits; don't invent.
+  - "bullets" (array) — each bullet is an object:
+      - "text" (string, required) — VERBATIM text from the resume. Strip leading bullet glyphs (•, -, *) and surrounding whitespace, but preserve every word, number, and punctuation mark inside.
+      - "suggested_tags" (array of strings) — 0-3 short tags identifying domains/skills/tech mentioned (e.g. "kubernetes", "leadership", "user-research"). Lowercase, hyphenated.
+- "skills" — array of strings. Every distinct skill, tool, technology, language, framework, or platform literally named in a Skills / Technical Skills / Technologies section of the résumé. Copy each name as written on the résumé — do not normalize casing, do not merge synonyms, do not invent anything not explicitly listed. Do NOT pull skills out of bullet prose or job descriptions — only from an explicit skills-style section. If the résumé has no such section, return an empty array.
 
 RULES:
-- NEVER invent companies, dates, titles, or bullets. If the source is ambiguous, leave the field empty or null.
+- NEVER invent companies, dates, titles, bullets, or skills. If the source is ambiguous, leave the field empty or null (or omit the skill).
 - NEVER rephrase bullets. Copy them as written — that's the candidate's voice and the grounding signal for the whole pipeline. If the bullet runs over multiple lines in the source, join them with a single space; otherwise preserve verbatim.
 - A role INTRO / SCOPE paragraph (prose describing the role, not an achievement) goes in "summary", NEVER in "bullets". Achievement lines go in "bullets".
 - Multiple roles at the same company become MULTIPLE experiences (one per distinct title + date range). Don't merge them.
-- If a section is non-experience (Skills, Education, Projects, Publications) — IGNORE IT. This call returns experiences only. Other extractors handle the rest.
+- If a section is non-experience and not a skills list (Education, Projects, Publications) — IGNORE IT. This call returns experiences + a flat skills list only. Other extractors handle the rest.
 - If you cannot identify even a start YEAR for an experience, OMIT THE WHOLE EXPERIENCE rather than guessing. A bare year is enough to keep the role. Dates anchor the audit trail.
 - Output JSON only — no markdown fences, no preamble, no commentary."""
 
@@ -119,13 +122,40 @@ def extract_experiences(
 
     The resume_text should be the full plaintext (from parser.parse_resume),
     not just one section — the LLM does its own section identification.
+
+    Thin wrapper over `extract_experiences_and_skills()` (same Haiku call,
+    skills discarded) kept for callers that only want experiences.
+    """
+    experiences, _skills = extract_experiences_and_skills(
+        client, resume_text, username=username, run_id=run_id
+    )
+    return experiences
+
+
+def extract_experiences_and_skills(
+    client: anthropic.Anthropic,
+    resume_text: str,
+    *,
+    username: str = "",
+    run_id: str = "",
+) -> tuple[list[ExtractedExperience], list[str]]:
+    """Extract structured experiences AND a flat skills list — ONE Haiku call (F-02).
+
+    The résumé text is already in the model's context for experience
+    extraction, so the skills list rides along on the same request instead of
+    paying for a second Haiku round trip. Returns `(experiences, skill_names)`.
+
+    `skill_names` are stripped and deduplicated case-insensitively (first-seen
+    casing wins) but NOT checked against the candidate's existing corpus —
+    the caller (`onboarding.corpus_import`) does that dedup before inserting
+    pending Skill rows.
     """
     if not resume_text.strip():
-        return []
+        return [], []
 
     user_prompt = (
-        "<task>Extract experiences from the resume below. "
-        "Return JSON with 'experiences' array. "
+        "<task>Extract experiences AND a flat skills list from the resume below. "
+        "Return JSON with 'experiences' and 'skills' arrays. "
         "Preserve bullet text verbatim.</task>\n\n"
         "<resume>\n"
         f"{resume_text}\n"
@@ -149,9 +179,11 @@ def extract_experiences(
         logger.warning(
             "extract_experiences: 'experiences' field is not a list, got %r", type(raw_experiences)
         )
-        return []
+        raw_experiences = []
 
-    return [_normalize_experience(exp) for exp in raw_experiences if isinstance(exp, dict)]
+    experiences = [_normalize_experience(exp) for exp in raw_experiences if isinstance(exp, dict)]
+    skills = _normalize_skill_list(data.get("skills"))
+    return experiences, skills
 
 
 # ---------------------------------------------------------------------------
@@ -235,10 +267,34 @@ def _clean_tag_list(value: object) -> list[str]:
     return out
 
 
+def _normalize_skill_list(raw: object) -> list[str]:
+    """Clean + case-insensitively dedup a raw LLM skills list (F-02).
+
+    Preserves first-seen casing (verbatim from the résumé); drops
+    non-strings and blanks. Downstream corpus dedup (against existing Skill
+    rows) happens in `onboarding.corpus_import`, not here.
+    """
+    if not isinstance(raw, list):
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        if not isinstance(item, str):
+            continue
+        name = item.strip()
+        key = name.lower()
+        if not name or key in seen:
+            continue
+        seen.add(key)
+        out.append(name)
+    return out
+
+
 __all__ = [
     "EXTRACT_EXPERIENCES_SYSTEM_PROMPT",
     "EXTRACT_REQUIRED_KEYS",
     "ExtractedBullet",
     "ExtractedExperience",
     "extract_experiences",
+    "extract_experiences_and_skills",
 ]

@@ -3,10 +3,13 @@
 Scope:
 - `configs/{user}.config` → candidate + skill + certification + education rows
 - `output/{user}/context_*.json` → clarification rows (deduped)
-- `resumes/{user}/{primary}` → experience + bullet rows (when --with-llm)
+- `resumes/{user}/{primary}` → experience + bullet + pending-skill rows (when --with-llm)
 
 Idempotent: re-running picks up only new content. Candidate is matched by
-`username`. Skills/certifications match by `(candidate_id, name)`.
+`username`. Config-seeded skills/certifications match by exact
+`(candidate_id, name)`; résumé-extracted skills (F-02) dedupe
+case-insensitively against every existing Skill row for the candidate and
+land `is_pending_review=1` for review, like imported bullets.
 Clarifications dedupe on (normalized_question, normalized_answer).
 Experiences match on `(company, start_date)`.
 
@@ -464,16 +467,21 @@ def ingest_one_resume(
     dry_run: bool = False,
     report: ImportReport | None = None,
 ) -> ImportReport:
-    """Parse and Haiku-extract a single resume file, inserting/merging its experiences as `is_pending_review=1`.
+    """Parse and Haiku-extract a single resume file, inserting/merging its experiences and skills as `is_pending_review=1`.
 
     Shared by the CLI importer's per-file loop AND the live
     `/api/users/<u>/corpus/ingest-resume` route so the
     merge-as-alternate-title behavior never forks.
 
+    Skills (F-02) ride along on the same extraction call — see
+    `extract_experiences_and_skills` — and land as pending Skill rows via
+    `_insert_pending_skills`, deduped case-insensitively against every
+    existing Skill row for the candidate.
+
     The caller owns session lifecycle + commit; this only flushes (when
     not dry_run) so it composes inside both call sites.
     """
-    from onboarding.extract_experiences import extract_experiences
+    from onboarding.extract_experiences import extract_experiences_and_skills
     from parser import parse_resume
 
     report = report if report is not None else ImportReport()
@@ -490,7 +498,9 @@ def ingest_one_resume(
         return report
 
     try:
-        extracted = extract_experiences(client, resume_text, username=username)
+        extracted, skill_names = extract_experiences_and_skills(
+            client, resume_text, username=username
+        )
     except Exception as exc:
         report.errors.append(f"extract {resume_path.name}: {exc}")
         return report
@@ -505,6 +515,13 @@ def ingest_one_resume(
             dry_run=dry_run,
             report=report,
         )
+    _insert_pending_skills(
+        skill_names,
+        candidate_id,
+        session=session,
+        dry_run=dry_run,
+        report=report,
+    )
     if not dry_run:
         session.flush()
     return report
@@ -768,6 +785,71 @@ def _merge_into_existing_experience(
         # extraction don't both insert.
         existing_bullet_keys.add(norm_btext)
         report.bullets_created += 1
+
+
+def _insert_pending_skills(
+    skill_names: list[str],
+    candidate_id: int,
+    *,
+    session: Session,
+    dry_run: bool,
+    report: ImportReport,
+) -> None:
+    """Insert extracted skill names as pending-review Skill rows (F-02).
+
+    Case-insensitive dedup against EVERY existing Skill row for this
+    candidate — active, retired, or already-pending — so a re-import or a
+    second résumé upload never creates a duplicate pending suggestion for a
+    skill the candidate already has (in any review state). New rows land
+    `is_pending_review=1, is_active=1, source="imported"` so the user reviews
+    them in the Career Corpus tab's "AI-suggested skills" lane, exactly like
+    bullets. Unlike Bullet/ExperienceTitle, `source` has no free-form
+    per-file provenance slot here — `ck_skill_source` (db/models.py)
+    CHECK-constrains it to 'manual' | 'imported' | 'llm_proposed'; 'imported'
+    is the same value the config-seeded Skills importer and the legacy-row
+    alembic backfill already use for "not typed by the user in this row."
+    """
+    if not skill_names:
+        return
+
+    if dry_run:
+        seen_dry: set[str] = set()
+        for raw in skill_names:
+            name = raw.strip() if isinstance(raw, str) else ""
+            key = name.lower()
+            if not name or key in seen_dry:
+                continue
+            seen_dry.add(key)
+            report.skills_created += 1
+        return
+
+    existing_lower = {
+        (name or "").strip().lower()
+        for (name,) in session.query(Skill.name).filter(Skill.candidate_id == candidate_id)
+    }
+    next_order = session.query(Skill).filter_by(candidate_id=candidate_id).count()
+    seen: set[str] = set()
+    for raw in skill_names:
+        name = raw.strip() if isinstance(raw, str) else ""
+        key = name.lower()
+        if not name:
+            continue
+        if key in existing_lower or key in seen:
+            report.skills_skipped += 1
+            continue
+        seen.add(key)
+        session.add(
+            Skill(
+                candidate_id=candidate_id,
+                name=name,
+                display_order=next_order,
+                is_active=1,
+                is_pending_review=1,
+                source="imported",
+            )
+        )
+        next_order += 1
+        report.skills_created += 1
 
 
 # ---------------------------------------------------------------------------

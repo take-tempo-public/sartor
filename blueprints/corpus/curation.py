@@ -457,6 +457,7 @@ def ingest_resume_to_corpus(username: str) -> ResponseReturnValue:
             "experiences_merged": report.experiences_merged,
             "bullets_created": report.bullets_created,
             "alternate_titles_created": report.alternate_titles_created,
+            "skills_created": report.skills_created,
             "errors": report.errors,
         }
         # Honesty: a parse/extract failure that yields nothing must NOT look
