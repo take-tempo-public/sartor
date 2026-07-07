@@ -970,7 +970,17 @@ def preview_application_html(application_id: int) -> ResponseReturnValue:
                 except (json.JSONDecodeError, OSError):
                     ctx_data = {}
                 cached = ctx_data.get("last_generated_json_resume")
-                if isinstance(cached, dict) and _json_resume_has_content(cached):
+                # Phase 4 — the frozen approved_composition is the single content
+                # contract: serve it verbatim so preview == deterministic assemble ==
+                # download (template-invariant). It wins UNLESS the user has made a
+                # hand-edit (edited_resume_text) — then last_generated_json_resume,
+                # recomputed from that edit by /api/save-edits, reflects the edit
+                # (D6(a): the user's own edits apply directly, WYSIWYG).
+                approved = ctx_data.get("approved_composition")
+                edited = bool(ctx_data.get("edited_resume_text"))
+                if not edited and isinstance(approved, dict) and _json_resume_has_content(approved):
+                    cached_json_resume = approved
+                elif isinstance(cached, dict) and _json_resume_has_content(cached):
                     cached_json_resume = cached
                 else:
                     # Non-empty dict of recommendations counts as "curation

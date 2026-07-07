@@ -160,6 +160,55 @@ def generate_resume(
     return str(path)
 
 
+def generate_resume_from_json_resume(
+    json_doc: dict[str, Any],
+    output_format: str,
+    username: str,
+    base_dir: str = "output",
+    template_path: str | None = None,
+) -> str:
+    """Render a pre-built JSON Resume doc to the requested format WITHOUT parsing markdown.
+
+    Generation-experience re-architecture Phase 4: the corpus-mode deterministic
+    assemble already holds the frozen ``approved_composition`` (a JSON Resume dict),
+    so it renders that doc DIRECTLY through the same writers `generate_resume` uses
+    after its `md_to_json_resume` parse (D3 single source of truth) — download ==
+    preview == ``approved_composition`` by construction, with no LLM and no markdown
+    round-trip. The ``.md`` format serializes the doc via `json_resume_to_markdown`.
+    Writes the same ``.jsonresume.json`` sidecar. Returns the primary output path.
+    """
+    import json as _json
+    from pathlib import Path as _Path
+
+    out_dir = Path(base_dir) / username
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    if output_format == ".md":
+        from json_resume import json_resume_to_markdown
+
+        path = out_dir / f"resume_{ts}.md"
+        path.write_text(json_resume_to_markdown(json_doc), encoding="utf-8")
+    elif output_format == ".pdf":
+        path = out_dir / f"resume_{ts}.pdf"
+        _render_pdf_from_json(json_doc, template_path, path)
+    else:
+        path = out_dir / f"resume_{ts}.docx"
+        _write_docx_from_json_resume(json_doc, path, template_path=template_path)
+
+    try:
+        sidecar = _Path(str(path)).with_suffix(".jsonresume.json")
+        sidecar.write_text(_json.dumps(json_doc, indent=2, ensure_ascii=False), encoding="utf-8")
+    except Exception as exc:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "JSON Resume sidecar write failed for %s: %s", path, exc
+        )
+
+    return str(path)
+
+
 def _render_pdf_from_json(
     json_doc: dict,
     docx_template_path: str | None,

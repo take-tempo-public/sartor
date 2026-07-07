@@ -7,9 +7,10 @@
 > file alone (plus git history), with nothing machine-local required.
 >
 > **Status (2026-07-06):** branch `fix/compose-frozen-composition` (Option B — one
-> cohesive branch, off `main` `64958d3`). Phases 1 + 2 + 3 committed + gate-green;
-> Phases 4–5 remain (owner checkpointed Phase 3 as a boundary). **Does NOT merge
-> until Phase 4 lands.**
+> cohesive branch, off `main` `64958d3`). Phases 1 + 2 + 3 + 4 committed + gate-green;
+> only **Phase 5 (validation + docs)** remains. Phase 4 (deterministic Generate) has
+> landed, so the branch is now usable END TO END — mergeable once Phase 5 validation
+> is done.
 >
 > **Companions:** `docs/dev/RELEASE_CHECKLIST.md` Carry-forward ledger
 > ("Generation-experience re-architecture — deferred remainder"); the approved
@@ -343,7 +344,7 @@ boundary so the branch is checkpoint-able across sessions.
 2. **Compose authors the summary** (Sonnet). *(DONE — §5.)*
 3. **Compose authors gap-fill bullets** (Sonnet + accept/retire). *(DONE — §5.)*
 4. **Generate becomes deterministic** (corpus-mode) + preview/download read the frozen
-   composition + refinement routes back to Compose. *(TODO — §6.)*
+   composition + refinement routes back to Compose. *(DONE — §5.)*
 5. **Validation + durable docs.** *(TODO — §6; this doc is part of it.)*
 
 **Deferred to LATER branches (NOT this branch):** loop-back for new content (D1/D6),
@@ -448,9 +449,45 @@ Mechanics reference (durable): the memory `reference-frozen-composition-mechanic
 the corpus-enrichment "save to corpus" offer beyond the free `is_pending_review=1` pending row
 (the existing pending-review APPROVE already covers D6(c)).
 
+### Phase 4 — Generate becomes deterministic (corpus-mode) — committed
+- **No corpus/legacy branch existed** before this — both modes called the résumé LLM
+  `generate()` → `generate_resume(markdown)`, and `approved_composition` had ZERO readers.
+  Phase 4 ADDS a corpus-deterministic branch gated on `_frozen_composition(context_set)`
+  (`approved_composition` present + content + `career_corpus`); legacy (no `career_corpus`)
+  and pre-freeze corpus contexts fall through UNCHANGED → `--suite synthetic` byte-identical.
+- `blueprints/generation.py`: `run_generation` + `run_generation_stream` — when frozen,
+  `_assemble_from_frozen_composition` builds the generate()-shaped result WITHOUT the résumé
+  LLM (résumé body = the frozen doc; `resume_content` = a deterministic `json_resume_to_markdown`
+  view; audit `selected_bullets` synthesized from `meta.sartor.work_provenance`); the résumé
+  renders DIRECTLY from the doc via `generate_resume_from_json_resume` (download == preview ==
+  `approved_composition`, no markdown round-trip). The COVER LETTER stays an LLM call
+  (`generate_cover_letter_against_resume`, only when opted in). The `_apply_*` context patches
+  are skipped in the frozen path (the freeze already resolved them).
+- `json_resume.py`: `json_resume_to_markdown(doc)` — deterministic inverse of
+  `md_to_json_resume` (round-trips; no LLM/clock). `generator.py`:
+  `generate_resume_from_json_resume(doc, fmt, …)` renders a pre-built doc through the same
+  writers (`_write_docx_from_json_resume` / `_render_pdf_from_json`), skipping the markdown parse.
+- `blueprints/templates.py` `preview_application_html`: serves `approved_composition` when
+  present (over `last_generated_json_resume`), UNLESS the user hand-edited (`edited_resume_text`
+  → the edit wins, D6(a)). So preview == deterministic assemble == download, template-invariant.
+- `static/app.js` + `style.css`: in corpus mode, `submitRefinement` routes BACK to Compose
+  (`wizardGoTo(3)` + an explaining `.compose-loopback-banner` rendered from a flag so it
+  survives the re-render cascade) instead of an LLM full-regenerate — the design's minimal
+  loop-back (owner-approved). Legacy refine keeps the LLM regenerate.
+- Tests: `tests/test_deterministic_generate.py` (serializer round-trip; `_frozen_composition`
+  gate; `_assemble_from_frozen_composition`; route: zero `generate`/`generate_streaming` LLM
+  calls in corpus mode, download == `approved_composition`, cover letter stays LLM, legacy +
+  pre-freeze fall back to LLM) + `test_live_preview_route.py::TestApplicationPreviewApprovedComposition`
+  (preview serves the frozen doc over corpus; hand-edit wins). Gate: ruff · mypy (247) ·
+  pytest (1458 non-ux + 76 ux).
+
+**Deferred to LATER branches:** SURGICAL refinement (a scoped single-item change / grounded
+re-phrasing) + the richer loop-back-with-accept/retire banner; WYSIWYG-as-source (D4);
+clarifications→corpus persistence (D5). This branch's refine is the minimal route-to-Compose.
+
 ---
 
-## 6. Remaining work — Phases 4, 5 (TODO)
+## 6. Remaining work — Phase 5 (TODO)
 
 ### Phase 3 — Compose authors gap-fill bullets (Sonnet + accept/retire) — DONE (as-built in §5)
 > The original plan is retained below as the as-built reference; see §5 for what shipped.
@@ -483,7 +520,8 @@ Model it on the proven "propose grounded new items → accept/retire" pattern
 - Tests: drafting grounded (no fabricated specifics); accept adds to composition + a
   pending corpus row; retire drops; retired never re-appears.
 
-### Phase 4 — Generate becomes deterministic (the core-pipeline change; riskiest)
+### Phase 4 — Generate becomes deterministic (the core-pipeline change; riskiest) — DONE (as-built in §5)
+> The original plan is retained below as the as-built reference; see §5 for what shipped.
 - `blueprints/generation.py`: in **corpus-mode**, `run_generation` /
   `run_generation_stream` no longer call the résumé-body LLM — they
   `freeze_approved_composition` (or read the already-frozen `approved_composition`) and

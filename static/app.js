@@ -2053,6 +2053,17 @@ async function submitRefinement() {
   const note = input.value.trim();
   if (!note || !lastContextPath) return;
 
+  // Phase 4 — in corpus mode the résumé is a DETERMINISTIC assembly of the
+  // Compose-approved composition; there is no résumé-body LLM to re-run. A
+  // refinement therefore routes the user BACK to Compose to adjust + re-approve
+  // content, which regenerates deterministically (the design's minimal loop-back;
+  // richer surgical refine is a later branch). Legacy (file-based) refine keeps
+  // the LLM regenerate below.
+  if (_composeApplicationId != null) {
+    _routeRefinementToCompose(note);
+    return;
+  }
+
   // Edit gate: handle in-progress preview edits before the refinement call
   // so the user's typed changes feed the next generation rather than being
   // silently discarded by the regenerate-from-context path.
@@ -2140,6 +2151,43 @@ async function submitRefinement() {
     document.getElementById('btnRefinement').disabled = false;
     document.getElementById('btnGenerate').disabled = false;
   }
+}
+
+// Phase 4 — the corpus-mode refinement loop-back: stash the note, navigate to
+// Compose (which re-runs loadComposition and renders the banner from the flag),
+// and let the user adjust + Save-and-continue to regenerate deterministically.
+function _routeRefinementToCompose(note) {
+  const input = document.getElementById('refinementInput');
+  if (input) input.value = '';
+  _composeLoopbackNote = note;
+  wizardGoTo(3);
+  setStatus('BACK TO COMPOSE');
+  _announce('Refinement moved to Compose — adjust your content there, then continue.');
+}
+
+// The explaining banner shown at the top of Compose after a loop-back. Rendered
+// from _composeLoopbackNote inside loadComposition so it survives the auto-
+// recommend re-render cascade; dismissing clears the flag.
+function _renderComposeLoopbackBanner() {
+  const banner = _el('div', { className: 'compose-loopback-banner' });
+  banner.appendChild(_el('div', {
+    className: 'compose-loopback-title',
+    textContent: 'Adjust your content here, then regenerate',
+  }));
+  banner.appendChild(_el('div', {
+    className: 'compose-loopback-body',
+    textContent:
+      'Your résumé is assembled from the content you approve here — there is no '
+      + 'separate rewrite step. Make your change (bullets, summary, skills) and '
+      + 'Save and continue to regenerate.'
+      + (_composeLoopbackNote ? ` You asked: “${_composeLoopbackNote}”` : ''),
+  }));
+  const dismiss = _el('button', {
+    className: 'btn-secondary btn-sm compose-loopback-dismiss', textContent: 'Got it',
+  });
+  dismiss.onclick = () => { _composeLoopbackNote = null; banner.remove(); };
+  banner.appendChild(dismiss);
+  return banner;
 }
 
 // ---- Iteration interview (post-generation clarifying questions) ----------
@@ -5462,6 +5510,10 @@ window.addEventListener('popstate', _onWizardPopState);
 // ===============================================================
 
 let _composeApplicationId = null;
+// Phase 4 — when a refinement loops the user back to Compose (corpus mode has no
+// résumé-body LLM to re-run), this holds their note so loadComposition can render
+// an explaining banner until dismissed. Null = no pending loop-back.
+let _composeLoopbackNote = null;
 // Generation-experience re-architecture — which application we've already
 // auto-fired the summary draft for, so a legitimately-empty draft (no JD facts)
 // can't re-loop the Sonnet call on every re-render. Reset when the app changes.
@@ -5506,6 +5558,10 @@ async function loadComposition() {
   }
   const data = await res.json();
   _clearChildren(list);
+  // Phase 4 — a refinement in corpus mode loops back here (no résumé-body LLM to
+  // re-run); render an explaining banner from the flag so it survives the
+  // auto-recommend re-render cascade until the user dismisses it.
+  if (_composeLoopbackNote != null) list.appendChild(_renderComposeLoopbackBanner());
   // β.6c — Positioning card renders first, above the experience cards.
   // Shows the candidate's SummaryItem variants with the recommendation
   // (if any) flagged and the user's pin (if any) marking the chosen one.

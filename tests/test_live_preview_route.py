@@ -484,6 +484,100 @@ class TestApplicationPreviewWysiwyg:
         assert "Preview is waiting on curation" in body
 
 
+_APPROVED_DOC = {
+    "$schema": "x",
+    "basics": {"name": "Casey Rivera", "summary": "Frozen positioning line for this JD."},
+    "work": [
+        {
+            "name": "Frozen Corp",
+            "position": "Staff Engineer",
+            "startDate": "2021-01",
+            "endDate": "present",
+            "highlights": ["Delivered the frozen approved bullet."],
+        }
+    ],
+    "skills": [{"name": "FrozenSkill"}],
+    "education": [],
+    "certificates": [],
+    "projects": [],
+    "meta": {"sartor": {"frozen": True}},
+}
+
+
+def _write_context_with_approved_composition(
+    out_dir: Path,
+    application_id: int,
+    doc: dict,
+    *,
+    edited_markdown: str | None = None,
+    filename: str = "context_frozen.json",
+) -> Path:
+    """Persist a context carrying a frozen approved_composition (Phase 4).
+
+    When ``edited_markdown`` is given, also stamps ``edited_resume_text`` +
+    ``last_generated_json_resume`` (as /api/save-edits would) so the D6(a) hand-edit
+    precedence over the frozen composition can be exercised.
+    """
+    import json as _json
+
+    from json_resume import md_to_json_resume
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    payload: dict = {"application_id": application_id, "approved_composition": doc}
+    if edited_markdown is not None:
+        payload["edited_resume_text"] = edited_markdown
+        payload["last_generated_resume"] = edited_markdown
+        payload["last_generated_json_resume"] = md_to_json_resume(edited_markdown)
+    ctx_path = out_dir / filename
+    ctx_path.write_text(_json.dumps(payload), encoding="utf-8")
+    return ctx_path
+
+
+class TestApplicationPreviewApprovedComposition:
+    def test_serves_approved_composition_over_corpus(self, preview_app):
+        """Phase 4 — once Compose has frozen an approved_composition, the preview
+        serves THAT (preview == deterministic assemble == download), NOT a fresh
+        corpus render (even though the corpus has different content)."""
+        cid, aid = _seed_candidate_app(preview_app, username="casey")
+        _seed_experience_with_bullets(cid)  # corpus content that must NOT leak
+        ctx_file = _write_context_with_approved_composition(
+            preview_app.OUTPUT_DIR / "casey", aid, _APPROVED_DOC
+        )
+        client = preview_app.app.test_client()
+        body = client.get(f"/api/applications/{aid}/preview?context_path={ctx_file}").get_data(
+            as_text=True
+        )
+        assert "Frozen positioning line for this JD." in body
+        assert "Delivered the frozen approved bullet." in body
+        # Corpus-direct content does NOT leak — proves the frozen composition served.
+        assert "Polaris" not in body
+        assert "Shipped the unified corpus." not in body
+
+    def test_hand_edit_wins_over_approved_composition(self, preview_app):
+        """D6(a) — a user hand-edit (edited_resume_text) takes precedence over the
+        frozen composition, so the preview reflects the edit (WYSIWYG)."""
+        cid, aid = _seed_candidate_app(preview_app, username="casey")
+        _seed_experience_with_bullets(cid)
+        edited = (
+            "# Casey Rivera\n\n## Experience\n\n"
+            "### Frozen Corp, Staff Engineer\t2021-01 – present\n"
+            "- Hand-edited bullet wins.\n"
+        )
+        ctx_file = _write_context_with_approved_composition(
+            preview_app.OUTPUT_DIR / "casey",
+            aid,
+            _APPROVED_DOC,
+            edited_markdown=edited,
+            filename="context_edited.json",
+        )
+        client = preview_app.app.test_client()
+        body = client.get(f"/api/applications/{aid}/preview?context_path={ctx_file}").get_data(
+            as_text=True
+        )
+        assert "Hand-edited bullet wins." in body
+        assert "Delivered the frozen approved bullet." not in body
+
+
 # -------------------------------------------------------------------
 # Cover-letter preview — styled business-letter render (v1.0.5)
 # -------------------------------------------------------------------

@@ -36,7 +36,7 @@ import uuid
 from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import anthropic
 from flask import Blueprint, Response, current_app, jsonify, request, send_file
@@ -47,6 +47,7 @@ from analyzer import (
     LLMResponseError,
     check_refinement_scope,
     generate,
+    generate_cover_letter_against_resume,
     generate_streaming,
 )
 
@@ -59,7 +60,11 @@ from blueprints.templates import (
     _resolve_default_persona_template_path,
     _resolve_persona_template_path,
 )
-from generator import generate_cover_letter, generate_resume
+from generator import (
+    generate_cover_letter,
+    generate_resume,
+    generate_resume_from_json_resume,
+)
 from hardening import (
     ContextSet,
     compute_date_grounding,
@@ -577,6 +582,90 @@ def save_edits() -> ResponseReturnValue:
     )
 
 
+def _frozen_composition(context_set: ContextSet) -> dict[str, Any] | None:
+    """Return the frozen ``approved_composition`` doc for a corpus context, else None.
+
+    Generation-experience re-architecture Phase 4 — the deterministic-assemble gate.
+    Present ONLY when Compose has frozen an approved_composition (Save-and-continue)
+    AND this is a corpus context (``career_corpus``). A corpus context that predates
+    the freeze, or any legacy file-based context (no ``career_corpus``), returns None
+    and falls through to the UNCHANGED generate() LLM path — so legacy + --suite
+    synthetic stay byte-identical.
+    """
+    if not context_set.get("career_corpus"):
+        return None
+    doc = context_set.get("approved_composition")
+    if not isinstance(doc, dict):
+        return None
+    basics = doc.get("basics")
+    summary = basics.get("summary") if isinstance(basics, dict) else None
+    has_content = bool(doc.get("work") or summary or doc.get("skills"))
+    return doc if has_content else None
+
+
+def _assemble_from_frozen_composition(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    analysis: dict[str, Any],
+    doc: dict[str, Any],
+    *,
+    with_cover_letter: bool,
+    username: str,
+    run_id: str,
+) -> dict[str, Any]:
+    """Build the generate()-shaped result dict from a frozen composition — no résumé LLM.
+
+    The résumé body IS the frozen ``approved_composition`` (rendered directly by the
+    caller via generate_resume_from_json_resume); this returns the SAME dict shape
+    generate() returns, so the shared post-LLM path (render / ATS / persist / snapshot
+    / response) needs no other change. ``resume_content`` is a deterministic
+    ``json_resume_to_markdown`` view of the doc (the editable secondary surface + the
+    generated_resume_md audit column + the cover-letter résumé context). The COVER
+    LETTER, when opted in, is a real LLM call (``generate_cover_letter_against_resume``,
+    call_kind="generate_cover_letter"). Audit ``selected_bullets`` are synthesized from
+    the frozen ``meta.sartor.work_provenance`` so the application_bullet chain still
+    fills. Charter C-6: zero LLM for the résumé body.
+    """
+    from json_resume import json_resume_to_markdown
+
+    resume_md = json_resume_to_markdown(doc)
+
+    cover_letter = ""
+    if with_cover_letter:
+        cl = generate_cover_letter_against_resume(
+            client,
+            context_set,
+            analysis,
+            resume_md,
+            username=username,
+            run_id=run_id,
+        )
+        cover_letter = str(cl.get("cover_letter_content") or "")
+
+    meta = doc.get("meta")
+    sartor = meta.get("sartor") if isinstance(meta, dict) else None
+    provenance = sartor.get("work_provenance") if isinstance(sartor, dict) else None
+    selected_bullets = [
+        {
+            "experience_id": wp.get("experience_id"),
+            "chosen_title_id": wp.get("title_id"),
+            "bullet_ids_in_order": wp.get("highlight_ids") or [],
+        }
+        for wp in (provenance or [])
+        if isinstance(wp, dict) and wp.get("experience_id") is not None
+    ]
+
+    return {
+        "resume_content": resume_md,
+        "cover_letter_content": cover_letter,
+        "changes_made": [],
+        "proofread_notes": [],
+        "selected_bullets": selected_bullets,
+        "proposed_new_bullets": [],
+        "proposed_experience_titles": [],
+    }
+
+
 @generation_bp.route("/api/generate", methods=["POST"])
 def run_generation() -> ResponseReturnValue:
     """P8 Human Gate #2: generates documents after user reviewed analysis.
@@ -620,42 +709,49 @@ def run_generation() -> ResponseReturnValue:
         "Starting generation for %s (iteration=%s)", username, context_set.get("iteration", 0)
     )
 
-    # β.6d — apply the chosen SummaryItem variant to the candidate's
-    # positioning text before the LLM sees the context. Priority chain:
-    #   1. composition_overrides.pinned_summary_id (user explicit pin)
-    #   2. llm_summary_recommendation.recommendation.summary_item_id
-    #   3. Candidate.profile_text (the back-compat default; preserved
-    #      when no SummaryItem rows exist or none is chosen)
-    # In-memory patch — save_iteration_context will persist the patched
-    # value into the next iteration's context, which is what we want:
-    # the user's chosen positioning carries forward into refinement.
     # The _apply_* helpers treat the context_set as a loose dict (they read /
     # write keys outside the ContextSet schema). It is a dict at runtime; cast
     # so the in-place mutations land on the same object.
     cs = cast(dict, context_set)
-    _apply_chosen_summary(cs)
-    # B.4 — inject the user's chosen per-role intros into the corpus snapshot
-    # (opt-in; no-op when the "Add role intros" toggle is off).
-    _apply_chosen_experience_summaries(cs)
-    # B.5 — reorder/filter the candidate's skills to the curated set so the
-    # download reflects recommend_skills + pin/drop/reorder (no-op when none).
-    _apply_recommended_skills(cs)
-
     client = _get_client()
     # Re-use the run_id minted in /api/analyze when present so both calls
     # share an ID in telemetry. New ID for legacy contexts that pre-date
     # this field (or for one-off /api/generate calls without a prior analyze).
     run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
+
+    # Phase 4 — corpus-mode DETERMINISTIC assemble: when Compose has frozen an
+    # approved_composition, render THAT (zero résumé-body LLM calls) instead of
+    # calling generate(). The cover letter stays an LLM call. Legacy + pre-freeze
+    # corpus contexts fall through to the UNCHANGED generate() path (byte-identical).
+    frozen_doc = _frozen_composition(context_set)
     try:
-        result = generate(
-            client,
-            context_set,
-            analysis,
-            refinement_notes=refinement_notes,
-            username=username,
-            run_id=run_id,
-            with_cover_letter=with_cover_letter,
-        )
+        if frozen_doc is not None:
+            result = _assemble_from_frozen_composition(
+                client,
+                context_set,
+                analysis,
+                frozen_doc,
+                with_cover_letter=with_cover_letter,
+                username=username,
+                run_id=run_id,
+            )
+        else:
+            # β.6d / B.4 / B.5 — apply the user's chosen summary / per-role intros /
+            # skill curation into the corpus snapshot before the LLM sees it (no-op
+            # in legacy). Skipped in the frozen-composition path — the freeze already
+            # resolved them into approved_composition.
+            _apply_chosen_summary(cs)
+            _apply_chosen_experience_summaries(cs)
+            _apply_recommended_skills(cs)
+            result = generate(
+                client,
+                context_set,
+                analysis,
+                refinement_notes=refinement_notes,
+                username=username,
+                run_id=run_id,
+                with_cover_letter=with_cover_letter,
+            )
     except anthropic.APIConnectionError as exc:
         logger.error("Anthropic API connection error during generation: %s", exc)
         return jsonify({"error": "Connection to AI service failed. Please try again."}), 503
@@ -711,13 +807,25 @@ def run_generation() -> ResponseReturnValue:
                 username=safe_user,
                 application_id=int(ctx_app_id) if ctx_app_id is not None else None,
             )
-    resume_path = generate_resume(
-        result["resume_content"],
-        output_format,
-        safe_user,
-        str(output_dir),
-        template_path=template_path,
-    )
+    # Phase 4 — the frozen composition renders DIRECTLY from the JSON-Resume doc
+    # (download == preview == approved_composition by construction; no markdown
+    # round-trip). Legacy renders from the LLM's markdown as before.
+    if frozen_doc is not None:
+        resume_path = generate_resume_from_json_resume(
+            frozen_doc,
+            output_format,
+            safe_user,
+            str(output_dir),
+            template_path=template_path,
+        )
+    else:
+        resume_path = generate_resume(
+            result["resume_content"],
+            output_format,
+            safe_user,
+            str(output_dir),
+            template_path=template_path,
+        )
     # Phase β.5 — only write the cover-letter file when the call actually
     # produced one. The /api/generate-cover-letter route does the writing
     # for opt-in cover letters after the résumé is finalized.
@@ -875,13 +983,17 @@ def run_generation_stream() -> ResponseReturnValue:
     # write keys outside the ContextSet schema). It is a dict at runtime; cast
     # so the in-place mutations land on the same object.
     cs = cast(dict, context_set)
-    _apply_chosen_summary(cs)
-    # B.4 — inject the user's chosen per-role intros into the corpus snapshot
-    # (opt-in; no-op when the "Add role intros" toggle is off).
-    _apply_chosen_experience_summaries(cs)
-    # B.5 — reorder/filter the candidate's skills to the curated set so the
-    # download reflects recommend_skills + pin/drop/reorder (no-op when none).
-    _apply_recommended_skills(cs)
+    # Phase 4 — corpus-mode deterministic assemble when Compose froze an
+    # approved_composition. Computed here (request context) so it is captured in
+    # the stream() closure below.
+    frozen_doc = _frozen_composition(context_set)
+    if frozen_doc is None:
+        # Apply the chosen summary / per-role intros / skill curation before the
+        # LLM sees the corpus (no-op in legacy). Skipped in the frozen path — the
+        # freeze already resolved them into approved_composition.
+        _apply_chosen_summary(cs)
+        _apply_chosen_experience_summaries(cs)
+        _apply_recommended_skills(cs)
 
     safe_user = _safe_username(username, configs_dir=configs_dir) if username else None
     if not safe_user:
@@ -917,21 +1029,36 @@ def run_generation_stream() -> ResponseReturnValue:
         """SSE generator: stream the résumé-generation events to the client."""
         try:
             result: dict | None = None
-            for event_kind, payload in generate_streaming(
-                client,
-                context_set,
-                analysis,
-                refinement_notes=refinement_notes,
-                username=safe_user,
-                run_id=run_id,
-                with_cover_letter=with_cover_letter,
-            ):
-                if event_kind == "chunk":
-                    yield _sse("chunk", {"text": payload})
-                elif event_kind == "retry":
-                    yield _sse("retry", {"reason": str(payload)})
-                elif event_kind == "done":
-                    result = payload if isinstance(payload, dict) else None
+            if frozen_doc is not None:
+                # Phase 4 — deterministic assemble: NO résumé-body LLM. Emit the
+                # assembled markdown as a single chunk so the live view shows
+                # content, then fall through to the shared post-LLM path.
+                result = _assemble_from_frozen_composition(
+                    client,
+                    context_set,
+                    analysis,
+                    frozen_doc,
+                    with_cover_letter=with_cover_letter,
+                    username=safe_user,
+                    run_id=run_id,
+                )
+                yield _sse("chunk", {"text": result["resume_content"]})
+            else:
+                for event_kind, payload in generate_streaming(
+                    client,
+                    context_set,
+                    analysis,
+                    refinement_notes=refinement_notes,
+                    username=safe_user,
+                    run_id=run_id,
+                    with_cover_letter=with_cover_letter,
+                ):
+                    if event_kind == "chunk":
+                        yield _sse("chunk", {"text": payload})
+                    elif event_kind == "retry":
+                        yield _sse("retry", {"reason": str(payload)})
+                    elif event_kind == "done":
+                        result = payload if isinstance(payload, dict) else None
             if result is None:
                 yield _sse(
                     "error",
@@ -943,13 +1070,24 @@ def run_generation_stream() -> ResponseReturnValue:
                 return
 
             # Post-LLM persistence — mirror the non-streaming route.
-            resume_path = generate_resume(
-                result["resume_content"],
-                resolved_output_format,
-                safe_user,
-                str(output_dir),
-                template_path=template_path,
-            )
+            # Phase 4 — the frozen composition renders directly from its JSON-Resume
+            # doc (download == preview == approved_composition); legacy from markdown.
+            if frozen_doc is not None:
+                resume_path = generate_resume_from_json_resume(
+                    frozen_doc,
+                    resolved_output_format,
+                    safe_user,
+                    str(output_dir),
+                    template_path=template_path,
+                )
+            else:
+                resume_path = generate_resume(
+                    result["resume_content"],
+                    resolved_output_format,
+                    safe_user,
+                    str(output_dir),
+                    template_path=template_path,
+                )
             cover_letter_path = ""
             if (result.get("cover_letter_content") or "").strip():
                 cover_letter_path = generate_cover_letter(

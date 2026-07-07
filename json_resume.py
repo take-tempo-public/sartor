@@ -513,3 +513,112 @@ def _parse_simple_list(body: list[str], name_key: str) -> list[dict[str, Any]]:
             s = bm.group(1).strip()
         entries.append({name_key: s})
     return entries
+
+
+# ---------------------------------------------------------------------
+# Inverse: JSON Resume dict → normalized résumé markdown
+# ---------------------------------------------------------------------
+
+
+def _format_date_range(start: object, end: object) -> str:
+    """`start – end` (en-dash, the separator `md_to_json_resume` splits on), or a single date."""
+    s = str(start).strip() if start else ""
+    e = str(end).strip() if end else ""
+    if s and e:
+        return f"{s} – {e}"
+    return s or e
+
+
+def json_resume_to_markdown(doc: dict[str, Any]) -> str:
+    """Serialize a JSON Resume v1.0 dict back to normalized résumé markdown.
+
+    The deterministic inverse of `md_to_json_resume` for the fields sartor.
+    populates (basics, work, skills, education, certificates). Generation-
+    experience re-architecture Phase 4: the corpus-mode deterministic assemble
+    uses this to derive an editable markdown representation of the frozen
+    ``approved_composition`` (for the edit surface, the ``generated_resume_md``
+    audit column, and the cover-letter résumé context) WITHOUT an LLM — the
+    styled preview + download render the ``approved_composition`` dict directly,
+    so this text is a secondary, editable view. Round-trips: re-parsing this
+    output through ``md_to_json_resume`` reproduces the same core fields.
+    ``meta.sartor.*`` provenance is intentionally NOT emitted (it is not part of
+    the rendered résumé). Deterministic: no LLM, no clock, no randomness.
+    """
+    basics = doc.get("basics") or {}
+    lines: list[str] = []
+    name = str(basics.get("name") or "").strip()
+    lines.append(f"# {name}".rstrip())
+    label = str(basics.get("label") or "").strip()
+    if label:
+        lines.append(label)
+    contact_bits: list[str] = []
+    for key in ("email", "phone", "url"):
+        if basics.get(key):
+            contact_bits.append(str(basics[key]).strip())
+    for p in basics.get("profiles") or []:
+        if isinstance(p, dict) and p.get("url"):
+            contact_bits.append(str(p["url"]).strip())
+    if contact_bits:
+        lines.append(" · ".join(contact_bits))
+
+    summary = str(basics.get("summary") or "").strip()
+    if summary:
+        lines.extend(["", "## Summary", "", summary])
+
+    work = doc.get("work") or []
+    if work:
+        lines.extend(["", "## Experience"])
+        for w in work:
+            if not isinstance(w, dict):
+                continue
+            lines.append("")
+            company = str(w.get("name") or "").strip()
+            position = str(w.get("position") or "").strip()
+            header = f"{company}, {position}" if (company and position) else (company or position)
+            dates = _format_date_range(w.get("startDate"), w.get("endDate"))
+            if dates:
+                header = f"{header}\t{dates}" if header else dates
+            lines.append(f"### {header}")
+            role_summary = str(w.get("summary") or "").strip()
+            if role_summary:
+                lines.extend(["", role_summary])
+            for h in w.get("highlights") or []:
+                if str(h).strip():
+                    lines.append(f"- {str(h).strip()}")
+
+    skill_names = [
+        str(s["name"]).strip()
+        for s in (doc.get("skills") or [])
+        if isinstance(s, dict) and str(s.get("name") or "").strip()
+    ]
+    if skill_names:
+        lines.extend(["", "## Skills", "", " · ".join(skill_names)])
+
+    education = doc.get("education") or []
+    if education:
+        lines.extend(["", "## Education"])
+        for e in education:
+            if not isinstance(e, dict):
+                continue
+            lines.append("")
+            inst = str(e.get("institution") or "").strip()
+            area = str(e.get("area") or "").strip()
+            header = f"{inst}, {area}" if (inst and area) else (inst or area)
+            dates = _format_date_range(e.get("startDate"), e.get("endDate"))
+            if dates:
+                header = f"{header}\t{dates}" if header else dates
+            lines.append(f"### {header}")
+            for h in e.get("highlights") or []:
+                if str(h).strip():
+                    lines.append(f"- {str(h).strip()}")
+
+    cert_names = [
+        str(c["name"]).strip()
+        for c in (doc.get("certificates") or [])
+        if isinstance(c, dict) and str(c.get("name") or "").strip()
+    ]
+    if cert_names:
+        lines.extend(["", "## Certifications"])
+        lines.extend(f"- {n}" for n in cert_names)
+
+    return "\n".join(lines).strip() + "\n"

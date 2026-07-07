@@ -3338,6 +3338,27 @@ input:focus, select:focus, textarea:focus {
 .gap-fill-row .gap-fill-text {
   line-height: 1.45;
 }
+/* Phase 4 — the refinement loop-back banner at the top of Compose. A soft brand
+   callout that explains why the user landed back here from Generate. */
+.compose-loopback-banner {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--brand);
+  border-left: 3px solid var(--brand);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #20212e 0%, #1a1b27 100%);
+}
+.compose-loopback-title {
+  font-weight: 600;
+  color: var(--brand);
+  margin-bottom: 4px;
+}
+.compose-loopback-body {
+  font-size: 0.9rem;
+  color: var(--fg-1);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
 .positioning-variant {
   cursor: pointer;
   position: relative;
