@@ -30,7 +30,7 @@ from blueprints import (
     templates_bp,
     users_bp,
 )
-from config import Config
+from config import STATIC_DIR, TEMPLATES_DIR, Config
 from dashboard import dashboard_bp
 
 # P7 Observability: structured logging
@@ -81,8 +81,19 @@ def create_app(config: Config | None = None) -> Flask:
     directories exist (the old import-time mkdir loop), and registers the
     blueprints. The side effects that importing this module used to trigger now
     happen here, when the factory is called.
+
+    `template_folder`/`static_folder` are passed EXPLICITLY (absolute paths,
+    resolved via `config.TEMPLATES_DIR`/`STATIC_DIR`) rather than left to
+    Flask's `Flask(__name__)` default, which resolves relative to `app.py`'s
+    own directory — correct only when `templates/`/`static/` happen to be
+    co-located with `app.py` on disk (a source checkout or editable install).
+    A real (non-editable) wheel install puts `app.py` directly in
+    `site-packages/` without those directories alongside it, which 500'd on
+    first page load (PyPI-wheel ledger item, `docs/dev/RELEASE_CHECKLIST.md`).
+    The resolved paths are byte-identical to the old default in the
+    dev/editable case (see `config._package_dir`).
     """
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder=str(TEMPLATES_DIR), static_folder=str(STATIC_DIR))
     config = config or Config()
     app.config.update(config.as_flask_config())
     # Disable browser caching of /static/* responses so UI edits land on

@@ -23,6 +23,7 @@ keeps the blueprint independently importable, so the v1.0.8 split is a move, not
 
 from __future__ import annotations
 
+import importlib
 import logging
 import re
 import uuid
@@ -52,8 +53,23 @@ logger = logging.getLogger(__name__)
 assistant_bp = Blueprint("assistant", __name__)
 
 # Re-derived locally (the dashboard-blueprint precedent) — never imported from app.py.
+# PROJECT_ROOT is used ONLY for the S2 git-grep tier below (a dev-checkout-only
+# feature: it shells out to `git grep`, which is a no-op without a `.git` dir —
+# an accepted limitation for installed wheels, unrelated to this ledger item).
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-_WIKI_DIR = PROJECT_ROOT / "docs" / "wiki"
+
+# `docs/wiki/` ships as a tiny data-only Python package (`docs/wiki/__init__.py`
+# + `[tool.setuptools.package-data]` in `pyproject.toml`), so this import-based
+# lookup resolves correctly under BOTH `pip install -e .` (byte-identical to the
+# old `PROJECT_ROOT`-relative computation) AND a real non-editable wheel install
+# (`site-packages/docs/wiki/`), where the old computation 404'd (PyPI-wheel
+# ledger item, `docs/dev/RELEASE_CHECKLIST.md`). Duplicated locally rather than
+# imported from `config.py` per this module's own "re-derived locally" precedent
+# above (it deliberately never depends on `app.py`/`config.py`).
+_docs_wiki_file = importlib.import_module("docs.wiki").__file__
+if _docs_wiki_file is None:  # pragma: no cover — real __init__.py-backed package, never hit
+    raise RuntimeError("docs.wiki has no __file__ (not a filesystem package)")
+_WIKI_DIR = Path(_docs_wiki_file).resolve().parent
 _INGEST_SHA_PATH = _WIKI_DIR / ".last_ingest_sha"
 
 # Retrieval feed size for one avatar turn (the recall token-budget pack ~4 chars/token).

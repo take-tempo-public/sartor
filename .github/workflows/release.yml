@@ -4,12 +4,17 @@ name: Release (PyPI)
 # Publishing (no stored token). One-time [HUMAN] setup is documented in
 # docs/install.md (PyPI → project → Publishing → add this repo/workflow/env).
 #
-# !! GATED !! The wheel does NOT yet ship the app's data dirs (templates/ ·
-# static/ · personas/ · docs/wiki), so a plain `pip install sartor` would 500 on
-# the first page load. The `publish` job FAILS FAST on purpose until that
-# packaging follow-up lands (docs/dev/RELEASE_CHECKLIST.md "Carry-forward"). The
-# `build` job still runs so packaging stays exercised. Delete the "GATE" step once
-# a fresh-venv `pip install <wheel>` + `sartor` actually serves a page.
+# The wheel-packaging gap that used to block this workflow (`pip install sartor`
+# 500ing on first page load because templates/static/personas/docs-wiki weren't
+# shipped) is FIXED as of `fix/packaging-install` (2026-07-07) — Flask now gets
+# absolute template/static folders, and the data dirs ship via
+# `[tool.setuptools.package-data]`, verified end-to-end with a real fresh-venv
+# `pip install <wheel>` serving `GET /` (200) from OUTSIDE the source tree. The
+# publish job's GATE step (which used to fail it on purpose) is removed.
+# Publishing is still `[HUMAN]`-blocked on a separate, unrelated prerequisite:
+# the PyPI Trusted Publisher config + GHCR package visibility, both gated on the
+# GitHub repo rename to `take-tempo-public/sartor` (see
+# docs/dev/RELEASE_CHECKLIST.md "Carry-forward").
 
 on:
   push:
@@ -63,11 +68,6 @@ jobs:
     permissions:
       id-token: write # OIDC — no PyPI token stored in the repo
     steps:
-      - name: GATE — wheel not yet installable (delete when the packaging follow-up lands)
-        run: |
-          echo "::error::PyPI publishing is GATED: the wheel does not ship templates/ static/ personas/ docs/wiki, so 'pip install sartor' would fail at runtime. Complete the wheel-packaging follow-up (docs/dev/RELEASE_CHECKLIST.md Carry-forward), verify a fresh-venv wheel install actually serves a page, then delete this step."
-          exit 1
-
       - uses: actions/download-artifact@v4
         with:
           name: dist

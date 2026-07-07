@@ -13,6 +13,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: installable wheel + python floor + install-doc truth (`fix/packaging-install`, 2026-07-07)
+
+Carry-forward ledger "PyPI wheel not installable" + UX-review Wave 0 F-24/25/26 +
+2026-07-efficiency-review PX-42, bundled together per the ledger's own note
+("F-24/25/26 ... overlaps the PyPI-wheel item below — fix together").
+
+- **The wheel is now installable.** `create_app()`'s `Flask(__name__)` used to resolve
+  `templates/`/`static/` relative to `app.py`'s own directory — correct only when they
+  happened to be co-located on disk (a source checkout or `pip install -e .`), and there
+  was no `package-data`/`MANIFEST.in`, so a real (non-editable) `pip install sartor` 500'd
+  on the first page load. Fixed with the smallest change that makes a real wheel serve,
+  not a `sartor/` package restructure:
+  - `templates/`, `static/`, `personas/bundled/`, and `docs/wiki/` each got a marker
+    `__init__.py` (see each file's own docstring) turning them into tiny data-only Python
+    packages, shipped via new `[tool.setuptools.package-data]` globs — narrow and
+    explicit (never `**/*`), so `personas/robert/` (a real gitignored per-user upload dir
+    sitting right next to `personas/bundled/`) can never leak into a build.
+  - `config.py` gains `_package_dir()` (import-based resolution — correct in both
+    editable and wheel installs) and exports `TEMPLATES_DIR`/`STATIC_DIR`; `app.py`
+    passes them explicitly to `Flask(__name__, template_folder=..., static_folder=...)`
+    instead of relying on the implicit default. `blueprints/assistant.py`'s `_WIKI_DIR`
+    (the doc-grounded assistant's S1 tier) gets the same `_package_dir`-style treatment,
+    locally (matching the file's existing "re-derived locally, never imports app.py"
+    precedent). `Config.bundled_personas_dir` is DELIBERATELY left untouched
+    (`base_dir`-relative, as before) — many existing tests fabricate an isolated
+    fake-bundled fixture under `Config(base_dir=tmp_path)`, and routing it through
+    `_package_dir` instead redirected those test writes onto the real, tracked
+    `personas/bundled/` files (caught by the fast test lane before landing). No code
+    change was needed there anyway: the default `base_dir` is `_PROJECT_ROOT`
+    (`config.py`'s own directory), which in an installed wheel IS `site-packages/`, and
+    `personas.bundled`'s new package-data ships to `site-packages/personas/bundled/` —
+    exactly where the existing `base_dir`-relative arithmetic already looks. The
+    dev/editable path for `templates`/`static`/`docs.wiki` is byte-identical (same
+    directories, resolved via import instead of `Path(__file__)` arithmetic).
+  - Verified end-to-end: `python -m build` → fresh venv → `pip install <wheel>` → app
+    started from a directory OUTSIDE the repo with a temp base dir → a real HTTP
+    `GET /` returns 200 with the shell HTML (and `/static/style.css` serves), proving both
+    halves (path resolution + packaging) together, not just in isolation. The `GATE` step
+    in `.github/workflows/release.yml` (added specifically to block publishing until this
+    landed) is removed. Publishing itself stays `[HUMAN]`-blocked on an unrelated
+    prerequisite (PyPI Trusted Publisher + GHCR, gated on the GitHub repo rename) — see
+    `docs/dev/RELEASE_CHECKLIST.md`.
+  - New regression test `tests/test_packaging.py` pins the code-level contract (absolute,
+    existing Flask folders; the four packages resolve; `py-modules` matches the repo's
+    actual root `.py` files; the `requires-python` floor) so a future edit can't silently
+    re-break the wheel between the (necessarily manual/scripted) fresh-venv verifies.
+- **PX-42 — the python floor tells the truth.** `requires-python` was `>=3.10`, but CI
+  (`ci.yml`) only ever tested 3.11–3.13, and `tests/test_docstring_coverage_gate.py` (dev
+  tooling) already used `tomllib` (3.11+ stdlib) — a real 3.10 install was untested and
+  would fail at *runtime*, not at `pip install` time. Raised to `requires-python = ">=3.11"`
+  and dropped the `Python :: 3.10` classifier; `docs/install.md` "Python 3.10 or newer"
+  corrected to 3.11.
+- **F-26 — `py-modules` omission fixed.** `[tool.setuptools] py-modules` listed 7 of the
+  repo's 11 root-level `.py` modules; `corpus_to_json_resume`, `docx_to_persona_html`,
+  `json_resume`, and `pdf_render` were missing (all four are imported at runtime) and would
+  have been absent from an installed wheel. Now lists all 11; `tests/test_packaging.py`
+  pins the roster against a live glob of the repo root so this can't silently drift again.
+- **F-24 — `docs/install.md` "Verifying the install" needs `[dev]`.** The verify steps ran
+  `pytest`/`ruff`, but the install steps only ever ran `pip install -e .` — neither tool is
+  a runtime dependency, so a clean install failed the very verification steps meant to
+  confirm it. Added `pip install -e '.[dev]'` as the first step of "Verifying the install".
+- **F-25 — `sartor --setup` added to every OS walkthrough.** The per-OS Windows/macOS/Linux
+  steps only ever documented the raw `python -m playwright install chromium` call, never the
+  documented one-time bootstrap (`sartor --setup`, which does that AND builds the assistant's
+  semantic-recall index) — a reader following an OS section got PDF export working but the
+  recall index unbuilt (silent lexical/wiki-tier fallback). Each OS section's Chromium step
+  now runs `sartor --setup` instead, documented as covering both.
+
 ### Fix: eval harness scores the shipped frozen-assembly path (`fix/eval-f11-frozen-assembly`, 2026-07-07)
 
 UX-review Wave 0, F-11 ([`40-friction-register.md`](docs/dev/reviews/2026-07-ux-review/40-friction-register.md)) —
