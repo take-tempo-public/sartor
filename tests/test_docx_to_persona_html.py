@@ -121,9 +121,9 @@ def test_detect_layout_fidelity_flags_tables(tmp_path) -> None:
     # preview (matches what _write_docx produces on download).
     result = d.generate_companion(docx)
     assert result is not None
-    assert '"layout_fidelity": "typography_only"' in (
-        tmp_path / "fancy.persona.json"
-    ).read_text(encoding="utf-8")
+    assert '"layout_fidelity": "typography_only"' in (tmp_path / "fancy.persona.json").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_generate_companion_missing_docx_returns_none(tmp_path) -> None:

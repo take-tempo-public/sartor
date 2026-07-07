@@ -65,7 +65,14 @@ dependencies = [
 dev = [
     "pytest>=8.0,<9.0",
     "pytest-socket>=0.7,<1.0",  # PX-08 / G-2 network-egress falsifiability gate
-    "ruff>=0.6,<1.0",
+    # Ruff is EXACT-pinned (not a range) so local and CI format identically: ruff does not
+    # guarantee formatter-output stability even across patch releases, so a range let 5 files
+    # silently drift under a newer formatter (carry-forward ledger, cleared on
+    # `chore/ruff-format-pin`). The exact pin is what makes the whole-tree `ruff format --check`
+    # gate (ci.yml `quality` job + the ruff-changed commit hook) deterministic — pin + gate are
+    # one inseparable fix. Bumping ruff is a deliberate one-commit action: upgrade + `ruff format .`
+    # + re-pin here.
+    "ruff==0.15.12",
     "mypy>=1.10,<2.0",
     "pyyaml>=6.0,<7.0",
     "types-requests>=2.31",

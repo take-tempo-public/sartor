@@ -13,6 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Chore: pin ruff + add a whole-tree `ruff format --check` CI gate (`chore/ruff-format-pin`, 2026-07-06)
+
+A reduction-sprint knock-down of the carry-forward "ruff-format-drift" ledger item.
+**Formatting-only and prompt-safe** — no logic, no prompt bytes, no `PROMPT_VERSION` bump.
+
+- **One-time `ruff format .` sweep** — 5 files that predated the current formatter re-formatted
+  under ruff 0.15.12 though no branch touched them (`docx_to_persona_html.py` + four `tests/`
+  files): f-string inner-quote normalization, single-line collapsing, string-concat re-wrapping.
+  None is `analyzer.py`, so no prompt changed.
+- **Ruff exact-pinned** — [`pyproject.toml`](pyproject.toml) dev extra: `ruff>=0.6,<1.0` →
+  `ruff==0.15.12`. Ruff does not guarantee formatter-output stability even across patch releases,
+  so a floating range let the drift accumulate; the exact pin makes local + CI format identically.
+- **New CI format gate** — [`.github/workflows/ci.yml`](.github/workflows/ci.yml) `quality` job now
+  runs `ruff format --check .`, which CI previously never did (it only ran `ruff check`, and the
+  commit hook only checks *staged* files). Pin + gate are one inseparable fix: a gate without the
+  pin would flake CI on unrelated PRs the day a new ruff releases. Bumping ruff is now a deliberate
+  one-commit action (upgrade + `ruff format .` + re-pin).
+
 ### Feature: Compose authors + freezes the composition; Generate becomes deterministic (`fix/compose-frozen-composition`, 2026-07-06)
 
 The generation-experience re-architecture (Option B — one cohesive branch). North

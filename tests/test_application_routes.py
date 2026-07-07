@@ -1426,9 +1426,7 @@ class TestRetireApplication:
         assert [a["id"] for a in default] == [keep]
 
         # include_retired surfaces it, flagged.
-        withret = client.get(
-            "/api/users/alice/applications?include_retired=1"
-        ).get_json()
+        withret = client.get("/api/users/alice/applications?include_retired=1").get_json()
         ids = {a["id"]: a["is_active"] for a in withret}
         assert ids == {keep: True, drop: False}
 
