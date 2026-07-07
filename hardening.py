@@ -193,6 +193,16 @@ class ContextSet(_ContextSetRequired, total=False):
     # and when llm_recommendations is also present restricts the corpus to
     # (recommended ∪ added ∪ pinned) − excluded. total=False so older
     # contexts round-trip unchanged.
+    # Also carries the generation-experience re-architecture Compose-authoring
+    # keys (all optional, absent → default path byte-identical):
+    #   "summary_text": str          # the Compose-drafted/edited 2-sentence
+    #                                #   positioning summary (draft_positioning_summary);
+    #                                #   resolved into basics.summary at freeze time.
+    #   "summary_text_edited": bool  # True once the user hand-edited the draft.
+    #   "accepted_generated_bullet_ids": [bullet_id...]  # gap-fill Bullet rows
+    #                                #   (source='llm_proposed:<hash>') the user
+    #                                #   ACCEPTED at Compose; folded into the
+    #                                #   per-role effective set like corpus bullets.
     composition_overrides: dict
     # Workstream H: the recommend_bullets() output keyed by experience id
     # (str or int). {"<exp_id>": {"bullet_ids": [<int>...], "rationale": str}}
@@ -200,6 +210,19 @@ class ContextSet(_ContextSetRequired, total=False):
     # total=False — applications generated before the recommendation step
     # ran (or whose call failed) keep the prior full-corpus behavior.
     llm_recommendations: dict
+    # Generation-experience re-architecture (fix/compose-frozen-composition):
+    # the SINGLE content contract. A resolved JSON-Resume document (resolved
+    # bullet / summary / skills text in final order) PLUS a meta.sartor
+    # provenance block (highlight_ids / title_id / role_intro_id / skill_ids /
+    # summary_source / accepted_generated_bullet_ids). Produced by the one
+    # deterministic resolver (corpus_to_json_resume.freeze_approved_composition)
+    # and written on the explicit Compose "Save and continue" (freeze) — NOT on
+    # every autosave. Every downstream surface (template preview, deterministic
+    # assemble, preview, download) renders THIS, so nothing downstream re-resolves
+    # or re-authors and preview == assemble == download by construction. Absent on
+    # pre-freeze contexts (the corpus-direct render is the fallback). total=False
+    # so older contexts round-trip unchanged.
+    approved_composition: dict
 
 
 # Common English stop words to exclude from keyword extraction

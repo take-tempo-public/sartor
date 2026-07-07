@@ -1321,6 +1321,24 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
         except (TypeError, ValueError):
             return jsonify({"error": "skill_order ids must be integers"}), 400
 
+    # Generation-experience re-architecture — Compose-authored content that
+    # freezes into the approved composition. summary_text = the drafted/edited
+    # 2-sentence positioning summary; accepted_generated_bullet_ids = gap-fill
+    # Bullet rows the user accepted. Each omitted when empty so the default path
+    # stays byte-identical. `freeze` (the Save-and-continue action, not the
+    # debounced autosave) triggers writing the resolved approved_composition
+    # snapshot — the single content contract every downstream surface renders.
+    summary_text_raw = data.get("summary_text")
+    if summary_text_raw is not None and not isinstance(summary_text_raw, str):
+        return jsonify({"error": "summary_text must be a string"}), 400
+    summary_text_in = (summary_text_raw or "").strip()
+    summary_text_edited_in = bool(data.get("summary_text_edited"))
+    try:
+        accepted_generated_in = [int(x) for x in (data.get("accepted_generated_bullet_ids") or [])]
+    except (TypeError, ValueError):
+        return jsonify({"error": "accepted_generated_bullet_ids must be integer ids"}), 400
+    freeze = bool(data.get("freeze"))
+
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
 
@@ -1478,6 +1496,14 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
             overrides["excluded_skill_ids"] = skill_excluded_in
         if skill_order_in:
             overrides["skill_order"] = skill_order_in
+        # Generation-experience re-architecture — Compose-authored content
+        # (each omitted when empty → default path byte-identical).
+        if summary_text_in:
+            overrides["summary_text"] = summary_text_in
+            if summary_text_edited_in:
+                overrides["summary_text_edited"] = True
+        if accepted_generated_in:
+            overrides["accepted_generated_bullet_ids"] = accepted_generated_in
         ctx["composition_overrides"] = overrides
 
         # feat/compose-add-title — generate reads the FROZEN career_corpus
@@ -1492,6 +1518,21 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 key = str(eid) if eid is not None else None
                 if key is not None and key in resynced_titles:
                     exp_entry["eligible_titles"] = resynced_titles[key]
+
+        # Generation-experience re-architecture — on the explicit "Save and
+        # continue" (freeze), capture the resolved approved-composition snapshot
+        # (the single content contract every downstream surface renders). Passes
+        # the in-memory ctx (with the just-rebuilt overrides) so the snapshot
+        # reflects THIS save; only on freeze so the debounced autosave stays cheap.
+        if freeze:
+            from corpus_to_json_resume import freeze_approved_composition
+
+            ctx["approved_composition"] = freeze_approved_composition(
+                session,
+                candidate.id,
+                application_id=application_id,
+                context_data=ctx,
+            )
 
         cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
         return jsonify(
@@ -1508,6 +1549,10 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 "pinned_skill_ids": skill_pinned_in,
                 "excluded_skill_ids": skill_excluded_in,
                 "skill_order": skill_order_in,
+                "summary_text": summary_text_in,
+                "summary_text_edited": summary_text_edited_in,
+                "accepted_generated_bullet_ids": accepted_generated_in,
+                "frozen": bool(freeze),
             }
         )
     finally:

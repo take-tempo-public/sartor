@@ -312,3 +312,102 @@ class TestPostComposition:
         assert r.status_code == 200
         ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
         assert "pinned_summary_id" not in ctx["composition_overrides"]
+
+
+# -------------------------------------------------------------------
+# Generation-experience re-architecture — the Compose "Save and continue"
+# freeze writes the resolved approved_composition snapshot, and the
+# Compose-drafted summary_text persists + resolves into it.
+# -------------------------------------------------------------------
+
+
+class TestPostCompositionFreeze:
+    def test_freeze_writes_approved_composition(self, composition_app):
+        _app, output_dir = composition_app
+        _cid, aid, ctx_path, _ = _seed(_app, output_dir)
+        client = _app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={
+                "context_path": ctx_path,
+                "pinned": [],
+                "excluded": [],
+                "added": [],
+                "summary_text": "A tailored two-sentence positioning summary.",
+                "freeze": True,
+            },
+        )
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["frozen"] is True
+        assert body["summary_text"] == "A tailored two-sentence positioning summary."
+
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
+        assert ctx["composition_overrides"]["summary_text"] == (
+            "A tailored two-sentence positioning summary."
+        )
+        # The frozen snapshot IS a resolved JSON Resume with the drafted summary.
+        frozen = ctx["approved_composition"]
+        assert frozen["basics"]["summary"] == "A tailored two-sentence positioning summary."
+        assert frozen["meta"]["sartor"]["frozen"] is True
+        assert frozen["meta"]["sartor"]["summary_source"] == "drafted"
+        assert frozen["meta"]["sartor"]["application_id"] == aid
+
+    def test_autosave_without_freeze_writes_no_snapshot(self, composition_app):
+        _app, output_dir = composition_app
+        _cid, aid, ctx_path, _ = _seed(_app, output_dir)
+        client = _app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={
+                "context_path": ctx_path,
+                "pinned": [],
+                "excluded": [],
+                "added": [],
+                "summary_text": "Drafted but not yet frozen.",
+            },
+        )
+        assert r.status_code == 200
+        assert r.get_json()["frozen"] is False
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
+        # summary_text still persists (rides the wholesale rebuild) ...
+        assert ctx["composition_overrides"]["summary_text"] == "Drafted but not yet frozen."
+        # ... but no snapshot until the explicit Save-and-continue.
+        assert "approved_composition" not in ctx
+
+    def test_edited_flag_persists(self, composition_app):
+        _app, output_dir = composition_app
+        _cid, aid, ctx_path, _ = _seed(_app, output_dir)
+        client = _app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={
+                "context_path": ctx_path,
+                "pinned": [],
+                "excluded": [],
+                "added": [],
+                "summary_text": "Hand-edited.",
+                "summary_text_edited": True,
+                "freeze": True,
+            },
+        )
+        assert r.status_code == 200
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
+        assert ctx["composition_overrides"]["summary_text_edited"] is True
+        assert ctx["approved_composition"]["meta"]["sartor"]["summary_source"] == "edited"
+
+    def test_rejects_non_string_summary_text(self, composition_app):
+        _app, output_dir = composition_app
+        _cid, aid, ctx_path, _ = _seed(_app, output_dir)
+        client = _app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={
+                "context_path": ctx_path,
+                "pinned": [],
+                "excluded": [],
+                "added": [],
+                "summary_text": {"not": "a string"},
+            },
+        )
+        assert r.status_code == 400

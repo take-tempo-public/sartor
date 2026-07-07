@@ -805,3 +805,169 @@ class TestSkills:
         _seed_skill(session, cid, "Python", display_order=0)
         doc = build_json_resume_from_corpus(session, cid)
         assert doc["meta"]["sartor"]["skill_curation_active"] is False
+
+
+# -------------------------------------------------------------------
+# Generation-experience re-architecture (fix/compose-frozen-composition):
+# the resolver becomes the single producer of the frozen composition —
+# honors bullet_order, folds in accepted gap-fill bullets, resolves the
+# Compose-drafted summary text, emits order-aligned meta.sartor provenance,
+# and freeze_approved_composition() stamps the value snapshot.
+# -------------------------------------------------------------------
+
+
+class TestBulletOrder:
+    def test_bullet_order_reorders_highlights(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        eid, bids = _seed_experience(
+            session, cid, bullets=("Bullet one.", "Bullet two.", "Bullet three.")
+        )
+        # Explicit order: third, first — second is unlisted → keeps its place at
+        # the end (by display_order), matching analyzer._stable_user_prefix.
+        ctx = _ctx_file(
+            tmp_path,
+            composition_overrides={"bullet_order": {str(eid): [bids[2], bids[0]]}},
+        )
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert doc["work"][0]["highlights"] == [
+            "Bullet three.",
+            "Bullet one.",
+            "Bullet two.",
+        ]
+
+    def test_no_bullet_order_is_display_order(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        _seed_experience(session, cid, bullets=("Bullet one.", "Bullet two."))
+        doc = build_json_resume_from_corpus(session, cid)
+        assert doc["work"][0]["highlights"] == ["Bullet one.", "Bullet two."]
+
+
+class TestDraftedSummary:
+    def test_drafted_summary_text_wins(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        # A pinned variant would normally win — the drafted text overrides even it.
+        pin_id = _seed_summary_variant(session, cid, text="Pinned variant.")
+        ctx = _ctx_file(
+            tmp_path,
+            composition_overrides={
+                "pinned_summary_id": pin_id,
+                "summary_text": "A tailored two-sentence positioning summary.",
+            },
+        )
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert doc["basics"]["summary"] == "A tailored two-sentence positioning summary."
+        assert doc["meta"]["sartor"]["summary_source"] == "drafted"
+
+    def test_edited_flag_reports_edited_source(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        ctx = _ctx_file(
+            tmp_path,
+            composition_overrides={
+                "summary_text": "Hand-edited summary.",
+                "summary_text_edited": True,
+            },
+        )
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert doc["basics"]["summary"] == "Hand-edited summary."
+        assert doc["meta"]["sartor"]["summary_source"] == "edited"
+
+    def test_blank_summary_text_falls_through(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session, profile_text="Fallback profile.")
+        # No summary_text → the legacy chain (here profile_text).
+        doc = build_json_resume_from_corpus(session, cid)
+        assert doc["basics"]["summary"] == "Fallback profile."
+        assert doc["meta"]["sartor"]["summary_source"] == "candidate_default"
+
+
+class TestAcceptedGeneratedBullets:
+    def test_accepted_generated_bullet_joins_curated_set(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        eid, bids = _seed_experience(
+            session, cid, bullets=("Bullet one.", "Bullet two.", "Bullet three.")
+        )
+        # Recommend only bullet one; accept bullet three (as a "gap-fill" id) —
+        # both survive the narrowing, bullet two drops.
+        ctx = _ctx_file(
+            tmp_path,
+            llm_recommendations={str(eid): {"bullet_ids": [bids[0]]}},
+            composition_overrides={"accepted_generated_bullet_ids": [bids[2]]},
+        )
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert doc["work"][0]["highlights"] == ["Bullet one.", "Bullet three."]
+        assert doc["meta"]["sartor"]["accepted_generated_bullet_ids"] == [bids[2]]
+        assert doc["meta"]["sartor"]["bullet_overrides_active"] is True
+
+
+class TestFrozenCompositionProvenance:
+    def test_work_provenance_is_order_aligned(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+        from db.models import ExperienceTitle
+
+        cid = _seed_candidate(session)
+        eid, bids = _seed_experience(session, cid, bullets=("One.", "Two."))
+        tid = session.query(ExperienceTitle).filter_by(experience_id=eid).first().id
+        doc = build_json_resume_from_corpus(session, cid, application_id=7)
+        prov = doc["meta"]["sartor"]["work_provenance"]
+        assert prov == [
+            {
+                "experience_id": eid,
+                "title_id": tid,
+                "role_intro_id": None,
+                "highlight_ids": [bids[0], bids[1]],
+            }
+        ]
+        # highlight_ids align 1:1 with the emitted highlights text.
+        assert len(prov[0]["highlight_ids"]) == len(doc["work"][0]["highlights"])
+
+    def test_skill_ids_emitted(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        py = _seed_skill(session, cid, "Python", display_order=0)
+        go = _seed_skill(session, cid, "Go", display_order=1)
+        doc = build_json_resume_from_corpus(session, cid)
+        assert doc["meta"]["sartor"]["skill_ids"] == [py, go]
+
+
+class TestFreezeApprovedComposition:
+    def test_freeze_stamps_frozen_and_resolves_text(self, session):
+        from corpus_to_json_resume import freeze_approved_composition
+
+        cid = _seed_candidate(session)
+        _seed_experience(session, cid, bullets=("Shipped X.",))
+        _seed_skill(session, cid, "Python")
+        doc = freeze_approved_composition(session, cid, application_id=3)
+        # A valid JSON Resume with resolved text + the frozen marker.
+        assert doc["meta"]["sartor"]["frozen"] is True
+        assert doc["meta"]["sartor"]["application_id"] == 3
+        assert doc["work"][0]["highlights"] == ["Shipped X."]
+        assert [s["name"] for s in doc["skills"]] == ["Python"]
+
+    def test_context_data_short_circuits_file_read(self, session):
+        """The freeze path passes in-memory overrides (not yet on disk); the
+        resolver must read them from context_data, not a (bogus) context_path."""
+        from corpus_to_json_resume import freeze_approved_composition
+
+        cid = _seed_candidate(session)
+        _seed_experience(session, cid, bullets=("Shipped X.",))
+        doc = freeze_approved_composition(
+            session,
+            cid,
+            application_id=3,
+            context_path="/does/not/exist.json",
+            context_data={"composition_overrides": {"summary_text": "In-memory summary."}},
+        )
+        assert doc["basics"]["summary"] == "In-memory summary."
+        assert doc["meta"]["sartor"]["summary_source"] == "drafted"
