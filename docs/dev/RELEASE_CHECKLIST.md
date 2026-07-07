@@ -509,30 +509,44 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       path byte-identical/unchanged. Unblocks ledger row "Eval baseline stale vs
       production model (Sonnet 5)" below to proceed) · F-24/25/26
       install.md `[dev]`/`--setup` gaps + `pyproject.toml` `py-modules` omission
-      (overlaps the PyPI-wheel item below — fix together). Screenshot evidence
+      (overlaps the PyPI-wheel item below — fix together). **F-24/25/26 DONE
+      2026-07-07 (`fix/packaging-install`).** Screenshot evidence
       (gitignored, local): `output/ux-review-2026-07-screenshots/` + its MANIFEST.md.
       _(discovered: 2026-07-07, `docs/ux-review-2026-07`; open count 11 → 12.)_
       **→ Integrate as `fix/ux-review-wave0-*` branches before any public tag;**
       waves 1–4 drain per the polish plan.
 
-- [ ] **PyPI wheel not installable — data files not packaged** — `create_app()` does
-      `Flask(__name__)`, so an installed (non-editable) wheel looks for `templates/` next to
-      the `app.py` module in `site-packages`, and there is **no `MANIFEST.in` /
-      `package-data` / `include-package-data`** — so `templates/` · `static/` ·
-      `personas/bundled/` · `docs/wiki/` (recall) ship in **neither** the sdist nor the
-      wheel. Result: `pip install sartor` / `uvx sartor` installs and then **500s on the
-      first page load**; only `pip install -e .` (source tree in place) or the container
-      (editable install under `/app`) work today. Fix: point Flask at absolute
-      template/static folders (or restructure the root-level modules + data dirs into a
-      `sartor/` package) **and** package the data dirs, then verify with a real fresh-venv
-      `pip install <wheel>` that actually serves a page — and only then delete the **GATE
-      step** in `.github/workflows/release.yml`. Also `[HUMAN]`, one-time: the PyPI
-      **Trusted Publisher** config + GHCR package visibility, both **blocked on the GitHub
-      repo rename to `take-tempo-public/sartor`** (image/publish namespaces + in-app URLs
-      depend on it). _(discovered: v1.0.8 stream, 2026-07-02, `feat/packaging-publish`;
-      open count 7 → 8.)_
+- [ ] **PyPI wheel not installable — data files not packaged** — **RESOLVED-PENDING-PUBLISH
+      2026-07-07 (`fix/packaging-install`); left open only for the still-blocked
+      `[HUMAN]` publish prerequisite below.** `create_app()` did `Flask(__name__)`, so an
+      installed (non-editable) wheel looked for `templates/` next to the `app.py` module in
+      `site-packages`, and there was **no `MANIFEST.in` / `package-data` /
+      `include-package-data`** — so `templates/` · `static/` · `personas/bundled/` ·
+      `docs/wiki/` (recall) shipped in **neither** the sdist nor the wheel, and
+      `pip install sartor` / `uvx sartor` 500'd on the first page load. **Fixed:** `app.py`
+      now passes absolute `template_folder`/`static_folder` to `Flask(__name__, ...)`
+      (resolved via the new `config._package_dir()`, import-based — correct under both
+      editable and wheel installs); `templates/`, `static/`, `personas/bundled/`, and
+      `docs/wiki/` each got a marker `__init__.py` + narrow `[tool.setuptools.package-data]`
+      globs (no `sartor/` package restructure needed — the smaller fix sufficed).
+      **Verified** with a real fresh-venv `pip install <wheel>` started from a directory
+      OUTSIDE the repo, serving a real HTTP `GET /` → 200 with the shell HTML; the **GATE
+      step** in `.github/workflows/release.yml` is deleted. `tests/test_packaging.py` pins
+      the code-level contract as a regression guard. Bundled together with F-24/25/26 above
+      per this ledger's own note. Still open: `[HUMAN]`, one-time, the PyPI **Trusted
+      Publisher** config + GHCR package visibility, both **blocked on the GitHub repo rename
+      to `take-tempo-public/sartor`** (image/publish namespaces + in-app URLs depend on it) —
+      unrelated to the packaging fix, un-touched by this branch.
+      _(discovered: v1.0.8 stream, 2026-07-02, `feat/packaging-publish`; open count 7 → 8.)_
       **→ Integrate as its own branch before the first PyPI tag** — the container +
       `sartor --setup` ship now; the wheel path is intentionally gated until this lands.
+      **Residual follow-ups (2026-07-07, `fix/packaging-install` close-out):** (i)
+      `[tool.ruff] target-version` + `[tool.mypy] python_version` still say py310 — bump to
+      3.11 alongside the new `requires-python` floor in a dedicated pass (deferred to avoid an
+      unplanned whole-tree UP-rule autofix diff); (ii) on a bare `pip install sartor && sartor`
+      run, `Config.base_dir`'s default and `dashboard/routes.py`'s `PROJECT_ROOT` resolve into
+      `site-packages/` (user data + telemetry would land there) — pre-existing characteristic,
+      revisit before public docs advertise the bare-wheel path as a user journey.
 
 - [ ] **In-app rendered citation viewer (deferred)** — the avatar's numbered citations
       (Sprint 7.8d, `feat/avatar-citation-format`) link to their source **on GitHub** (wiki
@@ -604,6 +618,11 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       when the git remote/CI activates — leave. **Note (8.2, 2026-06-21):** the
       `route-security-lint` widen (PX-21) kept the hook a self-contained bash script with no new
       coupling, so it stays migration-friendly for this lift.
+      **Note (Train 1, 2026-07-07):** `block-merge-to-main` false-positives on READ-ONLY
+      `git merge-base` invocations (its `git merge` pattern lacks a boundary against
+      `merge-base`) and resolves HEAD in the hook's own cwd rather than the caller's worktree,
+      so it fires from any worktree while the main checkout sits on `main` — fix both when
+      lifting it into the portable core.
 
 - [ ] **Periodic cross-document link / cite checker** — none exists or is planned. `wiki-lint`
       is `docs/wiki/`-scoped (`[[backlinks]]` + `path:line` existence only), so the

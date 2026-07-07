@@ -8,14 +8,13 @@ version = "1.0.7"
 description = "Local-first résumé + cover-letter tailor for one specific job at a time. Powered by the Claude API; your data stays on your machine."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "amodal1" }]
 keywords = ["resume", "resume-tailor", "cover-letter", "ats", "claude", "anthropic", "llm", "career", "job-search"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -110,14 +109,65 @@ Changelog = "https://github.com/take-tempo-public/sartor/blob/main/CHANGELOG.md"
 sartor = "app:main"
 
 [tool.setuptools]
-py-modules = ["app", "analyzer", "config", "hardening", "generator", "parser", "scraper"]
+# F-26 (2026-07 UX review, `docs/dev/reviews/2026-07-ux-review/40-friction-register.md`):
+# this list omitted 4 top-level deterministic modules that ARE imported at runtime
+# (`corpus_to_json_resume`, `docx_to_persona_html`, `json_resume`, `pdf_render` — every
+# `.py` file at the repo root minus `app`/`analyzer`/`config`/`hardening`/`generator`/
+# `parser`/`scraper`, which were already listed). An installed wheel was missing them.
+py-modules = [
+    "app",
+    "analyzer",
+    "config",
+    "corpus_to_json_resume",
+    "docx_to_persona_html",
+    "generator",
+    "hardening",
+    "json_resume",
+    "parser",
+    "pdf_render",
+    "scraper",
+]
 
 [tool.setuptools.packages.find]
 # `scripts*` is packaged because it is imported at RUNTIME by installed code:
 # `blueprints/diagnostics.py` imports `scripts.export_corpus_seed`, and
 # `sartor --setup` runs `python -m scripts.build_vector_index`. Omitting it broke
 # both in an installed wheel (they only worked from an editable clone).
-include = ["blueprints*", "dashboard*", "db*", "onboarding*", "recall*", "scripts*", "web_infra*"]
+#
+# `templates`/`static`/`personas.bundled`/`docs.wiki` are PyPI-wheel-ledger additions
+# (`docs/dev/RELEASE_CHECKLIST.md` "PyPI wheel not installable"): these directories
+# hold read-only data (the Jinja shell, the app's JS/CSS, the 4 bundled persona
+# templates, the committed LLM-wiki the assistant reads) with no `.py` files of their
+# own — each got a marker `__init__.py` (see those files' own docstrings) purely so
+# setuptools can treat them as packages and ship their contents via `package-data`
+# below, and so `config._package_dir()` / `blueprints/assistant.py` can resolve them
+# by import regardless of install mode. `docs.wiki` is a namespace-rooted subpackage —
+# `docs/` itself is NOT packaged (no `docs/__init__.py`), so none of the surrounding
+# `docs/` tree (dev docs, reviews, screenshots) ships in the wheel.
+include = [
+    "blueprints*",
+    "dashboard*",
+    "db*",
+    "docs.wiki",
+    "onboarding*",
+    "personas.bundled",
+    "recall*",
+    "scripts*",
+    "static",
+    "templates",
+    "web_infra*",
+]
+
+[tool.setuptools.package-data]
+# Explicit, narrow globs — NOT a blanket "**/*" — so gitignored/PII sibling content
+# never leaks into a build: `personas/robert/` (a real per-user upload dir) sits right
+# next to `personas/bundled/` but is excluded by construction (only `personas.bundled`
+# is a package; its own glob only reaches its own files).
+dashboard = ["templates/*.html"]
+templates = ["*.html"]
+static = ["*.js", "*.css", "vendor/*.js"]
+"personas.bundled" = ["*.css", "*.docx", "*.html"]
+"docs.wiki" = [".last_ingest_sha", "*.md", "pages/*.md"]
 
 [tool.ruff]
 line-length = 100

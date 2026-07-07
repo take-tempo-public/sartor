@@ -17,7 +17,7 @@
 
 ## Prerequisites
 
-- **Python 3.10 or newer.** Verify with `python --version` (or
+- **Python 3.11 or newer.** Verify with `python --version` (or
   `python3 --version` on macOS/Linux).
 - **An Anthropic API key.** Get one at
   [console.anthropic.com](https://console.anthropic.com/). See
@@ -169,12 +169,16 @@ extras, sizes, and licensing) live in
    python -m pip install -e .
    ```
 
-5. **Optional — only for PDF output:** download the Chromium binary (one-time,
-   ~150 MB). Skip it if you only need DOCX/Markdown output and the in-browser
-   preview; you can run this later when you want PDF.
+5. **Optional — one-time setup for PDF output + the assistant's semantic
+   search** (idempotent; safe to re-run; skip it if you only need
+   DOCX/Markdown output and the in-browser preview — you can run this later):
    ```cmd
-   python -m playwright install chromium
+   sartor --setup
    ```
+   This installs the Chromium binary (~150 MB, PDF output) and builds the
+   doc-grounded assistant's semantic-recall index (~30 MB model, one-time).
+   Without it: PDF export needs Chromium first, and the assistant falls back
+   to its lexical/wiki search tiers until the index is built.
 
 6. **Set your API key** (choose one):
 
@@ -221,11 +225,16 @@ extras, sizes, and licensing) live in
    pip3 install -e .
    ```
 
-5. **Optional — only for PDF output:** download Chromium (skip if you only need
-   DOCX/Markdown output and the in-browser preview).
+5. **Optional — one-time setup for PDF output + the assistant's semantic
+   search** (idempotent; safe to re-run; skip if you only need DOCX/Markdown
+   output and the in-browser preview):
    ```bash
-   python3 -m playwright install chromium
+   sartor --setup
    ```
+   This installs the Chromium binary (~150 MB, PDF output) and builds the
+   doc-grounded assistant's semantic-recall index (~30 MB model, one-time).
+   Without it: PDF export needs Chromium first, and the assistant falls back
+   to its lexical/wiki search tiers until the index is built.
 
 6. **Set your API key:**
    ```bash
@@ -275,15 +284,21 @@ extras, sizes, and licensing) live in
    pip3 install -e .
    ```
 
-4. **Optional — only for PDF output:** download Chromium (skip if you only need
-   DOCX/Markdown output and the in-browser preview).
+4. **Optional — one-time setup for PDF output + the assistant's semantic
+   search** (idempotent; safe to re-run; skip if you only need DOCX/Markdown
+   output and the in-browser preview):
    ```bash
-   python3 -m playwright install chromium
+   sartor --setup
    ```
-   On some distros Playwright also needs system libraries. If the
-   `chromium install` command warns about missing deps, follow its
-   on-screen instructions (usually one `apt install` line). On
-   Ubuntu 22.04+ the canonical fallback is:
+   This installs the Chromium binary (~150 MB, PDF output) and builds the
+   doc-grounded assistant's semantic-recall index (~30 MB model, one-time).
+   Without it: PDF export needs Chromium first, and the assistant falls back
+   to its lexical/wiki search tiers until the index is built.
+
+   On some distros Playwright also needs system libraries. If the Chromium
+   install step warns about missing deps, follow its on-screen instructions
+   (usually one `apt install` line). On Ubuntu 22.04+ the canonical fallback
+   is:
    ```bash
    sudo apt install libnss3 libatk1.0-0 libatk-bridge2.0-0 \
                     libxkbcommon0 libxcomposite1 libxdamage1 \
@@ -401,7 +416,19 @@ the repo root.
 
 ## Verifying the install
 
-After the steps above:
+`pytest` and `ruff` aren't part of the app itself — they're **dev-only**
+tooling, so the plain install steps above don't pull them in. Install the
+`[dev]` extra first:
+
+```bash
+pip install -e '.[dev]'
+```
+
+(Windows `cmd`: drop the quotes — `pip install -e .[dev]`. If `pip` isn't
+found, use `python -m pip install -e .[dev]` / `python -m pip install -e
+'.[dev]'` as in step 4 above.)
+
+Then:
 
 ```bash
 python -m pytest -q
@@ -416,5 +443,5 @@ python -m ruff check .
 Should report `All checks passed!`.
 
 If either fails on a fresh clone, check the Python version and
-re-run `pip install -e .` (a partial install can leave
+re-run `pip install -e '.[dev]'` (a partial install can leave
 dependencies out of sync).
