@@ -2730,10 +2730,16 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    `test_corpus_mode_prompt.py::TestGapFillPromptInvariance` (the gap-fill keys don't
    perturb `_stable_user_prefix`) + `test_deterministic_generate.py` (a legacy context
    still calls `generate()`; a corpus context makes ZERO `generate`/`generate_streaming`
-   calls). The `PROMPT_VERSION` bumps are attribution-only. **Still owner-manual (real API
-   + the E2E clone):** a live corpus-mode replay on the robert context to confirm 0
-   résumé-body LLM calls in `logs/llm_calls.jsonl` and assembled-doc == frozen composition
-   == preview end-to-end.
+   calls). The `PROMPT_VERSION` bumps are attribution-only. **Live replay DONE** on the REAL
+   robert corpus (`../sartor-e2e/output/robert/context_20260706_122956.json` + a read-only
+   copy of the robert DB): froze the composition deterministically (8 roles / 34 bullets),
+   drove the real `/api/generate` (`.md`), and confirmed **0 new `generate`/`generate_streaming`
+   records in `logs/llm_calls.jsonl`**, `download == json_resume_to_markdown(frozen)`, and
+   `resume_preview == frozen serialization` (a real robert bullet survived into the download).
+   The frozen doc there had NO drafted summary / curated skills (the context predated Phases
+   2–3), so those sections were empty — the résumé BODY assembled correctly, which is the
+   Phase-4 invariant. A summary + gap-fill Sonnet smoke on robert (real API via the Compose
+   flow) is a nice-to-have, not a blocker.
 4. **Learned?** Moving a section OUT of the résumé LLM to a dedicated Compose-time draft
    (a new per-call prompt) does NOT touch the analyze→generate cache or the synthetic eval
    as long as the generate prompt bytes are unchanged — assert that with a
