@@ -17,7 +17,9 @@ from onboarding.extract_experiences import (
     _clean_tag_list,
     _normalize_bullet,
     _normalize_experience,
+    _normalize_skill_list,
     extract_experiences,
+    extract_experiences_and_skills,
 )
 
 
@@ -203,6 +205,26 @@ class TestNormalizeExperience:
         assert exp["end_date"] is None
 
 
+class TestNormalizeSkillList:
+    """F-02: the deterministic cleanup applied to the LLM's flat skills list."""
+
+    def test_strips_and_passes_through(self):
+        assert _normalize_skill_list(["  Python ", "Kubernetes"]) == ["Python", "Kubernetes"]
+
+    def test_dedupes_case_insensitively_preserving_first_seen_casing(self):
+        assert _normalize_skill_list(["Python", "python", "PYTHON"]) == ["Python"]
+
+    def test_drops_blanks_and_non_strings(self):
+        assert _normalize_skill_list(["Go", "", "   ", 42, None, "Rust"]) == ["Go", "Rust"]
+
+    def test_handles_non_list_input(self):
+        assert _normalize_skill_list(None) == []
+        assert _normalize_skill_list("not a list") == []
+
+    def test_empty_list(self):
+        assert _normalize_skill_list([]) == []
+
+
 # ---------------------------------------------------------------------------
 # End-to-end extract_experiences with mocked LLM
 # ---------------------------------------------------------------------------
@@ -294,3 +316,53 @@ class TestExtractExperiencesEndToEnd:
         client = _mock_anthropic_client(json.dumps({"experiences": []}))
         result = extract_experiences(client, "x")
         assert result == []
+
+
+# ---------------------------------------------------------------------------
+# extract_experiences_and_skills (F-02: one Haiku call, two outputs)
+# ---------------------------------------------------------------------------
+
+
+class TestExtractExperiencesAndSkillsEndToEnd:
+    def test_returns_empty_on_empty_input_without_calling_client(self):
+        client = MagicMock()
+        experiences, skills = extract_experiences_and_skills(client, "")
+        assert experiences == []
+        assert skills == []
+        client.messages.stream.assert_not_called()
+
+    def test_parses_experiences_and_skills_from_one_call(self):
+        response = _make_valid_response()
+        response["skills"] = ["Python", "Kubernetes", "python"]
+        client = _mock_anthropic_client(json.dumps(response))
+        experiences, skills = extract_experiences_and_skills(client, "Some resume text...")
+        assert len(experiences) == 2
+        assert experiences[0]["company"] == "Acme Corp"
+        # Case-insensitive dedup, first-seen casing preserved.
+        assert skills == ["Python", "Kubernetes"]
+        # Exactly one underlying call for both outputs.
+        assert client.messages.stream.call_count == 1
+
+    def test_missing_skills_key_yields_empty_skills_list(self):
+        # Older/degenerate responses without a "skills" key must not crash —
+        # ExtractResponse declares skills: Any = None, so this is optional.
+        client = _mock_anthropic_client(json.dumps(_make_valid_response()))
+        experiences, skills = extract_experiences_and_skills(client, "x")
+        assert len(experiences) == 2
+        assert skills == []
+
+    def test_non_list_skills_value_yields_empty_list(self):
+        response = {"experiences": [], "skills": "Python, Kubernetes"}
+        client = _mock_anthropic_client(json.dumps(response))
+        _experiences, skills = extract_experiences_and_skills(client, "x")
+        assert skills == []
+
+    def test_extract_experiences_delegates_and_matches_direct_call(self):
+        """extract_experiences() is now a thin wrapper — same experiences, one call."""
+        response = _make_valid_response()
+        response["skills"] = ["Go"]
+        client = _mock_anthropic_client(json.dumps(response))
+        result = extract_experiences(client, "Some resume text...")
+        assert len(result) == 2
+        assert result[0]["company"] == "Acme Corp"
+        assert client.messages.stream.call_count == 1

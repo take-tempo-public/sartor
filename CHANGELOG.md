@@ -42,6 +42,41 @@ missing from the résumé. Deterministic fix (`hardening.py` — charter C-6, no
   SRE fixture's company/boilerplate never appear in the missing list and the cleaned score
   strictly exceeds the raw-overlap before-state.
 
+### Fix: résumé import creates pending skills (`fix/ux-f02-import-skill-rows`, 2026-07-07)
+
+UX-review Wave 0, F-02 ([`40-friction-register.md`](docs/dev/reviews/2026-07-ux-review/40-friction-register.md)) —
+résumé import created Experiences, ExperienceTitles, Bullets, and role-intro summary variants,
+but never Skill rows: a freshly imported candidate had an empty Skills section, the Compose
+skills card never appeared, and skills silently dropped out of every tailored output.
+
+- **One Haiku call, two outputs** (`onboarding/extract_experiences.py`) — the résumé-extraction
+  system prompt now also asks for a flat `"skills"` array (verbatim names from an explicit
+  Skills/Technologies section only; no invention, no pulling terms out of bullet prose). New
+  `extract_experiences_and_skills()` returns `(experiences, skill_names)` from that single call;
+  `extract_experiences()` becomes a thin backward-compatible wrapper over it, so every existing
+  caller/test keeps working unchanged. No second API round trip, no cost increase.
+- **`onboarding/corpus_import._insert_pending_skills`** — inserts the extracted names as
+  `is_pending_review=1, is_active=1, source="imported"` Skill rows (`source` is DB-CHECK-limited
+  to `manual|imported|llm_proposed` — `ck_skill_source` — so it reuses the same value the
+  config-seeded importer and the legacy-row backfill already use). Deduped case-insensitively
+  against **every** existing Skill row for the candidate (active, retired, or already pending),
+  both within one extraction batch and across re-imports/re-uploads, so re-running an import is
+  always safe. Wired into `ingest_one_resume`, so both the CLI importer (`--with-llm`) and the
+  live `POST /api/users/<u>/corpus/ingest-resume` route pick it up with no route changes.
+- Reuses the existing review surface end to end — no new UI. The Career Corpus tab's
+  "AI-suggested skills" lane and the existing approve/deny routes (`blueprints/corpus/skills.py`)
+  already list any `is_pending_review=1` Skill row regardless of source, and `refreshCorpus()`
+  already re-fetches skills after an ingest. `static/app.js`'s post-upload status line and the
+  route's JSON payload now also report `skills_created` alongside the existing experience/bullet
+  counts.
+- No `PROMPT_VERSION` bump — the changed prompt lives in `onboarding/extract_experiences.py`,
+  which the project does not version-stamp (unlike `analyzer.py`'s persona prompts).
+- Tests: pending-skill creation with the `imported` source, case-insensitive dedup against
+  pre-existing rows and within one extraction batch, re-import idempotence, dry-run counting,
+  and an end-to-end check that an approved skill flows through to
+  `corpus_to_json_resume._collect_skills` (the deterministic JSON-Resume/frozen-composition
+  skills source) while still-pending ones do not.
+
 ### Fix: deterministic Compose settle gate — stop the flaky-UX class (`fix/compose-settle-bg-reload`, 2026-07-06)
 
 A reduction-sprint knock-down of the carry-forward "recurring flaky Compose-UX" ledger item.

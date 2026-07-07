@@ -521,9 +521,14 @@ class Skill(Base):
     recommend_skills selects + orders the active, approved skills per JD;
     suggest_skills proposes corpus-grounded new skills as pending
     (is_pending_review=1, source='llm_proposed') for the user to approve or
-    deny. Pending/inactive skills never reach the recommend set, the preview
-    skills[], or the generate prompt — the approve/deny gate is the
-    grounding backstop.
+    deny. Résumé import (F-02, `onboarding.corpus_import._insert_pending_skills`)
+    extracts a flat skills list from the same Haiku call that extracts
+    experiences and lands them the same way (is_pending_review=1,
+    source='imported' — `source` has no per-file slot; it's DB-CHECK-limited
+    to 'manual'|'imported'|'llm_proposed'), deduped case-insensitively
+    against every existing Skill row for the candidate. Pending/inactive
+    skills never reach the recommend set, the preview skills[], or the
+    generate prompt — the approve/deny gate is the grounding backstop.
 
     Backfill semantics (alembic 0009): every pre-existing Skill row becomes
     source='imported', is_active=1, is_pending_review=0, with display_order
