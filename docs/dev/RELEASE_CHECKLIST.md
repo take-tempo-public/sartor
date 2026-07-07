@@ -875,11 +875,13 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       _(added: 2026-07-03, `review/2026-07-efficiency`; open count 8 → 9.)_
       **→ Update (2026-07-07, big-push Phase 0, `chore/px-staleness-reverify`):** the 7
       flagged-stale prescriptions (PX-38/39/43/45/47/51/55) were re-verified at HEAD — all 7
-      PARTIALLY_STALE with revised scopes (verdicts harvested in-session; dispositions NOT yet
-      written into the archive). That branch holds one unmerged doc commit (`6071478`, gen-exp
-      §6 marker reconcile); the Phase-0 remainder (archive dispositions + RELEASE_ARC scope
-      brief) is still owed. Also noted: MEMORY.md index ~19.2KB vs the 17.1KB soft target —
-      fold a completed-cluster consolidation into the PX-46 owner-gated memory review.
+      PARTIALLY_STALE with revised scopes. These dispositions are now recorded in
+      [`reviews/2026-07-efficiency/px-staleness-reverify-2026-07-07.md`](reviews/2026-07-efficiency/px-staleness-reverify-2026-07-07.md)
+      and cross-linked from the affected rows in `prescriptions.md`. The gen-exp §6 marker
+      reconcile (`6071478`) landed on this branch as well, and the Phase-0 remainder — the
+      RELEASE_ARC scope brief (§Phase 4.8, "Big-push scope brief") — landed alongside it. Also
+      noted: MEMORY.md index ~19.2KB vs the 17.1KB soft target — fold a completed-cluster
+      consolidation into the PX-46 owner-gated memory review.
 
 - [ ] **Generation-experience re-architecture — LATER-branch remainder** — the CORE
       re-architecture (the "unusable" remediation's deeper vision) SHIPPED on
