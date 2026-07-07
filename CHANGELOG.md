@@ -13,34 +13,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fix: keyword score no longer graded on the company name + JD boilerplate (`fix/ux-review-wave0-keyword-score`, 2026-07-07)
+### Fix: eval harness scores the shipped frozen-assembly path (`fix/eval-f11-frozen-assembly`, 2026-07-07)
 
-UX-review Wave 0, F-01 ([`40-friction-register.md`](docs/dev/reviews/2026-07-ux-review/40-friction-register.md)) —
-the highest-leverage P0: a strong SRE-to-SRE match scored **18%** because the hiring company's
-own name ("lattice cloud") and hiring boilerplate ("hiring", "serving") counted as keywords
-missing from the résumé. Deterministic fix (`hardening.py` — charter C-6, no LLM, no
-`PROMPT_VERSION` bump, no new dependency):
+UX-review Wave 0, F-11 ([`40-friction-register.md`](docs/dev/reviews/2026-07-ux-review/40-friction-register.md)) —
+on the UI happy path corpus-mode `/api/generate` assembles the résumé body **deterministically**
+from the frozen `approved_composition` (`blueprints/generation.py`'s `_frozen_composition` gate,
+zero résumé-body LLM calls), but `evals/runner.py` always ran `analyze → clarify → generate`,
+where `generate()` is a real ~27s Sonnet call — the harness was scoring the fallback/legacy path,
+not the assembled document users actually download.
 
-- **`JD_BOILERPLATE_WORDS`** — hiring-administrivia (process / qualifier / package /
-  arrangement words) is dropped from the JD keyword universe inside `compute_keyword_overlap`:
-  matching "hiring" is not signal, missing it is not a deficit.
-- **`extract_company_terms(jd_text)`** — conservative deterministic company detection
-  (header-zone "X — location" lines + "About X" / "at X" / "X is|runs|builds…" patterns);
-  job-title vocabulary disqualifies a candidate term, so duty-bullet proper nouns
-  (Kubernetes, Prometheus) are never captured; fail-open on any miss.
-- **Forgive-absence scoring** — a company term absent from the résumé leaves both the missing
-  list and the denominator; when present it still counts as matched (a Databricks engineer
-  applying to Databricks keeps the credit). New `excluded_terms` key reports what was cleaned
-  (also added to `evals/schemas/context_set.schema.json`).
-- Company terms are passed at the two overlap call sites — `db/build_context.py` (corpus mode)
-  and `evals/runner.py` (the eval harness stays on the live code path). Compose bullet ordering
-  and corpus-snapshot selection intentionally keep the raw JD keywords (`extract_keywords`
-  unchanged).
-- **Analyze-screen reframe** (`static/app.js`): "Keyword Match Score" → "JD Keyword Coverage"
-  plus a one-line explainer; "Keywords Missing From Resume" → "Keywords You Could Add".
-- Tests: company-term detection, cleaning semantics, and a fixture regression asserting the
-  SRE fixture's company/boilerplate never appear in the missing list and the cleaned score
-  strictly exceeds the raw-overlap before-state.
+- **New `evals/runner.py --mode {generate,assemble}` flag** (default `generate`, byte-identical to
+  before). `assemble` REQUIRES `--seed` (frozen-composition assembly needs a real corpus) and
+  drives the SAME Compose → freeze → assemble path the product uses instead of calling
+  `analyzer.generate()`: `analyzer.recommend_bullets` / `recommend_summaries` (Haiku — the exact
+  functions the `/recommend` + `/recommend-summary` routes call) populate
+  `llm_recommendations` / `llm_summary_recommendation` on the context, then
+  `corpus_to_json_resume.freeze_approved_composition` (the exact function Compose's
+  Save-and-continue calls) resolves + freezes the composition, and
+  `blueprints.generation._assemble_from_frozen_composition` (the exact function `/api/generate`
+  calls once frozen) assembles it — zero résumé-body LLM calls. The cover letter stays a real
+  Sonnet call (`generate_cover_letter_against_resume`) for tone-rubric parity with the legacy
+  path's own default. Skill curation is left at its documented product default (no
+  `recommend-skills` call → all active, approved skills), not an eval shortcut.
+- **`eval_mode` rides every JSONL record** (`"generate"` or `"assemble"`), mirroring how
+  `prompt_version` / `suite` attribute records — so the dashboard/baseline tooling can tell the
+  two content-generation populations apart.
+- **Baseline-gating scoped away from the new mode** — `assemble`-mode scores are never compared
+  against `baseline_v1.json` (measured on the `generate`-mode population): `baseline_comparison`
+  is always `null` and assemble-mode scores never feed the regression-gate `exit_code` (a
+  sub-threshold score still counts via `n_fail`). No `PROMPT_VERSION` bump — no prompt changed.
+- Unblocks the "Eval baseline stale vs production model (Sonnet 5)" carry-forward ledger row
+  (`docs/dev/RELEASE_CHECKLIST.md`), scheduled to run after this landed.
+- Tests: `tests/test_eval_runner.py::TestAssembleMode` — proves the graded résumé text is
+  byte-identical to an independently re-derived `freeze_approved_composition(...) →
+  json_resume_to_markdown(...)` call (not an LLM-authored stand-in), `analyzer.generate()` is
+  never invoked in `assemble` mode (patched to raise), every record carries `eval_mode`, and the
+  default `generate` mode never touches `recommend_bullets`/`recommend_summaries`/
+  `freeze_approved_composition` (patched to raise) — proving the legacy path is unchanged.
 
 ### Fix: résumé import creates pending skills (`fix/ux-f02-import-skill-rows`, 2026-07-07)
 
@@ -76,6 +85,35 @@ skills card never appeared, and skills silently dropped out of every tailored ou
   and an end-to-end check that an approved skill flows through to
   `corpus_to_json_resume._collect_skills` (the deterministic JSON-Resume/frozen-composition
   skills source) while still-pending ones do not.
+
+### Fix: keyword score no longer graded on the company name + JD boilerplate (`fix/ux-review-wave0-keyword-score`, 2026-07-07)
+
+UX-review Wave 0, F-01 ([`40-friction-register.md`](docs/dev/reviews/2026-07-ux-review/40-friction-register.md)) —
+the highest-leverage P0: a strong SRE-to-SRE match scored **18%** because the hiring company's
+own name ("lattice cloud") and hiring boilerplate ("hiring", "serving") counted as keywords
+missing from the résumé. Deterministic fix (`hardening.py` — charter C-6, no LLM, no
+`PROMPT_VERSION` bump, no new dependency):
+
+- **`JD_BOILERPLATE_WORDS`** — hiring-administrivia (process / qualifier / package /
+  arrangement words) is dropped from the JD keyword universe inside `compute_keyword_overlap`:
+  matching "hiring" is not signal, missing it is not a deficit.
+- **`extract_company_terms(jd_text)`** — conservative deterministic company detection
+  (header-zone "X — location" lines + "About X" / "at X" / "X is|runs|builds…" patterns);
+  job-title vocabulary disqualifies a candidate term, so duty-bullet proper nouns
+  (Kubernetes, Prometheus) are never captured; fail-open on any miss.
+- **Forgive-absence scoring** — a company term absent from the résumé leaves both the missing
+  list and the denominator; when present it still counts as matched (a Databricks engineer
+  applying to Databricks keeps the credit). New `excluded_terms` key reports what was cleaned
+  (also added to `evals/schemas/context_set.schema.json`).
+- Company terms are passed at the two overlap call sites — `db/build_context.py` (corpus mode)
+  and `evals/runner.py` (the eval harness stays on the live code path). Compose bullet ordering
+  and corpus-snapshot selection intentionally keep the raw JD keywords (`extract_keywords`
+  unchanged).
+- **Analyze-screen reframe** (`static/app.js`): "Keyword Match Score" → "JD Keyword Coverage"
+  plus a one-line explainer; "Keywords Missing From Resume" → "Keywords You Could Add".
+- Tests: company-term detection, cleaning semantics, and a fixture regression asserting the
+  SRE fixture's company/boilerplate never appear in the missing list and the cleaned score
+  strictly exceeds the raw-overlap before-state.
 
 ### Fix: deterministic Compose settle gate — stop the flaky-UX class (`fix/compose-settle-bg-reload`, 2026-07-06)
 

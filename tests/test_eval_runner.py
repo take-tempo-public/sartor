@@ -501,6 +501,265 @@ class TestRunSuite:
             run_suite(fixture_name="does-not-exist", out_dir=tmp_path, client=MagicMock())
 
 
+class TestAssembleMode:
+    """F-11 (2026-07 UX review) — ``--mode assemble`` drives the SAME Compose ->
+    freeze -> assemble path corpus-mode ``/api/generate`` uses (instead of the LLM
+    ``generate()`` fallback), so the harness scores the deterministically ASSEMBLED
+    résumé body users actually download, not an LLM-authored stand-in."""
+
+    def test_requires_seed(self):
+        """mode='assemble' without seed_data is a config error, raised before any
+        paid call — mirrors the unknown-prompt-override-name ValueError contract."""
+        from evals.runner import run_suite
+
+        with pytest.raises(ValueError, match="requires --seed"):
+            run_suite(mode="assemble", seed_data=None, client=MagicMock())
+
+    def test_unknown_mode_rejected(self):
+        from evals.runner import run_suite
+
+        with pytest.raises(ValueError, match="Unknown mode"):
+            run_suite(mode="bogus", client=MagicMock())
+
+    def _seed_corpus(self, db_session):
+        """Insert one real candidate (experience + official title + 2 active
+        bullets + 1 active SummaryItem), then export it to a seed dict via the
+        SAME exporter --seed corpus-backed runs consume. Returns (seed_data,
+        experience_id, bullet1_id, bullet2_id, summary_item_id)."""
+        from db.models import Bullet, Candidate, Experience, ExperienceTitle, SummaryItem
+        from scripts.export_corpus_seed import export_seed
+
+        c = Candidate(
+            username="casey_assemble",
+            name="Casey Rivera",
+            email="casey@example.com",
+            profile_text="Fallback text — must not win; a SummaryItem exists.",
+        )
+        db_session.add(c)
+        db_session.flush()
+
+        e = Experience(
+            candidate_id=c.id,
+            company="Polaris",
+            location="Remote",
+            start_date="2022-09",
+            end_date=None,
+            display_order=0,
+            summary="Backend.",
+        )
+        db_session.add(e)
+        db_session.flush()
+
+        db_session.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title="Senior SRE",
+                is_official=1,
+                truthful_enough_to_use=1,
+                is_pending_review=0,
+                source="official",
+            )
+        )
+        b1 = Bullet(
+            experience_id=e.id,
+            text="Cut p99 latency 40% by redesigning the caching tier.",
+            display_order=0,
+            is_active=1,
+            is_pending_review=0,
+            source="primary:r.md",
+            pattern_kind=None,
+            has_outcome=1,
+        )
+        b2 = Bullet(
+            experience_id=e.id,
+            text="Ran incident response for the Kafka pipeline fleet.",
+            display_order=1,
+            is_active=1,
+            is_pending_review=0,
+            source="primary:r.md",
+            pattern_kind=None,
+            has_outcome=0,
+        )
+        db_session.add_all([b1, b2])
+        s1 = SummaryItem(
+            candidate_id=c.id,
+            text="Platform SRE who ships reliability wins under real production load.",
+            display_order=0,
+            is_active=1,
+        )
+        db_session.add(s1)
+        db_session.flush()
+        db_session.commit()
+
+        seed = export_seed(db_session, candidate_username="casey_assemble")
+        return seed, e.id, b1.id, b2.id, s1.id
+
+    def test_assemble_mode_scores_the_deterministic_frozen_composition(
+        self, db_session, tmp_path, monkeypatch
+    ):
+        """The résumé text graded in assemble mode is BYTE-IDENTICAL to
+        freeze_approved_composition(...) -> json_resume_to_markdown(...) — the exact
+        product resolver + serializer — not an LLM-authored string. analyzer.generate()
+        is never called (patched to raise); the cover letter stays a real LLM call
+        (Sonnet parity with the legacy generate() default); the record carries
+        eval_mode="assemble" and is exempt from baseline-regression comparison."""
+        import evals.runner as runner
+        from corpus_to_json_resume import freeze_approved_composition
+        from evals.runner import run_suite
+        from evals.seed_import import seeded_session
+        from json_resume import json_resume_to_markdown
+
+        seed_data, exp_id, b1_id, b2_id, summary_id = self._seed_corpus(db_session)
+
+        monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path)
+        monkeypatch.setattr(runner, "BASELINE_JSON", tmp_path / "baseline_v1.json")
+        monkeypatch.setattr(runner, "analyze", lambda *a, **k: {"overall_strategy": "ok"})
+        monkeypatch.setattr(runner, "clarify", lambda *a, **k: {"questions": [], "reasoning": ""})
+
+        def _generate_must_not_be_called(*a, **k):
+            raise AssertionError("analyzer.generate() must not run in mode='assemble'")
+
+        monkeypatch.setattr(runner, "generate", _generate_must_not_be_called)
+        monkeypatch.setattr(
+            runner,
+            "recommend_bullets",
+            lambda *a, **k: {
+                "recommendations": [
+                    {"experience_id": exp_id, "bullet_ids": [b1_id, b2_id], "rationale": "fit"}
+                ]
+            },
+        )
+        monkeypatch.setattr(
+            runner,
+            "recommend_summaries",
+            lambda *a, **k: {
+                "recommendation": {"summary_item_id": summary_id, "rationale": "fit"},
+                "alternates": [],
+            },
+        )
+
+        cover_letter_calls = {"n": 0}
+
+        def _fake_cover_letter(client, ctx, analysis, resume_content, username="", run_id=""):
+            cover_letter_calls["n"] += 1
+            return {"cover_letter_content": "Dear hiring manager, ..."}
+
+        import blueprints.generation as bgen
+
+        monkeypatch.setattr(bgen, "generate_cover_letter_against_resume", _fake_cover_letter)
+
+        captured_payloads: list[dict] = []
+
+        def _capture_grade(client, rubric_path, payload):
+            captured_payloads.append(payload)
+            return {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"}
+
+        monkeypatch.setattr(runner, "_grade", _capture_grade)
+        monkeypatch.setattr(
+            runner, "_score_distinctiveness", lambda *a, **k: {"score": 4.0, "summary": "ok"}
+        )
+
+        result = run_suite(
+            suite="synthetic",
+            subset="smoke",
+            fixture_name="sre-mid-level",
+            seed_data=seed_data,
+            mode="assemble",
+            out_dir=tmp_path,
+            client=MagicMock(),
+        )
+        assert result.exit_code == 0
+        assert result.n_fail == 0
+        assert cover_letter_calls["n"] == 1  # cover letter stays a real LLM call
+        assert len(captured_payloads) == 1  # exactly one grounding-rubric grade call
+        graded_resume = captured_payloads[0]["generated_resume"]
+
+        # Independently re-derive the expected text via the SAME product resolver +
+        # serializer, against a FRESH import of the identical seed — proves the
+        # assembled artifact IS freeze_approved_composition's output, not a
+        # generate()-shaped stand-in.
+        with seeded_session(seed_data) as (session2, username2):
+            from db.models import Candidate
+
+            candidate2 = session2.query(Candidate).filter_by(username=username2).first()
+            expected_doc = freeze_approved_composition(
+                session2,
+                candidate2.id,
+                application_id=999,
+                context_data={
+                    "llm_recommendations": {
+                        str(exp_id): {"bullet_ids": [b1_id, b2_id], "rationale": "fit"}
+                    },
+                    "llm_summary_recommendation": {
+                        "recommendation": {"summary_item_id": summary_id, "rationale": "fit"},
+                        "alternates": [],
+                    },
+                },
+            )
+        expected_md = json_resume_to_markdown(expected_doc)
+        assert graded_resume == expected_md
+        assert "Cut p99 latency 40%" in graded_resume
+
+        lines = [
+            json.loads(ln)
+            for ln in result.out_path.read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ]
+        grounding = [r for r in lines if r.get("rubric") == "grounding"]
+        assert len(grounding) == 1
+        assert grounding[0]["eval_mode"] == "assemble"
+        # F-11: assemble-mode scores are never compared against the generate-mode
+        # baseline_v1.json population.
+        assert grounding[0]["baseline_comparison"] is None
+
+    def test_generate_mode_default_never_touches_assemble_helpers(self, tmp_path, monkeypatch):
+        """mode='generate' (the default) is the byte-identical historical path: it
+        never calls recommend_bullets / recommend_summaries / freeze_approved_composition
+        — patched here to raise, proving the default path never reaches them — and
+        every record carries eval_mode="generate"."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path)
+        monkeypatch.setattr(runner, "BASELINE_JSON", tmp_path / "baseline_v1.json")
+        monkeypatch.setattr(runner, "analyze", lambda *a, **k: {"overall_strategy": "ok"})
+        monkeypatch.setattr(runner, "clarify", lambda *a, **k: {"questions": [], "reasoning": ""})
+        monkeypatch.setattr(
+            runner,
+            "generate",
+            lambda *a, **k: {
+                "resume_content": "- Led a project\n- Built a system",
+                "cover_letter_content": "Dear team,",
+            },
+        )
+        monkeypatch.setattr(
+            runner,
+            "_grade",
+            lambda *a, **k: {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"},
+        )
+        monkeypatch.setattr(
+            runner, "_score_distinctiveness", lambda *a, **k: {"score": 4.0, "summary": "ok"}
+        )
+
+        def _must_not_be_called(*a, **k):
+            raise AssertionError("mode='generate' must not touch the assemble-mode helpers")
+
+        monkeypatch.setattr(runner, "recommend_bullets", _must_not_be_called)
+        monkeypatch.setattr(runner, "recommend_summaries", _must_not_be_called)
+        monkeypatch.setattr(runner, "freeze_approved_composition", _must_not_be_called)
+
+        result = run_suite(suite="synthetic", subset="smoke", out_dir=tmp_path, client=MagicMock())
+        assert result.exit_code == 0
+        lines = [
+            json.loads(ln)
+            for ln in result.out_path.read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ]
+        grounding = [r for r in lines if r.get("rubric") == "grounding"]
+        assert len(grounding) == 3
+        assert all(r["eval_mode"] == "generate" for r in grounding)
+
+
 class TestEvalGateGuard:
     """PX-13 — guard the eval-smoke gate's exit-2 failure path so it can't silently rot.
 

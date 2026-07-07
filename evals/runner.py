@@ -30,7 +30,7 @@ from contextlib import ExitStack, suppress
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import anthropic
 from sqlalchemy.orm import Session
@@ -48,7 +48,27 @@ from analyzer import (  # noqa: E402
     effective_prompt_version,
     generate,
     prompt_overrides,
+    recommend_bullets,
+    recommend_summaries,
 )
+
+# F-11 (2026-07 UX review) — the "assemble" eval mode drives the SAME
+# Compose -> freeze -> assemble path corpus-mode /api/generate uses, instead of
+# the LLM generate() fallback, so the harness can score the deterministically
+# ASSEMBLED résumé body users actually download. Reuses the product's own
+# resolver/gate/assembler functions (do not reimplement): recommend_bullets /
+# recommend_summaries (above, Haiku) populate the same context keys the
+# /recommend + /recommend-summary routes write; freeze_approved_composition is
+# the exact function Compose's Save-and-continue calls; _frozen_composition /
+# _assemble_from_frozen_composition are the exact gate + assembler
+# /api/generate calls once a composition is frozen. Module-level (not a lazy
+# import inside the assemble helper) so tests can monkeypatch these the same
+# way they already monkeypatch `analyze` / `clarify` / `generate` above.
+from blueprints.generation import (  # noqa: E402
+    _assemble_from_frozen_composition,
+    _frozen_composition,
+)
+from corpus_to_json_resume import freeze_approved_composition  # noqa: E402
 from evals.seed_import import load_seed, seeded_session  # noqa: E402
 from hardening import (  # noqa: E402
     ContextSet,
@@ -211,25 +231,27 @@ def _build_context_from_seed(
     candidate_username: str,
     jd_text: str,
     run_id: str,
-) -> ContextSet:
+) -> tuple[ContextSet, Any]:
     """Build a ContextSet from an imported corpus seed via the REAL product path.
 
     Drives ``db.build_context.build_context_set_from_db`` — the same function the
     Flask app uses for corpus-backed analyze — so eval traffic exercises the
     production corpus→context path, not the file-parsed ``_build_context``. The
-    application/run rows it creates are not persisted by the eval (only the
-    ContextSet is used). The deferred import keeps the default file-based path's
-    import surface unchanged.
+    application row is NOT persisted beyond the seeded in-memory session (only the
+    ContextSet is graded); it is returned (not discarded) so ``mode="assemble"`` can
+    freeze a composition against its ``candidate_id`` / ``application_id`` — the
+    generate-mode default path never reads the returned application. The deferred
+    import keeps the default file-based path's import surface unchanged.
     """
     from db.build_context import build_context_set_from_db
 
-    context, _application, _run = build_context_set_from_db(
+    context, application, _run = build_context_set_from_db(
         session,
         candidate_username=candidate_username,
         jd_text=jd_text,
         run_id=run_id,
     )
-    return context
+    return context, application
 
 
 def _groundedness_composite(fabricated_specifics: dict) -> dict:
@@ -843,12 +865,142 @@ def _run_iteration_phase(
     }
 
 
+def _coerce_bullet_recommendations(result: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Shape ``recommend_bullets()``'s output into the ``llm_recommendations`` dict
+    ``build_json_resume_from_corpus`` reads (``{str(experience_id): {"bullet_ids":
+    [...], "rationale": str}}``).
+
+    ``RecommendResponse.recommendations`` is typed ``Any`` (not a strict schema), so
+    — mirroring ``blueprints.applications.recommend_application_bullets`` verbatim —
+    this defensively strips a stray ``"e3"``/``"b12"`` id prefix the LLM sometimes
+    echoes back instead of a bare int. Small response-shaping glue, not a
+    reimplementation of any resolver: the resolver is ``build_json_resume_from_corpus``
+    / ``freeze_approved_composition``, called unmodified in ``_run_assemble_pipeline``.
+    """
+
+    def _to_int(v: object) -> int | None:
+        if v is None:
+            return None
+        s = str(v).strip().lstrip("eEbB")
+        try:
+            return int(s)
+        except (TypeError, ValueError):
+            return None
+
+    by_exp: dict[str, dict[str, Any]] = {}
+    for rec in result.get("recommendations", []) or []:
+        eid_int = _to_int(rec.get("experience_id"))
+        if eid_int is None:
+            continue
+        bullet_ids_int = [
+            bi for bi in (_to_int(b) for b in (rec.get("bullet_ids") or [])) if bi is not None
+        ]
+        by_exp[str(eid_int)] = {
+            "bullet_ids": bullet_ids_int,
+            "rationale": (rec.get("rationale") or "").strip(),
+        }
+    return by_exp
+
+
+def _run_assemble_pipeline(
+    *,
+    client: anthropic.Anthropic,
+    session: Session,
+    application: Any,
+    context: ContextSet,
+    analysis: dict[str, Any],
+    username: str,
+    run_id: str,
+) -> dict[str, Any]:
+    """``mode="assemble"``: build the generate()-shaped result via the REAL Compose
+    -> freeze -> assemble path instead of calling ``analyzer.generate()``.
+
+    Mirrors what a user does opening Compose: the auto-fired bullet + positioning-
+    summary recommend calls (Haiku — ``analyzer.recommend_bullets`` /
+    ``recommend_summaries``, the SAME functions the ``/recommend`` and
+    ``/recommend-summary`` routes call), landing on the context exactly where
+    ``corpus_to_json_resume.build_json_resume_from_corpus`` reads them
+    (``llm_recommendations`` / ``llm_summary_recommendation``). Skill curation is
+    left at its documented product default (no ``recommend-skills`` call -> ALL
+    active, approved skills — the same fallback ``build_json_resume_from_corpus``
+    uses when there is no recommendation; not an eval shortcut).
+
+    Then freezes via ``corpus_to_json_resume.freeze_approved_composition`` — the
+    exact function ``/api/applications/<id>/composition``'s Save-and-continue calls
+    — and assembles via ``blueprints.generation._assemble_from_frozen_composition``,
+    the exact function ``/api/generate`` calls once a composition is frozen. Zero
+    résumé-body LLM calls. The cover letter is opted in (``with_cover_letter=True``)
+    to keep parity with the legacy ``generate()`` call's own default — the one the
+    runner's ``mode="generate"`` path relies on to have cover-letter material for the
+    ``tone`` rubric — and is a real Sonnet call via ``generate_cover_letter_against_resume``.
+
+    Raises ``RuntimeError`` when the frozen composition has no content (e.g. an
+    empty corpus); the caller's existing ``except Exception`` pipeline-error handling
+    covers it like any other pipeline failure.
+    """
+    from db.models import SummaryItem
+
+    # `cs` is the SAME underlying dict as `context` (the cast is a type-checker
+    # hint only, no copy) — used only where a key falls outside the ContextSet
+    # TypedDict schema (`jd_text` / `summary_items` are transient, route-stashed
+    # keys; see recommend_summaries's own docstring). Calls typed to accept
+    # ContextSet specifically (recommend_bullets/_summaries, _frozen_composition,
+    # _assemble_from_frozen_composition) pass `context` itself.
+    cs = cast(dict, context)
+    candidate_id = int(application.candidate_id)
+    application_id = int(application.id)
+
+    # Mirror the /recommend route: stash the JD text the analyzer prompt reads
+    # (recommend_bullets/_summaries read context_set["jd_text"]), pop it once done
+    # so the transient key doesn't leak into the graded payload.
+    cs["jd_text"] = cs.get("job_description", "")
+
+    bullet_rec = recommend_bullets(client, context, username=username, run_id=run_id)
+    cs["llm_recommendations"] = _coerce_bullet_recommendations(bullet_rec)
+
+    summary_rows = (
+        session.query(SummaryItem)
+        .filter_by(candidate_id=candidate_id, is_active=1)
+        .order_by(SummaryItem.display_order, SummaryItem.id)
+        .all()
+    )
+    cs["summary_items"] = [
+        {"id": r.id, "text": r.text, "label": r.label, "has_outcome": bool(r.has_outcome)}
+        for r in summary_rows
+    ]
+    cs["llm_summary_recommendation"] = recommend_summaries(
+        client, context, username=username, run_id=run_id
+    )
+    cs.pop("jd_text", None)
+    cs.pop("summary_items", None)
+
+    cs["approved_composition"] = freeze_approved_composition(
+        session,
+        candidate_id,
+        application_id=application_id,
+        context_data=cs,
+    )
+    frozen_doc = _frozen_composition(context)
+    if frozen_doc is None:
+        raise RuntimeError("mode='assemble': frozen composition has no content (empty corpus?)")
+    return _assemble_from_frozen_composition(
+        client,
+        context,
+        analysis,
+        frozen_doc,
+        with_cover_letter=True,
+        username=username,
+        run_id=run_id,
+    )
+
+
 def run_suite(
     *,
     suite: str = "synthetic",
     subset: str = "full",
     fixture_name: str | None = None,
     seed_data: dict | None = None,
+    mode: str = "generate",
     prompt_overrides_map: dict[str, str] | None = None,
     grounding_signals: bool = False,
     out_dir: str | Path = RESULTS_DIR,
@@ -862,11 +1014,13 @@ def run_suite(
     writes per-grading JSONL records to ``out_dir/{timestamp}.jsonl`` exactly as
     before.
 
-    The default invocation (no seed, no overrides, ``progress=None``) is
-    **byte-identical** to the historical ``main()`` path: ``prompt_overrides({})``
-    is a no-op, ``effective_prompt_version()`` returns the real ``PROMPT_VERSION``,
-    and every ``_emit`` below is a no-op — so the analyze→generate prompt cache and
-    the result-record bytes are unchanged.
+    The default invocation (no seed, no overrides, ``mode="generate"``,
+    ``progress=None``) is **byte-identical** to the historical ``main()`` path:
+    ``prompt_overrides({})`` is a no-op, ``effective_prompt_version()`` returns the
+    real ``PROMPT_VERSION``, and every ``_emit`` below is a no-op — so the
+    analyze→generate prompt cache and the result-record bytes are unchanged.
+    ``mode="generate"`` never touches ``recommend_bullets`` / ``recommend_summaries``
+    / ``freeze_approved_composition`` / the frozen-composition assembler at all.
 
     ``seed_data`` is an already-loaded + validated corpus seed (the caller owns the
     file I/O, so a bad path fails before any paid call). ``prompt_overrides_map`` is
@@ -875,7 +1029,30 @@ def run_suite(
     ``FileNotFoundError``. ``progress`` (optional) is invoked with
     ``(event, payload)`` at coarse milestones so a caller can stream progress; it
     never alters the result.
+
+    ``mode`` (F-11, 2026-07 UX review): ``"generate"`` (default) is the historical
+    LLM-generate path, unchanged. ``"assemble"`` drives the SAME Compose -> freeze ->
+    assemble path corpus-mode ``/api/generate`` uses instead of calling
+    ``analyzer.generate()`` for the résumé body — so the rubrics score the
+    deterministically-assembled document users actually download, not the LLM
+    fallback. ``mode="assemble"`` REQUIRES ``seed_data`` (frozen-composition
+    assembly needs a real corpus + candidate/application rows) and raises
+    ``ValueError`` immediately, before any paid call, when seed_data is absent.
+    Every JSONL record this run writes carries ``eval_mode`` (``"generate"`` or
+    ``"assemble"``) so the dashboard/baseline tooling can tell the two populations
+    apart; assemble-mode scores are never compared against ``baseline_v1.json``
+    (measured on the generate-mode population) — ``baseline_comparison`` is always
+    ``None`` and assemble-mode scores never contribute to the regression-gate
+    ``exit_code`` (sub-threshold scores still count via ``n_fail``).
     """
+
+    if mode not in ("generate", "assemble"):
+        raise ValueError(f"Unknown mode {mode!r}; expected 'generate' or 'assemble'")
+    if mode == "assemble" and seed_data is None:
+        raise ValueError(
+            "mode='assemble' requires --seed — frozen-composition assembly needs a "
+            "real corpus (candidate + application rows), not a file-parsed résumé"
+        )
 
     def _emit(event: str, **payload: Any) -> None:
         if progress is not None:
@@ -1003,10 +1180,11 @@ def run_suite(
             _t_clarify: float | None = None
             _t_generate: float | None = None
             _t_generate_end: float | None = None
+            seed_application: Any = None
             try:
                 if seed_data is not None:
                     assert session is not None and seed_username is not None
-                    context = _build_context_from_seed(
+                    context, seed_application = _build_context_from_seed(
                         session,
                         candidate_username=seed_username,
                         jd_text=fixture["jd"],
@@ -1044,14 +1222,27 @@ def run_suite(
                         exc,
                     )
                 _t_generate = time.perf_counter()
-                _emit("generating", fixture=fixture["name"], index=index, total=total_fixtures)
-                result = generate(
-                    client,
-                    context,
-                    analysis,
-                    username=f"eval:{fixture['name']}",
-                    run_id=run_id,
-                )
+                if mode == "assemble":
+                    _emit("assembling", fixture=fixture["name"], index=index, total=total_fixtures)
+                    assert session is not None and seed_application is not None
+                    result = _run_assemble_pipeline(
+                        client=client,
+                        session=session,
+                        application=seed_application,
+                        context=context,
+                        analysis=analysis,
+                        username=f"eval:{fixture['name']}",
+                        run_id=run_id,
+                    )
+                else:
+                    _emit("generating", fixture=fixture["name"], index=index, total=total_fixtures)
+                    result = generate(
+                        client,
+                        context,
+                        analysis,
+                        username=f"eval:{fixture['name']}",
+                        run_id=run_id,
+                    )
                 _t_generate_end = time.perf_counter()
             except Exception as exc:
                 logger.error("Pipeline failed for %s: %s", fixture["name"], exc)
@@ -1076,6 +1267,7 @@ def run_suite(
                             "model_snapshots": MODEL_SNAPSHOTS,
                             "baseline_comparison": None,
                             "phase_latencies_ms": None,
+                            "eval_mode": mode,
                         }
                     )
                     + "\n"
@@ -1206,6 +1398,7 @@ def run_suite(
                                 "baseline_comparison": None,
                                 "phase_latencies_ms": phase_latencies_ms,
                                 "grounding_signals": grounding_signals_data,
+                                "eval_mode": mode,
                             }
                         )
                         + "\n"
@@ -1242,6 +1435,19 @@ def run_suite(
                         # mirroring how the dashboard's heatmap handles N/A cells.
                         continue
                     iter_score = iter_record.get("score")
+                    # F-11: assemble-mode scores are a different content-generation
+                    # population than the generate-mode baseline — never attribute a
+                    # baseline delta to them (see run_suite's mode docstring).
+                    iter_baseline_comparison = (
+                        _compute_baseline_comparison(
+                            fixture["name"],
+                            rubric_path.stem,
+                            iter_score if isinstance(iter_score, (int, float)) else None,
+                            baseline_v1_data,
+                        )
+                        if mode != "assemble"
+                        else None
+                    )
                     iter_record.update(
                         {
                             "anchor_version": anchor_version,
@@ -1249,14 +1455,10 @@ def run_suite(
                             "fixture_hash": fixture["hash"],
                             "rubric_version": rubric_versions.get(rubric_path),
                             "model_snapshots": MODEL_SNAPSHOTS,
-                            "baseline_comparison": _compute_baseline_comparison(
-                                fixture["name"],
-                                rubric_path.stem,
-                                iter_score if isinstance(iter_score, (int, float)) else None,
-                                baseline_v1_data,
-                            ),
+                            "baseline_comparison": iter_baseline_comparison,
                             "phase_latencies_ms": phase_latencies_ms,
                             "grounding_signals": grounding_signals_data,
+                            "eval_mode": mode,
                         }
                     )
                     out.write(json.dumps(iter_record) + "\n")
@@ -1272,7 +1474,9 @@ def run_suite(
                         iter_score,
                         verdict,
                     )
-                    if isinstance(iter_score, (int, float)):
+                    # F-11: assemble-mode scores never feed the regression gate —
+                    # baseline_v1.json was measured on the generate-mode population.
+                    if mode != "assemble" and isinstance(iter_score, (int, float)):
                         delta = _detect_regression(
                             fixture["name"],
                             rubric_path.stem,
@@ -1314,6 +1518,19 @@ def run_suite(
                 _score = grade.get("score")
                 if isinstance(_score, (int, float)) and grade.get("status") != "judge_error":
                     fixture_scores[rubric_path.stem] = float(_score)
+                # F-11: assemble-mode scores are a different content-generation
+                # population than the generate-mode baseline — never attribute a
+                # baseline delta to them (see run_suite's mode docstring).
+                baseline_comparison = (
+                    _compute_baseline_comparison(
+                        fixture["name"],
+                        rubric_path.stem,
+                        _score if isinstance(_score, (int, float)) else None,
+                        baseline_v1_data,
+                    )
+                    if mode != "assemble"
+                    else None
+                )
                 record = {
                     "schema_version": SCHEMA_VERSION,
                     "score_max": SCORE_MAX,
@@ -1335,14 +1552,10 @@ def run_suite(
                     "fixture_hash": fixture["hash"],
                     "rubric_version": rubric_versions.get(rubric_path),
                     "model_snapshots": MODEL_SNAPSHOTS,
-                    "baseline_comparison": _compute_baseline_comparison(
-                        fixture["name"],
-                        rubric_path.stem,
-                        _score if isinstance(_score, (int, float)) else None,
-                        baseline_v1_data,
-                    ),
+                    "baseline_comparison": baseline_comparison,
                     "phase_latencies_ms": phase_latencies_ms,
                     "grounding_signals": grounding_signals_data,
+                    "eval_mode": mode,
                 }
                 out.write(json.dumps(record) + "\n")
 
@@ -1369,7 +1582,13 @@ def run_suite(
                     verdict=verdict,
                 )
 
-                if isinstance(score, (int, float)) and record.get("status") != "judge_error":
+                # F-11: assemble-mode scores never feed the regression gate —
+                # baseline_v1.json was measured on the generate-mode population.
+                if (
+                    mode != "assemble"
+                    and isinstance(score, (int, float))
+                    and record.get("status") != "judge_error"
+                ):
                     delta = _detect_regression(
                         fixture["name"],
                         rubric_path.stem,
@@ -1427,6 +1646,7 @@ def run_suite(
                         "fixture_hash": fixture["hash"],
                         "model_snapshots": MODEL_SNAPSHOTS,
                         "phase_latencies_ms": phase_latencies_ms,
+                        "eval_mode": mode,
                     }
                 )
                 + "\n"
@@ -1557,6 +1777,22 @@ def main(argv: list[str] | None = None) -> int:
             "file-based path."
         ),
     )
+    ap.add_argument(
+        "--mode",
+        choices=["generate", "assemble"],
+        default="generate",
+        help=(
+            "F-11 (2026-07 UX review): 'generate' (default) is the historical "
+            "analyzer.generate() LLM path, byte-identical to before. 'assemble' "
+            "drives the SAME Compose -> freeze -> assemble path corpus-mode "
+            "/api/generate uses (recommend_bullets/recommend_summaries -> "
+            "freeze_approved_composition -> deterministic assemble, zero "
+            "résumé-body LLM calls) so the rubrics score the assembled document "
+            "users actually download. REQUIRES --seed. Every JSONL record carries "
+            "eval_mode; assemble-mode scores are never regression-gated against "
+            "baseline_v1.json (a different, generate-mode population)."
+        ),
+    )
     args = ap.parse_args(argv)
 
     # --prompt-overrides: read + shape-validate the file here (a CLI-file concern);
@@ -1604,6 +1840,7 @@ def main(argv: list[str] | None = None) -> int:
             subset=args.subset,
             fixture_name=args.fixture,
             seed_data=seed_data,
+            mode=args.mode,
             prompt_overrides_map=overrides,
             grounding_signals=args.grounding_signals,
             out_dir=args.out_dir,
@@ -1611,7 +1848,7 @@ def main(argv: list[str] | None = None) -> int:
     except FileNotFoundError as exc:  # unknown --fixture
         logger.error("%s", exc)
         return 1
-    except ValueError as exc:  # unknown prompt-override constant name
+    except ValueError as exc:  # unknown prompt-override constant name, or bad --mode/--seed combo
         logger.error("%s", exc)
         return 1
     return result.exit_code
