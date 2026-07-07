@@ -345,7 +345,9 @@ boundary so the branch is checkpoint-able across sessions.
 3. **Compose authors gap-fill bullets** (Sonnet + accept/retire). *(DONE — §5.)*
 4. **Generate becomes deterministic** (corpus-mode) + preview/download read the frozen
    composition + refinement routes back to Compose. *(DONE — §5.)*
-5. **Validation + durable docs.** *(TODO — §6; this doc is part of it.)*
+5. **Validation + durable docs.** *(DONE — §6; live replay on the robert corpus
+   2026-07-06, TUNING_LOG "Compose-frozen-composition" entry, CHANGELOG entry,
+   byte-identity unit tests in `tests/test_corpus_mode_prompt.py`.)*
 
 **Deferred to LATER branches (NOT this branch):** loop-back for new content (D1/D6),
 LLM-assisted surgical refinement, WYSIWYG-as-source-of-truth (D4), corpus
@@ -487,7 +489,16 @@ clarifications→corpus persistence (D5). This branch's refine is the minimal ro
 
 ---
 
-## 6. Remaining work — Phase 5 (TODO)
+## 6. Remaining work — Phase 5 (DONE 2026-07-06; sections below kept as as-built reference)
+
+> Phase-5 exit evidence: live corpus-mode replay on `../sartor-e2e/output/robert/`
+> (0 résumé-body LLM calls; download == frozen == preview), the
+> `evals/TUNING_LOG.md` "Compose-frozen-composition" entry, the CHANGELOG entry,
+> and the legacy byte-identity unit tests (`tests/test_corpus_mode_prompt.py`).
+> The only work remaining from this spec is the **LATER-branch remainder**
+> (surgical refinement + loop-back banner, WYSIWYG-as-source D4,
+> clarifications→corpus D5, regenerate-gap-fill) — tracked in the
+> RELEASE_CHECKLIST carry-forward ledger.
 
 ### Phase 3 — Compose authors gap-fill bullets (Sonnet + accept/retire) — DONE (as-built in §5)
 > The original plan is retained below as the as-built reference; see §5 for what shipped.

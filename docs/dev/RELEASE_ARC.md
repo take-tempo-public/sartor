@@ -1037,6 +1037,81 @@ Then: `chore/version-bump-v1.0.8`.
   (8.0) hygiene pair cleared and the `docs/assistant-wiki-coverage` (8.6a) doc sprint authored,
   so by the public cut the open ledger is down to ~the deferred in-app citation viewer.
 
+### Big-push scope brief (2026-07-07 — durable resume anchor)
+
+> **RELEASE_ARC edit sign-off: this write was mandated by the owner-approved
+> big-push plan (2026-07-07).** This subsection is the durable in-repo anchor
+> for that plan — the owner-approved sequence from the current window through
+> v1.1.0's public flip, spanning the remainder of Phase 4.8 through Phase 4.9
+> and into the v1.1.0 gate. It exists so a fresh session (or a resumed one)
+> can reconstruct the whole plan from the repo alone, without relying on
+> point-in-time chat memory.
+
+#### Phase table
+
+| Phase | Branch(es) | What lands |
+|---|---|---|
+| GATE 0 | — | **DONE.** E2E clone confirmed at `ecc8925`; session-setup (`bypassPermissions` in gitignored settings). |
+| Phase 0 | `chore/px-staleness-reverify` (this branch) | 7-PX staleness re-verify → all `PARTIALLY_STALE`, dispositions in [`px-staleness-reverify-2026-07-07.md`](reviews/2026-07-efficiency/px-staleness-reverify-2026-07-07.md); mypy-strict re-measure (2821 errors / 126 of 248 files, incl. tests — normalize at Phase 6); gen-exp §6 marker reconcile (commit `6071478`); this scope brief. |
+| Phase 1 | Wave 0 + packaging → **TRAIN 1** | `fix/ux-f01-keyword-score` (DONE, merged `f82fd00` 2026-07-07), `fix/ux-f02-import-skill-rows` (F-02), `fix/eval-f11-frozen-assembly` (F-11), `fix/packaging-install` (ledger #2 + PX-42 floor ≥3.11 + F-24/25/26); conditional `fix/walkthrough-p0` (owner E2E findings). |
+| Phase 2 | `feat/grounding-calibration-8.6b` | Owner PV-1 annotation (30–60 min) → PV-2 calibration → ledger #10 fresh Sonnet-5 baseline (~$0.30). |
+| Phase 3 | UX Waves 1–4 → **TRAIN 2** (7 branches) | `feat/ux-w1-first-run-flow` (F-12/06/05/15) · `feat/ux-w1-skills-education` (F-03/04) · `feat/ux-w1-generate-surface` (F-09/10) · `feat/ux-w3-demo-mode` (F-19) · `docs/ux-w3-contributor` (F-21/22/20/27/06d) · `feat/ux-w2-recruiter` (F-08/17/16) · `feat/ux-w4-aesthetic` (F-07/23/13/14/18). Shared `static/app.js`/templates → pre-train merge-tree preflight mandatory. |
+| Phase 3b | gen-exp completion → **TRAIN 3** | (a) `fix/surgical-refinement-and-loopback` + (d) `feat/regenerate-gap-fill` in parallel, then (b) `feat/wysiwyg-source-of-truth` + (c) `feat/clarifications-to-corpus`. Spec home: [`generation-experience-rearchitecture.md`](generation-experience-rearchitecture.md) §4/§6. Corpus-mode validation on a saved context + one real generate (NOT `--suite synthetic`). |
+| Phase 4 | 8.7 public-prep → **TRAIN 4** → **CODE FREEZE** | `feat/portable-enforcement-core` (ledger #6) · `ci/ux-a11y-required-check` (PX-25) · `chore/doc-link-sweep` (ledger #7). Then **[HUMAN]**: GitHub repo `take-tempo-public/sartor` (private) + PyPI Trusted Publisher + required checks. Then assets: `docs/screenshots-refresh` ($0.27, app running) · `docs/badges-readme-prep` (PX-26 + PX-54) → **TRAIN 4b**. |
+| Phase 5 | v1.0.8 tag ceremony | `/compliance-witness` at pinned sha + `/wiki-lint` (staleness carried as accepted note; PX-41 scheduled Phase 6) + `RELEASE_CHECKLIST` sweep + `CHANGELOG` cut → owner confirms → tag **v1.0.8** → verify published wheel. |
+| Phase 6 | v1.0.9 docs epic → **TRAIN 5** → v1.0.9 tag | `docs/readme-icp-ladder` · `docs/dev-home-depth-wsb` (+ PX-40/48 + avatar-voice casing) · `docs/wiki-content-pass` (PX-41 catch-up ingest 150+ commits via `/wiki-self-update` + PX-50/53 + user-tier pages + `llms.txt`) · `docs/diagrams-a11y` (new `accTitle`/`accDescr` diagrams; retire the 4 drifted `.mmd`) · `feat/fumadocs-site` (projection adapter + spectree/OpenAPI Layer-B) · `ci/doc-merge-gate` (last) · `chore/mypy-strict` (burn the normalized error count) · `spike/pagedjs-design` (timeboxed doc). Voice/tone reference: Google developer style guide tone (record in `documentation-architecture.md`). |
+| Phase 7 | v1.1.0 gate → **TRAIN 6** | `chore/px-v110-gate-batch` (Phase-0 survivors incl. PX-37/38/43/44/45/47/49/51/55/56 as re-scoped) · PX-39 Sonnet-5 latency baseline (idle only) · `release/visual-assets` · PX-46 memory consolidation (owner-gated) → final fresh-clone-from-GitHub verify → owner acts: tag **v1.1.0** + public flip. |
+
+#### Train schedule
+
+Six merge-trains carry the branch-heavy phases; each train gets its own owner
+confirm (manifest + diffstat + gates + spend) before merging:
+
+- **TRAIN 1** — Phase 1 Wave 0 + packaging.
+- **TRAIN 2** — Phase 3 UX Waves 1–4 (7 branches; merge-tree preflight mandatory given the shared `static/app.js`/templates surface).
+- **TRAIN 3** — Phase 3b gen-exp completion (parallel pair, then sequential pair).
+- **TRAIN 4 / 4b** — Phase 4 public-prep, split around the `[HUMAN]` GitHub/PyPI checkpoint (4 = code-freeze branches, 4b = post-checkpoint asset branches).
+- **TRAIN 5** — Phase 6 v1.0.9 docs epic.
+- **TRAIN 6** — Phase 7 v1.1.0 gate.
+
+#### Owner checkpoints (complete list)
+
+- GATE-0 clone confirm (done).
+- PV-1 annotation.
+- Train confirms T1–T6 (manifest + diffstat + gates + spend, one confirm each).
+- **[HUMAN]** GitHub/PyPI config, once.
+- Tag confirms v1.0.8 + v1.0.9.
+- PX-46 review.
+- Owner tags v1.1.0.
+
+#### Standing grants (owner-approved)
+
+- Merge-trains under `CLAUDE_CONFIRM_MERGE=1` per train confirm.
+- Plan-marker re-arm post-train only.
+- `bypassPermissions` for the push.
+- $10 API spend cap with cumulative reporting.
+
+#### Window map
+
+| Window | Covers | Milestone |
+|---|---|---|
+| W1 | GATE-0 + Phase 0 + Phase 1 + Train 1 | — |
+| W2 | Phase 2 + Phase 3 | — |
+| W3 | Phase 3b | — |
+| W4 | Phase 4 + Phase 5 | **v1.0.8 tagged** |
+| W5 | Phase 6 | **v1.0.9 tagged** |
+| W6 | Phase 7 | v1.1.0 gate |
+
+Total ≈ 20–28h across ~5–6 windows.
+
+#### Resume protocol
+
+A fresh session reads, in order: `git worktree list` + `git branch -a` → this
+brief → `RELEASE_CHECKLIST.md` train state → [`keep-ledger.md`](keep-ledger.md)
+→ the newest handoff. Repo state overrides memory. Any branch without a
+close-out entry gets its gate re-run. A wiped plan marker → owner
+re-confirmation doubles as resume.
+
 ---
 
 ## Phase 4.9 — Documentation & docs-site (v1.0.9)
