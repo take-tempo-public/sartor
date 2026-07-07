@@ -223,6 +223,15 @@ class ContextSet(_ContextSetRequired, total=False):
     # pre-freeze contexts (the corpus-direct render is the fallback). total=False
     # so older contexts round-trip unchanged.
     approved_composition: dict
+    # Generation-experience re-architecture Phase 3: transient gap-fill proposals
+    # authored at Compose (analyzer.draft_gap_fill_bullets, Sonnet). Each is
+    # {key, experience_id, text, pattern_kind, requirement, evidence, rationale} —
+    # unpersisted candidate text the user ACCEPTS (→ a pending Bullet row whose id
+    # joins composition_overrides.accepted_generated_bullet_ids) or RETIRES (dropped
+    # here, no row). Key PRESENCE (not list non-emptiness) drives the GET's
+    # has_gap_fill flag, so a zero-proposal draft fires once and never re-loops.
+    # total=False; absent on contexts that never reached the Compose gap-fill draft.
+    llm_gap_fill_proposals: list
 
 
 # Common English stop words to exclude from keyword extraction

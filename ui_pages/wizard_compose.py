@@ -250,9 +250,14 @@ class WizardComposePage(BasePage):
         self._row(text).get_by_role("button", name=Compose.MOVE_UP_LABEL).click()
 
     def reset_order(self) -> None:
-        """Click the first card's reset-order control (settles first)."""
-        self._wait_settled()
-        self.page.locator(Compose.EXPERIENCE_CARD).first.locator(Compose.RESET_ORDER).click()
+        """Click the first EXPERIENCE card's reset-order control (settles first).
+
+        Uses `_first_card()` (which excludes the always-present positioning card)
+        rather than `EXPERIENCE_CARD.first` — the positioning card also carries
+        `.compose-experience-card` but has no reset control, so `.first` resolved to
+        it and the click timed out. Mirrors every other first-card helper here.
+        """
+        self._first_card().locator(Compose.RESET_ORDER).click()
 
     def drag_below(self, src_text: str, target_text: str) -> None:
         """Reorder via dispatched native HTML5 DnD with a shared DataTransfer.

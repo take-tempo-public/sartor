@@ -226,6 +226,31 @@ class TestWebPresenceBlock:
         assert "Scraped portfolio text." in prefix
 
 
+class TestGapFillPromptInvariance:
+    """Phase 3 — the transient Compose gap-fill keys (llm_gap_fill_proposals +
+    composition_overrides.accepted_generated_bullet_ids) must NOT leak into the
+    generate() prompt prefix: generate() reads career_corpus + pinned/excluded/
+    added/bullet_order, never the gap-fill draft. So a context carrying them
+    produces a byte-identical prefix (the analyze→generate cache + --suite
+    synthetic invariance both depend on this)."""
+
+    def test_gap_fill_keys_do_not_perturb_prefix(self):
+        baseline = _stable_user_prefix(_make_corpus_context())
+        ctx = _make_corpus_context()
+        ctx["llm_gap_fill_proposals"] = [
+            {
+                "key": "abc123def456",
+                "experience_id": 1,
+                "text": "A drafted gap-fill bullet.",
+                "pattern_kind": "xyz",
+                "requirement": "Kubernetes",
+            }
+        ]
+        ctx["composition_overrides"] = {"accepted_generated_bullet_ids": [999]}
+        assert _stable_user_prefix(ctx) == baseline
+        assert "gap-fill" not in _stable_user_prefix(ctx)
+
+
 # ---------------------------------------------------------------------------
 # generate() — required key dispatch
 # ---------------------------------------------------------------------------

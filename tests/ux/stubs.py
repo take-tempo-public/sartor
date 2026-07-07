@@ -152,6 +152,47 @@ def fake_draft_positioning_summary(
     return {"summary": "Stubbed positioning summary, sentence one. Sentence two here."}
 
 
+def fake_draft_gap_fill_bullets(
+    client: Any, ctx: Any, username: str = "", run_id: str = ""
+) -> dict[str, Any]:
+    """Phase 3 — return ONE deterministic gap-fill proposal on the candidate's
+    first experience so the Compose gap-fill lane renders and has_gap_fill flips
+    (stopping the auto-fire loop, exactly like fake_draft_positioning_summary)
+    without a real Sonnet call. DB-aware: the proposal targets a REAL experience
+    id so the route's ownership validation keeps it (a foreign id would be dropped
+    and the lane would never render)."""
+    from db.models import Candidate, Experience
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        cand = session.query(Candidate).filter_by(username=username).first()
+        if cand is None:
+            return {"proposals": []}
+        exp = (
+            session.query(Experience)
+            .filter_by(candidate_id=cand.id)
+            .order_by(Experience.start_date.desc(), Experience.id.desc())
+            .first()
+        )
+        if exp is None:
+            return {"proposals": []}
+        return {
+            "proposals": [
+                {
+                    "experience_id": exp.id,
+                    "text": "Stubbed gap-fill bullet covering a JD requirement.",
+                    "pattern_kind": "manual",
+                    "requirement": "Stubbed requirement",
+                    "evidence": {"bullet_id": None, "quote": "stubbed evidence"},
+                    "rationale": "stubbed: fills a JD gap",
+                }
+            ]
+        }
+    finally:
+        session.close()
+
+
 def fake_recommend_experience_summaries(
     client: Any, ctx: Any, username: str = "", run_id: str = ""
 ) -> dict[str, Any]:
@@ -377,6 +418,7 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(analyzer, "recommend_bullets", fake_recommend_bullets)
     monkeypatch.setattr(analyzer, "recommend_summaries", fake_recommend_summaries)
     monkeypatch.setattr(analyzer, "draft_positioning_summary", fake_draft_positioning_summary)
+    monkeypatch.setattr(analyzer, "draft_gap_fill_bullets", fake_draft_gap_fill_bullets)
     monkeypatch.setattr(
         analyzer, "recommend_experience_summaries", fake_recommend_experience_summaries
     )

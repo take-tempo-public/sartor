@@ -136,6 +136,32 @@ def _seed_experience(
     return exp.id, bids
 
 
+def _seed_pending_bullet(
+    session,
+    experience_id: int,
+    *,
+    text="Pending gap-fill bullet.",
+    source="llm_proposed:abc123",
+) -> int:
+    """Seed one is_active=1, is_pending_review=1 bullet (an accepted gap-fill or a
+    promoted-clarification candidate) — the case the resolver pending-leak guard
+    governs. Returns its id."""
+    from db.models import Bullet
+
+    b = Bullet(
+        experience_id=experience_id,
+        text=text,
+        display_order=99,
+        is_active=1,
+        is_pending_review=1,
+        source=source,
+    )
+    session.add(b)
+    session.flush()
+    session.commit()
+    return b.id
+
+
 def _seed_summary_variant(
     session, candidate_id: int, *, text: str, display_order: int = 0, is_active: int = 1
 ) -> int:
@@ -908,6 +934,64 @@ class TestAcceptedGeneratedBullets:
         assert doc["work"][0]["highlights"] == ["Bullet one.", "Bullet three."]
         assert doc["meta"]["sartor"]["accepted_generated_bullet_ids"] == [bids[2]]
         assert doc["meta"]["sartor"]["bullet_overrides_active"] is True
+
+
+class TestPendingLeakGuard:
+    """Phase 3 — a pending+active bullet (an accepted gap-fill) must render for
+    THIS application (its id in accepted_generated_bullet_ids) but must NOT leak
+    into another application's default all-active render. Mirrors the skills guard
+    in _collect_skills (is_pending_review=0)."""
+
+    def test_pending_active_bullet_excluded_by_default(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        eid, _bids = _seed_experience(session, cid, bullets=("Canonical bullet.",))
+        _seed_pending_bullet(session, eid, text="Leaky pending bullet.")
+        # No accepted_generated_bullet_ids override → the default all-active path.
+        # The pending bullet must NOT appear (it would leak into every other app).
+        doc = build_json_resume_from_corpus(session, cid)
+        assert doc["work"][0]["highlights"] == ["Canonical bullet."]
+
+    def test_pending_bullet_renders_when_accepted(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        eid, _bids = _seed_experience(session, cid, bullets=("Canonical bullet.",))
+        pending_id = _seed_pending_bullet(session, eid, text="Accepted gap-fill bullet.")
+        ctx = _ctx_file(
+            tmp_path,
+            composition_overrides={"accepted_generated_bullet_ids": [pending_id]},
+        )
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert "Accepted gap-fill bullet." in doc["work"][0]["highlights"]
+        assert "Canonical bullet." in doc["work"][0]["highlights"]
+
+    def test_default_path_no_pending_byte_identical(self, session):
+        """A candidate with only non-pending bullets renders exactly as before the
+        guard — the guard's extra term is a no-op when nothing is pending."""
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        _seed_experience(session, cid, bullets=("One.", "Two.", "Three."))
+        doc = build_json_resume_from_corpus(session, cid)
+        assert doc["work"][0]["highlights"] == ["One.", "Two.", "Three."]
+
+    def test_freeze_includes_accepted_pending_bullet(self, session, tmp_path):
+        """freeze_approved_composition (the resolver wrapper) must fold an accepted
+        pending bullet into the frozen doc + its provenance."""
+        from corpus_to_json_resume import freeze_approved_composition
+
+        cid = _seed_candidate(session)
+        eid, _bids = _seed_experience(session, cid, bullets=("Canonical bullet.",))
+        pending_id = _seed_pending_bullet(session, eid, text="Accepted gap-fill bullet.")
+        ctx_data = {
+            "composition_overrides": {"accepted_generated_bullet_ids": [pending_id]},
+        }
+        doc = freeze_approved_composition(session, cid, application_id=5, context_data=ctx_data)
+        assert "Accepted gap-fill bullet." in doc["work"][0]["highlights"]
+        assert pending_id in doc["meta"]["sartor"]["accepted_generated_bullet_ids"]
+        assert pending_id in doc["meta"]["sartor"]["work_provenance"][0]["highlight_ids"]
 
 
 class TestFrozenCompositionProvenance:

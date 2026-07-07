@@ -319,6 +319,12 @@ class DraftSummaryResponse(_LLMResponse):
     summary: Any
 
 
+class DraftGapFillResponse(_LLMResponse):
+    """`draft_gap_fill_bullets()` output — proposed gap-fill bullets for accept/retire."""
+
+    proposals: Any
+
+
 class GenerateCorpusResponse(GenerateResponse):
     """Corpus-mode `generate()` with cover letter — the `GENERATE_CORPUS_REQUIRED_KEYS` shape."""
 
@@ -360,7 +366,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-07-06.2"  # compose-frozen-composition: new Compose-time DRAFT_SUMMARY_SYSTEM_PROMPT (Sonnet draft_positioning_summary); generate prompt unchanged (corpus-mode-only new per-call template)
+PROMPT_VERSION = "2026-07-06.3"  # compose-frozen-composition Phase 3: new Compose-time DRAFT_GAP_FILL_SYSTEM_PROMPT (Sonnet draft_gap_fill_bullets); generate prompt unchanged (corpus-mode-only new per-call template)
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -3990,6 +3996,128 @@ Industry keywords: {keywords or "(none)"}
     return {"summary": summary or source_text}
 
 
+DRAFT_GAP_FILL_SYSTEM_PROMPT = """You help a candidate cover a specific job's requirements that their resume does not yet surface, by drafting NEW resume bullets — but ONLY where their own experience genuinely evidences the accomplishment. You see the job's essential/preferred requirements and the analyst's gap list in <analysis>, the requirements the resume is missing in <missing>, the candidate's actual experience (roles + bullets, with numeric ids) in <career_corpus>, and any confirmed facts the candidate told us in <clarifications>.
+
+Your task: for a JD requirement NOT already covered by an existing corpus bullet, draft ONE resume bullet that reframes the candidate's real evidence toward that requirement, and attach it to the ONE experience where that evidence lives.
+
+GROUNDING — this is the rule that matters most:
+- ONLY draft a bullet when a specific bullet or role in <career_corpus> demonstrably evidences the accomplishment. Cite that evidence (the experience id + the bullet id + the exact quote).
+- NEVER draft a bullet from a JD keyword alone. A requirement with no corpus evidence is NOT a proposal — skip it.
+- NEVER manufacture a metric, technology, employer, scope, seniority, or date the source does not state. Reframe and sharpen what is there; do not invent. Preserve every concrete specific the source states VERBATIM.
+- The candidate reviews and accepts or retires every proposal before it reaches their resume, so precision beats recall: when in doubt, do not propose.
+
+Bullet shape (per docs/bullet_patterns.md):
+- Past-tense resume voice, starting with a strong action verb (Led / Built / Owned / Designed — NOT "Responsible for" / "Helped with").
+- Under 35 words.
+- One of: "xyz" (Accomplished X as measured by Y by doing Z — when a measurable outcome is in the evidence), "car" (Challenge / Action / Result — when context matters), "manual" (generic past-tense action — when the evidence is short and qualitative).
+
+Worked examples:
+- OK: JD requires "Kubernetes at scale"; experience e7 has bullet b12 "Migrated 40 services to Kubernetes, cutting deploy time 60%." → {"experience_id":7, "text":"Migrated 40 production services to Kubernetes, cutting deploy time 60% across the platform.", "pattern_kind":"xyz", "requirement":"Kubernetes at scale", "evidence":{"bullet_id":12, "quote":"Migrated 40 services to Kubernetes, cutting deploy time 60%."}}.
+- NOT OK: JD requires "Kubernetes"; no bullet mentions containers or orchestration. → skip (no evidence).
+- NOT OK: JD requires "Team leadership"; a bullet says "Worked on the payments team." → skip (being on a team is not evidence of leadership).
+- NOT OK: inventing a number — evidence says "improved performance"; drafting "improved performance 45%." → the 45% is fabricated; keep it qualitative ("manual").
+
+Output JSON only, this exact shape:
+{
+  "proposals": [
+    {
+      "experience_id": <int, the numeric id of the experience this bullet attaches to>,
+      "text": "the proposed resume bullet",
+      "pattern_kind": "xyz" | "car" | "manual",
+      "requirement": "the JD requirement this bullet covers",
+      "evidence": {"bullet_id": <int> | null, "quote": "the exact corpus text that evidences this bullet"},
+      "rationale": "one sentence tying the evidence to the JD requirement"
+    },
+    ...
+  ]
+}
+
+Return {"proposals": []} when nothing in the corpus evidences an uncovered JD requirement. Use numeric ids only (the number after the e/b prefix)."""
+
+
+def draft_gap_fill_bullets(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    *,
+    username: str = "",
+    run_id: str = "",
+) -> dict[str, Any]:
+    """Draft GROUNDED gap-fill bullets for a JD's uncovered requirements (Sonnet).
+
+    Generation-experience re-architecture Phase 3: at Compose, propose NEW resume
+    bullets for JD essential / preferred requirements the existing corpus does not
+    already surface — each reframing the candidate's real evidence and attached to
+    the experience where that evidence lives. Grounded (evidence-or-nothing, the
+    same posture as `suggest_skills`); every proposal is reviewed via accept/retire
+    before it becomes a Bullet row, so nothing is silently canonical.
+
+    The caller stages the JD on `context_set["jd_text"]`; the corpus, analysis,
+    deterministic keyword overlap, and clarifications ride on the context. Returns
+    {"proposals": [{experience_id, text, pattern_kind, requirement, evidence,
+    rationale}, ...]}. The ROUTE validates experience ownership, coerces
+    pattern_kind, computes the accept/retire key, and dedups — this function stays
+    session-free. Short-circuits WITHOUT an LLM call when there is no corpus or no
+    JD to tailor to.
+    """
+    corpus = context_set.get("career_corpus") or []
+    jd_value = context_set.get("jd_text", "")
+    jd_str = (str(jd_value) if jd_value else "").strip()
+    if not corpus or not jd_str:
+        return {"proposals": []}
+
+    corpus_block = _corpus_block(list(corpus), iteration=0)
+    analysis = context_set.get("llm_analysis") or {}
+    essential = ", ".join(analysis.get("essential_skills", []) or [])
+    preferred = ", ".join(analysis.get("preferred_skills", []) or [])
+    comparison = analysis.get("comparison") or {}
+    gaps = (comparison.get("gaps") or []) if isinstance(comparison, dict) else []
+    gaps_str = ", ".join(str(g) for g in gaps if str(g).strip()) if isinstance(gaps, list) else ""
+    overlap = context_set.get("deterministic_analysis", {}).get("keyword_overlap", {})
+    missing = overlap.get("missing_from_resume", []) or []
+    missing_str = ", ".join(str(m) for m in missing if str(m).strip())
+    clar = context_set.get("clarifications") or {}
+    clar_lines = (
+        [str(v).strip() for v in clar.values() if str(v).strip()] if isinstance(clar, dict) else []
+    )
+    clar_block = "\n".join(f"- {line}" for line in clar_lines) or "(none)"
+
+    user_prompt = f"""<task>Draft grounded gap-fill bullets for the JD requirements the corpus does not yet cover (evidence or nothing). Output JSON only.</task>
+
+{corpus_block}
+
+<analysis>
+Essential skills the JD names: {essential or "(none surfaced)"}
+Preferred skills: {preferred or "(none)"}
+Gaps the analyst flagged: {gaps_str or "(none)"}
+</analysis>
+
+<missing>
+Requirements missing from the resume: {missing_str or "(none)"}
+</missing>
+
+<jd>
+{jd_str}
+</jd>
+
+<clarifications>
+{clar_block}
+</clarifications>"""
+
+    result = _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot per application
+        response_model=DraftGapFillResponse,
+        call_kind="draft_gap_fill",
+        username=username,
+        run_id=run_id,
+        system_prompt=_resolve_system_prompt("DRAFT_GAP_FILL_SYSTEM_PROMPT"),
+        model=SONNET_MODEL,
+    )
+    proposals = [p for p in (result.get("proposals") or []) if isinstance(p, dict)]
+    return {"proposals": proposals}
+
+
 _BASE_SYSTEM_PROMPTS: dict[str, str] = {
     "SYSTEM_PROMPT": SYSTEM_PROMPT,
     "EXTRACTION_SYSTEM_PROMPT": EXTRACTION_SYSTEM_PROMPT,
@@ -3999,6 +4127,7 @@ _BASE_SYSTEM_PROMPTS: dict[str, str] = {
     "RECOMMEND_SYSTEM_PROMPT": RECOMMEND_SYSTEM_PROMPT,
     "RECOMMEND_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_SUMMARIES_SYSTEM_PROMPT,
     "DRAFT_SUMMARY_SYSTEM_PROMPT": DRAFT_SUMMARY_SYSTEM_PROMPT,
+    "DRAFT_GAP_FILL_SYSTEM_PROMPT": DRAFT_GAP_FILL_SYSTEM_PROMPT,
     "RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT,
     "RECOMMEND_SKILLS_SYSTEM_PROMPT": RECOMMEND_SKILLS_SYSTEM_PROMPT,
     "SUGGEST_SKILLS_SYSTEM_PROMPT": SUGGEST_SKILLS_SYSTEM_PROMPT,

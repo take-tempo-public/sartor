@@ -3327,6 +3327,17 @@ input:focus, select:focus, textarea:focus {
   padding: 4px 12px;
   font-size: 0.85rem;
 }
+/* Phase 3 — "Suggested for this JD" gap-fill lane inside each experience card.
+   A subtle top divider sets the grounded proposals apart from the corpus bullets
+   above; the rows reuse .compose-row so they read as the same kind of item. */
+.gap-fill-lane {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-2);
+}
+.gap-fill-row .gap-fill-text {
+  line-height: 1.45;
+}
 .positioning-variant {
   cursor: pointer;
   position: relative;

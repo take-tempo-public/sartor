@@ -7,8 +7,8 @@
 > file alone (plus git history), with nothing machine-local required.
 >
 > **Status (2026-07-06):** branch `fix/compose-frozen-composition` (Option B — one
-> cohesive branch, off `main` `64958d3`). Phases 1 + 2 committed + gate-green;
-> Phases 3–5 remain (owner checkpointed for a fresh session). **Does NOT merge
+> cohesive branch, off `main` `64958d3`). Phases 1 + 2 + 3 committed + gate-green;
+> Phases 4–5 remain (owner checkpointed Phase 3 as a boundary). **Does NOT merge
 > until Phase 4 lands.**
 >
 > **Companions:** `docs/dev/RELEASE_CHECKLIST.md` Carry-forward ledger
@@ -341,7 +341,7 @@ boundary so the branch is checkpoint-able across sessions.
 1. **Frozen composition contract** — the `approved_composition` snapshot + resolver +
    freeze-on-continue. *(DONE — §5.)*
 2. **Compose authors the summary** (Sonnet). *(DONE — §5.)*
-3. **Compose authors gap-fill bullets** (Sonnet + accept/retire). *(TODO — §6.)*
+3. **Compose authors gap-fill bullets** (Sonnet + accept/retire). *(DONE — §5.)*
 4. **Generate becomes deterministic** (corpus-mode) + preview/download read the frozen
    composition + refinement routes back to Compose. *(TODO — §6.)*
 5. **Validation + durable docs.** *(TODO — §6; this doc is part of it.)*
@@ -354,10 +354,10 @@ source, but does not build new persistence.
 
 ---
 
-## 5. Current state — Phases 1 + 2 (DONE, committed, gate-green)
+## 5. Current state — Phases 1 + 2 + 3 (DONE, committed, gate-green)
 
 Branch `fix/compose-frozen-composition` off `main` `64958d3`. Gate at each commit: ruff
-· mypy (243) · pytest (1422 non-ux) · compose UX (8).
+· ruff format · mypy (246) · pytest (1442 non-ux) · compose UX.
 
 ### Phase 1 — frozen `approved_composition` contract — commit `a7a4d87`
 - `hardening.py` `ContextSet`: `approved_composition: dict` + documented the new
@@ -404,11 +404,57 @@ Branch `fix/compose-frozen-composition` off `main` `64958d3`. Gate at each commi
 
 Mechanics reference (durable): the memory `reference-frozen-composition-mechanics`.
 
+### Phase 3 — Compose authors gap-fill bullets (Sonnet + accept/retire) — committed
+- `analyzer.py`: `DRAFT_GAP_FILL_SYSTEM_PROMPT` (grounded evidence-or-nothing +
+  bullet-shape rules) + `draft_gap_fill_bullets()` (**Sonnet**; structure from
+  `suggest_skills`, model wiring from `draft_positioning_summary`) + `DraftGapFillResponse`
+  + registry entry. `PROMPT_VERSION 2026-07-06.2 → 2026-07-06.3` (a NEW per-call
+  template; generate prompt UNCHANGED → legacy `--suite synthetic` byte-identical, guarded
+  by `TestGapFillPromptInvariance`). Session-free: the ROUTE validates experience
+  ownership, coerces `pattern_kind`, keys, and dedups.
+- `corpus_to_json_resume.py`: the **pending-leak guard** on the single `active_bullets`
+  choke point — `b.is_active and (not b.is_pending_review or b.id in accepted_generated_ids)`.
+  A pending+active bullet renders only when accepted for THIS app; it no longer leaks into
+  other apps' default all-active render. **Intended behavior change** for any pre-existing
+  pending+active bullet (e.g. promoted-clarification bullets); no test seeded one expecting
+  it to render, so nothing broke (re-verify on the Phase-5 robert replay).
+- `hardening.py`: `ContextSet.llm_gap_fill_proposals: list` (`total=False`).
+- `blueprints/applications.py`: `POST /draft-gap-fill` (clone of `/draft-summary`; stages
+  the JD, calls the drafter, normalizes route-side, ALWAYS writes the key so `has_gap_fill`
+  flips) + `POST /gap-fill-decide` (accept → a `Bullet` `source='llm_proposed:<key>'`,
+  `is_pending_review=1` + id into `accepted_generated_bullet_ids` + a pending `ProposalReview`
+  keyed to `ctx["application_run_id"]`, commit-then-write, idempotent on the source key;
+  retire → drop the transient proposal). GET `get_application_composition` surfaces
+  per-experience `gap_fill_proposals`, `accepted_generated` per bullet, and top-level
+  `has_gap_fill`. **Correctness note:** an iteration-0 `ApplicationRun` DOES exist at Compose
+  (`ctx["application_run_id"]`, written at `/api/analyze`) — the accept ledger uses it
+  directly (the design-doc §3.1 aside "ApplicationRun doesn't exist at Compose time" is true
+  only in the narrow no-new-DB-column sense).
+- `static/app.js` + `style.css` + `ui_pages/selectors.py`: per-role "Suggested for this JD"
+  lane (accept/retire, modeled on the Skills pending lane); auto-fires once per app
+  (`_gapFillFiredForApp` + the server `has_gap_fill` flag — no Regenerate, so a retired
+  proposal never reappears); accepted bullets join the visible set; **`accepted_generated_bullet_ids`
+  rides `_collectCompositionState` on every save** (the clobber-invariant fix — the POST
+  rebuilds overrides wholesale + freezes on continue).
+- Tests: `tests/test_draft_gap_fill.py` (short-circuit + route) + `tests/test_gap_fill_decide.py`
+  (accept creates Bullet+ledger, idempotent, foreign→400, retire drops) +
+  `tests/test_corpus_to_json_resume.py::TestPendingLeakGuard` (excluded-by-default,
+  renders-when-accepted, byte-identical default, freeze-includes-accepted) +
+  `tests/test_corpus_mode_prompt.py::TestGapFillPromptInvariance` (byte-identity guard) +
+  `tests/ux/regression/test_20260706_compose_gap_fill.py` + `fake_draft_gap_fill_bullets`.
+
+**Deferred to LATER branches (documented extension points):** a "Regenerate gap-fill" button
+(needs a `retired_gap_fill_keys` set); loop-back-to-Compose banner for newly-generated content;
+the corpus-enrichment "save to corpus" offer beyond the free `is_pending_review=1` pending row
+(the existing pending-review APPROVE already covers D6(c)).
+
 ---
 
-## 6. Remaining work — Phases 3, 4, 5 (TODO)
+## 6. Remaining work — Phases 4, 5 (TODO)
 
-### Phase 3 — Compose authors gap-fill bullets (Sonnet + accept/retire)
+### Phase 3 — Compose authors gap-fill bullets (Sonnet + accept/retire) — DONE (as-built in §5)
+> The original plan is retained below as the as-built reference; see §5 for what shipped.
+
 Model it on the proven "propose grounded new items → accept/retire" pattern
 (`analyzer.suggest_skills` + `promote_clarification_to_bullet`; `proposal_review` ledger).
 - `analyzer.py`: `DRAFT_GAP_FILL_SYSTEM_PROMPT` + `draft_gap_fill_bullets()` (**Sonnet**) +

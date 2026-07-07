@@ -230,7 +230,17 @@ def build_json_resume_from_corpus(
         # display_order, byte-identical to the pre-reorder default.
         rec_ids = rec_by_exp.get(exp.id)
         order = bullet_order.get(exp.id)
-        active_bullets = [b for b in exp.bullets if b.is_active]
+        # Pending-leak guard (Phase 3): an accepted gap-fill bullet is is_active=1
+        # AND is_pending_review=1. It must render in THIS application (its id is in
+        # accepted_generated_ids) but must NOT leak into other apps' default
+        # all-active render. Mirrors the skills guard in _collect_skills
+        # (is_pending_review=0). Non-pending active bullets are unaffected, so the
+        # default (no gap-fill) render stays byte-identical.
+        active_bullets = [
+            b
+            for b in exp.bullets
+            if b.is_active and (not b.is_pending_review or b.id in accepted_generated_ids)
+        ]
         if order:
             rank = {bid: i for i, bid in enumerate(order)}
             active_bullets.sort(
