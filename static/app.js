@@ -745,13 +745,15 @@ function _renderAnalysis(data) {
 
   let html = '';
 
-  // Keyword overlap score
+  // Keyword overlap score (F-01: server-side cleaned universe — company name +
+  // JD boilerplate excluded; coverage framing, not a grade)
   const score = d.keyword_overlap.match_score;
   const pct = Math.round(score * 100);
   const color = pct > 60 ? 'var(--success)' : pct > 35 ? 'var(--brand)' : 'var(--danger)';
   html += `<div class="analysis-section">
-    <h3>Keyword Match Score: ${pct}%</h3>
+    <h3>JD Keyword Coverage: ${pct}%</h3>
     <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${color}"></div></div>
+    <p class="score-note">Share of the job description's meaningful keywords found in your corpus — the company's name and hiring boilerplate don't count. The analysis below is the real fit read.</p>
   </div>`;
 
   // ATS Warnings
@@ -794,7 +796,7 @@ function _renderAnalysis(data) {
   d.keyword_overlap.matched.slice(0, 20).forEach(k => { html += `<span class="tag tag-matched">${esc(k)}</span>`; });
   html += `</div></div>`;
 
-  html += `<div class="analysis-section"><h3>Keywords Missing From Resume</h3><div>`;
+  html += `<div class="analysis-section"><h3>Keywords You Could Add</h3><div>`;
   d.keyword_overlap.missing_from_resume.slice(0, 20).forEach(k => { html += `<span class="tag tag-missing">${esc(k)}</span>`; });
   html += `</div></div>`;
 

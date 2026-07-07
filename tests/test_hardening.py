@@ -19,6 +19,7 @@ from hardening import (
     compute_specificity_density,
     compute_top_third_density,
     compute_verb_diversity,
+    extract_company_terms,
     extract_keywords,
     save_context_set,
     strip_cover_letter_block,
@@ -91,6 +92,111 @@ class TestComputeKeywordOverlap:
     def test_empty_jd_does_not_divide_by_zero(self):
         result = compute_keyword_overlap({"keywords": {}}, {"keywords": {}})
         assert result["match_score"] == 0.0
+
+
+class TestExtractCompanyTerms:
+    def test_header_dash_line(self):
+        jd = "Senior Site Reliability Engineer\nLattice Cloud — Remote (US)\n\nDuties follow."
+        assert "lattice cloud" in extract_company_terms(jd)
+
+    def test_sentence_position_pattern(self):
+        jd = "About the role\nLattice Cloud runs a multi-region container platform."
+        assert "lattice cloud" in extract_company_terms(jd)
+
+    def test_about_and_at_patterns(self):
+        assert "acme" in extract_company_terms("Come thrive at Acme today.")
+        assert "initech" in extract_company_terms("About Initech\nWe make software.")
+
+    def test_title_line_never_captured(self):
+        jd = "Senior Site Reliability Engineer\n\nKubernetes and Prometheus daily."
+        assert extract_company_terms(jd) == frozenset()
+
+    def test_title_noun_rejected_even_with_dash(self):
+        jd = "Senior SRE — Remote\n\nBody text."
+        assert extract_company_terms(jd) == frozenset()
+
+    def test_duty_proper_nouns_not_captured(self):
+        jd = (
+            "Platform Role\nAcme — Boston\n\n"
+            "- Extend our Prometheus/Grafana stack.\n- Author Terraform modules.\n"
+        )
+        assert extract_company_terms(jd) == frozenset({"acme"})
+
+    def test_empty_input(self):
+        assert extract_company_terms("") == frozenset()
+
+
+class TestKeywordOverlapCleaning:
+    """F-01 — boilerplate + hiring-company cleaning in compute_keyword_overlap."""
+
+    def test_boilerplate_never_counts_matched_or_missing(self):
+        resume = {"keywords": {"python": 2, "hiring": 1}}
+        jd = {"keywords": {"python": 3, "hiring": 2, "benefits": 1}}
+        result = compute_keyword_overlap(resume, jd)
+        assert result["matched"] == ["python"]
+        assert result["missing_from_resume"] == []
+        assert result["match_score"] == 1.0
+        assert set(result["excluded_terms"]) == {"hiring", "benefits"}
+
+    def test_company_absence_forgiven(self):
+        resume = {"keywords": {"python": 1}}
+        jd = {"keywords": {"python": 1, "lattice": 4, "lattice cloud": 2, "terraform": 1}}
+        result = compute_keyword_overlap(resume, jd, company_terms=frozenset({"lattice cloud"}))
+        assert result["missing_from_resume"] == ["terraform"]
+        assert result["match_score"] == 0.5  # 1 matched / (1 matched + 1 missing)
+        assert "lattice" in result["excluded_terms"]
+        assert "lattice cloud" in result["excluded_terms"]
+
+    def test_company_presence_still_credited(self):
+        resume = {"keywords": {"databricks": 2, "python": 1}}
+        jd = {"keywords": {"databricks": 5, "python": 1}}
+        result = compute_keyword_overlap(resume, jd, company_terms=frozenset({"databricks"}))
+        assert "databricks" in result["matched"]
+        assert result["match_score"] == 1.0
+
+    def test_no_cleaning_inputs_behave_as_before(self):
+        resume = {"keywords": {"python": 1, "go": 2}}
+        jd = {"keywords": {"python": 1, "kubernetes": 3}}
+        result = compute_keyword_overlap(resume, jd)
+        assert result["matched"] == ["python"]
+        assert result["missing_from_resume"] == ["kubernetes"]
+        assert result["match_score"] == 0.5
+        assert result["excluded_terms"] == []
+
+
+class TestKeywordScoreFixtureRegression:
+    """F-01 acceptance — the real SRE fixture must score defensibly.
+
+    Before-state evidence: 18% with "lattice cloud" in the missing list
+    (docs/dev/reviews/2026-07-ux-review/40-friction-register.md §F-01).
+    """
+
+    FIXTURE = Path(__file__).parent.parent / "evals" / "fixtures" / "synthetic" / "sre-mid-level"
+
+    def test_company_and_boilerplate_not_in_missing(self):
+        jd_text = (self.FIXTURE / "jd.txt").read_text(encoding="utf-8")
+        resume_text = (self.FIXTURE / "resume.md").read_text(encoding="utf-8")
+        company = extract_company_terms(jd_text)
+        assert "lattice cloud" in company
+        result = compute_keyword_overlap(
+            extract_keywords(resume_text),
+            extract_keywords(jd_text),
+            company_terms=company,
+        )
+        for term in ("lattice", "lattice cloud", "cloud", "hiring", "serving"):
+            assert term not in result["missing_from_resume"]
+
+    def test_score_exceeds_raw_overlap(self):
+        jd_text = (self.FIXTURE / "jd.txt").read_text(encoding="utf-8")
+        resume_text = (self.FIXTURE / "resume.md").read_text(encoding="utf-8")
+        jd_kw = extract_keywords(jd_text)
+        resume_kw = extract_keywords(resume_text)
+        jd_set = set(jd_kw["keywords"])
+        raw_score = len(set(resume_kw["keywords"]) & jd_set) / max(len(jd_set), 1)
+        result = compute_keyword_overlap(
+            resume_kw, jd_kw, company_terms=extract_company_terms(jd_text)
+        )
+        assert result["match_score"] > raw_score
 
 
 class TestCheckAtsFormat:

@@ -73,6 +73,7 @@
             "matched": {"type": "array", "items": {"type": "string"}},
             "missing_from_resume": {"type": "array", "items": {"type": "string"}},
             "only_in_resume": {"type": "array", "items": {"type": "string"}},
+            "excluded_terms": {"type": "array", "items": {"type": "string"}},
             "match_score": {"type": "number"}
           }
         },
