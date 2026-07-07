@@ -46,7 +46,7 @@ The project follows the [10 Principles framework](https://jdforsythe.github.io/1
 
 Full system + module map in [`docs/architecture.md`](docs/architecture.md). Quick orientation:
 
-- **All LLM calls live in `analyzer.py`.** Sonnet 4.6 for heavy reasoning (`analyze`, `clarify`, `iterate_clarify`, `generate`, `generate_cover_letter`); Haiku 4.5 for structured selection (`recommend`, `recommend_summary`, `critique_proposal`, `extract_experiences`).
+- **All LLM calls live in `analyzer.py`.** Sonnet 5 (`claude-sonnet-5`) for heavy reasoning (`analyze` synthesis pass, `iterate_clarify`, `generate`, `generate_cover_letter`); Haiku 4.5 (`claude-haiku-4-5-20251001`) for structured selection (the `analyze` extraction pass, `clarify`, `recommend`, `recommend_summary`, `critique_proposal`, `extract_experiences`). Verified against `analyzer.py:SONNET_MODEL`/`HAIKU_MODEL`.
 - **`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py`, `docx_to_persona_html.py` are deterministic** — no LLM calls allowed. The P1 Hardening boundary (canonical rule: charter **C-6**).
 - **`context_set` is the JSON contract** between every pipeline stage. Each `/api/generate` writes a NEW timestamped child file via `hardening.save_iteration_context()`; the `parent_context_path` chain is the iteration audit trail.
 - **`PROMPT_VERSION` in `analyzer.py`** must bump in the SAME commit when any prompt changes, so eval telemetry attributes scores correctly (a charter discipline rule — [`docs/governance/charter.md`](docs/governance/charter.md), C-0 / D-4).
@@ -146,7 +146,7 @@ The Playwright **UX** tier (`pytest -m ux`) drives the wizard in a headless Chro
 CI runs the same on PR. Eval harness (Anthropic API costs apply) runs locally and on label-gated CI:
 
 ```bash
-python evals/runner.py --suite synthetic --subset smoke   # ~$0.10, grounding only
+python evals/runner.py --suite synthetic --subset smoke   # ~$0.35-0.40 under Sonnet 5, grounding only
 python evals/runner.py --suite synthetic                  # ~$1.50, all 4 rubrics × 3 fixtures
 ```
 

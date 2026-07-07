@@ -98,7 +98,7 @@ the Kafka bullet rendered. No edits needed.
 Priya pastes the Vertica JD into the textarea and clicks
 **Analyze**.
 
-- **Cost:** ~$0.04 (one Sonnet 4.6 call to `analyze()`)
+- **Cost:** ~$0.04 (`analyze()` — a Haiku 4.5 extraction pass feeds a Sonnet 5 synthesis pass)
 - **Time:** ~45 seconds. Long enough to make coffee.
 
 The analysis comes back with three things she pays attention to:
@@ -263,7 +263,7 @@ Modern's blue-accent header feels more right.
 
 Priya selects `.docx` and clicks **Generate**.
 
-- **Cost:** ~$0.10 (Sonnet 4.6 call to `generate()`)
+- **Cost:** ~$0.10 (Sonnet 5 call to `generate()`)
 - **Time:** ~50 seconds.
 
 The preview shows the rendered résumé. She watches the wait;
@@ -317,11 +317,11 @@ reading and decisions.
 | Step | Call | Model | Approx |
 |---|---|---|---|
 | Setup | `extract_experiences()` | Haiku 4.5 | $0.02 |
-| Step 1 | `analyze()` | Sonnet 4.6 | $0.04 |
-| Step 2 | `clarify()` | Sonnet 4.6 | $0.03 |
+| Step 1 | `analyze()` | Haiku 4.5 + Sonnet 5 | $0.04 |
+| Step 2 | `clarify()` | Haiku 4.5 | $0.03 |
 | Step 3 | `recommend_bullets()` × 3, `recommend_summaries()`, `critique_proposal()` × 3 | Haiku 4.5 | $0.03 |
 | Step 4 | — | — | $0 |
-| Step 5 | `generate()` | Sonnet 4.6 | $0.10 |
+| Step 5 | `generate()` | Sonnet 5 | $0.10 |
 | Step 6 | — (approved without refine) | — | $0 |
 | **Total** | | | **~$0.22** |
 

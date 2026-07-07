@@ -344,11 +344,11 @@ different templates would be ideal."
 
 ```
 1. Job description (paste)
-2. Analyze (LLM)        — Sonnet 4.6
-3. Clarify (optional)   — Sonnet 4.6
+2. Analyze (LLM)        — Sonnet 5 (two-pass: Haiku 4.5 extraction → Sonnet synthesis)
+3. Clarify (optional)   — Haiku 4.5
 4. Compose              — Haiku 4.5 recommend_bullets + user curation
 5. Template             — pick persona
-6. Generate             — Sonnet 4.6, produces BOTH résumé + cover
+6. Generate             — Sonnet 5, produces BOTH résumé + cover
 7. Output / Download    — .docx or .md, preview = .docx download
 ```
 

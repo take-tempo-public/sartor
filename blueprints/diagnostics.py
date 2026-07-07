@@ -815,7 +815,7 @@ def eval_run_stream() -> ResponseReturnValue:
         username:<candidate>} → resolve evals/fixtures/real/<slug>/seed.json and run
         that one fixture against its corpus — the collate `--seed` command, in-browser.
 
-    PAID (Sonnet + Haiku): ~$0.10 smoke / ~$0.30 full per the runner's cost table;
+    PAID (Sonnet + Haiku): ~$0.35-0.40 smoke / ~$0.30 full per the runner's cost table;
     the UI shows a cost-band confirm() before POSTing. Streams `start` /
     `fixture_start` / `analyzing` / `clarifying` / `generating` / `rubric_done` /
     `fixture_done` / `done` / `error`. All eager validation (bad suite / unknown

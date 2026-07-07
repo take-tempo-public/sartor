@@ -2,8 +2,8 @@
 
 > **Purpose:** developer-facing architecture overview. The system
 > diagram, the module map, the DB schema, and the LLM routing table.
-> One page that a new contributor (human or LLM) can read in 5
-> minutes and then navigate the codebase confidently.
+> One page that a new contributor (human or LLM) can skim to get
+> oriented and then navigate the codebase confidently.
 > **Audience:** humans contributing PRs; LLM agents (Claude Code,
 > sub-agents) onboarding to the repo.
 > **Authoritative for:** the canonical pipeline shape, the on-disk
@@ -26,7 +26,7 @@ pipeline is **two-or-more LLM calls in sequence**, each gated by
 a human review or curation step:
 
 1. **Analyze** *(two-pass)* — Haiku 4.5 extraction (JD signals,
-   keywords, typed hidden_qualities) → Sonnet 4.6 synthesis
+   keywords, typed hidden_qualities) → Sonnet 5 synthesis
    (comparison, suggestions, overall strategy)
 2. **Clarify** *(optional, Haiku)* — surfaces real-but-undocumented
    candidate experience
@@ -176,6 +176,15 @@ All four render natively on GitHub when committed in a fenced
 `mermaid` block, and parse cleanly by every modern LLM. Use a
 local Mermaid live editor (`mermaid.live`) to preview changes
 before commit.
+
+> **Known staleness (2026-07-07, F-22).** The fenced diagrams above and their
+> `docs/diagrams/*.mmd` sources still label the heavy-reasoning tier "Sonnet
+> 4.6" — the running system uses **Sonnet 5** (`claude-sonnet-5`); Haiku 4.5
+> labels are still correct. The prose in "LLM routing + cost" below has the
+> corrected wording. A full diagram refresh is scheduled for the v1.0.9
+> docs-site epic ([`docs/dev/documentation-architecture.md`](dev/documentation-architecture.md));
+> until then, treat model names inside the fenced diagrams as illustrative,
+> not authoritative.
 
 ---
 

@@ -938,7 +938,7 @@ def run_generation_stream() -> ResponseReturnValue:
     Same request shape and same final response payload as /api/generate,
     but the LLM call streams tokens via SSE so the frontend can show a
     live "alive" indicator (token counter + collapsible raw stream)
-    during the ~50s Sonnet 4.6 call. All pre-LLM validation runs upfront
+    during the ~50s Sonnet 5 call. All pre-LLM validation runs upfront
     and returns plain JSON on failure; all post-LLM persistence (file
     writes, ATS round-trip, DB persist, iteration snapshot) runs inside
     the stream's `done` branch and rides the final SSE event.
