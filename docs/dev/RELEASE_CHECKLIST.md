@@ -514,7 +514,12 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       **Wave 1+:** **F-19 DONE 2026-07-07 (`feat/ux-w3-demo-mode`)** — offline/demo
       mode (`SARTOR_DEMO=1`): canned fixture-derived analyzer responses, zero
       Anthropic client construction, persistent banner, telemetry-clean by
-      construction. Screenshot evidence
+      construction. **Wave 1 (first-run delight):** F-12 progressive-disclosure
+      Analyze (verdict + top-3 deterministic actions, deep read behind "Show full
+      analysis") · F-06 one-time corpus-landing transition modal · F-05
+      display-name-first user form with live slug derivation · F-15 deterministic
+      company capture onto applications — **F-12/F-06/F-05/F-15 DONE 2026-07-07
+      (`feat/ux-w1-first-run-flow`).** Screenshot evidence
       (gitignored, local): `output/ux-review-2026-07-screenshots/` + its MANIFEST.md.
       _(discovered: 2026-07-07, `docs/ux-review-2026-07`; open count 11 → 12.)_
       **→ Integrate as `fix/ux-review-wave0-*` branches before any public tag;**
@@ -525,8 +530,8 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       (verified against `analyzer.py:SONNET_MODEL`/`HAIKU_MODEL`, incl. a `clarify()`
       tier bug found along the way), eval-smoke cost restated ~$0.35-0.40 under
       Sonnet 5 (AGENTS.md/README/evals/README.md/dashboard/diagnostics.py), dashboard
-      reliability tile relabeled "error rate." F-19 (demo mode) still open for Wave
-      3's remainder.
+      reliability tile relabeled "error rate." F-19 (demo mode) DONE (listed above,
+      `feat/ux-w3-demo-mode`) — Wave 3 fully drained.
 
 - [ ] **PyPI wheel not installable — data files not packaged** — **RESOLVED-PENDING-PUBLISH
       2026-07-07 (`fix/packaging-install`); left open only for the still-blocked

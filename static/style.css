@@ -3876,3 +3876,37 @@ input:focus, select:focus, textarea:focus {
   color: var(--fg-2);
   margin-top: 6px;
 }
+
+/* F-12 — progressive disclosure on the Analyze screen: verdict + top-3
+   actions lead; the deep analysis collapses behind "Show full analysis". */
+.analysis-verdict-line {
+  color: var(--brand-hi);
+  font-size: 13px;
+  margin: 4px 0 6px;
+}
+.analysis-top-actions {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+.analysis-top-actions li {
+  color: var(--brand-hi);
+  font-size: 13px;
+  padding: 3px 0;
+}
+.analysis-details {
+  margin-top: 8px;
+}
+.analysis-details > summary {
+  cursor: pointer;
+  color: var(--brand);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 6px 0;
+}
+.analysis-details > summary:hover {
+  color: var(--brand-hi);
+}
+.analysis-details[open] > summary {
+  margin-bottom: 8px;
+}

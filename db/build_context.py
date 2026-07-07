@@ -135,6 +135,7 @@ def build_context_set_from_db(
     application = Application(
         candidate_id=candidate.id,
         title=application_title or _infer_application_title(jd_text),
+        company=_infer_application_company(jd_text),
         jd_text=jd_text,
         jd_url=jd_url,
         jd_fingerprint=jd_fingerprint,
@@ -473,6 +474,27 @@ def _infer_application_title(jd_text: str) -> str:
         if cleaned:
             return cleaned[:80]
     return "Untitled application"
+
+
+def _infer_application_company(jd_text: str) -> str | None:
+    """Best-effort employer name for the application card (F-15).
+
+    Delegates to `extract_company_terms` (hardening.py, landed with F-01) —
+    the same conservative, fail-open detector already used to strip the
+    hiring company from the keyword-overlap universe. That function returns
+    a `frozenset` (no guaranteed iteration order across processes), so the
+    "primary" term is picked deterministically: the longest term wins (more
+    specific — fewer accidental single-word collisions), ties broken
+    alphabetically. Title-cased for display; `None` on a miss (fail-open —
+    the card just shows no company, exactly like before this fix). The user
+    can edit the result via the Applications detail modal (#24,
+    `PUT /api/applications/<id>/meta`).
+    """
+    terms = extract_company_terms(jd_text)
+    if not terms:
+        return None
+    primary = sorted(terms, key=lambda t: (-len(t), t))[0]
+    return primary.title()
 
 
 __all__ = ["build_context_set_from_db", "eligible_titles_for"]
