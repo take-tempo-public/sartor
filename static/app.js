@@ -5526,6 +5526,27 @@ let _gapFillFiredForApp = null;
 // B.4 — whether the "Add role intros" toggle is on for the loaded application.
 let _composeUseRoleIntros = false;
 
+// Test-observability: count of in-flight background reloads that will re-enter
+// loadComposition() (auto-cascade draft/recommend + user-action pin/accept/etc).
+// Reflected as `data-compose-bg-pending` on #composeList so
+// WizardComposePage._wait_settled can gate on "terminal render present AND no
+// reload pending" instead of a timing heuristic (the Compose flaky-class fix).
+// LOAD-BEARING invariant: each reload-firing call site increments as its FIRST
+// synchronous statement (before any await) so the attribute is present before
+// loadComposition re-sets `data-compose-ready` at the end of the firing pass —
+// a firing pass therefore never looks terminal — and decrements in a `finally`
+// so a failed/rejected POST still balances (no stuck attribute → no hang).
+// The attribute is ABSENT at zero (the `:not([data-compose-bg-pending])`
+// selector depends on that); it is never left as `data-compose-bg-pending="0"`.
+let _composeBgReloads = 0;
+function _markComposeBgReload(delta) {
+  _composeBgReloads = Math.max(0, _composeBgReloads + delta);
+  const list = document.getElementById('composeList');
+  if (!list) return;
+  if (_composeBgReloads > 0) list.setAttribute('data-compose-bg-pending', '1');
+  else list.removeAttribute('data-compose-bg-pending');
+}
+
 async function loadComposition() {
   const list = document.getElementById('composeList');
   if (!list) return;
@@ -5710,6 +5731,7 @@ async function _refreshCoverPreview() {
 // reload composition after to surface the recommendation chips.
 async function _fireRecommendSummary() {
   if (_composeApplicationId == null || !lastContextPath) return;
+  _markComposeBgReload(1);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/recommend-summary`,
@@ -5724,6 +5746,8 @@ async function _fireRecommendSummary() {
     }
   } catch {
     // Non-blocking — Compose still works without the recommendation.
+  } finally {
+    _markComposeBgReload(-1);
   }
 }
 
@@ -5737,6 +5761,7 @@ async function _fireDraftSummary(force) {
     const el = document.getElementById('composeSummaryDraft');
     if (el) el.placeholder = 'Drafting your summary…';
   }
+  _markComposeBgReload(1);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/draft-summary`,
@@ -5746,6 +5771,8 @@ async function _fireDraftSummary(force) {
     if (res.ok) loadComposition();
   } catch {
     // Non-blocking — the user can Regenerate or type their own summary.
+  } finally {
+    _markComposeBgReload(-1);
   }
 }
 
@@ -5754,6 +5781,7 @@ async function _fireDraftSummary(force) {
 // per-role "Suggested for this JD" lanes render. Non-blocking on failure.
 async function _fireDraftGapFill() {
   if (_composeApplicationId == null || !lastContextPath) return;
+  _markComposeBgReload(1);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/draft-gap-fill`,
@@ -5763,6 +5791,8 @@ async function _fireDraftGapFill() {
     if (res.ok) loadComposition();
   } catch {
     // Non-blocking — gap-fill is an optional enhancement over the corpus set.
+  } finally {
+    _markComposeBgReload(-1);
   }
 }
 
@@ -5901,6 +5931,7 @@ async function _togglePositioningPin(summaryId, alreadyPinned) {
   // override families (incl. B.4 role intros) intact on one save.
   const state = _collectCompositionState();
   state.pinned_summary_id = alreadyPinned ? null : summaryId;
+  _markComposeBgReload(1);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/composition`,
@@ -5910,6 +5941,8 @@ async function _togglePositioningPin(summaryId, alreadyPinned) {
     if (res.ok) loadComposition();
   } catch {
     // Non-blocking
+  } finally {
+    _markComposeBgReload(-1);
   }
 }
 
@@ -6090,6 +6123,7 @@ function _collectSkillState() {
 // user click (always run) from the auto-fire on first load.
 async function _fireRecommendSkills(explicit) {
   if (_composeApplicationId == null || !lastContextPath) return;
+  _markComposeBgReload(1);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/recommend-skills`,
@@ -6100,6 +6134,8 @@ async function _fireRecommendSkills(explicit) {
     else if (explicit) _toast('Could not tailor skills.', true);
   } catch {
     if (explicit) _toast('Network error tailoring skills.', true);
+  } finally {
+    _markComposeBgReload(-1);
   }
 }
 
@@ -6108,6 +6144,7 @@ async function _fireRecommendSkills(explicit) {
 async function _fireSuggestSkills(btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
   if (btn) { btn.disabled = true; btn.textContent = 'Suggesting…'; }
+  _markComposeBgReload(1);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/suggest-skills`,
@@ -6125,6 +6162,7 @@ async function _fireSuggestSkills(btn) {
   } catch {
     _toast('Network error suggesting skills.', true);
   } finally {
+    _markComposeBgReload(-1);
     if (btn) { btn.disabled = false; btn.textContent = 'Suggest skills from this JD'; }
   }
 }
@@ -6154,6 +6192,7 @@ function _renderPendingSkillRow(p) {
 // Approve (PUT is_pending_review=false → joins the canonical set) or deny
 // (DELETE → hard-removes the never-approved suggestion). Reloads composition.
 async function _reviewPendingSkill(skillId, approve) {
+  _markComposeBgReload(1);
   try {
     const res = approve
       ? await fetch(`/api/skills/${skillId}`, {
@@ -6164,6 +6203,8 @@ async function _reviewPendingSkill(skillId, approve) {
     else _toast('Could not update the suggested skill.', true);
   } catch {
     _toast('Network error updating the suggested skill.', true);
+  } finally {
+    _markComposeBgReload(-1);
   }
 }
 
@@ -6203,6 +6244,7 @@ function _renderGapFillRow(expId, p) {
 // or retire (drops the transient proposal). Reloads composition on success.
 async function _decideGapFill(key, decision) {
   if (_composeApplicationId == null || !lastContextPath) return;
+  _markComposeBgReload(1);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/gap-fill-decide`,
@@ -6213,6 +6255,8 @@ async function _decideGapFill(key, decision) {
     else _toast('Could not update the suggested bullet.', true);
   } catch {
     _toast('Network error updating the suggested bullet.', true);
+  } finally {
+    _markComposeBgReload(-1);
   }
 }
 
@@ -6390,6 +6434,7 @@ function _maybeFireRecommendExperienceSummaries() {
 
 async function _fireRecommendExperienceSummaries() {
   if (_composeApplicationId == null || !lastContextPath) return;
+  _markComposeBgReload(1);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/recommend-experience-summaries`,
@@ -6399,6 +6444,8 @@ async function _fireRecommendExperienceSummaries() {
     if (res.ok) loadComposition();
   } catch {
     // Non-blocking — Compose still works without the recommendation.
+  } finally {
+    _markComposeBgReload(-1);
   }
 }
 
@@ -6419,6 +6466,7 @@ async function _addComposeRoleIntro(expId) {
   if (!values) return;
   const trimmed = (values.text || '').trim();
   if (!trimmed) { _toast('Intro text cannot be empty.', true); return; }
+  _markComposeBgReload(1);
   try {
     const res = await fetch(`/api/experiences/${expId}/summaries`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -6431,6 +6479,8 @@ async function _addComposeRoleIntro(expId) {
     }
   } catch {
     _toast('Network error.', true);
+  } finally {
+    _markComposeBgReload(-1);
   }
 }
 
@@ -6721,7 +6771,12 @@ async function _addComposeTitlePrompt(expId) {
     },
   });
   if (!result) return;
-  await loadComposition();
+  _markComposeBgReload(1);
+  try {
+    await loadComposition();
+  } finally {
+    _markComposeBgReload(-1);
+  }
   _toast('Title added to corpus');
 }
 

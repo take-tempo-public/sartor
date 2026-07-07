@@ -400,3 +400,12 @@ class Compose:
     # reached its terminal render. Consumed by WizardComposePage._wait_settled —
     # the deterministic fix for the Compose flaky-test class.
     READY = "#composeList[data-compose-ready]"
+    # Terminal-render gate: READY present AND no background reload in flight.
+    # `data-compose-bg-pending` is a counter attribute app.js sets while any
+    # reload-firing background call (auto-cascade draft/recommend + user-action
+    # pin/accept/add) is in flight and removes when it drains to zero. The
+    # increment lands before loadComposition re-sets data-compose-ready, so the
+    # ONLY (READY present + bg-pending absent) state is the true terminal render —
+    # making this a deterministic settle signal (no timing heuristic). Consumed by
+    # WizardComposePage._wait_settled.
+    SETTLED = "#composeList[data-compose-ready]:not([data-compose-bg-pending])"
