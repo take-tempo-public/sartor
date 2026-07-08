@@ -13,12 +13,27 @@ deliberate, reviewed edit here. It also cross-checks the live wiring in
 ``.claude/settings.json`` — blockers wired as PreToolUse pre-gates, witnesses as
 PostToolUse observers — so a hook can't be silently unwired or a witness promoted
 to a gate.
+
+Since `feat/portable-enforcement-core` (2026-07-08), six of the seven blockers are
+thin wrappers that exec the shared Claude adapter
+(``scripts/enforcement/adapters/claude_hook.py``), so their reachable-``exit 2``
+proof moved from "the script text contains ``exit 2``" to a two-part invariant:
+the wrapper must delegate its own guard name to that adapter, and the adapter must
+behaviorally translate a blocked guard into exit code 2 (asserted in-process below;
+the full per-guard block/allow matrix through the real wrappers lives in
+``tests/test_enforcement_core.py``). ``check-plan-approved`` stays a standalone
+Claude-only script and keeps the literal-text check.
 """
 
 from __future__ import annotations
 
+import io
 import json
 from pathlib import Path
+
+import pytest
+
+from scripts.enforcement.adapters import claude_hook
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS_DIR = REPO_ROOT / ".claude-plugin" / "hooks"
@@ -43,6 +58,22 @@ WITNESS_HOOKS = frozenset(
         "cleanup-plan-on-merge",
         "mark-plan-approved",
         "wiki-freshness-reminder",
+    }
+)
+
+# Blockers whose decision logic lives in the shared portable-enforcement core
+# (`scripts/enforcement/`): their .sh files are thin wrappers that exec the
+# Claude adapter, which owns the exit-2 path. The complement of this set within
+# BLOCKER_HOOKS is the standalone, Claude-only script(s) still carrying a
+# literal `exit 2` of their own.
+CORE_DELEGATED_BLOCKERS = frozenset(
+    {
+        "block-merge-to-main",
+        "block-secrets",
+        "require-feature-branch",
+        "route-security-lint",
+        "ruff-changed",
+        "validate-context",
     }
 )
 
@@ -92,13 +123,42 @@ def test_every_hook_is_classified() -> None:
 # --------------------------------------------------------------------------- #
 # 2. The seven blockers each reach exit 2.
 # --------------------------------------------------------------------------- #
-def test_seven_blockers_reach_exit_2() -> None:
-    """F-gov-04: exactly seven enforced blockers, each with a reachable `exit 2`."""
+def test_seven_blockers_reach_exit_2(monkeypatch: pytest.MonkeyPatch) -> None:
+    """F-gov-04: exactly seven enforced blockers, each with a reachable `exit 2`.
+
+    Standalone scripts prove it textually (a literal ``exit 2``); core-delegated
+    wrappers prove it structurally (they exec the shared Claude adapter with their
+    own guard name) + behaviorally (the adapter's ``main`` returns 2 for a blocked
+    payload — the exact exit code the wrapper's ``exec`` propagates). Per-guard
+    block/allow coverage through the real wrappers: ``tests/test_enforcement_core.py``.
+    """
     assert len(BLOCKER_HOOKS) == 7, "F-gov-04 affirms exactly seven enforced blockers."
-    toothless = sorted(s for s in BLOCKER_HOOKS if "exit 2" not in _hook_text(s))
+
+    # Standalone blockers: the script text itself must reach exit 2.
+    standalone = BLOCKER_HOOKS - CORE_DELEGATED_BLOCKERS
+    toothless = sorted(s for s in standalone if "exit 2" not in _hook_text(s))
     assert not toothless, (
-        f"Blocker hook(s) with no reachable `exit 2`: {toothless}. A blocker that "
-        "cannot exit 2 does not block — fix it or reclassify it as a witness."
+        f"Standalone blocker hook(s) with no reachable `exit 2`: {toothless}. A blocker "
+        "that cannot exit 2 does not block — fix it or reclassify it as a witness."
+    )
+
+    # Core-delegated blockers: the wrapper must exec the shared adapter, naming
+    # its own guard (so the exit-2 path below is actually the one it reaches).
+    for stem in sorted(CORE_DELEGATED_BLOCKERS):
+        text = _hook_text(stem)
+        assert "scripts/enforcement/adapters/claude_hook.py" in text and stem in text, (
+            f"{stem}.sh no longer delegates to the shared enforcement core "
+            "(scripts/enforcement/adapters/claude_hook.py) — either restore the "
+            "delegation or move it out of CORE_DELEGATED_BLOCKERS and give it a "
+            "reachable `exit 2` of its own."
+        )
+
+    # ...and the shared adapter really turns a blocked guard into exit code 2.
+    payload = {"tool_name": "Bash", "tool_input": {"command": "echo sk-ant-" + "a" * 30}}
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(payload)))
+    assert claude_hook.main(["claude_hook.py", "block-secrets"]) == 2, (
+        "The shared Claude adapter must exit 2 on a blocked guard — the delegated "
+        "blockers' teeth all route through this path."
     )
 
 

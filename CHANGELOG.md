@@ -13,6 +13,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feat: portable enforcement core — one guard implementation, three consumers (`feat/portable-enforcement-core`, 2026-07-08)
+
+Lifts the six portable dev-loop guards (`require-feature-branch`, `block-merge-to-main`,
+`block-secrets`, `route-security-lint`, `ruff-changed`, `validate-context`) out of
+standalone `.claude-plugin/hooks/*.sh` bash and into a tool-agnostic shared core, so the
+rules hold for plain `git commit`/`git merge`/`git push` too, not only inside a Claude
+Code session (RELEASE_ARC §Phase 4.8 public-prep item (i); `docs/governance/
+enforcement.md` "gate" side of the gate/witness/tribal split).
+
+- **One implementation per guard** in `scripts/enforcement/guards/` (pure `decide()`
+  functions, stdlib-only). **Three consumers**: the Claude Code PreToolUse adapter
+  (`scripts/enforcement/adapters/claude_hook.py`, invoked by thin wrappers left at the
+  same `.claude-plugin/hooks/*.sh` paths — `.claude/settings.json` wiring untouched); the
+  native git hooks at `.githooks/` (`pre-commit`, `pre-merge-commit`, `pre-push`), opt-in
+  per clone via `git config core.hooksPath .githooks` (see `.githooks/README.md` — **not**
+  activated automatically); and a CI backstop step (`scripts/enforcement/ci_backstop.py`,
+  a repo-wide secrets scan wired into `.github/workflows/ci.yml`, itself still latent
+  until the git remote activates, same as the rest of that workflow).
+- **Fixes both defects filed against `block-merge-to-main`** (RELEASE_CHECKLIST.md
+  "Portable-enforcement-core migration" ledger row, Train-1 note, 2026-07-07): (i) the
+  `\bgit merge\b` pattern false-positived on read-only `git merge-base`/`git merge-tree`
+  (the `\b` boundary is satisfied at the `e`→`-` transition) — fixed with a negative
+  lookahead; (ii) the dominant-direction check resolved HEAD via a bare
+  `git rev-parse --abbrev-ref HEAD`, which runs in the hook *process's* ambient cwd —
+  under parallel-worktree sessions (charter W-1) that isn't guaranteed to be the invoking
+  agent's own worktree. Fixed by resolving against the PreToolUse hook-input `cwd` field
+  instead. The native `pre-merge-commit`/`pre-push` git hooks never had either bug — git
+  itself supplies the real operation and resolves HEAD in the invoking worktree.
+- **Plan-mode lifecycle hooks** (`check-plan-approved`, `mark-plan-approved`,
+  `cleanup-plan-on-merge`) and the wiki-freshness reminder stay Claude-only, untouched.
+- Proven with `tests/test_enforcement_core.py`: a >=3-case-per-guard block/allow/edge unit
+  matrix over the pure `decide()` functions, plus an OLD-vs-NEW equivalence harness that
+  runs the pre-migration standalone scripts (extracted from git history) side-by-side with
+  the migrated wrappers against byte-correct PreToolUse JSON, asserting matching exit
+  codes and block-message substance — including two dedicated regression cases proving
+  each `block-merge-to-main` defect existed pre-fix and is gone post-fix.
+- The PX-29 blocker/witness governance gate (`tests/test_governance_hooks_gate.py`)
+  tightened to the new architecture: the six core-delegated blockers now prove their
+  reachable exit-2 structurally (the wrapper execs the shared adapter, naming its own
+  guard) + behaviorally (the adapter's blocked path returns 2, asserted in-process),
+  replacing the literal-`exit 2` grep those wrappers no longer satisfy;
+  `check-plan-approved` keeps the literal-text check. Blocker/witness counts and the
+  `settings.json` wiring pins are unchanged.
+
 ### Feat: clarifications persist to the corpus for cross-JD reuse (`feat/clarifications-to-corpus`, 2026-07-08)
 
 Generation-experience re-architecture — item (c) of the LATER-branch remainder

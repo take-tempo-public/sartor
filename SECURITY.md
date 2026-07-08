@@ -256,4 +256,8 @@ hook in `.claude-plugin/hooks/` blocks Edit/Write operations on
 and `_within()` calls. (The read-only `dashboard/` diagnostics
 surface is excluded by design — its routes are localhost-gated and
 take no user-supplied path, so the user-path guards do not apply.)
-This guarantees future routes inherit the pattern.
+This guarantees future routes inherit the pattern. The check itself
+lives once in `scripts/enforcement/guards/route_security_lint.py`
+and also runs as an opt-in native git `pre-commit` hook
+(`.githooks/`, see `.githooks/README.md`) — enforcement is not
+contingent on using the Claude Code plugin.

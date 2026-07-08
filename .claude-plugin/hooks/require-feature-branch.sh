@@ -5,53 +5,12 @@
 # event, so the first Edit/Write after plan→execute is where we gate (same
 # philosophy as check-plan-approved.sh).
 #
-# Exemptions:
-#   - the plans dir (~/.claude/plans) — plan files must stay writable
-#   - not a git repo / detached HEAD — never wedge the user on edge cases
-#   - env CLAUDE_ALLOW_MAIN_EDITS=1 — explicit opt-in (mirrors the
-#     CLAUDE_CONFIRM_MERGE=1 escape hatch in block-merge-to-main.sh)
-
-INPUT=$(cat)
-
-# Exempt the plans directory (same parse + normalize as check-plan-approved.sh)
-FILE_PATH=$(python3 -c "
-import sys, json
-try:
-    d = json.load(sys.stdin)
-    print(d.get('tool_input', {}).get('file_path', ''))
-except Exception:
-    print('')
-" <<< "$INPUT" 2>/dev/null || echo "")
-NORM_PATH=$(echo "$FILE_PATH" | tr '\\' '/')
-if echo "$NORM_PATH" | grep -qF ".claude/plans"; then
-  exit 0
-fi
-
-# Explicit opt-in escape hatch
-if [ "${CLAUDE_ALLOW_MAIN_EDITS:-}" = "1" ]; then
-  exit 0
-fi
-
-# Branch of the repo containing the TARGET FILE (worktree-aware); pass on
-# any git edge case. Resolving HEAD in the hook's cwd misreads the launch
-# clone's branch when the target lives in another worktree/clone. Walk up
-# to the nearest existing dir (Write may create new parent dirs); the drive
-# root always exists, so the loop terminates.
-DIR=$(dirname "$NORM_PATH")
-while [ -n "$DIR" ] && [ ! -d "$DIR" ] && [ "$DIR" != "/" ] && [ "$DIR" != "." ]; do
-  DIR=$(dirname "$DIR")
-done
-BR=$(git -C "${DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null)
-if [ -z "$BR" ] || [ "$BR" = "HEAD" ]; then
-  exit 0
-fi
-
-if [ "$BR" = "main" ] || [ "$BR" = "master" ]; then
-  echo "BLOCKED (require-feature-branch): on '$BR'." >&2
-  echo "Create a feature branch before code changes:" >&2
-  echo "  git checkout -b <type>/<short-desc>   (e.g. feat/foo, fix/bar)" >&2
-  echo "Escape hatch (intentional main edit): export CLAUDE_ALLOW_MAIN_EDITS=1" >&2
-  exit 2
-fi
-
-exit 0
+# Portable-enforcement-core adapter (feat/portable-enforcement-core,
+# 2026-07-08): thin wrapper forwarding the Claude PreToolUse JSON contract on
+# stdin to the shared guard implementation — decision logic, the plans-dir
+# exemption, and the CLAUDE_ALLOW_MAIN_EDITS=1 escape hatch all live once in
+# scripts/enforcement/guards/require_feature_branch.py, byte-identical to this
+# script's pre-migration behavior (see tests/test_enforcement_core.py). The
+# same guard also runs as a native git pre-commit hook (.githooks/, opt-in)
+# and is reused by the Claude adapter here.
+exec python3 "$CLAUDE_PROJECT_DIR/scripts/enforcement/adapters/claude_hook.py" require-feature-branch

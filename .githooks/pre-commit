@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Portable-enforcement-core git-native hook (feat/portable-enforcement-core,
+# 2026-07-08). Runs require-feature-branch, block-secrets, route-security-lint,
+# ruff-changed, and validate-context over the staged commit.
+#
+# Activation is OPT-IN: see .githooks/README.md
+# ("git config core.hooksPath .githooks"). Not activated automatically.
+#
+# Delegates to the shared guard implementations in scripts/enforcement/.
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+exec python3 "$REPO_ROOT/scripts/enforcement/adapters/git_hook.py" pre-commit

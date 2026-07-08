@@ -101,12 +101,26 @@ CI runs `ruff` + `mypy` + `pytest` on every PR. Add the `eval` label to also run
 The project ships a Claude Code plugin (`sartor`). The pieces live in three places:
 
 - **Slash commands** in repo-root [`commands/`](commands/) and **subagents** in repo-root [`agents/`](agents/) — they load as the `sartor` plugin via a bundled local marketplace (`sartor-tools`), declared by the `extraKnownMarketplaces` + `enabledPlugins` entries committed in `.claude/settings.json`. Because they load as a plugin they appear **namespaced**: commands as `/sartor:<name>`, subagents as `sartor:<name>`.
-- **Hooks** in [`.claude-plugin/hooks/`](.claude-plugin/hooks/) — wired **directly** in the same `.claude/settings.json` (path-referenced, not plugin-discovered), so they stay independent of the marketplace loader.
+- **Hooks** in [`.claude-plugin/hooks/`](.claude-plugin/hooks/) — wired **directly** in the same `.claude/settings.json` (path-referenced, not plugin-discovered), so they stay independent of the marketplace loader. Six of the ten are thin wrappers over the tool-agnostic [`scripts/enforcement/`](scripts/enforcement/) core (see "Portable enforcement hooks" below); the three plan-mode lifecycle hooks and the wiki-freshness reminder stay Claude-only, standalone scripts.
 - The plugin **manifest** + local **marketplace** definition live in [`.claude-plugin/`](.claude-plugin/) (`plugin.json` + `marketplace.json`).
 
 Cloning the repo activates everything on session start — a fresh clone needs a one-time marketplace-trust prompt + reload, no install step. For the full command/subagent/hook catalog see [README → Claude Code Plugin](README.md#claude-code-plugin) (and [`CLAUDE.md`](CLAUDE.md) for the agent-facing contract); this section is the layout-and-activation orientation, not a catalog, so it deliberately doesn't re-list every entry.
 
 Hooks should remain deterministic shell. LLM-backed review is reserved for explicit `/code-review:code-review` and `/security-review` invocations.
+
+---
+
+## Portable enforcement hooks (git-native, optional)
+
+The six portable guards (`require-feature-branch`, `block-merge-to-main`, `block-secrets`, `route-security-lint`, `ruff-changed`, `validate-context`) live once in [`scripts/enforcement/`](scripts/enforcement/) and have three consumers: the Claude Code plugin hooks above, native git hooks under [`.githooks/`](.githooks/), and a repo-wide secrets scan in CI (`scripts/enforcement/ci_backstop.py`, latent until the GitHub remote activates — same posture as the rest of `.github/workflows/ci.yml`).
+
+The git-native hooks are **not activated by cloning the repo** — opt in once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+This gives you the same branch/merge/secrets/route-security/ruff/context-JSON checks from plain `git commit`/`git merge`/`git push`, without a Claude Code session. See [`.githooks/README.md`](.githooks/README.md) for the per-hook breakdown and the `CLAUDE_CONFIRM_MERGE=1` / `CLAUDE_ALLOW_MAIN_EDITS=1` escape hatches (same as the Claude Code plugin hooks).
 
 ---
 

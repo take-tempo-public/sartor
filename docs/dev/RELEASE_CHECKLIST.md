@@ -596,6 +596,27 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       `merge-base`) and resolves HEAD in the hook's own cwd rather than the caller's worktree,
       so it fires from any worktree while the main checkout sits on `main` — fix both when
       lifting it into the portable core.
+      **DONE (Train 4, `feat/portable-enforcement-core`, 2026-07-08):** the migration itself
+      landed. One implementation per guard in `scripts/enforcement/guards/`, three consumers —
+      the Claude PreToolUse adapter (unchanged `.claude-plugin/hooks/*.sh` paths, now thin
+      wrappers), the opt-in native git hooks at `.githooks/` (`git config core.hooksPath
+      .githooks` — see `.githooks/README.md`; NOT auto-activated), and a CI backstop step
+      (`scripts/enforcement/ci_backstop.py` in `.github/workflows/ci.yml`, itself still latent
+      until the git remote activates, unchanged from the rest of that workflow). Both Train-1
+      `block-merge-to-main` defects noted above are fixed — the `merge-base`/`merge-tree`
+      false positive (a negative-lookahead regex tightening) and the cwd misresolution (the
+      Claude adapter now reads the PreToolUse `cwd` field instead of the hook process's
+      ambient cwd; the git-native `pre-merge-commit`/`pre-push` adapters never had the bug,
+      since git itself supplies the operation and resolves HEAD in the invoking worktree) —
+      each with a dedicated regression test proving OLD-blocks/NEW-allows against the
+      pre-migration script. Equivalence proved by `tests/test_enforcement_core.py` (61 cases:
+      a >=3-per-guard block/allow/edge unit matrix + OLD-vs-NEW subprocess equivalence through
+      the real `.claude-plugin/hooks/*.sh` wrappers, byte-correct JSON via `json.dumps`); the
+      PX-29 blocker/witness gate (`tests/test_governance_hooks_gate.py`) tightened in step —
+      delegated blockers prove exit-2 structurally + behaviorally through the shared adapter
+      instead of the literal-`exit 2` grep the thin wrappers no longer satisfy.
+      Plan-mode lifecycle hooks + the wiki-freshness reminder stayed Claude-only, untouched.
+      Row's final resolution (closing the ledger item) deferred to the train-time capture.
 
 - [ ] **Periodic cross-document link / cite checker** — none exists or is planned. `wiki-lint`
       is `docs/wiki/`-scoped (`[[backlinks]]` + `path:line` existence only), so the
