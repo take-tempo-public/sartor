@@ -13,6 +13,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feat: WYSIWYG as source of truth — in-app edits are the document (`feat/wysiwyg-source-of-truth`, 2026-07-08)
+
+Generation-experience re-architecture item (b) (D4, the LATER-branch remainder
+tracked in the carry-forward ledger): closes the "preview != download" window
+that existed between typing an edit into `#resumePreview` / `#coverLetterPreview`
+and the next unrelated action (refine/iterate) that happened to persist it.
+
+- **`POST /api/applications/<id>/preview-edited` (new route, `blueprints/templates.py`).**
+  The preview-side twin of the existing `/api/download-edited`: content in,
+  rendered HTML out, NOTHING persisted (no context write, no DB write). Renders
+  résumé markdown through the same `md_to_json_resume` → `render_html_string`
+  pipeline `save_edits` already uses to recompute its cache, and cover-letter
+  markdown through `render_cover_letter_html` — the identical deterministic
+  pipelines the cached preview routes use, just applied to live POSTed text
+  instead of a stored snapshot.
+- **`static/app.js`** wires a debounced (300ms, matching Compose's autosave
+  cadence) `input` listener on both editors (`_wireLiveEditPreview` /
+  `_refreshLiveEditPreview`) that POSTs the live text to the new route and
+  swaps the styled iframe's `srcdoc` — so the visible Step-6 preview never lags
+  behind what Download would produce. The existing "Use edits as baseline"
+  edit-detection modal and `/api/save-edits` persistence path are UNCHANGED —
+  this is a pure display refresh, not a new autosave.
+- **Cover-letter preview precedence fix** (`preview_cover_letter_html`): the
+  route now prefers a saved `edited_cover_letter_text` over the un-edited
+  `last_generated_cover_letter`, mirroring the résumé preview's existing
+  `edited_resume_text` precedence (D6(a)). Previously the cover-letter preview
+  ignored a saved edit entirely — `/api/save-edits` persisted it but the
+  styled iframe kept showing the pre-edit AI text forever.
+- **DB durability fix** (`_persist_edited_text_to_db`, `blueprints/generation.py`):
+  `save_edits` now mirrors a corpus-backed edit onto
+  `ApplicationRun.edited_resume_text` / `edited_cover_letter_text` — columns
+  the model already documents as "every generated and edited artifact" and
+  `_build_resume_state` / `get_application`'s `has_edits` already READ, but
+  that were never written. Without this, an edit survived only in the
+  context_*.json sidecar: resuming an application after that file was cleaned
+  up silently reverted Step 6 to the un-edited AI text. Best-effort (mirrors
+  the sibling `_persist_run_persona`) — a DB hiccup never fails the save.
+- Tests: `tests/test_live_preview_route.py::TestPreviewEditedRoute` (renders
+  résumé/cover-letter content matching the editor, matches the persisted
+  WYSIWYG preview for the same content — the transitive download==preview
+  proof, nothing persisted, validation/ownership/404s) +
+  `::TestCoverLetterPreview::test_edited_text_wins_over_last_generated` +
+  `tests/test_app_iteration.py::TestSaveEditsRoute` (DB row persists, missing
+  run row doesn't fail the save, legacy contexts skip the DB write).
+- No prompt text changed — `analyzer.py` untouched; `PROMPT_VERSION` stays at
+  `2026-07-08.1`.
+
 ### Feat: regenerate gap-fill + durable retirals (`feat/regenerate-gap-fill`, 2026-07-08)
 
 Generation-experience re-architecture LATER-branch remainder item (d) (see

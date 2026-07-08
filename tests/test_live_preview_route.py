@@ -664,6 +664,39 @@ class TestCoverLetterPreview:
         ).get_data(as_text=True)
         assert "No cover letter yet" in body
 
+    def test_edited_text_wins_over_last_generated(self, preview_app):
+        """D4 (generation-experience re-architecture, item (b)) / D6(a): a
+        saved hand-edit (edited_cover_letter_text) must win over the
+        un-edited last_generated_cover_letter, mirroring the résumé
+        preview's edited_resume_text precedence. Before this fix the
+        cover-letter preview route ignored edited_cover_letter_text
+        entirely — a saved edit persisted to disk but the styled iframe
+        kept showing the pre-edit AI text forever (preview != download)."""
+        import json as _json
+
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        out_dir = preview_app.OUTPUT_DIR / "casey"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ctx_path = out_dir / "context_cl_edited.json"
+        ctx_path.write_text(
+            _json.dumps(
+                {
+                    "application_id": aid,
+                    "last_generated_cover_letter": self._CL,
+                    "edited_cover_letter_text": (
+                        "Dear Hiring Manager,\n\nHAND EDITED BODY.\n\nSincerely,\nCasey"
+                    ),
+                }
+            ),
+            encoding="utf-8",
+        )
+        client = preview_app.app.test_client()
+        body = client.get(
+            f"/api/applications/{aid}/cover-letter-preview?context_path={ctx_path}",
+        ).get_data(as_text=True)
+        assert "HAND EDITED BODY." in body
+        assert "distributed systems" not in body  # the un-edited AI text is gone
+
     def test_returns_404_for_unknown_application(self, preview_app):
         client = preview_app.app.test_client()
         r = client.get("/api/applications/9999/cover-letter-preview")
@@ -692,6 +725,122 @@ class TestCoverLetterPreview:
         ).get_data(as_text=True)
         assert "SENTINEL_LEAK_TEXT" not in body
         assert "No cover letter yet" in body
+
+
+# -------------------------------------------------------------------
+# POST /api/applications/<id>/preview-edited — D4 (item (b)): ephemeral
+# live-render of whatever's currently typed into the editor. Content in,
+# rendered HTML out, NOTHING persisted — the preview-side twin of
+# /api/download-edited.
+# -------------------------------------------------------------------
+
+
+class TestPreviewEditedRoute:
+    def test_renders_resume_content_matching_editor(self, preview_app):
+        """The route renders exactly the POSTed markdown — the same content
+        Download would receive from the same editor at the same instant."""
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        client = preview_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/preview-edited",
+            json={"content": _WYSIWYG_MARKDOWN, "type": "resume"},
+        )
+        assert r.status_code == 200
+        body = r.get_json()
+        assert "Drove a 3x revenue lift by repositioning the platform." in body["html"]
+        assert "Orbital Dynamics" in body["html"]
+        # Self-contained, same as the cached preview route.
+        assert "<style>" in body["html"]
+
+    def test_renders_cover_letter_content_matching_editor(self, preview_app):
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        client = preview_app.app.test_client()
+        letter = "Dear Hiring Manager,\n\nLIVE-TYPED BODY.\n\nSincerely,\nCasey"
+        r = client.post(
+            f"/api/applications/{aid}/preview-edited",
+            json={"content": letter, "type": "cover_letter"},
+        )
+        assert r.status_code == 200
+        body = r.get_json()
+        assert "LIVE-TYPED BODY." in body["html"]
+        assert 'class="cover-letter"' in body["html"]
+
+    def test_matches_the_persisted_wysiwyg_preview_for_the_same_content(self, preview_app):
+        """download == preview proof: the ephemeral live-render and the
+        PERSISTED WYSIWYG preview (save-edits -> cached
+        last_generated_json_resume -> GET .../preview, already proven ==
+        download by TestApplicationPreviewWysiwyg above) show the SAME
+        facts for the SAME typed content. That makes the chain
+        live-preview == persisted-preview == download hold transitively —
+        the D4 acceptance bar ("preview and download always match")."""
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        client = preview_app.app.test_client()
+
+        live_html = client.post(
+            f"/api/applications/{aid}/preview-edited",
+            json={"content": _WYSIWYG_MARKDOWN, "type": "resume"},
+        ).get_json()["html"]
+
+        ctx_file = _write_context_with_cached_json_resume(
+            preview_app.OUTPUT_DIR / "casey",
+            aid,
+            _WYSIWYG_MARKDOWN,
+            filename="context_live_cmp.json",
+        )
+        persisted_html = client.get(
+            f"/api/applications/{aid}/preview?context_path={ctx_file}",
+        ).get_data(as_text=True)
+
+        for fact in ("Orbital Dynamics", "Drove a 3x revenue lift by repositioning the platform."):
+            assert fact in live_html
+            assert fact in persisted_html
+
+    def test_nothing_is_persisted(self, preview_app):
+        """Ephemeral by design — posting content must not write a context
+        file or anything else the cached preview route could later read."""
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        client = preview_app.app.test_client()
+        client.post(
+            f"/api/applications/{aid}/preview-edited",
+            json={"content": "# Should not persist\n", "type": "resume"},
+        )
+        casey_dir = preview_app.OUTPUT_DIR / "casey"
+        assert not casey_dir.exists() or not list(casey_dir.glob("context_*.json"))
+
+    def test_requires_content(self, preview_app):
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        client = preview_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/preview-edited",
+            json={"content": "   ", "type": "resume"},
+        )
+        assert r.status_code == 400
+
+    def test_rejects_invalid_type(self, preview_app):
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        client = preview_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/preview-edited",
+            json={"content": "x", "type": "bogus"},
+        )
+        assert r.status_code == 400
+
+    def test_returns_404_for_unknown_application(self, preview_app):
+        client = preview_app.app.test_client()
+        r = client.post(
+            "/api/applications/9999/preview-edited",
+            json={"content": "x", "type": "resume"},
+        )
+        assert r.status_code == 404
+
+    def test_returns_404_for_unknown_template_id(self, preview_app):
+        _cid, aid = _seed_candidate_app(preview_app, username="casey")
+        client = preview_app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/preview-edited",
+            json={"content": "x", "type": "resume", "template_id": 99999},
+        )
+        assert r.status_code == 404
 
 
 # -------------------------------------------------------------------

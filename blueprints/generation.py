@@ -104,6 +104,48 @@ def _persist_run_persona(application_run_id: int, persona_template_id: int) -> N
         session.close()
 
 
+def _persist_edited_text_to_db(
+    application_run_id: int,
+    edited_resume_text: str | None,
+    edited_cover_letter_text: str | None,
+) -> None:
+    """Mirror a saved WYSIWYG edit onto its ApplicationRun row (D4 durability).
+
+    ``ApplicationRun.edited_resume_text`` / ``edited_cover_letter_text`` are the
+    DB-side half of "every generated and edited artifact" (see the model's
+    class docstring) — already READ by ``_build_resume_state`` in
+    ``blueprints/applications.py`` (the Applications-tab resume, and the
+    degraded-mode Step-6 rehydrate when the on-disk context file is gone) and
+    by ``get_application``'s ``has_edits`` flag, but never WRITTEN. Without
+    this, an in-app edit survived only in the context_*.json sidecar
+    (``/api/save-edits`` above): resuming an application after that file was
+    cleaned up silently reverted Step 6 to the un-edited AI text, and
+    ``has_edits`` always read false. Only called for corpus-backed contexts
+    (``application_run_id`` present); legacy file-based contexts have no run
+    row. Best-effort like the sibling ``_persist_run_persona`` callers — a DB
+    hiccup must not fail the save, since the context file already has the
+    edit and remains the primary source the preview/generate routes read.
+    """
+    from db.models import ApplicationRun
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        run = session.query(ApplicationRun).filter_by(id=application_run_id).first()
+        if run is None:
+            return
+        if edited_resume_text is not None:
+            run.edited_resume_text = edited_resume_text
+        if edited_cover_letter_text is not None:
+            run.edited_cover_letter_text = edited_cover_letter_text
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 def _persist_cover_letter_to_db(
     application_run_id: int,
     cover_letter_md: str,
@@ -566,6 +608,23 @@ def save_edits() -> ResponseReturnValue:
     context_set["iteration_notes"] = notes
 
     cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+
+    # D4 durability (generation-experience re-architecture, item (b)): mirror
+    # the saved edit onto the DB run row for corpus-backed contexts, so it
+    # survives independently of this context_*.json sidecar. Best-effort — the
+    # context file above is already the primary, already-persisted source.
+    app_run_id = context_set.get("application_run_id")
+    if app_run_id is not None and (saved_resume or saved_cover):
+        try:
+            _persist_edited_text_to_db(
+                int(app_run_id),
+                edited_resume if saved_resume else None,
+                edited_cover_letter if saved_cover else None,
+            )
+        except Exception as exc:
+            logger.error(
+                "Edited-text DB persist failed (run_id=%s): %s", app_run_id, exc, exc_info=True
+            )
 
     logger.info(
         "Saved edits for %s: resume=%s cover_letter=%s",

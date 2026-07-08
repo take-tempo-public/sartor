@@ -486,9 +486,10 @@ the corpus-enrichment "save to corpus" offer beyond the free `is_pending_review=
 
 **Deferred to LATER branches:** SURGICAL refinement (a scoped single-item change / grounded
 re-phrasing) + the richer loop-back-with-accept/retire banner — **DONE 2026-07-08 on
-`fix/surgical-refinement-and-loopback`, as-built in §8**; WYSIWYG-as-source (D4);
-clarifications→corpus persistence (D5). This branch's refine is the minimal route-to-Compose
-(superseded by §8's scoped proposal + richer banner).
+`fix/surgical-refinement-and-loopback`, as-built in §8**; WYSIWYG-as-source (D4) — **DONE
+2026-07-08 on `feat/wysiwyg-source-of-truth`, as-built in §9**; clarifications→corpus
+persistence (D5). This branch's refine is the minimal route-to-Compose (superseded by §8's
+scoped proposal + richer banner).
 
 ---
 
@@ -500,9 +501,10 @@ clarifications→corpus persistence (D5). This branch's refine is the minimal ro
 > and the legacy byte-identity unit tests (`tests/test_corpus_mode_prompt.py`).
 > The remaining work from this spec is the **LATER-branch remainder** — (a)
 > surgical refinement + loop-back banner is **DONE 2026-07-08** on
-> `fix/surgical-refinement-and-loopback` (as-built in §8); (d) regenerate-gap-fill
-> is **DONE 2026-07-08** on `feat/regenerate-gap-fill` (as-built below) — (b)
-> WYSIWYG-as-source D4 and (c) clarifications→corpus D5 remain — tracked in the
+> `fix/surgical-refinement-and-loopback` (as-built in §8); (b) WYSIWYG-as-source
+> D4 is **DONE 2026-07-08** on `feat/wysiwyg-source-of-truth` (as-built in §9);
+> (d) regenerate-gap-fill is **DONE 2026-07-08** on `feat/regenerate-gap-fill`
+> (as-built below) — (c) clarifications→corpus D5 remains — tracked in the
 > RELEASE_CHECKLIST carry-forward ledger.
 
 ### Phase 3 — Compose authors gap-fill bullets (Sonnet + accept/retire) — DONE (as-built in §5)
@@ -700,6 +702,87 @@ it themselves") with an actual scoped proposal.
   `evals/TUNING_LOG.md` "surgical-refinement-and-loopback" entry for the transcript,
   the proposal shape returned, and the telemetry cost.
 
-**Still deferred (b)/(c)/(d), each its own LATER branch:** WYSIWYG-as-source (D4),
-clarifications→corpus persistence (D5), and a "Regenerate gap-fill" affordance — tracked
-in the RELEASE_CHECKLIST carry-forward ledger.
+**Still deferred (c)/(d), each its own LATER branch:** clarifications→corpus persistence
+(D5), and a "Regenerate gap-fill" affordance — tracked in the RELEASE_CHECKLIST
+carry-forward ledger. (b) WYSIWYG-as-source (D4) is DONE — as-built in §9.
+
+---
+
+## 9. LATER branch — item (b): WYSIWYG as source of truth — DONE 2026-07-08
+
+Branch `feat/wysiwyg-source-of-truth` off `fix/surgical-refinement-and-loopback` @
+`1200b66` (Train 3, lane (b) — built after §8's item (a) landed on this branch's base).
+Closes the gap between D4's acceptance bar ("preview and download always match") and
+what shipped through Phase 4: the styled Step-6 iframe only ever picked up an in-app
+edit AFTER `/api/save-edits` ran (gated behind the "Use edits as baseline" modal, which
+only fires right before a refine/iterate action). Between typing an edit and that
+unrelated action, `/api/download-edited` (which reads `#resumePreview` /
+`#coverLetterPreview` directly) already produced the new content while the visible
+preview kept showing the old — preview != download, exactly the surprise D4 exists to
+kill.
+
+- **`POST /api/applications/<id>/preview-edited` (new route, `blueprints/templates.py`)**
+  — the preview-side twin of the existing `/api/download-edited`: content in, rendered
+  HTML out, NOTHING written to context or the DB. Résumé content renders through the
+  same `md_to_json_resume(_normalize_markdown(...))` → `render_html_string` pipeline
+  `save_edits` already uses to recompute its cache; cover-letter content renders through
+  `render_cover_letter_html` — the identical deterministic pipelines the CACHED preview
+  routes use, just applied to live POSTed text instead of a stored snapshot. Persona
+  resolution + ownership mirror `preview_application_html` (`_load_application_owned` +
+  an explicit `_safe_username` recheck + an explicit `_within(PERSONAS_DIR)` recheck on
+  the resolved template path — belt-and-suspenders, satisfies `route-security-lint`).
+- **`static/app.js`**: `_wireLiveEditPreview` / `_refreshLiveEditPreview` wire a
+  debounced (300ms — the same cadence as Compose's `_scheduleCompositionSave`) `input`
+  listener on both editors. On fire, POSTs the live editor text to the new route and
+  swaps the relevant iframe's `srcdoc` (`outputPreviewFrame` / `coverPreviewFrame`),
+  gated on `_composeApplicationId != null` (legacy file-based mode has no styled
+  iframe). The EXISTING edit-detection modal (`#editModal`, F-14's "Your edits aren't
+  saved yet" copy) and its `/api/save-edits` persistence path are **completely
+  unchanged** — this route never touches `edited_resume_text`, so the modal's copy
+  stays accurate (a deliberate scope decision: a live, non-persisting preview refresh
+  sidesteps the "discard must also clear a stale auto-save" correctness problem a
+  persisting auto-save would have introduced; see the `feat/wysiwyg-source-of-truth`
+  branch discussion below for why that alternative was rejected).
+- **Cover-letter preview precedence fix** (`preview_cover_letter_html`,
+  `blueprints/templates.py`): a real, independent bug found while implementing this —
+  the route read `last_generated_cover_letter` unconditionally and NEVER checked
+  `edited_cover_letter_text`, even though `save_edits` has persisted that field since
+  Phase 1. A saved cover-letter edit was invisible to the styled preview forever. Fixed
+  to mirror the résumé preview's existing `edited_resume_text` precedence (D6(a)).
+- **DB durability fix** (`_persist_edited_text_to_db`, `blueprints/generation.py`): a
+  second independent gap found in the same pass — `ApplicationRun.edited_resume_text` /
+  `edited_cover_letter_text` exist on the model (its class docstring literally says
+  "the frozen corpus snapshot plus every generated **and edited** artifact") and are
+  already READ by `_build_resume_state` (the degraded-mode Step-6 rehydrate when the
+  on-disk context file is gone) and `get_application`'s `has_edits` flag — but were
+  never WRITTEN anywhere in the codebase. `save_edits` now mirrors a corpus-backed edit
+  onto both columns (best-effort, mirrors the sibling `_persist_run_persona` — a DB
+  hiccup never fails the save, since the context file is already the primary,
+  already-persisted source). Without this, resuming an application after its context
+  file was cleaned up silently reverted Step 6 to the un-edited AI text.
+- **Design decision — ephemeral live-render over a new auto-save.** The alternative
+  considered was debouncing a call to the EXISTING `/api/save-edits` (persisting on
+  every pause in typing, not just before refine/iterate). Rejected: once an edit
+  auto-persists outside the explicit gate, "Discard edits" in that gate must ALSO
+  revert the persisted `edited_resume_text` / DB row (not just the DOM) or a discarded
+  edit would keep permanently overriding a later Compose re-freeze — a correctness
+  regression this branch does not want to own. Rendering live content ephemerally (no
+  persistence at all until the user explicitly picks "Use edits as baseline", exactly
+  as before) reaches the same acceptance bar — preview always matches what Download
+  would produce — without touching the save/discard semantics at all.
+- Tests: `tests/test_live_preview_route.py::TestPreviewEditedRoute` (renders résumé /
+  cover-letter content matching the editor; matches the PERSISTED WYSIWYG preview for
+  identical input — the transitive download==preview proof, since
+  `TestApplicationPreviewWysiwyg` already proves the persisted path == download; nothing
+  persisted; validation / ownership / 404s) +
+  `TestCoverLetterPreview::test_edited_text_wins_over_last_generated` +
+  `tests/test_app_iteration.py::TestSaveEditsRoute` (DB row persists for a corpus-backed
+  save, a foreign/missing run row doesn't fail the save, a legacy context with no
+  `application_run_id` skips the DB write entirely).
+- No prompt text changed anywhere in this branch — `analyzer.py` is untouched;
+  `PROMPT_VERSION` stays at `2026-07-08.1` (item (a)'s value). No real-LLM validation
+  run — there is no live prompt path in this branch's diff to validate.
+
+**Still deferred (c)/(d), each its own LATER branch:** clarifications→corpus persistence
+(D5), and a "Regenerate gap-fill" affordance — tracked in the RELEASE_CHECKLIST
+carry-forward ledger.
