@@ -2482,14 +2482,14 @@ async function submitRefinement() {
   const note = input.value.trim();
   if (!note || !lastContextPath) return;
 
-  // Phase 4 — in corpus mode the résumé is a DETERMINISTIC assembly of the
-  // Compose-approved composition; there is no résumé-body LLM to re-run. A
-  // refinement therefore routes the user BACK to Compose to adjust + re-approve
-  // content, which regenerates deterministically (the design's minimal loop-back;
-  // richer surgical refine is a later branch). Legacy (file-based) refine keeps
-  // the LLM regenerate below.
+  // Phase 4 / item (a) — in corpus mode the résumé is a DETERMINISTIC assembly
+  // of the Compose-approved composition; there is no résumé-body LLM to re-run
+  // wholesale. Instead of a full regenerate, draft ONE scoped item (a sharpened
+  // bullet or the summary) and route BACK to Compose with a richer banner that
+  // shows the actual proposed change for accept/retire. Legacy (file-based)
+  // refine keeps the LLM full regenerate below.
   if (_composeApplicationId != null) {
-    _routeRefinementToCompose(note);
+    await _submitSurgicalRefinement(note);
     return;
   }
 
@@ -2582,41 +2582,188 @@ async function submitRefinement() {
   }
 }
 
-// Phase 4 — the corpus-mode refinement loop-back: stash the note, navigate to
-// Compose (which re-runs loadComposition and renders the banner from the flag),
-// and let the user adjust + Save-and-continue to regenerate deterministically.
-function _routeRefinementToCompose(note) {
+// Item (a) — the corpus-mode surgical-refinement loop-back. Runs the SAME
+// fact-scope check the legacy path uses (a note can still ask for something
+// out of scope), then drafts ONE scoped proposal (POST /draft-refinement) and
+// stashes both the note AND the proposal (or null, when the model couldn't
+// scope one — e.g. a broad "rewrite everything" ask) so Compose's loop-back
+// banner can render the ACTUAL change for accept/retire, not just static
+// copy. Non-blocking on draft failure: falls back to the generic "adjust it
+// yourself" banner rather than stranding the user's refinement ask.
+async function _submitSurgicalRefinement(note) {
   const input = document.getElementById('refinementInput');
-  if (input) input.value = '';
-  _composeLoopbackNote = note;
-  wizardGoTo(3);
-  setStatus('BACK TO COMPOSE');
-  _announce('Refinement moved to Compose — adjust your content there, then continue.');
+  const btn = document.getElementById('btnRefinement');
+  if (btn) btn.disabled = true;
+  try {
+    setStatus('CHECKING REFINEMENT SCOPE');
+    const checkRes = await fetch('/api/validate-refinement', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note }),
+    });
+    const check = await checkRes.json();
+    if (!check.valid) {
+      const reason = check.reason || 'This may change facts rather than just wording.';
+      const choice = await _showRefinementScopeModal(reason, btn);
+      if (choice !== 'proceed') {
+        setStatus('REFINEMENT CANCELED');
+        return;
+      }
+    }
+
+    setStatus('DRAFTING TARGETED REFINEMENT');
+    _setBusy(true, 'Finding the one thing to change');
+    let proposal = null;
+    if (_composeApplicationId != null) {
+      try {
+        const res = await fetch(
+          `/api/applications/${_composeApplicationId}/draft-refinement`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ context_path: lastContextPath, note }) },
+        );
+        if (res.ok) proposal = (await res.json()).proposal || null;
+      } catch {
+        // Non-blocking — falls back to the generic loop-back banner below.
+      }
+    }
+
+    if (input) input.value = '';
+    _composeLoopbackNote = note;
+    _composeRefinementProposal = proposal;
+    wizardGoTo(3);
+    setStatus('BACK TO COMPOSE');
+    _announce(proposal
+      ? 'A targeted change is ready for your review in Compose.'
+      : 'Refinement moved to Compose — adjust your content there, then continue.');
+  } finally {
+    _setBusy(false);
+    if (btn) btn.disabled = false;
+  }
 }
 
 // The explaining banner shown at the top of Compose after a loop-back. Rendered
-// from _composeLoopbackNote inside loadComposition so it survives the auto-
-// recommend re-render cascade; dismissing clears the flag.
-function _renderComposeLoopbackBanner() {
+// from _composeLoopbackNote (+ _composeRefinementProposal, item (a)) inside
+// loadComposition so it survives the auto-recommend re-render cascade;
+// dismissing/deciding clears the flags. `data` is the GET /composition payload
+// loadComposition just fetched — used to look up the company name + any
+// superseded bullet's current text for the proposal card.
+function _renderComposeLoopbackBanner(data) {
   const banner = _el('div', { className: 'compose-loopback-banner' });
+  const proposal = _composeRefinementProposal;
+
+  if (!proposal) {
+    // The plain (pre-item-(a)) loop-back: no scoped proposal came back (e.g.
+    // the note asked for a broad rewrite the model correctly declined to
+    // scope) — fall back to pointing the user at Compose directly.
+    banner.appendChild(_el('div', {
+      className: 'compose-loopback-title',
+      textContent: 'Adjust your content here, then regenerate',
+    }));
+    banner.appendChild(_el('div', {
+      className: 'compose-loopback-body',
+      textContent:
+        'Your résumé is assembled from the content you approve here — there is no '
+        + 'separate rewrite step. Make your change (bullets, summary, skills) and '
+        + 'Save and continue to regenerate.'
+        + (_composeLoopbackNote ? ` You asked: “${_composeLoopbackNote}”` : ''),
+    }));
+    const dismiss = _el('button', {
+      className: 'btn-secondary btn-sm compose-loopback-dismiss', textContent: 'Got it',
+    });
+    dismiss.onclick = () => { _composeLoopbackNote = null; banner.remove(); };
+    banner.appendChild(dismiss);
+    return banner;
+  }
+
+  // Item (a) — a scoped proposal came back: show the ACTUAL change (old text
+  // struck through when it supersedes an existing bullet, then the new text)
+  // with Accept / Retire, instead of just telling the user to go make it.
+  banner.classList.add('compose-loopback-banner-proposal');
   banner.appendChild(_el('div', {
     className: 'compose-loopback-title',
-    textContent: 'Adjust your content here, then regenerate',
+    textContent: 'One targeted change is ready for your review',
   }));
-  banner.appendChild(_el('div', {
-    className: 'compose-loopback-body',
-    textContent:
-      'Your résumé is assembled from the content you approve here — there is no '
-      + 'separate rewrite step. Make your change (bullets, summary, skills) and '
-      + 'Save and continue to regenerate.'
-      + (_composeLoopbackNote ? ` You asked: “${_composeLoopbackNote}”` : ''),
-  }));
-  const dismiss = _el('button', {
-    className: 'btn-secondary btn-sm compose-loopback-dismiss', textContent: 'Got it',
+  if (_composeLoopbackNote) {
+    banner.appendChild(_el('div', {
+      className: 'compose-loopback-body',
+      textContent: `You asked: “${_composeLoopbackNote}”`,
+    }));
+  }
+
+  const card = _el('div', { className: 'compose-loopback-proposal-card' });
+  if (proposal.target_kind === 'summary') {
+    card.appendChild(_el('div', {
+      className: 'loopback-target-label', textContent: 'Positioning summary',
+    }));
+    const oldText = (data && data.summary && data.summary.drafted_text) || '';
+    if (oldText && oldText !== proposal.text) {
+      card.appendChild(_el('div', { className: 'loopback-old-text', textContent: oldText }));
+    }
+    card.appendChild(_el('div', { className: 'loopback-new-text', textContent: proposal.text }));
+  } else {
+    const exp = (data && data.experiences || []).find(e => e.id === proposal.experience_id);
+    card.appendChild(_el('div', {
+      className: 'loopback-target-label',
+      textContent: `Bullet — ${exp ? exp.company : 'this role'}`,
+    }));
+    if (proposal.supersedes_bullet_id != null && exp) {
+      const oldBullet = (exp.bullets || []).find(b => b.id === proposal.supersedes_bullet_id);
+      if (oldBullet) {
+        card.appendChild(_el('div', { className: 'loopback-old-text', textContent: oldBullet.text }));
+      }
+    }
+    card.appendChild(_el('div', { className: 'loopback-new-text', textContent: proposal.text }));
+  }
+  if (proposal.rationale) {
+    card.appendChild(_el('div', {
+      className: 'loopback-rationale', textContent: proposal.rationale,
+    }));
+  }
+  banner.appendChild(card);
+
+  const actions = _el('div', { className: 'compose-loopback-actions' });
+  const accept = _el('button', {
+    className: 'btn-secondary btn-sm compose-loopback-accept', textContent: 'Accept',
   });
-  dismiss.onclick = () => { _composeLoopbackNote = null; banner.remove(); };
-  banner.appendChild(dismiss);
+  accept.onclick = () => {
+    _composeRefinementProposal = null;
+    _composeLoopbackNote = null;
+    _acceptRefinementProposal(proposal);
+  };
+  const retire = _el('button', {
+    className: 'btn-secondary btn-sm compose-loopback-retire', textContent: 'Retire',
+  });
+  // Retire never reaches the server — nothing was written for a proposal the
+  // user hasn't accepted — so this is a pure client-side dismiss.
+  retire.onclick = () => { _composeRefinementProposal = null; _composeLoopbackNote = null; banner.remove(); };
+  actions.appendChild(accept);
+  actions.appendChild(retire);
+  banner.appendChild(actions);
   return banner;
+}
+
+// Apply an accepted surgical-refinement proposal (item (a)): POST
+// /accept-refinement (a pending Bullet folded into the composition +, when it
+// supersedes one, that bullet excluded — or the summary override) and reload
+// Compose so the change shows immediately. Mirrors _decideGapFill's bg-reload
+// bookkeeping (increment before the fetch, decrement in finally).
+async function _acceptRefinementProposal(proposal) {
+  if (_composeApplicationId == null || !lastContextPath) { loadComposition(); return; }
+  _markComposeBgReload(1);
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/accept-refinement`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context_path: lastContextPath, proposal }) },
+    );
+    if (res.ok) { _toast('Change applied.'); loadComposition(); }
+    else { _toast('Could not apply the change — please make it manually below.', true); loadComposition(); }
+  } catch {
+    _toast('Network error applying the change — please make it manually below.', true);
+    loadComposition();
+  } finally {
+    _markComposeBgReload(-1);
+  }
 }
 
 // ---- Iteration interview (post-generation clarifying questions) ----------
@@ -6385,6 +6532,11 @@ let _compositionFrozen = false;
 // résumé-body LLM to re-run), this holds their note so loadComposition can render
 // an explaining banner until dismissed. Null = no pending loop-back.
 let _composeLoopbackNote = null;
+// Item (a) — the ONE scoped bullet/summary proposal /draft-refinement returned
+// for the pending loop-back note, or null when the model couldn't scope one
+// (the plain loop-back banner renders instead). Cleared together with
+// _composeLoopbackNote on Accept/Retire.
+let _composeRefinementProposal = null;
 // Generation-experience re-architecture — which application we've already
 // auto-fired the summary draft for, so a legitimately-empty draft (no JD facts)
 // can't re-loop the Sonnet call on every re-render. Reset when the app changes.
@@ -6453,7 +6605,7 @@ async function loadComposition() {
   // Phase 4 — a refinement in corpus mode loops back here (no résumé-body LLM to
   // re-run); render an explaining banner from the flag so it survives the
   // auto-recommend re-render cascade until the user dismisses it.
-  if (_composeLoopbackNote != null) list.appendChild(_renderComposeLoopbackBanner());
+  if (_composeLoopbackNote != null) list.appendChild(_renderComposeLoopbackBanner(data));
   // β.6c — Positioning card renders first, above the experience cards.
   // Shows the candidate's SummaryItem variants with the recommendation
   // (if any) flagged and the user's pin (if any) marking the chosen one.

@@ -3598,6 +3598,46 @@ input:focus, select:focus, textarea:focus {
   line-height: 1.5;
   margin-bottom: 8px;
 }
+/* Item (a) — the richer loop-back: the scoped proposal card (old text struck
+   through, then the new text) + Accept/Retire, replacing the plain "go make
+   this change yourself" copy whenever a proposal came back. */
+.compose-loopback-proposal-card {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  background: var(--bg-1);
+}
+.loopback-target-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.loopback-old-text {
+  color: var(--fg-2);
+  text-decoration: line-through;
+  opacity: 0.75;
+  margin-bottom: 4px;
+  line-height: 1.45;
+}
+.loopback-new-text {
+  color: var(--fg-0);
+  line-height: 1.45;
+}
+.loopback-rationale {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--fg-2);
+  font-style: italic;
+}
+.compose-loopback-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
 .positioning-variant {
   cursor: pointer;
   position: relative;

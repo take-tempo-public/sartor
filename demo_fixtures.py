@@ -312,6 +312,18 @@ def demo_draft_gap_fill_bullets() -> dict[str, Any]:
     return {"proposals": []}
 
 
+def demo_draft_surgical_refinement(note: str) -> dict[str, Any]:
+    """Canned draft_surgical_refinement() result — proposes nothing, for the same grounding reason as `demo_suggest_skills`. `note` is accepted (mirrors the real signature) but unused — a demo run must never claim it targeted a real item."""
+    return {
+        "target_kind": "none",
+        "experience_id": None,
+        "supersedes_bullet_id": None,
+        "text": "",
+        "pattern_kind": None,
+        "rationale": "Demo mode: no real refinement review was performed.",
+    }
+
+
 def demo_promote_clarification_to_bullet(answer: str) -> dict[str, Any]:
     """Canned promote_clarification_to_bullet() result — echoes the candidate's own answer verbatim (zero fabrication risk) rather than rewriting it."""
     text = (answer or "").strip() or "Demo mode: no clarification answer was provided."

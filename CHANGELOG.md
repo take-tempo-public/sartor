@@ -13,6 +13,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: surgical single-item refinement + richer loop-back (`fix/surgical-refinement-and-loopback`, 2026-07-08)
+
+Generation-experience re-architecture item (a) (the LATER-branch remainder tracked
+in the carry-forward ledger, off `fix/compose-frozen-composition`'s minimal interim
+loop-back): a corpus-mode refinement note now drafts ONE scoped, grounded change
+instead of just pointing the user back at Compose to redo it themselves.
+
+- **`analyzer.draft_surgical_refinement()` (Sonnet, new `DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT`).**
+  Reads the CURRENT frozen `approved_composition` (with numeric bullet/role ids)
+  and the free-text note, and proposes exactly ONE of: sharpen an EXISTING bullet
+  in place (`supersedes_bullet_id`), a genuinely stronger NEW bullet where the
+  corpus is silent, a rewritten positioning summary, or — for a broad "rewrite
+  everything" ask with no single scoped target — nothing (`target_kind: "none"`,
+  falling back to the plain loop-back). Grounded (no invention beyond
+  `<current_resume>`/`<clarifications>`, the same posture as `draft_gap_fill_bullets`).
+  `PROMPT_VERSION 2026-07-06.3 → 2026-07-08.1` (a new per-call template; the
+  generate prompt is unchanged, so legacy + `--suite synthetic` stay byte-identical).
+- **Two new routes** (`blueprints/applications.py`): `POST /api/applications/<id>/draft-refinement`
+  (a pure read — stages the note + JD, re-validates any id the model returns against
+  the candidate's own corpus, never writes to the context file) and
+  `POST /api/applications/<id>/accept-refinement` (applies an accepted proposal:
+  a pending Bullet + `accepted_generated_bullet_ids`, and — when the proposal named
+  a superseded bullet — that bullet folds into `composition_overrides.excluded` too,
+  so the composition gains exactly ONE net item; a summary proposal persists into
+  `composition_overrides.summary_text`). Both reuse the EXISTING override keys the
+  frozen-composition resolver already honors — zero changes to
+  `corpus_to_json_resume.py`. Retire never reaches the server (nothing was written
+  for a proposal the user hasn't accepted) — the banner dismisses it client-side.
+- **The Compose loop-back banner is richer** (`static/app.js`, `.compose-loopback-*`
+  in `static/style.css`): `submitRefinement()`'s corpus-mode path now runs the
+  existing fact-scope check (`/api/validate-refinement` + `_showRefinementScopeModal`
+  — previously skipped in corpus mode), drafts the scoped proposal, and routes to
+  Compose with it stashed. `_renderComposeLoopbackBanner()` renders the ACTUAL
+  proposed change (old text struck through when superseding, then the new text,
+  plus the model's rationale) with Accept/Retire, falling back to the prior plain
+  "adjust it yourself" copy when no proposal came back.
+- Tests: `tests/test_draft_surgical_refinement.py` (short-circuit + route
+  normalization/ownership-revalidation), `tests/test_accept_refinement.py` (bullet
+  accept with/without supersede, idempotency, summary accept, validation),
+  `tests/test_demo_mode.py::test_draft_surgical_refinement` (demo mode proposes
+  nothing — same grounding-safety posture as `draft_gap_fill_bullets`).
+- Real-LLM validation: one scoped refinement drafted against a live sandbox
+  application (see `evals/TUNING_LOG.md` "surgical-refinement-and-loopback" entry
+  for the transcript + telemetry cost).
+
 ### Feat: aesthetic coherence — app-native confirms, wizard-first Tailor, optional gap-fill framing, clearer edit gate, honest dev defaults (`feat/ux-w4-aesthetic`, 2026-07-07)
 
 UX-review Wave 4 (P2, aesthetic/interaction polish — `50-oss-polish-plan.md`):

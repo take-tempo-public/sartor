@@ -2296,6 +2296,306 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
         session.close()
 
 
+# ---------------------------------------------------------------------------
+# Generation-experience re-architecture item (a) — surgical single-item
+# refinement + the richer loop-back accept/retire banner
+# ---------------------------------------------------------------------------
+
+
+@applications_bp.route("/api/applications/<int:application_id>/draft-refinement", methods=["POST"])
+def draft_application_refinement(application_id: int) -> ResponseReturnValue:
+    """Draft ONE scoped refinement from a free-text note (Sonnet) — item (a).
+
+    Unlike the legacy full-doc `generate()` refine, this targets exactly ONE
+    bullet (sharpened in place via `supersedes_bullet_id`, or a genuinely
+    stronger NEW bullet where the corpus is silent) or the positioning summary
+    — never a whole-document rewrite. Reads the CURRENT frozen
+    `approved_composition` already on the context (no staging needed) plus the
+    JD + the note staged transiently for the LLM call. A pure READ: nothing is
+    persisted here — the caller reviews the returned proposal in the Compose
+    loop-back banner and calls /accept-refinement to apply it. Returns
+    {"proposal": {...} | None}.
+
+    Body: {context_path, note}. Filesystem + ownership: _safe_username via
+    _load_application_owned; _within gates context_path.
+    """
+    from analyzer import LLMResponseError, draft_surgical_refinement
+    from db.models import Bullet, Experience
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    note = (data.get("note") or "").strip()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+    if not note:
+        return jsonify({"error": "note required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        # Stage the note + JD transiently for the LLM call. This route never
+        # writes ctx back to disk — the frozen composition already on ctx is the
+        # read source; the caller (Compose) decides accept/retire separately.
+        ctx["refinement_note"] = note
+        ctx["jd_text"] = app_row.jd_text
+        run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
+        try:
+            result = draft_surgical_refinement(
+                _get_client(),
+                ctx,
+                username=candidate.username,
+                run_id=run_id,
+            )
+        except anthropic.APIConnectionError as exc:
+            logger.error("Draft-refinement: Anthropic connection error: %s", exc)
+            return jsonify({"error": "AI service connection failed"}), 503
+        except LLMResponseError as exc:
+            logger.error("Draft-refinement: malformed LLM response: %s", exc.validation_error)
+            return jsonify(
+                {
+                    "error": "AI refinement draft was malformed",
+                    "detail": str(exc.validation_error),
+                }
+            ), 502
+
+        # Normalize + re-validate ownership route-side (the analyzer stays
+        # session-free): any id the model returns that this candidate doesn't
+        # own downgrades the proposal to "none" rather than risking a foreign
+        # write later — precision beats recall, mirrors draft-gap-fill.
+        kind = result.get("target_kind")
+        proposal: dict[str, Any] | None = None
+        if kind == "bullet":
+            text = (result.get("text") or "").strip()
+            eid = _coerce_experience_id(result.get("experience_id"))
+            exp = (
+                session.query(Experience).filter_by(id=eid, candidate_id=candidate.id).first()
+                if eid is not None
+                else None
+            )
+            if text and exp is not None:
+                supersedes = _coerce_experience_id(result.get("supersedes_bullet_id"))
+                if supersedes is not None:
+                    owned_bullet = (
+                        session.query(Bullet).filter_by(id=supersedes, experience_id=exp.id).first()
+                    )
+                    if owned_bullet is None:
+                        supersedes = None
+                pk = (result.get("pattern_kind") or "").strip().lower()
+                proposal = {
+                    "target_kind": "bullet",
+                    "experience_id": exp.id,
+                    "supersedes_bullet_id": supersedes,
+                    "text": text,
+                    "pattern_kind": pk if pk in ("xyz", "star", "car", "manual") else "manual",
+                    "rationale": (result.get("rationale") or "").strip(),
+                }
+        elif kind == "summary":
+            text = (result.get("text") or "").strip()
+            if text:
+                proposal = {
+                    "target_kind": "summary",
+                    "experience_id": None,
+                    "supersedes_bullet_id": None,
+                    "text": text,
+                    "pattern_kind": None,
+                    "rationale": (result.get("rationale") or "").strip(),
+                }
+
+        return jsonify({"application_id": application_id, "proposal": proposal})
+    finally:
+        session.close()
+
+
+@applications_bp.route("/api/applications/<int:application_id>/accept-refinement", methods=["POST"])
+def accept_application_refinement(application_id: int) -> ResponseReturnValue:
+    """Apply ONE accepted surgical-refinement proposal to the composition — item (a).
+
+    "bullet": creates a pending Bullet (source='llm_proposed:refine:<key>',
+    is_pending_review=1) on its experience — mirrors `gap_fill_decide`'s accept
+    branch — folds its id into composition_overrides.accepted_generated_bullet_ids,
+    and when the proposal named a `supersedes_bullet_id` (an EXISTING bullet this
+    replaces), excludes that bullet too, so the composition gains exactly ONE net
+    item (the "scoped single-item change" the design spec calls for). "summary":
+    persists proposal.text into composition_overrides.summary_text (fresh draft,
+    mirrors /draft-summary's persist). Idempotent on the Bullet.source key, like
+    gap_fill_decide. RETIRE never reaches the server — nothing was written yet, so
+    the Compose banner dismisses the proposal client-side.
+
+    The client echoes back the FULL proposal it received from /draft-refinement —
+    never trusted blindly: every id is re-validated against this candidate's own
+    corpus before any write (defense in depth; the draft route already filtered
+    them once).
+
+    Body: {context_path, proposal: {target_kind, experience_id,
+    supersedes_bullet_id, text, pattern_kind, rationale}}. Filesystem +
+    ownership: _safe_username via _load_application_owned; _within gates
+    context_path.
+    """
+    import hashlib
+
+    from db.models import Bullet, Experience, IterationLog, ProposalReview
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    proposal = data.get("proposal")
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+    if not isinstance(proposal, dict):
+        return jsonify({"error": "proposal required"}), 400
+    kind = proposal.get("target_kind")
+    if kind not in ("bullet", "summary"):
+        return jsonify({"error": "proposal.target_kind must be 'bullet' or 'summary'"}), 400
+    text = (proposal.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "proposal.text required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
+            return jsonify({"error": "Application not found"}), 404
+
+        cp = Path(context_path)
+        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        overrides = ctx.get("composition_overrides")
+        if not isinstance(overrides, dict):
+            overrides = {}
+
+        if kind == "summary":
+            overrides.pop("summary_text_edited", None)
+            overrides["summary_text"] = text
+            ctx["composition_overrides"] = overrides
+            cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+            return jsonify(
+                {"application_id": application_id, "target_kind": "summary", "summary_text": text}
+            )
+
+        # kind == "bullet"
+        eid = _coerce_experience_id(proposal.get("experience_id"))
+        exp = (
+            session.query(Experience).filter_by(id=eid, candidate_id=candidate.id).first()
+            if eid is not None
+            else None
+        )
+        if exp is None:
+            return jsonify({"error": "Proposal targets an unknown experience"}), 400
+
+        key = hashlib.sha256(f"refine:{exp.id}|{text}".encode()).hexdigest()[:12]
+        source = f"llm_proposed:refine:{key}"
+        accepted_ids = [int(x) for x in (overrides.get("accepted_generated_bullet_ids") or [])]
+        excluded_ids = {int(x) for x in (overrides.get("excluded") or [])}
+
+        supersedes = _coerce_experience_id(proposal.get("supersedes_bullet_id"))
+        superseded_id: int | None = None
+        if supersedes is not None:
+            owned = session.query(Bullet).filter_by(id=supersedes, experience_id=exp.id).first()
+            if owned is not None:
+                superseded_id = owned.id
+                excluded_ids.add(owned.id)
+
+        # Idempotency, mirrors gap_fill_decide: a re-accept (or a crash between
+        # commit and ctx write) reuses the existing Bullet by its source key.
+        existing = (
+            session.query(Bullet)
+            .join(Experience, Bullet.experience_id == Experience.id)
+            .filter(Experience.candidate_id == candidate.id, Bullet.source == source)
+            .first()
+        )
+        if existing is not None:
+            bullet_id = existing.id
+        else:
+            pk = (proposal.get("pattern_kind") or "manual").strip().lower()
+            if pk not in ("xyz", "star", "car", "manual"):
+                pk = "manual"
+            last_order = session.query(Bullet).filter_by(experience_id=exp.id).count()
+            bullet = Bullet(
+                experience_id=exp.id,
+                text=text,
+                display_order=last_order,
+                is_active=1,
+                is_pending_review=1,
+                source=source,
+                pattern_kind=pk,
+                has_outcome=0,
+            )
+            session.add(bullet)
+            session.flush()
+            bullet_id = bullet.id
+
+            run_pk = ctx.get("application_run_id")
+            if isinstance(run_pk, int):
+                session.add(
+                    ProposalReview(
+                        application_run_id=run_pk,
+                        bullet_id=bullet_id,
+                        original_text=text,
+                        decision="pending",
+                    )
+                )
+                session.add(
+                    IterationLog(
+                        application_run_id=run_pk,
+                        action="accept_refinement",
+                        summary=(
+                            f"Accepted surgical refinement bullet {bullet_id} on experience {exp.id}"
+                            + (f" (superseded bullet {superseded_id})" if superseded_id else "")
+                        ),
+                    )
+                )
+            session.commit()
+
+        if bullet_id not in accepted_ids:
+            accepted_ids.append(bullet_id)
+        overrides["accepted_generated_bullet_ids"] = accepted_ids
+        overrides["excluded"] = sorted(excluded_ids)
+        ctx["composition_overrides"] = overrides
+        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+
+        return jsonify(
+            {
+                "application_id": application_id,
+                "target_kind": "bullet",
+                "accepted_bullet_id": bullet_id,
+                "superseded_bullet_id": superseded_id,
+                "accepted_generated_bullet_ids": accepted_ids,
+            }
+        )
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 @applications_bp.route(
     "/api/applications/<int:application_id>/recommend-experience-summaries", methods=["POST"]
 )

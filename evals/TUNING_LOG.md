@@ -2747,3 +2747,52 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    corpus-mode generate is deterministic, the synthetic suite (legacy-only) stops covering
    the corpus path entirely — the representative check is the deterministic assemble test
    (zero-LLM + download == frozen doc), not an eval score.
+
+---
+
+## surgical-refinement-and-loopback — 2026-07-08 — `fix/surgical-refinement-and-loopback` — `2026-07-06.3` → `2026-07-08.1`
+
+1. **What changed?** Item (a) of the Compose-frozen-composition LATER-branch remainder: a
+   NEW Compose-time drafting prompt + call, `DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT` +
+   `analyzer.draft_surgical_refinement` (Sonnet). Given a free-text refinement note plus the
+   CURRENT frozen `approved_composition`, it proposes exactly ONE scoped change — sharpen an
+   existing bullet in place, a genuinely stronger new bullet, the positioning summary, or
+   `"none"` for a broad ask with no single scoped target. Two new routes
+   (`/draft-refinement` read-only, `/accept-refinement`) apply an accepted proposal via the
+   EXISTING `accepted_generated_bullet_ids` / `excluded` / `summary_text` override keys —
+   zero `corpus_to_json_resume.py` changes.
+2. **Why?** Phase 4's interim refine ("route back to Compose, redo it yourself") was
+   explicitly the minimal loop-back, with surgical refinement + a richer accept/retire
+   banner deferred as the design's LATER-branch item (a). This branch builds that: the
+   résumé stays a deterministic assembly (Phase 4 invariant unchanged — zero résumé-body
+   LLM calls at Generate), but a refinement note now drafts a real, grounded, single-item
+   proposal instead of just pointing the user at Compose.
+3. **Result? (live, real API — not `--suite synthetic`, which doesn't cover this path):**
+   a sandbox candidate (Acme Fintech PM role, 2 bullets: a billing-migration bullet phrased
+   passively — "coordinating" — and a mentorship bullet) + a real JD, driven through the
+   ACTUAL Flask routes (`app.test_client()`, not the bare analyzer function) with a real
+   Sonnet 5 call:
+   - Note: *"make the billing migration bullet sound like I owned it end-to-end, not just
+     coordinated."*
+   - `POST /draft-refinement` → `{"target_kind": "bullet", "experience_id": 1,
+     "supersedes_bullet_id": 1, "text": "Owned the billing migration project end-to-end,
+     coordinating across engineering and finance.", "pattern_kind": "manual", "rationale":
+     "Reframes the existing bullet's ownership language per the note while keeping the same
+     scope and facts."}` — grounded (kept "coordinating across engineering and finance"
+     verbatim from the source bullet; no invented metric/scope/date), targeted the correct
+     single bullet, left the unrelated mentorship bullet untouched.
+   - `POST /accept-refinement` → `200`, `accepted_bullet_id=3`, `superseded_bullet_id=1`.
+   - `composition_overrides` after accept: `{"accepted_generated_bullet_ids": [3],
+     "excluded": [1]}` — exactly ONE net item change, confirmed via `GET /composition`:
+     bullet 1 (old) shows `excluded`, bullet 3 (new) visible, bullet 2 (mentorship,
+     untouched) still visible.
+   - Telemetry (`logs/llm_calls.jsonl`, `call=draft_surgical_refinement`,
+     `model=claude-sonnet-5`): 318 input / 112 output / 1184 cache-creation tokens,
+     2927ms latency, **cost $0.010093** (well under the $0.50 cap; `accept-refinement`
+     itself makes no LLM call).
+4. **Learned?** Reusing the EXISTING `accepted_generated_bullet_ids`/`excluded`/
+   `summary_text` override keys (rather than inventing a new `bullet_text_overrides`
+   resolver surface) turned "surgical refinement" into a pure composition-membership
+   operation — swap-by-exclude-plus-add — which is both simpler to implement correctly and
+   trivially proven "touches only the targeted item" by inspecting the override diff,
+   without needing any change to `corpus_to_json_resume.py`'s resolver.
