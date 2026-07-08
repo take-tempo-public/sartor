@@ -72,7 +72,7 @@ synthetic eval suite (~$1.50 per full run, ~30 min wall clock).
 
 After R1.1's regression measurement, a recruiting-specialist subagent
 (`general-purpose` with a domain-expert framing prompt; later codified
-as [`headhunter.md`](../../../.claude-plugin/agents/headhunter.md)) diagnosed
+as [`headhunter.md`](../../../agents/headhunter.md)) diagnosed
 the failure: the system was emitting tool-name probes (`"Have you used
 Epic?"`) when the JD's underlying signal was portable operating-context
 that adjacent-background candidates could map onto.
@@ -256,7 +256,7 @@ fresh data before building on it.
    that's a *legitimate* signal — strict matches are easier to
    ground — but it punishes wording drift that doesn't actually
    degrade candidate-facing quality.
-6. **Use the [`headhunter`](../../../.claude-plugin/agents/headhunter.md)
+6. **Use the [`headhunter`](../../../agents/headhunter.md)
    agent between iterations.** The R1.2 fix was informed by a single
    ad-hoc consultation; codifying the agent makes the consultation
    cheap to repeat. Spawn it after each failing eval to diagnose

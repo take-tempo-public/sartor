@@ -73,7 +73,7 @@ This project ships a Claude Code plugin (`sartor`): the manifest +
 local marketplace live in [`.claude-plugin/`](.claude-plugin/),
 commands in [`commands/`](commands/), and subagents in
 [`agents/`](agents/). Commands, subagents, and hooks are listed in
-[`README.md`](README.md#claude-code-plugin).
+[`README.md`](README.md#architecture--developer-reference).
 **Activation:** the commands + subagents load as the `sartor`
 plugin via the local `sartor-tools` marketplace
 (`extraKnownMarketplaces` + `enabledPlugins` committed in

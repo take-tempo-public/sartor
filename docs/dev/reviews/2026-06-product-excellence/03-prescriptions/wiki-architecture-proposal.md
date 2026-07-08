@@ -7,7 +7,7 @@ graduation: docs/wiki/ planning + docs/dev/ (v1.0.7 / WS-4b)
 # Wiki architecture proposal — sartor.
 
 > Discovery-brief ask #8. Evaluates the committed `docs/wiki/` against its
-> own [`SCHEMA.md`](../../../docs/wiki/SCHEMA.md), then proposes
+> own [`SCHEMA.md`](../../../../wiki/SCHEMA.md), then proposes
 > document-architecture changes, the missing docs, and how the wiki
 > relates to the governance extraction and the `recall/` memory substrate.
 > Severity anchor: the SIGNED Product Charter
@@ -78,7 +78,7 @@ metadata dimension*, not a folder split. The mechanism already exists in the
 plan: WS-4b stamps each page with an `audience:` tag (`user | dev`), authored
 once and consumed by three beneficiaries — the wiki, the 6.5 user/dev
 education sweep, and the assistant's access plane
-([`memory-architecture.md`](../../../docs/dev/memory-architecture.md)
+([`memory-architecture.md`](../../../memory-architecture.md)
 decision #2; RELEASE_ARC §Phase 4.5). Proposal:
 
 - **Make `audience:` a required front-matter field in SCHEMA.md's page
@@ -101,7 +101,7 @@ decision #2; RELEASE_ARC §Phase 4.5). Proposal:
 The charter's P-3 posture names a support agent (the doc-grounded assistant,
 v1.0.7) that "can help a dev or agent-savvy user understand whatever it knows
 about itself." The assistant retrieves over the wiki as its S1 tier
-([`memory-architecture.md`](../../../docs/dev/memory-architecture.md): "WS-4b
+([`memory-architecture.md`](../../../memory-architecture.md): "WS-4b
 code-ingest feeds S1"). Therefore the wiki *is* the assistant's
 self-description, and two properties become load-bearing: **(a) it must be
 current** — which is precisely what the sentinel + freshness reminder exist
@@ -156,7 +156,7 @@ machine-checkable file.
 
 **Wiki ↔ governance extraction.** The wiki and the governance home are two
 strata of the same Memory/Governance split (`overview.md` seven-functions;
-[`governance-extraction.md`](../../../docs/wiki/pages/governance-extraction.md)).
+[`governance-extraction.md`](../../../../wiki/pages/governance-extraction.md)).
 The discipline to preserve is *one job per rule-bearing doc*: SCHEMA.md's D5
 fork already states the binding rules **once**, in their canonical homes, and
 the wiki only **cites** them — "on any conflict the canonical docs win, and
@@ -178,7 +178,7 @@ repo every tracked doc already *is* a raw layer, so copying a live doc into
 wiki-synthesis tier) in the `recall/` stack — the *vocabulary-bridge and map*
 the assistant retrieves over first, before dropping to S2 (`git grep` →
 exact `path:line`)
-([`memory-architecture.md`](../../../docs/dev/memory-architecture.md) tiers
+([`memory-architecture.md`](../../../memory-architecture.md) tiers
 table). The provenance plane there is the *same spine* as SCHEMA.md's
 grounding rule: every `Unit` carries `(tier, source_id, path:line, audience,
 sha)`, retrieval returns source units never rewritten facts, and the avatar

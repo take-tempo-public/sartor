@@ -10,14 +10,14 @@ allowed-tools:
 ---
 
 Audit a single wiki page against the sources it cites, enforcing the **one grounding rule**
-from [`docs/wiki/SCHEMA.md`](../../docs/wiki/SCHEMA.md): *a page may not assert anything its
+from [`docs/wiki/SCHEMA.md`](../docs/wiki/SCHEMA.md): *a page may not assert anything its
 cited sources do not support.* An LLM is an unreliable narrator of its own synthesis — this
 command is the falsification step that keeps a synthesis error from silently becoming a "fact."
 
 ## Steps
 
 1. **Load the page.** Read `docs/wiki/pages/<page-slug>.md` (resolve `<page-slug>` against
-   [`docs/wiki/index.md`](../../docs/wiki/index.md); if it doesn't exist, list the available
+   [`docs/wiki/index.md`](../docs/wiki/index.md); if it doesn't exist, list the available
    slugs and stop).
 2. **Check each claim against its source.** For every `path:line` cite and every `[synthesis]`
    statement, open the cited source (code at HEAD, or the living doc) and quote-match the
@@ -34,7 +34,7 @@ command is the falsification step that keeps a synthesis error from silently bec
    - **Surface UNSUPPORTED claims to the user** for correction or removal. Do **not** silently
      delete or rewrite a claim — flag it, propose the fix, and let the user decide (the page is
      committed history; an unsupported claim may signal a real code/doc change worth tracing).
-5. **Log it.** Append a dated entry to [`docs/wiki/log.md`](../../docs/wiki/log.md): the page
+5. **Log it.** Append a dated entry to [`docs/wiki/log.md`](../docs/wiki/log.md): the page
    audited and the per-tier counts (supported / drifted / unsupported).
 
 For a breadth check across the whole wiki (which pages to audit, what drifted at the file

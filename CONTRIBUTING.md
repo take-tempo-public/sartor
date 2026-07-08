@@ -104,7 +104,7 @@ The project ships a Claude Code plugin (`sartor`). The pieces live in three plac
 - **Hooks** in [`.claude-plugin/hooks/`](.claude-plugin/hooks/) — wired **directly** in the same `.claude/settings.json` (path-referenced, not plugin-discovered), so they stay independent of the marketplace loader. Six of the ten are thin wrappers over the tool-agnostic [`scripts/enforcement/`](scripts/enforcement/) core (see "Portable enforcement hooks" below); the three plan-mode lifecycle hooks and the wiki-freshness reminder stay Claude-only, standalone scripts.
 - The plugin **manifest** + local **marketplace** definition live in [`.claude-plugin/`](.claude-plugin/) (`plugin.json` + `marketplace.json`).
 
-Cloning the repo activates everything on session start — a fresh clone needs a one-time marketplace-trust prompt + reload, no install step. For the full command/subagent/hook catalog see [README → Claude Code Plugin](README.md#claude-code-plugin) (and [`CLAUDE.md`](CLAUDE.md) for the agent-facing contract); this section is the layout-and-activation orientation, not a catalog, so it deliberately doesn't re-list every entry.
+Cloning the repo activates everything on session start — a fresh clone needs a one-time marketplace-trust prompt + reload, no install step. For the full command/subagent/hook catalog see [README → Architecture & developer reference](README.md#architecture--developer-reference) (and [`CLAUDE.md`](CLAUDE.md) for the agent-facing contract); this section is the layout-and-activation orientation, not a catalog, so it deliberately doesn't re-list every entry.
 
 Hooks should remain deterministic shell. LLM-backed review is reserved for explicit `/code-review:code-review` and `/security-review` invocations.
 

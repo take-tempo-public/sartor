@@ -13,6 +13,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Chore: cross-document link checker + repo-wide link sweep (`chore/doc-link-sweep`, 2026-07-08)
+
+Carry-forward ledger item #7 / RELEASE_ARC §Phase 4.8 (ii): `wiki-lint` only checks
+`docs/wiki/` structural integrity, so the plain `[text](path)` links the extract-don't-restate
+move multiplied across the contract docs + `docs/governance/` (and the rest of the doc set)
+were ungated pointer-rot risk. **Deterministic, stdlib-only — no new dependency.**
+
+- **New checker** — [`scripts/check_doc_links.py`](scripts/check_doc_links.py): resolves every
+  relative `[text](path)` / `[text](path#anchor)` markdown link in all 190 tracked `*.md` files
+  (repo-wide, including `docs/wiki/*.md` — it uses the identical relative-link convention as
+  every other doc) against its containing file, verifies the target exists, and — for `.md`
+  targets with a `#fragment` — verifies a matching heading via a conservative GitHub-anchor
+  slugger (handles the repo's real double-hyphen cases from stripped `&`/`—`/`→`). Separately,
+  scoped to `docs/governance/*.md` + `AGENTS.md` + `CLAUDE.md`, verifies the **file** named by
+  each `` `path:SYMBOL` ``/`` `path:LINE` `` cite exists (existence only — line-drift checking
+  stays `wiki-lint`'s job). Skips external URLs, fenced code, literal backtick-quoted link
+  syntax examples, and gitignored targets; two narrow documented `(file, target)` exclusions
+  cover a generic `[text](path)` prose idiom and a destination-relative insertion-template doc.
+- **Wired into the existing gate, not a new CI job** —
+  [`tests/test_doc_links.py`](tests/test_doc_links.py) re-runs the checker as a subprocess and
+  asserts exit 0, so it rides `pytest` on every PR (already CI-covered).
+- **The sweep** — fixed every link/cite the checker found: a systemic `../../` depth bug in 6
+  `commands/`/`agents/` files (pre-dated the plugin-activation move to repo root), 4 stale
+  relative-depth links (`docs/dev/RELEASE_ARC.md`'s `excellence-walk/` refs, a design doc's
+  nested review-directory refs, a stale `.claude-plugin/agents/` path), 3 dangling `README.md`
+  anchors from a since-removed "Claude Code Plugin" heading (retargeted to the current
+  `#architecture--developer-reference` section) and 4 from a never-landed `#cost` anchor
+  (retargeted to `#install`, the closest live section), and 3 historical entries in
+  `CHANGELOG.md`/`RELEASE_CHECKLIST.md`/an archived UX audit that named a since-renamed file —
+  de-linked (kept as plain text) rather than retargeted, so the historical record stays accurate.
+
 ### CI: UX/a11y tier as a CI job, required-check ready (`ci/ux-a11y-required-check`, 2026-07-08)
 
 PX-25 (2026-06 product-excellence review, `F-qe-rel-01` P0): the browser-driven
@@ -4887,7 +4918,7 @@ and reverted; see "Attempted and deferred" below).
 
 ### Tests
 
-- **[`tests/test_onboarding_import_legacy.py`](tests/test_onboarding_import_legacy.py)** — 24/24 pass.
+- **`tests/test_onboarding_import_legacy.py`** — 24/24 pass.
   `test_merge_dedupes_identical_bullet_text_across_sources` replaces
   `test_merge_skips_exact_duplicate_bullet_same_source` (which
   codified the bullet-dedup bug — its name said "skips" but its

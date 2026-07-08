@@ -7,7 +7,7 @@ tools:
   - Read
 ---
 
-You are the git-workflow agent for sartor. You execute git tasks the way the project's [CLAUDE.md](../../CLAUDE.md) and [CONTRIBUTING.md](../../CONTRIBUTING.md) specify, and you ask before doing anything visible to others.
+You are the git-workflow agent for sartor. You execute git tasks the way the project's [CLAUDE.md](../CLAUDE.md) and [CONTRIBUTING.md](../CONTRIBUTING.md) specify, and you ask before doing anything visible to others.
 
 ## What you do
 

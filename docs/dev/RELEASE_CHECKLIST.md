@@ -632,6 +632,23 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       [`self-documenting-loop-design.md`](self-documenting-loop-design.md) §3 scope table).
       **→ Integrate at 8.7 (2026-06-20, 7.9 ledger capture):** as the *durable CI form* of the
       planned doc-link sweep — don't build it standalone.
+      **DONE (`chore/doc-link-sweep`, 2026-07-08, ledger #7 — Phase 4/TRAIN 4):** built
+      [`scripts/check_doc_links.py`](../../scripts/check_doc_links.py) (deterministic,
+      stdlib-only) — tree-wide `[text](path)`/`[text](path#anchor)` link resolution +
+      GitHub-anchor verification across all 190 tracked `*.md` files (incl. `docs/wiki/*.md`,
+      whose links use the identical convention — trivially covered, `[[backlinks]]`/`path:line`
+      *drift* stay `wiki-lint`'s job), plus file-existence checking for `` `path:line` ``/
+      `` `path:SYMBOL` `` cites scoped to `docs/governance/*.md` + `AGENTS.md` + `CLAUDE.md`
+      (existence only, not drift). Wired into the existing gate via
+      [`tests/test_doc_links.py`](../../tests/test_doc_links.py) — no new CI job, rides `pytest`
+      on every PR — which **is** the periodic mechanism this row asked for. The one-time sweep
+      fixed every hit: a systemic `../../` depth bug in 6 `commands/`/`agents/` files, 4 stale
+      relative-depth links, 7 dangling `README.md` anchors (a removed heading + a never-landed
+      one, both retargeted to the closest live section), and 3 historical entries (incl. this
+      file's own two `onboarding/import_legacy.py` cites) de-linked rather than retargeted to
+      keep the historical record accurate. Full findings in the branch close-out report.
+      **Row toggle + the open-count header reconcile at Phase-4/TRAIN-4 capture** (per the
+      cumulative-ledger discipline — multiple ledger items land in this train).
 
 - [ ] **Agent-coding-practices kit-adoption — staged commitments (2026-06-23)** — the
       [`kit-adoption-design.md`](kit-adoption-design.md) arc's cross-cutting deferrals, kept in
@@ -1222,7 +1239,7 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       only the hooks + the manifest (`plugin.json`) + the marketplace (`marketplace.json`) remain in
       `.claude-plugin/`. Dropped the stale skill/subagent enumeration and the "Step 5 / 8 / 9 of the
       OSS migration" references; the section now points to
-      [README → Claude Code Plugin](../../README.md#claude-code-plugin) for the full catalog
+      [README → Architecture & developer reference](../../README.md#architecture--developer-reference) for the full catalog
       (cite-don't-restate, charter D5 — re-listing the entries inline is what drifted in the first
       place). _(surfaced 2026-06-15, `feat/governance-extraction`; cleared on the 8.0 reduction
       micro-branch.)_
@@ -1542,7 +1559,7 @@ first follow-up release.
       keeps its name — route rename is a separate cleanup, v1.1.
 - [x] **~~Bullet-dedup gap in corpus re-import~~** — ✅ resolved
       2026-05-26. Changed `_merge_into_existing_experience` in
-      [`onboarding/import_legacy.py`](../../onboarding/import_legacy.py)
+      `onboarding/import_legacy.py`
       to dedup on **normalized bullet text** instead of
       `(source, text)`. The old key missed same-file re-imports
       because the source flips from `primary:<file>` to
@@ -1552,7 +1569,7 @@ first follow-up release.
       phrasings from different files still survive (they have
       different normalized text). Test
       `test_merge_dedupes_identical_bullet_text_across_sources`
-      in [`tests/test_onboarding_import_legacy.py`](../../tests/test_onboarding_import_legacy.py)
+      in `tests/test_onboarding_import_legacy.py`
       pins the new behavior; all 24 tests in that file pass.
 - [x] **~~Wizard rail step buttons don't re-enable after prior step
       completes~~** — ✅ resolved 2026-05-26. Added a
