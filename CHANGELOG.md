@@ -13,6 +13,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feat: first-run flow — calm Analyze + guided landing + display-name-first + application company capture (`feat/ux-w1-first-run-flow`, 2026-07-07)
+
+UX-review Wave 1 "first-run delight" slice — F-12 / F-06 / F-05 / F-15 from
+`docs/dev/reviews/2026-07-ux-review/40-friction-register.md`.
+
+- **F-12 — the Analyze screen leads calm.** `_renderAnalysis` (static/app.js) now
+  opens with the F-01 coverage block (heading, score bar, `.score-note` explainer —
+  preserved verbatim), then a **"Where to Focus"** verdict line + up to three actions
+  derived **deterministically from the payload** (top missing keywords + top
+  comparison gaps, backfilled from the analyzer's own suggestions — no new LLM call,
+  no prompt change, no `PROMPT_VERSION` bump). Everything else (skill chip clouds,
+  hidden qualities, matched/could-add keyword lists incl. the verbatim "Keywords You
+  Could Add" heading, comparison, suggestions, placement, strategy) folds into a
+  native `<details id="analysisDetails">` "Show full analysis" disclosure, collapsed
+  by default. ATS warnings (legacy path only) stay above the fold.
+- **F-06 — the post-create tab jump is explained.** Smart-landing an empty-corpus
+  user onto Career corpus now fires a one-time `tourCorpusLanding` help modal
+  ("Let's build your corpus first") via the existing `_HELP_REGISTRY` +
+  `cb_help_seen:` primitive — no new modal machinery; suppressed by default in the
+  UX suite like every other auto-firing stop (`_TOUR_STOP_BLOCKS`).
+- **F-05 — display-name-first new-user form.** Full name is the first field and gets
+  focus; typing it live-derives a username slug (lowercased, hyphenated, diacritics
+  stripped — `_slugify`) into the still-visible, still-editable username field with a
+  "this is your storage key" hint. A manual username edit stops the auto-derive for
+  that form session. Username remains the storage key; `POST /api/users` payload and
+  validation (`secure_filename`, required markers) are unchanged.
+- **F-15 — applications capture company at creation.** `build_context_set_from_db`
+  (db/build_context.py) stamps `Application.company` via the new
+  `_infer_application_company` — `hardening.extract_company_terms(jd_text)` (the
+  deterministic, fail-open F-01 detector), longest term wins deterministically,
+  title-cased for display; `None` on a miss (prior behavior). The applications card,
+  detail modal, and editable save path (#24 `PUT /api/applications/<id>/meta`)
+  already surfaced company — no migration needed either: `Application.company` has
+  existed since migration 0001.
+- Tests: `tests/ux/regression/test_20260707_first_run_flow.py` (progressive
+  disclosure collapsed/expandable + F-01 preservation; one-time transition modal via
+  the name-first create path; slug derivation/manual-edit-wins/re-arm; application
+  card shows the captured company) + `TestInferApplicationCompany` and two
+  capture-wiring cases in `tests/test_build_context_db.py`.
+
 ### Feat: demo mode — run without an API key (`feat/ux-w3-demo-mode`, 2026-07-07)
 
 UX review F-19 (`docs/dev/reviews/2026-07-ux-review/40-friction-register.md`): a

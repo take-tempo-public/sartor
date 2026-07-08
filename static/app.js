@@ -47,6 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
   ['newLinkedin', 'newWebsite', 'cfgLinkedin', 'cfgWebsite'].forEach(
     id => _wireUrlField(document.getElementById(id)),
   );
+  // F-05: display-name-first new-user form — typing a name auto-derives a
+  // username slug until the user edits the username field directly.
+  const _newNameEl = document.getElementById('newName');
+  if (_newNameEl) _newNameEl.addEventListener('input', _onNewNameInput);
+  const _newUsernameEl = document.getElementById('newUsername');
+  if (_newUsernameEl) _newUsernameEl.addEventListener('input', _onNewUsernameInput);
   document.getElementById('refinementInput').addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitRefinement(); }
   });
@@ -84,8 +90,9 @@ async function loadUsers() {
 }
 
 // Reveal the new-user form (don't toggle): hide the "New user" button so the
-// only affordance left is the form itself, and focus the username box so the
-// user can start typing immediately. Cancel (hideNewUserForm) restores it.
+// only affordance left is the form itself, and focus the name box (F-05:
+// display name is the first field now) so the user can start typing
+// immediately. Cancel (hideNewUserForm) restores it.
 function showNewUserForm() {
   document.getElementById('newUserForm').classList.remove('hidden');
   const btn = document.getElementById('btnNewUser');
@@ -96,13 +103,44 @@ function showNewUserForm() {
   // intentionally left alone — this is a label fix, not a context teardown.
   const sel = document.getElementById('userSelect');
   if (sel) sel.value = '';
-  const u = document.getElementById('newUsername');
-  if (u) u.focus();
+  _usernameEditedByUser = false;  // F-05: a fresh form re-arms slug auto-derive
+  const n = document.getElementById('newName');
+  if (n) n.focus();
   // KW3: the very first user on a fresh install → arm the new-user tour and
   // offer the "import a résumé to start" tip once (no-op for returning users —
   // _maybeFireTourStop gates on the armed flag).
   if (sel && sel.options.length <= 1) _armHelpTour();
   _maybeFireTourStop('tourAddUser', null);
+}
+
+// F-05: display-name-first new-user form. Deriving a URL/storage-safe slug
+// from a free-typed name client-side, mirrored server-side by
+// `_safe_username` (web_infra.py) at account-creation time — this is a
+// same-tab convenience only, not the source of truth for validity.
+// `_usernameEditedByUser` stops clobbering a deliberate manual edit: once the
+// user types directly into the username field, auto-derive backs off for the
+// rest of this form session (reset on show/hide).
+let _usernameEditedByUser = false;
+
+function _slugify(text) {
+  return (text || '')
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')  // strip diacritics
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+}
+
+function _onNewNameInput() {
+  if (_usernameEditedByUser) return;
+  const nameEl = document.getElementById('newName');
+  const userEl = document.getElementById('newUsername');
+  if (!nameEl || !userEl) return;
+  userEl.value = _slugify(nameEl.value);
+}
+
+function _onNewUsernameInput() {
+  _usernameEditedByUser = true;
 }
 
 const _NEW_USER_FIELDS = ['newUsername', 'newName', 'newEmail', 'newPhone', 'newLinkedin', 'newWebsite'];
@@ -119,6 +157,7 @@ function hideNewUserForm() {
     const el = document.getElementById(id);
     if (el) { el.value = ''; el.classList.remove('field-invalid'); el.removeAttribute('aria-invalid'); }
   });
+  _usernameEditedByUser = false;  // F-05: re-arm slug auto-derive for next time
 }
 
 async function createUser() {
@@ -185,6 +224,11 @@ async function onUserSelect() {
   const landing = await _landingTab();
   if (landing === 'corpus') _armHelpTour();  // empty corpus ⇒ new-user onboarding
   _activateTab(landing);
+  // F-06: explain the jump the moment it happens — a brand-new (or still-empty)
+  // user gets routed away from where they clicked, onto Career corpus, with no
+  // transition line. Once-ever (cb_help_seen), tour-armed users only, and
+  // _maybeFireTourStop already no-ops when another modal is up.
+  if (landing === 'corpus') _maybeFireTourStop('tourCorpusLanding', null);
   _resetIterationState();
   setStatus('READY');
   refreshApplications();
@@ -735,6 +779,37 @@ async function runAnalysis() {
   }
 }
 
+// F-12: derive the "top 3 actions" deterministically from data already in the
+// analyze payload — top missing keywords + top comparison gaps, backfilled from
+// the LLM's own suggestions list. No new LLM call; pure client-side selection.
+function _topAnalysisActions(a, d) {
+  const actions = [];
+  const overlap = (d && d.keyword_overlap) || {};
+  const missing = overlap.missing_from_resume || [];
+  if (missing.length) {
+    actions.push(
+      'Weave in the top missing keywords where they’re true of your experience: '
+      + missing.slice(0, 3).join(', '),
+    );
+  }
+  const gaps = (a.comparison && a.comparison.gaps) || [];
+  gaps.slice(0, 2).forEach(g => actions.push(String(g)));
+  if (actions.length < 3 && Array.isArray(a.suggestions)) {
+    a.suggestions.slice(0, 3 - actions.length).forEach(s => {
+      if (s && s.action) actions.push(s.section ? `${s.section}: ${s.action}` : String(s.action));
+    });
+  }
+  return actions.slice(0, 3);
+}
+
+// F-12: one-line deterministic verdict — same thresholds as the score-bar
+// color (60/35), coverage framing per F-01 (encouragement, not a grade).
+function _analysisVerdictLine(pct) {
+  if (pct > 60) return 'Strong keyword coverage — your corpus already speaks this job’s language.';
+  if (pct > 35) return 'Solid starting point — the actions below are the fastest wins before you compose.';
+  return 'Coverage starts low — that’s normal for a first pass. Focus on the actions below.';
+}
+
 function _renderAnalysis(data) {
   const a = data.analysis;
   const d = data.deterministic;
@@ -749,7 +824,8 @@ function _renderAnalysis(data) {
 
   // Keyword overlap score (F-01: server-side cleaned universe — company name +
   // JD boilerplate excluded; coverage framing, not a grade)
-  const score = d.keyword_overlap.match_score;
+  const overlap = (d && d.keyword_overlap) || {};
+  const score = overlap.match_score || 0;
   const pct = Math.round(score * 100);
   const color = pct > 60 ? 'var(--success)' : pct > 35 ? 'var(--brand)' : 'var(--danger)';
   html += `<div class="analysis-section">
@@ -758,12 +834,32 @@ function _renderAnalysis(data) {
     <p class="score-note">Share of the job description's meaningful keywords found in your corpus — the company's name and hiring boilerplate don't count. The analysis below is the real fit read.</p>
   </div>`;
 
-  // ATS Warnings
-  if (d.ats_warnings.length) {
+  // F-12: short verdict + the top 3 actions lead; the full read is one
+  // disclosure away (below) instead of an all-at-once wall.
+  const actions = _topAnalysisActions(a, d);
+  html += `<div class="analysis-section" id="analysisVerdict">
+    <h3>Where to Focus</h3>
+    <p class="analysis-verdict-line">${esc(_analysisVerdictLine(pct))}</p>`;
+  if (actions.length) {
+    html += `<ol class="analysis-top-actions">`;
+    actions.forEach(t => { html += `<li>${esc(t)}</li>`; });
+    html += `</ol>`;
+  } else {
+    html += `<p class="analysis-verdict-line">No urgent gaps found — open the full analysis for the complete read, then continue.</p>`;
+  }
+  html += `</div>`;
+
+  // ATS Warnings — actionable, so they stay above the fold (corpus mode
+  // suppresses them server-side; this renders only on the legacy path).
+  if (d && d.ats_warnings && d.ats_warnings.length) {
     html += `<div class="analysis-section"><h3>ATS Warnings</h3>`;
     d.ats_warnings.forEach(w => { html += `<div class="warning">${esc(w)}</div>`; });
     html += `</div>`;
   }
+
+  // F-12: everything below is the deep read — collapsed by default behind a
+  // native <details> disclosure (keyboard/screen-reader accessible for free).
+  html += `<details class="analysis-details" id="analysisDetails"><summary>Show full analysis</summary>`;
 
   // Essential Skills
   if (a.essential_skills) {
@@ -795,11 +891,11 @@ function _renderAnalysis(data) {
 
   // Keywords matched / missing
   html += `<div class="analysis-section"><h3>Keywords Matched</h3><div>`;
-  d.keyword_overlap.matched.slice(0, 20).forEach(k => { html += `<span class="tag tag-matched">${esc(k)}</span>`; });
+  (overlap.matched || []).slice(0, 20).forEach(k => { html += `<span class="tag tag-matched">${esc(k)}</span>`; });
   html += `</div></div>`;
 
   html += `<div class="analysis-section"><h3>Keywords You Could Add</h3><div>`;
-  d.keyword_overlap.missing_from_resume.slice(0, 20).forEach(k => { html += `<span class="tag tag-missing">${esc(k)}</span>`; });
+  (overlap.missing_from_resume || []).slice(0, 20).forEach(k => { html += `<span class="tag tag-missing">${esc(k)}</span>`; });
   html += `</div></div>`;
 
   // Comparison
@@ -850,6 +946,8 @@ function _renderAnalysis(data) {
   if (a.overall_strategy) {
     html += `<div class="analysis-section"><h3>Overall Strategy</h3><p style="color:var(--brand-hi)">${esc(a.overall_strategy)}</p></div>`;
   }
+
+  html += `</details>`;
 
   el.innerHTML = html;
 }
@@ -1720,6 +1818,18 @@ const _HELP_REGISTRY = {
       + 'sartor does its best with other formats. You can add your name and '
       + 'contact details now or later.',
     tip: 'Adding a user',
+  },
+  // F-06: the post-create tab jump (Tailor → Career corpus) explained in the
+  // moment it happens — fired by onUserSelect when smart-landing routes a
+  // new/empty-corpus user to the Corpus tab. Once-ever via cb_help_seen.
+  tourCorpusLanding: {
+    title: 'Let’s build your corpus first',
+    body: 'You landed on the Career corpus tab because your profile is empty — '
+      + 'sartor tailors résumés from a corpus of your experience, so that’s '
+      + 'the one thing to set up first. Import a résumé (fastest) or add an '
+      + 'experience by hand; when the corpus is ready, head to Tailor to '
+      + 'target a job.',
+    tip: 'Why am I on Career corpus?',
   },
   tourGenerating: {
     title: 'Generating your résumé',

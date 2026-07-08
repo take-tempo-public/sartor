@@ -25,6 +25,9 @@ class UserPicker:
     NEW_EMAIL = "#newEmail"
     CREATE_BUTTON = "text=Create"
     CANCEL_BUTTON = "#newUserForm >> text=Cancel"
+    # F-05 — display-name-first form: the username hint under the (now
+    # secondary) username field, auto-derived as a slug from the full name.
+    NEW_USERNAME_HINT = "#newUsernameHint"
 
 
 class Forms:
@@ -138,6 +141,12 @@ class Wizard:
     JD_TEXT = "#jdText"
     ANALYZE_BUTTON = "#btnAnalyze"
     ANALYSIS_CONTENT = "#analysisContent"
+    # F-12 — progressive disclosure: the verdict + top-3-actions block that
+    # leads the render, and the <details> fold holding the deep analysis
+    # (collapsed by default; open via its <summary>).
+    ANALYSIS_VERDICT = "#analysisVerdict"
+    ANALYSIS_DETAILS = "#analysisDetails"
+    ANALYSIS_DETAILS_SUMMARY = "#analysisDetails > summary"
     # In-flow "Continue" buttons have no ids (onclick=wizardGoTo(n)); text is
     # the only handle. Centralized here so a copy edit is a one-file change.
     CONTINUE_TO_CLARIFY = "text=Continue to Clarify →"

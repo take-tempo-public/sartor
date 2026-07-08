@@ -107,19 +107,27 @@
           <!-- Required fields carry `required` + `aria-required="true"`; the
                visible cue is the inline .required-marker asterisk (labels here
                are sr-only, so the asterisk rides next to the input). See the
-               reusable convention in static/style.css (.required-marker). -->
+               reusable convention in static/style.css (.required-marker).
+               F-05: display name leads (the natural "who are you" question)
+               instead of an invented username; typing a name auto-derives a
+               slug into the username field below (still the storage key + the
+               field the /api/users payload sends — no API change), and stays
+               visible/editable so the user can change it before submitting. -->
           <div class="form-row">
-            <label for="newUsername" class="sr-only">Username (required)</label>
-            <input type="text" id="newUsername" name="newUsername" autocomplete="username" placeholder="Username" aria-label="New user username" required aria-required="true">
-            <span class="required-marker" aria-hidden="true">*</span>
             <label for="newName" class="sr-only">Full name (required)</label>
             <input type="text" id="newName" name="newName" autocomplete="name" placeholder="Full Name" aria-label="New user full name" required aria-required="true">
             <span class="required-marker" aria-hidden="true">*</span>
-          </div>
-          <div class="form-row">
             <label for="newEmail" class="sr-only">Email (required)</label>
             <input type="email" id="newEmail" name="newEmail" autocomplete="email" placeholder="Email" aria-label="New user email" required aria-required="true">
             <span class="required-marker" aria-hidden="true">*</span>
+          </div>
+          <div class="form-row">
+            <label for="newUsername" class="sr-only">Username (required)</label>
+            <input type="text" id="newUsername" name="newUsername" autocomplete="username" placeholder="Username" aria-label="New user username" aria-describedby="newUsernameHint" required aria-required="true">
+            <span class="required-marker" aria-hidden="true">*</span>
+            <span class="edit-hint" id="newUsernameHint">Auto-filled from your name — this is your storage key, edit anytime</span>
+          </div>
+          <div class="form-row">
             <label for="newPhone" class="sr-only">Phone</label>
             <input type="tel" id="newPhone" name="newPhone" autocomplete="tel" placeholder="Phone" aria-label="New user phone">
           </div>

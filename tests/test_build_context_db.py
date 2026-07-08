@@ -12,6 +12,7 @@ import json
 import pytest
 
 from db.build_context import (
+    _infer_application_company,
     _infer_application_title,
     _pick_official_title,
     _select_corpus_snapshot,
@@ -187,6 +188,30 @@ class TestInferApplicationTitle:
     def test_empty_jd_returns_placeholder(self):
         assert _infer_application_title("") == "Untitled application"
         assert _infer_application_title("   \n  \n") == "Untitled application"
+
+
+class TestInferApplicationCompany:
+    """F-15: deterministic employer capture at application-creation time."""
+
+    def test_picks_the_detected_company(self):
+        assert _infer_application_company("About Initech\nWe make software.") == "Initech"
+
+    def test_title_cases_multi_word_company(self):
+        jd = "Senior Site Reliability Engineer\nLattice Cloud — Remote (US)\n\nDuties follow."
+        assert _infer_application_company(jd) == "Lattice Cloud"
+
+    def test_none_when_undetectable(self):
+        assert _infer_application_company("Responsibilities include leading a team.") is None
+
+    def test_empty_jd_returns_none(self):
+        assert _infer_application_company("") is None
+
+    def test_picks_longest_term_deterministically_on_multiple_signals(self):
+        # "At" pattern yields "Acme"; the dash-header pattern yields the more
+        # specific "Acme Robotics" — the longer term must win regardless of
+        # frozenset iteration order.
+        jd = "Come build robots at Acme.\nAcme Robotics — Remote\n\nDuties follow."
+        assert _infer_application_company(jd) == "Acme Robotics"
 
 
 class TestSummarizeEducations:
@@ -392,6 +417,30 @@ class TestBuildContextSetFromDb:
         snapshot = json.loads(run.corpus_snapshot_json)
         assert "bullet_ids" in snapshot
         assert "experience_title_ids" in snapshot
+
+    def test_application_company_captured_from_jd(self, db_session):
+        """F-15: the Application row's company is populated at creation time
+        (not left null for the user to notice and fill in by hand)."""
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        _ctx, app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text="About Lattice Cloud\nWe run a multi-region container platform.",
+            run_id="run_company",
+        )
+        assert app.company == "Lattice Cloud"
+
+    def test_application_company_none_when_jd_has_no_signal(self, db_session):
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        _ctx, app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text="Responsibilities include leading a team.",
+            run_id="run_no_company",
+        )
+        assert app.company is None
 
     def test_unknown_username_raises(self, db_session):
         with pytest.raises(ValueError, match="No candidate"):

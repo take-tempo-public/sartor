@@ -159,6 +159,7 @@ def page(_browser: Browser, live_server: str) -> Iterator[Page]:
 _TOUR_STOP_BLOCKS = (
     "panelUser",  # welcome
     "tourAddUser",  # add-user tip
+    "tourCorpusLanding",  # F-06 post-create corpus-landing transition
     "panelCorpus",  # post-ingest
     "panelJD",  # wizard step 1
     "panelClarify",  # wizard step 2
