@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 
     from db.models import (
         Candidate,
+        Certification,
+        Education,
         Experience,
         ExperienceSummaryItem,
         Skill,
@@ -188,4 +190,40 @@ def _skill_to_dict(s: Skill, tags: list | None = None) -> dict:
         "tags": tags if tags is not None else [],
         "created_at": s.created_at,
         "updated_at": s.updated_at,
+    }
+
+
+def _education_to_dict(ed: Education) -> dict:
+    """Shared response shape for Education routes (F-04, UX-W1).
+
+    No `source` / `is_pending_review` / `created_at` / `updated_at` — the
+    `Education` model (db/models.py) carries neither the LLM-proposal
+    lifecycle nor timestamps that Skill/SummaryItem do; this mirrors the
+    model exactly rather than padding out fields that don't exist.
+    """
+    return {
+        "id": ed.id,
+        "candidate_id": ed.candidate_id,
+        "institution": ed.institution,
+        "degree": ed.degree,
+        "field": ed.field,
+        "start_date": ed.start_date,
+        "end_date": ed.end_date,
+        "display_order": ed.display_order,
+        "is_active": bool(ed.is_active),
+        "notes": ed.notes,
+    }
+
+
+def _certification_to_dict(c: Certification) -> dict:
+    """Shared response shape for Certification routes (F-04, UX-W1). See `_education_to_dict`."""
+    return {
+        "id": c.id,
+        "candidate_id": c.candidate_id,
+        "name": c.name,
+        "issuer": c.issuer,
+        "issued": c.issued,
+        "expires": c.expires,
+        "display_order": c.display_order,
+        "is_active": bool(c.is_active),
     }

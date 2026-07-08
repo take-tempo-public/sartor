@@ -318,6 +318,40 @@ async function loadConfig() {
   document.getElementById('cfgEducation').value = currentConfig.education_summary || '';
   document.getElementById('cfgNotes').value = currentConfig.notes || '';
   document.getElementById('cfgPortfolioUrls').value = (currentConfig.portfolio_urls || []).join('\n');
+  // F-03/F-04 (UX-W1) — needs_onboarding (added to GET config) tells us
+  // whether a Candidate DB row exists yet: false once the corpus is
+  // authoritative, at which point the flat Skills/Certs/Education fields
+  // above are dead controls and the pointer rows take over.
+  _applyCorpusModeToSettingsFields(currentConfig.needs_onboarding !== false);
+}
+
+// F-03/F-04 (UX-W1, 2026-07-07) — toggle each of the three flat
+// Skills/Certifications/Education Settings rows between its live input
+// (pre-provision — still the only source of truth) and a labeled pointer
+// into the Career-corpus editor (post-provision — corpus is authoritative,
+// so the flat field would silently do nothing if left live and editable).
+function _applyCorpusModeToSettingsFields(fieldsAreLive) {
+  const pairs = [
+    ['cfgSkillsFieldRow', 'cfgSkillsCorpusRow'],
+    ['cfgCertsFieldRow', 'cfgCertsCorpusRow'],
+    ['cfgEducationFieldRow', 'cfgEducationCorpusRow'],
+  ];
+  pairs.forEach(([fieldRowId, corpusRowId]) => {
+    const fieldRow = document.getElementById(fieldRowId);
+    const corpusRow = document.getElementById(corpusRowId);
+    if (fieldRow) fieldRow.classList.toggle('hidden', !fieldsAreLive);
+    if (corpusRow) corpusRow.classList.toggle('hidden', fieldsAreLive);
+  });
+}
+
+// The pointer rows' "Go to Career corpus →" button: close the Settings
+// drawer (via its own dismiss handler, so focus-trap teardown stays
+// correct) and switch to the Corpus tab, where the live Skills/Education/
+// Certifications editors are.
+function _goToCareerCorpusFromSettings() {
+  const dismiss = document.querySelector('#settingsDrawer [data-settings-dismiss]');
+  if (dismiss) dismiss.click();
+  switchTopTab('corpus', document.getElementById('topTabCorpus'));
 }
 
 async function saveConfig() {
@@ -3057,6 +3091,10 @@ async function refreshCorpus() {
   // B.5 — load the candidate's skills editor alongside; independent route
   // and failure mode (a 5xx on skills doesn't block the experience list).
   refreshSkillsEditor();
+  // F-04 (UX-W1) — same independent-route/independent-failure-mode pattern
+  // for the education + certifications editors.
+  refreshEducationEditor();
+  refreshCertificationsEditor();
   let res;
   try {
     res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
@@ -3489,6 +3527,333 @@ async function _unlinkSkillTag(skillId, tagId) {
     if (res.ok) refreshSkillsEditor();
     else _toast('Could not remove tag.', true);
   } catch { _toast('Network error.', true); }
+}
+
+
+// ============================================================
+// F-04 (UX-W1, 2026-07-07) — Education + Certifications editors (Career corpus)
+// ============================================================
+// Candidate-level Corpus Items, same row chrome as the Skills editor above
+// (.summary-variant-row / .corpus-action-btn), but with no pending-review
+// lifecycle — db/models.py's Education/Certification carry no `source` /
+// `is_pending_review`; nothing here is LLM-proposed, a human types these
+// directly. db/build_context.py already reads both tables (ordered by
+// display_order) into the synthesized corpus-mode résumé the analyze/
+// generate prompts see; this editor is the missing UI half of that.
+//
+// Reorder: neither the Skills nor Summary-variant editors above have visible
+// reorder controls (their display_order is set once, at insertion), so there
+// is no existing corpus-editor reorder affordance to copy. _reorderCorpusRow
+// mirrors the Compose bullet-list's keyboard-reorder mechanics instead
+// (.reorder-controls/.reorder-btn) scaled down to an immediate swap-and-PUT
+// (no debounce — a corpus edit persists right away, unlike Compose autosave).
+
+async function _reorderCorpusRow(row, dir, putUrlFor) {
+  const list = row.parentElement;
+  if (!list) return;
+  const sib = dir < 0 ? row.previousElementSibling : row.nextElementSibling;
+  if (!sib) return;  // already at an edge — nothing to do
+  const rowId = Number(row.dataset.id);
+  const sibId = Number(sib.dataset.id);
+  const rowOrder = row.dataset.order;
+  const sibOrder = sib.dataset.order;
+  if (dir < 0) list.insertBefore(row, sib);
+  else list.insertBefore(sib, row);
+  try {
+    await Promise.all([
+      _putJson(putUrlFor(rowId), { display_order: Number(sibOrder) }),
+      _putJson(putUrlFor(sibId), { display_order: Number(rowOrder) }),
+    ]);
+    row.dataset.order = sibOrder;
+    sib.dataset.order = rowOrder;
+  } catch (e) {
+    _toast('Could not reorder: ' + e.message, true);
+  }
+}
+
+async function refreshEducationEditor() {
+  if (!currentUser) return;
+  const section = document.getElementById('educationEditorSection');
+  const listEl = document.getElementById('educationEditorList');
+  const hint = document.getElementById('educationEditorEmptyHint');
+  if (!section || !listEl) return;
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/education`);
+  } catch { section.style.display = 'none'; return; }
+  if (!res.ok) { section.style.display = 'none'; return; }
+  const body = await res.json();
+  const rows = body.education || [];
+  section.style.display = '';
+  _clearChildren(listEl);
+  if (rows.length === 0) {
+    hint.textContent = 'No education yet. Click + Add education, or import a résumé.';
+    return;
+  }
+  hint.textContent = 'Schools and degrees the résumé can surface.';
+  rows.forEach((e, i) => listEl.appendChild(_renderEducationRow(e, i === 0, i === rows.length - 1)));
+}
+
+function _renderEducationRow(e, isFirst, isLast) {
+  const row = _el('div', { className: 'summary-variant-row education-editor-row' });
+  row.dataset.id = String(e.id);
+  row.dataset.order = String(e.display_order);
+
+  const head = _el('div', { className: 'skill-editor-head' });
+  const titleParts = [e.degree, e.institution].filter(Boolean);
+  head.appendChild(_el('span', { className: 'skill-name', textContent: titleParts.join(', ') || e.institution }));
+  const dateRange = [e.start_date, e.end_date].filter(Boolean).join(' – ');
+  if (dateRange) {
+    head.appendChild(_el('span', {
+      className: 'skill-category', textContent: ' · ' + dateRange,
+      style: 'color:var(--fg-2);font-size:0.85em;',
+    }));
+  }
+  row.appendChild(head);
+  if (e.field) {
+    row.appendChild(_el('div', { className: 'edit-hint', textContent: e.field, style: 'margin:2px 0' }));
+  }
+
+  const actions = _el('div', { className: 'summary-variant-actions' });
+  const reorder = _el('div', { className: 'reorder-controls' });
+  const up = _el('button', { className: 'reorder-btn', textContent: '↑', title: 'Move up' });
+  up.type = 'button';
+  up.disabled = isFirst;
+  up.onclick = () => _reorderCorpusRow(row, -1, id => `/api/education/${id}`);
+  const down = _el('button', { className: 'reorder-btn', textContent: '↓', title: 'Move down' });
+  down.type = 'button';
+  down.disabled = isLast;
+  down.onclick = () => _reorderCorpusRow(row, 1, id => `/api/education/${id}`);
+  reorder.appendChild(up);
+  reorder.appendChild(down);
+  actions.appendChild(reorder);
+
+  const editBtn = _el('button', { className: 'corpus-action-btn', textContent: 'Edit' });
+  editBtn.onclick = () => openEducationEdit(e);
+  actions.appendChild(editBtn);
+
+  const del = _el('button', {
+    className: 'corpus-action-btn delete', textContent: 'Retire',
+    title: 'Soft-retire this education entry. Future résumés will skip it.',
+  });
+  del.onclick = () => _deleteEducationEditor(e.id);
+  actions.appendChild(del);
+
+  row.appendChild(actions);
+  return row;
+}
+
+async function openEducationAdd() {
+  if (!currentUser) return;
+  const values = await openFormModal({
+    title: 'Add education',
+    subtitle: 'A school or program the résumé can surface.',
+    submitLabel: 'Add education',
+    fields: [
+      { name: 'institution', label: 'Institution', type: 'text', required: true, placeholder: 'e.g. University of Washington' },
+      { name: 'degree', label: 'Degree (optional)', type: 'text', placeholder: 'e.g. B.S. Computer Science' },
+      { name: 'field', label: 'Field of study (optional)', type: 'text' },
+      { name: 'start_date', label: 'Start date (optional)', type: 'text', placeholder: 'YYYY or YYYY-MM' },
+      { name: 'end_date', label: 'End date (optional)', type: 'text', placeholder: 'YYYY or YYYY-MM' },
+    ],
+  });
+  if (!values) return;
+  const institution = (values.institution || '').trim();
+  if (!institution) { _toast('Institution cannot be empty.', true); return; }
+  try {
+    const res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/education`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          institution,
+          degree: (values.degree || '').trim() || null,
+          field: (values.field || '').trim() || null,
+          start_date: (values.start_date || '').trim() || null,
+          end_date: (values.end_date || '').trim() || null,
+        }) },
+    );
+    if (res.ok) refreshEducationEditor();
+    else {
+      const d = await res.json().catch(() => ({}));
+      _toast(d.error || 'Could not add education.', true);
+    }
+  } catch { _toast('Network error.', true); }
+}
+
+async function openEducationEdit(e) {
+  const values = await openFormModal({
+    title: 'Edit education',
+    submitLabel: 'Save',
+    fields: [
+      { name: 'institution', label: 'Institution', type: 'text', required: true, defaultValue: e.institution },
+      { name: 'degree', label: 'Degree (optional)', type: 'text', defaultValue: e.degree || '' },
+      { name: 'field', label: 'Field of study (optional)', type: 'text', defaultValue: e.field || '' },
+      { name: 'start_date', label: 'Start date (optional)', type: 'text', defaultValue: e.start_date || '' },
+      { name: 'end_date', label: 'End date (optional)', type: 'text', defaultValue: e.end_date || '' },
+    ],
+  });
+  if (!values) return;
+  const institution = (values.institution || '').trim();
+  if (!institution) { _toast('Institution cannot be empty.', true); return; }
+  try {
+    await _putJson(`/api/education/${e.id}`, {
+      institution,
+      degree: (values.degree || '').trim() || null,
+      field: (values.field || '').trim() || null,
+      start_date: (values.start_date || '').trim() || null,
+      end_date: (values.end_date || '').trim() || null,
+    });
+    refreshEducationEditor();
+  } catch (err) { _toast('Could not save: ' + err.message, true); }
+}
+
+async function _deleteEducationEditor(id) {
+  if (!confirm('Retire this education entry?\n\nFuture résumés will skip it. '
+               + 'You can\'t undo from here.')) return;
+  try {
+    await _deleteJson(`/api/education/${id}`);
+    refreshEducationEditor();
+  } catch (e) { _toast('Could not retire: ' + e.message, true); }
+}
+
+async function refreshCertificationsEditor() {
+  if (!currentUser) return;
+  const section = document.getElementById('certificationsEditorSection');
+  const listEl = document.getElementById('certificationsEditorList');
+  const hint = document.getElementById('certificationsEditorEmptyHint');
+  if (!section || !listEl) return;
+  let res;
+  try {
+    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/certifications`);
+  } catch { section.style.display = 'none'; return; }
+  if (!res.ok) { section.style.display = 'none'; return; }
+  const body = await res.json();
+  const rows = body.certifications || [];
+  section.style.display = '';
+  _clearChildren(listEl);
+  if (rows.length === 0) {
+    hint.textContent = 'No certifications yet. Click + Add certification, or import a résumé.';
+    return;
+  }
+  hint.textContent = 'Professional certifications the résumé can surface.';
+  rows.forEach((c, i) => listEl.appendChild(_renderCertificationRow(c, i === 0, i === rows.length - 1)));
+}
+
+function _renderCertificationRow(c, isFirst, isLast) {
+  const row = _el('div', { className: 'summary-variant-row certification-editor-row' });
+  row.dataset.id = String(c.id);
+  row.dataset.order = String(c.display_order);
+
+  const head = _el('div', { className: 'skill-editor-head' });
+  head.appendChild(_el('span', { className: 'skill-name', textContent: c.name }));
+  if (c.issuer) {
+    head.appendChild(_el('span', {
+      className: 'skill-category', textContent: ' · ' + c.issuer,
+      style: 'color:var(--fg-2);font-size:0.85em;',
+    }));
+  }
+  row.appendChild(head);
+  const dateRange = [c.issued, c.expires].filter(Boolean).join(' – ');
+  if (dateRange) {
+    row.appendChild(_el('div', { className: 'edit-hint', textContent: dateRange, style: 'margin:2px 0' }));
+  }
+
+  const actions = _el('div', { className: 'summary-variant-actions' });
+  const reorder = _el('div', { className: 'reorder-controls' });
+  const up = _el('button', { className: 'reorder-btn', textContent: '↑', title: 'Move up' });
+  up.type = 'button';
+  up.disabled = isFirst;
+  up.onclick = () => _reorderCorpusRow(row, -1, id => `/api/certifications/${id}`);
+  const down = _el('button', { className: 'reorder-btn', textContent: '↓', title: 'Move down' });
+  down.type = 'button';
+  down.disabled = isLast;
+  down.onclick = () => _reorderCorpusRow(row, 1, id => `/api/certifications/${id}`);
+  reorder.appendChild(up);
+  reorder.appendChild(down);
+  actions.appendChild(reorder);
+
+  const editBtn = _el('button', { className: 'corpus-action-btn', textContent: 'Edit' });
+  editBtn.onclick = () => openCertificationEdit(c);
+  actions.appendChild(editBtn);
+
+  const del = _el('button', {
+    className: 'corpus-action-btn delete', textContent: 'Retire',
+    title: 'Soft-retire this certification. Future résumés will skip it.',
+  });
+  del.onclick = () => _deleteCertificationEditor(c.id);
+  actions.appendChild(del);
+
+  row.appendChild(actions);
+  return row;
+}
+
+async function openCertificationAdd() {
+  if (!currentUser) return;
+  const values = await openFormModal({
+    title: 'Add certification',
+    subtitle: 'A professional certification the résumé can surface.',
+    submitLabel: 'Add certification',
+    fields: [
+      { name: 'name', label: 'Certification', type: 'text', required: true, placeholder: 'e.g. AWS Certified Solutions Architect' },
+      { name: 'issuer', label: 'Issuer (optional)', type: 'text' },
+      { name: 'issued', label: 'Issued (optional)', type: 'text', placeholder: 'YYYY or YYYY-MM' },
+      { name: 'expires', label: 'Expires (optional)', type: 'text', placeholder: 'YYYY or YYYY-MM' },
+    ],
+  });
+  if (!values) return;
+  const name = (values.name || '').trim();
+  if (!name) { _toast('Certification name cannot be empty.', true); return; }
+  try {
+    const res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/certifications`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          issuer: (values.issuer || '').trim() || null,
+          issued: (values.issued || '').trim() || null,
+          expires: (values.expires || '').trim() || null,
+        }) },
+    );
+    if (res.ok) refreshCertificationsEditor();
+    else {
+      const d = await res.json().catch(() => ({}));
+      _toast(d.error || 'Could not add certification.', true);
+    }
+  } catch { _toast('Network error.', true); }
+}
+
+async function openCertificationEdit(c) {
+  const values = await openFormModal({
+    title: 'Edit certification',
+    submitLabel: 'Save',
+    fields: [
+      { name: 'name', label: 'Certification', type: 'text', required: true, defaultValue: c.name },
+      { name: 'issuer', label: 'Issuer (optional)', type: 'text', defaultValue: c.issuer || '' },
+      { name: 'issued', label: 'Issued (optional)', type: 'text', defaultValue: c.issued || '' },
+      { name: 'expires', label: 'Expires (optional)', type: 'text', defaultValue: c.expires || '' },
+    ],
+  });
+  if (!values) return;
+  const name = (values.name || '').trim();
+  if (!name) { _toast('Certification name cannot be empty.', true); return; }
+  try {
+    await _putJson(`/api/certifications/${c.id}`, {
+      name,
+      issuer: (values.issuer || '').trim() || null,
+      issued: (values.issued || '').trim() || null,
+      expires: (values.expires || '').trim() || null,
+    });
+    refreshCertificationsEditor();
+  } catch (err) { _toast('Could not save: ' + err.message, true); }
+}
+
+async function _deleteCertificationEditor(id) {
+  if (!confirm('Retire this certification?\n\nFuture résumés will skip it. '
+               + 'You can\'t undo from here.')) return;
+  try {
+    await _deleteJson(`/api/certifications/${id}`);
+    refreshCertificationsEditor();
+  } catch (e) { _toast('Could not retire: ' + e.message, true); }
 }
 
 

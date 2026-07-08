@@ -127,6 +127,13 @@ class Corpus:
     # experience card (injected by _renderExperienceSummarySection).
     EXP_SUMMARY_SECTION = ".exp-summary-variants-section"
     ADD_INTRO_BUTTON_NAME = "Add intro"
+    # F-04 (UX-W1, 2026-07-07) — Education + Certifications editors.
+    EDUCATION_SECTION = "#educationEditorSection"
+    EDUCATION_LIST = "#educationEditorList"
+    ADD_EDUCATION_BUTTON_NAME = "Add education"
+    CERTIFICATIONS_SECTION = "#certificationsEditorSection"
+    CERTIFICATIONS_LIST = "#certificationsEditorList"
+    ADD_CERTIFICATION_BUTTON_NAME = "Add certification"
 
 
 class Wizard:
@@ -259,6 +266,15 @@ class Settings:
     # PX-02 — opt-in profile/website/portfolio scrape trigger + its status line.
     FETCH_PROFILE_BTN = "#btnFetchProfile"
     FETCH_PROFILE_STATUS = "#profileFetchStatus"
+    # F-03/F-04 (UX-W1, 2026-07-07) — the live-field / corpus-pointer row pair
+    # per flat field; exactly one of each pair is visible at a time.
+    SKILLS_FIELD_ROW = "#cfgSkillsFieldRow"
+    SKILLS_CORPUS_ROW = "#cfgSkillsCorpusRow"
+    CERTS_FIELD_ROW = "#cfgCertsFieldRow"
+    CERTS_CORPUS_ROW = "#cfgCertsCorpusRow"
+    EDUCATION_FIELD_ROW = "#cfgEducationFieldRow"
+    EDUCATION_CORPUS_ROW = "#cfgEducationCorpusRow"
+    GO_TO_CORPUS_BUTTON_NAME = "Go to Career corpus"
 
 
 class Onboarding:

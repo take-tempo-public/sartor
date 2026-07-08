@@ -111,13 +111,38 @@ def create_user() -> ResponseReturnValue:
 
 @users_bp.route("/api/users/<username>/config", methods=["GET"])
 def get_config(username: str) -> ResponseReturnValue:
-    """Return one user's saved profile config (404 if the user is unknown)."""
+    """Return one user's saved profile config (404 if the user is unknown).
+
+    Includes `needs_onboarding` (F-03/F-04, UX-W1): whether a Candidate DB row
+    exists yet for this user — the same flag `/api/users/<u>/experiences` etc.
+    already return. Phase C.4 removed the file-based analyze/generate path
+    entirely (every call reads the DB corpus), so this is not a permanent
+    "legacy mode" — it is a one-time PER-CANDIDATE state: before the first
+    corpus-touching action (first Analyze, or any Career-corpus write),
+    `_get_or_provision_candidate` has not yet run, so the flat config
+    Skills/Certifications/Education fields are still the only source of truth.
+    The instant it runs, it seeds Skill/Certification/Education rows from this
+    same config and the corpus becomes authoritative — the frontend uses this
+    flag to decide whether the flat Settings fields are still live or should
+    show a pointer into the Career-corpus editors instead.
+    """
     if not secure_filename(username):
         return jsonify({"error": "Invalid username"}), 400
     config = _load_config(username, configs_dir=current_app.config["CONFIGS_DIR"])
     if not config:
         return jsonify({"error": "User not found"}), 404
-    return jsonify(config)
+
+    from db.models import Candidate
+    from db.session import get_session, init_db
+
+    init_db()
+    session = get_session()
+    try:
+        has_candidate = session.query(Candidate).filter_by(username=username).first() is not None
+    finally:
+        session.close()
+
+    return jsonify({**config, "needs_onboarding": not has_candidate})
 
 
 @users_bp.route("/api/users/<username>/config", methods=["PUT"])
