@@ -914,9 +914,20 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       `excluded` / `summary_text` override keys (zero `corpus_to_json_resume.py`
       changes); the Compose loop-back banner renders the actual proposed change with
       Accept/Retire. `PROMPT_VERSION 2026-07-06.3 → 2026-07-08.1`; (b) **in-app
-      WYSIWYG editing** as source of truth (D4 — edits ARE the document); (c)
-      **clarifications persist to the corpus** for cross-JD reuse (D5); (d) a "Regenerate
-      gap-fill" affordance (needs a `retired_gap_fill_keys` set) — **(d) DONE
+      WYSIWYG editing** as source of truth (D4 — edits ARE the document) —
+      **(b) DONE 2026-07-08 (`feat/wysiwyg-source-of-truth`)**: new
+      `POST /api/applications/<id>/preview-edited` (content in, styled HTML out,
+      nothing persisted — the preview-side twin of `/api/download-edited`); a
+      debounced `input` listener swaps the Step-6 iframe's `srcdoc` so the visible
+      preview never lags the editor; the cover-letter preview route now honors a
+      saved `edited_cover_letter_text` (it previously ignored it outright); a new
+      `_persist_edited_text_to_db` mirrors a corpus-backed edit onto
+      `ApplicationRun.edited_resume_text`/`edited_cover_letter_text` (columns that
+      existed but were never written) so an edit survives a resumed application
+      even if its context file is gone. No prompt touched — `analyzer.py`
+      untouched, `PROMPT_VERSION` unchanged; (c) **clarifications persist to the
+      corpus** for cross-JD reuse (D5); (d) a "Regenerate gap-fill" affordance
+      (needs a `retired_gap_fill_keys` set) — **(d) DONE
       2026-07-08 (`feat/regenerate-gap-fill`)**: durable
       `composition_overrides.retired_gap_fill_keys` (written by `/gap-fill-decide`
       retire, re-sent on every `/composition` save like every other override key) +
@@ -925,11 +936,12 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       `data-compose-bg-pending`); the route-level exclusion filter keeps a
       regenerated draft from resurfacing a retired OR already-accepted proposal —
       deterministic, no prompt change, no `PROMPT_VERSION` bump. Real-LLM validated
-      (see `evals/TUNING_LOG.md`). (b)/(c) remain owed.
+      (see `evals/TUNING_LOG.md`). (c) remains owed.
       _(added: 2026-07-06; **CORE DONE 2026-07-06 on `fix/compose-frozen-composition`**;
       re-scoped from "whole vision owed" to the LATER-branch remainder above; (a) DONE
-      2026-07-08 on `fix/surgical-refinement-and-loopback`, (d) DONE 2026-07-08 on
-      `feat/regenerate-gap-fill`; (b)/(c) still open.)_
+      2026-07-08 on `fix/surgical-refinement-and-loopback`, (b) DONE 2026-07-08 on
+      `feat/wysiwyg-source-of-truth`, (d) DONE 2026-07-08 on `feat/regenerate-gap-fill`;
+      (c) still open.)_
 
 #### Resolved
 

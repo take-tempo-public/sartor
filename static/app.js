@@ -74,6 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // welcome modal once-ever on first view.
   _initHelp();
   _maybeAutoOpenHelp();
+
+  // D4 (generation-experience re-architecture, item (b)) — live-render the
+  // styled Step-6 preview from whatever's currently typed into the editors,
+  // so the visible preview never lags behind what Download would produce.
+  // See _wireLiveEditPreview for the mechanics.
+  _wireLiveEditPreview('resumePreview', 'resume', 'outputPreviewFrame');
+  _wireLiveEditPreview('coverLetterPreview', 'cover_letter', 'coverPreviewFrame');
 });
 
 // ---- Users ----
@@ -6766,6 +6773,56 @@ async function _refreshCoverPreview() {
   if (pageInfo) pageInfo.textContent = 'Page — of —';
   _wirePreviewPageCount(frame, 'coverPreviewPageInfo');
   _loadPreviewFrame(frame, `/api/applications/${_composeApplicationId}/cover-letter-preview?${params.toString()}`);
+}
+
+// D4 (generation-experience re-architecture, item (b) — "in-app edits ARE
+// the document"): wire a debounced live-preview refresh on #resumePreview /
+// #coverLetterPreview. Before this, the styled Step-6 iframe only picked up
+// an edit AFTER it was explicitly saved (the "Use edits as baseline" gate
+// before refine/iterate) — so a typed edit + a straight-to-Download click
+// would download the NEW text while the visible preview still showed the
+// OLD one. /api/download-edited already reads the editor directly and
+// writes nothing; /api/applications/<id>/preview-edited is its preview-side
+// twin (content in, rendered HTML out, nothing persisted) — this listener
+// is the only caller. The existing edit-detection modal / /api/save-edits
+// path (persistence) is untouched: this is purely a display refresh.
+const _liveEditPreviewTimers = {};
+function _wireLiveEditPreview(editorId, docType, frameId) {
+  const editor = document.getElementById(editorId);
+  if (!editor) return;
+  editor.addEventListener('input', () => {
+    if (_composeApplicationId == null) return;
+    clearTimeout(_liveEditPreviewTimers[editorId]);
+    _liveEditPreviewTimers[editorId] = setTimeout(
+      () => _refreshLiveEditPreview(editorId, docType, frameId),
+      300,
+    );
+  });
+}
+
+async function _refreshLiveEditPreview(editorId, docType, frameId) {
+  if (_composeApplicationId == null) return;
+  const content = (_readEditorText(editorId) || '').trim();
+  const frame = document.getElementById(frameId);
+  if (!content || !frame) return;
+  try {
+    const body = { content, type: docType };
+    const sel = _readSelectedPersonaId();
+    if (sel != null) body.template_id = sel;
+    const res = await fetch(`/api/applications/${_composeApplicationId}/preview-edited`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return;  // non-blocking — the last-loaded preview stays up
+    const data = await res.json();
+    if (typeof data.html !== 'string') return;
+    _wirePreviewPageCount(frame, editorId === 'resumePreview' ? 'outputPreviewPageInfo' : 'coverPreviewPageInfo');
+    frame.srcdoc = data.html;
+  } catch {
+    // Non-blocking — this is a display nicety; Download still reads the
+    // editor directly and is unaffected by a failed live-preview refresh.
+  }
 }
 
 // β.6c — fire recommend-summary in the background. Idempotent on the

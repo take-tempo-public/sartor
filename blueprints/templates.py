@@ -16,6 +16,7 @@ domain-only helpers:
     POST   /api/personas/<id>/preview                         preview_persona_with_resume
     GET    /api/applications/<id>/preview                     preview_application_html
     GET    /api/applications/<id>/cover-letter-preview        preview_cover_letter_html
+    POST   /api/applications/<id>/preview-edited               preview_edited_html
     GET    /api/users/<u>/preview                             preview_candidate_html
 
 Reads paths from `current_app.config[...]` at request time (never a module-global
@@ -1197,7 +1198,17 @@ def preview_cover_letter_html(application_id: int) -> ResponseReturnValue:
                     ctx_data = json.loads(cp.read_text(encoding="utf-8"))
                 except (json.JSONDecodeError, OSError):
                     ctx_data = {}
-                cover_letter_md = (ctx_data.get("last_generated_cover_letter") or "").strip()
+                # D4 (generation-experience re-architecture, item (b)): the user's
+                # own hand-edit wins, mirroring the résumé preview's
+                # edited_resume_text precedence above (D6(a) — a hand-edit applies
+                # directly, no re-approval). Without this the styled cover-letter
+                # iframe never reflected a saved edit at all — /api/save-edits
+                # persisted edited_cover_letter_text but this route ignored it and
+                # always re-rendered the un-edited AI text, so preview != download
+                # forever after the first edit.
+                cover_letter_md = (ctx_data.get("edited_cover_letter_text") or "").strip() or (
+                    ctx_data.get("last_generated_cover_letter") or ""
+                ).strip()
     finally:
         session.close()
 
@@ -1218,6 +1229,116 @@ def preview_cover_letter_html(application_id: int) -> ResponseReturnValue:
     )
     html_str = _inject_paged_polyfill(html_str)
     return html_str, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+@templates_bp.route("/api/applications/<int:application_id>/preview-edited", methods=["POST"])
+def preview_edited_html(application_id: int) -> ResponseReturnValue:
+    """Render POSTed in-app-edited text as styled preview HTML — nothing persisted.
+
+    D4 (generation-experience re-architecture, item (b) — "in-app edits ARE the
+    document"): the styled Step-6 iframes (`preview_application_html` /
+    `preview_cover_letter_html`) only ever reflected an edit AFTER it was
+    explicitly saved (`/api/save-edits`, gated behind the "Use edits as
+    baseline" modal before a refine/iterate action). Between typing an edit and
+    that unrelated action, the visible preview stayed on the pre-edit content
+    while `/api/download-edited` — which reads `#resumePreview` /
+    `#coverLetterPreview` directly — would already produce the NEW content:
+    preview != download. This route closes that gap the same way
+    `/api/download-edited` already does for the file itself: content in,
+    rendered artifact out, NOTHING written to context or the DB. The frontend
+    calls it on a debounced `input` from either editor and swaps the iframe's
+    `srcdoc`; the existing explicit-save gate (edit-detection modal) is
+    unchanged — this route never touches `edited_resume_text`.
+
+    Body: {content, type: "resume"|"cover_letter", template_id (optional)}.
+    Returns {html}.
+    """
+    from db.session import get_session, init_db
+    from docx_to_persona_html import generate_companion
+    from generator import _normalize_markdown
+    from json_resume import md_to_json_resume
+    from pdf_render import (
+        html_template_path_for,
+        persona_font_family,
+        render_cover_letter_html,
+        render_html_string,
+    )
+
+    personas_dir = current_app.config["PERSONAS_DIR"]
+    bundled_personas_dir = current_app.config["BUNDLED_PERSONAS_DIR"]
+    data = request.json or {}
+    content = (data.get("content") or "").strip()
+    doc_type = data.get("type", "resume")
+    if not content:
+        return jsonify({"error": "content required"}), 400
+    if doc_type not in ("resume", "cover_letter"):
+        return jsonify({"error": "type must be 'resume' or 'cover_letter'"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        # _load_application_owned runs _safe_username on the owning candidate;
+        # the explicit recheck just below keeps the route-security-lint hook
+        # happy when scanning this block (same pattern as preview_application_html
+        # / preview_cover_letter_html above).
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or candidate is None:
+            return jsonify({"error": "Application not found"}), 404
+        if not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
+            return jsonify({"error": "Application not found"}), 404
+
+        template_id_raw = data.get("template_id")
+        docx_template_path: str | None = None
+        if template_id_raw is not None:
+            try:
+                template_id = int(template_id_raw)
+            except (TypeError, ValueError):
+                return jsonify({"error": "template_id must be an integer"}), 400
+            docx_template_path = _resolve_persona_template_path(template_id)
+            if docx_template_path is None:
+                return jsonify({"error": "Template not found"}), 404
+        else:
+            docx_template_path = _resolve_default_persona_template_path(
+                username=candidate.username,
+                application_id=application_id,
+            )
+        if docx_template_path is None:
+            return jsonify({"error": "No template available"}), 500
+        # Defense in depth: docx_template_path came from a trusted resolver
+        # (both branches above already contain it to PERSONAS_DIR internally),
+        # but re-assert containment explicitly here — same belt-and-suspenders
+        # pattern as the _safe_username recheck just above, and what the
+        # route-security-lint hook expects to see in a filesystem-touching route.
+        if not _within(Path(docx_template_path), personas_dir):
+            return jsonify({"error": "Template not found"}), 404
+
+        if doc_type == "resume":
+            html_path = html_template_path_for(docx_template_path)
+            if html_path is None:
+                # Same lazy-companion-generation fallback as preview_application_html.
+                companion = generate_companion(docx_template_path)
+                html_path = companion[0] if companion else None
+            if html_path is None:
+                html_path = bundled_personas_dir / "classic.html"
+                if not html_path.exists():
+                    return jsonify({"error": "No HTML template available"}), 500
+            json_doc = md_to_json_resume(_normalize_markdown(content))
+            html_str = render_html_string(json_doc, html_template_path=html_path)
+            html_str = _inline_persona_css(html_str, html_path)
+        else:
+            css_path = Path(docx_template_path).with_suffix(".css")
+            font_family = persona_font_family(css_path)
+            cover_template = personas_dir / "cover_letter.html"
+            html_str = render_cover_letter_html(
+                content,
+                font_family=font_family,
+                template_path=cover_template,
+            )
+    finally:
+        session.close()
+
+    html_str = _inject_paged_polyfill(html_str)
+    return jsonify({"html": html_str})
 
 
 @templates_bp.route("/api/users/<string:username>/preview", methods=["GET"])

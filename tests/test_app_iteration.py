@@ -270,6 +270,101 @@ class TestSaveEditsRoute:
         body = resp.get_json()
         assert body["context_path"] == str(context_path)
 
+    def test_persists_edited_text_to_application_run_row(self, app_client):
+        """D4 durability (generation-experience re-architecture, item (b)):
+        ApplicationRun.edited_resume_text / edited_cover_letter_text exist to
+        carry a WYSIWYG edit independently of the context_*.json sidecar (see
+        the model's class docstring + _build_resume_state's degraded-mode
+        read + get_application's has_edits flag) but were never written
+        before this fix. A corpus-backed save (application_run_id present)
+        must land the edit on both the context file AND the run row."""
+        client, context_path, _output_dir = app_client
+
+        from db.models import Application, ApplicationRun, Base, Candidate
+        from db.session import get_engine, get_session
+
+        Base.metadata.create_all(get_engine())
+        session = get_session()
+        try:
+            cand = Candidate(username="alice", name="Alice")
+            session.add(cand)
+            session.flush()
+            app_row = Application(
+                candidate_id=cand.id,
+                title="x",
+                jd_text="...",
+                jd_fingerprint="abcd",
+            )
+            session.add(app_row)
+            session.flush()
+            run = ApplicationRun(
+                application_id=app_row.id,
+                iteration=0,
+                run_id="run_edit_persist",
+                prompt_version="test",
+                corpus_snapshot_json="{}",
+            )
+            session.add(run)
+            session.commit()
+            run_pk = run.id
+        finally:
+            session.close()
+
+        ctx = json.loads(context_path.read_text(encoding="utf-8"))
+        ctx["application_run_id"] = run_pk
+        context_path.write_text(json.dumps(ctx), encoding="utf-8")
+
+        resp = client.post(
+            "/api/save-edits",
+            json={
+                "context_path": str(context_path),
+                "edited_resume": "DB-DURABLE RESUME EDIT",
+                "edited_cover_letter": "DB-DURABLE LETTER EDIT",
+            },
+        )
+        assert resp.status_code == 200
+
+        session = get_session()
+        try:
+            refreshed = session.query(ApplicationRun).filter_by(id=run_pk).first()
+            assert refreshed is not None
+            assert refreshed.edited_resume_text == "DB-DURABLE RESUME EDIT"
+            assert refreshed.edited_cover_letter_text == "DB-DURABLE LETTER EDIT"
+        finally:
+            session.close()
+
+    def test_missing_run_row_does_not_fail_save(self, app_client):
+        """A foreign/stale application_run_id must not fail the (already-
+        succeeded) context-file save — the DB mirror is best-effort."""
+        client, context_path, _output_dir = app_client
+
+        from db.models import Base
+        from db.session import get_engine
+
+        Base.metadata.create_all(get_engine())  # table exists; no matching row
+
+        ctx = json.loads(context_path.read_text(encoding="utf-8"))
+        ctx["application_run_id"] = 999999
+        context_path.write_text(json.dumps(ctx), encoding="utf-8")
+
+        resp = client.post(
+            "/api/save-edits",
+            json={"context_path": str(context_path), "edited_resume": "x"},
+        )
+        assert resp.status_code == 200
+        saved = json.loads(context_path.read_text(encoding="utf-8"))
+        assert saved["edited_resume_text"] == "x"
+
+    def test_legacy_context_without_run_id_skips_db_write(self, app_client):
+        """No application_run_id (legacy file-based mode) — no DB touched at
+        all, no error, same as today."""
+        client, context_path, _output_dir = app_client
+        resp = client.post(
+            "/api/save-edits",
+            json={"context_path": str(context_path), "edited_resume": "x"},
+        )
+        assert resp.status_code == 200
+
 
 # ---------- /api/generate iteration semantics ------------------------------
 
