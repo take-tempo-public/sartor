@@ -255,6 +255,20 @@ class TestCallKindsShortCircuit:
     def test_draft_gap_fill_bullets(self) -> None:
         assert analyzer.draft_gap_fill_bullets(_Poison(), _CTX) == {"proposals": []}
 
+    def test_draft_surgical_refinement(self) -> None:
+        ctx = cast(
+            "ContextSet",
+            {
+                "jd_text": _CTX_DICT["jd_text"],
+                "refinement_note": "punch up the billing bullet",
+                "approved_composition": {"basics": {"summary": "x"}, "work": []},
+            },
+        )
+        result = analyzer.draft_surgical_refinement(_Poison(), ctx)
+        # Demo mode proposes nothing (grounding-safety), same posture as
+        # draft_gap_fill_bullets/suggest_skills above.
+        assert result["target_kind"] == "none"
+
     def test_promote_clarification_to_bullet(self) -> None:
         result = analyzer.promote_clarification_to_bullet(
             _Poison(), question="Used Terraform?", answer="Yes, for VPC peering."

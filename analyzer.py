@@ -327,6 +327,17 @@ class DraftGapFillResponse(_LLMResponse):
     proposals: Any
 
 
+class DraftSurgicalRefinementResponse(_LLMResponse):
+    """`draft_surgical_refinement()` output — ONE scoped bullet/summary proposal, or none."""
+
+    target_kind: Any
+    experience_id: Any
+    supersedes_bullet_id: Any
+    text: Any
+    pattern_kind: Any
+    rationale: Any
+
+
 class GenerateCorpusResponse(GenerateResponse):
     """Corpus-mode `generate()` with cover letter — the `GENERATE_CORPUS_REQUIRED_KEYS` shape."""
 
@@ -368,7 +379,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-07-06.3"  # compose-frozen-composition Phase 3: new Compose-time DRAFT_GAP_FILL_SYSTEM_PROMPT (Sonnet draft_gap_fill_bullets); generate prompt unchanged (corpus-mode-only new per-call template)
+PROMPT_VERSION = "2026-07-08.1"  # surgical-refinement-and-loopback: new Compose-time DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT (Sonnet draft_surgical_refinement); generate prompt unchanged (corpus-mode-only new per-call template)
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -4169,6 +4180,168 @@ Requirements missing from the resume: {missing_str or "(none)"}
     return {"proposals": proposals}
 
 
+def _current_composition_block(doc: dict[str, Any] | None) -> str:
+    """Emit a compact ``<current_resume>`` block from a frozen ``approved_composition`` doc.
+
+    Lists the positioning summary and, per role, its resolved bullets WITH their
+    numeric corpus ids (from ``meta.sartor.work_provenance``, order-aligned with
+    ``work[]`` — see `corpus_to_json_resume.build_json_resume_from_corpus`), so
+    `draft_surgical_refinement` can name the EXACT bullet a note refers to. Not a
+    LLM call site itself — a pure string builder, mirroring `_corpus_block`'s
+    role in `draft_gap_fill_bullets`. Returns a placeholder for an absent/empty doc.
+    """
+    if not isinstance(doc, dict):
+        return "(no composition yet)"
+    work = doc.get("work") or []
+    if not isinstance(work, list):
+        work = []
+    meta = doc.get("meta") or {}
+    sartor_meta = meta.get("sartor") if isinstance(meta, dict) else {}
+    provenance = sartor_meta.get("work_provenance") if isinstance(sartor_meta, dict) else []
+    if not isinstance(provenance, list):
+        provenance = []
+    basics = doc.get("basics") or {}
+    lines = [f"<summary>{_attr_escape(str(basics.get('summary') or ''))}</summary>"]
+    for i, entry in enumerate(work):
+        if not isinstance(entry, dict):
+            continue
+        prov = provenance[i] if i < len(provenance) and isinstance(provenance[i], dict) else {}
+        eid = prov.get("experience_id")
+        highlight_ids = prov.get("highlight_ids") or []
+        highlights = entry.get("highlights") or []
+        lines.append(
+            f'<role experience_id="{eid if eid is not None else ""}" '
+            f'company="{_attr_escape(str(entry.get("name", "")))}" '
+            f'position="{_attr_escape(str(entry.get("position", "")))}">'
+        )
+        for j, text in enumerate(highlights if isinstance(highlights, list) else []):
+            bid = highlight_ids[j] if j < len(highlight_ids) else None
+            lines.append(
+                f'  <bullet id="{bid if bid is not None else ""}">{_attr_escape(str(text))}</bullet>'
+            )
+        lines.append("</role>")
+    return "\n".join(lines)
+
+
+DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT = """You help a candidate make ONE scoped, targeted change to their already-assembled resume, driven by a single instruction from them. You see the resume as it stands now (with numeric role/bullet ids) as <current_resume>, their instruction as <note>, the target job as <jd>, and any confirmed facts they told us as <clarifications>.
+
+Your task: decide the ONE item the note is about, and propose ONLY that change — never a broader rewrite.
+
+Pick exactly one target_kind:
+- "bullet": the note is about a specific accomplishment/role bullet — either sharpening an EXISTING bullet's phrasing (name it by id in supersedes_bullet_id) or, when the note asks for something the resume doesn't cover yet, a genuinely stronger NEW bullet for one role (leave supersedes_bullet_id null). Attach it to the ONE experience_id the evidence lives under.
+- "summary": the note is about the opening positioning summary.
+- "none": the note doesn't map to a single scoped item (it asks for a broad rewrite, a change spanning multiple roles, or something with no basis in <current_resume>/<clarifications>) — propose nothing; the candidate can make the change in Compose directly.
+
+GROUNDING (hard rule): every claim in your proposed text must already appear in <current_resume> or <clarifications> — you are REPHRASING or SHARPENING what's there, never inventing a new metric, technology, employer, scope, seniority, or date. When "bullet" targets an existing id, keep every concrete specific from that bullet's text unless the note explicitly asks to change it (and even then, only if the new value traces to <clarifications>).
+
+Worked examples:
+  OK  (note: "make the second bullet at Acme punchier"; current_resume has bullet id 12 "Worked on the billing migration project."):
+      {"target_kind":"bullet","experience_id":7,"supersedes_bullet_id":12,"text":"Led the billing migration project end to end.","pattern_kind":"manual","rationale":"Sharpens passive phrasing into an ownership-forward action verb; no new facts."}
+  OK  (note: "emphasize my leadership experience more"; current_resume has no bullet naming leadership, but clarifications say "Mentored 3 junior engineers on the platform team."):
+      {"target_kind":"bullet","experience_id":7,"supersedes_bullet_id":null,"text":"Mentored 3 junior engineers on the platform team, growing the group's delivery capacity.","pattern_kind":"manual","rationale":"Surfaces a confirmed leadership fact the resume doesn't yet show."}
+  NOT OK (note: "make it sound like I led a bigger team"; current_resume/clarifications never state a team size):
+      target_kind should be "none" — inventing a team size is fabrication, not phrasing.
+  NOT OK (note: "rewrite the whole thing to sound more senior"):
+      target_kind should be "none" — this asks for a broad rewrite, not one scoped item; the candidate should use Compose directly.
+
+Output JSON only, this exact shape:
+{"target_kind": "bullet" | "summary" | "none",
+ "experience_id": <int> | null,
+ "supersedes_bullet_id": <int> | null,
+ "text": "<the proposed bullet or two-sentence summary, or \\"\\" for none>",
+ "pattern_kind": "xyz" | "car" | "manual" | null,
+ "rationale": "<one sentence>"}
+
+Use numeric ids only (the number after the e/b prefix, if any)."""
+
+
+def draft_surgical_refinement(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    *,
+    username: str = "",
+    run_id: str = "",
+) -> dict[str, Any]:
+    """Draft ONE scoped, single-item refinement from a free-text note (Sonnet).
+
+    Generation-experience re-architecture item (a) — the surgical-refinement
+    primitive. Unlike the legacy full-doc `generate()` refine, this targets
+    exactly ONE bullet (sharpened in place, or a genuinely stronger new bullet
+    where the corpus is silent) or the positioning summary — never a
+    whole-document rewrite. The caller stages the free-text ask on
+    `context_set["refinement_note"]`; the CURRENT assembled composition
+    (`context_set["approved_composition"]`), JD, and clarifications ride on the
+    context already (no other staging needed). Returns {"target_kind":
+    "bullet"|"summary"|"none", "experience_id", "supersedes_bullet_id", "text",
+    "pattern_kind", "rationale"}. The ROUTE re-validates ownership of any id the
+    model returns — this function stays session-free. Short-circuits WITHOUT an
+    LLM call when there is no frozen composition, no JD, or no note to act on.
+    """
+    default: dict[str, Any] = {
+        "target_kind": "none",
+        "experience_id": None,
+        "supersedes_bullet_id": None,
+        "text": "",
+        "pattern_kind": None,
+        "rationale": "",
+    }
+    note = str(context_set.get("refinement_note") or "").strip()
+    doc = context_set.get("approved_composition")
+    jd_value = context_set.get("jd_text", "")
+    jd_str = (str(jd_value) if jd_value else "").strip()
+    if not note or not isinstance(doc, dict) or not jd_str:
+        return default
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call (grounded proposal not faked).
+        return demo_fixtures.demo_draft_surgical_refinement(note)
+
+    current_block = f"<current_resume>\n{_current_composition_block(doc)}\n</current_resume>"
+    clar = context_set.get("clarifications") or {}
+    clar_lines = (
+        [str(v).strip() for v in clar.values() if str(v).strip()] if isinstance(clar, dict) else []
+    )
+    clar_block = "\n".join(f"- {line}" for line in clar_lines) or "(none)"
+
+    user_prompt = f"""<task>Propose ONE scoped refinement from the candidate's note. Output JSON only.</task>
+
+{current_block}
+
+<note>{note}</note>
+
+<jd>
+{jd_str}
+</jd>
+
+<clarifications>
+{clar_block}
+</clarifications>"""
+
+    result = _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot per refinement ask
+        response_model=DraftSurgicalRefinementResponse,
+        call_kind="draft_surgical_refinement",
+        username=username,
+        run_id=run_id,
+        system_prompt=_resolve_system_prompt("DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT"),
+        model=SONNET_MODEL,
+    )
+    kind = result.get("target_kind")
+    if kind not in ("bullet", "summary", "none"):
+        kind = "none"
+    text = str(result.get("text") or "").strip()
+    if kind != "none" and not text:
+        kind = "none"
+    return {
+        "target_kind": kind,
+        "experience_id": result.get("experience_id") if kind == "bullet" else None,
+        "supersedes_bullet_id": result.get("supersedes_bullet_id") if kind == "bullet" else None,
+        "text": text if kind != "none" else "",
+        "pattern_kind": result.get("pattern_kind") if kind == "bullet" else None,
+        "rationale": str(result.get("rationale") or "").strip(),
+    }
+
+
 _BASE_SYSTEM_PROMPTS: dict[str, str] = {
     "SYSTEM_PROMPT": SYSTEM_PROMPT,
     "EXTRACTION_SYSTEM_PROMPT": EXTRACTION_SYSTEM_PROMPT,
@@ -4179,6 +4352,7 @@ _BASE_SYSTEM_PROMPTS: dict[str, str] = {
     "RECOMMEND_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_SUMMARIES_SYSTEM_PROMPT,
     "DRAFT_SUMMARY_SYSTEM_PROMPT": DRAFT_SUMMARY_SYSTEM_PROMPT,
     "DRAFT_GAP_FILL_SYSTEM_PROMPT": DRAFT_GAP_FILL_SYSTEM_PROMPT,
+    "DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT": DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT,
     "RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT,
     "RECOMMEND_SKILLS_SYSTEM_PROMPT": RECOMMEND_SKILLS_SYSTEM_PROMPT,
     "SUGGEST_SKILLS_SYSTEM_PROMPT": SUGGEST_SKILLS_SYSTEM_PROMPT,

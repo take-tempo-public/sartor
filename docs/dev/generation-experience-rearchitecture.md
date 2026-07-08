@@ -484,8 +484,10 @@ the corpus-enrichment "save to corpus" offer beyond the free `is_pending_review=
   pytest (1458 non-ux + 76 ux).
 
 **Deferred to LATER branches:** SURGICAL refinement (a scoped single-item change / grounded
-re-phrasing) + the richer loop-back-with-accept/retire banner; WYSIWYG-as-source (D4);
-clarifications→corpus persistence (D5). This branch's refine is the minimal route-to-Compose.
+re-phrasing) + the richer loop-back-with-accept/retire banner — **DONE 2026-07-08 on
+`fix/surgical-refinement-and-loopback`, as-built in §8**; WYSIWYG-as-source (D4);
+clarifications→corpus persistence (D5). This branch's refine is the minimal route-to-Compose
+(superseded by §8's scoped proposal + richer banner).
 
 ---
 
@@ -495,10 +497,11 @@ clarifications→corpus persistence (D5). This branch's refine is the minimal ro
 > (0 résumé-body LLM calls; download == frozen == preview), the
 > `evals/TUNING_LOG.md` "Compose-frozen-composition" entry, the CHANGELOG entry,
 > and the legacy byte-identity unit tests (`tests/test_corpus_mode_prompt.py`).
-> The only work remaining from this spec is the **LATER-branch remainder**
-> (surgical refinement + loop-back banner, WYSIWYG-as-source D4,
-> clarifications→corpus D5, regenerate-gap-fill) — tracked in the
-> RELEASE_CHECKLIST carry-forward ledger.
+> The remaining work from this spec is the **LATER-branch remainder** — (a)
+> surgical refinement + loop-back banner is **DONE 2026-07-08** on
+> `fix/surgical-refinement-and-loopback` (as-built in §8); (b) WYSIWYG-as-source
+> D4, (c) clarifications→corpus D5, and (d) regenerate-gap-fill remain — tracked
+> in the RELEASE_CHECKLIST carry-forward ledger.
 
 ### Phase 3 — Compose authors gap-fill bullets (Sonnet + accept/retire) — DONE (as-built in §5)
 > The original plan is retained below as the as-built reference; see §5 for what shipped.
@@ -584,3 +587,69 @@ Model it on the proven "propose grounded new items → accept/retire" pattern
   artifact, not this branch's drift. Stage only your own (format-clean) files; the
   `ruff-changed` commit hook only checks STAGED files, so this doesn't block. Flag it at
   close-out (a ruff-pin / re-format decision, its own item).
+
+---
+
+## 8. LATER branch — item (a): surgical refinement + richer loop-back — DONE 2026-07-08
+
+Branch `fix/surgical-refinement-and-loopback` off `main` (post Trains 1+2 UX-review
+remediation). Replaces the Phase 4 interim ("route to Compose, tell the user to redo
+it themselves") with an actual scoped proposal.
+
+- `analyzer.py`: `DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT` + `draft_surgical_refinement()`
+  (**Sonnet**) + `DraftSurgicalRefinementResponse` + a `_current_composition_block(doc)`
+  helper (mirrors `_corpus_block`'s role for `draft_gap_fill_bullets`) that renders the
+  CURRENT frozen `approved_composition` — summary + per-role bullets with their real
+  corpus ids — so the model can name the EXACT item a note refers to. Given a free-text
+  note, proposes exactly ONE of: `"bullet"` (sharpen an EXISTING bullet via
+  `supersedes_bullet_id`, or a genuinely stronger NEW bullet where the corpus is silent),
+  `"summary"`, or `"none"` (a broad "rewrite everything" ask — no single scoped target,
+  so nothing is proposed and the plain loop-back copy renders instead). Grounded: every
+  claim must already appear in `<current_resume>`/`<clarifications>` — reframing, never
+  inventing. Short-circuits WITHOUT an LLM call when there's no note, no frozen
+  composition, or no JD. `PROMPT_VERSION 2026-07-06.3 → 2026-07-08.1` (a NEW per-call
+  template; the generate prompt is unchanged, so legacy + `--suite synthetic` stay
+  byte-identical — proven by the short-circuit unit tests, mirroring the Phase 2/3
+  precedent rather than a bespoke invariance test).
+- `blueprints/applications.py`: `POST /api/applications/<id>/draft-refinement` is a PURE
+  READ — stages the note + JD, calls the analyzer, then re-validates every id the model
+  returned against the candidate's own corpus (a foreign experience/bullet id downgrades
+  the proposal to `null` rather than risking a foreign write), and returns the proposal.
+  Nothing is persisted — unlike the gap-fill/summary drafts, there is no ctx write at this
+  step, so a proposal the user never acts on leaves zero trace. `POST
+  /api/applications/<id>/accept-refinement` applies an accepted proposal (the client
+  echoes the full proposal back, never trusted blindly — re-validated again server-side):
+  `"bullet"` creates a pending `Bullet` (`source='llm_proposed:refine:<key>'`,
+  `is_pending_review=1`, idempotent on that source key like `gap_fill_decide`), folds its
+  id into `composition_overrides.accepted_generated_bullet_ids`, and — when the proposal
+  named a `supersedes_bullet_id` — folds THAT bullet into `composition_overrides.excluded`
+  too, so the composition gains exactly ONE net item (the "scoped single-item change" the
+  spec calls for); `"summary"` persists straight into `composition_overrides.summary_text`
+  (mirrors `/draft-summary`'s persist). **Zero changes to `corpus_to_json_resume.py`** —
+  both cases reuse override keys the resolver already honors (`accepted_generated_bullet_ids`
+  / `excluded` / `summary_text`), so there was no new resolver surface to build or test.
+  RETIRE never reaches the server (nothing was written for a proposal the user hasn't
+  accepted yet) — the Compose banner dismisses it client-side.
+- `static/app.js` + `static/style.css`: `submitRefinement()`'s corpus-mode path now runs
+  the SAME fact-scope check (`/api/validate-refinement` + `_showRefinementScopeModal`) the
+  legacy full-regenerate path always ran — previously skipped in corpus mode since there
+  was no LLM call to gate — then drafts the proposal and routes to Compose with both the
+  note and the proposal stashed (`_composeRefinementProposal`, alongside the existing
+  `_composeLoopbackNote`). `_renderComposeLoopbackBanner(data)` renders the actual proposed
+  change (old text struck through when superseding, then the new text, plus the model's
+  rationale) with Accept/Retire, falling back to the prior plain "adjust it yourself" copy
+  when the model returned `"none"`. Both proposal state flags are purely client-side
+  (mirrors how `_composeLoopbackNote` already worked) — a page reload mid-review loses the
+  pending proposal, same as it already lost the pending note.
+- Tests: `tests/test_draft_surgical_refinement.py` (short-circuit — no note / no frozen
+  composition / no JD; route normalization + ownership re-validation for foreign ids),
+  `tests/test_accept_refinement.py` (bullet accept with/without supersede, idempotency,
+  summary accept, validation), `tests/test_demo_mode.py::test_draft_surgical_refinement`
+  (demo mode proposes nothing — same grounding-safety posture as `draft_gap_fill_bullets`).
+- Real-LLM validation: one scoped refinement against a live sandbox application — see
+  `evals/TUNING_LOG.md` "surgical-refinement-and-loopback" entry for the transcript,
+  the proposal shape returned, and the telemetry cost.
+
+**Still deferred (b)/(c)/(d), each its own LATER branch:** WYSIWYG-as-source (D4),
+clarifications→corpus persistence (D5), and a "Regenerate gap-fill" affordance — tracked
+in the RELEASE_CHECKLIST carry-forward ledger.

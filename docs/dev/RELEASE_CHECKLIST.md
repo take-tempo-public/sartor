@@ -905,12 +905,21 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       [`generation-experience-rearchitecture.md`](generation-experience-rearchitecture.md).
       **Still owed (each its own LATER branch, per that doc §4/§6):** (a) **surgical
       refinement** — a scoped single-item change / grounded re-phrasing (not the current
-      route-to-Compose) + the richer loop-back-with-accept/retire banner; (b) **in-app
+      route-to-Compose) + the richer loop-back-with-accept/retire banner —
+      **(a) DONE 2026-07-08 (`fix/surgical-refinement-and-loopback`)**: new
+      `analyzer.draft_surgical_refinement()` (Sonnet) proposes ONE bullet-supersede /
+      new-bullet / summary change from a free-text note (or "none" for a broad ask,
+      falling back to the prior plain banner); `/draft-refinement` (read-only) +
+      `/accept-refinement` apply it via the EXISTING `accepted_generated_bullet_ids` /
+      `excluded` / `summary_text` override keys (zero `corpus_to_json_resume.py`
+      changes); the Compose loop-back banner renders the actual proposed change with
+      Accept/Retire. `PROMPT_VERSION 2026-07-06.3 → 2026-07-08.1`; (b) **in-app
       WYSIWYG editing** as source of truth (D4 — edits ARE the document); (c)
       **clarifications persist to the corpus** for cross-JD reuse (D5); (d) a "Regenerate
       gap-fill" affordance (needs a `retired_gap_fill_keys` set).
       _(added: 2026-07-06; **CORE DONE 2026-07-06 on `fix/compose-frozen-composition`**;
-      re-scoped from "whole vision owed" to the LATER-branch remainder above.)_
+      re-scoped from "whole vision owed" to the LATER-branch remainder above; (a) DONE
+      2026-07-08 on `fix/surgical-refinement-and-loopback`, (b)/(c)/(d) still open.)_
 
 #### Resolved
 
