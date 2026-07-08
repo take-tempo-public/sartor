@@ -468,6 +468,8 @@ class Compose:
     GAP_FILL_ROW = ".gap-fill-row"
     GAP_FILL_ACCEPT = ".gap-fill-accept"
     GAP_FILL_RETIRE = ".gap-fill-retire"
+    # F-13 — the "Optional" framing badge on the gap-fill lane title.
+    GAP_FILL_OPTIONAL_BADGE = ".gap-fill-optional-badge"
     # B.4 (Sprint 6.6) — "Add role intros" opt-in toggle + the per-role intro
     # picker rendered inside each compose card.
     ROLE_INTROS_TOGGLE = "#composeRoleIntrosToggle"

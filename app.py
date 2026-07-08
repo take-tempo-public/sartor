@@ -133,6 +133,30 @@ def _should_open_browser(werkzeug_run_main: str | None, no_browser: str | None) 
     return werkzeug_run_main != "true"
 
 
+def _is_ci_or_container() -> bool:
+    """Best-effort signal for "this is not an interactive local desktop" (F-18).
+
+    A CI runner or a container, where an auto-opened browser hangs/errors and
+    Flask's debug reloader + verbose error pages are an unwanted surprise
+    rather than a convenience.
+
+    Two independent, widely-honored signals, either sufficient: ``CI`` (set
+    truthy by GitHub Actions, GitLab CI, CircleCI, Travis, and effectively
+    every other CI provider) and the presence of ``/.dockerenv`` (written by
+    the Docker runtime into every container's filesystem). This is only ever
+    consulted as a *default* — an explicit ``SARTOR_NO_BROWSER`` or
+    ``FLASK_DEBUG`` always wins (see ``main()``), so it can never override a
+    deliberate choice, only fill in a sane one when neither is set. The
+    shipped ``Dockerfile`` already sets both explicitly for its own image;
+    this covers the ad-hoc case (a bare ``python app.py`` run inside a
+    devcontainer, Codespace, or CI smoke step, outside that image).
+    """
+    ci_env = os.environ.get("CI", "").strip().lower()
+    if ci_env not in ("", "0", "false"):
+        return True
+    return os.path.exists("/.dockerenv")
+
+
 def _run_setup() -> int:
     """One-time post-install bootstrap: Chromium (PDF) + the vector index (recall).
 
@@ -180,14 +204,24 @@ def _run_setup() -> int:
 def main(argv: list[str] | None = None) -> None:
     """Console entry point for `sartor` (and `python app.py`).
 
-    Default (no flags) is unchanged: serve the app on http://localhost:5000 and
-    auto-open a browser. Flags:
+    Default (no flags) is unchanged for a local desktop run: serve the app on
+    http://localhost:5000, auto-open a browser, and run with Flask's debug
+    reloader on. Flags:
       `--setup`       one-time bootstrap (Chromium + vector index), then exit
       `--host`/`--port`  bind override (the container passes `--host 0.0.0.0`)
       `--no-browser`  skip the auto-open (alias for `SARTOR_NO_BROWSER=1`)
 
     Set `FLASK_DEBUG=0` to disable Flask's reloader + verbose error pages (see
     SECURITY.md). The default host stays loopback-only (127.0.0.1) per PX-19.
+
+    F-18: an explicit `SARTOR_NO_BROWSER` / `FLASK_DEBUG` always wins, but when
+    NEITHER is set, `_is_ci_or_container()` fills in the off default (no
+    browser open, debug off) instead of the local-desktop default — a bare
+    `python app.py` in a CI job or an ad-hoc container/devcontainer no longer
+    hangs on a browser open or prints a debug traceback by surprise. The
+    shipped `Dockerfile` already sets both env vars explicitly; this only
+    covers runs outside that image. See docs/install.md's "Local development"
+    section for the full flag/env reference.
     """
     parser = argparse.ArgumentParser(
         prog="sartor",
@@ -216,7 +250,11 @@ def main(argv: list[str] | None = None) -> None:
         raise SystemExit(_run_setup())
 
     print(f"\n  sartor. — http://localhost:{args.port}\n")
-    debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"
+    # F-18: FLASK_DEBUG explicit wins; unset defaults to debug-on locally, but
+    # debug-off when a CI/container signal is detected (verbose error pages +
+    # the reloader are a dev-hostile surprise there, not a convenience).
+    flask_debug_env = os.environ.get("FLASK_DEBUG")
+    debug_mode = not _is_ci_or_container() if flask_debug_env is None else flask_debug_env == "1"
 
     # Auto-open the user's default browser so `python app.py` lands them
     # straight on the app. Under Flask's reloader (debug=True) main() runs in
@@ -226,7 +264,13 @@ def main(argv: list[str] | None = None) -> None:
     # open in the supervisor / single process — exactly once. A short Timer
     # delays the open until the server is listening; it runs as a daemon so it
     # never holds the interpreter open on shutdown.
+    # F-18: SARTOR_NO_BROWSER (or --no-browser) explicit wins; unset defaults to
+    # "open" locally, but "skip" when a CI/container signal is detected — see
+    # _is_ci_or_container(). _should_open_browser's own (tested) 2-arg contract
+    # is untouched; this only changes what gets passed in as `no_browser`.
     no_browser = "1" if args.no_browser else os.environ.get("SARTOR_NO_BROWSER")
+    if no_browser is None and _is_ci_or_container():
+        no_browser = "1"
     if _should_open_browser(os.environ.get("WERKZEUG_RUN_MAIN"), no_browser):
 
         def _open_browser() -> None:

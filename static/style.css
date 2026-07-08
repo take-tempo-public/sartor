@@ -895,6 +895,19 @@ textarea {
 .panel-header.has-help-icon::after {
   margin-left: auto;
 }
+/* F-23 — a live one-line summary (selected user / application count) shown in
+   the header of a panel that's collapsed to a compact switcher. `margin-left:
+   auto` pins it just before the help icon/chevron under both the default
+   `space-between` header and the `.has-help-icon` `flex-start` variant. */
+.panel-header-summary {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: none;
+  opacity: 0.65;
+  white-space: nowrap;
+}
 .help-info {
   flex: none;
   width: 18px;
@@ -3377,6 +3390,23 @@ textarea:focus-visible {
   transform: translateY(-1px);
   box-shadow: var(--edge-top), 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px -4px rgba(0,0,0,0.3);
 }
+/* F-07 — the in-app confirm modal's destructive-action button (cbConfirm's
+   `danger: true`). Same neutral-pill shape as the other secondary variants
+   above, with the --danger accent so retire/delete confirmations still read
+   as destructive even off the native OS dialog. */
+.cb-btn.cb-bg-danger {
+  background: var(--grad-btn);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  box-shadow: var(--edge-soft), var(--shadow-1);
+}
+.cb-btn.cb-bg-danger:hover {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  filter: none;
+  transform: translateY(-1px);
+  box-shadow: var(--edge-top), 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px -4px rgba(0,0,0,0.3);
+}
 
 /* ---- Form fields ---- */
 input, select, textarea {
@@ -3528,6 +3558,24 @@ input:focus, select:focus, textarea:focus {
 }
 .gap-fill-row .gap-fill-text {
   line-height: 1.45;
+}
+/* F-13 — the "Optional" badge next to the gap-fill lane title. Subdued/
+   neutral (not the brand or a status color) so it reads as a light framing
+   cue, not another thing demanding attention; per-item Accept/Retire
+   affordances are unchanged. */
+.gap-fill-optional-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  border: 1px solid var(--border-2);
+  color: var(--fg-2);
+  border-radius: 3px;
+  padding: 2px 6px;
+  margin-left: 8px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  vertical-align: middle;
 }
 /* Phase 4 — the refinement loop-back banner at the top of Compose. A soft brand
    callout that explains why the user landed back here from Generate. */

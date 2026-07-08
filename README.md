@@ -149,6 +149,12 @@ coherent story (an SRE candidate against an SRE job posting, adapted from the
 project's synthetic eval fixtures) — they are **not** tailored to your input.
 If a real key is present alongside the flag, demo still wins: nothing spends.
 
+**Running headless (CI / container / devcontainer)?** The bare `sartor` above
+auto-opens a browser and runs Flask's debug reloader — fine for a local
+desktop, surprising elsewhere. `sartor` auto-detects a CI runner or container
+and turns both off by default there; `SARTOR_NO_BROWSER=1` / `FLASK_DEBUG=0`
+set it explicitly. Details: [`docs/install.md`](docs/install.md#local-development-headless--container--ci-runs-f-18).
+
 ---
 
 ## Model routing

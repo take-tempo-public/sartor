@@ -545,15 +545,21 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       (gitignored, local): `output/ux-review-2026-07-screenshots/` + its MANIFEST.md.
       _(discovered: 2026-07-07, `docs/ux-review-2026-07`; open count 11 → 12.)_
       **→ Integrate as `fix/ux-review-wave0-*` branches before any public tag;**
-      waves 1–4 drain per the polish plan. **Wave 3 (contributor on-ramp, partial):**
-      F-21/F-22/F-20/F-27/F-06d — **DONE 2026-07-07 (`docs/ux-w3-contributor`)**:
-      README three-reader-paths front matter + Install prominence/`git` prereq/
-      de-jargon/"formerly Callback" note, model-routing prose corrected repo-wide
-      (verified against `analyzer.py:SONNET_MODEL`/`HAIKU_MODEL`, incl. a `clarify()`
-      tier bug found along the way), eval-smoke cost restated ~$0.35-0.40 under
-      Sonnet 5 (AGENTS.md/README/evals/README.md/dashboard/diagnostics.py), dashboard
-      reliability tile relabeled "error rate." F-19 (demo mode) DONE (listed above,
-      `feat/ux-w3-demo-mode`) — Wave 3 fully drained.
+      waves 1–4 drain per the polish plan. **Wave 4 (P2, aesthetic/interaction
+      polish) — F-07/F-23/F-13/F-14/F-18 DONE 2026-07-07 (`feat/ux-w4-aesthetic`):**
+      native `confirm()` → app-native `cbConfirm()` modal (all 10 sites) ·
+      Tailor-tab fold (wizard-first, persisted collapse) · gap-fill "Optional"
+      framing · edit-gate modal plain-language copy · dev-default CI/container
+      auto-detection (`app._is_ci_or_container()`). **Wave 3 (contributor
+      on-ramp, partial):** F-21/F-22/F-20/F-27/F-06d — **DONE 2026-07-07
+      (`docs/ux-w3-contributor`)**: README three-reader-paths front matter +
+      Install prominence/`git` prereq/de-jargon/"formerly Callback" note,
+      model-routing prose corrected repo-wide (verified against
+      `analyzer.py:SONNET_MODEL`/`HAIKU_MODEL`, incl. a `clarify()` tier bug
+      found along the way), eval-smoke cost restated ~$0.35-0.40 under Sonnet 5
+      (AGENTS.md/README/evals/README.md/dashboard/diagnostics.py), dashboard
+      reliability tile relabeled "error rate." F-19 (demo mode) DONE (listed
+      above, `feat/ux-w3-demo-mode`) — Wave 3 fully drained.
 
 - [ ] **PyPI wheel not installable — data files not packaged** — **RESOLVED-PENDING-PUBLISH
       2026-07-07 (`fix/packaging-install`); left open only for the still-blocked

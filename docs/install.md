@@ -82,6 +82,26 @@ sartor --setup   # installs Chromium for PDF + builds the semantic-recall index
 It is idempotent (safe to re-run) and prints what it's doing. `sartor --host` /
 `--port` override the bind address; `sartor --no-browser` skips the auto-open.
 
+### Local development: headless / container / CI runs (F-18)
+
+The bare `sartor` / `python app.py` happy path is tuned for a local desktop:
+it auto-opens your browser and runs with Flask's debug reloader on (verbose
+error pages, live-reload). Two env vars turn each off explicitly:
+
+| Var | Effect when `1` |
+|---|---|
+| `SARTOR_NO_BROWSER` | skip the auto-open (same as `sartor --no-browser`) |
+| `FLASK_DEBUG=0` | disable the reloader + verbose error pages |
+
+**You usually don't need to set these by hand.** If neither is set, `sartor`
+auto-detects a CI runner (the `CI` env var most CI providers set) or a
+container (`/.dockerenv`) and defaults both off in that case — a bare
+`python app.py` in a CI smoke step, devcontainer, or Codespace no longer hangs
+on a browser open or prints a debug traceback by surprise. Setting either var
+explicitly always wins over the auto-detection. The shipped `Dockerfile`
+already sets both explicitly (see "Run in a container" above), so this only
+matters for an ad-hoc run outside that image.
+
 ## Try it without an API key (demo mode)
 
 Set `SARTOR_DEMO=1` to run without any Anthropic key — every AI step returns a

@@ -21,6 +21,7 @@ from playwright.sync_api import Page, expect
 
 from tests.ux.seeding import seed_user
 from ui_pages import BasePage, CorpusPage, UserPickerPage
+from ui_pages.base import DEFAULT_TIMEOUT_MS
 
 
 def _seed_pending_experience(candidate_id: int) -> int:
@@ -113,12 +114,13 @@ def test_accept_all_pending_clears_banner(page: Page, live_server: str, ux_app: 
     """KW2 — the banner's 'Accept all pending' clears every pending flag. On a
     non-empty corpus the pending prompt then flips to the Sprint 6.4 ready
     hand-off ('Start tailoring →'), not a bare hide (an EMPTY corpus is what
-    hides it — see test_20260612_corpus_first_landing)."""
+    hides it — see test_20260612_corpus_first_landing).
+
+    F-07 (2026-07-07): the control now guards behind the app's own cbConfirm()
+    modal, not a native confirm() — click its in-page CONFIRM button rather
+    than auto-accepting an OS dialog (no `page.on("dialog", ...)` needed)."""
     cid = seed_user(ux_app, "alice")
     _seed_pending_experience(cid)
-
-    # The control guards behind a confirm(); auto-accept it.
-    page.on("dialog", lambda dialog: dialog.accept())
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
@@ -126,6 +128,8 @@ def test_accept_all_pending_clears_banner(page: Page, live_server: str, ux_app: 
 
     expect(corpus.onboarding_banner()).to_be_visible()
     corpus.accept_all_button().click()
+    page.wait_for_selector("#cbConfirmModal:not(.hidden)", timeout=DEFAULT_TIMEOUT_MS)
+    page.click("#cbConfirmOk")
     # After the POST clears the flags + counts refresh, the pending controls are
     # gone and the ready CTA appears (banner stays visible, now is-ready).
     expect(corpus.start_tailoring_button()).to_be_visible()

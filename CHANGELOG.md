@@ -13,6 +13,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feat: aesthetic coherence — app-native confirms, wizard-first Tailor, optional gap-fill framing, clearer edit gate, honest dev defaults (`feat/ux-w4-aesthetic`, 2026-07-07)
+
+UX-review Wave 4 (P2, aesthetic/interaction polish — `50-oss-polish-plan.md`):
+F-07, F-23, F-13, F-14, F-18.
+
+- **F-07 — every native `confirm()` replaced by the app's own modal.** A new
+  reusable `cbConfirm(message, opts)` helper (`static/app.js`) + a generic
+  `#cbConfirmModal` skeleton (`templates/index.html`) mirror the existing
+  `_showEditModal`/`_showRefinementScopeModal` a11y posture (focus trap, Esc,
+  backdrop dismiss, focus restored to the trigger); call sites read
+  `if (await cbConfirm(...))`. All 10 sites migrated (corpus summary-variant/
+  skill/role-intro/title/bullet/experience retire, role merge, corpus-wide
+  accept-all, application retire, persona delete). Destructive actions keep a
+  destructive-styled confirm button (new `.cb-bg-danger` variant); the
+  non-destructive accept-all keeps its confirm (a KW2 high-stakes guard) but
+  drops the danger styling. Dialog-handler-dependent tests updated: the KW2
+  accept-all UX test no longer needs a `page.on("dialog", ...)` auto-accept —
+  it clicks the in-page modal instead.
+- **F-23 — the Tailor tab folds the ambient panels behind the wizard.** User
+  selection + Prior applications default to a compact/collapsible summary
+  (reusing the existing `.cb-panel` collapse mechanism) once a user is
+  selected, so the wizard rail is the primary surface instead of sitting below
+  a full account switcher + untruncated applications list. The expand/collapse
+  choice persists per panel via `localStorage` (`cb_panel_collapsed:<id>`), so
+  a returning visitor's own preference sticks. Every existing id/selector is
+  unchanged; `PriorAppsPage.open_detail()` (`ui_pages/prior_apps.py`) expands
+  the panel first if it's collapsed.
+- **F-13 — the Compose gap-fill lane reads as optional.** A subdued "Optional"
+  badge on the lane title + a "Optional — add only what fits" lead-in on the
+  hint copy. Presentation only — the gap-fill data flow, `bgDraftFiring`
+  serialization, and the Compose settle markers are untouched.
+- **F-14 — the edit-detection modal uses plain language.** "You edited the
+  preview" → "Your edits aren't saved yet"; the body now names each choice's
+  effect directly instead of the denser "ground truth" phrasing. Same ids,
+  same three choices, same timing (`_gateEditsBeforeAction` already fires it
+  at the moment the user acts on a stale preview, not on a delay) — the
+  typed-edits-feed-grounding function is untouched.
+- **F-18 — honest dev defaults.** `python app.py` still auto-opens a browser
+  and runs Flask's debug reloader by default for a local desktop run. A new
+  `app._is_ci_or_container()` (checks the `CI` env var and `/.dockerenv`) now
+  fills in the off default (no browser open, `FLASK_DEBUG=0`) when NEITHER
+  `SARTOR_NO_BROWSER` nor `FLASK_DEBUG` is set explicitly, so a bare
+  `python app.py` in a CI job or an ad-hoc devcontainer/Codespace no longer
+  surprises with a hung browser-open or a debug traceback. An explicit env var
+  always wins over the auto-detection; the shipped `Dockerfile` already sets
+  both explicitly, so this only covers runs outside that image.
+  `_should_open_browser`'s existing tested 2-arg contract is unchanged — the
+  detection only changes what `main()` passes in. Documented in
+  `docs/install.md` ("Local development: headless / container / CI runs") and
+  the README install section.
+
+No prompt/dep/migration; `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` untouched.
+
 ### Feat: honest Generate surface — deterministic-assembly copy + reliable server-side download (`feat/ux-w1-generate-surface`, 2026-07-07)
 
 UX-review Wave 1 items F-09 + F-10 (`docs/dev/reviews/2026-07-ux-review/40-friction-register.md`).

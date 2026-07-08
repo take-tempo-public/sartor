@@ -10,8 +10,20 @@ class PriorAppsPage(BasePage):
     """Page Object for the Prior Applications panel + resume-into-wizard flow."""
 
     def open_detail(self, app_id: int) -> None:
-        """Open a prior-app card's detail modal."""
+        """Open a prior-app card's detail modal.
+
+        F-23: the panel defaults to a collapsed short summary once a tailoring
+        session is active (a returning visitor's own expand/collapse choice,
+        persisted, can also leave it either way) — expand it first if needed so
+        the card is actually interactable.
+        """
         self.page.wait_for_selector(PriorApps.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
+        panel = self.page.locator(PriorApps.PANEL)
+        if "collapsed" in (panel.get_attribute("class") or ""):
+            panel.locator(".panel-header").click()
+            self.page.wait_for_selector(
+                f"{PriorApps.PANEL}:not(.collapsed)", timeout=DEFAULT_TIMEOUT_MS
+            )
         card = self.page.locator(PriorApps.card(app_id))
         card.wait_for(state="visible", timeout=DEFAULT_TIMEOUT_MS)
         card.click()
