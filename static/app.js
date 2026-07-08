@@ -462,6 +462,7 @@ function startNewTailoring() {
   lastResumePath = '';
   lastCoverLetterPath = '';
   lastTemplatePath = '';
+  _compositionFrozen = false;  // F-09: new run — no approved composition yet
   // 4. Clear the Step-6 preview editor so no stale document lingers (it is a
   //    contenteditable surface read via innerText — see _readEditorText).
   const preview = document.getElementById('resumePreview');
@@ -965,6 +966,7 @@ async function runAnalysis() {
     lastContextPath = finalData.context_path;
     lastTemplatePath = finalData.template_path || '';
     _composeApplicationId = finalData.application_id ?? null;
+    _compositionFrozen = false;  // F-09: fresh analysis — nothing frozen yet
     _renderAnalysis(finalData);
     show('panelAnalysis');
     // Reveal the Continue/Skip actions now that the analysis has
@@ -1982,9 +1984,13 @@ const _HELP_REGISTRY = {
   },
   panelGenerate: {
     title: 'Step 5 — Generate',
-    body: 'Choose your output format and click Generate. sartor writes the '
-      + 'final, tailored résumé from the content and template you picked. This '
-      + 'usually takes about 30–60 seconds.',
+    body: 'Choose your output format and click Generate. If you saved and '
+      + 'continued from Compose, sartor already has your approved composition — '
+      + 'clicking Generate just assembles it into the chosen format, instantly '
+      + 'and identically every time (no further AI writing, so re-generating '
+      + 'the same composition never changes the wording). If you skipped ahead '
+      + 'without approving a composition, sartor writes the résumé fresh with '
+      + 'an AI call instead, which usually takes about 30–60 seconds.',
     tip: 'Step 5 — Generate',
   },
   panelOutput: {
@@ -2913,18 +2919,6 @@ function _readEditorText(id) {
 
 async function downloadResume() {
   const btn = document.getElementById('btnDownloadResume');
-  // Diagnostic logging (round 6 smoke, 2026-05-26) — the user reported
-  // résumé download still fails after a successful cover-letter
-  // download. The console.log shows whether the button click is even
-  // firing (rules out CSS pseudo-disabled), the button's actual
-  // disabled prop, and the content length we read. With this we can
-  // tell which of three things broke: (a) button has stuck disabled
-  // state, (b) editor content is empty post-cl-download, or (c)
-  // Chrome's "multiple downloads" policy is silently blocking the
-  // second download (in which case the address bar would show a
-  // small downloads-blocked icon).
-  console.log('[download] résumé click; btn.disabled=', btn?.disabled,
-              'content len=', _readEditorText('resumePreview')?.length);
   await _runDownload(btn, async () => {
     const content = _readEditorText('resumePreview');
     if (!content || !content.trim()) {
@@ -2948,8 +2942,6 @@ async function downloadResume() {
 
 async function downloadCoverLetter() {
   const btn = document.getElementById('btnDownloadCover');
-  console.log('[download] cover letter click; btn.disabled=', btn?.disabled,
-              'content len=', _readEditorText('coverLetterPreview')?.length);
   await _runDownload(btn, async () => {
     // Use the same helper as downloadResume for symmetry — even though
     // #coverLetterPreview is visible in its tab body today (no drawer
@@ -2970,11 +2962,10 @@ async function downloadCoverLetter() {
 
 // B1 smoke fix (2026-05-26): wrap the download flow so a thrown error
 // inside _downloadEdited surfaces to the user (was silent before — the
-// thrown error in fetch / blob / click would unwind the await and the
+// thrown error in fetch / navigation would unwind the await and the
 // user would just see a non-responsive button). The disabled-then-
-// re-enabled toggle also prevents a second click during the in-flight
-// fetch from racing the first one and (on some browsers) tripping the
-// "multiple downloads" defense that silently blocks both.
+// re-enabled toggle also prevents a second click from racing an
+// in-flight fetch.
 async function _runDownload(btn, doDownload) {
   if (btn) btn.disabled = true;
   try {
@@ -2986,54 +2977,34 @@ async function _runDownload(btn, doDownload) {
   }
 }
 
+// F-10 (2026-07 UX review) — POST the edited content, then follow the
+// server's `download_url` with a plain top-level navigation (a real
+// Content-Disposition: attachment response the browser's own download
+// manager handles) instead of pulling the file back as a blob and
+// synthesizing an <a>.click(). The blob + synthetic-click pattern is what
+// Chrome's "multiple automatic downloads" heuristic could silently block on
+// the second download in a row without a fresh user gesture — the bug the
+// in-app caveat used to document. A location change to an attachment
+// response is not a popup and is not subject to that heuristic, and it does
+// not unload the current page (the browser recognizes the attachment and
+// downloads instead of navigating away). Errors are still caught here (the
+// fetch/JSON step) and surfaced via _runDownload's reportError — no silent
+// no-op.
 async function _downloadEdited(url, payload) {
-  console.log('[download] fetching', url, 'type=', payload.type);
   const res = await fetch(url, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(payload),
   });
-  console.log('[download] fetch resolved status=', res.status, 'type=', payload.type);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    console.error('[download] non-ok response', err);
     throw new Error(err.error || `Download failed (${res.status})`);
   }
-  // Stream the file as a download.
-  const blob = await res.blob();
-  console.log('[download] blob size=', blob.size, 'type=', blob.type);
-  const disposition = res.headers.get('Content-Disposition') || '';
-  const nameMatch = disposition.match(/filename="?([^"]+)"?/);
-  const filename = nameMatch ? nameMatch[1] : 'document.docx';
-  console.log('[download] resolved filename=', filename);
-
-  // B1 smoke fix (2026-05-26): attach the anchor to the DOM briefly
-  // before clicking, and DEFER URL.revokeObjectURL until after the
-  // browser has had a chance to read the blob. Pre-fix behavior:
-  // detached <a> + immediate revokeObjectURL was fragile across
-  // browsers — Chrome on Windows specifically broke subsequent
-  // downloads if the user canceled the "Save As" dialog. Both
-  // download buttons (résumé AND cover letter) appeared frozen
-  // because the leftover state from the first canceled download
-  // confused the browser's per-page download-anchor accounting.
-  const a = document.createElement('a');
-  const objectUrl = URL.createObjectURL(blob);
-  a.href = objectUrl;
-  a.download = filename;
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  console.log('[download] anchor in DOM, about to click; href.length=', objectUrl.length);
-  try {
-    a.click();
-    console.log('[download] a.click() returned; if no save dialog appears, browser policy may be blocking (check address bar for downloads-blocked icon)');
-  } finally {
-    document.body.removeChild(a);
-    // Hold the URL alive long enough for the browser to start the
-    // download (or open the Save As dialog). 5 seconds is excessive
-    // for a successful read but cheap (one blob URL); the GC will
-    // reclaim the blob once revoked.
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+  const data = await res.json().catch(() => ({}));
+  if (!data.download_url) {
+    throw new Error('Download failed — the server did not return a file location.');
   }
+  window.location.href = data.download_url;
   // B.8 Part 1: the user just took a document to go apply with — surface
   // the "Mark submitted" nudge so the outcome funnel starts here, not in a
   // tracker panel they may never revisit.
@@ -5698,6 +5669,11 @@ function resumeApplicationIntoWizard(detail) {
   // so preview iframes + downloads honor the template. lastContextPath enables
   // the Step 2/3 reachability gate (_wizardReachable).
   _composeApplicationId = detail.id;
+  // F-09: conservative reset — the resume payload doesn't say whether this
+  // context carries a frozen approved_composition, so Step 5 shows the legacy
+  // copy until the user re-freezes via Compose's Save-and-continue. Never
+  // claims determinism it can't verify.
+  _compositionFrozen = false;
   const personaSel = document.getElementById('personaSelect');
   if (personaSel && rs.persona_template_id != null) {
     personaSel.value = String(rs.persona_template_id);
@@ -6111,9 +6087,26 @@ function wizardGoTo(step, opts) {
   _wizardRender();
   if (step === 3) loadComposition();
   if (step === 4) _loadTemplatePicker();
+  if (step === 5) _renderGenerateStepCopy();
   // PX-22: record a history entry for this step change, UNLESS this call is the
   // popstate restore itself (which must not re-push, or Back/Forward would stack).
   if (!(opts && opts.fromHistory)) _wizardPushHistory(step);
+}
+
+// F-09 (2026-07 UX review) — Step 5's copy is state-aware: honest about which
+// path Generate will actually take. When _compositionFrozen is true (Compose's
+// Save-and-continue froze an approved_composition this session), the résumé
+// body assembles deterministically from that exact content — no résumé-body
+// LLM call (generation.py._frozen_composition / _assemble_from_frozen_
+// composition). Otherwise (no freeze yet — e.g. the user jumped to Step 5 via
+// the rail without going through Compose) Generate still runs the real LLM
+// path, so the copy must NOT claim determinism. Toggled on every entry to
+// Step 5 (wizardGoTo) so a mid-session freeze/un-freeze is always reflected.
+function _renderGenerateStepCopy() {
+  const legacy = document.getElementById('generateStepCopyLegacy');
+  const frozen = document.getElementById('generateStepCopyFrozen');
+  if (legacy) legacy.classList.toggle('hidden', _compositionFrozen);
+  if (frozen) frozen.classList.toggle('hidden', !_compositionFrozen);
 }
 
 function wizardNext() { wizardGoTo(Math.min(6, _wizardStep + 1)); }
@@ -6218,6 +6211,14 @@ window.addEventListener('popstate', _onWizardPopState);
 // ===============================================================
 
 let _composeApplicationId = null;
+// F-09 (2026-07 UX review) — whether Compose's "Save and continue" froze an
+// approved_composition THIS session (career_corpus context + freeze:true
+// succeeded — set in saveCompositionThenNext). This is exactly the predicate
+// generation.py's _frozen_composition() gates the deterministic-assemble path
+// on, so Step 5's copy mirrors it: true only after a real freeze; reset to
+// false at each fresh analysis (a legacy/non-corpus context never freezes, so
+// it never claims the deterministic-assembly copy). See _renderGenerateStepCopy.
+let _compositionFrozen = false;
 // Phase 4 — when a refinement loops the user back to Compose (corpus mode has no
 // résumé-body LLM to re-run), this holds their note so loadComposition can render
 // an explaining banner until dismissed. Null = no pending loop-back.
@@ -7907,7 +7908,11 @@ async function saveCompositionThenNext() {
     // Generation-experience re-architecture — Save-and-continue FREEZES the
     // approved composition (the single content contract downstream renders). The
     // debounced autosave omits `freeze`, so only this explicit action snapshots.
-    await _postComposition({ ...state, freeze: true });
+    // F-09: only claim the deterministic-assembly copy when the freeze POST
+    // actually landed (_postComposition returns false on its no-app/no-context
+    // guard — e.g. a degraded resume with no live context file — and throws on
+    // HTTP failure, caught below).
+    _compositionFrozen = (await _postComposition({ ...state, freeze: true })) === true;
     _toast(`Composition saved (${state.pinned.length} pinned, ${state.added.length} added, ${state.excluded.length} excluded)`);
   } catch (e) {
     _toast('Save failed: ' + e.message, true);

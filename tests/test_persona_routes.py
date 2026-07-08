@@ -621,6 +621,15 @@ class TestCopyPersonaToCandidate:
 
 class TestDownloadEditedPersona:
     def test_persona_template_id_resolves_under_personas_dir(self, persona_app):
+        """F-10: download-edited returns a download_url; the GET serves the file.
+
+        The route used to stream the bytes on the POST response; it now hands
+        back a URL onto GET /api/download/<path> (send_file(as_attachment=True))
+        so the client can follow it as a plain navigation the browser's download
+        manager handles natively. Both halves are asserted: the JSON contract,
+        and that the URL actually serves the templated .docx with an attachment
+        Content-Disposition.
+        """
         _seed_candidate(persona_app)
         pid, _ = _seed_bundled_persona_file(persona_app, "dl.docx")
         client = persona_app.app.test_client()
@@ -635,4 +644,69 @@ class TestDownloadEditedPersona:
             },
         )
         assert r.status_code == 200
-        assert r.data[:2] == b"PK"  # produced a real .docx (templated, not dropped)
+        body = r.get_json()
+        assert body["download_url"].startswith("/api/download/")
+        assert body["filename"].endswith(".docx")
+
+        dl = client.get(body["download_url"])
+        assert dl.status_code == 200
+        assert "attachment" in (dl.headers.get("Content-Disposition") or "")
+        assert dl.data[:2] == b"PK"  # produced a real .docx (templated, not dropped)
+
+
+# ---------------------------------------------------------------------------
+# F-10 — GET /api/download/<path> containment (relative re-anchor + legacy abs)
+# ---------------------------------------------------------------------------
+
+
+class TestDownloadFileContainment:
+    """The F-10 relative-path re-anchor must not weaken the _within gate."""
+
+    def test_relative_path_serves_from_output_dir(self, persona_app):
+        target = persona_app.OUTPUT_DIR / "alice" / "resume_x.md"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("# hi", encoding="utf-8")
+        client = persona_app.app.test_client()
+        r = client.get("/api/download/alice/resume_x.md")
+        assert r.status_code == 200
+        assert "attachment" in (r.headers.get("Content-Disposition") or "")
+        assert r.data == b"# hi"
+
+    def test_relative_traversal_to_existing_file_is_403(self, persona_app):
+        # A real file just OUTSIDE OUTPUT_DIR: exists() passes, _within must 403.
+        # The alice/ dir must exist so the OS can walk the ".." components.
+        (persona_app.OUTPUT_DIR / "alice").mkdir(parents=True, exist_ok=True)
+        secret = persona_app.OUTPUT_DIR.parent / "secret.txt"
+        secret.write_text("nope", encoding="utf-8")
+        client = persona_app.app.test_client()
+        r = client.get("/api/download/alice/../../secret.txt")
+        assert r.status_code == 403
+
+    # The absolute-path (legacy) branch is exercised at the view level: an
+    # absolute POSIX path in the URL would open with "/" and double-slash the
+    # route (Werkzeug merge_slashes 308s it), so the HTTP layer can't carry it
+    # portably — which is exactly why download-edited now hands back a
+    # RELATIVE download_url. The branch itself must keep working for any
+    # legacy caller that still passes an absolute path.
+
+    def test_absolute_path_inside_output_dir_still_serves(self, persona_app):
+        from blueprints.generation import download_file
+
+        target = persona_app.OUTPUT_DIR / "alice" / "resume_abs.md"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("# abs", encoding="utf-8")
+        with persona_app.app.test_request_context():
+            resp = download_file(str(target))
+        assert not isinstance(resp, tuple)  # a streamed 200, not (error, code)
+        assert "attachment" in (resp.headers.get("Content-Disposition") or "")
+        assert resp.status_code == 200
+        resp.close()  # release the send_file handle (Windows file lock)
+
+    def test_absolute_path_outside_output_dir_is_403(self, persona_app):
+        from blueprints.generation import download_file
+
+        secret = persona_app.OUTPUT_DIR.parent / "secret_abs.txt"
+        secret.write_text("nope", encoding="utf-8")
+        with persona_app.app.test_request_context():
+            resp = download_file(str(secret))
+        assert isinstance(resp, tuple) and resp[1] == 403

@@ -455,11 +455,24 @@
         <span class="cb-step-title">Generate</span>
       </div>
       <div class="panel-body">
-        <div class="edit-hint">
+        <!-- F-09 (2026-07 UX review) — state-aware copy, toggled by
+             _renderGenerateStepCopy() (static/app.js) on every entry to this
+             step via _compositionFrozen. Legacy (no freeze yet) keeps the
+             original LLM-cost/time framing; frozen tells the truth about the
+             deterministic assemble (generation.py._frozen_composition) so a
+             user with an approved composition isn't told to expect an AI
+             rewrite that won't happen. Longer explanation lives in the (i)
+             help icon this panel already carries (_HELP_REGISTRY.panelGenerate). -->
+        <div class="edit-hint" id="generateStepCopyLegacy">
           The AI writes a tailored résumé using your curated bullets and
           the template you picked. ~30–60s and a few cents per generate.
           The cover letter is opt-in &mdash; generate it from Step 6
           after you've reviewed the résumé.
+        </div>
+        <div class="edit-hint hidden" id="generateStepCopyFrozen">
+          Assembled instantly from your approved composition &mdash; same
+          input, same résumé, no AI variation. The cover letter is opt-in
+          &mdash; generate it from Step 6 after you've reviewed the résumé.
         </div>
         <div class="form-row" style="align-items:center;gap:12px;margin-bottom:8px;">
           <span class="edit-hint" style="margin:0">Output format:</span>
@@ -609,13 +622,13 @@
             &#9432; What changed?
           </button>
         </div>
-        <p class="edit-hint" style="margin-top:6px;text-transform:none">
-          Chrome may silently block a second download without a new user gesture between them.
-          If a file doesn't appear in your Downloads folder, click the
-          <strong>&#8595;</strong> icon in the browser address bar and choose
-          <strong>Always allow downloads from this site</strong>.
-          (A future release will switch to a server-side download to avoid this entirely.)
-        </p>
+        <!-- F-10 (2026-07 UX review): the "Chrome may silently block a second
+             download" caveat that used to sit here is retired — downloads are
+             now served by the server (POST /api/download-edited returns a
+             download_url onto GET /api/download/<path>, followed as a plain
+             navigation), which the browser's download manager handles without
+             the multiple-automatic-downloads heuristic. Failures surface via
+             the Download error modal, never a silent no-op. -->
         <!-- B.8 Part 1: outcome-capture nudge. Revealed after a successful
              download (the moment the user takes the file to go apply).
              "Mark submitted" sets the application's lifecycle status so the
