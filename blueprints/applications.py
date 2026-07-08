@@ -825,34 +825,36 @@ def _read_summary_draft(context_path: str) -> tuple[str, bool]:
     return _read_summary_text_override(ctx)
 
 
-def _read_gap_fill(context_path: str) -> tuple[list[dict[str, Any]], bool, set[int]]:
-    """Return (gap_fill_proposals, has_gap_fill, accepted_generated_bullet_ids).
+def _read_gap_fill(
+    context_path: str,
+) -> tuple[list[dict[str, Any]], bool, set[int], list[str]]:
+    """Return (gap_fill_proposals, has_gap_fill, accepted_generated_bullet_ids, retired_gap_fill_keys).
 
     Phase 3: the transient Compose gap-fill proposals; whether the draft has run
     (has_gap_fill = key PRESENCE, not list non-emptiness, so a zero-proposal draft
     still stops the auto-fire loop); and the set of accepted gap-fill Bullet ids for
-    this application. ([], False, set()) when absent / unreadable. _within-gated by
-    OUTPUT_DIR.
+    this application. feat/regenerate-gap-fill: also the durable
+    composition_overrides.retired_gap_fill_keys list, surfaced so the client can
+    seed its session state (and re-send it on every /composition save — see
+    hardening.ContextSet). ([], False, set(), []) when absent / unreadable.
+    _within-gated by OUTPUT_DIR.
     """
     if not context_path:
-        return [], False, set()
+        return [], False, set(), []
     cp = Path(context_path)
     if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
-        return [], False, set()
+        return [], False, set(), []
     try:
         ctx = json.loads(cp.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
-        return [], False, set()
+        return [], False, set(), []
     has_gap_fill = "llm_gap_fill_proposals" in ctx
     raw = ctx.get("llm_gap_fill_proposals")
     proposals = [p for p in raw if isinstance(p, dict)] if isinstance(raw, list) else []
-    accepted = {
-        int(x)
-        for x in (
-            (ctx.get("composition_overrides") or {}).get("accepted_generated_bullet_ids") or []
-        )
-    }
-    return proposals, has_gap_fill, accepted
+    overrides = ctx.get("composition_overrides") or {}
+    accepted = {int(x) for x in (overrides.get("accepted_generated_bullet_ids") or [])}
+    retired = [str(k) for k in (overrides.get("retired_gap_fill_keys") or [])]
+    return proposals, has_gap_fill, accepted, retired
 
 
 def _read_recommendations_and_added(
@@ -932,7 +934,14 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
         drafted_summary_text, drafted_summary_edited = _read_summary_draft(ctx_path)
         # Phase 3 — transient gap-fill proposals + the accepted-gap-fill bullet ids
         # for this application; has_gap_fill (key presence) drives the auto-fire latch.
-        gap_fill_proposals, has_gap_fill, accepted_generated_ids = _read_gap_fill(ctx_path)
+        # feat/regenerate-gap-fill — retired_gap_fill_keys seeds the client's durable
+        # retiral set (re-sent on every /composition save; see hardening.ContextSet).
+        (
+            gap_fill_proposals,
+            has_gap_fill,
+            accepted_generated_ids,
+            retired_gap_fill_keys,
+        ) = _read_gap_fill(ctx_path)
         gap_fill_by_exp: dict[int, list[dict[str, Any]]] = {}
         for _gp in gap_fill_proposals:
             _geid = _gp.get("experience_id")
@@ -1255,6 +1264,11 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                 # Phase 3 — key presence flips this true after the first draft
                 # (even with zero proposals), so the auto-fire latch never re-loops.
                 "has_gap_fill": has_gap_fill,
+                # feat/regenerate-gap-fill — the durable retired-proposal key set,
+                # so the client can seed its session state on load/reload and
+                # re-send it on every /composition save (the wholesale-rebuild
+                # clobber invariant).
+                "retired_gap_fill_keys": retired_gap_fill_keys,
                 "summary": {
                     "variants": summary_variants,
                     "recommended_id": rec_id,
@@ -1414,6 +1428,15 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
         accepted_generated_in = [int(x) for x in (data.get("accepted_generated_bullet_ids") or [])]
     except (TypeError, ValueError):
         return jsonify({"error": "accepted_generated_bullet_ids must be integer ids"}), 400
+    # feat/regenerate-gap-fill — the durable retired-proposal key set. /gap-fill-
+    # decide (retire) also writes this DIRECTLY (so a retiral sticks even with no
+    # composition save in between), but THIS route rebuilds composition_overrides
+    # wholesale, so the client must resend the full current set on every save (the
+    # same clobber invariant as accepted_generated_bullet_ids) or it is dropped.
+    retired_gap_fill_raw = data.get("retired_gap_fill_keys")
+    if retired_gap_fill_raw is not None and not isinstance(retired_gap_fill_raw, list):
+        return jsonify({"error": "retired_gap_fill_keys must be an array of strings"}), 400
+    retired_gap_fill_in = [str(x) for x in (retired_gap_fill_raw or [])]
     freeze = bool(data.get("freeze"))
 
     if not context_path:
@@ -1581,6 +1604,8 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 overrides["summary_text_edited"] = True
         if accepted_generated_in:
             overrides["accepted_generated_bullet_ids"] = accepted_generated_in
+        if retired_gap_fill_in:
+            overrides["retired_gap_fill_keys"] = retired_gap_fill_in
         ctx["composition_overrides"] = overrides
 
         # feat/compose-add-title — generate reads the FROZEN career_corpus
@@ -1629,6 +1654,7 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 "summary_text": summary_text_in,
                 "summary_text_edited": summary_text_edited_in,
                 "accepted_generated_bullet_ids": accepted_generated_in,
+                "retired_gap_fill_keys": retired_gap_fill_in,
                 "frozen": bool(freeze),
             }
         )
@@ -2027,13 +2053,23 @@ def draft_application_gap_fill(application_id: int) -> ResponseReturnValue:
     there's no corpus or no JD. The key is ALWAYS written (even []) so the GET's
     has_gap_fill flag flips and the auto-fire never re-loops.
 
+    feat/regenerate-gap-fill: this same route is also the explicit user-triggered
+    "Regenerate suggestions" affordance (a manual re-call, bypassing the once-only
+    auto-fire latch on purpose). A regenerated draft NEVER resurfaces a proposal
+    the user already decided on: proposals whose stable key (sha256(eid|text)[:12])
+    is in the durable composition_overrides.retired_gap_fill_keys set, or matches
+    an existing accepted Bullet's source (`llm_proposed:<key>`) for this candidate,
+    are filtered out here — deterministically, route-side, not by prompting the LLM
+    to avoid them (so the guarantee holds regardless of model behavior; no
+    PROMPT_VERSION bump needed since the prompt text is unchanged).
+
     Body: {context_path}. Filesystem + ownership: _safe_username via
     _load_application_owned; _within gates context_path.
     """
     import hashlib
 
     from analyzer import LLMResponseError, draft_gap_fill_bullets
-    from db.models import Experience
+    from db.models import Bullet, Experience
     from db.session import get_session, init_db
 
     data = request.json or {}
@@ -2089,6 +2125,24 @@ def draft_application_gap_fill(application_id: int) -> ResponseReturnValue:
         cand_exp_ids = {
             e.id for e in session.query(Experience).filter_by(candidate_id=candidate.id)
         }
+        # feat/regenerate-gap-fill — never resurface a proposal the user already
+        # decided on. RETIRED keys are durable (composition_overrides); ACCEPTED
+        # keys are derived from the Bullet.source convention the accept path
+        # writes (`llm_proposed:<key>`), so an already-accepted bullet doesn't
+        # reappear as a "new" suggestion on a Regenerate.
+        retired_keys = {
+            str(k)
+            for k in ((ctx.get("composition_overrides") or {}).get("retired_gap_fill_keys") or [])
+        }
+        accepted_sources = {
+            row[0].split(":", 1)[1]
+            for row in session.query(Bullet.source)
+            .join(Experience, Bullet.experience_id == Experience.id)
+            .filter(Experience.candidate_id == candidate.id, Bullet.source.like("llm_proposed:%"))
+            .all()
+            if row[0]
+        }
+        excluded_keys = retired_keys | accepted_sources
         valid_kinds = {"xyz", "star", "car", "manual"}
         normalized: list[dict[str, Any]] = []
         seen: set[str] = set()
@@ -2100,7 +2154,7 @@ def draft_application_gap_fill(application_id: int) -> ResponseReturnValue:
             if not text or eid is None or eid not in cand_exp_ids:
                 continue
             key = hashlib.sha256(f"{eid}|{text}".encode()).hexdigest()[:12]
-            if key in seen:
+            if key in seen or key in excluded_keys:
                 continue
             seen.add(key)
             pk = (p.get("pattern_kind") or "").strip().lower()
@@ -2140,9 +2194,12 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
     for THIS application only — the pending-leak guard keeps it out of others), and
     record a pending ProposalReview keyed to the iteration-0 ApplicationRun
     (ctx["application_run_id"]). RETIRE: drop the transient proposal — no Bullet is
-    ever created. Idempotent on the Bullet.source key, so a double-accept or a
-    crash-then-retry never duplicates. If the ctx write later fails, the guard makes
-    the bullet inert (renders nowhere), so no compensating delete is needed.
+    ever created — and (feat/regenerate-gap-fill) record the key durably in
+    composition_overrides.retired_gap_fill_keys so a later Regenerate never drafts
+    it again. Idempotent on the Bullet.source key, so a double-accept or a
+    crash-then-retry never duplicates; a double-retire is a no-op set-union. If the
+    ctx write later fails, the guard makes the bullet inert (renders nowhere), so no
+    compensating delete is needed.
 
     Body: {context_path, key, decision}. decision in {"accept","retire"}.
     Filesystem + ownership: _safe_username via _load_application_owned; _within
@@ -2187,10 +2244,33 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
 
         if decision == "retire":
             # Drop the transient proposal; no Bullet row exists pre-accept.
-            # Idempotent: a missing key is already-gone -> 200.
+            # feat/regenerate-gap-fill — ALSO record the key durably in
+            # composition_overrides.retired_gap_fill_keys so a later Regenerate (a
+            # fresh draft_gap_fill_bullets call) never resurfaces it — unlike
+            # llm_gap_fill_proposals (transient, fully rebuilt on every draft), this
+            # key rides composition_overrides and the client MUST resend it on every
+            # /composition save (the wholesale-rebuild clobber invariant) or it is
+            # silently dropped.
+            # Idempotent: a missing key is already-gone -> 200; dict.fromkeys dedups
+            # a duplicate retire without reordering the existing set.
+            overrides = ctx.get("composition_overrides")
+            if not isinstance(overrides, dict):
+                overrides = {}
+            retired_keys = list(
+                dict.fromkeys([*(overrides.get("retired_gap_fill_keys") or []), key])
+            )
+            overrides["retired_gap_fill_keys"] = retired_keys
+            ctx["composition_overrides"] = overrides
             ctx["llm_gap_fill_proposals"] = remaining
             cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
-            return jsonify({"application_id": application_id, "key": key, "retired": True})
+            return jsonify(
+                {
+                    "application_id": application_id,
+                    "key": key,
+                    "retired": True,
+                    "retired_gap_fill_keys": retired_keys,
+                }
+            )
 
         # decision == "accept"
         overrides = ctx.get("composition_overrides")

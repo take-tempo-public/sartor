@@ -916,10 +916,20 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       Accept/Retire. `PROMPT_VERSION 2026-07-06.3 → 2026-07-08.1`; (b) **in-app
       WYSIWYG editing** as source of truth (D4 — edits ARE the document); (c)
       **clarifications persist to the corpus** for cross-JD reuse (D5); (d) a "Regenerate
-      gap-fill" affordance (needs a `retired_gap_fill_keys` set).
+      gap-fill" affordance (needs a `retired_gap_fill_keys` set) — **(d) DONE
+      2026-07-08 (`feat/regenerate-gap-fill`)**: durable
+      `composition_overrides.retired_gap_fill_keys` (written by `/gap-fill-decide`
+      retire, re-sent on every `/composition` save like every other override key) +
+      an always-visible "Regenerate suggestions" control that re-calls
+      `/draft-gap-fill` (a third context-writing firing path, serialized through
+      `data-compose-bg-pending`); the route-level exclusion filter keeps a
+      regenerated draft from resurfacing a retired OR already-accepted proposal —
+      deterministic, no prompt change, no `PROMPT_VERSION` bump. Real-LLM validated
+      (see `evals/TUNING_LOG.md`). (b)/(c) remain owed.
       _(added: 2026-07-06; **CORE DONE 2026-07-06 on `fix/compose-frozen-composition`**;
       re-scoped from "whole vision owed" to the LATER-branch remainder above; (a) DONE
-      2026-07-08 on `fix/surgical-refinement-and-loopback`, (b)/(c)/(d) still open.)_
+      2026-07-08 on `fix/surgical-refinement-and-loopback`, (d) DONE 2026-07-08 on
+      `feat/regenerate-gap-fill`; (b)/(c) still open.)_
 
 #### Resolved
 
