@@ -46,3 +46,25 @@ class UserPickerPage(BasePage):
             self.select(username)
         else:
             self.create(username, name, email)
+
+    # --- candidate roster (Wave 2 recruiter tier, UX review F-08) ----------
+
+    def search_roster(self, query: str) -> None:
+        """Type into the roster search box (filters the card list client-side)."""
+        self.page.wait_for_selector(UserPicker.ROSTER_SEARCH, timeout=DEFAULT_TIMEOUT_MS)
+        self.page.fill(UserPicker.ROSTER_SEARCH, query)
+
+    def select_from_roster(self, username: str) -> None:
+        """Click a candidate's roster card and wait for it to drive #userSelect.
+
+        The roster card SETS #userSelect's value and fires the same
+        onUserSelect() any other selection path uses — this waits on that
+        underlying select, so the assertion contract matches `select()` above.
+        """
+        self.page.wait_for_selector(UserPicker.roster_card(username), timeout=DEFAULT_TIMEOUT_MS)
+        self.page.click(UserPicker.roster_card(username))
+        self.page.wait_for_function(
+            "(u) => document.getElementById('userSelect').value === u",
+            arg=username,
+            timeout=DEFAULT_TIMEOUT_MS,
+        )

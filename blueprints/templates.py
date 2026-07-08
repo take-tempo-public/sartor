@@ -1,7 +1,7 @@
 """Templates / personas seam — persona-template CRUD + live HTML previews.
 
 The fourth domain blueprint extracted from `app.py` (Sprint 8.3e, the app.py ->
-blueprints decomposition). Owns the eleven routes that manage persona templates
+blueprints decomposition). Owns the twelve routes that manage persona templates
 (bundled + user-uploaded) and render the live WYSIWYG previews, plus their
 domain-only helpers:
 
@@ -12,6 +12,7 @@ domain-only helpers:
     PUT    /api/personas/<id>                                 update_persona
     DELETE /api/personas/<id>                                 delete_persona
     GET    /api/personas/<id>/download                        download_persona
+    POST   /api/personas/<id>/copy                             copy_persona_to_candidate
     POST   /api/personas/<id>/preview                         preview_persona_with_resume
     GET    /api/applications/<id>/preview                     preview_application_html
     GET    /api/applications/<id>/cover-letter-preview        preview_cover_letter_html
@@ -29,6 +30,15 @@ Canonical home for the persona-template resolvers: `_resolve_persona_template_pa
 / `_resolve_default_persona_template_path` live here (Sprint 8.3e). The generation
 seam carried a transitional duplicate from 8.3c; it now imports the pair from this
 module (sibling blueprint -> blueprint is allowed). See the Carry-forward ledger.
+
+`copy_persona_to_candidate` (Wave 2 recruiter tier — UX review F-16, 2026-07-07)
+is the smallest honest fix for "house templates are per-candidate": personas stay
+per-candidate (no account-level scope, no schema change), but a one-click copy
+lets a recruiter plant an already-uploaded house template on another candidate
+instead of re-uploading the .docx by hand every time. It touches the filesystem
+(copies the .docx under a new candidate's persona dir) so it carries the full
+`_safe_username` + `secure_filename` + `_within` guard sequence, same as
+`upload_user_persona`.
 """
 
 from __future__ import annotations
@@ -776,6 +786,97 @@ def download_persona(persona_id: int) -> ResponseReturnValue:
         if not _within(disk_path, current_app.config["PERSONAS_DIR"]):
             return jsonify({"error": "Invalid persona path"}), 403
         return send_file(str(disk_path), as_attachment=True, download_name=f"{row.name}.docx")
+    finally:
+        session.close()
+
+
+@templates_bp.route("/api/personas/<int:persona_id>/copy", methods=["POST"])
+def copy_persona_to_candidate(persona_id: int) -> ResponseReturnValue:
+    """Copy a user-uploaded persona template to another candidate (F-16 house templates).
+
+    Body: `{username: <target candidate>}`. Personas stay per-candidate — this
+    is a one-click copy, not an account-level sharing scope, so it needs no
+    schema change and every existing persona route contract is untouched. Only
+    `user_upload` rows are eligible sources (`bundled` templates are already
+    visible to every candidate — nothing to copy). Copies the .docx into
+    `personas/<target>/`, regenerates its HTML/CSS preview companion (same
+    best-effort step `upload_user_persona` runs), and inserts a new
+    `persona_template` row owned by the target candidate — the original is
+    untouched, so the two copies can now diverge (rename/delete) independently.
+
+    Filesystem + containment: `_safe_username` validates the target username;
+    the source path is re-validated `_within` PERSONAS_DIR before it's read
+    (defense-in-depth against a corrupted `path` column); the copy target is
+    built from `secure_filename` and re-validated `_within` PERSONAS_DIR before
+    it's written, with a numeric-suffix fallback if a same-named file already
+    exists for that candidate.
+    """
+    import shutil
+
+    from db.models import PersonaTemplate
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    configs_dir = current_app.config["CONFIGS_DIR"]
+    safe_user = _safe_username(data.get("username", ""), configs_dir=configs_dir)
+    if not safe_user:
+        return jsonify({"error": "Invalid or unknown target user"}), 400
+
+    personas_dir = current_app.config["PERSONAS_DIR"]
+    init_db()
+    session = get_session()
+    try:
+        source = session.query(PersonaTemplate).filter_by(id=persona_id).first()
+        if source is None:
+            return jsonify({"error": "Persona not found"}), 404
+        if source.source != "user_upload":
+            return jsonify({"error": "Only uploaded templates can be copied"}), 400
+
+        target_candidate = cast(
+            "Candidate",
+            _get_or_provision_candidate(session, safe_user, configs_dir=configs_dir),
+        )
+        if source.candidate_id == target_candidate.id:
+            return jsonify({"error": f"Already belongs to {safe_user}"}), 400
+
+        src_path = (current_app.config["BASE_DIR"] / source.path).resolve()
+        if not src_path.exists() or not _within(src_path, personas_dir):
+            return jsonify({"error": "Source persona file missing or invalid"}), 403
+
+        safe_name = secure_filename(src_path.name)
+        target_dir = personas_dir / safe_user
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target_path = target_dir / safe_name
+        # Avoid clobbering an existing file of the same name for this candidate
+        # (e.g. copying the same house template to them twice).
+        stem, suffix = Path(safe_name).stem, Path(safe_name).suffix
+        n = 2
+        while target_path.exists():
+            target_path = target_dir / f"{stem}-{n}{suffix}"
+            n += 1
+        if not _within(target_path, personas_dir):
+            return jsonify({"error": "Invalid target persona path"}), 403
+        shutil.copyfile(src_path, target_path)
+
+        # Best-effort HTML/CSS preview companion, same as upload_user_persona.
+        from docx_to_persona_html import generate_companion
+
+        generate_companion(target_path)
+
+        row = PersonaTemplate(
+            candidate_id=target_candidate.id,
+            name=source.name,
+            path=f"personas/{safe_user}/{target_path.name}",
+            source="user_upload",
+            description=source.description,
+            is_default=0,
+        )
+        session.add(row)
+        session.commit()
+        return jsonify(_persona_dict(row)), 201
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 

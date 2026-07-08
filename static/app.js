@@ -41,6 +41,7 @@ let lastIterateClarifyQuestions = []; // most recent /api/iterate-clarify questi
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
   loadUsers();
+  loadCandidateRoster();
   setupDropZone();
   document.getElementById('userSelect').addEventListener('change', onUserSelect);
   // Format-check the URL boxes (new-user form + Settings drawer).
@@ -87,6 +88,190 @@ async function loadUsers() {
     opt.textContent = u;
     sel.appendChild(opt);
   });
+}
+
+// ---- Candidate roster (Wave 2 recruiter tier, UX review F-08) ----
+// A searchable front door layered ON TOP of #userSelect — it never replaces
+// the select's mechanics. Selecting a roster card just sets #userSelect's
+// value and fires the SAME onUserSelect() every other selection path uses,
+// so currentUser semantics are unchanged. Backed by the aggregate
+// /api/candidates/roster endpoint (also powers the Pipeline tab below), which
+// stays two DB queries regardless of candidate/application count
+// (blueprints/users.py:candidate_roster).
+let _candidateRoster = [];
+
+async function loadCandidateRoster() {
+  const wrap = document.getElementById('candidateRoster');
+  const list = document.getElementById('candidateRosterList');
+  if (!wrap || !list) return;
+  let res;
+  try {
+    res = await fetch('/api/candidates/roster');
+  } catch {
+    return; // silent — the plain <select> underneath still works
+  }
+  if (!res.ok) return;
+  const body = await res.json().catch(() => null);
+  if (!body || !Array.isArray(body.candidates)) return;
+  _candidateRoster = body.candidates;
+  // Single-candidate installs (the common job-seeker case) don't need a
+  // roster surface above the dropdown — only show it once there's something
+  // to search/scan.
+  wrap.classList.toggle('hidden', _candidateRoster.length < 2);
+  _renderCandidateRosterList(_candidateRoster);
+}
+
+function _filterCandidateRoster() {
+  const q = (document.getElementById('candidateRosterSearch')?.value || '').trim().toLowerCase();
+  const filtered = !q ? _candidateRoster : _candidateRoster.filter(c =>
+    c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q));
+  _renderCandidateRosterList(filtered, q);
+}
+
+function _renderCandidateRosterList(rows, query) {
+  const list = document.getElementById('candidateRosterList');
+  if (!list) return;
+  _clearChildren(list);
+  if (rows.length === 0) {
+    _setLoadingPlaceholder(list, query ? 'No candidates match.' : 'No candidates yet.');
+    return;
+  }
+  rows.forEach(c => list.appendChild(_renderCandidateRosterCard(c)));
+}
+
+function _renderCandidateRosterCard(c) {
+  const card = _el('div', {
+    className: 'candidate-roster-card' + (c.username === currentUser ? ' active' : ''),
+    id: `roster-card-${c.username}`,
+    tabIndex: 0,
+  }, [], { role: 'listitem' });
+  card.appendChild(_el('div', { className: 'candidate-roster-card-name', textContent: c.name }));
+  const latest = c.latest_application;
+  card.appendChild(_el('div', {
+    className: 'candidate-roster-card-target',
+    textContent: latest
+      ? `${latest.title}${latest.company ? ' · ' + latest.company : ''}`
+      : (c.has_corpus ? 'No applications yet' : 'Not onboarded yet'),
+  }));
+  const chips = _el('div', { className: 'candidate-roster-card-chips' });
+  Object.entries(c.status_counts || {}).forEach(([status, count]) => {
+    if (count === 0) return;
+    chips.appendChild(_el('span', {
+      className: `app-status-chip status-${status}`,
+      textContent: `${count} ${status === 'submitted' ? 'no response' : status}`,
+    }));
+  });
+  if (chips.childNodes.length === 0) {
+    chips.appendChild(_el('span', { className: 'app-status-chip status-draft', textContent: 'No applications' }));
+  }
+  card.appendChild(chips);
+
+  const activate = () => {
+    const sel = document.getElementById('userSelect');
+    if (!sel) return;
+    sel.value = c.username;
+    onUserSelect();
+  };
+  card.addEventListener('click', activate);
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+  });
+  return card;
+}
+
+// ---- Pipeline board (Wave 2 recruiter tier, UX review F-17) ----
+// Read-only v1: every candidate's applications, grouped by canonical
+// lifecycle status. Same aggregate endpoint as the roster above — one fetch,
+// grouped client-side into the five status columns.
+const _PIPELINE_STATUSES = ['draft', 'submitted', 'interview', 'rejected', 'withdrawn'];
+const _PIPELINE_STATUS_LABELS = {
+  draft: 'Draft',
+  submitted: 'No response yet',
+  interview: 'Got interview',
+  rejected: 'Rejected',
+  withdrawn: 'Withdrawn',
+};
+
+async function refreshPipeline() {
+  const board = document.getElementById('pipelineBoard');
+  const countEl = document.getElementById('pipelineCount');
+  if (!board) return;
+  _setLoadingPlaceholder(board, 'Loading…');
+  let res;
+  try {
+    res = await fetch('/api/candidates/roster');
+  } catch {
+    _setLoadingPlaceholder(board, 'Network error.');
+    return;
+  }
+  if (!res.ok) {
+    _setLoadingPlaceholder(board, 'Failed to load the pipeline.');
+    return;
+  }
+  const body = await res.json().catch(() => ({}));
+  const apps = Array.isArray(body.applications) ? body.applications : [];
+  if (countEl) countEl.textContent = `${apps.length} application${apps.length === 1 ? '' : 's'}`;
+  if (apps.length === 0) {
+    _setLoadingPlaceholder(board, 'No applications across any candidate yet.');
+    return;
+  }
+  _renderPipelineBoard(apps);
+}
+
+function _renderPipelineBoard(apps) {
+  const board = document.getElementById('pipelineBoard');
+  _clearChildren(board);
+  const byStatus = {};
+  _PIPELINE_STATUSES.forEach(s => { byStatus[s] = []; });
+  apps.forEach(a => { (byStatus[a.status] || (byStatus[a.status] = [])).push(a); });
+
+  _PIPELINE_STATUSES.forEach(status => {
+    const rows = byStatus[status] || [];
+    const col = _el('div', { className: 'pipeline-column' });
+    const header = _el('div', { className: 'pipeline-column-header' });
+    header.appendChild(_el('span', {
+      className: `app-status-chip status-${status}`,
+      textContent: _PIPELINE_STATUS_LABELS[status] || status,
+    }));
+    header.appendChild(_el('span', { className: 'pipeline-column-count', textContent: String(rows.length) }));
+    col.appendChild(header);
+    if (rows.length === 0) {
+      col.appendChild(_el('div', { className: 'pipeline-empty', textContent: '—' }));
+    }
+    rows.forEach(a => col.appendChild(_renderPipelineRow(a)));
+    board.appendChild(col);
+  });
+}
+
+function _renderPipelineRow(a) {
+  const row = _el('div', { className: 'pipeline-row', tabIndex: 0 }, [], { role: 'listitem' });
+  row.appendChild(_el('div', { className: 'pipeline-row-candidate', textContent: a.candidate_name }));
+  row.appendChild(_el('div', { className: 'pipeline-row-title', textContent: a.title }));
+  if (a.company) {
+    row.appendChild(_el('div', { className: 'pipeline-row-company', textContent: a.company }));
+  }
+  row.appendChild(_el('div', { className: 'pipeline-row-date', textContent: _formatRelativeDate(a.updated_at) }));
+
+  const activate = () => {
+    const sel = document.getElementById('userSelect');
+    if (!sel) return;
+    sel.value = a.candidate_username;
+    onUserSelect().then(() => {
+      const tailorBtn = document.getElementById('topTabTailor');
+      if (tailorBtn) switchTopTab('tailor', tailorBtn);
+      // "linking into that candidate+application" (F-17): open the specific
+      // application's detail modal, not just the candidate's list.
+      // _showApplicationDetail fetches independently, so it doesn't need to
+      // wait on the (fire-and-forget) applications-list refresh inside
+      // onUserSelect().
+      _showApplicationDetail(a.id);
+    });
+  };
+  row.addEventListener('click', activate);
+  row.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+  });
+  return row;
 }
 
 // Reveal the new-user form (don't toggle): hide the "New user" button so the
@@ -193,6 +378,7 @@ async function createUser() {
   hideNewUserForm();  // hide form, clear inputs, restore the "New user" button
   _armHelpTour();     // KW3: a brand-new user → walk them through the first run
   await loadUsers();
+  loadCandidateRoster();  // the new candidate should appear in the roster too
   document.getElementById('userSelect').value = data.username;
   onUserSelect();
 }
@@ -3061,6 +3247,7 @@ function switchTopTab(name, btn) {
   if (name === 'corpus') loadCorpusIfReady();
   if (name === 'personas') _personaTabActivated();
   if (name === 'memory') _memoryTabActivated();
+  if (name === 'pipeline') refreshPipeline();
   if (name === 'tailor') _fireWizardTourStop();  // KW3: entering the wizard
 }
 
@@ -5731,12 +5918,54 @@ function _renderPersonaCard(p, owned) {
     rename.onclick = () => _renamePersona(p.id, p.name);
     actions.appendChild(rename);
 
+    // Wave 2 recruiter tier (UX review F-16) — the smallest honest fix for
+    // "house templates are per-candidate": a one-click copy into another
+    // candidate's own templates instead of re-uploading the .docx by hand.
+    const copyBtn = _el('button', { className: 'corpus-action-btn', textContent: 'COPY TO CANDIDATE' });
+    copyBtn.onclick = () => _copyPersonaToCandidate(p.id, p.name);
+    actions.appendChild(copyBtn);
+
     const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'DELETE' });
     del.onclick = () => _deletePersona(p.id, p.name);
     actions.appendChild(del);
   }
   card.appendChild(actions);
   return card;
+}
+
+async function _copyPersonaToCandidate(id, name) {
+  let users;
+  try {
+    const res = await fetch('/api/users');
+    users = (await res.json()).filter(u => u !== currentUser);
+  } catch {
+    _toast('Could not load the candidate list.', true);
+    return;
+  }
+  if (users.length === 0) {
+    _toast('No other candidates to copy to yet.', true);
+    return;
+  }
+  const result = await openFormModal({
+    title: 'Copy to candidate',
+    subtitle: `Copy "${name}" into another candidate's own templates. The original is untouched.`,
+    submitLabel: 'Copy',
+    fields: [{
+      name: 'username',
+      label: 'Candidate',
+      type: 'select',
+      options: users.map(u => ({ value: u, label: u })),
+    }],
+  });
+  if (!result) return;
+  try {
+    const copied = await _postJson(`/api/personas/${id}/copy`, { username: result.username });
+    _toast(`Copied to ${result.username}`);
+    if (currentUser === result.username) await _loadOwnedPersonas();
+    return copied;
+  } catch (e) {
+    _toast('Copy failed: ' + e.message, true);
+  }
 }
 
 async function _renamePersona(id, currentName) {

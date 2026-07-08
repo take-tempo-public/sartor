@@ -12,6 +12,20 @@ opt-in profile scrape:
     PUT    /api/users/<u>/config                   update_config
     POST   /api/users/<u>/profile/fetch            fetch_profile
 
+Also owns the aggregate roster read (Wave 2 recruiter tier — UX review F-08/F-17,
+2026-07-07):
+
+    GET    /api/candidates/roster                  candidate_roster
+
+`candidate_roster` is ONE query-bounded response (candidates + their active
+applications) that the frontend uses BOTH for the searchable candidate-roster
+picker (F-08 — replaces the flat username `<select>` as the discoverable front
+door, which still exists underneath and still drives `currentUser`) and the
+cross-candidate pipeline board (F-17 — every candidate's applications grouped
+by status). See its docstring for the two-query design that keeps it constant
+regardless of candidate/application count (mirrors
+`applications.list_applications`'s selectinload + grouped-count discipline).
+
 Reads paths from `current_app.config[...]` at request time (never a module-global
 import) and shares the security / config-io / provisioning helpers from
 `web_infra` — so a test isolates the routes with
@@ -223,3 +237,119 @@ def fetch_profile(username: str) -> ResponseReturnValue:
         url_count,
     )
     return jsonify({"ok": True, "chars": len(scraped), "urls": url_count})
+
+
+@users_bp.route("/api/candidates/roster", methods=["GET"])
+def candidate_roster() -> ResponseReturnValue:
+    """Aggregate roster: every candidate's name, latest application, and per-status counts.
+
+    Wave 2 recruiter tier (UX review F-08 candidate roster + F-17 cross-candidate
+    pipeline, 2026-07-07). ONE response backs both frontend surfaces instead of an
+    N-per-candidate fan-out:
+
+      - the roster picker (F-08) reads `candidates[]` — name, latest
+        title/company, and a status-count summary per candidate;
+      - the pipeline board (F-17) reads `applications[]` — the flat,
+        candidate-tagged list, groupable by status client-side.
+
+    Query-count discipline (mirrors `applications.list_applications`'s
+    selectinload + grouped-count pattern; guarded by
+    `tests/test_users_routes.py::test_roster_avoids_n_plus_1_query_growth`):
+    exactly TWO queries total, regardless of how many candidates or
+    applications exist — one `Candidate` fetch by `username IN (...)`, one
+    `Application` fetch by `candidate_id IN (...)`. Everything else (latest-
+    per-candidate, status tallies) is derived in Python from those two result
+    sets. Config reads (for the display name) are bounded, sequential file I/O
+    over the same username list `list_users` already globs — not a SQL query,
+    so they don't count against the guard.
+
+    Every saved config is a candidate here, even ones with no corpus DB row
+    yet (`has_corpus=False`, zero applications) — a recruiter should see a
+    freshly-created candidate in the roster immediately, not only after their
+    first corpus write.
+    """
+    from blueprints.applications import _VALID_APP_STATUSES
+    from db.models import Application, Candidate
+    from db.session import get_session, init_db
+
+    configs_dir = current_app.config["CONFIGS_DIR"]
+    usernames = sorted(p.stem for p in configs_dir.glob("*.config"))
+    if not usernames:
+        return jsonify({"candidates": [], "applications": []})
+
+    init_db()
+    session = get_session()
+    try:
+        candidate_rows = session.query(Candidate).filter(Candidate.username.in_(usernames)).all()
+        candidate_by_username = {c.username: c for c in candidate_rows}
+        candidate_ids = [c.id for c in candidate_rows]
+
+        app_rows: list[Application] = []
+        if candidate_ids:
+            app_rows = (
+                session.query(Application)
+                .filter(
+                    Application.candidate_id.in_(candidate_ids),
+                    Application.is_active == 1,
+                )
+                .order_by(Application.updated_at.desc())
+                .all()
+            )
+    finally:
+        session.close()
+
+    # app_rows is globally sorted newest-first, so appending in encounter
+    # order preserves per-candidate newest-first order too (stable sort) —
+    # apps_by_candidate[cid][0] is that candidate's latest application.
+    apps_by_candidate: dict[int, list[Application]] = {}
+    for a in app_rows:
+        apps_by_candidate.setdefault(a.candidate_id, []).append(a)
+
+    candidates_out = []
+    applications_out = []
+    for username in usernames:
+        config = _load_config(username, configs_dir=configs_dir)
+        display_name = (config.get("name") or "").strip() or username
+        candidate = candidate_by_username.get(username)
+        cand_apps = apps_by_candidate.get(candidate.id, []) if candidate else []
+
+        status_counts = dict.fromkeys(sorted(_VALID_APP_STATUSES), 0)
+        for a in cand_apps:
+            status_counts[a.status] = status_counts.get(a.status, 0) + 1
+
+        latest = cand_apps[0] if cand_apps else None
+        candidates_out.append(
+            {
+                "username": username,
+                "name": display_name,
+                "has_corpus": candidate is not None,
+                "total_applications": len(cand_apps),
+                "status_counts": status_counts,
+                "latest_application": (
+                    {
+                        "id": latest.id,
+                        "title": latest.title,
+                        "company": latest.company,
+                        "status": latest.status,
+                        "updated_at": latest.updated_at,
+                    }
+                    if latest is not None
+                    else None
+                ),
+            }
+        )
+        for a in cand_apps:
+            applications_out.append(
+                {
+                    "id": a.id,
+                    "title": a.title,
+                    "company": a.company,
+                    "status": a.status,
+                    "updated_at": a.updated_at,
+                    "jd_url": a.jd_url,
+                    "candidate_username": username,
+                    "candidate_name": display_name,
+                }
+            )
+
+    return jsonify({"candidates": candidates_out, "applications": applications_out})

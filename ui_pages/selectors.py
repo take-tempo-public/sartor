@@ -29,6 +29,18 @@ class UserPicker:
     # secondary) username field, auto-derived as a slug from the full name.
     NEW_USERNAME_HINT = "#newUsernameHint"
 
+    # Wave 2 recruiter tier (UX review F-08) — the searchable candidate roster
+    # layered above SELECT. It sets SELECT's value; it never replaces it.
+    ROSTER = "#candidateRoster"
+    ROSTER_SEARCH = "#candidateRosterSearch"
+    ROSTER_LIST = "#candidateRosterList"
+    ROSTER_CARD = ".candidate-roster-card"
+
+    @staticmethod
+    def roster_card(username: str) -> str:
+        """Return the roster-card selector for a given username."""
+        return f"#roster-card-{username}"
+
 
 class Forms:
     """Cross-surface form conventions (Sprint 6.3 #21).
@@ -98,12 +110,14 @@ class LiveRegion:
 
 
 class TopTabs:
-    """Selectors for the top-bar section tabs (Corpus/Tailor/Personas/Memory)."""
+    """Selectors for the top-bar section tabs (Corpus/Tailor/Personas/Memory/Pipeline)."""
 
     CORPUS = "#topTabCorpus"
     TAILOR = "#topTabTailor"
     PERSONAS = "#topTabPersonas"
     MEMORY = "#topTabMemory"
+    # Wave 2 recruiter tier (UX review F-17) — cross-candidate pipeline board.
+    PIPELINE = "#topTabPipeline"
 
 
 class Corpus:
@@ -223,6 +237,26 @@ class Personas:
     """Selectors for the Personas tab."""
 
     PANEL = "#panelPersonas"
+    OWNED_GRID = "#personaOwnedGrid"
+    # Wave 2 recruiter tier (UX review F-16) — the per-owned-card copy action
+    # + its openFormModal candidate picker (shared #formModal, see Compose).
+    COPY_BUTTON_NAME = "COPY TO CANDIDATE"
+    COPY_TARGET_SELECT = "#formModal_username"
+
+    @staticmethod
+    def card(persona_id: int) -> str:
+        """Return the card selector for a persona id."""
+        return f"#persona-card-{persona_id}"
+
+
+class Pipeline:
+    """Selectors for the cross-candidate Pipeline tab (Wave 2 recruiter tier, F-17)."""
+
+    PANEL = "#panelPipeline"
+    BOARD = "#pipelineBoard"
+    COLUMN = ".pipeline-column"
+    ROW = ".pipeline-row"
+    COUNT = "#pipelineCount"
 
 
 class Memory:

@@ -13,6 +13,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feat: recruiter tier — candidate roster, cross-candidate pipeline, house templates (`feat/ux-w2-recruiter`, 2026-07-07)
+
+UX-review Wave 2 (`docs/dev/reviews/2026-07-ux-review/50-oss-polish-plan.md`) —
+F-08 / F-17 / F-16. The multi-candidate data model already supported all of
+this; this branch is presentation only, layered on the existing per-user
+model without breaking any existing route contract.
+
+- **F-08 — candidate roster.** The flat username `<select>` (`#userSelect`)
+  is still the mechanism every flow keys off of, but it now has a searchable
+  roster surface above it (`#candidateRoster`): each candidate's display
+  name, latest target role/company, and a per-status application-count
+  summary. Clicking a card just sets the `<select>` and fires the same
+  `onUserSelect()` every other selection path uses — `currentUser` semantics
+  are unchanged. Hidden for single-candidate installs (shows once 2+
+  candidates exist) so the job-seeker experience is undisturbed.
+- **F-17 — cross-candidate pipeline board.** A new read-only **Pipeline**
+  top-level tab: every candidate's applications grouped into the five
+  canonical lifecycle-status columns (draft / submitted / interview /
+  rejected / withdrawn). Clicking a row switches the selected candidate and
+  hands off to the Tailor tab on that application.
+- **F-16 — house templates.** Personas stay per-candidate (no account-level
+  scope, no schema change) — the smallest honest fix is a one-click
+  **COPY TO CANDIDATE** action on an owned persona card
+  (`POST /api/personas/<id>/copy`) that copies the `.docx` + regenerates its
+  HTML/CSS preview companion into the target candidate's own template list,
+  instead of re-uploading by hand for every candidate.
+- **New aggregate endpoint** — `GET /api/candidates/roster`
+  (`blueprints/users.py:candidate_roster`) backs both F-08 and F-17 in ONE
+  response: exactly two DB queries regardless of candidate/application count
+  (one `Candidate` `IN`-query, one `Application` `IN`-query), guarded by a
+  constant-query-count regression test
+  (`tests/test_users_routes.py::TestCandidateRoster::test_avoids_n_plus_1_query_growth`),
+  mirroring the `list_applications` selectinload + grouped-count discipline.
+- `copy_persona_to_candidate` carries the full `_safe_username` +
+  `secure_filename` + `_within` guard sequence (containment + traversal
+  tests in `tests/test_persona_routes.py::TestCopyPersonaToCandidate`); the
+  committed route-containment gate (`tests/test_route_containment_gate.py`)
+  stays green.
+
 ### Feat: one home per section — corpus skills/education/certifications editors + honest Settings fields (`feat/ux-w1-skills-education`, 2026-07-07)
 
 UX-review Wave 1, F-03 + F-04 (`docs/dev/reviews/2026-07-ux-review/40-friction-register.md`).

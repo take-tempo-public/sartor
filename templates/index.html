@@ -84,6 +84,12 @@
     <button class="top-tab-btn" id="topTabMemory"
             role="tab" aria-controls="tab-memory" aria-selected="false"
             onclick="switchTopTab('memory', this)">Candidate memory</button>
+    <!-- Wave 2 recruiter tier (UX review F-17): cross-candidate pipeline
+         board — read-only v1, reuses the same /api/candidates/roster
+         aggregate the roster picker uses. -->
+    <button class="top-tab-btn" id="topTabPipeline"
+            role="tab" aria-controls="tab-pipeline" aria-selected="false"
+            onclick="switchTopTab('pipeline', this)">Pipeline</button>
   </nav>
 
   <div id="tab-tailor" class="top-tab-panel" role="tabpanel" aria-labelledby="topTabTailor">
@@ -96,6 +102,23 @@
     <section class="cb-panel not-collapsible" id="panelUser">
       <div class="panel-header cb-bg-blue">User selection</div>
       <div class="panel-body">
+        <!-- Wave 2 recruiter tier (UX review F-08): a searchable candidate
+             roster as the discoverable front door — sets the <select> below
+             (currentUser semantics are unchanged; every existing flow still
+             keys off #userSelect). Hidden by default; shown once the roster
+             has 2+ candidates (see loadCandidateRoster in app.js) so a
+             single-candidate job-seeker install doesn't see empty chrome. -->
+        <div class="candidate-roster hidden" id="candidateRoster">
+          <div class="form-row">
+            <label for="candidateRosterSearch" class="sr-only">Search candidates</label>
+            <input type="text" id="candidateRosterSearch"
+                   placeholder="Search candidates by name…"
+                   aria-label="Search candidates" oninput="_filterCandidateRoster()">
+          </div>
+          <div id="candidateRosterList" class="candidate-roster-list" role="list">
+            <div class="corpus-empty-experience">Loading candidates…</div>
+          </div>
+        </div>
         <div class="form-row">
           <label for="userSelect" class="sr-only">Select user</label>
           <select id="userSelect" aria-label="Select user">
@@ -864,6 +887,32 @@
 
           <div id="memoryList" class="memory-list">
             <div class="corpus-empty-experience">Select a user to view memory.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Pipeline tab (Wave 2 recruiter tier, UX review F-17) — read-only v1:
+       every candidate's applications, grouped by canonical lifecycle status.
+       Backed by the same /api/candidates/roster aggregate the candidate
+       roster picker uses (F-08); a card click switches #userSelect to that
+       candidate and opens the Tailor tab on their applications list. -->
+  <div id="tab-pipeline" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabPipeline">
+    <div class="cb-main">
+      <section class="cb-panel" id="panelPipeline">
+        <div class="panel-header cb-bg-blue">Pipeline</div>
+        <div class="panel-body">
+          <div class="edit-hint">
+            Every candidate's applications, grouped by status. Read-only —
+            click a card to switch to that candidate and open the application.
+          </div>
+          <div class="form-row" style="margin-bottom:8px">
+            <button class="cb-btn cb-bg-teal" onclick="refreshPipeline()">Refresh</button>
+            <span class="edit-hint" id="pipelineCount" style="margin:0">0 applications</span>
+          </div>
+          <div id="pipelineBoard" class="pipeline-board">
+            <div class="corpus-empty-experience">Loading…</div>
           </div>
         </div>
       </section>
