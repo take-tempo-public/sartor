@@ -37,6 +37,7 @@ from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
+from urllib.parse import quote
 
 import anthropic
 from flask import Blueprint, Response, current_app, jsonify, request, send_file
@@ -1373,6 +1374,15 @@ def run_generate_cover_letter() -> ResponseReturnValue:
 def download_file(filepath: str) -> ResponseReturnValue:
     """Stream a generated output file as an attachment, contained to OUTPUT_DIR."""
     full_path = Path(filepath)
+    # F-10: a RELATIVE filepath is re-anchored under OUTPUT_DIR (what
+    # /api/download-edited now hands back — a relative segment URL-composes
+    # cleanly cross-platform, where an absolute POSIX path would double-slash
+    # the URL and a Windows path carries a drive colon). Absolute paths keep
+    # working for legacy callers. Re-anchoring happens BEFORE the exists +
+    # containment checks below, so the unchanged _within gate judges the final
+    # resolved path — a traversal like ../../etc/passwd still 403s.
+    if not full_path.is_absolute():
+        full_path = Path(current_app.config["OUTPUT_DIR"]) / filepath
     if not full_path.exists():
         return jsonify({"error": "File not found"}), 404
     # Security: ensure the file is within our output directory. _within IS this
@@ -1387,7 +1397,14 @@ def download_file(filepath: str) -> ResponseReturnValue:
 
 @generation_bp.route("/api/download-edited", methods=["POST"])
 def download_edited() -> ResponseReturnValue:
-    """Regenerate a document from edited preview content and stream it for download."""
+    """Regenerate a document from edited preview content; return its download URL.
+
+    F-10: responds with JSON ``{download_url, filename}`` pointing at GET
+    /api/download/<path> (an OUTPUT_DIR-relative path) instead of streaming the
+    bytes — the client follows the URL as a plain navigation so the browser's
+    download manager owns the save (no blob + synthetic-click, no silent Chrome
+    multiple-downloads block).
+    """
     output_dir = current_app.config["OUTPUT_DIR"]
     resumes_dir = current_app.config["RESUMES_DIR"]
     data = request.json
@@ -1442,4 +1459,29 @@ def download_edited() -> ResponseReturnValue:
             template_path=template_path or None,
         )
 
-    return send_file(str(path), as_attachment=True, download_name=Path(path).name)
+    # F-10 (2026-07 UX review) — hand back a URL onto the existing GET
+    # /api/download/<path:filepath> route (send_file(as_attachment=True) there —
+    # the Content-Disposition: attachment header this relies on) instead of
+    # streaming the bytes on THIS response. The client follows up with a plain
+    # top-level navigation (window.location.href) rather than a blob-URL +
+    # synthetic <a>.click() — the blob/synthetic-click pattern is what Chrome's
+    # "multiple automatic downloads" heuristic could silently block on the
+    # second download without a fresh user gesture (the retired in-app caveat).
+    # A navigation to an attachment response isn't a popup and isn't subject to
+    # that heuristic, and this POST's fetch() still surfaces a generation
+    # failure to the caller as JSON (unchanged error behavior) before any
+    # navigation happens. The URL carries the path RELATIVE to OUTPUT_DIR
+    # (download_file re-anchors a relative filepath there before its unchanged
+    # containment gate): an absolute POSIX path would open with "/" and
+    # double-slash the URL (Werkzeug's merge_slashes redirect then mangles it),
+    # a Windows path carries a drive colon — relative composes cleanly on both
+    # and leaks no server filesystem layout. quote() percent-encodes anything a
+    # URL path segment can't carry raw (e.g. spaces); Werkzeug decodes it back
+    # before routing.
+    rel_path = Path(path).resolve().relative_to(Path(str(output_dir)).resolve())
+    return jsonify(
+        {
+            "download_url": f"/api/download/{quote(rel_path.as_posix())}",
+            "filename": Path(path).name,
+        }
+    )

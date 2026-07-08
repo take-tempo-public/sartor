@@ -13,6 +13,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feat: honest Generate surface — deterministic-assembly copy + reliable server-side download (`feat/ux-w1-generate-surface`, 2026-07-07)
+
+UX-review Wave 1 items F-09 + F-10 (`docs/dev/reviews/2026-07-ux-review/40-friction-register.md`).
+
+- **F-09 — the deterministic Generate is finally said out loud.** On the primary
+  corpus-mode path the final Generate is a deterministic assemble of the frozen
+  `approved_composition` (`blueprints/generation.py:_frozen_composition` — LLM cost
+  front-loaded into Analyze/Compose), but Step 5's copy still read as "another AI
+  step". Step 5 now carries a state-aware copy pair (`#generateStepCopyFrozen` /
+  `#generateStepCopyLegacy` in `templates/index.html`, toggled by
+  `_renderGenerateStepCopy()` on every entry to the step): after Compose's
+  Save-and-continue freeze actually lands (`_compositionFrozen` in `static/app.js`,
+  set from the freeze POST's success and reset on fresh analysis / new-tailoring /
+  prior-app resume — mirroring the server gate's own predicate), the step says
+  "Assembled instantly from your approved composition — same input, same résumé,
+  no AI variation"; the legacy/fallback LLM path keeps the original ~30–60s framing
+  and NEVER gets the determinism claim. The `_HELP_REGISTRY.panelGenerate` (i) entry
+  carries the longer both-paths explanation. No prompt or backend behavior change;
+  no `PROMPT_VERSION` bump.
+- **F-10 — the download can no longer silently fail.** `downloadResume()` /
+  `downloadCoverLetter()` used to pull the bytes into a blob and click a synthetic
+  `<a>` — the pattern Chrome's multiple-automatic-downloads heuristic could silently
+  block on a second download without a fresh gesture, which the Step-6 panel
+  *documented in-app* as a known caveat. `POST /api/download-edited` now returns
+  JSON `{download_url, filename}` pointing at the existing containment-gated
+  `GET /api/download/<path>` (`send_file(as_attachment=True)`), and the client
+  follows it as a plain navigation the browser's download manager owns. The
+  `download_url` is OUTPUT_DIR-relative (an absolute POSIX path would double-slash
+  the URL; Windows paths carry a drive colon); `download_file` re-anchors a relative
+  path under OUTPUT_DIR *before* its unchanged `_within` containment gate (traversal
+  still 403s — new `TestDownloadFileContainment` cases pin it). Failures surface in
+  the shared error modal (`reportError`) — never a silent no-op — and the retired
+  Chrome caveat copy is REMOVED from `templates/index.html`. The 2026-05-26
+  round-6 diagnostic `console.log`s in the download path retire with the bug they
+  were instrumenting.
+- **Tests.** `tests/ux/regression/test_20260707_generate_surface_download.py` — the
+  deterministic copy shows on the frozen path and is absent on the legacy path (both
+  driven through the stubbed wizard), the download is a server-served attachment
+  (`download.url` is `/api/download/…`, not a `blob:`), and a forced failure opens
+  the error modal. `tests/test_persona_routes.py` — download-edited's new JSON
+  contract + the four `download_file` containment cases (relative serve, relative
+  traversal 403, legacy absolute serve, absolute escape 403).
+
 ### Feat: recruiter tier — candidate roster, cross-candidate pipeline, house templates (`feat/ux-w2-recruiter`, 2026-07-07)
 
 UX-review Wave 2 (`docs/dev/reviews/2026-07-ux-review/50-oss-polish-plan.md`) —

@@ -98,6 +98,17 @@ class DemoMode:
     BANNER = ".demo-mode-banner"
 
 
+class ErrorModal:
+    """The shared error modal (`reportError()` in app.js opens it).
+
+    Every surfaced failure — including a download error (F-10: never a silent
+    no-op) — lands here with a copyable stage/message/detail block.
+    """
+
+    MODAL = "#errorModal"
+    TEXT = "#errorModalText"
+
+
 class LiveRegion:
     """The shell's screen-reader announcer (`_announce()` in app.js).
 
@@ -191,6 +202,12 @@ class Wizard:
     CONTINUE_TO_GENERATE = "text=Continue to Generate →"
     PANEL_GENERATE = "#panelGenerate"
     GENERATE_BUTTON = "#btnGenerate"
+    # F-09 — Step 5's state-aware copy pair (_renderGenerateStepCopy toggles
+    # exactly one visible): FROZEN carries the deterministic-assembly claim
+    # (only after Compose's Save-and-continue froze an approved_composition);
+    # LEGACY keeps the original LLM-generate framing.
+    GENERATE_COPY_LEGACY = "#generateStepCopyLegacy"
+    GENERATE_COPY_FROZEN = "#generateStepCopyFrozen"
     REFINEMENT_INPUT = "#refinementInput"
     OUTPUT_PREVIEW_BLOCK = "#outputPreviewBlock"
     OUTPUT_PREVIEW_FRAME = "#outputPreviewFrame"
