@@ -100,7 +100,7 @@
          the box is a small target and an accidental header-click collapse
          strands first-time users with the dropdown hidden. -->
     <section class="cb-panel not-collapsible" id="panelUser">
-      <div class="panel-header cb-bg-blue">User selection</div>
+      <div class="panel-header cb-bg-blue">User selection<span id="panelUserSummary" class="panel-header-summary"></span></div>
       <div class="panel-body">
         <!-- Wave 2 recruiter tier (UX review F-08): a searchable candidate
              roster as the discoverable front door — sets the <select> below
@@ -171,7 +171,7 @@
 
     <!-- APPLICATIONS (Phase D.3) -->
     <section class="cb-panel hidden" id="panelApplications">
-      <div class="panel-header cb-bg-teal">Prior applications</div>
+      <div class="panel-header cb-bg-teal">Prior applications<span id="applicationsHeaderCount" class="panel-header-summary"></span></div>
       <div class="panel-body">
         <div class="edit-hint">
           Past applications stored in the DB. Click a card to view its
@@ -934,21 +934,48 @@
 
   <!-- Edit-detection modal — opens when REFINE or GET INTERVIEW QUESTIONS is
        clicked while the preview contains user edits not yet baselined. The
-       three-button cluster lets the user use, discard, or back out. -->
+       three-button cluster lets the user use, discard, or back out.
+       F-14 (2026-07-07): copy simplified to plain language that names each
+       choice's effect directly — presentation only, same ids/choices/timing
+       (_gateEditsBeforeAction already fires this at the moment the user acts,
+       i.e. clicking Refine/Get interview questions with unsaved edits, not on
+       a delay); the typed-edits-feed-grounding function is untouched. -->
   <div id="editModal" class="cb-modal hidden" role="dialog" aria-modal="true"
        aria-labelledby="editModalTitle" aria-describedby="editModalBody">
     <div class="cb-modal-backdrop" data-modal-dismiss="cancel"></div>
     <div class="cb-modal-content" role="document">
-      <h2 id="editModalTitle" class="cb-modal-title">You edited the preview</h2>
+      <h2 id="editModalTitle" class="cb-modal-title">Your edits aren't saved yet</h2>
       <p id="editModalBody" class="cb-modal-body">
-        Use your edits as the new baseline for this iteration, or discard them and
-        continue from the original generated text? First-person edits are treated as
-        ground truth — they are citable but never extended without your input.
+        You typed changes into the preview below. <strong>Use edits as baseline</strong> keeps
+        them as your new starting point (citable later, but nothing beyond them is added).
+        <strong>Discard edits</strong> throws them away and goes back to the last generated
+        text. <strong>Cancel</strong> stops here so you can decide later.
       </p>
       <div class="modal-actions">
         <button class="cb-btn cb-bg-teal" id="btnUseEdits" data-modal-dismiss="use">Use edits as baseline</button>
         <button class="cb-btn cb-bg-amber" id="btnDiscardEdits" data-modal-dismiss="discard">Discard edits</button>
         <button class="cb-btn cb-bg-blue" id="btnCancelRefine" data-modal-dismiss="cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- F-07 — generic in-app confirm modal, the replacement for browser-native
+       confirm() across every call site in static/app.js. Same .cb-modal shell
+       + a11y posture as editModal/refinementScopeModal (focus trap, Esc,
+       backdrop dismiss, focus restored to the trigger); title/body/button
+       labels are filled in by cbConfirm() per call. #cbConfirmOk carries
+       .cb-bg-danger for destructive actions (retire/delete) and .cb-bg-amber
+       for high-stakes-but-non-destructive ones (e.g. accept-all) — cbConfirm
+       toggles the class, never invents a new button. -->
+  <div id="cbConfirmModal" class="cb-modal hidden" role="dialog" aria-modal="true"
+       aria-labelledby="cbConfirmTitle" aria-describedby="cbConfirmBody">
+    <div class="cb-modal-backdrop" data-modal-dismiss="cancel"></div>
+    <div class="cb-modal-content" role="document">
+      <h2 id="cbConfirmTitle" class="cb-modal-title">Are you sure?</h2>
+      <div id="cbConfirmBody" class="cb-modal-body"></div>
+      <div class="modal-actions">
+        <button class="cb-btn cb-bg-danger" id="cbConfirmOk" data-modal-dismiss="confirm">Confirm</button>
+        <button class="cb-btn cb-bg-blue" id="cbConfirmCancel" data-modal-dismiss="cancel">Cancel</button>
       </div>
     </div>
   </div>

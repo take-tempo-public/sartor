@@ -391,15 +391,26 @@ async function onUserSelect() {
     // Selection cleared → re-lock the box open so it can't be collapsed shut
     // with no user picked.
     if (userPanel) { userPanel.classList.remove('collapsed'); userPanel.classList.add('not-collapsible'); }
+    const userSummary = document.getElementById('panelUserSummary');
+    if (userSummary) userSummary.textContent = '';
     hideAllPanels();
     _resetIterationState();
     return;
   }
   // A user is selected → the box now holds data, so allow it to be tucked away.
+  // F-23: default it to a compact switcher (collapsed) so it doesn't crowd the
+  // wizard; a returning visitor's own toggle choice (persisted) wins instead.
   if (userPanel) userPanel.classList.remove('not-collapsible');
+  _applyFoldableDefault('panelUser', true);
+  const userSummary = document.getElementById('panelUserSummary');
+  if (userSummary) userSummary.textContent = username;
   currentUser = username;
   await loadConfig();
   show('panelApplications');           // prep the Tailor tab's landing panel
+  // F-23: default the applications list to a collapsed short summary too — it
+  // used to be a full untruncated list sitting above the wizard rail. Persisted
+  // the same way as panelUser.
+  _applyFoldableDefault('panelApplications', true);
   // panelConfig moved to the Settings drawer (Workstream B1.3); no longer
   // a flow panel. loadConfig() still populates the same #cfgX inputs
   // because the drawer hosts them via the same ids.
@@ -1821,6 +1832,84 @@ function _showRefinementScopeModal(reason, triggerEl) {
   });
 }
 
+// F-07 — generic in-app confirm modal, replacing every browser-native
+// confirm() call site (10 sites — retire/delete/merge/accept-all across the
+// corpus, applications, and personas surfaces). Mirrors _showEditModal /
+// _showRefinementScopeModal's a11y posture (Esc closes, focus trap, backdrop
+// dismiss, focus restored to the trigger). Resolves `true` (confirmed) or
+// `false` (canceled/dismissed) — call sites read `if (await cbConfirm(...))`.
+//   message      — body text; '\n\n' splits into paragraphs (native confirm()
+//                  strings used '\n\n' the same way).
+//   title        — modal heading (default 'Are you sure?').
+//   confirmLabel — confirm button text (default 'Confirm').
+//   cancelLabel  — cancel button text (default 'Cancel').
+//   danger       — true (default) styles the confirm button destructively
+//                  (.cb-bg-danger); false is for high-stakes-but-not-actually-
+//                  destructive actions (e.g. accept-all), styled .cb-bg-amber.
+//   triggerEl    — element to restore focus to on close.
+function cbConfirm(message, {
+  title = 'Are you sure?',
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  danger = true,
+  triggerEl = null,
+} = {}) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('cbConfirmModal');
+    if (!modal) { resolve(false); return; }
+    const titleEl = document.getElementById('cbConfirmTitle');
+    const bodyEl = document.getElementById('cbConfirmBody');
+    const okBtn = document.getElementById('cbConfirmOk');
+    const cancelBtn = document.getElementById('cbConfirmCancel');
+    if (titleEl) titleEl.textContent = title;
+    if (bodyEl) {
+      _clearChildren(bodyEl);
+      String(message || '').split('\n\n').filter(Boolean).forEach((para) => {
+        bodyEl.appendChild(_el('p', { textContent: para, style: 'margin:0 0 10px' }));
+      });
+    }
+    if (okBtn) {
+      okBtn.textContent = confirmLabel;
+      okBtn.classList.toggle('cb-bg-danger', danger);
+      okBtn.classList.toggle('cb-bg-amber', !danger);
+    }
+    if (cancelBtn) cancelBtn.textContent = cancelLabel;
+
+    const buttons = Array.from(modal.querySelectorAll('[data-modal-dismiss]'));
+    const focusable = modal.querySelectorAll('button[data-modal-dismiss]');
+
+    const cleanup = (confirmed) => {
+      modal.classList.add('hidden');
+      modal.removeEventListener('keydown', onKey);
+      buttons.forEach(b => b.removeEventListener('click', onClick));
+      const backdrop = modal.querySelector('.cb-modal-backdrop');
+      if (backdrop) backdrop.removeEventListener('click', onClick);
+      if (triggerEl && typeof triggerEl.focus === 'function') triggerEl.focus();
+      resolve(!!confirmed);
+    };
+    const onClick = (e) => {
+      cleanup(e.currentTarget?.getAttribute?.('data-modal-dismiss') === 'confirm');
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); cleanup(false); return; }
+      if (e.key !== 'Tab' || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+
+    buttons.forEach(b => b.addEventListener('click', onClick));
+    const backdrop = modal.querySelector('.cb-modal-backdrop');
+    if (backdrop) backdrop.addEventListener('click', onClick);
+    modal.addEventListener('keydown', onKey);
+    modal.classList.remove('hidden');
+    // Default focus on Cancel — mirrors the native confirm()'s default-safe
+    // posture (Enter alone never confirms a destructive action).
+    if (cancelBtn) cancelBtn.focus();
+  });
+}
+
 // Diagnostics modal — a thin launcher for the /_dashboard blueprint.
 // The dashboard is served by this same Flask process, so there is no
 // server to "start"; the modal just gives a labelled, keyboard-safe
@@ -3178,6 +3267,14 @@ function esc(str) {
 }
 
 // ---- Panel collapse / expand ----
+// F-23 — the two "ambient" panels that used to crowd the wizard off-screen
+// (User selection, Prior applications) persist their collapsed/expanded state
+// across reloads, so a returning visitor's own choice sticks instead of
+// re-inheriting the collapsed-by-default posture every time. Any manual
+// toggle (via _togglePanel) on one of these ids is remembered here; every
+// other .cb-panel (wizard step panels, Corpus, etc.) is unaffected.
+const _FOLDABLE_PANEL_IDS = ['panelUser', 'panelApplications'];
+
 function _togglePanel(panelId) {
   const panel = document.getElementById(panelId);
   if (!panel || panel.classList.contains('hidden')) return;
@@ -3187,6 +3284,24 @@ function _togglePanel(panelId) {
   const isCollapsed = panel.classList.toggle('collapsed');
   const block = document.querySelector(`[data-panel="${panelId}"]`);
   if (block) block.classList.toggle('collapsed', isCollapsed);
+  if (_FOLDABLE_PANEL_IDS.includes(panelId)) {
+    try {
+      localStorage.setItem(`cb_panel_collapsed:${panelId}`, isCollapsed ? '1' : '0');
+    } catch { /* storage unavailable (private mode, quota) — state just won't persist */ }
+  }
+}
+
+// Apply the persisted collapse choice for a foldable panel, or `defaultCollapsed`
+// when nothing is stored yet (first visit). Called once the panel becomes
+// relevant (a user is selected) rather than on every render, so it never
+// fights a click the user just made in the same flow.
+function _applyFoldableDefault(panelId, defaultCollapsed) {
+  const panel = document.getElementById(panelId);
+  if (!panel || panel.classList.contains('not-collapsible')) return;
+  let stored = null;
+  try { stored = localStorage.getItem(`cb_panel_collapsed:${panelId}`); } catch { /* ignore */ }
+  const collapsed = stored === null ? defaultCollapsed : stored === '1';
+  panel.classList.toggle('collapsed', collapsed);
 }
 
 // Panel-header click toggles the parent .cb-panel between expanded
@@ -3374,7 +3489,7 @@ function _renderSummaryVariantRow(v) {
     title: 'Soft-retire this variant. Past applications that pinned it '
       + 'still reference it; future Compose steps will skip it.',
   });
-  delBtn.onclick = () => _deleteSummaryVariant(v.id);
+  delBtn.onclick = () => _deleteSummaryVariant(v.id, delBtn);
   actions.appendChild(delBtn);
   row.appendChild(actions);
   return row;
@@ -3437,10 +3552,13 @@ async function _editSummaryVariantLabel(id, currentLabel) {
   }
 }
 
-async function _deleteSummaryVariant(id) {
-  if (!confirm('Retire this summary variant?\n\nPast applications that '
-               + 'pinned it still reference it; future Compose steps '
-               + 'will skip it. You can\'t undo from here.')) return;
+async function _deleteSummaryVariant(id, triggerEl) {
+  const ok = await cbConfirm(
+    'Past applications that pinned it still reference it; future Compose '
+      + "steps will skip it. You can't undo from here.",
+    { title: 'Retire this summary variant?', confirmLabel: 'Retire', triggerEl },
+  );
+  if (!ok) return;
   try {
     const res = await fetch(`/api/summaries/${id}`, { method: 'DELETE' });
     if (res.ok) refreshSummaryVariants();
@@ -3592,7 +3710,7 @@ function _renderSkillEditorRow(s, isPending) {
       className: 'corpus-action-btn delete', textContent: 'Retire',
       title: 'Soft-retire this skill. Future Compose steps will skip it.',
     });
-    del.onclick = () => _deleteSkillEditor(s.id);
+    del.onclick = () => _deleteSkillEditor(s.id, del);
     actions.appendChild(del);
   }
   row.appendChild(actions);
@@ -3630,9 +3748,13 @@ async function openSkillAdd() {
   } catch { _toast('Network error.', true); }
 }
 
-async function _deleteSkillEditor(id) {
-  if (!confirm('Retire this skill?\n\nFuture Compose steps will skip it. '
-               + 'Past applications that pinned it still reference it.')) return;
+async function _deleteSkillEditor(id, triggerEl) {
+  const ok = await cbConfirm(
+    'Future Compose steps will skip it. Past applications that pinned it '
+      + 'still reference it.',
+    { title: 'Retire this skill?', confirmLabel: 'Retire', triggerEl },
+  );
+  if (!ok) return;
   try {
     const res = await fetch(`/api/skills/${id}`, { method: 'DELETE' });
     if (res.ok) refreshSkillsEditor();
@@ -4108,7 +4230,7 @@ function _renderExperienceSummaryRow(expId, v) {
     title: 'Soft-retire this intro. Past applications that used it still '
       + 'reference it; future Compose steps will skip it.',
   });
-  delBtn.onclick = () => _deleteExperienceSummary(expId, v.id);
+  delBtn.onclick = () => _deleteExperienceSummary(expId, v.id, delBtn);
   actions.appendChild(delBtn);
   row.appendChild(actions);
   return row;
@@ -4163,10 +4285,13 @@ async function _editExperienceSummaryLabel(expId, id, currentLabel) {
   }
 }
 
-async function _deleteExperienceSummary(expId, id) {
-  if (!confirm('Retire this role intro?\n\nPast applications that used it '
-               + 'still reference it; future Compose steps will skip it. '
-               + 'You can\'t undo from here.')) return;
+async function _deleteExperienceSummary(expId, id, triggerEl) {
+  const ok = await cbConfirm(
+    'Past applications that used it still reference it; future Compose steps '
+      + "will skip it. You can't undo from here.",
+    { title: 'Retire this role intro?', confirmLabel: 'Retire', triggerEl },
+  );
+  if (!ok) return;
   try {
     const res = await fetch(`/api/experience-summaries/${id}`, { method: 'DELETE' });
     if (res.ok) refreshExperienceSummaries(expId);
@@ -4315,7 +4440,7 @@ function _renderCorpusDetail(body, exp) {
     btnRow.appendChild(acceptAll);
   }
   const retire = _el('button', { className: 'cb-btn cb-bg-orange', textContent: 'SOFT-RETIRE EXPERIENCE' });
-  retire.onclick = () => deleteExperience(expId);
+  retire.onclick = () => deleteExperience(expId, retire);
   btnRow.appendChild(retire);
   body.appendChild(btnRow);
   body.appendChild(_renderTitleSection(expId, exp.titles || []));
@@ -4435,7 +4560,11 @@ function _renderTitleRow(expId, title) {
   }
   const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'RETIRE' });
   del.onclick = async () => {
-    if (!confirm('Retire this title? It is hidden unless you tick "Show retired", and won’t be used in new résumés.')) return;
+    const ok = await cbConfirm(
+      'It is hidden unless you tick "Show retired", and won’t be used in new résumés.',
+      { title: 'Retire this title?', confirmLabel: 'Retire', triggerEl: del },
+    );
+    if (!ok) return;
     try {
       await _deleteJson(`/api/experience-titles/${title.id}`);
       await _reloadCorpusCard(expId);
@@ -4529,7 +4658,11 @@ function _renderBulletRow(expId, bullet) {
   }
   const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'RETIRE' });
   del.onclick = async () => {
-    if (!confirm('Retire this bullet? It is hidden unless you tick "Show retired", and won’t appear in new résumés.')) return;
+    const ok = await cbConfirm(
+      'It is hidden unless you tick "Show retired", and won’t appear in new résumés.',
+      { title: 'Retire this bullet?', confirmLabel: 'Retire', triggerEl: del },
+    );
+    if (!ok) return;
     try {
       await _deleteJson(`/api/bullets/${bullet.id}`);
       await _reloadCorpusCard(expId);
@@ -4672,7 +4805,7 @@ function _renderMergeSuggestion(s) {
     textContent: `Match: ${signals} · ${n} shared bullet${n === 1 ? '' : 's'}` }));
   const actions = _el('div', { className: 'merge-suggestion-actions' });
   const merge = _el('button', { className: 'cb-btn cb-bg-teal', textContent: 'Merge into one' });
-  merge.onclick = () => _doMerge(s.exp_in_corpus.id, s.exp_other.id);
+  merge.onclick = () => _doMerge(s.exp_in_corpus.id, s.exp_other.id, merge);
   const keep = _el('button', { className: 'cb-btn', textContent: 'Keep separate' });
   keep.onclick = () => _dismissMerge(s.exp_a_id, s.exp_b_id);
   actions.appendChild(merge);
@@ -4682,10 +4815,13 @@ function _renderMergeSuggestion(s) {
 }
 
 // Merge the source role into the in-corpus target (which keeps its dates).
-async function _doMerge(targetId, sourceId) {
-  if (!confirm(
-    'Merge these into one role? The extra title becomes an alternate, the ' +
-    'bullets combine (duplicates dropped), and the corpus dates are kept.')) return;
+async function _doMerge(targetId, sourceId, triggerEl) {
+  const ok = await cbConfirm(
+    'The extra title becomes an alternate, the bullets combine (duplicates '
+      + 'dropped), and the corpus dates are kept.',
+    { title: 'Merge these into one role?', confirmLabel: 'Merge', danger: false, triggerEl },
+  );
+  if (!ok) return;
   try {
     await _postJson(`/api/experiences/${targetId}/merge`, { source_id: sourceId });
     _toast('Roles merged');
@@ -4762,8 +4898,13 @@ async function refreshCorpusSummaryFor(expId) {
     `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
 }
 
-async function deleteExperience(expId) {
-  if (!confirm('Retire this entire experience? All its bullets become inactive and it drops out of new résumés. You can restore them via "Show retired".')) return;
+async function deleteExperience(expId, triggerEl) {
+  const ok = await cbConfirm(
+    'All its bullets become inactive and it drops out of new résumés. You '
+      + 'can restore them via "Show retired".',
+    { title: 'Retire this entire experience?', confirmLabel: 'Retire', triggerEl },
+  );
+  if (!ok) return;
   try {
     const r = await _deleteJson(`/api/experiences/${expId}`);
     _toast(`Retired ${r.retired_bullets} bullet(s)`);
@@ -5149,11 +5290,18 @@ function scrollToFirstPending() {
 // destructive.
 async function acceptAllPendingCorpus() {
   if (!currentUser) return;
-  if (!confirm('Accept every pending item across all roles?\n\n'
-      + 'Accepted items become source-of-truth — the system analyzes them for '
-      + 'fit, writes new bullets from them, and builds your résumés on them. '
-      + 'One bad seed poisons everything downstream. Only accept what you\'ve '
-      + 'reviewed and trust.')) return;
+  const ok = await cbConfirm(
+    "Accepted items become source-of-truth — the system analyzes them for fit, "
+      + 'writes new bullets from them, and builds your résumés on them. One bad '
+      + "seed poisons everything downstream. Only accept what you've reviewed and trust.",
+    {
+      title: 'Accept every pending item across all roles?',
+      confirmLabel: 'Accept all',
+      danger: false,
+      triggerEl: document.getElementById('btnAcceptAllPending'),
+    },
+  );
+  if (!ok) return;
   try {
     const r = await _postJson(
       `/api/users/${encodeURIComponent(currentUser)}/accept-all-pending`, {});
@@ -5279,13 +5427,21 @@ function toggleApplicationsRetired(checked) {
   refreshApplications();
 }
 
+// F-23 — mirror the count into the panel-header summary too, so the
+// applications panel still reads as a short summary while it's collapsed.
+function _setApplicationsCount(text) {
+  const countEl = document.getElementById('applicationsCount');
+  const headerEl = document.getElementById('applicationsHeaderCount');
+  if (countEl) countEl.textContent = text;
+  if (headerEl) headerEl.textContent = text;
+}
+
 async function refreshApplications() {
   const list = document.getElementById('applicationsList');
-  const countEl = document.getElementById('applicationsCount');
   if (!list) return;
   if (!currentUser) {
     _setLoadingPlaceholder(list, 'Select a user to view their applications.');
-    if (countEl) countEl.textContent = '0 applications';
+    _setApplicationsCount('0 applications');
     return;
   }
   // B.8 Part 1: lifecycle filter — server-side via the route's ?status= param
@@ -5305,7 +5461,7 @@ async function refreshApplications() {
   }
   if (res.status === 404) {
     _setLoadingPlaceholder(list, `No applications yet for ${currentUser}. Analyze a JD below to start one.`);
-    if (countEl) countEl.textContent = '0 applications';
+    _setApplicationsCount('0 applications');
     return;
   }
   if (!res.ok) {
@@ -5314,7 +5470,7 @@ async function refreshApplications() {
   }
   const apps = await res.json().catch(() => []);
   if (_needsOnboarding(res, apps)) {
-    if (countEl) countEl.textContent = '0 applications';
+    _setApplicationsCount('0 applications');
     _renderCorpusEmptyCTA(list, 'No applications yet. Add your résumé in the '
       + 'Career corpus tab, then analyze a job description.');
     return;
@@ -5322,7 +5478,7 @@ async function refreshApplications() {
   if (apps.length === 0 && statusFilter) {
     // Distinguish "filtered everything out" from "no applications yet" so
     // the empty-state copy doesn't mislead.
-    if (countEl) countEl.textContent = '0 applications';
+    _setApplicationsCount('0 applications');
     _setLoadingPlaceholder(list, 'No applications with this status.');
     return;
   }
@@ -5331,9 +5487,8 @@ async function refreshApplications() {
 
 function _renderApplicationsList(apps) {
   const list = document.getElementById('applicationsList');
-  const countEl = document.getElementById('applicationsCount');
   _clearChildren(list);
-  if (countEl) countEl.textContent = `${apps.length} application${apps.length === 1 ? '' : 's'}`;
+  _setApplicationsCount(`${apps.length} application${apps.length === 1 ? '' : 's'}`);
   if (apps.length === 0) {
     _setLoadingPlaceholder(list, 'No applications yet. Analyze a JD below to start one.');
     return;
@@ -5420,8 +5575,11 @@ function _renderApplicationCard(app) {
     const retire = _el('button', { className: 'app-admin-btn retire', textContent: 'Retire' });
     retire.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!confirm('Retire this application? It is hidden unless you tick "Show retired". '
-        + 'Its iteration history is kept.')) return;
+      const ok = await cbConfirm(
+        'It is hidden unless you tick "Show retired". Its iteration history is kept.',
+        { title: 'Retire this application?', confirmLabel: 'Retire', triggerEl: retire },
+      );
+      if (!ok) return;
       if (await _setApplicationRetired(app.id, true)) refreshApplications();
     });
     adminRow.appendChild(retire);
@@ -5902,7 +6060,7 @@ function _renderPersonaCard(p, owned) {
     actions.appendChild(copyBtn);
 
     const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'DELETE' });
-    del.onclick = () => _deletePersona(p.id, p.name);
+    del.onclick = () => _deletePersona(p.id, p.name, del);
     actions.appendChild(del);
   }
   card.appendChild(actions);
@@ -5972,8 +6130,12 @@ async function _renamePersona(id, currentName) {
   }
 }
 
-async function _deletePersona(id, name) {
-  if (!confirm(`Delete ${name}? The .docx file is removed from disk.`)) return;
+async function _deletePersona(id, name, triggerEl) {
+  const ok = await cbConfirm(
+    'The .docx file is removed from disk.',
+    { title: `Delete ${name}?`, confirmLabel: 'Delete', triggerEl },
+  );
+  if (!ok) return;
   try {
     await _deleteJson(`/api/personas/${id}`);
     _toast('Deleted');
@@ -7405,18 +7567,22 @@ function _renderComposeCard(exp) {
   // Phase 3 — "Suggested for this JD" gap-fill lane: grounded bullet proposals
   // for JD requirements this résumé doesn't yet cover. Accept → a pending Bullet
   // joins this application's composition; Retire → dropped. Mirrors the Skills
-  // pending lane.
+  // pending lane. F-13 (2026-07-07): presentation-only "optional" framing — a
+  // subdued badge on the title + the hint leads with "Optional — add only what
+  // fits" — so the lane reads as suggestions, not a checklist. Per-item Accept/
+  // Retire affordances and the data flow underneath are unchanged.
   const gapFill = exp.gap_fill_proposals || [];
   if (gapFill.length) {
     const lane = _el('div', { className: 'gap-fill-lane' });
-    lane.appendChild(_el('div', {
-      className: 'compose-exp-section-title', textContent: 'Suggested for this JD',
-    }));
+    lane.appendChild(_el('div', { className: 'compose-exp-section-title' }, [
+      document.createTextNode('Suggested for this JD'),
+      _el('span', { className: 'gap-fill-optional-badge', textContent: 'Optional' }),
+    ]));
     lane.appendChild(_el('div', {
       className: 'edit-hint',
-      textContent: 'Grounded in your experience — accept to add to this résumé, or '
-        + 'retire to drop. Accepted bullets are yours to keep or approve into your '
-        + 'corpus later.',
+      textContent: 'Optional — add only what fits. Grounded in your experience; '
+        + 'accept to add to this résumé, or retire to drop. Accepted bullets are '
+        + 'yours to keep or approve into your corpus later.',
     }));
     gapFill.forEach(p => lane.appendChild(_renderGapFillRow(exp.id, p)));
     card.appendChild(lane);
