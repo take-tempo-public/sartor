@@ -2796,3 +2796,54 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    operation — swap-by-exclude-plus-add — which is both simpler to implement correctly and
    trivially proven "touches only the targeted item" by inspecting the override diff,
    without needing any change to `corpus_to_json_resume.py`'s resolver.
+
+## regenerate-gap-fill — 2026-07-08 — `feat/regenerate-gap-fill` — `2026-07-06.3` (unchanged)
+
+1. **What changed?** LATER-branch remainder item (d): a durable
+   `composition_overrides.retired_gap_fill_keys` set (written directly by
+   `/gap-fill-decide` retire, re-sent on every `/composition` save like every
+   other override key) + an always-visible "Regenerate suggestions" control that
+   re-calls the existing `POST /draft-gap-fill` route. The route now filters its
+   normalized proposals against that durable retired-key set AND any key already
+   realized as an accepted `Bullet.source`. `DRAFT_GAP_FILL_SYSTEM_PROMPT` and
+   `draft_gap_fill_bullets()` in `analyzer.py` are UNCHANGED — the exclusion is a
+   deterministic ROUTE-side filter (exact key match on the existing
+   `sha256(eid|text)[:12]` key), not a prompt change, so `PROMPT_VERSION` stays
+   at `2026-07-06.3`.
+2. **Why?** §5 Phase 3 of `generation-experience-rearchitecture.md` flagged this
+   as a known gap: retire only dropped the TRANSIENT `llm_gap_fill_proposals`
+   entry, so nothing stopped a later re-draft from resurfacing a proposal the
+   user had just rejected — and there was no user-facing way to ask for a fresh
+   draft at all (only the once-only silent auto-fire).
+3. **Result? (real-LLM validation, NOT a paid eval run — corpus-mode gap-fill
+   isn't in `--suite synthetic`):** a sandboxed app (`Config(base_dir=<tmp>)`,
+   throwaway sqlite DB, REAL Sonnet client) seeded with one experience carrying
+   an on-call fact buried inside an unrelated Go/latency bullet, against a JD
+   requiring "production on-call ownership" — a genuine gap (evidence exists,
+   not yet surfaced as its own bullet). Cycle: draft → 1 grounded proposal →
+   retire it → regenerate (a second real `draft_gap_fill_bullets` call) →
+   **the retired proposal's exact text/key never resurfaced** (the model
+   proposed a differently-worded reframe of the same evidence on the second
+   call, which is expected — a different key, filtered independently on its own
+   merits, not a resurfacing of the retired one). 3 earlier sandbox iterations
+   (corpus already fully covering the JD requirement, so the grounded drafter
+   correctly returned zero proposals — the evidence-or-nothing rule holding, not
+   a bug) cost the exploration before landing a genuine-gap scenario. **Total
+   real spend across all 5 `draft_gap_fill` calls this session: $0.020479**
+   (`logs/llm_calls.jsonl`, `claude-sonnet-5`, prompt-cache hits after the
+   first call) — the two calls that actually exercised retire→regenerate cost
+   $0.004932 each. Legacy/synthetic path is untouched by construction (no
+   prompt edit) — proven by the existing `TestGapFillPromptInvariance` unit
+   test, extended with a `retired_gap_fill_keys` case rather than re-run.
+4. **Learned?** The grounded evidence-or-nothing drafter is appropriately
+   conservative: when the corpus bullet already states a requirement almost
+   verbatim, it correctly returns zero proposals (nothing to draft) — a
+   REAL gap needs evidence that exists but is buried inside a bullet about
+   something else, not yet surfaced as its own item. That took several
+   iterations to construct deliberately for this validation; it also means the
+   route-level "exact key match" exclusion is the right enforcement mechanism
+   (not a prompt instruction to the LLM to avoid retired content) — the model's
+   own rewording between calls means it won't reliably reproduce byte-identical
+   text on request, so a semantic/prompt-side "don't repeat this" instruction
+   would be unverifiable, while the deterministic hash-key filter gives an
+   exact, testable guarantee regardless of model phrasing drift.

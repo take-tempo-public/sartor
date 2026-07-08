@@ -446,8 +446,9 @@ Mechanics reference (durable): the memory `reference-frozen-composition-mechanic
   `tests/test_corpus_mode_prompt.py::TestGapFillPromptInvariance` (byte-identity guard) +
   `tests/ux/regression/test_20260706_compose_gap_fill.py` + `fake_draft_gap_fill_bullets`.
 
-**Deferred to LATER branches (documented extension points):** a "Regenerate gap-fill" button
-(needs a `retired_gap_fill_keys` set); loop-back-to-Compose banner for newly-generated content;
+**Deferred to LATER branches (documented extension points):** ~~a "Regenerate gap-fill" button
+(needs a `retired_gap_fill_keys` set)~~ — **DONE 2026-07-08 on `feat/regenerate-gap-fill`**, see
+§6 (d) below; loop-back-to-Compose banner for newly-generated content;
 the corpus-enrichment "save to corpus" offer beyond the free `is_pending_review=1` pending row
 (the existing pending-review APPROVE already covers D6(c)).
 
@@ -499,9 +500,10 @@ clarifications→corpus persistence (D5). This branch's refine is the minimal ro
 > and the legacy byte-identity unit tests (`tests/test_corpus_mode_prompt.py`).
 > The remaining work from this spec is the **LATER-branch remainder** — (a)
 > surgical refinement + loop-back banner is **DONE 2026-07-08** on
-> `fix/surgical-refinement-and-loopback` (as-built in §8); (b) WYSIWYG-as-source
-> D4, (c) clarifications→corpus D5, and (d) regenerate-gap-fill remain — tracked
-> in the RELEASE_CHECKLIST carry-forward ledger.
+> `fix/surgical-refinement-and-loopback` (as-built in §8); (d) regenerate-gap-fill
+> is **DONE 2026-07-08** on `feat/regenerate-gap-fill` (as-built below) — (b)
+> WYSIWYG-as-source D4 and (c) clarifications→corpus D5 remain — tracked in the
+> RELEASE_CHECKLIST carry-forward ledger.
 
 ### Phase 3 — Compose authors gap-fill bullets (Sonnet + accept/retire) — DONE (as-built in §5)
 > The original plan is retained below as the as-built reference; see §5 for what shipped.
@@ -568,6 +570,54 @@ Model it on the proven "propose grounded new items → accept/retire" pattern
   byte-identical (corpus-mode-only changes; prove with a unit test).
 - `CHANGELOG.md`; RELEASE_CHECKLIST ledger update; memory.
 - Keep THIS doc current (it is the durable home).
+
+### (d) Regenerate gap-fill affordance + durable retirals — DONE 2026-07-08 (`feat/regenerate-gap-fill`)
+> LATER-branch remainder item (d), landed in Train 3 alongside (a)
+> `fix/surgical-refinement-and-loopback` (see `RELEASE_ARC.md` Phase 3b). Scope was
+> deliberately narrow — this item only, not (a)/(b)/(c).
+
+- **`composition_overrides.retired_gap_fill_keys`** (list of the existing stable
+  `sha256(eid|text)[:12]` key) — the durable retiral set §5 Phase 3 flagged as a
+  missing extension point. `/gap-fill-decide` (retire) writes it directly
+  alongside dropping the transient `llm_gap_fill_proposals` entry; it rides
+  `_collectCompositionState()`'s wholesale rebuild on every `/composition` save
+  like every other override key, so a save between decides never silently drops
+  it (the same clobber invariant `accepted_generated_bullet_ids` already
+  follows).
+- **"Regenerate suggestions"** (`static/app.js` `_renderGapFillControls` +
+  `_fireDraftGapFill(btn)`) — an always-visible control above the per-role
+  gap-fill lanes (once experiences exist), re-calling the SAME
+  `POST /draft-gap-fill` route the once-only auto-fire uses. It is a THIRD
+  context-writing firing path (alongside the summary draft + skills
+  recommend) and serializes through the same `data-compose-bg-pending`
+  counter, per the bgDraftFiring clobber-class precedent.
+- **Route-level exclusion filter** (`draft_application_gap_fill`, deterministic,
+  route-side — the analyzer stays session-free, unchanged): a fresh draft's
+  normalized proposals are filtered against (1) the durable
+  `retired_gap_fill_keys` set and (2) any key already realized as an accepted
+  `Bullet.source` (`llm_proposed:<key>`) for this candidate — so a Regenerate
+  never resurfaces a proposal the user already decided on, retired OR accepted.
+  The guarantee is enforced by exact key match (not by asking the LLM to avoid
+  the content), so it holds regardless of model behavior. `PROMPT_VERSION` is
+  UNCHANGED (`2026-07-06.3`) — `DRAFT_GAP_FILL_SYSTEM_PROMPT` was not touched;
+  `TestGapFillPromptInvariance` (extended with `retired_gap_fill_keys`) still
+  proves the legacy generate() prefix is byte-identical.
+- **Presence-semantics interaction (the load-bearing design decision):** the
+  once-only AUTO-FIRE latch (`has_gap_fill` = key presence, not list
+  non-emptiness) is UNCHANGED — it still fires the silent background draft at
+  most once per application. Regenerate is a SEPARATE, explicit, user-triggered
+  call to the identical route that deliberately bypasses that latch (by design,
+  not a bug) — durability against resurfacing a decided-on proposal comes from
+  `retired_gap_fill_keys` (+ the accepted-Bullet check), not from the latch.
+- Tests: `tests/test_regenerate_gap_fill.py` (`TestDraftGapFillExcludesRetired`,
+  `TestDraftGapFillExcludesAccepted`, `TestGapFillDecideRetirePersistsKey`,
+  `TestPostCompositionRetiredGapFillKeys` incl. an explicit clobber-invariant
+  regression), `tests/ux/regression/test_20260708_compose_gap_fill_regenerate.py`
+  (button visibility + retire→regenerate→no-resurface, incl. across a reload
+  and a Save-and-continue POST body assertion).
+- Validation: real-LLM regenerate cycle on a sandbox context (retire → regenerate
+  → confirm the retired key never resurfaces) — see `evals/TUNING_LOG.md`
+  "regenerate-gap-fill" entry for the transcript + actual telemetry cost.
 
 ---
 

@@ -232,7 +232,8 @@ class TestGapFillPromptInvariance:
     generate() prompt prefix: generate() reads career_corpus + pinned/excluded/
     added/bullet_order, never the gap-fill draft. So a context carrying them
     produces a byte-identical prefix (the analyze→generate cache + --suite
-    synthetic invariance both depend on this)."""
+    synthetic invariance both depend on this). feat/regenerate-gap-fill adds
+    composition_overrides.retired_gap_fill_keys — same posture, same test."""
 
     def test_gap_fill_keys_do_not_perturb_prefix(self):
         baseline = _stable_user_prefix(_make_corpus_context())
@@ -246,7 +247,10 @@ class TestGapFillPromptInvariance:
                 "requirement": "Kubernetes",
             }
         ]
-        ctx["composition_overrides"] = {"accepted_generated_bullet_ids": [999]}
+        ctx["composition_overrides"] = {
+            "accepted_generated_bullet_ids": [999],
+            "retired_gap_fill_keys": ["deadbeef1234"],
+        }
         assert _stable_user_prefix(ctx) == baseline
         assert "gap-fill" not in _stable_user_prefix(ctx)
 

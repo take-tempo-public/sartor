@@ -470,6 +470,11 @@ class Compose:
     GAP_FILL_RETIRE = ".gap-fill-retire"
     # F-13 — the "Optional" framing badge on the gap-fill lane title.
     GAP_FILL_OPTIONAL_BADGE = ".gap-fill-optional-badge"
+    # feat/regenerate-gap-fill — the always-visible control row above the per-role
+    # gap-fill lanes: live proposal count + the manual "Regenerate suggestions"
+    # trigger (a fresh draft that never resurfaces a retired/accepted key).
+    GAP_FILL_CONTROLS = ".gap-fill-controls"
+    GAP_FILL_REGEN = ".gap-fill-regen"
     # B.4 (Sprint 6.6) — "Add role intros" opt-in toggle + the per-role intro
     # picker rendered inside each compose card.
     ROLE_INTROS_TOGGLE = "#composeRoleIntrosToggle"

@@ -13,6 +13,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feat: regenerate gap-fill + durable retirals (`feat/regenerate-gap-fill`, 2026-07-08)
+
+Generation-experience re-architecture LATER-branch remainder item (d) (see
+[`docs/dev/generation-experience-rearchitecture.md`](docs/dev/generation-experience-rearchitecture.md)
+§4/§6 and the RELEASE_CHECKLIST carry-forward ledger). Phase 3
+(`fix/compose-frozen-composition`) shipped Compose gap-fill drafting +
+accept/retire, but retire was TRANSIENT — a re-draft could resurface a proposal
+the user had just rejected, and there was no explicit way to ask for a fresh
+draft at all.
+
+- **`composition_overrides.retired_gap_fill_keys`** — a durable set of retired
+  proposal keys (the existing `sha256(eid|text)[:12]` stable key), written
+  directly by `/gap-fill-decide` (retire) alongside dropping the transient
+  proposal. Rides `_collectCompositionState()`'s wholesale rebuild like every
+  other override key (`accepted_generated_bullet_ids`, `summary_text`, …), so
+  it survives a subsequent `/composition` save instead of being silently
+  dropped.
+- **"Regenerate suggestions"** — an always-visible control above the per-role
+  gap-fill lanes (once experiences exist), calling the SAME `/draft-gap-fill`
+  route the auto-fire uses. It's a THIRD context-writing firing path
+  (alongside the summary draft + skills recommend) and serializes through the
+  same `data-compose-bg-pending` counter.
+- **Route-level exclusion filter** (`draft_application_gap_fill`, deterministic
+  — no prompt change, no `PROMPT_VERSION` bump): a fresh draft filters out any
+  proposal whose stable key is in `retired_gap_fill_keys`, OR matches an
+  existing accepted `Bullet.source` (`llm_proposed:<key>`) for this candidate
+  — so a Regenerate never resurfaces a proposal the user already decided on,
+  either way.
+- Tests: `tests/test_regenerate_gap_fill.py` (draft-side exclusion filter +
+  decide-side durable write + `/composition` GET/POST round-trip, incl. the
+  clobber-invariant regression), `tests/ux/regression/test_20260708_compose_gap_fill_regenerate.py`
+  (the button + durability across Regenerate + reload + Save-and-continue),
+  plus a `retired_gap_fill_keys` case folded into the existing
+  `TestGapFillPromptInvariance` byte-identity guard.
+
 ### Fix: surgical single-item refinement + richer loop-back (`fix/surgical-refinement-and-loopback`, 2026-07-08)
 
 Generation-experience re-architecture item (a) (the LATER-branch remainder tracked

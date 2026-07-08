@@ -203,6 +203,20 @@ class ContextSet(_ContextSetRequired, total=False):
     #                                #   (source='llm_proposed:<hash>') the user
     #                                #   ACCEPTED at Compose; folded into the
     #                                #   per-role effective set like corpus bullets.
+    #   "retired_gap_fill_keys": [key...]  # feat/regenerate-gap-fill: gap-fill
+    #                                #   proposal keys (sha256(eid|text)[:12], the
+    #                                #   same key used as Bullet.source's suffix on
+    #                                #   accept) the user explicitly RETIRED at
+    #                                #   Compose. Durable — unlike the transient
+    #                                #   llm_gap_fill_proposals list (fully rebuilt
+    #                                #   on every draft), this key is read back on
+    #                                #   every /draft-gap-fill call (including an
+    #                                #   explicit Regenerate) so a retired proposal
+    #                                #   never resurfaces. Like every other key
+    #                                #   here, the client must resend the FULL
+    #                                #   current set on every /composition save (the
+    #                                #   route rebuilds composition_overrides
+    #                                #   wholesale) or it is silently dropped.
     composition_overrides: dict
     # Workstream H: the recommend_bullets() output keyed by experience id
     # (str or int). {"<exp_id>": {"bullet_ids": [<int>...], "rationale": str}}
@@ -229,7 +243,11 @@ class ContextSet(_ContextSetRequired, total=False):
     # unpersisted candidate text the user ACCEPTS (→ a pending Bullet row whose id
     # joins composition_overrides.accepted_generated_bullet_ids) or RETIRES (dropped
     # here, no row). Key PRESENCE (not list non-emptiness) drives the GET's
-    # has_gap_fill flag, so a zero-proposal draft fires once and never re-loops.
+    # has_gap_fill flag, so the AUTO-FIRE draft fires once and never re-loops.
+    # feat/regenerate-gap-fill: an explicit user-triggered Regenerate is a SEPARATE
+    # firing path that bypasses this once-only latch on purpose (it always
+    # overwrites this key with a fresh draft) — retired proposals are kept out by
+    # composition_overrides.retired_gap_fill_keys instead, not by this latch.
     # total=False; absent on contexts that never reached the Compose gap-fill draft.
     llm_gap_fill_proposals: list
 

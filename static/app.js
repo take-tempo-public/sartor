@@ -6546,6 +6546,14 @@ let _draftSummaryFiredForApp = null;
 // requirements) can't re-loop the Sonnet call on every re-render. The server
 // has_gap_fill (key presence) is the durable belt to this session-only latch.
 let _gapFillFiredForApp = null;
+// feat/regenerate-gap-fill — the current application's durably-retired gap-fill
+// proposal keys (composition_overrides.retired_gap_fill_keys), mirrored client-
+// side: seeded from the GET response on every loadComposition() pass, pushed to
+// optimistically on Retire, and re-sent on every _collectCompositionState() save
+// (the wholesale-rebuild clobber invariant — see hardening.ContextSet). The
+// server is the durable source of truth (gap-fill-decide writes it directly);
+// this mirror only exists so a save between decides doesn't drop it.
+let _retiredGapFillKeys = [];
 // B.4 — whether the "Add role intros" toggle is on for the loaded application.
 let _composeUseRoleIntros = false;
 
@@ -6601,6 +6609,12 @@ async function loadComposition() {
     return;
   }
   const data = await res.json();
+  // feat/regenerate-gap-fill — reseed the durable retired-keys mirror from the
+  // server on every load (composition_overrides.retired_gap_fill_keys), so a
+  // fresh page load / away-and-back reload starts from the persisted truth
+  // rather than whatever this session happened to accumulate.
+  _retiredGapFillKeys = Array.isArray(data.retired_gap_fill_keys)
+    ? data.retired_gap_fill_keys.slice() : [];
   _clearChildren(list);
   // Phase 4 — a refinement in corpus mode loops back here (no résumé-body LLM to
   // re-run); render an explaining banner from the flag so it survives the
@@ -6658,6 +6672,12 @@ async function loadComposition() {
   const anyRoleVariants = (data.experiences || []).some(
     e => ((e.summary || {}).variants || []).length > 0);
   if (anyRoleVariants) list.appendChild(_renderRoleIntrosToggle(_composeUseRoleIntros));
+  // feat/regenerate-gap-fill — the manual Regenerate control for the per-role
+  // gap-fill lanes rendered inside each experience card below. Always shown
+  // (once experiences exist): a retired proposal never re-auto-drafts (the
+  // once-only auto-fire latch), so a stalled zero-suggestion state still needs
+  // an explicit way to check again.
+  list.appendChild(_renderGapFillControls(data));
   data.experiences.forEach(exp => list.appendChild(_renderComposeCard(exp)));
   // Phase 3 — auto-author gap-fill bullets once on arrival (D2): grounded
   // proposals for JD requirements the corpus doesn't cover. DEFERRED to a pass
@@ -6801,9 +6821,18 @@ async function _fireDraftSummary(force) {
 
 // Phase 3 — auto-author gap-fill bullets (Sonnet). Fires once on Compose arrival
 // (guarded by _gapFillFiredForApp + the server has_gap_fill flag); reloads so the
-// per-role "Suggested for this JD" lanes render. Non-blocking on failure.
-async function _fireDraftGapFill() {
+// per-role "Suggested for this JD" lanes render.
+// feat/regenerate-gap-fill — this same function is ALSO the explicit "Regenerate
+// suggestions" trigger (a THIRD context-writing firing path alongside the summary
+// draft + skills recommend — serialized through _markComposeBgReload exactly like
+// those two). The route always overwrites llm_gap_fill_proposals, filtering out
+// anything the user already retired or accepted, so a regenerated draft never
+// resurfaces a decided-on proposal. `btn` is the clicked button (present only for
+// the explicit trigger); its presence gates in-flight UI feedback + a result
+// toast so the silent auto-fire keeps its original non-blocking behavior.
+async function _fireDraftGapFill(btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Regenerating…'; }
   _markComposeBgReload(1);
   try {
     const res = await fetch(
@@ -6811,12 +6840,53 @@ async function _fireDraftGapFill() {
       { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ context_path: lastContextPath }) },
     );
-    if (res.ok) loadComposition();
+    if (res.ok) {
+      if (btn) {
+        const body = await res.json().catch(() => ({}));
+        const n = (body.proposals || []).length;
+        _toast(n
+          ? `${n} suggestion${n === 1 ? '' : 's'} to review.`
+          : 'No new grounded suggestions found.');
+      }
+      loadComposition();
+    } else if (btn) {
+      _toast('Could not regenerate suggestions.', true);
+    }
   } catch {
-    // Non-blocking — gap-fill is an optional enhancement over the corpus set.
+    // Non-blocking on the silent auto-fire — gap-fill is an optional enhancement
+    // over the corpus set; the explicit Regenerate surfaces a toast instead.
+    if (btn) _toast('Network error regenerating suggestions.', true);
   } finally {
     _markComposeBgReload(-1);
+    if (btn) { btn.disabled = false; btn.textContent = 'Regenerate suggestions'; }
   }
+}
+
+// feat/regenerate-gap-fill — the always-visible (once experiences exist) control
+// row above the per-role "Suggested for this JD" lanes: a live count of what's
+// currently proposed across all roles + the manual Regenerate trigger. Gap-fill
+// proposals are drafted in ONE global call (not per-role), so the control lives
+// once here rather than duplicated on every card.
+function _renderGapFillControls(data) {
+  const total = (data.experiences || []).reduce(
+    (n, e) => n + (e.gap_fill_proposals || []).length, 0);
+  const wrap = _el('div', {
+    className: 'gap-fill-controls',
+    style: 'margin:6px 0 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;',
+  });
+  wrap.appendChild(_el('span', { className: 'gap-fill-optional-badge', textContent: 'Optional' }));
+  wrap.appendChild(_el('span', {
+    className: 'edit-hint',
+    textContent: total
+      ? `${total} suggested bullet${total === 1 ? '' : 's'} below, across your roles.`
+      : 'No open gap-fill suggestions right now.',
+  }));
+  const regen = _el('button', {
+    className: 'btn-secondary btn-sm gap-fill-regen', textContent: 'Regenerate suggestions',
+  });
+  regen.onclick = () => _fireDraftGapFill(regen);
+  wrap.appendChild(regen);
+  return wrap;
 }
 
 // Retire the drafted summary: clear it locally + persist (the empty value drops
@@ -7267,6 +7337,15 @@ function _renderGapFillRow(expId, p) {
 // or retire (drops the transient proposal). Reloads composition on success.
 async function _decideGapFill(key, decision) {
   if (_composeApplicationId == null || !lastContextPath) return;
+  // feat/regenerate-gap-fill — push the retired key into the local mirror
+  // BEFORE the request resolves (optimistic, like the DOM updates other autosave
+  // paths make first): the server already durably persists the retire directly,
+  // but a debounced _scheduleCompositionSave() that happens to fire in the same
+  // window resends _collectCompositionState() regardless, so it must already
+  // carry this key to avoid the wholesale-rebuild clobber.
+  if (decision === 'retire' && !_retiredGapFillKeys.includes(key)) {
+    _retiredGapFillKeys.push(key);
+  }
   _markComposeBgReload(1);
   try {
     const res = await fetch(
@@ -8073,6 +8152,10 @@ function _collectCompositionState() {
   return {
     pinned, excluded, added, bullet_order, pinned_title_ids,
     accepted_generated_bullet_ids,
+    // feat/regenerate-gap-fill — the durable retired-proposal key mirror rides
+    // along on every save (the POST rebuilds composition_overrides wholesale, so
+    // an omitted field would drop a retiral the moment any OTHER save fires).
+    retired_gap_fill_keys: _retiredGapFillKeys.slice(),
     // B.4 — per-role intro toggle + picks ride along on every save so a bullet/
     // title save never clobbers them (the POST rebuilds overrides wholesale).
     ..._collectExperienceSummaryState(),
