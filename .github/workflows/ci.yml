@@ -80,3 +80,112 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python evals/runner.py --suite synthetic --subset smoke
+
+  ux:
+    # PX-25 (2026-06 product-excellence review, F-qe-rel-01 P0): the browser-driven
+    # UX/a11y/PDF tier ran on the maintainer's laptop only — CI had no `playwright
+    # install`, so `pytest -m ux` was silently collected-then-skipped (see
+    # ACCESSIBILITY.md "Known gaps" and conftest's Chromium-absent skip guard). This
+    # job closes that gap. It is a SEPARATE job from `quality` (deliberate — see
+    # docs/dev/reviews/2026-06-product-excellence/03-prescriptions/release-pass-plan.md
+    # "G-1" + docs/governance/enforcement.md "New CI gates"): keeps the fast
+    # py3.11-3.13 lint/type/unit matrix from being slowed by a Chromium install + a
+    # browser-driven suite. `needs`/concurrency wiring between jobs is deliberately
+    # NOT decided here — that is PX-43 (Phase 7), out of scope for this branch.
+    #
+    # Single Python version (not matrixed): Playwright/browser behavior is not
+    # Python-version-sensitive, so matrixing would ~triple runtime for no coverage
+    # gain. Picked 3.12 — the middle of the `quality` matrix's 3.11-3.13 range — so
+    # the two non-matrixed jobs in this file (this one + `eval-smoke` @ 3.13) sit at
+    # different points of the support range instead of both re-pinning the newest.
+    #
+    # --- Flake policy (HONEST, not masking) -----------------------------------------
+    # A real flake class hit this suite under heavy LOCAL multi-suite concurrency
+    # (multiple pytest processes / dev-loop runs racing the same live Flask server).
+    # It was root-caused and FIXED 2026-07-06 (`fix/compose-settle-bg-reload` — a
+    # `data-compose-bg-pending` in-flight-reload counter replaced a stability-poll
+    # heuristic with a deterministic wait; see CHANGELOG "2026-07-06"). Since that
+    # fix, every recurrence has reproduced ONLY under that concurrent-load condition —
+    # isolated re-runs (single member, single process) are always green, including
+    # the members that flaked before the fix.
+    #
+    # This CI job structurally cannot reproduce that condition: it is the only
+    # process on its runner, running one `pytest -m ux` invocation against one live
+    # server with no sibling suite contending for it. Given that, the deliberate
+    # choice here is NO automatic retry. A retry step (even a "re-run only failures"
+    # one) would not be absorbing a *known* flake — that flake's precondition is
+    # absent by construction in this job's shape — it would silently re-run under a
+    # NEW, uncharacterized failure mode and report green. That is exactly the masking
+    # this policy exists to avoid. If this job fails in CI, treat it as a real
+    # signal and investigate first. If a genuinely new CI-only flake class is ever
+    # characterized, add a scoped, documented retry for THAT class (with its own
+    # rationale recorded here) — don't pre-emptively blanket-retry against a class
+    # that shouldn't occur under this job's execution model.
+    # ----------------------------------------------------------------------------------
+    #
+    # PDF slice: RELEASE_ARC/RELEASE_CHECKLIST call this the "UX/a11y/PDF tier", but
+    # `pytest -m ux` alone does not cover the PDF end-to-end tests — the 4 tests in
+    # tests/test_pdf_render.py are marked `slow` only (same Chromium dependency, not
+    # part of the Playwright-page-driving `ux` harness). The last step below runs
+    # them too (`-m "slow and not ux"`), reusing the Chromium install already done
+    # for the `ux` tier rather than standing up a second job for 4 tests.
+    #
+    # ACTIVATION NOTE — owed at the [HUMAN] GitHub-repo-creation step (RELEASE_ARC
+    # Phase 4): this job existing in ci.yml does NOT make it a "required check" —
+    # that is a GitHub repo setting (Settings -> Branches -> branch protection rule
+    # for `main` -> "Require status checks to pass before merging"), which cannot be
+    # configured until the repo exists. When it does: mark this job's check (its
+    # `name:` below, "UX / a11y / PDF (Playwright, py3.12)") AND the `quality`
+    # matrix's 3 checks ("Lint, type-check, test (py3.11)" / "(py3.12)" / "(py3.13)")
+    # required. Do NOT mark `eval-smoke` required — it only runs when the `eval`
+    # label is applied, so a required-but-conditional check would block every
+    # unlabeled PR forever.
+    name: UX / a11y / PDF (Playwright, py3.12)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package with dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Resolve installed Playwright version (cache key input)
+        id: playwright-version
+        run: echo "version=$(pip show playwright | grep '^Version:' | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
+
+      # actions/cache is GitHub-maintained (same `actions/` org as checkout/setup-python
+      # above) — not a new marketplace-trust action. Warranted because setup-python's
+      # `cache: pip` above only caches the pip package cache, not the ~150MB Chromium
+      # browser binary `playwright install` downloads; caching it removes the slowest
+      # step in this job on a cache hit.
+      - name: Cache Playwright Chromium
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright Chromium (+ OS deps)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: python -m playwright install --with-deps chromium
+
+      # Cache hit skips the ~150MB browser download, but the runner VM is still
+      # fresh each run, so the OS-level packages `--with-deps` installs via apt are
+      # NOT preserved by the cache above (it only covers ~/.cache/ms-playwright) —
+      # this still needs to run every time.
+      - name: Install Playwright OS dependencies (cache hit — browser already cached)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: python -m playwright install-deps chromium
+
+      - name: Pytest (UX / a11y tier)
+        run: pytest -m ux
+
+      - name: Pytest (PDF end-to-end render — shares the Chromium install above)
+        run: pytest -m "slow and not ux"

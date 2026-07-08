@@ -13,6 +13,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### CI: UX/a11y tier as a CI job, required-check ready (`ci/ux-a11y-required-check`, 2026-07-08)
+
+PX-25 (2026-06 product-excellence review, `F-qe-rel-01` P0): the browser-driven
+UX/a11y/PDF tier (`pytest -m ux` + the axe a11y gate + the PDF end-to-end
+renders) ran on the maintainer's laptop only — `ci.yml` had no `playwright
+install`, so the tier was silently collected-then-skipped in CI (documented as
+a known gap in `ACCESSIBILITY.md`). This lands the CI job the tier needed; the
+GitHub "required status check" flip is a separate, owner-gated repo setting
+that cannot be configured until the `[HUMAN]` GitHub-repo-creation step
+(RELEASE_ARC Phase 4) — see the activation note below.
+
+- **New `ux` job in `.github/workflows/ci.yml`**, separate from the `quality`
+  matrix so the fast py3.11–3.13 lint/type/unit gate isn't slowed by a
+  Chromium install: `pip install -e '.[dev]'` → `python -m playwright install
+  --with-deps chromium` → `pytest -m ux`. Single Python version (3.12, the
+  middle of the `quality` matrix's 3.11–3.13 range) — Playwright/browser
+  behavior isn't Python-version-sensitive, so matrixing would ~triple runtime
+  for no coverage gain. `needs`/concurrency wiring between jobs is
+  deliberately left undecided (PX-43, Phase 7 — out of scope here).
+- **Caching:** `actions/setup-python`'s built-in `cache: pip` (same as
+  `quality`) plus a new `actions/cache` step keyed on the installed
+  Playwright version, caching `~/.cache/ms-playwright` (the ~150MB Chromium
+  binary) — the slowest step in the job on a cache hit. `actions/cache` is
+  GitHub-maintained, the same trust tier as `actions/checkout`/
+  `actions/setup-python` already used in this file. OS-level Playwright deps
+  (`install-deps`) still run every time — ephemeral runner VMs don't preserve
+  apt packages regardless of the browser-binary cache.
+- **Flake policy (HONEST, not masking) — no automatic retry.** The suite's
+  known flake class (a Compose-wizard settle race under heavy LOCAL
+  multi-suite concurrency) was root-caused and fixed 2026-07-06
+  (`fix/compose-settle-bg-reload` — see that entry below); every recurrence
+  since has reproduced ONLY under that concurrent-load condition, always
+  green in isolation. A single dedicated CI job running one `pytest -m ux`
+  invocation with no sibling suite contending for the same server cannot
+  reproduce that precondition, so a retry step here would not be absorbing a
+  *known* flake — it would silently re-run under an uncharacterized failure
+  mode and report green, which is exactly the masking this policy avoids. If
+  the `ux` job fails in CI, treat it as a real signal and investigate first;
+  a genuinely new CI-only flake class would need its own scoped, documented
+  retry, not a pre-emptive blanket one. Full rationale recorded as a comment
+  block in the workflow itself.
+- **PDF slice included.** RELEASE_ARC/RELEASE_CHECKLIST call this the
+  "UX/a11y/PDF tier", but `pytest -m ux` alone doesn't cover the PDF
+  end-to-end tests — the 4 tests in `tests/test_pdf_render.py` are marked
+  `slow` only. The job's last step runs `pytest -m "slow and not ux"` too,
+  reusing the Chromium install already done for the `ux` step rather than
+  standing up a second job for 4 tests — so the tier's name is now accurate
+  in CI, not just on the maintainer's machine.
+- **Activation note (owed at the `[HUMAN]` GitHub-repo-creation step):** a CI
+  job existing does not make it a "required check" — that's a GitHub repo
+  setting (Settings → Branches → branch protection rule for `main` →
+  "Require status checks to pass before merging"), unavailable until the
+  repo exists. When it does: mark the `ux` job's check ("UX / a11y / PDF
+  (Playwright, py3.12)") AND the `quality` matrix's 3 checks required. Do
+  NOT mark `eval-smoke` required — it's label-gated (`eval` label only), so
+  a required-but-conditional check would block every unlabeled PR forever.
+- **Docs/workflow only** — no dependency change (`playwright` is already a
+  pinned hard dep; `actions/cache` is a workflow-file action, not a Python
+  package), no route/prompt/migration; `PROMPT_VERSION` unchanged.
+
 ### Feat: portable enforcement core — one guard implementation, three consumers (`feat/portable-enforcement-core`, 2026-07-08)
 
 Lifts the six portable dev-loop guards (`require-feature-branch`, `block-merge-to-main`,
