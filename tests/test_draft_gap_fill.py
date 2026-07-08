@@ -88,6 +88,37 @@ class TestDraftGapFillShortCircuit:
         assert "Terraform" in p
         assert "container orchestration" in p
 
+    def test_prompt_includes_prior_clarifications(self):
+        """D5 (feat/clarifications-to-corpus): cross-JD confirmed facts render
+        as a distinct <prior_clarifications> block, separate from this
+        application's own <clarifications>."""
+        from analyzer import draft_gap_fill_bullets
+
+        captured: dict = {}
+
+        def _cap(client, user_prompt, **kw):
+            captured["prompt"] = user_prompt
+            return {"proposals": []}
+
+        with patch("analyzer._parse_or_retry", _cap):
+            draft_gap_fill_bullets(
+                client=object(),
+                context_set={
+                    "career_corpus": [{"id": 1, "company": "Acme", "bullets": []}],
+                    "jd_text": "Senior SRE role.",
+                    "prior_clarifications": [
+                        {
+                            "question": "Led on-call?",
+                            "answer": "Led on-call for a 12-person SRE team.",
+                            "kind": "experience_probe",
+                        }
+                    ],
+                },
+            )
+        p = captured["prompt"]
+        assert "<prior_clarifications>" in p
+        assert "Led on-call for a 12-person SRE team." in p
+
 
 # -------------------------------------------------------------------
 # Route tests (stubbed LLM + real DB experiences)

@@ -512,6 +512,28 @@ class TestAssembleSourceUnion:
         union = assemble_source_union(ctx)
         assert union == ["only this"]
 
+    def test_prior_clarifications_widen_the_union(self):
+        """D5 (feat/clarifications-to-corpus): cross-JD confirmed facts staged
+        onto context_set["prior_clarifications"] must count as grounding source
+        material too, or the metric would over-report Compose drafting content
+        legitimately sourced from them as fabrication."""
+        ctx: dict = {
+            "resume": {"text": "primary resume body"},
+            "prior_clarifications": [
+                {"question": "SRE experience?", "answer": "Led on-call for 12 engineers."},
+                {"question": "empty answer dropped", "answer": ""},
+            ],
+        }
+        union = assemble_source_union(ctx)
+        assert "Led on-call for 12 engineers." in union
+        assert len(union) == 2  # primary + the one non-empty prior answer
+
+    def test_absent_prior_clarifications_unaffected(self):
+        """Legacy (file-based) contexts never populate prior_clarifications —
+        the union must be identical to pre-D5 behavior."""
+        ctx: dict = {"resume": {"text": "primary resume body"}}
+        assert assemble_source_union(ctx) == ["primary resume body"]
+
 
 class TestCallCost:
     def test_known_sonnet_record(self):

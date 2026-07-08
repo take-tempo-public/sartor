@@ -44,6 +44,61 @@ class TestDraftSummaryShortCircuit:
 
 
 # -------------------------------------------------------------------
+# D5 (feat/clarifications-to-corpus): cross-JD prior_clarifications reuse
+# -------------------------------------------------------------------
+
+
+class TestDraftSummaryPriorClarifications:
+    def test_prior_clarifications_render_in_prompt(self):
+        from unittest.mock import patch
+
+        from analyzer import draft_positioning_summary
+
+        captured: dict = {}
+
+        def _cap(client, user_prompt, **kw):
+            captured["prompt"] = user_prompt
+            return {"summary": ""}
+
+        with patch("analyzer._parse_or_retry", _cap):
+            draft_positioning_summary(
+                client=object(),
+                context_set={
+                    "summary_source_text": "Platform PM.",
+                    "jd_text": "Senior SRE role.",
+                    "prior_clarifications": [
+                        {
+                            "question": "Led on-call?",
+                            "answer": "Led on-call for a 12-person SRE team, cut MTTR 40%.",
+                            "kind": "experience_probe",
+                        }
+                    ],
+                },
+            )
+        p = captured["prompt"]
+        assert "<prior_clarifications>" in p
+        assert "Led on-call for a 12-person SRE team, cut MTTR 40%." in p
+
+    def test_absent_prior_clarifications_renders_none(self):
+        from unittest.mock import patch
+
+        from analyzer import draft_positioning_summary
+
+        captured: dict = {}
+
+        def _cap(client, user_prompt, **kw):
+            captured["prompt"] = user_prompt
+            return {"summary": ""}
+
+        with patch("analyzer._parse_or_retry", _cap):
+            draft_positioning_summary(
+                client=object(),
+                context_set={"summary_source_text": "Platform PM.", "jd_text": "Senior SRE role."},
+            )
+        assert "<prior_clarifications>\n(none)\n</prior_clarifications>" in captured["prompt"]
+
+
+# -------------------------------------------------------------------
 # Route tests (stubbed LLM + DB)
 # -------------------------------------------------------------------
 

@@ -479,6 +479,86 @@ class TestBuildContextSetFromDb:
 
 
 # ---------------------------------------------------------------------------
+# D5 (feat/clarifications-to-corpus): cross-JD prior_clarifications reuse
+# ---------------------------------------------------------------------------
+
+
+class TestPriorClarifications:
+    """`clarification` rows are candidate-scoped by design (cross-application
+    candidate memory), so build_context_set_from_db stages every existing row
+    for the candidate onto ctx["prior_clarifications"] — the just-created
+    Application row can't own any of them yet, so no origin filter is needed."""
+
+    def test_no_prior_clarifications_returns_empty_list(self, db_session):
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        ctx, _app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text="x",
+            run_id="run_no_prior",
+        )
+        assert ctx["prior_clarifications"] == []
+
+    def test_existing_clarifications_from_another_application_surface(self, db_session):
+        from db.models import Application, Clarification
+
+        c = _seed_full_candidate(db_session)
+        earlier_app = Application(
+            candidate_id=c.id,
+            title="Earlier SRE role",
+            jd_text="SRE role",
+            jd_fingerprint="e" * 16,
+        )
+        db_session.add(earlier_app)
+        db_session.flush()
+        db_session.add(
+            Clarification(
+                candidate_id=c.id,
+                origin_application_id=earlier_app.id,
+                question="Have you led an on-call rotation?",
+                answer="Led on-call for a 12-person SRE team, cut MTTR 40%.",
+                kind="experience_probe",
+            )
+        )
+        db_session.commit()
+
+        ctx, _app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text="Senior SRE role",
+            run_id="run_with_prior",
+        )
+        assert len(ctx["prior_clarifications"]) == 1
+        row = ctx["prior_clarifications"][0]
+        assert row["question"] == "Have you led an on-call rotation?"
+        assert row["answer"] == "Led on-call for a 12-person SRE team, cut MTTR 40%."
+        assert row["kind"] == "experience_probe"
+        assert row["origin_application_id"] == earlier_app.id
+
+    def test_capped_and_most_recent_first(self, db_session):
+        from db.build_context import _prior_clarifications_for_candidate
+        from db.models import Clarification
+
+        c = _seed_full_candidate(db_session)
+        for i in range(3):
+            db_session.add(
+                Clarification(
+                    candidate_id=c.id,
+                    question=f"q{i}",
+                    answer=f"a{i}",
+                    kind="manual",
+                )
+            )
+        db_session.commit()
+
+        capped = _prior_clarifications_for_candidate(db_session, c.id, limit=2)
+        assert len(capped) == 2
+        # Most-recent-first: the last-inserted row (q2) comes first.
+        assert capped[0]["question"] == "q2"
+
+
+# ---------------------------------------------------------------------------
 # Phase B.2: structured career_corpus payload
 # ---------------------------------------------------------------------------
 

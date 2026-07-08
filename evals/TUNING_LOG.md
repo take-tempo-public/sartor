@@ -2847,3 +2847,73 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    text on request, so a semantic/prompt-side "don't repeat this" instruction
    would be unverifiable, while the deterministic hash-key filter gives an
    exact, testable guarantee regardless of model phrasing drift.
+
+## D5 clarifications-to-corpus — 2026-07-08 — `feat/clarifications-to-corpus` — `2026-07-08.1` → `2026-07-08.2`
+
+1. **What changed?** The generation-experience re-architecture's LATER-branch
+   remainder item (c) — D5 cross-JD clarification reuse
+   ([`generation-experience-rearchitecture.md`](../docs/dev/generation-experience-rearchitecture.md)
+   §2 Stage 3 / §3.5 point 3). `db.build_context.build_context_set_from_db` now
+   stages `context_set["prior_clarifications"]` — every `clarification` DB row
+   for the candidate from an EARLIER application (candidate-scoped, capped at
+   40, most-recent-first). All three Compose CONTENT DRAFTING calls in
+   `analyzer.py` (`draft_positioning_summary`, `draft_gap_fill_bullets`,
+   `suggest_skills`) render it as a new `<prior_clarifications>` prompt block:
+   `draft_positioning_summary` and `suggest_skills` treat it as full grounding
+   source material (same posture as `<clarifications>`); `draft_gap_fill_bullets`
+   keeps it context-only — a proposed bullet's evidence must still cite
+   `<career_corpus>`. `hardening.assemble_source_union` (the deterministic
+   grounding metric) widened to match. The legacy `generate()` prompt is
+   untouched.
+2. **Why?** Today a clarification answered under JD-1 never informs JD-2's
+   pipeline run — the candidate re-states the same fact per application. D5
+   makes the corpus (and its clarifications) genuinely cross-JD, closing the
+   loop the design doc named at spec-time but deferred out of the frozen-
+   composition branch.
+3. **Result? (real-LLM validation, NOT a synthetic-suite run — corpus-mode-only
+   change, `--suite synthetic` stays legacy-only and byte-identical by
+   construction):** a throwaway sandbox candidate + temp DB (no repo
+   `configs`/`output`/`resumes` touched). Seeded a corpus with ZERO on-call/SRE
+   content. Ran JD-1 (generic Platform Engineer) through analyze → clarify,
+   answered one question with "Led on-call rotation for a 12-person SRE team,
+   cutting MTTR 40% through a runbook overhaul." Ran JD-2 (Senior SRE) through
+   analyze for the SAME candidate:
+   - JD-2's context carried the JD-1 answer under `prior_clarifications`; its
+     OWN `clarifications` map was correctly still empty (the two channels stay
+     distinct).
+   - `draft-summary` (real Sonnet): wove the cross-JD fact into the JD-2
+     positioning summary alongside the corpus CI/CD fact — grounded, no
+     invention: *"Platform engineer who has led on-call rotation for a
+     12-person SRE team, cutting MTTR 40% through a runbook overhaul,
+     alongside building CI/CD pipelines that cut deploy time 50% across four
+     product teams. Brings that same reliability-first discipline to owning
+     incident response and reducing MTTR across critical production
+     services."*
+   - `suggest-skills` (real Haiku): proposed 4 skills — 3 ("On-call
+     leadership", "Incident response", "MTTR optimization") evidenced ONLY by
+     the clarification quote (`bullet_id`/`experience_id` both null, exactly
+     the shape the widened prompt specifies), 1 ("CI/CD pipeline development")
+     evidenced by an actual corpus bullet id. The two evidence shapes came back
+     correctly distinguished.
+   - `draft-gap-fill` (real Sonnet): **0 proposals** — the grounding boundary
+     held. A prior clarification alone is CONTEXT, not sufficient evidence for
+     a new bullet; the model correctly did not fabricate a "led on-call" bullet
+     with no corpus citation to back it.
+   - Candidate isolation: a second, unrelated candidate's freshly-built context
+     saw `prior_clarifications == []` — no cross-candidate leak.
+   - Cost: 9 real LLM calls, **$0.1111 total** (well under the $0.30 estimate),
+     from `logs/llm_calls.jsonl` telemetry summed via `hardening.compute_call_cost`.
+   - Deterministic coverage: `tests/test_build_context_db.py::TestPriorClarifications`
+     (staging + cap + candidate-scoping), `tests/test_hardening.py::TestAssembleSourceUnion`
+     (metric widening), and one prompt-content test per drafting call
+     (`test_draft_summary.py`, `test_draft_gap_fill.py`, `test_suggest_skills.py`).
+4. **Learned?** The same "stage it deterministically once, let every downstream
+   consumer read the context_set key" pattern used for `career_corpus` extends
+   cleanly to cross-JD clarifications — no live DB access needed from either
+   the drafting prompts or the grounding metric, both of which only ever see
+   `context_set`. Letting the two grounding rules diverge on purpose (summary
+   + skills treat prior_clarifications as sufficient evidence; gap-fill does
+   not) is a real, load-bearing distinction, not an oversight — the real-LLM
+   run is the cheapest way to prove a "surgical, not blanket" carve-out claim
+   actually holds under a real model instead of asserting it from the prompt
+   text alone.

@@ -55,6 +55,34 @@ class TestFunction:
         names = [p["name"] for p in result["proposals"]]
         assert names == ["Kubernetes"]  # python (existing) + dup + blank dropped
 
+    def test_prior_clarifications_render_in_prompt(self):
+        """D5 (feat/clarifications-to-corpus): cross-JD confirmed facts are
+        offered as an additional grounding source alongside the corpus."""
+        from analyzer import suggest_skills
+
+        captured: dict = {}
+
+        def _cap(client, user_prompt, **kw):
+            captured["prompt"] = user_prompt
+            return {"proposals": []}
+
+        ctx = {
+            "career_corpus": [{"id": 1, "company": "Acme", "bullets": []}],
+            "llm_analysis": {"essential_skills": ["on-call leadership"]},
+            "prior_clarifications": [
+                {
+                    "question": "Led on-call?",
+                    "answer": "Led on-call rotation for a 12-person SRE team.",
+                    "kind": "experience_probe",
+                }
+            ],
+        }
+        with patch("analyzer._parse_or_retry", _cap):
+            suggest_skills(client=object(), context_set=ctx)
+        p = captured["prompt"]
+        assert "<prior_clarifications>" in p
+        assert "Led on-call rotation for a 12-person SRE team." in p
+
 
 # -------------------------------------------------------------------
 # Route tests (stubbed LLM + DB)
