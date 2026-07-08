@@ -13,6 +13,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs: contributor-facing truth pass — reader paths, model routing, eval costs, README polish, dashboard label (`docs/ux-w3-contributor`, 2026-07-07)
+
+UX-review Wave 3 (contributor on-ramp): F-21, F-22, F-20, F-27, F-06d. Doc/copy-level
+only — no code-behavior change.
+
+- **F-21 — un-conflate using/developing/extending.** Added a "Three ways to meet
+  Sartor" section to `README.md` (front matter, before "What Sartor does") with three
+  explicitly labeled reader paths — Use it / Develop on it / Extend it — each pointing
+  into the existing doc set; the "Extend it" path scopes the tuning slash commands
+  (`/prompt-tune`, `/tune-from-annotations`, …) as Claude-Code-specific (they need the
+  `sartor` plugin), distinct from the plugin-independent eval harness CLI.
+- **F-22 — model-routing drift (Sonnet 4.6 → Sonnet 5).** Verified current routing
+  against `analyzer.py:SONNET_MODEL`/`HAIKU_MODEL` and corrected drifted prose in:
+  `AGENTS.md`, `docs/architecture.md` (prose only — the four fenced/linked diagrams
+  are known-drifted, scheduled for full replacement in the v1.0.9 docs epic; added a
+  one-line staleness note instead of reworking them), `README.md` (also fixed a
+  pre-existing tier bug — `clarify()` was listed under "Sonnet"; it runs on Haiku
+  4.5), `vision.md`, `docs/PRODUCT_SHAPE.md` (same `clarify()` tier fix),
+  `docs/walkthrough.md`, `docs/walkthrough_example.md`, `evals/README.md`,
+  `templates/index.html`, `scripts/capture_screenshots.py`, `blueprints/analysis.py`,
+  `blueprints/generation.py`, `docs/dev/RELEASE_CHECKLIST.md` (risk-register item).
+  Historical/dated artifacts (CHANGELOG entries, `evals/TUNING_LOG.md`,
+  `docs/dev/perf/*`, `docs/dev/reviews/**`, `evals/results/baseline_v1.json`,
+  `hardening.py`'s intentionally-retained `claude-sonnet-4-6` pricing entry) were
+  left untouched — they're point-in-time records, not current-state claims.
+- **F-20 — stale eval smoke cost.** The documented "~$0.10" smoke estimate was
+  ~3.7× stale post-Sonnet-5 (measured ~$0.37 total / ~$0.12 per fixture in the
+  2026-07-07 UX review). Restated as "~$0.35–0.40 under Sonnet 5" in `AGENTS.md`,
+  `README.md`, `evals/README.md` (Quick start + Cost considerations table + the
+  Tuning-tab 2×-cost gate estimate), the dashboard Quality-tab copy
+  (`dashboard/templates/dashboard.html`: help text, `updateCost()`, the `confirm()`
+  estimate string), and `blueprints/diagnostics.py`'s route docstring.
+- **F-27 — README polish bundle.** Added a `git` prerequisite line to Install; moved
+  the `## Install` section up (right after "How it works", before the audience
+  sections) for prominence; expanded "ATS" on first use in "What Sartor does";
+  softened `docs/architecture.md`'s "read in 5 minutes" claim (no such claim existed
+  in the current README — the closest survivor was this one); added a brief
+  "formerly Callback" note under the title.
+- **F-06d — dashboard "RELIABILITY 0%" tile.** Relabeled the Pipeline-tab tile from
+  "reliability" to "error rate" (`dashboard/templates/dashboard.html`) — the tile
+  always rendered `error_rate * 100`, so the old label read as catastrophic at a
+  glance. No metric/computation change. Updated the tile's `data-title` and the
+  `_DASH_HELP.dashPipeline` body text to match.
+
+No test asserted the old copy in any touched file (verified via grep), so no test
+changes were needed.
+
 ### Fix: installable wheel + python floor + install-doc truth (`fix/packaging-install`, 2026-07-07)
 
 Carry-forward ledger "PyPI wheel not installable" + UX-review Wave 0 F-24/25/26 +

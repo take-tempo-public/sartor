@@ -514,7 +514,15 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       (gitignored, local): `output/ux-review-2026-07-screenshots/` + its MANIFEST.md.
       _(discovered: 2026-07-07, `docs/ux-review-2026-07`; open count 11 → 12.)_
       **→ Integrate as `fix/ux-review-wave0-*` branches before any public tag;**
-      waves 1–4 drain per the polish plan.
+      waves 1–4 drain per the polish plan. **Wave 3 (contributor on-ramp, partial):**
+      F-21/F-22/F-20/F-27/F-06d — **DONE 2026-07-07 (`docs/ux-w3-contributor`)**:
+      README three-reader-paths front matter + Install prominence/`git` prereq/
+      de-jargon/"formerly Callback" note, model-routing prose corrected repo-wide
+      (verified against `analyzer.py:SONNET_MODEL`/`HAIKU_MODEL`, incl. a `clarify()`
+      tier bug found along the way), eval-smoke cost restated ~$0.35-0.40 under
+      Sonnet 5 (AGENTS.md/README/evals/README.md/dashboard/diagnostics.py), dashboard
+      reliability tile relabeled "error rate." F-19 (demo mode) still open for Wave
+      3's remainder.
 
 - [ ] **PyPI wheel not installable — data files not packaged** — **RESOLVED-PENDING-PUBLISH
       2026-07-07 (`fix/packaging-install`); left open only for the still-blocked
@@ -2096,7 +2104,7 @@ These are evergreen — re-check on every release cut.
 1. **PII in fixtures.** Any `evals/fixtures/real/` files crept
    into the main suite? Run `pytest -k 'real'` separately,
    verify they're gitignored.
-2. **Anthropic model availability.** Sonnet 4.6 + Haiku 4.5 IDs
+2. **Anthropic model availability.** Sonnet 5 + Haiku 4.5 IDs
    in `analyzer.py` — confirm still GA when the release cuts.
 3. **Cross-platform path handling.** `_safe_username` + `_within`
    are POSIX-friendly; verify on Windows with users that have

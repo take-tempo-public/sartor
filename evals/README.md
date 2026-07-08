@@ -40,7 +40,7 @@ pip install -e ".[dev]"  # if you haven't already
 python evals/runner.py --suite synthetic --subset smoke
 ```
 
-Runs the 3 committed synthetic fixtures × 1 rubric (`grounding`) — ~9 LLM calls, ~$0.10. Exit code is `0` if every rubric scored ≥4 **and** nothing regressed past `REGRESSION_DELTA` (0.5) vs the committed baseline, otherwise `2`.
+Runs the 3 committed synthetic fixtures × 1 rubric (`grounding`) — ~9 LLM calls, ~$0.35–0.40 under Sonnet 5 (was ~$0.10 pre-upgrade; see "Cost considerations" below). Exit code is `0` if every rubric scored ≥4 **and** nothing regressed past `REGRESSION_DELTA` (0.5) vs the committed baseline, otherwise `2`.
 
 Results land in `evals/results/{timestamp}.jsonl` and surface in the dashboard at `http://localhost:5000/_dashboard` while the app is running.
 
@@ -767,7 +767,7 @@ irreversible step that stays a human/agent's job:
    — then renders the per-`(fixture, rubric)` delta with the LLM-free
    [`evals/tune.py`](#evalstunepy) helpers. The candidate run self-stamps
    `prompt_version=candidate:<hash>`, so it is quarantined from score-over-time
-   exactly like the `--prompt-overrides` CLI path. A 2×-cost `confirm()` gate (≈$0.20
+   exactly like the `--prompt-overrides` CLI path. A 2×-cost `confirm()` gate (≈$0.70–0.80
    smoke / ≈$0.60 full) guards the two paid runs. It mirrors `/api/eval/run`'s input
    contract, including the optional corpus-seed mode (`slug` + `username` →
    `evals/fixtures/real/<slug>/seed.json`).
@@ -865,7 +865,7 @@ These ride along on every eval result and surface in the dashboard's recent-eval
 | `verb_diversity.diversity_ratio` | ≥ 0.6 | < 0.5: inspect `top_repeated`. SYSTEM_PROMPT already discourages verb repetition; if it persists, strengthen with a worked example like the grounding one. |
 | `specificity_density.density` | 0.30–0.80 | < 0.30: LLM under-quantified — likely paraphrasing real numbers from source into qualitative language. > 0.80: number-stuffing risk — cross-check grounding score. |
 | `grounding_overlap.overlap_ratio` | 0.20–0.50 | The ratio alone is NOT a pass/fail signal. Always read `missing_samples` for items containing technology names, domain nouns, or company-specific phrases — those are the fabrication candidates. Pure-stopword n-grams are filtered out automatically. |
-| `cost_usd` (per fixture) | $0.10–$0.15 (Sonnet 4.6 + 1× Haiku judge call) | A spike usually means a longer-than-usual generation — check `pipeline_latency_ms` and the corresponding `logs/llm_calls.jsonl` entry's `output_tokens`. |
+| `cost_usd` (per fixture) | $0.10–$0.15 (Sonnet 5 + 1× Haiku judge call) | A spike usually means a longer-than-usual generation — check `pipeline_latency_ms` and the corresponding `logs/llm_calls.jsonl` entry's `output_tokens`. |
 
 ### How to read the dashboard
 
@@ -928,12 +928,16 @@ The exit-`2` contract above is a real gate, not advisory: a sub-`PASS_THRESHOLD`
 
 ## Cost considerations
 
-Per-run cost (Claude Sonnet 4 + Haiku 4.5 pricing as of early 2026):
+Per-run cost (Claude Sonnet 5 + Haiku 4.5 pricing):
 
 | Subset | Pipeline calls | Grading calls | Total LLM calls | Approx. cost |
 |---|---|---|---|---|
-| `--subset smoke` (3 fixtures × 1 rubric) | 6 (3 analyze + 3 generate) | 3 | 9 | ~$0.10 |
-| `--subset full` (3 fixtures × 4 rubrics) | 6 | 12 | 18 | ~$0.30 |
+| `--subset smoke` (3 fixtures × 1 rubric) | 6 (3 analyze + 3 generate) | 3 | 9 | ~$0.35–0.40 |
+| `--subset full` (3 fixtures × 4 rubrics) | 6 | 12 | 18 | ~$0.30* |
+
+_* `full` hasn't been re-measured since the Sonnet 5 upgrade (2026-07-05); treat as
+approximate — the smoke figure above is a live post-upgrade measurement
+(2026-07-07 UX review, `docs/dev/reviews/2026-07-ux-review/`), 3 fixtures × ~$0.12 = ~$0.37._
 
 Each new fixture adds 2 pipeline calls + N grading calls (where N = number of rubrics). The pipeline calls are the dominant cost (Sonnet input + output). Grading calls are cheap (Haiku, structured output, ~1024 max tokens).
 

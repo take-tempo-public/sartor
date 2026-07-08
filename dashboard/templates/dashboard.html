@@ -194,7 +194,7 @@
 <!-- ============================ PIPELINE ============================ -->
 <section class="dash-pane" data-pane="pipeline" role="tabpanel">
   <p class="dash-pane-intro">
-    <span>Live cost, latency, cache, reliability, and a per-run trace for every LLM call — reads <code class="short">logs/llm_calls.jsonl</code>.</span>
+    <span>Live cost, latency, cache, error rate, and a per-run trace for every LLM call — reads <code class="short">logs/llm_calls.jsonl</code>.</span>
     <button class="help-info" id="help-icon-dashPipeline" data-help="dashPipeline" type="button"
             title="About the Pipeline tab" aria-label="Help: Pipeline — live call telemetry"
             aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
@@ -232,8 +232,8 @@
       <span class="v">{{ summary.count }}</span>
       <span class="sub">cache hit <span class="num">{{ "%.0f"|format(summary.cache_hit_ratio * 100) }}%</span> · {{ summary.total_input_tokens }} in / {{ summary.total_output_tokens }} out</span>
     </button>
-    <button class="tile" data-detail="reliability" data-title="Reliability — errors & truncation">
-      <span class="k">reliability</span>
+    <button class="tile" data-detail="reliability" data-title="Error rate — errors & truncation">
+      <span class="k">error rate</span>
       <span class="v {% if reliability.error_count or reliability.truncation_count %}err{% else %}ok{% endif %}">{{ "%.0f"|format(reliability.error_rate * 100) }}%</span>
       <span class="sub">{{ reliability.error_count }} error · {{ reliability.truncation_count }} truncated (max_tokens)</span>
     </button>
@@ -817,7 +817,7 @@
     dashPipeline: {
       title: 'Pipeline — live call telemetry',
       body: 'This tab shows telemetry for every LLM call the app makes — total '
-        + 'cost, token usage, cache-hit rate, latency, reliability, and a '
+        + 'cost, token usage, cache-hit rate, latency, error rate, and a '
         + 'per-run trace waterfall. It reads logs/llm_calls.jsonl, which fills '
         + 'in as you run analyze + generate from the main app, so it stays empty '
         + 'until you have run the pipeline at least once. Click any tile to '
@@ -828,7 +828,7 @@
       body: 'This tab grades generated résumés against the eval rubrics on a 0–5 '
         + 'scale. "Synthetic" grades against committed sample fixtures; "anchor" '
         + 'is the small always-on smoke set. "Smoke" runs a fast grounding-only '
-        + 'subset (≈$0.10); "full" runs all four rubrics (≈$0.30). The "grounding '
+        + 'subset (≈$0.35–0.40 under Sonnet 5); "full" runs all four rubrics (≈$0.30). The "grounding '
         + 'signals" checkbox additionally runs the heavier DeBERTa/MiniCheck '
         + 'scorers. Every run makes paid Sonnet + Haiku calls. The panel is empty '
         + 'until you run an eval here or from the CLI; results land in '
@@ -1165,13 +1165,13 @@
   var prog = document.getElementById('evalProgress');
   function updateCost() {
     cost.textContent = subsetSel.value === 'smoke'
-      ? '≈ $0.10 — 3 fixtures × grounding (paid Sonnet + Haiku, ~1–2 min).'
+      ? '≈ $0.35–0.40 — 3 fixtures × grounding, Sonnet 5 (paid Sonnet + Haiku, ~1–2 min).'
       : '≈ $0.30 — 3 fixtures × 4 rubrics (paid Sonnet + Haiku, ~4–6 min).';
   }
   subsetSel.addEventListener('change', updateCost); updateCost();
   btn.addEventListener('click', function () {
     var suite = suiteSel.value, subset = subsetSel.value;
-    var estimate = subset === 'smoke' ? '~$0.10' : '~$0.30';
+    var estimate = subset === 'smoke' ? '~$0.35-0.40' : '~$0.30';
     if (!window.confirm('Run the ' + suite + ' / ' + subset + ' eval now?\n\nThis makes paid Sonnet + Haiku API calls (' + estimate + ') and takes a few minutes.')) return;
     run({ suite: suite, subset: subset, grounding_signals: grounding.checked }, prog, btn, function () {
       prog.textContent += ' Reloading…';

@@ -162,7 +162,7 @@ Per-file responsibility:
   format checks, document rendering, schema transformations.
 - `analyzer.py` — the only module that calls the LLM. Every
   call has a stated `call_kind`, a model assignment (Sonnet
-  4.6 for heavy reasoning; Haiku 4.5 for structured
+  5 for heavy reasoning; Haiku 4.5 for structured
   selection), and a logged cost. The prompt set is
   versioned via `PROMPT_VERSION` so the eval dashboard can
   attribute behavior to specific prompt revisions.
@@ -287,7 +287,7 @@ prettier but don't parse don't ship.
 ### The analyze step is the latency floor
 
 `analyze` is the slowest call on the critical path (p50 ~90s
-on Sonnet 4.6 for ~4500 output tokens). Two v1.1 optimizations
+on Sonnet 5 for ~4500 output tokens). Two v1.1 optimizations
 are queued: streaming the response so perceived latency drops
 to 10-15s, and splitting the call into a Haiku-fast first
 pass (structured JD fields) + Sonnet-deep second pass (prose

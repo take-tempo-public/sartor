@@ -256,7 +256,7 @@ def run_step1(page: Page) -> None:
     wait_quiet(page)
     cap(page, "walkthrough_step1pre_jd-textarea.png")
 
-    print("  · clicking Analyze; this is the ~30-60s Sonnet 4.6 call…")
+    print("  · clicking Analyze; this is the ~30-60s Sonnet 5 call…")
     job.analyze()
     wait_quiet(page, 1200)
     page.evaluate("""
@@ -336,7 +336,7 @@ def run_step5_and_6(page: Page) -> None:
     WizardTemplatePage(page, APP_URL).continue_to_generate()
     wait_quiet(page)
 
-    print("  · generating résumé (~30-60s Sonnet 4.6 call)…")
+    print("  · generating résumé (~30-60s Sonnet 5 call)…")
     gen = WizardGeneratePage(page, APP_URL)
     gen.generate()
     wait_quiet(page, 2000)

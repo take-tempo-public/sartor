@@ -94,7 +94,7 @@ def run_analysis_stream() -> ResponseReturnValue:
     Same request shape and same final response payload as /api/analyze,
     but the response is delivered as Server-Sent Events so the frontend
     can render tokens as they arrive instead of waiting ~90s for the
-    full Sonnet 4.6 response. Backed by `analyze_streaming` in analyzer.py.
+    full Sonnet 5 response. Backed by `analyze_streaming` in analyzer.py.
 
     Event types emitted on the SSE stream:
       - `chunk`: `{"text": "<delta>"}` for each text delta from the model

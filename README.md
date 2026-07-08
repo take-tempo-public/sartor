@@ -1,5 +1,9 @@
 # Sartor
 
+*(Formerly named **Callback** — renamed in July 2026 to avoid confusion with the
+recruiting term "callback" [getting called back for an interview]. Same project,
+new name; see [`CHANGELOG.md`](CHANGELOG.md) for the rename record.)*
+
 > **Purpose:** the product front door — what Sartor is, who it's for, and where to go deeper. Also the home page the hosted docs site renders.
 > **Audience:** `user` — the one place all three audiences (job seeker · coach · developer) meet; routes developers onward to the dev-tier homes.
 > **Authoritative for:** the product positioning, the three-audience cumulative ladder, and at-a-glance orientation + the documentation map. Everything else is **cited**; the linked canonical home governs on conflict.
@@ -27,12 +31,33 @@ The core discipline: **the LLM discovers and phrases — it does not invent.** N
 
 ---
 
+## Three ways to meet Sartor
+
+However you found this repo, pick your lane — each points into the doc set above:
+
+- **Use it.** Tailor résumés for yourself or, if you're a coach/recruiter, for
+  many clients. Start at [For job seekers](#for-job-seekers) or
+  [For coaches & headhunters](#for-coaches--headhunters); [Install](#install)
+  gets you running in a few commands.
+- **Develop on it.** Run it locally, self-host it, or send a PR against the
+  core product. Start at [Install](#install), then
+  [`CONTRIBUTING.md`](CONTRIBUTING.md) for the dev loop and branch conventions.
+- **Extend it.** Tune the prompts, add a new capability, or lift out a
+  reusable substrate (memory, grounding, evaluation). Start at
+  [For developers](#for-developers). One scoping note: the tuning slash
+  commands mentioned there (`/prompt-tune`, `/tune-from-annotations`, …) are
+  **Claude Code commands** — they need the `sartor` plugin
+  ([`CLAUDE.md`](CLAUDE.md)); the eval harness itself
+  (`python evals/runner.py …`) needs no plugin at all.
+
+---
+
 ## What Sartor does
 
 Generic AI résumé tools pad a history with claims that fall apart in an interview, and emit formats that automated résumé screeners (ATS) choke on. Sartor is the opposite bet:
 
 - **It only asserts what's true.** It discovers real, undocumented experience — in the candidate's own words — then rewrites and synthesizes toward the job, without inventing.
-- **It's ATS-safe by default.** Bundled templates are single-column, plain-bullet, standard-font. Non-ATS-safe templates were retired.
+- **It's ATS-safe by default.** ATS = the applicant-tracking software employers use to auto-screen incoming résumés. Bundled templates are single-column, plain-bullet, standard-font; non-ATS-safe templates were retired.
 - **The human stays in control.** Two required review gates, plus optional clarifying interviews. It hands you documents (`.md` / `.docx` / `.pdf`); submitting is yours to do.
 - **It builds a career corpus that compounds.** Import a résumé once and it becomes a structured, reusable body of experience; every clarifying answer, edit, and approved bullet is saved and improves the next résumé.
 
@@ -74,7 +99,53 @@ A sequence of small, inspectable stages — full sequence + diagrams in [`docs/a
 
 **Two required human gates** bracket the work; the clarification interviews between them are optional and cheap. **Discover, don't invent:** output is grounded in the union of (corpus + clarifying answers + the candidate's own typed edits); a grounding check and a deterministic witness metric measure that it holds — see [`generation-and-grounding`](docs/wiki/pages/generation-and-grounding.md) and [`docs/dev/GROUNDING_METRIC.md`](docs/dev/GROUNDING_METRIC.md).
 
-**Model routing** (canonical: [`docs/architecture.md`](docs/architecture.md) · [`llm-call-catalog`](docs/wiki/pages/llm-call-catalog.md)): heavy reasoning (analyze, clarify, generate, cover letter) runs on **Claude Sonnet**; structured selection (recommend, extract, critique) and the docs assistant run on **Claude Haiku**. Sartor's tailoring uses the **hosted Claude API only** — no fine-tuned generation model, nothing trained on your data. "Tuning" here means *prompt, eval, and retrieval* tuning, never model fine-tuning.
+---
+
+## Install
+
+**Prerequisites:** [`git`](https://git-scm.com/downloads), Python 3.11+, and an
+Anthropic API key ([console.anthropic.com](https://console.anthropic.com/)).
+Full prerequisites + OS-specific notes: [`docs/install.md`](docs/install.md).
+
+**From source (works today):**
+
+```bash
+git clone https://github.com/take-tempo-public/sartor
+cd sartor
+pip install -e .
+sartor --setup                             # one-time: Chromium (PDF) + the recall index
+export ANTHROPIC_API_KEY=your-key-here     # or put it in a .api_key file at the repo root
+sartor                                      # (or: python app.py)
+```
+
+**Container (Docker or Podman) — batteries included** (Chromium + recall index baked in):
+
+```bash
+docker run -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
+  ghcr.io/take-tempo-public/sartor            # podman run … works identically
+```
+
+Then open `http://localhost:5000`. `sartor --setup` replaces the manual
+`python -m playwright install chromium` step (it also builds the semantic-recall
+index). A **`pip install sartor` / `uvx sartor`** path is planned once the wheel
+ships its data files (tracked follow-up). Full setup (Windows/macOS/Linux),
+container data-persistence, cost guidance, and troubleshooting:
+[`docs/install.md`](docs/install.md). Cap spend via
+[Anthropic usage limits](https://console.anthropic.com/settings/limits) — Sartor
+has no built-in budget guard.
+
+---
+
+## Model routing
+
+Canonical: [`docs/architecture.md`](docs/architecture.md) ·
+[`llm-call-catalog`](docs/wiki/pages/llm-call-catalog.md). Heavy reasoning
+(analyze's synthesis pass, generate, cover letter) runs on **Claude Sonnet**;
+structured selection (analyze's extraction pass, clarify, recommend, extract,
+critique) and the docs assistant run on **Claude Haiku**. Sartor's tailoring
+uses the **hosted Claude API only** — no fine-tuned generation model, nothing
+trained on your data. "Tuning" here means *prompt, eval, and retrieval*
+tuning, never model fine-tuning.
 
 ---
 
@@ -152,39 +223,8 @@ Pointers to the canonical homes; depth lives there, not here.
 - **Dev loop** (canonical: [`CONTRIBUTING.md`](CONTRIBUTING.md)):
   ```bash
   ruff check . && mypy . && pytest        # the minimum bar; CI runs the same
-  python evals/runner.py --suite synthetic --subset smoke   # grounding-only, ~$0.10
+  python evals/runner.py --suite synthetic --subset smoke   # grounding-only, ~$0.35-0.40 under Sonnet 5
   ```
-
----
-
-## Install
-
-**From source (works today):**
-
-```bash
-git clone https://github.com/take-tempo-public/sartor
-cd sartor
-pip install -e .
-sartor --setup                             # one-time: Chromium (PDF) + the recall index
-export ANTHROPIC_API_KEY=your-key-here     # or put it in a .api_key file at the repo root
-sartor                                      # (or: python app.py)
-```
-
-**Container (Docker or Podman) — batteries included** (Chromium + recall index baked in):
-
-```bash
-docker run -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
-  ghcr.io/take-tempo-public/sartor            # podman run … works identically
-```
-
-Then open `http://localhost:5000`. `sartor --setup` replaces the manual
-`python -m playwright install chromium` step (it also builds the semantic-recall
-index). A **`pip install sartor` / `uvx sartor`** path is planned once the wheel
-ships its data files (tracked follow-up). Full setup (Windows/macOS/Linux),
-container data-persistence, cost guidance, and troubleshooting:
-[`docs/install.md`](docs/install.md). Cap spend via
-[Anthropic usage limits](https://console.anthropic.com/settings/limits) — Sartor
-has no built-in budget guard.
 
 ---
 

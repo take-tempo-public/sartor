@@ -165,7 +165,7 @@ deterministically (no LLM) to extract text, then one Haiku 4.5
 call to `extract_experiences()` parses the text into structured
 experiences, titles, and bullets. Haiku 4.5 is Anthropic's small +
 fast model — sartor. uses it for selection and parsing; the
-larger Sonnet 4.6 model handles writing. Cost: ~$0.02. The result
+larger Sonnet 5 model handles writing. Cost: ~$0.02. The result
 writes to `db/resume.sqlite` as the canonical corpus.
 
 **Why a structured corpus instead of just file uploads:** the
@@ -198,7 +198,7 @@ Corpus and Application tabs are the two top-level views of the app.
 description" with a paste-the-JD prompt. Right: an empty analysis
 panel that fills in once you click **Analyze**.
 
-![Step 1 with the job description pasted into the left textarea. Clicking Analyze triggers a ~30–60s Sonnet 4.6 call that fills the right panel with skill matches, gaps, and ATS warnings.](screenshots/walkthrough_step1pre_jd-textarea.png)
+![Step 1 with the job description pasted into the left textarea. Clicking Analyze triggers a ~30–60s two-pass call (Haiku 4.5 extraction → Sonnet 5 synthesis) that fills the right panel with skill matches, gaps, and ATS warnings.](screenshots/walkthrough_step1pre_jd-textarea.png)
 
 **What you do:** paste the full JD (title + body + requirements +
 nice-to-haves). Click **Analyze**.
@@ -206,8 +206,10 @@ nice-to-haves). Click **Analyze**.
 **Under the hood:** [`/api/analyze`](../app.py) calls
 `analyze()` in [`analyzer.py`](../analyzer.py).
 
-- **Model:** Sonnet 4.6 (the heavy-reasoning model — Sonnet is used
-  for any call where the LLM is writing or reasoning, not picking).
+- **Model:** two-pass — a Haiku 4.5 pass extracts JD signals first,
+  then Sonnet 5 (the heavy-reasoning model — Sonnet is used for any
+  call where the LLM is writing or reasoning, not picking)
+  synthesizes the comparison, suggestions, and overall strategy.
 - **Cost:** ~$0.04 per call (most of the user prefix is cache-hit
   on the second analysis in a session).
 - **Latency:** ~30–60s — the slowest call in the pipeline. It
@@ -251,7 +253,7 @@ that aren't relevant. Click **Submit clarifications**.
 **Under the hood:** two routes are involved.
 
 - [`/api/clarify`](../app.py) calls `clarify()` in
-  [`analyzer.py`](../analyzer.py) — Sonnet 4.6, ~$0.03.
+  [`analyzer.py`](../analyzer.py) — Haiku 4.5, ~$0.03.
   Reads the analysis from Step 1 and the gap list, asks
   *targeted* questions to surface real-but-undocumented experience.
 - [`/api/answer-clarifications`](../app.py) saves your answers into
@@ -391,7 +393,7 @@ runs; a preview of the generated text once done.
 **Under the hood:** [`/api/generate`](../app.py) calls
 `generate()` in [`analyzer.py`](../analyzer.py).
 
-- **Model:** Sonnet 4.6 — this is the writing call, the heaviest
+- **Model:** Sonnet 5 — this is the writing call, the heaviest
   reasoning point in the pipeline.
 - **Cost:** ~$0.05–$0.15 depending on context size (longer corpus +
   more clarifications = more tokens).
@@ -472,7 +474,7 @@ doesn't), then you can refine it the same way as the résumé.
 
 **Under the hood:** [`/api/generate-cover-letter`](../app.py)
 calls `generate_cover_letter_against_resume()` in
-[`analyzer.py`](../analyzer.py) — Sonnet 4.6, ~$0.04–$0.08.
+[`analyzer.py`](../analyzer.py) — Sonnet 5, ~$0.04–$0.08.
 The cover letter has full refine/iterate parity with the résumé
 flow (same edit-aware refinement, same audit trail).
 
