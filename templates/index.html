@@ -746,6 +746,37 @@
             <div id="skillsEditorList"></div>
           </section>
 
+          <!-- F-04 (UX-W1, 2026-07-07) — Education editor. Candidate-level
+               Corpus Item, same chrome as the Skills editor above. No
+               pending-review lifecycle (a human types these directly; see
+               db/models.py Education). Reorder is two ↑/↓ buttons per row
+               (mirrors the Compose bullet-list keyboard-reorder affordance —
+               .reorder-controls/.reorder-btn — since neither the Skills nor
+               Summary-variant editors have reorder chrome to copy). -->
+          <section class="education-editor-section" id="educationEditorSection" style="display:none">
+            <div class="corpus-section-header">
+              <div class="corpus-section-title">Education</div>
+              <button class="corpus-action-btn" onclick="openEducationAdd()">+ Add education</button>
+            </div>
+            <div class="edit-hint" id="educationEditorEmptyHint" style="margin-bottom:8px">
+              Schools and degrees the résumé can surface.
+            </div>
+            <div id="educationEditorList"></div>
+          </section>
+
+          <!-- F-04 (UX-W1, 2026-07-07) — Certifications editor. Same shape
+               as the Education editor immediately above. -->
+          <section class="certifications-editor-section" id="certificationsEditorSection" style="display:none">
+            <div class="corpus-section-header">
+              <div class="corpus-section-title">Certifications</div>
+              <button class="corpus-action-btn" onclick="openCertificationAdd()">+ Add certification</button>
+            </div>
+            <div class="edit-hint" id="certificationsEditorEmptyHint" style="margin-bottom:8px">
+              Professional certifications the résumé can surface.
+            </div>
+            <div id="certificationsEditorList"></div>
+          </section>
+
           <div id="corpusExperienceList" class="corpus-experience-list"></div>
         </div>
       </section>
@@ -1168,17 +1199,50 @@
               <label for="cfgWebsite">Website</label>
               <input type="url" id="cfgWebsite" name="cfgWebsite" autocomplete="url">
             </div>
-            <div class="form-row">
+            <!-- F-03/F-04 (UX-W1, 2026-07-07) — one home per section. These
+                 three flat fields are a ONE-TIME seed into the Career-corpus
+                 Skill/Certification/Education rows on first provisioning
+                 (onboarding/corpus_import.py); after that the corpus is
+                 authoritative and editing here would be a dead control. Each
+                 field ships as a pair: the live input (shown pre-provision,
+                 when there is nothing yet to point at) and a labeled pointer
+                 into the Career-corpus editor (shown post-provision). JS
+                 (_applyCorpusModeToSettingsFields, loadConfig's needs_onboarding
+                 read) toggles which one is visible; never both. Chose a
+                 pointer over a live mirror — the smallest honest option that
+                 still tells the truth about which control does something. -->
+            <div class="form-row" id="cfgSkillsFieldRow">
               <label for="cfgSkills">Skills</label>
               <input type="text" id="cfgSkills" placeholder="Comma-separated skills">
             </div>
-            <div class="form-row">
+            <div class="form-row hidden" id="cfgSkillsCorpusRow">
+              <label>Skills</label>
+              <p class="edit-hint settings-corpus-pointer">
+                Managed in your Career corpus now — this field no longer affects your résumé.
+                <button type="button" class="corpus-action-btn" onclick="_goToCareerCorpusFromSettings()">Go to Career corpus →</button>
+              </p>
+            </div>
+            <div class="form-row" id="cfgCertsFieldRow">
               <label for="cfgCerts">Certifications</label>
               <input type="text" id="cfgCerts" placeholder="Comma-separated certifications">
             </div>
-            <div class="form-row">
+            <div class="form-row hidden" id="cfgCertsCorpusRow">
+              <label>Certifications</label>
+              <p class="edit-hint settings-corpus-pointer">
+                Managed in your Career corpus now — this field no longer affects your résumé.
+                <button type="button" class="corpus-action-btn" onclick="_goToCareerCorpusFromSettings()">Go to Career corpus →</button>
+              </p>
+            </div>
+            <div class="form-row" id="cfgEducationFieldRow">
               <label for="cfgEducation">Education</label>
               <input type="text" id="cfgEducation" placeholder="Education summary">
+            </div>
+            <div class="form-row hidden" id="cfgEducationCorpusRow">
+              <label>Education</label>
+              <p class="edit-hint settings-corpus-pointer">
+                Managed in your Career corpus now — this field no longer affects your résumé.
+                <button type="button" class="corpus-action-btn" onclick="_goToCareerCorpusFromSettings()">Go to Career corpus →</button>
+              </p>
             </div>
             <div class="form-row">
               <label for="cfgNotes">Notes</label>

@@ -2707,6 +2707,18 @@ textarea:focus-visible {
   border-bottom: 1px solid #2b2b40;
 }
 
+/* F-03/F-04 (UX-W1, 2026-07-07) — the Settings drawer's flat-field pointer
+   rows (Skills/Certifications/Education, once a corpus exists). Same
+   .edit-hint text, just enough spacing so the inline "Go to Career corpus"
+   button doesn't hug the sentence above it. */
+.settings-corpus-pointer {
+  margin-bottom: 0;
+}
+.settings-corpus-pointer .corpus-action-btn {
+  display: inline-block;
+  margin-top: 6px;
+}
+
 /* =============================================================== */
 /* Workstream B1.2 — duplicates clusters in the Career Corpus tab  */
 /* =============================================================== */

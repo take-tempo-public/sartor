@@ -13,6 +13,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feat: one home per section — corpus skills/education/certifications editors + honest Settings fields (`feat/ux-w1-skills-education`, 2026-07-07)
+
+UX-review Wave 1, F-03 + F-04 (`docs/dev/reviews/2026-07-ux-review/40-friction-register.md`).
+Both findings were SHARPENED during the review's verification pass, and the
+F-02 skills-import fix that just merged to `main` changed the F-03 landscape
+further (résumé import now also feeds the corpus Skill rows), so this branch
+re-verified both against current code before designing a fix.
+
+- **F-03 — one home for Skills.** The Settings drawer's flat Skills field
+  is a ONE-TIME seed into the corpus (`onboarding/corpus_import.py`), not a
+  permanent "legacy mode": `blueprints/analysis.py` confirms Phase C.4 already
+  removed the file-based analyze/generate path for every user — everyone is
+  corpus-backed once `_get_or_provision_candidate` has run once (on the first
+  Analyze, or any Career-corpus write). So the real per-candidate state is
+  pre-provision (flat field is still the only source of truth — nothing to
+  point at yet) vs. post-provision (corpus Skill rows are authoritative, and
+  the flat field silently does nothing). `GET /api/users/<u>/config` now
+  returns `needs_onboarding` (does a Candidate DB row exist yet — the same
+  flag `/api/users/<u>/experiences` etc. already expose) so the frontend can
+  tell the two states apart. Chose the smallest honest fix: pre-provision, the
+  live input renders unchanged; post-provision, it's replaced by a labeled
+  "Managed in your Career corpus now… Go to Career corpus →" pointer that
+  switches to the Corpus tab. No live mirror (extra fetch, staleness risk for
+  no real benefit over a link) and no automatic data migration between the two
+  homes — only the existing one-time config-seed import.
+- **F-04 — a real corpus editor for Education + Certifications.** The
+  `Education`/`Certification` DB tables already existed and were already
+  consumed (`db/build_context.py` reads both, ordered by `display_order`, into
+  the synthesized corpus-mode résumé the analyze/generate prompts see) — the
+  gap was UI-only. Added 8 routes (`blueprints/corpus/career_assets.py`, list/
+  create/update/delete × 2 entities, candidate-scoped via `_safe_username`,
+  DB-only so no filesystem containment applies) and a matching Career-corpus
+  editor section for each, reusing the Skills editor's row chrome
+  (`.summary-variant-row` / `.corpus-action-btn`) rather than inventing a new
+  component family. Neither entity gets a pending-review/LLM-proposal
+  lifecycle (the DB models carry no `source`/`is_pending_review` column — a
+  human types these directly). Delete always soft-retires (`is_active=0`,
+  already on both models) — never hard-deleted, matching the project's
+  "nothing hard-deleted" promise. Reorder: since neither the Skills nor
+  Summary-variant editors have visible reorder controls to copy, added a small
+  swap-with-neighbor ↑/↓ affordance (`.reorder-controls`/`.reorder-btn`,
+  reused from the Compose bullet-list's keyboard-reorder styling) that PUTs
+  both affected rows' `display_order` immediately. The Settings drawer's flat
+  Certifications/Education fields get the exact same F-03 pointer treatment.
+- No data migration: the flat config fields and the corpus rows stay two
+  independent homes, reconciled only by the existing one-time import — never
+  synced automatically, per the review's explicit scope.
+
 ### Feat: first-run flow — calm Analyze + guided landing + display-name-first + application company capture (`feat/ux-w1-first-run-flow`, 2026-07-07)
 
 UX-review Wave 1 "first-run delight" slice — F-12 / F-06 / F-05 / F-15 from

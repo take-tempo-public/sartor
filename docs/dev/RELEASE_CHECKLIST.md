@@ -519,7 +519,22 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       analysis") · F-06 one-time corpus-landing transition modal · F-05
       display-name-first user form with live slug derivation · F-15 deterministic
       company capture onto applications — **F-12/F-06/F-05/F-15 DONE 2026-07-07
-      (`feat/ux-w1-first-run-flow`).** Screenshot evidence
+      (`feat/ux-w1-first-run-flow`).** F-03 two skills homes (flat Settings field
+      goes inert after first corpus provisioning) + F-04 education/certifications
+      have no corpus panel — **F-03/F-04 DONE 2026-07-07
+      (`feat/ux-w1-skills-education`)**: one home per section —
+      `GET /api/users/<u>/config` now returns `needs_onboarding` (Candidate DB
+      row exists?); the Settings drawer's flat Skills/Certifications/Education
+      fields show a labeled "Go to Career corpus →" pointer once a candidate is
+      provisioned (corpus authoritative) and stay live, unchanged, pre-provision
+      (the true legacy state — Phase C.4 already removed the file-based
+      analyze/generate path for everyone, so this is a per-candidate lifecycle
+      flag, not a permanent second mode); new candidate-level Education +
+      Certification corpus editors (8 routes, `blueprints/corpus/career_assets.py`)
+      mirror the Skills editor's add/edit/retire chrome, soft-retire only
+      (never hard-deleted), with a swap-and-persist ↑/↓ reorder. No automatic
+      data migration between the flat fields and the corpus rows (only the
+      existing one-time `import_candidate_from_config` seed). Screenshot evidence
       (gitignored, local): `output/ux-review-2026-07-screenshots/` + its MANIFEST.md.
       _(discovered: 2026-07-07, `docs/ux-review-2026-07`; open count 11 → 12.)_
       **→ Integrate as `fix/ux-review-wave0-*` branches before any public tag;**
