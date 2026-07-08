@@ -7,6 +7,19 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+  <!-- F-19 offline/demo mode — persistent, always-visible banner while the
+       demo env flag is set (config.Config.demo_mode -> app.config["DEMO_MODE"],
+       injected into every Jinja template by Flask's default context
+       processor; see demo_fixtures.is_demo_mode for the env var name). Renders
+       BEFORE the skip link, at the very top, so it's the first thing on the
+       page — never a dismissible toast someone can miss. NOTE: no all-caps
+       brand mark in this comment — HTML comments ship in the rendered page and
+       tests/test_avatar_streaming.py scans it for the brand-mark rule. -->
+  {% if config.DEMO_MODE %}
+  <div class="demo-mode-banner" role="status">
+    Demo mode — canned AI responses, no API calls
+  </div>
+  {% endif %}
   <!-- Skip link — visible only on focus. Lets keyboard users bypass the
        LCARS top bar and jump straight into the first interactive panel. -->
   <a href="#main" class="skip-link">Skip to main content</a>

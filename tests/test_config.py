@@ -70,6 +70,9 @@ class TestAsFlaskConfig:
             "BUNDLED_PERSONAS_DIR",
             "ALLOWED_EXTENSIONS",
             "HOST",
+            # F-19 demo mode (feat/ux-w3-demo-mode) — not a legacy app.py global;
+            # surfaces Config.demo_mode to templates as config.DEMO_MODE.
+            "DEMO_MODE",
         }
         assert flask_cfg["CONFIGS_DIR"] == tmp_path / "configs"
         assert flask_cfg["HOST"] == "127.0.0.1"

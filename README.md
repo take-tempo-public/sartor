@@ -134,6 +134,21 @@ container data-persistence, cost guidance, and troubleshooting:
 [Anthropic usage limits](https://console.anthropic.com/settings/limits) — Sartor
 has no built-in budget guard.
 
+**Try it without an API key** — demo mode serves canned, deterministic AI
+responses (no key, no network calls, no spend), so you can walk the whole
+analyze → compose → generate flow before committing a budget:
+
+```bash
+SARTOR_DEMO=1 sartor          # PowerShell: $env:SARTOR_DEMO = "1"; sartor
+```
+
+A persistent banner ("Demo mode — canned AI responses, no API calls") stays
+visible the whole time, and demo runs never touch the telemetry log or the
+diagnostics dashboard's cost/latency stats. The canned outputs tell one
+coherent story (an SRE candidate against an SRE job posting, adapted from the
+project's synthetic eval fixtures) — they are **not** tailored to your input.
+If a real key is present alongside the flag, demo still wins: nothing spends.
+
 ---
 
 ## Model routing

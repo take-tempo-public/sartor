@@ -13,6 +13,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feat: demo mode — run without an API key (`feat/ux-w3-demo-mode`, 2026-07-07)
+
+UX review F-19 (`docs/dev/reviews/2026-07-ux-review/40-friction-register.md`): a
+technical evaluator had no way to see the product without a billed Anthropic key.
+
+- **Activation.** `SARTOR_DEMO=1` (env) is the single source of truth
+  (`demo_fixtures.is_demo_mode()`); `config.Config.demo_mode` reads it as a
+  `field(default_factory=...)` so `create_app()` surfaces it to Flask config
+  (`DEMO_MODE`, for the banner) with no extra wiring, while `analyzer.py` checks
+  the same env var directly so it keeps working outside a Flask request context
+  (evals, onboarding scripts, tests). Demo mode never activates implicitly — a
+  missing/blank key alone is unchanged (still fails at the first live API call,
+  same as always); a real key present alongside the flag still means demo (checked
+  before any key lookup, so a demo run can never accidentally spend).
+- **Mechanism.** `web_infra.clients._get_client()` returns a `_DemoClient`
+  sentinel instead of constructing `anthropic.Anthropic` when the flag is set —
+  no key read, no client built. Every one of `analyzer.py`'s 18 public LLM call
+  kinds (`analyze`, `analyze_streaming`, `avatar_answer_streaming`, `clarify`,
+  `clarify_iteration`, `generate`, `generate_streaming`,
+  `generate_cover_letter_against_resume`, `check_refinement_scope`,
+  `critique_proposal`, `recommend_bullets`, `recommend_summaries`,
+  `recommend_experience_summaries`, `recommend_skills`, `suggest_skills`,
+  `promote_clarification_to_bullet`, `draft_positioning_summary`,
+  `draft_gap_fill_bullets`) independently short-circuits to a canned response
+  before it would ever touch the client, so the sentinel is never dereferenced.
+  New product-side module `demo_fixtures.py` (LLM-free, like `hardening.py`)
+  holds the canned payloads: the analysis/clarify/résumé/cover-letter story is
+  adapted from `evals/fixtures/synthetic/sre-mid-level/` (a coherent JD +
+  candidate + analysis, not disconnected scraps); the `recommend_*` family
+  selects deterministically from whatever the caller staged on `context_set`
+  (never fixture-fixed ids that wouldn't exist in a real corpus); calls needing
+  genuine grounded judgment (`suggest_skills`, `draft_gap_fill_bullets`,
+  `critique_proposal`, `promote_clarification_to_bullet`,
+  `draft_positioning_summary`) return conservative, clearly-labeled no-ops
+  rather than fabricated content.
+- **Honesty.** A persistent, always-visible banner ("Demo mode — canned AI
+  responses, no API calls") renders at the very top of every page while
+  `DEMO_MODE` is set (`templates/index.html`, `.demo-mode-banner` in
+  `static/style.css`) — never a dismissible toast. Telemetry is suppressed by
+  construction, not filtered after the fact: every demo call kind returns
+  before it would ever call `analyzer._call_llm`/`_call_llm_streaming`, so
+  `logs/llm_calls.jsonl` and the `/_dashboard` cost/latency/reliability stats
+  never see a demo row.
+- Zero new dependencies; no `PROMPT_VERSION` change (no prompt touched); the
+  deterministic modules stay LLM-free.
+- Docs: README quickstart + `docs/install.md` gain a "Try it without an API
+  key" section.
+
 ### Docs: contributor-facing truth pass — reader paths, model routing, eval costs, README polish, dashboard label (`docs/ux-w3-contributor`, 2026-07-07)
 
 UX-review Wave 3 (contributor on-ramp): F-21, F-22, F-20, F-27, F-06d. Doc/copy-level

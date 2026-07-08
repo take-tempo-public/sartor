@@ -20,8 +20,10 @@ P1 Hardening boundary: this module is deterministic — no LLM calls (charter C-
 from __future__ import annotations
 
 import importlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+
+from demo_fixtures import is_demo_mode
 
 # The repo root. `config.py` is a top-level module (like `app.py`), so this is the
 # same directory `app.py:BASE_DIR` resolves to — the production default. This
@@ -80,6 +82,14 @@ class Config:
     # PX-19: pin the bind to loopback by construction (mirror at `app.run(...)`).
     host: str = "127.0.0.1"
     allowed_extensions: frozenset[str] = frozenset({".docx", ".pdf", ".md"})
+    # F-19 offline/demo mode. Defaults from the `SARTOR_DEMO=1` env var (the
+    # single source of truth `demo_fixtures.is_demo_mode()` also reads directly
+    # for analyzer.py, which must work outside a Flask request context) so a
+    # bare `Config()` — including the module-level `app = create_app()` in
+    # `app.py` — picks it up with no extra wiring. A test that wants demo mode
+    # OFF regardless of the environment can still pass `Config(demo_mode=False)`
+    # explicitly; the default only reads the env var.
+    demo_mode: bool = field(default_factory=is_demo_mode)
 
     # --- Derived roots (mirror the app.py module globals exactly) ---
     @property
@@ -161,4 +171,5 @@ class Config:
             "BUNDLED_PERSONAS_DIR": self.bundled_personas_dir,
             "ALLOWED_EXTENSIONS": self.allowed_extensions,
             "HOST": self.host,
+            "DEMO_MODE": self.demo_mode,
         }

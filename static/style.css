@@ -2148,6 +2148,29 @@ textarea:focus-visible {
 }
 
 /* =============================================================== */
+/* F-19 — offline/demo mode banner (SARTOR_DEMO=1)                 */
+/* Persistent, full-width, always at the very top of the page —    */
+/* deliberately not a dismissible toast. No text-transform here    */
+/* (some panel-header rules elsewhere apply uppercase; this one     */
+/* is a plain sentence, on purpose, so it reads at a glance).       */
+/* =============================================================== */
+
+.demo-mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--warning-soft);
+  border-bottom: 1px solid var(--warning);
+  color: var(--fg-0);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: none;
+}
+
+/* =============================================================== */
 /* Diagnostics pill (a <button> wearing .cb-pill) + modal code  */
 /* =============================================================== */
 

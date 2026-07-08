@@ -510,7 +510,11 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       production model (Sonnet 5)" below to proceed) · F-24/25/26
       install.md `[dev]`/`--setup` gaps + `pyproject.toml` `py-modules` omission
       (overlaps the PyPI-wheel item below — fix together). **F-24/25/26 DONE
-      2026-07-07 (`fix/packaging-install`).** Screenshot evidence
+      2026-07-07 (`fix/packaging-install`).**
+      **Wave 1+:** **F-19 DONE 2026-07-07 (`feat/ux-w3-demo-mode`)** — offline/demo
+      mode (`SARTOR_DEMO=1`): canned fixture-derived analyzer responses, zero
+      Anthropic client construction, persistent banner, telemetry-clean by
+      construction. Screenshot evidence
       (gitignored, local): `output/ux-review-2026-07-screenshots/` + its MANIFEST.md.
       _(discovered: 2026-07-07, `docs/ux-review-2026-07`; open count 11 → 12.)_
       **→ Integrate as `fix/ux-review-wave0-*` branches before any public tag;**
