@@ -47,6 +47,16 @@ jobs:
       - name: Pytest (unit tests)
         run: pytest
 
+      # Portable-enforcement-core CI backstop (feat/portable-enforcement-core, 2026-07-08):
+      # a repo-wide secrets scan, independent of whether a contributor's local hooks
+      # (Claude PreToolUse or the opt-in .githooks/, see .githooks/README.md) ran at all.
+      # Per docs/governance/enforcement.md ("CI is committed but latent until the git
+      # remote activates"), this whole workflow — this step included — is authored now
+      # and starts running for real only once `main` is pushed to a GitHub remote
+      # (Sprint 8.7); it is not a new latency mechanism of its own.
+      - name: Enforcement guards (repo-wide secrets backstop)
+        run: python -m scripts.enforcement.ci_backstop
+
   eval-smoke:
     name: Smoke eval (synthetic, label-gated)
     runs-on: ubuntu-latest

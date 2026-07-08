@@ -121,9 +121,20 @@ The v1.0.7 governance slice, with current ship state:
    gate** (F-sec-02, v1.0.8), **UX/a11y/PDF required CI job** (F-qe-rel-01 P0, v1.1.0),
    **E-2 machine badges** (F-qe-rel-03, v1.1.0).
 
-The two hook corrections on this branch (PX-24/PX-28) are narrow edits to existing
-Claude-only scripts; the **portable-enforcement-core migration** — lifting the portable
-guards into a tool-agnostic shared core invoked by both committed git-hooks and the
-Claude plugin, with CI as the server-side backstop — is **decided (split) and deferred**
-to the v1.0.8 gate epic when the remote/CI activates (charter W-1; design §5;
-[`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md) Carry-forward ledger).
+The two hook corrections that originally landed on PX-24/PX-28 were narrow edits to
+existing Claude-only scripts; the **portable-enforcement-core migration** — lifting the
+portable guards into a tool-agnostic shared core invoked by both committed git-hooks and
+the Claude plugin, with CI as the server-side backstop — was **decided (split) on
+`design/governance-extraction` (2026-06-15)** and **landed on
+`feat/portable-enforcement-core` (2026-07-08, Sprint 8.7 / TRAIN 4)**: one guard
+implementation per rule in `scripts/enforcement/guards/`, three consumers (the Claude
+PreToolUse adapter at the unchanged `.claude-plugin/hooks/*.sh` paths, the opt-in native
+git hooks at [`../../.githooks/`](../../.githooks/) via `core.hooksPath`, and the CI
+backstop step in `.github/workflows/ci.yml`, itself still latent until the git remote
+activates). The migration also fixed the two `block-merge-to-main` defects filed against
+it (the `merge-base`/`merge-tree` false positive, and resolving HEAD against the
+invocation's own cwd instead of the hook process's ambient cwd — see
+`scripts/enforcement/guards/block_merge_to_main.py`'s docstring and
+`tests/test_enforcement_core.py`). See charter W-1; design §5;
+[`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md) Carry-forward ledger for the
+resolution record.

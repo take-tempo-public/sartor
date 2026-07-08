@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Portable-enforcement-core git-native hook (feat/portable-enforcement-core,
+# 2026-07-08). Blocks a push updating refs/heads/main or refs/heads/master
+# unless CLAUDE_CONFIRM_MERGE=1 is set.
+#
+# Activation is OPT-IN: see .githooks/README.md
+# ("git config core.hooksPath .githooks"). Not activated automatically.
+#
+# Delegates to the shared guard implementations in scripts/enforcement/.
+# git passes <remote-name> <remote-url> as args and the updated-ref lines on
+# stdin; both are forwarded as-is (exec inherits stdin).
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+exec python3 "$REPO_ROOT/scripts/enforcement/adapters/git_hook.py" pre-push "$@"

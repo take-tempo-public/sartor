@@ -19,6 +19,15 @@
 .gitignore text eol=lf
 .gitattributes text eol=lf
 
+# Portable git-native hooks — extensionless shell scripts (git's hooksPath
+# contract requires the exact names `pre-commit`/`pre-merge-commit`/`pre-push`,
+# no `.sh`), so the `*.sh` rule above doesn't catch them. A CRLF-mangled
+# shebang line breaks `exec` on POSIX (Linux CI, macOS) and Git for Windows'
+# bundled sh alike, so pin LF the same as `*.sh`.
+.githooks/pre-commit text eol=lf
+.githooks/pre-merge-commit text eol=lf
+.githooks/pre-push text eol=lf
+
 # Binary — never diff or mangle
 *.docx  binary
 *.pdf   binary
