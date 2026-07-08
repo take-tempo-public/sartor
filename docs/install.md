@@ -82,6 +82,36 @@ sartor --setup   # installs Chromium for PDF + builds the semantic-recall index
 It is idempotent (safe to re-run) and prints what it's doing. `sartor --host` /
 `--port` override the bind address; `sartor --no-browser` skips the auto-open.
 
+## Try it without an API key (demo mode)
+
+Set `SARTOR_DEMO=1` to run without any Anthropic key — every AI step returns a
+canned, deterministic response instead of calling the API, so you can walk the
+full analyze → compose → generate flow with zero spend before deciding to get
+a key:
+
+```bash
+SARTOR_DEMO=1 sartor                       # macOS / Linux
+```
+
+```powershell
+$env:SARTOR_DEMO = "1"; sartor             # Windows PowerShell
+```
+
+What to expect:
+
+- A persistent banner — "Demo mode — canned AI responses, no API calls" — at
+  the top of every page while the flag is set.
+- The canned outputs tell one coherent story (an SRE candidate against an SRE
+  job posting, adapted from the project's synthetic eval fixtures); they are
+  **not** tailored to what you paste in.
+- No telemetry: demo runs never write to `logs/llm_calls.jsonl`, so the
+  diagnostics dashboard's cost/latency numbers stay real.
+- Demo mode never turns on by itself — a missing key without the flag still
+  produces the normal explicit error at the first AI call. And if a real key
+  *is* present alongside the flag, demo still wins: nothing spends.
+
+Unset the variable and restart to switch back to real AI calls.
+
 ## Maintainer: publishing (one-time `[HUMAN]` setup)
 
 Two workflows do the release automatically on a version tag (`vX.Y.Z`):

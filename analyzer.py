@@ -24,6 +24,8 @@ from typing import Any, Literal, cast
 import anthropic
 from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, model_validator
 
+import demo_fixtures
+from demo_fixtures import is_demo_mode as _demo_mode_active
 from hardening import ContextSet, CorpusExperience
 from recall.models import Context, Unit
 
@@ -1500,6 +1502,8 @@ def analyze(
     pass. P9 Token Economy counterweight: the split is justified by the measured
     single-call latency; the eval dual gate is the quality-floor enforcement.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call.
+        return demo_fixtures.demo_analysis()
     # P2 Context Hygiene: stable inputs (résumé + JD + profile) live in the
     # cached prefix; both passes share it byte-identically so Pass 2 (Sonnet)
     # writes the prompt-cache block that the later generate() call reads.
@@ -1658,6 +1662,11 @@ def analyze_streaming(
     The `phase` events let the SSE route swap the frontend status label per pass.
     Both passes share one cached_user_prefix so Pass 2 hits the prompt cache.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call.
+        yield ("phase", {"phase": "extraction"})
+        yield ("phase", {"phase": "synthesis"})
+        yield ("done", demo_fixtures.demo_analysis())
+        return
     prefix = _stable_user_prefix(context_set)
 
     yield ("phase", {"phase": "extraction"})
@@ -1818,6 +1827,13 @@ def avatar_answer_streaming(
     over-disclose regardless of what it proposes. Telemetry rides `_call_llm_streaming`
     stamped `call_kind="avatar_answer"`.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call, no real retrieval grounding.
+        for chunk in demo_fixtures.DEMO_AVATAR_ANSWER.split(" "):
+            yield ("chunk", chunk + " ")
+        payload = demo_fixtures.demo_avatar_answer()
+        payload["allow_dev"] = allow_dev
+        yield ("done", payload)
+        return
     mode = "dev" if allow_dev else "user"
     user_prompt = (
         f"<mode>{mode}</mode>\n\n"
@@ -1886,6 +1902,8 @@ def clarify(
     compact — just the analysis output and deterministic keyword gaps —
     because the full resume/JD has already been digested by the analyzer.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call.
+        return demo_fixtures.demo_clarify()
     # Compact inputs — the analyzer has already digested the resume + JD.
     # We pass only the structured outputs the clarifier needs to identify gaps.
     overlap = context_set.get("deterministic_analysis", {}).get("keyword_overlap", {})
@@ -2003,6 +2021,8 @@ def clarify_iteration(
 
     Returns the same shape as clarify(): {questions: [...], reasoning: ...}.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call.
+        return demo_fixtures.demo_clarify_iteration()
     # Compact prior-clarifications block — pair each question with its answer
     # so the LLM sees what's already established. Only confirmed (non-empty)
     # answers count; skipped questions are not "established truth".
@@ -2566,6 +2586,8 @@ def generate(
       - Grounding wording widens to acknowledge first-person typed edits as
         legitimate source material (mirrors the clarification carve-out).
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call.
+        return demo_fixtures.demo_generate(with_cover_letter=with_cover_letter)
     prompt, model_cls = _build_generate_prompt(
         context_set,
         analysis,
@@ -2609,6 +2631,11 @@ def generate_streaming(
     each event as a Server-Sent Event. Existing non-streaming callers
     keep using `generate()`.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call.
+        done = demo_fixtures.demo_generate(with_cover_letter=with_cover_letter)
+        yield ("chunk", "Drafting résumé (demo mode — canned output)…")
+        yield ("done", done)
+        return
     prompt, model_cls = _build_generate_prompt(
         context_set,
         analysis,
@@ -2671,6 +2698,8 @@ def generate_cover_letter_against_resume(
     iterated multiple times stays consistent with the candidate's
     typed-in edits and clarification answers.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call.
+        return demo_fixtures.demo_cover_letter()
     # Reuse the clarifications + iteration draft block construction
     # from generate(). These are pure functions of context_set so we
     # can build them inline here without duplicating logic.
@@ -2792,6 +2821,8 @@ def check_refinement_scope(client: anthropic.Anthropic, note: str) -> dict[str, 
     Out of scope: inventing experience, changing factual data, adding credentials
                   not in source, repurposing for a different role.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call.
+        return demo_fixtures.demo_refinement_scope()
     prompt = f"""A user submitted the following instruction for refining their resume and cover letter:
 
 <note>{note}</note>
@@ -2890,6 +2921,8 @@ def critique_proposal(
     `subject_kind` toggles minor wording in the prompt so a title critique
     doesn't read like a bullet critique.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call.
+        return demo_fixtures.demo_critique_proposal()
     edit_block = (
         f"The user edited the proposal to:\n  {user_edited_text}"
         if user_edited_text and user_edited_text.strip() != original_text.strip()
@@ -3009,6 +3042,8 @@ def recommend_bullets(
     raising the same LLMResponseError as the other calls when the model
     output can't be parsed after a retry.
     """
+    if _demo_mode_active():  # F-19 — canned selection over the caller's OWN staged corpus.
+        return demo_fixtures.demo_recommend_bullets(context_set.get("career_corpus"))
     corpus = context_set.get("career_corpus") or []
     if not corpus:
         # No corpus means nothing to recommend — return an empty payload
@@ -3161,6 +3196,8 @@ def recommend_summaries(
     `recommendation` is None when there are zero variants; the single
     variant otherwise. Alternates is always [].
     """
+    if _demo_mode_active():  # F-19 — canned selection over the caller's OWN staged variants.
+        return demo_fixtures.demo_recommend_summaries(context_set.get("summary_items"))
     # context_set is a TypedDict; `summary_items` is a transient key the
     # route stashes, so it's typed as object. Coerce defensively.
     items_raw = context_set.get("summary_items") or []
@@ -3367,6 +3404,10 @@ def recommend_experience_summaries(
     SUGGESTS — per-role intros are opt-in, so the frontend seeds the per-role
     picks from this and the user accepts/clears them; nothing is auto-applied.
     """
+    if _demo_mode_active():  # F-19 — canned selection over the caller's OWN staged variants.
+        return demo_fixtures.demo_recommend_experience_summaries(
+            context_set.get("experience_summary_items")
+        )
     raw = context_set.get("experience_summary_items") or []
     groups_in = list(raw) if isinstance(raw, list) else []
 
@@ -3607,6 +3648,8 @@ def recommend_skills(
     staged (active, approved) set, so a pending/inactive skill can never be
     recommended. Short-circuits without an LLM call for 0 or 1 skills.
     """
+    if _demo_mode_active():  # F-19 — canned selection over the caller's OWN staged skills.
+        return demo_fixtures.demo_recommend_skills(context_set.get("skill_items"))
     raw = context_set.get("skill_items") or []
     items = [
         it
@@ -3761,6 +3804,8 @@ def suggest_skills(
     recommend set, the preview skills[], or the generate prompt until the user
     approves it. Returns no proposals when the corpus is empty.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call (grounded proposals not faked).
+        return demo_fixtures.demo_suggest_skills()
     corpus = context_set.get("career_corpus") or []
     if not corpus:
         return {"proposals": []}
@@ -3865,6 +3910,8 @@ def promote_clarification_to_bullet(
     and creates a `proposal_review` row keyed to it so the critique loop can
     examine the result.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call.
+        return demo_fixtures.demo_promote_clarification_to_bullet(answer)
     target_block = ""
     if target_company or target_official_title:
         target_block = (
@@ -3942,6 +3989,8 @@ def draft_positioning_summary(
     JD-less / analyze-less context is free.
     """
     source_text = str(context_set.get("summary_source_text") or "").strip()
+    if _demo_mode_active():  # F-19 — canned: echo the existing positioning, invent nothing.
+        return demo_fixtures.demo_positioning_summary(source_text)
     jd_value = context_set.get("jd_text", "")
     jd_str = (str(jd_value) if jd_value else "").strip()
     if not jd_str:
@@ -4059,6 +4108,8 @@ def draft_gap_fill_bullets(
     session-free. Short-circuits WITHOUT an LLM call when there is no corpus or no
     JD to tailor to.
     """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call (grounded proposals not faked).
+        return demo_fixtures.demo_draft_gap_fill_bullets()
     corpus = context_set.get("career_corpus") or []
     jd_value = context_set.get("jd_text", "")
     jd_str = (str(jd_value) if jd_value else "").strip()

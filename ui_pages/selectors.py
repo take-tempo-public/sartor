@@ -73,6 +73,16 @@ class Header:
     WORDMARK = ".cb-wordmark"
 
 
+class DemoMode:
+    """F-19 offline/demo-mode banner (`SARTOR_DEMO=1`, `config.Config.demo_mode`).
+
+    Persistent, always-visible at the very top of the page — never a
+    dismissible toast — while demo mode is active.
+    """
+
+    BANNER = ".demo-mode-banner"
+
+
 class LiveRegion:
     """The shell's screen-reader announcer (`_announce()` in app.js).
 

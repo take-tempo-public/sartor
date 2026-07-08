@@ -119,6 +119,7 @@ py-modules = [
     "analyzer",
     "config",
     "corpus_to_json_resume",
+    "demo_fixtures",
     "docx_to_persona_html",
     "generator",
     "hardening",
