@@ -352,8 +352,8 @@ boundary so the branch is checkpoint-able across sessions.
 **Deferred to LATER branches (NOT this branch):** loop-back for new content (D1/D6),
 LLM-assisted surgical refinement, WYSIWYG-as-source-of-truth (D4), corpus
 enrichment / offer-edited-bullets-to-corpus (D5/D6), clarifications-persistence /
-cross-JD drafting reuse (D5). This branch's drafting MAY read existing clarifications as a
-source, but does not build new persistence.
+cross-JD drafting reuse (D5) — **DONE 2026-07-08, see §8(c)**. This branch's drafting
+MAY read existing clarifications as a source, but does not build new persistence.
 
 ---
 
@@ -499,13 +499,14 @@ scoped proposal + richer banner).
 > (0 résumé-body LLM calls; download == frozen == preview), the
 > `evals/TUNING_LOG.md` "Compose-frozen-composition" entry, the CHANGELOG entry,
 > and the legacy byte-identity unit tests (`tests/test_corpus_mode_prompt.py`).
-> The remaining work from this spec is the **LATER-branch remainder** — (a)
-> surgical refinement + loop-back banner is **DONE 2026-07-08** on
-> `fix/surgical-refinement-and-loopback` (as-built in §8); (b) WYSIWYG-as-source
-> D4 is **DONE 2026-07-08** on `feat/wysiwyg-source-of-truth` (as-built in §9);
-> (d) regenerate-gap-fill is **DONE 2026-07-08** on `feat/regenerate-gap-fill`
-> (as-built below) — (c) clarifications→corpus D5 remains — tracked in the
-> RELEASE_CHECKLIST carry-forward ledger.
+> The **LATER-branch remainder** is now fully landed — (a) surgical refinement +
+> loop-back banner **DONE 2026-07-08** on `fix/surgical-refinement-and-loopback`
+> (as-built in §8); (b) WYSIWYG-as-source D4 **DONE 2026-07-08** on
+> `feat/wysiwyg-source-of-truth` (as-built in §9); (c) clarifications→corpus D5
+> **DONE 2026-07-08** on `feat/clarifications-to-corpus` (as-built in §10);
+> (d) regenerate-gap-fill **DONE 2026-07-08** on `feat/regenerate-gap-fill`
+> (as-built below) — see the RELEASE_CHECKLIST carry-forward ledger for the
+> Resolved entry.
 
 ### Phase 3 — Compose authors gap-fill bullets (Sonnet + accept/retire) — DONE (as-built in §5)
 > The original plan is retained below as the as-built reference; see §5 for what shipped.
@@ -702,9 +703,9 @@ it themselves") with an actual scoped proposal.
   `evals/TUNING_LOG.md` "surgical-refinement-and-loopback" entry for the transcript,
   the proposal shape returned, and the telemetry cost.
 
-**Still deferred (c)/(d), each its own LATER branch:** clarifications→corpus persistence
-(D5), and a "Regenerate gap-fill" affordance — tracked in the RELEASE_CHECKLIST
-carry-forward ledger. (b) WYSIWYG-as-source (D4) is DONE — as-built in §9.
+**All four LATER-branch remainder items are now DONE** — (b) WYSIWYG-as-source (D4)
+in §9, (c) clarifications→corpus (D5) in §10, (d) regenerate-gap-fill in §6 (the
+as-built subsection below the Phase 5 record).
 
 ---
 
@@ -783,6 +784,96 @@ kill.
   `PROMPT_VERSION` stays at `2026-07-08.1` (item (a)'s value). No real-LLM validation
   run — there is no live prompt path in this branch's diff to validate.
 
-**Still deferred (c)/(d), each its own LATER branch:** clarifications→corpus persistence
-(D5), and a "Regenerate gap-fill" affordance — tracked in the RELEASE_CHECKLIST
-carry-forward ledger.
+**All four LATER-branch remainder items are now DONE** — (a) surgical refinement
+in §8, (c) clarifications→corpus (D5) in §10, (d) regenerate-gap-fill in §6 (the
+as-built subsection below the Phase 5 record).
+
+---
+
+## 10. LATER branch — item (c): clarifications persist to the corpus for cross-JD reuse — DONE 2026-07-08 (`feat/clarifications-to-corpus`)
+
+Branch `feat/clarifications-to-corpus` off `feat/wysiwyg-source-of-truth` (Train 3,
+lane (c) — built after §8's item (a) and §9's item (b) landed on this branch's
+base). D5, the last of the four LATER-branch remainder items from §4/§6 to land
+on its own branch — item (d) regenerate-gap-fill shipped in parallel (Train 3
+lane (d)), as-built in §6 above.
+
+**Scope, exactly as bounded by §2 Stage 3 / §3.5 point 3:** feed the
+candidate's confirmed clarifications from OTHER applications into Compose
+CONTENT DRAFTING (summary / gap-fill / skills) — NOT into `clarify()`'s
+question-asking (out of scope; `clarify()` itself still does not read prior
+clarifications, only `clarify_iteration` does, and only within the SAME
+application). Promote-to-corpus already existed
+(`analyzer.promote_clarification_to_bullet` +
+`blueprints/corpus/proposals.py`) — not this branch's job.
+
+**Mechanism decision — direct injection via the SAME `<clarifications>`-family
+block, not corpus-mediated through promotion.** §3.5 point 3 already treats
+`draft_positioning_summary`'s `<clarifications>` block as a legitimate
+grounding source; D5 widens that established pattern to a second,
+distinctly-named `<prior_clarifications>` block, populated from the
+`clarification` table's cross-application rows (the table is candidate-scoped
+by design — see `Clarification`'s docstring), rather than requiring each fact
+be promoted to a `Bullet` first. The promote-to-corpus path is a SEPARATE,
+already-shipped, user-gated action — D5 doesn't route through it.
+
+**Staging point — `db.build_context.build_context_set_from_db`, once, at
+context-build time.** A new `_prior_clarifications_for_candidate()` helper
+queries `clarification` by `candidate_id` (capped at 40, most-recent-first)
+and writes the result onto `context_set["prior_clarifications"]`
+(`hardening.PriorClarification`, `total=False`). The just-created
+`Application` row can't own any existing row yet, so no origin filter is
+needed. Corpus-mode only (legacy file-based contexts never populate it — the
+default path stays byte-identical). Every downstream reader — the three
+drafting calls AND the grounding metric — only ever reads `context_set`, so
+neither needs live DB access.
+
+**Compose drafting — two DIFFERENT grounding postures, on purpose:**
+- `draft_positioning_summary` and `suggest_skills` treat `<prior_clarifications>`
+  as FULL grounding source material (their GROUNDING rule / worked examples
+  widened to say so explicitly) — a confirmed fact from an earlier application
+  is real evidence for this one. `suggest_skills`'s evidence shape already
+  supported this with zero schema change (`evidence.bullet_id`/`experience_id`
+  both `null` when the evidence is a clarification quote, vs populated when
+  it's a corpus row).
+- `draft_gap_fill_bullets` keeps `<prior_clarifications>` CONTEXT-only — its
+  GROUNDING rule (bullet evidence must cite `<career_corpus>`) is UNCHANGED.
+  The real-LLM validation below confirms this holds under a live model, not
+  just in prompt text.
+
+**Grounding metric widened to match — justified, not left to drift.**
+`hardening.assemble_source_union` (the deterministic 3-source grounding
+check shared by `compute_iteration_signals` and the eval-time L0 check) now
+also folds in `prior_clarifications` answers. Once Compose drafting can
+legitimately cite a cross-JD fact, the metric MUST see the same union the
+prompt does, or it over-reports correctly-grounded content as fabrication —
+this is the same reasoning that motivated the original clarifications carve-out
+(AGENTS.md "LLM prompts"). The legacy `generate()` prompt is untouched, so
+`assemble_source_union`'s behavior on any context without `prior_clarifications`
+(every pre-D5 / legacy context) is unchanged.
+
+**`PROMPT_VERSION 2026-07-08.1 → 2026-07-08.2`** — the three Compose drafting
+system prompts (`DRAFT_SUMMARY_SYSTEM_PROMPT`, `DRAFT_GAP_FILL_SYSTEM_PROMPT`,
+`SUGGEST_SKILLS_SYSTEM_PROMPT`) changed text; the legacy résumé-body `generate()`
+prompt did not. (This branch landed last in the Train 3 chain, after item (a)'s
+own prompt-template addition had already bumped `PROMPT_VERSION` to
+`2026-07-08.1` — see §8 — so this is the SECOND bump of the day, to `.2`, to
+keep the two independent prompt changes separately attributable.)
+
+**Validation — real-LLM, end to end, on a throwaway sandbox candidate (not
+`--suite synthetic`, which is legacy-only and doesn't cover corpus mode; see
+§2 Global constraints).** Full scenario + numbers: `evals/TUNING_LOG.md`
+"D5 clarifications-to-corpus" entry and the CHANGELOG `[Unreleased]` entry.
+Headline: answering a clarification under a Platform Engineer JD and then
+running a Senior SRE JD for the same candidate produced a positioning summary
+that wove in the cross-JD fact, 3 skill proposals evidenced ONLY by the
+clarification (correctly `bullet_id`/`experience_id: null`), ZERO gap-fill
+bullets fabricated from the clarification alone (the corpus-evidence boundary
+held), and zero leak into a second, unrelated candidate's context. 9 real
+calls, $0.1111 total.
+
+**Deterministic tests:** `tests/test_build_context_db.py::TestPriorClarifications`,
+`tests/test_hardening.py::TestAssembleSourceUnion` (the two new cases),
+`tests/test_draft_summary.py::TestDraftSummaryPriorClarifications`,
+`tests/test_draft_gap_fill.py` (`test_prompt_includes_prior_clarifications`),
+`tests/test_suggest_skills.py` (`test_prior_clarifications_render_in_prompt`).

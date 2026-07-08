@@ -13,6 +13,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feat: clarifications persist to the corpus for cross-JD reuse (`feat/clarifications-to-corpus`, 2026-07-08)
+
+Generation-experience re-architecture — item (c) of the LATER-branch remainder
+(D5: [`docs/dev/generation-experience-rearchitecture.md`](docs/dev/generation-experience-rearchitecture.md)
+§2 Stage 3 / §3.5 point 3). A clarification the candidate confirms while
+working one JD now informs Compose content drafting for every LATER JD, not
+just the one it was answered under.
+
+- **`db.build_context.build_context_set_from_db`** stages a new
+  `context_set["prior_clarifications"]` field — every `clarification` DB row
+  for the candidate (cross-application by design; see `Clarification`'s
+  docstring) EXCEPT the just-created application's own (which can't own any
+  yet at build time, so no origin filter is needed), most-recent-first, capped
+  at 40. Corpus-mode only; legacy (file-based) contexts are unaffected.
+- **The three Compose CONTENT DRAFTING calls** (`analyzer.draft_positioning_summary`,
+  `draft_gap_fill_bullets`, `suggest_skills`) each read
+  `context_set["prior_clarifications"]` and render it as a `<prior_clarifications>`
+  prompt block, distinct from the existing THIS-application `<clarifications>`
+  block. `draft_positioning_summary` and `suggest_skills` treat it as full
+  grounding source material (same posture as `<clarifications>`) — a confirmed
+  fact from an earlier application is real evidence for this one too.
+  `draft_gap_fill_bullets` keeps it CONTEXT-only: a proposed bullet's cited
+  evidence must still come from `<career_corpus>`, unchanged.
+- **Grounding widened, surgically.** `hardening.assemble_source_union` (the
+  deterministic 3-source grounding metric) now also folds in
+  `prior_clarifications` answers, so it scores against the same source union
+  the Compose prompts are shown — it no longer over-reports legitimately
+  cross-JD-sourced content as fabrication. The legacy `generate()` prompt is
+  byte-identical; the widened carve-out is scoped to the three drafting calls
+  only (AGENTS.md "LLM prompts").
+- `PROMPT_VERSION` bumped `2026-07-08.1 → 2026-07-08.2` (the three drafting
+  system prompts changed text; the legacy résumé-body `generate()` prompt is
+  untouched).
+- Real-LLM validated end to end on a throwaway sandbox candidate + temp DB
+  (never touched `configs/`/`output/`/`resumes/`): answered a clarification
+  under a Platform Engineer JD, then ran an SRE JD for the same candidate —
+  the drafted summary wove in the cross-JD fact, `suggest-skills` proposed
+  3 new skills evidenced ONLY by the clarification (corpus-evidenced skills
+  still cite a bullet id), `draft-gap-fill` correctly proposed ZERO bullets
+  from the clarification alone (its evidence-must-be-corpus rule held), and a
+  second unrelated candidate saw zero prior_clarifications (candidate-scoped).
+  9 real calls, $0.11 total. See `evals/TUNING_LOG.md` for the full record.
+
 ### Feat: WYSIWYG as source of truth — in-app edits are the document (`feat/wysiwyg-source-of-truth`, 2026-07-08)
 
 Generation-experience re-architecture item (b) (D4, the LATER-branch remainder

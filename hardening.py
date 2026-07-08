@@ -123,6 +123,22 @@ class ClarificationQuestion(TypedDict, total=False):
     kind: str  # "experience_probe" | "scope_probe" | "iteration_probe"
 
 
+class PriorClarification(TypedDict, total=False):
+    """One candidate-confirmed Q&A fact reused from a DIFFERENT application.
+
+    D5 (feat/clarifications-to-corpus) — the `clarification` DB table is
+    candidate-scoped by design (cross-application candidate memory), so a fact
+    confirmed while working JD-A is real evidence for JD-B too. Shape mirrors
+    the `prior_clarifications` param `clarify_iteration()` already accepts for
+    same-application reuse.
+    """
+
+    question: str
+    answer: str
+    kind: str
+    origin_application_id: int | None
+
+
 class IterationNote(TypedDict, total=False):
     """One append-only audit entry recording a step in the generate/iterate loop."""
 
@@ -250,6 +266,17 @@ class ContextSet(_ContextSetRequired, total=False):
     # composition_overrides.retired_gap_fill_keys instead, not by this latch.
     # total=False; absent on contexts that never reached the Compose gap-fill draft.
     llm_gap_fill_proposals: list
+    # D5 (feat/clarifications-to-corpus): candidate-confirmed clarification
+    # facts from OTHER applications. Staged ONCE at analyze/context-build time
+    # (db.build_context.build_context_set_from_db, corpus-mode only — the
+    # just-created Application row cannot own any of these rows yet, so no
+    # origin filter is needed there), so it round-trips with the rest of the
+    # JSON contract and reaches both Compose drafting (draft_positioning_summary
+    # / draft_gap_fill_bullets / suggest_skills) and the deterministic grounding
+    # metric (assemble_source_union below) without either needing live DB
+    # access. Absent on legacy (file-based) contexts — the default path (and
+    # --suite synthetic) stay byte-identical. total=False.
+    prior_clarifications: list[PriorClarification]
 
 
 # Common English stop words to exclude from keyword extraction
@@ -1452,8 +1479,15 @@ def assemble_source_union(context_set: ContextSet) -> list[str]:
 
     Mirrors exactly what generate() treats as legitimate source material when
     its grounding check widens (AGENTS.md "LLM prompts"): the original primary
-    résumé, every supplemental résumé, and the candidate's clarification
-    answers. Returned as a list of raw text blocks (empty entries skipped).
+    résumé, every supplemental résumé, the candidate's clarification answers
+    for THIS application, and — D5 (feat/clarifications-to-corpus) — confirmed
+    clarification answers reused from the candidate's OTHER applications
+    (`context_set["prior_clarifications"]`). The latter is exactly what Compose
+    drafting (draft_positioning_summary / draft_gap_fill_bullets /
+    suggest_skills) is shown as grounding material once it starts citing prior
+    clarifications, so the metric must see the same union the prompt does or
+    it over-reports legitimately-reused facts as fabrication. Returned as a
+    list of raw text blocks (empty entries skipped).
 
     This is the single source-union definition, shared by
     compute_iteration_signals (the iteration clarifier) and the eval-time L0
@@ -1472,6 +1506,10 @@ def assemble_source_union(context_set: ContextSet) -> list[str]:
     for ans in (context_set.get("clarifications") or {}).values():
         if ans:
             source_texts.append(ans)
+    for prior in context_set.get("prior_clarifications") or []:
+        prior_ans = prior.get("answer") if isinstance(prior, dict) else None
+        if prior_ans:
+            source_texts.append(str(prior_ans))
     return source_texts
 
 

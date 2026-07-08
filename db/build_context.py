@@ -33,6 +33,7 @@ from db.models import (
     Bullet,
     Candidate,
     Certification,
+    Clarification,
     Education,
     Experience,
     ExperienceTitle,
@@ -43,6 +44,7 @@ from hardening import (
     CorpusBullet,
     CorpusEligibleTitle,
     CorpusExperience,
+    PriorClarification,
     compute_keyword_overlap,
     extract_company_terms,
     extract_keywords,
@@ -72,6 +74,8 @@ def build_context_set_from_db(
     - `resume.text` is synthesized from DB bullets, not file-parsed
     - `resume.format` is "md" (the synthesized text uses markdown)
     - `resume.path` is "" (no file backs the synthetic text)
+    - `prior_clarifications` is populated (D5 — cross-JD reuse; absent from
+      `hardening.build_context_set`'s legacy file-based output)
     - `supplemental_resumes` is always [] in DB-backed mode
     """
     candidate = session.query(Candidate).filter_by(username=candidate_username).first()
@@ -165,6 +169,11 @@ def build_context_set_from_db(
     profile_text = candidate.profile_text or ""
 
     career_corpus = _build_career_corpus_payload(experiences)
+    # D5 (feat/clarifications-to-corpus): the Application row above was just
+    # created in THIS call, so every existing `clarification` row for this
+    # candidate necessarily belongs to an earlier application — no origin
+    # filter needed.
+    prior_clarifications = _prior_clarifications_for_candidate(session, candidate.id)
 
     context_set: ContextSet = {
         "timestamp": application_run.created_at,
@@ -201,8 +210,44 @@ def build_context_set_from_db(
         },
         "run_id": run_id,
         "career_corpus": career_corpus,
+        "prior_clarifications": prior_clarifications,
     }
     return context_set, application, application_run
+
+
+def _prior_clarifications_for_candidate(
+    session: Session, candidate_id: int, *, limit: int = 40
+) -> list[PriorClarification]:
+    """D5 — candidate-confirmed clarification Q&A facts from EARLIER applications.
+
+    `clarification` rows are candidate-scoped by design (cross-application
+    candidate memory — see `Clarification`'s docstring in db/models.py); this
+    function's only caller (`build_context_set_from_db`, above) runs BEFORE the
+    new `Application` row exists, so every row returned here necessarily
+    belongs to a DIFFERENT (earlier) application — no origin filter is needed.
+    Most-recent-first and capped so a long candidate history can't blow the
+    token budget of the Compose drafting prompts that consume this list
+    (draft_positioning_summary / draft_gap_fill_bullets / suggest_skills).
+    """
+    rows = (
+        session.execute(
+            select(Clarification)
+            .where(Clarification.candidate_id == candidate_id)
+            .order_by(Clarification.created_at.desc(), Clarification.id.desc())
+            .limit(limit)
+        )
+        .scalars()
+        .all()
+    )
+    return [
+        {
+            "question": row.question,
+            "answer": row.answer,
+            "kind": row.kind,
+            "origin_application_id": row.origin_application_id,
+        }
+        for row in rows
+    ]
 
 
 def eligible_titles_for(exp: Experience) -> list[CorpusEligibleTitle]:

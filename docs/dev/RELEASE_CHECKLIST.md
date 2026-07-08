@@ -926,8 +926,22 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       existed but were never written) so an edit survives a resumed application
       even if its context file is gone. No prompt touched — `analyzer.py`
       untouched, `PROMPT_VERSION` unchanged; (c) **clarifications persist to the
-      corpus** for cross-JD reuse (D5); (d) a "Regenerate gap-fill" affordance
-      (needs a `retired_gap_fill_keys` set) — **(d) DONE
+      corpus** for cross-JD reuse (D5) — **(c) DONE 2026-07-08
+      (`feat/clarifications-to-corpus`)**: `db.build_context.build_context_set_from_db`
+      stages `context_set["prior_clarifications"]` (every OTHER application's
+      confirmed clarification, candidate-scoped, capped at 40); `draft_positioning_summary`
+      + `suggest_skills` treat it as full grounding source material (same posture as
+      `<clarifications>`), `draft_gap_fill_bullets` keeps it context-only (bullet
+      evidence still must cite `<career_corpus>` — unchanged); `hardening.assemble_source_union`
+      widened to match so the grounding metric scores the same union the prompts see.
+      `PROMPT_VERSION 2026-07-08.1 → 2026-07-08.2`. Real-LLM validated end to end
+      (sandbox candidate, temp DB): a JD-1 clarification surfaced in the JD-2 summary
+      + 3 skill proposals (clarification-only evidence, `bullet_id`/`experience_id: null`),
+      correctly did NOT leak into a fabricated gap-fill bullet (0 proposals — the
+      corpus-evidence boundary held), and did not leak across candidates. 9 real
+      calls, $0.1111. As-built record: `generation-experience-rearchitecture.md` §10;
+      `evals/TUNING_LOG.md` "D5 clarifications-to-corpus" entry; (d) a "Regenerate
+      gap-fill" affordance (needs a `retired_gap_fill_keys` set) — **(d) DONE
       2026-07-08 (`feat/regenerate-gap-fill`)**: durable
       `composition_overrides.retired_gap_fill_keys` (written by `/gap-fill-decide`
       retire, re-sent on every `/composition` save like every other override key) +
@@ -936,12 +950,13 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       `data-compose-bg-pending`); the route-level exclusion filter keeps a
       regenerated draft from resurfacing a retired OR already-accepted proposal —
       deterministic, no prompt change, no `PROMPT_VERSION` bump. Real-LLM validated
-      (see `evals/TUNING_LOG.md`). (c) remains owed.
+      (see `evals/TUNING_LOG.md`). **All four items (a)/(b)/(c)/(d) are now DONE.**
       _(added: 2026-07-06; **CORE DONE 2026-07-06 on `fix/compose-frozen-composition`**;
       re-scoped from "whole vision owed" to the LATER-branch remainder above; (a) DONE
       2026-07-08 on `fix/surgical-refinement-and-loopback`, (b) DONE 2026-07-08 on
-      `feat/wysiwyg-source-of-truth`, (d) DONE 2026-07-08 on `feat/regenerate-gap-fill`;
-      (c) still open.)_
+      `feat/wysiwyg-source-of-truth`, (c) DONE 2026-07-08 on `feat/clarifications-to-corpus`,
+      (d) DONE 2026-07-08 on `feat/regenerate-gap-fill`. All four LATER-branch items
+      landed.)_
 
 #### Resolved
 

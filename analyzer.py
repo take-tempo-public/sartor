@@ -379,7 +379,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-07-08.1"  # surgical-refinement-and-loopback: new Compose-time DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT (Sonnet draft_surgical_refinement); generate prompt unchanged (corpus-mode-only new per-call template)
+PROMPT_VERSION = "2026-07-08.2"  # D5 (feat/clarifications-to-corpus): DRAFT_SUMMARY_SYSTEM_PROMPT / DRAFT_GAP_FILL_SYSTEM_PROMPT / SUGGEST_SKILLS_SYSTEM_PROMPT widen to a <prior_clarifications> cross-JD source; generate prompt unchanged (corpus-mode-only new per-call template text)
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -3762,19 +3762,45 @@ def _skills_block(items: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-SUGGEST_SKILLS_SYSTEM_PROMPT = """You help a candidate discover skills they genuinely have but have NOT yet added to their canonical skill list, for ONE specific job. You see: the job's required/preferred skills in <analysis>, the candidate's actual experience (roles + bullets, with numeric ids) in <career_corpus>, and their existing canonical skills in <existing_skills> (NEVER re-propose any of these).
+def _prior_clarifications_block(prior: "list[Any] | None") -> str:
+    """Render D5 cross-JD confirmed clarifications as a compact Q/A block.
 
-Your task: propose skills that BOTH (a) the JD wants AND (b) the candidate's <career_corpus> demonstrably evidences. Every proposal MUST be backed by a specific bullet or role in the corpus.
+    Shared by suggest_skills / draft_positioning_summary / draft_gap_fill_bullets
+    — the three Compose CONTENT DRAFTING calls the generation-experience
+    re-architecture design doc (§2 Stage 3) names as needing prior-clarification
+    reuse. Mirrors clarify_iteration's own confirmed-clarifications rendering
+    (same file, above) for a consistent LLM-facing shape; kept as an independent
+    helper rather than a shared call so each site's short-circuit / demo-mode
+    paths stay untouched.
+    """
+    if not prior:
+        return "(none)"
+    lines = []
+    for c in prior:
+        if not isinstance(c, dict):
+            continue
+        q = (c.get("question") or "").strip()
+        a = (c.get("answer") or "").strip()
+        if not a:
+            continue
+        lines.append(f"- Q: {q}\n  A: {a}" if q else f"- {a}")
+    return "\n".join(lines) or "(none)"
+
+
+SUGGEST_SKILLS_SYSTEM_PROMPT = """You help a candidate discover skills they genuinely have but have NOT yet added to their canonical skill list, for ONE specific job. You see: the job's required/preferred skills in <analysis>, the candidate's actual experience (roles + bullets, with numeric ids) in <career_corpus>, their existing canonical skills in <existing_skills> (NEVER re-propose any of these), and confirmed facts the candidate told us for OTHER applications in <prior_clarifications> (D5 — the corpus is candidate-scoped, so a fact confirmed for one job is real for all of them).
+
+Your task: propose skills that BOTH (a) the JD wants AND (b) the candidate's <career_corpus> OR <prior_clarifications> demonstrably evidences. Every proposal MUST be backed by a specific bullet/role in the corpus OR a specific confirmed clarification answer.
 
 GROUNDING — this is the rule that matters most:
-- ONLY propose a skill when a specific bullet or role in <career_corpus> shows the candidate actually did it. Cite that evidence (the bullet/experience id + the exact quote).
-- NEVER propose a skill just because the JD asks for it. A JD requirement with no corpus evidence is NOT a proposal — skip it.
+- ONLY propose a skill when a specific bullet or role in <career_corpus>, OR a specific answer in <prior_clarifications>, shows the candidate actually did it. Cite that evidence (the bullet/experience id + quote for corpus evidence; the answer quote with both ids null for clarification evidence).
+- NEVER propose a skill just because the JD asks for it. A JD requirement with no corpus AND no clarification evidence is NOT a proposal — skip it.
 - NEVER infer a skill the candidate "probably" has from adjacency or job title alone. Evidence or nothing.
 - The candidate reviews every proposal before it becomes canonical, so precision beats recall: when in doubt, do not propose.
 
 Worked examples:
 - OK: JD wants "Kubernetes"; a bullet reads "Migrated 40 services to Kubernetes, cutting deploy time 60%." → propose {"name":"Kubernetes", "evidence":{"bullet_id":12, "quote":"Migrated 40 services to Kubernetes, cutting deploy time 60%."}}.
-- NOT OK: JD wants "Kubernetes"; no bullet mentions containers or orchestration. → do NOT propose (no evidence).
+- OK: JD wants "on-call leadership"; no bullet mentions it, but <prior_clarifications> (confirmed for an earlier application) has "Led on-call rotation for a 12-person SRE team" → propose {"name":"On-call leadership", "evidence":{"experience_id":null, "bullet_id":null, "quote":"Led on-call rotation for a 12-person SRE team"}}.
+- NOT OK: JD wants "Kubernetes"; no bullet mentions containers or orchestration, and no prior clarification confirms it either. → do NOT propose (no evidence).
 - NOT OK: JD wants "Leadership"; a bullet says "Worked on the payments team." → do NOT propose (being on a team is not evidence of leadership).
 
 Output JSON only, this exact shape:
@@ -3783,14 +3809,14 @@ Output JSON only, this exact shape:
     {
       "name": "the skill name, as it should appear on a résumé",
       "category": "language" | "framework" | "platform" | "methodology" | "domain" | null,
-      "evidence": {"experience_id": <int> | null, "bullet_id": <int> | null, "quote": "the exact corpus text that evidences this skill"},
+      "evidence": {"experience_id": <int> | null, "bullet_id": <int> | null, "quote": "the exact corpus or clarification text that evidences this skill"},
       "rationale": "one sentence tying the evidence to the JD requirement"
     },
     ...
   ]
 }
 
-Return {"proposals": []} when nothing in the corpus evidences a JD-wanted skill the candidate doesn't already have. Use numeric ids only."""
+Return {"proposals": []} when nothing in the corpus or prior_clarifications evidences a JD-wanted skill the candidate doesn't already have. Use numeric ids only (null for both when the evidence is a clarification, not a corpus row)."""
 
 
 def suggest_skills(
@@ -3800,12 +3826,13 @@ def suggest_skills(
     username: str = "",
     run_id: str = "",
 ) -> dict[str, Any]:
-    """B.5 — propose NEW canonical skills the JD wants AND the corpus evidences.
+    """B.5 — propose NEW canonical skills the JD wants AND the corpus/clarifications evidence.
 
     Haiku, grounded generator. The caller stages `context_set["career_corpus"]`
     (experiences + bullets), `context_set["llm_analysis"]` (JD essential /
     preferred skills), and `context_set["existing_skill_names"]` (names to
-    skip). Returns:
+    skip); `context_set["prior_clarifications"]` (D5 — cross-JD confirmed
+    facts) rides along automatically when present. Returns:
 
         {"proposals": [{name, category, evidence, rationale}, ...]}
 
@@ -3813,7 +3840,8 @@ def suggest_skills(
     approve/deny gate downstream: each proposal lands as a pending Skill row
     (is_pending_review=1, source='llm_proposed') and never reaches the
     recommend set, the preview skills[], or the generate prompt until the user
-    approves it. Returns no proposals when the corpus is empty.
+    approves it. Returns no proposals when the corpus is empty (prior
+    clarifications alone do not unlock a call — unchanged pre-D5 gate).
     """
     if _demo_mode_active():  # F-19 — canned, no Anthropic call (grounded proposals not faked).
         return demo_fixtures.demo_suggest_skills()
@@ -3832,8 +3860,9 @@ def suggest_skills(
         else []
     )
     existing = ", ".join(existing_list)
+    prior_block = _prior_clarifications_block(context_set.get("prior_clarifications"))
 
-    user_prompt = f"""<task>Propose skills the JD wants AND the corpus evidences (grounded — evidence or nothing). Output JSON only.</task>
+    user_prompt = f"""<task>Propose skills the JD wants AND the corpus/clarifications evidence (grounded — evidence or nothing). Output JSON only.</task>
 
 {corpus_block}
 
@@ -3844,7 +3873,11 @@ def suggest_skills(
 <analysis>
 Essential skills the JD names: {essential or "(none surfaced)"}
 Preferred skills: {preferred or "(none)"}
-</analysis>"""
+</analysis>
+
+<prior_clarifications>
+{prior_block}
+</prior_clarifications>"""
 
     result = _parse_or_retry(
         client,
@@ -3959,17 +3992,19 @@ Answer: {answer}
 # no active override it returns the identical constant object, so the bytes sent
 # to the API are unchanged. Keep this in sync if a new overridable persona
 # constant is added.
-DRAFT_SUMMARY_SYSTEM_PROMPT = """You are a senior resume writer drafting the opening positioning summary for ONE specific job application. You are given the candidate's current positioning + career facts as <candidate>, the target job as <jd>, the analyst's JD breakdown as <analysis>, and any confirmed facts the candidate told us as <clarifications>.
+DRAFT_SUMMARY_SYSTEM_PROMPT = """You are a senior resume writer drafting the opening positioning summary for ONE specific job application. You are given the candidate's current positioning + career facts as <candidate>, the target job as <jd>, the analyst's JD breakdown as <analysis>, any confirmed facts the candidate told us for THIS application as <clarifications>, and confirmed facts the candidate told us for OTHER applications as <prior_clarifications> (D5 — the corpus is candidate-scoped, so a fact confirmed for one job is real for all of them).
 
 Your one task: write a targeted, TWO-SENTENCE positioning summary that opens this candidate's resume for THIS job. Answer, across the two sentences: what role they're aiming for, what makes them distinctive, and the concrete value they bring — led with the strongest, most JD-relevant framing and the JD's primary domain language.
 
-GROUNDING (hard rule): every claim must trace to the <candidate> facts or <clarifications>. NEVER manufacture a years-of-experience count, a seniority level, a title, an employer, a metric, or a skill the source does not state. Reframe and sharpen what is there; do not invent. When the source is thin, write a shorter, honest summary rather than padding it with invented scope.
+GROUNDING (hard rule): every claim must trace to the <candidate> facts, <clarifications>, or <prior_clarifications>. NEVER manufacture a years-of-experience count, a seniority level, a title, an employer, a metric, or a skill the source does not state. Reframe and sharpen what is there; do not invent. When the source is thin, write a shorter, honest summary rather than padding it with invented scope.
 
 Style: EXACTLY two sentences. Confident, specific, concrete. No filler ("results-driven professional", "proven track record", "passionate about"), no first-person pronouns, no buzzword stacking. Prefer the candidate's real domain + outcomes over generic adjectives.
 
 Worked examples:
   OK  (source: "Platform PM, 3 roles, led billing rewrite that cut churn"; JD: fintech platform PM):
       "Platform product manager who turns billing and payments complexity into shipped, adopted systems. Most recently led a billing rewrite that measurably cut churn, and brings that same outcome-first rigor to fintech platform work."
+  OK  (source thin for THIS job; <prior_clarifications> confirms, for an earlier application, "Led on-call rotation for a 12-person SRE team, cut MTTR 40%"; JD: SRE lead):
+      "Site reliability engineer who has led on-call for a 12-person team and cut MTTR 40%, bringing that same operational rigor to this SRE lead role." ← the metric came from prior_clarifications, not this JD's own clarifications — still grounded, still usable.
   NOT OK (invents seniority + a metric not in source):
       "Seasoned senior director with 15+ years driving 300% revenue growth across Fortune 500 fintechs."  ← tenure, title, and metric are fabricated.
 
@@ -3992,12 +4027,15 @@ def draft_positioning_summary(
     Compose (not at Generate). The caller stages the candidate's current
     positioning on `context_set["summary_source_text"]` and a compact career
     synopsis on `context_set["career_facts"]`; the JD, analysis, and
-    clarifications ride on the context. Returns {"summary": "<two sentences>"}.
+    clarifications ride on the context. `context_set["prior_clarifications"]`
+    (D5 — cross-JD confirmed facts) rides along automatically when present.
+    Returns {"summary": "<two sentences>"}.
 
-    Grounded in the staged candidate facts + clarifications (no invention — the
-    same posture as SYSTEM_PROMPT rule #1). Short-circuits WITHOUT an LLM call
-    when there is no JD to tailor to (returns the source summary unchanged), so a
-    JD-less / analyze-less context is free.
+    Grounded in the staged candidate facts + clarifications + prior
+    clarifications (no invention — the same posture as SYSTEM_PROMPT rule #1).
+    Short-circuits WITHOUT an LLM call when there is no JD to tailor to
+    (returns the source summary unchanged), so a JD-less / analyze-less
+    context is free.
     """
     source_text = str(context_set.get("summary_source_text") or "").strip()
     if _demo_mode_active():  # F-19 — canned: echo the existing positioning, invent nothing.
@@ -4017,6 +4055,7 @@ def draft_positioning_summary(
         [str(v).strip() for v in clar.values() if str(v).strip()] if isinstance(clar, dict) else []
     )
     clar_block = "\n".join(f"- {line}" for line in clar_lines) or "(none)"
+    prior_block = _prior_clarifications_block(context_set.get("prior_clarifications"))
 
     user_prompt = f"""<task>Write the two-sentence positioning summary for this candidate + JD. Output JSON only.</task>
 
@@ -4038,7 +4077,11 @@ Industry keywords: {keywords or "(none)"}
 
 <clarifications>
 {clar_block}
-</clarifications>"""
+</clarifications>
+
+<prior_clarifications>
+{prior_block}
+</prior_clarifications>"""
 
     result = _parse_or_retry(
         client,
@@ -4056,7 +4099,7 @@ Industry keywords: {keywords or "(none)"}
     return {"summary": summary or source_text}
 
 
-DRAFT_GAP_FILL_SYSTEM_PROMPT = """You help a candidate cover a specific job's requirements that their resume does not yet surface, by drafting NEW resume bullets — but ONLY where their own experience genuinely evidences the accomplishment. You see the job's essential/preferred requirements and the analyst's gap list in <analysis>, the requirements the resume is missing in <missing>, the candidate's actual experience (roles + bullets, with numeric ids) in <career_corpus>, and any confirmed facts the candidate told us in <clarifications>.
+DRAFT_GAP_FILL_SYSTEM_PROMPT = """You help a candidate cover a specific job's requirements that their resume does not yet surface, by drafting NEW resume bullets — but ONLY where their own experience genuinely evidences the accomplishment. You see the job's essential/preferred requirements and the analyst's gap list in <analysis>, the requirements the resume is missing in <missing>, the candidate's actual experience (roles + bullets, with numeric ids) in <career_corpus>, any confirmed facts the candidate told us for THIS application in <clarifications>, and confirmed facts the candidate told us for OTHER applications in <prior_clarifications> (D5 — the corpus is candidate-scoped, so a fact confirmed for one job is real for all of them). <clarifications> and <prior_clarifications> are useful CONTEXT for interpreting the corpus (e.g. disambiguating scope) — the bullet's cited evidence must still come from <career_corpus>.
 
 Your task: for a JD requirement NOT already covered by an existing corpus bullet, draft ONE resume bullet that reframes the candidate's real evidence toward that requirement, and attach it to the ONE experience where that evidence lives.
 
@@ -4112,12 +4155,14 @@ def draft_gap_fill_bullets(
     before it becomes a Bullet row, so nothing is silently canonical.
 
     The caller stages the JD on `context_set["jd_text"]`; the corpus, analysis,
-    deterministic keyword overlap, and clarifications ride on the context. Returns
-    {"proposals": [{experience_id, text, pattern_kind, requirement, evidence,
-    rationale}, ...]}. The ROUTE validates experience ownership, coerces
-    pattern_kind, computes the accept/retire key, and dedups — this function stays
-    session-free. Short-circuits WITHOUT an LLM call when there is no corpus or no
-    JD to tailor to.
+    deterministic keyword overlap, and clarifications ride on the context.
+    `context_set["prior_clarifications"]` (D5 — cross-JD confirmed facts) rides
+    along automatically when present. Returns {"proposals": [{experience_id,
+    text, pattern_kind, requirement, evidence, rationale}, ...]}. The ROUTE
+    validates experience ownership, coerces pattern_kind, computes the
+    accept/retire key, and dedups — this function stays session-free.
+    Short-circuits WITHOUT an LLM call when there is no corpus or no JD to
+    tailor to.
     """
     if _demo_mode_active():  # F-19 — canned, no Anthropic call (grounded proposals not faked).
         return demo_fixtures.demo_draft_gap_fill_bullets()
@@ -4142,6 +4187,7 @@ def draft_gap_fill_bullets(
         [str(v).strip() for v in clar.values() if str(v).strip()] if isinstance(clar, dict) else []
     )
     clar_block = "\n".join(f"- {line}" for line in clar_lines) or "(none)"
+    prior_block = _prior_clarifications_block(context_set.get("prior_clarifications"))
 
     user_prompt = f"""<task>Draft grounded gap-fill bullets for the JD requirements the corpus does not yet cover (evidence or nothing). Output JSON only.</task>
 
@@ -4163,7 +4209,11 @@ Requirements missing from the resume: {missing_str or "(none)"}
 
 <clarifications>
 {clar_block}
-</clarifications>"""
+</clarifications>
+
+<prior_clarifications>
+{prior_block}
+</prior_clarifications>"""
 
     result = _parse_or_retry(
         client,
