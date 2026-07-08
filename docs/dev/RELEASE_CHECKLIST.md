@@ -488,7 +488,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprint IN PROGRESS; see the dated reconciliation at the end of this note). Most 2026-07 additions drain via already-scheduled coordinates (see the aggregate rows below), so the drain plan stands in lieu of a standalone reduction sprint — but treat 10 as the ceiling: clear before adding. **Triaged 2026-06-20 (7.9 ledger capture):** each item below carries a **→ integrate at 8.x** target mapping it to an already-scheduled v1.0.8 sprint, so the ledger drains without new standalone branches. **`chore/ledger-reduction` (8.0) ran 2026-06-21** and cleared the **CONTRIBUTING-drift + pytest-socket `UserWarning`** pair (both now under Resolved), dropping the open count 10→8. **`refactor/app-blueprints-generation` (8.3c) added one item** — the `_resolve_persona_*` transitional duplicate (→ clears at 8.3e) — bumping 8→9. **`refactor/app-blueprints-corpus` (8.3d) added one item** — the pre-existing `list_resumes` raw-username observation surfaced while moving the route (owner chose to track it 2026-06-22, → 8.3f); its shared `_tag_list`/`_skill_to_dict` used the legal `app.py → blueprint` import (no transitional duplicate) — bumping 9→10. **`refactor/app-blueprints-templates` (8.3e) ran 2026-06-22** — RESOLVED the `_resolve_persona_*` duplicate (now under Resolved) and ADDED the `_load_application_owned` transitional duplicate (→ clears at 8.3f); net open count unchanged at **10**. **`refactor/app-blueprints-applications` (8.3f) ran 2026-06-22** — RESOLVED both the `_load_application_owned` transitional duplicate and the `list_resumes` raw-username hardening (both now under Resolved), dropping the open count **10→8**. **`refactor/app-blueprints-users-config` (8.3g) ran 2026-06-22** — no ledger item added or cleared: the seam introduced **no transitional duplicate** (the `web_infra` config-io/provisioning helpers already existed) and **no new observation**; help-opener (#7) still targets 8.3h as scheduled. **`refactor/app-blueprints-diagnostics` (8.3h) ran 2026-06-22** — the **seventh and last** domain seam (`app.py` → zero routes; the transitional local-helper block + path globals retired): **no ledger item added or cleared** — no transitional duplicate, and help-opener (#7) was **reviewed and deferred** (owner kept the last seam a pure route move → #7 re-targeted to a dedicated help-refactor branch). Open count holds at **8**. **Re-evaluated at 8.3g (as the threshold note required): open count holds at 8** — the four remaining targeted items all drain on already-scheduled sprints (8.5 / 8.6a / 8.7) and the citation viewer stays deferred, so no standalone reduction sprint is needed. Net drain from here: 8.5 clears the S3-eval + grounding-metric pair · 8.7 clears portable-core + link-checker + flaky-UX · 8.3f clears the `list_resumes` raw-username hardening **and** the `_load_application_owned` duplicate · 8.3 clears help-opener · 8.6a clears assistant doc-coverage · the citation viewer stays deferred → by v1.1.0 the ledger is ~2 items. **`eval/live-shakedown-labels` (8.5) ran 2026-06-23** — RESOLVED the **S3 vector tier** item (judge-scored before/after → KEEP) and ADDED the **E2E walkthrough + R2-live remainder** (deferred at close-out, owner-decided, → runs against `main` before 8.6); net open count **unchanged at 8**. The **grounding-metric** item stays open but is now precisely blocked on **EV-1** (the minicheck unpinned-git-dep drift the shakedown surfaced) — its L1/L2 labels move to 8.6 PV-2 after that fix. The 8.5 window's other findings (EV-1/2/3 + S3-1) live in [`window-8.5-findings.md`](window-8.5-findings.md), which 8.6 (`fix/window-findings-*`) burns wholesale. **`fix/window-findings-grounding` (8.6, first sub-branch) ran 2026-06-23** — burned the grounding slice (EV-1/2/3 + S3-1, all window-doc findings, **not** ledger rows) and applied the 8.5 flaky-UX stabilization annotation (now **watch**-to-resolve). **No open ledger row cleared or added:** the **grounding-metric** item stays open (its PV-2 calibration is owner-gated — EV-1 is fixed but the manual annotation labels are still owed); the **flaky-UX** item stays open in watch. Open count holds at **8**. **`docs/kit-adoption-arc` (2026-06-23) ADDED one item** — the agent-coding-practices kit-adoption staged commitments (one consolidated home for the strict-ratchet exit criterion + gate-hardness ratchet-then-block + skills/hooks coherence; → [`kit-adoption-design.md`](kit-adoption-design.md)); open count **8 → 9**, still under the ~8–10 reduction threshold. **`chore/kit-phase1-pydantic-mypy` (2026-06-23)** — Phase 1's first kit-adoption branch (`pydantic.mypy` enabled; ERA + SQLAlchemy plugin evaluated-and-rejected); added/cleared no ledger row, so open count **holds at 9** (the subsequent kit Phase-1/Phase-2 branches likewise added/cleared no ledger row). **`docs/assistant-wiki-coverage` (8.6a) ran 2026-06-25** — RESOLVED the **Assistant doc-coverage** item (7 `audience: user` how-to pages authored — all-7-topics scope; `index.md` + bidirectional backlinks reconciled; per-page author≠auditor grounding audit = 6 CLEAN + 1 re-anchored; content pass, `.last_ingest_sha` unchanged), dropping the open count **9 → 8**. **`refactor/help-opener-dedup` (v1.0.8 reduction sprint) ran 2026-06-25** — RESOLVED the **Help-opener duplication** item (#7): the wizard/console help opener + `cb_help_seen:` seam extracted into the shared leaf `static/help-modal.js` (`window.cbOpenHelpModal` + seam globals); `openHelpModal`/`openDashHelp` become thin wrappers over their own (still-local) registries, so public names + DOM ids + localStorage keys are unchanged → zero test-code changes, and the console still never loads `app.js`. Dropping the open count **8 → 7**. **`fix/compose-ux-stabilization` (2026-06-26) ran** — RESOLVED the **Flaky Compose-UX race class** item (#3): the **test-infra** causes (5 members) via a `data-compose-ready` settle marker + settle-aware POM, AND **a real rare server-side title-pin race the 6th member was catching** — `save_application_composition` now self-heals a transient title-eligibility miss (rollback + fresh-snapshot re-read before 400), proven by a deterministic miss-then-hit unit test (the live race is unreproducible). Empirical support: positioning **400/400** with the fix (was ~0.37%), full `pytest` ✓ (1394). Dropping the open count **7 → 6**. **`fix/corpus-import-and-curation-ux` (2026-06-29) ADDED one item** — the merge-suggestion similarity-threshold calibration (first-pass scorer constants validated during e2e); open count **6 → 7**, still under the ~8–10 threshold. **`feat/packaging-publish` (2026-07-02) ADDED one item** — the PyPI-wheel data-files gap (its own bullet records **7 → 8**; this header missed that update, caught by the 2026-07 efficiency review as F-doc-02). **`review/2026-07-efficiency` ran 2026-07-03** — witness-only efficiency review ADDED one aggregate item (PX-37..56 → archive); open count **8 → 9**. The review's own PX-48 prescribes compressing this head-note to a current-state summary. **`chore/upgrade-sonnet-5-model` (v1.0.8 stream) ran 2026-07-05** — the Sonnet 4.6 → Sonnet 5 model upgrade (product LLM calls + 6 plugin subagents); ADDED one item (the eval-baseline stale-vs-Sonnet-5 refresh, deferred as bookkeeping after a controlled A/B cleared the model of material regression); open count **9 → 10** (its branch-time note said 7 → 8, inheriting the pre-correction header). **`chore/ruff-format-pin` (2026-07-06) ran** — the first reduction-sprint knock-down after the generation-experience re-architecture merge: RESOLVED the ruff-format-drift item AND reconciled this head-note to reality. The running per-item tally above had lagged — this note's headline said 10 and the flaky-Compose bullet said 11 — while **13** `- [ ]` items actually rendered; the authoritative rendered count is now **12** after this item. Treat the rendered `- [ ]` count as source-of-truth; compressing this whole head-note down to a current-state summary remains PX-48's job. **`fix/compose-settle-bg-reload` (2026-07-06) ran** — RESOLVED the flaky Compose-UX item via the **settle-marker** route: a `data-compose-bg-pending` in-flight-reload counter (set as the first synchronous statement of all 11 `loadComposition()`-on-success reload sites, cleared in a `finally`) makes `_wait_settled` gate deterministically on `#composeList[data-compose-ready]:not([data-compose-bg-pending])` instead of a networkidle + stability-poll heuristic; rendered open count **12 → 11**. Reduction sprint continues — next cheap candidate: the eval-baseline refresh. **`docs/ux-review-2026-07` (2026-07-07) ADDED one aggregate item** — the 3-persona UX-review remediation backlog (F-01..F-27, waves pre-planned in the review's `50-oss-polish-plan.md`); open count **11 → 12**, over the ceiling — the reduction sprint should burn the P0 wave next. **Trains 1+2 (2026-07-07)** RESOLVED the UX-review remediation aggregate (all 27 findings landed); rendered open count **12 → 11**. **Train 3 (2026-07-08)** RESOLVED the generation-experience LATER-branch remainder; rendered open count **11 → 10**._
+_Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprint IN PROGRESS; see the dated reconciliation at the end of this note). Most 2026-07 additions drain via already-scheduled coordinates (see the aggregate rows below), so the drain plan stands in lieu of a standalone reduction sprint — but treat 10 as the ceiling: clear before adding. **Triaged 2026-06-20 (7.9 ledger capture):** each item below carries a **→ integrate at 8.x** target mapping it to an already-scheduled v1.0.8 sprint, so the ledger drains without new standalone branches. **`chore/ledger-reduction` (8.0) ran 2026-06-21** and cleared the **CONTRIBUTING-drift + pytest-socket `UserWarning`** pair (both now under Resolved), dropping the open count 10→8. **`refactor/app-blueprints-generation` (8.3c) added one item** — the `_resolve_persona_*` transitional duplicate (→ clears at 8.3e) — bumping 8→9. **`refactor/app-blueprints-corpus` (8.3d) added one item** — the pre-existing `list_resumes` raw-username observation surfaced while moving the route (owner chose to track it 2026-06-22, → 8.3f); its shared `_tag_list`/`_skill_to_dict` used the legal `app.py → blueprint` import (no transitional duplicate) — bumping 9→10. **`refactor/app-blueprints-templates` (8.3e) ran 2026-06-22** — RESOLVED the `_resolve_persona_*` duplicate (now under Resolved) and ADDED the `_load_application_owned` transitional duplicate (→ clears at 8.3f); net open count unchanged at **10**. **`refactor/app-blueprints-applications` (8.3f) ran 2026-06-22** — RESOLVED both the `_load_application_owned` transitional duplicate and the `list_resumes` raw-username hardening (both now under Resolved), dropping the open count **10→8**. **`refactor/app-blueprints-users-config` (8.3g) ran 2026-06-22** — no ledger item added or cleared: the seam introduced **no transitional duplicate** (the `web_infra` config-io/provisioning helpers already existed) and **no new observation**; help-opener (#7) still targets 8.3h as scheduled. **`refactor/app-blueprints-diagnostics` (8.3h) ran 2026-06-22** — the **seventh and last** domain seam (`app.py` → zero routes; the transitional local-helper block + path globals retired): **no ledger item added or cleared** — no transitional duplicate, and help-opener (#7) was **reviewed and deferred** (owner kept the last seam a pure route move → #7 re-targeted to a dedicated help-refactor branch). Open count holds at **8**. **Re-evaluated at 8.3g (as the threshold note required): open count holds at 8** — the four remaining targeted items all drain on already-scheduled sprints (8.5 / 8.6a / 8.7) and the citation viewer stays deferred, so no standalone reduction sprint is needed. Net drain from here: 8.5 clears the S3-eval + grounding-metric pair · 8.7 clears portable-core + link-checker + flaky-UX · 8.3f clears the `list_resumes` raw-username hardening **and** the `_load_application_owned` duplicate · 8.3 clears help-opener · 8.6a clears assistant doc-coverage · the citation viewer stays deferred → by v1.1.0 the ledger is ~2 items. **`eval/live-shakedown-labels` (8.5) ran 2026-06-23** — RESOLVED the **S3 vector tier** item (judge-scored before/after → KEEP) and ADDED the **E2E walkthrough + R2-live remainder** (deferred at close-out, owner-decided, → runs against `main` before 8.6); net open count **unchanged at 8**. The **grounding-metric** item stays open but is now precisely blocked on **EV-1** (the minicheck unpinned-git-dep drift the shakedown surfaced) — its L1/L2 labels move to 8.6 PV-2 after that fix. The 8.5 window's other findings (EV-1/2/3 + S3-1) live in [`window-8.5-findings.md`](window-8.5-findings.md), which 8.6 (`fix/window-findings-*`) burns wholesale. **`fix/window-findings-grounding` (8.6, first sub-branch) ran 2026-06-23** — burned the grounding slice (EV-1/2/3 + S3-1, all window-doc findings, **not** ledger rows) and applied the 8.5 flaky-UX stabilization annotation (now **watch**-to-resolve). **No open ledger row cleared or added:** the **grounding-metric** item stays open (its PV-2 calibration is owner-gated — EV-1 is fixed but the manual annotation labels are still owed); the **flaky-UX** item stays open in watch. Open count holds at **8**. **`docs/kit-adoption-arc` (2026-06-23) ADDED one item** — the agent-coding-practices kit-adoption staged commitments (one consolidated home for the strict-ratchet exit criterion + gate-hardness ratchet-then-block + skills/hooks coherence; → [`kit-adoption-design.md`](kit-adoption-design.md)); open count **8 → 9**, still under the ~8–10 reduction threshold. **`chore/kit-phase1-pydantic-mypy` (2026-06-23)** — Phase 1's first kit-adoption branch (`pydantic.mypy` enabled; ERA + SQLAlchemy plugin evaluated-and-rejected); added/cleared no ledger row, so open count **holds at 9** (the subsequent kit Phase-1/Phase-2 branches likewise added/cleared no ledger row). **`docs/assistant-wiki-coverage` (8.6a) ran 2026-06-25** — RESOLVED the **Assistant doc-coverage** item (7 `audience: user` how-to pages authored — all-7-topics scope; `index.md` + bidirectional backlinks reconciled; per-page author≠auditor grounding audit = 6 CLEAN + 1 re-anchored; content pass, `.last_ingest_sha` unchanged), dropping the open count **9 → 8**. **`refactor/help-opener-dedup` (v1.0.8 reduction sprint) ran 2026-06-25** — RESOLVED the **Help-opener duplication** item (#7): the wizard/console help opener + `cb_help_seen:` seam extracted into the shared leaf `static/help-modal.js` (`window.cbOpenHelpModal` + seam globals); `openHelpModal`/`openDashHelp` become thin wrappers over their own (still-local) registries, so public names + DOM ids + localStorage keys are unchanged → zero test-code changes, and the console still never loads `app.js`. Dropping the open count **8 → 7**. **`fix/compose-ux-stabilization` (2026-06-26) ran** — RESOLVED the **Flaky Compose-UX race class** item (#3): the **test-infra** causes (5 members) via a `data-compose-ready` settle marker + settle-aware POM, AND **a real rare server-side title-pin race the 6th member was catching** — `save_application_composition` now self-heals a transient title-eligibility miss (rollback + fresh-snapshot re-read before 400), proven by a deterministic miss-then-hit unit test (the live race is unreproducible). Empirical support: positioning **400/400** with the fix (was ~0.37%), full `pytest` ✓ (1394). Dropping the open count **7 → 6**. **`fix/corpus-import-and-curation-ux` (2026-06-29) ADDED one item** — the merge-suggestion similarity-threshold calibration (first-pass scorer constants validated during e2e); open count **6 → 7**, still under the ~8–10 threshold. **`feat/packaging-publish` (2026-07-02) ADDED one item** — the PyPI-wheel data-files gap (its own bullet records **7 → 8**; this header missed that update, caught by the 2026-07 efficiency review as F-doc-02). **`review/2026-07-efficiency` ran 2026-07-03** — witness-only efficiency review ADDED one aggregate item (PX-37..56 → archive); open count **8 → 9**. The review's own PX-48 prescribes compressing this head-note to a current-state summary. **`chore/upgrade-sonnet-5-model` (v1.0.8 stream) ran 2026-07-05** — the Sonnet 4.6 → Sonnet 5 model upgrade (product LLM calls + 6 plugin subagents); ADDED one item (the eval-baseline stale-vs-Sonnet-5 refresh, deferred as bookkeeping after a controlled A/B cleared the model of material regression); open count **9 → 10** (its branch-time note said 7 → 8, inheriting the pre-correction header). **`chore/ruff-format-pin` (2026-07-06) ran** — the first reduction-sprint knock-down after the generation-experience re-architecture merge: RESOLVED the ruff-format-drift item AND reconciled this head-note to reality. The running per-item tally above had lagged — this note's headline said 10 and the flaky-Compose bullet said 11 — while **13** `- [ ]` items actually rendered; the authoritative rendered count is now **12** after this item. Treat the rendered `- [ ]` count as source-of-truth; compressing this whole head-note down to a current-state summary remains PX-48's job. **`fix/compose-settle-bg-reload` (2026-07-06) ran** — RESOLVED the flaky Compose-UX item via the **settle-marker** route: a `data-compose-bg-pending` in-flight-reload counter (set as the first synchronous statement of all 11 `loadComposition()`-on-success reload sites, cleared in a `finally`) makes `_wait_settled` gate deterministically on `#composeList[data-compose-ready]:not([data-compose-bg-pending])` instead of a networkidle + stability-poll heuristic; rendered open count **12 → 11**. Reduction sprint continues — next cheap candidate: the eval-baseline refresh. **`docs/ux-review-2026-07` (2026-07-07) ADDED one aggregate item** — the 3-persona UX-review remediation backlog (F-01..F-27, waves pre-planned in the review's `50-oss-polish-plan.md`); open count **11 → 12**, over the ceiling — the reduction sprint should burn the P0 wave next. **Trains 1+2 (2026-07-07)** RESOLVED the UX-review remediation aggregate (all 27 findings landed); rendered open count **12 → 11**. **Train 3 (2026-07-08)** RESOLVED the generation-experience LATER-branch remainder; rendered open count **11 → 10**. **Train 4 (2026-07-08)** RESOLVED portable-enforcement-core + the cross-document link checker; rendered open count **10 → 8**._
 
 - [ ] **PyPI wheel not installable — data files not packaged** — **RESOLVED-PENDING-PUBLISH
       2026-07-07 (`fix/packaging-install`); left open only for the still-blocked
@@ -579,59 +579,6 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       **calibration itself stays open**: it needs the owner's manual browser annotation pass, so PV-2
       is **staged, owner-gated** (may spill to v1.0.9 per RELEASE_ARC §4.8). Remains open until those
       labels + the calibration land.
-
-- [ ] **Portable-enforcement-core migration** — **DECIDED 2026-06-15: split** (the decision
-      record is under Resolved below). The migration itself is pending: lift the portable
-      guards (`require-feature-branch`, `block-merge-to-main`, `block-secrets`,
-      `route-security-lint`, `ruff-changed`, `validate-context`) into a tool-agnostic shared
-      core invoked by BOTH committed git-hooks (`core.hooksPath`/pre-commit) AND the Claude
-      plugin, with CI as the server-side backstop. Follow-on **`feat/portable-enforcement-core`**
-      clustered with the v1.0.8 gate epic when the git remote/CI activates (Sprint 8.7).
-      Plan-mode lifecycle hooks stay Claude-only. _(discovered: v1.0.7 stream, 2026-06-15.)_
-      **→ Integrate at 8.7 (2026-06-20, 7.9 ledger capture):** `feat/portable-enforcement-core`,
-      when the git remote/CI activates — leave. **Note (8.2, 2026-06-21):** the
-      `route-security-lint` widen (PX-21) kept the hook a self-contained bash script with no new
-      coupling, so it stays migration-friendly for this lift.
-      **Note (Train 1, 2026-07-07):** `block-merge-to-main` false-positives on READ-ONLY
-      `git merge-base` invocations (its `git merge` pattern lacks a boundary against
-      `merge-base`) and resolves HEAD in the hook's own cwd rather than the caller's worktree,
-      so it fires from any worktree while the main checkout sits on `main` — fix both when
-      lifting it into the portable core.
-      **DONE (Train 4, `feat/portable-enforcement-core`, 2026-07-08):** the migration itself
-      landed. One implementation per guard in `scripts/enforcement/guards/`, three consumers —
-      the Claude PreToolUse adapter (unchanged `.claude-plugin/hooks/*.sh` paths, now thin
-      wrappers), the opt-in native git hooks at `.githooks/` (`git config core.hooksPath
-      .githooks` — see `.githooks/README.md`; NOT auto-activated), and a CI backstop step
-      (`scripts/enforcement/ci_backstop.py` in `.github/workflows/ci.yml`, itself still latent
-      until the git remote activates, unchanged from the rest of that workflow). Both Train-1
-      `block-merge-to-main` defects noted above are fixed — the `merge-base`/`merge-tree`
-      false positive (a negative-lookahead regex tightening) and the cwd misresolution (the
-      Claude adapter now reads the PreToolUse `cwd` field instead of the hook process's
-      ambient cwd; the git-native `pre-merge-commit`/`pre-push` adapters never had the bug,
-      since git itself supplies the operation and resolves HEAD in the invoking worktree) —
-      each with a dedicated regression test proving OLD-blocks/NEW-allows against the
-      pre-migration script. Equivalence proved by `tests/test_enforcement_core.py` (61 cases:
-      a >=3-per-guard block/allow/edge unit matrix + OLD-vs-NEW subprocess equivalence through
-      the real `.claude-plugin/hooks/*.sh` wrappers, byte-correct JSON via `json.dumps`); the
-      PX-29 blocker/witness gate (`tests/test_governance_hooks_gate.py`) tightened in step —
-      delegated blockers prove exit-2 structurally + behaviorally through the shared adapter
-      instead of the literal-`exit 2` grep the thin wrappers no longer satisfy.
-      Plan-mode lifecycle hooks + the wiki-freshness reminder stayed Claude-only, untouched.
-      Row's final resolution (closing the ledger item) deferred to the train-time capture.
-
-- [ ] **Periodic cross-document link / cite checker** — none exists or is planned. `wiki-lint`
-      is `docs/wiki/`-scoped (`[[backlinks]]` + `path:line` existence only), so the
-      `[text](path)` links across the contract docs **and the new `docs/governance/` pointers**
-      are unchecked by any gate. The extract-don't-restate move multiplies those pointers →
-      pointer-rot risk with no gate. Build a periodic link/cite gate (a CI step, or extend
-      `wiki-lint` over `docs/governance/` + the contract docs); makes the §4.7 wiki-lint payoff
-      actually true. Candidate reduction-sprint seed. _(surfaced 2026-06-15, `feat/governance-extraction`.)_
-      **Confirmed out of scope for 7.3 (2026-06-16):** the `design/self-documenting-loop` design keeps the
-      self-documenting loop **`docs/wiki/`-scoped** and explicitly does **not** absorb this cross-document
-      link/cite checker — it stays this named separate follow-on (no new open item created;
-      [`self-documenting-loop-design.md`](self-documenting-loop-design.md) §3 scope table).
-      **→ Integrate at 8.7 (2026-06-20, 7.9 ledger capture):** as the *durable CI form* of the
-      planned doc-link sweep — don't build it standalone.
 
 - [ ] **Agent-coding-practices kit-adoption — staged commitments (2026-06-23)** — the
       [`kit-adoption-design.md`](kit-adoption-design.md) arc's cross-cutting deferrals, kept in
@@ -913,6 +860,88 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       consolidation into the PX-46 owner-gated memory review.
 
 #### Resolved
+
+- [x] **Portable-enforcement-core migration** —
+      **RESOLVED 2026-07-08 (Train 4, big-push Phase 4):** the six portable guards lifted into
+      `scripts/enforcement/` (stdlib Python core; Claude/git/CI adapters; `.githooks/` via
+      opt-in `core.hooksPath`); Claude-side behavior equivalence-proven (61-test OLD-vs-NEW
+      matrix + 17/17 hand-tests + a real `core.hooksPath` end-to-end); both Train-1-filed
+      `block-merge-to-main` defects fixed with regressions; CI backstop latent until the git
+      remote exists. Detail retained below.
+      **DECIDED 2026-06-15: split** (the decision
+      record is under Resolved below). The migration itself is pending: lift the portable
+      guards (`require-feature-branch`, `block-merge-to-main`, `block-secrets`,
+      `route-security-lint`, `ruff-changed`, `validate-context`) into a tool-agnostic shared
+      core invoked by BOTH committed git-hooks (`core.hooksPath`/pre-commit) AND the Claude
+      plugin, with CI as the server-side backstop. Follow-on **`feat/portable-enforcement-core`**
+      clustered with the v1.0.8 gate epic when the git remote/CI activates (Sprint 8.7).
+      Plan-mode lifecycle hooks stay Claude-only. _(discovered: v1.0.7 stream, 2026-06-15.)_
+      **→ Integrate at 8.7 (2026-06-20, 7.9 ledger capture):** `feat/portable-enforcement-core`,
+      when the git remote/CI activates — leave. **Note (8.2, 2026-06-21):** the
+      `route-security-lint` widen (PX-21) kept the hook a self-contained bash script with no new
+      coupling, so it stays migration-friendly for this lift.
+      **Note (Train 1, 2026-07-07):** `block-merge-to-main` false-positives on READ-ONLY
+      `git merge-base` invocations (its `git merge` pattern lacks a boundary against
+      `merge-base`) and resolves HEAD in the hook's own cwd rather than the caller's worktree,
+      so it fires from any worktree while the main checkout sits on `main` — fix both when
+      lifting it into the portable core.
+      **DONE (Train 4, `feat/portable-enforcement-core`, 2026-07-08):** the migration itself
+      landed. One implementation per guard in `scripts/enforcement/guards/`, three consumers —
+      the Claude PreToolUse adapter (unchanged `.claude-plugin/hooks/*.sh` paths, now thin
+      wrappers), the opt-in native git hooks at `.githooks/` (`git config core.hooksPath
+      .githooks` — see `.githooks/README.md`; NOT auto-activated), and a CI backstop step
+      (`scripts/enforcement/ci_backstop.py` in `.github/workflows/ci.yml`, itself still latent
+      until the git remote activates, unchanged from the rest of that workflow). Both Train-1
+      `block-merge-to-main` defects noted above are fixed — the `merge-base`/`merge-tree`
+      false positive (a negative-lookahead regex tightening) and the cwd misresolution (the
+      Claude adapter now reads the PreToolUse `cwd` field instead of the hook process's
+      ambient cwd; the git-native `pre-merge-commit`/`pre-push` adapters never had the bug,
+      since git itself supplies the operation and resolves HEAD in the invoking worktree) —
+      each with a dedicated regression test proving OLD-blocks/NEW-allows against the
+      pre-migration script. Equivalence proved by `tests/test_enforcement_core.py` (61 cases:
+      a >=3-per-guard block/allow/edge unit matrix + OLD-vs-NEW subprocess equivalence through
+      the real `.claude-plugin/hooks/*.sh` wrappers, byte-correct JSON via `json.dumps`); the
+      PX-29 blocker/witness gate (`tests/test_governance_hooks_gate.py`) tightened in step —
+      delegated blockers prove exit-2 structurally + behaviorally through the shared adapter
+      instead of the literal-`exit 2` grep the thin wrappers no longer satisfy.
+      Plan-mode lifecycle hooks + the wiki-freshness reminder stayed Claude-only, untouched.
+      Row's final resolution (closing the ledger item) deferred to the train-time capture.
+
+- [x] **Periodic cross-document link / cite checker** —
+      **RESOLVED 2026-07-08 (Train 4, big-push Phase 4):** `scripts/check_doc_links.py` +
+      `tests/test_doc_links.py` ride the standard pytest gate (the periodic mechanism,
+      CI-covered via the pytest job); the one-time sweep fixed 48+ broken links/anchors incl.
+      the systemic plugin-move depth bug. Detail retained below.
+      **Originally:** none exists or is planned. `wiki-lint`
+      is `docs/wiki/`-scoped (`[[backlinks]]` + `path:line` existence only), so the
+      `[text](path)` links across the contract docs **and the new `docs/governance/` pointers**
+      are unchecked by any gate. The extract-don't-restate move multiplies those pointers →
+      pointer-rot risk with no gate. Build a periodic link/cite gate (a CI step, or extend
+      `wiki-lint` over `docs/governance/` + the contract docs); makes the §4.7 wiki-lint payoff
+      actually true. Candidate reduction-sprint seed. _(surfaced 2026-06-15, `feat/governance-extraction`.)_
+      **Confirmed out of scope for 7.3 (2026-06-16):** the `design/self-documenting-loop` design keeps the
+      self-documenting loop **`docs/wiki/`-scoped** and explicitly does **not** absorb this cross-document
+      link/cite checker — it stays this named separate follow-on (no new open item created;
+      [`self-documenting-loop-design.md`](self-documenting-loop-design.md) §3 scope table).
+      **→ Integrate at 8.7 (2026-06-20, 7.9 ledger capture):** as the *durable CI form* of the
+      planned doc-link sweep — don't build it standalone.
+      **DONE (`chore/doc-link-sweep`, 2026-07-08, ledger #7 — Phase 4/TRAIN 4):** built
+      [`scripts/check_doc_links.py`](../../scripts/check_doc_links.py) (deterministic,
+      stdlib-only) — tree-wide `[text](path)`/`[text](path#anchor)` link resolution +
+      GitHub-anchor verification across all 190 tracked `*.md` files (incl. `docs/wiki/*.md`,
+      whose links use the identical convention — trivially covered, `[[backlinks]]`/`path:line`
+      *drift* stay `wiki-lint`'s job), plus file-existence checking for `` `path:line` ``/
+      `` `path:SYMBOL` `` cites scoped to `docs/governance/*.md` + `AGENTS.md` + `CLAUDE.md`
+      (existence only, not drift). Wired into the existing gate via
+      [`tests/test_doc_links.py`](../../tests/test_doc_links.py) — no new CI job, rides `pytest`
+      on every PR — which **is** the periodic mechanism this row asked for. The one-time sweep
+      fixed every hit: a systemic `../../` depth bug in 6 `commands/`/`agents/` files, 4 stale
+      relative-depth links, 7 dangling `README.md` anchors (a removed heading + a never-landed
+      one, both retargeted to the closest live section), and 3 historical entries (incl. this
+      file's own two `onboarding/import_legacy.py` cites) de-linked rather than retargeted to
+      keep the historical record accurate. Full findings in the branch close-out report.
+      **Row toggle + the open-count header reconcile at Phase-4/TRAIN-4 capture** (per the
+      cumulative-ledger discipline — multiple ledger items land in this train).
 
 - [x] **Generation-experience re-architecture — LATER-branch remainder** —
       **RESOLVED 2026-07-08 (Train 3, big-push Phase 3b):** all four LATER-branch
@@ -1222,7 +1251,7 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       only the hooks + the manifest (`plugin.json`) + the marketplace (`marketplace.json`) remain in
       `.claude-plugin/`. Dropped the stale skill/subagent enumeration and the "Step 5 / 8 / 9 of the
       OSS migration" references; the section now points to
-      [README → Claude Code Plugin](../../README.md#claude-code-plugin) for the full catalog
+      [README → Architecture & developer reference](../../README.md#architecture--developer-reference) for the full catalog
       (cite-don't-restate, charter D5 — re-listing the entries inline is what drifted in the first
       place). _(surfaced 2026-06-15, `feat/governance-extraction`; cleared on the 8.0 reduction
       micro-branch.)_
@@ -1542,7 +1571,7 @@ first follow-up release.
       keeps its name — route rename is a separate cleanup, v1.1.
 - [x] **~~Bullet-dedup gap in corpus re-import~~** — ✅ resolved
       2026-05-26. Changed `_merge_into_existing_experience` in
-      [`onboarding/import_legacy.py`](../../onboarding/import_legacy.py)
+      `onboarding/import_legacy.py`
       to dedup on **normalized bullet text** instead of
       `(source, text)`. The old key missed same-file re-imports
       because the source flips from `primary:<file>` to
@@ -1552,7 +1581,7 @@ first follow-up release.
       phrasings from different files still survive (they have
       different normalized text). Test
       `test_merge_dedupes_identical_bullet_text_across_sources`
-      in [`tests/test_onboarding_import_legacy.py`](../../tests/test_onboarding_import_legacy.py)
+      in `tests/test_onboarding_import_legacy.py`
       pins the new behavior; all 24 tests in that file pass.
 - [x] **~~Wizard rail step buttons don't re-enable after prior step
       completes~~** — ✅ resolved 2026-05-26. Added a

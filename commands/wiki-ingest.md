@@ -12,7 +12,7 @@ allowed-tools:
 
 Ingest the repository into the committed LLM-wiki under `docs/wiki/`, following the
 **git-as-engine source model** and the **one grounding rule** in
-[`docs/wiki/SCHEMA.md`](../../docs/wiki/SCHEMA.md). The repo at **git HEAD is the source
+[`docs/wiki/SCHEMA.md`](../docs/wiki/SCHEMA.md). The repo at **git HEAD is the source
 of truth**; the wiki is a compiled, link-back artifact — never a copy of the code.
 
 > **This is an LLM-heavy op.** A cold pass reads the whole repo (chunked per module); a
@@ -21,9 +21,9 @@ of truth**; the wiki is a compiled, link-back artifact — never a copy of the c
 
 ## Steps
 
-1. **Pick the mode.** Read [`docs/wiki/.last_ingest_sha`](../../docs/wiki/.last_ingest_sha).
+1. **Pick the mode.** Read [`docs/wiki/.last_ingest_sha`](../docs/wiki/.last_ingest_sha).
    - No 40-char SHA present (empty / sentinel), **or** `--full` was passed ⇒ **cold pass**:
-     a whole-repo pass, chunked per module using [`docs/architecture.md`](../../docs/architecture.md)
+     a whole-repo pass, chunked per module using [`docs/architecture.md`](../docs/architecture.md)
      as the module map (the deterministic core, `analyzer.py`, the routes, `db/`, the eval
      harness, the frontend).
    - A real SHA is present ⇒ **diff pass**: `git diff --name-status <sha> HEAD` selects only
@@ -42,16 +42,16 @@ of truth**; the wiki is a compiled, link-back artifact — never a copy of the c
    do not support.* The wiki may select, condense, and connect what the sources say; it may
    not invent past them. This is the same discipline the product enforces on résumé bullets.
 4. **Update the map + backlinks.** Add or revise the one-line entry per new/changed page in
-   [`docs/wiki/index.md`](../../docs/wiki/index.md), and reconcile `[[backlinks]]` in both
+   [`docs/wiki/index.md`](../docs/wiki/index.md), and reconcile `[[backlinks]]` in both
    directions (a new inbound link gets a matching outbound mention where it belongs).
 5. **Advance the checkpoint.** Write the current `git rev-parse HEAD` (full 40-char SHA)
-   into [`docs/wiki/.last_ingest_sha`](../../docs/wiki/.last_ingest_sha), replacing the
+   into [`docs/wiki/.last_ingest_sha`](../docs/wiki/.last_ingest_sha), replacing the
    sentinel line on a cold pass.
-6. **Log it.** Append a dated entry to [`docs/wiki/log.md`](../../docs/wiki/log.md) (newest
+6. **Log it.** Append a dated entry to [`docs/wiki/log.md`](../docs/wiki/log.md) (newest
    last): the branch, the mode (cold / diff), the files read, and the pages created/changed.
    `log.md` is the wiki's changelog — a wiki pass does **not** touch the root
-   [`CHANGELOG.md`](../../CHANGELOG.md), which tracks product/code changes.
+   [`CHANGELOG.md`](../CHANGELOG.md), which tracks product/code changes.
 
 Do not duplicate the project's operating rules into the wiki — `SCHEMA.md` **references**
-[`AGENTS.md`](../../AGENTS.md) / [`CLAUDE.md`](../../CLAUDE.md) / [`vision.md`](../../vision.md)
+[`AGENTS.md`](../AGENTS.md) / [`CLAUDE.md`](../CLAUDE.md) / [`vision.md`](../vision.md)
 (design fork D5); on any conflict, those canonical docs win and the wiki is what's wrong.

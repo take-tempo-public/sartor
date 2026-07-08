@@ -14,7 +14,7 @@
 
 The owner's test (a Dev-mode "where should I start?" answer) shows three conventions colliding in the same sentences:
 
-1. **markdown links** — `` [`architecture.md`](docs/architecture.md) ``
+1. **markdown links** — `` [`architecture.md`](../architecture.md) ``
 2. **plain parentheticals** — `(pipeline, persistence, data-flow, LLM routing)`
 3. **numeric citation markers** — `[4]`, `[5]`, `[8]`
 
@@ -30,7 +30,7 @@ The owner's test (a Dev-mode "where should I start?" answer) shows three convent
 
 The example answer (Dev mode, question *"where should i start to understand the project architecture, conventions, etc.?"*) rendered, e.g.:
 
-> Start with `` [`architecture.md`](docs/architecture.md) `` for a fast system tour — it has the module map and four Mermaid diagrams (pipeline, persistence, data-flow, LLM routing) `[4]`. …
+> Start with `` [`architecture.md`](../architecture.md) `` for a fast system tour — it has the module map and four Mermaid diagrams (pipeline, persistence, data-flow, LLM routing) `[4]`. …
 
 and closed with a footer:
 

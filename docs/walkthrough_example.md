@@ -326,7 +326,7 @@ reading and decisions.
 | **Total** | | | **~$0.22** |
 
 This is the "résumé + clarify" band from
-[Cost guidance](../README.md#cost) — squarely in the typical-use
+[Cost guidance](../README.md#install) — squarely in the typical-use
 range.
 
 ---

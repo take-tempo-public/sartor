@@ -563,7 +563,7 @@ once on first view and is re-openable via its (i)-circle (KW10):
 ### WS-4 substrate — LLM-wiki knowledge architecture (split: WS-4a front-loaded, WS-4b after 6.6)
 > From the excellence walk (WS-4). **Split** because the doc/whys content needs a home
 > **early** — the preserved excellence-walk source (now tracked at
-> [`../excellence-walk/`](../excellence-walk/)) must move into the wiki **very soon** —
+> [`excellence-walk/`](excellence-walk/)) must move into the wiki **very soon** —
 > while the **code** cold-ingest wants route-churn settled (**after 6.6** — re-sequenced
 > 2026-06-12 so the cold pass also captures the B.4/B.5 corpus-completer Compose cards).
 > The wiki's hard deadline is **Sprint 6.5**: the education sweep authors **into** the
@@ -575,8 +575,8 @@ once on first view and is re-openable via its (i)-circle (KW10):
    Governance**, the one-way dependency law (every dependency points inward toward
    Production; Production answers only upward to Governance), and the **Product / Work**
    split. The canonical self-model + the wiki `overview.md` seed. *(Source:
-   [`../excellence-walk/excellence-walk.md`](../excellence-walk/excellence-walk.md) +
-   [`../excellence-walk/q1-overview.md`](../excellence-walk/q1-overview.md).)*
+   [`excellence-walk/excellence-walk.md`](excellence-walk/excellence-walk.md) +
+   [`excellence-walk/q1-overview.md`](excellence-walk/q1-overview.md).)*
 2. `docs/wiki-skeleton` ✓ **DONE (this branch)** — committed the `docs/wiki/` skeleton
    (`SCHEMA.md`, `index.md`, `overview.md` ← seeded from + deferring to
    `docs/system-model.md` as canonical, carrying its 4 revision points; `log.md`;
@@ -589,7 +589,7 @@ once on first view and is re-openable via its (i)-circle (KW10):
    lightweight commit-time freshness **reminder** hook (NOT auto-ingest — per-commit
    LLM cost); `wiki-lint` as a periodic + pre-release gate.
 4. `wiki/ingest-excellence-walk` — **ingest the preserved
-   [`../excellence-walk/`](../excellence-walk/) raw source** into synthesized wiki
+   [`excellence-walk/`](excellence-walk/) raw source** into synthesized wiki
    pages (system-model · the five-question deliverables · the WS-4/Governance design).
    This makes "minimally operational" real and lets the raw folder retire into the
    wiki's `raw/` constitutional layer. **The temp source is now safe in git — but

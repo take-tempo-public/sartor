@@ -21,7 +21,7 @@
   `python3 --version` on macOS/Linux).
 - **An Anthropic API key.** Get one at
   [console.anthropic.com](https://console.anthropic.com/). See
-  [Cost guidance](../README.md#cost) for the per-application
+  [Cost guidance](../README.md#install) for the per-application
   breakdown; budget guards are documented in
   [`SECURITY.md`](../SECURITY.md).
 - **A modern browser** (Chrome / Edge / Firefox / Safari).
@@ -376,7 +376,7 @@ extras, sizes, and licensing) live in
 By the end of these eight steps you'll have your first tailored
 résumé sitting in `output/<your-user>/`. Total time: about 5
 minutes plus one ~30–60s LLM analyze call. Total cost: ~$0.05–$0.30
-([see breakdown](../README.md#cost)).
+([see breakdown](../README.md#install)).
 
 After the app is running:
 

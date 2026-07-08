@@ -40,7 +40,7 @@ rather than silently overriding a constant the primitive can't reach.
    promote edit reviewable). Confirm `evals/fixtures/real/<name>/` has
    `improvement_brief.md` and `seed.json`; if missing, stop and point the user at
    the export → bootstrap → annotate → collate steps in
-   [`evals/README.md`](../../evals/README.md).
+   [`evals/README.md`](../evals/README.md).
 2. **Baseline (no overrides).** Run both suites and capture each JSONL path the
    runner prints:
    - target: `python evals/runner.py --suite real --seed evals/fixtures/real/<name>/seed.json $ARGUMENTS`
@@ -70,7 +70,7 @@ rather than silently overriding a constant the primitive can't reach.
 6. **Promote / Revert.** Ask the user. Promote **only** on an explicit "promote":
    - **Promote:** `Edit` the chosen constant in `analyzer.py` to the candidate
      text; bump `PROMPT_VERSION` to the next iteration **in the same edit**;
-     append an [`evals/TUNING_LOG.md`](../../evals/TUNING_LOG.md) entry following
+     append an [`evals/TUNING_LOG.md`](../evals/TUNING_LOG.md) entry following
      its four-question structure (what changed / why — the brief's failure mode /
      result — the real + anchor before-after scores from step 5 / what we
      learned); suggest a commit message like

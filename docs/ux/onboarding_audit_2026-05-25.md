@@ -73,7 +73,7 @@ Fix: rewrite as direct second-person: "sartor. runs on your machine. Every LLM c
 
 **README.md:75–77** — cost-not-set
 > "Résumé only, no iteration, no clarify — ~$0.05 – $0.10 / Résumé + clarify + 1-2 refine iterations — ~$0.15 – $0.25 / Full loop with iterate-clarify + multiple refines + cover letter — ~$0.30 – $0.50"
-Fix: this is the canonical cost paragraph and it needs to be the canonical cost paragraph everywhere. Add an anchor `<a name="cost"></a>` here, then change `install.md:23–24` and `walkthrough.md` per-step cost numbers to link to it ("see [Cost guidance](../../README.md#cost) for the per-call breakdown"). BECAUSE the install.md "first generation is ~$0.05–$0.30" framing doesn't match either of the three README bands; a first-time reader who compares the two pages will distrust both.
+Fix: this is the canonical cost paragraph and it needs to be the canonical cost paragraph everywhere. Add an anchor `<a name="cost"></a>` here, then change `install.md:23–24` and `walkthrough.md` per-step cost numbers to link to it ("see [Cost guidance](../../README.md#install) for the per-call breakdown"). BECAUSE the install.md "first generation is ~$0.05–$0.30" framing doesn't match either of the three README bands; a first-time reader who compares the two pages will distrust both.
 
 **README.md:99** — jargon-first-use
 > "A single application moves through six steps. The first three are corpus + analysis (cheap or free)."
@@ -128,7 +128,7 @@ Fix: vision.md is the highest-priority doc for "should I use this" decisions and
 Fix: this is the strongest opening sentence in the whole doc set — keep it verbatim. But the surrounding "Audience: humans evaluating whether to use or contribute" Purpose block is reference-voiced and reads cold before the punch. Move the one-question quote above the Purpose block as the literal first content after the H1. BECAUSE the punch belongs on the first screen the reader sees, not after they've scrolled past a Purpose/Audience metadata block.
 
 **vision.md:256–264** — step-skipped
-> "The analyze step is the latency floor ... See [`docs/PERF_ANALYZE.md`](docs/PERF_ANALYZE.md) for the audit."
+> "The analyze step is the latency floor ... See `docs/PERF_ANALYZE.md` for the audit."
 Fix: the audited doc set lists `docs/PERF_ANALYZE.md` as a referenced doc, but it's a dev-facing artifact (audit, not user-facing prose). Either soft-gate the link with "(dev-facing)" or drop it. BECAUSE a user-facing vision doc shouldn't dump readers into a perf audit without warning.
 
 ---
