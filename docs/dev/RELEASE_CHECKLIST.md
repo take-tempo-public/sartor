@@ -487,79 +487,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprint IN PROGRESS; see the dated reconciliation at the end of this note). Most 2026-07 additions drain via already-scheduled coordinates (see the aggregate rows below), so the drain plan stands in lieu of a standalone reduction sprint — but treat 10 as the ceiling: clear before adding. **Triaged 2026-06-20 (7.9 ledger capture):** each item below carries a **→ integrate at 8.x** target mapping it to an already-scheduled v1.0.8 sprint, so the ledger drains without new standalone branches. **`chore/ledger-reduction` (8.0) ran 2026-06-21** and cleared the **CONTRIBUTING-drift + pytest-socket `UserWarning`** pair (both now under Resolved), dropping the open count 10→8. **`refactor/app-blueprints-generation` (8.3c) added one item** — the `_resolve_persona_*` transitional duplicate (→ clears at 8.3e) — bumping 8→9. **`refactor/app-blueprints-corpus` (8.3d) added one item** — the pre-existing `list_resumes` raw-username observation surfaced while moving the route (owner chose to track it 2026-06-22, → 8.3f); its shared `_tag_list`/`_skill_to_dict` used the legal `app.py → blueprint` import (no transitional duplicate) — bumping 9→10. **`refactor/app-blueprints-templates` (8.3e) ran 2026-06-22** — RESOLVED the `_resolve_persona_*` duplicate (now under Resolved) and ADDED the `_load_application_owned` transitional duplicate (→ clears at 8.3f); net open count unchanged at **10**. **`refactor/app-blueprints-applications` (8.3f) ran 2026-06-22** — RESOLVED both the `_load_application_owned` transitional duplicate and the `list_resumes` raw-username hardening (both now under Resolved), dropping the open count **10→8**. **`refactor/app-blueprints-users-config` (8.3g) ran 2026-06-22** — no ledger item added or cleared: the seam introduced **no transitional duplicate** (the `web_infra` config-io/provisioning helpers already existed) and **no new observation**; help-opener (#7) still targets 8.3h as scheduled. **`refactor/app-blueprints-diagnostics` (8.3h) ran 2026-06-22** — the **seventh and last** domain seam (`app.py` → zero routes; the transitional local-helper block + path globals retired): **no ledger item added or cleared** — no transitional duplicate, and help-opener (#7) was **reviewed and deferred** (owner kept the last seam a pure route move → #7 re-targeted to a dedicated help-refactor branch). Open count holds at **8**. **Re-evaluated at 8.3g (as the threshold note required): open count holds at 8** — the four remaining targeted items all drain on already-scheduled sprints (8.5 / 8.6a / 8.7) and the citation viewer stays deferred, so no standalone reduction sprint is needed. Net drain from here: 8.5 clears the S3-eval + grounding-metric pair · 8.7 clears portable-core + link-checker + flaky-UX · 8.3f clears the `list_resumes` raw-username hardening **and** the `_load_application_owned` duplicate · 8.3 clears help-opener · 8.6a clears assistant doc-coverage · the citation viewer stays deferred → by v1.1.0 the ledger is ~2 items. **`eval/live-shakedown-labels` (8.5) ran 2026-06-23** — RESOLVED the **S3 vector tier** item (judge-scored before/after → KEEP) and ADDED the **E2E walkthrough + R2-live remainder** (deferred at close-out, owner-decided, → runs against `main` before 8.6); net open count **unchanged at 8**. The **grounding-metric** item stays open but is now precisely blocked on **EV-1** (the minicheck unpinned-git-dep drift the shakedown surfaced) — its L1/L2 labels move to 8.6 PV-2 after that fix. The 8.5 window's other findings (EV-1/2/3 + S3-1) live in [`window-8.5-findings.md`](window-8.5-findings.md), which 8.6 (`fix/window-findings-*`) burns wholesale. **`fix/window-findings-grounding` (8.6, first sub-branch) ran 2026-06-23** — burned the grounding slice (EV-1/2/3 + S3-1, all window-doc findings, **not** ledger rows) and applied the 8.5 flaky-UX stabilization annotation (now **watch**-to-resolve). **No open ledger row cleared or added:** the **grounding-metric** item stays open (its PV-2 calibration is owner-gated — EV-1 is fixed but the manual annotation labels are still owed); the **flaky-UX** item stays open in watch. Open count holds at **8**. **`docs/kit-adoption-arc` (2026-06-23) ADDED one item** — the agent-coding-practices kit-adoption staged commitments (one consolidated home for the strict-ratchet exit criterion + gate-hardness ratchet-then-block + skills/hooks coherence; → [`kit-adoption-design.md`](kit-adoption-design.md)); open count **8 → 9**, still under the ~8–10 reduction threshold. **`chore/kit-phase1-pydantic-mypy` (2026-06-23)** — Phase 1's first kit-adoption branch (`pydantic.mypy` enabled; ERA + SQLAlchemy plugin evaluated-and-rejected); added/cleared no ledger row, so open count **holds at 9** (the subsequent kit Phase-1/Phase-2 branches likewise added/cleared no ledger row). **`docs/assistant-wiki-coverage` (8.6a) ran 2026-06-25** — RESOLVED the **Assistant doc-coverage** item (7 `audience: user` how-to pages authored — all-7-topics scope; `index.md` + bidirectional backlinks reconciled; per-page author≠auditor grounding audit = 6 CLEAN + 1 re-anchored; content pass, `.last_ingest_sha` unchanged), dropping the open count **9 → 8**. **`refactor/help-opener-dedup` (v1.0.8 reduction sprint) ran 2026-06-25** — RESOLVED the **Help-opener duplication** item (#7): the wizard/console help opener + `cb_help_seen:` seam extracted into the shared leaf `static/help-modal.js` (`window.cbOpenHelpModal` + seam globals); `openHelpModal`/`openDashHelp` become thin wrappers over their own (still-local) registries, so public names + DOM ids + localStorage keys are unchanged → zero test-code changes, and the console still never loads `app.js`. Dropping the open count **8 → 7**. **`fix/compose-ux-stabilization` (2026-06-26) ran** — RESOLVED the **Flaky Compose-UX race class** item (#3): the **test-infra** causes (5 members) via a `data-compose-ready` settle marker + settle-aware POM, AND **a real rare server-side title-pin race the 6th member was catching** — `save_application_composition` now self-heals a transient title-eligibility miss (rollback + fresh-snapshot re-read before 400), proven by a deterministic miss-then-hit unit test (the live race is unreproducible). Empirical support: positioning **400/400** with the fix (was ~0.37%), full `pytest` ✓ (1394). Dropping the open count **7 → 6**. **`fix/corpus-import-and-curation-ux` (2026-06-29) ADDED one item** — the merge-suggestion similarity-threshold calibration (first-pass scorer constants validated during e2e); open count **6 → 7**, still under the ~8–10 threshold. **`feat/packaging-publish` (2026-07-02) ADDED one item** — the PyPI-wheel data-files gap (its own bullet records **7 → 8**; this header missed that update, caught by the 2026-07 efficiency review as F-doc-02). **`review/2026-07-efficiency` ran 2026-07-03** — witness-only efficiency review ADDED one aggregate item (PX-37..56 → archive); open count **8 → 9**. The review's own PX-48 prescribes compressing this head-note to a current-state summary. **`chore/upgrade-sonnet-5-model` (v1.0.8 stream) ran 2026-07-05** — the Sonnet 4.6 → Sonnet 5 model upgrade (product LLM calls + 6 plugin subagents); ADDED one item (the eval-baseline stale-vs-Sonnet-5 refresh, deferred as bookkeeping after a controlled A/B cleared the model of material regression); open count **9 → 10** (its branch-time note said 7 → 8, inheriting the pre-correction header). **`chore/ruff-format-pin` (2026-07-06) ran** — the first reduction-sprint knock-down after the generation-experience re-architecture merge: RESOLVED the ruff-format-drift item AND reconciled this head-note to reality. The running per-item tally above had lagged — this note's headline said 10 and the flaky-Compose bullet said 11 — while **13** `- [ ]` items actually rendered; the authoritative rendered count is now **12** after this item. Treat the rendered `- [ ]` count as source-of-truth; compressing this whole head-note down to a current-state summary remains PX-48's job. **`fix/compose-settle-bg-reload` (2026-07-06) ran** — RESOLVED the flaky Compose-UX item via the **settle-marker** route: a `data-compose-bg-pending` in-flight-reload counter (set as the first synchronous statement of all 11 `loadComposition()`-on-success reload sites, cleared in a `finally`) makes `_wait_settled` gate deterministically on `#composeList[data-compose-ready]:not([data-compose-bg-pending])` instead of a networkidle + stability-poll heuristic; rendered open count **12 → 11**. Reduction sprint continues — next cheap candidate: the eval-baseline refresh. **`docs/ux-review-2026-07` (2026-07-07) ADDED one aggregate item** — the 3-persona UX-review remediation backlog (F-01..F-27, waves pre-planned in the review's `50-oss-polish-plan.md`); open count **11 → 12**, over the ceiling — the reduction sprint should burn the P0 wave next._
-
-- [ ] **UX-review remediation (aggregate) — F-01..F-27** — the 2026-07-07 three-persona
-      UX review ([`docs/dev/reviews/2026-07-ux-review/`](reviews/2026-07-ux-review/README.md))
-      landed 27 code-verified findings with a pre-sequenced wave plan
-      ([`50-oss-polish-plan.md`](reviews/2026-07-ux-review/50-oss-polish-plan.md)).
-      **Wave 0 (P0, launch blockers):** F-01 keyword-score deflation — **DONE 2026-07-07**
-      (`fix/ux-review-wave0-keyword-score`: boilerplate stoplist + forgive-absence
-      company-term cleaning + coverage reframe) · F-02 résumé import
-      creates no Skill rows — **F-02 DONE 2026-07-07 (`fix/ux-f02-import-skill-rows`)**
-      · F-11 eval harness scores the fallback LLM `generate`
-      path, not the frozen-composition assembly the UI ships — **DONE 2026-07-07**
-      (`fix/eval-f11-frozen-assembly`: new `evals/runner.py --mode assemble` path
-      drives the SAME Compose → freeze → assemble product path —
-      `recommend_bullets`/`recommend_summaries` (Haiku) → `freeze_approved_composition`
-      → the deterministic assembler, zero résumé-body LLM calls, cover letter stays a
-      real Sonnet call — so corpus-backed runs score the shipped assembled document;
-      every JSONL record carries `eval_mode`, assemble-mode scores are exempt from the
-      `baseline_v1.json` regression gate (different population); legacy `--mode generate`
-      path byte-identical/unchanged. Unblocks ledger row "Eval baseline stale vs
-      production model (Sonnet 5)" below to proceed) · F-24/25/26
-      install.md `[dev]`/`--setup` gaps + `pyproject.toml` `py-modules` omission
-      (overlaps the PyPI-wheel item below — fix together). **F-24/25/26 DONE
-      2026-07-07 (`fix/packaging-install`).**
-      **Wave 1+:** **F-09/F-10 DONE 2026-07-07 (`feat/ux-w1-generate-surface`)**.
-      **F-19 DONE 2026-07-07 (`feat/ux-w3-demo-mode`)** — offline/demo
-      mode (`SARTOR_DEMO=1`): canned fixture-derived analyzer responses, zero
-      Anthropic client construction, persistent banner, telemetry-clean by
-      construction. **Wave 1 (first-run delight):** F-12 progressive-disclosure
-      Analyze (verdict + top-3 deterministic actions, deep read behind "Show full
-      analysis") · F-06 one-time corpus-landing transition modal · F-05
-      display-name-first user form with live slug derivation · F-15 deterministic
-      company capture onto applications — **F-12/F-06/F-05/F-15 DONE 2026-07-07
-      (`feat/ux-w1-first-run-flow`).** F-03 two skills homes (flat Settings field
-      goes inert after first corpus provisioning) + F-04 education/certifications
-      have no corpus panel — **F-03/F-04 DONE 2026-07-07
-      (`feat/ux-w1-skills-education`)**: one home per section —
-      `GET /api/users/<u>/config` now returns `needs_onboarding` (Candidate DB
-      row exists?); the Settings drawer's flat Skills/Certifications/Education
-      fields show a labeled "Go to Career corpus →" pointer once a candidate is
-      provisioned (corpus authoritative) and stay live, unchanged, pre-provision
-      (the true legacy state — Phase C.4 already removed the file-based
-      analyze/generate path for everyone, so this is a per-candidate lifecycle
-      flag, not a permanent second mode); new candidate-level Education +
-      Certification corpus editors (8 routes, `blueprints/corpus/career_assets.py`)
-      mirror the Skills editor's add/edit/retire chrome, soft-retire only
-      (never hard-deleted), with a swap-and-persist ↑/↓ reorder. No automatic
-      data migration between the flat fields and the corpus rows (only the
-      existing one-time `import_candidate_from_config` seed). **Wave 2 (recruiter
-      tier):** F-08/F-17/F-16 DONE 2026-07-07 (`feat/ux-w2-recruiter`) —
-      searchable candidate roster (F-08) layered above the existing
-      `#userSelect`, a read-only cross-candidate Pipeline board grouped by
-      canonical status (F-17), and a one-click persona COPY-TO-CANDIDATE for
-      house templates (F-16); all three share one new query-count-guarded
-      aggregate endpoint (`GET /api/candidates/roster`). Screenshot evidence
-      (gitignored, local): `output/ux-review-2026-07-screenshots/` + its MANIFEST.md.
-      _(discovered: 2026-07-07, `docs/ux-review-2026-07`; open count 11 → 12.)_
-      **→ Integrate as `fix/ux-review-wave0-*` branches before any public tag;**
-      waves 1–4 drain per the polish plan. **Wave 4 (P2, aesthetic/interaction
-      polish) — F-07/F-23/F-13/F-14/F-18 DONE 2026-07-07 (`feat/ux-w4-aesthetic`):**
-      native `confirm()` → app-native `cbConfirm()` modal (all 10 sites) ·
-      Tailor-tab fold (wizard-first, persisted collapse) · gap-fill "Optional"
-      framing · edit-gate modal plain-language copy · dev-default CI/container
-      auto-detection (`app._is_ci_or_container()`). **Wave 3 (contributor
-      on-ramp, partial):** F-21/F-22/F-20/F-27/F-06d — **DONE 2026-07-07
-      (`docs/ux-w3-contributor`)**: README three-reader-paths front matter +
-      Install prominence/`git` prereq/de-jargon/"formerly Callback" note,
-      model-routing prose corrected repo-wide (verified against
-      `analyzer.py:SONNET_MODEL`/`HAIKU_MODEL`, incl. a `clarify()` tier bug
-      found along the way), eval-smoke cost restated ~$0.35-0.40 under Sonnet 5
-      (AGENTS.md/README/evals/README.md/dashboard/diagnostics.py), dashboard
-      reliability tile relabeled "error rate." F-19 (demo mode) DONE (listed
-      above, `feat/ux-w3-demo-mode`) — Wave 3 fully drained.
+_Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprint IN PROGRESS; see the dated reconciliation at the end of this note). Most 2026-07 additions drain via already-scheduled coordinates (see the aggregate rows below), so the drain plan stands in lieu of a standalone reduction sprint — but treat 10 as the ceiling: clear before adding. **Triaged 2026-06-20 (7.9 ledger capture):** each item below carries a **→ integrate at 8.x** target mapping it to an already-scheduled v1.0.8 sprint, so the ledger drains without new standalone branches. **`chore/ledger-reduction` (8.0) ran 2026-06-21** and cleared the **CONTRIBUTING-drift + pytest-socket `UserWarning`** pair (both now under Resolved), dropping the open count 10→8. **`refactor/app-blueprints-generation` (8.3c) added one item** — the `_resolve_persona_*` transitional duplicate (→ clears at 8.3e) — bumping 8→9. **`refactor/app-blueprints-corpus` (8.3d) added one item** — the pre-existing `list_resumes` raw-username observation surfaced while moving the route (owner chose to track it 2026-06-22, → 8.3f); its shared `_tag_list`/`_skill_to_dict` used the legal `app.py → blueprint` import (no transitional duplicate) — bumping 9→10. **`refactor/app-blueprints-templates` (8.3e) ran 2026-06-22** — RESOLVED the `_resolve_persona_*` duplicate (now under Resolved) and ADDED the `_load_application_owned` transitional duplicate (→ clears at 8.3f); net open count unchanged at **10**. **`refactor/app-blueprints-applications` (8.3f) ran 2026-06-22** — RESOLVED both the `_load_application_owned` transitional duplicate and the `list_resumes` raw-username hardening (both now under Resolved), dropping the open count **10→8**. **`refactor/app-blueprints-users-config` (8.3g) ran 2026-06-22** — no ledger item added or cleared: the seam introduced **no transitional duplicate** (the `web_infra` config-io/provisioning helpers already existed) and **no new observation**; help-opener (#7) still targets 8.3h as scheduled. **`refactor/app-blueprints-diagnostics` (8.3h) ran 2026-06-22** — the **seventh and last** domain seam (`app.py` → zero routes; the transitional local-helper block + path globals retired): **no ledger item added or cleared** — no transitional duplicate, and help-opener (#7) was **reviewed and deferred** (owner kept the last seam a pure route move → #7 re-targeted to a dedicated help-refactor branch). Open count holds at **8**. **Re-evaluated at 8.3g (as the threshold note required): open count holds at 8** — the four remaining targeted items all drain on already-scheduled sprints (8.5 / 8.6a / 8.7) and the citation viewer stays deferred, so no standalone reduction sprint is needed. Net drain from here: 8.5 clears the S3-eval + grounding-metric pair · 8.7 clears portable-core + link-checker + flaky-UX · 8.3f clears the `list_resumes` raw-username hardening **and** the `_load_application_owned` duplicate · 8.3 clears help-opener · 8.6a clears assistant doc-coverage · the citation viewer stays deferred → by v1.1.0 the ledger is ~2 items. **`eval/live-shakedown-labels` (8.5) ran 2026-06-23** — RESOLVED the **S3 vector tier** item (judge-scored before/after → KEEP) and ADDED the **E2E walkthrough + R2-live remainder** (deferred at close-out, owner-decided, → runs against `main` before 8.6); net open count **unchanged at 8**. The **grounding-metric** item stays open but is now precisely blocked on **EV-1** (the minicheck unpinned-git-dep drift the shakedown surfaced) — its L1/L2 labels move to 8.6 PV-2 after that fix. The 8.5 window's other findings (EV-1/2/3 + S3-1) live in [`window-8.5-findings.md`](window-8.5-findings.md), which 8.6 (`fix/window-findings-*`) burns wholesale. **`fix/window-findings-grounding` (8.6, first sub-branch) ran 2026-06-23** — burned the grounding slice (EV-1/2/3 + S3-1, all window-doc findings, **not** ledger rows) and applied the 8.5 flaky-UX stabilization annotation (now **watch**-to-resolve). **No open ledger row cleared or added:** the **grounding-metric** item stays open (its PV-2 calibration is owner-gated — EV-1 is fixed but the manual annotation labels are still owed); the **flaky-UX** item stays open in watch. Open count holds at **8**. **`docs/kit-adoption-arc` (2026-06-23) ADDED one item** — the agent-coding-practices kit-adoption staged commitments (one consolidated home for the strict-ratchet exit criterion + gate-hardness ratchet-then-block + skills/hooks coherence; → [`kit-adoption-design.md`](kit-adoption-design.md)); open count **8 → 9**, still under the ~8–10 reduction threshold. **`chore/kit-phase1-pydantic-mypy` (2026-06-23)** — Phase 1's first kit-adoption branch (`pydantic.mypy` enabled; ERA + SQLAlchemy plugin evaluated-and-rejected); added/cleared no ledger row, so open count **holds at 9** (the subsequent kit Phase-1/Phase-2 branches likewise added/cleared no ledger row). **`docs/assistant-wiki-coverage` (8.6a) ran 2026-06-25** — RESOLVED the **Assistant doc-coverage** item (7 `audience: user` how-to pages authored — all-7-topics scope; `index.md` + bidirectional backlinks reconciled; per-page author≠auditor grounding audit = 6 CLEAN + 1 re-anchored; content pass, `.last_ingest_sha` unchanged), dropping the open count **9 → 8**. **`refactor/help-opener-dedup` (v1.0.8 reduction sprint) ran 2026-06-25** — RESOLVED the **Help-opener duplication** item (#7): the wizard/console help opener + `cb_help_seen:` seam extracted into the shared leaf `static/help-modal.js` (`window.cbOpenHelpModal` + seam globals); `openHelpModal`/`openDashHelp` become thin wrappers over their own (still-local) registries, so public names + DOM ids + localStorage keys are unchanged → zero test-code changes, and the console still never loads `app.js`. Dropping the open count **8 → 7**. **`fix/compose-ux-stabilization` (2026-06-26) ran** — RESOLVED the **Flaky Compose-UX race class** item (#3): the **test-infra** causes (5 members) via a `data-compose-ready` settle marker + settle-aware POM, AND **a real rare server-side title-pin race the 6th member was catching** — `save_application_composition` now self-heals a transient title-eligibility miss (rollback + fresh-snapshot re-read before 400), proven by a deterministic miss-then-hit unit test (the live race is unreproducible). Empirical support: positioning **400/400** with the fix (was ~0.37%), full `pytest` ✓ (1394). Dropping the open count **7 → 6**. **`fix/corpus-import-and-curation-ux` (2026-06-29) ADDED one item** — the merge-suggestion similarity-threshold calibration (first-pass scorer constants validated during e2e); open count **6 → 7**, still under the ~8–10 threshold. **`feat/packaging-publish` (2026-07-02) ADDED one item** — the PyPI-wheel data-files gap (its own bullet records **7 → 8**; this header missed that update, caught by the 2026-07 efficiency review as F-doc-02). **`review/2026-07-efficiency` ran 2026-07-03** — witness-only efficiency review ADDED one aggregate item (PX-37..56 → archive); open count **8 → 9**. The review's own PX-48 prescribes compressing this head-note to a current-state summary. **`chore/upgrade-sonnet-5-model` (v1.0.8 stream) ran 2026-07-05** — the Sonnet 4.6 → Sonnet 5 model upgrade (product LLM calls + 6 plugin subagents); ADDED one item (the eval-baseline stale-vs-Sonnet-5 refresh, deferred as bookkeeping after a controlled A/B cleared the model of material regression); open count **9 → 10** (its branch-time note said 7 → 8, inheriting the pre-correction header). **`chore/ruff-format-pin` (2026-07-06) ran** — the first reduction-sprint knock-down after the generation-experience re-architecture merge: RESOLVED the ruff-format-drift item AND reconciled this head-note to reality. The running per-item tally above had lagged — this note's headline said 10 and the flaky-Compose bullet said 11 — while **13** `- [ ]` items actually rendered; the authoritative rendered count is now **12** after this item. Treat the rendered `- [ ]` count as source-of-truth; compressing this whole head-note down to a current-state summary remains PX-48's job. **`fix/compose-settle-bg-reload` (2026-07-06) ran** — RESOLVED the flaky Compose-UX item via the **settle-marker** route: a `data-compose-bg-pending` in-flight-reload counter (set as the first synchronous statement of all 11 `loadComposition()`-on-success reload sites, cleared in a `finally`) makes `_wait_settled` gate deterministically on `#composeList[data-compose-ready]:not([data-compose-bg-pending])` instead of a networkidle + stability-poll heuristic; rendered open count **12 → 11**. Reduction sprint continues — next cheap candidate: the eval-baseline refresh. **`docs/ux-review-2026-07` (2026-07-07) ADDED one aggregate item** — the 3-persona UX-review remediation backlog (F-01..F-27, waves pre-planned in the review's `50-oss-polish-plan.md`); open count **11 → 12**, over the ceiling — the reduction sprint should burn the P0 wave next. **Trains 1+2 (2026-07-07)** RESOLVED the UX-review remediation aggregate (all 27 findings landed); rendered open count **12 → 11**._
 
 - [ ] **PyPI wheel not installable — data files not packaged** — **RESOLVED-PENDING-PUBLISH
       2026-07-07 (`fix/packaging-install`); left open only for the still-blocked
@@ -985,6 +913,84 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       re-scoped from "whole vision owed" to the LATER-branch remainder above.)_
 
 #### Resolved
+
+- [x] **UX-review remediation (aggregate) — F-01..F-27** —
+      **RESOLVED 2026-07-07 (Trains 1+2, big-push Phases 1+3):** all 27 register
+      findings (+F-06d) landed — Wave 0 via Train 1 (`fix/ux-review-wave0-keyword-score`
+      · `fix/ux-f02-import-skill-rows` · `fix/eval-f11-frozen-assembly` ·
+      `fix/packaging-install`) and Waves 1-4 via Train 2's seven lanes. Per-wave DONE
+      clauses retained below for the record.
+      The 2026-07-07 three-persona
+      UX review ([`docs/dev/reviews/2026-07-ux-review/`](reviews/2026-07-ux-review/README.md))
+      landed 27 code-verified findings with a pre-sequenced wave plan
+      ([`50-oss-polish-plan.md`](reviews/2026-07-ux-review/50-oss-polish-plan.md)).
+      **Wave 0 (P0, launch blockers):** F-01 keyword-score deflation — **DONE 2026-07-07**
+      (`fix/ux-review-wave0-keyword-score`: boilerplate stoplist + forgive-absence
+      company-term cleaning + coverage reframe) · F-02 résumé import
+      creates no Skill rows — **F-02 DONE 2026-07-07 (`fix/ux-f02-import-skill-rows`)**
+      · F-11 eval harness scores the fallback LLM `generate`
+      path, not the frozen-composition assembly the UI ships — **DONE 2026-07-07**
+      (`fix/eval-f11-frozen-assembly`: new `evals/runner.py --mode assemble` path
+      drives the SAME Compose → freeze → assemble product path —
+      `recommend_bullets`/`recommend_summaries` (Haiku) → `freeze_approved_composition`
+      → the deterministic assembler, zero résumé-body LLM calls, cover letter stays a
+      real Sonnet call — so corpus-backed runs score the shipped assembled document;
+      every JSONL record carries `eval_mode`, assemble-mode scores are exempt from the
+      `baseline_v1.json` regression gate (different population); legacy `--mode generate`
+      path byte-identical/unchanged. Unblocks ledger row "Eval baseline stale vs
+      production model (Sonnet 5)" below to proceed) · F-24/25/26
+      install.md `[dev]`/`--setup` gaps + `pyproject.toml` `py-modules` omission
+      (overlaps the PyPI-wheel item below — fix together). **F-24/25/26 DONE
+      2026-07-07 (`fix/packaging-install`).**
+      **Wave 1+:** **F-09/F-10 DONE 2026-07-07 (`feat/ux-w1-generate-surface`)**.
+      **F-19 DONE 2026-07-07 (`feat/ux-w3-demo-mode`)** — offline/demo
+      mode (`SARTOR_DEMO=1`): canned fixture-derived analyzer responses, zero
+      Anthropic client construction, persistent banner, telemetry-clean by
+      construction. **Wave 1 (first-run delight):** F-12 progressive-disclosure
+      Analyze (verdict + top-3 deterministic actions, deep read behind "Show full
+      analysis") · F-06 one-time corpus-landing transition modal · F-05
+      display-name-first user form with live slug derivation · F-15 deterministic
+      company capture onto applications — **F-12/F-06/F-05/F-15 DONE 2026-07-07
+      (`feat/ux-w1-first-run-flow`).** F-03 two skills homes (flat Settings field
+      goes inert after first corpus provisioning) + F-04 education/certifications
+      have no corpus panel — **F-03/F-04 DONE 2026-07-07
+      (`feat/ux-w1-skills-education`)**: one home per section —
+      `GET /api/users/<u>/config` now returns `needs_onboarding` (Candidate DB
+      row exists?); the Settings drawer's flat Skills/Certifications/Education
+      fields show a labeled "Go to Career corpus →" pointer once a candidate is
+      provisioned (corpus authoritative) and stay live, unchanged, pre-provision
+      (the true legacy state — Phase C.4 already removed the file-based
+      analyze/generate path for everyone, so this is a per-candidate lifecycle
+      flag, not a permanent second mode); new candidate-level Education +
+      Certification corpus editors (8 routes, `blueprints/corpus/career_assets.py`)
+      mirror the Skills editor's add/edit/retire chrome, soft-retire only
+      (never hard-deleted), with a swap-and-persist ↑/↓ reorder. No automatic
+      data migration between the flat fields and the corpus rows (only the
+      existing one-time `import_candidate_from_config` seed). **Wave 2 (recruiter
+      tier):** F-08/F-17/F-16 DONE 2026-07-07 (`feat/ux-w2-recruiter`) —
+      searchable candidate roster (F-08) layered above the existing
+      `#userSelect`, a read-only cross-candidate Pipeline board grouped by
+      canonical status (F-17), and a one-click persona COPY-TO-CANDIDATE for
+      house templates (F-16); all three share one new query-count-guarded
+      aggregate endpoint (`GET /api/candidates/roster`). Screenshot evidence
+      (gitignored, local): `output/ux-review-2026-07-screenshots/` + its MANIFEST.md.
+      _(discovered: 2026-07-07, `docs/ux-review-2026-07`; open count 11 → 12.)_
+      **→ Integrate as `fix/ux-review-wave0-*` branches before any public tag;**
+      waves 1–4 drain per the polish plan. **Wave 4 (P2, aesthetic/interaction
+      polish) — F-07/F-23/F-13/F-14/F-18 DONE 2026-07-07 (`feat/ux-w4-aesthetic`):**
+      native `confirm()` → app-native `cbConfirm()` modal (all 10 sites) ·
+      Tailor-tab fold (wizard-first, persisted collapse) · gap-fill "Optional"
+      framing · edit-gate modal plain-language copy · dev-default CI/container
+      auto-detection (`app._is_ci_or_container()`). **Wave 3 (contributor
+      on-ramp, partial):** F-21/F-22/F-20/F-27/F-06d — **DONE 2026-07-07
+      (`docs/ux-w3-contributor`)**: README three-reader-paths front matter +
+      Install prominence/`git` prereq/de-jargon/"formerly Callback" note,
+      model-routing prose corrected repo-wide (verified against
+      `analyzer.py:SONNET_MODEL`/`HAIKU_MODEL`, incl. a `clarify()` tier bug
+      found along the way), eval-smoke cost restated ~$0.35-0.40 under Sonnet 5
+      (AGENTS.md/README/evals/README.md/dashboard/diagnostics.py), dashboard
+      reliability tile relabeled "error rate." F-19 (demo mode) DONE (listed
+      above, `feat/ux-w3-demo-mode`) — Wave 3 fully drained.
 
 - [x] **Recurring flaky Compose-UX under full-suite concurrency (settle-marker route)** —
       **DONE 2026-07-06 on `fix/compose-settle-bg-reload` (v1.1.0 reduction sprint).** The two
