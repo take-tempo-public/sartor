@@ -2008,6 +2008,162 @@ textarea:focus-visible {
 }
 
 /* =============================================================== */
+/* Wave 2 recruiter tier — candidate roster (F-08)                 */
+/* =============================================================== */
+
+.candidate-roster {
+  margin-bottom: 12px;
+}
+
+#candidateRosterSearch {
+  flex: 1;
+  min-width: 240px;
+  background: var(--bg-0);
+  color: var(--fg-0);
+  border: 1px solid #2b2b40;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-family: var(--font);
+  font-size: 14px;
+}
+
+.candidate-roster-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.candidate-roster-card {
+  background: var(--grad-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 10px 14px;
+  cursor: pointer;
+  box-shadow: var(--edge-top), var(--shadow-1);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-med) var(--ease),
+    transform var(--t-fast) var(--ease);
+}
+.candidate-roster-card:hover,
+.candidate-roster-card:focus-visible {
+  border-color: var(--border-2);
+  box-shadow: var(--edge-top), var(--shadow-2), var(--shadow-brand);
+  transform: translateY(-1px);
+  outline: none;
+}
+.candidate-roster-card.active {
+  border-color: var(--brand-edge);
+  box-shadow: var(--edge-top), var(--shadow-2), var(--shadow-brand);
+}
+
+.candidate-roster-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-0);
+}
+
+.candidate-roster-card-target {
+  font-size: 12px;
+  color: var(--fg-2);
+  margin-top: 2px;
+}
+
+.candidate-roster-card-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+/* =============================================================== */
+/* Wave 2 recruiter tier — pipeline board (F-17)                   */
+/* =============================================================== */
+
+.pipeline-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(180px, 1fr));
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.pipeline-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pipeline-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.pipeline-column-count {
+  font-size: 11px;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.pipeline-empty {
+  color: var(--fg-3);
+  font-size: 12px;
+  padding: 8px 0;
+}
+
+.pipeline-row {
+  background: var(--grad-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 8px 10px;
+  cursor: pointer;
+  box-shadow: var(--edge-top), var(--shadow-1);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease);
+}
+.pipeline-row:hover,
+.pipeline-row:focus-visible {
+  border-color: var(--border-2);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.pipeline-row-candidate {
+  font-size: 11px;
+  color: var(--brand);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.pipeline-row-title {
+  font-size: 13px;
+  color: var(--fg-0);
+  font-weight: 500;
+}
+
+.pipeline-row-company {
+  font-size: 12px;
+  color: var(--fg-1);
+}
+
+.pipeline-row-date {
+  font-size: 11px;
+  color: var(--fg-2);
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .pipeline-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =============================================================== */
 /* Phase D.5 — Candidate Memory tab                                */
 /* =============================================================== */
 

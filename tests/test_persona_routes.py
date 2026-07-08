@@ -467,6 +467,158 @@ class TestPersonaPreview:
         assert r.status_code == 404
 
 
+# ---------------------------------------------------------------------------
+# POST /api/personas/<id>/copy (Wave 2 recruiter tier — UX review F-16)
+# ---------------------------------------------------------------------------
+
+
+def _seed_owned_persona_file(
+    persona_app, candidate_id, owner_username, filename="house.docx", name="House Style"
+):
+    """Drop a fake .docx under personas/<owner>/ and insert a user_upload row."""
+    from db.models import PersonaTemplate
+    from db.session import get_session
+
+    owner_dir = persona_app.BASE_DIR / "personas" / owner_username
+    owner_dir.mkdir(parents=True, exist_ok=True)
+    disk_path = owner_dir / filename
+    disk_path.write_bytes(b"PK\x03\x04not a real docx but good enough for a copy")
+
+    s = get_session()
+    try:
+        row = PersonaTemplate(
+            candidate_id=candidate_id,
+            name=name,
+            path=f"personas/{owner_username}/{filename}",
+            source="user_upload",
+        )
+        s.add(row)
+        s.commit()
+        return row.id
+    finally:
+        s.close()
+
+
+class TestCopyPersonaToCandidate:
+    def test_copies_file_and_creates_row_for_target(self, persona_app):
+        alice_id = _seed_candidate(persona_app, "alice")
+        (persona_app.CONFIGS_DIR / "bob.config").write_text("{}", encoding="utf-8")
+        bob_id = _seed_candidate(persona_app, "bob")
+        pid = _seed_owned_persona_file(persona_app, alice_id, "alice")
+
+        client = persona_app.app.test_client()
+        r = client.post(f"/api/personas/{pid}/copy", json={"username": "bob"})
+        assert r.status_code == 201, r.get_json()
+        body = r.get_json()
+        assert body["name"] == "House Style"
+        assert body["source"] == "user_upload"
+        assert body["candidate_id"] == bob_id
+        assert body["path"].startswith("personas/bob/")
+        assert (persona_app.BASE_DIR / body["path"]).exists()
+
+        # Original untouched — both rows now exist, each owned by its candidate.
+        from db.models import PersonaTemplate
+        from db.session import get_session
+
+        s = get_session()
+        try:
+            rows = s.query(PersonaTemplate).filter_by(source="user_upload").all()
+            assert len(rows) == 2
+            assert {row.candidate_id for row in rows} == {alice_id, bob_id}
+            assert (persona_app.BASE_DIR / "personas" / "alice" / "house.docx").exists()
+        finally:
+            s.close()
+
+    def test_rejects_bundled_source(self, persona_app):
+        pid, _ = _seed_bundled_persona_file(persona_app, "bundled_copy.docx")
+        (persona_app.CONFIGS_DIR / "bob.config").write_text("{}", encoding="utf-8")
+        _seed_candidate(persona_app, "bob")
+
+        client = persona_app.app.test_client()
+        r = client.post(f"/api/personas/{pid}/copy", json={"username": "bob"})
+        assert r.status_code == 400
+        assert "uploaded" in r.get_json()["error"].lower()
+
+    def test_404_unknown_persona(self, persona_app):
+        (persona_app.CONFIGS_DIR / "bob.config").write_text("{}", encoding="utf-8")
+        _seed_candidate(persona_app, "bob")
+        client = persona_app.app.test_client()
+        r = client.post("/api/personas/99999/copy", json={"username": "bob"})
+        assert r.status_code == 404
+
+    def test_400_unknown_target_user(self, persona_app):
+        alice_id = _seed_candidate(persona_app, "alice")
+        pid = _seed_owned_persona_file(persona_app, alice_id, "alice")
+        client = persona_app.app.test_client()
+        r = client.post(f"/api/personas/{pid}/copy", json={"username": "ghost"})
+        assert r.status_code == 400
+
+    def test_400_traversal_target_username_sanitized(self, persona_app):
+        # secure_filename flattens "../../evil" -> "evil"; no config exists for
+        # it, so _safe_username rejects — same traversal-sanitize contract as
+        # create_user (tests/test_users_routes.py::test_traversal_username_...).
+        alice_id = _seed_candidate(persona_app, "alice")
+        pid = _seed_owned_persona_file(persona_app, alice_id, "alice")
+        client = persona_app.app.test_client()
+        r = client.post(f"/api/personas/{pid}/copy", json={"username": "../../evil"})
+        assert r.status_code == 400
+        assert not (persona_app.PERSONAS_DIR / "evil").exists()
+
+    def test_400_copy_to_same_owner(self, persona_app):
+        alice_id = _seed_candidate(persona_app, "alice")
+        pid = _seed_owned_persona_file(persona_app, alice_id, "alice")
+        client = persona_app.app.test_client()
+        r = client.post(f"/api/personas/{pid}/copy", json={"username": "alice"})
+        assert r.status_code == 400
+        assert "already belongs" in r.get_json()["error"].lower()
+
+    def test_403_when_source_path_escapes_personas_dir(self, persona_app):
+        # A corrupted DB row (path escaping PERSONAS_DIR) must not be readable
+        # via the copy route — the _within re-check on the source is the guard.
+        alice_id = _seed_candidate(persona_app, "alice")
+        (persona_app.CONFIGS_DIR / "bob.config").write_text("{}", encoding="utf-8")
+        _seed_candidate(persona_app, "bob")
+        from db.models import PersonaTemplate
+        from db.session import get_session
+
+        s = get_session()
+        try:
+            row = PersonaTemplate(
+                candidate_id=alice_id,
+                name="Escapee",
+                path="../outside.docx",
+                source="user_upload",
+            )
+            s.add(row)
+            s.commit()
+            pid = row.id
+        finally:
+            s.close()
+
+        client = persona_app.app.test_client()
+        r = client.post(f"/api/personas/{pid}/copy", json={"username": "bob"})
+        assert r.status_code == 403
+
+    def test_duplicate_copy_gets_a_suffixed_filename_not_clobbered(self, persona_app):
+        alice_id = _seed_candidate(persona_app, "alice")
+        (persona_app.CONFIGS_DIR / "bob.config").write_text("{}", encoding="utf-8")
+        _seed_candidate(persona_app, "bob")
+        pid = _seed_owned_persona_file(persona_app, alice_id, "alice", filename="dup.docx")
+
+        client = persona_app.app.test_client()
+        r1 = client.post(f"/api/personas/{pid}/copy", json={"username": "bob"})
+        assert r1.status_code == 201
+        path1 = r1.get_json()["path"]
+
+        r2 = client.post(f"/api/personas/{pid}/copy", json={"username": "bob"})
+        assert r2.status_code == 201
+        path2 = r2.get_json()["path"]
+
+        assert path1 != path2
+        assert (persona_app.BASE_DIR / path1).exists()
+        assert (persona_app.BASE_DIR / path2).exists()
+
+
 class TestDownloadEditedPersona:
     def test_persona_template_id_resolves_under_personas_dir(self, persona_app):
         _seed_candidate(persona_app)

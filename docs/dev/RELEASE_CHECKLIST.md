@@ -534,7 +534,13 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       mirror the Skills editor's add/edit/retire chrome, soft-retire only
       (never hard-deleted), with a swap-and-persist ↑/↓ reorder. No automatic
       data migration between the flat fields and the corpus rows (only the
-      existing one-time `import_candidate_from_config` seed). Screenshot evidence
+      existing one-time `import_candidate_from_config` seed). **Wave 2 (recruiter
+      tier):** F-08/F-17/F-16 DONE 2026-07-07 (`feat/ux-w2-recruiter`) —
+      searchable candidate roster (F-08) layered above the existing
+      `#userSelect`, a read-only cross-candidate Pipeline board grouped by
+      canonical status (F-17), and a one-click persona COPY-TO-CANDIDATE for
+      house templates (F-16); all three share one new query-count-guarded
+      aggregate endpoint (`GET /api/candidates/roster`). Screenshot evidence
       (gitignored, local): `output/ux-review-2026-07-screenshots/` + its MANIFEST.md.
       _(discovered: 2026-07-07, `docs/ux-review-2026-07`; open count 11 → 12.)_
       **→ Integrate as `fix/ux-review-wave0-*` branches before any public tag;**

@@ -19,6 +19,7 @@ from __future__ import annotations
 from ui_pages.base import BasePage
 from ui_pages.corpus import CorpusPage
 from ui_pages.dashboard_console import DashboardConsolePage
+from ui_pages.pipeline import PipelinePage
 from ui_pages.prior_apps import PriorAppsPage
 from ui_pages.user_picker import UserPickerPage
 from ui_pages.wizard_clarify import WizardClarifyPage
@@ -32,6 +33,7 @@ __all__ = [
     "BasePage",
     "CorpusPage",
     "DashboardConsolePage",
+    "PipelinePage",
     "PriorAppsPage",
     "UserPickerPage",
     "WizardClarifyPage",
