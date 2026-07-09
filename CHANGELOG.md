@@ -13,6 +13,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs/CI: E-2 machine badge set + pip-audit (`docs/badges-readme-prep`, 2026-07-09)
+
+Lands PX-26 (E-2 machine badge set) + PX-54 (pip-audit) as committed files —
+Train-4b, freeze-independent per `RELEASE_ARC.md` "Big-push scope brief"
+Phase 4.
+
+- **README badges row** — replaces the `docs/badges-readme-prep` placeholder
+  with CI status, static MIT license, static Python 3.11/3.12/3.13, a static
+  "network egress: allowlisted" badge citing `tests/test_egress_allowlist.py`
+  (PX-08), OpenSSF Scorecard, and REUSE status, with an HTML comment noting
+  the CI/Scorecard/REUSE badges resolve live data only once the repo is
+  pushed to GitHub and promoted public.
+- **`.github/dependabot.yml`** — `pip` (against `pyproject.toml`, no
+  lockfile) + `github-actions` ecosystems, weekly.
+- **`pip-audit` CI job** (PX-54) — a separate advisory job in
+  `.github/workflows/ci.yml` with `continue-on-error: true`, not gating the
+  `quality`/PR path (a CVE-triggered CI failure is a new triage source for a
+  solo maintainer, per the prescription).
+- **`.github/workflows/scorecard.yml`** — standard `ossf/scorecard-action`
+  workflow, gated `if: ${{ !github.event.repository.private }}` so it's an
+  inert no-op while the repo is private.
+- **REUSE/SPDX manifest** — a wildcard `REUSE.toml` (`path = "**"` → MIT)
+  plus one override for `tests/ux/a11y/vendor/axe.min.js` (MPL-2.0, Deque
+  Systems), with `LICENSES/MIT.txt` + `LICENSES/MPL-2.0.txt` (canonical SPDX
+  license texts). No per-file SPDX headers — large-diff and prompt-adjacent
+  risk (`analyzer.py` is the prompt home). Verified locally: `reuse lint`
+  reports 578/578 files covered, 0 issues. `SECURITY.md` "Bundled
+  third-party assets" updated from "planned for the public release" to cite
+  the committed manifest.
+- **Owner-activation still owed** ([HUMAN], out of this branch's scope):
+  creating the `take-tempo-public/sartor` GitHub repo, promoting it public,
+  and the PyPI Trusted Publisher config — until then the CI/Scorecard/REUSE
+  badges render as unresolved/404. A pinned dependency lockfile for
+  Dependabot's `pip` ecosystem is a separate owner decision, not addressed
+  here.
+
 ### Fix: persona preview fidelity + walkthrough residuals + witness reconciles (`fix/persona-fidelity-and-residuals`, 2026-07-09)
 
 Closes the "Walkthrough residuals (post-Train-5)" carry-forward row: the six

@@ -14,7 +14,19 @@ new name; see [`CHANGELOG.md`](CHANGELOG.md) for the rename record.)*
 
 The core discipline: **the LLM discovers and phrases — it does not invent.** No fabricated titles, numbers, or dates. A grounding check in the prompt plus a deterministic "witness" metric measure how much of the output traces back to real material. That's a *mechanism and a constraint*, **not** a guarantee a language model can never hallucinate — the full rationale lives in [`vision.md`](vision.md).
 
-<!-- PLACEHOLDER: badges row (CI · license · Python versions) -->
+[![CI](https://img.shields.io/github/actions/workflow/status/take-tempo-public/sartor/ci.yml?branch=main&label=CI)](https://github.com/take-tempo-public/sartor/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](pyproject.toml)
+[![Network egress: allowlisted](https://img.shields.io/badge/network%20egress-allowlisted-informational.svg)](tests/test_egress_allowlist.py)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/take-tempo-public/sartor/badge)](https://scorecard.dev/viewer/?uri=github.com/take-tempo-public/sartor)
+[![REUSE status](https://api.reuse.software/badge/github.com/take-tempo-public/sartor)](https://api.reuse.software/info/github.com/take-tempo-public/sartor)
+
+<!-- The CI, OpenSSF Scorecard, and REUSE badges above resolve live data from
+     the GitHub repo + reuse.software's API — they render as "unknown"/404
+     until the repo is pushed to github.com/take-tempo-public/sartor and
+     promoted public (see RELEASE_ARC.md "Big-push scope brief" Phase 4,
+     [HUMAN] step). The license, Python-version, and egress badges are static
+     and correct today. -->
 
 > **Documentation map.** This README orients; the depth lives in single-home docs:
 > [`vision.md`](vision.md) (intent + scope) ·

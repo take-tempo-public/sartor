@@ -1,0 +1,45 @@
+name: OpenSSF Scorecard
+
+# PX-26 (E-2 machine badge set). Standard ossf/scorecard-action workflow.
+# Guarded `if: ${{ !github.event.repository.private }}` so it is an inert
+# no-op while this repo is private — Scorecard requires a public repo (or a
+# GitHub App install for private ones, not set up here) and would otherwise
+# fail every run. Matches ci.yml's own "committed but latent until the repo
+# is pushed + promoted public" framing (see docs/governance/enforcement.md).
+# Activates for real once the [HUMAN] GitHub-repo-creation + public-promotion
+# step lands (RELEASE_ARC.md "Big-push scope brief" Phase 4).
+
+on:
+  branch_protection_rule:
+  schedule:
+    - cron: "23 4 * * 2" # weekly, arbitrary offset
+  push:
+    branches: [main]
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.repository.private }}
+    permissions:
+      security-events: write # to upload SARIF results
+      id-token: write # to publish results and get a badge
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run analysis
+        uses: ossf/scorecard-action@v2
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload SARIF results to code scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
