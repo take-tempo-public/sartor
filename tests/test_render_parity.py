@@ -103,6 +103,59 @@ class TestDownloadPreviewParity:
         assert "Skills" in paras and "Core Competencies" not in paras
 
 
+class TestSectionSpacing:
+    """O1a (round-2 quick win): the .docx writer inserts a blank-paragraph
+    spacer between top-level sections and between consecutive work entries, so
+    the output stops reading as a dense wall of text. On the default (no
+    template) path, no role carries captured spacing, so every spacer fires —
+    that is the invariant pinned here. Content parity is unaffected (the
+    existing parity tests filter `p.text.strip()`, so spacers are invisible to
+    them and every bullet/field still lands)."""
+
+    @staticmethod
+    def _all_paras(path: str) -> list[str]:
+        # Include EMPTY paragraphs — the spacers are empty, so we must not
+        # filter them out here (unlike the content-parity tests).
+        return [p.text for p in docx.Document(path).paragraphs]
+
+    def test_blank_spacer_before_each_later_section(self, tmp_path: Path) -> None:
+        path = generate_resume(RESUME_MD, ".docx", "spacing", base_dir=str(tmp_path))
+        paras = self._all_paras(path)
+        # The first section (Summary) gets no leading spacer; every later
+        # section heading is immediately preceded by a blank paragraph.
+        for heading in ("Experience", "Skills"):
+            assert heading in paras, f"missing section heading: {heading}"
+            idx = paras.index(heading)
+            assert idx > 0 and paras[idx - 1] == "", (
+                f"expected a blank spacer before the '{heading}' heading"
+            )
+        # Summary is first — it must NOT be preceded by a spacer.
+        s_idx = paras.index("Summary")
+        assert paras[s_idx - 1] != "", "first section (Summary) should have no leading spacer"
+
+    def test_blank_spacer_between_work_entries(self, tmp_path: Path) -> None:
+        path = generate_resume(RESUME_MD, ".docx", "spacing", base_dir=str(tmp_path))
+        paras = self._all_paras(path)
+        # RESUME_MD has two work entries; a blank paragraph separates them.
+        first = next(i for i, t in enumerate(paras) if t.startswith("Core Impact"))
+        second = next(i for i, t in enumerate(paras) if t.startswith("Intel"))
+        assert first < second
+        assert "" in paras[first + 1 : second], (
+            "expected a blank spacer between the two work entries"
+        )
+
+    def test_spacers_do_not_disturb_content_parity(self, tmp_path: Path) -> None:
+        """Every non-blank line still matches the preview source (spacers add
+        emptiness, never text)."""
+        jr = md_to_json_resume(_normalize_markdown(RESUME_MD))
+        path = generate_resume(RESUME_MD, ".docx", "spacing", base_dir=str(tmp_path))
+        text = "\n".join(p.text for p in docx.Document(path).paragraphs if p.text.strip())
+        for job in jr["work"]:
+            for highlight in job.get("highlights", []):
+                assert highlight in text
+        assert jr["basics"]["summary"] in text
+
+
 class TestAtsScrubAndIdentityOverrideParity:
     """fix/output-identity-and-dates: the ATS scrub and identity override run
     inside generate_resume() itself (right after md_to_json_resume), so

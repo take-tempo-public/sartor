@@ -1482,6 +1482,15 @@ textarea:focus-visible {
   border-bottom: 1px solid #2b2b40;
 }
 
+/* C2 (round-2 quick win) — bound the Skills editor section so a candidate
+   with many skills scrolls within it instead of it growing to take over
+   the window. Collapsible-toggle refinement is deferred to the UX
+   Cohesion Epic; this is scroll-bounds only. */
+.skills-editor-section {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
 .corpus-section-title {
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -2058,6 +2067,7 @@ textarea:focus-visible {
   display: flex;
   gap: 6px;
   margin-top: 4px;
+  flex-wrap: wrap;
 }
 
 /* =============================================================== */
@@ -2583,6 +2593,15 @@ textarea:focus-visible {
   text-transform: uppercase;
   color: var(--fg-1);
   margin: 10px 0 6px;
+}
+
+/* C2 (round-2 quick win) — bound the Compose skills row list so a candidate
+   with many skills scrolls within the card instead of the card (and the
+   "Tailor"/"Suggest" action buttons above it) growing to fill the window.
+   Collapsible-toggle refinement is deferred to the UX Cohesion Epic. */
+.compose-skill-list {
+  max-height: 360px;
+  overflow-y: auto;
 }
 
 /* ----- feat/bullet-drag-reorder — Compose bullet ordering ----- */

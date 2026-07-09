@@ -1114,6 +1114,61 @@ re-confirmation doubles as resume.
 
 ---
 
+## UX Cohesion Epic (registered 2026-07-09 — unscheduled, post-v1.0.8)
+
+> **Registration only — not a spec.** Surfaced by the owner's e2e round-2
+> walkthrough ([`reviews/2026-07-ux-round2-findings.md`](reviews/2026-07-ux-round2-findings.md)
+> has the full findings + disposition table); the six decision-free items
+> from that pass landed immediately as Wave A quick-wins
+> (`fix/round2-quick-wins`). Everything below needs a design/shape decision
+> first, so it is parked here as a named epic rather than decided inline.
+> **Version slot: TBD — owner to slot this against the v1.0.9 docs epic**
+> (Phase 4.9 above); it may run before, after, or interleaved with it.
+
+Themes (each design-scoped, not yet branch-planned):
+
+- **State-communication unification** (G2/G4/G8/Co5) — shape is fixed by
+  owner decision: **strengthen the existing `_setBusy` banner** (see
+  `static/app.js`) and fill its remaining gaps, not a new modal or
+  mechanism. Co5 (Compose's quiet background-reload-on-save) rides this
+  theme.
+- **Skills redesign** (C1/Co1/Co3-adjacent) — denial semantics (C1, a
+  schema question: what "Deny" does to a pending suggestion), a
+  collapsible-toggle for the bounded skills lists (Wave A did CSS bounds
+  only), and icon unification (Co1, with G3) folded together since they
+  all touch the same skills surfaces.
+- **Design-system pass** (G1/G3/G5/Co1) — modal open/close fade
+  consistency (G1), iconography unification across skills/templates/chips
+  (G3, paired with Co1), and caps-vs-sentence-case labeling consistency
+  (G5).
+- **Prior-application compact cards** (G7) — a denser roster-view card for
+  prior applications.
+- **Compose-reload loudness** (Co5) — listed under state-communication
+  above; cross-referenced here since the owner named it separately.
+- **Template-preview fidelity** (T2) — **spike-first, not a quick fix.** The
+  in-app preview is architecturally single-column (`docx_to_persona_html.py`
+  extracts only typography onto the Classic skeleton — python-docx can't
+  represent multi-column/tables/text-boxes/shading), so colored section bars
+  fall back to Classic, and multi-column + accurate paging are out of reach
+  (paging is a paged.js *polyfill* preview, not real pagination).
+  **Cross-referenced to the roadmap's existing paged.js design-spike** —
+  Phase 6 `spike/pagedjs-design` + the Phase 4.9 preview-engine note.
+  Acceptance targets: colored bars, multi-column, section spacing, accurate
+  paging. Scoping caveat: verify whether the docx **download** (real template
+  as style source) is already faithful while only the **preview** is lossy —
+  "preview should match output" is the principle at stake. Detail in the
+  findings doc's T2 deep-dive.
+
+Deferred out of this epic (tracked elsewhere): **Co3** (skill-suggestion
+ATS-quality) is a tune-loop question, not a code branch. **O1b** (dates
+right-alignment) is **RESOLVED, no code change** — the owner chose keep
+status quo after an evidence pass debunked the "never right-align for ATS"
+premise as a false constraint (right tab stops are ATS-safe; the earlier
+`fix/persona-fidelity-and-residuals` shipped a preview/download *parity*
+fix, not an ATS fix). See the findings doc's O1b deep-dive.
+
+---
+
 ## Phase 4.9 — Documentation & docs-site (v1.0.9)
 
 > **Inserted 2026-06-29 (owner direction): a dedicated pre-public DOCUMENTATION epic

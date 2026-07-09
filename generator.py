@@ -687,6 +687,14 @@ def _write_docx_from_json_resume(
     captured via `_capture_template_styles` and applied through the same
     `_apply_para_proto` / `_add_inline_runs_with_proto` helpers the old writer
     used. Falls back to clean built-in defaults otherwise. Deterministic — no LLM.
+
+    O1a (round-2 quick win): a blank-paragraph spacer separates top-level
+    sections and separates `work` entries from each other, so the wall of
+    text gets breathing room. A spacer for a given role (`section_heading` /
+    `job_title`) is skipped when the template already captured its own
+    `space_before`/`space_after` for that role (see `_role_has_own_spacing`)
+    — a template that already spaces well is left alone; one is added only
+    where no template spacing exists (including the no-template default).
     """
     tp = Path(template_path) if template_path else None
     use_template = bool(tp and tp.exists() and tp.suffix.lower() == ".docx")
@@ -786,6 +794,31 @@ def _write_docx_from_json_resume(
             run._element.getparent().remove(run._element)
         _add_inline_runs(p, text)
 
+    def emit_spacer() -> None:
+        """A blank paragraph used as inter-section / inter-entry breathing room."""
+        doc.add_paragraph()
+
+    def _role_has_own_spacing(role: str) -> bool:
+        proto = styles.get(role)
+        if not proto:
+            return False
+        return bool(
+            (proto.get("space_before_pt") or 0) > 0 or (proto.get("space_after_pt") or 0) > 0
+        )
+
+    # O1a: whether a spacer is needed depends only on the TEMPLATE's captured
+    # spacing for that role — computed once, not re-checked per call.
+    section_spacer_needed = not _role_has_own_spacing("section_heading")
+    work_entry_spacer_needed = not _role_has_own_spacing("job_title")
+    section_started = False
+
+    def start_section(title: str) -> None:
+        nonlocal section_started
+        if section_started and section_spacer_needed:
+            emit_spacer()
+        emit_section_heading(title)
+        section_started = True
+
     # ── Walk the document in classic.html's section order ─────────────────
     basics: dict[str, Any] = json_doc.get("basics") or {}
     if basics.get("name"):
@@ -798,7 +831,7 @@ def _write_docx_from_json_resume(
 
     summary = basics.get("summary")
     if summary:
-        emit_section_heading("Summary")
+        start_section("Summary")
         for para in str(summary).split("\n\n"):
             para = para.strip()
             if para:
@@ -806,8 +839,10 @@ def _write_docx_from_json_resume(
 
     work = json_doc.get("work") or []
     if work:
-        emit_section_heading("Experience")
-        for job in work:
+        start_section("Experience")
+        for i, job in enumerate(work):
+            if i > 0 and work_entry_spacer_needed:
+                emit_spacer()
             emit_entry_header(
                 _entry_header_text(
                     str(job.get("name") or ""),
@@ -823,7 +858,7 @@ def _write_docx_from_json_resume(
 
     skills = json_doc.get("skills") or []
     if skills:
-        emit_section_heading("Skills")
+        start_section("Skills")
         if any(s.get("keywords") for s in skills):
             for s in skills:
                 keywords = ", ".join(str(k) for k in (s.get("keywords") or []))
@@ -836,14 +871,14 @@ def _write_docx_from_json_resume(
 
     certificates = json_doc.get("certificates") or []
     if certificates:
-        emit_section_heading("Certifications")
+        start_section("Certifications")
         for c in certificates:
             if c.get("name"):
                 emit_bullet(str(c["name"]))
 
     education = json_doc.get("education") or []
     if education:
-        emit_section_heading("Education")
+        start_section("Education")
         for ed in education:
             emit_entry_header(
                 _entry_header_text(
@@ -858,7 +893,7 @@ def _write_docx_from_json_resume(
 
     projects = json_doc.get("projects") or []
     if projects:
-        emit_section_heading("Projects")
+        start_section("Projects")
         for proj in projects:
             if proj.get("name"):
                 emit_entry_header(str(proj["name"]))

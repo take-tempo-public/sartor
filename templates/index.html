@@ -780,6 +780,11 @@
             <div class="corpus-section-header">
               <div class="corpus-section-title">Skills</div>
               <button class="corpus-action-btn" onclick="openSkillAdd()">+ Add skill</button>
+              <!-- Co4 (round-2 quick win) — wires the already-built, tested
+                   /skills/suggest-from-corpus route (analyzer.suggest_skills_from_corpus)
+                   so a candidate can populate Skills before their first application. -->
+              <button class="corpus-action-btn" id="btnSuggestSkillsFromCorpus"
+                      onclick="suggestSkillsFromCorpus()">Suggest skills from my corpus</button>
             </div>
             <div class="edit-hint" id="skillsEditorEmptyHint" style="margin-bottom:8px">
               The skills the résumé can surface. The Compose step orders and
