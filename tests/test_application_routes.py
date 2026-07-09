@@ -1354,6 +1354,76 @@ class TestResumeState:
         rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
         assert rs["target_step"] == 3
 
+    # --- feat/ux-busy-states-and-hydration: Step 6 merges the pre-generate
+    # hydration block instead of discarding it (Option A, full hydration) ---
+
+    def test_step_6_merges_pre_generate_hydration_for_back_navigation(self, app_app):
+        """A résumé was generated (target_step stays 6), but the SAME context
+        file also carries analysis + clarify + composition data — that must
+        ride along on the Step-6 payload so back-navigation from a resumed
+        Step 6 shows populated Step 1-3 panels instead of blanks."""
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0, generated_resume_md="# Resume")
+        _write_context_file(
+            app_app,
+            "alice",
+            "context_full_iter0.json",
+            _analyze_ctx(
+                rid,
+                clarification_questions=[{"id": "q1", "text": "Ran k8s?"}],
+                clarifications={"q1": "Yes, in prod."},
+                composition_overrides={"pinned": [1]},
+            ),
+        )
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["target_step"] == 6  # furthest step stays 6 — a résumé exists
+        assert rs["resume_md"] == "# Resume"
+        assert rs["analysis"] == {"essential_skills": ["Python"]}
+        assert rs["deterministic"]["ats_warnings"] == []
+        assert rs["clarification_questions"][0]["id"] == "q1"
+        assert rs["clarifications"] == {"q1": "Yes, in prod."}
+        assert rs["has_composition"] is True
+
+    def test_step_6_hydration_omits_clarify_keys_when_never_clarified(self, app_app):
+        """Analysis + composition present but clarify was skipped — the
+        clarification_questions/clarifications keys must be absent, not
+        empty-valued, matching the pre-generate branch's own contract."""
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0, generated_resume_md="# Resume")
+        _write_context_file(
+            app_app,
+            "alice",
+            "context_noclarify_iter0.json",
+            _analyze_ctx(rid, composition_overrides={"pinned": [1]}),
+        )
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["target_step"] == 6
+        assert rs["has_composition"] is True
+        assert "clarification_questions" not in rs
+        assert "clarifications" not in rs
+
+    def test_step_6_omits_hydration_when_context_predates_analysis(self, app_app):
+        """A context file with no llm_analysis (e.g. a legacy/degraded file,
+        or the pre-analysis write in `test_full_payload_resume_and_cover`)
+        falls back to the original resume-only Step-6 payload — no phantom
+        hydration keys."""
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0, generated_resume_md="# Resume")
+        _write_context_file(
+            app_app,
+            "alice",
+            "context_bare_iter1.json",
+            {"application_run_id": rid, "iteration": 1},
+        )
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["target_step"] == 6
+        assert rs["resume_md"] == "# Resume"
+        assert "analysis" not in rs
+        assert "has_composition" not in rs
+
 
 class TestUpdateMeta:
     """PUT /api/applications/<id>/meta — editable title + company (#24)."""

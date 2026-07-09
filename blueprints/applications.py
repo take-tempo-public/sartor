@@ -271,6 +271,44 @@ def get_application(application_id: int) -> ResponseReturnValue:
         session.close()
 
 
+def _pre_generate_hydration(ctx_data: dict[str, Any]) -> dict[str, Any] | None:
+    """Build the Step-1/2/3 rehydration block from one context file's dict.
+
+    Returns None when the context has no `llm_analysis` (nothing to rehydrate
+    for the pre-generate steps — e.g. a context file that predates analysis).
+    Otherwise returns `analysis` + `deterministic` (Step 1), `clarification_questions`
+    + `clarifications` when either is present (Step 2), and `has_composition`
+    (True when `composition_overrides` or `llm_recommendations` is present —
+    Step 3 was reached; the frontend uses this to decide whether to call
+    `loadComposition()`, since the actual composition content itself lives
+    behind the separate `/composition` route, not in the context file).
+
+    Shared by the two `_build_resume_state` call sites (feat/ux-busy-states-and-
+    hydration, Option A): the pre-generate branch below, which uses it to pick
+    the furthest step to land on directly, AND the Step-6 (résumé generated)
+    branch, which merges it in so back-navigation from Step 6 shows populated
+    earlier steps instead of blank ones.
+    """
+    analysis = ctx_data.get("llm_analysis")
+    if not analysis:
+        return None
+    det = ctx_data.get("deterministic_analysis") or {}
+    hydration: dict[str, Any] = {
+        "analysis": analysis,
+        "deterministic": {
+            "keyword_overlap": det.get("keyword_overlap", {}),
+            "ats_warnings": det.get("ats_warnings", []),
+        },
+        "has_composition": bool(
+            ctx_data.get("composition_overrides") or ctx_data.get("llm_recommendations")
+        ),
+    }
+    if ctx_data.get("clarifications") or ctx_data.get("clarification_questions"):
+        hydration["clarification_questions"] = ctx_data.get("clarification_questions") or []
+        hydration["clarifications"] = ctx_data.get("clarifications") or {}
+    return hydration
+
+
 def _build_resume_state(safe_user: str, runs_sorted: list[ApplicationRun]) -> dict[str, Any]:
     """Package the frontend state needed to resume a prior application at its furthest wizard step.
 
@@ -292,6 +330,16 @@ def _build_resume_state(safe_user: str, runs_sorted: list[ApplicationRun]) -> di
     an analyze-only application). When a résumé was generated but the context
     file is gone, Step 6 still resumes in a degraded mode (editors hydrate from
     the DB markdown).
+
+    feat/ux-busy-states-and-hydration (Option A — full hydration on resume):
+    the Step 6 (résumé generated) response ALSO merges in the same Step-1/2/3
+    hydration block the pre-generate branch builds (via `_pre_generate_hydration`),
+    when the context file carries a completed analysis. Previously Step 6
+    early-returned with ONLY the résumé/cover-letter payload, discarding the
+    analysis/clarifications/composition data already parsed from the same
+    `ctx_data` — so back-navigation from a resumed Step 6 showed blank Step 1-3
+    panels even when that data existed on disk. `target_step` stays 6 either
+    way; the extra keys are purely additive.
     """
     for r in reversed(runs_sorted):
         resume_md = r.edited_resume_text or r.generated_resume_md or ""
@@ -319,43 +367,35 @@ def _build_resume_state(safe_user: str, runs_sorted: list[ApplicationRun]) -> di
             "resumable": True,
         }
 
+        hydration = _pre_generate_hydration(ctx_data) if isinstance(ctx_data, dict) else None
+
         # Step 6 — a résumé was generated (existing behavior; degraded when the
         # context file is gone — the editors still hydrate from the DB markdown).
+        # ALWAYS merge in the pre-generate hydration block when available, so
+        # back-navigation from Step 6 shows populated Step 1-3 panels.
         if resume_md:
             cover_md = r.edited_cover_letter_text or r.generated_cover_letter_md or ""
-            return {**base, "target_step": 6, "resume_md": resume_md, "cover_letter_md": cover_md}
+            state = {**base, "target_step": 6, "resume_md": resume_md, "cover_letter_md": cover_md}
+            if hydration:
+                state.update(hydration)
+            return state
 
         # No generated résumé — restore the furthest pre-generate step from the
         # context file. ctx_data is a dict here (guarded by the continue above).
         if not isinstance(ctx_data, dict):  # pragma: no cover - mypy narrowing
             continue
-        analysis = ctx_data.get("llm_analysis")
-        if not analysis:
+        if hydration is None:
             # Context file predates analysis (shouldn't normally happen) — can't
             # rehydrate the analysis panel; fall through to an older run.
             continue
-        det = ctx_data.get("deterministic_analysis") or {}
-        deterministic = {
-            "keyword_overlap": det.get("keyword_overlap", {}),
-            "ats_warnings": det.get("ats_warnings", []),
-        }
-        if ctx_data.get("composition_overrides") or ctx_data.get("llm_recommendations"):
+        if hydration["has_composition"]:
             target_step = 3
-        elif ctx_data.get("clarifications") or ctx_data.get("clarification_questions"):
+        elif "clarifications" in hydration:
             target_step = 2
         else:
             target_step = 1
 
-        state = {
-            **base,
-            "target_step": target_step,
-            "analysis": analysis,
-            "deterministic": deterministic,
-        }
-        if target_step == 2:
-            state["clarification_questions"] = ctx_data.get("clarification_questions") or []
-            state["clarifications"] = ctx_data.get("clarifications") or {}
-        return state
+        return {**base, "target_step": target_step, **hydration}
     return {"resumable": False}
 
 

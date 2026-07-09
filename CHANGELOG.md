@@ -13,6 +13,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Feat: visible working states + full wizard hydration on resume (`feat/ux-busy-states-and-hydration`, 2026-07-08)
+
+Owner-observed UX gaps closed against a verified mechanism inventory (reused the existing
+`_setBusy` full-overlay, per-element loading-placeholder, and `data-compose-bg-pending`
+test-observability counter idioms; one new affordance).
+
+- **Clarify→Compose busy states** — `submitClarifications`, `skipClarifications`, and the
+  recommend call inside `_fireRecommendThenCompose` now wrap in `_setBusy` ("Integrating your
+  answers…" / "Preparing compose…"), matching `runGeneration`'s existing overlay idiom. Before
+  this, all three ran real LLM calls behind only a status-pill text change.
+- **Regenerate-summary feedback** — `_fireDraftSummary(force=true)`'s explicit Compose
+  "Regenerate" click now disables the button + relabels it ("Regenerating…") for the fetch,
+  restoring in `finally` (idiom: `_fireDraftGapFill`'s existing button-disable pattern). The
+  silent auto-fire on Compose arrival (`force=false`, no button) is unaffected.
+- **Compose background-cascade visibility (new)** — a subdued `#composeBgChip`
+  ("Updating suggestions…", `aria-live="polite"`) now renders near the Compose header while the
+  auto-recommend/draft/gap-fill cascade is in flight, driven off the SAME
+  `data-compose-bg-pending` counter `_markComposeBgReload` already maintained for the UX settle
+  gate — never a second source of truth, so the chip and the gate can never disagree.
+- **Scroll preservation** — `loadComposition()`, `refreshCorpus()`, and `_loadCorpusDetail()`
+  all clear + rebuild a list/card body on every reload (accept/deny/retire/pin), which briefly
+  shrinks the page and snapped window scroll back toward the top. All three now capture
+  `window.scrollY` before the reload and restore it once the terminal render lands.
+- **Keyword-coverage explainer** — the Analyze `.score-note` and the `panelAnalysis` help entry
+  now answer what the JD Keyword Coverage percentage measures (literal-term overlap after
+  company/boilerplate cleaning), why it matters (the same signal an ATS keyword scan uses), and
+  what a good target looks like (30–50% typical for a strong match — it's coverage, not a
+  grade), consistent with the existing F-01/F-12 framing.
+- **Assistant guidance** (`AVATAR_SYSTEM_PROMPT`, `AVATAR_PROMPT_VERSION` → `2026-07-08.1`) — two
+  new rules: dev-tier operations (seed export, grounding calibration, running evals) are now
+  named explicitly as requiring Dev mode, not just offered as "more detail"; and when an answer
+  mixes what sartor. does today with what's only planned/deferred, the avatar now separates them
+  into labeled **What exists now** / **What's planned** sections instead of blending them into
+  one claim. `PROMPT_VERSION` (the résumé pipeline) is untouched.
+- **Full wizard hydration on resume (Option A)** — `_build_resume_state`
+  (`blueprints/applications.py`) previously early-returned at Step 6 with ONLY the résumé/cover-
+  letter payload whenever a run had a generated résumé, discarding the `llm_analysis` /
+  clarifications / composition data already parsed from the SAME context file. It now ALWAYS
+  merges that pre-generate hydration block (`_pre_generate_hydration`, shared with the existing
+  pre-generate branch) into the Step-6 response. `_resumeIntoStep6` (`static/app.js`) renders it
+  — mirroring `_resumeIntoPreGenerateStep` — and hydrates Compose via `loadComposition()` only
+  when the saved context actually reached Compose (`has_composition`), so back-navigation from a
+  resumed Step 6 shows populated Step 1-3 panels without clobbering saved state or re-firing the
+  auto-cascade (the persisted `has_draft`/`has_gap_fill` flags gate it shut, same as a normal
+  Step-3 arrival). `_compositionFrozen` stays conservative on resume (unchanged — F-09).
+
 ### Fix: review-surface unification, corpus skill suggestions, honest application titles (`fix/review-surface-and-flows`, 2026-07-08)
 
 Six independently-verified fixes from a review pass, landed on one branch (owner-decided where noted).
