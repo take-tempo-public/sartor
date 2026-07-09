@@ -13,6 +13,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: UX round-2 quick wins (`fix/round2-quick-wins`, 2026-07-09)
+
+Six decision-free fixes from the owner's e2e round-2 walkthrough (Wave A;
+see [`docs/dev/reviews/2026-07-ux-round2-findings.md`](docs/dev/reviews/2026-07-ux-round2-findings.md)
+for the full findings + disposition table — the design-heavy remainder is
+registered as the UX Cohesion Epic in `docs/dev/RELEASE_ARC.md`, not landed
+here).
+
+- **G6 — clarify busy-state gap** — `runClarify()` and `runIterateClarify()`
+  (`static/app.js`) now wrap their `/api/clarify` and `/api/iterate-clarify`
+  calls with the existing `_setBusy(true, 'Generating clarifying
+  questions…')` / `_setBusy(false)` idiom, matching every other long-running
+  action (analyze/generate/compose). No new mechanism — just filled the two
+  sites the busy-state work had skipped.
+- **Co2 — "Tailor skills to this JD" working-state** — `_fireRecommendSkills()`
+  (`static/app.js`) now disables its button and relabels it "Tailoring…"
+  for the duration of the call, restored in a `finally`, mirroring the
+  adjacent `_fireSuggestSkills()`.
+- **Co4 — wire "Suggest skills from my corpus"** — a new button in the
+  Career Corpus tab's Skills editor (`templates/index.html`) calls the
+  already-built, already-tested `POST
+  /api/users/<username>/skills/suggest-from-corpus` route
+  (`blueprints/corpus/skills.py`, backing `analyzer.suggest_skills_from_corpus`)
+  so a candidate can populate Skills before their first application, not
+  just from a JD in Compose. Same working-state pattern as Co2/the existing
+  Compose suggest button.
+- **T1 — owned-template card button overflow** — `.persona-card-actions`
+  (`static/style.css`) gained `flex-wrap: wrap` so a template card's 5
+  action buttons (including Delete, rendered last) wrap instead of
+  overflowing the ~280–320px card.
+- **C2 — bounded skill lists** — `.skills-editor-section` (Career Corpus
+  tab) and `.compose-skill-list` (Compose skills card) got a bounded
+  `max-height` + `overflow-y: auto` so a candidate with many skills scrolls
+  within the section instead of the editor taking over the window. The
+  collapsible-toggle refinement is deferred to the UX Cohesion Epic.
+- **O1a — docx section/entry spacing** — `generator.py:_write_docx_from_json_resume`
+  (the shared download/preview/PDF writer — download == preview is
+  preserved) now inserts a blank-paragraph spacer between top-level
+  sections and between `work` entries, deterministically — no LLM
+  involved. A template's own captured `space_before`/`space_after` for the
+  relevant role is respected: the spacer is skipped when the template
+  already spaces that role, and added only where none exists.
+
 ### Docs/CI: E-2 machine badge set + pip-audit (`docs/badges-readme-prep`, 2026-07-09)
 
 Lands PX-26 (E-2 machine badge set) + PX-54 (pip-audit) as committed files —
