@@ -51,7 +51,7 @@
           </h3>
           {% if job.startDate or job.endDate %}
             <span class="dates">
-              {{ job.startDate or "" }}{% if job.startDate and job.endDate %} – {% endif %}{{ job.endDate or "" }}
+              {{ date_range(job.startDate, job.endDate) }}
             </span>
           {% endif %}
         </header>
@@ -118,7 +118,7 @@
           </h3>
           {% if ed.startDate or ed.endDate %}
             <span class="dates">
-              {{ ed.startDate or "" }}{% if ed.startDate and ed.endDate %} – {% endif %}{{ ed.endDate or "" }}
+              {{ date_range(ed.startDate, ed.endDate) }}
             </span>
           {% endif %}
         </header>

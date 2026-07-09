@@ -40,7 +40,10 @@ import logging
 import re
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +66,25 @@ def html_template_path_for(docx_template_path: str | Path) -> Path | None:
     docx = Path(docx_template_path)
     html = docx.with_suffix(".html")
     return html if html.exists() else None
+
+
+def _register_date_range_global(env: Environment) -> None:
+    """Register `json_resume.format_date_range` as the `date_range` Jinja global.
+
+    Fix/output-identity-and-dates: every bundled persona template (classic /
+    modern / spacious / tech) renders a `{{ date_range(x.startDate,
+    x.endDate) }}` call in place of the old raw `x.startDate or ""` +
+    manual-dash interpolation — the SAME canonical helper `generator.py`'s
+    .docx writer and `json_resume_to_markdown`'s .md serializer call, so the
+    live preview, the PDF, and the .docx/.md downloads can never disagree on
+    date formatting (MM-YYYY, "– Present" for an open end date). A
+    user-uploaded persona's auto-generated HTML companion
+    (`docx_to_persona_html.generate_companion`) is a verbatim copy of
+    `classic.html`'s skeleton, so it inherits this automatically.
+    """
+    from json_resume import format_date_range
+
+    env.globals["date_range"] = format_date_range
 
 
 def render_pdf(
@@ -116,6 +138,7 @@ def render_pdf(
         autoescape=select_autoescape(["html", "xml"]),
         keep_trailing_newline=True,
     )
+    _register_date_range_global(env)
     template = env.get_template(html_path.name)
     html_str = template.render(**json_resume)
 
@@ -182,6 +205,7 @@ def render_html_string(
         autoescape=select_autoescape(["html", "xml"]),
         keep_trailing_newline=True,
     )
+    _register_date_range_global(env)
     template = env.get_template(html_path.name)
     return template.render(**json_resume)
 

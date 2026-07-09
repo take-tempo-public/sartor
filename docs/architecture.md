@@ -667,7 +667,7 @@ Key invariants:
 
 | Format | Pipeline | Template type | When to use |
 |---|---|---|---|
-| **`.md`** | `_normalize_markdown()` → write | None | Quick paste; ATS submissions that accept markdown |
+| **`.md`** | `_normalize_markdown()` → `md_to_json_resume()` → identity override + ATS scrub → `json_resume_to_markdown()` → write (same JSON Resume intermediate as `.docx`/`.pdf`, fix/output-identity-and-dates) | None | Quick paste; ATS submissions that accept markdown |
 | **`.docx`** | `_normalize_markdown()` → `_write_docx()` with persona `.docx` as style template | `personas/bundled/<name>.docx` | Word-based ATS portals; recruiter inbox |
 | **`.pdf`** | `_normalize_markdown()` → `md_to_json_resume()` → Jinja2 `.html` → Playwright Chromium → PDF | `personas/bundled/<name>.html` + `.css` | Direct apply forms; user portfolios |
 

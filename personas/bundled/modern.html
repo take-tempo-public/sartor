@@ -67,7 +67,7 @@
         {% if job.name %}<span class="company">{{ job.name }}</span>{% endif %}
       </h3>
       {% if job.startDate or job.endDate %}
-      <span class="dates">{{ job.startDate or "" }}{% if job.startDate and job.endDate %} – {% endif %}{{ job.endDate or "" }}</span>
+      <span class="dates">{{ date_range(job.startDate, job.endDate) }}</span>
       {% endif %}
     </header>
     {% if job.location %}<p class="loc">{{ job.location }}</p>{% endif %}
@@ -109,7 +109,7 @@
     <header class="job-header">
       <h3>{{ p.name }}</h3>
       {% if p.startDate or p.endDate %}
-      <span class="dates">{{ p.startDate or "" }}{% if p.startDate and p.endDate %} – {% endif %}{{ p.endDate or "" }}</span>
+      <span class="dates">{{ date_range(p.startDate, p.endDate) }}</span>
       {% endif %}
     </header>
     {% if p.description %}<p>{{ p.description }}</p>{% endif %}
@@ -142,7 +142,7 @@
         {% if ed.area %}<span>{{ ed.area }}</span>{% endif %}
       </h3>
       {% if ed.startDate or ed.endDate %}
-      <span class="dates">{{ ed.startDate or "" }}{% if ed.startDate and ed.endDate %} – {% endif %}{{ ed.endDate or "" }}</span>
+      <span class="dates">{{ date_range(ed.startDate, ed.endDate) }}</span>
       {% endif %}
     </header>
     {% if ed.studyType %}<p>{{ ed.studyType }}</p>{% endif %}

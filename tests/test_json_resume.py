@@ -12,7 +12,14 @@ rather than raising.
 
 from __future__ import annotations
 
-from json_resume import SCHEMA_URI, md_to_json_resume
+from json_resume import (
+    SCHEMA_URI,
+    apply_identity_override,
+    format_date_range,
+    format_month_year,
+    md_to_json_resume,
+    scrub_ats_unsafe,
+)
 
 # ---------------------------------------------------------------------
 # Empty / minimal
@@ -377,3 +384,179 @@ class TestRealisticFull:
         first = md_to_json_resume(md)
         second = md_to_json_resume(md)
         assert first == second
+
+
+# ---------------------------------------------------------------------
+# format_month_year / format_date_range (fix/output-identity-and-dates)
+# ---------------------------------------------------------------------
+
+
+class TestFormatMonthYear:
+    def test_iso_year_month_becomes_mm_yyyy(self):
+        assert format_month_year("2022-09") == "09-2022"
+
+    def test_year_only_passes_through(self):
+        assert format_month_year("2022") == "2022"
+
+    def test_empty_and_none(self):
+        assert format_month_year("") == ""
+        assert format_month_year(None) == ""
+
+    def test_non_iso_text_passes_through_unchanged(self):
+        """A literal 'present'/'current' or hand-typed date is not ISO-shaped
+        — best-effort passthrough rather than mangling it."""
+        assert format_month_year("present") == "present"
+        assert format_month_year("March 2020") == "March 2020"
+
+
+class TestFormatDateRange:
+    def test_closed_range_both_mm_yyyy(self):
+        assert format_date_range("2022-09", "2023-05") == "09-2022 – 05-2023"
+
+    def test_open_ended_renders_present(self):
+        """The DB's NULL-end-date = current convention (db.models.Experience)
+        renders as 'Present' — the mechanical bug this fix closes."""
+        assert format_date_range("2022-09", None) == "09-2022 – Present"
+        assert format_date_range("2022-09", "") == "09-2022 – Present"
+
+    def test_no_iso_yyyy_mm_pattern_in_output(self):
+        import re
+
+        result = format_date_range("2022-09", "2023-05")
+        assert not re.search(r"\d{4}-\d{2}", result)
+
+    def test_missing_start_falls_back_to_end(self):
+        assert format_date_range(None, "2023-05") == "05-2023"
+
+    def test_both_missing_is_empty(self):
+        assert format_date_range(None, None) == ""
+
+    def test_year_only_range(self):
+        assert format_date_range("2020", "2023") == "2020 – 2023"
+
+
+# ---------------------------------------------------------------------
+# scrub_ats_unsafe (fix/output-identity-and-dates)
+# ---------------------------------------------------------------------
+
+
+class TestScrubAtsUnsafe:
+    def test_strips_brackets_braces_quotes_backtick(self):
+        doc = {"basics": {"summary": 'Shipped [v2] with {config} "quotes" and `code`.'}}
+        out = scrub_ats_unsafe(doc)
+        assert out["basics"]["summary"] == "Shipped v2 with config quotes and code."
+
+    def test_preserves_comparison_operators(self):
+        """'<50ms' has no closing '>' — not tag-shaped — must survive verbatim."""
+        doc = {"work": [{"highlights": ["Cut p99 latency to <50ms."]}]}
+        out = scrub_ats_unsafe(doc)
+        assert out["work"][0]["highlights"][0] == "Cut p99 latency to <50ms."
+
+    def test_preserves_plus_plus_and_hash(self):
+        doc = {"skills": [{"name": "C++"}, {"name": "C#"}]}
+        out = scrub_ats_unsafe(doc)
+        assert [s["name"] for s in out["skills"]] == ["C++", "C#"]
+
+    def test_strips_tag_shaped_html(self):
+        doc = {"basics": {"summary": "Built a <b>bold</b> <script>alert(1)</script> feature."}}
+        out = scrub_ats_unsafe(doc)
+        assert "<b>" not in out["basics"]["summary"]
+        assert "<script>" not in out["basics"]["summary"]
+        assert "bold" in out["basics"]["summary"]
+
+    def test_records_changed_strings_in_meta(self):
+        doc = {"basics": {"name": "Ann [Q] Lee"}, "meta": {"sartor": {"version": "1.0"}}}
+        out = scrub_ats_unsafe(doc)
+        scrubbed = out["meta"]["sartor"]["ats_scrubbed"]
+        assert len(scrubbed) == 1
+        assert scrubbed[0]["before"] == "Ann [Q] Lee"
+        assert scrubbed[0]["after"] == "Ann Q Lee"
+
+    def test_no_meta_key_when_nothing_changed(self):
+        doc = {"basics": {"name": "Clean Name"}}
+        out = scrub_ats_unsafe(doc)
+        assert "meta" not in out or "ats_scrubbed" not in out.get("meta", {}).get("sartor", {})
+
+    def test_walks_nested_lists_and_dicts(self):
+        doc = {
+            "work": [
+                {"name": "Acme [Inc]", "highlights": ['Led "the" launch.']},
+            ]
+        }
+        out = scrub_ats_unsafe(doc)
+        assert out["work"][0]["name"] == "Acme Inc"
+        assert out["work"][0]["highlights"][0] == "Led the launch."
+
+    def test_does_not_touch_schema_or_meta_bookkeeping(self):
+        doc = {"$schema": "http://x/[v1]", "meta": {"sartor": {"unparsed": ["[stray]"]}}}
+        out = scrub_ats_unsafe(doc)
+        assert out["$schema"] == "http://x/[v1]"
+        assert out["meta"]["sartor"]["unparsed"] == ["[stray]"]
+
+
+# ---------------------------------------------------------------------
+# apply_identity_override (fix/output-identity-and-dates)
+# ---------------------------------------------------------------------
+
+
+class TestApplyIdentityOverride:
+    def test_none_identity_is_a_no_op(self):
+        doc = {"basics": {"name": "Stale Name", "url": "https://stray-site.example"}}
+        out = apply_identity_override(doc, None)
+        assert out["basics"]["name"] == "Stale Name"
+        assert out["basics"]["url"] == "https://stray-site.example"
+
+    def test_overrides_replace_stale_markdown_identity(self):
+        """The reported bug: a website in the parsed markdown that isn't in
+        the candidate's DB record must never survive into basics."""
+        doc = {
+            "basics": {
+                "name": "Old Name",
+                "url": "https://stray-site.example",
+                "email": "old@example.com",
+            }
+        }
+        out = apply_identity_override(
+            doc,
+            {
+                "name": "Real Name",
+                "email": "real@example.com",
+                "phone": "",
+                "linkedin_url": "",
+                "website_url": "",
+            },
+        )
+        assert out["basics"]["name"] == "Real Name"
+        assert out["basics"]["email"] == "real@example.com"
+        # Candidate has no website on file -> the stray URL is CLEARED, not kept.
+        assert "url" not in out["basics"]
+
+    def test_clears_fields_absent_from_candidate(self):
+        doc = {"basics": {"phone": "555-0100"}}
+        out = apply_identity_override(doc, {"name": "Real Name"})
+        assert "phone" not in out["basics"]
+
+    def test_linkedin_replaces_all_profiles_wholesale(self):
+        """Candidate has no GitHub/Twitter columns — any such profile the LLM
+        parsed from the markdown is dropped, not merged."""
+        doc = {
+            "basics": {
+                "profiles": [
+                    {"network": "GitHub", "url": "https://github.com/stray"},
+                    {"network": "LinkedIn", "url": "https://linkedin.com/in/stale"},
+                ]
+            }
+        }
+        out = apply_identity_override(doc, {"linkedin_url": "https://linkedin.com/in/real"})
+        assert out["basics"]["profiles"] == [
+            {
+                "network": "LinkedIn",
+                "url": "https://linkedin.com/in/real",
+                "username": "real",
+            }
+        ]
+
+    def test_no_linkedin_clears_profiles(self):
+        doc = {"basics": {"profiles": [{"network": "GitHub", "url": "https://github.com/x"}]}}
+        out = apply_identity_override(doc, {"name": "Real Name"})
+        assert "profiles" not in out["basics"]

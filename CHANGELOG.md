@@ -13,6 +13,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: output identity integrity, MM-YYYY dates, education/certs projection, dropped-role telemetry, ATS scrub (`fix/output-identity-and-dates`, 2026-07-08)
+
+Five independently-verified output-fidelity bugs, all bound by the same D3
+"download == preview" invariant. Highest severity: a real user saw a website
+in a **downloaded** résumé that was in neither their corpus nor their preview.
+
+- **Identity-field divergence (highest severity).** `/api/generate` replayed
+  ANY saved `context_*.json` with no schema/version check, including
+  pre-corpus-era files whose identity was frozen by the now-dead
+  `hardening.build_context_set`, and `candidate.online_profile_text`
+  (scraped web presence) was an ungoverned source the corpus-mode GROUNDING
+  rule never excluded from identity/header fields. Fixed the class, not the
+  instance:
+  - **(a) Deterministic identity override** — `json_resume.apply_identity_override()`
+    unconditionally re-resolves `basics.name/email/phone/url/profiles` from
+    the live `Candidate` DB row, overriding whatever the LLM markdown or a
+    stale context carried. Wired into `generator.generate_resume()` (all
+    three output formats) AND into `blueprints/generation.py`'s
+    `_apply_output_fidelity_fixes()`, which corrects `result["resume_content"]`
+    itself — the text also cached as `last_generated_resume` and served back
+    as the WYSIWYG live preview — so a download and the in-app preview can
+    never disagree. The frozen-composition path is untouched by design:
+    `corpus_to_json_resume.build_json_resume_from_corpus` already resolves
+    identity from the DB at build time.
+  - **(b) Pre-corpus context-shape guard** — `/api/generate` and
+    `/api/generate/stream` now reject (409, `needs_reanalyze: true`) a
+    context missing `application_id`, the reliable corpus-era marker every
+    `/api/analyze` call has stamped since Phase C.4.
+  - **(c) Prompt tightening** — the corpus-mode GROUNDING rule
+    (`analyzer.py`'s `_build_generate_prompt`) now states explicitly that the
+    name and header contact line come ONLY from `<candidate_profile>`, never
+    `<candidate_web_presence>`. `PROMPT_VERSION` bumped `2026-07-08.2` →
+    `2026-07-08.3` (generate-prompt-only; analyze/clarify unchanged).
+- **Dates — owner-decided `MM-YYYY` format.** One canonical
+  presentation-boundary helper, `json_resume.format_date_range()` (+
+  `format_month_year()`), renders `MM-YYYY`, ranges `MM-YYYY – MM-YYYY`, and
+  open-ended roles as `MM-YYYY – Present` (previously nothing rendered
+  "Present" for a missing end date, and raw ISO `YYYY-MM` passed through
+  verbatim everywhere). Used by `generator.py` (.docx), `json_resume_to_markdown`
+  (.md), and every bundled persona template (classic/modern/spacious/tech)
+  via a `date_range` Jinja global registered in `pdf_render.py` — so preview,
+  PDF, and download can never disagree on date formatting. Storage stays ISO.
+- **Education/certificates preview-parity gap-close.**
+  `corpus_to_json_resume.py` hardcoded `education: []` / `certificates: []`
+  even though both DB tables were already populated and already consumed by
+  the corpus-mode generate prompt (`db/build_context.py`). New
+  `_collect_education()` / `_collect_certificates()` (mirroring
+  `_collect_skills`'s active/display_order shape) close the gap; the stale
+  deferred-scope note in `blueprints/corpus/career_assets.py` is updated.
+- **Dropped-role import telemetry.** `onboarding/extract_experiences.py`'s
+  `_normalize_experience()` used to collapse a role with no parseable start
+  date to a fully-blank sentinel, discarding the company/title/bullets the
+  LLM DID extract. It now blanks only `start_date` (still the drop signal)
+  and retains everything else; `onboarding/corpus_import.py`'s `ImportReport`
+  gained `experiences_dropped` / `dropped_experiences`, surfaced in the
+  ingest response, the corpus UI ("N roles could not be parsed... review and
+  add manually"), and the CLI report.
+- **ATS character scrub (owner-decided policy).** New
+  `json_resume.scrub_ats_unsafe()` recursively strips `[ ] { } " ` ` `
+  (backtick) from every rendered string leaf; `< >` only as tag-shaped pairs
+  (`<[^<>]{1,30}>`), so `<50ms` survives untouched. Every changed string is
+  recorded into `meta.sartor.ats_scrubbed`. Called at the two finalization
+  choke points — `generator.generate_resume()` and
+  `corpus_to_json_resume.build_json_resume_from_corpus` — covering freeze,
+  preview, and every download in one.
+
+Real-LLM validation of the prompt change (sandbox candidate + temp DB, no
+repo data touched): a candidate with no `website_url` but `online_profile_text`
+containing a decoy website + email produced a résumé header with the
+candidate's real name/email only — the decoy never appeared — while grounded
+generation (verbatim corpus bullet + metric) still worked. Cost: **$0.0306**
+(1 Sonnet 5 call), well under the $0.10 estimate. See
+[`evals/TUNING_LOG.md`](evals/TUNING_LOG.md) for the full record.
+
 ### Fix: eval-run resilience + annotate flow + migration data-safety (`fix/eval-pipeline-and-data-safety`, 2026-07-08)
 
 Four pre-existing bugs surfaced by the owner's E2E walkthrough triage (root-caused by a

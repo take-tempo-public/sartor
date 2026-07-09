@@ -35,6 +35,7 @@ Design constraints
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from typing import Any
 
 # JSON Resume v1.0 schema URI — included on every document we emit so
@@ -61,6 +62,21 @@ _BULLET_RE = re.compile(r"^-\s+(.+?)\s*$")
 # Skills section item separator — sentence-case skill names, separated
 # by ` · ` (sartor. brand), `, `, or one-per-line bullets.
 _SKILLS_SPLIT_RE = re.compile(r"\s*[·•|,]\s+")
+
+# ATS character scrub (owner-decided policy, fix/output-identity-and-dates):
+# `[ ] { } " `` (backtick) are stripped outright — ATS parsers routinely choke
+# on stray brackets/braces/quotes/backticks in résumé text. `<` / `>` are
+# stripped ONLY when they form a tag-shaped pattern so a legitimate comparison
+# like "<50ms" (no closing `>`) survives untouched while a copy-pasted HTML
+# fragment ("<b>bold</b>") does not.
+_ATS_UNSAFE_CHARS = '[]{}"`'
+_ATS_TAG_SHAPED_RE = re.compile(r"<[^<>]{1,30}>")
+
+# Presentation-boundary date formatting (owner-decided: numeric MM-YYYY).
+# Storage stays ISO (YYYY-MM or YYYY) everywhere else — sorting depends on it;
+# these patterns only recognize the ISO shape to reformat it for display.
+_ISO_YEAR_MONTH_RE = re.compile(r"^(\d{4})-(\d{2})$")
+_ISO_YEAR_ONLY_RE = re.compile(r"^\d{4}$")
 
 # Map h2 title text → JSON Resume top-level key. Lowercased for matching.
 #
@@ -520,13 +536,41 @@ def _parse_simple_list(body: list[str], name_key: str) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------
 
 
-def _format_date_range(start: object, end: object) -> str:
-    """`start – end` (en-dash, the separator `md_to_json_resume` splits on), or a single date."""
-    s = str(start).strip() if start else ""
-    e = str(end).strip() if end else ""
-    if s and e:
-        return f"{s} – {e}"
-    return s or e
+def format_month_year(value: object) -> str:
+    """Render a stored ISO date as the product's presentation format `MM-YYYY`.
+
+    Accepts `YYYY-MM` or `YYYY` (owner-decided, fix/output-identity-and-dates).
+    Storage stays ISO everywhere else — this is a presentation-boundary-only
+    transform, never persisted. Best-effort: a value that isn't ISO-shaped
+    (hand-typed, legacy, or already-formatted text) passes through unchanged
+    rather than vanishing.
+    """
+    s = str(value).strip() if value else ""
+    if not s:
+        return ""
+    m = _ISO_YEAR_MONTH_RE.match(s)
+    if m:
+        year, month = m.group(1), m.group(2)
+        return f"{month}-{year}"
+    return s
+
+
+def format_date_range(start: object, end: object) -> str:
+    """Render a presentation date range, tolerating either side missing.
+
+    `MM-YYYY – MM-YYYY`, or `MM-YYYY – Present` when `start` is present and
+    `end` is falsy — the DB's NULL-end-date-means-current convention (see
+    `db.models.Experience.end_date`) applies uniformly to work AND education
+    entries here. The single canonical presentation-boundary helper: used by
+    `generator.py` (.docx), `json_resume_to_markdown` (.md), and the persona
+    Jinja templates via `pdf_render.py`'s registered `date_range` global, so
+    preview / download / PDF can never disagree on date formatting.
+    """
+    s = format_month_year(start)
+    if not s:
+        return format_month_year(end)
+    e = format_month_year(end) if end else "Present"
+    return f"{s} – {e}"
 
 
 def json_resume_to_markdown(doc: dict[str, Any]) -> str:
@@ -575,7 +619,7 @@ def json_resume_to_markdown(doc: dict[str, Any]) -> str:
             company = str(w.get("name") or "").strip()
             position = str(w.get("position") or "").strip()
             header = f"{company}, {position}" if (company and position) else (company or position)
-            dates = _format_date_range(w.get("startDate"), w.get("endDate"))
+            dates = format_date_range(w.get("startDate"), w.get("endDate"))
             if dates:
                 header = f"{header}\t{dates}" if header else dates
             lines.append(f"### {header}")
@@ -604,7 +648,7 @@ def json_resume_to_markdown(doc: dict[str, Any]) -> str:
             inst = str(e.get("institution") or "").strip()
             area = str(e.get("area") or "").strip()
             header = f"{inst}, {area}" if (inst and area) else (inst or area)
-            dates = _format_date_range(e.get("startDate"), e.get("endDate"))
+            dates = format_date_range(e.get("startDate"), e.get("endDate"))
             if dates:
                 header = f"{header}\t{dates}" if header else dates
             lines.append(f"### {header}")
@@ -622,3 +666,151 @@ def json_resume_to_markdown(doc: dict[str, Any]) -> str:
         lines.extend(f"- {n}" for n in cert_names)
 
     return "\n".join(lines).strip() + "\n"
+
+
+# ---------------------------------------------------------------------
+# Identity-field override (fix/output-identity-and-dates)
+# ---------------------------------------------------------------------
+
+
+def apply_identity_override(
+    doc: dict[str, Any], identity: Mapping[str, Any] | None
+) -> dict[str, Any]:
+    """Overwrite `basics` identity fields from a live Candidate DB projection.
+
+    Highest-severity fix in fix/output-identity-and-dates: a replayed context
+    or an LLM's own markdown can carry stale or hallucinated identity fields
+    (e.g. `candidate.online_profile_text` scraped content leaking a stray
+    website into the header, or a pre-corpus context frozen from an old flat
+    config) — this unconditionally re-resolves name/email/phone/linkedin/
+    website from the CURRENT Candidate row (the same fields
+    `corpus_to_json_resume.build_json_resume_from_corpus` reads for the live
+    preview), overriding whatever the parsed markdown carried, so a download
+    can never disagree with the corpus or the live preview on identity.
+
+    `identity` keys: `name` / `email` / `phone` / `linkedin_url` /
+    `website_url` — presence-conditional, mirroring
+    `build_json_resume_from_corpus`'s `if candidate.X:` sets exactly: an
+    absent/falsy key CLEARS the corresponding basics field rather than
+    leaving whatever the markdown parsed (the DB is the single source of
+    truth, not just a supplement). `profiles` is REPLACED wholesale (not
+    merged) with LinkedIn-only-if-present — Candidate has no other profile
+    columns, so a GitHub/Twitter/etc. URL the LLM wrote is exactly the kind
+    of ungoverned content this override exists to strip.
+
+    A `None` `identity` (no resolvable Candidate row — legacy/file-based
+    generation with nothing to override from) is a no-op: `doc` is returned
+    unchanged. Deterministic: no LLM, no network, no clock.
+    """
+    if identity is None:
+        return doc
+    basics = doc.get("basics")
+    if not isinstance(basics, dict):
+        basics = {}
+        doc["basics"] = basics
+
+    name = str(identity.get("name") or "").strip()
+    if name:
+        basics["name"] = name
+    else:
+        basics.pop("name", None)
+
+    email = str(identity.get("email") or "").strip()
+    if email:
+        basics["email"] = email
+    else:
+        basics.pop("email", None)
+
+    phone = str(identity.get("phone") or "").strip()
+    if phone:
+        basics["phone"] = phone
+    else:
+        basics.pop("phone", None)
+
+    website = str(identity.get("website_url") or "").strip()
+    if website:
+        basics["url"] = website
+    else:
+        basics.pop("url", None)
+
+    linkedin = str(identity.get("linkedin_url") or "").strip()
+    if linkedin:
+        basics["profiles"] = [
+            {"network": "LinkedIn", "url": linkedin, "username": _linkedin_username(linkedin)}
+        ]
+    else:
+        basics.pop("profiles", None)
+
+    return doc
+
+
+def _linkedin_username(url: str) -> str:
+    """Pull the LinkedIn handle from a profile URL; best-effort, "" on unexpected formats."""
+    if "/in/" in url:
+        tail = url.rsplit("/in/", 1)[-1]
+        return tail.split("/")[0].split("?")[0]
+    return ""
+
+
+# ---------------------------------------------------------------------
+# ATS character scrub (owner-decided policy)
+# ---------------------------------------------------------------------
+
+
+def scrub_ats_unsafe(doc: dict[str, Any]) -> dict[str, Any]:
+    """Recursively strip ATS-unsafe characters from every string leaf of a JSON Resume doc.
+
+    `[ ] { } " `` (backtick) are stripped outright — common ATS parsers choke on
+    stray brackets/braces/quotes/backticks in résumé text. `< >` are stripped
+    ONLY as tag-shaped pairs (`_ATS_TAG_SHAPED_RE`, e.g. a copy-pasted HTML
+    fragment) so a legitimate comparison like "<50ms" (no closing `>`) survives
+    untouched, as does "C++" / "C#" (neither character is in the strip set).
+
+    Every string actually changed is recorded into `meta.sartor.ats_scrubbed`
+    (`[{"path": ..., "before": ..., "after": ...}, ...]`) so the UI can surface
+    "N items adjusted"; the key is omitted entirely when nothing changed.
+
+    Walks only the rendered-content keys (basics/work/education/skills/
+    certificates/projects) — `$schema` and the rest of `meta` are bookkeeping,
+    never rendered into the document, and are left untouched.
+
+    Mutates `doc` in place and returns it. Deterministic: no LLM, no network,
+    no clock. Called at the two finalization choke points —
+    `generator.generate_resume()` (right after its `md_to_json_resume` parse)
+    and `corpus_to_json_resume.build_json_resume_from_corpus` (right before it
+    returns) — so freeze, preview, and every download share one scrub pass.
+    """
+    scrubbed: list[dict[str, str]] = []
+
+    def _scrub_string(path: str, value: str) -> str:
+        cleaned = _ATS_TAG_SHAPED_RE.sub("", value)
+        cleaned = "".join(ch for ch in cleaned if ch not in _ATS_UNSAFE_CHARS)
+        if cleaned != value:
+            scrubbed.append({"path": path, "before": value, "after": cleaned})
+        return cleaned
+
+    def _walk(node: object, path: str) -> object:
+        if isinstance(node, str):
+            return _scrub_string(path, node)
+        if isinstance(node, list):
+            return [_walk(item, f"{path}[{i}]") for i, item in enumerate(node)]
+        if isinstance(node, dict):
+            return {k: _walk(v, f"{path}.{k}" if path else k) for k, v in node.items()}
+        return node
+
+    for key in ("basics", "work", "education", "skills", "certificates", "projects"):
+        if key in doc:
+            doc[key] = _walk(doc[key], key)
+
+    if scrubbed:
+        meta = doc.get("meta")
+        if not isinstance(meta, dict):
+            meta = {}
+            doc["meta"] = meta
+        sartor_meta = meta.get("sartor")
+        if not isinstance(sartor_meta, dict):
+            sartor_meta = {}
+            meta["sartor"] = sartor_meta
+        sartor_meta["ats_scrubbed"] = scrubbed
+
+    return doc

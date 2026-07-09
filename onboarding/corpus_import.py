@@ -90,6 +90,15 @@ class ImportReport:
     bullets_created: int = 0
     alternate_titles_created: int = 0
     resume_files_processed: int = 0
+    # Dropped-role telemetry (fix/output-identity-and-dates): a role the
+    # extractor found but couldn't place (missing company and/or start date)
+    # used to vanish silently. `experiences_dropped` counts them;
+    # `dropped_experiences` retains the raw extracted payload (company/title/
+    # bullets/source file) so the ingest response + corpus UI can show the
+    # user what to add manually instead of a document that's quietly thinner
+    # than the résumé they uploaded.
+    experiences_dropped: int = 0
+    dropped_experiences: list[dict] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
     def merge(self, other: ImportReport) -> None:
@@ -108,6 +117,8 @@ class ImportReport:
         self.bullets_created += other.bullets_created
         self.alternate_titles_created += other.alternate_titles_created
         self.resume_files_processed += other.resume_files_processed
+        self.experiences_dropped += other.experiences_dropped
+        self.dropped_experiences.extend(other.dropped_experiences)
         self.errors.extend(other.errors)
 
 
@@ -603,7 +614,23 @@ def _insert_or_merge_experience(
     start_date = exp.get("start_date", "")
     title_text = exp.get("candidate_inferred_title", "")
     if not company or not start_date:
-        return  # _normalize_experience emitted a sentinel; nothing to do
+        # Dropped-role telemetry (fix/output-identity-and-dates): count it and
+        # retain what WAS extracted (company/title/bullets — possibly partial,
+        # possibly a fully-empty _normalize_experience sentinel) instead of
+        # the row vanishing with no trace. The caller surfaces this to the
+        # user ("N roles could not be parsed... review and add manually").
+        report.experiences_dropped += 1
+        report.dropped_experiences.append(
+            {
+                "company": company,
+                "candidate_inferred_title": title_text,
+                "start_date": start_date,
+                "location": exp.get("location", ""),
+                "bullets": [b.get("text", "") for b in (exp.get("bullets") or [])],
+                "source_filename": source_filename,
+            }
+        )
+        return  # missing company and/or start date; nothing to insert
 
     if dry_run:
         # Same-shape counting for visibility; can't know existing matches
@@ -948,6 +975,18 @@ def _format_report(report: ImportReport, *, dry_run: bool) -> str:
             f"{prefix}Bullets:        created={report.bullets_created:3d}, "
             f"alternate-titles={report.alternate_titles_created:3d}"
         )
+    if report.experiences_dropped:
+        # Dropped-role telemetry (fix/output-identity-and-dates): surface what
+        # couldn't be parsed instead of it silently vanishing.
+        lines.append(
+            f"{prefix}Dropped:        {report.experiences_dropped} role(s) could not be "
+            f"parsed (missing company or start date) — review and add manually:"
+        )
+        for dropped in report.dropped_experiences:
+            label = (
+                dropped.get("candidate_inferred_title") or dropped.get("company") or "(untitled)"
+            )
+            lines.append(f"{prefix}  - {label} (source: {dropped.get('source_filename', '?')})")
     if report.errors:
         lines.append(f"{prefix}Errors ({len(report.errors)}):")
         for err in report.errors[:10]:

@@ -254,6 +254,104 @@ def _persist_corpus_generation_to_db(
         session.close()
 
 
+def _is_pre_corpus_context(context_set: ContextSet) -> bool:
+    """True when `context_set` predates corpus-based generation (fix/output-identity-and-dates).
+
+    `application_id` is the reliable shape marker: every `/api/analyze` call
+    since Phase C.4 ("the file-based legacy path is gone" —
+    blueprints/analysis.py) stamps `application_id` + `application_run_id`
+    onto the saved context, and `hardening.save_iteration_context` deep-copies
+    the WHOLE parent context into every child iteration file, so the marker
+    propagates through an entire generate/refine chain once it's set. A
+    context missing it cannot have come from the current pipeline — it is
+    either a pre-corpus-era file (frozen by the retired
+    `hardening.build_context_set`, whose identity fields can silently drift
+    from the candidate's current corpus/DB row — the root cause this fix
+    closes) or a stale replay of one. `career_corpus` is NOT used as the
+    marker: a corpus-mode context that hasn't reached generate yet (or a
+    résumé with zero corpus experiences) legitimately has an empty
+    `career_corpus`, but always still carries `application_id`.
+    """
+    return context_set.get("application_id") is None
+
+
+def _resolve_candidate_identity(context_set: ContextSet) -> dict[str, str] | None:
+    """Resolve the CURRENT Candidate DB row's identity fields for this context's application.
+
+    Highest-severity fix in fix/output-identity-and-dates: feeds
+    `generator.generate_resume`'s `identity_override`, which unconditionally
+    replaces `basics.name/email/phone/url/profiles` with these fields —
+    closing the vector where a replayed or stale context's `candidate` block
+    (or `candidate.online_profile_text` scraped content) diverges from what
+    the live corpus/preview shows. Returns `None` (a no-op for the caller)
+    when the context isn't corpus-mode or the row can't be resolved — legacy/
+    file-based generation has no DB row to override from. Best-effort: any DB
+    hiccup here must not fail the user's generate — the markdown is already
+    produced.
+    """
+    app_id = context_set.get("application_id")
+    if app_id is None:
+        return None
+    from db.models import Application, Candidate
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        app_row = session.query(Application).filter_by(id=int(app_id)).first()
+        if app_row is None:
+            return None
+        candidate = session.query(Candidate).filter_by(id=app_row.candidate_id).first()
+        if candidate is None:
+            return None
+        return {
+            "name": candidate.name or "",
+            "email": candidate.email or "",
+            "phone": candidate.phone or "",
+            "linkedin_url": candidate.linkedin_url or "",
+            "website_url": candidate.website_url or "",
+        }
+    except Exception:
+        logger.warning("Identity resolution failed for application_id=%s", app_id, exc_info=True)
+        return None
+    finally:
+        session.close()
+
+
+def _apply_output_fidelity_fixes(resume_markdown: str, context_set: ContextSet) -> str:
+    """Re-resolve identity + scrub ATS-unsafe chars in the LLM's OWN markdown (fix/output-identity-and-dates).
+
+    `generator.generate_resume`'s `identity_override`/internal scrub only
+    protect the FILE it writes — but `result["resume_content"]` (this
+    string) is ALSO cached verbatim as `last_generated_resume` /
+    `last_generated_json_resume` and served BACK as the WYSIWYG live preview
+    (`blueprints/templates.preview_application_html`) and as the
+    `resume_preview` response field. Without fixing it here too, a download
+    would show the corrected identity while the in-app preview kept showing
+    the stale one — trading one D3 violation for another. Round-trips
+    through the SAME parse/override/scrub/serialize pipeline
+    `generator.generate_resume` uses for `.md` (md_to_json_resume ->
+    apply_identity_override -> scrub_ats_unsafe -> json_resume_to_markdown),
+    so there is exactly one implementation of each transform, not a second,
+    divergent one. Callers apply this only on the non-frozen (LLM-markdown)
+    path — the frozen-composition path's resume_content is already derived
+    from an already-corrected, already-scrubbed `build_json_resume_from_corpus`
+    doc. No-op on blank/whitespace-only input.
+    """
+    if not resume_markdown.strip():
+        return resume_markdown
+    from json_resume import (
+        apply_identity_override,
+        json_resume_to_markdown,
+        md_to_json_resume,
+        scrub_ats_unsafe,
+    )
+
+    doc = md_to_json_resume(resume_markdown)
+    doc = apply_identity_override(doc, _resolve_candidate_identity(context_set))
+    doc = scrub_ats_unsafe(doc)
+    return json_resume_to_markdown(doc)
+
+
 def _check_date_grounding(context_set: ContextSet, result: dict) -> dict | None:
     """KW6 guard: flag generated heading date ranges that don't trace to the corpus (altered or duplicated date ranges).
 
@@ -765,6 +863,18 @@ def run_generation() -> ResponseReturnValue:
     if not analysis:
         return jsonify({"error": "No valid analysis found in context"}), 400
 
+    # fix/output-identity-and-dates: reject a pre-corpus context shape rather
+    # than silently replaying it — its identity fields (and everything else)
+    # cannot be trusted against the candidate's CURRENT corpus. See
+    # _is_pre_corpus_context's docstring for the marker + rationale.
+    if _is_pre_corpus_context(context_set):
+        return jsonify(
+            {
+                "error": "This session predates corpus-based generation. Please re-analyze to continue.",
+                "needs_reanalyze": True,
+            }
+        ), 409
+
     logger.info(
         "Starting generation for %s (iteration=%s)", username, context_set.get("iteration", 0)
     )
@@ -832,6 +942,13 @@ def run_generation() -> ResponseReturnValue:
 
     if isinstance(result.get("resume_content"), str):
         result["resume_content"] = strip_cover_letter_block(result["resume_content"])
+        if frozen_doc is None:
+            # fix/output-identity-and-dates: fix the LLM's OWN markdown so the
+            # WYSIWYG preview (which caches this exact text) and the download
+            # can never disagree — see _apply_output_fidelity_fixes.
+            result["resume_content"] = _apply_output_fidelity_fixes(
+                result["resume_content"], context_set
+            )
 
     safe_user = _safe_username(username, configs_dir=configs_dir) if username else None
     if not safe_user:
@@ -879,12 +996,20 @@ def run_generation() -> ResponseReturnValue:
             template_path=template_path,
         )
     else:
+        # fix/output-identity-and-dates: ALWAYS re-resolve identity fields
+        # from the live Candidate DB row for the non-frozen (LLM-markdown)
+        # path — this is what actually diverges (a stale context or the
+        # LLM's own header line). The frozen-composition branch above
+        # doesn't need this: build_json_resume_from_corpus already resolved
+        # basics from the DB at the moment it was built (freeze time), so
+        # preview == download == approved_composition holds by construction.
         resume_path = generate_resume(
             result["resume_content"],
             output_format,
             safe_user,
             str(output_dir),
             template_path=template_path,
+            identity_override=_resolve_candidate_identity(context_set),
         )
     # Phase β.5 — only write the cover-letter file when the call actually
     # produced one. The /api/generate-cover-letter route does the writing
@@ -1034,6 +1159,16 @@ def run_generation_stream() -> ResponseReturnValue:
     if not analysis:
         return jsonify({"error": "No valid analysis found in context"}), 400
 
+    # fix/output-identity-and-dates: same pre-corpus-shape guard as
+    # /api/generate — see _is_pre_corpus_context's docstring.
+    if _is_pre_corpus_context(context_set):
+        return jsonify(
+            {
+                "error": "This session predates corpus-based generation. Please re-analyze to continue.",
+                "needs_reanalyze": True,
+            }
+        ), 409
+
     logger.info(
         "Starting streaming generation for %s (iteration=%s)",
         username,
@@ -1129,6 +1264,16 @@ def run_generation_stream() -> ResponseReturnValue:
                 )
                 return
 
+            if frozen_doc is None and isinstance(result.get("resume_content"), str):
+                # fix/output-identity-and-dates: see run_generation's identical
+                # step (_apply_output_fidelity_fixes) for the full rationale —
+                # mid-stream chunks already sent can't be retracted, but the
+                # final result (what gets downloaded, snapshotted, and echoed
+                # in the `done` event) must match the non-streaming route.
+                result["resume_content"] = _apply_output_fidelity_fixes(
+                    result["resume_content"], context_set
+                )
+
             # Post-LLM persistence — mirror the non-streaming route.
             # Phase 4 — the frozen composition renders directly from its JSON-Resume
             # doc (download == preview == approved_composition); legacy from markdown.
@@ -1141,12 +1286,15 @@ def run_generation_stream() -> ResponseReturnValue:
                     template_path=template_path,
                 )
             else:
+                # fix/output-identity-and-dates: see the non-streaming route's
+                # identical call site for the full rationale.
                 resume_path = generate_resume(
                     result["resume_content"],
                     resolved_output_format,
                     safe_user,
                     str(output_dir),
                     template_path=template_path,
+                    identity_override=_resolve_candidate_identity(context_set),
                 )
             cover_letter_path = ""
             if (result.get("cover_letter_content") or "").strip():

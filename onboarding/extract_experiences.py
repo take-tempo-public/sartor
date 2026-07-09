@@ -222,15 +222,23 @@ def _normalize_experience(raw: dict) -> ExtractedExperience:
     end_date = raw.get("end_date")
     exp["end_date"] = None if end_date is None else _clean_str(end_date) or None
 
-    # Drop experiences whose start date isn't a year (optionally with a month).
-    if not exp["start_date"] or not _DATE_RE.match(exp["start_date"]):
-        return {"company": "", "start_date": "", "candidate_inferred_title": "", "bullets": []}
-
     raw_bullets = raw.get("bullets") or []
     if isinstance(raw_bullets, list):
         exp["bullets"] = [_normalize_bullet(b) for b in raw_bullets if isinstance(b, dict)]
         # Drop any bullet with empty text after normalization.
         exp["bullets"] = [b for b in exp["bullets"] if b.get("text")]
+
+    # Drop experiences whose start date isn't a year (optionally with a month)
+    # — but RETAIN what was extracted (company/title/bullets/etc.) instead of
+    # collapsing to a blank sentinel. `start_date` stays "" — the signal
+    # `onboarding.corpus_import._insert_or_merge_experience` reads to skip DB
+    # insertion — but the caller now surfaces the raw payload to the user
+    # ("N roles could not be parsed... review and add manually") instead of
+    # the row vanishing with no trace (dropped-role telemetry,
+    # fix/output-identity-and-dates).
+    if not exp["start_date"] or not _DATE_RE.match(exp["start_date"]):
+        exp["start_date"] = ""
+        return exp
 
     return exp
 

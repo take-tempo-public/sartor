@@ -83,9 +83,9 @@ def build_json_resume_from_corpus(
         "basics":       {name, label, email, phone, url, summary, profiles},
         "work":         [...],
         "skills":       [...],
-        "education":    [],   # not modeled in the DB yet (v1.1+)
-        "certificates": [],   # same
-        "projects":     [],   # same
+        "education":    [...],  # fix/output-identity-and-dates: _collect_education
+        "certificates": [...],  # fix/output-identity-and-dates: _collect_certificates
+        "projects":     [],     # not modeled in the DB yet (v1.1+)
         "meta":         {"sartor": {...}, "language": "en-US"},
       }
     """
@@ -288,14 +288,18 @@ def build_json_resume_from_corpus(
         rec_ids=skill_rec_ids,
     )
 
+    # ---- Assemble education[] / certificates[] (F-04 preview-parity gap-close) ----
+    education = _collect_education(session, candidate.id)
+    certificates = _collect_certificates(session, candidate.id)
+
     # ---- Final document ----
     doc: dict[str, Any] = {
         "$schema": SCHEMA_URI,
         "basics": basics,
         "work": work,
-        "education": [],
+        "education": education,
         "skills": skills,
-        "certificates": [],
+        "certificates": certificates,
         "projects": [],
         "meta": {
             "sartor": {
@@ -333,7 +337,13 @@ def build_json_resume_from_corpus(
             "language": "en-US",
         },
     }
-    return doc
+    from json_resume import scrub_ats_unsafe
+
+    # Fix/output-identity-and-dates: the ATS char scrub's other finalization
+    # choke point (generator.generate_resume() is the LLM-markdown one). This
+    # single call covers freeze + live preview + frozen download, since every
+    # one of them is built by this function.
+    return scrub_ats_unsafe(doc)
 
 
 def freeze_approved_composition(
@@ -833,6 +843,76 @@ def _collect_skills(
     )
     valid_ids = [sid for sid in ordered if sid in name_by_id]
     return [{"name": name_by_id[sid]} for sid in valid_ids], valid_ids
+
+
+def _collect_education(session: Session, candidate_id: int) -> list[dict[str, Any]]:
+    """Return JSON Resume education[] for the candidate (F-04 preview-parity gap-close).
+
+    Mirrors `_collect_skills`'s shape: active rows only, in display_order.
+    `Education` (db/models.py) has no pending-review/curation lifecycle
+    (career_assets.py's F-04 docstring — no LLM-proposal path, no per-application
+    pin/exclude layer to apply), so every active row renders, unconditionally.
+    Field mapping (`blueprints/corpus/_shared.py._education_to_dict`):
+    institution -> institution, degree -> area (the renderers' one "position
+    line" slot — generator.py/classic.html only ever read institution+area),
+    field -> studyType (carried for schema completeness; not yet surfaced by
+    any renderer), start_date/end_date -> startDate/endDate (ISO; formatted at
+    the presentation boundary by json_resume.format_date_range).
+    """
+    from db.models import Education
+
+    rows = (
+        session.query(Education)
+        .filter_by(candidate_id=candidate_id, is_active=1)
+        .order_by(Education.display_order, Education.id)
+        .all()
+    )
+    out: list[dict[str, Any]] = []
+    for ed in rows:
+        entry: dict[str, Any] = {}
+        if ed.institution:
+            entry["institution"] = ed.institution
+        if ed.degree:
+            entry["area"] = ed.degree
+        if ed.field:
+            entry["studyType"] = ed.field
+        if ed.start_date:
+            entry["startDate"] = ed.start_date
+        if ed.end_date:
+            entry["endDate"] = ed.end_date
+        if entry:
+            out.append(entry)
+    return out
+
+
+def _collect_certificates(session: Session, candidate_id: int) -> list[dict[str, Any]]:
+    """Return JSON Resume certificates[] for the candidate (F-04 preview-parity gap-close). See `_collect_education`.
+
+    Field mapping (`blueprints/corpus/_shared.py._certification_to_dict`):
+    name -> name, issuer -> issuer, issued -> date (JSON Resume's single
+    certificate date field). `expires` has no standard JSON Resume slot and no
+    renderer surfaces it today, so it is intentionally not projected here.
+    """
+    from db.models import Certification
+
+    rows = (
+        session.query(Certification)
+        .filter_by(candidate_id=candidate_id, is_active=1)
+        .order_by(Certification.display_order, Certification.id)
+        .all()
+    )
+    out: list[dict[str, Any]] = []
+    for c in rows:
+        entry: dict[str, Any] = {}
+        if c.name:
+            entry["name"] = c.name
+        if c.issuer:
+            entry["issuer"] = c.issuer
+        if c.issued:
+            entry["date"] = c.issued
+        if entry:
+            out.append(entry)
+    return out
 
 
 def _username_from_linkedin(url: str) -> str:

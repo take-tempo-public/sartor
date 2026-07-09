@@ -21,6 +21,8 @@ from docx.shared import Inches, Pt
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 
+from json_resume import format_date_range
+
 # Matches any common bullet prefix used by LLMs:
 # -, *, •, –, —, ·, ◆, ●, ▪, ›, ‣
 BULLET_RE = re.compile(r"^[-*\u2022\u2013\u2014\u00b7\u25c6\u25cf\u25aa\u2023\u2043\u203a]\s+")
@@ -95,11 +97,13 @@ def generate_resume(
     username: str,
     base_dir: str = "output",
     template_path: str | None = None,
+    identity_override: dict[str, Any] | None = None,
 ) -> str:
     """Generate the tailored resume in the requested format.
 
     Supported formats:
-      .md   — write the normalized markdown directly
+      .md   — serialize the same JSON Resume doc the other formats render
+              (json_resume_to_markdown) — see the D3 note below
       .docx — render via python-docx + the persona .docx as style template
       .pdf  — render via Playwright (β.3): parse markdown → JSON Resume
               → Jinja2 HTML → headless Chromium → PDF. Requires the
@@ -111,11 +115,23 @@ def generate_resume(
     (`resume_{ts}.jsonresume.json`) next to the primary output (β.2).
     The sidecar is best-effort — write failures log a warning but do
     not block the primary output.
+
+    `identity_override` (fix/output-identity-and-dates): when supplied, the
+    caller's already-resolved Candidate identity dict
+    (name/email/phone/linkedin_url/website_url) UNCONDITIONALLY replaces
+    whatever `basics` the markdown parse produced — see
+    `json_resume.apply_identity_override`. `None` (the default) is a no-op,
+    preserving legacy/file-based behavior with nothing to override from.
     """
     import json as _json
     from pathlib import Path as _Path
 
-    from json_resume import md_to_json_resume
+    from json_resume import (
+        apply_identity_override,
+        json_resume_to_markdown,
+        md_to_json_resume,
+        scrub_ats_unsafe,
+    )
 
     out_dir = Path(base_dir) / username
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -127,10 +143,19 @@ def generate_resume(
     # HTML preview) then flows from this single json_doc, so they cannot diverge.
     content = _normalize_markdown(content)
     json_doc = md_to_json_resume(content)
+    json_doc = apply_identity_override(json_doc, identity_override)
+    json_doc = scrub_ats_unsafe(json_doc)
 
     if output_format == ".md":
+        # D3 (single source of truth): .md now serializes the SAME json_doc
+        # .docx/.pdf render (via json_resume_to_markdown) instead of writing
+        # the pre-override, pre-scrub markdown verbatim — otherwise a stale
+        # identity field or an ATS-unsafe character fixed in json_doc would
+        # still leak into a .md download. Matches the sibling
+        # generate_resume_from_json_resume()'s .md branch, which already
+        # does this for the frozen-composition path.
         path = out_dir / f"resume_{ts}.md"
-        path.write_text(content, encoding="utf-8")
+        path.write_text(json_resume_to_markdown(json_doc), encoding="utf-8")
     elif output_format == ".pdf":
         path = out_dir / f"resume_{ts}.pdf"
         _render_pdf_from_json(json_doc, template_path, path)
@@ -620,12 +645,14 @@ def _contact_line_items(basics: dict[str, Any]) -> list[str]:
 
 
 def _date_range(start: str | None, end: str | None) -> str:
-    """Render a `Start – End` date range (en-dash), tolerating either side missing."""
-    start = (start or "").strip()
-    end = (end or "").strip()
-    if start and end:
-        return f"{start} – {end}"
-    return start or end
+    """Render a presentation date range (MM-YYYY, "– Present" when open-ended).
+
+    Thin wrapper over `json_resume.format_date_range` — the single canonical
+    presentation-boundary helper (fix/output-identity-and-dates) — so the
+    .docx/.pdf writer, `json_resume_to_markdown`, and the persona Jinja
+    templates can never disagree on date formatting.
+    """
+    return format_date_range(start, end)
 
 
 def _entry_header_text(name: str, position: str, start: str | None, end: str | None) -> str:

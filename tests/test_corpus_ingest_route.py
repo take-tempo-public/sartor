@@ -127,6 +127,43 @@ class TestIngestResume:
         finally:
             s.close()
 
+    def test_dropped_role_surfaced_in_response(self, ingest_app):
+        """Dropped-role telemetry (fix/output-identity-and-dates): a role
+        missing company/start_date is counted + its raw payload retained in
+        the response instead of silently vanishing."""
+        _seed_candidate()
+        client = ingest_app.test_client()
+        mixed = [
+            *_FAKE_EXTRACT,
+            {
+                "company": "",
+                "start_date": "",
+                "candidate_inferred_title": "Some Freelance Gig",
+                "bullets": [{"text": "Did freelance work.", "suggested_tags": []}],
+            },
+        ]
+        with (
+            _patch_extract(mixed, _FAKE_SKILLS),
+            patch("blueprints.corpus.curation._get_client", return_value=object()),
+        ):
+            r = client.post(
+                "/api/users/alice/corpus/ingest-resume",
+                data={
+                    "file": (
+                        io.BytesIO(b"# Resume\n\n## Experience\n\n- Did things at Polaris"),
+                        "r.md",
+                    )
+                },
+                content_type="multipart/form-data",
+            )
+        assert r.status_code == 201, r.get_json()
+        body = r.get_json()
+        assert body["experiences_dropped"] == 1
+        assert body["dropped_experiences"][0]["candidate_inferred_title"] == "Some Freelance Gig"
+        assert body["dropped_experiences"][0]["bullets"] == ["Did freelance work."]
+        # The valid role still landed — a drop never blocks the rest of the import.
+        assert body["experiences_created"] >= 1
+
     def test_skills_dedup_case_insensitively_against_existing(self, ingest_app):
         """A skill that already exists (any case, any review state) never gets a duplicate pending row."""
         from db.models import Skill

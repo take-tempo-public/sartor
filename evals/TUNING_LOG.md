@@ -2917,3 +2917,66 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    run is the cheapest way to prove a "surgical, not blanket" carve-out claim
    actually holds under a real model instead of asserting it from the prompt
    text alone.
+
+## Output identity integrity — 2026-07-08 — `fix/output-identity-and-dates` — `2026-07-08.2` → `2026-07-08.3`
+
+1. **What changed?** The corpus-mode GROUNDING rule inside
+   `analyzer._build_generate_prompt`'s `corpus_mode_block` gained one new
+   instruction: the candidate's name and header contact line (email, phone,
+   LinkedIn, website) MUST be reproduced exactly from `<candidate_profile>`
+   and are NEVER sourced from `<candidate_web_presence>` (the opt-in scraped
+   profile/website/portfolio text, PX-02), even when that scraped text
+   mentions a different or additional contact channel. Generate-prompt-only;
+   `analyze()`/`clarify()` prompts are untouched.
+2. **Why?** A real user saw a website in a **downloaded** résumé that
+   appeared in neither their corpus nor their live preview. Root-cause
+   investigation found two contributing vectors: (1) `/api/generate` replaying
+   pre-corpus-era saved contexts with no schema check, and (2)
+   `candidate.online_profile_text` (scraped web presence) being an ungoverned
+   prompt source the GROUNDING rule never excluded from identity/header
+   fields specifically — only bullet-level grounding was governed. This entry
+   covers (2), the prompt-side half of the fix; the deterministic half — an
+   identity override that unconditionally re-resolves `basics` from the live
+   `Candidate` DB row regardless of what the LLM or a stale context carries —
+   lives in `json_resume.apply_identity_override()` and needs no prompt
+   validation (it's pure post-processing, covered by unit + integration
+   tests, not this log).
+3. **Result? (real-LLM validation, NOT a synthetic-suite run — this is a
+   corpus-mode-only prompt-text change with no bullet-selection or
+   scoring-relevant effect, so `--suite synthetic` was not re-run):** a
+   throwaway sandbox candidate + temp SQLite DB (no repo
+   configs/output/resumes touched). Seeded a candidate with `website_url=""`
+   (no website on file) but `online_profile_text` containing a decoy website
+   (`stray-blog-not-real.example`) and a decoy email
+   (`scraped-decoy@not-real.example`), plus one real experience (Acme Cloud,
+   a Kubernetes migration bullet with a "40%" metric). Ran `generate()`
+   directly (real Sonnet 5 call, `PROMPT_VERSION 2026-07-08.3`) against a JD
+   for a Senior Platform Engineer role:
+   - Header rendered `# Jordan Rivera` / `jordan.rivera@example.com | 555-0199
+     | linkedin.com/in/jordanrivera` — the candidate's REAL `<candidate_profile>`
+     fields, verbatim.
+   - Neither decoy string (`stray-blog-not-real.example`,
+     `scraped-decoy@not-real.example`) appeared anywhere in the output — the
+     web-presence content the model DID use (implicitly, for Summary framing
+     around "on-call culture") never leaked into the header.
+   - Grounded generation still worked: "Acme Cloud" and the "40%" metric both
+     appeared verbatim from the corpus bullet — the tightened rule didn't
+     make the model over-cautious about legitimate corpus content.
+   - Cost: **$0.0306** (1 Sonnet 5 call, `logs/llm_calls.jsonl` telemetry via
+     `hardening.compute_call_cost`), well under the $0.10 estimate.
+   - Deterministic coverage (no LLM):
+     `tests/test_corpus_mode_prompt.py::TestGenerateDispatch::test_corpus_mode_block_excludes_web_presence_from_identity`
+     pins the new prompt text's presence; `tests/test_identity_override_route.py`
+     and `tests/test_json_resume.py::TestApplyIdentityOverride` cover the
+     deterministic override end to end (route + unit level).
+4. **Learned?** A GROUNDING rule that governs bullets doesn't automatically
+   govern identity/header fields — they're a structurally different kind of
+   claim (never "reframe-able," always exact-reproduction-or-nothing) and
+   needed their own explicit carve-out naming the disallowed source by tag.
+   The real-LLM run was cheap ($0.03) because it needed exactly one call with
+   a corpus small enough to keep the prompt short — no need to run the full
+   eval suite to validate a single, surgical instruction addition; a
+   purpose-built adversarial fixture (a decoy string that would ONLY appear
+   in the output if the model ignored the new instruction) is a sharper,
+   cheaper validation than a broad regression run for this class of prompt
+   change.

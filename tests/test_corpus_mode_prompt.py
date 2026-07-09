@@ -367,6 +367,36 @@ class TestGenerateDispatch:
             generate(None, ctx, analysis, username="u", run_id="r")
         assert "the candidate has CHOSEN it for this application" in captured["prompt"]
 
+    def test_corpus_mode_block_excludes_web_presence_from_identity(self, monkeypatch):
+        """fix/output-identity-and-dates (PROMPT_VERSION 2026-07-08.3): the
+        corpus-mode GROUNDING rule must tell the model the name/header contact
+        line come ONLY from <candidate_profile>, never <candidate_web_presence>
+        — the ungoverned vector for a stray website/email leaking into the
+        header from scraped profile content."""
+        ctx = _make_corpus_context()
+        ctx["candidate"]["online_profile_text"] = "Also reachable at stray@example.com."
+        analysis = {
+            "essential_skills": [],
+            "keyword_placement": [],
+            "suggestions": [],
+            "overall_strategy": "",
+            "professional_vocabulary": [],
+        }
+        captured: dict = {}
+        fake_response = {
+            "resume_content": "x",
+            "cover_letter_content": "y",
+            "changes_made": [],
+            "proofread_notes": [],
+            "selected_bullets": [],
+            "proposed_new_bullets": [],
+            "proposed_experience_titles": [],
+        }
+        with patch("analyzer._call_llm", _mock_llm_call(captured, fake_response)):
+            generate(None, ctx, analysis, username="u", run_id="r")
+        assert "NEVER a source for the name or the header contact line" in captured["prompt"]
+        assert "<candidate_web_presence>" in captured["cached_user_prefix"]
+
     # -- v1.0.8 walkthrough generation-quality (PROMPT_VERSION 2026-07-01.1) --
 
     _ANALYSIS: ClassVar[dict] = {

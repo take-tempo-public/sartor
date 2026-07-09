@@ -214,6 +214,14 @@ def _write_ctx(output_dir, *, corpus=True, approved=True):
         "deterministic_analysis": {"keyword_overlap": {}},
         "iteration": 0,
         "run_id": "rid",
+        # fix/output-identity-and-dates: the corpus-era shape marker
+        # _is_pre_corpus_context checks for. Every scenario this fixture
+        # builds (corpus=True/False x approved=True/False) represents a
+        # candidate onboarded to the corpus — "legacy" here means
+        # "non-frozen" (falls through to the LLM generate() path), not
+        # "pre-corpus"; those are different axes since Phase C.4 retired the
+        # true no-DB-Candidate flow entirely.
+        "application_id": 1,
     }
     if corpus:
         ctx["career_corpus"] = [
