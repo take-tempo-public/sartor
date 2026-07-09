@@ -1767,9 +1767,18 @@ textarea:focus-visible {
 }
 
 .application-card-company {
+  /* fix/review-surface-and-flows: a modest weight/contrast lift so the
+     company reads as scannable metadata, not filler text — stays visually
+     subordinate to .application-card-title (600 weight, --fg-0) via the
+     lighter weight + secondary color token; the flex row (.application-card-header,
+     title flex:1) already anchors it at the card's top-right. Same --fg-1
+     color token as .pipeline-row-company (no contrast regression — weight-only
+     change, doesn't touch the axe-gated color-contrast ratio). */
   font-size: 13px;
+  font-weight: 500;
   color: var(--fg-1);
   font-style: normal;
+  letter-spacing: 0.1px;
 }
 
 .application-card-meta {

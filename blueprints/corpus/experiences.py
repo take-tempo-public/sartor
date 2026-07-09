@@ -22,6 +22,7 @@ from blueprints.corpus._shared import (
     _experience_summary_dict,
     _experience_summary_item_to_dict,
     _load_experience_for_candidate,
+    _resolve_proposal_reviews,
 )
 from web_infra import (
     _error_detail_payload,
@@ -547,6 +548,7 @@ def delete_bullet(bullet_id: int) -> ResponseReturnValue:
 
         bullet.is_active = 0
         bullet.is_pending_review = 0
+        _resolve_proposal_reviews(session, decision="reject", bullet_ids=[bullet.id])
         session.commit()
         return jsonify({"id": bullet.id, "is_active": False})
     except Exception:
@@ -941,6 +943,7 @@ def delete_experience_title(title_id: int) -> ResponseReturnValue:
         title.is_official = 0
         title.truthful_enough_to_use = 0
         title.is_pending_review = 0
+        _resolve_proposal_reviews(session, decision="reject", title_ids=[title.id])
         session.commit()
         return jsonify(
             {

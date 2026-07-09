@@ -13,6 +13,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: review-surface unification, corpus skill suggestions, honest application titles (`fix/review-surface-and-flows`, 2026-07-08)
+
+Six independently-verified fixes from a review pass, landed on one branch (owner-decided where noted).
+
+- **ProposalReview bridge (owner-decided: bridge, not delete).** The applications-list "N to
+  review" badge counts `ProposalReview.decision=='pending'`
+  ([`blueprints/applications.py`](blueprints/applications.py)), but the only UI-reachable review
+  path — the corpus accept routes (`accept_bullet` / `accept_experience_title` /
+  `accept_experience_all` / `accept_all_pending`,
+  [`blueprints/corpus/curation.py`](blueprints/corpus/curation.py)) and the retire routes
+  (`delete_bullet` / `delete_experience_title`,
+  [`blueprints/corpus/experiences.py`](blueprints/corpus/experiences.py)) — cleared
+  `is_pending_review`/`is_active` directly and never touched `ProposalReview.decision`, so the
+  badge over-counted forever; the `/api/proposals/*` critique/decide lane has zero frontend
+  callers. New helper `blueprints/corpus/_shared.py:_resolve_proposal_reviews` resolves any
+  still-pending `ProposalReview` row referencing an accepted bullet/title to
+  `decision="accept_original"`, and any retired one to `decision="reject"` — the same values
+  `/api/proposals/<id>/decide` would have recorded. Idempotent (only touches `decision="pending"`
+  rows) and wired into all 4 accept routes + both retire routes. New migration
+  [`0014_backfill_orphaned_proposal_reviews`](db/migrations/versions/0014_backfill_orphaned_proposal_reviews.py)
+  (UPDATE-only, no `batch_alter_table` — `proposal_review`'s FK parents are non-CASCADE toward it
+  anyway) resolves already-orphaned pending rows whose referenced bullet/title is no longer
+  pending (49 such rows on the owner's clone) to `accept_original` or `reject` per its current
+  state; a genuinely-still-pending row is left alone. The `/api/proposals/*` backend stays intact
+  (owner-decided).
+- **Corpus-wide skill suggestion** (owner feature ask — closes the "pre-F-02 corpus has no
+  skills" onboarding gap). New `POST /api/users/<username>/skills/suggest-from-corpus`
+  ([`blueprints/corpus/skills.py`](blueprints/corpus/skills.py)) runs the grounded suggest-skills
+  machinery over the candidate's WHOLE career corpus with no job description in view. The
+  existing `analyzer.suggest_skills` prompt hard-gates every proposal on "the JD wants X AND the
+  corpus evidences X" — with no JD in scope that AND can never fire, so reusing it unchanged
+  would have silently returned zero proposals forever. A **new** sibling prompt constant,
+  `SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT`, and a new function `analyzer.suggest_skills_from_corpus`
+  drop the JD condition down to evidence-alone (same grounding discipline, same worked-example
+  teaching pattern). **This is a genuine prompt-text addition** — per the merge-train
+  instructions, this branch deliberately did **not** bump `PROMPT_VERSION` itself; the
+  merge-train orchestrator assigns the next suffix on landing: `PROMPT_VERSION` `2026-07-08.3` →
+  `2026-07-08.4` (see `analyzer.py`). Proposals land as pending `Skill` rows
+  (`source="llm_proposed"`, dedup case-insensitive against every existing row for the candidate
+  incl. retired, mirroring `onboarding/corpus_import.py:_insert_pending_skills`), reviewed via
+  the existing approve/deny UI.
+- **Application title inference** — owner-approved format (revised mid-branch, see below):
+  `Application.title` is now the cleaned **role title only** — no company prefix. A new
+  deterministic extractor, `db.build_context._infer_role_title`, strips markdown heading
+  markers, U+FFFD/mojibake artifacts, and normalizes whitespace; skips boilerplate-shaped opening
+  lines ("About the...", "Who We Are", ...) in favor of the first role-shaped line (conservative
+  keyword heuristic); fails open to the cleaned first line. Company is unchanged — it stays
+  exclusively in `Application.company` (F-15) and its existing card/detail-modal rendering; an
+  earlier draft of this fix composed `"Company — Role Title"` into the title string, but the
+  owner redirected mid-branch (the company column already renders company, so the composition
+  would have duplicated it) — reverted before landing. Applied at creation
+  (`db.build_context.build_context_set_from_db`). **Backfill** (owner-approved, manual only):
+  [`scripts/backfill_application_titles.py`](scripts/backfill_application_titles.py) rewrites
+  ONLY rows whose current title still equals the raw first-line inference (hand-edited titles
+  untouched); dry-run by default, `--apply` to write. Never wired to a route, a migration, or app
+  startup. A small CSS polish accompanies this (owner request): `.application-card-company` gets
+  a modest weight/letter-spacing lift (`static/style.css`) so it reads as scannable metadata
+  without out-competing the (now role-only) title — verified the roster card, pipeline row, and
+  application detail modal all already render company alongside title/role consistently
+  (conditional on `company` being detected, same fail-open contract as before).
+- **Corpus date-rail propagation** — `_saveExperienceField` (`static/app.js`) now calls
+  `refreshCorpusSummaryFor(expId)` after a successful field PUT, and `refreshCorpusSummaryFor`
+  now also refreshes `.corpus-card-dates` (previously only company/title/meta) — editing an
+  experience's start/end date inline used to leave the collapsed card header showing the stale
+  date until a full page reload.
+- **Surgical-refine resilience** — `_submitSurgicalRefinement` (`static/app.js`) had a
+  try/finally with no catch, so a transient failure on `POST /api/validate-refinement`
+  propagated uncaught and the UI just reset silently. Added a catch mirroring the legacy refine
+  path: `reportError('Refine', ...)` + a "NOT EXECUTED" entry in the shared refinement-history
+  panel. The note stays in the input box and the button re-enables, so retrying is just clicking
+  Refine again.
+- **Roster search threshold** — the searchable candidate roster (`static/app.js`) appeared at
+  `_candidateRoster.length >= 2`; raised to `>= 6` so it shows only once there are enough
+  candidates that search actually helps (a couple of names scan fine in the plain `<select>`).
+
+Tests: `tests/test_proposal_review_bridge.py` (bridge routes, both bulk routes, idempotency, the
+0014 migration's 49-orphan shape + a genuinely-pending control row + migration idempotency);
+`tests/test_suggest_skills_from_corpus.py` (analyzer function + route: dedup incl. retired, empty
+corpus short-circuit, no `<analysis>`/JD gate in the prompt); `tests/test_build_context_db.py`
+(the `_infer_role_title` extractor: markdown/mojibake/boilerplate/fallback + the role-only
+creation-time integration); `tests/test_backfill_application_titles.py` (eligibility safety
+rule, dry-run, apply, idempotency); `tests/ux/regression/test_20260708_review_surface_and_flows.py`
+(date-rail propagation + refine-failure error/retry, both LLM-free); the roster-threshold change
+updates `tests/ux/regression/test_20260707_recruiter_roster_pipeline.py` (adds a
+below-threshold-hidden case, pads the above-threshold case to 6 candidates).
+
 ### Fix: output identity integrity, MM-YYYY dates, education/certs projection, dropped-role telemetry, ATS scrub (`fix/output-identity-and-dates`, 2026-07-08)
 
 Five independently-verified output-fidelity bugs, all bound by the same D3

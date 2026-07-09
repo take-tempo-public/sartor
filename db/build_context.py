@@ -138,7 +138,16 @@ def build_context_set_from_db(
     jd_fingerprint = hashlib.sha256(jd_text.encode("utf-8")).hexdigest()[:16]
     application = Application(
         candidate_id=candidate.id,
-        title=application_title or _infer_application_title(jd_text),
+        # Role-title ONLY (owner spec, fix/review-surface-and-flows) — no
+        # company prefix in the title string. Company already renders
+        # separately (its own `company=` column below, F-15) on the
+        # application card / detail modal, so composing "Company — Role"
+        # here would duplicate it. `_infer_role_title` fails open to the
+        # cleaned first JD line; `_infer_application_title` is the final
+        # fallback (empty JD -> "Untitled application") and also the exact
+        # raw-first-line shape the backfill script's safety rule compares
+        # existing titles against.
+        title=application_title or _infer_role_title(jd_text) or _infer_application_title(jd_text),
         company=_infer_application_company(jd_text),
         jd_text=jd_text,
         jd_url=jd_url,
@@ -542,4 +551,96 @@ def _infer_application_company(jd_text: str) -> str | None:
     return primary.title()
 
 
-__all__ = ["build_context_set_from_db", "eligible_titles_for"]
+_MD_HEADING_RE = re.compile(r"^#{1,6}\s*")
+_MD_EMPHASIS_STRIP = "*_`~ \t"
+# Boilerplate JD openers that precede the actual role title often enough that
+# picking them as "the title" is worse than skipping ahead a few lines.
+# Conservative — a prefix match against the CLEANED, lowercased line, not a
+# blocklist of exact titles (so "About the Role: Senior Engineer" still
+# skips, but "Solutions Engineer" never does).
+_BOILERPLATE_PREFIXES = (
+    "about ",
+    "about:",
+    "who we are",
+    "who you are",
+    "company overview",
+    "job overview",
+    "overview",
+    "the role",
+    "job description",
+    "position summary",
+    "summary",
+    "introduction",
+    "our company",
+    "our mission",
+    "at ",  # "At Acme, we believe..."
+)
+# Common résumé/JD role-title keywords — presence is the signal a line is
+# ROLE-shaped rather than prose. Not exhaustive by design (conservative,
+# fail-open to the cleaned first line covers everything this misses).
+_ROLE_HINT_RE = re.compile(
+    r"\b("
+    r"engineer|manager|director|lead|analyst|scientist|designer|architect|"
+    r"specialist|coordinator|consultant|administrator|developer|officer|"
+    r"president|vp|vice president|head of|intern|associate|representative|"
+    r"executive|strategist|producer|recruiter|programmer|technician|"
+    r"researcher|writer|editor|counsel|attorney"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def _clean_jd_line(line: str) -> str:
+    """Strip markdown heading markers + mojibake artifacts, normalize whitespace.
+
+    Conservative, deterministic cleanup only — no full mojibake-repair
+    library (D-1 minimal deps): drops the U+FFFD replacement character (the
+    unmistakable artifact of a failed-decode byte sequence) and any other
+    stray control characters, strips leading `#`/`##`/... heading markers and
+    residual markdown emphasis wrappers, then collapses whitespace runs.
+    """
+    cleaned = _MD_HEADING_RE.sub("", line)
+    cleaned = cleaned.replace("�", "")
+    cleaned = "".join(ch for ch in cleaned if ch == "\n" or ch >= " " or ch == "\t")
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned.strip(_MD_EMPHASIS_STRIP)
+
+
+def _looks_boilerplate(line: str) -> bool:
+    """True when `line` (already cleaned) reads as a JD boilerplate opener, not a role title."""
+    lowered = line.lower()
+    return any(lowered.startswith(prefix) for prefix in _BOILERPLATE_PREFIXES)
+
+
+def _infer_role_title(jd_text: str) -> str:
+    """Best-effort ROLE-shaped label extracted from the JD text.
+
+    Conservative heuristics, fail-open to the cleaned first non-empty line:
+    1. Clean every line (`_clean_jd_line`): strip markdown heading markers,
+       U+FFFD/mojibake artifacts, normalize whitespace.
+    2. Scan the first 5 cleaned non-empty lines for the first one that is
+       NOT boilerplate-shaped (`_looks_boilerplate`) AND contains a
+       role-title keyword (`_ROLE_HINT_RE`) — a real role title is almost
+       always near the top of a JD, right after (or instead of) a
+       boilerplate opener like "About the Role" or "Who We Are".
+    3. If nothing matches, fail open to the cleaned first non-empty line
+       (never emptier than `_infer_application_title`'s raw contract).
+
+    Returns "" only when `jd_text` has no non-empty lines at all.
+    """
+    lines = [_clean_jd_line(raw) for raw in jd_text.splitlines()]
+    lines = [line for line in lines if line]
+    if not lines:
+        return ""
+    for line in lines[:5]:
+        if _looks_boilerplate(line):
+            continue
+        if _ROLE_HINT_RE.search(line):
+            return line[:80]
+    return lines[0][:80]
+
+
+__all__ = [
+    "build_context_set_from_db",
+    "eligible_titles_for",
+]

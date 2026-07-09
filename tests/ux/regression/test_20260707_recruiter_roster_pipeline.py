@@ -35,21 +35,42 @@ def _wait_tab_active(page: Page, tab_id: str) -> None:
 
 @pytest.mark.ux
 @pytest.mark.slow
+def test_roster_hidden_below_threshold(page: Page, live_server: str, ux_app: ModuleType) -> None:
+    """fix/review-surface-and-flows: below the roster's visibility threshold
+    (6 candidates), the searchable roster stays hidden — a couple of names
+    scan fine in the plain <select>; search only earns its keep once
+    there's enough to actually search (was >= 2, raised to >= 6)."""
+    seed_user(ux_app, "alice")
+    seed_user(ux_app, "bob")
+
+    BasePage(page, live_server).load()
+    page.wait_for_selector(UserPicker.SELECT, state="visible", timeout=DEFAULT_TIMEOUT_MS)
+    assert page.locator(UserPicker.ROSTER).is_hidden()
+
+
+@pytest.mark.ux
+@pytest.mark.slow
 def test_roster_shows_target_role_and_search_filters_it(
     page: Page, live_server: str, ux_app: ModuleType
 ) -> None:
     seed_user(ux_app, "alice")
     bob_id = seed_user(ux_app, "bob")
     seed_application(bob_id, title="Senior SRE @ Globex", company="Globex", status="submitted")
+    # fix/review-surface-and-flows raised the roster's visibility threshold
+    # from 2 to 6 candidates — pad with filler candidates so this test still
+    # exercises the roster surface itself (see test_roster_hidden_below_threshold
+    # above for the below-threshold case).
+    for extra in ("carol", "dave", "erin", "frank"):
+        seed_user(ux_app, extra)
 
     BasePage(page, live_server).load()
     picker = UserPickerPage(page, live_server)
 
-    # 2+ candidates → the roster surface is shown above the plain <select>.
+    # 6+ candidates → the roster surface is shown above the plain <select>.
     page.wait_for_selector(UserPicker.ROSTER, state="visible", timeout=DEFAULT_TIMEOUT_MS)
     page.wait_for_function(
         "(n) => document.querySelectorAll('.candidate-roster-card').length === n",
-        arg=2,
+        arg=6,
         timeout=DEFAULT_TIMEOUT_MS,
     )
 

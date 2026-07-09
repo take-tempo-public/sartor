@@ -17,6 +17,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from sqlalchemy.orm import Session
 
     from db.models import (
@@ -138,6 +140,56 @@ def _load_experience_for_candidate(
         return None, None
     candidate = session.query(Candidate).filter_by(id=exp.candidate_id).first()
     return exp, candidate
+
+
+def _resolve_proposal_reviews(
+    session: Session,
+    *,
+    decision: str,
+    bullet_ids: Iterable[int] | None = None,
+    title_ids: Iterable[int] | None = None,
+) -> int:
+    """Resolve still-pending ProposalReview row(s) for the given bullet/title ids.
+
+    Bridges the corpus accept/retire routes — the ONLY UI-reachable review path
+    (the `/api/proposals/*` critique/decide lane has zero frontend callers) — to
+    the ProposalReview decision lifecycle those routes own
+    (`blueprints/corpus/proposals.py:decide_proposal_route`). Without this, a
+    bullet/title accepted or retired via the corpus UI clears its own
+    `is_pending_review` flag but leaves any `ProposalReview` row referencing it
+    stuck at `decision="pending"` forever — and the applications-list "N to
+    review" badge (`blueprints/applications.py`) counts exactly that column, so
+    the badge orphans.
+
+    `decision` must be a value from the model's CHECK-constrained vocabulary
+    (`db/models.py:ProposalReview`, `ck_proposal_review_decision`: `pending`,
+    `accept_original`, `accept_edit`, `reject`). The corpus accept routes never
+    edit bullet/title text, so callers here only ever pass `accept_original` or
+    `reject` — mirroring what `decide_proposal_route` would have recorded had
+    the user gone through the `/api/proposals/*` lane instead. Only rows still
+    `decision="pending"` are touched (idempotent — re-resolving an
+    already-decided row is a no-op). Returns the number of rows resolved.
+    """
+    from sqlalchemy import or_
+
+    from db.models import ProposalReview, utc_now
+
+    resolved_bullet_ids = [b for b in (bullet_ids or []) if b is not None]
+    resolved_title_ids = [t for t in (title_ids or []) if t is not None]
+    if not resolved_bullet_ids and not resolved_title_ids:
+        return 0
+
+    conditions = []
+    if resolved_bullet_ids:
+        conditions.append(ProposalReview.bullet_id.in_(resolved_bullet_ids))
+    if resolved_title_ids:
+        conditions.append(ProposalReview.experience_title_id.in_(resolved_title_ids))
+
+    return (
+        session.query(ProposalReview)
+        .filter(ProposalReview.decision == "pending", or_(*conditions))
+        .update({"decision": decision, "decided_at": utc_now()}, synchronize_session=False)
+    )
 
 
 def _summary_item_to_dict(s: SummaryItem) -> dict:

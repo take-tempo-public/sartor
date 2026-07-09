@@ -379,7 +379,7 @@ class PromoteBulletResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-07-08.3"  # fix/output-identity-and-dates: corpus-mode GROUNDING (_build_generate_prompt's corpus_mode_block) tightened — name/header contact line MUST come from <candidate_profile>, NEVER <candidate_web_presence> (generate-only; analyze/clarify prompts unchanged)
+PROMPT_VERSION = "2026-07-08.4"  # merge-train assignment for fix/review-surface-and-flows: NEW SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT constant + suggest_skills_from_corpus (corpus-wide skill discovery, no JD in view) — genuine prompt-text addition the branch deliberately left unbumped; orchestrator assigns .4 on landing (stacks on .3's fix/output-identity-and-dates generate-prompt tightening)
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -3819,6 +3819,51 @@ Output JSON only, this exact shape:
 Return {"proposals": []} when nothing in the corpus or prior_clarifications evidences a JD-wanted skill the candidate doesn't already have. Use numeric ids only (null for both when the evidence is a clarification, not a corpus row)."""
 
 
+# PROMPT-TEXT CHANGE (fix/review-surface-and-flows, 2026-07-08): NEW constant,
+# added for the corpus-wide "Suggest skills from my corpus" affordance
+# (owner feature ask). SUGGEST_SKILLS_SYSTEM_PROMPT above hard-gates every
+# proposal on "the JD wants X AND the corpus evidences X" — worked examples
+# and all — which is structurally incompatible with a JD-less, corpus-wide
+# call: with no <analysis> skills to want, the AND can never be satisfied and
+# the call would silently return zero proposals forever. Reusing that prompt
+# unchanged was evaluated and rejected as dishonest (it would look like a
+# working feature that never actually surfaces anything). This sibling drops
+# the JD condition; grounding (evidence-or-nothing) is unchanged. Per the
+# merge-train instructions this lane does NOT bump PROMPT_VERSION — flagged
+# in the branch report for the orchestrator to assign (this repo's next
+# available prompt-version suffix, `.4`, since `.3` is owned by a parallel
+# lane) when this branch lands.
+SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT = """You help a candidate discover skills they genuinely have but have NOT yet added to their canonical skill list, by reading their WHOLE career corpus — not tied to any specific job. You see: the candidate's actual experience (roles + bullets, with numeric ids) in <career_corpus>, their existing canonical skills in <existing_skills> (NEVER re-propose any of these), and confirmed facts the candidate told us across their applications in <prior_clarifications>.
+
+Your task: propose skills that the candidate's <career_corpus> OR <prior_clarifications> demonstrably evidences. There is no job description in view and no per-job requirement gate — this is corpus-wide discovery, not JD-targeted selection. Evidence alone is the bar: every proposal MUST be backed by a specific bullet/role in the corpus OR a specific confirmed clarification answer.
+
+GROUNDING — this is the rule that matters most:
+- ONLY propose a skill when a specific bullet or role in <career_corpus>, OR a specific answer in <prior_clarifications>, shows the candidate actually did it. Cite that evidence (the bullet/experience id + quote for corpus evidence; the answer quote with both ids null for clarification evidence).
+- NEVER infer a skill the candidate "probably" has from adjacency, job title, or industry norms alone. Evidence or nothing.
+- The candidate reviews every proposal before it becomes canonical, so precision beats recall: when in doubt, do not propose.
+
+Worked examples:
+- OK: a bullet reads "Migrated 40 services to Kubernetes, cutting deploy time 60%." → propose {"name":"Kubernetes", "evidence":{"bullet_id":12, "quote":"Migrated 40 services to Kubernetes, cutting deploy time 60%."}}.
+- OK: no bullet mentions it, but <prior_clarifications> has "Led on-call rotation for a 12-person SRE team" → propose {"name":"On-call leadership", "evidence":{"experience_id":null, "bullet_id":null, "quote":"Led on-call rotation for a 12-person SRE team"}}.
+- NOT OK: a bullet says "Worked on the payments team." → do NOT propose "Leadership" (being on a team is not evidence of leadership).
+- NOT OK: the candidate's most recent title is "Senior Platform Engineer" and no bullet mentions Terraform. → do NOT propose "Terraform" just because senior platform engineers typically know it (title-adjacency is not evidence).
+
+Output JSON only, this exact shape:
+{
+  "proposals": [
+    {
+      "name": "the skill name, as it should appear on a résumé",
+      "category": "language" | "framework" | "platform" | "methodology" | "domain" | null,
+      "evidence": {"experience_id": <int> | null, "bullet_id": <int> | null, "quote": "the exact corpus or clarification text that evidences this skill"},
+      "rationale": "one sentence tying the evidence to the corpus/clarification source"
+    },
+    ...
+  ]
+}
+
+Return {"proposals": []} when nothing in the corpus or prior_clarifications evidences a skill the candidate doesn't already have. Use numeric ids only (null for both when the evidence is a clarification, not a corpus row)."""
+
+
 def suggest_skills(
     client: anthropic.Anthropic,
     context_set: ContextSet,
@@ -3888,6 +3933,107 @@ Preferred skills: {preferred or "(none)"}
         username=username,
         run_id=run_id,
         system_prompt=_resolve_system_prompt("SUGGEST_SKILLS_SYSTEM_PROMPT"),
+        model=HAIKU_MODEL,
+    )
+    # Normalize + dedup against existing canonical names (case-insensitive) and
+    # against each other. Belt-and-suspenders: the route also enforces the
+    # (candidate, name) unique constraint before inserting.
+    existing_lower = {s.strip().lower() for s in existing_list}
+    proposals: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for p in result.get("proposals") or []:
+        if not isinstance(p, dict):
+            continue
+        name = (p.get("name") or "").strip()
+        key = name.lower()
+        if not name or key in existing_lower or key in seen:
+            continue
+        seen.add(key)
+        p["name"] = name
+        proposals.append(p)
+    return {"proposals": proposals}
+
+
+def suggest_skills_from_corpus(
+    client: anthropic.Anthropic,
+    context_set: Mapping[str, Any],
+    *,
+    username: str = "",
+    run_id: str = "",
+) -> dict[str, Any]:
+    """Corpus-wide skill discovery — the "Suggest skills from my corpus" affordance.
+
+    `context_set` is typed `Mapping[str, Any]` rather than the full `ContextSet`
+    contract (unlike every sibling in this file): this call is NOT part of the
+    analyze -> clarify -> generate pipeline — there is no application, no JD, no
+    saved `context_*.json` — so the caller (the corpus-wide suggest-from-corpus
+    route) builds a minimal ad hoc mapping with just the three keys this
+    function reads, rather than force-fitting `ContextSet`'s pipeline-required
+    keys (`timestamp` / `candidate` / `resume` / `job_description` / etc.) that
+    don't apply here. A real `ContextSet` also satisfies `Mapping[str, Any]`, so
+    this stays call-compatible with `ContextSet` values too.
+
+    Sibling of `suggest_skills()` above for the case where there is no target
+    job in view (e.g. a freshly-onboarded candidate reviewing their Career
+    Corpus before starting any application — the "pre-F-02 corpus has no
+    skills" gap). Same grounded machinery and response shape, but the
+    system prompt (`SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT`) drops
+    `suggest_skills()`'s "the JD wants X AND corpus evidences X" AND-gate —
+    there is no JD here, so that condition can never fire — down to
+    evidence-alone: propose a skill iff `context_set["career_corpus"]` or
+    `context_set["prior_clarifications"]` demonstrably evidences it.
+
+    The caller stages `context_set["career_corpus"]` (experiences + bullets)
+    and `context_set["existing_skill_names"]` (names to skip); no
+    `llm_analysis` is consumed (there is no JD-derived analysis to consume).
+    `context_set["prior_clarifications"]` rides along automatically when
+    present, same as `suggest_skills()`. Returns:
+
+        {"proposals": [{name, category, evidence, rationale}, ...]}
+
+    Grounding is enforced by the prompt (evidence-or-nothing) AND by the same
+    human approve/deny gate downstream: each proposal lands as a pending
+    Skill row (is_pending_review=1, source='llm_proposed') and never reaches
+    the recommend set, the preview skills[], or the generate prompt until the
+    user approves it. Returns no proposals when the corpus is empty.
+    """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call (grounded proposals not faked).
+        return demo_fixtures.demo_suggest_skills()
+    corpus = context_set.get("career_corpus") or []
+    if not corpus:
+        return {"proposals": []}
+
+    corpus_block = _corpus_block(list(corpus), iteration=0)
+    existing_raw = context_set.get("existing_skill_names") or []
+    existing_list = (
+        [s for s in existing_raw if isinstance(s, str) and s.strip()]
+        if isinstance(existing_raw, list)
+        else []
+    )
+    existing = ", ".join(existing_list)
+    prior_block = _prior_clarifications_block(context_set.get("prior_clarifications"))
+
+    user_prompt = f"""<task>Propose skills the corpus/clarifications evidence — no specific job in view. Output JSON only.</task>
+
+{corpus_block}
+
+<existing_skills>
+{existing or "(none)"}
+</existing_skills>
+
+<prior_clarifications>
+{prior_block}
+</prior_clarifications>"""
+
+    result = _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot per corpus-wide request
+        response_model=SuggestSkillsResponse,
+        call_kind="suggest_skill_from_corpus",
+        username=username,
+        run_id=run_id,
+        system_prompt=_resolve_system_prompt("SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
     )
     # Normalize + dedup against existing canonical names (case-insensitive) and
@@ -4406,6 +4552,7 @@ _BASE_SYSTEM_PROMPTS: dict[str, str] = {
     "RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT,
     "RECOMMEND_SKILLS_SYSTEM_PROMPT": RECOMMEND_SKILLS_SYSTEM_PROMPT,
     "SUGGEST_SKILLS_SYSTEM_PROMPT": SUGGEST_SKILLS_SYSTEM_PROMPT,
+    "SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT": SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT,
     "PROMOTE_CLARIFICATION_SYSTEM_PROMPT": PROMOTE_CLARIFICATION_SYSTEM_PROMPT,
 }
 
