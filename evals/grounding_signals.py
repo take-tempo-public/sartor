@@ -17,6 +17,10 @@ Install:
 
 from __future__ import annotations
 
+import os
+import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 _NLI_MODEL_ID = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
@@ -59,6 +63,64 @@ def _load_nli_pipeline() -> Any:
     )
 
 
+def _minicheck_offload_folder() -> str:
+    """Return (creating if needed) a stable dir accelerate can page weights to."""
+    folder = os.path.join(tempfile.gettempdir(), "sartor-minicheck-offload")
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+
+@contextmanager
+def _hardened_device_placement() -> Iterator[None]:
+    """Force CPU placement (+ an offload_folder fallback) for MiniCheck's model load.
+
+    The pinned minicheck package's ``Inferencer`` (site-packages/minicheck/
+    inference.py, EV-1 pin b58b9fa — verified against the INSTALLED package,
+    not assumed) hardcodes ``device_map="auto"`` on
+    ``AutoModelForSeq2SeqLM.from_pretrained`` for the ``flan-t5-large``
+    checkpoint we use, with no ``device`` or ``offload_folder`` kwarg exposed
+    through ``MiniCheck.__init__``. On a RAM-constrained host, accelerate's
+    "auto" device map can plan part of the ~3 GB checkpoint onto disk and
+    raise before the load completes: "... had weights offloaded to the disk.
+    Please provide an offload_folder for them." — hard-failing the whole eval
+    run (before this fix; see evals/runner.py's per-fixture try/except, which
+    now degrades instead of aborting either way).
+
+    We can't edit the pinned dependency, so for the duration of the load we
+    monkeypatch the one ``from_pretrained`` classmethod it calls to force
+    ``device_map="cpu"`` (skips accelerate's GPU+CPU+disk auto-planning
+    entirely — there is nothing to offload) and set ``offload_folder`` as a
+    belt-and-suspenders fallback in case a genuinely constrained host still
+    needs it. A no-op on hosts with enough RAM. Restored unconditionally via
+    the context manager, whether or not the load succeeds.
+    """
+    from transformers import AutoModelForSeq2SeqLM
+
+    cls = AutoModelForSeq2SeqLM
+    offload_folder = _minicheck_offload_folder()
+    original = cls.from_pretrained
+    had_own_attr = "from_pretrained" in cls.__dict__
+
+    def _wrapped(*args: Any, **kwargs: Any) -> Any:
+        if kwargs.get("device_map") is not None:
+            kwargs["device_map"] = "cpu"
+            kwargs.setdefault("offload_folder", offload_folder)
+        return original(*args, **kwargs)
+
+    # Deliberate monkeypatch of a classmethod for the duration of the load —
+    # mypy's method-assign check is right that this is unusual, but there's
+    # no other way to inject kwargs into a call the pinned dependency makes
+    # internally (see docstring above).
+    cls.from_pretrained = _wrapped  # type: ignore[method-assign]
+    try:
+        yield
+    finally:
+        if had_own_attr:
+            cls.from_pretrained = original  # type: ignore[method-assign]
+        else:
+            del cls.from_pretrained
+
+
 def _load_minicheck_scorer() -> Any:
     """Load the MiniCheck flan-t5-large scorer. Lazy-imports minicheck.
 
@@ -69,6 +131,9 @@ def _load_minicheck_scorer() -> Any:
     (see pyproject ``eval-grounding``) routes it through the transformers
     ``Inferencer`` path and selects the device internally — the constructor no
     longer accepts a ``device`` kwarg (it is vLLM-only on the LLM checkpoints).
+    The load is wrapped in ``_hardened_device_placement`` so it degrades
+    gracefully (forced CPU + an offload fallback) on low-RAM hosts instead of
+    hard-crashing — see that function's docstring for the root cause.
     """
     try:
         from minicheck.minicheck import MiniCheck
@@ -78,10 +143,11 @@ def _load_minicheck_scorer() -> Any:
             "See CONTRIBUTING.md 'Grounding signal scorers' for install instructions."
         ) from exc
     _ensure_minicheck_nltk_data()
-    return MiniCheck(
-        model_name=_MINICHECK_MODEL_NAME,
-        enable_prefix_caching=False,
-    )
+    with _hardened_device_placement():
+        return MiniCheck(
+            model_name=_MINICHECK_MODEL_NAME,
+            enable_prefix_caching=False,
+        )
 
 
 def _ensure_minicheck_nltk_data() -> None:

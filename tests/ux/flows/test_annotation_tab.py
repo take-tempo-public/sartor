@@ -14,7 +14,7 @@ import json
 from types import ModuleType
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page, Route, expect
 
 from ui_pages import DashboardConsolePage
 from ui_pages.selectors import Dashboard
@@ -117,3 +117,73 @@ def test_annotation_tab_save_and_collate(page: Page, live_server: str, ux_app: M
     assert (fixture_dir / "expected.json").exists()
     assert (fixture_dir / "improvement_brief.md").exists()
     assert (fixture_dir / "jd.txt").read_text(encoding="utf-8") == "Senior PM JD body."
+
+
+@pytest.mark.ux
+def test_bootstrap_done_loads_editor_without_manual_repick(
+    page: Page, live_server: str, ux_app: ModuleType
+) -> None:
+    """Fix (2026-07-08): the bootstrap-`done` handler used to set
+    `$('fixtureSelect').value = slug` directly — a plain `.value =`
+    assignment never fires `change`, so the editor never rendered until the
+    user manually re-picked the option (which can't fire `change` on a
+    second pick of the SAME already-selected value either). The fix calls
+    `loadFixture(slug, user)` directly instead of relying on the `change`
+    listener.
+
+    The paid `POST /api/annotation/bootstrap` SSE pipeline is intercepted via
+    `page.route` with a canned SSE stream ending in the real `done` event
+    shape (`web_infra.http._sse`'s wire format) — this targets the CLIENT
+    behavior the bug lived in; the server pipeline itself is already covered
+    by `TestBootstrapStream` in `tests/test_annotation_routes.py`.
+    """
+    from tests.ux.seeding import seed_user
+    from web_infra.http import _sse
+
+    seed_user(ux_app, "alice")
+    ann_root = ux_app.app.config["ANNOTATION_ROOT"]
+    fixture_dir = ann_root / "alice-bootstrap"
+    (fixture_dir / "jds").mkdir(parents=True)
+    (fixture_dir / "bootstrap.json").write_text(json.dumps(_BOOTSTRAP), encoding="utf-8")
+    (fixture_dir / "jds" / "jd1.txt").write_text("Senior PM JD body.", encoding="utf-8")
+
+    def _stub(route: Route) -> None:
+        body = (
+            _sse("start", {"total": 1, "slug": "alice-bootstrap", "candidate": "alice"})
+            + _sse("jd_start", {"index": 0, "total": 1, "jd_file": "jd1"})
+            + _sse(
+                "done",
+                {
+                    "slug": "alice-bootstrap",
+                    "candidate": "alice",
+                    "jd_count": 1,
+                    "bullet_clusters": 2,
+                    "skill_clusters": 1,
+                    "grounded": False,
+                },
+            )
+        )
+        route.fulfill(status=200, content_type="text/event-stream", body=body)
+
+    page.route("**/api/annotation/bootstrap", _stub)
+
+    dash = DashboardConsolePage(page, live_server).load()
+    dash.activate_tab("annotate")
+    expect(dash.active_pane("annotate")).to_be_visible()
+
+    dash.reveal_details_for(Dashboard.ANN_BS_USER)
+    page.wait_for_selector(f"{Dashboard.ANN_BS_USER} option[value='alice']", state="attached")
+    dash.select_bs_user("alice")
+    page.fill(Dashboard.ANN_BS_SLUG, "alice-bootstrap")
+    # addJdRow('', '') fires once unconditionally on load, so one empty JD
+    # row already exists — fill it rather than adding another.
+    page.fill(".bs-jd-name", "jd1")
+    page.fill(".bs-jd-text", "Senior PM JD body.")
+    page.locator(Dashboard.ANN_BS_RUN).click()
+
+    # The bug: without the fix, nothing below renders — the fixture <select>
+    # gets its `.value` set but the editor stays hidden, and this test never
+    # touches the <select> itself to work around it.
+    expect(dash.editor()).to_be_visible()
+    expect(dash.bullet_items()).to_have_count(2)
+    expect(page.locator(Dashboard.ANN_FIXTURE_SELECT)).to_have_value("alice-bootstrap")

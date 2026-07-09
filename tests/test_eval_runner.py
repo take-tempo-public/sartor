@@ -501,6 +501,134 @@ class TestRunSuite:
             run_suite(fixture_name="does-not-exist", out_dir=tmp_path, client=MagicMock())
 
 
+class TestGroundingSignalsDegrade:
+    """Fix (2026-07-08): a grounding-scorer exception must degrade the fixture
+    to un-scored and continue the run, never abort it — run_suite now honors
+    the same contract as evals/bootstrap.py's build_bootstrap_document (EV-2,
+    "grounding failure degrades to un-scored, never discards paid work").
+    Before this fix, run_grounding_signals(...) sat outside the per-fixture
+    try/except, so a scorer exception (e.g. transformers' offload_folder
+    error on a low-RAM host) aborted the ENTIRE run via the worker-thread
+    handler in blueprints/diagnostics.py — this exact scenario had zero
+    coverage across the existing suite.
+    """
+
+    def _stub_pipeline(self, runner, monkeypatch, tmp_path):
+        monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path)
+        monkeypatch.setattr(runner, "BASELINE_JSON", tmp_path / "baseline_v1.json")
+        monkeypatch.setattr(runner, "analyze", lambda *a, **k: {"overall_strategy": "ok"})
+        monkeypatch.setattr(runner, "clarify", lambda *a, **k: {"questions": [], "reasoning": ""})
+        monkeypatch.setattr(
+            runner,
+            "generate",
+            lambda *a, **k: {
+                "resume_content": "- Led a project\n- Built a system",
+                "cover_letter_content": "Dear team,",
+            },
+        )
+        monkeypatch.setattr(
+            runner,
+            "_grade",
+            lambda *a, **k: {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"},
+        )
+        monkeypatch.setattr(
+            runner,
+            "_score_distinctiveness",
+            lambda *a, **k: {"score": 4.0, "summary": "ok"},
+        )
+
+    def test_scorer_exception_degrades_to_unscored_and_continues(self, tmp_path, monkeypatch):
+        import evals.grounding_signals as grounding_signals_module
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+
+        def _raise(*_a, **_k):
+            raise RuntimeError(
+                "The current device_map had weights offloaded to the disk. "
+                "Please provide an offload_folder for them."
+            )
+
+        monkeypatch.setattr(grounding_signals_module, "run_grounding_signals", _raise)
+
+        events: list[tuple[str, dict]] = []
+        result = run_suite(
+            suite="synthetic",
+            subset="smoke",
+            out_dir=tmp_path,
+            client=MagicMock(),
+            grounding_signals=True,
+            progress=lambda ev, payload: events.append((ev, payload)),
+        )
+
+        # The run completes to the end — paid analyze/clarify/generate/judge
+        # work is never discarded because the scorer blew up.
+        assert result.n_pass == 3
+        assert result.n_fail == 0
+        assert result.exit_code == 0
+
+        lines = [
+            json.loads(ln)
+            for ln in result.out_path.read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ]
+        grounding = [r for r in lines if r.get("rubric") == "grounding"]
+        assert len(grounding) == 3
+        # Records are written un-scored on the grounding_signals axis; the
+        # judge-graded score/status are completely untouched by the failure.
+        assert all(r["status"] == "ok" and r["score"] == 4.5 for r in grounding)
+        assert all(r["grounding_signals"] is None for r in grounding)
+
+        # A "warning" progress event fired per fixture instead of the run
+        # raising out of run_suite (which would abort the worker thread in
+        # blueprints/diagnostics.py's /api/eval/run route).
+        warnings = [p for ev, p in events if ev == "warning"]
+        assert len(warnings) == 3
+        assert all("Grounding signals failed" in w.get("message", "") for w in warnings)
+
+    def test_scorer_success_path_unaffected(self, tmp_path, monkeypatch):
+        """Sanity companion: when the scorer succeeds, grounding_signals_data
+        still lands on every record and no warning fires (the try/except/else
+        split didn't disturb the happy path)."""
+        import evals.grounding_signals as grounding_signals_module
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+
+        fake_signals = {
+            "bullet_count": 2,
+            "nli": [],
+            "nli_summary": {"mean_entailment": 0.9, "contradiction_count": 0},
+            "minicheck": [],
+            "minicheck_summary": {"mean_score": 0.85, "low_score_count": 0},
+        }
+        monkeypatch.setattr(
+            grounding_signals_module, "run_grounding_signals", lambda *a, **k: fake_signals
+        )
+
+        events: list[str] = []
+        result = run_suite(
+            suite="synthetic",
+            subset="smoke",
+            out_dir=tmp_path,
+            client=MagicMock(),
+            grounding_signals=True,
+            progress=lambda ev, payload: events.append(ev),
+        )
+        assert result.n_fail == 0
+        assert "warning" not in events
+
+        lines = [
+            json.loads(ln)
+            for ln in result.out_path.read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ]
+        grounding = [r for r in lines if r.get("rubric") == "grounding"]
+        assert all(r["grounding_signals"] == fake_signals for r in grounding)
+
+
 class TestAssembleMode:
     """F-11 (2026-07 UX review) — ``--mode assemble`` drives the SAME Compose ->
     freeze -> assemble path corpus-mode ``/api/generate`` uses (instead of the LLM

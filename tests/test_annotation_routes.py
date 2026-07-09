@@ -734,6 +734,66 @@ class TestEvalRunRoute:
         resp = client.post("/api/eval/run", json={"suite": "bogus"})
         assert resp.status_code == 400
 
+    def test_grounding_scorer_failure_streams_warning_not_error(self, ann_app, monkeypatch):
+        """End-to-end (route -> real run_suite -> real per-fixture loop): the
+        worker thread in this route's `stream()` re-raises anything run_suite
+        raises as `event: error` (500). Before the fix, a grounding-scorer
+        exception propagated all the way out of run_suite and hit exactly that
+        path, turning one scorer hiccup into a failed eval run. This drives
+        the REAL run_suite (only the LLM calls + the scorer are stubbed) and
+        asserts the stream instead shows `event: warning` + a normal
+        `event: done` — the worker thread never sees an exception."""
+        from unittest.mock import MagicMock
+
+        import evals.grounding_signals as grounding_signals_module
+        import evals.runner as runner
+
+        monkeypatch.setattr(runner, "RESULTS_DIR", ann_app.OUTPUT_DIR / "eval_results")
+        monkeypatch.setattr(runner, "BASELINE_JSON", ann_app.OUTPUT_DIR / "baseline_v1.json")
+        # The route never passes a `client` kwarg to run_suite — it resolves
+        # one internally via _get_client(), which needs ANTHROPIC_API_KEY /
+        # .api_key. Stub it so the route path doesn't need real credentials
+        # (every LLM-shaped call below is stubbed too, so it's never used).
+        monkeypatch.setattr(runner, "_get_client", lambda: MagicMock())
+        monkeypatch.setattr(runner, "analyze", lambda *a, **k: {"overall_strategy": "ok"})
+        monkeypatch.setattr(runner, "clarify", lambda *a, **k: {"questions": [], "reasoning": ""})
+        monkeypatch.setattr(
+            runner,
+            "generate",
+            lambda *a, **k: {
+                "resume_content": "- Led a project\n- Built a system",
+                "cover_letter_content": "Dear team,",
+            },
+        )
+        monkeypatch.setattr(
+            runner,
+            "_grade",
+            lambda *a, **k: {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"},
+        )
+        monkeypatch.setattr(
+            runner, "_score_distinctiveness", lambda *a, **k: {"score": 4.0, "summary": "ok"}
+        )
+
+        def _raise(*_a, **_k):
+            raise RuntimeError(
+                "The current device_map had weights offloaded to the disk. "
+                "Please provide an offload_folder for them."
+            )
+
+        monkeypatch.setattr(grounding_signals_module, "run_grounding_signals", _raise)
+
+        client = ann_app.app.test_client()
+        resp = client.post(
+            "/api/eval/run",
+            json={"suite": "synthetic", "subset": "smoke", "grounding_signals": True},
+        )
+        assert resp.status_code == 200
+        body = resp.get_data(as_text=True)
+        assert "event: warning" in body
+        assert "Grounding signals failed" in body
+        assert "event: done" in body
+        assert "event: error" not in body
+
     def test_seed_mode_missing_seed_409(self, ann_app):
         # A bootstrap fixture exists but no seed.json was ever captured.
         _seed_bootstrap(ann_app.ANNOTATION_ROOT)
