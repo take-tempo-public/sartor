@@ -78,9 +78,11 @@ true. *[src: charter C-1; `../../vision.md` "Local-first, single-tenant"; `../..
 "Scope". The "single-tenant **by design / as a value**" framing is demoted to a
 threat-model statement (**F-vision-04**: `list_users()` / multi-profile UI contradict
 the value claim; the single-unauthenticated-user threat model is preserved) — the
-demotion lands in `vision.md` on this branch (PX-27). **Owed gate — v1.0.8 (PX-19):**
-the 127.0.0.1 bind is implicit (Flask default), neither pinned nor asserted by a test —
-**F-sec-02** (`app.py app.run()` has no `host=`; `SERVER_NAME` a silent-flip vector).]*
+demotion lands in `vision.md` on this branch (PX-27). **Gate shipped — v1.0.8 Sprint
+8.3a (PX-19):** the 127.0.0.1 bind is now pinned + asserted by a test (was implicit,
+neither pinned nor asserted — **F-sec-02**, `app.py app.run()` had no `host=`;
+`SERVER_NAME` a silent-flip vector) — see [`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md)
+Sprint 8.3a. Owner-approved factual reconcile, 2026-07-09, witness CW-102.]*
 
 **C-2 — Egress.** Outbound traffic is confined to an enumerable destination set;
 because it is enumerable, this clause is machine-verifiable. The sanctioned classes are
@@ -135,8 +137,11 @@ module (`analyzer.py`) owns all LLM calls. *[src: charter C-6; `../../vision.md`
 "Deterministic where possible"; `../../AGENTS.md` "Architecture at a glance" + "What NOT
 to do"; `../system-model.md` "Production" + "the one law". The boundary **holds by
 behavior** (7 modules clean, AST-verified — **F-arch-04**) but by **convention only**:
-no import-lint/boundary test fails on a regression. **Owed gate — v1.0.8 WS-1 (PX-20):**
-an import-linter contract or ~15-line AST test (**F-arch-01** / **F-qe-rel-04**).]*
+no import-lint/boundary test fails on a regression. **Gate shipped — v1.0.8 Sprint
+8.3a (PX-20, WS-1):** an AST-walk boundary test,
+[`../../tests/test_construction_boundary.py`](../../tests/test_construction_boundary.py)
+(**F-arch-01** / **F-qe-rel-04**) — see [`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md)
+Sprint 8.3a. Owner-approved factual reconcile, 2026-07-09, witness CW-102.]*
 
 ### Defaults (binding until changed; changeable in normal flow with a written rationale)
 
@@ -161,9 +166,13 @@ an import-linter contract or ~15-line AST test (**F-arch-01** / **F-qe-rel-04**)
   REUSE/SPDX manifest is planned for the public release (v1.1.0).]*
 - **D-6 — Per-system tool bundling, progressively disclosed.** Capabilities needing
   extra installs (grounding-scorer models, Chromium) bundle per system; install docs are
-  progressive. *[src: charter D-6. Chromium classification is inconsistent across docs
-  (basic-tool vs dev-only) — **F-docs-05** (WEAKENED ~P3: reconcile the classification,
-  not a clean D-6 contradiction).]*
+  progressive. *[src: charter D-6. Chromium's docs classification (was inconsistent
+  across docs, basic-tool vs dev-only — **F-docs-05**) was reconciled in v1.0.7
+  (**PX-31**): reclassified PDF-output-only across `docs/install.md`'s Prerequisites +
+  all 3 OS sequences, correcting the "renders every PDF and the live preview"
+  conflation (the live preview is browser-side paged.js, Chromium-free). Cited as
+  corrected; do not re-flag. Owner-approved factual reconcile, 2026-07-09, witness
+  CW-104.]*
 
 ---
 

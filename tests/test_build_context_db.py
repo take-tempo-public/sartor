@@ -250,6 +250,51 @@ class TestInferRoleTitle:
         jd = "Senior Engineer " + "x" * 200
         assert len(_infer_role_title(jd)) == 80
 
+    def test_extracts_role_from_about_the_role_at_company_boilerplate(self):
+        """Real backfill evidence: 'About the X at Y:' used to be skipped
+        wholesale as boilerplate, discarding the role segment sitting right
+        in it (walkthrough residuals item 9a)."""
+        jd = "About the Director, AI Enablement at Headspace:\nWe build things."
+        assert _infer_role_title(jd) == "Director, AI Enablement"
+
+    def test_about_role_at_company_extraction_requires_a_role_hint(self):
+        """The extracted segment must itself look like a title — 'About the
+        Company at a Glance:' must not yield 'Company' as a fake role. No
+        role-shaped line exists anywhere, so this fails open to the cleaned
+        first line (same fail-open contract as the no-role-hint case)."""
+        jd = "About the Company at a Glance:\nWe build things at scale."
+        assert _infer_role_title(jd) == "About the Company at a Glance:"
+
+    def test_extracts_role_from_glued_as_the_role_you_will_pattern(self):
+        """Real backfill evidence (mojibake/copy-paste glue): a JD whose lines
+        never resolve to a clean title via the plain keyword scan — the raw
+        'As theDirector...' prose fragment must never be picked as the title
+        (walkthrough residuals item 9b). The glued article ('theDirector',
+        no space) is repaired by the regex boundary, not string surgery."""
+        jd = (
+            "SanDisk’sProduct Innovation Teamoperates at the front end…\n"
+            "As theDirector of Product Management for Product Innovation, "
+            "you will lead…"
+        )
+        assert _infer_role_title(jd) == "Director of Product Management for Product Innovation"
+
+    def test_never_picks_a_glued_prose_line_with_no_extractable_pattern(self):
+        """When no 'About X at Y' / 'As the X, you will' pattern applies and no
+        line is genuinely role-shaped, fail open to the CLEANED first line —
+        never a raw prose sentence just because it contains a hint keyword."""
+        jd = "We are looking for a talented Software Engineer to join our growing team.\nMore context."
+        assert (
+            _infer_role_title(jd)
+            == "We are looking for a talented Software Engineer to join our growing team."
+        )
+
+    def test_short_sentence_with_role_keyword_is_not_mistaken_for_a_title(self):
+        """A short line can still be a sentence, not a title — 'you will lead'
+        must not win just because it clears the word-count cap and contains
+        the role-hint keyword 'lead'."""
+        jd = "You will lead the Product org.\nSenior Product Manager"
+        assert _infer_role_title(jd) == "Senior Product Manager"
+
 
 class TestApplicationTitleIsRoleOnly:
     """fix/review-surface-and-flows (owner spec, revised mid-branch): `Application.title`

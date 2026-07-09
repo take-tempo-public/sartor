@@ -179,14 +179,15 @@ master resume for design IC or product management. Let's consider
 how those resumes are revealed and utilized as part of the flow or
 library."
 
-**Surprise finding from exploration:**
+**Surprise finding from exploration (v1.0-era; `_resolve_default_persona_template_path()`
+now lives in [`blueprints/templates.py`](../blueprints/templates.py) post-8.3e, not
+`app.py`):**
 `PersonaTemplate.is_default` + `primary_role_tag_id` columns already
 exist in [`db/models.py:359, 368-372`](../db/models.py). A partial
 unique index enforces at most one `is_default = 1` per candidate per
-role tag. **But [`app.py:1403-1423`](../app.py)
-`_resolve_default_persona_template_path()` never consults them** —
-the default resolution hardcodes to bundled Classic Single-Column.
-This is a 5-line fix and a v1.0 quick win.
+role tag. **At the time, `_resolve_default_persona_template_path()` never
+consulted them** — the default resolution hardcoded to bundled Classic
+Single-Column. This is a 5-line fix and a v1.0 quick win.
 
 **Recommended UX (v1.1):**
 
@@ -318,7 +319,9 @@ different templates would be ideal."
 
 **Today** (from exploration):
 
-- Preview lives at [`/api/personas/<id>/preview`](../app.py)
+- Preview lives at [`/api/personas/<id>/preview`](../blueprints/templates.py)
+  (moved off `app.py` in the v1.0.8 blueprint decomposition, Sprint 8.3e —
+  `app.py` is a zero-route composition root today; see §11.2 WS-1)
 - Streams a generated `.docx` file (`send_file`)
 - Requires user to have called `/api/generate` at least once first
   (pulls the most-recent `ApplicationRun.generated_resume_md`)
@@ -338,7 +341,13 @@ different templates would be ideal."
     rebuilds from corpus + overrides; cheap, no LLM call
   - **Template selection changes** — pure CSS swap
 - **Reuses the Playwright HTML render** (§5.3) — the live preview
-  IS the same HTML that becomes the PDF. True WYSIWYG.
+  IS the same HTML that becomes the PDF. True WYSIWYG. This parity is
+  between preview and PDF specifically — both paginate via the same
+  CSS + paged.js engine. A `.docx` download shares the same *content*
+  but paginates through Word at open time (its own layout engine), so
+  exactly where a page breaks can differ from the preview; parity
+  there is content-level (D3), not pixel/pagination-level. Accepted
+  limitation, not scheduled — see the paged.js fragility note below.
 
 ## 6. Wizard flow — current vs sketched + clarified
 
@@ -479,12 +488,13 @@ Build the unified pattern in stages, no schema breaks between stages.
 ## 9. Bug found during exploration (file under v1.0)
 
 `PersonaTemplate.is_default` is in the schema and has a partial
-unique index ([`db/models.py:359, 368-372`](../db/models.py)) — but
-[`app.py:1403-1423`](../app.py)
-`_resolve_default_persona_template_path()` never consults it. The
-default resolver hardcodes to bundled Classic Single-Column. Five-
-line fix; **deferred during v1.0.0 cut** (see §10) to v1.1 along
-with the rest of the master-résumé surfacing in §5.2.
+unique index ([`db/models.py:359, 368-372`](../db/models.py)) — but at
+the time, `_resolve_default_persona_template_path()` (now in
+[`blueprints/templates.py`](../blueprints/templates.py) post-8.3e, not
+`app.py`) never consulted it. The default resolver hardcoded to bundled
+Classic Single-Column. Five-line fix; **deferred during v1.0.0 cut**
+(see §10) to v1.1 along with the rest of the master-résumé surfacing
+in §5.2.
 
 ---
 
@@ -653,8 +663,9 @@ acceptance criteria / target version**.
   shapes: `Cannot read getBoundingClientRect of null` (async, from its
   un-`catch`-ed `await preview()`) and `node.getAttribute is not a function`
   (sync, from an off-chain layout sartor). `feat/template-pagination`
-  (v1.0.5) **contained** both — the injection in `app.py`
-  (`_PAGED_PREVIEW_INJECTION`) drives `preview()` itself with `try/catch` +
+  (v1.0.5) **contained** both — the injection (`_PAGED_PREVIEW_INJECTION`,
+  now in [`blueprints/templates.py`](../blueprints/templates.py) post-8.3e,
+  not `app.py`) drives `preview()` itself with `try/catch` +
   `.catch()` and narrowly swallows the two known paged-origin throws — so the
   console is clean and the tests run with no allowlist. But the throws still
   fire inside the library; we catch-and-ignore them. This is safe **only
@@ -673,7 +684,8 @@ acceptance criteria / target version**.
   the v1.0.1 sandbox item.
 - *Acceptance (when picked up):* preview pagination renders with **zero**
   internal paged.js throws (no suppression filter needed) across all four
-  bundled templates on sparse + dense content; the `app.py` paged-origin
+  bundled templates on sparse + dense content; the
+  [`blueprints/templates.py`](../blueprints/templates.py) paged-origin
   `window.error` / `unhandledrejection` swallows are removed; the UX sentinel
   stays green.
 - *Target:* a deliberate, separately-scoped render-engine decision — v2, or

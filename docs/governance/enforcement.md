@@ -18,11 +18,11 @@ Three charter categoricals — **egress (C-2)**, the **deterministic–LLM bound
 (C-6)**, and **shipped-template ATS properties (C-5)** — assert "never / only / always".
 C-0 says a categorical is licensed *only where a deterministic test enforces it by
 construction*. So each **needs** a machine enforcer or the charter overclaims. As of
-v1.0.7 the **egress gate has shipped** (PX-08); the boundary and ATS-template gates are
-forward-sequenced (v1.0.8 / v1.1.0) and until each lands the honest register stays
-mechanism-and-effort. Everything that depends on LLM behavior, owner availability, or
-human judgement stays witness/best-effort — and that is correct, not a gap (D-4, E-1,
-T-C).
+v1.0.7 the **egress gate has shipped** (PX-08); the **boundary gate has since shipped
+too** (v1.0.8 Sprint 8.3a, PX-20). The **ATS-template gate stays forward-sequenced**
+(v1.1.0) and until it lands, C-5's honest register stays mechanism-and-effort.
+Everything that depends on LLM behavior, owner availability, or human judgement stays
+witness/best-effort — and that is correct, not a gap (D-4, E-1, T-C).
 
 ## Enforcement vocabulary
 
@@ -48,8 +48,8 @@ T-C).
 |---|---|---|---|---|
 | **C-2 egress** — telemetry never leaves; two sanctioned classes only | **committed test** (pytest-socket / allowlist on the enumerable destination set) | — (shipped) | F-qe-rel-02 **(P0)**, F-sec-01 | **SHIPPED v1.0.6/7** — [`../../tests/test_egress_allowlist.py`](../../tests/test_egress_allowlist.py) (PX-08) |
 | **C-2(i) no runtime CDN** | vendored + SRI-pinned; no external CDN at runtime | — (shipped) | F-sec-03, F-docs-02, F-vision-05 | **SHIPPED v1.0.6** (PX-01 — Chart.js vendored) |
-| **C-6 deterministic–LLM boundary** — "Inviolable" | convention-only; 7 modules AST-clean but no gate fails on an `import analyzer` | **CI gate**: import-linter/grimp contract *or* ~15-line AST test in the pytest job | F-arch-01, F-qe-rel-04 | **owed — v1.0.8 (WS-1, PX-20)** |
-| **C-1 loopback bind** — "binds to 127.0.0.1 only" | implicit Flask default; `app.run()` has no `host=`; SERVER_NAME a silent flip vector | **CI gate / unit test** pinning the bind host (fold into the egress test) | F-sec-02 | **owed — v1.0.8 (PX-19)** |
+| **C-6 deterministic–LLM boundary** — "Inviolable" | **committed AST-walk test** — [`../../tests/test_construction_boundary.py`](../../tests/test_construction_boundary.py) fails the pytest job on an `import analyzer`/`anthropic` in any of the 8 deterministic modules | — (shipped) | F-arch-01, F-qe-rel-04 | **SHIPPED v1.0.8 Sprint 8.3a** (WS-1, PX-20) |
+| **C-1 loopback bind** — "binds to 127.0.0.1 only" | **committed unit test** — `tests/test_config.py` pins `Config.host == "127.0.0.1"` and the Flask config host | — (shipped) | F-sec-02 | **SHIPPED v1.0.8 Sprint 8.3a** (PX-19) |
 | **C-5 ATS-safe templates** — "all the time" | template properties asserted in prose; PDF/render path browser-dependent | **CI gate**: shipped-template property assertions (single-column / plain-bullet / standard-font) inside the UX/PDF job below | F-qe-rel-01 (vehicle), C-5 trace | **owed — v1.1.0** |
 
 Each row is a C-0 categorical in a *deterministically-enforceable* domain (network
@@ -63,7 +63,7 @@ exists, the honest register is mechanism-and-effort, not "never."
 |---|---|---|---|---|
 | **UX / a11y / PDF job** | dedicated job that `playwright install chromium` + `pytest -m ux` as a **required** check | E-2 promises "machine-checked in CI, free forever"; the tier *silently skips* without a browser, so the promise is local-only | F-qe-rel-01 **(P0)**, F-expa11y-01, F-expa11y-05 | **owed — v1.1.0** |
 | **Egress falsifiability** | socket/allowlist test (row A) | makes C-2 falsifiable; would have caught the CDN fetch | F-qe-rel-02 **(P0)** | **SHIPPED** (PX-08) |
-| **Import-boundary** | import-linter contract / AST test (row A) | makes C-6 fail-closed | F-arch-01, F-qe-rel-04 | **owed — v1.0.8** |
+| **Import-boundary** | AST test (row A) | makes C-6 fail-closed | F-arch-01, F-qe-rel-04 | **SHIPPED v1.0.8 Sprint 8.3a** (PX-20) |
 | **E-2 machine badges** | Dependabot + lockfile, OpenSSF Scorecard, REUSE/SPDX lint, one-time PVR | E-1 prefers machine-run measures *because they keep themselves honest*; none exist yet | F-qe-rel-03, F-sec-08, F-sec-09 | **owed — v1.1.0** |
 
 The eval-quality regression gate already in CI (`REGRESSION_DELTA` → exit 2 → fails

@@ -2129,7 +2129,11 @@ const _HELP_REGISTRY = {
       + 'template on the left and the preview shows the pages exactly as they’ll '
       + 'print: same words, different typography and layout. You can also upload '
       + 'your own .docx for sartor to reuse (ATS-safe templates strongly '
-      + 'recommended). Click Generate when you’re happy with the look.',
+      + 'recommended). Click Generate when you’re happy with the look. Note: the '
+      + 'preview and PDF paginate identically (same render engine); a .docx '
+      + 'download page-breaks the same words through Word instead, so exactly '
+      + 'where a page splits can shift slightly there — the content is always '
+      + 'the same.',
     tip: 'Step 4 — Template',
   },
   panelGenerate: {
@@ -6472,7 +6476,11 @@ async function uploadPersonaFromInput(input) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
-    _toast('Uploaded');
+    // companion_warning: the .docx uploaded fine but its live-preview
+    // companion (.html/.css) failed to generate — surface it instead of
+    // silently previewing as Classic forever (walkthrough residuals item 3).
+    const body = await res.json().catch(() => ({}));
+    _toast(body.companion_warning ? `Uploaded — ${body.companion_warning}` : 'Uploaded');
     document.getElementById('personaUploadName').value = '';
     await _loadOwnedPersonas();
   } catch (e) {
@@ -8821,7 +8829,11 @@ async function uploadTemplateFromTemplateStep(input) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
-    _toast('Template uploaded');
+    // companion_warning: the .docx uploaded fine but its live-preview
+    // companion (.html/.css) failed to generate — surface it instead of
+    // silently previewing as Classic forever (walkthrough residuals item 3).
+    const body = await res.json().catch(() => ({}));
+    _toast(body.companion_warning ? `Template uploaded — ${body.companion_warning}` : 'Template uploaded');
     // Refresh the picker (re-fetches /api/users/<u>/personas).
     await _loadTemplatePicker();
   } catch (e) {

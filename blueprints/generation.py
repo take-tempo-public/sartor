@@ -317,6 +317,43 @@ def _resolve_candidate_identity(context_set: ContextSet) -> dict[str, str] | Non
         session.close()
 
 
+def _resolve_candidate_identity_by_username(username: str) -> dict[str, str] | None:
+    """Resolve the CURRENT Candidate DB row's identity fields, keyed by username.
+
+    The `/api/download-edited` sibling of `_resolve_candidate_identity` above:
+    that helper needs a corpus-mode `context_set` (application_id -> Candidate),
+    but `download_edited` works from raw edited preview content + a bare
+    username with no context in scope (walkthrough residuals item 4 — verified
+    at HEAD that `run_generation`/`run_generation_stream` both pass
+    `identity_override` into `generator.generate_resume()` but `download_edited`
+    did not, so a re-download of hand-edited content could resurrect stale
+    identity fields the corpus-backed paths already fix). Same
+    `identity_override` contract, same best-effort semantics: any DB hiccup or
+    an unknown/legacy username with no corpus Candidate row returns `None`
+    (a no-op for the caller), never fails the download.
+    """
+    from db.models import Candidate
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        candidate = session.query(Candidate).filter_by(username=username).first()
+        if candidate is None:
+            return None
+        return {
+            "name": candidate.name or "",
+            "email": candidate.email or "",
+            "phone": candidate.phone or "",
+            "linkedin_url": candidate.linkedin_url or "",
+            "website_url": candidate.website_url or "",
+        }
+    except Exception:
+        logger.warning("Identity resolution failed for username=%s", username, exc_info=True)
+        return None
+    finally:
+        session.close()
+
+
 def _apply_output_fidelity_fixes(resume_markdown: str, context_set: ContextSet) -> str:
     """Re-resolve identity + scrub ATS-unsafe chars in the LLM's OWN markdown (fix/output-identity-and-dates).
 
@@ -1646,12 +1683,19 @@ def download_edited() -> ResponseReturnValue:
             template_path = None
 
     if doc_type == "resume":
+        # identity_override (walkthrough residuals item 4): mirrors
+        # run_generation/run_generation_stream, which resolve the CURRENT
+        # Candidate row rather than trusting whatever `basics` the edited
+        # markdown parses to — this route has no context_set in scope, so it
+        # resolves by username instead of application_id (same identity dict
+        # shape, same best-effort None-on-miss).
         path = generate_resume(
             content,
             output_format,
             safe_user,
             str(output_dir),
             template_path=template_path or None,
+            identity_override=_resolve_candidate_identity_by_username(safe_user),
         )
     else:
         # Cover letter honors the chosen format too (feat/cover-letter-formats).

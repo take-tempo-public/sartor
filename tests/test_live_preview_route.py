@@ -969,3 +969,48 @@ class TestUserPreview:
         r = client.get("/api/users/..%2Fadmin/preview")
         # Werkzeug routing strips the slash; the validator catches it.
         assert r.status_code in (400, 404)
+
+    def test_lazy_regenerates_companion_for_uploaded_persona_without_one(self, preview_app):
+        """Walkthrough residuals item 2: preview_candidate_html gains the same
+        lazy-companion-regen fallback its two sibling preview routes already
+        have (preview_application_html / preview_edited_html). Before this fix
+        an uploaded persona with no .html/.css companion yet previewed as
+        Classic forever, even after downloading a faithful .docx.
+        """
+        import shutil
+
+        from db.models import PersonaTemplate
+        from db.session import get_session
+
+        cid, _aid = _seed_candidate_app(preview_app, username="casey")
+        _seed_experience_with_bullets(cid)
+
+        owner_dir = preview_app.BASE_DIR / "personas" / "casey"
+        owner_dir.mkdir(parents=True, exist_ok=True)
+        repo_root = Path(__file__).resolve().parents[1]
+        docx_path = owner_dir / "mine.docx"
+        shutil.copy(repo_root / "personas" / "bundled" / "tech.docx", docx_path)
+        assert not docx_path.with_suffix(".html").exists()  # no companion yet
+
+        session = get_session()
+        try:
+            row = PersonaTemplate(
+                candidate_id=cid,
+                name="Mine",
+                path="personas/casey/mine.docx",
+                source="user_upload",
+            )
+            session.add(row)
+            session.commit()
+            template_id = row.id
+        finally:
+            session.close()
+
+        client = preview_app.app.test_client()
+        r = client.get(f"/api/users/casey/preview?template_id={template_id}")
+        assert r.status_code == 200
+        # The lazy fallback wrote the companion next to the .docx...
+        assert docx_path.with_suffix(".html").exists()
+        assert docx_path.with_suffix(".css").exists()
+        # ...and the preview used ITS typography (tech's Georgia), not Classic's.
+        assert "Georgia" in r.get_data(as_text=True)

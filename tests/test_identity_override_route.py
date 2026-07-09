@@ -17,6 +17,7 @@ Uses the real `generator.generate_resume` (not stubbed) — only the LLM
 
 from __future__ import annotations
 
+import io
 import json
 from pathlib import Path
 
@@ -152,6 +153,76 @@ class TestIdentityOverrideEndToEnd:
         new_ctx = json.loads(Path(body["context_path"]).read_text(encoding="utf-8"))
         assert "Real Current Name" in new_ctx["last_generated_resume"]
         assert "stray-old-site.example" not in new_ctx["last_generated_resume"]
+
+
+class TestDownloadEditedIdentityOverride:
+    """Walkthrough residuals item 4 — /api/download-edited gains the same
+    identity_override wiring run_generation/run_generation_stream already had.
+
+    This route has no context_set in scope (it works from raw edited preview
+    content + a bare username), so it resolves the Candidate row by username
+    via `_resolve_candidate_identity_by_username` instead of by
+    application_id — same identity dict shape, same unconditional override.
+    """
+
+    def test_download_edited_shows_db_identity_not_edited_markdown(self, identity_app):
+        client, _ctx_path, _output_dir = identity_app
+        resp = client.post(
+            "/api/download-edited",
+            json={
+                "username": "alice",
+                "content": (
+                    "# Hand-Edited Stale Name\n"
+                    "hand-edited-stale@example.com | https://stray-old-site.example\n\n"
+                    "## Summary\n"
+                    "Body text.\n"
+                ),
+                "type": "resume",
+                "original_format": ".docx",
+            },
+        )
+        assert resp.status_code == 200, resp.get_json()
+        body = resp.get_json()
+        dl = client.get(body["download_url"])
+        assert dl.status_code == 200
+
+        doc_text = "\n".join(
+            p.text for p in docx.Document(io.BytesIO(dl.data)).paragraphs if p.text.strip()
+        )
+        assert "Real Current Name" in doc_text
+        assert "real-current@example.com" in doc_text
+        assert "Hand-Edited Stale Name" not in doc_text
+        assert "hand-edited-stale@example.com" not in doc_text
+        assert "stray-old-site.example" not in doc_text
+
+    def test_unknown_username_is_a_noop_not_a_failure(self, identity_app):
+        """A username with no corpus Candidate row (legacy/file-based) must
+        still download — identity_override resolves to None, preserving
+        whatever basics the edited markdown itself carries."""
+        client, _ctx_path, _output_dir = identity_app
+        (Path(client.application.config["CONFIGS_DIR"]) / "ghostwriter.config").write_text(
+            "{}", encoding="utf-8"
+        )
+        (Path(client.application.config["OUTPUT_DIR"]) / "ghostwriter").mkdir(
+            parents=True, exist_ok=True
+        )
+        resp = client.post(
+            "/api/download-edited",
+            json={
+                "username": "ghostwriter",
+                "content": "# No Corpus Row\n\n## Summary\nBody text.\n",
+                "type": "resume",
+                "original_format": ".docx",
+            },
+        )
+        assert resp.status_code == 200, resp.get_json()
+        body = resp.get_json()
+        dl = client.get(body["download_url"])
+        assert dl.status_code == 200
+        doc_text = "\n".join(
+            p.text for p in docx.Document(io.BytesIO(dl.data)).paragraphs if p.text.strip()
+        )
+        assert "No Corpus Row" in doc_text
 
 
 class TestPreCorpusContextGuard:
