@@ -157,6 +157,15 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       cards). Card title + company are user-editable in the detail modal (new
       DB-only `PUT /api/applications/<id>/meta`; company was never captured) and
       the proposal pill reads "N to review". No prompt change, no new dep.
+      _(Surgical note, `fix/review-surface-and-flows`, 2026-07-08: that "N to
+      review" pill counted `ProposalReview.decision=='pending'`, but the corpus
+      accept/retire routes — the only UI-reachable review path — never resolved
+      those rows, so the badge over-counted indefinitely; bridged +
+      backfilled. Title inference also moved off the raw-first-line contract this
+      paragraph describes to a role-title-only extractor, owner-approved;
+      company stays in its own column, unchanged. See CHANGELOG "Fix:
+      review-surface unification, corpus skill suggestions, honest application
+      titles".)_
       Sixth 6.1 branch `feat/compose-add-title` (#7) landed 2026-06-11 — a
       Compose "+ Add title" affordance writes a sourced, immediately-eligible
       `ExperienceTitle` (`truthful_enough_to_use=1`, via the existing title

@@ -14,6 +14,7 @@ import pytest
 from db.build_context import (
     _infer_application_company,
     _infer_application_title,
+    _infer_role_title,
     _pick_official_title,
     _select_corpus_snapshot,
     _summarize_educations,
@@ -212,6 +213,91 @@ class TestInferApplicationCompany:
         # frozenset iteration order.
         jd = "Come build robots at Acme.\nAcme Robotics — Remote\n\nDuties follow."
         assert _infer_application_company(jd) == "Acme Robotics"
+
+
+class TestInferRoleTitle:
+    """fix/review-surface-and-flows: the NEW deterministic role-title extractor."""
+
+    def test_picks_first_role_shaped_line(self):
+        jd = "Senior Backend Engineer\n\nWe build things."
+        assert _infer_role_title(jd) == "Senior Backend Engineer"
+
+    def test_strips_markdown_heading_markers(self):
+        jd = "## Senior Software Engineer\nMore text here."
+        assert _infer_role_title(jd) == "Senior Software Engineer"
+
+    def test_strips_mojibake_artifacts(self):
+        jd = "Senior Softwar�e Engineer\nMore text."
+        assert _infer_role_title(jd) == "Senior Software Engineer"
+
+    def test_skips_boilerplate_opener_for_role_shaped_line(self):
+        jd = "About the Role\nSenior Backend Engineer\nWe build things at scale."
+        assert _infer_role_title(jd) == "Senior Backend Engineer"
+
+    def test_skips_who_we_are_opener(self):
+        jd = "Who We Are\nStaff Data Scientist\nJoin our team."
+        assert _infer_role_title(jd) == "Staff Data Scientist"
+
+    def test_fails_open_to_cleaned_first_line_when_no_role_hint(self):
+        jd = "Come join our mission-driven team\nWe do great work.\nApply today."
+        assert _infer_role_title(jd) == "Come join our mission-driven team"
+
+    def test_empty_jd_returns_empty_string(self):
+        assert _infer_role_title("") == ""
+        assert _infer_role_title("   \n  \n") == ""
+
+    def test_truncates_at_80_chars(self):
+        jd = "Senior Engineer " + "x" * 200
+        assert len(_infer_role_title(jd)) == 80
+
+
+class TestApplicationTitleIsRoleOnly:
+    """fix/review-surface-and-flows (owner spec, revised mid-branch): `Application.title`
+    is the cleaned ROLE TITLE ONLY — no company prefix. Company already renders
+    separately (`Application.company`, F-15) on the card / detail modal, so an
+    earlier "Company — Role Title" composition would have duplicated it; that
+    combinator was written, then removed on explicit owner direction before
+    landing. This covers the creation-time call site in
+    `build_context_set_from_db` end-to-end (not just the extractor unit, see
+    `TestInferRoleTitle` above)."""
+
+    def test_title_is_role_only_company_stays_in_its_own_column(self, db_session):
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        jd = "Senior Backend Engineer\nAcme Robotics — Remote\n\nDuties follow."
+        _ctx, app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text=jd,
+            run_id="role_only_run1",
+        )
+        assert app.title == "Senior Backend Engineer"
+        assert "—" not in app.title
+        assert "Acme" not in app.title
+        assert app.company == "Acme Robotics"  # unchanged F-15 channel
+
+    def test_falls_back_to_cleaned_first_line_when_no_role_hint(self, db_session):
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        jd = "Come join our mission-driven team\nWe do great work.\nApply today."
+        _ctx, app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text=jd,
+            run_id="role_only_run2",
+        )
+        assert app.title == "Come join our mission-driven team"
+
+    def test_empty_jd_falls_back_to_untitled_application(self, db_session):
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        _ctx, app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text="",
+            run_id="role_only_run3",
+        )
+        assert app.title == "Untitled application"
 
 
 class TestSummarizeEducations:

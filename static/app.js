@@ -121,10 +121,11 @@ async function loadCandidateRoster() {
   const body = await res.json().catch(() => null);
   if (!body || !Array.isArray(body.candidates)) return;
   _candidateRoster = body.candidates;
-  // Single-candidate installs (the common job-seeker case) don't need a
-  // roster surface above the dropdown — only show it once there's something
-  // to search/scan.
-  wrap.classList.toggle('hidden', _candidateRoster.length < 2);
+  // Small rosters (the common job-seeker / small-team case) don't need a
+  // searchable surface above the plain <select> — scanning a handful of
+  // names in a dropdown is faster than reaching for search. Only show the
+  // roster once there are enough candidates that search actually helps.
+  wrap.classList.toggle('hidden', _candidateRoster.length < 6);
   _renderCandidateRosterList(_candidateRoster);
 }
 
@@ -2661,6 +2662,19 @@ async function _submitSurgicalRefinement(note) {
     _announce(proposal
       ? 'A targeted change is ready for your review in Compose.'
       : 'Refinement moved to Compose — adjust your content there, then continue.');
+  } catch (e) {
+    // A transient failure here (e.g. /api/validate-refinement network error)
+    // used to propagate uncaught — the finally block below still reset the
+    // busy state, but nothing told the user anything had failed. Mirrors the
+    // legacy refine path's catch (above, submitRefinement): surface via
+    // reportError, AND leave a visible "NOT EXECUTED" entry in the same
+    // refinement history panel both refine paths share. `input` is
+    // deliberately left populated (only cleared on success, above) and `btn`
+    // is re-enabled in `finally` — together, the retry affordance is simply
+    // clicking Refine again with the note still in the box.
+    reportError('Refine', 'Refinement request failed', e.message);
+    refinementHistory.push({ note, status: 'rejected', reason: 'Request failed: ' + e.message });
+    _renderRefinementHistory();
   } finally {
     _setBusy(false);
     if (btn) btn.disabled = false;
@@ -4855,6 +4869,12 @@ async function _saveExperienceField(expId, field, value) {
   body[field] = value;
   try {
     await _putJson(`/api/experiences/${expId}`, body);
+    // The collapsed card header (company / title / dates) is rendered from a
+    // separate list fetch and doesn't auto-follow this field-level PUT — a
+    // company/date edit inside the expanded body used to leave the header
+    // showing stale text until a full page reload. Same refresh
+    // `_reloadCorpusCard` already uses after title/bullet edits.
+    await refreshCorpusSummaryFor(expId);
     _toast(`${field} saved`);
   } catch (e) {
     _toast(`Save failed: ${e.message}`, true);
@@ -5062,9 +5082,12 @@ async function refreshCorpusSummaryFor(expId) {
   if (!card) return;
   const company = card.querySelector('.corpus-card-company');
   const title = card.querySelector('.corpus-card-title');
+  const dates = card.querySelector('.corpus-card-dates');
   const meta = card.querySelector('.corpus-card-meta');
   if (company) company.textContent = exp.company;
   if (title) title.textContent = exp.official_title || '(no official title)';
+  // Same display convention as _renderCorpusSummary's initial render.
+  if (dates) dates.textContent = `${exp.start_date} — ${exp.end_date || 'current'}`;
   if (meta) meta.textContent = `${exp.bullet_count_active} bullets` +
     (exp.bullet_count_pending ? ` · ${exp.bullet_count_pending} pending` : '');
   document.getElementById('corpusCount').textContent =

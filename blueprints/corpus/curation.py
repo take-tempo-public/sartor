@@ -23,7 +23,7 @@ from flask.typing import ResponseReturnValue
 from werkzeug.utils import secure_filename
 
 from blueprints.corpus._bp import corpus_bp
-from blueprints.corpus._shared import _load_experience_for_candidate
+from blueprints.corpus._shared import _load_experience_for_candidate, _resolve_proposal_reviews
 from web_infra import (
     _get_client,
     _get_or_provision_candidate,
@@ -519,6 +519,7 @@ def accept_bullet(bullet_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
         bullet.is_pending_review = 0
+        _resolve_proposal_reviews(session, decision="accept_original", bullet_ids=[bullet.id])
         session.commit()
         return jsonify({"id": bullet.id, "is_pending_review": False})
     except Exception:
@@ -550,6 +551,7 @@ def accept_experience_title(title_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
         title.is_pending_review = 0
+        _resolve_proposal_reviews(session, decision="accept_original", title_ids=[title.id])
         session.commit()
         return jsonify({"id": title.id, "is_pending_review": False})
     except Exception:
@@ -576,22 +578,44 @@ def accept_experience_all(experience_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Experience not found"}), 404
         if not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
             return jsonify({"error": "Candidate validation failed"}), 403
-        titles_cleared = (
-            session.query(ExperienceTitle)
-            .filter_by(
+        # Capture the pending ids BEFORE clearing is_pending_review — the
+        # ProposalReview bridge below needs to know which bullets/titles this
+        # bulk accept just resolved, and the filter below can't see them once
+        # is_pending_review flips to 0.
+        pending_title_ids = [
+            row[0]
+            for row in session.query(ExperienceTitle.id).filter_by(
                 experience_id=exp.id,
                 is_pending_review=1,
             )
-            .update({"is_pending_review": 0})
-        )
-        bullets_cleared = (
-            session.query(Bullet)
-            .filter_by(
+        ]
+        pending_bullet_ids = [
+            row[0]
+            for row in session.query(Bullet.id).filter_by(
                 experience_id=exp.id,
                 is_pending_review=1,
                 is_active=1,
             )
-            .update({"is_pending_review": 0})
+        ]
+        titles_cleared = (
+            session.query(ExperienceTitle)
+            .filter(ExperienceTitle.id.in_(pending_title_ids))
+            .update({"is_pending_review": 0}, synchronize_session=False)
+            if pending_title_ids
+            else 0
+        )
+        bullets_cleared = (
+            session.query(Bullet)
+            .filter(Bullet.id.in_(pending_bullet_ids))
+            .update({"is_pending_review": 0}, synchronize_session=False)
+            if pending_bullet_ids
+            else 0
+        )
+        _resolve_proposal_reviews(
+            session,
+            decision="accept_original",
+            bullet_ids=pending_bullet_ids,
+            title_ids=pending_title_ids,
         )
         session.commit()
         return jsonify(
@@ -641,22 +665,43 @@ def accept_all_pending(username: str) -> ResponseReturnValue:
             return jsonify({"titles_accepted": 0, "bullets_accepted": 0})
         # Bulk updates over exp_ids; synchronize_session=False because we
         # commit + close immediately and never reuse the session objects.
-        titles_cleared = (
-            session.query(ExperienceTitle)
-            .filter(
+        # Ids captured BEFORE the update (same reason as accept_experience_all
+        # above): the ProposalReview bridge needs the pending set, which the
+        # is_pending_review=1 filter can no longer see post-update.
+        pending_title_ids = [
+            row[0]
+            for row in session.query(ExperienceTitle.id).filter(
                 ExperienceTitle.experience_id.in_(exp_ids),
                 ExperienceTitle.is_pending_review == 1,
             )
-            .update({"is_pending_review": 0}, synchronize_session=False)
-        )
-        bullets_cleared = (
-            session.query(Bullet)
-            .filter(
+        ]
+        pending_bullet_ids = [
+            row[0]
+            for row in session.query(Bullet.id).filter(
                 Bullet.experience_id.in_(exp_ids),
                 Bullet.is_pending_review == 1,
                 Bullet.is_active == 1,
             )
+        ]
+        titles_cleared = (
+            session.query(ExperienceTitle)
+            .filter(ExperienceTitle.id.in_(pending_title_ids))
             .update({"is_pending_review": 0}, synchronize_session=False)
+            if pending_title_ids
+            else 0
+        )
+        bullets_cleared = (
+            session.query(Bullet)
+            .filter(Bullet.id.in_(pending_bullet_ids))
+            .update({"is_pending_review": 0}, synchronize_session=False)
+            if pending_bullet_ids
+            else 0
+        )
+        _resolve_proposal_reviews(
+            session,
+            decision="accept_original",
+            bullet_ids=pending_bullet_ids,
+            title_ids=pending_title_ids,
         )
         session.commit()
         return jsonify(

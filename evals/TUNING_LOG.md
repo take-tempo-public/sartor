@@ -2980,3 +2980,45 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    in the output if the model ignored the new instruction) is a sharper,
    cheaper validation than a broad regression run for this class of prompt
    change.
+
+## Corpus-wide skill suggestion prompt — 2026-07-08 — `fix/review-surface-and-flows` (merge-train assignment) — `2026-07-08.3` → `2026-07-08.4`
+
+1. **What changed?** A new system-prompt constant,
+   `SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT`, and its function
+   `analyzer.suggest_skills_from_corpus()` landed on `fix/review-surface-and-flows`
+   for the "Suggest skills from my corpus" affordance. This is a genuine
+   prompt-text addition (a new persona, not an edit to an existing one), so
+   `PROMPT_VERSION` needed a bump — but the branch was designed to land
+   alongside sibling merge-train lanes that also touch `PROMPT_VERSION`
+   (`fix/output-identity-and-dates` took `.3`), so the branch deliberately
+   left the bump undone and flagged it in its own CHANGELOG entry + a
+   code comment for the train orchestrator to assign the next free suffix
+   at merge time. This entry records that assignment: `2026-07-08.3` →
+   `2026-07-08.4`.
+2. **Why?** `suggest_skills()`'s existing prompt hard-gates every proposal on
+   "the JD wants X AND the corpus evidences X" — with no job description in
+   view (corpus-wide discovery has no per-job requirement gate), that AND
+   can never fire, so reusing the existing prompt unchanged would have
+   silently returned zero proposals forever. The new sibling prompt drops
+   the JD condition down to evidence-alone, keeping the same grounding
+   discipline (evidence-or-nothing, cite the bullet/experience id or the
+   clarification quote) and the same worked-example teaching pattern as
+   every other prompt in this file.
+3. **Result?** No separate real-LLM validation run was needed for the
+   version-assignment bookkeeping itself — the branch's own deterministic
+   suite (`tests/test_suggest_skills_from_corpus.py`) already covers the
+   new function end to end: dedup against existing skills (case-insensitive,
+   including retired rows), the empty-corpus short-circuit, and — the
+   structurally load-bearing assertion — that the new prompt text carries
+   no `<analysis>`/JD gate (the exact defect this sibling prompt exists to
+   avoid). `PROMPT_VERSION` now reads `2026-07-08.4` in `analyzer.py`
+   (comment attributes the suggest-from-corpus addition); the `.3` grounding
+   tightening from `fix/output-identity-and-dates` is preserved underneath it
+   — both prompt-text changes are real and stack in the merged history.
+4. **Learned?** Parallel lanes that each add real prompt text need one
+   arbiter for `PROMPT_VERSION` ordering, not a race to claim a suffix —
+   `fix/review-surface-and-flows` flagging its own deferral (in the
+   CHANGELOG prose and a code comment) rather than guessing a suffix number
+   kept the merge-train rebase mechanical instead of adversarial: the
+   orchestrator had one clear instruction to execute, not two branches to
+   reconcile after the fact.
