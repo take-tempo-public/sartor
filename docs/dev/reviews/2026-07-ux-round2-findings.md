@@ -35,7 +35,7 @@
 
 **Templates (T):**
 - **T1** — owned-template cards overflow: the 5 action buttons (including Delete, rendered last) don't fit the ~280–320px card width and spill out.
-- **T2** — template-preview feedback from the owner's session was truncated/unclear in transcription; needs the owner to restate before it's actionable.
+- **T2** — template-preview fidelity: the preview shows "odd spacing (gaps between sections sometimes)", "fallback to parts of classic single column (the colored bars)", and inaccurate paging. See the T2 deep-dive below — this is the preview's architectural ceiling, not a quick fix.
 
 **Compose (Co):**
 - **Co1** — skill icons need the same iconography pass as G3.
@@ -46,7 +46,7 @@
 
 **Output (O):**
 - **O1a** — the downloaded/previewed `.docx` runs sections and work entries together with no blank-line separation, reading as a dense wall of text.
-- **O1b** — dates should right-align in the entry-header line — reopened generally by the owner (a prior narrower fix landed honest date-column layout on `fix/persona-fidelity-and-residuals`, but the owner wants the broader question re-examined) — evidence-first research pending, not yet a code branch.
+- **O1b** — dates right-alignment in the entry-header line — reopened "generally" by the owner. **RESOLVED, no code change** (owner decision 2026-07-09: keep status quo). See the O1b deep-dive below.
 
 ## Disposition table
 
@@ -61,14 +61,14 @@
 | C1 | denial semantics | → Epic (schema) |
 | **C2** | skills bounded-scroll | **→ Wave A (CSS bounds only; collapsible-toggle deferred to the epic)** |
 | **T1** | templates overflow | **→ Wave A** |
-| T2 | template-preview | → owner-clarify (feedback truncated) |
+| T2 | template-preview fidelity | → Epic (spike-first; cross-ref roadmap paged.js design-spike) |
 | Co1 | skill icons | → Epic (with G3) |
 | **Co2** | tailor-skills-state | **→ Wave A** |
 | Co3 | skill-ATS-quality | → tune-loop (not a code branch) |
 | **Co4** | wire corpus-groomer | **→ Wave A** |
 | Co5 | compose-reload-loudness | → Epic |
 | **O1a** | docx blank-lines | **→ Wave A** |
-| O1b | dates-right-align | → research-first (owner reopened generally) |
+| O1b | dates-right-align | → RESOLVED, no code change (owner: keep status quo; false-constraint conclusion recorded) |
 
 ## Owner decisions (2026-07-09)
 
@@ -80,9 +80,11 @@
    remaining gaps (starting with G6 here) — **not** to introduce a new
    modal or a different mechanism. The epic's G2/G4/G8/Co5 items inherit
    this same shape constraint.
-3. **Dates.** O1b is **reopened generally** — the owner wants the
-   right-alignment question re-examined from evidence rather than assumed;
-   this is research-first, not yet scoped as a branch.
+3. **Dates.** O1b was reopened generally, an evidence pass ran, and the
+   owner chose **keep status quo** — no proactive right-alignment; respect
+   the imported template. The "never right-align for ATS" premise was found
+   to be a **false constraint** (see the O1b deep-dive), and that conclusion
+   is recorded so it can't be re-litigated. **RESOLVED, no code change.**
 
 ## Wave A — what actually landed here
 
@@ -93,3 +95,87 @@ skills surfaces), T1 (`flex-wrap` on `.persona-card-actions`), Co2 (working-
 state on `_fireRecommendSkills()`), Co4 (wired "Suggest skills from my
 corpus" into the Corpus-tab skills editor), O1a (blank-line section/entry
 spacing in `generator.py:_write_docx_from_json_resume`).
+
+## O1b deep-dive — dates right-alignment (RESOLVED, no code change)
+
+**Decision (owner, 2026-07-09): keep status quo.** No proactive
+right-alignment; respect whatever the imported template does. Recorded here
+so the "never right-align for ATS" premise can't quietly return as a
+constraint on a future branch.
+
+**The evidence pass (read-only).** The finding was reopened "generally" on a
+suspicion that dates *should* be right-aligned but that ATS parsers would
+choke on it. A read-only ATS-evidence pass found the opposite:
+
+- **Right-aligned dates via a right *tab stop* are ATS-safe** (high
+  confidence). The established ATS-parsing risk is **tables, multi-column
+  layouts, and text-boxes** — not a tab stop. A right tab stop keeps the job
+  entry as **one paragraph with a single `\t`**, which an ATS reads as one
+  coherent string tied to that entry; it is not a column. The University at
+  Buffalo School of Management ATS-résumé guide states the
+  tab-stop-vs-column distinction explicitly, and OOXML models a tab stop as
+  a `w:tabs`/`w:tab` paragraph property (datypic.com OOXML `w:tabs` spec) —
+  not a table cell. python-docx exposes exactly this via
+  `paragraph_format.tab_stops` (python-docx text docs).
+- So **"never right-align for ATS" was a FALSE constraint.** It conflated
+  "right-aligned via a right tab stop" (safe) with "laid out in a
+  table/column" (the actual risk). Workable's "how an ATS reads resumes" and
+  Jobscan's resume-dates + tables/columns guides corroborate that the risk
+  lives in tables/columns/text-boxes, not tab stops.
+
+**What `fix/persona-fidelity-and-residuals` actually shipped.** That earlier
+branch is sometimes remembered as an "ATS date fix"; it was not. It was a
+**preview/download PARITY** fix: the preview must not *idealize* a
+right-alignment the download won't actually produce. The owner's three real
+templates simply **lack a right tab stop**, so the honest layout is
+left-flowed — and forcing a right-align into the preview would make the
+preview lie about the download. That parity rationale stands independently of
+the (now-debunked) ATS concern.
+
+**Net.** Both the ATS worry and the "must right-align" impulse dissolve: the
+tool should reproduce the template faithfully (parity), a template that
+*does* carry a right tab stop is ATS-safe to reproduce as-is, and sartor.
+should not inject a right-alignment the source template doesn't have. No
+code change; the status quo already does the right thing.
+
+**Sources (for a future re-scoper who doubts the false-constraint call):**
+OOXML `w:tabs` element spec (datypic.com); python-docx text /
+`paragraph_format.tab_stops` docs; Workable "how an ATS reads resumes";
+University at Buffalo School of Management ATS-résumé guide (tab-stop vs
+column); Jobscan resume-dates guide + Jobscan tables/columns guide.
+
+## T2 deep-dive — template-preview fidelity (spike-first, → Epic)
+
+**Owner's actual symptom** (the earlier transcription was truncated): the
+in-app preview shows **odd spacing** ("gaps between sections sometimes"), a
+**fallback to parts of Classic single-column** ("the colored bars"), and
+**inaccurate paging**.
+
+**Root cause = the preview's architectural ceiling.**
+`docx_to_persona_html.py` **always renders single-column**: per its own
+docstring, python-docx cannot represent multi-column layouts, tables,
+text-boxes, or shading, so the preview extracts only *typography* from the
+persona template and lays it onto the **Classic single-column skeleton**.
+Consequences:
+
+- **Colored section bars** are docx **shading** — not extracted — so a
+  template that uses them drops to the plain Classic bars in preview.
+- **Multi-column** persona layouts and **accurate paging** are out of reach
+  of the current preview path entirely.
+- **Paging** in preview is a **paged.js polyfill** — an approximation, not
+  the real pagination engine, so page breaks in preview ≠ the real output.
+
+**Disposition: spike-first, not a quick fix.** Cross-referenced to the
+roadmap's **existing paged.js design-spike** — `RELEASE_ARC.md` Phase 6
+`spike/pagedjs-design` + the Phase 4.9 preview-engine note. Acceptance
+targets for whatever the spike proposes: **colored bars, multi-column,
+section spacing, and accurate paging** all faithful in preview.
+
+**Caveat to verify when scoping.** Confirm whether the **docx DOWNLOAD** —
+which uses the *real* template as its style source via
+`_write_docx_from_json_resume(template_path=…)` — is already **faithful**
+while only the in-app **PREVIEW** is lossy. If so, the gap is preview-only,
+and the principle at stake is **"preview should match output"**: the fix is
+to raise the preview's fidelity to the download's, not to change the
+download. That distinction determines the spike's scope and must be checked
+against the real download before the spike commits to an approach.

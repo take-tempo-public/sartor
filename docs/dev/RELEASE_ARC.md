@@ -1145,12 +1145,27 @@ Themes (each design-scoped, not yet branch-planned):
   prior applications.
 - **Compose-reload loudness** (Co5) — listed under state-communication
   above; cross-referenced here since the owner named it separately.
+- **Template-preview fidelity** (T2) — **spike-first, not a quick fix.** The
+  in-app preview is architecturally single-column (`docx_to_persona_html.py`
+  extracts only typography onto the Classic skeleton — python-docx can't
+  represent multi-column/tables/text-boxes/shading), so colored section bars
+  fall back to Classic, and multi-column + accurate paging are out of reach
+  (paging is a paged.js *polyfill* preview, not real pagination).
+  **Cross-referenced to the roadmap's existing paged.js design-spike** —
+  Phase 6 `spike/pagedjs-design` + the Phase 4.9 preview-engine note.
+  Acceptance targets: colored bars, multi-column, section spacing, accurate
+  paging. Scoping caveat: verify whether the docx **download** (real template
+  as style source) is already faithful while only the **preview** is lossy —
+  "preview should match output" is the principle at stake. Detail in the
+  findings doc's T2 deep-dive.
 
 Deferred out of this epic (tracked elsewhere): **Co3** (skill-suggestion
 ATS-quality) is a tune-loop question, not a code branch. **O1b** (dates
-right-alignment) is evidence-first research, reopened generally by the
-owner — not yet scoped to this epic or any branch. **T2** (template-preview
-feedback) needs the owner to restate before it's actionable.
+right-alignment) is **RESOLVED, no code change** — the owner chose keep
+status quo after an evidence pass debunked the "never right-align for ATS"
+premise as a false constraint (right tab stops are ATS-safe; the earlier
+`fix/persona-fidelity-and-residuals` shipped a preview/download *parity*
+fix, not an ATS fix). See the findings doc's O1b deep-dive.
 
 ---
 
