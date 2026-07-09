@@ -588,6 +588,82 @@ _ROLE_HINT_RE = re.compile(
     r")\b",
     re.IGNORECASE,
 )
+# "About the <Role> at <Company>[:]" boilerplate — common enough that the plain
+# _BOILERPLATE_PREFIXES skip (which drops the whole line) throws away a role
+# segment sitting right there. Non-greedy up to the FIRST " at " so "<Role>"
+# never swallows the company name. e.g. "About the Director, AI Enablement at
+# Headspace:" -> "Director, AI Enablement".
+_ABOUT_ROLE_AT_RE = re.compile(
+    r"^about\s+(?:the\s+)?(?P<role>.+?)\s+at\s+.+$",
+    re.IGNORECASE,
+)
+# "As the<Role>, you will ..." — real-world backfill evidence showed this
+# pattern surviving with the article glued onto the role word (a mojibake/
+# copy-paste artifact: "As theDirector of..." with no space). Matching the
+# literal "the" as its own token and letting `\s*` (zero-or-more) follow it
+# is what separates the glued word from the article without any string
+# surgery: "the" + "" + "Director..." captures cleanly as "Director...".
+_AS_THE_ROLE_RE = re.compile(
+    r"^as\s+the\s*(?P<role>[A-Z][^,]*?)\s*,\s*you\s*(?:will|'ll)\b",
+    re.IGNORECASE,
+)
+# Multi-word phrases that mark a line as a PROSE SENTENCE rather than a role
+# title — pronoun+auxiliary combos and JD stock phrases that essentially never
+# appear inside an actual title. Deliberately phrase-based, not single verbs
+# like bare "lead"/"manage": those are common role-title words themselves
+# ("Lead Engineer", "Engineering Manager") and would false-positive as prose.
+_SENTENCE_MARKER_RE = re.compile(
+    r"\b(you will|you'll|we are|we're|will lead|will manage|will drive|"
+    r"is responsible|are responsible|responsible for|operates|is seeking|"
+    r"are seeking|seeking a|looking for|join our|join us)\b",
+    re.IGNORECASE,
+)
+# A role title is short. Glued/mojibake prose run-ons ("SanDisk'sProduct
+# Innovation Teamoperates at the front end...") and ordinary JD sentences both
+# read much longer than a real title — capping the word count is a cheap,
+# reliable second signal alongside _SENTENCE_MARKER_RE.
+_ROLE_MAX_WORDS = 8
+
+
+def _extract_about_role_at(line: str) -> str | None:
+    """Pull the role segment out of an "About the <Role> at <Company>[:]" line.
+
+    Returns None (not this shape, or the extracted segment doesn't itself read
+    as a role) rather than a bad guess — the caller falls through to the
+    ordinary boilerplate-skip / role-hint scan.
+    """
+    m = _ABOUT_ROLE_AT_RE.match(line)
+    if not m:
+        return None
+    role = m.group("role").strip(_MD_EMPHASIS_STRIP + ",")
+    if role and _ROLE_HINT_RE.search(role):
+        return role
+    return None
+
+
+def _extract_as_the_role(line: str) -> str | None:
+    """Pull the role segment out of an "As the<Role>, you will ..." line."""
+    m = _AS_THE_ROLE_RE.match(line)
+    if not m:
+        return None
+    role = m.group("role").strip(_MD_EMPHASIS_STRIP + ",")
+    if role and _ROLE_HINT_RE.search(role):
+        return role
+    return None
+
+
+def _looks_role_shaped(line: str) -> bool:
+    """True when `line` reads as a short title phrase, not a JD prose sentence.
+
+    Both signals must hold: short (<= _ROLE_MAX_WORDS) AND no sentence-marker
+    phrase. Guards the generic role-hint-keyword fallback scan in
+    `_infer_role_title` — a keyword match alone isn't enough (a full sentence
+    can easily contain "engineer" or "lead" without being a title).
+    """
+    words = line.split()
+    if len(words) > _ROLE_MAX_WORDS:
+        return False
+    return not _SENTENCE_MARKER_RE.search(line)
 
 
 def _clean_jd_line(line: str) -> str:
@@ -618,13 +694,22 @@ def _infer_role_title(jd_text: str) -> str:
     Conservative heuristics, fail-open to the cleaned first non-empty line:
     1. Clean every line (`_clean_jd_line`): strip markdown heading markers,
        U+FFFD/mojibake artifacts, normalize whitespace.
-    2. Scan the first 5 cleaned non-empty lines for the first one that is
-       NOT boilerplate-shaped (`_looks_boilerplate`) AND contains a
-       role-title keyword (`_ROLE_HINT_RE`) — a real role title is almost
-       always near the top of a JD, right after (or instead of) a
-       boilerplate opener like "About the Role" or "Who We Are".
-    3. If nothing matches, fail open to the cleaned first non-empty line
-       (never emptier than `_infer_application_title`'s raw contract).
+    2. Scan the first 5 cleaned non-empty lines. For each:
+       a. "About the <Role> at <Company>[:]" boilerplate — extract the role
+          segment (`_extract_about_role_at`) instead of skipping the whole
+          line wholesale.
+       b. "As the<Role>, you will ..." — extract the role segment
+          (`_extract_as_the_role`); handles the article gluing onto the role
+          word (a real-world mojibake/copy-paste artifact).
+       c. Otherwise: skip boilerplate-shaped lines (`_looks_boilerplate`);
+          of the rest, take the first that BOTH contains a role-title
+          keyword (`_ROLE_HINT_RE`) AND reads as a short title phrase, not a
+          prose sentence (`_looks_role_shaped`) — a real role title is
+          almost always near the top of a JD, right after (or instead of) a
+          boilerplate opener like "About the Role" or "Who We Are".
+    3. If nothing matches, fail open to the cleaned first non-empty line —
+       NEVER a raw glued/mojibake prose fragment — (never emptier than
+       `_infer_application_title`'s raw contract).
 
     Returns "" only when `jd_text` has no non-empty lines at all.
     """
@@ -633,9 +718,15 @@ def _infer_role_title(jd_text: str) -> str:
     if not lines:
         return ""
     for line in lines[:5]:
+        about_role = _extract_about_role_at(line)
+        if about_role:
+            return about_role[:80]
+        as_the_role = _extract_as_the_role(line)
+        if as_the_role:
+            return as_the_role[:80]
         if _looks_boilerplate(line):
             continue
-        if _ROLE_HINT_RE.search(line):
+        if _ROLE_HINT_RE.search(line) and _looks_role_shaped(line):
             return line[:80]
     return lines[0][:80]
 

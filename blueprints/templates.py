@@ -642,11 +642,22 @@ def upload_user_persona(username: str) -> ResponseReturnValue:
 
         # Generate the HTML+CSS preview companion so the live preview renders the
         # uploaded template's OWN typography instead of silently falling back to
-        # Classic (walkthrough B2/B3). Best-effort — a failure logs + still 201s,
-        # and the preview route falls back to Classic exactly as before.
+        # Classic (walkthrough B2/B3). Best-effort — a failure still 201s (the
+        # preview route falls back to Classic exactly as before), but the caller
+        # gets a `companion_warning` in the response so the UI can surface it
+        # instead of the persona previewing as Classic forever with no signal
+        # (walkthrough residuals item 3). generate_companion() already logs the
+        # underlying exception; None just means it happened.
         from docx_to_persona_html import generate_companion
 
-        generate_companion(target)
+        companion_warning: str | None = None
+        if generate_companion(target) is None:
+            companion_warning = "Preview will use the default style; download unaffected."
+            logger.warning(
+                "Persona companion generation failed for upload %s (user=%s)",
+                target,
+                safe_user,
+            )
 
         display_name = (request.form.get("name") or Path(safe_name).stem).strip()
         relative_path = f"personas/{safe_user}/{safe_name}"
@@ -659,7 +670,10 @@ def upload_user_persona(username: str) -> ResponseReturnValue:
         )
         session.add(row)
         session.commit()
-        return jsonify(_persona_dict(row)), 201
+        response_body = _persona_dict(row)
+        if companion_warning:
+            response_body["companion_warning"] = companion_warning
+        return jsonify(response_body), 201
     except Exception:
         session.rollback()
         raise
@@ -1395,6 +1409,15 @@ def preview_candidate_html(username: str) -> ResponseReturnValue:
             return jsonify({"error": "No template available"}), 500
 
         html_path = html_template_path_for(docx_template_path)
+        if html_path is None:
+            # Lazily generate the HTML+CSS companion for a persona uploaded before
+            # companion generation shipped, so its preview reflects the uploaded
+            # template's typography instead of falling back to Classic (B2/B3).
+            # Same fallback as preview_application_html / preview_edited_html.
+            from docx_to_persona_html import generate_companion
+
+            companion = generate_companion(docx_template_path)
+            html_path = companion[0] if companion else None
         if html_path is None:
             html_path = current_app.config["BUNDLED_PERSONAS_DIR"] / "classic.html"
             if not html_path.exists():

@@ -227,6 +227,11 @@ class TestUploadPersona:
         assert body["path"].startswith("personas/alice/")
         # File landed on disk
         assert (persona_app.BASE_DIR / body["path"]).exists()
+        # The uploaded bytes aren't a real .docx, so companion generation fails
+        # (walkthrough residuals item 3): upload still succeeds (degrade, don't
+        # block) but the response carries a warning instead of silence.
+        assert "companion_warning" in body
+        assert not (persona_app.BASE_DIR / body["path"]).with_suffix(".html").exists()
         # DB row landed
         from db.models import PersonaTemplate
         from db.session import get_session
@@ -237,6 +242,22 @@ class TestUploadPersona:
             assert count == 1
         finally:
             s.close()
+
+    def test_upload_with_valid_docx_has_no_companion_warning(self, persona_app):
+        """A real, single-column .docx generates its companion cleanly — no warning."""
+        _seed_candidate(persona_app)
+        repo_root = Path(__file__).resolve().parents[1]
+        docx_bytes = (repo_root / "personas" / "bundled" / "tech.docx").read_bytes()
+        client = persona_app.app.test_client()
+        r = client.post(
+            "/api/users/alice/personas",
+            data={"file": (io.BytesIO(docx_bytes), "mine.docx")},
+            content_type="multipart/form-data",
+        )
+        assert r.status_code == 201, r.get_json()
+        body = r.get_json()
+        assert "companion_warning" not in body
+        assert (persona_app.BASE_DIR / body["path"]).with_suffix(".html").exists()
 
     def test_rejects_non_docx_extension(self, persona_app):
         _seed_candidate(persona_app)

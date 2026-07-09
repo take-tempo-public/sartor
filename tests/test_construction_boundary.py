@@ -2,8 +2,8 @@
 
 `analyzer.py` is the single home for every LLM call. The deterministic modules —
 `hardening`, `parser`, `generator`, `scraper`, `json_resume`, `corpus_to_json_resume`,
-`pdf_render` — must NEVER import `analyzer` or `anthropic`, so the boundary holds
-by construction (a failing test), not by code review.
+`pdf_render`, `docx_to_persona_html` — must NEVER import `analyzer` or `anthropic`,
+so the boundary holds by construction (a failing test), not by code review.
 
 This reuses the whole-tree AST-import walk from `tests/test_recall_boundary.py`
 (which guards `recall/`'s substrate independence) and applies it to the C-6
@@ -29,6 +29,7 @@ DETERMINISTIC_MODULES = (
     "json_resume.py",
     "corpus_to_json_resume.py",
     "pdf_render.py",
+    "docx_to_persona_html.py",
 )
 
 # An LLM call would mean importing one of these. (scraper.py legitimately imports

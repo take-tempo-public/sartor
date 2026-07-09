@@ -131,6 +131,25 @@ def extract_persona_style(docx_path: str | Path) -> dict[str, Any]:
     so the preview interprets the .docx the same way the .docx download does.
     Missing attributes fall back to neutral defaults so a partial/odd .docx still
     yields a clean companion.
+
+    Also captures per-role vertical rhythm (mirroring `generator._capture_proto`'s
+    `space_before_pt`/`space_after_pt`, not just font sizes): the header block's
+    closing gap (`header_space_after_pt`, from the LAST centered header line —
+    "contact" when a 3-line header exists, "subtitle" when it's a 2-line header),
+    the section heading's `heading_space_before_pt`/`heading_space_after_pt`, and
+    `job_title_space_before_pt` (the gap before each job entry). Each stays `None`
+    when the source `.docx` never sets it explicitly (inherits from the style),
+    so `_build_css` keeps its existing hardcoded default — no behavior change for
+    documents without direct paragraph-level spacing overrides.
+
+    `job_title_has_right_tab` records whether the job-title line actually carries
+    a right-aligned tab stop for the date column. Real uploaded résumés routinely
+    don't (the date is a bare tab character with no defined stop — Word falls
+    through to its default tab ladder, NOT a flush-right column); `_build_css`
+    reads this knob so the preview doesn't idealize a right-alignment the actual
+    `.docx` doesn't render (owner decision: no right-alignment work in the docx
+    writer — the preview reconciles toward the document, not the other way
+    around).
     """
     doc = Document(str(docx_path))
 
@@ -160,6 +179,11 @@ def extract_persona_style(docx_path: str | Path) -> dict[str, Any]:
         "heading_color": None,
         "line_spacing": 1.3,
         "job_title_pt": 11.0,
+        "job_title_has_right_tab": False,
+        "header_space_after_pt": None,
+        "heading_space_before_pt": None,
+        "heading_space_after_pt": None,
+        "job_title_space_before_pt": None,
         "layout_fidelity": detect_layout_fidelity(doc),
     }
 
@@ -188,6 +212,12 @@ def extract_persona_style(docx_path: str | Path) -> dict[str, Any]:
                 knobs[f"{role}_pt"] = size_pt
             if role == "name":
                 knobs["name_align"] = "center"
+            # Overwritten on every header line seen so it ends on the LAST one —
+            # "contact" for a 3-line header, "subtitle" for the common 2-line
+            # case (name + contact, no separate tagline).
+            header_sa = p.paragraph_format.space_after
+            if header_sa is not None:
+                knobs["header_space_after_pt"] = header_sa.pt
             centered_seen += 1
             continue
 
@@ -195,6 +225,10 @@ def extract_persona_style(docx_path: str | Path) -> dict[str, Any]:
         if any_bold and has_right_tab:
             if size_pt:
                 knobs["job_title_pt"] = size_pt
+            knobs["job_title_has_right_tab"] = True
+            job_sb = p.paragraph_format.space_before
+            if job_sb is not None:
+                knobs["job_title_space_before_pt"] = job_sb.pt
             last_was_job_title = True
             continue
 
@@ -212,6 +246,12 @@ def extract_persona_style(docx_path: str | Path) -> dict[str, Any]:
                     knobs["heading_small_caps"] = bool(run0.font.small_caps)
                     knobs["heading_underline"] = bool(run0.font.underline or run0.underline)
                     knobs["heading_color"] = _run_color_hex(run0)
+                heading_sb = p.paragraph_format.space_before
+                if heading_sb is not None:
+                    knobs["heading_space_before_pt"] = heading_sb.pt
+                heading_sa = p.paragraph_format.space_after
+                if heading_sa is not None:
+                    knobs["heading_space_after_pt"] = heading_sa.pt
             last_was_job_title = False
             continue
 
@@ -238,11 +278,26 @@ def _fmt_pt(value: float) -> str:
     return f"{value:g}"
 
 
+def _spacing_css(value_pt: float | None, default_px: float) -> str:
+    """Render a captured `space_before`/`space_after` knob as CSS.
+
+    Falls back to the historical hardcoded `<default_px>px` literal when the
+    source `.docx` never set the property explicitly (`None` — inherited from
+    the paragraph style, not zero), so a document with no direct spacing
+    overrides renders byte-identical CSS to before this knob existed.
+    """
+    if value_pt is None:
+        return f"{_fmt_pt(default_px)}px"
+    return f"{_fmt_pt(value_pt)}pt"
+
+
 def _build_css(knobs: dict[str, Any]) -> str:
     """Emit a single-column ATS-safe stylesheet from the extracted knobs.
 
     Structure mirrors `personas/bundled/classic.css`; only the typography values
-    are swapped for the uploaded template's own.
+    are swapped for the uploaded template's own. Vertical rhythm (header/heading/
+    job-entry gaps) uses the captured per-role spacing when the source `.docx` set
+    it explicitly, else the same literals `classic.css` has always used.
     """
     fg = knobs.get("heading_color") or _DEFAULT_FG
     accent = knobs.get("heading_color") or _DEFAULT_ACCENT
@@ -252,6 +307,22 @@ def _build_css(knobs: dict[str, Any]) -> str:
     heading_transform = "uppercase" if knobs.get("heading_uppercase") else "none"
     heading_variant = "small-caps" if knobs.get("heading_small_caps") else "normal"
     heading_decoration = "underline" if knobs.get("heading_underline") else "none"
+
+    header_space_after = _spacing_css(knobs.get("header_space_after_pt"), 20)
+    heading_space_before = _spacing_css(knobs.get("heading_space_before_pt"), 20)
+    heading_space_after = _spacing_css(knobs.get("heading_space_after_pt"), 8)
+    job_space_after = _spacing_css(knobs.get("job_title_space_before_pt"), 14)
+
+    # Date-column honesty (walkthrough residuals, item 1): only force the date
+    # flush against the right margin when the source .docx actually right-aligns
+    # it via a tab stop. Real uploaded résumés commonly leave the date as a bare
+    # tab with no stop defined — Word renders that at its own default tab ladder,
+    # NOT flush-right — so idealizing it here would show a layout the downloaded
+    # .docx doesn't produce. Bundled personas all define the tab stop, so their
+    # preview is unaffected (still `space-between`).
+    has_date_tab = bool(knobs.get("job_title_has_right_tab"))
+    job_header_justify = "space-between" if has_date_tab else "flex-start"
+    job_header_gap = "8px" if has_date_tab else "18pt"
 
     m = (
         f"{_fmt_pt(knobs.get('margin_top_in', 1.0))}in "
@@ -290,7 +361,7 @@ html, body {{
 
 .resume-header {{
   text-align: {knobs.get("name_align", "center")};
-  margin-bottom: 20px;
+  margin-bottom: {header_space_after};
   padding-bottom: 14px;
   border-bottom: 1px solid var(--rule);
 }}
@@ -306,8 +377,8 @@ h2 {{
   font-variant: {heading_variant};
   text-decoration: {heading_decoration};
   letter-spacing: 1.2pt;
-  margin-top: 20px;
-  margin-bottom: 8px;
+  margin-top: {heading_space_before};
+  margin-bottom: {heading_space_after};
   padding-bottom: 2pt;
   border-bottom: 1.5pt solid var(--accent);
   page-break-after: avoid;
@@ -316,8 +387,8 @@ section:first-of-type h2 {{ margin-top: 8px; }}
 
 .summary p {{ line-height: 1.5; }}
 
-.job, .degree, .project {{ margin-bottom: 14px; page-break-inside: avoid; }}
-.job-header, .degree-header {{ display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 2pt; }}
+.job, .degree, .project {{ margin-bottom: {job_space_after}; page-break-inside: avoid; }}
+.job-header, .degree-header {{ display: flex; justify-content: {job_header_justify}; align-items: baseline; gap: {job_header_gap}; margin-bottom: 2pt; }}
 .job-title, .degree-header h3 {{ font-size: {_fmt_pt(knobs.get("job_title_pt", 11.0))}pt; font-weight: 600; color: var(--fg-0); }}
 .job-title .company, .degree-header .institution {{ font-weight: 600; }}
 .job-title .position, .degree-header .area {{ font-weight: 400; color: var(--fg-1); }}

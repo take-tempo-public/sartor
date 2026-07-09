@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
+from docx.shared import Inches, Pt
 
 import docx_to_persona_html as d
 from scripts.build_bundled_templates import PRESETS
@@ -43,6 +43,16 @@ def test_extract_matches_bundled_preset(preset) -> None:
     assert knobs["margin_left_in"] == pytest.approx(preset.margin_inches)
     # All bundled templates are single-column running text.
     assert knobs["layout_fidelity"] == "full"
+
+    # Per-role vertical rhythm (walkthrough residuals, item 1): the builder sets
+    # these explicitly on every bundled template, so extraction must recover the
+    # exact values, not the CSS defaults.
+    assert knobs["header_space_after_pt"] == pytest.approx(preset.section_space_before_pt)
+    assert knobs["heading_space_before_pt"] == pytest.approx(preset.section_space_before_pt)
+    assert knobs["heading_space_after_pt"] == pytest.approx(preset.section_space_after_pt)
+    assert knobs["job_title_space_before_pt"] == pytest.approx(preset.section_space_after_pt)
+    # Every bundled template defines a right tab stop for the date column.
+    assert knobs["job_title_has_right_tab"] is True
 
 
 def test_generate_companion_writes_html_css_sidecar(tmp_path) -> None:
@@ -101,6 +111,139 @@ def test_generate_companion_idempotent(tmp_path) -> None:
     second = d.generate_companion(docx)
     assert second == first
     assert second[1].stat().st_mtime_ns == mtime  # not rewritten
+
+
+def _add_job_title_paragraph(doc, *, right_tab: bool, space_before_pt: float | None) -> None:
+    """Build a bold job-title-shaped paragraph, mirroring a résumé's job-header line.
+
+    `right_tab=False` reproduces what real uploaded résumés routinely do: a bare
+    `\\t` before the date with no tab stop defined at all.
+    """
+    p = doc.add_paragraph()
+    if right_tab:
+        p.paragraph_format.tab_stops.add_tab_stop(Inches(6.5), WD_TAB_ALIGNMENT.RIGHT)
+    if space_before_pt is not None:
+        p.paragraph_format.space_before = Pt(space_before_pt)
+    run = p.add_run("Acme Corp, Staff Engineer")
+    run.bold = True
+    p.add_run("\tJanuary 2022 – Present").bold = True
+
+
+def test_extract_no_explicit_spacing_falls_back_to_css_defaults(tmp_path) -> None:
+    """A .docx with no direct paragraph spacing yields None knobs and unchanged CSS.
+
+    Regression guard for the walkthrough-residuals per-role spacing capture: a
+    source that never overrides `space_before`/`space_after` (inherits from the
+    paragraph style) must render byte-identical rhythm to before the knobs
+    existed — `_spacing_css` falls back to the historical px literals.
+    """
+    doc = Document()
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.add_run("Casey Rivera").font.size = Pt(18)
+    p2 = doc.add_paragraph()
+    p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p2.add_run("casey@example.com")
+    heading = doc.add_paragraph()
+    heading.add_run("Experience").bold = True
+    _add_job_title_paragraph(doc, right_tab=False, space_before_pt=None)
+    docx = tmp_path / "plain.docx"
+    doc.save(str(docx))
+
+    knobs = d.extract_persona_style(docx)
+    assert knobs["header_space_after_pt"] is None
+    assert knobs["heading_space_before_pt"] is None
+    assert knobs["heading_space_after_pt"] is None
+    assert knobs["job_title_space_before_pt"] is None
+    assert knobs["job_title_has_right_tab"] is False
+
+    css = d._build_css(knobs)
+    assert "margin-bottom: 20px;" in css  # .resume-header — unchanged default
+    assert "margin-top: 20px;" in css  # h2 — unchanged default
+    assert "margin-bottom: 8px;" in css  # h2 — unchanged default
+    assert "margin-bottom: 14px; page-break-inside" in css  # .job — unchanged default
+
+
+def test_build_css_honors_captured_spacing(tmp_path) -> None:
+    """Explicit space_before/space_after on the source .docx reaches the CSS as pt.
+
+    The job-title line carries a right tab stop here because the role heuristic
+    (mirroring `generator._capture_template_styles`) only classifies a line as
+    job_title when it is bold AND right-tabbed — without the tab stop the line
+    reads as another section heading and its spacing is (correctly) not captured
+    as `job_title_space_before_pt`.
+    """
+    doc = Document()
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.add_run("Casey Rivera").font.size = Pt(18)
+    p2 = doc.add_paragraph()
+    p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p2.paragraph_format.space_after = Pt(11)
+    p2.add_run("casey@example.com")
+    heading = doc.add_paragraph()
+    heading.paragraph_format.space_before = Pt(15)
+    heading.paragraph_format.space_after = Pt(5)
+    heading.add_run("Experience").bold = True
+    _add_job_title_paragraph(doc, right_tab=True, space_before_pt=9)
+    docx = tmp_path / "spaced.docx"
+    doc.save(str(docx))
+
+    knobs = d.extract_persona_style(docx)
+    assert knobs["header_space_after_pt"] == pytest.approx(11)
+    assert knobs["heading_space_before_pt"] == pytest.approx(15)
+    assert knobs["heading_space_after_pt"] == pytest.approx(5)
+    assert knobs["job_title_space_before_pt"] == pytest.approx(9)
+
+    css = d._build_css(knobs)
+    assert "margin-bottom: 11pt;" in css  # .resume-header
+    assert "margin-top: 15pt;" in css  # h2
+    assert "margin-bottom: 5pt;" in css  # h2
+    assert "margin-bottom: 9pt; page-break-inside" in css  # .job
+
+
+def test_build_css_date_layout_matches_docx_reality_no_tab_stop(tmp_path) -> None:
+    """No captured right tab stop → the preview must not idealize a right-aligned date.
+
+    Walkthrough residuals item 1 (owner decision): the docx writer stays
+    single-tab / no right-alignment work, so a persona whose job-title line has
+    no defined tab stop will NOT render its date flush-right in the real .docx
+    download. The companion CSS must match that reality instead of the old
+    always-`space-between` layout.
+    """
+    doc = Document()
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.add_run("Casey Rivera").font.size = Pt(18)
+    heading = doc.add_paragraph()
+    heading.add_run("Experience").bold = True
+    _add_job_title_paragraph(doc, right_tab=False, space_before_pt=None)
+    docx = tmp_path / "no_tab.docx"
+    doc.save(str(docx))
+
+    knobs = d.extract_persona_style(docx)
+    assert knobs["job_title_has_right_tab"] is False
+    css = d._build_css(knobs)
+    assert "justify-content: flex-start" in css
+    assert "justify-content: space-between" not in css
+
+
+def test_build_css_date_layout_keeps_flush_right_with_tab_stop(tmp_path) -> None:
+    """A captured right tab stop keeps the flush-right flex layout (bundled-template case)."""
+    doc = Document()
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.add_run("Casey Rivera").font.size = Pt(18)
+    heading = doc.add_paragraph()
+    heading.add_run("Experience").bold = True
+    _add_job_title_paragraph(doc, right_tab=True, space_before_pt=None)
+    docx = tmp_path / "with_tab.docx"
+    doc.save(str(docx))
+
+    knobs = d.extract_persona_style(docx)
+    assert knobs["job_title_has_right_tab"] is True
+    css = d._build_css(knobs)
+    assert "justify-content: space-between" in css
 
 
 def test_detect_layout_fidelity_flags_tables(tmp_path) -> None:

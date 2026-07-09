@@ -13,6 +13,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: persona preview fidelity + walkthrough residuals + witness reconciles (`fix/persona-fidelity-and-residuals`, 2026-07-09)
+
+Closes the "Walkthrough residuals (post-Train-5)" carry-forward row: the six
+items the four Train-5 repair lanes didn't cover, plus three governance-witness
+FLAGs (CW-101/102/104) and one live-backfill extractor gap, in one lane before
+the code freeze.
+
+- **Persona-preview style fidelity** — `docx_to_persona_html.extract_persona_style`
+  now captures per-role vertical rhythm (`header_space_after_pt`,
+  `heading_space_before_pt`/`heading_space_after_pt`, `job_title_space_before_pt`
+  — mirroring `generator._capture_template_styles`'s `space_before_pt`/
+  `space_after_pt`), and `_build_css` renders it (falling back to the historical
+  hardcoded px literals when the source `.docx` never set it — no behavior
+  change for documents without direct spacing overrides). Verified against the
+  owner's uploaded persona + before/after walkthrough artifacts (python-docx
+  property analysis, not committed): real captured values (10.9pt header gap,
+  2.8pt heading gap) now reach the preview instead of the generic 20px/8px
+  defaults; all 4 bundled templates round-trip their `TypographyPreset` values
+  exactly. **Date-column honesty (owner decision — no right-alignment work in
+  the docx writer):** the owner's real artifacts show job-title lines with NO
+  captured right tab stop (all 3 examined), so the actual `.docx` download does
+  NOT right-align the date — the companion CSS's `.job-header` now only forces
+  `justify-content: space-between` when the source `.docx` actually defines a
+  right tab stop (`job_title_has_right_tab`); otherwise it renders inline
+  instead of idealizing a right-alignment the download doesn't produce.
+  Bundled templates (which do define the tab stop) are unaffected.
+- **`preview_candidate_html` lazy-regen fallback** — gained the same
+  lazy-companion-generation fallback its two sibling preview routes already had
+  (`preview_application_html` / `preview_edited_html`): an uploaded persona
+  with no `.html`/`.css` companion yet now regenerates it on first preview
+  instead of falling back to Classic forever.
+- **Silent persona-companion-generation failure surfaced** — `upload_user_persona`
+  no longer discards `generate_companion`'s return value: a companion failure
+  now adds `companion_warning` to the 201 response ("Preview will use the
+  default style; download unaffected"), and both frontend upload paths
+  (`uploadPersonaFromInput` / `uploadTemplateFromTemplateStep`) surface it via
+  toast. Upload still succeeds either way (degrade, don't block); the
+  underlying failure was already logged inside `generate_companion`.
+- **`/api/download-edited` identity-override wiring** — `run_generation` /
+  `run_generation_stream` already resolved `identity_override` from the
+  current Candidate DB row (`_resolve_candidate_identity`, keyed by
+  `application_id`); `download_edited` had no `context_set` in scope to reuse
+  that helper, so hand-edited re-downloads could resurrect stale identity
+  fields. New `_resolve_candidate_identity_by_username` (same dict shape, same
+  best-effort None-on-miss) closes the gap.
+- **Page-break preview/download parity — documented as an accepted
+  limitation.** Preview/PDF paginate via CSS + paged.js (byte-identical
+  engines); a `.docx` download page-breaks the same content through Word at
+  open time instead, so exactly where a page splits can differ — parity is
+  content-level (D3), not pagination-level. Noted in the Step 4 (Template)
+  in-app help copy and `docs/PRODUCT_SHAPE.md` §5.5.
+- **CW-101 (witness FLAG)** — `docx_to_persona_html.py` added to
+  `tests/test_construction_boundary.py`'s `DETERMINISTIC_MODULES` gate (it was
+  named C-6-deterministic in AGENTS.md but the gate omitted it). The module
+  passes as-is — no LLM import, confirming the witness's "clean today" read.
+- **CW-102 / CW-104 (witness FLAGs — owner-approved factual reconciles)** —
+  `docs/governance/charter.md` + `docs/governance/enforcement.md` still marked
+  PX-19 (loopback-bind gate) and PX-20 (deterministic–LLM boundary gate) "owed
+  — v1.0.8"; both shipped in Sprint 8.3a (`RELEASE_CHECKLIST.md` 8.3a row —
+  `tests/test_config.py` pins the host, `tests/test_construction_boundary.py`
+  is the boundary gate). Status cells updated to SHIPPED with cites; no clause
+  meaning changed. charter.md's D-6 Chromium-classification cite (flagged
+  stale by the witness, already fixed in reality by PX-31) reconciled to cite
+  the PX-31 reclassification instead of describing the pre-fix inconsistency.
+- **CW-103 prose slice** — `docs/PRODUCT_SHAPE.md`'s dangling `app.py` route
+  citations (persona preview route, `_resolve_default_persona_template_path`,
+  `_PAGED_PREVIEW_INJECTION`) repointed to `blueprints/templates.py`, the
+  post-8.3 reality (`app.py` is a zero-route composition root). Wiki pages
+  untouched (PX-41 owns them).
+- **Role-title extractor improvements** (`db.build_context._infer_role_title`,
+  real live-backfill evidence) — (a) `About the <Role> at <Company>:`
+  boilerplate lines now extract the role segment instead of being skipped
+  wholesale (`About the Director, AI Enablement at Headspace:` →
+  `Director, AI Enablement`); (b) glued/mojibake prose lines never win as a
+  title anymore — a new `As the<Role>, you will ...` extractor (handling the
+  article gluing onto the role word) plus a `_looks_role_shaped` guard
+  (≤ 8 words, no sentence-marker phrase) on the generic keyword-scan fallback
+  keep a run-on JD sentence from being mistaken for a title just because it
+  contains a role-hint keyword; failing open still lands on the cleaned first
+  line, never a raw prose fragment. No backfill-script change — the safety
+  rule already leaves hand-edited rows alone.
+
 ### Feat: visible working states + full wizard hydration on resume (`feat/ux-busy-states-and-hydration`, 2026-07-08)
 
 Owner-observed UX gaps closed against a verified mechanism inventory (reused the existing
