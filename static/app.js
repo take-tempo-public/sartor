@@ -1248,6 +1248,7 @@ function continueToClarify() {
 async function runClarify() {
   if (!lastContextPath) return alert('Run analysis first');
   setStatus('GENERATING QUESTIONS');
+  _setBusy(true, 'Generating clarifying questions…');
   // Hide the "Get clarifying questions / Skip" row for the duration of the
   // fetch: when runClarify is reached via the "Continue to Clarify →" CTA the
   // row is redundant (finding #6) and would otherwise flash; the pending
@@ -1287,6 +1288,8 @@ async function runClarify() {
   } catch (e) {
     _restore();
     reportError('Clarify', 'Clarification request failed', e.message);
+  } finally {
+    _setBusy(false);
   }
 }
 
@@ -2868,6 +2871,7 @@ async function runIterateClarify() {
   if (!proceed) return;
 
   setStatus('GENERATING QUESTIONS');
+  _setBusy(true, 'Generating clarifying questions…');
   const btn = document.getElementById('btnIterateClarify');
   if (btn) btn.disabled = true;
 
@@ -2899,6 +2903,8 @@ async function runIterateClarify() {
   } catch (e) {
     if (btn) btn.disabled = false;
     reportError('Iteration interview', 'Iteration interview request failed', e.message);
+  } finally {
+    _setBusy(false);
   }
 }
 
@@ -3895,6 +3901,37 @@ async function refreshSkillsEditor() {
   hint.textContent = 'The skills the résumé can surface. The Compose step '
     + 'orders and curates them per job; tailor + AI suggestions live there too.';
   approved.forEach(s => listEl.appendChild(_renderSkillEditorRow(s, false)));
+}
+
+// Co4 (round-2 quick win) — corpus-wide "Suggest skills from my corpus",
+// wired to the already-built/tested `/skills/suggest-from-corpus` route
+// (analyzer.suggest_skills_from_corpus: evidence-only gate, no JD in scope,
+// unlike the JD-scoped Compose suggest-skills call). Mirrors the Compose
+// "Suggest skills from this JD" button's working-state idiom
+// (_fireSuggestSkills): disable + relabel while in flight, restore in a
+// finally, refresh the editor on success so the new pending rows render.
+async function suggestSkillsFromCorpus() {
+  if (!currentUser) return;
+  const btn = document.getElementById('btnSuggestSkillsFromCorpus');
+  if (btn) { btn.disabled = true; btn.textContent = 'Suggesting…'; }
+  try {
+    const res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/skills/suggest-from-corpus`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' } },
+    );
+    if (res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const n = (body.proposals || []).length;
+      _toast(n ? `${n} skill suggestion${n === 1 ? '' : 's'} to review.` : 'No new grounded skills found.');
+      await refreshSkillsEditor();
+    } else {
+      _toast('Could not suggest skills from your corpus.', true);
+    }
+  } catch {
+    _toast('Network error suggesting skills.', true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Suggest skills from my corpus'; }
+  }
 }
 
 function _renderSkillEditorRow(s, isPending) {
@@ -7304,7 +7341,7 @@ function _renderSkillsCard(skills) {
   const tailorBtn = _el('button', {
     className: 'btn-secondary btn-sm', textContent: 'Tailor skills to this JD',
   });
-  tailorBtn.onclick = () => _fireRecommendSkills(true);
+  tailorBtn.onclick = () => _fireRecommendSkills(true, tailorBtn);
   actions.appendChild(tailorBtn);
   const suggestBtn = _el('button', {
     className: 'btn-secondary btn-sm', textContent: 'Suggest skills from this JD',
@@ -7450,8 +7487,9 @@ function _collectSkillState() {
 // Fire recommend-skills (Haiku ordering). Idempotent server-side. Reloads
 // composition after so the new order + chips render. `explicit` distinguishes a
 // user click (always run) from the auto-fire on first load.
-async function _fireRecommendSkills(explicit) {
+async function _fireRecommendSkills(explicit, btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Tailoring…'; }
   _markComposeBgReload(1);
   try {
     const res = await fetch(
@@ -7465,6 +7503,7 @@ async function _fireRecommendSkills(explicit) {
     if (explicit) _toast('Network error tailoring skills.', true);
   } finally {
     _markComposeBgReload(-1);
+    if (btn) { btn.disabled = false; btn.textContent = 'Tailor skills to this JD'; }
   }
 }
 
