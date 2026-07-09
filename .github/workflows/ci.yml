@@ -57,6 +57,34 @@ jobs:
       - name: Enforcement guards (repo-wide secrets backstop)
         run: python -m scripts.enforcement.ci_backstop
 
+  pip-audit:
+    # PX-54 (2026-07 efficiency review, F-tci-09): a minimal dependency-vulnerability
+    # scan riding PX-26's badge/Dependabot work. Deliberately a SEPARATE job with
+    # `continue-on-error: true` and no `needs: quality` — per the prescription's
+    # own text ("land deliberately — a CVE-triggered CI failure is a new triage
+    # source for a solo maintainer"), this is advisory-only and must never block
+    # the `quality`/PR gate. Promoting it to blocking is a future, explicit decision.
+    name: pip-audit (advisory, non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install package + pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pip-audit
+
+      - name: Audit installed dependencies
+        run: pip-audit
+
   eval-smoke:
     name: Smoke eval (synthetic, label-gated)
     runs-on: ubuntu-latest

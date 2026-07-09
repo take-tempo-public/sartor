@@ -110,8 +110,14 @@ test-tier asset) the local test runner.
 The repository's top-level `LICENSE` is MIT; the vendored assets
 above carry their own licenses (MIT for paged.js / Chart.js;
 **MPL-2.0** for the test-tier axe-core). A machine-readable
-REUSE/SPDX manifest declaring this mix is planned for the public
-release.
+REUSE/SPDX manifest declaring this mix (PX-26) is committed at
+[`REUSE.toml`](REUSE.toml) — a wildcard MIT annotation plus the one
+axe-core MPL-2.0 override — with the full license texts under
+[`LICENSES/`](LICENSES/). It resolves as a passing
+[REUSE status badge](README.md) once the repo is pushed + promoted
+public (the `reuse.software` API needs a public remote to check
+against; the manifest itself is correct today and can be verified
+locally with `pip install reuse && reuse lint`).
 
 No external CDN is loaded at runtime. Every static asset in the
 preview / generated output ships from the local repo.

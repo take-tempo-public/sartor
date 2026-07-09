@@ -1,0 +1,24 @@
+# REUSE/SPDX licensing manifest (PX-26, E-2 machine badge set).
+#
+# Deliberately a single wildcard annotation + one override — NOT per-file
+# SPDX headers. Stamping every tracked file (analyzer.py included — the
+# prompt home, see AGENTS.md "LLM prompts") with header comments is a
+# large, prompt-adjacent diff for no functional gain; this manifest declares
+# the same licensing facts machine-readably without touching file bodies.
+# See SECURITY.md "Bundled third-party assets" for the human-readable version
+# of the same mix.
+
+version = 1
+
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "sartor. contributors"
+SPDX-License-Identifier = "MIT"
+
+# tests/ux/a11y/vendor/axe.min.js — axe-core v4.10.2, vendored test-tier-only
+# (see tests/ux/a11y/vendor/README.md). MPL-2.0, not MIT — the one exception
+# to the wildcard above.
+[[annotations]]
+path = "tests/ux/a11y/vendor/axe.min.js"
+SPDX-FileCopyrightText = "Deque Systems, Inc."
+SPDX-License-Identifier = "MPL-2.0"

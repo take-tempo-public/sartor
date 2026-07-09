@@ -875,6 +875,14 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       RELEASE_ARC scope brief (§Phase 4.8, "Big-push scope brief") — landed alongside it. Also
       noted: MEMORY.md index ~19.2KB vs the 17.1KB soft target — fold a completed-cluster
       consolidation into the PX-46 owner-gated memory review.
+      **→ Update (2026-07-09, `docs/badges-readme-prep`):** PX-26 (E-2 machine badge set) +
+      PX-54 (pip-audit) landed as committed files — README badges row, `.github/dependabot.yml`,
+      the advisory `pip-audit` CI job, `.github/workflows/scorecard.yml`, and the `REUSE.toml` +
+      `LICENSES/` manifest (`reuse lint` clean, 578/578 files). 2 of the row's 20 PX rows now
+      land; row stays open. Owner-activation still owed: the `take-tempo-public/sartor` GitHub
+      repo creation + public promotion + PyPI Trusted Publisher config ([HUMAN], out of scope
+      here) — until then the CI/Scorecard/REUSE badges render unresolved. A pinned dependency
+      lockfile is a separate, still-undecided owner call.
 
 #### Resolved
 

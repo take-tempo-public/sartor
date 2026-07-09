@@ -1,0 +1,25 @@
+# Dependabot version-update config (PX-26, E-2 machine badge set).
+#
+# `pip` ecosystem works directly against pyproject.toml's `dependencies` /
+# `[project.optional-dependencies]` — no lockfile is committed today (out of
+# scope for this branch; a pinned lockfile is a separate owner decision, see
+# RELEASE_CHECKLIST.md Carry-forward ledger). `github-actions` covers the
+# pinned action versions in .github/workflows/*.yml.
+#
+# Latent until the repo is pushed to GitHub and this file is read by
+# Dependabot on the real remote (matches ci.yml's "committed but dormant
+# until pushed" framing — see docs/governance/enforcement.md).
+
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
