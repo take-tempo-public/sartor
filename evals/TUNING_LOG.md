@@ -3022,3 +3022,93 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    kept the merge-train rebase mechanical instead of adversarial: the
    orchestrator had one clear instruction to execute, not two branches to
    reconcile after the fact.
+
+---
+
+## Eval baseline model-reference refresh — 2026-07-09 — `chore/eval-baseline-sonnet-5` — `2026-07-08.4` (unchanged)
+
+1. **What changed?** `evals/results/baseline_v1.json` (`schema_version` 3,
+   unchanged format) refreshed from `model_snapshots.sonnet =
+   "claude-sonnet-4-6"` / `prompt_version "2026-05-24.4"` to
+   `"claude-sonnet-5"` / `"2026-07-08.4"` (the live `analyzer.py:
+   PROMPT_VERSION` at HEAD — not the `2026-07-01.1` the RELEASE_CHECKLIST
+   ledger row cited; later merge-train lanes bumped it three more times
+   since that row was written). This is a **bookkeeping refresh, not a
+   prompt or code change** — `analyzer.py` was not touched, no
+   `PROMPT_VERSION` bump was made here. Also seeds the new
+   `callback_likelihood` rubric (added `8640773`, no prior baseline entry)
+   fresh into every fixture cell.
+2. **Why?** Production has run `SONNET_MODEL = "claude-sonnet-5"` since
+   `chore/upgrade-sonnet-5-model`, but the tracked gate baseline still
+   recorded Sonnet 4.6 on a stale prompt version, so the eval-smoke gate
+   (PX-13, exit 2 on regression > 0.5 vs `baseline_v1.json`) and the
+   full-suite regression report were both comparing live Sonnet-5 output
+   against a Sonnet-4.6/older-prompt reference — a standing model/prompt
+   confound that reads as phantom drift on every run. A controlled
+   single-variable A/B on 2026-07-05 (same prompt, 4.6 vs 5, both
+   thinking-off) already showed no material regression, so this refresh
+   is re-anchoring the reference, not re-validating quality.
+3. **Result?** One run of `python evals/runner.py --suite synthetic`
+   (generate-mode only — `--mode assemble` is a structurally different
+   population per `runner.py`'s F-11 docstring and the comparison logic
+   doesn't support a split baseline, so generate-mode-only matches this
+   file's pre-existing scope). Result file:
+   `evals/results/20260709_173755Z.jsonl` (data-scientist-junior,
+   sre-mid-level; `.jsonl` run logs are gitignored per
+   `evals/results/*` — referenced here by name, not committed).
+   `pm-senior`'s first attempt in that file hit a Haiku judge_error
+   (invalid JSON) on the new `callback_likelihood` rubric; re-ran that one
+   fixture standalone (`evals/results/20260709_174652Z.jsonl`,
+   `run_id=24b12daa4840`, clean 6/6) and used the clean attempt for all
+   six `pm-senior` cells so the fixture's row comes from one
+   internally-consistent run.
+
+   | Fixture | ats_format | callback_likelihood | clarification_quality | grounding | keyword_coverage | tone | iteration_quality |
+   |---|---|---|---|---|---|---|---|
+   | data-scientist-junior | 4.58→**4.8** | n/a→**4.6** (new) | 3.92→**4.2** | 4.70→**4.8** | 4.30→**4.2** | 4.20→**4.2** | n/a |
+   | pm-senior | 4.44→**4.8** | n/a→**4.2** (new) | 4.00→**4.2** | 4.40→**4.8** | 4.12→**4.2** | 4.18→**4.2** | n/a |
+   | sre-mid-level | 4.52→**4.2** | n/a→**4.3** (new) | 4.02→**3.2** | 4.64→**4.2** | 4.32→**4.2** | 4.12→**4.2** | 3.73→**3.8** |
+
+   (Left side = old `v1.0.2_2026-05-28` 5-run aggregate on 4.6/`2026-05-24.4`;
+   right side = new n=1 single-run reading on 5/`2026-07-08.4`. n=1 means
+   `stdev`/`min`/`max` collapse to the point estimate — this is a
+   re-anchored reference point, not a revalidated confidence interval.)
+   Every cell is ≥ 4.0 except the two carried-forward known-fragile cells
+   below (unchanged in kind from the prior baseline, not new regressions):
+   `sre-mid-level × clarification_quality` (3.2 — Haiku judge noise on the
+   **unchanged** `clarify` path; single-run spread of this size is within
+   the v1.0.1 baseline's own run-to-run variance) and `sre-mid-level ×
+   iteration_quality` (3.8, n=1 — known fixture fragility, consistent with
+   the prior 3.73 n=3 reading).
+
+   Spend: pipeline cost (analyze+clarify+generate, both runs, from the
+   recorded `cost_usd` fields) = **$0.51135**; plus 28 Haiku judge grading
+   calls (21 + 7, uninstrumented — `_grade()` calls the Anthropic client
+   directly, not through `analyzer._call_llm`, so no `logs/llm_calls.jsonl`
+   record) estimated at ~$0.08–0.12 from rubric + payload size, for an
+   **estimated total ≈ $0.59–0.63**. Because that estimate sits at/over
+   the session's $0.60 guardrail, the "confirm `--subset smoke` self-compare
+   is clean" step was done **offline** instead of as a second live paid
+   run: `evals.runner._load_baseline_scores()` +
+   `evals.runner._detect_regression()` (the actual PX-13 gate functions)
+   were called directly against the committed `baseline_v1.json`, and for
+   every fixture's `grounding` cell (the rubric `--subset smoke` grades)
+   the seeded baseline score matched the just-recorded run
+   (`delta=0.0`, `is_regression=False`, `score ≥ 4.0`) — i.e. the gate
+   reads this file as clean by construction, without spending more budget
+   to prove it live.
+4. **Learned?** (a) A single-run baseline capture (vs. the original
+   5-run v1.0.2 aggregate) is adequate for a same-prompt model-reference
+   swap where the point is "stop comparing against the wrong model," not
+   "establish a new confidence interval" — say so explicitly in the file's
+   `notes` field so nobody later reads `n=1` `stdev=0.0` as five-run
+   stability. (b) The Haiku judge's occasional invalid-JSON `judge_error`
+   is cheap to route around by re-running just the one affected fixture
+   (`--fixture <name>`) rather than the whole suite — no CLI support exists
+   for regrading a single (fixture, rubric) pair without re-running the
+   pipeline, which is worth keeping in mind for the next transient judge
+   failure. (c) Grading-call spend is invisible to `logs/llm_calls.jsonl`
+   (a separate, uninstrumented Anthropic client in `runner.py:_grade()`),
+   so a lane's "exact spend" claim for an eval run is necessarily an
+   estimate unless that gap gets closed — worth a future PX row, not fixed
+   here (out of this lane's scope).
