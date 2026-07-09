@@ -1347,23 +1347,48 @@ def run_suite(
             if grounding_signals:
                 from evals.grounding_signals import run_grounding_signals
 
-                grounding_signals_data = run_grounding_signals(
-                    result.get("resume_content", ""),
-                    sources,
-                )
-                logger.info(
-                    "  grounding_signals: %d bullets  nli_mean=%.3f contradictions=%d"
-                    "  minicheck_mean=%.3f low_scores=%d",
-                    grounding_signals_data["bullet_count"],
-                    grounding_signals_data["nli_summary"]["mean_entailment"],
-                    grounding_signals_data["nli_summary"]["contradiction_count"],
-                    grounding_signals_data["minicheck_summary"]["mean_score"],
-                    grounding_signals_data["minicheck_summary"]["low_score_count"],
-                )
-                # Layer L1/L2 into the composite in place — det_metrics is
-                # embedded by reference in every record write, so this enriches
-                # all downstream records for this fixture at once.
-                _enrich_groundedness(det_metrics["groundedness"], grounding_signals_data)
+                try:
+                    grounding_signals_data = run_grounding_signals(
+                        result.get("resume_content", ""),
+                        sources,
+                    )
+                except Exception as exc:
+                    # Grounding is an OPTIONAL enhancement layered on top of the
+                    # already-completed (and paid) analyze/clarify/generate work
+                    # above — a scorer failure (a drifted dep, a low-RAM host
+                    # failing the MiniCheck load, missing [eval-grounding]
+                    # extras) must NEVER discard that work or abort the rest of
+                    # the run. Degrade to an un-scored fixture and keep going —
+                    # same contract as evals/bootstrap.py's
+                    # build_bootstrap_document() (EV-2, window-8.5-findings).
+                    logger.warning(
+                        "Grounding signals scoring failed for %s; continuing without it: %s",
+                        fixture["name"],
+                        exc,
+                        exc_info=True,
+                    )
+                    _emit(
+                        "warning",
+                        fixture=fixture["name"],
+                        index=index,
+                        total=total_fixtures,
+                        message=f"Grounding signals failed for {fixture['name']}: {exc}",
+                    )
+                    grounding_signals_data = None
+                else:
+                    logger.info(
+                        "  grounding_signals: %d bullets  nli_mean=%.3f contradictions=%d"
+                        "  minicheck_mean=%.3f low_scores=%d",
+                        grounding_signals_data["bullet_count"],
+                        grounding_signals_data["nli_summary"]["mean_entailment"],
+                        grounding_signals_data["nli_summary"]["contradiction_count"],
+                        grounding_signals_data["minicheck_summary"]["mean_score"],
+                        grounding_signals_data["minicheck_summary"]["low_score_count"],
+                    )
+                    # Layer L1/L2 into the composite in place — det_metrics is
+                    # embedded by reference in every record write, so this enriches
+                    # all downstream records for this fixture at once.
+                    _enrich_groundedness(det_metrics["groundedness"], grounding_signals_data)
 
             fixture_scores: dict[str, float] = {}
 

@@ -13,6 +13,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: eval-run resilience + annotate flow + migration data-safety (`fix/eval-pipeline-and-data-safety`, 2026-07-08)
+
+Four pre-existing bugs surfaced by the owner's E2E walkthrough triage (root-caused by a
+read-only investigation, not new regressions from any recent branch — in particular, not
+F-11): a scorer failure could abort a whole paid eval run, the pinned MiniCheck loader could
+hard-crash on low-RAM hosts, the Annotate tab's bootstrap-complete handler could leave the
+editor stuck hidden, and two 2026-05-29 migrations could silently cascade-delete a real user's
+entire application/generation history on upgrade. All four fixed; each had zero prior test
+coverage for the specific failure path (confirmed by reverting each fix in isolation and
+re-running its new test, which then fails exactly as described below).
+
+- **Eval run degrades, not aborts, on grounding-scorer failure**
+  (`evals/runner.py`) — `run_grounding_signals(...)` sat outside the per-fixture
+  `try/except` (which closes before the metrics/grounding block), so any scorer
+  exception propagated out of `run_suite()` and hit the worker-thread `except Exception`
+  handler in `blueprints/diagnostics.py`'s `/api/eval/run` SSE route, turning one scorer
+  hiccup into a failed run — discarding the already-completed, already-paid
+  analyze/clarify/generate/judge work for every fixture. Now wrapped per-fixture: a scorer
+  exception degrades `grounding_signals_data` to `None` (skips `_enrich_groundedness`,
+  records still write with `status: "ok"`), emits an `_emit("warning", ...)` progress event,
+  and the loop continues — the same contract `evals/bootstrap.py`'s
+  `build_bootstrap_document()` already uses (EV-2, window-8.5-findings). The dashboard's
+  Quality-tab streamer (`dashboard/templates/dashboard.html`) gained a `warning` case in
+  `describe()` mirroring the bootstrap-wrapper JS's existing `⚠` rendering.
+- **MiniCheck loader hardening** (`evals/grounding_signals.py`) — the pinned minicheck
+  commit's `Inferencer` hardcodes `device_map="auto"` on
+  `AutoModelForSeq2SeqLM.from_pretrained` for `flan-t5-large` with no `offload_folder` or
+  `device` kwarg exposed through `MiniCheck.__init__` (verified against the installed
+  package's actual source, not assumed) — on a RAM-constrained host, accelerate's auto
+  device-map planning can raise before the model even loads. `_load_minicheck_scorer()` now
+  runs inside `_hardened_device_placement()`, a scoped monkeypatch of that one
+  `from_pretrained` classmethod that forces `device_map="cpu"` (skips the GPU+CPU+disk
+  auto-plan entirely) and sets an `offload_folder` fallback for genuinely constrained hosts —
+  a no-op on hosts with enough RAM, always restored on exit (success or exception). The EV-1
+  pin is untouched.
+- **Annotate tab: bootstrap-complete now loads the editor** (`dashboard/templates/dashboard.html`)
+  — the bootstrap-`done` and seed-export handlers set `$('fixtureSelect').value = slug`
+  directly, which never fires `change` (and re-picking the same value manually can't fire it
+  either), so the editor stayed hidden until an unrelated interaction happened to trigger a
+  reload. Both handlers now call `loadFixture(slug, user)` directly after setting the select.
+- **Migration data-loss fix (forward-protection P0)** (`db/migrations/versions/0006_*.py`,
+  `0007_*.py`) — both used `op.batch_alter_table("application", recreate="always")` to add
+  columns / swap the `status` CHECK constraint. `application` is a CASCADE parent of
+  `application_run`; with the app's `PRAGMA foreign_keys=ON` connect-time default active
+  during migrations too (the listener is registered on the `Engine` class, so Alembic's engine
+  gets it too), the recreate's internal `DROP TABLE application` cascade-deleted every run +
+  its audit trail on any DB that already had them — reproduced end-to-end (downgrade → seed
+  app+run → upgrade → run count 1→0). Column adds now go through native `op.add_column` (no
+  batch — the PX-02 precedent already used in migrations 0010/0011/0013). The CHECK-constraint
+  swap can't go through native `ALTER TABLE` at all (SQLite has none for CHECK) and disabling
+  `PRAGMA foreign_keys` around the batch recreate does NOT work either — empirically confirmed
+  the pragma is a no-op once Alembic's `env.py` has opened its single wrapping transaction for
+  the whole migration run. New `db/migrations/_sqlite_check_constraint.py` rewrites the CHECK
+  clause by editing `sqlite_master.sql` in place (`PRAGMA writable_schema` + a
+  `PRAGMA schema_version` bump) instead of rebuilding the table — no `DROP TABLE` is ever
+  issued against the parent, so there's nothing for the cascade to fire on, and the chain
+  reaches `head` successfully even on a DB with existing run history (verified: children
+  survive, `PRAGMA integrity_check` and `PRAGMA foreign_key_check` stay clean, for a fresh
+  empty DB, a pre-0006 DB with seeded history, and an already-at-head DB re-run).
+
 ### Chore: cross-document link checker + repo-wide link sweep (`chore/doc-link-sweep`, 2026-07-08)
 
 Carry-forward ledger item #7 / RELEASE_ARC §Phase 4.8 (ii): `wiki-lint` only checks

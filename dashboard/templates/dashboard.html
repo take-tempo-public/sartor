@@ -1111,6 +1111,7 @@
     if (ev === 'generating') return 'Fixture ' + pos(p) + ' (' + (p.fixture || '') + '): generating…';
     if (ev === 'rubric_done') return (p.fixture || '') + ' × ' + (p.rubric || '') + ' → ' + (p.score == null ? '—' : p.score) + ' (' + (p.verdict || p.status || '') + ')';
     if (ev === 'fixture_done') return 'Fixture ' + (p.fixture || '') + ' done' + (p.eval_composite != null ? ' (composite ' + p.eval_composite + ')' : '') + '.';
+    if (ev === 'warning') return '⚠ ' + (p.message || 'warning');
     return '';
   }
   // Generic SSE POST streamer: calls onEvent(ev, payload) for EVERY server event, plus a
@@ -1484,7 +1485,7 @@
             else if (ev === 'jd_done') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ' done (' + p.bullets + 'b/' + p.skills + 's).';
             else if (ev === 'scoring') prog.textContent = p.message || 'Scoring grounding…';
             else if (ev === 'warning') prog.textContent = '⚠ ' + (p.message || 'warning');
-            else if (ev === 'done') { prog.textContent = 'Bootstrap written: ' + p.slug + ' (' + p.bullet_clusters + ' bullet clusters, ' + p.skill_clusters + ' skill clusters' + (p.grounded ? ', grounded' : '') + ').'; loadFixtures().then(function () { $('fixtureSelect').value = p.slug; }); }
+            else if (ev === 'done') { prog.textContent = 'Bootstrap written: ' + p.slug + ' (' + p.bullet_clusters + ' bullet clusters, ' + p.skill_clusters + ' skill clusters' + (p.grounded ? ', grounded' : '') + ').'; loadFixtures().then(function () { $('fixtureSelect').value = p.slug; loadFixture(p.slug, user); }); }
             else if (ev === 'error') prog.textContent = 'Error: ' + (p.error || 'bootstrap failed') + (p.detail ? ' — ' + p.detail : '');
           });
           return pump();
@@ -1505,7 +1506,7 @@
         var d = res.d || {};
         if (!res.ok) { prog.textContent = 'Error: ' + (d.error || resp.status) + (d.detail ? ' — ' + d.detail : ''); return; }
         prog.textContent = 'Seed written: ' + d.path + ' (' + d.experiences + ' experiences, ' + d.bullets + ' bullets, ' + d.summary_items + ' summary items, ' + d.skills + ' skills).';
-        loadFixtures().then(function () { if (d.slug) $('fixtureSelect').value = d.slug; });
+        loadFixtures().then(function () { if (d.slug) { $('fixtureSelect').value = d.slug; loadFixture(d.slug, user); } });
       });
     }).catch(function () { prog.textContent = 'Seed export request failed.'; }).then(function () { $('bsExportSeed').disabled = false; });
   }

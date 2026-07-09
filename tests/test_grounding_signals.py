@@ -189,3 +189,112 @@ class TestRunGroundingSignals:
         result = self._run_with_mocks(mock_nli, mock_mc, resume="## Exp\n- Led a team\n")
         assert result["nli"] == mock_nli
         assert result["minicheck"] == mock_mc
+
+
+class TestMinicheckLoaderHardening:
+    """Fix #2 (2026-07-08): MiniCheck's Inferencer hardcodes device_map="auto"
+    with no offload_folder exposed — hardened via a scoped monkeypatch. These
+    tests need the real `transformers` package (to patch the real
+    `AutoModelForSeq2SeqLM` class object) but never download or run a model.
+    """
+
+    transformers = pytest.importorskip("transformers")
+
+    def test_forces_cpu_and_injects_offload_folder(self, tmp_path):
+        from evals import grounding_signals as gs
+
+        AutoModelForSeq2SeqLM = self.transformers.AutoModelForSeq2SeqLM
+        captured = {}
+
+        def fake_from_pretrained(*args, **kwargs):
+            captured.update(kwargs)
+            return MagicMock()
+
+        with (
+            patch.object(AutoModelForSeq2SeqLM, "from_pretrained", fake_from_pretrained),
+            gs._hardened_device_placement(),
+        ):
+            AutoModelForSeq2SeqLM.from_pretrained("dummy-ckpt", cache_dir=None, device_map="auto")
+
+        assert captured["device_map"] == "cpu"
+        assert captured["offload_folder"] == gs._minicheck_offload_folder()
+
+    def test_passthrough_when_device_map_not_requested(self):
+        from evals import grounding_signals as gs
+
+        AutoModelForSeq2SeqLM = self.transformers.AutoModelForSeq2SeqLM
+        captured = {}
+
+        def fake_from_pretrained(*args, **kwargs):
+            captured.update(kwargs)
+            return MagicMock()
+
+        with (
+            patch.object(AutoModelForSeq2SeqLM, "from_pretrained", fake_from_pretrained),
+            gs._hardened_device_placement(),
+        ):
+            AutoModelForSeq2SeqLM.from_pretrained("dummy-ckpt", cache_dir=None)
+
+        assert "device_map" not in captured
+        assert "offload_folder" not in captured
+
+    def test_restores_original_from_pretrained_after_context_exits(self):
+        # Bound-classmethod access isn't `is`-stable across repeated reads (a
+        # fresh MethodType wrapper each time), so compare the underlying
+        # function object (`.__func__`) for the before/after (still-a-
+        # classmethod) states. Mid-context it's a plain function assigned
+        # directly on the class (no auto-binding, so no `.__func__` at all) —
+        # assert that shape instead of an identity that doesn't apply.
+        from evals import grounding_signals as gs
+
+        AutoModelForSeq2SeqLM = self.transformers.AutoModelForSeq2SeqLM
+        before_func = AutoModelForSeq2SeqLM.from_pretrained.__func__
+        with gs._hardened_device_placement():
+            assert not hasattr(AutoModelForSeq2SeqLM.from_pretrained, "__func__")
+        assert AutoModelForSeq2SeqLM.from_pretrained.__func__ is before_func
+
+    def test_restores_original_even_if_load_raises(self):
+        from evals import grounding_signals as gs
+
+        AutoModelForSeq2SeqLM = self.transformers.AutoModelForSeq2SeqLM
+        before = AutoModelForSeq2SeqLM.from_pretrained.__func__
+        with pytest.raises(RuntimeError), gs._hardened_device_placement():
+            raise RuntimeError("simulated load failure")
+        assert AutoModelForSeq2SeqLM.from_pretrained.__func__ is before
+
+    def test_load_minicheck_scorer_applies_hardening_around_construction(
+        self, tmp_path, monkeypatch
+    ):
+        """Integration-style: _load_minicheck_scorer() must construct MiniCheck
+        WHILE the hardening patch is active, so any device_map="auto" call
+        MiniCheck's Inferencer makes internally gets forced to cpu+offload.
+        """
+        pytest.importorskip("minicheck")
+        from evals import grounding_signals as gs
+
+        monkeypatch.setattr(gs, "_ensure_minicheck_nltk_data", lambda: None)
+        monkeypatch.setattr(gs, "_minicheck_offload_folder", lambda: str(tmp_path))
+
+        AutoModelForSeq2SeqLM = self.transformers.AutoModelForSeq2SeqLM
+        captured = {}
+
+        def fake_from_pretrained(*args, **kwargs):
+            captured.update(kwargs)
+            return MagicMock()
+
+        class FakeMiniCheck:
+            def __init__(self, **kwargs):
+                # Simulate what minicheck's Inferencer does internally for
+                # the flan-t5-large checkpoint (inference.py:40).
+                AutoModelForSeq2SeqLM.from_pretrained(
+                    "lytang/MiniCheck-Flan-T5-Large", cache_dir=None, device_map="auto"
+                )
+
+        with (
+            patch.object(AutoModelForSeq2SeqLM, "from_pretrained", fake_from_pretrained),
+            patch("minicheck.minicheck.MiniCheck", FakeMiniCheck),
+        ):
+            gs._load_minicheck_scorer()
+
+        assert captured["device_map"] == "cpu"
+        assert captured["offload_folder"] == str(tmp_path)
