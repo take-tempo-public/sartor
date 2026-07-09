@@ -822,6 +822,16 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       repo creation + public promotion + PyPI Trusted Publisher config ([HUMAN], out of scope
       here) — until then the CI/Scorecard/REUSE badges render unresolved. A pinned dependency
       lockfile is a separate, still-undecided owner call.
+      **→ Update (2026-07-09, `docs/v109-epic-scope`):** the GitHub repo
+      `take-tempo-public/sartor` is **created + `main` pushed** (private; the throwaway GitHub
+      `LICENSE` init commit was force-pushed over with the real history, owner-directed). **All
+      remaining CI / PyPI / GHCR / branch-protection activation is DEFERRED to the pre-v1.1.0
+      checklist per owner (2026-07-09)** — the exact one-time steps live in the workflow files
+      themselves: `.github/workflows/release.yml` (PyPI Trusted Publisher — project `sartor`,
+      environment `pypi`), `docker.yml` (GHCR `ghcr.io/take-tempo-public/sartor` visibility),
+      and `ci.yml`'s ACTIVATION NOTE (names the four required checks; NOT `eval-smoke`), plus
+      `docs/install.md`. Public promotion (repo → public) + badge/citation-link resolution land
+      at v1.1.0.
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in

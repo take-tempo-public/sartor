@@ -1114,7 +1114,7 @@ re-confirmation doubles as resume.
 
 ---
 
-## UX Cohesion Epic (registered 2026-07-09 — unscheduled, post-v1.0.8)
+## UX Cohesion Epic (registered 2026-07-09 — slotted into v1.0.9, owner 2026-07-09)
 
 > **Registration only — not a spec.** Surfaced by the owner's e2e round-2
 > walkthrough ([`reviews/2026-07-ux-round2-findings.md`](reviews/2026-07-ux-round2-findings.md)
@@ -1122,8 +1122,10 @@ re-confirmation doubles as resume.
 > from that pass landed immediately as Wave A quick-wins
 > (`fix/round2-quick-wins`). Everything below needs a design/shape decision
 > first, so it is parked here as a named epic rather than decided inline.
-> **Version slot: TBD — owner to slot this against the v1.0.9 docs epic**
-> (Phase 4.9 above); it may run before, after, or interleaved with it.
+> **Version slot: v1.0.9** (owner-slotted 2026-07-09 — rolls into the v1.0.9
+> epic alongside the Phase 4.9 docs-site work; may run before, after, or
+> interleaved with it). Now also carries the **Diagnostics-DX + hardening**
+> thread below.
 
 Themes (each design-scoped, not yet branch-planned):
 
@@ -1158,6 +1160,26 @@ Themes (each design-scoped, not yet branch-planned):
   as style source) is already faithful while only the **preview** is lossy —
   "preview should match output" is the principle at stake. Detail in the
   findings doc's T2 deep-dive.
+- **Diagnostics-DX + hardening** (round-2 items #1–#17) — the diagnostics
+  console (`/_dashboard`) round-2 batch, captured in
+  [`reviews/2026-07-diagnostics-round2-findings.md`](reviews/2026-07-diagnostics-round2-findings.md)
+  (owner-decided 2026-07-09: **bundle into v1.0.9; nothing pre-empts the v1.0.8
+  tag** — the broken fixture flow ships as-is). Fix order: **#15 → #11** (reconcile
+  the anchor-JD `.txt` path + add the collate CLI `--fixture` flag — unblocks the
+  whole fixture flow, currently broken end-to-end), then the **run-lock + a real
+  run-cancel endpoint** (#1 + the daemon-thread run-lifecycle; owner opted **in** to
+  cancel, not just a lock), the **annotate-flow persistence** (#9 localStorage draft
+  + jump-to-flagged-item — pairs with the **grounding-signal persistence gap** from
+  the #14 run-health review, where NLI + MiniCheck scores never wrote back to
+  `annotations.json`), the **bootstrap skills parser** (#8, LLM-free) and the
+  **should_omit/verdict tooltip + design-Q** (#7), then the instructional / assistant
+  / progress-bar polish (#2–#6, #10, #13, #16, #17). Run-health follow-ups (0-byte-run
+  guard, full-rubric coverage) ride here too
+  ([`reviews/2026-07-e2e-run-health-review.md`](reviews/2026-07-e2e-run-health-review.md)).
+  **Separate governance decision (NOT epic bug work):** single-threaded `app.run()`
+  (`app.py`, no `threaded=True`) freezes the whole app during a diagnostics run —
+  making it threaded touches the C-1-sensitive loopback-bind area, so it is an
+  owner-gated governance call, deliberately kept out of this epic.
 
 Deferred out of this epic (tracked elsewhere): **Co3** (skill-suggestion
 ATS-quality) is a tune-loop question, not a code branch. **O1b** (dates
