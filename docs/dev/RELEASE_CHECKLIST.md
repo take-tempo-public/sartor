@@ -576,6 +576,15 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       **calibration itself stays open**: it needs the owner's manual browser annotation pass, so PV-2
       is **staged, owner-gated** (may spill to v1.0.9 per RELEASE_ARC §4.8). Remains open until those
       labels + the calibration land.
+      **→ Update (2026-07-09, `docs/diagnostics-round2-capture` / #14 run-health review):** the owner's
+      manual annotation pass **did run** this session — 53 real annotations on
+      `evals/fixtures/real/robert-bootstrap/annotations.json` (verdict + should_omit fully populated) —
+      but surfaced a **different, more specific blocker than "awaiting the owner":** both automated
+      grounding signals (NLI + MiniCheck) are **100% null**, an annotate-flow **persistence gap** (the
+      scorer works in the eval *result* records; the scores never wrote back to the fixture). PV-2
+      calibration is now blocked on **fixing that persistence seam + re-running grounding**, folded into
+      the **v1.0.9** Diagnostics-DX thread. Detail:
+      [`reviews/2026-07-e2e-run-health-review.md`](reviews/2026-07-e2e-run-health-review.md).
 
 - [ ] **Agent-coding-practices kit-adoption — staged commitments (2026-06-23)** — the
       [`kit-adoption-design.md`](kit-adoption-design.md) arc's cross-cutting deferrals, kept in
