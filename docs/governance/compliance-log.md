@@ -31,3 +31,35 @@
 - **Note:** first run; the registered `/sartor:compliance-witness` surfaces on the next
   Claude Code reload — this pilot reproduced the Sonnet subagent in-session (the
   registered Task-delegated path is contract-identical).
+
+## 2026-07-08 — pre-tag companion run (`chore/compliance-witness-2026-07-08`)
+
+- **Window:** `44d6814` (v1.0.7 tag) → HEAD `80febb2` (189 commits). Primary surface:
+  `docs/governance/`, `RELEASE_ARC.md`/`RELEASE_CHECKLIST.md`, `CHANGELOG.md`, the
+  post-blueprint-split wiki, and AGENTS.md's C-6 module list.
+- **Counts:** FLAG 3 · WATCH 3 · AFFIRM 6 · 0 withheld (cap 12).
+- **Gate verdict:** **needs attention** (3 FLAG-tier).
+- **FLAG — CW-101:** `AGENTS.md:50,167` names `docx_to_persona_html.py` as C-6-deterministic,
+  but `tests/test_construction_boundary.py`'s `DETERMINISTIC_MODULES` gates only 7 modules,
+  omitting it — a C-0 enforcement gap (module is clean today; the gate just doesn't check).
+  New, not previously tracked.
+- **FLAG — CW-102:** `charter.md:81-83,138-139` + `enforcement.md:51-52` (touched as recently
+  as `f1b3193`, 2026-07-08) still mark PX-19/PX-20 "owed — v1.0.8"; both shipped Sprint 8.3a
+  (`RELEASE_CHECKLIST.md:81`). Pure doc catch-up.
+- **FLAG — CW-103:** `route-surface.md`, `code-module-map.md`, `diagnostics-console.md`,
+  `PRODUCT_SHAPE.md` still cite `app.py` as route-bearing; it's a 297-line zero-route
+  composition root post-8.3a-h. Already tracked (`RELEASE_ARC.md:1061` PX-40/PX-41, v1.0.9) —
+  this run confirms the gap persists and flags its size (a whole wiki page) as worth a
+  pull-forward judgment call before the v1.0.8 tag.
+- **WATCH:** CW-104 (charter D-6 Chromium-classification cite stale, already fixed by PX-31);
+  CW-105 (`RELEASE_ARC.md:23` top-of-doc v1.0.8 summary undersells realized scope —
+  within-doc only); CW-106 (wiki `PROMPT_VERSION` cite stale but correctly hedged
+  "at this ingest" per D-5).
+- **AFFIRM:** `CHANGELOG.md` current with all Train 3/4 merges; `RELEASE_CHECKLIST.md`
+  Carry-forward open-count (8) matches actual rendered rows; `SECURITY.md` post-split-correct;
+  `tests/test_egress_allowlist.py` matches the blueprint split; `pyproject.toml` version
+  correctly un-bumped pre-tag; portable-enforcement-core description matches
+  `scripts/enforcement/guards/` + `.githooks/`.
+- **Full findings-register table:** rendered to chat this run (not filed to a doc — no
+  `output/` write, per the witness's write envelope). CW-101 is the one net-new,
+  unscheduled item; CW-102/103 are known items this run reconfirms are still open.
