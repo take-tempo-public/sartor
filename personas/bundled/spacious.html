@@ -60,7 +60,7 @@
         {% if job.name %}<span class="company">{{ job.name }}</span>{% endif %}
       </h3>
       {% if job.startDate or job.endDate %}
-      <span class="dates">{{ job.startDate or "" }}{% if job.startDate and job.endDate %} – {% endif %}{{ job.endDate or "" }}</span>
+      <span class="dates">{{ date_range(job.startDate, job.endDate) }}</span>
       {% endif %}
     </header>
     {% if job.summary %}<p class="job-summary">{{ job.summary }}</p>{% endif %}
@@ -109,7 +109,7 @@
         {% if ed.area %}<span class="area">{{ ed.area }}</span>{% endif %}
       </h3>
       {% if ed.startDate or ed.endDate %}
-      <span class="dates">{{ ed.startDate or "" }}{% if ed.startDate and ed.endDate %} – {% endif %}{{ ed.endDate or "" }}</span>
+      <span class="dates">{{ date_range(ed.startDate, ed.endDate) }}</span>
       {% endif %}
     </header>
   </article>

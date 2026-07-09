@@ -726,6 +726,19 @@ async function uploadFile(file) {
     const bullets = data.bullets_created || 0;
     const altTitles = data.alternate_titles_created || 0;
     const skillsFound = data.skills_created || 0;
+    // Dropped-role telemetry (fix/output-identity-and-dates): roles the
+    // extractor found but couldn't place (missing company or start date) —
+    // surfaced instead of silently vanishing from the corpus.
+    const dropped = data.experiences_dropped || 0;
+    const droppedList = data.dropped_experiences || [];
+    const droppedNote = dropped
+      ? ` ${dropped} role(s) could not be parsed (missing company or start ` +
+        `date) — review and add manually: ` +
+        droppedList
+          .map(d => d.candidate_inferred_title || d.company || '(untitled)')
+          .join(', ') +
+        '.'
+      : '';
 
     // Honesty: a 2xx with nothing extracted is NOT a success. Tell the user
     // plainly and don't fire the green toast — otherwise the status pill reads
@@ -738,7 +751,8 @@ async function uploadFile(file) {
           (errs.length
             ? errs.join('; ')
             : 'Make sure it’s a text résumé (not a scanned image) with ' +
-              'month/year dates on each role.');
+              'month/year dates on each role.') +
+          droppedNote;
       }
       _toast('No experiences found in résumé', true);
       return;
@@ -749,9 +763,14 @@ async function uploadFile(file) {
       out.textContent =
         `Added ${made} experience(s), ${merged} merged into existing roles, ` +
         `${altTitles} alternate title(s), ${bullets} bullet(s), ` +
-        `${skillsFound} skill(s) — now pending review below.`;
+        `${skillsFound} skill(s) — now pending review below.` +
+        droppedNote;
     }
-    _toast('Resume ingested into corpus');
+    if (dropped) {
+      _toast(`Resume ingested — ${dropped} role(s) need manual review`, true);
+    } else {
+      _toast('Resume ingested into corpus');
+    }
     // Render the new cards in place — the user is already on the Career Corpus
     // tab, so a "refetch next visit" flag isn't enough (the old bug: status said
     // ready but the list never updated). refreshCorpus() always refetches and

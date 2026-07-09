@@ -71,7 +71,12 @@ def app_client(tmp_path, monkeypatch):
 
     # Stub document writers — return a fake on-disk path. The Phase 1 test
     # surface is the route shape and context lineage, not docx rendering.
-    def _stub_resume_writer(content, fmt, user, base_dir, template_path=None):
+    # identity_override (fix/output-identity-and-dates): accepted so the
+    # stub matches generator.generate_resume's real signature; unused here
+    # since no Application/Candidate row is seeded for application_id=1.
+    def _stub_resume_writer(
+        content, fmt, user, base_dir, template_path=None, identity_override=None
+    ):
         out = Path(base_dir) / user / f"resume_stub{fmt}"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(content, encoding="utf-8")
@@ -124,6 +129,14 @@ def app_client(tmp_path, monkeypatch):
         },
         "iteration": 0,
         "run_id": "rid_iteration_test",
+        # fix/output-identity-and-dates: application_id is the corpus-era
+        # shape marker _is_pre_corpus_context checks for — every context a
+        # live /api/analyze writes carries it (blueprints/analysis.py). No
+        # matching Application/Candidate row is seeded (most tests below
+        # don't need DB-backed identity resolution); the route's DB lookups
+        # for this id gracefully no-op when the row isn't found, matching
+        # the existing _apply_chosen_summary / _persist_* best-effort pattern.
+        "application_id": 1,
     }
     context_path.write_text(json.dumps(initial, indent=2), encoding="utf-8")
     return client, context_path, output_dir

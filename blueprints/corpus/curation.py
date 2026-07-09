@@ -451,6 +451,20 @@ def ingest_resume_to_corpus(username: str) -> ResponseReturnValue:
             report=report,
         )
         session.commit()
+        if report.experiences_dropped:
+            # Dropped-role telemetry (fix/output-identity-and-dates): a role
+            # the extractor found but couldn't place (missing company and/or
+            # start date) used to vanish with no trace. Log loudly so it's
+            # visible in server logs even before the UI surfaces it.
+            logger.warning(
+                "Ingest %s: %d role(s) dropped (missing company/start date): %s",
+                safe_name,
+                report.experiences_dropped,
+                [
+                    d.get("candidate_inferred_title") or d.get("company") or "(untitled)"
+                    for d in report.dropped_experiences
+                ],
+            )
         payload = {
             "filename": safe_name,
             "experiences_created": report.experiences_created,
@@ -458,6 +472,8 @@ def ingest_resume_to_corpus(username: str) -> ResponseReturnValue:
             "bullets_created": report.bullets_created,
             "alternate_titles_created": report.alternate_titles_created,
             "skills_created": report.skills_created,
+            "experiences_dropped": report.experiences_dropped,
+            "dropped_experiences": report.dropped_experiences,
             "errors": report.errors,
         }
         # Honesty: a parse/extract failure that yields nothing must NOT look

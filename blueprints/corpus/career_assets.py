@@ -16,9 +16,9 @@ not new plumbing: `db/build_context.py` already reads both tables (ordered by
 `display_order`) into the synthesized corpus-mode résumé markdown the
 analyze/generate prompts see (F-04's "the DB models already exist and corpus
 mode already consumes them"). `corpus_to_json_resume.py`'s JSON-Resume preview
-still hardcodes `education: []` / `certificates: []` ("not modeled in the DB
-yet (v1.1+)") — that preview-rendering gap is pre-existing and out of scope
-here; this branch only closes the CRUD-UI gap the friction register flagged.
+ALSO projects both tables now (`_collect_education` / `_collect_certificates`,
+fix/output-identity-and-dates) — the preview-rendering gap this docstring used
+to flag is closed; this branch's own scope was always just the CRUD-UI half.
 """
 
 from __future__ import annotations

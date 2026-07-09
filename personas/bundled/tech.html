@@ -83,7 +83,7 @@
     </div>
     <div class="item-details">
       {% if job.startDate or job.endDate %}
-        <div class="item-details-date">{{ job.startDate or "" }}{% if job.startDate and job.endDate %} – {% endif %}{{ job.endDate or "" }}</div>
+        <div class="item-details-date">{{ date_range(job.startDate, job.endDate) }}</div>
       {% endif %}
     </div>
     <div class="clearfix"></div>
@@ -108,7 +108,7 @@
     </div>
     <div class="item-details">
       {% if p.startDate or p.endDate %}
-        <div class="item-details-date">{{ p.startDate or "" }}{% if p.startDate and p.endDate %} – {% endif %}{{ p.endDate or "" }}</div>
+        <div class="item-details-date">{{ date_range(p.startDate, p.endDate) }}</div>
       {% endif %}
     </div>
     <div class="clearfix"></div>
@@ -134,7 +134,7 @@
     </div>
     <div class="item-details">
       {% if ed.startDate or ed.endDate %}
-        <div class="item-details-date">{{ ed.startDate or "" }}{% if ed.startDate and ed.endDate %} – {% endif %}{{ ed.endDate or "" }}</div>
+        <div class="item-details-date">{{ date_range(ed.startDate, ed.endDate) }}</div>
       {% endif %}
     </div>
     <div class="clearfix"></div>

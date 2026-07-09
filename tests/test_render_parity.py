@@ -101,3 +101,67 @@ class TestDownloadPreviewParity:
         assert "Summary" in paras and "Professional Summary" not in paras
         assert "Experience" in paras and "Professional Experience" not in paras
         assert "Skills" in paras and "Core Competencies" not in paras
+
+
+class TestAtsScrubAndIdentityOverrideParity:
+    """fix/output-identity-and-dates: the ATS scrub and identity override run
+    inside generate_resume() itself (right after md_to_json_resume), so
+    .docx / .md / the jsonresume.json sidecar can never disagree."""
+
+    UNSAFE_MD = (
+        "# Dana [QA] Cole\n"
+        'Staff Engineer "the closer"\n'
+        "dana@example.com\n\n"
+        "## Summary\n"
+        "Shipped {v2} with <b>bold</b> claims and <50ms latency.\n\n"
+        "## Experience\n\n"
+        "### Acme, Staff Engineer\t2022-01 – present\n"
+        "- Cut p99 latency to <50ms using C++ and C#.\n"
+    )
+
+    def test_docx_md_and_sidecar_agree_on_scrubbed_text(self, tmp_path: Path) -> None:
+        docx_path = generate_resume(self.UNSAFE_MD, ".docx", "scrub", base_dir=str(tmp_path))
+        md_path = generate_resume(self.UNSAFE_MD, ".md", "scrub", base_dir=str(tmp_path))
+        sidecar = Path(docx_path).with_suffix(".jsonresume.json")
+        sidecar_doc = json.loads(sidecar.read_text(encoding="utf-8"))
+
+        docx_text = "\n".join(p.text for p in docx.Document(docx_path).paragraphs if p.text.strip())
+        md_text = Path(md_path).read_text(encoding="utf-8")
+
+        for surface_name, text in (("docx", docx_text), ("md", md_text)):
+            assert "[" not in text and "]" not in text, surface_name
+            assert "{" not in text and "}" not in text, surface_name
+            assert '"' not in text, surface_name
+            assert "<b>" not in text, surface_name
+            # tag-shaped <...> stripped, but a bare "<50ms" (no closing '>')
+            # and C++/C# (neither char is in the strip set) survive.
+            assert "<50ms" in text, surface_name
+            assert "C++" in text and "C#" in text, surface_name
+
+        assert sidecar_doc["meta"]["sartor"]["ats_scrubbed"]
+
+    def test_identity_override_applies_to_docx_and_md_alike(self, tmp_path: Path) -> None:
+        identity = {
+            "name": "Real Name",
+            "email": "real@example.com",
+            "phone": "",
+            "linkedin_url": "",
+            "website_url": "",
+        }
+        stale_md = (
+            "# Old Name\nold@example.com | https://stray-site.example\n\n## Summary\nBody text.\n"
+        )
+        docx_path = generate_resume(
+            stale_md, ".docx", "identity", base_dir=str(tmp_path), identity_override=identity
+        )
+        md_path = generate_resume(
+            stale_md, ".md", "identity", base_dir=str(tmp_path), identity_override=identity
+        )
+        docx_text = "\n".join(p.text for p in docx.Document(docx_path).paragraphs if p.text.strip())
+        md_text = Path(md_path).read_text(encoding="utf-8")
+        for surface_name, text in (("docx", docx_text), ("md", md_text)):
+            assert "Real Name" in text, surface_name
+            assert "real@example.com" in text, surface_name
+            assert "Old Name" not in text, surface_name
+            assert "old@example.com" not in text, surface_name
+            assert "stray-site.example" not in text, surface_name

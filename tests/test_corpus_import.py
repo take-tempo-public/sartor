@@ -614,11 +614,22 @@ class TestInsertOrMergeExperience:
         assert db_session.query(Experience).count() == 0
 
     def test_sentinel_empty_company_skips(self, db_session):
-        """_normalize_experience returns {"company": ""} for malformed rows."""
+        """_normalize_experience returns {"company": ""} for malformed rows.
+
+        Dropped-role telemetry (fix/output-identity-and-dates): the drop is
+        no longer silent — it's counted and the raw payload retained so the
+        user can be told "N roles could not be parsed... review and add
+        manually" instead of the résumé quietly landing thinner than what
+        was uploaded."""
         c = self._make_candidate(db_session)
         report = ImportReport()
         _insert_or_merge_experience(
-            {"company": "", "start_date": "", "candidate_inferred_title": ""},
+            {
+                "company": "",
+                "start_date": "",
+                "candidate_inferred_title": "Ghost Role",
+                "bullets": [{"text": "Some bullet."}],
+            },
             c.id,
             source_filename="r.md",
             is_primary_file=True,
@@ -627,6 +638,17 @@ class TestInsertOrMergeExperience:
             report=report,
         )
         assert report.experiences_created == 0
+        assert report.experiences_dropped == 1
+        assert report.dropped_experiences == [
+            {
+                "company": "",
+                "candidate_inferred_title": "Ghost Role",
+                "start_date": "",
+                "location": "",
+                "bullets": ["Some bullet."],
+                "source_filename": "r.md",
+            }
+        ]
 
 
 # ---------------------------------------------------------------------------

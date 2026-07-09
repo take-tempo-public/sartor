@@ -74,7 +74,11 @@ def app_with_stubs(tmp_path, monkeypatch):
             "proofread_notes": [],
         }
 
-    def _stub_resume_writer(content, fmt, user, base_dir, template_path=None):
+    # identity_override (fix/output-identity-and-dates): accepted so the stub
+    # matches generator.generate_resume's real signature.
+    def _stub_resume_writer(
+        content, fmt, user, base_dir, template_path=None, identity_override=None
+    ):
         out = Path(base_dir) / user / f"resume_stub{fmt}"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(content, encoding="utf-8")
@@ -123,6 +127,10 @@ def app_with_stubs(tmp_path, monkeypatch):
         },
         "last_generated_resume": "# Generated résumé v1\n- Bullet.",
         "supplemental_resumes": [],
+        # fix/output-identity-and-dates: the corpus-era shape marker
+        # _is_pre_corpus_context checks for — see test_app_iteration.py's
+        # identical fixture comment.
+        "application_id": 1,
     }
     ctx_path = output_dir / "alice" / "context_iter0.json"
     ctx_path.write_text(json.dumps(initial_ctx), encoding="utf-8")

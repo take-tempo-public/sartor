@@ -232,6 +232,17 @@ class TestBasics:
         assert doc["work"] == []
         assert doc["education"] == []
 
+    def test_ats_unsafe_characters_scrubbed_from_basics(self, session):
+        """fix/output-identity-and-dates: this function is one of the two ATS
+        scrub choke points — covers freeze + preview + frozen download in
+        one, since every one of them is built by this function."""
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session, name='Casey "Rivera"')
+        doc = build_json_resume_from_corpus(session, cid)
+        assert doc["basics"]["name"] == "Casey Rivera"
+        assert doc["meta"]["sartor"]["ats_scrubbed"]
+
 
 # -------------------------------------------------------------------
 # Summary resolution priority chain
@@ -831,6 +842,146 @@ class TestSkills:
         _seed_skill(session, cid, "Python", display_order=0)
         doc = build_json_resume_from_corpus(session, cid)
         assert doc["meta"]["sartor"]["skill_curation_active"] is False
+
+
+def _seed_education(
+    session,
+    candidate_id,
+    *,
+    institution="Polytechnic Institute of Test",
+    degree="B.S.",
+    field="Computer Science",
+    start_date="2016-09",
+    end_date="2020-05",
+    display_order=0,
+    is_active=1,
+):
+    from db.models import Education
+
+    ed = Education(
+        candidate_id=candidate_id,
+        institution=institution,
+        degree=degree,
+        field=field,
+        start_date=start_date,
+        end_date=end_date,
+        display_order=display_order,
+        is_active=is_active,
+    )
+    session.add(ed)
+    session.flush()
+    session.commit()
+    return ed.id
+
+
+def _seed_certification(
+    session,
+    candidate_id,
+    *,
+    name="AWS Certified Solutions Architect",
+    issuer="AWS",
+    issued="2021-03",
+    expires=None,
+    display_order=0,
+    is_active=1,
+):
+    from db.models import Certification
+
+    c = Certification(
+        candidate_id=candidate_id,
+        name=name,
+        issuer=issuer,
+        issued=issued,
+        expires=expires,
+        display_order=display_order,
+        is_active=is_active,
+    )
+    session.add(c)
+    session.flush()
+    session.commit()
+    return c.id
+
+
+class TestEducationAndCertificates:
+    """F-04 preview-parity gap-close (fix/output-identity-and-dates): the
+    preview used to hardcode `education: []` / `certificates: []` even
+    though both tables were already populated + already consumed by the
+    corpus-mode generate prompt (db/build_context.py) — a real, user-visible
+    projection gap, not just a schema placeholder."""
+
+    def test_active_education_projected_in_display_order(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        _seed_education(session, cid, institution="Second U", display_order=1)
+        _seed_education(session, cid, institution="First U", display_order=0)
+        doc = build_json_resume_from_corpus(session, cid)
+        assert [e["institution"] for e in doc["education"]] == ["First U", "Second U"]
+
+    def test_education_field_mapping(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        _seed_education(
+            session,
+            cid,
+            institution="Polytechnic Institute of Test",
+            degree="B.S.",
+            field="Computer Science",
+            start_date="2016-09",
+            end_date="2020-05",
+        )
+        doc = build_json_resume_from_corpus(session, cid)
+        entry = doc["education"][0]
+        assert entry["institution"] == "Polytechnic Institute of Test"
+        # degree -> area (the renderers' one visible "position line" slot)
+        assert entry["area"] == "B.S."
+        # field -> studyType (schema-complete; surfaced by modern/tech personas)
+        assert entry["studyType"] == "Computer Science"
+        assert entry["startDate"] == "2016-09"
+        assert entry["endDate"] == "2020-05"
+
+    def test_retired_education_excluded(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        _seed_education(session, cid, institution="Retired U", is_active=0)
+        doc = build_json_resume_from_corpus(session, cid)
+        assert doc["education"] == []
+
+    def test_active_certificates_projected_in_display_order(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        _seed_certification(session, cid, name="Second Cert", display_order=1)
+        _seed_certification(session, cid, name="First Cert", display_order=0)
+        doc = build_json_resume_from_corpus(session, cid)
+        assert [c["name"] for c in doc["certificates"]] == ["First Cert", "Second Cert"]
+
+    def test_certificate_field_mapping(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        _seed_certification(
+            session,
+            cid,
+            name="AWS Certified Solutions Architect",
+            issuer="AWS",
+            issued="2021-03",
+        )
+        doc = build_json_resume_from_corpus(session, cid)
+        entry = doc["certificates"][0]
+        assert entry["name"] == "AWS Certified Solutions Architect"
+        assert entry["issuer"] == "AWS"
+        assert entry["date"] == "2021-03"
+
+    def test_retired_certificate_excluded(self, session):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        _seed_certification(session, cid, name="Retired Cert", is_active=0)
+        doc = build_json_resume_from_corpus(session, cid)
+        assert doc["certificates"] == []
 
 
 # -------------------------------------------------------------------

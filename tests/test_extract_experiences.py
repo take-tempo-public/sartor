@@ -96,6 +96,10 @@ class TestNormalizeBullet:
 
 class TestNormalizeExperience:
     def test_drops_experience_with_invalid_start_date(self):
+        """Dropped-role telemetry (fix/output-identity-and-dates): start_date
+        is blanked (the caller's drop signal), but company/title/bullets are
+        RETAINED — not blanked to a sentinel — so the caller can surface the
+        raw payload to the user instead of it vanishing with no trace."""
         exp = _normalize_experience(
             {
                 "company": "Acme",
@@ -104,7 +108,10 @@ class TestNormalizeExperience:
                 "bullets": [{"text": "x", "suggested_tags": []}],
             }
         )
-        assert exp["company"] == ""  # sentinel — caller should drop
+        assert exp["start_date"] == ""  # caller's drop signal
+        assert exp["company"] == "Acme"
+        assert exp["candidate_inferred_title"] == "PM"
+        assert [b["text"] for b in exp["bullets"]] == ["x"]
 
     def test_accepts_year_only_start_date(self):
         """Walkthrough F3: a bare YYYY is a valid date (kept, stored verbatim)."""
@@ -298,8 +305,10 @@ class TestExtractExperiencesEndToEnd:
         }
         client = _mock_anthropic_client(json.dumps(bad_response))
         result = extract_experiences(client, "x")
-        # Bad-date experience has empty company sentinel; caller (importer) drops it.
-        assert result[0]["company"] == ""
+        # Bad-date experience: start_date blanked (the drop signal the caller
+        # reads) but company/title RETAINED for dropped-role telemetry.
+        assert result[0]["start_date"] == ""
+        assert result[0]["company"] == "Acme"
         assert result[1]["company"] == "Beta"
 
     def test_tolerates_response_with_markdown_fences(self):

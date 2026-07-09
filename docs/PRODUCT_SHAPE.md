@@ -283,7 +283,9 @@ specific shape.
 | `work[].summary` | `ExperienceSummaryItem` (v1.1) |
 | `work[].highlights[]` | active `Bullet` rows respecting `composition_overrides` |
 | `skills[]` | `Skill` rows as Corpus Items — recommend-curated + pin/drop/reorder per JD (B.5, v1.0.6); no grouping |
-| `education[]`, `projects[]`, `certificates[]`, `languages[]` | future |
+| `education[]` | `Education` rows (`_collect_education`, fix/output-identity-and-dates) — active/display_order, mirrors `skills[]`'s shape |
+| `certificates[]` | `Certification` rows (`_collect_certificates`, fix/output-identity-and-dates) — same shape |
+| `projects[]`, `languages[]` | future |
 
 **Extension namespace.** Our corpus-only fields (tags, scores,
 is_active, variants, has_outcome) live under
