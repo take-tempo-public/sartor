@@ -6,7 +6,7 @@
 > the R2-live-analyze-streaming and merge-suggestion-threshold facts). This
 > pass surfaced UX friction across generate/compose/templates/corpus, coded
 > below by surface. It is a findings + disposition capture, not a full
-> persona study like [`2026-07-ux-review/`](../2026-07-ux-review/) — see
+> persona study like [`2026-07-ux-review/`](2026-07-ux-review/README.md) — see
 > that review for the fuller three-persona methodology this one doesn't
 > repeat.
 >
