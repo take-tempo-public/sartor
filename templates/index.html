@@ -325,6 +325,13 @@
       <div class="panel-header cb-step-header">
         <span class="cb-step-eyebrow">Step 3</span>
         <span class="cb-step-title">Compose</span>
+        <!-- UX fix (feat/ux-busy-states-and-hydration) — subdued, non-blocking
+             affordance for the background auto-cascade (summary draft / skills
+             recommend / gap-fill) that already reloads Compose silently.
+             Driven from the SAME data-compose-bg-pending counter the UX
+             settle gate depends on (_markComposeBgReload); never toggled
+             independently. -->
+        <span id="composeBgChip" class="compose-bg-chip hidden" aria-live="polite">Updating suggestions…</span>
       </div>
       <div class="panel-body">
         <div class="edit-hint">

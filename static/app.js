@@ -1091,7 +1091,7 @@ function _renderAnalysis(data) {
   html += `<div class="analysis-section">
     <h3>JD Keyword Coverage: ${pct}%</h3>
     <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${color}"></div></div>
-    <p class="score-note">Share of the job description's meaningful keywords found in your corpus — the company's name and hiring boilerplate don't count. The analysis below is the real fit read.</p>
+    <p class="score-note">Share of the job description's meaningful keywords found in your corpus — the company's name and hiring boilerplate don't count. It matters because it's the same literal-match signal an ATS keyword scan uses to decide whether a human ever sees your résumé. It's coverage, not a grade: 30–50% is typical for a strong match, since multi-word phrases rarely match word-for-word even when your experience genuinely fits. The analysis below is the real fit read.</p>
   </div>`;
 
   // F-12: short verdict + the top 3 actions lead; the full read is one
@@ -1381,6 +1381,12 @@ async function submitClarifications() {
   setStatus('SAVING ANSWERS');
   const btnSubmit = document.getElementById('btnSubmitClarifications');
   if (btnSubmit) btnSubmit.disabled = true;
+  // UX fix (feat/ux-busy-states-and-hydration) — this saves answers, then
+  // hands off to _fireRecommendThenCompose's real recommend LLM call; before
+  // this the only feedback was the status pill, so the app read as frozen.
+  // The label switches to "Preparing compose…" once _fireRecommendThenCompose
+  // takes over (same overlay element, idempotent re-set — no flicker).
+  _setBusy(true, 'Integrating your answers…');
 
   try {
     const res = await fetch('/api/answer-clarifications', {
@@ -1396,10 +1402,12 @@ async function submitClarifications() {
     const data = await res.json();
     if (!res.ok) {
       if (btnSubmit) btnSubmit.disabled = false;
+      _setBusy(false);
       return reportError('Save answers', data.error || 'Saving answers failed', data.detail);
     }
   } catch (e) {
     if (btnSubmit) btnSubmit.disabled = false;
+    _setBusy(false);
     return reportError('Save answers', 'Saving answers request failed', e.message);
   }
   // KW7 / B.8: the route mirrored these answers into candidate memory —
@@ -1407,31 +1415,44 @@ async function submitClarifications() {
   refreshMemory();
   await _fireRecommendThenCompose();
   if (btnSubmit) btnSubmit.disabled = false;
+  // Belt-and-suspenders: _fireRecommendThenCompose already clears the busy
+  // overlay when it fires the recommend call, but it's a no-op (no
+  // _composeApplicationId) when there's nothing to recommend against — this
+  // guarantees the overlay never sticks in that case.
+  _setBusy(false);
 }
 
 async function skipClarifications() {
-  // No answers submitted — clear any previously saved clarifications so
-  // recommend + generate don't pick up stale answers from a prior run.
-  // merge:false makes this an explicit whole-map replace (the deliberate
-  // "clear" path); submit paths use merge:true to accumulate by id instead.
-  if (lastContextPath) {
-    try {
-      await fetch('/api/answer-clarifications', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          context_path: lastContextPath,
-          username: currentUser,
-          answers: {},
-          merge: false,
-        }),
-      });
-    } catch (e) {
-      // Non-fatal: continue to recommend + compose regardless.
-      console.warn('Failed to clear clarifications on skip:', e);
+  // UX fix (feat/ux-busy-states-and-hydration) — skip funnels straight into
+  // the same recommend call submit does; show the same busy overlay so
+  // clicking Skip doesn't read as a no-op while the network call runs.
+  _setBusy(true, 'Preparing compose…');
+  try {
+    // No answers submitted — clear any previously saved clarifications so
+    // recommend + generate don't pick up stale answers from a prior run.
+    // merge:false makes this an explicit whole-map replace (the deliberate
+    // "clear" path); submit paths use merge:true to accumulate by id instead.
+    if (lastContextPath) {
+      try {
+        await fetch('/api/answer-clarifications', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            context_path: lastContextPath,
+            username: currentUser,
+            answers: {},
+            merge: false,
+          }),
+        });
+      } catch (e) {
+        // Non-fatal: continue to recommend + compose regardless.
+        console.warn('Failed to clear clarifications on skip:', e);
+      }
     }
+    await _fireRecommendThenCompose();
+  } finally {
+    _setBusy(false);
   }
-  await _fireRecommendThenCompose();
 }
 
 // Workstream B1: fire the recommend call so Compose can default to the
@@ -1439,6 +1460,10 @@ async function skipClarifications() {
 // failure the Compose step falls back to top-5 by score with a toast.
 async function _fireRecommendThenCompose() {
   if (_composeApplicationId != null) {
+    // UX fix (feat/ux-busy-states-and-hydration) — the recommend call is the
+    // real LLM spend in this flow; both submitClarifications and
+    // skipClarifications funnel through here, so one wrap covers both.
+    _setBusy(true, 'Preparing compose…');
     try {
       setStatus('RECOMMENDING BULLETS');
       const rec = await fetch(
@@ -1472,6 +1497,8 @@ async function _fireRecommendThenCompose() {
     } catch (e) {
       _toast(`Recommend skipped: ${e.message} — using top-5 fallback`, true);
       setStatus('READY');
+    } finally {
+      _setBusy(false);
     }
   }
   wizardGoTo(3);
@@ -2065,7 +2092,14 @@ const _HELP_REGISTRY = {
   panelAnalysis: {
     title: 'Step 1 — Analysis',
     body: 'This is sartor’s read of the job — the themes it found and how '
-      + 'your experience lines up. From here you can answer a few clarifying '
+      + 'your experience lines up. The JD Keyword Coverage percentage at the '
+      + 'top measures how much of the job posting’s meaningful vocabulary '
+      + 'shows up in your corpus, after cleaning out the company’s name and '
+      + 'hiring boilerplate — the same literal-match signal an ATS keyword '
+      + 'scan uses to decide whether a human ever sees your résumé. It’s '
+      + 'coverage, not a grade: 30–50% is typical for a strong match, since '
+      + 'multi-word phrases rarely match word-for-word even when your '
+      + 'experience genuinely fits. From here you can answer a few clarifying '
       + 'questions next (recommended — it usually sharpens the result) or skip '
       + 'straight to composing the résumé.',
     tip: 'Analysis',
@@ -3539,6 +3573,12 @@ async function loadCorpusIfReady() {
 
 async function refreshCorpus() {
   const list = document.getElementById('corpusExperienceList');
+  // Scroll preservation (feat/ux-busy-states-and-hydration) — every accept /
+  // retire / add-experience reloads the whole corpus list, and the
+  // "Loading…" placeholder briefly shrinks the page and snaps window scroll
+  // back toward the top ("accepting a bullet scrolls me to the top"). Same
+  // capture/restore idiom as loadComposition(); see _captureScrollY.
+  const _scrollY = _captureScrollY();
   _setLoadingPlaceholder(list, 'Loading…');
   // The onboarding banner refresh fires AFTER _renderCorpusList() (below), not
   // here: its ready/empty decision (Sprint 6.4) reads `_corpusExperiences`,
@@ -3560,6 +3600,7 @@ async function refreshCorpus() {
     res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
   } catch (e) {
     _setLoadingPlaceholder(list, 'Network error.');
+    _restoreScrollY(_scrollY);
     return;
   }
   if (res.status === 404) {
@@ -3567,6 +3608,7 @@ async function refreshCorpus() {
     _corpusLoadedForUser = currentUser;
     _renderCorpusList();
     _refreshOnboardingBanner();  // fire-and-forget; fresh emptiness (empty → hides)
+    _restoreScrollY(_scrollY);
     return;
   }
   if (!res.ok) {
@@ -3574,6 +3616,7 @@ async function refreshCorpus() {
     const data = await res.json().catch(() => ({}));
     const detail = data.detail || data.error || `status ${res.status}`;
     _setLoadingPlaceholder(list, `Failed to load corpus: ${detail}`);
+    _restoreScrollY(_scrollY);
     return;
   }
   const data = await res.json().catch(() => []);
@@ -3586,6 +3629,7 @@ async function refreshCorpus() {
   _renderCorpusList();
   _refreshOnboardingBanner();  // fire-and-forget; reads fresh _corpusExperiences
   refreshMergeSuggestions();   // fire-and-forget; hides itself when none found
+  _restoreScrollY(_scrollY);
 }
 
 // β.6e — Summary variants editor. Lives at the top of the Career
@@ -4588,6 +4632,13 @@ async function toggleCorpusCard(experienceId) {
 async function _loadCorpusDetail(experienceId) {
   const body = document.getElementById(`corpus-body-${experienceId}`);
   if (!body) return;
+  // Scroll preservation (feat/ux-busy-states-and-hydration) — the owner's
+  // "accepting a bullet scrolls me to the top" report traces to THIS reload
+  // path: accept/retire/restore call _reloadCorpusCard → here. The card body
+  // briefly shrinks to a one-line "Loading…" placeholder mid-reload, which
+  // can shift everything below it and clamp window scroll. Same
+  // capture/restore idiom as loadComposition() / refreshCorpus().
+  const _scrollY = _captureScrollY();
   _setLoadingPlaceholder(body, 'Loading…');
   let res;
   const q = _corpusShowRetired ? '?include_retired=1' : '';
@@ -4595,13 +4646,16 @@ async function _loadCorpusDetail(experienceId) {
     res = await fetch(`/api/experiences/${experienceId}${q}`);
   } catch (e) {
     _setLoadingPlaceholder(body, 'Network error.');
+    _restoreScrollY(_scrollY);
     return;
   }
   if (!res.ok) {
     _setLoadingPlaceholder(body, 'Failed to load.');
+    _restoreScrollY(_scrollY);
     return;
   }
   _renderCorpusDetail(body, await res.json());
+  _restoreScrollY(_scrollY);
 }
 
 function _renderCorpusDetail(body, exp) {
@@ -5201,6 +5255,21 @@ function _clearChildren(el) {
 function _setLoadingPlaceholder(el, msg) {
   _clearChildren(el);
   el.appendChild(_el('div', { className: 'corpus-empty-experience', textContent: msg }));
+}
+
+// UX fix (feat/ux-busy-states-and-hydration) — several corpus/compose reloads
+// clear a list or card body and rebuild it (loadComposition, refreshCorpus,
+// _loadCorpusDetail). The page briefly shrinks to a one-line "Loading…"
+// placeholder while that happens, which snaps window scroll back toward the
+// top — the "accepting a bullet scrolls me to the top" complaint. Capture the
+// scroll position right before the clear, then restore it once the rebuilt
+// DOM has landed. Neither the app nor these lists use an internal scroll
+// container (verified: .corpus-experience-list has no overflow rule), so
+// window scroll is the only position that needs preserving. Restoring the
+// same value when nothing moved is a harmless no-op.
+function _captureScrollY() { return window.scrollY; }
+function _restoreScrollY(y) {
+  requestAnimationFrame(() => window.scrollTo(0, y));
 }
 
 function _toast(msg, isError) {
@@ -6066,6 +6135,41 @@ function _resumeIntoStep6(rs) {
   _onGenerationComplete(data);
   _renderOutput(data);
 
+  // Full hydration on resume (feat/ux-busy-states-and-hydration, Option A) —
+  // the backend now ALWAYS merges the Step-1/2/3 hydration block into the
+  // Step-6 resume_state when the context file has it (see
+  // blueprints/applications.py::_build_resume_state /
+  // _pre_generate_hydration), so back-navigation from a resumed Step 6 shows
+  // populated earlier steps instead of blanks. Mirrors
+  // _resumeIntoPreGenerateStep's own rendering below, applied to the SAME
+  // rs fields, without touching _wizardStep (stays on 6).
+  if (rs.analysis) {
+    _renderAnalysis({ analysis: rs.analysis, deterministic: rs.deterministic || {} });
+    document.getElementById('analysisPending')?.classList.add('hidden');
+    document.getElementById('analysisActions')?.classList.remove('hidden');
+  }
+  if (rs.clarification_questions) {
+    lastClarifyQuestions = rs.clarification_questions;
+    _renderClarifyQuestions(lastClarifyQuestions, '');
+    const answers = rs.clarifications || {};
+    document.querySelectorAll('#clarifyQuestions .clarify-question').forEach(el => {
+      const qid = el.getAttribute('data-qid');
+      const ta = el.querySelector('.clarify-answer');
+      if (qid && ta && answers[qid]) ta.value = answers[qid];
+    });
+  }
+  // Compose (Step 3): only hydrate when the saved context actually reached
+  // compose (`has_composition` — composition_overrides / llm_recommendations
+  // were present), the same gate the backend uses to pick target_step===3 in
+  // the pre-generate branch. loadComposition() reads the PERSISTED
+  // has_draft/has_gap_fill/has_recommendation flags from the live
+  // /composition GET, so its own auto-fire guards apply exactly as they
+  // would on a fresh Step-3 arrival — an already-drafted summary or gap-fill
+  // never re-fires the cascade, and nothing saved is clobbered. Skipping the
+  // call entirely when compose was never reached avoids firing that cascade
+  // as a side effect of just viewing a downloaded résumé.
+  if (rs.has_composition) loadComposition();
+
   if (_wizardReachable(6)) {
     _wizardAdvanceTo(6);
   } else {
@@ -6625,11 +6729,24 @@ function _markComposeBgReload(delta) {
   if (!list) return;
   if (_composeBgReloads > 0) list.setAttribute('data-compose-bg-pending', '1');
   else list.removeAttribute('data-compose-bg-pending');
+  // UX fix (feat/ux-busy-states-and-hydration) — the visible counterpart to
+  // the test-only attribute above: same counter, same increments/decrements,
+  // so the chip and the UX settle gate can never disagree about "is a
+  // background reload in flight". Purely presentational — no new state.
+  const chip = document.getElementById('composeBgChip');
+  if (chip) chip.classList.toggle('hidden', _composeBgReloads === 0);
 }
 
 async function loadComposition() {
   const list = document.getElementById('composeList');
   if (!list) return;
+  // Scroll preservation (feat/ux-busy-states-and-hydration) — every
+  // accept/deny/retire/pin in Compose re-enters this function, which clears
+  // + rebuilds #composeList; the transient "Loading…"/error placeholders
+  // briefly shrink the page and snap window scroll back toward the top.
+  // Capture the position now and restore it (see _restoreScrollY calls
+  // below) on every exit path once that path's DOM has landed.
+  const _scrollY = _captureScrollY();
   // Test-observability settle signal (no product behavior; nothing reads it).
   // Cleared here at entry — BEFORE the /composition fetch opens — so the marker
   // is absent for a render pass's entire in-flight duration, and the auto-
@@ -6641,6 +6758,7 @@ async function loadComposition() {
   _setLoadingPlaceholder(list, 'Scoring corpus against this job…');
   if (_composeApplicationId == null) {
     _setLoadingPlaceholder(list, 'Run ANALYZE first.');
+    _restoreScrollY(_scrollY);
     return;
   }
   let res;
@@ -6651,10 +6769,12 @@ async function loadComposition() {
     );
   } catch (e) {
     _setLoadingPlaceholder(list, 'Network error.');
+    _restoreScrollY(_scrollY);
     return;
   }
   if (!res.ok) {
     _setLoadingPlaceholder(list, 'Failed to load composition.');
+    _restoreScrollY(_scrollY);
     return;
   }
   const data = await res.json();
@@ -6712,6 +6832,7 @@ async function loadComposition() {
   }
   if (!data.experiences || data.experiences.length === 0) {
     _setLoadingPlaceholder(list, 'No corpus experiences to rank.');
+    _restoreScrollY(_scrollY);
     return;
   }
   // B.4 — "Add role intros" application-level toggle + per-role pickers inside
@@ -6752,6 +6873,7 @@ async function loadComposition() {
   // Step 6 (Output) where it's clearly relevant.
   // Terminal render reached — re-set the settle marker cleared at entry (above).
   list.setAttribute('data-compose-ready', '1');
+  _restoreScrollY(_scrollY);
 }
 
 // PX-22: load a preview iframe WITHOUT adding a joint session-history entry, so
@@ -6897,12 +7019,18 @@ async function _fireRecommendSummary() {
 // positioning summary (Sonnet) at Compose, then refresh so the editable draft
 // shows. `force` just repaints the placeholder for an explicit Regenerate; the
 // route always overwrites composition_overrides.summary_text.
-async function _fireDraftSummary(force) {
+async function _fireDraftSummary(force, btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
   if (force) {
     const el = document.getElementById('composeSummaryDraft');
     if (el) el.placeholder = 'Drafting your summary…';
   }
+  // UX fix (feat/ux-busy-states-and-hydration) — the explicit Regenerate
+  // click (force=true, `btn` passed) gets visible in-flight feedback on the
+  // button itself — same idiom as submitClarifications' btnSubmit.disabled.
+  // The silent auto-fire on Compose arrival (force=false, no btn) is
+  // unaffected: it already has no button to disable.
+  if (btn) { btn.disabled = true; btn.textContent = 'Regenerating…'; }
   _markComposeBgReload(1);
   try {
     const res = await fetch(
@@ -6915,6 +7043,7 @@ async function _fireDraftSummary(force) {
     // Non-blocking — the user can Regenerate or type their own summary.
   } finally {
     _markComposeBgReload(-1);
+    if (btn) { btn.disabled = false; btn.textContent = 'Regenerate'; }
   }
 }
 
@@ -7040,7 +7169,7 @@ function _renderPositioningCard(summary) {
   const regen = _el('button', {
     className: 'btn-secondary positioning-draft-regen', textContent: 'Regenerate',
   });
-  regen.onclick = () => _fireDraftSummary(true);
+  regen.onclick = () => _fireDraftSummary(true, regen);
   actions.appendChild(regen);
   const retire = _el('button', {
     className: 'btn-secondary positioning-draft-retire', textContent: 'Retire',

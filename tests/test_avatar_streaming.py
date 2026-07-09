@@ -260,6 +260,45 @@ def test_l1_carries_the_locked_voice_clauses():
     assert "[[slug]]" not in p  # no double-bracket inline form anywhere in the prompt
 
 
+# --------------------------------------------------------------------------- #
+# feat/ux-busy-states-and-hydration (AVATAR_PROMPT_VERSION 2026-07-08.1):
+# two owner-requested clauses — (a) dev-tier operations are gated behind Dev
+# mode, not just offered as "more detail"; (b) shipped-vs-planned content gets
+# separated into labeled sections instead of blended into one claim.
+# Deterministic, LLM-free — same "L1 carries the clause" pattern as above.
+# --------------------------------------------------------------------------- #
+
+
+def test_l1_carries_dev_tier_gate_clause():
+    p = analyzer.AVATAR_SYSTEM_PROMPT
+    # Names the concrete dev-tier operations the owner called out.
+    assert "seed export, grounding calibration, running evals" in p
+    # The gate is a hard "requires Dev mode", distinct from the general
+    # USER-mode "want more detail" invitation tested above.
+    assert "gated behind Dev mode entirely, not just deeper detail" in p
+    assert "requires enabling Dev mode in the assistant panel" in p
+    # Worked OK/NOT-OK pair teaches the distinction (never assume access
+    # silently).
+    assert "dev-tier operation" in p
+    assert "assumes access the reader was never told they need" in p
+
+
+def test_l1_carries_exists_vs_planned_split_clause():
+    p = analyzer.AVATAR_SYSTEM_PROMPT
+    assert "**What exists now**" in p
+    assert "**What's planned**" in p
+    assert "never let a planned item read as already shipped" in p
+    # Worked OK/NOT-OK pair.
+    assert "blends shipped and proposed into a single claim" in p
+
+
+def test_avatar_prompt_version_bumped_for_dev_gate_and_planned_split():
+    # AVATAR_PROMPT_VERSION must bump in the same commit as the prompt edit
+    # (AGENTS.md discipline); the résumé-pipeline PROMPT_VERSION is untouched
+    # by this avatar-only change.
+    assert analyzer.AVATAR_PROMPT_VERSION == "2026-07-08.1"
+
+
 def test_banned_tell_scanner_flags_overpromise_and_performed():
     not_ok = (
         "sartor. keeps the output ATS-safe so it reaches a human.",

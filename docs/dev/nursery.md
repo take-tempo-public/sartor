@@ -64,6 +64,61 @@ Chips above the source chips to filter templates by role tag. Pointless until th
 template set has meaningful role-tag coverage — "chips with one template each is
 worse UX than no chips." *Source: PRODUCT_SHAPE §10.*
 
+### 6. Corpus-groomer LLM — dedup / tighten on demand
+*Value H · Effort H · Risk M · Status: blocked: outcome data (B.8 Part 2) · Added 2026-07-08*
+
+An on-demand LLM pass over the whole corpus that dedups and tightens bullets,
+skills, titles, and summaries — proposing merges where two bullets say the same
+thing at different quality levels, combining them into one stronger bullet rather
+than leaving both. Leverages interview-outcome data (once B.8 Part 2 lands) to
+find dedup targets: bullets that never contributed to a callback are the cheapest
+candidates to fold into a stronger neighbor. Same human approve/deny gate as every
+other corpus-mutating proposal (`is_pending_review`) — never auto-applies.
+*Owner post-1.1.0 walkthrough idea.*
+
+### 7. ATS-provider ingest research + optimization
+*Value M · Effort H · Risk L · Status: blocked: owner's NVIDIA Workday sample artifacts analysis · Added 2026-07-08*
+
+Research how the major ATS intake systems (Workday, SmartRecruiters/SAP,
+Greenhouse) actually parse an uploaded résumé, and tune output structure/format
+so it survives that pipeline intact — a real-world complement to the existing
+`scrub_ats_unsafe()` character-level scrub. A concrete starting point already
+exists: the owner has a real Workday-choke sample (their own NVIDIA application
+artifacts) demonstrating a parse failure against a live provider, which should be
+the first thing analyzed once this is picked up. *Owner post-1.1.0 walkthrough
+idea.*
+
+### 8. Job-title laddering agent
+*Value M · Effort H · Risk L · Status: idea · Added 2026-07-08*
+
+A specialized agent that suggests alternative title phrasings for a role, laddered
+the way recruitment/ATS systems expect (jr → sr → staff, and adjacent lateral
+titles), so a candidate's actual title can be reframed toward the JD's leveling
+language without misrepresenting the role. Needs deep research into how ATS
+title-matching / leveling actually works before the agent's rules can be trusted;
+not a quick prompt-only addition. *Owner post-1.1.0 walkthrough idea.*
+
+### 9. Owner's template as a bundled template + a clean ATS template set
+*Value M · Effort M · Risk L · Status: idea · Added 2026-07-08*
+
+Bundle the owner's own résumé template as a selectable persona template (it's
+already proven through real use), and alongside it build a set of very clean,
+tightly-spaced single-column ATS templates pitched at different experience
+levels (junior / mid / senior+), each offered with and without a role-summary
+block, so a candidate can pick the closest fit instead of one generic default.
+*Owner post-1.1.0 walkthrough idea.*
+
+### 10. STAR/CAR bullet-construction assistance
+*Value M · Effort M · Risk L · Status: idea · Added 2026-07-08*
+
+The Compose bullet editor already has a STAR/CAR **format picker**, but no
+guided construction — the candidate still has to write the Situation/Task/
+Action/Result (or Context/Action/Result) content themselves with no scaffolding.
+An assisted mode would prompt for each component in turn (grounded in the
+candidate's own corpus/clarifications, same no-invention discipline as every
+other drafting call) and assemble the finished bullet. *Owner post-1.1.0
+walkthrough idea.*
+
 ---
 
 ## Retired (cut — kept as a one-line record)

@@ -1714,6 +1714,37 @@ textarea:focus-visible {
   animation: cb-status-pulse-strong 1.4s var(--ease) infinite;
 }
 
+/* UX fix (feat/ux-busy-states-and-hydration) — subdued chip for Compose's
+   background auto-cascade (summary draft / skills recommend / gap-fill).
+   Deliberately quieter than .cb-busy-banner: this reload never blocks
+   input, so it shouldn't compete for attention the way a full-page busy
+   state does. Visibility is driven by _markComposeBgReload off the same
+   counter as the (test-only) data-compose-bg-pending attribute. */
+.compose-bg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--fg-2);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.compose-bg-chip::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--info);
+  animation: cb-status-pulse-strong 1.4s var(--ease) infinite;
+  flex-shrink: 0;
+}
+
 .top-tab-btn:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
