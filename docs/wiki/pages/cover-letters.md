@@ -5,9 +5,10 @@
 > **Audience:** `user` — no technical background assumed.
 > **Grounding:** the cover-letter tab + controls in `templates/index.html`
 > (`#tabCoverLetter`, `#btnGenerateCover`, `#coverLetterPreview`) driven by
-> `static/app.js` (`runGenerateCoverLetter`); the deterministic
-> `run_generate_cover_letter` route in `blueprints/generation.py` and
-> `analyzer.generate_cover_letter_against_resume`.
+> `static/app.js` (`runGenerateCoverLetter`); the `run_generate_cover_letter` and
+> `download_edited` routes in `blueprints/generation.py`,
+> `analyzer.generate_cover_letter_against_resume`, and the deterministic
+> `generator.generate_cover_letter` (format + persona-font matching).
 
 ---
 
@@ -23,8 +24,10 @@ generating a résumé.
 
 ## Editing and downloading
 The letter appears in an editable preview, just like the résumé — fix wording in place
-(see [[editing-and-refining]]), choose a format, and download it from its own button.
-The cover letter and résumé download separately, so you can send one or both — see
+(see [[editing-and-refining]]), choose a format (Word, PDF, or Markdown), and download
+it from its own button. A Word or PDF cover letter picks up the same look (font and
+styling) as the résumé template you chose, so the two match. The cover letter and
+résumé download separately, so you can send one or both — see
 [[downloading-your-documents]].
 
 For where the cover letter fits in the whole flow, see [[tailoring-a-resume]].

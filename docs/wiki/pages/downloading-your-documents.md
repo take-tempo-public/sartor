@@ -6,9 +6,10 @@
 > **Audience:** `user` — no technical background assumed.
 > **Grounding:** the Step 6 output panel in `templates/index.html` (`#panelOutput`)
 > and its download buttons (`#btnDownloadResume`, `#btnDownloadCover`) driven by
-> `static/app.js` (`downloadResume`, `downloadCoverLetter`); the deterministic
-> download + render path in `blueprints/generation.py` (`download_file`,
-> `download_edited`), `generator.py`, and `pdf_render.py`.
+> `static/app.js` (`downloadResume`, `downloadCoverLetter`); the download + render
+> path in `blueprints/generation.py` (`download_file`, `download_edited`), and the
+> single shared renderer in `generator.py` (`_write_docx_from_json_resume`) and
+> `pdf_render.py`.
 
 ---
 
@@ -28,6 +29,14 @@ PDF output is rendered through a bundled headless browser (Chromium), which is a
 Markdown, and the on-screen preview don't need it — if you only ever download Word or
 Markdown, you can skip it entirely. (See [[troubleshooting]] if a PDF download reports
 that Chromium is missing.)
+
+## What you download matches what you saw
+Whatever format you choose, the download is built from the **same structured
+document** that produced the on-screen preview — so the Word file you save has the
+same sections and content as what you reviewed, not a second, independently-parsed
+copy `[synthesis]`. If your download starts, but seems to hang or never appears, it's
+following a normal browser download link rather than a pop-up, so check your browser's
+download manager or downloads folder before assuming it failed.
 
 ## Downloading with your edits
 If you fixed wording in the preview (see [[editing-and-refining]]), the Download button
