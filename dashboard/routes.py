@@ -22,6 +22,7 @@ import logging
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
+from typing import Any, cast
 
 from flask import Blueprint, abort, render_template, request
 from flask.typing import ResponseReturnValue
@@ -41,11 +42,11 @@ LLM_LOG = PROJECT_ROOT / "logs" / "llm_calls.jsonl"
 EVAL_RESULTS_DIR = PROJECT_ROOT / "evals" / "results"
 
 
-def _read_jsonl(path: Path) -> list[dict]:
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     """Read a JSONL file. Returns [] if the file is missing. Skips malformed lines."""
     if not path.exists():
         return []
-    records: list[dict] = []
+    records: list[dict[str, Any]] = []
     with path.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -58,7 +59,7 @@ def _read_jsonl(path: Path) -> list[dict]:
     return records
 
 
-def _normalize_eval_record(r: dict) -> dict:
+def _normalize_eval_record(r: dict[str, Any]) -> dict[str, Any]:
     """Coerce eval records to a single shape regardless of schema version.
 
     Older records (schema_version=1) had integer scores and lacked
@@ -84,11 +85,11 @@ def _normalize_eval_record(r: dict) -> dict:
     return r
 
 
-def _read_eval_results() -> list[dict]:
+def _read_eval_results() -> list[dict[str, Any]]:
     """Aggregate every line of every evals/results/*.jsonl into one list."""
     if not EVAL_RESULTS_DIR.exists():
         return []
-    out: list[dict] = []
+    out: list[dict[str, Any]] = []
     for path in sorted(EVAL_RESULTS_DIR.glob("*.jsonl")):
         out.extend(_normalize_eval_record(r) for r in _read_jsonl(path))
     return out
@@ -105,7 +106,9 @@ def _parse_date(s: str) -> datetime | None:
         return None
 
 
-def _filter_calls(records: list[dict], since: str, user: str, model: str) -> list[dict]:
+def _filter_calls(
+    records: list[dict[str, Any]], since: str, user: str, model: str
+) -> list[dict[str, Any]]:
     """Filter LLM-call ``records`` by date floor (``since``), ``user``, and ``model``."""
     floor = _parse_date(since)
     out = []
@@ -139,7 +142,7 @@ def _percentile(sorted_values: list[float], pct: float) -> float:
     return float(sorted_values[lo] + (sorted_values[hi] - sorted_values[lo]) * frac)
 
 
-def _summarize_calls(records: list[dict]) -> dict:
+def _summarize_calls(records: list[dict[str, Any]]) -> dict[str, Any]:
     """Compute aggregate stats over a filtered call list.
 
     Includes p50/p95 latency and cost so the dashboard can surface tail
@@ -189,14 +192,14 @@ def _summarize_calls(records: list[dict]) -> dict:
     }
 
 
-def _per_rubric_pass_rate(records: list[dict]) -> list[dict]:
+def _per_rubric_pass_rate(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Group eval records by rubric and compute pass counts.
 
     A pass is score >= 4.0. Records with score=None (pipeline_error,
     judge_error) are counted as failures so the dashboard surfaces them
     clearly rather than hiding behind None.
     """
-    by_rubric: dict[str, list[dict]] = defaultdict(list)
+    by_rubric: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in records:
         rubric = r.get("rubric")
         if not rubric:
@@ -221,7 +224,7 @@ def _per_rubric_pass_rate(records: list[dict]) -> list[dict]:
     return out
 
 
-def _score_over_time(records: list[dict]) -> dict:
+def _score_over_time(records: list[dict[str, Any]]) -> dict[str, Any]:
     """Build Chart.js-shaped data for score trend by rubric.
 
     Records lacking a prompt_version are filtered out (they predate the
@@ -265,14 +268,14 @@ def _score_over_time(records: list[dict]) -> dict:
     }
 
 
-def _rubric_fixture_heatmap(records: list[dict]) -> dict:
+def _rubric_fixture_heatmap(records: list[dict[str, Any]]) -> dict[str, Any]:
     """Most-recent score per (rubric, fixture) pair, plus axis lists.
 
     Renders as an HTML/CSS table in the template (color = hsl(120 *
     score/5, 60%, 30%)) — green for pass, red for fail. Cells with no
     record show as empty.
     """
-    latest: dict[tuple[str, str], dict] = {}
+    latest: dict[tuple[str, str], dict[str, Any]] = {}
     for r in records:
         rubric = r.get("rubric")
         fixture = r.get("fixture")
@@ -310,7 +313,7 @@ def _rubric_fixture_heatmap(records: list[dict]) -> dict:
     return {"rubrics": rubrics, "fixtures": fixtures, "rows": rows}
 
 
-def _failure_mode_frequency(records: list[dict]) -> list[dict]:
+def _failure_mode_frequency(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Count failed_rules occurrences across records.
 
     Per-record dedup: a record with failed_rules=["a","a","b"] counts as
@@ -331,7 +334,7 @@ def _failure_mode_frequency(records: list[dict]) -> list[dict]:
     return [{"slug": slug, "count": count} for slug, count in top]
 
 
-def _pareto_data(eval_records: list[dict]) -> dict:
+def _pareto_data(eval_records: list[dict[str, Any]]) -> dict[str, Any]:
     """Build Pareto frontier data for the quality-vs-latency scatter panel.
 
     Pulls eval_composite records from the eval record list, joins cost_usd
@@ -348,7 +351,7 @@ def _pareto_data(eval_records: list[dict]) -> dict:
         cost_trend: dict              — Chart.js line-chart data (p50 cost by version)
         version_stats: dict           — per-version aggregates
     """
-    _EMPTY: dict = {
+    _EMPTY: dict[str, Any] = {
         "has_data": False,
         "scatter_datasets": [],
         "timeline_dataset": {"label": "baseline trajectory", "data": []},
@@ -392,7 +395,7 @@ def _pareto_data(eval_records: list[dict]) -> dict:
     if not points:
         return _EMPTY
 
-    by_version: dict[str, list[dict]] = defaultdict(list)
+    by_version: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for pt in points:
         by_version[pt["prompt_version"]].append(pt)
 
@@ -402,7 +405,7 @@ def _pareto_data(eval_records: list[dict]) -> dict:
     )
 
     # Per-version aggregates used for trend lines and summary.
-    version_stats: dict[str, dict] = {}
+    version_stats: dict[str, dict[str, Any]] = {}
     for version in sorted_versions:
         pts = by_version[version]
         latencies = sorted(pt["total_latency_ms"] for pt in pts)
@@ -420,7 +423,7 @@ def _pareto_data(eval_records: list[dict]) -> dict:
     max_cost = max(all_costs) if all_costs else 1.0
 
     palette = ["#ffb86b", "#82c8a4", "#94d4ff", "#d77a7a", "#c8a4ff"]
-    scatter_datasets: list[dict] = []
+    scatter_datasets: list[dict[str, Any]] = []
     for i, version in enumerate(sorted_versions):
         pts = sorted(by_version[version], key=lambda p: p["timestamp"])
         data = []
@@ -471,7 +474,7 @@ def _pareto_data(eval_records: list[dict]) -> dict:
     }
 
     # Most-recent-change summary (requires ≥2 distinct prompt_versions).
-    summary: dict | None = None
+    summary: dict[str, Any] | None = None
     if len(sorted_versions) >= 2:
         v_prev = sorted_versions[-2]
         v_new = sorted_versions[-1]
@@ -552,7 +555,7 @@ def _pareto_data(eval_records: list[dict]) -> dict:
     }
 
 
-def _dedup_by_run(records: list[dict]) -> list[dict]:
+def _dedup_by_run(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Keep the first record seen per run_id, preserving input order.
 
     The groundedness / fabricated_specifics block is computed once per pipeline
@@ -562,7 +565,7 @@ def _dedup_by_run(records: list[dict]) -> list[dict]:
     Records without a run_id are kept individually (can't be deduped safely).
     """
     seen: set[str] = set()
-    out: list[dict] = []
+    out: list[dict[str, Any]] = []
     for r in records:
         run_id = r.get("run_id") or ""
         if run_id:
@@ -573,7 +576,7 @@ def _dedup_by_run(records: list[dict]) -> list[dict]:
     return out
 
 
-def _groundedness_points(records: list[dict]) -> list[dict]:
+def _groundedness_points(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """One groundedness point per run, sorted by timestamp.
 
     Pulls deterministic_metrics.groundedness off each record, dedups by run_id,
@@ -606,7 +609,7 @@ def _groundedness_points(records: list[dict]) -> list[dict]:
     return points
 
 
-def _groundedness_trend(records: list[dict]) -> dict:
+def _groundedness_trend(records: list[dict[str, Any]]) -> dict[str, Any]:
     """Chart.js-shaped trend of the L0 groundedness score (0-5) over time.
 
     One deduped point per run (see _dedup_by_run); each point carries its
@@ -644,7 +647,7 @@ def _groundedness_trend(records: list[dict]) -> dict:
     }
 
 
-def _latest_groundedness_detail(records: list[dict]) -> dict:
+def _latest_groundedness_detail(records: list[dict[str, Any]]) -> dict[str, Any]:
     """Most-recent run's fabricated_specifics evidence — the drill-down.
 
     Returns the headline groundedness summary plus the fabricated_specifics
@@ -656,7 +659,7 @@ def _latest_groundedness_detail(records: list[dict]) -> dict:
         return {"has_data": False}
     latest_run = points[-1]["run_id"]
     latest_ts = points[-1]["timestamp"]
-    detail: dict = {}
+    detail: dict[str, Any] = {}
     for r in records:
         if r.get("run_id", "") != latest_run or r.get("timestamp", "") != latest_ts:
             continue
@@ -681,7 +684,7 @@ def _latest_groundedness_detail(records: list[dict]) -> dict:
     }
 
 
-def _cost_by_call_kind(records: list[dict]) -> list[dict]:
+def _cost_by_call_kind(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Per-call-kind cost rollup over the filtered call list.
 
     Answers "which stage costs the most?" — analyze/generate dominate; clarify
@@ -712,7 +715,7 @@ def _cost_by_call_kind(records: list[dict]) -> list[dict]:
     ]
 
 
-def _reliability(records: list[dict]) -> dict:
+def _reliability(records: list[dict[str, Any]]) -> dict[str, Any]:
     """Error + truncation rates over the filtered call list, with per-kind split.
 
     error = status == "error"; truncation = stop_reason == "max_tokens" (output
@@ -720,7 +723,9 @@ def _reliability(records: list[dict]) -> dict:
     surfaced overall and per call_kind so a flaky stage is isolatable.
     """
     total = len(records)
-    by_kind: dict[str, dict] = defaultdict(lambda: {"total": 0, "error": 0, "truncation": 0})
+    by_kind: dict[str, dict[str, int]] = defaultdict(
+        lambda: {"total": 0, "error": 0, "truncation": 0}
+    )
     error = 0
     truncation = 0
     for r in records:
@@ -756,7 +761,7 @@ def _reliability(records: list[dict]) -> dict:
     }
 
 
-def _run_trace(records: list[dict]) -> dict:
+def _run_trace(records: list[dict[str, Any]]) -> dict[str, Any]:
     """Per-run span waterfall assembled from already-logged call telemetry.
 
     Each LLM call carries run_id + call (kind) + latency_ms; grouping by run_id
@@ -765,7 +770,7 @@ def _run_trace(records: list[dict]) -> dict:
     run's ordered spans (with each span's % of total latency for bar widths) plus
     a short list of recent runs. {"has_data": False} when nothing carries a run_id.
     """
-    by_run: dict[str, list[dict]] = defaultdict(list)
+    by_run: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in records:
         run_id = r.get("run_id") or ""
         if not run_id:
@@ -774,7 +779,7 @@ def _run_trace(records: list[dict]) -> dict:
     if not by_run:
         return {"has_data": False, "latest": None, "runs": []}
 
-    def _run_ts(calls: list[dict]) -> str:
+    def _run_ts(calls: list[dict[str, Any]]) -> str:
         """Return the latest timestamp among a run's ``calls`` (``""`` if none)."""
         return max((c.get("timestamp", "") for c in calls), default="")
 
@@ -827,14 +832,14 @@ def _run_trace(records: list[dict]) -> dict:
     }
 
 
-def _load_baseline() -> dict:
+def _load_baseline() -> dict[str, Any]:
     """Read evals/results/baseline_v1.json (schema 3). {} if missing/malformed."""
     path = EVAL_RESULTS_DIR / "baseline_v1.json"
     if not path.exists():
         return {}
     try:
         with path.open(encoding="utf-8") as f:
-            return json.load(f)
+            return cast("dict[str, Any]", json.load(f))
     except (json.JSONDecodeError, OSError):
         return {}
 
@@ -845,7 +850,7 @@ _HEALTH_REGRESSED_DELTA = -0.5
 _HEALTH_WATCH_DELTA = -0.3
 
 
-def _baseline_health(records: list[dict], baseline: dict) -> dict:
+def _baseline_health(records: list[dict[str, Any]], baseline: dict[str, Any]) -> dict[str, Any]:
     """Compare the latest score per (fixture, rubric) to its baseline mean.
 
     Verdict bands: regressed (delta < -0.5, the merge-block gate), watch
@@ -858,7 +863,7 @@ def _baseline_health(records: list[dict], baseline: dict) -> dict:
         return {"has_baseline": False, "overall": "unknown", "rows": [], "counts": {}}
 
     # Latest score per (fixture, rubric) — same "most recent wins" rule as the heatmap.
-    latest: dict[tuple[str, str], dict] = {}
+    latest: dict[tuple[str, str], dict[str, Any]] = {}
     for r in records:
         fixture = r.get("fixture")
         rubric = r.get("rubric")
@@ -927,7 +932,7 @@ def _localhost_guard() -> None:
         abort(403)
 
 
-def _tune_prompt_choices() -> list[dict]:
+def _tune_prompt_choices() -> list[dict[str, Any]]:
     """The overridable system-prompt constants for the Tuning-tab A/B dropdown.
 
     Read-only use of analyzer's `_BASE_SYSTEM_PROMPTS` registry (no edit, no LLM call):

@@ -634,6 +634,32 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > remaining strict debt is `ui_pages/**` and any other non-listed production module,
 > each a later rung toward the Decision-7 end-state.
 >
+> **Phase 2 #2 ratchet — rung 7, `dashboard.*`
+> (`chore/kit-mypy-strict-dashboard`, 2026-07-10).** Seventh rung of the per-module mypy
+> `--strict` ratchet — the localhost-only diagnostics dashboard (`dashboard/__init__.py` +
+> `dashboard/routes.py`, the JSONL-telemetry aggregator behind `/_dashboard`). Appended
+> `"dashboard.*"` to the strict override's `module` list. `route-security-lint` doesn't apply
+> to this cohort — the hook is scoped to `app.py` + `blueprints/**.py` and deliberately
+> excludes `dashboard/` (its routes are localhost-gated, take no `<username>`, read fixed
+> diagnostic dirs), so no route-decorator edit-window carve-out was needed. Measured live
+> (`python -m mypy --strict --warn-unreachable dashboard/`) **= 36 errors, all in
+> `dashboard/routes.py`** (`dashboard/__init__.py` measured strict-clean already): **35
+> bare-generic `type-arg`** (the JSON-shaped eval/telemetry aggregation dicts/lists ->
+> `dict[str, Any]` / `list[dict[str, Any]]`, reusing the rung-4/5/6 precedent) + **1
+> `no-any-return`** (`_load_baseline`'s `json.load(f)` -> `cast("dict[str, Any]", ...)`, a
+> runtime no-op). No `warn_unreachable`. **PROMPT-SAFE (grep-verified):** the
+> `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)` grep across
+> `dashboard/` matched only `analyzer._BASE_SYSTEM_PROMPTS` registry reads (the read-only
+> Tuning-tab prompt picker) and `dashboard.html` display-text instructing the user to bump
+> `PROMPT_VERSION` by hand in `analyzer.py` — no prompt constant is DEFINED in `dashboard/` —
+> so no `PROMPT_VERSION` bump, no eval. No new dependency, no behavior change beyond
+> annotations. Gate green: `ruff check .` ✓ · `ruff format --check` (touched files) ✓ ·
+> `mypy .` ("Success: no issues found in 298 source files") ✓ (pytest deferred to the
+> conductor's full-suite run on the committed tip, per this run's gate division).
+> **Per-module tracking: 44 production modules now at full strict** (the 42 rung-1..6
+> modules + the 2 `dashboard/` modules) — **only `ui_pages/**` remains** → the next rung
+> reaches the §6 exit criterion (strict everywhere except the Decision-7 exempt set).
+>
 > **Progress (2026-06-25, `chore/kit-phase2-interrogate`):** Phase 2 #4 — the `interrogate`
 > docstring-**coverage** floor-lock gate — LANDED, the **final Phase 2 implementation sub-item**.
 > `interrogate>=1.7,<2.0` added to the `dev` extra (a real new dependency → CHANGELOG); a new

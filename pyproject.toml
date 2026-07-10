@@ -366,6 +366,18 @@ ignore_missing_imports = true
 #     `route-security-lint` never fired (it scans for a route decorator + filesystem access
 #     without the `_safe_username`/`_within` gate in the same edit window). PROMPT-SAFE (grep-0):
 #     blueprints hold no prompt constants of their own (they call `analyzer.*`).
+#   - rung 7 (dashboard.*) — the localhost-only diagnostics dashboard (`dashboard/__init__.py` +
+#     `dashboard/routes.py`, the JSONL-telemetry aggregator behind `/_dashboard`).
+#     `route-security-lint` doesn't apply here — the hook is scoped to app.py + blueprints/**.py
+#     and deliberately excludes dashboard/ (its routes are localhost-gated, take no `<username>`,
+#     read fixed diagnostic dirs), so route decorator lines needed no separate carve-out.
+#     `dashboard/__init__.py` measured strict-clean already. Measured 36 errors, all in
+#     dashboard/routes.py: 35 bare-generic `type-arg` (JSON-shaped aggregation dicts/lists ->
+#     `dict[str, Any]` / `list[dict[str, Any]]`, the rung-4/5/6 precedent) + 1 `no-any-return`
+#     (`_load_baseline`'s `json.load(f)` -> `cast("dict[str, Any]", ...)`). No `warn_unreachable`.
+#     PROMPT-SAFE (grep-verified): dashboard/routes.py references `prompt_version` only as a data
+#     field on eval/telemetry records and imports `analyzer._BASE_SYSTEM_PROMPTS` read-only for the
+#     Tuning-tab picker — it defines no prompt constant of its own.
 [[tool.mypy.overrides]]
 module = [
     "scraper",
@@ -392,6 +404,7 @@ module = [
     "db.migrations.env",
     "db.migrations._sqlite_check_constraint",
     "blueprints.*",
+    "dashboard.*",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true

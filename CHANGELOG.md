@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Chore: mypy --strict roster — dashboard (`chore/kit-mypy-strict-dashboard`)
+
+- **Kit-adoption Phase 2 #2, ratchet rung 7 — the localhost-only diagnostics
+  dashboard brought to full `mypy --strict`.** Appended `dashboard.*` to the
+  `pyproject.toml` strict-roster `[[tool.mypy.overrides]]` block
+  (`docs/dev/kit-adoption-design.md` §4/§6). Measured **36 errors** live
+  (`mypy --strict --warn-unreachable dashboard/`), all in `dashboard/routes.py`
+  (`dashboard/__init__.py` was already strict-clean) and all mechanical: **35
+  bare-generic `type-arg`** (the JSONL eval/telemetry aggregators →
+  `dict[str, Any]` / `list[dict[str, Any]]`, reusing the rung-4/5/6
+  precedent) + **1 `no-any-return`** (`_load_baseline`'s `json.load(f)` →
+  `cast("dict[str, Any]", ...)`). No `warn_unreachable`. **Route-security-lint
+  doesn't apply here** — the hook is scoped to `app.py` + `blueprints/**.py`
+  and deliberately excludes `dashboard/` (its routes are localhost-gated, take
+  no `<username>`, read fixed diagnostic dirs), so route decorator lines
+  needed no separate carve-out. **PROMPT-SAFE (grep-verified):**
+  `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+  across `dashboard/` matched only `analyzer._BASE_SYSTEM_PROMPTS`
+  registry reads (the Tuning-tab picker) and template display-text
+  instructing the user to bump `PROMPT_VERSION` by hand — never a constant
+  definition. So **no `PROMPT_VERSION` bump, no eval run**. No new
+  dependency, no behavior change beyond annotations. Gate green:
+  `ruff check .` + `ruff format --check` (touched files) + `mypy .`
+  ("Success: no issues found in 298 source files").
+
 ### Chore: mypy --strict roster — blueprints (`chore/kit-mypy-strict-blueprints`)
 
 - **Kit-adoption Phase 2 #2, ratchet rung 6 — the rest of `blueprints/**` brought
