@@ -46,10 +46,9 @@ Each user's information is kept apart and **never shared between users** — the
 promise the [[career-corpus]] and [[candidate-memory]] pages make. It all stays on this
 machine.
 
-## Coverage gap
-This page doesn't yet cover the read-only **Pipeline** tab (a cross-candidate view of
-every candidate's applications by status) that appears alongside the searchable
-candidate list once you're managing more than one person — flagged for a follow-up pass
-rather than added here speculatively.
+## Tracking more than one candidate
+Once you're managing more than one person, the [[recruiter-pipeline-tab]] gives you a
+single board of every candidate's applications grouped by status, instead of switching
+users one at a time to check on each.
 
 See [[using-sartor]] for the whole first run.

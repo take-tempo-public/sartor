@@ -1702,6 +1702,27 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       common path stays guarded by `test_20260604_bullet_drag_reorder.py`. See
       CHANGELOG [Unreleased].
 
+- [x] **F-17 — avatar refuses Pipeline-tab questions for lack of a `user`-tier
+      wiki page** — discovered during the `docs/wiki-content-pass` v1.0.9 docs-epic
+      scoping (2026-07-10): `feat/ux-w2-recruiter` (2026-07-07) shipped the
+      recruiter-tier **Pipeline tab** (`templates/index.html` `#tab-pipeline`;
+      `static/app.js:refreshPipeline`/`_renderPipelineBoard`; backing route
+      `blueprints/users.py:candidate_roster`) but never got a matching
+      `audience: user` wiki page, so the doc-grounded assistant's `user`-scoped
+      access plane had nothing to cite and refused Pipeline questions (the
+      audience gate — [`SCHEMA.md`](../wiki/SCHEMA.md) §Audience tag).
+      **Resolved same session:** authored
+      [`pages/recruiter-pipeline-tab.md`](../wiki/pages/recruiter-pipeline-tab.md)
+      (`audience: user`), grounded against the live app, bidirectionally
+      backlinked from [`pages/using-sartor.md`](../wiki/pages/using-sartor.md) +
+      [`pages/managing-users.md`](../wiki/pages/managing-users.md), and disambiguated
+      from the unrelated `audience: dev` [`pages/pipeline-stages.md`](../wiki/pages/pipeline-stages.md)
+      (the résumé-generation analyze→…→iterate sequence — a different "pipeline"
+      entirely). Content pass; `docs/wiki/.last_ingest_sha` intentionally untouched
+      per [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.9 (`docs/wiki-content-pass` row).
+      _(discovered + resolved: v1.0.9 docs epic, 2026-07-10, `docs/wiki-content-pass`;
+      open count unchanged — added and cleared in the same edit.)_
+
 The v1.0.1 item list below was **reconciled in place at the v1.0.3 tag
 (2026-06-02)**: completed items are checked; still-open items are flagged
 `→ OPEN` with their current owning release. The v1.0.0 release landed in

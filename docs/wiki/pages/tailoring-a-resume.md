@@ -73,3 +73,6 @@ same job and résumé if you want one (see [[cover-letters]]).
 Everything sartor writes stays **grounded in your real history** — see
 [`../overview.md`](../overview.md). Back to [[using-sartor]]; the developer's view
 of these same six steps is [[frontend-wizard]].
+
+Tracking applications for more than one candidate? See the
+[[recruiter-pipeline-tab]] for a status board across everyone at once.

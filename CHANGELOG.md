@@ -441,6 +441,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `POST /api/eval/run` open via a Playwright route interceptor, asserts all
   four buttons + the banner lock, then fulfills the held request and asserts
   they release.
+### Docs: recruiter Pipeline-tab wiki coverage, closes F-17 (`docs/wiki-content-pass`, v1.0.9 docs epic)
+
+- Authored the `audience: user` how-to page
+  [`docs/wiki/pages/recruiter-pipeline-tab.md`](docs/wiki/pages/recruiter-pipeline-tab.md) for
+  the recruiter-tier **Pipeline** tab (`feat/ux-w2-recruiter`, F-17) — the cross-candidate
+  application-status board. Closes the gap where the in-app doc-grounded assistant's
+  `user`-scoped access plane had no page to cite and refused Pipeline questions. See
+  [`docs/wiki/log.md`](docs/wiki/log.md) for the full content-pass record (per this file's
+  scope rule, wiki content itself is logged there, not restated here).
+- Closed the corresponding Carry-forward-ledger row in
+  [`docs/dev/RELEASE_CHECKLIST.md`](docs/dev/RELEASE_CHECKLIST.md) — added and resolved in the
+  same edit, so the rendered open count is unchanged.
 
 ## [1.0.8] — 2026-07-09
 

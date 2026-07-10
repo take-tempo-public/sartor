@@ -72,5 +72,7 @@ onboarding again.
 - [[downloading-your-documents]] — formats and saving your files.
 - [[managing-users]] — using sartor with more than one person.
 - [[candidate-memory]] — what sartor remembers across applications.
+- [[recruiter-pipeline-tab]] — the cross-candidate Pipeline board, for tracking
+  more than one candidate's applications at once.
 - [[using-the-assistant]] — the built-in assistant that answers from these guides.
 - [[troubleshooting]] — when something goes wrong.
