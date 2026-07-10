@@ -13,6 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: diagnostics anchor-JD path reconciliation (`fix/diagnostics-15-anchor-jd-path`)
+
+- **Diagnostics round-2 #15 — "No anchor JD is saved" root cause.** The
+  browser bootstrap worker's writer normalizes each pasted JD's filename
+  (`secure_filename` + a force-appended `.txt`) before saving it under
+  `jds/`, but `annotation_collate`'s reader resolved the anchor filename
+  with `secure_filename()` alone — so any JD whose display name didn't
+  already end in `.txt` (e.g. `"kafka backend"` → `jds/kafka_backend.txt`)
+  could never be found, `jd.txt` was never written, and `_load_fixture`
+  (which hard-requires `jd.txt`) could never run that fixture. Extracted
+  the shared normalization into one helper, `_jd_filename()`
+  (`blueprints/diagnostics.py`), used by both the writer (bootstrap SSE
+  route) and the reader (`annotation_collate`) so they can't drift apart
+  again. See
+  [`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`](docs/dev/reviews/2026-07-diagnostics-round2-findings.md)
+  item #15 (root of the broken fixture flow; unblocks #11 next). Added a
+  regression test (`tests/test_annotation_routes.py`) driving both real
+  routes end-to-end with a space-containing, `.txt`-less JD name.
+
 ## [1.0.8] — 2026-07-09
 
 ### Fix: UX round-2 quick wins (`fix/round2-quick-wins`, 2026-07-09)
