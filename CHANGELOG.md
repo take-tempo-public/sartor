@@ -175,8 +175,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `typing` import), **1 `no-any-return`**
   (`generator.py:_extract_list_numPr` — wrapped the `deepcopy(numPr)` return
   in `cast("CT_NumPr | None", …)`, a runtime no-op; `cast` added to the
-  `typing` import), and **2 `unreachable`** in `hardening.py` (`:1500`'s
-  `resume` access and `:1528`'s `keyword_overlap` access — both the same
+  `typing` import), and **2 `unreachable`** in `hardening.py` (`:1504`'s
+  `resume` access and `:1535`'s `keyword_overlap` access — both the same
   ContextSet-TypedDict always-truthy `or {}` JSON-defense artifact already
   resolved identically in `analyzer.py`'s rung-3 precedent; kept the
   defensive fallback behind a scoped `# type: ignore[unreachable]` with a

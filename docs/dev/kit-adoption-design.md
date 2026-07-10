@@ -518,8 +518,8 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > (`generator.py:_extract_list_numPr`, whose declared return is `CT_NumPr | None` but
 > `deepcopy()` on an untyped lxml/etree element returns `Any` — wrapped in
 > `cast("CT_NumPr | None", deepcopy(numPr))`, `cast` added to the `typing` import, a
-> runtime no-op) + **2 `warn_unreachable`** in `hardening.py` (`:1500`'s `resume` access
-> and `:1528`'s `keyword_overlap` access) — **the identical ContextSet-TypedDict
+> runtime no-op) + **2 `warn_unreachable`** in `hardening.py` (`:1504`'s `resume` access
+> and `:1535`'s `keyword_overlap` access) — **the identical ContextSet-TypedDict
 > always-truthy `or {}` artifact already resolved in rung 3's `analyzer.py`** (same
 > `(context_set.get(...) or {})` shape, one of the two lines byte-identical to
 > `analyzer.py`'s), resolved the same way: kept the defensive fallback (persisted context
