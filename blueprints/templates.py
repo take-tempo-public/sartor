@@ -48,7 +48,7 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from flask import Blueprint, current_app, jsonify, request, send_file
 from flask.typing import ResponseReturnValue
@@ -74,7 +74,7 @@ templates_bp = Blueprint("templates", __name__)
 # --- Persona serializers (moved with the seam) ---
 
 
-def _persona_dict(template: PersonaTemplate) -> dict:
+def _persona_dict(template: PersonaTemplate) -> dict[str, Any]:
     """Serialize a persona_template row for the API response."""
     return {
         "id": template.id,
@@ -89,7 +89,7 @@ def _persona_dict(template: PersonaTemplate) -> dict:
     }
 
 
-def _persona_dicts_safe(templates: list[PersonaTemplate]) -> list[dict]:
+def _persona_dicts_safe(templates: list[PersonaTemplate]) -> list[dict[str, Any]]:
     """Serialize a list of persona_template rows, skipping (and logging) any row that fails serialization.
 
     Rationale (2026-05-27 handoff §4): the user reported
@@ -105,7 +105,7 @@ def _persona_dicts_safe(templates: list[PersonaTemplate]) -> list[dict]:
     user on next smoke) can pin the exact data problem. Returns a
     list; logs warnings for skipped rows.
     """
-    out: list[dict] = []
+    out: list[dict[str, Any]] = []
     for t in templates:
         try:
             out.append(_persona_dict(t))
@@ -270,7 +270,7 @@ def _latest_generated_resume_md(candidate_id: int) -> str | None:
         session.close()
 
 
-def _json_resume_has_content(doc: dict) -> bool:
+def _json_resume_has_content(doc: dict[str, Any]) -> bool:
     """True when a JSON Resume doc carries renderable content.
 
     `md_to_json_resume("")` (and any blank/whitespace markdown) returns an
@@ -1075,7 +1075,7 @@ def preview_application_html(application_id: int) -> ResponseReturnValue:
         # can't read outside.
         ctx_path_raw = request.args.get("context_path", "").strip()
         ctx_path_arg: str | None = None
-        cached_json_resume: dict | None = None
+        cached_json_resume: dict[str, Any] | None = None
         ctx_has_recommendations = False
         if ctx_path_raw:
             cp = Path(ctx_path_raw)

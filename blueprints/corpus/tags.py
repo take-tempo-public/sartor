@@ -9,7 +9,7 @@ candidate. DB imports stay lazy in-function.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from flask import current_app, jsonify, request
 from flask.typing import ResponseReturnValue
@@ -134,7 +134,7 @@ def _find_or_create_tag(session: Session, candidate_id: int, kind: str, value: s
     return tag
 
 
-def _tag_link_target(session: Session, kind: str, subject_id: int) -> tuple:
+def _tag_link_target(session: Session, kind: str, subject_id: int) -> tuple[Any, Any, Any, Any]:
     """Resolve a bullet/title subject to (subject, candidate, LinkModel, fk_name).
 
     Returns (None, None, None, None) when the subject is not found.

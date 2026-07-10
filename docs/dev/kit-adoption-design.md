@@ -595,6 +595,45 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > and any other non-listed production module, each a later rung toward the Decision-7
 > end-state.
 >
+> **Phase 2 #2 ratchet — rung 6, the rest of `blueprints/**`
+> (`chore/kit-mypy-strict-blueprints`, 2026-07-10).** Sixth rung of the per-module mypy
+> `--strict` ratchet, closing the top-level-root + blueprints cohort. Appended
+> `"blueprints.*"` to the strict override's `module` list — mypy's `*` glob matches
+> across dots, so one entry covers every `blueprints/` submodule including the
+> `corpus/` subpackage — and dropped the now-redundant explicit `"blueprints.applications"`
+> entry (rung 2), subsumed by the glob with identical flags. Measured live
+> (`python -m mypy --strict --warn-unreachable blueprints/`) **= 51 errors across 9
+> files**: `diagnostics.py` 14 · `generation.py` 11 · `corpus/_shared.py` 10 ·
+> `templates.py` 5 · `analysis.py` 4 · `assistant.py` 3 · `corpus/curation.py` 2 ·
+> `corpus/tags.py` 1 · `corpus/skills.py` 1 — **49 bare-generic `type-arg`** (JSON-object
+> dicts -> `dict[str, Any]`; lists -> `list[...]`; one SSE progress `Queue` (reused
+> across diagnostics.py's five stream-worker closures) -> `Queue[Any]`; one
+> heterogeneous 4-tuple return, `corpus/tags.py:_tag_link_target` (subject-or-None,
+> candidate-or-None, model-class-or-None, fk-name-or-None) -> `tuple[Any, Any, Any,
+> Any]`, reusing the rung-2 "`Any` over a costly precise type" judgment call — a
+> parameter/return shape not worth widening callers for in a typing-only rung) + **2
+> `no-any-return`** (`cast(...)` — `diagnostics._load_bootstrap_doc`'s
+> `json.loads(...)` and `assistant._embed`'s `matrix / norms` numpy division, both
+> runtime no-ops). No `warn_unreachable` this rung — a first among the non-clean
+> rungs. **Route-security-lint edit technique (the ruff-`D` blueprints-unit
+> pattern):** every Edit window was anchored inside a function signature or body,
+> never the `@…route`/`.get`/`.post` decorator line, so the hook — which fires only
+> when a route decorator + filesystem access appear in the same edit window without
+> the `_safe_username`/`_within` gate — never fired; confirmed after the fact via
+> `git diff` grep for added/removed decorator lines (zero hits). **PROMPT-SAFE
+> (grep-0):** the `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|
+> _BASE_SYSTEM_PROMPTS)` grep across `blueprints/` matched only prose/docstring
+> cross-references and `analyzer.*` imports/uses — no prompt constant is DEFINED in
+> any blueprint — so no `PROMPT_VERSION` bump, no eval. No new dependency, no
+> behavior change beyond annotations. Gate green: `ruff check .` ✓ · `ruff format
+> --check` (touched files) ✓ · `mypy .` ("Success: no issues found in 298 source
+> files") ✓ (pytest deferred to the conductor's full-suite run on the committed tip,
+> per this run's gate division). **Per-module tracking: 42 production modules now at
+> full strict** (the 24 rung-1..5 modules + the 18 `blueprints/**` modules) — the
+> top-level-root + blueprints cohort of the §6 exit criterion is now **complete**;
+> remaining strict debt is `ui_pages/**` and any other non-listed production module,
+> each a later rung toward the Decision-7 end-state.
+>
 > **Progress (2026-06-25, `chore/kit-phase2-interrogate`):** Phase 2 #4 — the `interrogate`
 > docstring-**coverage** floor-lock gate — LANDED, the **final Phase 2 implementation sub-item**.
 > `interrogate>=1.7,<2.0` added to the `dev` extra (a real new dependency → CHANGELOG); a new

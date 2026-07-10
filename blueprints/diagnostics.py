@@ -28,6 +28,7 @@ import json
 import logging
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any, cast
 
 from flask import Blueprint, Response, current_app, jsonify, request
 from flask.typing import ResponseReturnValue
@@ -81,18 +82,18 @@ def _jd_filename(name: str) -> str:
     return safe_name
 
 
-def _load_bootstrap_doc(fixture_dir: Path) -> dict | None:
+def _load_bootstrap_doc(fixture_dir: Path) -> dict[str, Any] | None:
     """Read a fixture's bootstrap.json. None if absent or malformed."""
     bootstrap_path = fixture_dir / "bootstrap.json"
     if not bootstrap_path.exists():
         return None
     try:
-        return json.loads(bootstrap_path.read_text(encoding="utf-8"))
+        return cast("dict[str, Any]", json.loads(bootstrap_path.read_text(encoding="utf-8")))
     except (OSError, json.JSONDecodeError):
         return None
 
 
-def _write_seed_json(fixture_dir: Path, seed: dict) -> Path:
+def _write_seed_json(fixture_dir: Path, seed: dict[str, Any]) -> Path:
     """Canonical writer for a fixture's seed.json corpus snapshot.
 
     The single source of the dump format, shared by the paid bootstrap route (which
@@ -107,7 +108,7 @@ def _write_seed_json(fixture_dir: Path, seed: dict) -> Path:
     return seed_path
 
 
-def _patch_annotation_scores(ann_path: Path, grounding_signals: dict) -> int:
+def _patch_annotation_scores(ann_path: Path, grounding_signals: dict[str, Any]) -> int:
     """Patch ONLY the inline grounding score fields onto an existing annotations.json.
 
     Joins the freshly-computed nli/minicheck lists to each bullet by cluster_index
@@ -441,9 +442,9 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
         import queue as _queue
         import threading
 
-        events: _queue.Queue = _queue.Queue()
+        events: _queue.Queue[Any] = _queue.Queue()
         sentinel = object()
-        result: dict = {}
+        result: dict[str, Any] = {}
 
         def worker() -> None:
             """Thread target: run grounding signals over the corpus; stash the result/error and signal done."""
@@ -672,9 +673,9 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
 
         from db.session import get_session, init_db
 
-        events: _queue.Queue = _queue.Queue()
+        events: _queue.Queue[Any] = _queue.Queue()
         sentinel = object()
-        result: dict = {}
+        result: dict[str, Any] = {}
 
         def worker() -> None:
             """Thread target: run the bootstrap pipeline in a fresh DB session; stash result/error and signal done."""
@@ -855,7 +856,7 @@ def eval_run_stream() -> ResponseReturnValue:
     # Optional corpus-seed mode (the Annotate "Run this fixture" button). The seed
     # lives under ANNOTATION_ROOT/<slug>/seed.json (gitignored, PII-bearing). Resolve
     # + contain it and confirm the candidate user exists, all before any paid call.
-    seed_data: dict | None = None
+    seed_data: dict[str, Any] | None = None
     raw_slug = str(data.get("slug", "")).strip()
     if raw_slug:
         annotation_root = current_app.config["ANNOTATION_ROOT"]
@@ -889,9 +890,9 @@ def eval_run_stream() -> ResponseReturnValue:
         import queue as _queue
         import threading
 
-        events: _queue.Queue = _queue.Queue()
+        events: _queue.Queue[Any] = _queue.Queue()
         sentinel = object()
-        result: dict = {}
+        result: dict[str, Any] = {}
 
         def worker() -> None:
             """Thread target: run the eval suite; stash the result/error and signal done."""
@@ -1021,7 +1022,7 @@ def tune_run_stream() -> ResponseReturnValue:
     # Optional corpus-seed mode — identical contract to /api/eval/run. The seed lives
     # under ANNOTATION_ROOT/<slug>/seed.json (gitignored, PII-bearing); resolve + contain
     # it and confirm the candidate user exists, all before any paid call.
-    seed_data: dict | None = None
+    seed_data: dict[str, Any] | None = None
     raw_slug = str(data.get("slug", "")).strip()
     if raw_slug:
         annotation_root = current_app.config["ANNOTATION_ROOT"]
@@ -1057,9 +1058,9 @@ def tune_run_stream() -> ResponseReturnValue:
         import threading
         from dataclasses import asdict
 
-        events: _queue.Queue = _queue.Queue()
+        events: _queue.Queue[Any] = _queue.Queue()
         sentinel = object()
-        result: dict = {}
+        result: dict[str, Any] = {}
 
         def _run(phase: str, overrides_map: dict[str, str] | None) -> EvalRunResult:
             """Run the suite for one ``phase`` (with optional ``overrides_map``), emitting phase-tagged progress."""

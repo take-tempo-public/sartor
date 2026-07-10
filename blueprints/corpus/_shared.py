@@ -14,7 +14,7 @@ lazy inside the one function that needs them, mirroring the monolith.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     )
 
 
-def _experience_summary_dict(exp: Experience) -> dict:
+def _experience_summary_dict(exp: Experience) -> dict[str, Any]:
     """Compact experience row for the Career Corpus list view."""
     official = next((t for t in exp.titles if t.is_official), None)
     active_titles = [t for t in exp.titles if t.is_active]
@@ -53,7 +53,7 @@ def _experience_summary_dict(exp: Experience) -> dict:
     }
 
 
-def _tag_list(tag_links: list) -> list[dict]:
+def _tag_list(tag_links: list[Any]) -> list[dict[str, Any]]:
     """Serialize a bullet/title's tag_links (each carries .tag) for the UI."""
     out = []
     for link in tag_links:
@@ -71,7 +71,7 @@ def _tag_list(tag_links: list) -> list[dict]:
     return sorted(out, key=lambda d: d["value"])
 
 
-def _experience_detail_dict(exp: Experience, *, include_retired: bool = False) -> dict:
+def _experience_detail_dict(exp: Experience, *, include_retired: bool = False) -> dict[str, Any]:
     """Full experience payload for the inline expand view.
 
     Retired titles + bullets (is_active=0) are excluded by default so the corpus
@@ -192,7 +192,7 @@ def _resolve_proposal_reviews(
     )
 
 
-def _summary_item_to_dict(s: SummaryItem) -> dict:
+def _summary_item_to_dict(s: SummaryItem) -> dict[str, Any]:
     """Shared response shape for SummaryItem routes."""
     return {
         "id": s.id,
@@ -209,7 +209,7 @@ def _summary_item_to_dict(s: SummaryItem) -> dict:
     }
 
 
-def _experience_summary_item_to_dict(s: ExperienceSummaryItem) -> dict:
+def _experience_summary_item_to_dict(s: ExperienceSummaryItem) -> dict[str, Any]:
     """Shared response shape for ExperienceSummaryItem routes."""
     return {
         "id": s.id,
@@ -226,7 +226,7 @@ def _experience_summary_item_to_dict(s: ExperienceSummaryItem) -> dict:
     }
 
 
-def _skill_to_dict(s: Skill, tags: list | None = None) -> dict:
+def _skill_to_dict(s: Skill, tags: list[Any] | None = None) -> dict[str, Any]:
     """Shared response shape for Skill routes."""
     return {
         "id": s.id,
@@ -245,7 +245,7 @@ def _skill_to_dict(s: Skill, tags: list | None = None) -> dict:
     }
 
 
-def _education_to_dict(ed: Education) -> dict:
+def _education_to_dict(ed: Education) -> dict[str, Any]:
     """Shared response shape for Education routes (F-04, UX-W1).
 
     No `source` / `is_pending_review` / `created_at` / `updated_at` — the
@@ -267,7 +267,7 @@ def _education_to_dict(ed: Education) -> dict:
     }
 
 
-def _certification_to_dict(c: Certification) -> dict:
+def _certification_to_dict(c: Certification) -> dict[str, Any]:
     """Shared response shape for Certification routes (F-04, UX-W1). See `_education_to_dict`."""
     return {
         "id": c.id,

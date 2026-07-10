@@ -351,12 +351,26 @@ ignore_missing_imports = true
 #     parameter instead of a local. PROMPT-SAFE: `EXTRACT_EXPERIENCES_SYSTEM_PROMPT` in
 #     `onboarding/extract_experiences.py` sha256-verified byte-identical pre/post; the rest of the
 #     cohort holds no prompt constants (grep-0).
+#   - rung 6 (blueprints.*) — the rest of `blueprints/**`, closing the cohort. Added the
+#     `blueprints.*` glob (mypy `*` matches across dots, so it covers the `corpus/` subpackage
+#     too); the pre-existing explicit `blueprints.applications` entry is now redundant (subsumed
+#     by the glob, identical flags) and was dropped for cleanliness. Measured 51 errors across 9
+#     files (all mechanical): diagnostics.py 14 · generation.py 11 · corpus/_shared.py 10 ·
+#     templates.py 5 · analysis.py 4 · assistant.py 3 · corpus/curation.py 2 · corpus/tags.py 1 ·
+#     corpus/skills.py 1 — 49 bare-generic `type-arg` (JSON-object dicts -> dict[str, Any];
+#     lists -> list[...]; one `Queue` -> `Queue[Any]`; one heterogeneous 4-tuple ->
+#     `tuple[Any, Any, Any, Any]`, the rung-2 "Any over a costly precise type" precedent) + 2
+#     `no-any-return` (`cast(...)` — `diagnostics._load_bootstrap_doc`'s `json.loads(...)` and
+#     `assistant._embed`'s `matrix / norms` numpy division). No `warn_unreachable` this rung. All
+#     edits were scoped to function signatures/bodies, never the `@…route` decorator line, so
+#     `route-security-lint` never fired (it scans for a route decorator + filesystem access
+#     without the `_safe_username`/`_within` gate in the same edit window). PROMPT-SAFE (grep-0):
+#     blueprints hold no prompt constants of their own (they call `analyzer.*`).
 [[tool.mypy.overrides]]
 module = [
     "scraper",
     "json_resume",
     "pdf_render",
-    "blueprints.applications",
     "analyzer",
     "hardening",
     "parser",
@@ -377,6 +391,7 @@ module = [
     "db.session",
     "db.migrations.env",
     "db.migrations._sqlite_check_constraint",
+    "blueprints.*",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true

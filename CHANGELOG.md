@@ -13,6 +13,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Chore: mypy --strict roster — blueprints (`chore/kit-mypy-strict-blueprints`)
+
+- **Kit-adoption Phase 2 #2, ratchet rung 6 — the rest of `blueprints/**` brought
+  to full `mypy --strict`, closing the top-level-root + blueprints cohort.**
+  Appended `blueprints.*` to the `pyproject.toml` strict-roster
+  `[[tool.mypy.overrides]]` block (`docs/dev/kit-adoption-design.md` §4/§6) —
+  mypy's `*` glob matches across dots, so one entry covers every
+  `blueprints/` submodule including the `corpus/` subpackage. The
+  pre-existing explicit `blueprints.applications` entry (rung 2) is now
+  redundant — subsumed by the glob, identical flags — and was **dropped for
+  cleanliness**. Measured **51 errors** live
+  (`mypy --strict --warn-unreachable blueprints/`) across 9 files, all
+  mechanical: `diagnostics.py` 14 · `generation.py` 11 · `corpus/_shared.py`
+  10 · `templates.py` 5 · `analysis.py` 4 · `assistant.py` 3 ·
+  `corpus/curation.py` 2 · `corpus/tags.py` 1 · `corpus/skills.py` 1 — **49
+  bare-generic `type-arg`** (JSON-object dicts → `dict[str, Any]`; lists →
+  `list[...]`; one SSE progress `Queue` → `Queue[Any]`; one heterogeneous
+  4-tuple return (`corpus/tags.py:_tag_link_target`) →
+  `tuple[Any, Any, Any, Any]`, reusing the rung-2 "`Any` over a costly precise
+  type" judgment call) + **2 `no-any-return`** (`cast(...)` —
+  `diagnostics._load_bootstrap_doc`'s `json.loads(...)` and
+  `assistant._embed`'s `matrix / norms` numpy division). No
+  `warn_unreachable` this rung. **Route-security-lint technique:** every edit
+  window was scoped to the function signature/body, never the `@…route`
+  decorator line (the ruff-`D` blueprints-unit pattern from
+  `docs/dev/kit-adoption-design.md` §4) — the hook never fired. **PROMPT-SAFE
+  (grep-0):** `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+  across `blueprints/` matched only prose/docstring references and
+  `analyzer.*` imports/uses, never a constant definition — blueprints hold no
+  prompt constants of their own. So **no `PROMPT_VERSION` bump, no eval
+  run**. No new dependency, no behavior change beyond annotations. Gate
+  green: `ruff check .` + `ruff format --check` (touched files) + `mypy .`
+  ("Success: no issues found in 298 source files").
+
 ### Chore: mypy --strict roster — backend substrate (`chore/kit-mypy-strict-backend`)
 
 - **Kit-adoption Phase 2 #2, ratchet rung 5 — the backend substrate brought

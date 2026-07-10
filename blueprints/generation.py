@@ -196,9 +196,9 @@ def _persist_cover_letter_to_db(
 
 def _persist_corpus_generation_to_db(
     application_run_id: int,
-    generate_result: dict,
+    generate_result: dict[str, Any],
     *,
-    ats_findings: dict | None = None,
+    ats_findings: dict[str, Any] | None = None,
 ) -> None:
     """Phase B.3 write-back: persist the structured generate() output to the DB.
 
@@ -389,7 +389,7 @@ def _apply_output_fidelity_fixes(resume_markdown: str, context_set: ContextSet) 
     return json_resume_to_markdown(doc)
 
 
-def _check_date_grounding(context_set: ContextSet, result: dict) -> dict | None:
+def _check_date_grounding(context_set: ContextSet, result: dict[str, Any]) -> dict[str, Any] | None:
     """KW6 guard: flag generated heading date ranges that don't trace to the corpus (altered or duplicated date ranges).
 
     Warn-only by design: appends a plain-language note per flagged heading to
@@ -441,7 +441,7 @@ def _check_date_grounding(context_set: ContextSet, result: dict) -> dict | None:
 # generation now and are revisited at 8.3f if an applications route grows a caller.
 
 
-def _apply_chosen_summary(context_set: dict) -> None:
+def _apply_chosen_summary(context_set: dict[str, Any]) -> None:
     """β.6d — patch context_set["candidate"]["profile_text"] in-place with the chosen SummaryItem variant's text.
 
     Priority chain (first match wins):
@@ -515,7 +515,7 @@ def _apply_chosen_summary(context_set: dict) -> None:
         session.close()
 
 
-def _apply_chosen_experience_summaries(context_set: dict) -> None:
+def _apply_chosen_experience_summaries(context_set: dict[str, Any]) -> None:
     """B.4 (Sprint 6.6) — patch each career_corpus experience's `summary` in-place with the chosen ExperienceSummaryItem variant text (WYSIWYG; OPT-IN, no auto-fallback).
 
     Gated on composition_overrides.use_experience_summaries (the explicit
@@ -589,7 +589,7 @@ def _apply_chosen_experience_summaries(context_set: dict) -> None:
         session.close()
 
 
-def _apply_recommended_skills(context_set: dict) -> None:
+def _apply_recommended_skills(context_set: dict[str, Any]) -> None:
     """B.5 (Sprint 6.6) — reorder / filter context_set["candidate"]["skills"] to the curated set for this application (in-memory patch before the LLM sees the context).
 
     The effective ordered set is computed by resolve_skill_selection from
@@ -919,7 +919,7 @@ def run_generation() -> ResponseReturnValue:
     # The _apply_* helpers treat the context_set as a loose dict (they read /
     # write keys outside the ContextSet schema). It is a dict at runtime; cast
     # so the in-place mutations land on the same object.
-    cs = cast(dict, context_set)
+    cs = cast(dict[str, Any], context_set)
     client = _get_client()
     # Re-use the run_id minted in /api/analyze when present so both calls
     # share an ID in telemetry. New ID for legacy contexts that pre-date
@@ -1062,7 +1062,7 @@ def run_generation() -> ResponseReturnValue:
     # Phase C.3: ATS round-trip self-check. Best-effort; failures are
     # surfaced in the response + persisted on application_run (when DB-
     # backed) but never block the user. Pure file operation — no LLM cost.
-    ats_findings: dict | None = None
+    ats_findings: dict[str, Any] | None = None
     if output_format == ".docx":
         try:
             from db.ats_roundtrip import run_ats_roundtrip
@@ -1214,7 +1214,7 @@ def run_generation_stream() -> ResponseReturnValue:
     # The _apply_* helpers treat the context_set as a loose dict (they read /
     # write keys outside the ContextSet schema). It is a dict at runtime; cast
     # so the in-place mutations land on the same object.
-    cs = cast(dict, context_set)
+    cs = cast(dict[str, Any], context_set)
     # Phase 4 — corpus-mode deterministic assemble when Compose froze an
     # approved_composition. Computed here (request context) so it is captured in
     # the stream() closure below.
@@ -1260,7 +1260,7 @@ def run_generation_stream() -> ResponseReturnValue:
     def stream() -> Iterator[str]:
         """SSE generator: stream the résumé-generation events to the client."""
         try:
-            result: dict | None = None
+            result: dict[str, Any] | None = None
             if frozen_doc is not None:
                 # Phase 4 — deterministic assemble: NO résumé-body LLM. Emit the
                 # assembled markdown as a single chunk so the live view shows
@@ -1346,7 +1346,7 @@ def run_generation_stream() -> ResponseReturnValue:
                 cover_letter_path,
             )
 
-            ats_findings: dict | None = None
+            ats_findings: dict[str, Any] | None = None
             if resolved_output_format == ".docx":
                 try:
                     from db.ats_roundtrip import run_ats_roundtrip

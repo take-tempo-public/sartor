@@ -15,7 +15,7 @@ usual `blueprints.corpus.skills._get_client` seam.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import anthropic
 from flask import current_app, jsonify, request
@@ -322,7 +322,7 @@ def suggest_skills_from_corpus_route(username: str) -> ResponseReturnValue:
             ), 502
 
         next_order = session.query(Skill).filter_by(candidate_id=candidate.id).count()
-        created: list[dict] = []
+        created: list[dict[str, Any]] = []
         for p in result.get("proposals") or []:
             if not isinstance(p, dict):
                 continue
