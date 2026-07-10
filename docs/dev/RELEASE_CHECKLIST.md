@@ -858,21 +858,30 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       and `ci.yml`'s ACTIVATION NOTE (names the four required checks; NOT `eval-smoke`), plus
       `docs/install.md`. Public promotion (repo → public) + badge/citation-link resolution land
       at v1.1.0.
-      **→ Update (2026-07-10, `train/v109-docs-hygiene`):** PX-40 (reconcile
-      `docs/PRODUCT_SHAPE.md` to the post-split reality) landed — the §11.2 WS-1 row now
-      reads ✓ SHIPPED (v1.0.8) with the verified post-split `app.py` facts (0 routes,
-      ~296 lines), the two `app.py:1403-1423` dead citations the prescription named were
-      already re-anchored by prior work (verified absent, no edit needed), and a Status
-      column + `DOC-STATUS` marker were added to the workstream table. PX-48 (dev-doc
-      staleness batch) landed alongside it — SUPERSEDED/SHIPPED banners on
+      **→ Update (2026-07-10, `train/v109-docs-hygiene`):** four PX rows land together off
+      this docs-hygiene train. **PX-40** (reconcile `docs/PRODUCT_SHAPE.md` to the post-split
+      reality) — the §11.2 WS-1 row now reads ✓ SHIPPED (v1.0.8) with the verified post-split
+      `app.py` facts (0 routes, ~296 lines), the two `app.py:1403-1423` dead citations the
+      prescription named were already re-anchored by prior work (verified absent, no edit
+      needed), and a Status column + `DOC-STATUS` marker were added to the workstream table.
+      **PX-48** (dev-doc staleness batch) — SUPERSEDED/SHIPPED banners on
       `app-blueprints-design.md` + `kit-adoption-design.md`, the CHANGELOG archive split
       (`CHANGELOG-archive.md`), and this ledger's own head-note compression (the note you're
-      reading now). PX-53 (F-tci-02, the triplicated `_imported_roots()` AST helper) landed
-      too — one shared `tests/_ast_import_roots.py::imported_roots()` (with a
-      `resolve_relative` parameter preserving `test_recall_boundary.py`'s one legitimate
-      semantic variant) now backs all three boundary gates; behavior verified byte-identical
-      (16/16 tests green + a manual fail-closed sanity check). [TRAIN-ASSEMBLY-WIP: PX-50
-      folds into this same clause below.]
+      reading now). **PX-53** (F-tci-02, the triplicated `_imported_roots()` AST helper) — one
+      shared `tests/_ast_import_roots.py::imported_roots()` (with a `resolve_relative`
+      parameter preserving `test_recall_boundary.py`'s one legitimate semantic variant) now
+      backs all three boundary gates; behavior verified byte-identical (16/16 tests green + a
+      manual fail-closed sanity check). **PX-50** (the DOC-STATUS grep gate) —
+      `tests/test_doc_status_gate.py` built (rides the normal `pytest` run) enforcing the
+      `DOC-STATUS` marker grammar + version-trigger reconciliation per
+      [`documentation-architecture.md`](documentation-architecture.md); found and reconciled 3
+      real unreconciled `README.md` markers (PX-19/PX-20 cited as still owed at v1.0.8, but
+      both shipped v1.0.8 Sprint 8.3a per `docs/governance/enforcement.md`, and v1.0.8 is
+      already tagged), and — assembled against the combined train tree — passed clean against
+      the two new markers PX-40 and PX-48 add that PX-50 never saw at cherry-pick time (no
+      marker edit needed; both already conform to the documented grammar). **Cumulative count:**
+      prior landed rows were PX-26 + PX-54 (2 of 20); with PX-40/PX-48/PX-50/PX-53 landing here,
+      **6 of the row's 20 PX rows now land**; row stays open (14 remain).
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in

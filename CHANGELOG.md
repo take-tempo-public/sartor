@@ -13,6 +13,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Chore: DOC-STATUS grep gate (`ci/px50-doc-status-gate`, PX-50)
+
+- New `tests/test_doc_status_gate.py` — a pytest gate (rides the normal
+  `pytest` run, no separate CI wiring) that enforces the `DOC-STATUS`
+  marker convention documented in
+  [`docs/dev/documentation-architecture.md`](docs/dev/documentation-architecture.md)
+  (F-doc-09): every `<!-- DOC-STATUS(key): ... Canonical: ... -->` marker
+  must parse to the documented grammar shape, and any marker whose own
+  text frames a `vX.Y[.Z]` version as an open trigger ("owed at vX",
+  "until vX", "update when vX lands") fails the build once that version is
+  `<=` the current `pyproject.toml` version — the freshness-gate "hook
+  point" the architecture doc proposed but never built. Proximity-based
+  phrase/version pairing so a marker mixing a resolved past trigger with a
+  distinct, still-open future one is not wrongly flagged for the resolved
+  half. Grammar deviation found and tolerated: real markers use "Canonical
+  homes:" (plural) alongside the documented singular "Canonical:".
+- The gate found 3 real unreconciled markers in `README.md` — all three
+  cited PX-19/PX-20 as still owed at v1.0.8, but both shipped in v1.0.8
+  Sprint 8.3a (`docs/governance/enforcement.md`) and v1.0.8 is already
+  tagged. Reconciled the 3 markers (and their immediately adjacent
+  claim-state prose: the "Governed by construction" paragraph, the egress
+  paragraph's marker, and the Status section's governance bullet) to the
+  already-established SHIPPED status. No new claim invented — text mirrors
+  `enforcement.md`'s existing "SHIPPED v1.0.8 Sprint 8.3a" language. The
+  `v1.1.0`-triggered portion of the Status bullet stays open (untagged).
+- **TRAIN-ASSEMBLY note (2026-07-10, `train/v109-docs-hygiene`):** this gate
+  now also runs against the combined tree assembled by this train, which
+  adds PX-40's new `docs/PRODUCT_SHAPE.md` marker and PX-48's two new
+  design-doc markers that PX-50 never saw at cherry-pick time — see the
+  gate-pass evidence in the train assembly commit / manifest.
+- No product code / prompt / route / dependency change; `PROMPT_VERSION`
+  untouched.
+
 ### Test: consolidate the triplicated `_imported_roots()` AST helper (`test/px53-shared-ast-helper`)
 
 - **PX-53 (2026-07 efficiency review, F-tci-02).** The whole-tree AST
