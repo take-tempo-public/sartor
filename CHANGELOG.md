@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.8] — 2026-07-09
+
 ### Fix: UX round-2 quick wins (`fix/round2-quick-wins`, 2026-07-09)
 
 Six decision-free fixes from the owner's e2e round-2 walkthrough (Wave A;

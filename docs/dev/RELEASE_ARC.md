@@ -1003,7 +1003,9 @@ Then: `chore/version-bump-v1.0.7`.
   demo.gif); fresh-clone < 5 min verification; the machine-badge set (Dependabot + lockfile,
   OpenSSF Scorecard, REUSE/SPDX — the E-2 prescription / PX-26); the UX/a11y/PDF tier as a
   **required CI check** (PX-25); a doc-link resolution sweep; **create the GitHub repo +
-  push `main` (private/unpromoted)**.
+  push `main` (private/unpromoted)** — **DONE 2026-07-09 (repo created + `main` pushed
+  private); the required-CI-check + badge-activation + PyPI/GHCR pieces are DEFERRED to
+  pre-v1.1.0 (owner 2026-07-09)**.
   **Folds in here (slotted 2026-06-23 from the carry-forward ledger — re-homing, not new items):**
   (i) **`feat/portable-enforcement-core`** — lift the portable guards (`require-feature-branch`,
   `block-merge-to-main`, `block-secrets`, `route-security-lint`, `ruff-changed`, `validate-context`)
@@ -1032,7 +1034,9 @@ Then: `chore/version-bump-v1.0.8`.
   bumped (the only prompt change in the two epics).
 - **Pre-public prep done** (moved from Phase 5): screenshots, fresh-clone < 5 min, badge set,
   UX/a11y/PDF required CI check, doc links resolve, GitHub repo pushed (private/unpromoted).
-  "All work done by v1.0.8."
+  "All work done by v1.0.8." **(Reconciled 2026-07-09: `main` is pushed to the private repo;
+  the required-CI-check activation + badge-resolution + PyPI/GHCR moved to the pre-v1.1.0
+  checklist per owner — the v1.0.8 tag no longer gates on them.)**
 - **Carry-forward ledger drained** (the 2026-06-20 7.9 triage): the `chore/ledger-reduction`
   (8.0) hygiene pair cleared and the `docs/assistant-wiki-coverage` (8.6a) doc sprint authored,
   so by the public cut the open ledger is down to ~the deferred in-app citation viewer.
@@ -1057,7 +1061,7 @@ Then: `chore/version-bump-v1.0.8`.
 | Phase 2 | `feat/grounding-calibration-8.6b` | Owner PV-1 annotation (30–60 min) → PV-2 calibration → ledger #10 fresh Sonnet-5 baseline (~$0.30). |
 | Phase 3 | UX Waves 1–4 → **TRAIN 2** (7 branches) | `feat/ux-w1-first-run-flow` (F-12/06/05/15) · `feat/ux-w1-skills-education` (F-03/04) · `feat/ux-w1-generate-surface` (F-09/10) · `feat/ux-w3-demo-mode` (F-19) · `docs/ux-w3-contributor` (F-21/22/20/27/06d) · `feat/ux-w2-recruiter` (F-08/17/16) · `feat/ux-w4-aesthetic` (F-07/23/13/14/18). Shared `static/app.js`/templates → pre-train merge-tree preflight mandatory. |
 | Phase 3b | gen-exp completion → **TRAIN 3** | (a) `fix/surgical-refinement-and-loopback` + (d) `feat/regenerate-gap-fill` in parallel, then (b) `feat/wysiwyg-source-of-truth` + (c) `feat/clarifications-to-corpus`. Spec home: [`generation-experience-rearchitecture.md`](generation-experience-rearchitecture.md) §4/§6. Corpus-mode validation on a saved context + one real generate (NOT `--suite synthetic`). |
-| Phase 4 | 8.7 public-prep → **TRAIN 4** → **CODE FREEZE** | `feat/portable-enforcement-core` (ledger #6) · `ci/ux-a11y-required-check` (PX-25) · `chore/doc-link-sweep` (ledger #7). Then **[HUMAN]**: GitHub repo `take-tempo-public/sartor` (private) + PyPI Trusted Publisher + required checks. Then assets: `docs/screenshots-refresh` ($0.27, app running) · `docs/badges-readme-prep` (PX-26 + PX-54) → **TRAIN 4b**. |
+| Phase 4 | 8.7 public-prep → **TRAIN 4** → **CODE FREEZE** | `feat/portable-enforcement-core` (ledger #6) · `ci/ux-a11y-required-check` (PX-25) · `chore/doc-link-sweep` (ledger #7). Then **[HUMAN]**: GitHub repo `take-tempo-public/sartor` (private) + PyPI Trusted Publisher + required checks. **[Reconciled 2026-07-09: repo created + `main` pushed private; PyPI/GHCR/required-checks activation DEFERRED to pre-v1.1.0 per owner — see the RELEASE_CHECKLIST [HUMAN] row.]** Then assets: `docs/screenshots-refresh` ($0.27, app running) · `docs/badges-readme-prep` (PX-26 + PX-54) → **TRAIN 4b**. |
 | Phase 5 | v1.0.8 tag ceremony | `/compliance-witness` at pinned sha + `/wiki-lint` (staleness carried as accepted note; PX-41 scheduled Phase 6) + `RELEASE_CHECKLIST` sweep + `CHANGELOG` cut → owner confirms → tag **v1.0.8** → verify published wheel. |
 | Phase 6 | v1.0.9 docs epic → **TRAIN 5** → v1.0.9 tag | `docs/readme-icp-ladder` · `docs/dev-home-depth-wsb` (+ PX-40/48 + avatar-voice casing) · `docs/wiki-content-pass` (PX-41 catch-up ingest 150+ commits via `/wiki-self-update` + PX-50/53 + user-tier pages + `llms.txt`) · `docs/diagrams-a11y` (new `accTitle`/`accDescr` diagrams; retire the 4 drifted `.mmd`) · `feat/fumadocs-site` (projection adapter + spectree/OpenAPI Layer-B) · `ci/doc-merge-gate` (last) · `chore/mypy-strict` (burn the normalized error count) · `spike/pagedjs-design` (timeboxed doc). Voice/tone reference: Google developer style guide tone (record in `documentation-architecture.md`). |
 | Phase 7 | v1.1.0 gate → **TRAIN 6** | `chore/px-v110-gate-batch` (Phase-0 survivors incl. PX-37/38/43/44/45/47/49/51/55/56 as re-scoped) · PX-39 Sonnet-5 latency baseline (idle only) · `release/visual-assets` · PX-46 memory consolidation (owner-gated) → final fresh-clone-from-GitHub verify → owner acts: tag **v1.1.0** + public flip. |
@@ -1114,7 +1118,7 @@ re-confirmation doubles as resume.
 
 ---
 
-## UX Cohesion Epic (registered 2026-07-09 — unscheduled, post-v1.0.8)
+## UX Cohesion Epic (registered 2026-07-09 — slotted into v1.0.9, owner 2026-07-09)
 
 > **Registration only — not a spec.** Surfaced by the owner's e2e round-2
 > walkthrough ([`reviews/2026-07-ux-round2-findings.md`](reviews/2026-07-ux-round2-findings.md)
@@ -1122,8 +1126,10 @@ re-confirmation doubles as resume.
 > from that pass landed immediately as Wave A quick-wins
 > (`fix/round2-quick-wins`). Everything below needs a design/shape decision
 > first, so it is parked here as a named epic rather than decided inline.
-> **Version slot: TBD — owner to slot this against the v1.0.9 docs epic**
-> (Phase 4.9 above); it may run before, after, or interleaved with it.
+> **Version slot: v1.0.9** (owner-slotted 2026-07-09 — rolls into the v1.0.9
+> epic alongside the Phase 4.9 docs-site work; may run before, after, or
+> interleaved with it). Now also carries the **Diagnostics-DX + hardening**
+> thread below.
 
 Themes (each design-scoped, not yet branch-planned):
 
@@ -1158,6 +1164,26 @@ Themes (each design-scoped, not yet branch-planned):
   as style source) is already faithful while only the **preview** is lossy —
   "preview should match output" is the principle at stake. Detail in the
   findings doc's T2 deep-dive.
+- **Diagnostics-DX + hardening** (round-2 items #1–#17) — the diagnostics
+  console (`/_dashboard`) round-2 batch, captured in
+  [`reviews/2026-07-diagnostics-round2-findings.md`](reviews/2026-07-diagnostics-round2-findings.md)
+  (owner-decided 2026-07-09: **bundle into v1.0.9; nothing pre-empts the v1.0.8
+  tag** — the broken fixture flow ships as-is). Fix order: **#15 → #11** (reconcile
+  the anchor-JD `.txt` path + add the collate CLI `--fixture` flag — unblocks the
+  whole fixture flow, currently broken end-to-end), then the **run-lock + a real
+  run-cancel endpoint** (#1 + the daemon-thread run-lifecycle; owner opted **in** to
+  cancel, not just a lock), the **annotate-flow persistence** (#9 localStorage draft
+  + jump-to-flagged-item — pairs with the **grounding-signal persistence gap** from
+  the #14 run-health review, where NLI + MiniCheck scores never wrote back to
+  `annotations.json`), the **bootstrap skills parser** (#8, LLM-free) and the
+  **should_omit/verdict tooltip + design-Q** (#7), then the instructional / assistant
+  / progress-bar polish (#2–#6, #10, #13, #16, #17). Run-health follow-ups (0-byte-run
+  guard, full-rubric coverage) ride here too
+  ([`reviews/2026-07-e2e-run-health-review.md`](reviews/2026-07-e2e-run-health-review.md)).
+  **Separate governance decision (NOT epic bug work):** single-threaded `app.run()`
+  (`app.py`, no `threaded=True`) freezes the whole app during a diagnostics run —
+  making it threaded touches the C-1-sensitive loopback-bind area, so it is an
+  owner-gated governance call, deliberately kept out of this epic.
 
 Deferred out of this epic (tracked elsewhere): **Co3** (skill-suggestion
 ATS-quality) is a tune-loop question, not a code branch. **O1b** (dates

@@ -63,3 +63,36 @@
 - **Full findings-register table:** rendered to chat this run (not filed to a doc — no
   `output/` write, per the witness's write envelope). CW-101 is the one net-new,
   unscheduled item; CW-102/103 are known items this run reconfirms are still open.
+
+## 2026-07-09 — pre-v1.0.8-tag ceremony run (`chore/version-bump-v1.0.8`)
+
+- **Window:** `44d6814` (v1.0.7 tag) → HEAD `cb976cc` (223 commits). Primary surface: this
+  session's 4-commit pre-tag docs stack (diagnostics round-2 capture · #14 run-health review ·
+  UX Cohesion Epic + diagnostics-DX slot · version bump), cross-read against
+  `docs/governance/{charter,enforcement,metrics}.md`, `RELEASE_ARC.md`/`RELEASE_CHECKLIST.md`,
+  `CHANGELOG.md`, `AGENTS.md`/`CLAUDE.md`.
+- **Counts:** FLAG 2 · WATCH 2 · AFFIRM 5 · 0 withheld (cap 12).
+- **Gate verdict:** **needs attention** (2 FLAG-tier) — **neither blocks the v1.0.8 tag** (both
+  pure doc-reconciliation drift inside this session's own docs stack).
+- **FLAG — CW-107 (CLOSED this branch):** RELEASE_ARC's resume anchor still framed the GitHub
+  repo push as pending (`RELEASE_ARC.md:1005/1034/1060`) while `RELEASE_CHECKLIST.md:825` recorded
+  it done — and the RELEASE_ARC Phase table is what the resume protocol says to read first.
+  Reconciled the three RELEASE_ARC spots on `chore/version-bump-v1.0.8` (W-1.4 single accurate home).
+- **FLAG — CW-108 (CLOSED this branch):** the grounding-metric ledger row
+  (`RELEASE_CHECKLIST.md:570-578`) still framed PV-2 as "awaiting the owner's annotation pass"; the
+  #14 run-health review shows the pass ran (53 annotations) + surfaced the NLI/MiniCheck 100%-null
+  annotate-flow persistence gap as the real blocker. Appended a `→ Update` note folding it into the
+  v1.0.9 Diagnostics-DX thread.
+- **WATCH:** CW-109 (wiki-staleness "219" vs 223 at the pinned sha — soft descriptive number in a row
+  already deferred to `docs/wiki-refresh-v1.0.9`, self-healing there; left as-is per the witness's
+  no-action call). CW-110 (stray unmerged local branches from the hook-blocked capture lane — a
+  pre-close branch-prune item; the stack merges at the tag ceremony, the empty
+  `docs/diagnostics-triage-capture` prunes with owner OK).
+- **AFFIRM:** CW-111 (`#15` + `threaded=True` citations exact at the sha) · CW-112 (C-6 8-module
+  gate incl. `docx_to_persona_html.py` — the prior CW-101 close held) · CW-113 (prior CW-102/104
+  reconciles held, not re-drifted) · CW-114 (version-bump/CHANGELOG cut correct; `evals/fixtures/real/`
+  gitignored) · CW-115 (ledger open-count = 7, matches the head-note).
+- **Note:** run reproduced the Sonnet subagent in-session (registered `/sartor:compliance-witness`
+  surfaces on reload; the Task-delegated path is contract-identical). The two FLAGs were closed on
+  the branch **before** the tag (AGENTS.md pre-close sweep — reconcile drift before the merge, not
+  after), not deferred.
