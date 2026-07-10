@@ -197,6 +197,41 @@ class TestExtractSkills:
     def test_no_skills_section(self) -> None:
         assert bootstrap._extract_skills("## Experience\n- did a thing") == []
 
+    def test_inline_bold_category_label_colon_inside(self) -> None:
+        # diagnostics round-2 #8: colon INSIDE the bold span.
+        md = "## Skills\n**Languages:** Python, Go\n**Frameworks:** Flask, React"
+        assert bootstrap._extract_skills(md) == ["Python", "Go", "Flask", "React"]
+
+    def test_inline_bold_category_label_colon_outside(self) -> None:
+        # diagnostics round-2 #8: colon OUTSIDE the bold span.
+        md = "## Skills\n**Languages**: Python, Go\n**Frameworks**: Flask, React"
+        assert bootstrap._extract_skills(md) == ["Python", "Go", "Flask", "React"]
+
+    def test_inline_underscore_category_label_both_colon_placements(self) -> None:
+        md = "## Skills\n__Languages:__ Python, Go\n__Frameworks__: Flask, React"
+        assert bootstrap._extract_skills(md) == ["Python", "Go", "Flask", "React"]
+
+    def test_no_extracted_skill_contains_bold_markers_or_label(self) -> None:
+        md = "## Skills\n**Languages:** Python, Go"
+        skills = bootstrap._extract_skills(md)
+        assert not any("*" in s or "Languages" in s for s in skills)
+
+    def test_plain_comma_list_unaffected_by_label_strip(self) -> None:
+        # Guard against over-stripping: no bold category prefix present.
+        md = "## Skills\nPython, Kubernetes, Go"
+        assert bootstrap._extract_skills(md) == ["Python", "Kubernetes", "Go"]
+
+    def test_bulleted_inline_bold_category_label(self) -> None:
+        # Bullet marker + inline bold label together.
+        md = "## Skills\n- **Languages:** Python, Go"
+        assert bootstrap._extract_skills(md) == ["Python", "Go"]
+
+    def test_bolded_skill_token_without_label_colon_untouched(self) -> None:
+        # A bolded skill with no adjacent label colon is content, not a label —
+        # must not be stripped away.
+        md = "## Skills\n**Kubernetes**, Go"
+        assert bootstrap._extract_skills(md) == ["**Kubernetes**", "Go"]
+
 
 class TestBuildBootstrapDocument:
     def _per_jd(self) -> list[dict]:

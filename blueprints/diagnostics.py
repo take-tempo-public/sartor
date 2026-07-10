@@ -65,6 +65,22 @@ def _annotation_fixture_path(slug: str, annotation_root: Path) -> Path | None:
     return annotation_root / safe
 
 
+def _jd_filename(name: str) -> str:
+    """Sanitize a pasted-JD display name into its ``jds/`` filename.
+
+    Single source of truth shared by the bootstrap wrapper's writer (persists
+    each pasted JD under ``jds/<name>``) and ``annotation_collate``'s reader
+    (resolves the anchor JD's ``jds/<name>`` back to copy into ``jd.txt``) — the
+    two MUST agree bit-for-bit or the anchor lookup silently misses
+    (diagnostics-round2 #15). ``secure_filename`` alone is not idempotent
+    against a trailing ``.txt``, so both sides force the suffix the same way.
+    """
+    safe_name = secure_filename(name) or "jd"
+    if not safe_name.endswith(".txt"):
+        safe_name = f"{safe_name}.txt"
+    return safe_name
+
+
 def _load_bootstrap_doc(fixture_dir: Path) -> dict | None:
     """Read a fixture's bootstrap.json. None if absent or malformed."""
     bootstrap_path = fixture_dir / "bootstrap.json"
@@ -303,9 +319,11 @@ def annotation_collate(username: str, slug: str) -> ResponseReturnValue:
     expected = collate_expected(annotations, bootstrap)
     brief = build_improvement_brief(annotations, bootstrap)
 
-    # Anchor JD text → jd.txt (best-effort; the wrapper saves pasted JDs in jds/).
+    # Anchor JD text → jd.txt (best-effort; the wrapper saves pasted JDs in jds/,
+    # normalized via _jd_filename — resolve the anchor name the SAME way so the
+    # lookup can't miss when the raw name didn't already end in .txt).
     anchor_name = pick_anchor_jd(bootstrap)
-    anchor_src = (fixture_dir / "jds" / secure_filename(anchor_name)) if anchor_name else None
+    anchor_src = (fixture_dir / "jds" / _jd_filename(anchor_name)) if anchor_name else None
     jd_written = False
     if anchor_src is not None and _within(anchor_src, annotation_root) and anchor_src.exists():
         (fixture_dir / "jd.txt").write_text(
@@ -336,7 +354,7 @@ def annotation_collate(username: str, slug: str) -> ResponseReturnValue:
             "must_keywords": len(expected.get("must_keywords", [])),
             "forbidden_inventions": len(expected.get("forbidden_inventions", [])),
             "run_command": (
-                f"python evals/runner.py --suite real --seed "
+                f"python evals/runner.py --fixture {secure_filename(slug)} --seed "
                 f"evals/fixtures/real/{secure_filename(slug)}/seed.json"
             ),
         }
@@ -767,10 +785,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
         jds_dir = fixture_dir / "jds"
         jds_dir.mkdir(parents=True, exist_ok=True)
         for name, text in jds:
-            safe_name = secure_filename(name) or "jd"
-            if not safe_name.endswith(".txt"):
-                safe_name = f"{safe_name}.txt"
-            jd_file = jds_dir / safe_name
+            jd_file = jds_dir / _jd_filename(name)
             if _within(jd_file, annotation_root):
                 jd_file.write_text(text, encoding="utf-8")
         grounded = doc.get("grounding_signals") is not None

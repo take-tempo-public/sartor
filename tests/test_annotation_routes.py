@@ -296,6 +296,72 @@ class TestCollate:
         # collate_expected lowercases skill keywords (case-insensitive coverage).
         assert "python" in expected["must_keywords"]
         assert r"\$5M\b" in expected["forbidden_inventions"]
+        # Regression for diagnostics-round2 #11: the printed run_command must target
+        # the SAME single fixture the "Run this fixture" button posts — without
+        # --fixture, --seed doesn't restrict which fixtures run and the CLI globs
+        # every real fixture (crashing in _load_fixture on missing jd.txt).
+        assert "--fixture alice-bootstrap" in body["run_command"]
+        assert "evals/fixtures/real/alice-bootstrap/seed.json" in body["run_command"]
+
+    def test_anchor_jd_resolves_when_raw_name_lacks_txt_suffix(self, ann_app, monkeypatch):
+        """Regression for diagnostics-round2 #15: the bootstrap wrapper's writer
+        force-appends ``.txt`` (via ``secure_filename`` + suffix normalization) when
+        persisting a pasted JD under ``jds/``. Collate's reader must resolve the
+        anchor filename the SAME way or ``jd_written`` stays False and ``jd.txt`` is
+        never produced (the "no anchor JD saved" bug). Drives BOTH real routes — the
+        writer via the stubbed bootstrap pipeline, then the reader via collate — so a
+        re-drift between the two normalizations would fail this test again.
+        """
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")  # client construct only
+
+        def _fake_pipeline(client, session, username, jds, *, progress=None):
+            per_jd = []
+            for i, (name, _text) in enumerate(jds):
+                per_jd.append(
+                    {
+                        "jd_file": name,
+                        "run_id": f"run{i}",
+                        "analysis": {},
+                        "clarification_questions": [],
+                        "clarification_reasoning": "",
+                        "generated_resume": "",
+                        "generated_cover_letter": "",
+                        "bullets": ["Led a $5M migration"],
+                        "skills": ["Python"],
+                    }
+                )
+            return per_jd, "corpus source text"
+
+        import evals.bootstrap as bootstrap_mod
+
+        monkeypatch.setattr(bootstrap_mod, "run_pipeline_over_jd_texts", _fake_pipeline)
+
+        client = ann_app.app.test_client()
+        # Raw JD name has neither a .txt suffix nor a filesystem-safe form —
+        # secure_filename also maps the space to an underscore.
+        resp = client.post(
+            "/api/annotation/bootstrap",
+            json={
+                "username": "alice",
+                "jds": [{"name": "kafka backend", "text": "Senior backend JD body."}],
+            },
+        )
+        assert resp.status_code == 200
+        assert "event: done" in resp.get_data(as_text=True)
+
+        fixture_dir = ann_app.ANNOTATION_ROOT / "alice-bootstrap"
+        # The writer's normalization: "kafka backend" -> "kafka_backend.txt".
+        assert (fixture_dir / "jds" / "kafka_backend.txt").exists()
+        assert not (fixture_dir / "jds" / "kafka backend.txt").exists()
+
+        doc = _complete_doc(ann_app)
+        (fixture_dir / "annotations.json").write_text(json.dumps(doc), encoding="utf-8")
+
+        resp = client.post("/api/annotation/fixture/alice/alice-bootstrap/collate")
+        assert resp.status_code == 200
+        body = resp.get_json()
+        assert body["jd_written"] is True
+        assert (fixture_dir / "jd.txt").read_text(encoding="utf-8") == "Senior backend JD body."
 
 
 # --- path containment helpers ----------------------------------------------

@@ -13,6 +13,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix: diagnostics anchor-JD path reconciliation (`fix/diagnostics-15-anchor-jd-path`)
+
+- **Diagnostics round-2 #15 — "No anchor JD is saved" root cause.** The
+  browser bootstrap worker's writer normalizes each pasted JD's filename
+  (`secure_filename` + a force-appended `.txt`) before saving it under
+  `jds/`, but `annotation_collate`'s reader resolved the anchor filename
+  with `secure_filename()` alone — so any JD whose display name didn't
+  already end in `.txt` (e.g. `"kafka backend"` → `jds/kafka_backend.txt`)
+  could never be found, `jd.txt` was never written, and `_load_fixture`
+  (which hard-requires `jd.txt`) could never run that fixture. Extracted
+  the shared normalization into one helper, `_jd_filename()`
+  (`blueprints/diagnostics.py`), used by both the writer (bootstrap SSE
+  route) and the reader (`annotation_collate`) so they can't drift apart
+  again. See
+  [`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`](docs/dev/reviews/2026-07-diagnostics-round2-findings.md)
+  item #15 (root of the broken fixture flow; unblocks #11 next). Added a
+  regression test (`tests/test_annotation_routes.py`) driving both real
+  routes end-to-end with a space-containing, `.txt`-less JD name.
+
+### Fix: diagnostics collate CLI command targets one fixture (`fix/diagnostics-11-collate-cli-fixture`)
+
+- **Diagnostics round-2 #11 — collate's printed CLI command didn't match the
+  adjacent "Run this fixture" button.** `annotation_collate`'s `run_command`
+  read `python evals/runner.py --suite real --seed
+  evals/fixtures/real/<slug>/seed.json` — no `--fixture <slug>`, and `--seed`
+  doesn't restrict which fixtures run, so copy-pasting it globbed every real
+  fixture and crashed in `_load_fixture` (which hard-requires each fixture's
+  `jd.txt`), while the button posts a single `fixture: slug`. Added
+  `--fixture <slug>` (and dropped the now-redundant `--suite real`, since
+  `--fixture` overrides it) so the printed command matches the button's
+  single-fixture semantics. See
+  [`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`](docs/dev/reviews/2026-07-diagnostics-round2-findings.md)
+  item #11 (blocked by #15, fixed above first). Extended the existing
+  collate test to assert `run_command` contains `--fixture <slug>`.
+
+### Fix: bootstrap skills parser strips inline category labels (`fix/diagnostics-08-skills-parser`)
+
+- **Diagnostics round-2 #8 — skills rendered strangely when annotating.**
+  `_heading_text` (`evals/bootstrap.py`) only recognizes a full-line
+  bold/`#` heading, so an inline category line like `**Languages:**
+  Python, Go` falls through to `_split_skill_line` as a content line —
+  which stripped a leading bullet marker but not the inline bold label,
+  so the first "skill" came out as the garbled `**Languages:** Python`
+  instead of `Python`. `_split_skill_line` now also strips a leading
+  inline bold/underscore category-label prefix (`**Label:** …` and
+  `**Label**: …`, colon inside or outside the bold span, `**`/`__`
+  both supported) before splitting on delimiters — deliberately
+  requiring the colon adjacent to the bold close so a genuinely bolded
+  skill token with no label colon is left untouched. `_heading_text`
+  and its heading semantics are unchanged. See
+  [`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`](docs/dev/reviews/2026-07-diagnostics-round2-findings.md)
+  item #8. Added regression tests (`tests/test_bootstrap.py`) covering
+  both colon placements, the `__…__` variant, a bulleted inline label,
+  a plain comma list (no over-stripping), and a bolded skill token with
+  no label colon.
+
+### Fix: diagnostics global paid-run lock (`fix/diagnostics-01-run-lock`)
+
+- **Diagnostics round-2 #1 — no shared single-flight across the four paid-run
+  buttons.** Each of the eval / tune / bootstrap / grounding-score run
+  controls (`dashboard/templates/dashboard.html`) toggled only its own
+  `disabled` flag, so switching tabs mid-run and clicking a second button
+  could silently fire a duplicate **paid** Anthropic run. Added a shared
+  client-side `window.sartorRunLock` (`acquireRunLock()`/`releaseRunLock()`):
+  ships the **conservative "block any second run" default** — while any one
+  of the four is live, the lock disables all four (including re-clicks of the
+  live one), shows a prominent `#runLockBanner`, and arms a `beforeunload`
+  guard that only warns while a run is actually in flight. `releaseRunLock()`
+  is wired at each entry point's existing terminal paths, mirroring each
+  button's own pre-existing re-enable (eval/tune SSE `_closed` + `error`;
+  bootstrap/grounding-score `!ok` / `chunk.done` / `.catch()`), so a completed,
+  failed, or aborted run releases the lock. The eval `_closed` release is
+  covered by the regression test below; the other sites are wired by hand
+  identically to their button re-enable — funnelling bootstrap/grounding-score
+  through the shared streamer, or extending the test to all four entry points,
+  is tracked as a WATCH in the Diagnostics-DX ledger row (witness CW-117). See
+  [`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`](docs/dev/reviews/2026-07-diagnostics-round2-findings.md)
+  item #1 / the RUN-LIFECYCLE note. Client-side lock only — the real run-cancel
+  abort endpoint and `app.run(threaded=True)` are separate, owner-gated epic
+  items, deliberately out of scope here. Added a UX regression test
+  (`tests/ux/regression/test_20260709_diagnostics_run_lock.py`) that holds a
+  `POST /api/eval/run` open via a Playwright route interceptor, asserts all
+  four buttons + the banner lock, then fulfills the held request and asserts
+  they release.
+
 ## [1.0.8] — 2026-07-09
 
 ### Fix: UX round-2 quick wins (`fix/round2-quick-wins`, 2026-07-09)

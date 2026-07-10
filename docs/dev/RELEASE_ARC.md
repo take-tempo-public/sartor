@@ -1180,6 +1180,12 @@ Themes (each design-scoped, not yet branch-planned):
   / progress-bar polish (#2–#6, #10, #13, #16, #17). Run-health follow-ups (0-byte-run
   guard, full-rubric coverage) ride here too
   ([`reviews/2026-07-e2e-run-health-review.md`](reviews/2026-07-e2e-run-health-review.md)).
+  **Built 2026-07-09 (unattended stack, awaiting owner merge):** the four confirmed-bug
+  fixes — #15, #11, #8, and the #1 client-side run-lock — are landed on stacked branches
+  (`fix/diagnostics-{15,11,08,01}-*`), full suite green; the run-cancel endpoint, annotate
+  persistence (#9), the #7 tooltip/design-Q, and the #2–#6/#10/#13/#16/#17 polish remain
+  open. Shas + the #1 lock-scope design-Q + witness CW-117 are in the
+  [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) Carry-forward diagnostics progress note.
   **Separate governance decision (NOT epic bug work):** single-threaded `app.run()`
   (`app.py`, no `threaded=True`) freezes the whole app during a diagnostics run —
   making it threaded touches the C-1-sensitive loopback-bind area, so it is an
