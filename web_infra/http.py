@@ -16,13 +16,14 @@ import json
 import logging
 import traceback
 import uuid
+from typing import Any
 
 from flask import current_app
 
 logger = logging.getLogger(__name__)
 
 
-def _sse(event: str, payload: dict) -> str:
+def _sse(event: str, payload: dict[str, Any]) -> str:
     r"""Format a Server-Sent Event line block.
 
     SSE protocol requires:
@@ -32,7 +33,7 @@ def _sse(event: str, payload: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(payload)}\n\n"
 
 
-def _error_detail_payload(exc: Exception) -> dict:
+def _error_detail_payload(exc: Exception) -> dict[str, Any]:
     """Return the per-route 5xx error payload extras.
 
     In debug mode (Flask's default for `python app.py`): includes the

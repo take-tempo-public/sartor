@@ -31,7 +31,7 @@ import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from sqlalchemy.orm import Session
 
@@ -98,7 +98,7 @@ class ImportReport:
     # user what to add manually instead of a document that's quietly thinner
     # than the résumé they uploaded.
     experiences_dropped: int = 0
-    dropped_experiences: list[dict] = field(default_factory=list)
+    dropped_experiences: list[dict[str, Any]] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
     def merge(self, other: ImportReport) -> None:
@@ -140,7 +140,7 @@ def _safe_load_config(username: str, *, configs_dir: Path | None = None) -> dict
     if not path.exists():
         raise FileNotFoundError(f"No config found at {path}")
     with path.open(encoding="utf-8") as fh:
-        return json.load(fh)
+        return cast("dict[str, Any]", json.load(fh))
 
 
 def import_candidate_from_config(

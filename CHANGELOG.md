@@ -13,6 +13,185 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Chore: mypy --strict ratchet COMPLETE — §6 exit (`chore/kit-mypy-strict-uipages-exit`)
+
+- **Kit-adoption Phase 2 #2, ratchet rung 8 — the FINAL rung, reaching the §6
+  exit criterion.** Appended `ui_pages.*` (the Playwright Page-Object-Model —
+  a test *driver*, but not in the Decision-7 exempt set, so strict per
+  Decision-7; the `D`/`interrogate` families already treated it as production
+  scope) plus the 4 setuptools data-package **marker `__init__.py`** files
+  (`templates`, `static`, `personas.bundled`, `docs.wiki` — verified
+  pure-docstring, zero code, already strict-clean) to the `pyproject.toml`
+  strict-roster `[[tool.mypy.overrides]]` block (`docs/dev/kit-adoption-design.md`
+  §4/§6), and rewrote the block's leading comment into its final terse
+  cohort-history form (rungs 1-8) declaring the ratchet complete. Measured **1
+  error** live (`mypy --strict --warn-unreachable ui_pages/`):
+  `ui_pages/user_picker.py`'s `options()` `no-any-return` on
+  `eval_on_selector_all(...)` → wrapped in `cast("list[str]", ...)` (a runtime
+  no-op; `cast` added to a top-level `from typing import cast`, not under
+  `TYPE_CHECKING`, since `cast()` runs at runtime). The 4 markers added **zero**
+  errors (roster-add only). **§6-exit proof:** with the roster complete, the
+  non-covered/non-root production-`.py` list is empty —
+  `git ls-files '*.py' | grep -vE '^(tests/|evals/|scripts/|db/migrations/versions/)'
+  | grep -vE '^(blueprints/|dashboard/|web_infra/|recall/|onboarding/|ui_pages/|db/|
+  templates/__init__|static/__init__|personas/bundled/__init__|docs/wiki/__init__)'
+  | grep '/'` prints nothing — so **all 81 non-exempt production `.py` modules**
+  are now at full `mypy --strict` + `warn_unreachable`; only the named Decision-7
+  exempt set (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`) stays
+  permissive. **This completes kit-adoption commitment (1)** [the mypy `--strict`
+  ratchet, `docs/dev/kit-adoption-design.md` §6] — the row in
+  `docs/dev/RELEASE_CHECKLIST.md` stays open pending commitment (3) [the 8.7
+  hooks-rehome / skills-packaging coherence pass]. **PROMPT-SAFE (grep-0):**
+  `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+  across `ui_pages/` returned 0 hits (the 4 markers hold no prompts either) —
+  no `PROMPT_VERSION` bump, no eval run. No new dependency, no behavior change
+  beyond the one `cast`. Gate green: `ruff check .` + `ruff format --check`
+  (touched files) + `mypy .` ("Success: no issues found in 298 source files").
+
+- **§6-exit enforced by construction (charter C-0 / compliance-witness CW-118).**
+  Added `tests/test_mypy_strict_roster_gate.py` — the mypy-roster analogue of the
+  route-containment + docstring-coverage KEEP gates. It parses the strict
+  `[[tool.mypy.overrides]]` roster and asserts every non-exempt tracked `.py`
+  module is covered (under mypy's own `pkg.*` glob semantics), so a module added
+  outside the Decision-7 exempt set and left off the roster fails the suite —
+  instead of silently type-checking permissively while `mypy .` still prints
+  Success. Turns the §6 claim from a one-time manual proof into a by-construction
+  invariant (and guards the exempt `db/migrations/versions` tree against a `db.*`
+  wildcard). `mypy .` now reports 299 source files (the added gate).
+
+### Chore: mypy --strict roster — dashboard (`chore/kit-mypy-strict-dashboard`)
+
+- **Kit-adoption Phase 2 #2, ratchet rung 7 — the localhost-only diagnostics
+  dashboard brought to full `mypy --strict`.** Appended `dashboard.*` to the
+  `pyproject.toml` strict-roster `[[tool.mypy.overrides]]` block
+  (`docs/dev/kit-adoption-design.md` §4/§6). Measured **36 errors** live
+  (`mypy --strict --warn-unreachable dashboard/`), all in `dashboard/routes.py`
+  (`dashboard/__init__.py` was already strict-clean) and all mechanical: **35
+  bare-generic `type-arg`** (the JSONL eval/telemetry aggregators →
+  `dict[str, Any]` / `list[dict[str, Any]]`, reusing the rung-4/5/6
+  precedent) + **1 `no-any-return`** (`_load_baseline`'s `json.load(f)` →
+  `cast("dict[str, Any]", ...)`). No `warn_unreachable`. **Route-security-lint
+  doesn't apply here** — the hook is scoped to `app.py` + `blueprints/**.py`
+  and deliberately excludes `dashboard/` (its routes are localhost-gated, take
+  no `<username>`, read fixed diagnostic dirs), so route decorator lines
+  needed no separate carve-out. **PROMPT-SAFE (grep-verified):**
+  `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+  across `dashboard/` matched only `analyzer._BASE_SYSTEM_PROMPTS`
+  registry reads (the Tuning-tab picker) and template display-text
+  instructing the user to bump `PROMPT_VERSION` by hand — never a constant
+  definition. So **no `PROMPT_VERSION` bump, no eval run**. No new
+  dependency, no behavior change beyond annotations. Gate green:
+  `ruff check .` + `ruff format --check` (touched files) + `mypy .`
+  ("Success: no issues found in 298 source files").
+
+### Chore: mypy --strict roster — blueprints (`chore/kit-mypy-strict-blueprints`)
+
+- **Kit-adoption Phase 2 #2, ratchet rung 6 — the rest of `blueprints/**` brought
+  to full `mypy --strict`, closing the top-level-root + blueprints cohort.**
+  Appended `blueprints.*` to the `pyproject.toml` strict-roster
+  `[[tool.mypy.overrides]]` block (`docs/dev/kit-adoption-design.md` §4/§6) —
+  mypy's `*` glob matches across dots, so one entry covers every
+  `blueprints/` submodule including the `corpus/` subpackage. The
+  pre-existing explicit `blueprints.applications` entry (rung 2) is now
+  redundant — subsumed by the glob, identical flags — and was **dropped for
+  cleanliness**. Measured **51 errors** live
+  (`mypy --strict --warn-unreachable blueprints/`) across 9 files, all
+  mechanical: `diagnostics.py` 14 · `generation.py` 11 · `corpus/_shared.py`
+  10 · `templates.py` 5 · `analysis.py` 4 · `assistant.py` 3 ·
+  `corpus/curation.py` 2 · `corpus/tags.py` 1 · `corpus/skills.py` 1 — **49
+  bare-generic `type-arg`** (JSON-object dicts → `dict[str, Any]`; lists →
+  `list[...]`; one SSE progress `Queue` → `Queue[Any]`; one heterogeneous
+  4-tuple return (`corpus/tags.py:_tag_link_target`) →
+  `tuple[Any, Any, Any, Any]`, reusing the rung-2 "`Any` over a costly precise
+  type" judgment call) + **2 `no-any-return`** (`cast(...)` —
+  `diagnostics._load_bootstrap_doc`'s `json.loads(...)` and
+  `assistant._embed`'s `matrix / norms` numpy division). No
+  `warn_unreachable` this rung. **Route-security-lint technique:** every edit
+  window was scoped to the function signature/body, never the `@…route`
+  decorator line (the ruff-`D` blueprints-unit pattern from
+  `docs/dev/kit-adoption-design.md` §4) — the hook never fired. **PROMPT-SAFE
+  (grep-0):** `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+  across `blueprints/` matched only prose/docstring references and
+  `analyzer.*` imports/uses, never a constant definition — blueprints hold no
+  prompt constants of their own. So **no `PROMPT_VERSION` bump, no eval
+  run**. No new dependency, no behavior change beyond annotations. Gate
+  green: `ruff check .` + `ruff format --check` (touched files) + `mypy .`
+  ("Success: no issues found in 298 source files").
+
+### Chore: mypy --strict roster — backend substrate (`chore/kit-mypy-strict-backend`)
+
+- **Kit-adoption Phase 2 #2, ratchet rung 5 — the backend substrate brought
+  to full `mypy --strict`.** Appended `web_infra.*`, `recall.*`,
+  `onboarding.*`, and `db` — listed as explicit submodules (`db`,
+  `db.ats_roundtrip`, `db.build_context`, `db.models`, `db.persist_run`,
+  `db.session`, `db.migrations.env`, `db.migrations._sqlite_check_constraint`)
+  rather than a `db.*`/`db.migrations.*` wildcard, since either wildcard would
+  capture `db.migrations.versions.*` — the Decision-7 EXEMPT set — to the
+  `pyproject.toml` strict-roster `[[tool.mypy.overrides]]` block
+  (`docs/dev/kit-adoption-design.md` §4/§6). `recall.*` measured
+  strict-clean already (roster-add only, zero fixes). Measured **17 errors**
+  live (`mypy --strict --warn-unreachable`) across the rest: **web_infra**
+  (5 — 4 bare-generic `type-arg` + 1 `no-any-return`, in `config_io.py` and
+  `http.py`), **onboarding** (4 — 3 `type-arg` + 1 `no-any-return`, in
+  `extract_experiences.py` and `corpus_import.py`), and **db** (8 — 5
+  `type-arg` in `ats_roundtrip.py`/`persist_run.py` + **3 `warn_unreachable`**
+  in `db/persist_run.py:180,270,350`). The 3 unreachable were
+  `isinstance(entry, dict)` runtime guards over the `selected`/`proposals`
+  params of `_persist_selected_bullets`/`_persist_proposed_bullets`/
+  `_persist_proposed_titles` — each carries untrusted LLM JSON, so the guard
+  is live defense, not dead code. **Resolved by widening the param type**
+  from `list[dict]` to `list[Any]` (not a scoped ignore) — this also fixes
+  the `type-arg` error on the same declaration in one edit, keeps the guard
+  reachable, and stays honest that the entries are untrusted at the type
+  level; zero runtime change (the rung-3/4 "widen a local to keep the branch
+  live" precedent, applied to a parameter). All other `type-arg`/
+  `no-any-return` fixes were the usual mechanical pattern (`dict[str, Any]`
+  parametrization; `cast(...)` on `json.load`/`json.loads` returns; `Any`/
+  `cast` added to each file's `typing` import). **PROMPT-SAFE:** the only
+  prompt constant in scope, `EXTRACT_EXPERIENCES_SYSTEM_PROMPT` in
+  `onboarding/extract_experiences.py`, sha256-verified byte-identical
+  HEAD-vs-branch (`602e8ef4a68c...4283e9c`), and the branch's diff never
+  enters its line range; the
+  `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+  grep across `web_infra/`, `recall/`, `db/` returned zero hits (the one hit
+  in `db/build_context.py` is an *import/use* of `analyzer.PROMPT_VERSION`,
+  not a definition). So **no `PROMPT_VERSION` bump, no eval run**. No new
+  dependency, no logic change beyond the one deliberate param-type widening.
+  Gate green: `ruff check .` + `ruff format --check` (touched files) +
+  `mypy .` ("Success: no issues found in 298 source files").
+
+### Chore: mypy --strict roster — top-level modules (`chore/kit-mypy-strict-toplevel`)
+
+- **Kit-adoption Phase 2 #2, ratchet rung 4 — all 8 remaining top-level root
+  `.py` modules brought to full `mypy --strict`.** Appended `hardening`,
+  `parser`, `generator`, `corpus_to_json_resume`, `docx_to_persona_html`,
+  `config`, `demo_fixtures`, `app` to the `pyproject.toml` strict-roster
+  `[[tool.mypy.overrides]]` block (`docs/dev/kit-adoption-design.md` §4/§6).
+  `config.py`/`demo_fixtures.py`/`app.py` were already strict-clean
+  (roster-add only, zero fixes). The 5 C-6 deterministic modules measured
+  **51 errors** live (`mypy --strict --warn-unreachable`): **48 bare-generic
+  `type-arg`** (JSON-object dicts parametrized to `dict[str, Any]`, section/
+  proto lists to `list[dict[str, Any]]`; `Any` added to each file's
+  `typing` import), **1 `no-any-return`**
+  (`generator.py:_extract_list_numPr` — wrapped the `deepcopy(numPr)` return
+  in `cast("CT_NumPr | None", …)`, a runtime no-op; `cast` added to the
+  `typing` import), and **2 `unreachable`** in `hardening.py` (`:1504`'s
+  `resume` access and `:1535`'s `keyword_overlap` access — both the same
+  ContextSet-TypedDict always-truthy `or {}` JSON-defense artifact already
+  resolved identically in `analyzer.py`'s rung-3 precedent; kept the
+  defensive fallback behind a scoped `# type: ignore[unreachable]` with a
+  one-line comment, zero runtime change). **PROMPT-SAFE:** the
+  `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+  grep across the 8 modules returned 3 hits, all verified false positives —
+  `demo_fixtures.py`'s `DEMO_AVATAR_ANSWER` (a canned demo-mode fixture
+  string, not a prompt constant) and two `hardening.py` docstring prose
+  mentions of "SYSTEM_PROMPT" as a cross-reference to the real constant in
+  `analyzer.py` — neither is a prompt definition and neither line was
+  touched by this branch's edits, so **no `PROMPT_VERSION` bump, no eval
+  run**. No new dependency, no logic change — annotations/casts/a scoped
+  ignore only. Gate green: `ruff check .` + `ruff format --check` (touched
+  files) + `mypy .` ("Success: no issues found") + full `pytest`.
+
 ### Fix: diagnostics anchor-JD path reconciliation (`fix/diagnostics-15-anchor-jd-path`)
 
 - **Diagnostics round-2 #15 — "No anchor JD is saved" root cause.** The

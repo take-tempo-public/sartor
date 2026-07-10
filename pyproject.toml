@@ -306,28 +306,65 @@ no_implicit_reexport = true
 module = ["docx", "docx.*", "pdfplumber", "pdfplumber.*", "markdown", "markdown.*", "bs4", "bs4.*"]
 ignore_missing_imports = true
 
-# Kit-adoption Phase 2 #2 (KIT-6 ratchet / KIT-7 end-state): the per-module --strict ratchet
-# roster (kit-adoption-design.md §4/§6) — every module listed here is at full `mypy --strict` +
-# warn_unreachable while the global config stays permissive. `strict` is NOT a per-module option
-# (mypy.options.PER_MODULE_OPTIONS), so the strict preset is spelled out as its per-module-capable
-# component flags. This list IS the §6 tracking surface; it GROWS module-by-module toward the
-# Decision-7 end-state (strict everywhere except tests/ evals/ scripts/ db/migrations/versions).
-# Three cohorts so far:
-#   - rung 1 (scraper/json_resume/pdf_render) — the deterministic, LLM-free P1-Hardening leaves;
-#     pure (no intra-project calls), so strict surfaced no cross-module cascade.
-#   - rung 2 (blueprints.applications) — the FIRST non-leaf route/seam module. It was clean for a
-#     different reason: Phase-2 #1 (ruff ANN) had already annotated its whole call graph, so strict
-#     surfaced only bare-generic `type-arg` + one `no-any-return` — NOT an untyped-call cascade.
-#   - rung 3 (analyzer) — the prompt-home large module (~3.8k lines; the sole LLM-call site). Clean
-#     for the same reason as rung 2: ANN had pre-typed the call graph, so strict surfaced 43
-#     bare-generic `type-arg` + 2 `no-any-return` (cast) + 2 `warn_unreachable` — NO untyped-call
-#     cascade. One unreachable was a ContextSet-TypedDict always-truthy artifact on a deliberate
-#     `or {}` JSON defense (kept behind a scoped `# type: ignore[unreachable]`); the other was fixed
-#     by widening a local to `object` so a documented list branch stays live. The 15 prompt
-#     constants were sha256-proven byte-identical pre/post, so no PROMPT_VERSION bump / no eval
-#     (the GOTCHA-4 prompt-home ceremony).
+# Kit-adoption Phase 2 #2 (KIT-6 ratchet / KIT-7 end-state, kit-adoption-design.md §4/§6):
+# the per-module --strict ratchet roster. RATCHET COMPLETE — §6 EXIT REACHED (2026-07-10,
+# `chore/kit-mypy-strict-uipages-exit`): every non-exempt production module is now at full
+# `mypy --strict` + warn_unreachable, while the global config stays permissive for the
+# Decision-7 exempt set (tests/, evals/, scripts/, db/migrations/versions — never rostered
+# here). `strict` is NOT a per-module option (mypy.options.PER_MODULE_OPTIONS), so the preset
+# is spelled out as its per-module-capable component flags below. Terse cohort history
+# (rungs 1-8; full per-rung detail in kit-adoption-design.md §4):
+#   - rung 1: scraper/json_resume/pdf_render — the deterministic P1-Hardening leaves (clean).
+#   - rung 2: blueprints.applications — first non-leaf route/seam module (ANN pre-typed it).
+#   - rung 3: analyzer — the prompt-home module (sha256-proven prompt-byte-identical).
+#   - rung 4: hardening/parser/generator/corpus_to_json_resume/docx_to_persona_html/config/
+#     demo_fixtures/app — the remaining top-level root modules.
+#   - rung 5: web_infra.*/recall.*/onboarding.*/db-minus-versions — the backend substrate
+#     (db listed as explicit submodules, never a wildcard, to keep db.migrations.versions.*
+#     exempt).
+#   - rung 6: blueprints.* — the rest of blueprints/** (glob subsumes rung 2's entry).
+#   - rung 7: dashboard.* — the localhost-only diagnostics dashboard.
+#   - rung 8: ui_pages.* (the Playwright Page-Object-Model — a test *driver*, but not in the
+#     Decision-7 exempt set, so strict per Decision-7) + the 4 setuptools data-package marker
+#     `__init__.py` files (`templates`, `static`, `personas.bundled`, `docs.wiki` — verified
+#     pure-docstring, zero code, already strict-clean; rostered so the §6 exit is literal and
+#     caveat-free). Measured 1 error in ui_pages/user_picker.py (`no-any-return` on
+#     `options()` -> `cast("list[str]", ...)`, a runtime no-op); the 4 markers added zero
+#     errors. This closes the ratchet: no module carries a strictness override except the
+#     named exempt set (Decision 7) — the §6 exit criterion is met.
 [[tool.mypy.overrides]]
-module = ["scraper", "json_resume", "pdf_render", "blueprints.applications", "analyzer"]
+module = [
+    "scraper",
+    "json_resume",
+    "pdf_render",
+    "analyzer",
+    "hardening",
+    "parser",
+    "generator",
+    "corpus_to_json_resume",
+    "docx_to_persona_html",
+    "config",
+    "demo_fixtures",
+    "app",
+    "web_infra.*",
+    "recall.*",
+    "onboarding.*",
+    "db",
+    "db.ats_roundtrip",
+    "db.build_context",
+    "db.models",
+    "db.persist_run",
+    "db.session",
+    "db.migrations.env",
+    "db.migrations._sqlite_check_constraint",
+    "blueprints.*",
+    "dashboard.*",
+    "ui_pages.*",
+    "templates",
+    "static",
+    "personas.bundled",
+    "docs.wiki",
+]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 disallow_untyped_calls = true

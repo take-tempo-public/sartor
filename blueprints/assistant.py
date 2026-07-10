@@ -29,6 +29,7 @@ import re
 import uuid
 from collections.abc import Iterator, Sequence
 from pathlib import Path
+from typing import Any, cast
 
 import anthropic
 from flask import Blueprint, Response, current_app, jsonify, request
@@ -167,7 +168,7 @@ def _make_embedder() -> Embedder | None:
             matrix = matrix.reshape(1, -1)
         norms = np.linalg.norm(matrix, axis=1, keepdims=True)
         norms[norms == 0] = 1.0  # never divide an all-zero embedding by zero
-        return matrix / norms
+        return cast("np.ndarray", matrix / norms)
 
     _EMBEDDER = _embed
     logger.info("S3 vector tier active (model loaded from %s)", _VECTOR_MODEL_DIR)
@@ -185,7 +186,7 @@ def _enabled_tiers(sources: Sequence[object]) -> frozenset[Tier]:
     return frozenset(tiers)
 
 
-def _build_sources(session_turns: list) -> list:
+def _build_sources(session_turns: list[Any]) -> list[Any]:
     """Construct the retrieval tiers bound to sartor's roots + audience rules.
 
     Built per request (cheap: ~30 small wiki files + one `git rev-parse`; the vector
@@ -204,7 +205,7 @@ def _build_sources(session_turns: list) -> list:
             session.observe(turn)
         elif isinstance(turn, dict):
             session.observe(str(turn.get("text", "")), turn.get("citation"))
-    sources: list = [wiki, git, session]
+    sources: list[Any] = [wiki, git, session]
     embedder = _make_embedder()
     if embedder is not None and VectorSource.index_exists(_VECTOR_INDEX_DIR):
         sources.append(VectorSource(_VECTOR_INDEX_DIR, embedder, _path_audience))

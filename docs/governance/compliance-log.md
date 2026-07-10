@@ -129,3 +129,42 @@
   CHANGELOG capture complete (each commit carries its own dated entry).
 - **Note:** the one FLAG was a pre-close capture gap, closed on the branch before the manifest per
   the AGENTS.md pre-close sweep — not deferred past the merge.
+
+## 2026-07-10 — mypy `--strict` §6-exit stack pre-close witness (`chore/kit-mypy-strict-uipages-exit` @ `f2d5328`)
+
+- **Window:** `main` (`3bb3103`) → `f2d5328` — the five-commit unattended mypy `--strict` ratchet
+  stack (`daa1e31` rung 4 top-level roots · `a145371` rung 5 backend substrate · `448962a` rung 6
+  blueprints · `325dcad` rung 7 dashboard · `f2d5328` rung 8 ui_pages + markers / §6-exit). 23 files
+  touched (no `analyzer.py`, no migrations, no new deps). Cross-read against `docs/governance/charter.md`
+  (C-0, C-6), `RELEASE_ARC.md`, `RELEASE_CHECKLIST.md`, `decisions.md`, `kit-adoption-design.md` at the
+  pinned sha. Delegated to the `sartor:compliance-witness` Sonnet subagent (read-only; rides the plan).
+- **Counts:** FLAG 1 · WATCH 2 · AFFIRM 5 · 0 withheld (cap 12).
+- **Gate verdict:** **needs attention** (1 FLAG) — a by-construction-enforcement gap in this session's
+  own §6-exit claim (the claim is true today, just not durably gated); **does not block** the
+  (owner-gated) merge. All three actionable items closed on-branch before the manifest.
+- **FLAG — CW-118 (CLOSED this branch, `81b96a3`):** the rung-8 capstone's categorical §6-exit claim
+  rested on a one-time manual proof, not a deterministic gate — a charter **C-0** violation (a new `.py`
+  added outside the exempt set and left off the roster would type-check permissively while `mypy .`
+  still prints Success, so the claim would silently go stale). Closed by adding
+  `tests/test_mypy_strict_roster_gate.py` — the mypy-roster analogue of the two sibling KEEP gates
+  (`test_route_containment_gate.py`, `test_docstring_coverage_gate.py`): it parses the strict
+  `[[tool.mypy.overrides]]` roster and asserts every non-exempt tracked `.py` module is covered under
+  mypy's own glob semantics, with explicit teeth tests + a guard that the exempt `db/migrations/versions`
+  tree is NOT rostered (the rung-5 `db.*` trap). The §6 claim is now an invariant.
+- **WATCH → CLOSED — CW-119 (this branch, capture commit):** `RELEASE_ARC.md` "Type hardening" note
+  still framed the ratchet as pending with a stale snapshot (146 errors / 18 of 69 modules). Marked
+  **✅ BUILT (2026-07-10)** with a status header pointing at the rung history + gate; the original plan
+  retained below it. Precedent: CW-116's same-branch "Built" status marker.
+- **WATCH → CLOSED — CW-120 (this branch, capture commit):** the 2 `hardening.py` `unreachable`
+  citations in `CHANGELOG.md` + `kit-adoption-design.md` §4 said `:1500`/`:1528`; the committed lines
+  are `:1504`/`:1535`. Byte-fixed both (substance was already correct).
+- **AFFIRM:** §6-exit holds at the sha — all 81 non-exempt production `.py` roster-covered,
+  `db.migrations.versions` correctly NOT rostered (CW-121) · PROMPT-SAFE — `git diff main..f2d5328 --
+  analyzer.py` byte-empty, `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` unchanged (CW-122) · C-6 boundary
+  intact — no LLM call / `analyzer` import added to the 5 deterministic modules,
+  `corpus_to_json_resume`/`docx_to_persona_html` untouched (CW-123) · ledger row #4 coherent, stays
+  open pending (3) 8.7 (CW-124) · rung 4–8 numeric claims (error counts / file lists / param-widen
+  refs) match the diffs, no new dep (CW-125).
+- **Note:** the FLAG was a by-construction-enforcement gap, not a false claim — closed by building the
+  missing gate on-branch before the manifest, not deferred past the merge. Full stack gated per tip
+  (ruff/format ✓ · mypy 298→299 · pytest **1951**, no flaky fired across all 6 suite runs).

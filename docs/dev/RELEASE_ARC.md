@@ -1250,7 +1250,15 @@ Sequence (each its own branch, in dependency order):
    extending `block-merge-to-main` + `wiki-lint`. **Last**, because merge=publish only
    matters once the site exists.
 
-**Type hardening (pulled pre-public into v1.0.9 — owner 2026-06-29).** Complete the
+**Type hardening (pulled pre-public into v1.0.9 — owner 2026-06-29).** **✅ BUILT
+(2026-07-10, `chore/kit-mypy-strict-*` 5-branch stack, ratchet rungs 4–8):** the
+`mypy --strict` ratchet reached its **§6 exit** — every non-exempt production module
+(all 81) now carries the strict override; only the Decision-7 exempt set
+(`tests/`/`evals/`/`scripts/`/`db/migrations/versions`) stays permissive, and the exit
+is enforced **by construction** via `tests/test_mypy_strict_roster_gate.py` (closes
+compliance-witness CW-118), not a one-time proof. Rung history:
+[`kit-adoption-design.md`](kit-adoption-design.md) §4/§6 + `CHANGELOG.md` `[Unreleased]`.
+The original plan is retained below for the record. — Complete the
 `mypy --strict` ratchet to the §6 end-state so strict typing can be claimed for all
 non-test code. Empirically measured 2026-06-29: **146 errors across 18 of 69 production
 modules** (the other 51 are already strict-clean → free to roster; 5 already rostered).

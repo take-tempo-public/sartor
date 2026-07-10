@@ -26,6 +26,7 @@ import uuid
 from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import anthropic
 from flask import Blueprint, Response, current_app, jsonify, request
@@ -120,7 +121,7 @@ def run_analysis_stream() -> ResponseReturnValue:
 def _run_analysis_corpus_backed_streaming(
     safe_user: str,
     jd_text: str,
-    data: dict,
+    data: dict[str, Any],
 ) -> ResponseReturnValue:
     """SSE-streaming counterpart to `_run_analysis_corpus_backed`.
 
@@ -188,7 +189,7 @@ def _run_analysis_corpus_backed_streaming(
     def stream() -> Iterator[str]:
         """SSE generator: stream the corpus-backed analyze events to the client."""
         try:
-            analysis: dict | None = None
+            analysis: dict[str, Any] | None = None
             for event_kind, payload in analyze_streaming(
                 client,
                 context_set,
@@ -308,7 +309,7 @@ def _run_analysis_corpus_backed_streaming(
 def _run_analysis_corpus_backed(
     safe_user: str,
     jd_text: str,
-    data: dict,
+    data: dict[str, Any],
 ) -> ResponseReturnValue:
     """DB-backed analyze path used when CORPUS_BACKED=1.
 
@@ -759,7 +760,7 @@ def run_iterate_clarify() -> ResponseReturnValue:
     # established truths rather than re-ask. Skipped questions are omitted.
     prior_qs = context_set.get("clarification_questions") or []
     prior_answers = context_set.get("clarifications") or {}
-    prior_clarifications: list[dict] = []
+    prior_clarifications: list[dict[str, Any]] = []
     for q in prior_qs:
         qid = q.get("id", "")
         ans = (

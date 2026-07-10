@@ -498,6 +498,202 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > coverage gate (baseline/setup branch) — the larger-module mypy `--strict` commitment is now
 > COMPLETE.**
 >
+> **Phase 2 #2 ratchet — rung 4, the remaining top-level root modules
+> (`chore/kit-mypy-strict-toplevel`, 2026-07-09).** Fourth rung of the per-module mypy
+> `--strict` ratchet: added the **8 remaining top-level root `.py` modules** —
+> `hardening`, `parser`, `generator`, `corpus_to_json_resume`, `docx_to_persona_html`,
+> `config`, `demo_fixtures`, `app` — to the strict override's `module` list (now 13
+> entries) and extended the block comment to a **fourth cohort**. Five of the eight
+> (`hardening`/`parser`/`generator`/`corpus_to_json_resume`/`docx_to_persona_html`) are the
+> LAST of the C-6 deterministic, LLM-free P1-Hardening leaves (rung 1 covered
+> `scraper`/`json_resume`/`pdf_render`); the other three (`config`/`demo_fixtures`/`app`)
+> measured **strict-clean already** — roster-add only, zero fixes, confirmed via the
+> authoritative whole-tree `mypy .` staying green with no new source. **Measured live**
+> (`python -m mypy --strict --warn-unreachable hardening.py parser.py generator.py
+> corpus_to_json_resume.py docx_to_persona_html.py config.py demo_fixtures.py app.py`)
+> **= 51 errors, entirely in the 5 deterministic leaves**: **48 bare-generic `type-arg`**
+> (every JSON-object dict parametrized to `dict[str, Any]`; section/proto lists to
+> `list[dict[str, Any]]`; `Any` added to each file's `typing` import — no cross-module
+> cascade, matching rungs 1–3's pattern of a pre-typed call graph) + **1 `no-any-return`**
+> (`generator.py:_extract_list_numPr`, whose declared return is `CT_NumPr | None` but
+> `deepcopy()` on an untyped lxml/etree element returns `Any` — wrapped in
+> `cast("CT_NumPr | None", deepcopy(numPr))`, `cast` added to the `typing` import, a
+> runtime no-op) + **2 `warn_unreachable`** in `hardening.py` (`:1504`'s `resume` access
+> and `:1535`'s `keyword_overlap` access) — **the identical ContextSet-TypedDict
+> always-truthy `or {}` artifact already resolved in rung 3's `analyzer.py`** (same
+> `(context_set.get(...) or {})` shape, one of the two lines byte-identical to
+> `analyzer.py`'s), resolved the same way: kept the defensive fallback (persisted context
+> JSON can be partial/null at runtime even though the all-required TypedDict types the
+> access as always-truthy) behind a scoped `# type: ignore[unreachable]` with a one-line
+> comment — zero runtime change, not a design question. **PROMPT-SAFE (grep-first, with a
+> documented false-positive twist):** the `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|
+> _RULES_BLOCK|_BASE_SYSTEM_PROMPTS)` grep across the 8 modules was **non-zero (3 hits)**
+> but each verified NOT a prompt constant — `demo_fixtures.py`'s `DEMO_AVATAR_ANSWER` (a
+> canned F-19 demo-mode fixture string whose name merely contains the substring
+> "AVATAR_"; not `AVATAR_SYSTEM_PROMPT`/`AVATAR_PROMPT_VERSION`) and two pre-existing
+> `hardening.py` docstring sentences that cross-reference "SYSTEM_PROMPT" as prose
+> (documenting that a metric pairs with rules already stated in the real constant, which
+> lives in `analyzer.py`) — neither hit is a prompt definition, and this branch's diff
+> never touches either docstring line. So no `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION`
+> bump, no eval run. No dep/hook change. Gate green: ruff check ✓ · ruff format --check
+> (touched files) ✓ · mypy ("Success: no issues found in N source files") ✓ · pytest full
+> suite (split not-ux-not-slow / ux-or-slow). **Per-module tracking: 13 production
+> modules now at full strict** (the 5 rung-1/2/3 modules + this rung's 8) — **the
+> top-level-root cohort of the §6 exit criterion is now complete**; remaining strict debt
+> is the rest of `blueprints/**`, `db/`, `onboarding/`, `recall/`, `ui_pages/**` and any
+> other non-top-level production module, each a later rung toward the Decision-7
+> end-state.
+>
+> **Phase 2 #2 ratchet — rung 5, the backend substrate
+> (`chore/kit-mypy-strict-backend`, 2026-07-10).** Fifth rung of the per-module mypy
+> `--strict` ratchet: added `web_infra.*`, `recall.*`, `onboarding.*`, and `db` — to the
+> strict override's `module` list — now 24 entries — and extended the block comment to a
+> **fifth cohort**. **The db-versions-exempt trap:** `db` is listed as **explicit
+> submodules** (`db`, `db.ats_roundtrip`, `db.build_context`, `db.models`,
+> `db.persist_run`, `db.session`, `db.migrations.env`,
+> `db.migrations._sqlite_check_constraint`) rather than a `db.*`/`db.migrations.*`
+> wildcard — either wildcard would silently capture `db.migrations.versions.*`, which is
+> in the Decision-7 EXEMPT set (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`)
+> and must stay permissive. **Measured live** (`python -m mypy --strict --warn-unreachable
+> <each group>`) **= 17 errors**: `recall/` measured **strict-clean already**
+> (roster-add only, zero fixes — the second module after rung-4's `config`/`demo_fixtures`/
+> `app` to land clean); `web_infra/` **5** (4 bare-generic `type-arg` in `config_io.py` +
+> `http.py`, parametrizing JSON-object dicts to `dict[str, Any]`, + 1 `no-any-return` —
+> `config_io._load_config`'s `json.loads(...)` wrapped in
+> `cast("dict[str, Any]", ...)`); `onboarding/` **4** (3 `type-arg` in
+> `extract_experiences.py`/`corpus_import.py` + 1 `no-any-return` —
+> `corpus_import._safe_load_config`'s `json.load(fh)` similarly `cast`); `db/` (excl.
+> `migrations/versions`) **8** (5 `type-arg` in `ats_roundtrip.py`/`persist_run.py` + **3
+> `warn_unreachable`** in `db/persist_run.py:180,270,350`). **The 3 unreachable:** each is
+> an `isinstance(entry, dict)` runtime guard inside `_persist_selected_bullets`/
+> `_persist_proposed_bullets`/`_persist_proposed_titles`, over params (`selected`/
+> `proposals`) declared `list[dict]` — the docstrings say "we fail safely on parse
+> errors," and the entries are untrusted LLM JSON that can genuinely arrive non-dict at
+> runtime, so the guard is live defense, not dead code. **Resolved by widening the param
+> type** from `list[dict]` to `list[Any]` (the rung-3/4 "widen a local to keep a
+> documented branch reachable" precedent, applied here to a parameter) — this doubles as
+> the `type-arg` fix for the same declaration, keeps the guard reachable, and types the
+> parameter honestly as untrusted input; a scoped `# type: ignore[unreachable]` was not
+> needed. Verified the three widened params don't cascade to callers:
+> `persist_corpus_generation`'s call sites pass `generate_result.get(...) or []` — already
+> untyped-JSON shaped — so `mypy .` stayed green with no new call-site friction.
+> **PROMPT-SAFE (sha256, matching the analyzer/hardening ceremony):** the only prompt
+> constant in the cohort, `EXTRACT_EXPERIENCES_SYSTEM_PROMPT` in
+> `onboarding/extract_experiences.py`, sha256-verified byte-identical HEAD-vs-branch
+> (`602e8ef4a68c...4283e9c`), and the branch's `git diff` on that file touches only lines
+> 200/246 (function signatures), never the constant's ~69-90 line range; the
+> `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)` grep across
+> `web_infra/`, `recall/`, `db/` returned zero hits (the one `db/build_context.py` hit is
+> an *import/use* of `analyzer.PROMPT_VERSION`, not a definition) — so no
+> `PROMPT_VERSION` bump, no eval run. No new dependency, no logic change beyond the one
+> deliberate param-type widening. Gate green: `ruff check .` ✓ · `ruff format --check`
+> (touched files) ✓ · `mypy .` ("Success: no issues found in 298 source files") ✓ (pytest
+> deferred to the conductor's full-suite run on the committed tip, per this run's gate
+> division). **Per-module tracking: 24 production modules now at full strict** (the 13
+> top-level-root modules + `recall` + the 5 web_infra/onboarding leaves + the 5 db
+> modules) — remaining strict debt is `blueprints/**` (minus `applications`), `ui_pages/**`,
+> and any other non-listed production module, each a later rung toward the Decision-7
+> end-state.
+>
+> **Phase 2 #2 ratchet — rung 6, the rest of `blueprints/**`
+> (`chore/kit-mypy-strict-blueprints`, 2026-07-10).** Sixth rung of the per-module mypy
+> `--strict` ratchet, closing the top-level-root + blueprints cohort. Appended
+> `"blueprints.*"` to the strict override's `module` list — mypy's `*` glob matches
+> across dots, so one entry covers every `blueprints/` submodule including the
+> `corpus/` subpackage — and dropped the now-redundant explicit `"blueprints.applications"`
+> entry (rung 2), subsumed by the glob with identical flags. Measured live
+> (`python -m mypy --strict --warn-unreachable blueprints/`) **= 51 errors across 9
+> files**: `diagnostics.py` 14 · `generation.py` 11 · `corpus/_shared.py` 10 ·
+> `templates.py` 5 · `analysis.py` 4 · `assistant.py` 3 · `corpus/curation.py` 2 ·
+> `corpus/tags.py` 1 · `corpus/skills.py` 1 — **49 bare-generic `type-arg`** (JSON-object
+> dicts -> `dict[str, Any]`; lists -> `list[...]`; one SSE progress `Queue` (reused
+> across diagnostics.py's five stream-worker closures) -> `Queue[Any]`; one
+> heterogeneous 4-tuple return, `corpus/tags.py:_tag_link_target` (subject-or-None,
+> candidate-or-None, model-class-or-None, fk-name-or-None) -> `tuple[Any, Any, Any,
+> Any]`, reusing the rung-2 "`Any` over a costly precise type" judgment call — a
+> parameter/return shape not worth widening callers for in a typing-only rung) + **2
+> `no-any-return`** (`cast(...)` — `diagnostics._load_bootstrap_doc`'s
+> `json.loads(...)` and `assistant._embed`'s `matrix / norms` numpy division, both
+> runtime no-ops). No `warn_unreachable` this rung — a first among the non-clean
+> rungs. **Route-security-lint edit technique (the ruff-`D` blueprints-unit
+> pattern):** every Edit window was anchored inside a function signature or body,
+> never the `@…route`/`.get`/`.post` decorator line, so the hook — which fires only
+> when a route decorator + filesystem access appear in the same edit window without
+> the `_safe_username`/`_within` gate — never fired; confirmed after the fact via
+> `git diff` grep for added/removed decorator lines (zero hits). **PROMPT-SAFE
+> (grep-0):** the `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|
+> _BASE_SYSTEM_PROMPTS)` grep across `blueprints/` matched only prose/docstring
+> cross-references and `analyzer.*` imports/uses — no prompt constant is DEFINED in
+> any blueprint — so no `PROMPT_VERSION` bump, no eval. No new dependency, no
+> behavior change beyond annotations. Gate green: `ruff check .` ✓ · `ruff format
+> --check` (touched files) ✓ · `mypy .` ("Success: no issues found in 298 source
+> files") ✓ (pytest deferred to the conductor's full-suite run on the committed tip,
+> per this run's gate division). **Per-module tracking: 42 production modules now at
+> full strict** (the 24 rung-1..5 modules + the 18 `blueprints/**` modules) — the
+> top-level-root + blueprints cohort of the §6 exit criterion is now **complete**;
+> remaining strict debt is `ui_pages/**` and any other non-listed production module,
+> each a later rung toward the Decision-7 end-state.
+>
+> **Phase 2 #2 ratchet — rung 7, `dashboard.*`
+> (`chore/kit-mypy-strict-dashboard`, 2026-07-10).** Seventh rung of the per-module mypy
+> `--strict` ratchet — the localhost-only diagnostics dashboard (`dashboard/__init__.py` +
+> `dashboard/routes.py`, the JSONL-telemetry aggregator behind `/_dashboard`). Appended
+> `"dashboard.*"` to the strict override's `module` list. `route-security-lint` doesn't apply
+> to this cohort — the hook is scoped to `app.py` + `blueprints/**.py` and deliberately
+> excludes `dashboard/` (its routes are localhost-gated, take no `<username>`, read fixed
+> diagnostic dirs), so no route-decorator edit-window carve-out was needed. Measured live
+> (`python -m mypy --strict --warn-unreachable dashboard/`) **= 36 errors, all in
+> `dashboard/routes.py`** (`dashboard/__init__.py` measured strict-clean already): **35
+> bare-generic `type-arg`** (the JSON-shaped eval/telemetry aggregation dicts/lists ->
+> `dict[str, Any]` / `list[dict[str, Any]]`, reusing the rung-4/5/6 precedent) + **1
+> `no-any-return`** (`_load_baseline`'s `json.load(f)` -> `cast("dict[str, Any]", ...)`, a
+> runtime no-op). No `warn_unreachable`. **PROMPT-SAFE (grep-verified):** the
+> `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)` grep across
+> `dashboard/` matched only `analyzer._BASE_SYSTEM_PROMPTS` registry reads (the read-only
+> Tuning-tab prompt picker) and `dashboard.html` display-text instructing the user to bump
+> `PROMPT_VERSION` by hand in `analyzer.py` — no prompt constant is DEFINED in `dashboard/` —
+> so no `PROMPT_VERSION` bump, no eval. No new dependency, no behavior change beyond
+> annotations. Gate green: `ruff check .` ✓ · `ruff format --check` (touched files) ✓ ·
+> `mypy .` ("Success: no issues found in 298 source files") ✓ (pytest deferred to the
+> conductor's full-suite run on the committed tip, per this run's gate division).
+> **Per-module tracking: 44 production modules now at full strict** (the 42 rung-1..6
+> modules + the 2 `dashboard/` modules) — **only `ui_pages/**` remains** → the next rung
+> reaches the §6 exit criterion (strict everywhere except the Decision-7 exempt set).
+>
+> **Phase 2 #2 ratchet — rung 8, `ui_pages.*` + the 4 packaging markers — RATCHET COMPLETE /
+> §6 EXIT REACHED (`chore/kit-mypy-strict-uipages-exit`, 2026-07-10).** The FINAL rung.
+> Appended `"ui_pages.*"` (the Playwright Page-Object-Model — a test *driver*, but NOT in
+> the Decision-7 exempt set, so held to strict per Decision-7; the `D` + `interrogate`
+> families already treated it as production scope) and the 4 setuptools data-package
+> **marker `__init__.py`** files — `templates`, `static`, `personas.bundled`, `docs.wiki` —
+> to the strict override's `module` list, then rewrote the block's leading comment into its
+> final terse cohort-history form (rungs 1-8) declaring the ratchet complete. The 4 markers
+> were verified pure-docstring (zero code) and already strict-clean
+> (`mypy --strict --warn-unreachable templates/__init__.py static/__init__.py
+> personas/bundled/__init__.py docs/wiki/__init__.py` → `Success: no issues found in 4
+> source files`) before rostering — roster-add only, zero fixes, added purely so the §6 exit
+> is literal and caveat-free ("strict everywhere except the exempt set", no "…except empty
+> markers" asterisk). Measured live (`python -m mypy --strict --warn-unreachable ui_pages/`)
+> **= 1 error**: `ui_pages/user_picker.py`'s `options()` `no-any-return` on
+> `self.page.eval_on_selector_all(...)` (Playwright's stub types the call `Any`) → wrapped
+> in `cast("list[str]", ...)`, a runtime no-op; `cast` added to a top-level
+> `from typing import cast` (not under `TYPE_CHECKING`, since `cast()` executes at runtime).
+> **§6-EXIT PROOF:** with the roster complete, the non-covered/non-root production-`.py`
+> list is empty —
+> `git ls-files '*.py' | grep -vE '^(tests/|evals/|scripts/|db/migrations/versions/)' | grep -vE '^(blueprints/|dashboard/|web_infra/|recall/|onboarding/|ui_pages/|db/|templates/__init__|static/__init__|personas/bundled/__init__|docs/wiki/__init__)' | grep '/'`
+> prints nothing. **Per-module tracking: 81 non-exempt production `.py` modules total, ALL
+> now at full `mypy --strict` + `warn_unreachable`** (root-level files individually rostered,
+> every package dir + the 4 markers covered) — **no module carries a strictness override
+> except the Decision-7 exempt set. The §6 exit criterion is MET.** **PROMPT-SAFE
+> (grep-0):** `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+> across `ui_pages/` (and the 4 markers) returned 0 hits — no prompt constant is defined in
+> this cohort — so no `PROMPT_VERSION` bump, no eval run. No new dependency, no behavior
+> change beyond the one `cast`. Gate green: `ruff check .` ✓ · `ruff format --check`
+> (touched files) ✓ · `mypy .` ("Success: no issues found in 298 source files") ✓ (pytest
+> deferred to the conductor's full-suite run on the committed tip, per this run's gate
+> division). **This completes kit-adoption commitment (1)** — the mypy `--strict` ratchet
+> (§6) — while commitment (3) [8.7 hooks-rehome / skills-packaging coherence] stays open.
+>
 > **Progress (2026-06-25, `chore/kit-phase2-interrogate`):** Phase 2 #4 — the `interrogate`
 > docstring-**coverage** floor-lock gate — LANDED, the **final Phase 2 implementation sub-item**.
 > `interrogate>=1.7,<2.0` added to the `dev` extra (a real new dependency → CHANGELOG); a new
@@ -576,6 +772,14 @@ because it's tracked*. A strict ratchet with no tracking + no finish line is how
   set (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`; Decision 7). When the only
   remaining overrides are those four, the ratchet is complete and the gate blocks everywhere
   non-exempt.
+
+**EXIT REACHED (2026-07-10, `chore/kit-mypy-strict-uipages-exit`):** the `--strict` family met
+its finish line — every non-exempt production module carries the strict override; only the
+named exempt set stays permissive. This exit is enforced **by construction** (charter C-0),
+not asserted once: `tests/test_mypy_strict_roster_gate.py` (added on the same branch to close
+compliance-witness **CW-118**) parses the strict roster and fails the suite if any non-exempt
+tracked `.py` module escapes it — the mypy-roster analogue of the route-containment +
+docstring-coverage KEEP gates.
 
 ---
 

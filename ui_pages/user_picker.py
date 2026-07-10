@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from ui_pages.base import DEFAULT_TIMEOUT_MS, BasePage
 from ui_pages.selectors import UserPicker
 
@@ -11,8 +13,11 @@ class UserPickerPage(BasePage):
 
     def options(self) -> list[str]:
         """Return the usernames currently in the picker dropdown."""
-        return self.page.eval_on_selector_all(
-            f"{UserPicker.SELECT} option", "els => els.map(e => e.value)"
+        return cast(
+            "list[str]",
+            self.page.eval_on_selector_all(
+                f"{UserPicker.SELECT} option", "els => els.map(e => e.value)"
+            ),
         )
 
     def select(self, username: str) -> None:

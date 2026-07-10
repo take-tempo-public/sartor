@@ -17,7 +17,7 @@ from docx.table import Table, _Cell
 from docx.text.paragraph import Paragraph
 
 
-def parse_resume(filepath: str) -> dict:
+def parse_resume(filepath: str) -> dict[str, Any]:
     """Parse a resume file and return structured content."""
     path = Path(filepath)
     ext = path.suffix.lower()
@@ -56,11 +56,11 @@ def _iter_block_items(parent: Document | _Cell) -> Iterator[Any]:
             yield Table(child, parent)
 
 
-def _parse_docx(path: Path) -> tuple[str, list]:
+def _parse_docx(path: Path) -> tuple[str, list[dict[str, Any]]]:
     """Extract text and sections from a Word document, including table cells."""
     doc = docx.Document(str(path))
-    sections: list[dict] = []
-    current_section: dict = {"heading": "Header", "content": []}
+    sections: list[dict[str, Any]] = []
+    current_section: dict[str, Any] = {"heading": "Header", "content": []}
     full_text: list[str] = []
     seen_cells: set[int] = set()
 
@@ -103,7 +103,7 @@ def _parse_docx(path: Path) -> tuple[str, list]:
     return "\n".join(full_text), sections
 
 
-def _parse_pdf(path: Path) -> tuple[str, list]:
+def _parse_pdf(path: Path) -> tuple[str, list[dict[str, Any]]]:
     """Extract text from a PDF, page by page."""
     pages = []
     with pdfplumber.open(str(path)) as pdf:
@@ -117,14 +117,14 @@ def _parse_pdf(path: Path) -> tuple[str, list]:
     return full_text, sections
 
 
-def _parse_markdown(path: Path) -> tuple[str, list]:
+def _parse_markdown(path: Path) -> tuple[str, list[dict[str, Any]]]:
     """Parse a markdown resume into sections."""
     text = path.read_text(encoding="utf-8")
     sections = _infer_sections(text)
     return text, sections
 
 
-def _infer_sections(text: str) -> list:
+def _infer_sections(text: str) -> list[dict[str, Any]]:
     """Infer sections from text using common resume headings."""
     heading_pattern = re.compile(
         r"^(?:#{1,3}\s+)?("

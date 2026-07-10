@@ -165,7 +165,7 @@ def persist_cover_letter_md(
 def _persist_selected_bullets(
     session: Session,
     application_run: ApplicationRun,
-    selected: list[dict],
+    selected: list[Any],
     candidate_id: int,
     report: PersistReport,
 ) -> None:
@@ -174,6 +174,10 @@ def _persist_selected_bullets(
     All IDs come as prefixed strings (e.g., "e3", "t12", "b41"). The LLM
     occasionally drops the prefix; both forms are accepted to keep the path
     forgiving — we fail safely on parse errors, not on minor formatting.
+
+    `selected` is typed `list[Any]`, not `list[dict[str, Any]]`, because each
+    entry is untrusted LLM JSON — the `isinstance(entry, dict)` guard below is
+    live defense against a malformed (non-dict) entry, not dead code.
     """
     for entry in selected:
         if not isinstance(entry, dict):
@@ -258,11 +262,16 @@ def _persist_selected_bullets(
 def _persist_proposed_bullets(
     session: Session,
     application_run: ApplicationRun,
-    proposals: list[dict],
+    proposals: list[Any],
     candidate_id: int,
     report: PersistReport,
 ) -> None:
-    """Each proposal: {experience_id, text, pattern_kind, rationale}."""
+    """Each proposal: {experience_id, text, pattern_kind, rationale}.
+
+    `proposals` is typed `list[Any]`, not `list[dict[str, Any]]`, because each
+    entry is untrusted LLM JSON — the `isinstance(entry, dict)` guard below is
+    live defense against a malformed (non-dict) entry, not dead code.
+    """
     source_value = f"llm_proposed:{application_run.run_id}"
 
     for entry in proposals:
@@ -338,11 +347,16 @@ def _persist_proposed_bullets(
 def _persist_proposed_titles(
     session: Session,
     application_run: ApplicationRun,
-    proposals: list[dict],
+    proposals: list[Any],
     candidate_id: int,
     report: PersistReport,
 ) -> None:
-    """Each proposal: {experience_id, title, rationale}."""
+    """Each proposal: {experience_id, title, rationale}.
+
+    `proposals` is typed `list[Any]`, not `list[dict[str, Any]]`, because each
+    entry is untrusted LLM JSON — the `isinstance(entry, dict)` guard below is
+    live defense against a malformed (non-dict) entry, not dead code.
+    """
     source_value = f"llm_proposed:{application_run.run_id}"
 
     for entry in proposals:

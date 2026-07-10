@@ -14,7 +14,7 @@ import re
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict
+from typing import Any, TypedDict
 from urllib.parse import urlparse
 
 from json_resume import md_to_json_resume
@@ -45,7 +45,7 @@ class ResumeInfo(TypedDict):
     """The candidate's primary résumé — parsed text, format, and section structure."""
 
     format: str
-    sections: list[dict]
+    sections: list[dict[str, Any]]
     text: str
     filename: str
     path: str
@@ -56,15 +56,15 @@ class SupplementalResume(TypedDict):
 
     filename: str
     text: str
-    sections: list[dict]
+    sections: list[dict[str, Any]]
 
 
 class DeterministicAnalysisBlock(TypedDict):
     """Deterministic (non-LLM) JD/résumé keyword analysis attached to every context_set."""
 
-    jd_keywords: dict
-    resume_keywords: dict
-    keyword_overlap: dict
+    jd_keywords: dict[str, Any]
+    resume_keywords: dict[str, Any]
+    keyword_overlap: dict[str, Any]
     ats_warnings: list[str]
 
 
@@ -151,7 +151,7 @@ class ContextSet(_ContextSetRequired, total=False):
     """The JSON contract passed between every pipeline stage (analyze → clarify → generate → iterate)."""
 
     # Added by app.py after analyze(); not present at build_context_set time
-    llm_analysis: dict
+    llm_analysis: dict[str, Any]
     run_id: str
     # The full set of questions surfaced by /api/clarify. Persisted (not cleared
     # by /api/answer-clarifications) so generate() can pair each answer with
@@ -187,7 +187,7 @@ class ContextSet(_ContextSetRequired, total=False):
     # LLM call — derived from the markdown above, so the two can never drift.
     # Absent on pre-generate contexts; the preview falls back to the
     # corpus-direct render in that case.
-    last_generated_json_resume: dict
+    last_generated_json_resume: dict[str, Any]
     # Phase B.2: when populated by db.build_context.build_context_set_from_db,
     # the LLM prompt emits a structured <career_corpus> XML block instead of
     # the legacy <resume> block, and the generate output schema requires
@@ -233,13 +233,13 @@ class ContextSet(_ContextSetRequired, total=False):
     #                                #   current set on every /composition save (the
     #                                #   route rebuilds composition_overrides
     #                                #   wholesale) or it is silently dropped.
-    composition_overrides: dict
+    composition_overrides: dict[str, Any]
     # Workstream H: the recommend_bullets() output keyed by experience id
     # (str or int). {"<exp_id>": {"bullet_ids": [<int>...], "rationale": str}}
     # When present, the corpus block restricts to the curated effective set.
     # total=False — applications generated before the recommendation step
     # ran (or whose call failed) keep the prior full-corpus behavior.
-    llm_recommendations: dict
+    llm_recommendations: dict[str, Any]
     # Generation-experience re-architecture (fix/compose-frozen-composition):
     # the SINGLE content contract. A resolved JSON-Resume document (resolved
     # bullet / summary / skills text in final order) PLUS a meta.sartor
@@ -252,7 +252,7 @@ class ContextSet(_ContextSetRequired, total=False):
     # or re-authors and preview == assemble == download by construction. Absent on
     # pre-freeze contexts (the corpus-direct render is the fallback). total=False
     # so older contexts round-trip unchanged.
-    approved_composition: dict
+    approved_composition: dict[str, Any]
     # Generation-experience re-architecture Phase 3: transient gap-fill proposals
     # authored at Compose (analyzer.draft_gap_fill_bullets, Sonnet). Each is
     # {key, experience_id, text, pattern_kind, requirement, evidence, rationale} —
@@ -265,7 +265,7 @@ class ContextSet(_ContextSetRequired, total=False):
     # overwrites this key with a fresh draft) — retired proposals are kept out by
     # composition_overrides.retired_gap_fill_keys instead, not by this latch.
     # total=False; absent on contexts that never reached the Compose gap-fill draft.
-    llm_gap_fill_proposals: list
+    llm_gap_fill_proposals: list[dict[str, Any]]
     # D5 (feat/clarifications-to-corpus): candidate-confirmed clarification
     # facts from OTHER applications. Staged ONCE at analyze/context-build time
     # (db.build_context.build_context_set_from_db, corpus-mode only — the
@@ -442,7 +442,7 @@ def bullet_jaccard(a: str, b: str) -> float:
     return inter / union if union else 0.0
 
 
-def extract_keywords(text: str, top_n: int = 50) -> dict:
+def extract_keywords(text: str, top_n: int = 50) -> dict[str, Any]:
     """Extract keyword frequencies from text. Deterministic — no LLM needed."""
     words = re.findall(r"\b[a-zA-Z][a-zA-Z+#.-]{1,}\b", text.lower())
     filtered = [w for w in words if w not in STOP_WORDS and len(w) > 2]
@@ -502,11 +502,11 @@ def extract_company_terms(jd_text: str) -> frozenset[str]:
 
 
 def compute_keyword_overlap(
-    resume_kw: dict,
-    jd_kw: dict,
+    resume_kw: dict[str, Any],
+    jd_kw: dict[str, Any],
     *,
     company_terms: frozenset[str] = frozenset(),
-) -> dict:
+) -> dict[str, Any]:
     """Compare keyword sets between resume and JD. Pure set math.
 
     F-01 cleaning before scoring: JD_BOILERPLATE_WORDS never count (matched
@@ -549,7 +549,7 @@ def compute_keyword_overlap(
     }
 
 
-def check_ats_format(parsed_resume: dict) -> list[str]:
+def check_ats_format(parsed_resume: dict[str, Any]) -> list[str]:
     """Flag ATS-hostile patterns in a parsed resume. Deterministic checks."""
     warnings = []
     text = parsed_resume.get("text", "")
@@ -628,7 +628,7 @@ def strip_cover_letter_block(resume_md: str) -> str:
     return resume_md[: match.start()].rstrip() + "\n"
 
 
-def compute_verb_diversity(resume_text: str) -> dict:
+def compute_verb_diversity(resume_text: str) -> dict[str, Any]:
     """Measure leading-verb variety across resume bullets.
 
     Repeated verbs signal lack of depth — already called out in
@@ -672,7 +672,7 @@ def compute_verb_diversity(resume_text: str) -> dict:
     }
 
 
-def compute_specificity_density(resume_text: str) -> dict:
+def compute_specificity_density(resume_text: str) -> dict[str, Any]:
     """Fraction of bullets that contain at least one quantifiable metric.
 
     Pairs with the grounding metric: high specificity + low grounding =
@@ -711,7 +711,7 @@ def compute_specificity_density(resume_text: str) -> dict:
     }
 
 
-def compute_top_third_density(generated_resume: str, jd_keywords: dict) -> dict:
+def compute_top_third_density(generated_resume: str, jd_keywords: dict[str, Any]) -> dict[str, Any]:
     """Ratio of the first 3 bullets in the first experience section that contain the JD's top 3 essentials.
 
     A high density (1.0) means the candidate leads with role-critical keywords
@@ -749,7 +749,7 @@ def compute_top_third_density(generated_resume: str, jd_keywords: dict) -> dict:
     }
 
 
-def compute_quantification_rate(generated_resume: str) -> dict:
+def compute_quantification_rate(generated_resume: str) -> dict[str, Any]:
     """Rate of resume bullets that contain a number, %, $, or scale word.
 
     Simpler than specificity_density: one float (rate) for the eval composite
@@ -785,7 +785,7 @@ def compute_grounding_overlap(
     generated_text: str,
     source_texts: list[str],
     n: int = 3,
-) -> dict:
+) -> dict[str, Any]:
     """Deterministic backstop for the LLM grounding rubric.
 
     Computes the fraction of n-grams in the generated output that also
@@ -1045,7 +1045,7 @@ def _source_entity_set(source_texts: list[str]) -> set[str]:
 def compute_fabricated_specifics(
     generated_text: str,
     source_texts: list[str],
-) -> dict:
+) -> dict[str, Any]:
     """Deterministic L0 fabricated-specifics detector (hot-path-safe, no LLM).
 
     The sharpened successor to compute_grounding_overlap's lossy
@@ -1095,7 +1095,7 @@ def compute_fabricated_specifics(
     flagged_weight = 0.0
     total_specifics = 0
     flagged_count = 0
-    per_bullet: list[dict] = []
+    per_bullet: list[dict[str, Any]] = []
     flagged_samples: list[str] = []
 
     for body in bullets:
@@ -1230,7 +1230,7 @@ def _experience_section_text(generated_resume: str) -> str:
 def compute_date_grounding(
     generated_resume: str,
     experiences: list[CorpusExperience],
-) -> dict:
+) -> dict[str, Any]:
     """Deterministic KW6 guard: heading date ranges must trace to the corpus.
 
     Compares the multiset of (start_year, end_year) ranges in the generated
@@ -1251,7 +1251,7 @@ def compute_date_grounding(
         if rng is not None:
             expected[rng] += 1
 
-    result: dict = {
+    result: dict[str, Any] = {
         "checked": 0,
         "corpus_ranges": sorted(f"{s} – {e}" for s, e in expected.elements()),
         "flagged": [],
@@ -1281,7 +1281,7 @@ def compute_date_grounding(
     return result
 
 
-def compute_call_cost(record: dict) -> float:
+def compute_call_cost(record: dict[str, Any]) -> float:
     """Per-call USD cost given a telemetry record from logs/llm_calls.jsonl.
 
     Pure function: takes the record's model + token counts and returns
@@ -1330,7 +1330,7 @@ def _normalize_url_scheme(url: str) -> str:
     return f"https://{url}"
 
 
-def validate_config(config: dict) -> list[str]:
+def validate_config(config: dict[str, Any]) -> list[str]:
     """Validate a user config for required fields and well-formed URLs.
 
     URLs are normalized (https:// prepended when scheme-less) before the
@@ -1366,14 +1366,14 @@ def _is_valid_url(url: str) -> bool:
 
 def build_context_set(
     jd_text: str,
-    parsed_resume: dict,
-    config: dict,
+    parsed_resume: dict[str, Any],
+    config: dict[str, Any],
     profile_text: str,
-    jd_keywords: dict,
-    resume_keywords: dict,
-    keyword_overlap: dict,
+    jd_keywords: dict[str, Any],
+    resume_keywords: dict[str, Any],
+    keyword_overlap: dict[str, Any],
     ats_warnings: list[str],
-    supplemental_resumes: list[dict] | None = None,
+    supplemental_resumes: list[dict[str, Any]] | None = None,
     original_resume_path: str = "",
 ) -> ContextSet:
     """Assemble the optimized context payload for LLM calls.
@@ -1497,7 +1497,11 @@ def assemble_source_union(context_set: ContextSet) -> list[str]:
     over-reports, flagging legitimately-clarified facts as fabrication.
     """
     source_texts: list[str] = []
-    primary_text = (context_set.get("resume", {}) or {}).get("text", "")
+    # The defensive `or {}` fallback is dead under the ContextSet TypedDict
+    # (which types "resume" as always-present/truthy), but persisted context
+    # JSON can be partial or null at runtime, so the fallback is deliberately
+    # retained.
+    primary_text = (context_set.get("resume", {}) or {}).get("text", "")  # type: ignore[unreachable]
     if primary_text:
         source_texts.append(primary_text)
     for s in context_set.get("supplemental_resumes", []) or []:
@@ -1516,7 +1520,7 @@ def assemble_source_union(context_set: ContextSet) -> list[str]:
 def compute_iteration_signals(
     context_set: ContextSet,
     current_resume_text: str,
-) -> dict:
+) -> dict[str, Any]:
     """Compute the four deterministic signal sources for the iteration clarifier.
 
     Each signal is independently informative — the LLM uses them to target
@@ -1525,7 +1529,10 @@ def compute_iteration_signals(
     signals with the post-generation metrics that ride along on every
     eval result.
     """
-    overlap = (context_set.get("deterministic_analysis", {}) or {}).get("keyword_overlap", {}) or {}
+    # The defensive `or {}` chain is dead under the ContextSet TypedDict (which
+    # types this access as always-truthy), but persisted context JSON can be
+    # partial or null at runtime, so the fallback is deliberately retained.
+    overlap = (context_set.get("deterministic_analysis", {}) or {}).get("keyword_overlap", {}) or {}  # type: ignore[unreachable]
     jd_kw_set = set(overlap.get("matched", [])) | set(overlap.get("missing_from_resume", []))
 
     # Recompute keyword coverage against the CURRENT draft. The analyzer's

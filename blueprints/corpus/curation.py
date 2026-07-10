@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from flask import current_app, jsonify, request
 from flask.typing import ResponseReturnValue
@@ -260,7 +260,7 @@ def _experience_like(exp: Experience) -> ExperienceLike:
     )
 
 
-def _suggestion_side(exp: Experience) -> dict:
+def _suggestion_side(exp: Experience) -> dict[str, Any]:
     """Compact one experience for the merge-suggestion card (live titles/bullets)."""
     active_titles = sorted(
         (t for t in exp.titles if t.is_active),
@@ -316,7 +316,7 @@ def list_merge_suggestions(username: str) -> ResponseReturnValue:
             for d in session.query(MergeDismissal).filter_by(candidate_id=candidate.id)
         }
         likes = {e.id: _experience_like(e) for e in experiences}
-        suggestions: list[dict] = []
+        suggestions: list[dict[str, Any]] = []
         for i in range(len(experiences)):
             for j in range(i + 1, len(experiences)):
                 a, b = experiences[i], experiences[j]
