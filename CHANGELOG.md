@@ -69,6 +69,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a plain comma list (no over-stripping), and a bolded skill token with
   no label colon.
 
+### Fix: diagnostics global paid-run lock (`fix/diagnostics-01-run-lock`)
+
+- **Diagnostics round-2 #1 — no shared single-flight across the four paid-run
+  buttons.** Each of the eval / tune / bootstrap / grounding-score run
+  controls (`dashboard/templates/dashboard.html`) toggled only its own
+  `disabled` flag, so switching tabs mid-run and clicking a second button
+  could silently fire a duplicate **paid** Anthropic run. Added a shared
+  client-side `window.sartorRunLock` (`acquireRunLock()`/`releaseRunLock()`):
+  ships the **conservative "block any second run" default** — while any one
+  of the four is live, the lock disables all four (including re-clicks of the
+  live one), shows a prominent `#runLockBanner`, and arms a `beforeunload`
+  guard that only warns while a run is actually in flight. Wired into every
+  terminal path of all four entry points (SSE `_closed`, `error`, and
+  `.catch()` request-failure branches) so the UI can't deadlock locked. See
+  [`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`](docs/dev/reviews/2026-07-diagnostics-round2-findings.md)
+  item #1 / the RUN-LIFECYCLE note. Client-side lock only — the real run-cancel
+  abort endpoint and `app.run(threaded=True)` are separate, owner-gated epic
+  items, deliberately out of scope here. Added a UX regression test
+  (`tests/ux/regression/test_20260709_diagnostics_run_lock.py`) that holds a
+  `POST /api/eval/run` open via a Playwright route interceptor, asserts all
+  four buttons + the banner lock, then fulfills the held request and asserts
+  they release.
+
 ## [1.0.8] — 2026-07-09
 
 ### Fix: UX round-2 quick wins (`fix/round2-quick-wins`, 2026-07-09)

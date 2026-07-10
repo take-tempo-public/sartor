@@ -130,6 +130,15 @@
     .scaffold-banner { background: var(--info-soft); border: 1px solid var(--border-2); color: var(--fg-1); padding: 0.6rem 0.9rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 1rem; }
     .scaffold-banner.write { background: var(--warning-soft); }
 
+    /* Global paid-run single-flight lock banner (#1: eval/tune/bootstrap/grounding-score) */
+    #runLockBanner {
+      position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 0.5rem;
+      background: var(--warning-soft); color: var(--warning); border: 1px solid var(--warning);
+      border-radius: var(--radius-md); padding: 0.65rem 0.95rem; margin: 0 0 1rem; font-size: 0.88rem; font-weight: 600;
+      box-shadow: var(--shadow-1);
+    }
+    #runLockBanner[hidden] { display: none; }
+
     /* Run-eval control (Quality tab) + collate run-this-fixture result (Annotate tab) */
     .eval-run { background: var(--info-soft); border: 1px solid var(--border-2); border-radius: var(--radius-md); padding: 0.8rem 1rem; margin-bottom: 1.2rem; }
     .eval-run > strong { color: var(--brand); }
@@ -177,6 +186,11 @@
   </style>
 </head>
 <body class="cb-dash">
+
+<div id="runLockBanner" role="status" aria-live="assertive" hidden>
+  <span aria-hidden="true">⏳</span>
+  <span>A diagnostics run is in progress — other paid runs are locked until it finishes. Please don't close this tab.</span>
+</div>
 
 <h1>sartor. <span class="sub">— diagnostics console</span></h1>
 <p class="meta">Read-only observability for the LLM pipeline. Telemetry from
@@ -1086,6 +1100,38 @@
 })();
 </script>
 
+<!-- ===== Global paid-run single-flight lock (diagnostics round-2 #1): shared by all four
+     run entry points (eval / tune / bootstrap / grounding-score) — blocks any second paid
+     run, shows a prominent banner, and arms a beforeunload guard while a run is live. ===== -->
+<script>
+(function () {
+  var LOCK_BTN_IDS = ['evalRunBtn', 'tuneRunBtn', 'bsRun', 'annScore'];
+  var locked = false;
+  function warnBeforeUnload(e) {
+    e.preventDefault();
+    e.returnValue = 'A diagnostics run is still in progress.';
+    return e.returnValue;
+  }
+  function acquireRunLock() {
+    if (locked) return;
+    locked = true;
+    LOCK_BTN_IDS.forEach(function (id) { var b = document.getElementById(id); if (b) b.disabled = true; });
+    var banner = document.getElementById('runLockBanner');
+    if (banner) banner.hidden = false;
+    window.addEventListener('beforeunload', warnBeforeUnload);
+  }
+  function releaseRunLock() {
+    if (!locked) return;
+    locked = false;
+    LOCK_BTN_IDS.forEach(function (id) { var b = document.getElementById(id); if (b) b.disabled = false; });
+    var banner = document.getElementById('runLockBanner');
+    if (banner) banner.hidden = true;
+    window.removeEventListener('beforeunload', warnBeforeUnload);
+  }
+  window.sartorRunLock = { acquire: acquireRunLock, release: releaseRunLock };
+})();
+</script>
+
 <!-- ===== Eval runner: shared SSE streamer (window.sartorEval.run) + Quality-tab control ===== -->
 <script>
 (function () {
@@ -1139,9 +1185,10 @@
   // Stream POST /api/eval/run; update progEl, toggle btnEl, call onDone(payload) on 'done'.
   function run(params, progEl, btnEl, onDone) {
     if (btnEl) btnEl.disabled = true;
+    if (window.sartorRunLock) window.sartorRunLock.acquire();
     if (progEl) progEl.textContent = 'Starting… (paid Sonnet/Haiku calls)';
     stream('/api/eval/run', params, function (ev, p) {
-      if (ev === '_closed') { if (btnEl) btnEl.disabled = false; return; }
+      if (ev === '_closed') { if (btnEl) btnEl.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); return; }
       if (ev === 'done') {
         if (progEl) progEl.textContent = 'Done — ' + p.n_pass + ' pass / ' + p.n_fail + ' fail'
           + (p.regressions ? ', ' + p.regressions + ' regression(s)' : '') + ' → ' + (p.out_file || 'results') + '.';
@@ -1149,6 +1196,7 @@
       } else if (ev === 'error') {
         if (progEl) progEl.textContent = 'Error: ' + (p.error || 'eval failed') + (p.detail ? ' — ' + p.detail : '');
         if (btnEl) btnEl.disabled = false;
+        if (window.sartorRunLock) window.sartorRunLock.release();
       } else {
         var msg = describe(ev, p); if (msg && progEl) progEl.textContent = msg;
       }
@@ -1238,10 +1286,11 @@
     var scope = slug ? 'real / seed:' + slug : params.suite + ' / ' + params.subset;
     if (!window.confirm('Run a candidate-vs-baseline A/B on ' + scope + ' now?\n\nThis runs TWO eval suites (baseline + candidate) — paid Sonnet + Haiku (' + est + ') and takes several minutes.')) return;
     btn.disabled = true;
+    if (window.sartorRunLock) window.sartorRunLock.acquire();
     deltaEl.hidden = true; promote.hidden = true;
     prog.textContent = 'Starting A/B — baseline then candidate… (paid Sonnet/Haiku)';
     window.sartorEval.stream('/api/tune/run', params, function (ev, p) {
-      if (ev === '_closed') { btn.disabled = false; return; }
+      if (ev === '_closed') { btn.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); return; }
       if (ev === 'delta') {
         deltaEl.hidden = false; deltaEl.textContent = p.table || '(no delta)';
         promote.hidden = false;
@@ -1254,6 +1303,7 @@
       } else if (ev === 'error') {
         prog.textContent = 'Error: ' + (p.error || 'A/B failed') + (p.detail ? ' — ' + p.detail : '');
         btn.disabled = false;
+        if (window.sartorRunLock) window.sartorRunLock.release();
       } else {
         var msg = describeTune(ev, p); if (msg) prog.textContent = msg;
       }
@@ -1468,13 +1518,14 @@
     if (!user) { prog.textContent = 'Enter a candidate username.'; return; }
     if (!jds.length) { prog.textContent = 'Add at least one JD (name + text).'; return; }
     $('bsRun').disabled = true;
+    if (window.sartorRunLock) window.sartorRunLock.acquire();
     prog.textContent = 'Starting… (paid Sonnet/Haiku calls, ~70s per JD)';
     fetch(API + '/bootstrap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, slug: slug || undefined, jds: jds, grounding_signals: $('bsGrounding').checked }) }).then(function (resp) {
-      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status); $('bsRun').disabled = false; }); }
+      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status); $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); }); }
       var reader = resp.body.getReader(); var dec = new TextDecoder(); var buf = '';
       function pump() {
         return reader.read().then(function (chunk) {
-          if (chunk.done) { $('bsRun').disabled = false; return; }
+          if (chunk.done) { $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); return; }
           buf += dec.decode(chunk.value, { stream: true });
           buf = parseSse(buf, function (ev, p) {
             if (ev === 'start') prog.textContent = 'Running ' + p.total + ' JD(s)…';
@@ -1492,7 +1543,7 @@
         });
       }
       return pump();
-    }).catch(function () { prog.textContent = 'Bootstrap request failed.'; $('bsRun').disabled = false; });
+    }).catch(function () { prog.textContent = 'Bootstrap request failed.'; $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); });
   }
 
   // ---- standalone seed export (deterministic, no paid LLM calls) ----
@@ -1516,13 +1567,14 @@
     if (!state.slug || !state.candidate) { return; }
     var prog = $('annScoreProgress');
     $('annScore').disabled = true;
+    if (window.sartorRunLock) window.sartorRunLock.acquire();
     prog.textContent = 'Starting grounding scorers… (CPU-bound; no paid LLM calls)';
     fetch(API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug) + '/score', { method: 'POST' }).then(function (resp) {
-      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status) + ((res.d && res.d.detail) ? ' — ' + res.d.detail : ''); $('annScore').disabled = false; }); }
+      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status) + ((res.d && res.d.detail) ? ' — ' + res.d.detail : ''); $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); }); }
       var reader = resp.body.getReader(); var dec = new TextDecoder(); var buf = '';
       function pump() {
         return reader.read().then(function (chunk) {
-          if (chunk.done) { $('annScore').disabled = false; return; }
+          if (chunk.done) { $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); return; }
           buf += dec.decode(chunk.value, { stream: true });
           buf = parseSse(buf, function (ev, p) {
             if (ev === 'start') prog.textContent = 'Scoring ' + p.bullet_clusters + ' bullet clusters…';
@@ -1540,7 +1592,7 @@
         });
       }
       return pump();
-    }).catch(function () { prog.textContent = 'Score request failed.'; $('annScore').disabled = false; });
+    }).catch(function () { prog.textContent = 'Score request failed.'; $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); });
   }
 
   // ---- wire up ----
