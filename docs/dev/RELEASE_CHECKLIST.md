@@ -98,6 +98,10 @@ post-feature test window is a **formal gate** (E2E walkthrough + first real-data
       (v) **PX-25 DONE (CI job) — required-check flip PENDING.** `ci/ux-a11y-required-check` (2026-07-08) added a dedicated `ux` job to [`ci.yml`](../../.github/workflows/ci.yml) (`playwright install --with-deps chromium` → `pytest -m ux` → the PDF slice `pytest -m "slow and not ux"`, single Python 3.12, Playwright-browser caching), with a documented no-retry flake policy (the `(iii)` prerequisite above is resolved by `fix/compose-settle-bg-reload`, 2026-07-06 — see CHANGELOG) and an ACTIVATION NOTE comment in the workflow. **Still owed:** flipping "required status check" is a GitHub branch-protection setting, unavailable until the **GitHub repo create + push** step above actually runs — do that first, then mark the `ux` job's check + the `quality` matrix's 3 checks required (not `eval-smoke`, which is label-gated).
 - [ ] **8.8** `chore/version-bump-v1.0.8` — tag; all work done.
 
+**Epic v1.0.9 — Documentation & docs-site (Phase 6, [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.9/§6).** Lanes captured here individually as each merges; the orchestrated Train 5 manifest reconciles this into one block at capture.
+
+- [x] **docs/fumadocs-site** `feat/fumadocs-site` — the Fumadocs static-export site + its L1→MDX projection adapter (RELEASE_ARC §Phase 4.9 sequence item 4). **Delivered:** `docs-site/` — a Fumadocs (Next.js App Router) app scaffolded via `create-fumadocs-app` (`+next+fuma-docs-mdx+static` template, `output: 'export'`); `scripts/project_docs_to_mdx.py` — deterministic, stdlib-only, no new Python dep — projects the 31-page L1 doc set (README + `docs/**` pages carrying the full `Purpose`/`Audience`/`Authoritative-for` header, excluding `docs/wiki/**` which is L2) into `docs-site/content/docs/*.mdx` (frontmatter per the P/A/A→frontmatter map) + a `meta.json` whose page order is parsed live from README's own "Documentation map" block (the ICP ladder, made literal — not a hand-maintained priority table) partitioned by the SCHEMA `user`/`dev` audience tag (backtick-token parse, falling back to SCHEMA's blanket path rule, then a conservative `dev` default); local screenshot images referenced by `docs/walkthrough.md`/`docs/install.md` are mirrored alongside; an MDX-safety escaper (fence/inline-code-aware) HTML-entity-escapes stray `<`/`{`/`}` in prose and rewrites `<!-- -->` HTML comments to MDX's own `{/* */}` form (MDX has no raw-HTML-comment syntax — a correction to the `documentation-architecture.md` "Fumadocs also hides it" claim, noted there for a future doc fix). `.github/workflows/docs-deploy.yml` — on push to `main`: run the projector → `npm ci && npm run build` → always publish `out/` as a downloadable artifact (works with any webhost) → an OPTIONAL, GUARDED SFTP/SSH auto-push (`SFTP_HOST`/`SFTP_USER`/`SFTP_KEY`-or-`SFTP_PASSWORD`, skips gracefully when unset). `docs/dev/docs-site-deploy.md` — the self-host runbook (DNS, SFTP/SSH setup, manual-upload fallback; deploy target = shared webhost, confirmed by the owner mid-lane, superseding an earlier nginx/rsync draft). `pyproject.toml` — `docs-site` excluded from ruff/mypy/interrogate (a separate JS toolchain, documented in CHANGELOG per the "new JS dep" rule). `tests/test_docs_projection.py` — 23 focused unit tests on the P/A/A→frontmatter mapping, audience classification, slugging, and the MDX escaper. **Gate:** `ruff check .` clean · `ruff format --check` clean on touched files · `mypy .` clean (299 source files, `docs-site/` excluded) · `pytest -m "not ux and not slow"` 1848 passed + the 23 new · `npm run build` succeeds, `out/index.html` present (~29 MB static export, 31 doc pages + home). **STOP-AND-REPORT (not built, per the lane's explicit scope):** RELEASE_ARC.md's Phase 4.9 §4 claims Fumadocs renders an HTTP-API reference (Layer B) from an OpenAPI spec "spectree emits (dependency: spectree, pulled into v1.0.8)" — verified DRIFT: `spectree` appears in zero `.py` files and is absent from `pyproject.toml`. Layer B (the spectree/OpenAPI request-boundary work + its Fumadocs rendering) was **not** built this lane; it needs an owner decision (wire spectree into the Flask app first — product code + a security-gated route-registration surface, out of a docs lane's authority) before it can be scheduled.
+
 **v1.1.0 (owner-gated promotion):** flip the repo public + cut the tag once the v1.0.8 window's integration issues are resolved and the product is "working as expected"; final fresh-clone + doc-link re-verify at the cut.
 
 ### v1.0.6 — Walkthrough polish + knowledge substrate + corpus completion (SHIPPED 2026-06-15)
@@ -928,6 +932,30 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
 
 #### Resolved
 
+- [x] **`docs/readme-icp-ladder` (v1.0.9 Phase 6, item 1)** — RESOLVED, already on
+      `main` (`323bf6c` + `996d1c9`): the ICP-laddered README front door +
+      [`documentation-architecture.md`](documentation-architecture.md). Its governance
+      `DOC-STATUS(governance-boundary)` flag reads **RESOLVED** in `README.md` (C-6
+      import-boundary lint PX-20 + C-1 loopback-bind test PX-19 shipped v1.0.8 Sprint
+      8.3a) — the reconcile PX-50 verified separately (see "2026-07 efficiency review"
+      row above). Closed as its own Phase-6 sequence item in
+      [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.9. _(verified + closed: 2026-07-10,
+      `docs/dev-home-depth-wsb`.)_
+- [x] **paged.js render-engine design spike — landed** — RESOLVED 2026-07-10
+      (`spike/pagedjs-design`). New
+      [`pagedjs-preview-spike.md`](pagedjs-preview-spike.md) grounds B.13's
+      current fidelity gap (the vendored paged.js v0.4.3 polyfill's contained-
+      not-eliminated throws, per `docs/PRODUCT_SHAPE.md` §10) in the real
+      `blueprints/templates.py`/`static/app.js` preview wiring, fences the scope
+      to preview-only (PDF export stays Playwright-native, untouched), and lists
+      bounded spike tasks + a recommendation. **Design doc only — no code
+      landed.** Does not close or open a Carry-forward item: the actual
+      replacement stays owner-slotted for its own pre-public sprint per
+      [`RELEASE_ARC.md`](RELEASE_ARC.md):1227-1230 / §Post-public 1.1.1, which
+      remains the authoritative scheduling pointer.
+      _(discovered: 2026-06-29 owner decision, `RELEASE_ARC.md` Phase 4.9
+      reconcile; spike doc delivered 2026-07-10.)_
+
 - [x] **Wiki ingest refresh — the v1.0.9 code-keyed catch-up** — RESOLVED 2026-07-10
       (`docs/wiki-v109-refresh`). The full `/wiki-self-update`-style refresh ran as a
       parallelized 6-lane pass (Sonnet `wiki-scribe` worktrees + Haiku grounding audit of the
@@ -940,6 +968,25 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       **Lands PX-41** (the scheduled 8.6 wiki catch-up ingest) → **7 of 20** efficiency PX rows.
       _(discovered: 2026-07-09, `docs/diagnostics-round2-capture`; resolved on the v1.0.9 train;
       open count 7 → 6.)_
+
+- [x] **Doc merge-gate (v1.0.9 docs epic item 5) — merge=publish gates built** — DONE
+      2026-07-10 (`ci/doc-merge-gate`). Not a previously-tracked ledger item (recorded here
+      for visibility alongside the epic's other progress notes, per
+      [`RELEASE_ARC.md`](RELEASE_ARC.md) §"Documentation & docs-site" item 5). Built the four
+      `docs/dev/documentation-architecture.md` "Gates — merge = publish" checks that weren't
+      already committed (link-integrity + the `DOC-STATUS`-trigger check were already built
+      by PX-50/`chore/doc-link-sweep`): frontmatter+audience
+      (`scripts/check_doc_frontmatter.py`), the D5 single-home heuristic
+      (`scripts/check_doc_single_home.py` — the hardest of the five, scoped + proven on
+      synthetic fixtures rather than left unautomated), cite-resolution (widened
+      `check_doc_links.py`'s scope), and wiki-freshness
+      (`scripts/wiki_freshness.py`, wired into `block_merge_to_main.py` as a genuine,
+      non-bypassable merge-time block). All ride the existing `pytest` gate (no new CI job);
+      all green on the current tree with zero doc content edits required. Full detail in
+      `CHANGELOG.md` [Unreleased]. **Flag for the train tip:** `PUBLISHED_DOC_FILES`
+      (the frontmatter/single-home/cite registry) should converge with
+      `scripts/project_docs_to_mdx.py`'s own published-page scope once `feat/fumadocs-site`
+      lands.
 
 - [x] **E2E walkthrough + R2-live verification (8.5 remainder)** — the gated test window's
       *walkthrough* half. 8.5 (`eval/live-shakedown-labels`) ran the *eval* half and produced
@@ -1677,6 +1724,27 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       `tests/ux/regression/test_20260611_compose_order_no_recommendations.py`; the
       common path stays guarded by `test_20260604_bullet_drag_reorder.py`. See
       CHANGELOG [Unreleased].
+
+- [x] **F-17 — avatar refuses Pipeline-tab questions for lack of a `user`-tier
+      wiki page** — discovered during the `docs/wiki-content-pass` v1.0.9 docs-epic
+      scoping (2026-07-10): `feat/ux-w2-recruiter` (2026-07-07) shipped the
+      recruiter-tier **Pipeline tab** (`templates/index.html` `#tab-pipeline`;
+      `static/app.js:refreshPipeline`/`_renderPipelineBoard`; backing route
+      `blueprints/users.py:candidate_roster`) but never got a matching
+      `audience: user` wiki page, so the doc-grounded assistant's `user`-scoped
+      access plane had nothing to cite and refused Pipeline questions (the
+      audience gate — [`SCHEMA.md`](../wiki/SCHEMA.md) §Audience tag).
+      **Resolved same session:** authored
+      [`pages/recruiter-pipeline-tab.md`](../wiki/pages/recruiter-pipeline-tab.md)
+      (`audience: user`), grounded against the live app, bidirectionally
+      backlinked from [`pages/using-sartor.md`](../wiki/pages/using-sartor.md) +
+      [`pages/managing-users.md`](../wiki/pages/managing-users.md), and disambiguated
+      from the unrelated `audience: dev` [`pages/pipeline-stages.md`](../wiki/pages/pipeline-stages.md)
+      (the résumé-generation analyze→…→iterate sequence — a different "pipeline"
+      entirely). Content pass; `docs/wiki/.last_ingest_sha` intentionally untouched
+      per [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.9 (`docs/wiki-content-pass` row).
+      _(discovered + resolved: v1.0.9 docs epic, 2026-07-10, `docs/wiki-content-pass`;
+      open count unchanged — added and cleared in the same edit.)_
 
 The v1.0.1 item list below was **reconciled in place at the v1.0.3 tag
 (2026-06-02)**: completed items are checked; still-open items are flagged

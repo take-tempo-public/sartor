@@ -70,7 +70,7 @@ into **16 new `pages/`**, every code claim `path:line`-grounded per
 `pdf_render.py`, `app.py`, `db/` (`models.py`, `build_context.py`, `persist_run.py`),
 `evals/` (`runner.py`, `bootstrap.py`, `rubrics/`), `dashboard/`, `static/app.js`,
 `templates/index.html`, plus [`../architecture.md`](../architecture.md) +
-[`../diagrams/`](../diagrams/) `*.mmd`.
+`../diagrams/*.mmd` (retired 2026-07-10, `docs/diagrams-a11y`).
 
 **Pages created (16):** `code-module-map` (hub), `deterministic-llm-boundary`,
 `prompt-version-discipline`, `context-set-contract`, `iteration-audit-chain`,
@@ -95,10 +95,11 @@ commit-time freshness reminder goes live (it was deliberately silent under the s
 
 **Diagram drifts folded in** (the re-read caught them, as tracked in
 [`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md)): Step-2 in
-[`../diagrams/pipeline.mmd`](../diagrams/pipeline.mmd) + the embedded copy in
+`../diagrams/pipeline.mmd` (retired 2026-07-10, `docs/diagrams-a11y` —
+content lives solely in `../architecture.md` now) + the embedded copy in
 [`../architecture.md`](../architecture.md) "GET INTERVIEW QUESTIONS" → "GET CLARIFYING
 QUESTIONS" (the Step-6 iterate flow was already correct);
-[`../diagrams/data-flow.mmd`](../diagrams/data-flow.mmd) cover-letter node brought up to
+`../diagrams/data-flow.mmd` (retired 2026-07-10) cover-letter node brought up to
 `cover_TS.docx /<br/>.pdf / .md` to match the already-correct `../architecture.md`.
 
 **Authoring method.** A 16-page Workflow — one author agent per page, then a *different*
@@ -529,3 +530,39 @@ wiki-refresh commits touch only `docs/wiki/`, which the loop excludes).
 resolve; 36 `pages/` ↔ `index.md` agree both ways; all root-relative `path` cites resolve; no
 orphans. **Loop invariant held: reviewable diff, no auto-commit** — the human reviews + commits.
 Docs-only branch (no `.py` touched); recorded here (the wiki's changelog), not in CHANGELOG.
+## 2026-07-10 — content pass: recruiter Pipeline-tab coverage, closes F-17 (`docs/wiki-content-pass`)
+
+**Mode: hand-authored content pass — NOT a code ingest / diff pass** (v1.0.9 docs epic,
+[`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md) §Phase 4.9, branch #3). Closes the
+Carry-forward-ledger F-17 gap: `feat/ux-w2-recruiter` (2026-07-07) shipped the recruiter-tier
+**Pipeline** tab, but no `audience: user` page described it, so the doc-grounded assistant's
+`user`-scoped access plane had nothing to cite and refused Pipeline questions. Like the prior
+content passes, `.last_ingest_sha` is **deliberately left unchanged** — no code changed.
+
+**Page created (1, `audience: user`):** [`pages/recruiter-pipeline-tab.md`](pages/recruiter-pipeline-tab.md)
+— what the Pipeline board is, who it's for, and how to use it. Grounded against the live app:
+`templates/index.html` `#tab-pipeline`/`#pipelineBoard`, `static/app.js`
+(`refreshPipeline`/`_renderPipelineBoard`/`_renderPipelineRow`), and the backing
+`GET /api/candidates/roster` route (`blueprints/users.py:candidate_roster`). Explicitly
+disambiguated from the unrelated `audience: dev` [`pages/pipeline-stages.md`](pages/pipeline-stages.md)
+(the internal analyze→clarify→compose→generate→iterate résumé-generation sequence) — a
+different "pipeline" entirely; that page was **not** touched.
+
+**Wiki meta updated.** [`index.md`](index.md) gained the new page under a short "Wave 2
+recruiter tier" note; `[[backlinks]]` reconciled bidirectionally — [`using-sartor`](pages/using-sartor.md)
+"The guides" and [`managing-users`](pages/managing-users.md) "Everyone's data stays separate"
+now each link to `recruiter-pipeline-tab`, which links back to both plus
+[`tailoring-a-resume`](pages/tailoring-a-resume.md) (which gained a reciprocal pointer too).
+[`overview.md`](overview.md) and [`llms.txt`](../../llms.txt) were reviewed and found current —
+no edit needed (both describe the system at the wiki/system altitude, not per-feature detail).
+
+**Authoring + verification.** Single-author content pass (no separate grounding-auditor
+subagent run this session — every cite was verified directly against the live source files
+listed above during authoring, matching the bar the auditor role checks for). `/wiki-lint`-style
+manual check: the new page's 3 `[[backlinks]]` all resolve to existing slugs; `index.md` ↔
+`pages/` agree; no orphan (inbound link from the `using-sartor` hub). **Gate:** `ruff` ✓ ·
+`ruff format --check` ✓ · `mypy` ✓ · `pytest -m "not ux and not slow"` ✓ (docs-only — no `.py`
+touched). Per the [`../../CHANGELOG.md`](../../CHANGELOG.md) scope rule this content pass is
+recorded here; a CHANGELOG [Unreleased] line was also added (conductor scope directive) since
+the branch additionally closes a Carry-forward-ledger row in
+[`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md).

@@ -102,6 +102,15 @@ assistant draws on (same `audience: user` content pass; `.last_ingest_sha` uncha
 - [`pages/troubleshooting.md`](pages/troubleshooting.md) — where errors show up and the
   common ones (Chromium-for-PDF, API key, the date-check note).
 
+The `docs/wiki-content-pass` v1.0.9 branch added the recruiter-tier (Wave 2, F-17)
+how-to page (same `audience: user` content pass; `.last_ingest_sha` unchanged):
+
+- [`pages/recruiter-pipeline-tab.md`](pages/recruiter-pipeline-tab.md) — the
+  cross-candidate Pipeline board that groups every candidate's applications by
+  status; disambiguated from the unrelated `audience: dev`
+  [`pages/pipeline-stages.md`](pages/pipeline-stages.md) (the résumé-generation
+  sequence).
+
 ## Wiki infrastructure
 
 - [`SCHEMA.md`](SCHEMA.md) — wiki conventions, the one grounding rule, the

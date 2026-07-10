@@ -2,7 +2,7 @@
 
 > **Audience:** `dev`
 > **Concept:** the full set of LLM call kinds sartor. makes, which model tier each routes to (Sonnet 5 = heavy reasoning; Haiku 4.5 = structured selection), and the two-pass analyze (Haiku extraction → Sonnet synthesis) that anchors the analyze→generate cache.
-> **Sources:** [`analyzer.py`](../../../analyzer.py), [`onboarding/extract_experiences.py`](../../../onboarding/extract_experiences.py), [`blueprints/applications.py`](../../../blueprints/applications.py), [`blueprints/corpus/skills.py`](../../../blueprints/corpus/skills.py), [`architecture.md` §"LLM routing + cost"](../../architecture.md), [`llm-routing.mmd`](../../diagrams/llm-routing.mmd), [`pipeline.mmd`](../../diagrams/pipeline.mmd).
+> **Sources:** [`analyzer.py`](../../../analyzer.py), [`onboarding/extract_experiences.py`](../../../onboarding/extract_experiences.py), [`blueprints/applications.py`](../../../blueprints/applications.py), [`blueprints/corpus/skills.py`](../../../blueprints/corpus/skills.py), [`architecture.md` §"LLM routing + cost"](../../architecture.md), [`architecture.md` §"System overview"](../../architecture.md).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---

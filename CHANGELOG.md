@@ -13,6 +13,127 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs: dev-tier depth verify (WS-B) + close the `docs/readme-icp-ladder` row (`docs/dev-home-depth-wsb`)
+
+- **WS-B verify-first pass** against settled v1.0.8 code (v1.0.9 Phase 6, item 2)
+  over the three dev-tier homes the README's "For developers" ICP rung points
+  into (`docs/system-model.md`, `docs/dev/memory-architecture.md`,
+  `docs/architecture.md`). Filled three genuine, narrowly-scoped gaps found
+  during verification (no invented claims — each grounded in code read at
+  HEAD):
+  - `docs/architecture.md` — added a "Typed contracts (pydantic-in-the-loop)"
+    paragraph to §LLM routing + cost: the README claims `pydantic`
+    `model_validator`s enforce semantic rules and a validation failure is fed
+    back as a structured retry, but the doc had **zero** mentions of
+    `pydantic`. Documented the mechanism against `analyzer.py`'s actual
+    `_LLMResponse`/`HiddenQualityItem`/`ClarifyResponse.enforce_composition_rules`
+    (`analyzer.py:152/158/240`) and the `_parse_or_retry()` retry loop
+    (`analyzer.py:1405`, `1452`-1474).
+  - `docs/dev/memory-architecture.md` — the "Reuse boundary / extraction
+    contract" section still called the `recall/` import boundary-lint "a
+    candidate for its own boundary-lint," but it shipped in Sprint 7.4
+    (`tests/test_recall_boundary.py`, plus the literal-leak guard
+    `test_recall_sources_no_hardcoded_roots`). Updated to state it is
+    **built** and enforced by construction, matching the README's "enforced,
+    not narrated" claim.
+  - `docs/system-model.md` — the "Where it lives" table/prose still framed
+    `app.py` as "the web layer" (pre-8.3a-h; `app.py` is now a 296-line
+    composition root with zero routes — all 93 routes live in `blueprints/`)
+    and called the wiki "planned" (`docs/wiki/` ships 36 pages; the `recall/`
+    Memory substrate is also unlisted). Updated both the Production and
+    Memory rows/prose to the settled state.
+  - **WS-E unification** (recursive grounding + the shared `user`/`dev`
+    audience plane) — confirmed already folded into
+    `docs/dev/documentation-architecture.md`, and `docs/system-model.md`
+    already carries the "one law" framing it cites (§"The one law"). No
+    edit needed (confirm-only, per the design doc).
+- **Closed the `docs/readme-icp-ladder` Phase-6 sequence row.** Its content
+  (`323bf6c`/`996d1c9`) and the governance `DOC-STATUS(governance-boundary)`
+  reconcile are already on `main` and the flag reads RESOLVED (PX-19/PX-20).
+  Marked DONE/struck-through in
+  [`docs/dev/RELEASE_ARC.md`](docs/dev/RELEASE_ARC.md) (Phase 6 branch list +
+  the numbered v1.0.9 sequence) and logged the resolution in
+  [`docs/dev/RELEASE_CHECKLIST.md`](docs/dev/RELEASE_CHECKLIST.md)'s
+  Carry-forward ledger.
+- Docs-only: no product code, no new deps, `PROMPT_VERSION` untouched.
+### Docs: paged.js render-engine design spike (`spike/pagedjs-design`, B.13)
+
+- New [`docs/dev/pagedjs-preview-spike.md`](docs/dev/pagedjs-preview-spike.md) —
+  the timeboxed design-spike doc for the paged.js preview-render engine
+  replacement pulled pre-public per `RELEASE_ARC.md`:1227-1230. Grounds the
+  current fidelity gap in `blueprints/templates.py`'s
+  `_inject_paged_polyfill()`/`_PAGED_PREVIEW_INJECTION` and
+  `static/app.js`'s `_wirePreviewPageCount()`, states an explicit scope fence
+  (PDF export stays Playwright-native via `pdf_render.py`, untouched), and
+  lists bounded spike tasks + a recommendation. **Doc only** — no product
+  code, no dependency, no `PROMPT_VERSION` change; the replacement itself is
+  owner-slotted for its own pre-public sprint, not built in v1.0.9.
+### CI: doc merge-gate — the merge=publish gates (`ci/doc-merge-gate`, v1.0.9 docs epic item 5)
+
+- **`docs/dev/documentation-architecture.md`'s "Gates — merge = publish" table, built.**
+  Four of the five listed gates were not yet built (`tests/test_doc_status_gate.py`
+  already covered the `DOC-STATUS`-trigger check, PX-50); this branch adds the remaining
+  four as committed pytest gates (rides the existing `pytest` run — no new CI job), matching
+  the repo's established pattern (`tests/test_doc_links.py` / `scripts/check_doc_links.py`,
+  `tests/test_route_containment_gate.py`):
+  - **link-integrity** — already built (`scripts/check_doc_links.py` +
+    `tests/test_doc_links.py`, `chore/doc-link-sweep`); unchanged.
+  - **frontmatter + audience** — new `scripts/check_doc_frontmatter.py` +
+    `tests/test_doc_frontmatter_gate.py`. Checks every doc in a new explicit
+    `PUBLISHED_DOC_FILES` registry (16 files: the repo-root canonical docs + `docs/*.md`
+    top-level + `docs/governance/*.md` — deliberately narrower than all of `docs/dev/**`,
+    which is a heterogeneous mix of live design docs and frozen review/perf artifacts most
+    of which predate and were never meant to carry the convention; widening false-positived
+    on ~12 files with no content decision made here) carries all three
+    `**Purpose:**`/`**Audience:**`/`**Authoritative for:**` header fields. Green on the
+    current tree with zero doc edits needed.
+  - **single-home (D5)** — new `scripts/check_doc_single_home.py` +
+    `tests/test_doc_single_home_gate.py`. The hardest of the five to automate (verifying
+    restatement-vs-linking needs meaning, not grep) — implemented as a documented, narrower
+    heuristic: near-verbatim (post-whitespace/case-normalization) duplicated prose paragraphs
+    (>= 240 chars) across 2+ distinct files in the same `PUBLISHED_DOC_FILES` registry, fenced
+    code excluded, with a reviewed-exception registry for the (currently empty) case of an
+    intentional duplication. Proven to have real detection teeth on synthetic fixtures before
+    trusting the green real-tree result (D5 discipline is genuinely holding across the
+    registry — zero duplication found even at an 80-char probe threshold).
+  - **cite-resolution** — widened `scripts/check_doc_links.py`'s `CITE_CHECK_FILES` from
+    `{AGENTS.md, CLAUDE.md}` to the full `PUBLISHED_DOC_FILES` registry (imported from the
+    frontmatter gate, not restated — D5 applied to this gate's own code);
+    `CITE_CHECK_DIRS = ("docs/governance/",)` stays directory-wide unchanged so
+    `compliance-log.md` (an append-only log, deliberately excluded from the frontmatter
+    registry) keeps its existing cite coverage. Green on the current tree; no new dead cites
+    found.
+  - **wiki-freshness** — new `scripts/wiki_freshness.py` (stdlib + git only, no LLM), reusing
+    `wiki-freshness-reminder.sh`'s drift computation but as a hard block: `BLOCK_THRESHOLD =
+    75` (distinct from the reminder hook's soft `THRESHOLD = 10`, calibrated above ordinary
+    branch-scale drift but below the 119-434 file drift that went unblocked for ~7 weeks
+    before the 2026-07-10 catch-up ingest). Rides `pytest` via
+    `tests/test_wiki_freshness_gate.py`, **and** is wired into
+    `scripts/enforcement/guards/block_merge_to_main.py` (`decide()` /
+    `git_operation_check()` / `git_push_check()`) as a genuine merge-time block — checked
+    once a command would otherwise be allowed, **not bypassed by `CLAUDE_CONFIRM_MERGE=1`**
+    (that token confirms the merge target, not doc freshness; the only way through is running
+    `/wiki-self-update` or `/wiki-ingest`, mirroring the `DOC-STATUS` gate's no-escape-hatch
+    design). 6 new unit/integration tests added to `tests/test_enforcement_core.py`
+    (`TestBlockMergeToMainUnit`); all 61 pre-existing tests in that file still pass unchanged
+    (the extension only fires when a real `docs/wiki/.last_ingest_sha` baseline exists —
+    every existing fixture repo has none, so it silently no-ops for them). Currently green:
+    the wiki was refreshed to `e785e53` on this same train (1-file drift at authoring time).
+- **No product code, prompt, route, or dependency change** — doc-tooling + test-infra only
+  (`scripts/**`/`tests/**`, both KIT-7 ANN/D-exempt). `PROMPT_VERSION` untouched.
+- **Doc issues found while scoping:** none required a content fix — the widened cite-check
+  and the new frontmatter/single-home registries were green against the current tree with no
+  doc edits needed (see the per-gate notes above for the scope decisions that kept it that
+  way; `docs/dev/**`'s ~12 files with a partial `Purpose`/`Audience`/`Authoritative-for`
+  header are a known, out-of-scope-for-this-gate observation, not a fix made here — see the
+  lane report for the full list).
+- **Flags for the train tip / sibling lanes:** `PUBLISHED_DOC_FILES` (in
+  `scripts/check_doc_frontmatter.py`) should converge with `scripts/project_docs_to_mdx.py`'s
+  own published-page scope once `feat/fumadocs-site` lands (this branch predates that script
+  and defines its registry independently, per the lane's task brief); any new top-level
+  `docs/*.md`/root doc a sibling lane adds should carry the Purpose/Audience/Authoritative-for
+  header or it will need adding to (or excluding from) `PUBLISHED_DOC_FILES` explicitly.
+
 ### Chore: DOC-STATUS grep gate (`ci/px50-doc-status-gate`, PX-50)
 
 - New `tests/test_doc_status_gate.py` — a pytest gate (rides the normal
@@ -385,6 +506,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `POST /api/eval/run` open via a Playwright route interceptor, asserts all
   four buttons + the banner lock, then fulfills the held request and asserts
   they release.
+### Docs: recruiter Pipeline-tab wiki coverage, closes F-17 (`docs/wiki-content-pass`, v1.0.9 docs epic)
+
+- Authored the `audience: user` how-to page
+  [`docs/wiki/pages/recruiter-pipeline-tab.md`](docs/wiki/pages/recruiter-pipeline-tab.md) for
+  the recruiter-tier **Pipeline** tab (`feat/ux-w2-recruiter`, F-17) — the cross-candidate
+  application-status board. Closes the gap where the in-app doc-grounded assistant's
+  `user`-scoped access plane had no page to cite and refused Pipeline questions. See
+  [`docs/wiki/log.md`](docs/wiki/log.md) for the full content-pass record (per this file's
+  scope rule, wiki content itself is logged there, not restated here).
+- Closed the corresponding Carry-forward-ledger row in
+  [`docs/dev/RELEASE_CHECKLIST.md`](docs/dev/RELEASE_CHECKLIST.md) — added and resolved in the
+  same edit, so the rendered open count is unchanged.
+### Docs: diagram accessibility + single-source consolidation (`docs/diagrams-a11y`, 2026-07-10)
+
+- Added Mermaid `accTitle`/`accDescr` a11y directives (screen-reader title +
+  description) to all four canonical diagrams in `docs/architecture.md`
+  (pipeline sequence, persistence ER, LLM routing, `context_set` data flow).
+- Retired the 4 standalone `docs/diagrams/*.mmd` files — byte-identical
+  duplicates of the `docs/architecture.md` embeds that relied on "edit
+  either copy and keep both in sync" discipline alone; `docs/architecture.md`
+  is now the single source. Re-pointed every cross-document link/cite that
+  targeted a retired path (`AGENTS.md`, `docs/wiki/pages/*.md`); verified
+  clean via `scripts/check_doc_links.py`.
+### Added: hosted Fumadocs docs site (`feat/fumadocs-site`, v1.0.9 Phase 6 docs epic)
+
+- **New `docs-site/` app** — a self-hosted [Fumadocs](https://fumadocs.dev)
+  (Next.js App Router) site configured for **static export**
+  (`output: 'export'` → `docs-site/out/`, no server process). Scaffolded via
+  `create-fumadocs-app` (`+next+fuma-docs-mdx+static` template). **New JS
+  toolchain** (`docs-site/package.json`): `next`, `fumadocs-core`,
+  `fumadocs-mdx`, `fumadocs-ui`, React 19, TypeScript, Tailwind CSS 4 — a
+  separate dependency tree from the Python product (the "no new dep without
+  a `pyproject.toml` + CHANGELOG entry" rule is a Python-tree rule; this is
+  its JS-tree documentation instead, per the lane's scope).
+- **New `scripts/project_docs_to_mdx.py`** — the deterministic, stdlib-only
+  (no new Python dependency) projection adapter: reads the L1 doc set
+  (README + `docs/**` pages carrying the `Purpose`/`Audience`/
+  `Authoritative-for` header, excluding `docs/wiki/**` which is L2) and
+  emits `docs-site/content/docs/*.mdx` + a `meta.json` ordered by README's
+  own "Documentation map" (the ICP ladder) partitioned by the
+  `docs/wiki/SCHEMA.md` `user`/`dev` audience tag. See the module docstring
+  for the full frontmatter map, audience-classification fallback chain, and
+  the MDX-safety escaping (including a `<!-- -->` → `{/* */}` rewrite — MDX
+  has no raw-HTML-comment syntax). Covered by `tests/test_docs_projection.py`
+  (23 tests).
+- **New `.github/workflows/docs-deploy.yml`** — on push to `main`: runs the
+  projector, builds the static export, and always publishes it as a
+  downloadable artifact (works with any webhost). An optional, guarded
+  SFTP/SSH auto-push (`SFTP_HOST`/`SFTP_USER`/`SFTP_KEY`-or-`SFTP_PASSWORD`
+  repo secrets) skips gracefully when unconfigured. No literal secrets.
+- **New [`docs/dev/docs-site-deploy.md`](docs/dev/docs-site-deploy.md)** —
+  the self-host runbook (DNS, SFTP/SSH setup, manual-upload fallback).
+- `pyproject.toml` — `docs-site/` excluded from `ruff`/`mypy`/`interrogate`
+  (a separate JS toolchain; see `docs-site/README.md` for its own dev loop).
+- **Deferred, not built this lane:** RELEASE_ARC.md's Phase 4.9 plan has
+  Fumadocs render an HTTP-API reference (Layer B) from an OpenAPI spec
+  `spectree` emits. `spectree` is **not present** in this codebase (zero
+  `.py` imports, absent from `pyproject.toml`) — the ARC's "pulled into
+  v1.0.8" claim is stale. Wiring `spectree` into the Flask route surface is
+  product code + a security-gated change, out of this docs lane's scope;
+  flagged for an owner decision.
 
 ## [1.0.8] — 2026-07-09
 

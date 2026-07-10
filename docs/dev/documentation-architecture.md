@@ -111,7 +111,10 @@ layers:
   …" note, so the public reader knows it is a moving target and where the truth lives.
 - **Invisible:** an HTML comment naming the exact update trigger —
   `<!-- DOC-STATUS(<key>): <claim state> — update when <sprint> lands <PX/finding ids>. Canonical: <home> -->`.
-  Plain markdown (GitHub + Fumadocs both hide it), greppable.
+  Plain markdown — GitHub hides the `<!-- … -->` comment, and the Fumadocs
+  projection rewrites it to an MDX `{/* … */}` comment the site hides (MDX has
+  no raw-HTML-comment syntax, so the projector converts rather than relying on
+  Fumadocs to hide it). Greppable in-repo either way.
 
 **Hook point (proposed):** the freshness gate can `grep` for `DOC-STATUS` markers whose
 trigger sprint has tagged and fail the build until the line is reconciled — turning "remember

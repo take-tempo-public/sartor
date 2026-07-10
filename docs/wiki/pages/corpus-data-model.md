@@ -15,7 +15,6 @@
 > [`db/migrations/versions/0012_merge_dismissal.py`](../../../db/migrations/versions/0012_merge_dismissal.py),
 > [`db/migrations/versions/0013_application_is_active.py`](../../../db/migrations/versions/0013_application_is_active.py),
 > [`db/migrations/versions/0014_backfill_orphaned_proposal_reviews.py`](../../../db/migrations/versions/0014_backfill_orphaned_proposal_reviews.py),
-> [`docs/diagrams/persistence.mmd`](../../diagrams/persistence.mmd),
 > [`docs/architecture.md`](../../architecture.md) §Persistence model.
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
@@ -40,8 +39,7 @@ scan re-surfacing a dismissed pair; it cascades away if either experience is del
 [`Tag`](../../../db/models.py) is one canonical per-candidate registry
 (`kind IN ('role','domain','skill','tech')`, CHECK-constrained) reached from each
 content table through its own junction row. The full FK/cascade picture is the ER
-diagram in [`persistence.mmd`](../../diagrams/persistence.mmd); architecture
-highlights are [`architecture.md` §Persistence model](../../architecture.md).
+diagram in [`architecture.md` §Persistence model](../../architecture.md).
 
 ## The unified Corpus-Item lifecycle
 
@@ -121,7 +119,7 @@ denormalized caches for back-compat: `Candidate.profile_text` (superseded by
 the item rows**; the legacy columns survive for code that reads them directly
 `[synthesis]`. The persistence diagram annotates `profile_text` as
 "legacy; SummaryItem variants are canonical post-v1.0"
-([`persistence.mmd`](../../diagrams/persistence.mmd)).
+([`architecture.md` §Persistence model](../../architecture.md)).
 
 ## How the lifecycle gates output
 

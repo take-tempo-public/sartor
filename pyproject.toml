@@ -173,7 +173,12 @@ static = ["*.js", "*.css", "vendor/*.js"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-extend-exclude = ["configs", "resumes", "output", "logs", "evals/results", "evals/fixtures/real", "db/migrations/versions"]
+# docs-site/ is the Fumadocs (Next.js/TypeScript) app (feat/fumadocs-site) — a
+# separate JS toolchain (docs-site/package.json), not Python; ruff has nothing
+# to check there. node_modules is already in ruff's own default excludes, but
+# this is listed explicitly so the whole tree (content/, src/, etc.) is a
+# documented, deliberate exclusion rather than an accident of ruff's defaults.
+extend-exclude = ["configs", "resumes", "output", "logs", "evals/results", "evals/fixtures/real", "db/migrations/versions", "docs-site"]
 
 [tool.ruff.lint]
 select = [
@@ -272,7 +277,7 @@ fail-under = 99
 # Production-only scope: the KIT-7 exempt set (tests/ evals/ scripts/ db/migrations) excluded,
 # plus data/build noise (mirrors [tool.ruff] extend-exclude above). `ui_pages/**` stays IN scope
 # to match the surface the ruff-`D` family covers (ratchet unit 8).
-exclude = ["tests", "evals", "scripts", "db/migrations", "configs", "resumes", "output", "logs", "build", ".venv", "__pycache__", "setup.py"]
+exclude = ["tests", "evals", "scripts", "db/migrations", "configs", "resumes", "output", "logs", "build", ".venv", "__pycache__", "setup.py", "docs-site"]
 # Coherence with the ruff-`D` google scope: google omits module docstrings (no D100) and does not
 # treat magics/privates as public API. `@property` accessors are COUNTED
 # (ignore-property-decorators = false) to match the D102 treatment of config.py's derived-root
@@ -288,6 +293,11 @@ ignore-property-decorators = false
 
 [tool.mypy]
 python_version = "3.10"
+# docs-site/ is the Fumadocs (Next.js/TypeScript) app (feat/fumadocs-site) — no
+# .py files live there, but its node_modules/ is large and mypy's default file
+# discovery would otherwise walk it looking for stray .py/.pyi files. Excluded
+# explicitly rather than relying on that walk finding nothing.
+exclude = ["^docs-site/"]
 # Kit-adoption Phase 1 (KIT-3/§4): the Pydantic mypy plugin teaches mypy the
 # analyzer response models' generated __init__/validator signatures. Ships inside
 # the existing `pydantic` dep — no new dependency. The legacy SQLAlchemy mypy

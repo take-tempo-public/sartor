@@ -51,7 +51,7 @@ Full system + module map in [`docs/architecture.md`](docs/architecture.md). Quic
 - **`context_set` is the JSON contract** between every pipeline stage. Each `/api/generate` writes a NEW timestamped child file via `hardening.save_iteration_context()`; the `parent_context_path` chain is the iteration audit trail.
 - **`PROMPT_VERSION` in `analyzer.py`** must bump in the SAME commit when any prompt changes, so eval telemetry attributes scores correctly (a charter discipline rule — [`docs/governance/charter.md`](docs/governance/charter.md), C-0 / D-4).
 
-For the full pipeline sequence (with all eight LLM call kinds, which Flask route fires each, and cost/latency footprints), see [`docs/diagrams/pipeline.mmd`](docs/diagrams/pipeline.mmd) and [`docs/diagrams/llm-routing.mmd`](docs/diagrams/llm-routing.mmd).
+For the full pipeline sequence (with all eight LLM call kinds, which Flask route fires each, and cost/latency footprints), see [`docs/architecture.md`](docs/architecture.md) §"System overview" (pipeline) and §"LLM routing + cost" — the two fenced Mermaid diagrams there are the single source (the standalone `docs/diagrams/*.mmd` copies were retired in v1.0.9).
 
 ---
 

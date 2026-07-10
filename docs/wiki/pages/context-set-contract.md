@@ -7,8 +7,7 @@
 > **Sources:** [`hardening.py`](../../../hardening.py) (`ContextSet`, `build_context_set`,
 > `assemble_source_union`, `save_iteration_context`), [`web_infra/security.py`](../../../web_infra/security.py)
 > (`_within`), [`db/build_context.py`](../../../db/build_context.py),
-> [`docs/architecture.md`](../../architecture.md) §"context_set lifecycle",
-> [`docs/diagrams/data-flow.mmd`](../../diagrams/data-flow.mmd).
+> [`docs/architecture.md`](../../architecture.md) §"context_set lifecycle".
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---

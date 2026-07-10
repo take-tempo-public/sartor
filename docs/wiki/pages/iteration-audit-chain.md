@@ -2,7 +2,7 @@
 
 > **Audience:** `dev`
 > **Concept:** every `/api/generate` writes a NEW timestamped child context file; the `parent_context_path` pointer back to the file it was derived from forms an immutable audit trail. The parent is never mutated; `iteration`, `edited_*`, and `last_generated_*` fields carry the loop's state forward.
-> **Sources:** [`hardening.py`](../../../hardening.py), [`blueprints/generation.py`](../../../blueprints/generation.py), [`docs/architecture.md`](../../architecture.md) §context_set lifecycle, [`docs/diagrams/data-flow.mmd`](../../diagrams/data-flow.mmd).
+> **Sources:** [`hardening.py`](../../../hardening.py), [`blueprints/generation.py`](../../../blueprints/generation.py), [`docs/architecture.md`](../../architecture.md) §context_set lifecycle.
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---

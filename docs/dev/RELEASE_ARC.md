@@ -1063,7 +1063,7 @@ Then: `chore/version-bump-v1.0.8`.
 | Phase 3b | gen-exp completion → **TRAIN 3** | (a) `fix/surgical-refinement-and-loopback` + (d) `feat/regenerate-gap-fill` in parallel, then (b) `feat/wysiwyg-source-of-truth` + (c) `feat/clarifications-to-corpus`. Spec home: [`generation-experience-rearchitecture.md`](generation-experience-rearchitecture.md) §4/§6. Corpus-mode validation on a saved context + one real generate (NOT `--suite synthetic`). |
 | Phase 4 | 8.7 public-prep → **TRAIN 4** → **CODE FREEZE** | `feat/portable-enforcement-core` (ledger #6) · `ci/ux-a11y-required-check` (PX-25) · `chore/doc-link-sweep` (ledger #7). Then **[HUMAN]**: GitHub repo `take-tempo-public/sartor` (private) + PyPI Trusted Publisher + required checks. **[Reconciled 2026-07-09: repo created + `main` pushed private; PyPI/GHCR/required-checks activation DEFERRED to pre-v1.1.0 per owner — see the RELEASE_CHECKLIST [HUMAN] row.]** Then assets: `docs/screenshots-refresh` ($0.27, app running) · `docs/badges-readme-prep` (PX-26 + PX-54) → **TRAIN 4b**. |
 | Phase 5 | v1.0.8 tag ceremony | `/compliance-witness` at pinned sha + `/wiki-lint` (staleness carried as accepted note; PX-41 scheduled Phase 6) + `RELEASE_CHECKLIST` sweep + `CHANGELOG` cut → owner confirms → tag **v1.0.8** → verify published wheel. |
-| Phase 6 | v1.0.9 docs epic → **TRAIN 5** → v1.0.9 tag | `docs/readme-icp-ladder` · `docs/dev-home-depth-wsb` (+ PX-40/48 + avatar-voice casing) · `docs/wiki-content-pass` (PX-41 catch-up ingest 150+ commits via `/wiki-self-update` + PX-50/53 + user-tier pages + `llms.txt`) · `docs/diagrams-a11y` (new `accTitle`/`accDescr` diagrams; retire the 4 drifted `.mmd`) · `feat/fumadocs-site` (projection adapter + spectree/OpenAPI Layer-B) · `ci/doc-merge-gate` (last) · `chore/mypy-strict` (burn the normalized error count) · `spike/pagedjs-design` (timeboxed doc). Voice/tone reference: Google developer style guide tone (record in `documentation-architecture.md`). |
+| Phase 6 | v1.0.9 docs epic → **TRAIN 5** → v1.0.9 tag | ~~`docs/readme-icp-ladder`~~ **DONE** (`323bf6c`/`996d1c9`, on `main`; DOC-STATUS governance-boundary reconcile RESOLVED — PX-19/PX-20 closed) · `docs/dev-home-depth-wsb` (+ PX-40/48 + avatar-voice casing) · `docs/wiki-content-pass` (PX-41 catch-up ingest 150+ commits via `/wiki-self-update` + PX-50/53 + user-tier pages + `llms.txt`) · `docs/diagrams-a11y` (new `accTitle`/`accDescr` diagrams; retire the 4 drifted `.mmd`) · `feat/fumadocs-site` (projection adapter + spectree/OpenAPI Layer-B) · `ci/doc-merge-gate` (last) · `chore/mypy-strict` (burn the normalized error count) · `spike/pagedjs-design` (timeboxed doc). Voice/tone reference: Google developer style guide tone (record in `documentation-architecture.md`). <br>**[TRAIN 5 assembled 2026-07-10 — pending owner train-confirm]** landed as one chain: `docs/dev-home-depth-wsb` · `docs/wiki-content-pass` (the F-17 recruiter-Pipeline `audience: user` page; the PX-41 catch-up already landed separately as `docs/wiki-v109-refresh`) · `docs/diagrams-a11y` · `feat/fumadocs-site` (L1→MDX projection core + SFTP self-host deploy to `sartor-docs.taketempo.com`; **spectree/OpenAPI Layer-B deferred** — spectree was never wired, the "pulled into v1.0.8" note above was drift) · `ci/doc-merge-gate` · `spike/pagedjs-design`. **`chore/mypy-strict` burn** = satisfied by the mypy `--strict` §6 exit (all production modules strict + roster-gated, landed 2026-07-10); the exempt-tree (`tests/`/`evals/`/`scripts/`, ~2821 errors) burn is **deferred post-public** unless the owner directs otherwise. |
 | Phase 7 | v1.1.0 gate → **TRAIN 6** | `chore/px-v110-gate-batch` (Phase-0 survivors incl. PX-37/38/43/44/45/47/49/51/55/56 as re-scoped) · PX-39 Sonnet-5 latency baseline (idle only) · `release/visual-assets` · PX-46 memory consolidation (owner-gated) → final fresh-clone-from-GitHub verify → owner acts: tag **v1.1.0** + public flip. |
 
 #### Train schedule
@@ -1230,10 +1230,12 @@ fix, not an ATS fix). See the findings doc's O1b deep-dive.
 >   slot its own pre-public sprint.**
 
 Sequence (each its own branch, in dependency order):
-1. **`docs/readme-icp-ladder`** — MERGE the new README front door + the
+1. ~~**`docs/readme-icp-ladder`** — MERGE the new README front door + the
    [`documentation-architecture.md`](documentation-architecture.md) design doc (already
    built off the 8.x line — commits `323bf6c` + `996d1c9`; rebase onto the v1.0.8 tag
-   first). Reconcile its governance `DOC-STATUS` flags now that v1.0.8 closed PX-19/PX-20.
+   first). Reconcile its governance `DOC-STATUS` flags now that v1.0.8 closed PX-19/PX-20.~~
+   **DONE** — on `main` (`323bf6c`/`996d1c9`); the governance-boundary `DOC-STATUS`
+   flag reads `RESOLVED` (PX-19/PX-20 closed, verified against `README.md`).
 2. **`docs/dev-home-depth` (WS-B)** — verify the dev-tier homes (`system-model` /
    `memory-architecture` / `architecture`) carry the depth the README hooks into,
    against settled v1.0.8 code; the 2026-06 architecture digest is the checklist.
@@ -1248,7 +1250,17 @@ Sequence (each its own branch, in dependency order):
 5. **`ci/doc-merge-gate`** — the doc gates (link-integrity / frontmatter+audience /
    D5 single-home / cite-resolution / wiki-freshness) + the `DOC-STATUS`-trigger check,
    extending `block-merge-to-main` + `wiki-lint`. **Last**, because merge=publish only
-   matters once the site exists.
+   matters once the site exists. **DONE** (`ci/doc-merge-gate`): link-integrity and the
+   `DOC-STATUS`-trigger check were already built (`chore/doc-link-sweep`, PX-50); this
+   branch adds the remaining three — `scripts/check_doc_frontmatter.py` (frontmatter+
+   audience, a new `PUBLISHED_DOC_FILES` registry), `scripts/check_doc_single_home.py` (D5,
+   a documented near-duplicate-paragraph heuristic — the hardest of the five, scoped and
+   proven on synthetic fixtures rather than left unautomated), and widened
+   `check_doc_links.py`'s cite-check to the same registry — plus
+   `scripts/wiki_freshness.py`, wired both as a pytest gate and as a genuine merge-time
+   block in `block_merge_to_main.py` (no `CLAUDE_CONFIRM_MERGE=1` bypass). All green on the
+   current tree, zero doc content edits required. See `CHANGELOG.md` [Unreleased] for the
+   full per-gate detail and the `PUBLISHED_DOC_FILES`/`feat/fumadocs-site` convergence flag.
 
 **Type hardening (pulled pre-public into v1.0.9 — owner 2026-06-29).** **✅ BUILT
 (2026-07-10, `chore/kit-mypy-strict-*` 5-branch stack, ratchet rungs 4–8):** the
