@@ -483,3 +483,49 @@ was not re-run for this docs-only branch (owner direction) — no `.py` touched,
 relevant `test_wiki_source` + `test_recall` (28) ran green. Per the
 [`../../CHANGELOG.md`](../../CHANGELOG.md) scope rule, this content pass is recorded here (the
 wiki's own changelog), not in CHANGELOG.
+
+## 2026-07-10 — diff refresh: the v1.0.9 code-keyed catch-up (`docs/wiki-v109-refresh`)
+
+**Mode: diff** (`3561657` → `e785e53`) — the big deferred **code-keyed** refresh the 2026-06-20
+and 2026-06-25 passes parked (both left `.last_ingest_sha` at the v1.0.7 tip precisely so this
+branch would pick up the blueprint split). 244 commits / ~341 non-doc source files in window:
+the whole **`app.py`→`blueprints/` decomposition** (Sprint 8.3a–h — `app.py` is now a zero-route
+factory; the `_safe_username`/`_within` gate + SSE/request helpers moved to the new leaf
+[`web_infra/`](../../web_infra/) package; new [`ui_pages/`](../../ui_pages/) POM), the
+**compose-frozen-composition** UX re-architecture (deterministic `_frozen_composition` assembly
++ the `draft_*` Compose calls), kit-adoption (mypy `--strict` §6 exit), and packaging.
+
+**Method (parallelized loop).** Six **Sonnet** `wiki-scribe` lanes (worktree-isolated, one per
+domain batch), each grounding against source at HEAD `e785e53` — Sonnet, not the default Haiku,
+because a 244-commit structural refresh is reasoning-heavy, not a steady-state increment. Per-page
+**Haiku** `wiki-grounding-auditor` pass (author≠auditor). **Per D5 the wiki
+references-not-duplicates** the canonical/contract docs, so the 341 changed sources map to **29
+changed pages** (of 36; `prompt-version-discipline` + 6 others verified CLEAN, no edit). The
+dominant re-anchor: every `app.py:<route/helper>` cite → its `blueprints/**` /
+`web_infra/security.py` home; route count `93` → **117**.
+
+**Auditor catch-rate (tuning signal, not a gate).** Tooling note: the first audit round used a
+`git show`-based prompt the read-only (no-Bash) auditor couldn't run, so it silently read the
+**pre-scribe** pages from the main checkout and re-flagged already-fixed drift — invalid. The
+pages were integrated onto the review branch and **re-audited against the working tree** (correct
+source-of-truth). The valid re-audit over all 29 pages found **5 real drift points**, all
+re-anchored centrally: `generator.py:_write_docx` → `_write_docx_from_json_resume`
+(document-rendering ×2, code-module-map ×1); `_HELP_SEEN_PREFIX` → `CB_HELP_SEEN_PREFIX`
+(frontend-wizard, per `static/help-modal.js`); and a cross-page **"three Compose drafting calls"**
+collision (`llm-call-catalog` groups the three `draft_*` calls by explicit Sonnet model;
+`generation-and-grounding` means the D5 `prior_clarifications` set — the latter reworded to scope
+by that property). The remaining ~24 pages: CLEAN on first synthesis.
+
+**Prior WATCH items closed.** The long-standing `raw/` phrasing (`SCHEMA.md` §"raw/ constitutional
+layer" + two pages) is corrected — the Governance-extraction branch **rejected** `raw/` in favor
+of `docs/governance/`, so `raw/` stays unbuilt (carried as WATCH since the 2026-06-16 + 2026-06-20
+runs). `engineering-workstreams` WS-1 "design-pending" → **SHIPPED**; the stale `6,290-LOC /
+75-route` `app.py` figure retired (now the zero-route factory).
+
+**`.last_ingest_sha` advanced `35616579…` → `e785e539df0340f57ba5d5e0d7663b933118b3f1`** (HEAD; the
+wiki-refresh commits touch only `docs/wiki/`, which the loop excludes).
+
+**`/wiki-lint`: PASS — 0 ERROR / 0 WARN.** Staleness 0 (checkpoint == code tip); all `[[backlinks]]`
+resolve; 36 `pages/` ↔ `index.md` agree both ways; all root-relative `path` cites resolve; no
+orphans. **Loop invariant held: reviewable diff, no auto-commit** — the human reviews + commits.
+Docs-only branch (no `.py` touched); recorded here (the wiki's changelog), not in CHANGELOG.

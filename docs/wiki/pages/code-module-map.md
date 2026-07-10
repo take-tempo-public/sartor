@@ -73,7 +73,7 @@ tiers are in [[pipeline-stages]] and [[generation-and-grounding]].
 | Module | Job | Anchor |
 |---|---|---|
 | [`hardening.py`](../../../hardening.py) | Keyword/ATS checks, the `context_set` lifecycle, post-generation metrics. | [`hardening.py:build_context_set`](../../../hardening.py), [`hardening.py:save_iteration_context`](../../../hardening.py), [`hardening.py:ContextSet`](../../../hardening.py), [`hardening.py:compute_iteration_signals`](../../../hardening.py) |
-| [`generator.py`](../../../generator.py) | Document output `.md` / `.docx` / `.pdf`. | [`generator.py:generate_resume`](../../../generator.py), [`generator.py:_write_docx`](../../../generator.py), [`generator.py:BULLET_RE`](../../../generator.py) |
+| [`generator.py`](../../../generator.py) | Document output `.md` / `.docx` / `.pdf`. | [`generator.py:generate_resume`](../../../generator.py), [`generator.py:_write_docx_from_json_resume`](../../../generator.py), [`generator.py:BULLET_RE`](../../../generator.py) |
 | [`parser.py`](../../../parser.py) | Résumé file → structured dict. | [`parser.py:parse_resume`](../../../parser.py) |
 | [`pdf_render.py`](../../../pdf_render.py) | Jinja2 + Playwright PDF / live-preview render. | [`pdf_render.py:render_pdf`](../../../pdf_render.py), [`pdf_render.py:html_template_path_for`](../../../pdf_render.py) |
 | [`json_resume.py`](../../../json_resume.py) | Markdown → JSON Resume v1.0 normalizer. | [`json_resume.py:md_to_json_resume`](../../../json_resume.py) |

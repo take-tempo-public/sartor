@@ -115,7 +115,8 @@ recomputed per iteration because the union grows as clarifications arrive
 in `context_set["prior_clarifications"]` — confirmed clarification answers reused
 from the candidate's OTHER applications, staged once by
 [`db/build_context.py:build_context_set_from_db`](../../../db/build_context.py)
-(corpus-mode only). This mirrors what the THREE Compose content-drafting calls
+(corpus-mode only). This mirrors what the three drafting calls that accept
+`prior_clarifications`
 ([`analyzer.py:draft_positioning_summary`](../../../analyzer.py),
 [`analyzer.py:draft_gap_fill_bullets`](../../../analyzer.py),
 [`analyzer.py:suggest_skills`](../../../analyzer.py) — see [[llm-call-catalog]])

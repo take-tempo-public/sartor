@@ -196,7 +196,7 @@ title + icon group left and the collapse chevron stays right — see
 `.help-inline` line as the first `.panel-body` child wired into `aria-describedby`. The
 `panelUser` welcome block auto-opens once-ever via
 [`app.js:_maybeAutoOpenHelp`](../../../static/app.js), gated by the `cb_help_seen:`
-localStorage seam (`_HELP_SEEN_PREFIX`), wrapped so a throwing store reads as "not seen"
+localStorage seam (`CB_HELP_SEEN_PREFIX`), wrapped so a throwing store reads as "not seen"
 `[synthesis]`. The same primitive is **ported** (not imported) into the localhost console
 — see [[diagnostics-console]].
 

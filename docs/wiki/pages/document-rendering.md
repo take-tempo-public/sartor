@@ -31,7 +31,7 @@ branches on `output_format`:
   ATS-unsafe character never leaks into a `.md` download
   ([`generator.py:generate_resume`](../../../generator.py)) `[synthesis]`.
 - `.pdf` → `_render_pdf_from_json` → [`pdf_render.py:render_pdf`](../../../pdf_render.py).
-- else (`.docx`) → [`generator.py:_write_docx`](../../../generator.py) with the persona `.docx` as template.
+- else (`.docx`) → [`generator.py:_write_docx_from_json_resume`](../../../generator.py) with the persona `.docx` as template.
 
 The three-format table is mirrored in [`docs/architecture.md`](../../architecture.md) §Output formats.
 
@@ -92,7 +92,7 @@ JSON contract the renderers consume — distinct from the pipeline's `context_se
 
 ## `.docx` — original-as-style-template
 
-[`generator.py:_write_docx`](../../../generator.py) opens the persona `.docx` via
+[`generator.py:_write_docx_from_json_resume`](../../../generator.py) opens the persona `.docx` via
 `docx.Document(str(tp))` (only when the template exists and is `.docx`), then
 **captures per-role formatting prototypes** from the template before clearing the
 body and rewriting it:
