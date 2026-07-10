@@ -112,7 +112,7 @@ duration, makes `_resolve_system_prompt` return the candidate text for the named
 the `_BASE_SYSTEM_PROMPTS` registry, and makes [`analyzer.py:effective_prompt_version`](../../../analyzer.py)
 return a stable `candidate:<sha256[:12]>` so the run is **quarantined** from score-over-time.
 The default (empty/None) path is byte-identical — the resolver returns the identical constant
-object and the version stays `PROMPT_VERSION` (`2026-06-13.1` at HEAD), so the analyze→generate
+object and the version stays `PROMPT_VERSION` (`2026-07-08.4` at HEAD), so the analyze→generate
 cache is untouched `[synthesis]`. `run_suite` enters the context over the whole fixture loop
 when `--prompt-overrides` supplies a name→text mapping
 ([`evals/runner.py:run_suite`](../../../evals/runner.py)); unknown constant names raise

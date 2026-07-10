@@ -4,7 +4,7 @@
 > **Concept:** the deterministic render path — LLM markdown (or the corpus DB)
 > → JSON Resume v1.0 → `.docx` (original-as-style-template), `.pdf` (Playwright
 > Chromium), or `.md`. No LLM call lives on this path, by contract.
-> **Sources:** [`generator.py`](../../../generator.py), [`json_resume.py`](../../../json_resume.py), [`corpus_to_json_resume.py`](../../../corpus_to_json_resume.py), [`pdf_render.py`](../../../pdf_render.py), [`docs/architecture.md`](../../architecture.md) §Output formats.
+> **Sources:** [`generator.py`](../../../generator.py), [`json_resume.py`](../../../json_resume.py), [`corpus_to_json_resume.py`](../../../corpus_to_json_resume.py), [`pdf_render.py`](../../../pdf_render.py), [`blueprints/generation.py`](../../../blueprints/generation.py), [`docs/architecture.md`](../../architecture.md) §Output formats.
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -19,16 +19,41 @@ the original file is opened as a **style template**, never `docx.Document()` on 
 
 ## The entry point and the three branches
 
-[`generator.py:generate_resume`](../../../generator.py) is the single résumé entry.
-It always runs [`generator.py:_normalize_markdown`](../../../generator.py) first,
-then parses to JSON Resume via [`json_resume.py:md_to_json_resume`](../../../json_resume.py),
-then branches on `output_format`:
+[`generator.py:generate_resume`](../../../generator.py) is the single résumé entry
+for the **LLM-markdown** path. It always runs
+[`generator.py:_normalize_markdown`](../../../generator.py) first, then parses to
+JSON Resume via [`json_resume.py:md_to_json_resume`](../../../json_resume.py), then
+branches on `output_format`:
 
-- `.md` → write the normalized markdown directly.
+- `.md` → serialize the SAME `json_doc` the other formats render, via
+  [`json_resume.py:json_resume_to_markdown`](../../../json_resume.py) — not the
+  pre-override, pre-scrub markdown verbatim, so a fixed identity field or an
+  ATS-unsafe character never leaks into a `.md` download
+  ([`generator.py:generate_resume`](../../../generator.py)) `[synthesis]`.
 - `.pdf` → `_render_pdf_from_json` → [`pdf_render.py:render_pdf`](../../../pdf_render.py).
 - else (`.docx`) → [`generator.py:_write_docx`](../../../generator.py) with the persona `.docx` as template.
 
 The three-format table is mirrored in [`docs/architecture.md`](../../architecture.md) §Output formats.
+
+## The frozen-composition entry point (no markdown round-trip)
+
+[`generator.py:generate_resume_from_json_resume`](../../../generator.py) is the
+sibling **deterministic** entry point for the generation-experience
+re-architecture's Phase 4: when Compose has frozen an `approved_composition`
+(a JSON Resume dict, already resolved by
+[`corpus_to_json_resume.py:build_json_resume_from_corpus`](../../../corpus_to_json_resume.py)),
+it renders that doc **directly** through the same `.md`/`.pdf`/`.docx` writers
+`generate_resume` uses after its `md_to_json_resume` parse — skipping the parse
+entirely, so download == preview == `approved_composition` by construction, with
+zero résumé-body LLM calls and no markdown round-trip
+([`generator.py:generate_resume_from_json_resume`](../../../generator.py)). It
+writes the same `.jsonresume.json` sidecar as `generate_resume`. The Flask callers
+are `POST /api/generate` / `POST /api/generate/stream`
+([`blueprints/generation.py:run_generation`](../../../blueprints/generation.py) /
+[`run_generation_stream`](../../../blueprints/generation.py)), which call it only
+when [`blueprints/generation.py:_frozen_composition`](../../../blueprints/generation.py)
+returns a non-`None` doc; legacy and pre-freeze corpus contexts fall through
+unchanged to `generate_resume` off the LLM's markdown `[synthesis]`.
 
 Every résumé call also writes a best-effort `resume_{ts}.jsonresume.json` sidecar
 (the canonical intermediate) next to the primary output; a sidecar write failure
@@ -128,10 +153,12 @@ so preview and output agree exactly (the dual-reach is in [[corpus-to-output-rea
 
 ## Why this matters
 
-Two producers (LLM markdown, corpus DB) converge on one intermediate, which fans
-out to three renderers. Keeping every step deterministic makes the document exactly
-reproducible from a saved sidecar or context file, and keeps the LLM out of the
-formatting layer entirely `[synthesis]`.
+Two producers (LLM markdown, corpus DB) converge on one intermediate — JSON Resume —
+which fans out to three renderers through **two** entry points that share the same
+writers: `generate_resume` (parses markdown first) and `generate_resume_from_json_resume`
+(renders an already-built doc directly). Keeping every step deterministic makes the
+document exactly reproducible from a saved sidecar or context file, and keeps the LLM
+out of the formatting layer entirely `[synthesis]`.
 
 ## Related
 
