@@ -13,6 +13,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs: dev-tier depth verify (WS-B) + close the `docs/readme-icp-ladder` row (`docs/dev-home-depth-wsb`)
+
+- **WS-B verify-first pass** against settled v1.0.8 code (v1.0.9 Phase 6, item 2)
+  over the three dev-tier homes the README's "For developers" ICP rung points
+  into (`docs/system-model.md`, `docs/dev/memory-architecture.md`,
+  `docs/architecture.md`). Filled three genuine, narrowly-scoped gaps found
+  during verification (no invented claims — each grounded in code read at
+  HEAD):
+  - `docs/architecture.md` — added a "Typed contracts (pydantic-in-the-loop)"
+    paragraph to §LLM routing + cost: the README claims `pydantic`
+    `model_validator`s enforce semantic rules and a validation failure is fed
+    back as a structured retry, but the doc had **zero** mentions of
+    `pydantic`. Documented the mechanism against `analyzer.py`'s actual
+    `_LLMResponse`/`HiddenQualityItem`/`ClarifyResponse.enforce_composition_rules`
+    (`analyzer.py:152/158/240`) and the `_parse_or_retry()` retry loop
+    (`analyzer.py:1405`, `1452`-1474).
+  - `docs/dev/memory-architecture.md` — the "Reuse boundary / extraction
+    contract" section still called the `recall/` import boundary-lint "a
+    candidate for its own boundary-lint," but it shipped in Sprint 7.4
+    (`tests/test_recall_boundary.py`, plus the literal-leak guard
+    `test_recall_sources_no_hardcoded_roots`). Updated to state it is
+    **built** and enforced by construction, matching the README's "enforced,
+    not narrated" claim.
+  - `docs/system-model.md` — the "Where it lives" table/prose still framed
+    `app.py` as "the web layer" (pre-8.3a-h; `app.py` is now a 296-line
+    composition root with zero routes — all 93 routes live in `blueprints/`)
+    and called the wiki "planned" (`docs/wiki/` ships 36 pages; the `recall/`
+    Memory substrate is also unlisted). Updated both the Production and
+    Memory rows/prose to the settled state.
+  - **WS-E unification** (recursive grounding + the shared `user`/`dev`
+    audience plane) — confirmed already folded into
+    `docs/dev/documentation-architecture.md`, and `docs/system-model.md`
+    already carries the "one law" framing it cites (§"The one law"). No
+    edit needed (confirm-only, per the design doc).
+- **Closed the `docs/readme-icp-ladder` Phase-6 sequence row.** Its content
+  (`323bf6c`/`996d1c9`) and the governance `DOC-STATUS(governance-boundary)`
+  reconcile are already on `main` and the flag reads RESOLVED (PX-19/PX-20).
+  Marked DONE/struck-through in
+  [`docs/dev/RELEASE_ARC.md`](docs/dev/RELEASE_ARC.md) (Phase 6 branch list +
+  the numbered v1.0.9 sequence) and logged the resolution in
+  [`docs/dev/RELEASE_CHECKLIST.md`](docs/dev/RELEASE_CHECKLIST.md)'s
+  Carry-forward ledger.
+- Docs-only: no product code, no new deps, `PROMPT_VERSION` untouched.
+
 ### Chore: DOC-STATUS grep gate (`ci/px50-doc-status-gate`, PX-50)
 
 - New `tests/test_doc_status_gate.py` — a pytest gate (rides the normal

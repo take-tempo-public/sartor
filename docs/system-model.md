@@ -73,9 +73,11 @@ your strongest material → generate the tailored draft → let you refine it.
 **Everything that talks to the AI is isolated in one place** (`analyzer.py`);
 everything that must be exact and repeatable — parsing files, rendering the document,
 checking that nothing was fabricated — is kept deliberately *away* from the AI, in
-plain deterministic code. *(Lives in: `app.py` web layer · `analyzer.py` — **all** AI
-calls · the deterministic core `hardening.py` / `generator.py` / `parser.py` /
-`pdf_render.py` / `json_resume.py` · `db/` · `personas/` · the frontend.)*
+plain deterministic code. *(Lives in: `app.py` (the app-factory composition root)
++ `blueprints/` (every route, split by domain since the v1.0.8 monolith split) —
+the web layer · `analyzer.py` — **all** AI calls · the deterministic core
+`hardening.py` / `generator.py` / `parser.py` / `pdf_render.py` / `json_resume.py`
+· `db/` · `personas/` · the frontend.)*
 
 ### Evaluation — measures, verifies, improves Production
 How the project knows the Product is actually good: an automated test suite, plus a
@@ -93,8 +95,12 @@ strict, mechanically-enforced rules. *(Lives in: `commands/` +
 ### Memory — recallable knowledge and rules
 The project's drawn-upon knowledge: the documentation, the design rationale, and the
 contributor contract that both humans and AI read *before* changing anything. It is
-pulled when needed, not pushed. *(Lives in: `docs/`, `CHANGELOG.md`, and the planned
-knowledge wiki.)*
+pulled when needed, not pushed. Also the module-level `Memory` capacity described in
+[`dev/memory-architecture.md`](dev/memory-architecture.md): `recall/`, a reusable,
+project-agnostic retrieval substrate (git-grep + the wiki + a static-embedding vector
+tier, fused by Reciprocal Rank Fusion) that feeds a citing Haiku avatar. *(Lives in:
+`docs/`, `CHANGELOG.md`, the compiled knowledge wiki `docs/wiki/`, and the `recall/`
+substrate.)*
 
 ### Regulation — gates, enforces, advances
 The rules, enforced by machines rather than by vigilance: automated checks that block
@@ -132,10 +138,10 @@ navigable as it grows.
 | Function | In the repo |
 |---|---|
 | **Substrate** | `configs/`, `resumes/`, `output/`, `db/resume.sqlite` |
-| **Production** | `app.py` (web layer) · `analyzer.py` (**all** AI calls) · the deterministic core `hardening.py` / `generator.py` / `parser.py` / `pdf_render.py` / `json_resume.py` · `db/` |
+| **Production** | `app.py` (composition root) + `blueprints/` (routes, web layer) · `analyzer.py` (**all** AI calls) · the deterministic core `hardening.py` / `generator.py` / `parser.py` / `pdf_render.py` / `json_resume.py` · `db/` |
 | **Evaluation** | `tests/` · `evals/` · `dashboard/` |
 | **Operation** | `commands/` + `agents/` · [`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md) (the operating contract) |
-| **Memory** | `docs/` · `CHANGELOG.md` · (the planned knowledge wiki) |
+| **Memory** | `docs/` · `CHANGELOG.md` · `docs/wiki/` (compiled) · `recall/` (the retrieval substrate) |
 | **Regulation** | `.claude-plugin/hooks/` · the `ruff` + `mypy` + `pytest` gate · [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) / [`dev/RELEASE_CHECKLIST.md`](dev/RELEASE_CHECKLIST.md) |
 | **Governance** | [`vision.md`](../vision.md) · the 10 Principles |
 

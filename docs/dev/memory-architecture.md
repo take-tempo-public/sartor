@@ -229,7 +229,12 @@ agents build against (the way [`../../AGENTS.md`](../../AGENTS.md) governs):
 - **Dependency rule (hard):** `recall/` may import stdlib + light libs, **never**
   [`../../app.py`](../../app.py), [`../../analyzer.py`](../../analyzer.py), or the
   sartor DB models. This mirrors the P1 determinism boundary the repo already
-  enforces with hooks, and is a candidate for its own boundary-lint.
+  enforces with hooks. **Built** (Sprint 7.4): a static AST-walk test —
+  [`../../tests/test_recall_boundary.py`](../../tests/test_recall_boundary.py) —
+  fails the build on any forbidden import (`app`/`analyzer`/`db`/`flask`/`anthropic`,
+  including lazy/`TYPE_CHECKING` imports) and, for `recall/sources/`, on any
+  hardcoded sartor-specific path/symbol literal (`test_recall_sources_no_hardcoded_roots`)
+  — the boundary is enforced by construction, not merely a hook-mirrored convention.
 - **Extraction readiness:** lifting `recall/` into a standalone package should be
   **packaging only** — *if* the boundary above stays clean. Every PR touching the
   avatar or memory must respect the seam; that discipline is the cost of keeping

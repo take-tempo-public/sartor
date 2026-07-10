@@ -555,6 +555,24 @@ heavy user prefix is unaffected.
 `<kind>_retry` for dashboard breakdowns. Implementation in
 [`analyzer.py`](../analyzer.py) `_parse_or_retry()`.
 
+**Typed contracts (pydantic-in-the-loop).** Every call's expected shape is a
+`pydantic.BaseModel` subclass — `_LLMResponse` (`analyzer.py:152`) and its
+per-call subclasses (`AnalyzeResponse`, `ClarifyResponse`, `GenerateResponse`,
+etc.). `response_model.model_validate()` runs on the parsed JSON before a
+response is trusted, and validation is not limited to shape: a `Literal`-typed
+field (`HiddenQualityItem.category`, `analyzer.py:158`) rejects an out-of-enum
+value, and a `@model_validator(mode="after")` can enforce a semantic rule —
+`ClarifyResponse.enforce_composition_rules` (`analyzer.py:240`) fails
+validation unless `clarify()`'s question-composition rules hold (a
+`context_probe` question when `hidden_qualities` is non-empty; ≥60% of
+questions typed `experience_probe`/`context_probe`). The resulting
+`ValidationError` is what *drives* the retry, not just what it is logged as:
+`_parse_or_retry()` (`analyzer.py:1405`, streaming variant
+`_parse_or_retry_streaming()`) catches it, appends the error text to the
+prompt inside a `<retry_reason>` block, and re-calls the model
+(`analyzer.py:1452`-1474) — the "structured retry" [`README.md`](../README.md)
+refers to under "For developers."
+
 ---
 
 ## context_set lifecycle

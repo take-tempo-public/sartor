@@ -928,6 +928,16 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
 
 #### Resolved
 
+- [x] **`docs/readme-icp-ladder` (v1.0.9 Phase 6, item 1)** — RESOLVED, already on
+      `main` (`323bf6c` + `996d1c9`): the ICP-laddered README front door +
+      [`documentation-architecture.md`](documentation-architecture.md). Its governance
+      `DOC-STATUS(governance-boundary)` flag reads **RESOLVED** in `README.md` (C-6
+      import-boundary lint PX-20 + C-1 loopback-bind test PX-19 shipped v1.0.8 Sprint
+      8.3a) — the reconcile PX-50 verified separately (see "2026-07 efficiency review"
+      row above). Closed as its own Phase-6 sequence item in
+      [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.9. _(verified + closed: 2026-07-10,
+      `docs/dev-home-depth-wsb`.)_
+
 - [x] **Wiki ingest refresh — the v1.0.9 code-keyed catch-up** — RESOLVED 2026-07-10
       (`docs/wiki-v109-refresh`). The full `/wiki-self-update`-style refresh ran as a
       parallelized 6-lane pass (Sonnet `wiki-scribe` worktrees + Haiku grounding audit of the
