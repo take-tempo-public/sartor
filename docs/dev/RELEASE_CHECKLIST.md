@@ -861,6 +861,21 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       captured in [`reviews/2026-07-diagnostics-round2-findings.md`](reviews/2026-07-diagnostics-round2-findings.md)
       + [`reviews/2026-07-e2e-run-health-review.md`](reviews/2026-07-e2e-run-health-review.md) and
       bundle into the v1.0.9 epic (owner-decided; nothing pre-empts the v1.0.8 tag).
+      **→ Progress (2026-07-09, unattended Diagnostics-DX bug-fix stack — awaiting the owner merge
+      train):** the four confirmed-bug fixes are BUILT + gated (full suite 1951 ✓), stacked on
+      `main`: **#15** anchor-JD `.txt` reconcile (`fix/diagnostics-15-anchor-jd-path`, `272f05a`)
+      → **#11** collate CLI `--fixture` (`fix/diagnostics-11-collate-cli-fixture`, `7c25e9b`) →
+      **#8** bootstrap skills-parser inline-label strip (`fix/diagnostics-08-skills-parser`,
+      `3068563`) → **#1** client-side global run-lock (`fix/diagnostics-01-run-lock`, `8a40ae8`).
+      **Still open** (stay in the review doc + the [`RELEASE_ARC.md`](RELEASE_ARC.md) Diagnostics-DX
+      epic section): #2–#7, #9–#10, #12–#17, the **run-cancel** endpoint, and the
+      `app.run(threaded=True)` governance flag. **Tracked sub-decisions from this stack:**
+      (a) **#1 lock-scope design-Q** — the lock ships the conservative *block-any-second-run*
+      default; whether to narrow it to *paid-runs-only* (letting the cheap seed export run
+      concurrently) is an owner call for the epic; (b) **run-lock test-hardening (witness CW-117,
+      WATCH)** — the no-deadlock guarantee is hand-wired at 10 release sites, but only the eval
+      `_closed` path is regression-tested and bootstrap/grounding-score don't route through the
+      shared streamer, so fold them through it or extend the test when the epic hardens this surface.
       _(discovered: 2026-07-09, `fix/round2-quick-wins`; open count 5 → 6.)_
       **→ Integrate:** Wave A is done on this branch; the epic itself needs owner slotting
       before it becomes a branch sequence.

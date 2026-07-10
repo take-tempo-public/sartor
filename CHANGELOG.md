@@ -80,9 +80,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ships the **conservative "block any second run" default** — while any one
   of the four is live, the lock disables all four (including re-clicks of the
   live one), shows a prominent `#runLockBanner`, and arms a `beforeunload`
-  guard that only warns while a run is actually in flight. Wired into every
-  terminal path of all four entry points (SSE `_closed`, `error`, and
-  `.catch()` request-failure branches) so the UI can't deadlock locked. See
+  guard that only warns while a run is actually in flight. `releaseRunLock()`
+  is wired at each entry point's existing terminal paths, mirroring each
+  button's own pre-existing re-enable (eval/tune SSE `_closed` + `error`;
+  bootstrap/grounding-score `!ok` / `chunk.done` / `.catch()`), so a completed,
+  failed, or aborted run releases the lock. The eval `_closed` release is
+  covered by the regression test below; the other sites are wired by hand
+  identically to their button re-enable — funnelling bootstrap/grounding-score
+  through the shared streamer, or extending the test to all four entry points,
+  is tracked as a WATCH in the Diagnostics-DX ledger row (witness CW-117). See
   [`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`](docs/dev/reviews/2026-07-diagnostics-round2-findings.md)
   item #1 / the RUN-LIFECYCLE note. Client-side lock only — the real run-cancel
   abort endpoint and `app.run(threaded=True)` are separate, owner-gated epic

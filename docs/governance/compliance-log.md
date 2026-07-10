@@ -96,3 +96,36 @@
   surfaces on reload; the Task-delegated path is contract-identical). The two FLAGs were closed on
   the branch **before** the tag (AGENTS.md pre-close sweep — reconcile drift before the merge, not
   after), not deferred.
+
+## 2026-07-09 — Diagnostics-DX bug-fix stack pre-close witness (`fix/diagnostics-01-run-lock` @ `8a40ae8`)
+
+- **Window:** `main` (`eb96357`) → `8a40ae8` — the four-commit unattended Diagnostics-DX bug-fix
+  stack (`272f05a` #15 · `7c25e9b` #11 · `3068563` #8 · `8a40ae8` #1). 7 files touched (no
+  `analyzer.py`, no `pyproject.toml`, no migrations, no new deps). Cross-read against
+  `docs/governance/charter.md` (W-1, C-0, C-6), `RELEASE_ARC.md`, `RELEASE_CHECKLIST.md`,
+  `CHANGELOG.md`, the diagnostics round-2 review, and `evals/runner.py` at the pinned sha.
+  Delegated to the `sartor:compliance-witness` Sonnet subagent (read-only; rides the plan).
+- **Counts:** FLAG 1 · WATCH 1 · AFFIRM 5 · 0 withheld (cap 12).
+- **Gate verdict:** **needs attention** (1 FLAG) — a doc-reconciliation drift inside this session's
+  own docs; **does not block** the (owner-gated) merge. Closed on-branch before the manifest.
+- **FLAG — CW-116 (CLOSED this branch):** the carry-forward ledger + the RELEASE_ARC Diagnostics-DX
+  epic section still described all 17 round-2 items as un-landed while `CHANGELOG.md` recorded 4 as
+  shipped on this stack (charter **W-1** clause 4 — the ledger must be the single authoritative,
+  current home). Reconciled both on the tip: `RELEASE_CHECKLIST.md` UX-round-2 row got a
+  Progress note (four fixes built + shas, open subset #2–#7/#9–#10/#12–#17 + run-cancel +
+  `threaded=True`), and `RELEASE_ARC.md:1167-1186` got a "Built 2026-07-09" status marker. Precedent:
+  CW-107/CW-108 (same-branch close).
+- **WATCH — CW-117 (tracked):** the #1 run-lock's categorical "can't deadlock locked" claim rested
+  on hand-wired release at 10 sites with only the eval `_closed` path test-enforced, and
+  bootstrap/grounding-score don't route through the shared streamer (forward-drift risk; verified
+  correct today by direct read). Grounded the `CHANGELOG.md` #1 wording to match actual enforcement
+  and filed the fold-through-streamer / extend-test hardening as a WATCH sub-note in the
+  Diagnostics-DX ledger row for the epic.
+- **AFFIRM:** PROMPT_VERSION discipline (no prompt text / no `analyzer.py` in the diff; `CHANGELOG`
+  "no PROMPT_VERSION" accurate) · C-6 boundary (`evals/bootstrap.py` skills-parser stayed pure regex,
+  no LLM call; never on the deterministic-module list) · route-security gate (both `_jd_filename()`
+  call sites still behind the pre-existing `_within` containment check) · #11 root cause exact
+  (`runner.py:1769` `--fixture` overrides `--suite`; `_select_fixtures` ignores `--seed`) · per-fix
+  CHANGELOG capture complete (each commit carries its own dated entry).
+- **Note:** the one FLAG was a pre-close capture gap, closed on the branch before the manifest per
+  the AGENTS.md pre-close sweep — not deferred past the merge.
