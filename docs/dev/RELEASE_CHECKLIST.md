@@ -969,6 +969,25 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       _(discovered: 2026-07-09, `docs/diagnostics-round2-capture`; resolved on the v1.0.9 train;
       open count 7 → 6.)_
 
+- [x] **Doc merge-gate (v1.0.9 docs epic item 5) — merge=publish gates built** — DONE
+      2026-07-10 (`ci/doc-merge-gate`). Not a previously-tracked ledger item (recorded here
+      for visibility alongside the epic's other progress notes, per
+      [`RELEASE_ARC.md`](RELEASE_ARC.md) §"Documentation & docs-site" item 5). Built the four
+      `docs/dev/documentation-architecture.md` "Gates — merge = publish" checks that weren't
+      already committed (link-integrity + the `DOC-STATUS`-trigger check were already built
+      by PX-50/`chore/doc-link-sweep`): frontmatter+audience
+      (`scripts/check_doc_frontmatter.py`), the D5 single-home heuristic
+      (`scripts/check_doc_single_home.py` — the hardest of the five, scoped + proven on
+      synthetic fixtures rather than left unautomated), cite-resolution (widened
+      `check_doc_links.py`'s scope), and wiki-freshness
+      (`scripts/wiki_freshness.py`, wired into `block_merge_to_main.py` as a genuine,
+      non-bypassable merge-time block). All ride the existing `pytest` gate (no new CI job);
+      all green on the current tree with zero doc content edits required. Full detail in
+      `CHANGELOG.md` [Unreleased]. **Flag for the train tip:** `PUBLISHED_DOC_FILES`
+      (the frontmatter/single-home/cite registry) should converge with
+      `scripts/project_docs_to_mdx.py`'s own published-page scope once `feat/fumadocs-site`
+      lands.
+
 - [x] **E2E walkthrough + R2-live verification (8.5 remainder)** — the gated test window's
       *walkthrough* half. 8.5 (`eval/live-shakedown-labels`) ran the *eval* half and produced
       the findings backlog, but the **owner-driven E2E user+dev walkthrough** (R2 streaming

@@ -24,14 +24,22 @@ PR, so wiring in there IS the "periodic" mechanism.
    `[text](path)` links here is free. Their `[[backlink]]` graph and
    `path:line` cite *drift* stay `wiki-lint`'s job — untouched here.
 
-2. Cite check (SCOPED — `docs/governance/*.md` + `AGENTS.md` + `CLAUDE.md`
-   only). These docs use inline `` `path:SYMBOL` `` / `` `path:LINE` ``
-   cites (e.g. `` `analyzer.py:SYSTEM_PROMPT` ``, `` `RELEASE_CHECKLIST.md:64` ``).
-   This checker verifies the **file** named by the cite exists somewhere in
-   the tracked tree. It deliberately does NOT verify the line number or
-   symbol still resolves at that spot — that drift check is `wiki-lint`'s
-   job for `path:line` cites inside `docs/wiki/` pages, and is out of scope
-   for this script.
+2. Cite check (SCOPED — `docs/governance/*.md` + the L1 "published front door"
+   registry `check_doc_frontmatter.PUBLISHED_DOC_FILES`, widened from the
+   original `AGENTS.md`/`CLAUDE.md`-only scope by `ci/doc-merge-gate`'s
+   merge=publish "cite-resolution" gate — see that module's docstring for the
+   registry's scope rationale). These docs use inline `` `path:SYMBOL` `` /
+   `` `path:LINE` `` cites (e.g. `` `analyzer.py:SYSTEM_PROMPT` ``,
+   `` `RELEASE_CHECKLIST.md:64` ``). This checker verifies the **file** named
+   by the cite exists somewhere in the tracked tree — the same "cheap
+   existence check, not a line/symbol resolution check" scope `/wiki-lint`
+   documents for `path:line` cites inside `docs/wiki/` pages (deeper
+   quote-matching is `/wiki-audit`'s job there; there is no deeper checker for
+   L1 docs, by the same reasoning). `docs/governance/` stays a directory-wide
+   prefix (not folded into the file registry) so `compliance-log.md` — an
+   append-only log, deliberately excluded from `PUBLISHED_DOC_FILES` (gate 2's
+   header check does not apply to logs) — keeps its pre-existing cite
+   coverage unchanged.
 
 **Exclusions (by design, not oversight)**
 
@@ -77,15 +85,17 @@ import subprocess
 import sys
 from pathlib import Path
 
+from check_doc_frontmatter import PUBLISHED_DOC_FILES
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Cite check is intentionally scoped to the governance + contract docs named
-# in the carry-forward ledger row — line-drift checking elsewhere is out of
-# scope (wiki-lint's job for docs/wiki/).
-CITE_CHECK_FILES = {
-    "AGENTS.md",
-    "CLAUDE.md",
-}
+# Cite check is scoped to the governance dir (kept directory-wide — see module
+# docstring) plus the L1 "published front door" registry (gate 2's
+# PUBLISHED_DOC_FILES, reused here rather than restated — D5 applied to this
+# gate's own code). Line-drift checking elsewhere is out of scope (wiki-lint's
+# job for docs/wiki/; docs/dev/** review/design prose is out of scope for the
+# same reason gate 2 excludes it — see check_doc_frontmatter's docstring).
+CITE_CHECK_FILES: frozenset[str] = PUBLISHED_DOC_FILES
 CITE_CHECK_DIRS = ("docs/governance/",)
 
 _URI_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*:")

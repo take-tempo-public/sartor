@@ -1250,7 +1250,17 @@ Sequence (each its own branch, in dependency order):
 5. **`ci/doc-merge-gate`** — the doc gates (link-integrity / frontmatter+audience /
    D5 single-home / cite-resolution / wiki-freshness) + the `DOC-STATUS`-trigger check,
    extending `block-merge-to-main` + `wiki-lint`. **Last**, because merge=publish only
-   matters once the site exists.
+   matters once the site exists. **DONE** (`ci/doc-merge-gate`): link-integrity and the
+   `DOC-STATUS`-trigger check were already built (`chore/doc-link-sweep`, PX-50); this
+   branch adds the remaining three — `scripts/check_doc_frontmatter.py` (frontmatter+
+   audience, a new `PUBLISHED_DOC_FILES` registry), `scripts/check_doc_single_home.py` (D5,
+   a documented near-duplicate-paragraph heuristic — the hardest of the five, scoped and
+   proven on synthetic fixtures rather than left unautomated), and widened
+   `check_doc_links.py`'s cite-check to the same registry — plus
+   `scripts/wiki_freshness.py`, wired both as a pytest gate and as a genuine merge-time
+   block in `block_merge_to_main.py` (no `CLAUDE_CONFIRM_MERGE=1` bypass). All green on the
+   current tree, zero doc content edits required. See `CHANGELOG.md` [Unreleased] for the
+   full per-gate detail and the `PUBLISHED_DOC_FILES`/`feat/fumadocs-site` convergence flag.
 
 **Type hardening (pulled pre-public into v1.0.9 — owner 2026-06-29).** **✅ BUILT
 (2026-07-10, `chore/kit-mypy-strict-*` 5-branch stack, ratchet rungs 4–8):** the

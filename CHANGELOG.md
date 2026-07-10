@@ -68,6 +68,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lists bounded spike tasks + a recommendation. **Doc only** — no product
   code, no dependency, no `PROMPT_VERSION` change; the replacement itself is
   owner-slotted for its own pre-public sprint, not built in v1.0.9.
+### CI: doc merge-gate — the merge=publish gates (`ci/doc-merge-gate`, v1.0.9 docs epic item 5)
+
+- **`docs/dev/documentation-architecture.md`'s "Gates — merge = publish" table, built.**
+  Four of the five listed gates were not yet built (`tests/test_doc_status_gate.py`
+  already covered the `DOC-STATUS`-trigger check, PX-50); this branch adds the remaining
+  four as committed pytest gates (rides the existing `pytest` run — no new CI job), matching
+  the repo's established pattern (`tests/test_doc_links.py` / `scripts/check_doc_links.py`,
+  `tests/test_route_containment_gate.py`):
+  - **link-integrity** — already built (`scripts/check_doc_links.py` +
+    `tests/test_doc_links.py`, `chore/doc-link-sweep`); unchanged.
+  - **frontmatter + audience** — new `scripts/check_doc_frontmatter.py` +
+    `tests/test_doc_frontmatter_gate.py`. Checks every doc in a new explicit
+    `PUBLISHED_DOC_FILES` registry (16 files: the repo-root canonical docs + `docs/*.md`
+    top-level + `docs/governance/*.md` — deliberately narrower than all of `docs/dev/**`,
+    which is a heterogeneous mix of live design docs and frozen review/perf artifacts most
+    of which predate and were never meant to carry the convention; widening false-positived
+    on ~12 files with no content decision made here) carries all three
+    `**Purpose:**`/`**Audience:**`/`**Authoritative for:**` header fields. Green on the
+    current tree with zero doc edits needed.
+  - **single-home (D5)** — new `scripts/check_doc_single_home.py` +
+    `tests/test_doc_single_home_gate.py`. The hardest of the five to automate (verifying
+    restatement-vs-linking needs meaning, not grep) — implemented as a documented, narrower
+    heuristic: near-verbatim (post-whitespace/case-normalization) duplicated prose paragraphs
+    (>= 240 chars) across 2+ distinct files in the same `PUBLISHED_DOC_FILES` registry, fenced
+    code excluded, with a reviewed-exception registry for the (currently empty) case of an
+    intentional duplication. Proven to have real detection teeth on synthetic fixtures before
+    trusting the green real-tree result (D5 discipline is genuinely holding across the
+    registry — zero duplication found even at an 80-char probe threshold).
+  - **cite-resolution** — widened `scripts/check_doc_links.py`'s `CITE_CHECK_FILES` from
+    `{AGENTS.md, CLAUDE.md}` to the full `PUBLISHED_DOC_FILES` registry (imported from the
+    frontmatter gate, not restated — D5 applied to this gate's own code);
+    `CITE_CHECK_DIRS = ("docs/governance/",)` stays directory-wide unchanged so
+    `compliance-log.md` (an append-only log, deliberately excluded from the frontmatter
+    registry) keeps its existing cite coverage. Green on the current tree; no new dead cites
+    found.
+  - **wiki-freshness** — new `scripts/wiki_freshness.py` (stdlib + git only, no LLM), reusing
+    `wiki-freshness-reminder.sh`'s drift computation but as a hard block: `BLOCK_THRESHOLD =
+    75` (distinct from the reminder hook's soft `THRESHOLD = 10`, calibrated above ordinary
+    branch-scale drift but below the 119-434 file drift that went unblocked for ~7 weeks
+    before the 2026-07-10 catch-up ingest). Rides `pytest` via
+    `tests/test_wiki_freshness_gate.py`, **and** is wired into
+    `scripts/enforcement/guards/block_merge_to_main.py` (`decide()` /
+    `git_operation_check()` / `git_push_check()`) as a genuine merge-time block — checked
+    once a command would otherwise be allowed, **not bypassed by `CLAUDE_CONFIRM_MERGE=1`**
+    (that token confirms the merge target, not doc freshness; the only way through is running
+    `/wiki-self-update` or `/wiki-ingest`, mirroring the `DOC-STATUS` gate's no-escape-hatch
+    design). 6 new unit/integration tests added to `tests/test_enforcement_core.py`
+    (`TestBlockMergeToMainUnit`); all 61 pre-existing tests in that file still pass unchanged
+    (the extension only fires when a real `docs/wiki/.last_ingest_sha` baseline exists —
+    every existing fixture repo has none, so it silently no-ops for them). Currently green:
+    the wiki was refreshed to `e785e53` on this same train (1-file drift at authoring time).
+- **No product code, prompt, route, or dependency change** — doc-tooling + test-infra only
+  (`scripts/**`/`tests/**`, both KIT-7 ANN/D-exempt). `PROMPT_VERSION` untouched.
+- **Doc issues found while scoping:** none required a content fix — the widened cite-check
+  and the new frontmatter/single-home registries were green against the current tree with no
+  doc edits needed (see the per-gate notes above for the scope decisions that kept it that
+  way; `docs/dev/**`'s ~12 files with a partial `Purpose`/`Audience`/`Authoritative-for`
+  header are a known, out-of-scope-for-this-gate observation, not a fix made here — see the
+  lane report for the full list).
+- **Flags for the train tip / sibling lanes:** `PUBLISHED_DOC_FILES` (in
+  `scripts/check_doc_frontmatter.py`) should converge with `scripts/project_docs_to_mdx.py`'s
+  own published-page scope once `feat/fumadocs-site` lands (this branch predates that script
+  and defines its registry independently, per the lane's task brief); any new top-level
+  `docs/*.md`/root doc a sibling lane adds should carry the Purpose/Audience/Authoritative-for
+  header or it will need adding to (or excluding from) `PUBLISHED_DOC_FILES` explicitly.
 
 ### Chore: DOC-STATUS grep gate (`ci/px50-doc-status-gate`, PX-50)
 

@@ -15,10 +15,12 @@ HOW: `scripts/check_doc_links.py` is invoked as a subprocess (mirrors
 `test_docstring_coverage_gate.py`'s pattern) so a failure prints the exact
 `file:line -> broken-target` listing a human would see running it directly.
 See that script's module docstring for the full scope (link check tree-wide,
-cite-existence check scoped to `docs/governance/*.md` + `AGENTS.md` +
-`CLAUDE.md`) and its documented exclusions (external URLs, fenced code,
-literal backtick-quoted link syntax, gitignored targets, two narrow
-documented (file, target) exclusions).
+cite-existence check scoped to `docs/governance/*.md` + the L1
+`PUBLISHED_DOC_FILES` registry — widened from the original `AGENTS.md`/
+`CLAUDE.md`-only scope by `ci/doc-merge-gate`'s "cite-resolution" merge=publish
+gate) and its documented exclusions (external URLs, fenced code, literal
+backtick-quoted link syntax, gitignored targets, two narrow documented
+(file, target) exclusions).
 """
 
 from __future__ import annotations

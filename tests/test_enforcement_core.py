@@ -44,6 +44,7 @@ from scripts.enforcement.guards import (
     ruff_changed,
     validate_context,
 )
+from scripts.wiki_freshness import BLOCK_THRESHOLD as WIKI_BLOCK_THRESHOLD
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS_DIR = REPO_ROOT / ".claude-plugin" / "hooks"
@@ -85,6 +86,23 @@ def _make_repo(tmp_path: Path, name: str, branch: str) -> Path:
     _git(["config", "user.name", "Test"], cwd=repo)
     _git(["commit", "-q", "--allow-empty", "-m", "init"], cwd=repo)
     return repo
+
+
+def _add_wiki_checkpoint(repo: Path, drift_file_count: int = 0) -> None:
+    """Layer a `docs/wiki/.last_ingest_sha` checkpoint onto a `_make_repo` repo (checkpoint =
+    current HEAD), then optionally commit `drift_file_count` more tracked files after it —
+    `ci/doc-merge-gate`'s wiki-freshness extension to `block_merge_to_main` fixture helper."""
+    wiki_dir = repo / "docs" / "wiki"
+    wiki_dir.mkdir(parents=True, exist_ok=True)
+    checkpoint_sha = _git(["rev-parse", "HEAD"], cwd=repo).stdout.strip()
+    (wiki_dir / ".last_ingest_sha").write_text(f"{checkpoint_sha}\n", encoding="utf-8")
+    _git(["add", "."], cwd=repo)
+    _git(["commit", "-q", "-m", "record wiki checkpoint"], cwd=repo)
+    if drift_file_count:
+        for i in range(drift_file_count):
+            (repo / f"drift_{i}.md").write_text(f"drift {i}\n", encoding="utf-8")
+        _git(["add", "."], cwd=repo)
+        _git(["commit", "-q", "-m", f"{drift_file_count} drift file(s)"], cwd=repo)
 
 
 @pytest.fixture(scope="module")
@@ -255,6 +273,58 @@ class TestBlockMergeToMainUnit:
         command = "git merge other-branch --no-ff"
         assert not block_merge_to_main.decide(command, str(feature_repo)).blocked
         assert block_merge_to_main.decide(command, str(main_repo)).blocked
+
+    # --- wiki-freshness extension (ci/doc-merge-gate, merge=publish gate 5) --
+    def test_wiki_freshness_blocks_even_with_confirm_hatch(self, tmp_path: Path) -> None:
+        repo = _make_repo(tmp_path, "merge_confirm_stale_wiki", "main")
+        _add_wiki_checkpoint(repo, drift_file_count=WIKI_BLOCK_THRESHOLD)
+        result = block_merge_to_main.decide(
+            "CLAUDE_CONFIRM_MERGE=1 git merge feature-x --no-ff", str(repo)
+        )
+        assert result.blocked, "stale wiki must block even with the merge-target confirm hatch"
+        assert "wiki" in " ".join(result.messages).lower()
+
+    def test_wiki_freshness_allows_confirm_hatch_when_fresh(self, tmp_path: Path) -> None:
+        repo = _make_repo(tmp_path, "merge_confirm_fresh_wiki", "main")
+        _add_wiki_checkpoint(repo, drift_file_count=1)
+        result = block_merge_to_main.decide(
+            "CLAUDE_CONFIRM_MERGE=1 git merge feature-x --no-ff", str(repo)
+        )
+        assert not result.blocked
+
+    def test_wiki_freshness_allows_when_no_baseline_yet(self, tmp_path: Path) -> None:
+        # No docs/wiki/ dir at all — same repo shape every other test in this class uses.
+        repo = _make_repo(tmp_path, "merge_confirm_no_wiki", "main")
+        result = block_merge_to_main.decide(
+            "CLAUDE_CONFIRM_MERGE=1 git merge feature-x --no-ff", str(repo)
+        )
+        assert not result.blocked
+
+    def test_wiki_freshness_not_reached_without_confirm_hatch(self, tmp_path: Path) -> None:
+        # Missing-confirm blocks first, on its own message — the wiki check is never reached
+        # (and if it were, this fixture's stale wiki would block too, so this also proves
+        # ordering: the cheaper/simpler check short-circuits first).
+        repo = _make_repo(tmp_path, "merge_no_confirm_stale_wiki", "main")
+        _add_wiki_checkpoint(repo, drift_file_count=WIKI_BLOCK_THRESHOLD)
+        result = block_merge_to_main.decide("git merge feature-x --no-ff", str(repo))
+        assert result.blocked
+        assert result.messages == block_merge_to_main._MESSAGE_LINES
+
+    def test_git_operation_check_blocks_on_stale_wiki(self, tmp_path: Path) -> None:
+        repo = _make_repo(tmp_path, "op_stale_wiki", "main")
+        _add_wiki_checkpoint(repo, drift_file_count=WIKI_BLOCK_THRESHOLD)
+        result = block_merge_to_main.git_operation_check(
+            "main", env={"CLAUDE_CONFIRM_MERGE": "1"}, repo_root=str(repo)
+        )
+        assert result.blocked
+
+    def test_git_push_check_blocks_on_stale_wiki(self, tmp_path: Path) -> None:
+        repo = _make_repo(tmp_path, "push_stale_wiki", "main")
+        _add_wiki_checkpoint(repo, drift_file_count=WIKI_BLOCK_THRESHOLD)
+        result = block_merge_to_main.git_push_check(
+            "refs/heads/main", env={"CLAUDE_CONFIRM_MERGE": "1"}, repo_root=str(repo)
+        )
+        assert result.blocked
 
 
 class TestBlockSecretsUnit:
