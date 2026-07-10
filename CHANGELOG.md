@@ -13,6 +13,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Chore: mypy --strict roster — backend substrate (`chore/kit-mypy-strict-backend`)
+
+- **Kit-adoption Phase 2 #2, ratchet rung 5 — the backend substrate brought
+  to full `mypy --strict`.** Appended `web_infra.*`, `recall.*`,
+  `onboarding.*`, and `db` — listed as explicit submodules (`db`,
+  `db.ats_roundtrip`, `db.build_context`, `db.models`, `db.persist_run`,
+  `db.session`, `db.migrations.env`, `db.migrations._sqlite_check_constraint`)
+  rather than a `db.*`/`db.migrations.*` wildcard, since either wildcard would
+  capture `db.migrations.versions.*` — the Decision-7 EXEMPT set — to the
+  `pyproject.toml` strict-roster `[[tool.mypy.overrides]]` block
+  (`docs/dev/kit-adoption-design.md` §4/§6). `recall.*` measured
+  strict-clean already (roster-add only, zero fixes). Measured **17 errors**
+  live (`mypy --strict --warn-unreachable`) across the rest: **web_infra**
+  (5 — 4 bare-generic `type-arg` + 1 `no-any-return`, in `config_io.py` and
+  `http.py`), **onboarding** (4 — 3 `type-arg` + 1 `no-any-return`, in
+  `extract_experiences.py` and `corpus_import.py`), and **db** (8 — 5
+  `type-arg` in `ats_roundtrip.py`/`persist_run.py` + **3 `warn_unreachable`**
+  in `db/persist_run.py:180,270,350`). The 3 unreachable were
+  `isinstance(entry, dict)` runtime guards over the `selected`/`proposals`
+  params of `_persist_selected_bullets`/`_persist_proposed_bullets`/
+  `_persist_proposed_titles` — each carries untrusted LLM JSON, so the guard
+  is live defense, not dead code. **Resolved by widening the param type**
+  from `list[dict]` to `list[Any]` (not a scoped ignore) — this also fixes
+  the `type-arg` error on the same declaration in one edit, keeps the guard
+  reachable, and stays honest that the entries are untrusted at the type
+  level; zero runtime change (the rung-3/4 "widen a local to keep the branch
+  live" precedent, applied to a parameter). All other `type-arg`/
+  `no-any-return` fixes were the usual mechanical pattern (`dict[str, Any]`
+  parametrization; `cast(...)` on `json.load`/`json.loads` returns; `Any`/
+  `cast` added to each file's `typing` import). **PROMPT-SAFE:** the only
+  prompt constant in scope, `EXTRACT_EXPERIENCES_SYSTEM_PROMPT` in
+  `onboarding/extract_experiences.py`, sha256-verified byte-identical
+  HEAD-vs-branch (`602e8ef4a68c...4283e9c`), and the branch's diff never
+  enters its line range; the
+  `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+  grep across `web_infra/`, `recall/`, `db/` returned zero hits (the one hit
+  in `db/build_context.py` is an *import/use* of `analyzer.PROMPT_VERSION`,
+  not a definition). So **no `PROMPT_VERSION` bump, no eval run**. No new
+  dependency, no logic change beyond the one deliberate param-type widening.
+  Gate green: `ruff check .` + `ruff format --check` (touched files) +
+  `mypy .` ("Success: no issues found in 298 source files").
+
 ### Chore: mypy --strict roster — top-level modules (`chore/kit-mypy-strict-toplevel`)
 
 - **Kit-adoption Phase 2 #2, ratchet rung 4 — all 8 remaining top-level root

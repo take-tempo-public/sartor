@@ -197,7 +197,7 @@ def extract_experiences_and_skills(
 _DATE_RE = re.compile(r"^\d{4}(-\d{2})?$")
 
 
-def _normalize_experience(raw: dict) -> ExtractedExperience:
+def _normalize_experience(raw: dict[str, Any]) -> ExtractedExperience:
     """Clean up an LLM-extracted experience, dropping fields that don't validate.
 
     Outcome-detection (has_outcome) is computed deterministically here rather
@@ -243,7 +243,7 @@ def _normalize_experience(raw: dict) -> ExtractedExperience:
     return exp
 
 
-def _normalize_bullet(raw: dict) -> ExtractedBullet:
+def _normalize_bullet(raw: dict[str, Any]) -> ExtractedBullet:
     """Normalize a raw bullet dict into an ``ExtractedBullet`` (clean text, tags, derived outcome flag)."""
     text = _clean_str(raw.get("text"))
     return {

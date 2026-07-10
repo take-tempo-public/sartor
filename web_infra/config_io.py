@@ -16,11 +16,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 from werkzeug.utils import secure_filename
 
 
-def _load_config(username: str, *, configs_dir: Path) -> dict:
+def _load_config(username: str, *, configs_dir: Path) -> dict[str, Any]:
     """Read ``configs/<user>.config`` and return the parsed dict; sanitizes the username at the helper (PX-21), returning ``{}`` for an unsafe or missing config."""
     # Sanitize here, not only at the call site: secure_filename strips ../ and
     # other traversal sequences, so the config read is contained to configs_dir
@@ -32,10 +33,10 @@ def _load_config(username: str, *, configs_dir: Path) -> dict:
     path = configs_dir / f"{safe}.config"
     if not path.exists():
         return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+    return cast("dict[str, Any]", json.loads(path.read_text(encoding="utf-8")))
 
 
-def _save_config(username: str, config: dict, *, configs_dir: Path) -> None:
+def _save_config(username: str, config: dict[str, Any], *, configs_dir: Path) -> None:
     """Write ``config`` to ``configs/<user>.config``; sanitizes the username at the helper (PX-21) and raises ``ValueError`` if it sanitizes to empty."""
     # Mirror _load_config: sanitize at the helper so the write is contained to
     # configs_dir regardless of the caller (PX-21). An all-stripped username

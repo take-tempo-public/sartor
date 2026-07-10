@@ -544,6 +544,57 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > other non-top-level production module, each a later rung toward the Decision-7
 > end-state.
 >
+> **Phase 2 #2 ratchet — rung 5, the backend substrate
+> (`chore/kit-mypy-strict-backend`, 2026-07-10).** Fifth rung of the per-module mypy
+> `--strict` ratchet: added `web_infra.*`, `recall.*`, `onboarding.*`, and `db` — to the
+> strict override's `module` list — now 24 entries — and extended the block comment to a
+> **fifth cohort**. **The db-versions-exempt trap:** `db` is listed as **explicit
+> submodules** (`db`, `db.ats_roundtrip`, `db.build_context`, `db.models`,
+> `db.persist_run`, `db.session`, `db.migrations.env`,
+> `db.migrations._sqlite_check_constraint`) rather than a `db.*`/`db.migrations.*`
+> wildcard — either wildcard would silently capture `db.migrations.versions.*`, which is
+> in the Decision-7 EXEMPT set (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`)
+> and must stay permissive. **Measured live** (`python -m mypy --strict --warn-unreachable
+> <each group>`) **= 17 errors**: `recall/` measured **strict-clean already**
+> (roster-add only, zero fixes — the second module after rung-4's `config`/`demo_fixtures`/
+> `app` to land clean); `web_infra/` **5** (4 bare-generic `type-arg` in `config_io.py` +
+> `http.py`, parametrizing JSON-object dicts to `dict[str, Any]`, + 1 `no-any-return` —
+> `config_io._load_config`'s `json.loads(...)` wrapped in
+> `cast("dict[str, Any]", ...)`); `onboarding/` **4** (3 `type-arg` in
+> `extract_experiences.py`/`corpus_import.py` + 1 `no-any-return` —
+> `corpus_import._safe_load_config`'s `json.load(fh)` similarly `cast`); `db/` (excl.
+> `migrations/versions`) **8** (5 `type-arg` in `ats_roundtrip.py`/`persist_run.py` + **3
+> `warn_unreachable`** in `db/persist_run.py:180,270,350`). **The 3 unreachable:** each is
+> an `isinstance(entry, dict)` runtime guard inside `_persist_selected_bullets`/
+> `_persist_proposed_bullets`/`_persist_proposed_titles`, over params (`selected`/
+> `proposals`) declared `list[dict]` — the docstrings say "we fail safely on parse
+> errors," and the entries are untrusted LLM JSON that can genuinely arrive non-dict at
+> runtime, so the guard is live defense, not dead code. **Resolved by widening the param
+> type** from `list[dict]` to `list[Any]` (the rung-3/4 "widen a local to keep a
+> documented branch reachable" precedent, applied here to a parameter) — this doubles as
+> the `type-arg` fix for the same declaration, keeps the guard reachable, and types the
+> parameter honestly as untrusted input; a scoped `# type: ignore[unreachable]` was not
+> needed. Verified the three widened params don't cascade to callers:
+> `persist_corpus_generation`'s call sites pass `generate_result.get(...) or []` — already
+> untyped-JSON shaped — so `mypy .` stayed green with no new call-site friction.
+> **PROMPT-SAFE (sha256, matching the analyzer/hardening ceremony):** the only prompt
+> constant in the cohort, `EXTRACT_EXPERIENCES_SYSTEM_PROMPT` in
+> `onboarding/extract_experiences.py`, sha256-verified byte-identical HEAD-vs-branch
+> (`602e8ef4a68c...4283e9c`), and the branch's `git diff` on that file touches only lines
+> 200/246 (function signatures), never the constant's ~69-90 line range; the
+> `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)` grep across
+> `web_infra/`, `recall/`, `db/` returned zero hits (the one `db/build_context.py` hit is
+> an *import/use* of `analyzer.PROMPT_VERSION`, not a definition) — so no
+> `PROMPT_VERSION` bump, no eval run. No new dependency, no logic change beyond the one
+> deliberate param-type widening. Gate green: `ruff check .` ✓ · `ruff format --check`
+> (touched files) ✓ · `mypy .` ("Success: no issues found in 298 source files") ✓ (pytest
+> deferred to the conductor's full-suite run on the committed tip, per this run's gate
+> division). **Per-module tracking: 24 production modules now at full strict** (the 13
+> top-level-root modules + `recall` + the 5 web_infra/onboarding leaves + the 5 db
+> modules) — remaining strict debt is `blueprints/**` (minus `applications`), `ui_pages/**`,
+> and any other non-listed production module, each a later rung toward the Decision-7
+> end-state.
+>
 > **Progress (2026-06-25, `chore/kit-phase2-interrogate`):** Phase 2 #4 — the `interrogate`
 > docstring-**coverage** floor-lock gate — LANDED, the **final Phase 2 implementation sub-item**.
 > `interrogate>=1.7,<2.0` added to the `dev` extra (a real new dependency → CHANGELOG); a new

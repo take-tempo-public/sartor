@@ -29,6 +29,7 @@ import logging
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from parser import parse_resume
 
@@ -65,14 +66,14 @@ _KNOWN_SECTIONS = frozenset(
 )
 
 
-def run_ats_roundtrip(docx_path: str | Path, resume_content_md: str) -> dict:
+def run_ats_roundtrip(docx_path: str | Path, resume_content_md: str) -> dict[str, Any]:
     """Parse the generated .docx back through parser.py and diff against what the generator was asked to emit.
 
     Returns a findings dict with a status verdict (pass/warning/fail) and
     counts/notes for human inspection. Never raises — even when parser.py
     fails outright the result has status='fail' with the exception in notes.
     """
-    findings: dict = {
+    findings: dict[str, Any] = {
         "status": "pass",
         "bullet_count_emitted": 0,
         "bullet_count_recovered": 0,

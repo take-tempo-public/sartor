@@ -312,7 +312,7 @@ ignore_missing_imports = true
 # (mypy.options.PER_MODULE_OPTIONS), so the strict preset is spelled out as its per-module-capable
 # component flags. This list IS the §6 tracking surface; it GROWS module-by-module toward the
 # Decision-7 end-state (strict everywhere except tests/ evals/ scripts/ db/migrations/versions).
-# Four cohorts so far:
+# Five cohorts so far:
 #   - rung 1 (scraper/json_resume/pdf_render) — the deterministic, LLM-free P1-Hardening leaves;
 #     pure (no intra-project calls), so strict surfaced no cross-module cascade.
 #   - rung 2 (blueprints.applications) — the FIRST non-leaf route/seam module. It was clean for a
@@ -337,6 +337,20 @@ ignore_missing_imports = true
 #     `warn_unreachable` in hardening.py (the SAME ContextSet-TypedDict always-truthy `or {}` JSON
 #     defense as rung 3's analyzer.py case — both kept behind a scoped
 #     `# type: ignore[unreachable]` with a one-line comment; zero runtime change).
+#   - rung 5 (web_infra.*/recall.*/onboarding.*/db-minus-versions) — the backend substrate.
+#     `db` is listed as explicit submodules (db, db.ats_roundtrip, db.build_context, db.models,
+#     db.persist_run, db.session, db.migrations.env, db.migrations._sqlite_check_constraint) —
+#     NEVER `db.*`/`db.migrations.*` wildcards, which would capture `db.migrations.versions.*`,
+#     the Decision-7 EXEMPT set. `recall.*` measured strict-clean already (roster-add only).
+#     Measured 17 errors: web_infra (5: 4 type-arg + 1 no-any-return), onboarding (4: 3 type-arg
+#     + 1 no-any-return), db (8: 5 type-arg + 3 `warn_unreachable` in db/persist_run.py — three
+#     `isinstance(entry, dict)` runtime guards over `selected`/`proposals` params that carry
+#     untrusted LLM JSON). Resolved the 3 unreachable by widening those params from `list[dict]`
+#     to `list[Any]` (not a scoped ignore) so the guard stays reachable AND honest about the
+#     untrusted input, zero runtime change — the rung-3/4 "widen a local" precedent, applied to a
+#     parameter instead of a local. PROMPT-SAFE: `EXTRACT_EXPERIENCES_SYSTEM_PROMPT` in
+#     `onboarding/extract_experiences.py` sha256-verified byte-identical pre/post; the rest of the
+#     cohort holds no prompt constants (grep-0).
 [[tool.mypy.overrides]]
 module = [
     "scraper",
@@ -352,6 +366,17 @@ module = [
     "config",
     "demo_fixtures",
     "app",
+    "web_infra.*",
+    "recall.*",
+    "onboarding.*",
+    "db",
+    "db.ats_roundtrip",
+    "db.build_context",
+    "db.models",
+    "db.persist_run",
+    "db.session",
+    "db.migrations.env",
+    "db.migrations._sqlite_check_constraint",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
