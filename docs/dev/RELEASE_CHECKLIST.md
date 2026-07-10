@@ -867,7 +867,12 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       staleness batch) landed alongside it — SUPERSEDED/SHIPPED banners on
       `app-blueprints-design.md` + `kit-adoption-design.md`, the CHANGELOG archive split
       (`CHANGELOG-archive.md`), and this ledger's own head-note compression (the note you're
-      reading now). [TRAIN-ASSEMBLY-WIP: PX-50 + PX-53 fold into this same clause below.]
+      reading now). PX-53 (F-tci-02, the triplicated `_imported_roots()` AST helper) landed
+      too — one shared `tests/_ast_import_roots.py::imported_roots()` (with a
+      `resolve_relative` parameter preserving `test_recall_boundary.py`'s one legitimate
+      semantic variant) now backs all three boundary gates; behavior verified byte-identical
+      (16/16 tests green + a manual fail-closed sanity check). [TRAIN-ASSEMBLY-WIP: PX-50
+      folds into this same clause below.]
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in

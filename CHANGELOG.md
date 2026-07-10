@@ -13,6 +13,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Test: consolidate the triplicated `_imported_roots()` AST helper (`test/px53-shared-ast-helper`)
+
+- **PX-53 (2026-07 efficiency review, F-tci-02).** The whole-tree AST
+  import-walk helper backing the three boundary-gate tests
+  (`tests/test_construction_boundary.py`, `tests/test_recall_boundary.py`,
+  `tests/test_web_infra_is_leaf.py`) was duplicated near-verbatim three
+  times. Extracted the ONE shared implementation to
+  `tests/_ast_import_roots.py::imported_roots()`; all three gate files now
+  import it instead of defining their own copy. **Verified the three bodies
+  before touching anything:** `test_construction_boundary.py` and
+  `test_web_infra_is_leaf.py` were byte-identical (skip relative imports
+  outright — they can never resolve to an absolute forbidden root);
+  `test_recall_boundary.py` differs in exactly one place — it resolves a
+  relative import to a local root (falling back to `"recall"`) instead of
+  skipping it, so `recall/`'s own self-referential imports read as
+  in-package rather than third-party. Preserved that exactly via a
+  `resolve_relative: bool = False` parameter — the default reproduces the
+  skip behavior the other two gates need; `test_recall_boundary.py`'s two
+  call sites pass `resolve_relative=True`. No gate semantics changed: all 16
+  tests across the three files still pass, and a manual sanity check
+  confirmed each gate still fails closed on a deliberate violation
+  (`import analyzer`/`import app`/`from blueprints import assistant`
+  injected ad hoc against the shared helper). TEST-INFRA only — no product
+  code, prompt, route, or dependency touched; `PROMPT_VERSION` untouched.
+  Gate green: `ruff check .` + `ruff format --check` (touched files) +
+  `mypy .` ("Success: no issues found in 300 source files") + full pytest.
+
 ### Docs: dev-doc staleness batch (PX-48, `docs/px48-doc-staleness-batch`)
 
 - **SUPERSEDED/SHIPPED status banners** on two completed design docs, per the
