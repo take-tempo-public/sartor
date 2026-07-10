@@ -498,6 +498,52 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > coverage gate (baseline/setup branch) — the larger-module mypy `--strict` commitment is now
 > COMPLETE.**
 >
+> **Phase 2 #2 ratchet — rung 4, the remaining top-level root modules
+> (`chore/kit-mypy-strict-toplevel`, 2026-07-09).** Fourth rung of the per-module mypy
+> `--strict` ratchet: added the **8 remaining top-level root `.py` modules** —
+> `hardening`, `parser`, `generator`, `corpus_to_json_resume`, `docx_to_persona_html`,
+> `config`, `demo_fixtures`, `app` — to the strict override's `module` list (now 13
+> entries) and extended the block comment to a **fourth cohort**. Five of the eight
+> (`hardening`/`parser`/`generator`/`corpus_to_json_resume`/`docx_to_persona_html`) are the
+> LAST of the C-6 deterministic, LLM-free P1-Hardening leaves (rung 1 covered
+> `scraper`/`json_resume`/`pdf_render`); the other three (`config`/`demo_fixtures`/`app`)
+> measured **strict-clean already** — roster-add only, zero fixes, confirmed via the
+> authoritative whole-tree `mypy .` staying green with no new source. **Measured live**
+> (`python -m mypy --strict --warn-unreachable hardening.py parser.py generator.py
+> corpus_to_json_resume.py docx_to_persona_html.py config.py demo_fixtures.py app.py`)
+> **= 51 errors, entirely in the 5 deterministic leaves**: **48 bare-generic `type-arg`**
+> (every JSON-object dict parametrized to `dict[str, Any]`; section/proto lists to
+> `list[dict[str, Any]]`; `Any` added to each file's `typing` import — no cross-module
+> cascade, matching rungs 1–3's pattern of a pre-typed call graph) + **1 `no-any-return`**
+> (`generator.py:_extract_list_numPr`, whose declared return is `CT_NumPr | None` but
+> `deepcopy()` on an untyped lxml/etree element returns `Any` — wrapped in
+> `cast("CT_NumPr | None", deepcopy(numPr))`, `cast` added to the `typing` import, a
+> runtime no-op) + **2 `warn_unreachable`** in `hardening.py` (`:1500`'s `resume` access
+> and `:1528`'s `keyword_overlap` access) — **the identical ContextSet-TypedDict
+> always-truthy `or {}` artifact already resolved in rung 3's `analyzer.py`** (same
+> `(context_set.get(...) or {})` shape, one of the two lines byte-identical to
+> `analyzer.py`'s), resolved the same way: kept the defensive fallback (persisted context
+> JSON can be partial/null at runtime even though the all-required TypedDict types the
+> access as always-truthy) behind a scoped `# type: ignore[unreachable]` with a one-line
+> comment — zero runtime change, not a design question. **PROMPT-SAFE (grep-first, with a
+> documented false-positive twist):** the `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|
+> _RULES_BLOCK|_BASE_SYSTEM_PROMPTS)` grep across the 8 modules was **non-zero (3 hits)**
+> but each verified NOT a prompt constant — `demo_fixtures.py`'s `DEMO_AVATAR_ANSWER` (a
+> canned F-19 demo-mode fixture string whose name merely contains the substring
+> "AVATAR_"; not `AVATAR_SYSTEM_PROMPT`/`AVATAR_PROMPT_VERSION`) and two pre-existing
+> `hardening.py` docstring sentences that cross-reference "SYSTEM_PROMPT" as prose
+> (documenting that a metric pairs with rules already stated in the real constant, which
+> lives in `analyzer.py`) — neither hit is a prompt definition, and this branch's diff
+> never touches either docstring line. So no `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION`
+> bump, no eval run. No dep/hook change. Gate green: ruff check ✓ · ruff format --check
+> (touched files) ✓ · mypy ("Success: no issues found in N source files") ✓ · pytest full
+> suite (split not-ux-not-slow / ux-or-slow). **Per-module tracking: 13 production
+> modules now at full strict** (the 5 rung-1/2/3 modules + this rung's 8) — **the
+> top-level-root cohort of the §6 exit criterion is now complete**; remaining strict debt
+> is the rest of `blueprints/**`, `db/`, `onboarding/`, `recall/`, `ui_pages/**` and any
+> other non-top-level production module, each a later rung toward the Decision-7
+> end-state.
+>
 > **Progress (2026-06-25, `chore/kit-phase2-interrogate`):** Phase 2 #4 — the `interrogate`
 > docstring-**coverage** floor-lock gate — LANDED, the **final Phase 2 implementation sub-item**.
 > `interrogate>=1.7,<2.0` added to the `dev` extra (a real new dependency → CHANGELOG); a new

@@ -13,6 +13,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Chore: mypy --strict roster — top-level modules (`chore/kit-mypy-strict-toplevel`)
+
+- **Kit-adoption Phase 2 #2, ratchet rung 4 — all 8 remaining top-level root
+  `.py` modules brought to full `mypy --strict`.** Appended `hardening`,
+  `parser`, `generator`, `corpus_to_json_resume`, `docx_to_persona_html`,
+  `config`, `demo_fixtures`, `app` to the `pyproject.toml` strict-roster
+  `[[tool.mypy.overrides]]` block (`docs/dev/kit-adoption-design.md` §4/§6).
+  `config.py`/`demo_fixtures.py`/`app.py` were already strict-clean
+  (roster-add only, zero fixes). The 5 C-6 deterministic modules measured
+  **51 errors** live (`mypy --strict --warn-unreachable`): **48 bare-generic
+  `type-arg`** (JSON-object dicts parametrized to `dict[str, Any]`, section/
+  proto lists to `list[dict[str, Any]]`; `Any` added to each file's
+  `typing` import), **1 `no-any-return`**
+  (`generator.py:_extract_list_numPr` — wrapped the `deepcopy(numPr)` return
+  in `cast("CT_NumPr | None", …)`, a runtime no-op; `cast` added to the
+  `typing` import), and **2 `unreachable`** in `hardening.py` (`:1500`'s
+  `resume` access and `:1528`'s `keyword_overlap` access — both the same
+  ContextSet-TypedDict always-truthy `or {}` JSON-defense artifact already
+  resolved identically in `analyzer.py`'s rung-3 precedent; kept the
+  defensive fallback behind a scoped `# type: ignore[unreachable]` with a
+  one-line comment, zero runtime change). **PROMPT-SAFE:** the
+  `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+  grep across the 8 modules returned 3 hits, all verified false positives —
+  `demo_fixtures.py`'s `DEMO_AVATAR_ANSWER` (a canned demo-mode fixture
+  string, not a prompt constant) and two `hardening.py` docstring prose
+  mentions of "SYSTEM_PROMPT" as a cross-reference to the real constant in
+  `analyzer.py` — neither is a prompt definition and neither line was
+  touched by this branch's edits, so **no `PROMPT_VERSION` bump, no eval
+  run**. No new dependency, no logic change — annotations/casts/a scoped
+  ignore only. Gate green: `ruff check .` + `ruff format --check` (touched
+  files) + `mypy .` ("Success: no issues found") + full `pytest`.
+
 ### Fix: diagnostics anchor-JD path reconciliation (`fix/diagnostics-15-anchor-jd-path`)
 
 - **Diagnostics round-2 #15 — "No anchor JD is saved" root cause.** The

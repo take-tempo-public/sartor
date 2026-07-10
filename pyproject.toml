@@ -312,7 +312,7 @@ ignore_missing_imports = true
 # (mypy.options.PER_MODULE_OPTIONS), so the strict preset is spelled out as its per-module-capable
 # component flags. This list IS the §6 tracking surface; it GROWS module-by-module toward the
 # Decision-7 end-state (strict everywhere except tests/ evals/ scripts/ db/migrations/versions).
-# Three cohorts so far:
+# Four cohorts so far:
 #   - rung 1 (scraper/json_resume/pdf_render) — the deterministic, LLM-free P1-Hardening leaves;
 #     pure (no intra-project calls), so strict surfaced no cross-module cascade.
 #   - rung 2 (blueprints.applications) — the FIRST non-leaf route/seam module. It was clean for a
@@ -326,8 +326,33 @@ ignore_missing_imports = true
 #     by widening a local to `object` so a documented list branch stays live. The 15 prompt
 #     constants were sha256-proven byte-identical pre/post, so no PROMPT_VERSION bump / no eval
 #     (the GOTCHA-4 prompt-home ceremony).
+#   - rung 4 (hardening/parser/generator/corpus_to_json_resume/docx_to_persona_html/config/
+#     demo_fixtures/app) — the remaining top-level root modules: the last five C-6 deterministic
+#     leaves (hardening/parser/generator/corpus_to_json_resume/docx_to_persona_html are ALL
+#     LLM-free by charter) plus config/demo_fixtures/app, which measured strict-clean already
+#     (roster-add only, zero fixes needed). Measured 51 errors across hardening.py/parser.py/
+#     generator.py: 48 bare-generic `type-arg` (JSON-object dicts -> dict[str, Any], sections/
+#     proto lists -> list[dict[str, Any]]) + 1 `no-any-return` (generator.py's
+#     `_extract_list_numPr` -> `cast("CT_NumPr | None", deepcopy(numPr))`, a runtime no-op) + 2
+#     `warn_unreachable` in hardening.py (the SAME ContextSet-TypedDict always-truthy `or {}` JSON
+#     defense as rung 3's analyzer.py case — both kept behind a scoped
+#     `# type: ignore[unreachable]` with a one-line comment; zero runtime change).
 [[tool.mypy.overrides]]
-module = ["scraper", "json_resume", "pdf_render", "blueprints.applications", "analyzer"]
+module = [
+    "scraper",
+    "json_resume",
+    "pdf_render",
+    "blueprints.applications",
+    "analyzer",
+    "hardening",
+    "parser",
+    "generator",
+    "corpus_to_json_resume",
+    "docx_to_persona_html",
+    "config",
+    "demo_fixtures",
+    "app",
+]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 disallow_untyped_calls = true

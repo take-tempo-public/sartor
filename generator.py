@@ -10,7 +10,7 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import docx
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
@@ -235,7 +235,7 @@ def generate_resume_from_json_resume(
 
 
 def _render_pdf_from_json(
-    json_doc: dict,
+    json_doc: dict[str, Any],
     docx_template_path: str | None,
     output_pdf_path: Path,
 ) -> None:
@@ -456,7 +456,9 @@ def _extract_list_numPr(doc: "docx.document.Document") -> CT_NumPr | None:
             if pPr is not None:
                 numPr = pPr.find(qn("w:numPr"))
                 if numPr is not None:
-                    return deepcopy(numPr)
+                    # lxml/etree elements are untyped (Any); deepcopy of the
+                    # located numPr is a same-shape runtime no-op.
+                    return cast("CT_NumPr | None", deepcopy(numPr))
     return None
 
 
@@ -493,7 +495,7 @@ def _apply_numPr(paragraph: Paragraph, numPr_template: CT_NumPr) -> None:
 # the corresponding markdown elements.
 
 
-def _capture_proto(p: Paragraph) -> dict:
+def _capture_proto(p: Paragraph) -> dict[str, Any]:
     """Capture a paragraph's formatting into a serializable prototype.
 
     Captures alignment, vertical spacing, tab stops, and the primary run's
@@ -512,7 +514,7 @@ def _capture_proto(p: Paragraph) -> dict:
     }
 
 
-def _capture_template_styles(doc: "docx.document.Document") -> dict:
+def _capture_template_styles(doc: "docx.document.Document") -> dict[str, Any]:
     """Walk the template's first ~30 paragraphs; classify each by role.
 
     Heuristics:
@@ -525,7 +527,7 @@ def _capture_template_styles(doc: "docx.document.Document") -> dict:
     Returns a dict keyed by role; missing roles fall back to the writer's
     built-in defaults so a partial capture still yields a clean output.
     """
-    styles: dict = {}
+    styles: dict[str, Any] = {}
     centered_seen = 0
     last_was_job_title = False
 
@@ -572,7 +574,7 @@ def _capture_template_styles(doc: "docx.document.Document") -> dict:
     return styles
 
 
-def _apply_para_proto(p: Paragraph, proto: dict | None) -> None:
+def _apply_para_proto(p: Paragraph, proto: dict[str, Any] | None) -> None:
     """Apply paragraph-level formatting from a proto. Skips runs."""
     if not proto:
         return
@@ -586,7 +588,7 @@ def _apply_para_proto(p: Paragraph, proto: dict | None) -> None:
         p.paragraph_format.tab_stops.add_tab_stop(Pt(pos_pt), alignment=align)
 
 
-def _apply_run_proto(run: Run, proto: dict | None) -> None:
+def _apply_run_proto(run: Run, proto: dict[str, Any] | None) -> None:
     """Apply run-level formatting (bold, font size) from a proto."""
     if not proto:
         return
@@ -596,7 +598,9 @@ def _apply_run_proto(run: Run, proto: dict | None) -> None:
         run.font.size = Pt(proto["run_size_pt"])
 
 
-def _add_inline_runs_with_proto(paragraph: Paragraph, text: str, proto: dict | None) -> None:
+def _add_inline_runs_with_proto(
+    paragraph: Paragraph, text: str, proto: dict[str, Any] | None
+) -> None:
     """Like _add_inline_runs but also applies the proto's run-level format to every emitted run.
 
     The proto format acts as a baseline (inline ** / * still wins over base bold).
