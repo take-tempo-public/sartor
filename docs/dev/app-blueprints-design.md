@@ -1,7 +1,16 @@
 # Design — `app.py` → Flask blueprints (v1.0.8, item 8.1)
 
-> **Status:** APPROVED design (owner decisions locked 2026-06-21). Read-only investigation
-> of the monolith; **no route moved in this document's branch** (`design/app-blueprints`).
+> **SHIPPED 2026-06-22.** All eight domain-seam branches (8.1 design → 8.2
+> route-security-lint widen → 8.3a–h decomposition) landed; `app.py` carries
+> zero routes. This document is now the **historical design record** — read
+> it for the architecture rationale and the decisions locked below, not as a
+> live plan. Canonical for the shipped shape: the `blueprints/` tree at HEAD +
+> [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) items **8.1–8.3h**.
+<!-- DOC-STATUS(app-blueprints): SHIPPED 2026-06-22 (8.3h `refactor/app-blueprints-diagnostics`, the seventh and last domain seam) — no update trigger, historical record. Canonical: blueprints/ tree at HEAD + RELEASE_CHECKLIST.md items 8.1-8.3h. -->
+
+> **Status (at authoring, 2026-06-21):** APPROVED design (owner decisions locked
+> 2026-06-21). Read-only investigation of the monolith; **no route moved in this
+> document's branch** (`design/app-blueprints`).
 > **Authorizes:** the 8.2+ decomposition branches.
 > **Authorized by:** [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.8 "`design/app-blueprints`"
 > bullet + [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) item **8.1**.
