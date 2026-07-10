@@ -854,6 +854,13 @@ _Open count: 12 — OVER the ~8–10 reduction-sprint threshold (reduction sprin
       and `ci.yml`'s ACTIVATION NOTE (names the four required checks; NOT `eval-smoke`), plus
       `docs/install.md`. Public promotion (repo → public) + badge/citation-link resolution land
       at v1.1.0.
+      **→ Update (2026-07-10, `docs/px40-product-shape-reconcile`):** PX-40 (reconcile
+      `docs/PRODUCT_SHAPE.md` to the post-split reality) landed — the §11.2 WS-1 row now
+      reads ✓ SHIPPED (v1.0.8) with the verified post-split `app.py` facts (0 routes,
+      ~296 lines), the two `app.py:1403-1423` dead citations the prescription named were
+      already re-anchored by prior work (verified absent, no edit needed), and a Status
+      column + `DOC-STATUS` marker were added to the workstream table. 3 of the row's 20
+      PX rows now land; row stays open.
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in

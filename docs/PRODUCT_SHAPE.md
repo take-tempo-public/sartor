@@ -729,12 +729,18 @@ defers to it.
 
 ### 11.2 The four workstreams (structural intent)
 
-| WS | Shape lever | What | Sequenced |
-|---|---|---|---|
-| **WS-1** | split the monolith | decompose the 6,290-LOC / 75-route `app.py` into Flask blueprints, preserving the `_safe_username`/`_within` gate + its lint hook | **v1.0.8** — a dedicated *pre-public* epic (so v1.1.0 ships clean); absorbs PV-4; **never interleaved with a sprint stream** |
-| **WS-2** | model the contracts as types | strict-typing ratchet + a typed `context_set` (TypedDict/dataclass/Pydantic) — the contract becomes a *type*, not prose + JSON-schema | increment 1 = PV-4 in **v1.0.8** (rides WS-1); WS-2-full in the post-public 1.1.x series |
-| **WS-3** | keep the test suite lean | recurring engineering-design pass over the ~955-test suite (redundancy, slow tests, fixture dup) | recurring, post-public (1.1.x) |
-| **WS-4** | a knowledge substrate | committed `docs/wiki/` (git-as-engine) + `llms.txt` + `/wiki-*` skills + a canonical **Governance** extraction | substrate (WS-4a/b) in **v1.0.6**; the self-documenting loop + the doc-grounded assistant in **v1.0.7** |
+> **Snapshot — updated as these land; canonical schedule:**
+> [`RELEASE_ARC.md`](dev/RELEASE_ARC.md) §Phase 4.8 / §"Recurring / continuing
+> workstreams". Status column as of 2026-07-10.
+
+| WS | Shape lever | Status | What | Sequenced |
+|---|---|---|---|---|
+| **WS-1** | split the monolith | ✓ **SHIPPED (v1.0.8)** | decomposed the monolithic `app.py` (pre-split size per [`RELEASE_ARC.md`](dev/RELEASE_ARC.md) §Phase 4.8: 8,251 LOC / 93 routes) into Flask blueprints across Sprints 8.3a–h, preserving the `_safe_username`/`_within` gate + its lint hook (since widened to `blueprints/**.py`, PX-29). `app.py` is now a ~296-line application-factory composition root with **zero** `@app.route` handlers — every route lives on a domain blueprint (`blueprints/` + the read-only `dashboard/`), per [`app.py`](../app.py)'s own module docstring. | **v1.0.8** — landed as a dedicated *pre-public* epic (so v1.1.0 ships clean); absorbed PV-4; was never interleaved with a sprint stream |
+| **WS-2** | model the contracts as types | ◐ **PARTIAL** | strict-typing ratchet + a typed `context_set` (TypedDict/dataclass/Pydantic) — the contract becomes a *type*, not prose + JSON-schema | increment 1 = PV-4 ✓ shipped **v1.0.8** (rode WS-1); the strict-typing ratchet itself ✓ shipped **v1.0.9** (the `mypy --strict` §6 exit criterion was reached 2026-07-10 — every non-exempt production module now type-checks under full `--strict`, see [`kit-adoption-design.md`](dev/kit-adoption-design.md) §6); the **typed `context_set` spine** is still **PLANNED**, post-public 1.1.x |
+| **WS-3** | keep the test suite lean | **PLANNED** | recurring engineering-design pass over the ~955-test suite (redundancy, slow tests, fixture dup) | not yet started; recurring, post-public (1.1.x) |
+| **WS-4** | a knowledge substrate | ✓ **SHIPPED** | committed `docs/wiki/` (git-as-engine) + `llms.txt` + `/wiki-*` skills + a canonical **Governance** extraction | substrate (WS-4a/b) shipped **v1.0.6**; the self-documenting loop + the doc-grounded assistant shipped **v1.0.7** |
+
+<!-- DOC-STATUS(ws-workstreams): WS-2's typed `context_set` spine and WS-3 (test-suite engineering-design pass) are PLANNED, not started as of 2026-07-10 — update this table's Status column when either lands. Canonical: docs/dev/RELEASE_ARC.md "Recurring / continuing workstreams". -->
 
 ### 11.3 Consistency tracks enforcement (the Q2 finding → why WS-1 + WS-2)
 

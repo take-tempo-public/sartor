@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs: reconcile PRODUCT_SHAPE.md to the post-split reality (PX-40, `docs/px40-product-shape-reconcile`)
+
+- **WS-1 row (§11.2) updated from scheduled to shipped.** Verified at HEAD
+  (2026-07-10): `app.py` is a ~296-line application-factory composition root
+  with **zero** `@app.route` decorators (`grep -c` confirms both hits are
+  prose in the module docstring, not decorators); every route lives on a
+  domain blueprint (`blueprints/` + the read-only `dashboard/`), per
+  `app.py`'s own docstring. The row now reads ✓ **SHIPPED (v1.0.8)** instead
+  of describing the split as future work.
+- **The two `app.py:1403-1423` dead citations the prescription named
+  (`PRODUCT_SHAPE.md:186`, `:481`) are already gone** — re-verified: no
+  `app.py:` line-number citations remain anywhere in the file; both
+  locations were already re-anchored to `blueprints/templates.py` by prior
+  work (the 8.3e blueprint-decomposition docs pass). No edit needed for
+  this sub-item; noted here so the prescription doesn't re-surface it.
+- **Added as-of/status markers to the §11.2 workstream table** — a Status
+  column (✓ SHIPPED / ◐ PARTIAL / PLANNED) plus a visible "Snapshot —
+  updated as these land" note and a `DOC-STATUS` HTML-comment trigger (the
+  convention documented in `docs/dev/documentation-architecture.md`), so a
+  reader can tell shipped from aspirational without cross-referencing
+  `RELEASE_ARC.md`. WS-2 is corrected from "post-public 1.1.x" to
+  **PARTIAL**: the `mypy --strict` §6 exit criterion was reached
+  2026-07-10 (same day, prior branch on this train) — only the typed
+  `context_set` spine itself remains post-public.
+
 ### Chore: mypy --strict ratchet COMPLETE — §6 exit (`chore/kit-mypy-strict-uipages-exit`)
 
 - **Kit-adoption Phase 2 #2, ratchet rung 8 — the FINAL rung, reaching the §6
