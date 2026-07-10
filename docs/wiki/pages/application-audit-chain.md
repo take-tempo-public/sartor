@@ -9,7 +9,9 @@
 > **Sources:** [`db/models.py`](../../../db/models.py),
 > [`db/build_context.py`](../../../db/build_context.py),
 > [`db/persist_run.py`](../../../db/persist_run.py),
-> [`app.py`](../../../app.py).
+> [`blueprints/generation.py`](../../../blueprints/generation.py),
+> [`blueprints/corpus/proposals.py`](../../../blueprints/corpus/proposals.py),
+> [`blueprints/applications.py`](../../../blueprints/applications.py).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -34,7 +36,13 @@ here `[synthesis]`.
 `cascade="all, delete-orphan"` relationship. The row is created in
 [`db/build_context.py:build_context_set_from_db`](../../../db/build_context.py),
 which computes the fingerprint and inserts `status="draft"` before the first
-run.
+run. `Application.is_active` (walkthrough J1) is a soft-retire flag — same
+pattern as `ExperienceTitle.is_active` — flipped by
+[`blueprints/applications.py:retire_application`](../../../blueprints/applications.py)
+(`DELETE /api/applications/<id>`, sets `0`) and `restore_application` (`POST
+.../restore`, sets `1`) via the shared `_set_application_active` body; a
+retired application is hidden from the Prior Applications list but its runs +
+audit trail are kept, never hard-deleted `[synthesis]`.
 
 ## `ApplicationRun` — one generation pass
 
@@ -96,7 +104,8 @@ The LLM may also propose *new* bullets/titles.
 one of `bullet_id` / `experience_title_id`; `decision` is constrained to
 `pending | accept_original | accept_edit | reject`. The user's verdict is
 applied in the decide route
-[`app.py:decide_proposal_route`](../../../app.py): accept flips
+[`blueprints/corpus/proposals.py:decide_proposal_route`](../../../blueprints/corpus/proposals.py)
+(`POST /api/proposals/<id>/decide`): accept flips
 `is_pending_review=0` (and
 `truthful_enough_to_use=1` for titles), `accept_edit` stores
 `user_edited_text` + rewrites the row, `reject` retires the bullet
@@ -105,13 +114,17 @@ applied in the decide route
 
 ## Persist entry points + the cover-letter carve-out
 
-After `generate()` returns, [`app.py:_persist_corpus_generation_to_db`](../../../app.py)
+After the résumé step of [`blueprints/generation.py:run_generation`](../../../blueprints/generation.py)
+completes — the LLM `generate()` call, OR (Phase 4) the zero-LLM deterministic
+frozen-composition assemble; both return the same result-dict shape (see
+[[corpus-to-output-reach]] / [[pipeline-stages]] Step 5) — 
+[`blueprints/generation.py:_persist_corpus_generation_to_db`](../../../blueprints/generation.py)
 looks up the run, re-validates `candidate_id`, calls
 [`db/persist_run.py:persist_corpus_generation`](../../../db/persist_run.py)
 (which writes the md, the bullet/title rows, the proposals, and one
 `IterationLog` "generate" row), and commits. The detached cover-letter route
 uses a separate write-back,
-[`app.py:_persist_cover_letter_to_db`](../../../app.py) →
+[`blueprints/generation.py:_persist_cover_letter_to_db`](../../../blueprints/generation.py) →
 [`db/persist_run.py:persist_cover_letter_md`](../../../db/persist_run.py),
 which writes **only** `generated_cover_letter_md` — routing it through the full
 persist path would null the already-saved résumé md `[synthesis]`.
@@ -132,3 +145,5 @@ answers already turned into corpus bullets.
 - [[iteration-audit-chain]] — the on-disk `context_*.json` sibling chain (same intent, file substrate).
 - [[code-module-map]] — where `db/` sits in the module map.
 - [[route-surface]] — the Flask routes (`/api/generate`, proposal decide, cover-letter) that drive these writes.
+- [[pipeline-stages]] — Step 5's frozen-vs-legacy generate branch, both of which feed the persist entry point above.
+- [[corpus-to-output-reach]] — how Compose curation resolves into the result dict this chain persists.

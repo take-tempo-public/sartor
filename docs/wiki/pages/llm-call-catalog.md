@@ -1,8 +1,8 @@
 # LLM call catalog
 
 > **Audience:** `dev`
-> **Concept:** the full set of LLM call kinds sartor. makes, which model tier each routes to (Sonnet 4.6 = heavy reasoning; Haiku 4.5 = structured selection), and the two-pass analyze (Haiku extraction → Sonnet synthesis) that anchors the analyze→generate cache.
-> **Sources:** [`analyzer.py`](../../../analyzer.py), [`onboarding/extract_experiences.py`](../../../onboarding/extract_experiences.py), [`architecture.md` §"LLM routing + cost"](../../architecture.md), [`llm-routing.mmd`](../../diagrams/llm-routing.mmd), [`pipeline.mmd`](../../diagrams/pipeline.mmd).
+> **Concept:** the full set of LLM call kinds sartor. makes, which model tier each routes to (Sonnet 5 = heavy reasoning; Haiku 4.5 = structured selection), and the two-pass analyze (Haiku extraction → Sonnet synthesis) that anchors the analyze→generate cache.
+> **Sources:** [`analyzer.py`](../../../analyzer.py), [`onboarding/extract_experiences.py`](../../../onboarding/extract_experiences.py), [`blueprints/applications.py`](../../../blueprints/applications.py), [`blueprints/corpus/skills.py`](../../../blueprints/corpus/skills.py), [`architecture.md` §"LLM routing + cost"](../../architecture.md), [`llm-routing.mmd`](../../diagrams/llm-routing.mmd), [`pipeline.mmd`](../../diagrams/pipeline.mmd).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -21,13 +21,13 @@ explicitly passes `model=HAIKU_MODEL` `[synthesis]`. The legacy `MODEL` alias st
 points at `SONNET_MODEL` but new code references the tier constants directly
 ([`analyzer.py:MODEL`](../../../analyzer.py)).
 
-The split is deliberate: **Sonnet 4.6 for heavy reasoning** (large JSON, strategy,
+The split is deliberate: **Sonnet 5 for heavy reasoning** (large JSON, strategy,
 prose); **Haiku 4.5 for structured selection / classification** (cheap, fast, ~5 s
 median per [`architecture.md`](../../architecture.md) §"LLM routing + cost"). Every
 call carries a `call_kind` string for JSONL telemetry + the dashboard, with a
 `<kind>_retry` sibling on the retry path ([`analyzer.py:_parse_or_retry`](../../../analyzer.py)).
 
-## Sonnet 4.6 — heavy reasoning (default tier)
+## Sonnet 5 — heavy reasoning (default tier)
 
 | call_kind | Function | Notes |
 |---|---|---|
@@ -35,10 +35,15 @@ call carries a `call_kind` string for JSONL telemetry + the dashboard, with a
 | `generate` | [`generate`](../../../analyzer.py) / [`generate_streaming`](../../../analyzer.py) | The tailored-résumé producer. |
 | `generate_cover_letter` | [`generate_cover_letter_against_resume`](../../../analyzer.py) | Optional cover-letter pass. |
 | `iterate_clarify` | [`clarify_iteration`](../../../analyzer.py) | Iteration-time interview; **no `model=` override → Sonnet** `[synthesis]`. |
+| `draft_summary` | [`draft_positioning_summary`](../../../analyzer.py) | Generation-experience re-architecture: drafts the JD-tailored two-sentence positioning summary ONCE at Compose. Fired by `POST /api/applications/<id>/draft-summary` ([`blueprints/applications.py:draft_application_summary`](../../../blueprints/applications.py)). Explicit `model=SONNET_MODEL`, not the bare default. Short-circuits without a call when there is no JD `[synthesis]`. |
+| `draft_gap_fill` | [`draft_gap_fill_bullets`](../../../analyzer.py) | Generation-experience re-architecture Phase 3: drafts GROUNDED gap-fill bullets (evidence-or-nothing) for JD requirements the corpus doesn't cover, for accept/retire. Fired by `POST /api/applications/<id>/draft-gap-fill` ([`blueprints/applications.py:draft_application_gap_fill`](../../../blueprints/applications.py)), both the once-per-application auto-fire and the explicit "Regenerate suggestions" affordance. Explicit `model=SONNET_MODEL`. Short-circuits without a call when there is no corpus or no JD `[synthesis]`. |
+| `draft_surgical_refinement` | [`draft_surgical_refinement`](../../../analyzer.py) | Generation-experience re-architecture item (a): drafts ONE scoped, single-item refinement (a sharpened bullet or the positioning summary — never a whole-document rewrite) from a free-text note against the frozen `approved_composition`. Fired by `POST /api/applications/<id>/draft-refinement` ([`blueprints/applications.py:draft_application_refinement`](../../../blueprints/applications.py)). Explicit `model=SONNET_MODEL`. Short-circuits without a call when there is no frozen composition, no JD, or no note `[synthesis]`. |
 
 Note the name mismatch: the function is `clarify_iteration()` but its `call_kind`
 string is `"iterate_clarify"` ([`analyzer.py:clarify_iteration`](../../../analyzer.py)).
-All four omit `model=`, so they inherit the Sonnet default `[synthesis]`.
+The first four omit `model=` and inherit the Sonnet default; the three Compose
+drafting calls (`draft_summary`, `draft_gap_fill`, `draft_surgical_refinement`) pass
+`model=SONNET_MODEL` explicitly instead `[synthesis]`.
 
 ## Haiku 4.5 — structured selection (explicit `model=HAIKU_MODEL`)
 
@@ -51,6 +56,7 @@ All four omit `model=`, so they inherit the Sonnet default `[synthesis]`.
 | `recommend_experience_summary` | [`recommend_experience_summaries`](../../../analyzer.py) | Per-role intro selection. |
 | `recommend_skill` | [`recommend_skills`](../../../analyzer.py) | Skill-item selection. |
 | `suggest_skill` | [`suggest_skills`](../../../analyzer.py) | Proposes NEW canonical skills (grounded; human approve/deny gate). |
+| `suggest_skill_from_corpus` | [`suggest_skills_from_corpus`](../../../analyzer.py) | Sibling of `suggest_skills` for the "Suggest skills from my corpus" affordance — no JD in view, so the evidence gate drops the AND-with-JD condition down to evidence-alone. Fired by `POST /api/users/<username>/skills/suggest-from-corpus` ([`blueprints/corpus/skills.py:suggest_skills_from_corpus_route`](../../../blueprints/corpus/skills.py)). Same pending-review approve/deny gate as `suggest_skill` `[synthesis]`. |
 | `critique_proposal` | [`critique_proposal`](../../../analyzer.py) | Structured critique of a proposal. |
 | `promote_clarification_to_bullet` | [`analyzer.py` promote helper](../../../analyzer.py) | Turns a confirmed clarification into a bullet. |
 | `extract_experiences` | [`onboarding/extract_experiences.py:extract_experiences`](../../../onboarding/extract_experiences.py) | Onboarding/corpus résumé ingest — **lives outside `analyzer.py`** `[synthesis]`. |
@@ -99,9 +105,11 @@ rubrics) ([`analyzer.py:analyze`](../../../analyzer.py)) `[synthesis]`.
 ## Cache + system-prompt overrides
 
 Calls that pass a non-default `system_prompt` (the `clarify` variants, `critique_proposal`,
-the `recommend_*`/`suggest_skills` family, `extract_experiences`) pay one cache-miss on
-the system block; the cheap small calls also pass `cached_user_prefix=""` because there
-is no long static block worth caching ([`analyzer.py:_call_llm`](../../../analyzer.py)) `[synthesis]`.
+the `recommend_*`/`suggest_skills`/`suggest_skills_from_corpus` family, `extract_experiences`,
+and the three Compose drafting calls `draft_positioning_summary` / `draft_gap_fill_bullets` /
+`draft_surgical_refinement`) pay one cache-miss on the system block; the cheap small calls
+also pass `cached_user_prefix=""` because there is no long static block worth caching
+([`analyzer.py:_call_llm`](../../../analyzer.py)) `[synthesis]`.
 Only `analyze_synthesis` and `generate` ride the heavy corpus-prefix cache — see
 [`architecture.md`](../../architecture.md) §"LLM routing + cost" for the green/red
 cache map and real p50 latencies.

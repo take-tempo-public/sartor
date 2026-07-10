@@ -6,9 +6,11 @@
 > stayed grounded — the product enforcing on itself the same no-invention rule
 > this wiki follows.
 > **Sources:** [`analyzer.py`](../../../analyzer.py) (`generate`, the generate
-> prompt's GROUNDING CHECK + worked examples), [`hardening.py`](../../../hardening.py)
-> (the post-gen metric functions + `assemble_source_union`),
-> [`evals/runner.py`](../../../evals/runner.py) (the groundedness composite).
+> prompt's GROUNDING CHECK + worked examples, the D5 drafting calls),
+> [`hardening.py`](../../../hardening.py) (the post-gen metric functions +
+> `assemble_source_union`), [`db/build_context.py`](../../../db/build_context.py)
+> (where `prior_clarifications` is staged), [`evals/runner.py`](../../../evals/runner.py)
+> (the groundedness composite).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -108,6 +110,22 @@ grounding check admits, so the iteration clarifier and the eval-time
 fabricated-specifics check can never score against divergent source sets. It is
 recomputed per iteration because the union grows as clarifications arrive
 ([`hardening.py:assemble_source_union`](../../../hardening.py)).
+
+**D5 cross-JD reuse widens the union further.** `assemble_source_union` also folds
+in `context_set["prior_clarifications"]` — confirmed clarification answers reused
+from the candidate's OTHER applications, staged once by
+[`db/build_context.py:build_context_set_from_db`](../../../db/build_context.py)
+(corpus-mode only). This mirrors what the three drafting calls that accept
+`prior_clarifications`
+([`analyzer.py:draft_positioning_summary`](../../../analyzer.py),
+[`analyzer.py:draft_gap_fill_bullets`](../../../analyzer.py),
+[`analyzer.py:suggest_skills`](../../../analyzer.py) — see [[llm-call-catalog]])
+are shown as legitimate grounding material via a `<prior_clarifications>` prompt
+block once they start citing prior clarifications: the metric must see the same
+union the prompt does, or it over-reports legitimately-reused facts as
+fabrication. The **legacy `generate()` prompt is untouched** — this carve-out is
+scoped to the three drafting calls, not blanket (per
+[`AGENTS.md`](../../../AGENTS.md) "LLM prompts") `[synthesis]`.
 
 The reportable signal is the **groundedness composite** in
 [`evals/runner.py:_groundedness_composite`](../../../evals/runner.py): it folds the

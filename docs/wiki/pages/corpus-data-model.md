@@ -4,12 +4,17 @@
 > **Concept:** the SQLite career-corpus schema and the one lifecycle
 > (`is_active` / `is_pending_review` / `source` / `display_order` + a `*_tag`
 > join) that `Bullet`, `Skill`, `SummaryItem`, and `ExperienceSummaryItem` all
-> wear — the "unified Corpus Item" shape, and the alembic chain (head `0010`)
-> that grew it.
+> wear — the "unified Corpus Item" shape — plus the narrower `is_active`
+> soft-retire pattern it later lent to `ExperienceTitle` and `Application`,
+> and the alembic chain (head `0014`) that grew it.
 > **Sources:** [`db/models.py`](../../../db/models.py),
 > [`db/build_context.py`](../../../db/build_context.py),
 > [`db/migrations/versions/0009_skill_corpus_item.py`](../../../db/migrations/versions/0009_skill_corpus_item.py),
 > [`db/migrations/versions/0010_online_profile_text.py`](../../../db/migrations/versions/0010_online_profile_text.py),
+> [`db/migrations/versions/0011_experience_title_is_active.py`](../../../db/migrations/versions/0011_experience_title_is_active.py),
+> [`db/migrations/versions/0012_merge_dismissal.py`](../../../db/migrations/versions/0012_merge_dismissal.py),
+> [`db/migrations/versions/0013_application_is_active.py`](../../../db/migrations/versions/0013_application_is_active.py),
+> [`db/migrations/versions/0014_backfill_orphaned_proposal_reviews.py`](../../../db/migrations/versions/0014_backfill_orphaned_proposal_reviews.py),
 > [`docs/diagrams/persistence.mmd`](../../diagrams/persistence.mmd),
 > [`docs/architecture.md`](../../architecture.md) §Persistence model.
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
@@ -25,7 +30,13 @@ career-content spine is **Candidate → Experience → Bullet**, with
 `display_order`, and [`Bullet`](../../../db/models.py) the line-level achievement
 rows. Per-role titles live in [`ExperienceTitle`](../../../db/models.py) (at most
 one `is_official=1` per experience, enforced by a partial unique index
-`ix_experience_title_official` with `sqlite_where=text("is_official = 1")`).
+`ix_experience_title_official` with `sqlite_where=text("is_official = 1")`; migration
+`0011` also gave it an `is_active` soft-retire flag — see below). A candidate's
+"keep separate" decision on a pair of similar experiences the merge-suggestion scan
+flagged is recorded in [`MergeDismissal`](../../../db/models.py) (migration `0012`) —
+an order-normalized, uniqued `(candidate_id, exp_a_id, exp_b_id)` row that stops the
+scan re-surfacing a dismissed pair; it cascades away if either experience is deleted
+`[synthesis]`.
 [`Tag`](../../../db/models.py) is one canonical per-candidate registry
 (`kind IN ('role','domain','skill','tech')`, CHECK-constrained) reached from each
 content table through its own junction row. The full FK/cascade picture is the ER
@@ -78,6 +89,29 @@ operations treat all four identically `[synthesis]`. Note `SkillTag` (a Skill ro
 linked to any-kind tags) is distinct from a `Tag` of `kind='skill'` (a skill
 keyword tagging a bullet/title), per the `SkillTag` docstring.
 
+## The `is_active` soft-retire pattern spreads beyond the four items
+
+Two non-Corpus-Item tables later borrowed just the `is_active` half of the shape
+(soft-retire, never hard-delete a row other rows reference), not the full
+four-column lifecycle — neither gained `is_pending_review`/`source`/`display_order`:
+
+- [`ExperienceTitle`](../../../db/models.py) — migration `0011` adds `is_active`
+  "parity with `Bullet.is_active`": the corpus "delete" on an
+  alternate title was always a soft-retire (clearing `is_official` /
+  `truthful_enough_to_use`), but nothing filtered the row out of the UI until this
+  column existed. Retired titles are kept for the `application_run_title` /
+  `proposal_review` audit FKs.
+- [`Application`](../../../db/models.py) — migration `0013` (walkthrough J1) adds
+  `is_active` "parity with `ExperienceTitle.is_active`" so the Prior Applications
+  list can hide poor examples / abandoned drafts while keeping the application's
+  runs + audit trail.
+
+Both migrations use a **native `ADD COLUMN`**, not `batch_alter_table`, for the same
+reason `0010` does (below): `experience_title` and `application` are each a PARENT
+table (of `application_run_title` and `application_run` respectively), and a batch
+recreate would cascade-delete those child rows while SQLite FK enforcement is on
+`[synthesis]`.
+
 ## Denormalized caches the items supersede
 
 Two scalar columns predate their multi-variant items and are kept as
@@ -108,11 +142,32 @@ application's iterations `[synthesis]`. (The hardening / no-LLM boundary itself 
 canonical in [`AGENTS.md`](../../../AGENTS.md) — cited, not restated, per
 [`SCHEMA.md`](../SCHEMA.md) D5.)
 
-## Migration chain — head `0010`
+## Migration chain — head `0014`
 
-Schema evolution is alembic-driven; the current head is **`0010`**
-([`0010_online_profile_text.py`](../../../db/migrations/versions/0010_online_profile_text.py),
-`revision="0010"`, `down_revision="0009"` — no migration revises it, verified).
+Schema evolution is alembic-driven; the current head is **`0014`**
+([`0014_backfill_orphaned_proposal_reviews.py`](../../../db/migrations/versions/0014_backfill_orphaned_proposal_reviews.py),
+`revision="0014"`, `down_revision="0013"` — no migration revises it, verified). Four
+migrations landed after `0010`:
+
+- **`0011`** adds `ExperienceTitle.is_active` (see the `is_active` pattern section
+  above); backfills prior "retired" titles (not official, not pending, marked
+  not-truthful under the old semantics) to `is_active=0` so their retire intent
+  survives the migration.
+- **`0012`** creates the `merge_dismissal` table (see above) — a table-existence
+  guard, not a column-existence one, since it's a new table rather than an ALTER.
+- **`0013`** adds `Application.is_active` (see above); no backfill — every existing
+  application starts active (`server_default '1'`).
+- **`0014`** is a **data-only** backfill with no schema change: before this release,
+  the corpus onboarding-review accept/retire routes
+  (`blueprints/corpus/curation.py` / `blueprints/corpus/experiences.py`) cleared
+  `is_pending_review`/`is_active` directly without ever touching
+  `ProposalReview.decision`, leaving it `"pending"` forever for already-reviewed
+  rows and over-counting the applications-list "N to review" badge. `0014`
+  resolves those stale rows via idempotent `UPDATE ... WHERE decision = 'pending'`
+  statements (mirroring what `/api/proposals/<id>/decide` would have recorded);
+  `downgrade()` is a documented no-op since reverting would misrepresent
+  already-resolved review history `[synthesis]`.
+
 `0010` (PX-02) adds the nullable `Candidate.online_profile_text` column — the cached
 opt-in profile/website scrape, a **distinct channel** from `profile_text` (the β.6
 positioning summary); reusing `profile_text` would corrupt summaries, so the scrape gets

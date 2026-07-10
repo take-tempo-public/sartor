@@ -13,16 +13,26 @@
 ---
 
 ## WS-1 — decompose `app.py` into Flask blueprints
-- **What:** split the 6,290-line / 75-route monolith into domain blueprints (candidate
-  seams: analysis, generation/cover-letter, corpus, dashboard, user/config, templates),
+- **What:** split the (walk-era) 6,290-line / 75-route monolith into domain blueprints
+  (analysis, generation/cover-letter, corpus, dashboard, user/config, templates),
   preserving the `_safe_username`/`_within` gate + the hook that lints it.
 - **Why:** navigability + parallel future development; the single biggest *structural*
   gap to polished production (see [[project-self-assessment]],
   [[consistency-tracks-enforcement]]).
-- **Status / where:** design-pending — needs its own session; it rewrites routes nearly
-  every branch touches, so it must run in a dedicated low-churn window. Lands as
-  **v1.0.8** (RELEASE_ARC §Phase 4.8), after the product is feature-complete and before
-  the public cut.
+- **Status / where: ✅ SHIPPED.** Landed as Sprint 8.3a–h (`refactor/app-factory-and-infra`
+  foundation + one domain seam per branch), tagged **v1.0.8**. `app.py` is now a
+  ~296-line composition root (`create_app()` factory + `register_blueprints()` +
+  `main()`) with **zero** `@app.route` decorators; every route lives on one of eight
+  domain blueprints under [`blueprints/`](../../../blueprints/) (`analysis.py`,
+  `generation.py`, `corpus/` — a 7-submodule sub-package, `templates.py`,
+  `applications.py`, `users.py`, `diagnostics.py`, `assistant.py`) — 117 route
+  decorators total, each monolith-origin seam registering with no `url_prefix` so
+  every URL stayed byte-identical. The `_safe_username`/`_within` gate moved to the
+  new leaf package [`web_infra/security.py`](../../../web_infra/security.py); the
+  `route-security-lint` hook and the PX-29 `tests/test_route_containment_gate.py`
+  gate both widened to cover `blueprints/**.py`. Full inventory: [[route-surface]] +
+  [[code-module-map]]. The structural gap this workstream targeted is closed
+  `[synthesis]`.
 
 ## WS-2 — tighten typing toward strict + model the data contracts
 - **What:** move mypy toward `strict=true` (per-module ratchet); model `context_set` and
@@ -31,10 +41,18 @@
   deserves to be a *type*, not prose + JSON-schema (the "data-contract typing" gap in
   [[consistency-tracks-enforcement]]).
 - **Status / where:** the modest first increment (annotate route returns / flip
-  `check_untyped_defs` — "PV-4") is **absorbed into v1.0.8** as the routes move; the full
-  `mypy --strict` ratchet + a typed `context_set` spine is the post-public **WS-2-full**
-  (1.1.x recurring). Reconcile with the release plan's PV-4 type scan so the work isn't
-  done twice `[synthesis]`.
+  `check_untyped_defs` — "PV-4") landed with v1.0.8 as the routes moved. The **strict
+  half is also now shipped**: the `mypy --strict` ratchet reached its **§6 exit**
+  (2026-07-10, the `chore/kit-mypy-strict-*` branch stack, ratchet rungs 4–8) — every
+  non-exempt production module (all 81) carries the strict override; only the
+  Decision-7 exempt set (`tests/`/`evals/`/`scripts/`/`db/migrations/versions`) stays
+  permissive, and the exit is enforced **by construction** via
+  [`tests/test_mypy_strict_roster_gate.py`](../../../tests/test_mypy_strict_roster_gate.py)
+  rather than a one-time proof (closes compliance-witness CW-118). The typed
+  `context_set` spine (a typed model, not just strict-checked `dict`s) is the
+  remaining, still-open half — that stays the post-public **WS-2-full** (1.1.x
+  recurring; see [`docs/dev/kit-adoption-design.md`](../../dev/kit-adoption-design.md)
+  §6) `[synthesis]`.
 
 ## WS-3 — test-suite engineering-design pass
 - **What:** a periodic design review of the ~955-test suite for efficiencies,
@@ -60,8 +78,10 @@
 
 - [[excellence-walk]] — the walk this backlog belongs to.
 - [[system-model-derivation]] — the lenses that surfaced these gaps.
-- [[consistency-tracks-enforcement]] · [[project-self-assessment]] — where WS-1/WS-2 are
-  diagnosed.
+- [[consistency-tracks-enforcement]] · [[project-self-assessment]] — where WS-1/WS-2 were
+  originally diagnosed as gaps; both are now closed (see above).
 - [[llm-wiki-design]] — the WS-4 design in depth.
-- [[code-module-map]] — the single-file `app.py` monolith + module inventory WS-1 would
-  decompose; the code cold-ingest is WS-4 realized.
+- [[code-module-map]] — the post-WS-1 `blueprints/` + `web_infra/` module inventory
+  (the single-file `app.py` monolith WS-1 decomposed); the code cold-ingest is WS-4
+  realized.
+- [[route-surface]] — the `blueprints/` route inventory WS-1 produced.

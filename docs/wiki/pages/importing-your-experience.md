@@ -8,7 +8,8 @@
 > `#corpusIngestFile`) and the profile-fetch fields in the Settings drawer
 > (`#btnFetchProfile`) driven by `static/app.js` (`uploadFile`, `fetchProfileContent`);
 > the ingest route `ingest_resume_to_corpus` in `blueprints/corpus/curation.py`
-> (parsing via `parser.py`, extraction via the Haiku `onboarding.extract_experiences`).
+> (parsing via `parser.py`, extraction via the Haiku
+> `onboarding.extract_experiences_and_skills`).
 
 ---
 
@@ -17,10 +18,16 @@ experience. There are three ways to fill it.
 
 ## Import a résumé
 Import a résumé you already have (`.docx`, `.pdf`, or `.md`) and sartor reads it and
-extracts your roles and bullet points for you, so you don't start from a blank page. A
-clean, **ATS-friendly** résumé — plain text, clear month/year dates — reads best.
-Everything it pulls out starts as *pending review*, for you to accept (see
-[[career-corpus]]).
+extracts your roles, bullet points, **and skills** for you, so you don't start from a
+blank page. A clean, **ATS-friendly** résumé — plain text, clear month/year dates —
+reads best. Everything it pulls out starts as *pending review*, for you to accept (see
+[[career-corpus]]) — including any skills it found in a dedicated Skills/Technologies
+section, which now land as pending Skill entries too, so a freshly-imported résumé no
+longer leaves your Skills section empty `[synthesis]` (grounded in
+[`onboarding/extract_experiences.py`](../../../onboarding/extract_experiences.py)'s
+`extract_experiences_and_skills` and `onboarding/corpus_import.py`'s
+`_insert_pending_skills`, wired through the same
+[`blueprints/corpus/curation.py`](../../../blueprints/corpus/curation.py) ingest route).
 
 ## Pull from your online profiles
 In **Settings** you can add links to your LinkedIn, website, or portfolio and let

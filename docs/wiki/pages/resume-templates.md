@@ -5,7 +5,7 @@
 > **Audience:** `user` — no technical background assumed.
 > **Grounding:** the Résumé templates tab in `templates/index.html`
 > (`#panelPersonas`) + the Step 4 template picker; mirrors the in-app templates
-> help.
+> help. Preview fidelity: `docx_to_persona_html.py` (`extract_persona_style`).
 
 ---
 
@@ -24,5 +24,8 @@ your user, and you can rename or delete the ones you uploaded. You can do this o
 the Résumé templates tab or right inside Step 4 of [[tailoring-a-resume]].
 
 ## Choosing one
-In Step 4 the preview shows the pages exactly as they'll print, so you can compare
-the look before you generate. See [[using-sartor]] for the whole flow.
+In Step 4 the preview shows the pages closely matching how they'll print, so you can
+compare the look before you generate — sartor reads spacing details (like the gap
+around headings and job titles) out of your chosen `.docx` rather than guessing at
+them, so the preview reflects that template's actual rhythm, not a generic
+approximation `[synthesis]`. See [[using-sartor]] for the whole flow.

@@ -139,9 +139,10 @@ material everything downstream must stay consistent with (durable design rationa
 point-in-time notes, external references) that git cannot otherwise track as a living
 doc. It **starts at zero**: in a codebase git already *is* a raw/ layer (every commit
 is an immutable, diffable snapshot with provenance), so `raw/` only earns its place for
-knowledge git can't see. It is introduced by the later, gated Governance-extraction
-branch — not here. Copying a live git-tracked doc into `raw/` would be pure duplication
-and rot; don't.
+knowledge git can't see. The later, gated Governance-extraction branch ultimately
+**rejected** `raw/` (choosing [`docs/governance/`](../governance/) as the constitutional
+home instead), so `raw/` stays unbuilt — a documented option, not a live directory.
+Copying a live git-tracked doc into `raw/` would be pure duplication and rot; don't.
 
 ## Ops
 

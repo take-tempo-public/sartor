@@ -93,7 +93,9 @@ were resolved on 2026-06-15 (per RELEASE_ARC §Phase 4.7 governance extraction s
 
 ## Related
 
-- [[llm-wiki-design]] — the wiki design; `raw/` is introduced by this extraction.
+- [[llm-wiki-design]] — the wiki design; this extraction is where the earlier `raw/`
+  question got resolved — `raw/` was rejected in favor of `docs/governance/` (§Status
+  above), so it stays unbuilt.
 - [[engineering-workstreams]] — this is WS-4's follow-on.
 - [[system-model-derivation]] — the seven-functions language that dissolved the crux.
 - [[consistency-tracks-enforcement]] — the finding this extends to the vision.

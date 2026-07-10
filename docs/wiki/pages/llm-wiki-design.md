@@ -65,10 +65,15 @@ This is **the same move as the product's own grounding check**:
 But **in a codebase, git already *is* a `raw/` layer** — every commit is an immutable,
 diffable, rebuildable snapshot with provenance. So `raw/` only earns its place for
 knowledge git *cannot* see (external papers, point-in-time rationale) — and it therefore
-**starts at zero**, introduced later by [[governance-extraction]], not invented eagerly.
-Copying a live git-tracked doc into `raw/` would be pure duplication `[synthesis]`. The
-canonical statement of this is [`../SCHEMA.md`](../SCHEMA.md) "The `raw/` constitutional
-layer."
+**started at zero**, not invented eagerly. [[governance-extraction]] later resolved where
+the constitutional layer would actually live — **not** `raw/`, which it explicitly
+rejected ("descriptive source-shed, wrong register") in favor of
+[`../../governance/`](../../governance/) as its own directory; `docs/wiki/raw/` remains
+unbuilt at HEAD `[synthesis]`. Copying a live git-tracked doc into a `raw/` layer would
+still be pure duplication `[synthesis]`. The original framing of this question is
+[`../SCHEMA.md`](../SCHEMA.md) "The `raw/` constitutional layer" — itself now stale on
+this one point (still says "introduced by the later, gated Governance-extraction branch")
+and due a correction pass.
 
 ## Ops + trigger + cost
 
@@ -84,4 +89,5 @@ is the branch close-out + the pre-release lint gate `[synthesis]`.
 - [[excellence-walk]] — the walk this design belongs to.
 - [[engineering-workstreams]] — WS-4 in the backlog context.
 - [[project-self-assessment]] — the Q4 docs-discoverability watch-out this answers.
-- [[governance-extraction]] — the follow-on that introduces the constitutional `raw/`.
+- [[governance-extraction]] — the follow-on that resolved (and rejected) the constitutional
+  `raw/` question in favor of `docs/governance/`.

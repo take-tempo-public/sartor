@@ -497,7 +497,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **7** (`grep -c '^- \[ \]'` over this subsection is the
+_Rendered open count: **6** (`grep -c '^- \[ \]'` over this subsection is the
 source of truth, re-verified at each close-out). Ceiling reminder: schedule a
 reduction sprint at ~8–10 open items, and clear before adding. The full
 per-item addition/resolution chronology since 2026-06-15 lives in git history
@@ -882,6 +882,11 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       marker edit needed; both already conform to the documented grammar). **Cumulative count:**
       prior landed rows were PX-26 + PX-54 (2 of 20); with PX-40/PX-48/PX-50/PX-53 landing here,
       **6 of the row's 20 PX rows now land**; row stays open (14 remain).
+      **→ Update (2026-07-10, `docs/wiki-v109-refresh`):** **PX-41** (the scheduled 8.6 wiki
+      catch-up ingest) lands — the full `/wiki-self-update`-style refresh re-anchored 29 pages,
+      advanced `.last_ingest_sha` `3561657` → `e785e53`, and passed `/wiki-lint` (see the Resolved
+      "Wiki ingest refresh" row). **Cumulative: 7 of the row's 20 PX rows now land**; row stays
+      open (13 remain).
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in
@@ -921,17 +926,20 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       **→ Integrate:** Wave A is done on this branch; the epic itself needs owner slotting
       before it becomes a branch sequence.
 
-- [ ] **Wiki ingest refresh — 219 commits stale at the v1.0.8 tag** — `docs/wiki/.last_ingest_sha`
-      (`3561657`) predates the entire `app.py`→`blueprints/**` decomposition + kit-adoption +
-      big-push, so most code cites in the wiki have drifted. A full `/wiki-self-update` pass is a
-      **v1.0.9-sized refresh, not a pre-tag top-up**, so it was **deliberately deferred**: the
-      v1.0.8 tag ships with the wiki stale — a conscious deviation from the v1.0.7 wiki-clean
-      precedent, justified (internal dev-docs, not product; 219-commit drift). **→ Integrate as a
-      dedicated v1.0.9 branch** (`docs/wiki-refresh-v1.0.9`): run `/wiki-self-update` to re-anchor
-      `.last_ingest_sha` + confirm `/wiki-lint` clean. _(discovered: 2026-07-09,
-      `docs/diagnostics-round2-capture`, pre-v1.0.8 tag prep; open count 6 → 7.)_
-
 #### Resolved
+
+- [x] **Wiki ingest refresh — the v1.0.9 code-keyed catch-up** — RESOLVED 2026-07-10
+      (`docs/wiki-v109-refresh`). The full `/wiki-self-update`-style refresh ran as a
+      parallelized 6-lane pass (Sonnet `wiki-scribe` worktrees + Haiku grounding audit of the
+      integrated working tree + a central reconcile), re-anchoring **29 pages** to HEAD and
+      advancing `docs/wiki/.last_ingest_sha` `3561657` → `e785e53` (the 244-commit drift that
+      accreted since the v1.0.8 tag: `app.py`→`blueprints/**` + kit-adoption + big-push). `/wiki-lint`
+      **PASS** (0 ERROR). Also closed three long-carried WATCH items in the same pass: the `raw/`
+      "introduced by governance-extraction" phrasing (corrected — governance-extraction **rejected**
+      `raw/`), WS-1 design-pending → SHIPPED, and the stale `6,290-LOC/75-route` `app.py` figure.
+      **Lands PX-41** (the scheduled 8.6 wiki catch-up ingest) → **7 of 20** efficiency PX rows.
+      _(discovered: 2026-07-09, `docs/diagnostics-round2-capture`; resolved on the v1.0.9 train;
+      open count 7 → 6.)_
 
 - [x] **E2E walkthrough + R2-live verification (8.5 remainder)** — the gated test window's
       *walkthrough* half. 8.5 (`eval/live-shakedown-labels`) ran the *eval* half and produced

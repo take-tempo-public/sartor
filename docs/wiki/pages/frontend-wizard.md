@@ -2,12 +2,15 @@
 
 > **Audience:** `dev`
 > **Concept:** the browser wizard — the six-step panel rail, the Compose cards
-> (bullets + B.4 role-intro picker + B.5 skills card), the paged.js live preview,
-> config persistence, the smart-landing top-tab structure, the reusable in-app help
-> primitive, and the KW3 new-user first-run tour.
+> (bullets + B.4 role-intro picker + B.5 skills card + Compose-authored summary and
+> gap-fill drafting), the frozen-composition / WYSIWYG-as-source re-architecture,
+> the paged.js live preview, config persistence, the smart-landing top-tab
+> structure, the reusable in-app help primitive, and the KW3 new-user first-run
+> tour.
 > **Sources:** [`static/app.js`](../../../static/app.js),
 > [`templates/index.html`](../../../templates/index.html),
-> [`static/style.css`](../../../static/style.css).
+> [`static/style.css`](../../../static/style.css),
+> [`docs/dev/generation-experience-rearchitecture.md`](../../../docs/dev/generation-experience-rearchitecture.md).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -91,6 +94,70 @@ gates mean an untouched card sends nothing, keeping the default path (and the ge
 cache) byte-identical `[synthesis]`. The override schema itself lives in
 [[corpus-to-output-reach]] — not restated here.
 
+## The generation-experience re-architecture: frozen composition + deterministic Generate
+
+Compose is no longer just a curation surface — it is where content is *authored*.
+The full design record (locked owner decisions D1–D6, the build sequence, and the
+as-built record for every phase) lives in
+[`docs/dev/generation-experience-rearchitecture.md`](../../../docs/dev/generation-experience-rearchitecture.md);
+this section is the frontend's view of it.
+
+**Auto-drafting on arrival.** `loadComposition()` fires up to three background
+content-authoring calls the first time Compose loads for an application: the
+2-sentence positioning summary
+([`app.js:_fireDraftSummary`](../../../static/app.js), Sonnet
+`draft_positioning_summary`), skills recommendation
+([`_fireRecommendSkills`](../../../static/app.js)), and — deferred to a pass where
+neither of those is in flight — grounded gap-fill bullet proposals for JD
+requirements the corpus doesn't cover
+([`_fireDraftGapFill`](../../../static/app.js), Sonnet `draft_gap_fill_bullets`).
+A local `bgDraftFiring` flag inside `loadComposition` and the persisted
+`data-compose-bg-pending` counter (`_markComposeBgReload`) serialize these so two
+calls never read-modify-write the same context file at once — a real clobber bug
+this serialization exists to prevent `[synthesis]`. While the counter is nonzero, a
+`#composeBgChip` ("Updating suggestions…") makes the in-flight background work
+visible rather than silent. Gap-fill proposals render per-role with accept/retire;
+[`app.js:_renderGapFillControls`](../../../static/app.js) also exposes an
+always-visible "Regenerate suggestions" control that re-fires the same draft route
+on demand, excluding (route-side) any key already retired or already accepted so a
+decided-on proposal never resurfaces.
+
+**Freezing on Save-and-continue.** `saveCompositionThenNext`
+([`static/app.js`](../../../static/app.js)) POSTs the collected composition state
+with `freeze: true`; the server resolves it into `approved_composition` — a
+resolved JSON-Resume snapshot plus a `meta.sartor` provenance block — via
+`corpus_to_json_resume.freeze_approved_composition`. `_compositionFrozen` (a
+client-side flag mirroring the server's `_frozen_composition` gate) then makes
+Step 5's copy state-aware: [`app.js:_renderGenerateStepCopy`](../../../static/app.js)
+shows one of two copy blocks (`#generateStepCopyFrozen` /
+`#generateStepCopyLegacy`) depending on whether Generate is about to run a real
+LLM call or deterministically assemble the frozen content — so the app never
+claims a determinism guarantee it isn't about to honor `[synthesis]`.
+
+**Surgical refinement loops back to Compose, not a rewrite.** In corpus mode
+(`_composeApplicationId != null`), `submitRefinement` routes to
+[`app.js:_submitSurgicalRefinement`](../../../static/app.js) instead of the legacy
+full-regenerate path: it runs the same `/api/validate-refinement` scope check,
+then drafts exactly ONE scoped proposal (`POST .../draft-refinement`) — a
+sharpened existing bullet, a genuinely new grounded bullet, or a rewritten
+summary — and routes back to Compose with a banner
+([`_renderComposeLoopbackBanner`](../../../static/app.js)) showing the actual
+proposed change for accept/retire. A note the model can't scope to one item
+("rewrite everything") falls back to plain "go adjust it yourself" copy. Legacy
+(file-based, non-corpus) applications keep the original LLM full-regenerate.
+
+**WYSIWYG-as-source: the preview always matches what Download would produce.**
+Editing `#resumePreview` / `#coverPreviewFrame`'s companion editor debounces
+(300ms) into [`app.js:_refreshLiveEditPreview`](../../../static/app.js), which
+POSTs the live editor text to `POST /api/applications/<id>/preview-edited` (new
+route, `blueprints/templates.py`) and swaps the iframe's `srcdoc` — nothing is
+persisted by this call. This closes the gap where a typed edit was visible to
+`/api/download-edited` immediately but the styled preview only picked it up after
+the separate explicit `/api/save-edits` gate — preview and download could
+disagree in between `[synthesis]`. The existing "your edits aren't saved yet"
+modal and `/api/save-edits` persistence are unchanged; the live route is a pure,
+non-persisting display refresh layered on top.
+
 ## The paged.js live preview
 
 Three sandboxed iframes render the real document: `livePreviewFrame` (Step 4 template
@@ -129,7 +196,7 @@ title + icon group left and the collapse chevron stays right — see
 `.help-inline` line as the first `.panel-body` child wired into `aria-describedby`. The
 `panelUser` welcome block auto-opens once-ever via
 [`app.js:_maybeAutoOpenHelp`](../../../static/app.js), gated by the `cb_help_seen:`
-localStorage seam (`_HELP_SEEN_PREFIX`), wrapped so a throwing store reads as "not seen"
+localStorage seam (`CB_HELP_SEEN_PREFIX`), wrapped so a throwing store reads as "not seen"
 `[synthesis]`. The same primitive is **ported** (not imported) into the localhost console
 — see [[diagnostics-console]].
 
@@ -150,4 +217,5 @@ armed and with no modal already open (so stops never stack);
 - [[pipeline-stages]] — the analyze→compose→generate flow the wizard steps drive.
 - [[route-surface]] — the `/api/...` routes each step calls.
 - [[corpus-to-output-reach]] — how composition overrides reach the generated document.
+- [[tailoring-a-resume]] — the user-facing walk through the same six steps.
 - [[diagnostics-console]] — the localhost console that ports this help primitive.

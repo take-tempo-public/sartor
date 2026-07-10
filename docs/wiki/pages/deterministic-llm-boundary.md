@@ -10,6 +10,7 @@
 > [`json_resume.py`](../../../json_resume.py),
 > [`corpus_to_json_resume.py`](../../../corpus_to_json_resume.py),
 > [`pdf_render.py`](../../../pdf_render.py),
+> [`docx_to_persona_html.py`](../../../docx_to_persona_html.py),
 > [`AGENTS.md`](../../../AGENTS.md).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
@@ -24,10 +25,14 @@ embodies it* so a reader can verify the rule holds at HEAD. On any conflict,
 AGENTS.md wins and this page is the thing that is wrong.
 
 The shape: **all** LLM calls live in `analyzer.py`; `hardening.py`, `parser.py`,
-`generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, and
-`pdf_render.py` are deterministic and **must not** call an LLM. AGENTS.md frames
-this as the **P1 Hardening** boundary (the 10 Principles annotations are
-load-bearing, per [`AGENTS.md`](../../../AGENTS.md)).
+`generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`,
+`pdf_render.py`, and `docx_to_persona_html.py` are deterministic and **must
+not** call an LLM. AGENTS.md frames this as the **P1 Hardening** boundary (the
+10 Principles annotations are load-bearing, per
+[`AGENTS.md`](../../../AGENTS.md)) and now enumerates all eight modules by
+name (`AGENTS.md` "Architecture at a glance") — this page's module list
+previously stopped at seven; `docx_to_persona_html.py` (the persona-upload
+HTML/CSS preview companion generator, added since) closes that gap `[synthesis]`.
 
 ## The main funnel: `_call_llm_streaming`
 
@@ -100,8 +105,13 @@ docstrings declare it, and the code matches:
   JSON, no model.
 - [`pdf_render.py`](../../../pdf_render.py) — Playwright/Chromium + Jinja2 HTML→PDF
   render; purely mechanical.
+- [`docx_to_persona_html.py`](../../../docx_to_persona_html.py) — "Deterministic
+  — no LLM (charter **C-6**)." Reads an uploaded persona `.docx` with
+  `python-docx` and emits an HTML+CSS live-preview companion (margins, fonts,
+  heading treatment) so uploaded templates preview faithfully instead of
+  falling back to the default persona.
 
-A live grep over these seven modules finds **zero** `anthropic` / `_call_llm` /
+A live grep over these eight modules finds **zero** `anthropic` / `_call_llm` /
 `client.messages` call sites — the single hit is the pricing comment in
 `hardening.py` `[synthesis]`.
 
