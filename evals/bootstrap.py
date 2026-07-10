@@ -184,10 +184,22 @@ def _heading_text(line: str) -> str | None:
 def _split_skill_line(line: str) -> list[str]:
     """Split one content line under a Skills heading into individual skills.
 
-    Strips a leading bullet marker, then splits on commas / semicolons / pipes /
-    middots. Returns trimmed, non-empty parts.
+    Strips a leading bullet marker, then a leading inline bold/underscore
+    category-label prefix (``**Languages:** Python, Go`` or
+    ``**Languages**: Python, Go`` — colon inside or outside the bold span,
+    ``**``/``__`` both supported) — these are NOT full-line headings per
+    ``_heading_text``, so without this strip the label text leaks into the
+    first "skill". The colon is required immediately adjacent to the bold
+    close so a genuinely bolded skill token with no label colon (e.g.
+    ``**Kubernetes**, Go``) is left untouched. Finally splits on commas /
+    semicolons / pipes / middots. Returns trimmed, non-empty parts.
     """
     line = re.sub(r"^[-*•]\s+", "", line)
+    line = re.sub(
+        r"^\s*(?:\*\*[^*]+?:\*\*|\*\*[^*]+?\*\*:|__[^_]+?:__|__[^_]+?__:)\s*",
+        "",
+        line,
+    )
     return [p.strip() for p in re.split(r"[,;|·•]", line) if p.strip()]
 
 

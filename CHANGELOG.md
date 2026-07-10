@@ -48,6 +48,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   item #11 (blocked by #15, fixed above first). Extended the existing
   collate test to assert `run_command` contains `--fixture <slug>`.
 
+### Fix: bootstrap skills parser strips inline category labels (`fix/diagnostics-08-skills-parser`)
+
+- **Diagnostics round-2 #8 — skills rendered strangely when annotating.**
+  `_heading_text` (`evals/bootstrap.py`) only recognizes a full-line
+  bold/`#` heading, so an inline category line like `**Languages:**
+  Python, Go` falls through to `_split_skill_line` as a content line —
+  which stripped a leading bullet marker but not the inline bold label,
+  so the first "skill" came out as the garbled `**Languages:** Python`
+  instead of `Python`. `_split_skill_line` now also strips a leading
+  inline bold/underscore category-label prefix (`**Label:** …` and
+  `**Label**: …`, colon inside or outside the bold span, `**`/`__`
+  both supported) before splitting on delimiters — deliberately
+  requiring the colon adjacent to the bold close so a genuinely bolded
+  skill token with no label colon is left untouched. `_heading_text`
+  and its heading semantics are unchanged. See
+  [`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`](docs/dev/reviews/2026-07-diagnostics-round2-findings.md)
+  item #8. Added regression tests (`tests/test_bootstrap.py`) covering
+  both colon placements, the `__…__` variant, a bulleted inline label,
+  a plain comma list (no over-stripping), and a bolded skill token with
+  no label colon.
+
 ## [1.0.8] — 2026-07-09
 
 ### Fix: UX round-2 quick wins (`fix/round2-quick-wins`, 2026-07-09)
