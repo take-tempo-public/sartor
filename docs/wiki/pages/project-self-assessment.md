@@ -36,13 +36,23 @@
 - **Principle-driven** — P1/P2/P5/P6/P8/P9 annotations thread architecture intent through
   the code; load-bearing, not decoration.
 
-## ⚠️ Watch-outs (named honestly)
+## ⚠️ Watch-outs (named honestly, at the walk's 2026-06-07 reading) — both now resolved
 
-- **★ `app.py` is a 6,290-line / 75-route monolith** — the clearest smell; hurts
-  navigability even though each function is readable. → WS-1 ([[engineering-workstreams]]).
-- **Typing is "typed, not strict"** — mypy runs in the gate but not `strict=true`;
-  payloads are `dict`-typed rather than modelled; ~117/214 core functions carry return
-  annotations. → WS-2 ([[engineering-workstreams]]; see [[consistency-tracks-enforcement]]).
+- **★ `app.py` was a 6,290-line / 75-route monolith** — the clearest smell at the time;
+  hurt navigability even though each function was readable. **✅ Resolved:** WS-1
+  ([[engineering-workstreams]]) shipped as Sprint 8.3a–h (tagged v1.0.8) — `app.py` is
+  now a ~296-line composition root with zero routes; every route lives on a domain
+  blueprint under [`blueprints/`](../../../blueprints/) (see [[code-module-map]],
+  [[route-surface]]) `[synthesis]`.
+- **Typing was "typed, not strict"** — mypy ran in the gate but not `strict=true`;
+  payloads were `dict`-typed rather than modelled; ~117/214 core functions carried
+  return annotations. **✅ Resolved (the strict half):** WS-2
+  ([[engineering-workstreams]]) reached its `mypy --strict` **§6 exit** 2026-07-10 —
+  every non-exempt production module now carries the strict override, enforced by
+  construction via `tests/test_mypy_strict_roster_gate.py`. The typed `context_set`
+  spine (modelling the `dict`-typed payloads themselves, not just strict-checking
+  them) is still open, tracked as the post-public **WS-2-full** `[synthesis]` (see
+  [[consistency-tracks-enforcement]]).
 - **Heavy process/meta footprint for a solo beta** — ~70 markdown files / ~14k doc lines,
   comparable to the ~12k-line core. Defensible *if* the repo is also a Claude-Code
   methodology showcase, but it is enterprise-scale ceremony on a single-author beta —
@@ -62,15 +72,20 @@
 
 > This reads like **a staff/principal engineer's personal project that adopted
 > big-company rigor** — above the GitHub median on docs, test discipline,
-> security-by-convention, and AI-product engineering; the remaining gap to "polished
-> production" is **structural** (split the monolith) and **type-strictness**, not
-> cultural. `[synthesis]`
+> security-by-convention, and AI-product engineering; at the walk's 2026-06-07
+> reading, the remaining gap to "polished production" was **structural** (split
+> the monolith) and **type-strictness**, not cultural. `[synthesis]`
 
-That gap is exactly what the [[engineering-workstreams]] backlog targets.
+Both halves of that gap are now closed: WS-1 (the monolith split) shipped as
+Sprint 8.3a–h / v1.0.8, and WS-2's `mypy --strict` ratchet reached its §6 exit
+2026-07-10 — see the Watch-outs section above and
+[[engineering-workstreams]]. What remains open is narrower: WS-2-full's typed
+`context_set` spine, and the process/meta-footprint question above, which stays
+a framing call rather than a gap `[synthesis]`.
 
 ## Related
 
 - [[excellence-walk]] — the walk this assessment belongs to.
 - [[consistency-tracks-enforcement]] — Q2; the consistency view of the same gaps.
-- [[engineering-workstreams]] — WS-1/WS-2 close the structural + typing gaps named here.
+- [[engineering-workstreams]] — WS-1/WS-2, both now shipped, closed the structural + typing (strict) gaps named here.
 - [[deterministic-llm-boundary]] — the P1-boundary strength named here, in code.

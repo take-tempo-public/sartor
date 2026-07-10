@@ -3,11 +3,15 @@
 > **Audience:** `dev`
 > **Concept:** the localhost-only `/_dashboard` console — a read-only Flask
 > blueprint of telemetry + eval tiles, plus the SSE eval / tune / annotation
-> write surface in `app.py` that drives the in-browser self-tuning loop.
+> write surface in `blueprints/diagnostics.py` that drives the in-browser
+> self-tuning loop.
 > **Sources:** [`dashboard/routes.py`](../../../dashboard/routes.py),
 > [`dashboard/__init__.py`](../../../dashboard/__init__.py),
 > [`dashboard/README.md`](../../../dashboard/README.md),
 > [`dashboard/templates/dashboard.html`](../../../dashboard/templates/dashboard.html),
+> [`blueprints/diagnostics.py`](../../../blueprints/diagnostics.py),
+> [`web_infra/http.py`](../../../web_infra/http.py),
+> [`web_infra/request_gates.py`](../../../web_infra/request_gates.py),
 > [`app.py`](../../../app.py),
 > [`docs/architecture.md`](../../architecture.md),
 > [`docs/system-model.md`](../../system-model.md).
@@ -18,8 +22,10 @@
 ## What it is
 
 A self-contained observability surface mounted at `/_dashboard`, registered as
-`app.register_blueprint(dashboard_bp, url_prefix="/_dashboard")`
-([`app.py`](../../../app.py)). The blueprint object is built in
+`app.register_blueprint(dashboard_bp, url_prefix="/_dashboard")` inside
+[`app.py:register_blueprints`](../../../app.py) — one call among the nine that
+factory function makes (see [[code-module-map]] for the full blueprint
+roster). The blueprint object is built in
 [`dashboard/routes.py:dashboard_bp`](../../../dashboard/routes.py) with a single
 `template_folder`, and re-exported from
 [`dashboard/__init__.py`](../../../dashboard/__init__.py). It exists so prompt
@@ -36,17 +42,23 @@ co-location in the route tree is not membership in the Product pipeline
 
 ## The localhost + PII guard
 
-The whole blueprint is loopback-only by a `before_request` hook:
-[`dashboard/routes.py:_localhost_guard`](../../../dashboard/routes.py) splits the
-`Host` header on `:` and `abort(403)`s unless the host is `localhost`,
-`127.0.0.1`, `::1`, or `[::1]`. The write routes in `app.py` enforce the **same**
-posture through [`app.py:_is_localhost_request`](../../../app.py) (identical host
-set), each route returning a JSON 403 when it fails. This is the access control
-for surfaces that touch PII-bearing artifacts under `evals/fixtures/real/`
-`[synthesis]`. The console is not part of the canonical `_safe_username` /
-`_within` route gate's threat model except where it *writes* — see "Annotate"
-below; the security gate itself is canonical in [`AGENTS.md`](../../../AGENTS.md),
-cited not restated (D5).
+The whole blueprint is loopback-only by a `before_request` hook,
+[`dashboard/routes.py:_localhost_guard`](../../../dashboard/routes.py), which
+`abort(403)`s unless the host is `localhost`, `127.0.0.1`, `::1`, or `[::1]`.
+Since Sprint 8.3a this check is no longer a local duplicate: `_localhost_guard`
+**calls the shared**
+[`web_infra/request_gates.py:_is_localhost_request`](../../../web_infra/request_gates.py)
+(which does the `Host`-header split), rather than re-implementing the host set
+inline. The write routes in [`blueprints/diagnostics.py`](../../../blueprints/diagnostics.py)
+enforce the **same** posture through the identical `_is_localhost_request`
+import, each route returning a JSON 403 when it fails — dashboard and
+diagnostics now literally share one function instead of two copies with an
+"identical host set" `[synthesis]`. This is the access control for surfaces
+that touch PII-bearing artifacts under `evals/fixtures/real/` `[synthesis]`.
+The console is not part of the canonical `_safe_username` / `_within` route
+gate's threat model except where it *writes* — see "Annotate" below; the
+security gate itself is canonical in [`AGENTS.md`](../../../AGENTS.md), cited
+not restated (D5).
 
 ## Read-only blueprint: one route, pure helpers
 
@@ -123,45 +135,60 @@ suite's tour-stop seed relies on `[synthesis]`. The annotate tab's verdict legen
 were rewritten for lay readers in the same pass — the write mechanism (routes + gating) is
 unchanged from "The SSE self-tuning loop" below.
 
-## The SSE self-tuning loop (writes live in `app.py`)
+## The SSE self-tuning loop (writes live in `blueprints/diagnostics.py`)
 
-The interactive write surface is **not** in the blueprint — it is a set of routes
-in [`app.py`](../../../app.py), keeping the blueprint read-only `[synthesis]`.
-Each route is `_is_localhost_request`-gated and streams via
-[`app.py:_sse`](../../../app.py) (`event: <name>\ndata: <json>\n\n`) over a
-`text/event-stream` Response so a paid wait reads as alive:
+The interactive write surface is **not** in the blueprint — it is a set of
+routes in [`blueprints/diagnostics.py`](../../../blueprints/diagnostics.py)
+(Sprint 8.3h, the last domain seam extracted from `app.py` — after it the
+monolith carried zero routes), keeping the `dashboard_bp` blueprint read-only
+`[synthesis]`. Each route is `_is_localhost_request`-gated and streams via
+[`web_infra/http.py:_sse`](../../../web_infra/http.py)
+(`event: <name>\ndata: <json>\n\n`) over a `text/event-stream` Response so a
+paid wait reads as alive — every SSE route captures its `current_app.config`
+values as locals **before** the generator runs (the generator executes lazily,
+after the view returns and the app context is gone) `[synthesis]`:
 
-- [`app.py:eval_run_stream`](../../../app.py) — `POST /api/eval/run`. The browser
-  face of `python evals/runner.py …`: drives `evals.runner.run_suite` in a worker
-  thread and streams `start`/`fixture_start`/`analyzing`/`clarifying`/
+- [`blueprints/diagnostics.py:eval_run_stream`](../../../blueprints/diagnostics.py) —
+  `POST /api/eval/run`. The browser face of `python evals/runner.py …`: drives
+  `evals.runner.run_suite` in a worker thread and streams
+  `start`/`fixture_start`/`analyzing`/`clarifying`/
   `generating`/`rubric_done`/`fixture_done`/`done`. **Paid** (Sonnet + Haiku); all
   validation (bad suite, unknown user, missing seed) returns a JSON 4xx *before*
   the worker spends anything.
-- [`app.py:tune_run_stream`](../../../app.py) — `POST /api/tune/run`. Runs
-  `run_suite` **twice** in one worker — baseline (no overrides) then candidate
-  (the pasted `prompt_overrides` map) — and streams a per-(fixture, rubric) delta
-  from the LLM-free `evals.tune` helpers. The candidate self-stamps
-  `prompt_version=candidate:<hash>` via `analyzer.prompt_overrides`, so it never
-  pollutes score-over-time; promote stays manual (the route never edits
-  `analyzer.py`).
+- [`blueprints/diagnostics.py:tune_run_stream`](../../../blueprints/diagnostics.py) —
+  `POST /api/tune/run`. Runs `run_suite` **twice** in one worker — baseline (no
+  overrides) then candidate (the pasted `prompt_overrides` map) — and streams a
+  per-(fixture, rubric) delta from the LLM-free `evals.tune` helpers. The
+  candidate self-stamps `prompt_version=candidate:<hash>` via
+  `analyzer.prompt_overrides`, so it never pollutes score-over-time; promote
+  stays manual (the route never edits `analyzer.py`).
 - `POST /api/annotation/*` — the **only** write surface, running the v1.0.4
-  tuning loop in-browser. [`annotation_bootstrap_stream`](../../../app.py)
+  tuning loop in-browser, all in
+  [`blueprints/diagnostics.py`](../../../blueprints/diagnostics.py):
+  [`annotation_bootstrap_stream`](../../../blueprints/diagnostics.py)
   (`/api/annotation/bootstrap`, paid) drives analyze→clarify→generate over pasted
-  JDs; [`annotation_save`](../../../app.py) writes a fail-closed-validated
-  `annotations.json`; [`annotation_collate`](../../../app.py) (`…/collate`,
+  JDs; [`annotation_save`](../../../blueprints/diagnostics.py) writes a
+  fail-closed-validated `annotations.json`;
+  [`annotation_collate`](../../../blueprints/diagnostics.py) (`…/collate`,
   deterministic) reuses `collate_expected` + `build_improvement_brief` →
   `expected.json` + `improvement_brief.md` + a runnable anchor `jd.txt`;
-  [`annotation_score_grounding`](../../../app.py) (`…/score`, **no paid calls**)
-  backfills NLI/MiniCheck pre-scores over a throwaway in-memory SQLite.
+  [`annotation_score_grounding`](../../../blueprints/diagnostics.py) (`…/score`,
+  **no paid calls**) backfills NLI/MiniCheck pre-scores over a throwaway
+  in-memory SQLite.
 
-Every annotation write is contained: [`app.py`](../../../app.py) routes apply
-`_safe_username()` + `secure_filename(slug)` + `_within(path, ANNOTATION_ROOT)`
-(= `evals/fixtures/real/`, gitignored) — the canonical gate from
-[`AGENTS.md`](../../../AGENTS.md), here on a localhost-only seam (D5).
+Every annotation write is contained:
+[`blueprints/diagnostics.py`](../../../blueprints/diagnostics.py) routes apply
+`_safe_username()` (from `web_infra`) + `secure_filename(slug)` +
+`_within(path, current_app.config["ANNOTATION_ROOT"])` (= `evals/fixtures/real/`,
+gitignored) — the canonical gate from [`AGENTS.md`](../../../AGENTS.md), here on
+a localhost-only seam (D5). This module imports no `anthropic` itself — the paid
+work is delegated to `evals.runner` / `evals.bootstrap` / the `web_infra`
+client factory, so `blueprints/diagnostics.py` is **not** on the PX-08 egress
+allowlist `[synthesis]`.
 
 ## Related
 
-- [[code-module-map]] — where `dashboard/` and the eval tooling sit in the tree.
+- [[code-module-map]] — where `dashboard/`, `blueprints/diagnostics.py`, and the eval tooling sit in the tree.
 - [[eval-harness]] — `evals/runner.py`, whose `results/*.jsonl` this console reads.
 - [[route-surface]] — the Flask routes, including the SSE eval/tune/annotation seam.
 - [[frontend-wizard]] — the wizard help primitive this console ports.

@@ -8,8 +8,9 @@
 > **Sources:** [`docs/architecture.md`](../../architecture.md) §"System overview" +
 > §"Module map"; the root modules ([`analyzer.py`](../../../analyzer.py),
 > [`hardening.py`](../../../hardening.py), [`app.py`](../../../app.py),
-> [`generator.py`](../../../generator.py), the `db/` + `evals/` + `dashboard/`
-> packages, [`static/app.js`](../../../static/app.js) +
+> [`generator.py`](../../../generator.py), the `db/` + `evals/` + `dashboard/` +
+> `blueprints/` + `web_infra/` + `ui_pages/` packages,
+> [`static/app.js`](../../../static/app.js) +
 > [`templates/index.html`](../../../templates/index.html)).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
@@ -21,11 +22,23 @@ Each root Python file has **one stated job**, and the import edges only ever
 point *inward* toward the LLM core — never back out. Verified at HEAD:
 [`hardening.py`](../../../hardening.py) imports neither `analyzer` nor `app`, and
 [`analyzer.py`](../../../analyzer.py) does not import `app` — so the dependency
-arrows are `app → analyzer → hardening`, and they never reverse. The architecture
-doc states this rule as prose; the absence of those import lines is the
-enforcement `[synthesis]`. This is the **Production → Governance answers-upward**
-posture in code form: the deterministic modules are the load-bearing floor, the
-LLM brain sits above them, and the route layer composes both `[synthesis]`.
+arrows are `app → blueprints → analyzer → hardening`, and they never reverse.
+The architecture doc states this rule as prose; the absence of those import
+lines is the enforcement `[synthesis]`. This is the **Production → Governance
+answers-upward** posture in code form: the deterministic modules are the
+load-bearing floor, the LLM brain sits above them, and the route layer composes
+both `[synthesis]`.
+
+Since the Sprint 8.3a–h WS-1 split (see [[engineering-workstreams]]), the route
+layer itself has two tiers: the domain **blueprints** (which may import
+`analyzer`, DB models, and the deterministic modules) and the **`web_infra/`
+leaf** they all share, which is asserted — by
+[`tests/test_web_infra_is_leaf.py`](../../../tests/test_web_infra_is_leaf.py) —
+to never import `app.py`, any blueprint, or `config.py`
+([`web_infra/__init__.py`](../../../web_infra/__init__.py) docstring). So the
+full arrow is `app.py → blueprints/ → {analyzer.py, hardening.py, db/}`, with
+`web_infra/` sitting off to the side as infrastructure every layer above it can
+import freely `[synthesis]`.
 
 The deterministic / LLM boundary itself is canonical in
 [`AGENTS.md`](../../../AGENTS.md) (the P1 hardening rule) — see
@@ -76,14 +89,23 @@ per-iteration chaining is [[iteration-audit-chain]]; document output is
 
 ## The route + frontend surface
 
+**`app.py` is no longer where the routes live.** The Sprint 8.3a–h WS-1 split
+(see [[engineering-workstreams]]) moved every `@app.route` onto domain
+blueprints and moved the security/config/HTTP helpers into a new `web_infra/`
+leaf package. At HEAD `app.py` is a ~296-line composition root carrying
+**zero** route decorators:
+
 | Module | Job | Anchor |
 |---|---|---|
-| [`app.py`](../../../app.py) | Flask routes; the `_safe_username` / `_within` security gate; request/response glue. | [`app.py:_safe_username`](../../../app.py), [`app.py:_within`](../../../app.py) |
+| [`app.py`](../../../app.py) | Composition root: the `create_app(Config)` application factory, `register_blueprints()`, the module-level WSGI/console handle (`app = create_app()`), and `main()`. No route handlers, path globals, or per-request helpers remain — they moved to `blueprints/` + `web_infra/` (Sprint 8.3a–h). | [`app.py:create_app`](../../../app.py), [`app.py:register_blueprints`](../../../app.py), [`app.py:main`](../../../app.py) |
+| [`blueprints/`](../../../blueprints/) | Every Flask route, split into eight domain seams: `analysis.py` (5 routes, 8.3b), `generation.py` (7, 8.3c), `corpus/` (a 7-submodule sub-package on one `corpus_bp`, 8.3d), `templates.py` (13, 8.3e), `applications.py` (20, 8.3f), `users.py` (7, 8.3g), `diagnostics.py` (9, 8.3h — the last seam), `assistant.py` (1, the doc-grounded assistant, predates the split). 116 route decorators total; each of the seven monolith-origin seams registers with **no** `url_prefix` so every URL stays byte-identical. Full route inventory is [[route-surface]]. | [`blueprints/__init__.py`](../../../blueprints/__init__.py) |
+| [`web_infra/`](../../../web_infra/) | The **leaf** helper package `app.py` and every blueprint share instead of re-inlining: `security.py` (`_safe_username`/`_within`), `http.py` (`_sse`, `_error_detail_payload`), `request_gates.py` (`_is_localhost_request`), `clients.py` (`_get_client`), `config_io.py` (`_load_config`/`_save_config`), `provisioning.py` (`_get_or_provision_candidate`). Never imports `app.py`, any blueprint, or `config.py` — enforced by `tests/test_web_infra_is_leaf.py`. | [`web_infra/security.py:_safe_username`](../../../web_infra/security.py), [`web_infra/security.py:_within`](../../../web_infra/security.py) |
 | [`static/app.js`](../../../static/app.js) + [`templates/index.html`](../../../templates/index.html) | The single-page wizard front-end. | — |
 
-`app.py` imports the analyzer verbs when a route needs the LLM and the
-deterministic modules for everything else; it registers the dashboard blueprint
-([`app.py` `register_blueprint(dashboard_bp)`](../../../app.py)). The route
+`app.py`'s `register_blueprints()` mounts all nine — the eight `blueprints/`
+seams plus the pre-existing read-only `dashboard/` blueprint
+([`app.py:register_blueprints`](../../../app.py) calls
+`app.register_blueprint(dashboard_bp, url_prefix="/_dashboard")`). The route
 inventory is [[route-surface]]; the wizard is [[frontend-wizard]]. The security
 gate is canonical in [`AGENTS.md`](../../../AGENTS.md) — cited, not restated (D5).
 
@@ -105,20 +127,22 @@ The corpus data model is [[corpus-data-model]]; how corpus rows reach output is
 |---|---|---|
 | [`evals/runner.py`](../../../evals/runner.py) | LLM eval harness; 0.0–5.0 rubric scoring. | [`evals/runner.py:run_suite`](../../../evals/runner.py), [`evals/runner.py:_load_baseline_scores`](../../../evals/runner.py) |
 | [`dashboard/`](../../../dashboard) | Read-only Flask blueprint at `/_dashboard` for eval results, cost cards, failure-mode heatmap. | [`dashboard/routes.py:dashboard_bp`](../../../dashboard/routes.py) |
+| [`ui_pages/`](../../../ui_pages/) | Framework-free Page Object Model for the wizard UI — shared navigation + selectors, `base_url` injected. Single source of truth for both `tests/ux/` (the Playwright UX tier) and `scripts/capture_screenshots.py`; redesign-resilient by construction (selectors centralized in `ui_pages/selectors.py`, anchored to stable IDs/ARIA roles, never styling-only CSS classes). One POM per surface: `BasePage` + `CorpusPage`, `DashboardConsolePage`, `PipelinePage`, `PriorAppsPage`, `UserPickerPage`, and the six `Wizard*Page` classes. | [`ui_pages/base.py:BasePage`](../../../ui_pages/base.py), [`ui_pages/__init__.py`](../../../ui_pages/__init__.py) |
 
 The harness is [[eval-harness]]; the console is [[diagnostics-console]]. Both read
-production artifacts (logs, eval JSON). `app.py` (the composition root) *does*
-import them — the dashboard blueprint at
-[`app.py` `register_blueprint(dashboard_bp)`](../../../app.py) and the
-`evals.*` modules inside their localhost route handlers — but the **core
+production artifacts (logs, eval JSON); `ui_pages/` reads nothing production but
+*drives* it through Playwright. `app.py` (the composition root) *does* import the
+dashboard blueprint at
+[`app.py:register_blueprints`](../../../app.py) — but the **core
 resume-generation pipeline** (`analyze`→`generate`→`iterate` in `analyzer.py` +
-`hardening.py`) never depends on them: the arrow is `app → eval/dashboard`, never
-`pipeline → eval/dashboard` `[synthesis]`.
+`hardening.py`) never depends on `evals`, `dashboard`, or `ui_pages`: the arrow
+is `app → eval/dashboard`, `tests/ux → ui_pages`, never
+`pipeline → eval/dashboard/ui_pages` `[synthesis]`.
 
 ## Related
 
 - [`overview`](../overview.md) — the front door this map sits under.
-- [[engineering-workstreams]] — WS-1 (the single-file `app.py` monolith) is the navigability cost this inventory makes visible.
+- [[engineering-workstreams]] — WS-1 (the `app.py`→blueprints split) **shipped** (Sprint 8.3a–h); this inventory is the split's post-state, not the pre-split gap anymore.
 - [[deterministic-llm-boundary]] — the P1 rule that fixes which column a module lands in.
 - [[prompt-version-discipline]] — the `PROMPT_VERSION` bump that rides every `analyzer.py` prompt change.
 - [[context-set-contract]] — the JSON contract the deterministic floor builds + passes.
@@ -129,8 +153,8 @@ resume-generation pipeline** (`analyze`→`generate`→`iterate` in `analyzer.py
 - [[pipeline-stages]] — the analyze→generate→iterate sequence across these modules.
 - [[llm-call-catalog]] — every `analyzer.py` LLM verb + its call_kind.
 - [[generation-and-grounding]] — the `generate` call + the no-invention check.
-- [[route-surface]] — the `app.py` route inventory.
+- [[route-surface]] — the `blueprints/` route inventory + the `web_infra/` security gate.
 - [[frontend-wizard]] — `static/app.js` + `templates/index.html`.
 - [[document-rendering]] — `generator.py` / `pdf_render.py` / the JSON Resume intermediate.
 - [[eval-harness]] — `evals/runner.py`.
-- [[diagnostics-console]] — the `/_dashboard` blueprint.
+- [[diagnostics-console]] — the `/_dashboard` blueprint + `blueprints/diagnostics.py`.
