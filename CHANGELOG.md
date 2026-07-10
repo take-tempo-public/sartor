@@ -56,6 +56,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [`docs/dev/RELEASE_CHECKLIST.md`](docs/dev/RELEASE_CHECKLIST.md)'s
   Carry-forward ledger.
 - Docs-only: no product code, no new deps, `PROMPT_VERSION` untouched.
+### Docs: paged.js render-engine design spike (`spike/pagedjs-design`, B.13)
+
+- New [`docs/dev/pagedjs-preview-spike.md`](docs/dev/pagedjs-preview-spike.md) —
+  the timeboxed design-spike doc for the paged.js preview-render engine
+  replacement pulled pre-public per `RELEASE_ARC.md`:1227-1230. Grounds the
+  current fidelity gap in `blueprints/templates.py`'s
+  `_inject_paged_polyfill()`/`_PAGED_PREVIEW_INJECTION` and
+  `static/app.js`'s `_wirePreviewPageCount()`, states an explicit scope fence
+  (PDF export stays Playwright-native via `pdf_render.py`, untouched), and
+  lists bounded spike tasks + a recommendation. **Doc only** — no product
+  code, no dependency, no `PROMPT_VERSION` change; the replacement itself is
+  owner-slotted for its own pre-public sprint, not built in v1.0.9.
 
 ### Chore: DOC-STATUS grep gate (`ci/px50-doc-status-gate`, PX-50)
 

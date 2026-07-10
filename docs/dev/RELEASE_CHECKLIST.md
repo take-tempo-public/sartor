@@ -937,6 +937,20 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       row above). Closed as its own Phase-6 sequence item in
       [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.9. _(verified + closed: 2026-07-10,
       `docs/dev-home-depth-wsb`.)_
+- [x] **paged.js render-engine design spike — landed** — RESOLVED 2026-07-10
+      (`spike/pagedjs-design`). New
+      [`pagedjs-preview-spike.md`](pagedjs-preview-spike.md) grounds B.13's
+      current fidelity gap (the vendored paged.js v0.4.3 polyfill's contained-
+      not-eliminated throws, per `docs/PRODUCT_SHAPE.md` §10) in the real
+      `blueprints/templates.py`/`static/app.js` preview wiring, fences the scope
+      to preview-only (PDF export stays Playwright-native, untouched), and lists
+      bounded spike tasks + a recommendation. **Design doc only — no code
+      landed.** Does not close or open a Carry-forward item: the actual
+      replacement stays owner-slotted for its own pre-public sprint per
+      [`RELEASE_ARC.md`](RELEASE_ARC.md):1227-1230 / §Post-public 1.1.1, which
+      remains the authoritative scheduling pointer.
+      _(discovered: 2026-06-29 owner decision, `RELEASE_ARC.md` Phase 4.9
+      reconcile; spike doc delivered 2026-07-10.)_
 
 - [x] **Wiki ingest refresh — the v1.0.9 code-keyed catch-up** — RESOLVED 2026-07-10
       (`docs/wiki-v109-refresh`). The full `/wiki-self-update`-style refresh ran as a
