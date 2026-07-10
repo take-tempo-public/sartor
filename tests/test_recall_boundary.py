@@ -12,11 +12,19 @@ This test enforces it the same way the PX-08 egress gate
 every `recall/*.py` module (so lazy / `TYPE_CHECKING` / in-function imports are
 caught too). It is the boundary-lint `memory-architecture.md` calls for — a test,
 not a hook (enforcement-portability is the Sprint 8.7 work).
+
+The walk itself is the shared `tests/_ast_import_roots.py` helper (PX-53 —
+also used by `tests/test_construction_boundary.py` and
+`tests/test_web_infra_is_leaf.py`), called here with `resolve_relative=True`
+so `recall/`'s own relative imports resolve to the `"recall"` root instead of
+being skipped (see that module's docstring for why this gate needs that).
 """
 
 import ast
 import sys
 from pathlib import Path
+
+from tests._ast_import_roots import imported_roots
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RECALL_DIR = REPO_ROOT / "recall"
@@ -47,24 +55,6 @@ def _recall_py_files() -> list[Path]:
     return sorted(RECALL_DIR.rglob("*.py"))
 
 
-def _imported_roots(tree: ast.AST) -> set[str]:
-    """Top-level module name for every import in a parsed module (the whole tree,
-    not just module scope), e.g. ``from collections.abc import X`` → ``collections``,
-    ``from recall.models import Y`` → ``recall``, ``import re`` → ``re``.
-    """
-    roots: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                roots.add(alias.name.split(".")[0])
-        elif isinstance(node, ast.ImportFrom):
-            if node.level:  # relative import — stays within the recall package
-                roots.add((node.module or "recall").split(".")[0] or "recall")
-            else:
-                roots.add((node.module or "").split(".")[0])
-    return roots
-
-
 def test_recall_package_is_present():
     """Guard against the scan silently passing on an empty/missing directory."""
     files = _recall_py_files()
@@ -77,7 +67,7 @@ def test_recall_imports_no_forbidden_module():
     offenders: dict[str, set[str]] = {}
     for path in _recall_py_files():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        hits = _imported_roots(tree) & _FORBIDDEN_ROOTS
+        hits = imported_roots(tree, resolve_relative=True) & _FORBIDDEN_ROOTS
         if hits:
             offenders[path.relative_to(REPO_ROOT).as_posix()] = hits
     assert not offenders, (
@@ -97,7 +87,11 @@ def test_recall_imports_only_stdlib():
     for path in _recall_py_files():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         extra = _SOURCES_LIGHT_LIBS if path.is_relative_to(SOURCES_DIR) else frozenset()
-        external = {root for root in _imported_roots(tree) if root and root != "recall"}
+        external = {
+            root
+            for root in imported_roots(tree, resolve_relative=True)
+            if root and root != "recall"
+        }
         outside = {root for root in external if root not in stdlib and root not in extra}
         if outside:
             third_party[path.relative_to(REPO_ROOT).as_posix()] = outside

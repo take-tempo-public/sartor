@@ -235,8 +235,8 @@ tuning, never model fine-tuning.
 
 *Note:* the résumé generator is **not** RAG — it assembles the whole corpus into the prompt. Retrieval-as-RAG is the doc-assistant's mechanism, not the generator's.
 
-**Governed by construction.** Extensions stay trustworthy because the rules are machine-enforced — a written constitution, git hooks (secret-blocking, branch discipline, route-security, merge gates), a read-only compliance-witness agent, and the seven-pillar law (every dependency points inward to Production; Production answers only upward to Governance). In keeping with the project's own claims discipline (C-0), **two enforcement gates are openly flagged as still owed** — the C-1 loopback-bind test and the C-6 import-boundary lint, scheduled in **v1.0.8, before the public tag**; until the linter lands, the deterministic boundary holds "by convention, AST-verified," not yet fail-closed. Canonical: [`docs/governance/`](docs/governance/) (the owed-gates table is in [`enforcement.md`](docs/governance/enforcement.md)) · [`docs/system-model.md`](docs/system-model.md).
-<!-- DOC-STATUS(governance-boundary): C-6 boundary is convention-only until the PX-20 import-linter (v1.0.8); C-1 bind is unpinned until PX-19 (v1.0.8). Remove this caveat when both gates land. Canonical: docs/governance/enforcement.md -->
+**Governed by construction.** Extensions stay trustworthy because the rules are machine-enforced — a written constitution, git hooks (secret-blocking, branch discipline, route-security, merge gates), a read-only compliance-witness agent, and the seven-pillar law (every dependency points inward to Production; Production answers only upward to Governance). In keeping with the project's own claims discipline (C-0), the two boundary gates once flagged as owed — the C-1 loopback-bind test and the C-6 import-boundary lint — **shipped in v1.0.8 Sprint 8.3a** (PX-19, PX-20); the deterministic boundary is fail-closed by a committed test, not merely convention. Canonical: [`docs/governance/`](docs/governance/) (the gate-status table is in [`enforcement.md`](docs/governance/enforcement.md)) · [`docs/system-model.md`](docs/system-model.md).
+<!-- DOC-STATUS(governance-boundary): RESOLVED — C-6 import-boundary lint (PX-20) and C-1 loopback-bind test (PX-19) shipped v1.0.8 Sprint 8.3a; both gates are fail-closed. Canonical: docs/governance/enforcement.md -->
 
 ---
 
@@ -264,7 +264,7 @@ Pointers to the canonical homes; depth lives there, not here.
 ## What stays on your machine
 
 Local-first: nothing leaves your computer except the Claude API calls (and the optional opt-in LinkedIn/portfolio scrape). This isn't only policy — it's **machine-verified**: a test (`tests/test_egress_allowlist.py`, green at HEAD) confines outbound traffic to exactly two sanctioned classes (the Anthropic API; the opt-in scrape) and fails the build if any module opens a socket elsewhere or a template references an off-box CDN. Configs, source résumés, generated output, the corpus DB, and per-call logs all live gitignored under the repo root. No telemetry, no analytics, no runtime third-party CDN. Full threat model + the file-by-file table: [`SECURITY.md`](SECURITY.md).
-<!-- DOC-STATUS(egress): claim backed by tests/test_egress_allowlist.py (charter C-2, PX-08), green at HEAD; pinning the loopback bind in the same test is owed at v1.0.8 (PX-19). Canonical: SECURITY.md + docs/governance/enforcement.md. -->
+<!-- DOC-STATUS(egress): claim backed by tests/test_egress_allowlist.py (charter C-2, PX-08); the loopback bind is separately pinned via tests/test_config.py (PX-19), shipped v1.0.8 Sprint 8.3a. Canonical: SECURITY.md + docs/governance/enforcement.md. -->
 
 ---
 
@@ -273,11 +273,11 @@ Local-first: nothing leaves your computer except the Claude API calls (and the o
 At-a-glance snapshot — the authoritative schedule is [`docs/dev/RELEASE_ARC.md`](docs/dev/RELEASE_ARC.md) (+ [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md)):
 
 - ✅ **Shipped:** the tailoring pipeline, two-point clarifying interview, the compounding corpus (cross-application memory + human-gated curation), multiple persistent candidate profiles, grounding check + witness metric, ATS-safe templates, human gates, `.md`/`.docx`/`.pdf`, the recall substrate + doc-grounded avatar, and the eval/test stack.
-- 🟡 **Governance — extracted & live, two boundary gates owed.** The constitution (charter C-0…C-6), the read-only compliance-witness auditor, and the enforcement hooks are shipped. **Two boundary gates are still owed** — the C-1 loopback-bind test (PX-19) and the C-6 import-boundary lint (PX-20) — **scheduled in v1.0.8, before the public v1.1.0 tag.** A further enforcement-hardening set (C-5 template assertions, the required UX/a11y CI job, supply-chain badges) lands with the v1.1.0 cut. *Snapshot — updated as those sprints close; canonical: [`enforcement.md`](docs/governance/enforcement.md).*
+- 🟡 **Governance — extracted & live, v1.0.8 boundary gates shipped.** The constitution (charter C-0…C-6), the read-only compliance-witness auditor, and the enforcement hooks are shipped. **The two v1.0.8 boundary gates shipped** — the C-1 loopback-bind test (PX-19) and the C-6 import-boundary lint (PX-20), both landed Sprint 8.3a. **Still open for v1.1.0** — C-5 template-property assertions, the required UX/a11y/PDF CI job, and the E-2 supply-chain badges. *Snapshot — updated as those sprints close; canonical: [`enforcement.md`](docs/governance/enforcement.md).*
 - 🚧 **In the codebase:** the static-embedding semantic search tier (local, no hosted DB).
 - 🔭 **Roadmap:** outcome-weighted recommendations · master files per role · provider-agnostic / local models.
 - ⛔ **Out of scope by design:** multi-user / multi-tenant (the threat model is a single trusted local user).
-<!-- DOC-STATUS(governance): PROVISIONAL — update when: v1.0.8 lands PX-19 (C-1 loopback-bind test) + PX-20 (C-6 import-boundary gate, F-arch-01); v1.1.0 lands C-5 template-property assertions + the required UX/a11y/PDF CI job + the E-2 supply-chain badges. Canonical homes: docs/governance/enforcement.md (owed-gates table) + docs/dev/RELEASE_ARC.md (schedule). -->
+<!-- DOC-STATUS(governance): PARTIAL — v1.0.8 landed PX-19 (C-1 loopback-bind test) + PX-20 (C-6 import-boundary gate, F-arch-01), Sprint 8.3a; still open — update when v1.1.0 lands C-5 template-property assertions + the required UX/a11y/PDF CI job + the E-2 supply-chain badges. Canonical homes: docs/governance/enforcement.md (gate-status table) + docs/dev/RELEASE_ARC.md (schedule). -->
 
 ---
 

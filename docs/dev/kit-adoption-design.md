@@ -1,5 +1,18 @@
 # Agent-coding-practices kit adoption — design + arc (captured 2026-06-23)
 
+> **Phases 1–2 SHIPPED 2026-07-10.** The mechanizable-gate work this design
+> specifies — `ruff format`/`SIM`/`RUF`/`ANN`/`D` families, `interrogate`
+> docstring-coverage, and the mypy `--strict` ratchet — reached its §6 exit
+> criterion (rung 8, `chore/kit-mypy-strict-uipages-exit`): every non-exempt
+> production module carries the strict override, enforced by construction via
+> `tests/test_mypy_strict_roster_gate.py`. **Commitment (3) — skills/hooks
+> packaging coherence — stays open**, deferred to the v1.1.0-gate window
+> (`feat/portable-enforcement-core`, 8.7). This document remains authoritative
+> for that remaining commitment; read §4/§6 for the phase log and exit proof.
+> Canonical: [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) carry-forward
+> ledger, "Agent-coding-practices kit-adoption — staged commitments".
+<!-- DOC-STATUS(kit-adoption): Phases 1-2 (commitments 1+2) SHIPPED 2026-07-10, §6 exit reached; commitment (3) [skills/hooks-packaging coherence] open until 8.7 feat/portable-enforcement-core lands (v1.1.0-gate). Update when 8.7 lands. Canonical: RELEASE_CHECKLIST.md carry-forward ledger. -->
+
 > **Purpose:** the settled evaluation + sequenced plan for adopting the lichen
 > `agent-coding-practices-kit` (context / documentation / strict-typing practices +
 > the `context-structure-review` skill) into sartor. Produced as an
