@@ -5,7 +5,7 @@
 > stage reads and writes; how it is built, what fields it carries, and the
 > resolved-path containment guard that gates every route touching it.
 > **Sources:** [`hardening.py`](../../../hardening.py) (`ContextSet`, `build_context_set`,
-> `assemble_source_union`, `save_iteration_context`), [`app.py`](../../../app.py)
+> `assemble_source_union`, `save_iteration_context`), [`web_infra/security.py`](../../../web_infra/security.py)
 > (`_within`), [`db/build_context.py`](../../../db/build_context.py),
 > [`docs/architecture.md`](../../architecture.md) §"context_set lifecycle",
 > [`docs/diagrams/data-flow.mmd`](../../diagrams/data-flow.mmd).
@@ -44,7 +44,8 @@ analyze LLM output is attached afterward by the route, not by the builder `[synt
 Everything past analyze is added on demand, so older context files round-trip unchanged
 `[synthesis]`. The notable members of [`hardening.py:ContextSet`](../../../hardening.py):
 
-- `llm_analysis`, `run_id` — written by `app.py` after `analyze()` returns.
+- `llm_analysis`, `run_id` — written by `blueprints/analysis.py:run_analysis` after
+  `analyze()` returns.
 - `clarification_questions` / `clarifications` — the surfaced questions and the user's
   free-form answers (treated as first-person ground truth by `generate()`).
 - `iteration` (0 = analyze-only; N = state after the Nth generation) and
@@ -58,6 +59,13 @@ Everything past analyze is added on demand, so older context files round-trip un
   `application_id` / `application_run_id`, `composition_overrides`, and
   `llm_recommendations` — the corpus-mode / DB-backed members (B.2–B.3 + the Compose
   step). Absent on file-based contexts.
+- `approved_composition` — Generation-experience re-architecture Phase 4: the frozen,
+  fully-resolved JSON Resume document (bullet/summary/skills text in final order plus a
+  `meta.sartor` provenance block), written on Compose's explicit "Save and continue"
+  (freeze), not on every autosave. When present, `/api/generate` renders it directly
+  with **zero** résumé-body LLM calls instead of running `generate()` — see
+  [[corpus-to-output-reach]] and [[pipeline-stages]] Step 5. `total=False`, so older
+  contexts round-trip unchanged `[synthesis]`.
 
 ## Two builders, one shape
 
@@ -76,13 +84,17 @@ creates the `application` + `application_run` rows that anchor the audit chain �
 
 [`hardening.py:assemble_source_union`](../../../hardening.py) derives, from the
 context_set, the exact set of texts that count as legitimate source material: the
-primary `resume.text`, every supplemental's `text`, and every clarification answer. It
-is the single shared definition consumed by both the iteration clarifier
+primary `resume.text`, every supplemental's `text`, every clarification answer **for
+this application**, and — D5 cross-JD reuse (`feat/clarifications-to-corpus`) — every
+confirmed clarification answer reused from the candidate's *other* applications, read
+off `context_set["prior_clarifications"]` (staged once by
+`db/build_context.py:build_context_set_from_db`, corpus mode only). It is the single
+shared definition consumed by both the iteration clarifier
 ([`hardening.py:compute_iteration_signals`](../../../hardening.py)) and the eval-time
 fabricated-specifics check, so the two can never score against divergent source sets
-`[synthesis]`. The carve-out that widens the grounding check to accept clarifications is
-canonical in AGENTS.md "LLM prompts" — cited, not restated here (D5). See
-[[generation-and-grounding]].
+`[synthesis]`. The carve-out that widens the grounding check to accept clarifications
+(and the D5 prior-clarifications widen specifically) is canonical in AGENTS.md "LLM
+prompts" — cited, not restated here (D5). See [[generation-and-grounding]].
 
 ## Persistence and the iteration chain
 
@@ -97,13 +109,18 @@ of `parent_context_path` pointers IS the audit trail — see [[iteration-audit-c
 ## The containment guard
 
 Because the context path arrives from the client, every route that loads or writes one
-first checks [`app.py:_within`](../../../app.py): it resolves the path and asserts it
-sits under `OUTPUT_DIR` (`path.resolve().relative_to(parent.resolve())`), returning
-`403` otherwise. This is the resolved-path half of the project's filesystem gate
-(alongside `_safe_username` + `secure_filename`); the gate itself is canonical in
-AGENTS.md "Key patterns" and enforced by the `route-security-lint` hook — cited, not
-duplicated (D5). The guard recurs at dozens of context-loading routes in `app.py`
-`[synthesis]`.
+first checks [`web_infra/security.py:_within`](../../../web_infra/security.py): it
+resolves the path and asserts it sits under `OUTPUT_DIR`
+(`path.resolve().relative_to(parent.resolve())`), returning `403` otherwise. `_within`
+(alongside `_safe_username`, which now takes an explicit `configs_dir` keyword rather
+than reading a module global) moved out of `app.py` into the leaf `web_infra` package in
+the app.py→blueprints decomposition (Sprint 8.3a), so every blueprint imports the same
+definition instead of re-inlining it `[synthesis]`. This is the resolved-path half of the
+project's filesystem gate (alongside `_safe_username` + `secure_filename`); the gate
+itself is canonical in AGENTS.md "Key patterns" and enforced by the `route-security-lint`
+hook (now scanning `app.py` + `blueprints/**.py`) — cited, not duplicated (D5). The guard
+recurs at dozens of context-loading routes across `blueprints/analysis.py`,
+`blueprints/generation.py`, and `blueprints/applications.py` `[synthesis]`.
 
 ## Related
 
@@ -112,3 +129,4 @@ duplicated (D5). The guard recurs at dozens of context-loading routes in `app.py
 - [[pipeline-stages]] — the analyze→generate→iterate stages that read/write this file.
 - [[deterministic-llm-boundary]] — why `build_context_set` carries no LLM call.
 - [[corpus-data-model]] — the DB rows the `_from_db` builder projects into this shape.
+- [[corpus-to-output-reach]] — how `approved_composition` is produced and consumed downstream.
