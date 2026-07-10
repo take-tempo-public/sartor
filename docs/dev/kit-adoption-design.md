@@ -775,7 +775,11 @@ because it's tracked*. A strict ratchet with no tracking + no finish line is how
 
 **EXIT REACHED (2026-07-10, `chore/kit-mypy-strict-uipages-exit`):** the `--strict` family met
 its finish line — every non-exempt production module carries the strict override; only the
-named exempt set stays permissive.
+named exempt set stays permissive. This exit is enforced **by construction** (charter C-0),
+not asserted once: `tests/test_mypy_strict_roster_gate.py` (added on the same branch to close
+compliance-witness **CW-118**) parses the strict roster and fails the suite if any non-exempt
+tracked `.py` module escapes it — the mypy-roster analogue of the route-containment +
+docstring-coverage KEEP gates.
 
 ---
 

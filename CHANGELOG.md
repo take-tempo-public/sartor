@@ -48,6 +48,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   beyond the one `cast`. Gate green: `ruff check .` + `ruff format --check`
   (touched files) + `mypy .` ("Success: no issues found in 298 source files").
 
+- **§6-exit enforced by construction (charter C-0 / compliance-witness CW-118).**
+  Added `tests/test_mypy_strict_roster_gate.py` — the mypy-roster analogue of the
+  route-containment + docstring-coverage KEEP gates. It parses the strict
+  `[[tool.mypy.overrides]]` roster and asserts every non-exempt tracked `.py`
+  module is covered (under mypy's own `pkg.*` glob semantics), so a module added
+  outside the Decision-7 exempt set and left off the roster fails the suite —
+  instead of silently type-checking permissively while `mypy .` still prints
+  Success. Turns the §6 claim from a one-time manual proof into a by-construction
+  invariant (and guards the exempt `db/migrations/versions` tree against a `db.*`
+  wildcard). `mypy .` now reports 299 source files (the added gate).
+
 ### Chore: mypy --strict roster — dashboard (`chore/kit-mypy-strict-dashboard`)
 
 - **Kit-adoption Phase 2 #2, ratchet rung 7 — the localhost-only diagnostics
