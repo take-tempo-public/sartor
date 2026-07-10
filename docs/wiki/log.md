@@ -70,7 +70,7 @@ into **16 new `pages/`**, every code claim `path:line`-grounded per
 `pdf_render.py`, `app.py`, `db/` (`models.py`, `build_context.py`, `persist_run.py`),
 `evals/` (`runner.py`, `bootstrap.py`, `rubrics/`), `dashboard/`, `static/app.js`,
 `templates/index.html`, plus [`../architecture.md`](../architecture.md) +
-[`../diagrams/`](../diagrams/) `*.mmd`.
+`../diagrams/*.mmd` (retired 2026-07-10, `docs/diagrams-a11y`).
 
 **Pages created (16):** `code-module-map` (hub), `deterministic-llm-boundary`,
 `prompt-version-discipline`, `context-set-contract`, `iteration-audit-chain`,
@@ -95,10 +95,11 @@ commit-time freshness reminder goes live (it was deliberately silent under the s
 
 **Diagram drifts folded in** (the re-read caught them, as tracked in
 [`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md)): Step-2 in
-[`../diagrams/pipeline.mmd`](../diagrams/pipeline.mmd) + the embedded copy in
+`../diagrams/pipeline.mmd` (retired 2026-07-10, `docs/diagrams-a11y` —
+content lives solely in `../architecture.md` now) + the embedded copy in
 [`../architecture.md`](../architecture.md) "GET INTERVIEW QUESTIONS" → "GET CLARIFYING
 QUESTIONS" (the Step-6 iterate flow was already correct);
-[`../diagrams/data-flow.mmd`](../diagrams/data-flow.mmd) cover-letter node brought up to
+`../diagrams/data-flow.mmd` (retired 2026-07-10) cover-letter node brought up to
 `cover_TS.docx /<br/>.pdf / .md` to match the already-correct `../architecture.md`.
 
 **Authoring method.** A 16-page Workflow — one author agent per page, then a *different*

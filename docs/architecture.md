@@ -8,8 +8,8 @@
 > sub-agents) onboarding to the repo.
 > **Authoritative for:** the canonical pipeline shape, the on-disk
 > data flow, the model assignment per LLM call, the DB ER model.
-> When the code changes shape, this doc + the four diagrams in
-> [`docs/diagrams/`](diagrams/) must change with it.
+> When the code changes shape, this doc — including the four fenced
+> Mermaid diagrams it embeds — must change with it.
 > Sibling docs:
 > [`CLAUDE.md`](../CLAUDE.md) (contributor contract),
 > [`docs/PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) (product intent),
@@ -39,11 +39,11 @@ a human review or curation step:
 6. **Generate cover letter** *(optional, Sonnet)* — against the
    finalized résumé, with the same refine/iterate affordances
 
-Full sequence diagram: [`docs/diagrams/pipeline.mmd`](diagrams/pipeline.mmd).
+Full sequence diagram — rendered inline below (the single source; see [The four canonical diagrams](#the-four-canonical-diagrams)).
 
 ```mermaid
 %% Pipeline of one full sartor. apply-run.
-%%
+%% 
 %% Shows the LLM calls that can fire across a single application,
 %% the Flask route that triggers each, and which model is used.
 %% analyze() is a TWO-PASS call: Haiku 4.5 extraction (JD signals) feeds
@@ -52,12 +52,14 @@ Full sequence diagram: [`docs/diagrams/pipeline.mmd`](diagrams/pipeline.mmd).
 %% Haiku 4.5 handles clarify and the structured-recommendation calls
 %% (recommend, recommend_summary, critique_proposal,
 %% promote_clarification_to_bullet).
-%%
+%% 
 %% Renders natively on GitHub Markdown and in any Mermaid live editor.
 %% Source: analyzer.py + app.py route map (verified 2026-05-25;
 %% two-pass analyze + clarify→Haiku updated 2026-06-02, R1 Phase 2 / v1.0.3).
 
 sequenceDiagram
+    accTitle: sartor. apply-run pipeline sequence
+    accDescr: Sequence diagram of one full apply-run across Analyze, optional Clarify, Compose, Template preview, Generate, optional repeatable Iterate, and optional Cover letter generation. Shows the user, the static/app.js frontend, Flask app.py, analyzer.py, the heavy-reasoning and structured-selection LLM tiers, the SQLite database, and the on-disk output directory, with the Flask route and analyzer call each step triggers.
     autonumber
     participant U as User
     participant FE as Frontend<br/>(static/app.js)
@@ -66,7 +68,7 @@ sequenceDiagram
     participant SO as Sonnet 4.6
     participant HK as Haiku 4.5
     participant DB as SQLite<br/>(db/resume.sqlite)
-    participant FS as Disk<br/>(output/&lt;user&gt;/)
+    participant FS as Disk<br/>(output/&#60;user&#62;/)
 
     Note over U,FS: Step 1 — Analyze
     U->>FE: paste JD, click ANALYZE
@@ -100,25 +102,25 @@ sequenceDiagram
     APP->>FS: merge answers into context
 
     Note over U,FS: Step 3 — Compose (recommend + curate)
-    FE->>APP: POST /api/applications/&lt;id&gt;/recommend
+    FE->>APP: POST /api/applications/&#60;id&#62;/recommend
     APP->>ANL: recommend_bullets(ctx)
     ANL->>HK: call_kind="recommend" (~5s)
     HK-->>ANL: bullet_ids[] per experience
     ANL-->>APP: recommendations
     APP->>FS: write llm_recommendations to context
-    FE->>APP: POST /api/applications/&lt;id&gt;/recommend-summary
+    FE->>APP: POST /api/applications/&#60;id&#62;/recommend-summary
     APP->>ANL: recommend_summaries(ctx)
     ANL->>HK: call_kind="recommend_summary" (~3s)
     HK-->>ANL: summary_item_id
     ANL-->>APP: rec
     APP->>FS: write llm_summary_recommendation
     U->>FE: pin/exclude/add bullets, pick summary
-    FE->>APP: POST /api/applications/&lt;id&gt;/composition
+    FE->>APP: POST /api/applications/&#60;id&#62;/composition
     APP->>FS: write composition_overrides
 
     Note over U,FS: Step 4 — Template (live preview, no LLM)
     U->>FE: select persona
-    FE->>APP: GET /api/applications/&lt;id&gt;/preview?template_id=N
+    FE->>APP: GET /api/applications/&#60;id&#62;/preview?template_id=N
     APP->>DB: build_json_resume_from_corpus()
     DB-->>APP: JSON Resume v1.0 doc
     APP-->>FE: rendered HTML
@@ -161,28 +163,34 @@ sequenceDiagram
     APP-->>FE: preview
 ```
 
-*(Source: [`docs/diagrams/pipeline.mmd`](diagrams/pipeline.mmd). Embedded above so the diagram renders inline on GitHub; edit either copy and keep both in sync.)*
+*(This fenced diagram is the single source as of v1.0.9 — the standalone `docs/diagrams/pipeline.mmd` copy was retired to remove the two-copy sync-drift risk.)*
 
 ### The four canonical diagrams
 
+As of v1.0.9 (`docs/diagrams-a11y`), these four fenced Mermaid blocks are
+the **single source** — the standalone `docs/diagrams/*.mmd` copies were
+retired to remove the two-copy sync-drift risk that "edit either copy and
+keep both in sync" relied on discipline alone to prevent. Each block now
+also carries `accTitle`/`accDescr` a11y directives for screen readers.
+
 | Diagram | Source | Purpose |
 |---|---|---|
-| [Pipeline](diagrams/pipeline.mmd) | `analyzer.py` + `app.py` route map | One full apply-run, sequence-diagram view |
-| [Persistence](diagrams/persistence.mmd) | `db/models.py` | DB tables + FK relationships + cascade behavior |
-| [Data flow](diagrams/data-flow.mmd) | `hardening.py` + route handlers | `context_set` lifecycle across iterations |
-| [LLM routing](diagrams/llm-routing.mmd) | `analyzer.py` `_call_llm` sites + `docs/dev/perf/PERF_ANALYZE.md` | Which route fires which model, with cost / latency |
+| Pipeline (§System overview, above) | `analyzer.py` + `app.py` route map | One full apply-run, sequence-diagram view |
+| Persistence (§Persistence model) | `db/models.py` | DB tables + FK relationships + cascade behavior |
+| Data flow (§context_set lifecycle) | `hardening.py` + route handlers | `context_set` lifecycle across iterations |
+| LLM routing (§LLM routing + cost) | `analyzer.py` `_call_llm` sites + `docs/dev/perf/PERF_ANALYZE.md` | Which route fires which model, with cost / latency |
 
-All four render natively on GitHub when committed in a fenced
-`mermaid` block, and parse cleanly by every modern LLM. Use a
-local Mermaid live editor (`mermaid.live`) to preview changes
-before commit.
+All four render natively on GitHub in a fenced `mermaid` block, and
+parse cleanly by every modern LLM. Use a local Mermaid live editor
+(`mermaid.live`) to preview changes before commit.
 
-> **Known staleness (2026-07-07, F-22).** The fenced diagrams above and their
-> `docs/diagrams/*.mmd` sources still label the heavy-reasoning tier "Sonnet
-> 4.6" — the running system uses **Sonnet 5** (`claude-sonnet-5`); Haiku 4.5
-> labels are still correct. The prose in "LLM routing + cost" below has the
-> corrected wording. A full diagram refresh is scheduled for the v1.0.9
-> docs-site epic ([`docs/dev/documentation-architecture.md`](dev/documentation-architecture.md));
+> **Known staleness (2026-07-07, F-22).** The fenced diagrams above still
+> label the heavy-reasoning tier "Sonnet 4.6" — the running system uses
+> **Sonnet 5** (`claude-sonnet-5`); Haiku 4.5 labels are still correct. The
+> prose in "LLM routing + cost" below has the corrected wording. A full
+> diagram content refresh (fixing the model-version labels themselves) is
+> scheduled for the v1.0.9 docs-site epic
+> ([`docs/dev/documentation-architecture.md`](dev/documentation-architecture.md));
 > until then, treat model names inside the fenced diagrams as illustrative,
 > not authoritative.
 
@@ -227,27 +235,29 @@ import `analyzer.py`; `analyzer.py` does not import `app.py`.
 
 ## Persistence model
 
-The DB schema is in [`docs/diagrams/persistence.mmd`](diagrams/persistence.mmd).
+The DB schema is rendered inline below.
 
 ```mermaid
 %% Persistence model — db/resume.sqlite ER diagram.
-%%
+%% 
 %% Shows the active DB tables and their foreign-key relationships.
 %% Cascade behavior (ON DELETE CASCADE vs SET NULL) noted per edge
 %% where it differs from the SQLAlchemy default. Source of truth:
 %% db/models.py — verify with `grep -nE "^class |ForeignKey" db/models.py`.
-%%
+%% 
 %% Pattern legend:
 %%   ||--o{   one (required) to many
 %%   }o--||   many to one (required)
 %%   ||--o|   one to (optional) one
 %%   }o--o{   many to many (junction table; rendered as two edges)
-%%
+%% 
 %% Renders on GitHub Markdown via `mermaid` fenced block.
 %% Field lists are abbreviated to the joinable / curatable columns;
 %% audit timestamps (created_at, updated_at) omitted for readability.
 
 erDiagram
+    accTitle: sartor. database entity-relationship diagram
+    accDescr: Entity-relationship diagram of the SQLite schema rooted at candidate, showing experience, experience_title, bullet, summary_item, tag and its three junction tables, skill, persona_template, application, application_run, application_bullet, and clarification, with foreign-key cardinality and cascade-versus-set-null behavior labeled on each relationship.
     candidate {
         int id PK
         string username UK
@@ -419,7 +429,7 @@ erDiagram
     bullet ||--o| clarification          : "promoted_to_bullet_id"
 ```
 
-*(Source: [`docs/diagrams/persistence.mmd`](diagrams/persistence.mmd). Embedded above so the diagram renders inline on GitHub; edit either copy and keep both in sync.)*
+*(This fenced diagram is the single source as of v1.0.9 — the standalone `docs/diagrams/persistence.mmd` copy was retired to remove the two-copy sync-drift risk.)*
 Highlights:
 
 - **Candidate** is the root of nearly every other table. One row
@@ -443,22 +453,22 @@ Highlights:
 
 ## LLM routing + cost
 
-Full picture: [`docs/diagrams/llm-routing.mmd`](diagrams/llm-routing.mmd).
+Full picture — rendered inline below.
 
 ```mermaid
 %% LLM routing — every _call_llm site in analyzer.py, with model
 %% assignment and cache-prefix usage.
-%%
+%% 
 %% Source: analyzer.py `_call_llm(...)` invocations + the SONNET_MODEL
 %% / HAIKU_MODEL constants. Cost / latency numbers from
 %% docs/dev/perf/PERF_ANALYZE.md (real production data across 83+ runs);
 %% two-pass analyze + clarify→Haiku figures from
 %% docs/dev/perf/R1_PHASE2_RESULTS.md (R1 Phase 2 / v1.0.3, 2026-06-02).
-%%
+%% 
 %% Two model tiers:
 %%   - Sonnet 4.6: heavy reasoning, JSON-structured output, costlier
 %%   - Haiku 4.5:  structured selection / classification, cheap, fast
-%%
+%% 
 %% A call uses the "cached_user_prefix" trick when it can re-use a long
 %% static user-message block across attempts within the same run (the
 %% retry path shares the cache). analyze_synthesis runs under the shared
@@ -469,6 +479,8 @@ Full picture: [`docs/diagrams/llm-routing.mmd`](diagrams/llm-routing.mmd).
 %% system block.
 
 graph LR
+    accTitle: sartor. LLM call routing and cost tiers
+    accDescr: Graph of every LLM call site in analyzer.py grouped into a heavy-reasoning model subgraph (analyze_synthesis, iterate_clarify, generate, generate_cover_letter) and a structured-selection model subgraph (analyze_extraction, clarify, recommend bullets, recommend_summary, critique_proposal, promote_clarification_to_bullet, extract_experiences), each labeled with p50 latency and median output tokens, connected from the Flask route that triggers it, with a legend distinguishing calls that reuse a cached prompt prefix from calls that do not.
     subgraph SO[Sonnet 4.6 — heavy reasoning]
         direction TB
         A1[analyze_synthesis<br/>p50 = 58 s<br/>median out: 2600 tok<br/>cache writer]
@@ -525,7 +537,7 @@ graph LR
     %% analyzer.py:_parse_or_retry() line 730 sets the retry call_kind.
 ```
 
-*(Source: [`docs/diagrams/llm-routing.mmd`](diagrams/llm-routing.mmd). Embedded above so the diagram renders inline on GitHub; edit either copy and keep both in sync.)*
+*(This fenced diagram is the single source as of v1.0.9 — the standalone `docs/diagrams/llm-routing.mmd` copy was retired to remove the two-copy sync-drift risk.)*
 Latency data from real production usage in
 [`docs/dev/perf/PERF_ANALYZE.md`](dev/perf/PERF_ANALYZE.md).
 
@@ -578,25 +590,27 @@ refers to under "For developers."
 ## context_set lifecycle
 
 The `context_set` JSON file is the contract between every stage.
-Full data-flow diagram: [`docs/diagrams/data-flow.mmd`](diagrams/data-flow.mmd).
+Full data-flow diagram, rendered inline below.
 
 ```mermaid
 %% Data flow — context_set lifecycle.
-%%
+%% 
 %% Shows how the JSON `context_set` artifact is built, mutated, and
 %% chained across the wizard steps and iterations. The context file is
 %% the single source of truth between LLM calls — every route that
 %% touches it does so through `hardening.py:build_context_set` or
 %% `save_iteration_context`, and validates containment under OUTPUT_DIR
 %% via `_within()`.
-%%
+%% 
 %% A NEW timestamped child file is written on every /api/generate so
 %% the parent_context_path chain is the iteration audit trail.
-%%
+%% 
 %% Source: hardening.py (ContextSet TypedDict, save_iteration_context),
 %% app.py route handlers, CLAUDE.md "context_set lifecycle" diagram.
 
 flowchart TD
+    accTitle: sartor. context_set lifecycle data flow
+    accDescr: Flowchart of the context_set JSON artifact's lifecycle from analyze through clarify, recommend, composition, generate, iterate, and cover-letter generation, showing on-disk context and output files as rectangles, Flask routes as rounded nodes, LLM-touching steps highlighted, and deterministic Python merge/save steps, including the parent_context_path chain linking each generated iteration to its parent.
     %% On-disk artifacts (rectangles)
     %% Routes (rounded)
     %% LLM-touching nodes (yellow)
@@ -663,7 +677,7 @@ flowchart TD
     R7 -->|done| Done([Download])
 ```
 
-*(Source: [`docs/diagrams/data-flow.mmd`](diagrams/data-flow.mmd). Embedded above so the diagram renders inline on GitHub; edit either copy and keep both in sync.)*
+*(This fenced diagram is the single source as of v1.0.9 — the standalone `docs/diagrams/data-flow.mmd` copy was retired to remove the two-copy sync-drift risk.)*
 
 Key invariants:
 

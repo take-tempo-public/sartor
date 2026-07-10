@@ -2,12 +2,12 @@
 
 > **Audience:** `dev`
 > **Concept:** the full apply-run sequence — analyze → clarify → compose → template → generate (+ optional cover letter) → iterate — and how each Flask route drives an LLM call (or none) that mutates the shared `context_set`.
-> **Sources:** [`pipeline.mmd`](../../diagrams/pipeline.mmd), [`architecture.md`](../../architecture.md), [`blueprints/analysis.py`](../../../blueprints/analysis.py), [`blueprints/generation.py`](../../../blueprints/generation.py), [`blueprints/applications.py`](../../../blueprints/applications.py), [`analyzer.py`](../../../analyzer.py), [`hardening.py`](../../../hardening.py).
+> **Sources:** [`architecture.md`](../../architecture.md), [`blueprints/analysis.py`](../../../blueprints/analysis.py), [`blueprints/generation.py`](../../../blueprints/generation.py), [`blueprints/applications.py`](../../../blueprints/applications.py), [`analyzer.py`](../../../analyzer.py), [`hardening.py`](../../../hardening.py).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
 
-The pipeline is **two-or-more LLM calls in sequence, each gated by a human review or curation step** ([`architecture.md` §System overview](../../architecture.md)). The frontend ([`static/app.js`](../../../static/app.js)) drives the steps in order; every step is a Flask route that loads a saved `context_set`, optionally calls an analyzer function, and writes the mutated context back to disk. As of the app.py→blueprints decomposition (Sprint 8.3), `app.py` carries **zero** route handlers — it is only the `create_app` factory + WSGI/console entry point; the analyze/clarify family lives on `blueprints/analysis.py`, generate/save-edits/cover-letter on `blueprints/generation.py`, and Compose/recommend on `blueprints/applications.py` `[synthesis]`. The `context_set` JSON file is the contract that carries state between steps — see [[context-set-contract]]. The full sequence (with model + latency per call) is the [`pipeline.mmd`](../../diagrams/pipeline.mmd) diagram.
+The pipeline is **two-or-more LLM calls in sequence, each gated by a human review or curation step** ([`architecture.md` §System overview](../../architecture.md)). The frontend ([`static/app.js`](../../../static/app.js)) drives the steps in order; every step is a Flask route that loads a saved `context_set`, optionally calls an analyzer function, and writes the mutated context back to disk. As of the app.py→blueprints decomposition (Sprint 8.3), `app.py` carries **zero** route handlers — it is only the `create_app` factory + WSGI/console entry point; the analyze/clarify family lives on `blueprints/analysis.py`, generate/save-edits/cover-letter on `blueprints/generation.py`, and Compose/recommend on `blueprints/applications.py` `[synthesis]`. The `context_set` JSON file is the contract that carries state between steps — see [[context-set-contract]]. The full sequence (with model + latency per call) is the pipeline sequence diagram in [`architecture.md` §System overview](../../architecture.md).
 
 ## Step 1 — Analyze (two-pass, writes iter-0 context)
 
@@ -23,7 +23,7 @@ Compose runs against the `Application` row, not the context file. [`blueprints/a
 
 ## Step 4 — Template (live preview, no LLM)
 
-The persona/template preview is a deterministic render — no LLM call. The pin choices and persona feed the live preview iframe ([`pipeline.mmd`](../../diagrams/pipeline.mmd) Step 4); document rendering itself is [[document-rendering]].
+The persona/template preview is a deterministic render — no LLM call. The pin choices and persona feed the live preview iframe ([`architecture.md` §System overview](../../architecture.md), pipeline diagram Step 4); document rendering itself is [[document-rendering]].
 
 ## Step 5 — Generate (writes a NEW iteration context)
 

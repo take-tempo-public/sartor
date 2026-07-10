@@ -453,6 +453,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Closed the corresponding Carry-forward-ledger row in
   [`docs/dev/RELEASE_CHECKLIST.md`](docs/dev/RELEASE_CHECKLIST.md) — added and resolved in the
   same edit, so the rendered open count is unchanged.
+### Docs: diagram accessibility + single-source consolidation (`docs/diagrams-a11y`, 2026-07-10)
+
+- Added Mermaid `accTitle`/`accDescr` a11y directives (screen-reader title +
+  description) to all four canonical diagrams in `docs/architecture.md`
+  (pipeline sequence, persistence ER, LLM routing, `context_set` data flow).
+- Retired the 4 standalone `docs/diagrams/*.mmd` files — byte-identical
+  duplicates of the `docs/architecture.md` embeds that relied on "edit
+  either copy and keep both in sync" discipline alone; `docs/architecture.md`
+  is now the single source. Re-pointed every cross-document link/cite that
+  targeted a retired path (`AGENTS.md`, `docs/wiki/pages/*.md`); verified
+  clean via `scripts/check_doc_links.py`.
 
 ## [1.0.8] — 2026-07-09
 
