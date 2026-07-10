@@ -13,6 +13,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Chore: mypy --strict ratchet COMPLETE — §6 exit (`chore/kit-mypy-strict-uipages-exit`)
+
+- **Kit-adoption Phase 2 #2, ratchet rung 8 — the FINAL rung, reaching the §6
+  exit criterion.** Appended `ui_pages.*` (the Playwright Page-Object-Model —
+  a test *driver*, but not in the Decision-7 exempt set, so strict per
+  Decision-7; the `D`/`interrogate` families already treated it as production
+  scope) plus the 4 setuptools data-package **marker `__init__.py`** files
+  (`templates`, `static`, `personas.bundled`, `docs.wiki` — verified
+  pure-docstring, zero code, already strict-clean) to the `pyproject.toml`
+  strict-roster `[[tool.mypy.overrides]]` block (`docs/dev/kit-adoption-design.md`
+  §4/§6), and rewrote the block's leading comment into its final terse
+  cohort-history form (rungs 1-8) declaring the ratchet complete. Measured **1
+  error** live (`mypy --strict --warn-unreachable ui_pages/`):
+  `ui_pages/user_picker.py`'s `options()` `no-any-return` on
+  `eval_on_selector_all(...)` → wrapped in `cast("list[str]", ...)` (a runtime
+  no-op; `cast` added to a top-level `from typing import cast`, not under
+  `TYPE_CHECKING`, since `cast()` runs at runtime). The 4 markers added **zero**
+  errors (roster-add only). **§6-exit proof:** with the roster complete, the
+  non-covered/non-root production-`.py` list is empty —
+  `git ls-files '*.py' | grep -vE '^(tests/|evals/|scripts/|db/migrations/versions/)'
+  | grep -vE '^(blueprints/|dashboard/|web_infra/|recall/|onboarding/|ui_pages/|db/|
+  templates/__init__|static/__init__|personas/bundled/__init__|docs/wiki/__init__)'
+  | grep '/'` prints nothing — so **all 81 non-exempt production `.py` modules**
+  are now at full `mypy --strict` + `warn_unreachable`; only the named Decision-7
+  exempt set (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`) stays
+  permissive. **This completes kit-adoption commitment (1)** [the mypy `--strict`
+  ratchet, `docs/dev/kit-adoption-design.md` §6] — the row in
+  `docs/dev/RELEASE_CHECKLIST.md` stays open pending commitment (3) [the 8.7
+  hooks-rehome / skills-packaging coherence pass]. **PROMPT-SAFE (grep-0):**
+  `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+  across `ui_pages/` returned 0 hits (the 4 markers hold no prompts either) —
+  no `PROMPT_VERSION` bump, no eval run. No new dependency, no behavior change
+  beyond the one `cast`. Gate green: `ruff check .` + `ruff format --check`
+  (touched files) + `mypy .` ("Success: no issues found in 298 source files").
+
 ### Chore: mypy --strict roster — dashboard (`chore/kit-mypy-strict-dashboard`)
 
 - **Kit-adoption Phase 2 #2, ratchet rung 7 — the localhost-only diagnostics

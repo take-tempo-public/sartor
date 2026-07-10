@@ -660,6 +660,40 @@ tightening branch. **Tracked by a per-module coverage surface + the §6 exit cri
 > modules + the 2 `dashboard/` modules) — **only `ui_pages/**` remains** → the next rung
 > reaches the §6 exit criterion (strict everywhere except the Decision-7 exempt set).
 >
+> **Phase 2 #2 ratchet — rung 8, `ui_pages.*` + the 4 packaging markers — RATCHET COMPLETE /
+> §6 EXIT REACHED (`chore/kit-mypy-strict-uipages-exit`, 2026-07-10).** The FINAL rung.
+> Appended `"ui_pages.*"` (the Playwright Page-Object-Model — a test *driver*, but NOT in
+> the Decision-7 exempt set, so held to strict per Decision-7; the `D` + `interrogate`
+> families already treated it as production scope) and the 4 setuptools data-package
+> **marker `__init__.py`** files — `templates`, `static`, `personas.bundled`, `docs.wiki` —
+> to the strict override's `module` list, then rewrote the block's leading comment into its
+> final terse cohort-history form (rungs 1-8) declaring the ratchet complete. The 4 markers
+> were verified pure-docstring (zero code) and already strict-clean
+> (`mypy --strict --warn-unreachable templates/__init__.py static/__init__.py
+> personas/bundled/__init__.py docs/wiki/__init__.py` → `Success: no issues found in 4
+> source files`) before rostering — roster-add only, zero fixes, added purely so the §6 exit
+> is literal and caveat-free ("strict everywhere except the exempt set", no "…except empty
+> markers" asterisk). Measured live (`python -m mypy --strict --warn-unreachable ui_pages/`)
+> **= 1 error**: `ui_pages/user_picker.py`'s `options()` `no-any-return` on
+> `self.page.eval_on_selector_all(...)` (Playwright's stub types the call `Any`) → wrapped
+> in `cast("list[str]", ...)`, a runtime no-op; `cast` added to a top-level
+> `from typing import cast` (not under `TYPE_CHECKING`, since `cast()` executes at runtime).
+> **§6-EXIT PROOF:** with the roster complete, the non-covered/non-root production-`.py`
+> list is empty —
+> `git ls-files '*.py' | grep -vE '^(tests/|evals/|scripts/|db/migrations/versions/)' | grep -vE '^(blueprints/|dashboard/|web_infra/|recall/|onboarding/|ui_pages/|db/|templates/__init__|static/__init__|personas/bundled/__init__|docs/wiki/__init__)' | grep '/'`
+> prints nothing. **Per-module tracking: 81 non-exempt production `.py` modules total, ALL
+> now at full `mypy --strict` + `warn_unreachable`** (root-level files individually rostered,
+> every package dir + the 4 markers covered) — **no module carries a strictness override
+> except the Decision-7 exempt set. The §6 exit criterion is MET.** **PROMPT-SAFE
+> (grep-0):** `(SYSTEM_PROMPT|PROMPT_VERSION|AVATAR_|_RULES_BLOCK|_BASE_SYSTEM_PROMPTS)`
+> across `ui_pages/` (and the 4 markers) returned 0 hits — no prompt constant is defined in
+> this cohort — so no `PROMPT_VERSION` bump, no eval run. No new dependency, no behavior
+> change beyond the one `cast`. Gate green: `ruff check .` ✓ · `ruff format --check`
+> (touched files) ✓ · `mypy .` ("Success: no issues found in 298 source files") ✓ (pytest
+> deferred to the conductor's full-suite run on the committed tip, per this run's gate
+> division). **This completes kit-adoption commitment (1)** — the mypy `--strict` ratchet
+> (§6) — while commitment (3) [8.7 hooks-rehome / skills-packaging coherence] stays open.
+>
 > **Progress (2026-06-25, `chore/kit-phase2-interrogate`):** Phase 2 #4 — the `interrogate`
 > docstring-**coverage** floor-lock gate — LANDED, the **final Phase 2 implementation sub-item**.
 > `interrogate>=1.7,<2.0` added to the `dev` extra (a real new dependency → CHANGELOG); a new
@@ -738,6 +772,10 @@ because it's tracked*. A strict ratchet with no tracking + no finish line is how
   set (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`; Decision 7). When the only
   remaining overrides are those four, the ratchet is complete and the gate blocks everywhere
   non-exempt.
+
+**EXIT REACHED (2026-07-10, `chore/kit-mypy-strict-uipages-exit`):** the `--strict` family met
+its finish line — every non-exempt production module carries the strict override; only the
+named exempt set stays permissive.
 
 ---
 
