@@ -464,6 +464,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is now the single source. Re-pointed every cross-document link/cite that
   targeted a retired path (`AGENTS.md`, `docs/wiki/pages/*.md`); verified
   clean via `scripts/check_doc_links.py`.
+### Added: hosted Fumadocs docs site (`feat/fumadocs-site`, v1.0.9 Phase 6 docs epic)
+
+- **New `docs-site/` app** — a self-hosted [Fumadocs](https://fumadocs.dev)
+  (Next.js App Router) site configured for **static export**
+  (`output: 'export'` → `docs-site/out/`, no server process). Scaffolded via
+  `create-fumadocs-app` (`+next+fuma-docs-mdx+static` template). **New JS
+  toolchain** (`docs-site/package.json`): `next`, `fumadocs-core`,
+  `fumadocs-mdx`, `fumadocs-ui`, React 19, TypeScript, Tailwind CSS 4 — a
+  separate dependency tree from the Python product (the "no new dep without
+  a `pyproject.toml` + CHANGELOG entry" rule is a Python-tree rule; this is
+  its JS-tree documentation instead, per the lane's scope).
+- **New `scripts/project_docs_to_mdx.py`** — the deterministic, stdlib-only
+  (no new Python dependency) projection adapter: reads the L1 doc set
+  (README + `docs/**` pages carrying the `Purpose`/`Audience`/
+  `Authoritative-for` header, excluding `docs/wiki/**` which is L2) and
+  emits `docs-site/content/docs/*.mdx` + a `meta.json` ordered by README's
+  own "Documentation map" (the ICP ladder) partitioned by the
+  `docs/wiki/SCHEMA.md` `user`/`dev` audience tag. See the module docstring
+  for the full frontmatter map, audience-classification fallback chain, and
+  the MDX-safety escaping (including a `<!-- -->` → `{/* */}` rewrite — MDX
+  has no raw-HTML-comment syntax). Covered by `tests/test_docs_projection.py`
+  (23 tests).
+- **New `.github/workflows/docs-deploy.yml`** — on push to `main`: runs the
+  projector, builds the static export, and always publishes it as a
+  downloadable artifact (works with any webhost). An optional, guarded
+  SFTP/SSH auto-push (`SFTP_HOST`/`SFTP_USER`/`SFTP_KEY`-or-`SFTP_PASSWORD`
+  repo secrets) skips gracefully when unconfigured. No literal secrets.
+- **New [`docs/dev/docs-site-deploy.md`](docs/dev/docs-site-deploy.md)** —
+  the self-host runbook (DNS, SFTP/SSH setup, manual-upload fallback).
+- `pyproject.toml` — `docs-site/` excluded from `ruff`/`mypy`/`interrogate`
+  (a separate JS toolchain; see `docs-site/README.md` for its own dev loop).
+- **Deferred, not built this lane:** RELEASE_ARC.md's Phase 4.9 plan has
+  Fumadocs render an HTTP-API reference (Layer B) from an OpenAPI spec
+  `spectree` emits. `spectree` is **not present** in this codebase (zero
+  `.py` imports, absent from `pyproject.toml`) — the ARC's "pulled into
+  v1.0.8" claim is stale. Wiring `spectree` into the Flask route surface is
+  product code + a security-gated change, out of this docs lane's scope;
+  flagged for an owner decision.
 
 ## [1.0.8] — 2026-07-09
 

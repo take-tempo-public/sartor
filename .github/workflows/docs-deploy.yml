@@ -1,0 +1,112 @@
+name: Docs site deploy
+
+# feat/fumadocs-site (v1.0.9 Phase 6 docs epic). Builds the hosted Fumadocs
+# static export from the governed L1 doc set on every push to main —
+# "merge = publish" (docs/dev/documentation-architecture.md "Gates"). The
+# PRIMARY, always-produced output is a downloadable static-export artifact
+# (works with ANY webhost — manual cPanel/File-Manager/FTP-client upload is
+# always a valid deploy path). An OPTIONAL, GUARDED SFTP/SSH auto-push runs
+# on top of that when the four SFTP_* secrets are configured in the repo
+# settings; until then it skips gracefully (exit 0, logged as "not
+# configured") — this workflow is authored now but latent until the repo is
+# pushed to a GitHub remote (same "committed but latent" status as the rest
+# of CI; see docs/governance/enforcement.md). No literal secrets — see
+# docs/dev/docs-site-deploy.md for the setup runbook.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    name: Project docs -> MDX, build static export, publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # scripts/project_docs_to_mdx.py — deterministic, stdlib-only. No
+      # Anthropic key, no network call; regenerates docs-site/content/docs/
+      # from the L1 doc set at THIS commit (the projection is a pure
+      # function of `main` HEAD, per documentation-architecture.md).
+      - name: Project L1 docs -> MDX
+        run: python scripts/project_docs_to_mdx.py
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: docs-site/package-lock.json
+
+      - name: npm ci
+        working-directory: docs-site
+        run: npm ci
+
+      - name: npm run build (static export)
+        working-directory: docs-site
+        run: npm run build
+
+      - name: Verify static export was produced
+        working-directory: docs-site
+        run: test -f out/index.html
+
+      # PRIMARY output — always produced. A zip any webhost can serve:
+      # download from the workflow run, upload via FTP/SFTP/cPanel/File
+      # Manager. This is the deploy path that works before any secret is
+      # configured, and stays the fallback afterward.
+      - name: Upload static export artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-site-out
+          path: docs-site/out
+          retention-days: 30
+
+      # OPTIONAL, GUARDED auto-push over SFTP/SSH. Secrets (repo settings ->
+      # Secrets and variables -> Actions):
+      #   SFTP_HOST          — the webhost's SFTP hostname
+      #   SFTP_USER          — the SFTP username
+      #   SFTP_KEY           — SSH private key (preferred), OR
+      #   SFTP_PASSWORD      — SFTP password, if the host doesn't offer key auth
+      #   SFTP_REMOTE_PATH   — optional; target dir on the host (default: "/")
+      #   SFTP_PORT          — optional; SFTP port (default: 22)
+      # See docs/dev/docs-site-deploy.md for the full setup runbook. Absent
+      # secrets are NOT a failure — this step logs "not configured" and the
+      # job still succeeds (the artifact above already published).
+      - name: Check SFTP/SSH deploy secrets
+        id: sftp_check
+        env:
+          HAS_HOST: ${{ secrets.SFTP_HOST != '' }}
+          HAS_USER: ${{ secrets.SFTP_USER != '' }}
+          HAS_KEY: ${{ secrets.SFTP_KEY != '' }}
+          HAS_PASSWORD: ${{ secrets.SFTP_PASSWORD != '' }}
+        run: |
+          if [ "$HAS_HOST" = "true" ] && [ "$HAS_USER" = "true" ] && { [ "$HAS_KEY" = "true" ] || [ "$HAS_PASSWORD" = "true" ]; }; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "SFTP/SSH deploy secrets not configured — skipping auto-push (not a failure)."
+            echo "The static-export artifact above is still published every run."
+            echo "See docs/dev/docs-site-deploy.md to set up SFTP_HOST / SFTP_USER / SFTP_KEY (or SFTP_PASSWORD)."
+          fi
+
+      - name: Deploy over SFTP/SSH
+        if: steps.sftp_check.outputs.configured == 'true'
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          username: ${{ secrets.SFTP_USER }}
+          server: ${{ secrets.SFTP_HOST }}
+          port: ${{ secrets.SFTP_PORT || '22' }}
+          ssh_private_key: ${{ secrets.SFTP_KEY }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          local_path: "docs-site/out/*"
+          remote_path: ${{ secrets.SFTP_REMOTE_PATH || '/' }}
+          sftp_only: true
