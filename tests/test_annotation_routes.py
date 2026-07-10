@@ -296,6 +296,12 @@ class TestCollate:
         # collate_expected lowercases skill keywords (case-insensitive coverage).
         assert "python" in expected["must_keywords"]
         assert r"\$5M\b" in expected["forbidden_inventions"]
+        # Regression for diagnostics-round2 #11: the printed run_command must target
+        # the SAME single fixture the "Run this fixture" button posts — without
+        # --fixture, --seed doesn't restrict which fixtures run and the CLI globs
+        # every real fixture (crashing in _load_fixture on missing jd.txt).
+        assert "--fixture alice-bootstrap" in body["run_command"]
+        assert "evals/fixtures/real/alice-bootstrap/seed.json" in body["run_command"]
 
     def test_anchor_jd_resolves_when_raw_name_lacks_txt_suffix(self, ann_app, monkeypatch):
         """Regression for diagnostics-round2 #15: the bootstrap wrapper's writer

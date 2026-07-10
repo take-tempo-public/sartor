@@ -32,6 +32,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   regression test (`tests/test_annotation_routes.py`) driving both real
   routes end-to-end with a space-containing, `.txt`-less JD name.
 
+### Fix: diagnostics collate CLI command targets one fixture (`fix/diagnostics-11-collate-cli-fixture`)
+
+- **Diagnostics round-2 #11 — collate's printed CLI command didn't match the
+  adjacent "Run this fixture" button.** `annotation_collate`'s `run_command`
+  read `python evals/runner.py --suite real --seed
+  evals/fixtures/real/<slug>/seed.json` — no `--fixture <slug>`, and `--seed`
+  doesn't restrict which fixtures run, so copy-pasting it globbed every real
+  fixture and crashed in `_load_fixture` (which hard-requires each fixture's
+  `jd.txt`), while the button posts a single `fixture: slug`. Added
+  `--fixture <slug>` (and dropped the now-redundant `--suite real`, since
+  `--fixture` overrides it) so the printed command matches the button's
+  single-fixture semantics. See
+  [`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`](docs/dev/reviews/2026-07-diagnostics-round2-findings.md)
+  item #11 (blocked by #15, fixed above first). Extended the existing
+  collate test to assert `run_command` contains `--fixture <slug>`.
+
 ## [1.0.8] — 2026-07-09
 
 ### Fix: UX round-2 quick wins (`fix/round2-quick-wins`, 2026-07-09)

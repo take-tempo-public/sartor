@@ -354,7 +354,7 @@ def annotation_collate(username: str, slug: str) -> ResponseReturnValue:
             "must_keywords": len(expected.get("must_keywords", [])),
             "forbidden_inventions": len(expected.get("forbidden_inventions", [])),
             "run_command": (
-                f"python evals/runner.py --suite real --seed "
+                f"python evals/runner.py --fixture {secure_filename(slug)} --seed "
                 f"evals/fixtures/real/{secure_filename(slug)}/seed.json"
             ),
         }
