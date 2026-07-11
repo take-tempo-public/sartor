@@ -83,6 +83,7 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 from check_doc_frontmatter import PUBLISHED_DOC_FILES
@@ -176,7 +177,7 @@ def _is_gitignored(path: Path) -> bool:
     return result.returncode == 0
 
 
-def _iter_unfenced_lines(lines: list[str]):
+def _iter_unfenced_lines(lines: list[str]) -> Iterator[tuple[int, str]]:
     """Yield (1-based lineno, line) for lines NOT inside a fenced code block."""
     in_fence = False
     fence_char = None

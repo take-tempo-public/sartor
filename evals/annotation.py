@@ -56,7 +56,7 @@ import shutil
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 # Make project root importable so `python -m evals.annotation` and direct script
 # invocation both resolve top-level imports. Mirrors evals/bootstrap.py.
@@ -268,7 +268,7 @@ def validate_annotations(doc: Any) -> None:
 
 def load_annotations(path: str | Path) -> dict[str, Any]:
     """Read + validate an annotations.json from disk. Raises on bad JSON or drift."""
-    doc = json.loads(Path(path).read_text(encoding="utf-8"))
+    doc = cast("dict[str, Any]", json.loads(Path(path).read_text(encoding="utf-8")))
     validate_annotations(doc)
     return doc
 

@@ -17,6 +17,7 @@ dirs, so the `_safe_username`/`_within` user-path guards do not apply there.
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from scripts.enforcement import gitutil
 from scripts.enforcement.guards.result import GuardResult
@@ -62,7 +63,7 @@ def decide(file_path: str, content: str) -> GuardResult:
     return GuardResult.block(*lines)
 
 
-def claude_check(payload: dict) -> GuardResult:
+def claude_check(payload: dict[str, Any]) -> GuardResult:
     """Claude PreToolUse adapter: extract `file_path` + the proposed `new_string`/`content`."""
     tool_input = payload.get("tool_input") or {}
     file_path = tool_input.get("file_path", "") or ""

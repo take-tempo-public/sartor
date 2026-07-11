@@ -28,8 +28,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from docx import Document
+from docx.document import Document as DocxDocument
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING, WD_TAB_ALIGNMENT
 from docx.shared import Inches, Pt
+from docx.text.paragraph import Paragraph
+from docx.text.run import Run
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUT = REPO_ROOT / "personas" / "bundled"
@@ -180,7 +183,7 @@ PRESETS: list[TypographyPreset] = [
 
 
 def _apply_font(
-    run,
+    run: Run,
     family: str,
     size_pt: int,
     *,
@@ -198,7 +201,7 @@ def _apply_font(
 
 
 def _apply_paragraph_spacing(
-    paragraph,
+    paragraph: Paragraph,
     *,
     line_spacing: float,
     space_before_pt: int = 0,
@@ -335,7 +338,7 @@ def build_template_to_path(preset: TypographyPreset, out_path: Path) -> None:
     doc.save(str(out_path))
 
 
-def _add_section_heading(doc, preset: TypographyPreset, text: str) -> None:
+def _add_section_heading(doc: DocxDocument, preset: TypographyPreset, text: str) -> None:
     p = doc.add_paragraph()
     _apply_paragraph_spacing(
         p,

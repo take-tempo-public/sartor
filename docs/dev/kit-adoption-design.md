@@ -112,7 +112,7 @@ oversized-file gate is a future-guard, not a current fix.
 | 4 | ADRs | **Thin `decisions.md` index** over existing records | Closes the "no single chronological decision log" gap with zero duplication or competing home (cite-don't-restate / D5) |
 | 5 | `context-structure-review` packaging | **Committed plugin skill in a root `skills/` dir** | `.claude/skills/` is gitignored → unshipped/unpromotable. Root `skills/` mirrors the `commands/`/`agents/` convention, stays close to the kit format for easy upstream sync, and is committed + promotable |
 | 6 | Gate hardness | **Ratchet-then-block** | Hard-block unambiguous gates day one (gitleaks, `ruff format`, mypy on covered modules); strict families (`D`/`ANN`/`--strict`) ratchet warn→block per-module, locking each gain; known-noisy heuristics (oversized-file, any commented-out grep) stay **warn-only forever** (the kit's false-positive→route-around caveat) |
-| 7 | mypy `--strict` end-state | **Strict everywhere except a named exempt set** (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`) | Professional default; named + justified exemptions satisfy "audit the escape hatches"; gives the ratchet a finite finish line |
+| 7 | mypy `--strict` end-state | **Strict everywhere except a named exempt set** — originally (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`); **AMENDED 2026-07-10** (`chore/mypy-strict-tooling`, owner-directed v1.0.9 tooling-slice pull-in) to **`tests/` only** — see §6 for the amendment record | Professional default; named + justified exemptions satisfy "audit the escape hatches"; gives the ratchet a finite finish line |
 | 8 | `uv` migration | **Out of scope** | Stay pip/setuptools; translate the kit's commands |
 
 Full rationale for Decisions 1, 2, 3, and 5 (the ones that turned on Sartor-specific facts —
@@ -782,9 +782,9 @@ because it's tracked*. A strict ratchet with no tracking + no finish line is how
 - **Tracking surface:** a per-module coverage record (which modules are at full strict / `D` /
   `ANN`, which still carry an override).
 - **Exit criterion (done):** no module carries a strictness override **except** the named exempt
-  set (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`; Decision 7). When the only
-  remaining overrides are those four, the ratchet is complete and the gate blocks everywhere
-  non-exempt.
+  set (originally `tests/`, `evals/`, `scripts/`, `db/migrations/versions`; Decision 7 — see the
+  2026-07-10 amendment below for the current, narrower set). When the only remaining overrides
+  are the named exempt set, the ratchet is complete and the gate blocks everywhere non-exempt.
 
 **EXIT REACHED (2026-07-10, `chore/kit-mypy-strict-uipages-exit`):** the `--strict` family met
 its finish line — every non-exempt production module carries the strict override; only the
@@ -793,6 +793,53 @@ not asserted once: `tests/test_mypy_strict_roster_gate.py` (added on the same br
 compliance-witness **CW-118**) parses the strict roster and fails the suite if any non-exempt
 tracked `.py` module escapes it — the mypy-roster analogue of the route-containment +
 docstring-coverage KEEP gates.
+
+> **Decision-7 AMENDED — the tooling slice (2026-07-10, `chore/mypy-strict-tooling`,
+> owner-directed v1.0.9 pull-in).** The §6 exit above was reached against Decision 7's
+> *original* exempt set (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`) — four
+> trees deliberately left permissive when the ratchet started (kit-adoption-design.md §3
+> Decision 7, 2026-06-23). At owner direction, three of the four were brought to full
+> `mypy --strict` + `warn_unreachable` on this branch, so **the exempt set is now `tests/`
+> only**. Measured **72 errors total** across the tooling slice: **22 in `scripts/`** (12
+> files — mostly bare-generic `dict`/`frozenset`/`list` parametrization on hook-payload and
+> retrieval-tier helpers, three missing param annotations, one `cast(...)`-wrapped
+> `no-any-return` in the vector-index embedder), **44 in `evals/`** (3 files, dominated by
+> `evals/runner.py`'s ~40 bare-generic `dict` JSON-payload parameters/returns — the eval
+> harness's request/response shapes — plus 4 `cast(...)`-wrapped `no-any-return`s on
+> `json.loads(...)` boundaries), and **6 in `db/migrations/versions/`** (5 files — untyped
+> `_table_exists(bind)` / `_candidate_columns(bind)` / `_skill_columns(bind)`-style helper
+> params, fixed to `sa.engine.Connection` matching the convention already used in
+> `0011`–`0013`, plus one bare `list[dict]` seed-row constant in `0002`). **Zero behavior
+> change** — every fix is annotation-only (parametrized generics, added param/return types,
+> or a runtime-no-op `cast`); no prompt constant lives in any of the three trees, so no
+> `PROMPT_VERSION` bump and no eval run.
+>
+> **Why the alembic-versions friction is negligible (the thing Decision 7 originally
+> worried about):** `db/migrations/script.py.mako` — the template alembic renders every
+> future `alembic revision` from — already emits strict-clean scaffolding
+> (`def upgrade() -> None:`, typed `revision: str`, `down_revision: str | Sequence[str] |
+> None`). The 6 measured errors were entirely in HAND-ADDED helpers layered on top of that
+> scaffolding, not the generated shape itself, so future autogenerated revisions cost
+> nothing extra under strict. `db.migrations.versions.*` is rostered as its **own** explicit
+> glob entry (not folded into a broader `db.*`/`db.migrations.*` wildcard) — the rung-5
+> db-glob-trap discipline (§4) still applies to how the entry is added, even though the
+> tree itself is no longer exempt.
+>
+> **`tests/` stays permissive** — explicitly out of scope for this pull-in. A full-strict
+> burn of `tests/` was measured separately (~3,252 errors) and is a much larger, later
+> effort; the owner deferred it on 2026-07-10 rather than fold it into this branch.
+>
+> The gate stayed **by construction**: `tests/test_mypy_strict_roster_gate.py`'s
+> `_EXEMPT_PREFIXES` narrowed to `("tests/",)`, and its `db/migrations/versions`-stays-permissive
+> guard was rewritten into its premise-reversal (`test_migrations_versions_is_strict_rostered`
+> now asserts the tree **is** covered) — the mypy-roster gate's falsifiability holds under
+> the amendment, not just before it. Gate green: `ruff check .` ✓ · `ruff format --check`
+> (touched files) ✓ · `mypy .` ✓ (72 → 0 across the tooling slice, whole-tree still green) ·
+> `pytest -m "not ux and not slow"` ✓ (roster gate's 4 tests included). Binding proof: an
+> untyped probe function added to one `scripts/` file and one `db/migrations/versions/` file
+> was confirmed flagged `[no-untyped-def]` by `mypy .` before being reverted — the roster
+> entries actually bind mypy's per-module resolution, not just satisfy the gate's static
+> parse.
 
 ---
 

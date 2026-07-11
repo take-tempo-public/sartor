@@ -19,6 +19,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 # Make `scripts.enforcement.*` importable regardless of how this file is
 # invoked (a direct script path, as the wrapper `.sh` files do — not `-m`).
@@ -46,7 +47,7 @@ _GUARD_NAMES = (
 )
 
 
-def _load_payload() -> dict:
+def _load_payload() -> dict[str, Any]:
     raw = sys.stdin.read()
     try:
         return json.loads(raw) if raw.strip() else {}
@@ -54,7 +55,7 @@ def _load_payload() -> dict:
         return {}
 
 
-def dispatch(name: str, payload: dict) -> GuardResult:
+def dispatch(name: str, payload: dict[str, Any]) -> GuardResult:
     """Route `name` (one of `_GUARD_NAMES`) to its guard's `claude_check`."""
     if name == "require-feature-branch":
         return require_feature_branch.claude_check(payload)

@@ -1,4 +1,4 @@
-"""B.5 (Sprint 6.6) — promote Skill to a Corpus Item; add skill_tag; backfill lifecycle columns
+"""B.5 (Sprint 6.6) — promote Skill to a Corpus Item; add skill_tag; backfill lifecycle columns.
 
 Revision ID: 0009
 Revises: 0008
@@ -27,6 +27,7 @@ present — the PRAGMA / table-exists guards skip the ALTER in that case. On
 an upgraded DB (skill with only the legacy columns), the ALTER + backfill
 land normally.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -41,16 +42,17 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
-def _table_exists(bind, name: str) -> bool:
+def _table_exists(bind: sa.engine.Connection, name: str) -> bool:
     inspector = sa.inspect(bind)
     return name in inspector.get_table_names()
 
 
-def _skill_columns(bind) -> set[str]:
+def _skill_columns(bind: sa.engine.Connection) -> set[str]:
     return {row[1] for row in bind.execute(sa.text("PRAGMA table_info(skill)"))}
 
 
 def upgrade() -> None:
+    """Promote skill to a Corpus Item (lifecycle columns + skill_tag); backfill display_order (idempotent)."""
     bind = op.get_bind()
 
     # Promote the skill table to a Corpus Item. Guard on `source`: present
@@ -90,7 +92,8 @@ def upgrade() -> None:
         # name-sorted order (ties broken by id). Plain (non-f) string — no
         # user input is ever formatted in, so the ruff-changed S608 check
         # has nothing to flag.
-        bind.execute(sa.text("""
+        bind.execute(
+            sa.text("""
             UPDATE skill
             SET display_order = (
                 SELECT COUNT(*) FROM skill s2
@@ -98,7 +101,8 @@ def upgrade() -> None:
                   AND (s2.name < skill.name
                        OR (s2.name = skill.name AND s2.id < skill.id))
             )
-        """))
+        """)
+        )
 
     # skill_tag (mirrors bullet_tag)
     if not _table_exists(bind, "skill_tag"):
@@ -115,6 +119,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Drop skill_tag and revert skill's Corpus Item lifecycle columns (idempotent)."""
     bind = op.get_bind()
 
     if _table_exists(bind, "skill_tag"):

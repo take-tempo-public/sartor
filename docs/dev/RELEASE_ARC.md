@@ -1270,6 +1270,15 @@ Sequence (each its own branch, in dependency order):
 is enforced **by construction** via `tests/test_mypy_strict_roster_gate.py` (closes
 compliance-witness CW-118), not a one-time proof. Rung history:
 [`kit-adoption-design.md`](kit-adoption-design.md) §4/§6 + `CHANGELOG.md` `[Unreleased]`.
+**Tooling-slice pull-in — ✅ LANDED (2026-07-10, `chore/mypy-strict-tooling`,
+owner-directed).** Decision 7 AMENDED: the exempt set narrows to **`tests/` only** —
+`scripts/` (22 errs) + `evals/` (44 errs) + `db/migrations/versions/` (6 errs) = 72
+measured `mypy --strict --warn-unreachable` errors fixed and rostered (annotation-only,
+zero behavior change). `tests/test_mypy_strict_roster_gate.py` updated to match
+(`_EXEMPT_PREFIXES` narrowed, the migrations/versions guard inverted to assert
+coverage). The remaining `tests/` strict burn (~3,252 errors measured) **stays
+deferred** per owner direction 2026-07-10 — out of scope for this pull-in; see
+[`kit-adoption-design.md`](kit-adoption-design.md) §6 for the full amendment record.
 The original plan is retained below for the record. — Complete the
 `mypy --strict` ratchet to the §6 end-state so strict typing can be claimed for all
 non-test code. Empirically measured 2026-06-29: **146 errors across 18 of 69 production

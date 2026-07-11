@@ -25,6 +25,8 @@ import logging
 
 from blueprints.assistant import _VECTOR_INDEX_DIR, _build_sources, _make_embedder
 from recall import Scope, Tier, VectorSource
+from recall.models import Unit
+from recall.source import Source
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +102,7 @@ def main() -> int:
     return 0
 
 
-def assemble_units(query: str, tiers: frozenset, sources: list) -> list:
+def assemble_units(query: str, tiers: frozenset[Tier], sources: list[Source]) -> list[Unit]:
     """Retrieve for `query` with `tiers` enabled (allow_dev so code chunks are admitted)."""
     from recall import assemble
 

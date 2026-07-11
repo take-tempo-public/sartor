@@ -1,4 +1,4 @@
-"""PX-02 — add candidate.online_profile_text (cached opt-in profile/website scrape)
+"""PX-02 — add candidate.online_profile_text (cached opt-in profile/website scrape).
 
 Revision ID: 0010
 Revises: 0009
@@ -17,6 +17,7 @@ the ALTER. On an upgraded DB (candidate without the column), the ALTER lands.
 No backfill: the field starts empty and is populated by the
 POST /api/users/<u>/profile/fetch route when the user opts in.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -30,11 +31,12 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
-def _candidate_columns(bind) -> set[str]:
+def _candidate_columns(bind: sa.engine.Connection) -> set[str]:
     return {row[1] for row in bind.execute(sa.text("PRAGMA table_info(candidate)"))}
 
 
 def upgrade() -> None:
+    """Add candidate.online_profile_text (native ADD COLUMN; idempotent)."""
     # Native ALTER TABLE ADD COLUMN (no batch). A nullable column needs no
     # table reconstruction, and `candidate` is a PARENT table — a batch
     # recreate would cascade-delete child rows (experience, skill, …) whenever
@@ -46,6 +48,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Drop candidate.online_profile_text (native DROP COLUMN)."""
     # Native DROP COLUMN (SQLite ≥ 3.35). See upgrade() — no batch recreate of
     # the parent `candidate` table, so no FK cascade onto child rows.
     bind = op.get_bind()

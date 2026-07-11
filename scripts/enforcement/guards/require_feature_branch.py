@@ -18,6 +18,7 @@ import os
 import posixpath
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from scripts.enforcement.gitutil import git_branch
 from scripts.enforcement.guards.result import GuardResult
@@ -61,7 +62,7 @@ def decide(file_path: str, env: Mapping[str, str]) -> GuardResult:
     return GuardResult.allow()
 
 
-def claude_check(payload: dict, env: Mapping[str, str] | None = None) -> GuardResult:
+def claude_check(payload: dict[str, Any], env: Mapping[str, str] | None = None) -> GuardResult:
     """Claude PreToolUse adapter: extract `tool_input.file_path`."""
     if env is None:
         env = os.environ
