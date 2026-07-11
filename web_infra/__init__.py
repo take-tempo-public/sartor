@@ -1,9 +1,10 @@
 """Shared web-infra package — cross-cutting HTTP-layer helpers.
 
 The small, cohesive home for the helpers `app.py` and every blueprint share
-(Sprint 8.3a, the `app.py` -> blueprints decomposition foundation). Six fixed
-groups (per the 8.1 design): security, http/sse, clients, config-io, provisioning,
-request-gates.
+(Sprint 8.3a, the `app.py` -> blueprints decomposition foundation). Seven fixed
+groups (per the 8.1 design, `openapi` added Phase 1 of the spectree/OpenAPI
+kit-adoption slice): security, http/sse, clients, config-io, provisioning,
+request-gates, openapi.
 
 Hard rule (enforced by `tests/test_web_infra_is_leaf.py`): this package NEVER
 imports `app.py`, any blueprint, or `config.py`. It is leaf infrastructure — that
@@ -21,6 +22,7 @@ from __future__ import annotations
 from web_infra.clients import _get_client
 from web_infra.config_io import _load_config, _save_config
 from web_infra.http import _error_detail_payload, _sse
+from web_infra.openapi import spec
 from web_infra.provisioning import _get_or_provision_candidate
 from web_infra.request_gates import _is_localhost_request
 from web_infra.security import _safe_username, _within
@@ -35,4 +37,5 @@ __all__ = [
     "_save_config",
     "_sse",
     "_within",
+    "spec",
 ]

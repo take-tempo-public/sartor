@@ -58,6 +58,13 @@ dependencies = [
     # + RELEASE_ARC §4.7.
     "numpy>=1.24,<3.0",
     "model2vec>=0.3,<1.0",
+    # spectree/OpenAPI kit-adoption Phase 1 (KIT-1/KIT-2a, `feat/spectree-openapi-emit`):
+    # decorator-only OpenAPI spec EMISSION over 5 read-only GET routes
+    # (web_infra/openapi.py) — additive, `resp=`/`skip_validation=True` only, zero
+    # request-validation, zero route-body edits. `spectree[flask]` ships its own
+    # `py.typed` marker (verified — no `ignore_missing_imports` override needed).
+    # Fumadocs RENDERING the emitted docs-site/openapi.json is a separate, later branch.
+    "spectree[flask]>=2.0,<3.0",
 ]
 
 [project.optional-dependencies]
