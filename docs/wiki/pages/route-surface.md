@@ -196,6 +196,22 @@ The lifecycle layer over generated applications:
 The status/run history these expose is the application audit trail (see
 [[application-audit-chain]]).
 
+## OpenAPI spec emission on five GET routes (spectree Layer B)
+
+Five read-only `GET` routes across three blueprint files —
+`users.list_users` + `users.get_config`
+([`blueprints/users.py`](../../../blueprints/users.py)),
+`corpus.experiences.list_experiences`
+([`blueprints/corpus/experiences.py`](../../../blueprints/corpus/experiences.py)),
+and `applications.list_applications` + `applications.get_application`
+(above) — additionally carry an `@spec.validate(resp=..., skip_validation=True,
+tags=[...])` decorator against the shared `web_infra/openapi.py:spec`
+instance. `skip_validation=True` means this is documentation-only: the
+routes' request handling, security gate, and response bodies are unchanged
+`[synthesis]`. See [[openapi-api-reference]] for the full treatment (the
+response models, the `mode="strict"` scoping, and the
+`scripts/generate_openapi_spec.py` generator this decoration feeds).
+
 ## Other blueprints (not re-catalogued here)
 
 Three more domain blueprints round out the nine-module surface; each has its own
@@ -225,3 +241,4 @@ inventory:
 - [[application-audit-chain]] — the runs/status history behind the tracker routes.
 - [[diagnostics-console]] — the diagnostics blueprint's SSE write surface.
 - [[consistency-tracks-enforcement]] — why the security gate is uniform (the hook).
+- [[openapi-api-reference]] — the spectree OpenAPI decoration on five of these GET routes.

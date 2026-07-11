@@ -566,3 +566,97 @@ touched). Per the [`../../CHANGELOG.md`](../../CHANGELOG.md) scope rule this con
 recorded here; a CHANGELOG [Unreleased] line was also added (conductor scope directive) since
 the branch additionally closes a Carry-forward-ledger row in
 [`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md).
+
+## 2026-07-10 — diff refresh: v1.0.9 pre-merge bounded catch-up (`chore/wiki-refresh-v109`)
+
+**Mode: BOUNDED diff refresh** (`e785e539` → `c8899fd`) — NOT a full re-ingest. The
+pull-in train (docs epic + mypy tooling slice + spectree OpenAPI Layer B) pushed the
+`scripts/wiki_freshness.py` drift gate past its threshold; owner directed a genuine
+synthesis pass over the new surface, scoped to two items (not the whole 41-file diff,
+most of which is canonical living docs the wiki references-not-duplicates per D5, or
+the docs/diagrams-a11y + docs-site/Fumadocs work already reconciled by the prior
+`docs/wiki-v109-refresh` pass and out of scope here as an L3 projection).
+
+**Scope item 1 — spectree OpenAPI "Layer B."** [`web_infra/openapi.py`](../../web_infra/openapi.py)
+(the shared `spec` `SpecTree` instance + `RootModel`/permissive-base response
+models, `mode="strict"`), five read-only `GET` routes now carrying
+`@spec.validate(resp=..., skip_validation=True)` across
+[`blueprints/users.py`](../../blueprints/users.py) (`list_users`, `get_config`),
+[`blueprints/corpus/experiences.py`](../../blueprints/corpus/experiences.py)
+(`list_experiences`), and [`blueprints/applications.py`](../../blueprints/applications.py)
+(`list_applications`, `get_application`); the deterministic generator
+[`scripts/generate_openapi_spec.py`](../../scripts/generate_openapi_spec.py); and the
+`docs-deploy.yml` CI step wiring it into the Fumadocs build (the Fumadocs render itself,
+and everything under `docs-site/`, is an L3 projection — out of wiki scope per
+[`SCHEMA.md`](SCHEMA.md)).
+
+**Scope item 2 — mypy `--strict` tooling slice.** `scripts/`, `evals/`, and
+`db/migrations/versions/` brought to full `--strict` (72 measured errors fixed,
+zero behavior change), narrowing the Decision-7 exempt set to `tests/` only
+([`docs/dev/kit-adoption-design.md`](../dev/kit-adoption-design.md) §6 amendment;
+[`tests/test_mypy_strict_roster_gate.py`](../../tests/test_mypy_strict_roster_gate.py)
+updated in lockstep).
+
+**Pages created (1, `audience: dev`):** [`pages/openapi-api-reference.md`](pages/openapi-api-reference.md)
+— no existing page owned this concept (a repo-wide grep for `docs-site|spectree|openapi|fumadocs`
+across `docs/wiki/` returned nothing before this pass), so a dedicated page was warranted per
+[`SCHEMA.md`](SCHEMA.md)'s "one concept per page" rather than folding a multi-file, CI-spanning
+concern into [[route-surface]].
+
+**Pages changed (4, all `audience: dev`).**
+- [`pages/route-surface.md`](pages/route-surface.md) — added an "OpenAPI spec emission on
+  five GET routes (spectree Layer B)" section naming the five decorated routes and pointing to
+  the new page; added a `[[openapi-api-reference]]` backlink.
+- [`pages/code-module-map.md`](pages/code-module-map.md) — added `openapi.py` to the
+  `web_infra/` leaf-module row + a `[[openapi-api-reference]]` backlink.
+- [`pages/engineering-workstreams.md`](pages/engineering-workstreams.md) — WS-2 status:
+  the Decision-7 exempt set (previously stated as `tests/`/`evals/`/`scripts/`/
+  `db/migrations/versions`) is now **`tests/` only**; recorded the 72-error tooling-slice
+  fix and the roster-gate's matching narrowing.
+- [`pages/consistency-tracks-enforcement.md`](pages/consistency-tracks-enforcement.md) —
+  **Related-section backlink only, no content change** (its content stays pinned to the
+  2026-06-07 excellence-walk source per its own grounding note): added
+  `[[openapi-api-reference]]` as a reciprocal bidirectional link, since the new page cites
+  it as a later instance of the same "consistency tracks enforcement" pattern
+  (`mode="strict"` + the 5-path self-check).
+
+**A closer look considered, then declined: `pages/deterministic-llm-boundary.md`.** That
+page's scope is explicitly the eight modules AGENTS.md names as the P1 boundary (verified
+unchanged by this diff — the only AGENTS.md edit in range retargets a diagram-location
+sentence, unrelated). `web_infra/openapi.py` is deterministic by its own docstring but is a
+`web_infra/` leaf module, not one of those eight — noted explicitly on the new page instead
+of stretching this page's fixed module list `[synthesis]`. The new page links to
+`deterministic-llm-boundary` one-way (to state the distinction), deliberately **without** a
+reciprocal backlink — adding one there would misrepresent that page's fixed, AGENTS.md-anchored
+scope as having grown to include a `web_infra/` module it explicitly does not cover.
+The mypy-slice note was also considered for
+[`pages/consistency-tracks-enforcement.md`](pages/consistency-tracks-enforcement.md) directly
+(beyond the backlink above), but that page's content is pinned to the 2026-06-07
+excellence-walk source and its own grounding note says a later audit should re-read that
+source, not re-grep live code — WS-2 in `engineering-workstreams.md` (which already tracks
+the `--strict` ratchet's live status) is the precise, established home for that fact instead.
+
+**Cite re-anchoring.** None needed on the touched pages: `route-surface.md` and
+`code-module-map.md` cite `docs/architecture.md` by section anchor (`§Module map`,
+`§"System overview"`), not line number, and those sections were not renumbered;
+`engineering-workstreams.md`'s `kit-adoption-design.md` §6 cite is unchanged (the tooling
+amendment landed as a new blockquote under the existing §6, not a renumber). No page in
+this pass cites `docs/system-model.md`, `docs/dev/memory-architecture.md`, or
+`docs/dev/documentation-architecture.md` by line number.
+
+**`.last_ingest_sha` advanced `e785e539df0340f57ba5d5e0d7663b933118b3f1` →
+`c8899fdeaf84394cf3b7528b166a58e41731eb9f`** (HEAD at this branch's base — the
+spectree-fumadocs-render tip the v1.0.9 pull-in train carries forward).
+
+**Verification.** `python scripts/wiki_freshness.py` → OK (drift now under threshold).
+`ruff check .` ✓ · `ruff format --check .` ✓ · `mypy .` ✓ ·
+`pytest -m "not ux and not slow"` ✓, including
+[`tests/test_wiki_freshness_gate.py`](../../tests/test_wiki_freshness_gate.py) — green now
+that the checkpoint is advanced (the one test expected to flip). `index.md` ↔ `pages/`
+agree (38 pages); the new page's 4 `[[backlinks]]` and the 3 reciprocal backlinks added on
+`route-surface`/`code-module-map`/`consistency-tracks-enforcement` all resolve to existing
+slugs; no orphan (inbound links from `route-surface` and `code-module-map`, both
+hub-adjacent). Single-author pass, no separate grounding-auditor subagent run this session
+— every cite was verified directly against the source files at this branch's HEAD during
+authoring; a follow-on grounding audit is expected to run separately per the owner's stated
+plan.
