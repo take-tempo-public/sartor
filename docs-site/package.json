@@ -7,18 +7,21 @@
     "dev": "next dev",
     "start": "serve out",
     "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
-    "postinstall": "fumadocs-mdx"
+    "postinstall": "fumadocs-mdx",
+    "gen:api-docs": "node scripts/generate-api-docs.mjs"
   },
   "dependencies": {
     "@orama/orama": "^3.1.18",
     "cnfast": "^0.0.8",
     "fumadocs-core": "16.11.2",
     "fumadocs-mdx": "15.1.0",
+    "fumadocs-openapi": "^11.1.1",
     "fumadocs-ui": "npm:@fumadocs/base-ui@16.11.2",
     "lucide-react": "^1.23.0",
     "next": "16.2.10",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "shiki": "^4.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.2",

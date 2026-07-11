@@ -68,6 +68,52 @@ Layer B, remains a separate, later branch).
 - `docs/dev/RELEASE_ARC.md`: reconciled the Phase 4.9 / WS-3 "pulled into
   v1.0.8" claims to point at this branch's actual v1.0.9 Phase-1 landing.
 
+### Added: spectree/OpenAPI Layer B, Phase 2 — render the spec in Fumadocs (`feat/spectree-fumadocs-render`)
+
+Renders the `docs-site/openapi.json` spec (Phase 1, above) as an **API
+reference** section of the hosted Fumadocs static-export site, and wires CI to
+regenerate + render it on every deploy. Completes kit Decision 2a's Layer B.
+
+- **New deps** (`docs-site/package.json`): `fumadocs-openapi@^11.1.1` +
+  `shiki@^4.3.1` — the version compatible with this site's pinned
+  `fumadocs-core@16.11.2` / `fumadocs-ui@npm:@fumadocs/base-ui@16.11.2`
+  (fumadocs-openapi 11.1.1's own peer range is `fumadocs-core@^16.10.0` /
+  `fumadocs-ui@^16.10.0`); confirmed via the npm registry before installing,
+  per this branch's STOP-point instruction not to force a fumadocs major bump.
+- **New `docs-site/scripts/generate-api-docs.mjs`** — a standalone generator
+  (mirrors `scripts/generate_openapi_spec.py` / `scripts/project_docs_to_mdx.py`'s
+  "builds its own instance" style): reads `docs-site/openapi.json`, calls
+  `createOpenAPI()` + `generateFiles({ per: 'operation', groupBy: 'tag', meta:
+  true })`, and emits MDX under `content/docs/api-reference/` grouped by the 3
+  spectree route tags (`users`/`applications`/`corpus`), each with its own
+  generated `meta.json`. Also appends exactly ONE nav entry (`"api-reference"`)
+  to the already-projected `content/docs/meta.json`'s `pages` array (the
+  low-risk nested approach — this script never edits
+  `scripts/project_docs_to_mdx.py`'s own L1 ordering logic).
+- **Reference-only rendering, by design**: `docs-site/src/components/api-page.tsx`
+  sets `playground: { enabled: false }` on `createOpenAPIPage()` — replaces the
+  interactive "try it" request builder with a static method+path badge.
+  Parameters, request/response schemas, TypeScript definitions, and
+  multi-language code-usage samples still render (all static, no live fetch).
+  A live playground would fire cross-origin requests at each visitor's own
+  `localhost:5000`, which is wrong for a static site documenting a local
+  desktop app — no proxy route was added, keeping the site's `output: 'export'`
+  static-export commitment intact.
+- **Render wiring**: `docs-site/src/lib/openapi.ts` (the runtime
+  `createOpenAPI()` instance, consumed via `openapi.preloadOpenAPIPage(page)`
+  at Next static-build time — resolved during `next build`'s
+  `generateStaticParams()` prerender, not at request time, so it stays
+  compatible with static export); `docs-site/src/app/docs/[[...slug]]/page.tsx`
+  adds an `OpenAPIPage` entry to its MDX `components` map; `docs-site/src/lib/source.ts`
+  adds `openapiPlugin()` (method-badge page-tree decoration only); `global.css`
+  imports `fumadocs-openapi/css/preset.css`.
+- **`.github/workflows/docs-deploy.yml`**: added a `python
+  scripts/generate_openapi_spec.py` step and a `npm run gen:api-docs` step,
+  both before `npm run build` — both are pure functions of `main` HEAD
+  (deterministic, no LLM, no network), so "merge = publish" still holds.
+- **`.gitignore`**: `docs-site/content/docs/api-reference/` — a build
+  artifact like the L1-projected MDX, same rationale.
+
 ### chore: mypy `--strict` tooling slice — `scripts/` + `evals/` + `db/migrations/versions/` (`chore/mypy-strict-tooling`)
 
 - **Decision-7 amended** (kit-adoption-design.md §3/§6, owner-directed v1.0.9
