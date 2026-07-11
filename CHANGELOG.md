@@ -13,6 +13,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed/Added: diagnostics-DX round-2 batch — #3/#7/#9/#10/#17, CW-117, RH-1/RH-2, #1-scope (`feat/diagnostics-dx`)
+
+v1.1.0 debt-burn Lane DX: closes out the still-open items from
+[`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`](docs/dev/reviews/2026-07-diagnostics-round2-findings.md)
+and [`docs/dev/reviews/2026-07-e2e-run-health-review.md`](docs/dev/reviews/2026-07-e2e-run-health-review.md).
+
+- **RH-1 (grounding-signal persistence, highest value)** — `evals/annotation.py`
+  gains `patch_grounding_scores_by_text`, wired into `evals/runner.py:run_suite`:
+  a `--suite real` eval run's grounding signals now persist into the fixture's
+  `annotations.json` (matched by normalized bullet text — a `--suite real` run
+  grades a freshly-generated résumé, not the bootstrap's deduped cluster
+  representatives, so index-alignment doesn't apply here the way the existing
+  "Score grounding" button's `_patch_annotation_scores` uses). Before this fix,
+  scores landed in every JSONL result record but never made it back to the
+  ground-truth file the Annotate tab edits.
+- **RH-2 (0-byte-run guard)** — `run_suite` now raises (and deletes the empty
+  file) instead of silently returning a "0 pass / 0 fail" result when a run's
+  fixture loop wrote ZERO result records (every matched fixture failed to load
+  or grade); `main()` maps it to exit 1 like the other run_suite failure modes.
+- **#3** — the Tuning tab's real-corpus-seed section cross-links the Annotate
+  tab's "Export seed" button (switches tabs, opens step ①, focuses it) instead
+  of only pointing at the CLI.
+- **#7** — the `should_omit` checkbox gets the `.title` tooltip the verdict
+  `<select>` already had, and relabels to "Also list under Omissions
+  (independent of verdict)."
+- **#9** — the Annotate editor's `state.doc` now debounce-snapshots to
+  localStorage on every edit (restored on reload, cleared on a successful
+  Save), and a failed Save's `bullets[N]`/`skills[N]` validation error scrolls
+  to + briefly highlights the named item.
+- **#10** — the eval/tune/bootstrap run controls get a real `<progress>` bar
+  driven by the SSE's existing `index`/`total` payloads, replacing reliance on
+  the plain-text progress line alone.
+- **#13** — the grounding-score button (a single blocking scorer call with no
+  per-item granularity) gets an indeterminate `<progress>` bar — a coarse busy
+  signal, deliberately not granular (owner: acceptable, minimal).
+- **#17** — the doc-grounded assistant is ported onto `/_dashboard`: `static/
+  assistant.js` now self-promotes its own `_consumeSSE`/`esc` (guarded — never
+  overrides an already-loaded `app.js` copy) so it works without the wizard's
+  `app.js`; `dashboard.html` supplies a tiny `currentUser` shim, ports the
+  `#assistantModal` block, and defaults its "Dev mode" checkbox CHECKED (the
+  wizard's copy defaults unchecked). No backend change —
+  `blueprints/assistant.py:ask()` already treats `username` as optional.
+- **CW-117** — added Playwright coverage for the two hand-rolled SSE pumps
+  (bootstrap, grounding-score) that independently acquire/release the shared
+  paid-run lock; previously only the eval `_closed` path was regression-tested.
+- **#1-scope** — verified already correct at this branch's base (seed-export
+  never took the lock); additionally gave the dynamically-created "Run this
+  fixture" button a stable id so the lock disables it too while another paid
+  run is in flight.
+- **Content cluster #2/#4/#5/#6/#16 (DRAFT — owner-review-before-merge)** — a
+  handful of new field-level `.title` tooltips (Tuning's constant/slug
+  pickers, the bootstrap JD name/text inputs) and one clarifying sentence
+  added to the Annotate tab's help copy describing the new #9 draft behavior.
+  This is a small down payment, not the full field-level authoring pass the
+  finding calls for.
+
 ### Docs: agent-contract trim + corpus/pipeline dedup + affirm-and-protect notes (`docs/efficiency-px`)
 
 2026-07 efficiency review doc-only lane (PX-45, PX-49, PX-56 + decision-14 doc-only

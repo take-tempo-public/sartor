@@ -273,6 +273,89 @@ def load_annotations(path: str | Path) -> dict[str, Any]:
     return doc
 
 
+def _norm_bullet_text(text: str) -> str:
+    """Casefold + collapse-whitespace normalization for bullet-text matching."""
+    return " ".join(text.split()).casefold()
+
+
+def patch_grounding_scores_by_text(
+    ann_path: Path, grounding_signals_data: dict[str, Any] | None
+) -> int:
+    """Best-effort persist NLI + MiniCheck scores into an existing annotations.json,
+    matched by normalized bullet TEXT rather than ``cluster_index``.
+
+    RH-1 (2026-07 e2e-run-health-review): grounding signals computed during a
+    ``evals.runner.run_suite(..., grounding_signals=True)`` pass over a ``--suite
+    real`` fixture land in every JSONL result record but, before this, never made
+    it back to the fixture's ``annotations.json`` — the ground-truth file the
+    Annotate tab edits. That is a distinct code path from the bootstrap-time
+    template join (``_bullet_item_template``, index-aligned to
+    ``bootstrap.json``'s deduped cluster order) and from the dashboard's dedicated
+    "Score grounding" button (``blueprints.diagnostics._patch_annotation_scores``,
+    also index-aligned — it renders the SAME cluster representatives the
+    bootstrap scored). A ``--suite real`` eval run instead grades a FRESH résumé
+    generated for one JD, whose bullets are the pipeline's own selection/order —
+    not the bootstrap's deduped clusters — so index alignment does not apply.
+    Matching by normalized (casefolded, whitespace-collapsed) bullet text is the
+    correct join here: many of a generated résumé's bullets are drawn verbatim
+    from the same corpus the bootstrap deduped, so a meaningful subset resolve.
+
+    Unmatched scored bullets and un-scored annotation items are left untouched
+    (best-effort, not a repair-everything pass) — every human verdict / note /
+    rewrite is preserved unconditionally. Returns the number of annotation items
+    patched. Non-raising: a missing/malformed ``annotations.json`` or an empty/
+    absent ``grounding_signals_data`` is a no-op (returns 0), since this patch
+    rides along on an eval run and must never turn a successful grade into a
+    failure.
+    """
+    if not grounding_signals_data:
+        return 0
+    try:
+        doc = json.loads(ann_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 0
+    if not isinstance(doc, dict):
+        return 0
+
+    nli_by_text = {
+        _norm_bullet_text(r["bullet"]): r
+        for r in grounding_signals_data.get("nli", []) or []
+        if r.get("bullet")
+    }
+    mc_by_text = {
+        _norm_bullet_text(r["bullet"]): r
+        for r in grounding_signals_data.get("minicheck", []) or []
+        if r.get("bullet")
+    }
+    if not nli_by_text and not mc_by_text:
+        return 0
+
+    patched = 0
+    for item in doc.get("bullets", []) or []:
+        if not isinstance(item, dict):
+            continue
+        rep = item.get("representative")
+        if not isinstance(rep, str) or not rep:
+            continue
+        key = _norm_bullet_text(rep)
+        changed = False
+        nli = nli_by_text.get(key)
+        if nli is not None:
+            item["nli_entailment_score"] = nli.get("nli_entailment_score")
+            item["nli_contradiction_flag"] = nli.get("nli_contradiction_flag")
+            changed = True
+        mc = mc_by_text.get(key)
+        if mc is not None:
+            item["minicheck_grounding_score"] = mc.get("minicheck_grounding_score")
+            changed = True
+        if changed:
+            patched += 1
+
+    if patched:
+        ann_path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return patched
+
+
 # ---------------------------------------------------------------------------
 # Template emitter — bootstrap.json → blank annotations.json skeleton. LLM-free.
 # ---------------------------------------------------------------------------
@@ -879,6 +962,7 @@ __all__ = [
     "build_improvement_brief",
     "collate_expected",
     "load_annotations",
+    "patch_grounding_scores_by_text",
     "pick_anchor_jd",
     "validate_annotations",
 ]

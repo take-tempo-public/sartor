@@ -641,6 +641,20 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       calibration is now blocked on **fixing that persistence seam + re-running grounding**, folded into
       the **v1.0.9** Diagnostics-DX thread. Detail:
       [`reviews/2026-07-e2e-run-health-review.md`](reviews/2026-07-e2e-run-health-review.md).
+      **→ Update (2026-07-11, `feat/diagnostics-dx`, RH-1 fixed):** the persistence seam is fixed —
+      `evals.annotation.patch_grounding_scores_by_text` (matched by normalized bullet text; a
+      `--suite real` run's own generated bullets aren't index-aligned to the bootstrap's deduped
+      clusters the way the existing "Score grounding" button's index-based patch is) is now wired
+      into `evals.runner.run_suite`, so a grounding re-score over a `--suite real` fixture persists
+      NLI + MiniCheck into that fixture's `annotations.json`. Tested against a SCRATCH fixture
+      (never `evals/fixtures/real/robert-bootstrap/` or the owner's e2e clone), scorer STUBBED (the
+      DeBERTa/MiniCheck `[eval-grounding]` extras are heavy CPU models, not assumed installed in a
+      dev worktree). **PV-2 calibration itself is still owner-gated** (the manual browser annotation
+      pass + threshold-setting) — this fix only unblocks re-running grounding over the existing
+      53-annotation `robert-bootstrap` fixture so its scores stop being null; it does not itself
+      close this ledger item. Same branch also closed RH-2 (0-byte-run guard — `run_suite` now
+      raises + cleans up instead of silently returning a "0 pass / 0 fail" result over a run that
+      wrote zero records).
 
 - [ ] **Agent-coding-practices kit-adoption — staged commitments (2026-06-23)** — the
       [`kit-adoption-design.md`](kit-adoption-design.md) arc's cross-cutting deferrals, kept in
@@ -1010,6 +1024,31 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       _(discovered: 2026-07-09, `fix/round2-quick-wins`; open count 5 → 6.)_
       **→ Integrate:** Wave A is done on this branch; the epic itself needs owner slotting
       before it becomes a branch sequence.
+      **→ Update (2026-07-11, `feat/diagnostics-dx`, v1.1.0 debt-burn Lane DX):** a further
+      batch landed off `wave1-assembly` (gate green — ruff/mypy/pytest incl. `-m ux` + a11y,
+      2030 tests): **#3** (Tuning-tab cross-link to Annotate's Export-seed button), **#7**
+      (`should_omit` tooltip + relabel), **#9** (localStorage draft snapshot/restore +
+      jump-to-flagged-item), **#10** (real `<progress>` bars for eval/tune/bootstrap, driven
+      by the SSE's existing `index`/`total`), **#13** (indeterminate busy bar for the
+      grounding-score button — deliberately coarse, per its own disposition), and **#17**
+      (the doc-grounded assistant ported onto `/_dashboard`, dev-mode checkbox defaulting
+      checked there — no backend change). **(a) #1 lock-scope** verified ALREADY correct at
+      this branch's base (seed export never took the lock; only eval/tune/bootstrap/
+      grounding-score do) — no design-Q remained, just a small hygiene close (the
+      dynamically-created "Run this fixture" button now also participates in the shared
+      disable-list). **(b) CW-117 run-lock test-hardening** resolved by adding Playwright
+      coverage for the bootstrap and grounding-score hand-rolled SSE pumps (previously only
+      the eval `_closed` path was regression-tested); left them as their own hand-rolled
+      pumps rather than routing through `window.sartorEval.stream` (lower risk, same
+      guarantee now proven). **Content cluster #2/#4/#5/#6/#16** got a SMALL, DRAFT,
+      owner-review-before-merge down payment only (a handful of new field-level tooltips +
+      one clarifying help sentence) — not the full field-level authoring pass. **Still open**
+      (unchanged by this branch): #12, #14 (already routed elsewhere), #16's remaining
+      breadth, the **run-cancel** endpoint, and the `app.run(threaded=True)` governance flag.
+      The **grounding-signal persistence gap** this same branch also fixed (RH-1/RH-2, off
+      the paired [`2026-07-e2e-run-health-review.md`](reviews/2026-07-e2e-run-health-review.md))
+      is logged under the "Grounding / hallucination metric" ledger item above, not
+      restated here.
 
 #### Resolved
 
