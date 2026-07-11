@@ -85,8 +85,7 @@ Before opening a PR:
 
 - [ ] `ruff check .` — clean
 - [ ] `mypy .` — clean
-- [ ] `pytest` — green
-- [ ] `pytest -m ux` — green (Playwright UI suite; needs `python -m playwright install chromium`, see [Quick start](#quick-start))
+- [ ] `pytest` — green (one full run; the Playwright UX tier runs automatically as part of it once Chromium is installed — `python -m playwright install chromium`, see [Quick start](#quick-start) — and self-skips otherwise, so plain `pytest` stays green either way. Don't also run `pytest -m ux` separately — that re-executes the same UX tests the full run already covered; use `pytest -m ux` on its own only to isolate/debug that tier. For the honest fast-lane (`-m "not slow and not ux"`) timing and why it's not module-scoped further yet, see [`docs/dev/perf/TEST_SUITE_PERFORMANCE.md`](docs/dev/perf/TEST_SUITE_PERFORMANCE.md))
 - [ ] `CHANGELOG.md` — entry under `[Unreleased]` describing the user-visible change
 - [ ] No real personal data committed (`evals/fixtures/real/` is gitignored — keep it that way)
 - [ ] If you touched a Flask route that reads or writes the filesystem, the route uses `_safe_username()` and `_within()` — see [`app.py`](app.py)

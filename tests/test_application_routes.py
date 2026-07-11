@@ -561,6 +561,60 @@ def _seed_exp_with_bullets(candidate_id, company="Acme"):
         s.close()
 
 
+def _seed_full_experience(candidate_id, n=0):
+    """One Experience with a title, a bullet, and a role-summary variant —
+    the full per-experience collection shape get_application_composition
+    walks (PX-38 N+1 guard fixture)."""
+    from db.models import Bullet, Experience, ExperienceSummaryItem, ExperienceTitle
+    from db.session import get_session
+
+    s = get_session()
+    try:
+        e = Experience(
+            candidate_id=candidate_id,
+            company=f"Acme {n}",
+            start_date="2021-01",
+            display_order=n,
+        )
+        s.add(e)
+        s.flush()
+        s.add(
+            ExperienceTitle(
+                experience_id=e.id,
+                title=f"Engineer {n}",
+                is_official=1,
+                is_pending_review=0,
+                source="official",
+            )
+        )
+        s.add(
+            Bullet(
+                experience_id=e.id,
+                text=f"Did thing {n}",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=0,
+            )
+        )
+        s.add(
+            ExperienceSummaryItem(
+                experience_id=e.id,
+                text=f"Role intro {n}",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=0,
+            )
+        )
+        s.commit()
+        return e.id
+    finally:
+        s.close()
+
+
 class TestComposition:
     def test_get_ranks_relevant_bullet_first(self, app_app):
         cid = _seed_candidate()
@@ -626,6 +680,55 @@ class TestComposition:
         client = app_app.app.test_client()
         r = client.post(f"/api/applications/{aid}/composition", json={"pinned": [], "excluded": []})
         assert r.status_code == 400
+
+    def test_avoids_n_plus_1_query_growth(self, app_app):
+        """N+1 regression guard (PX-38): the SQL query count for one GET must
+        be CONSTANT in the number of experiences — selectinload on
+        bullets+tag_links, titles+tag_links, and summary_items collapses what
+        was three per-experience query families (O(experiences) each) into
+        one selectin batch per family, regardless of experience count.
+        """
+        from sqlalchemy import event
+
+        from db.session import get_engine
+
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+
+        engine = get_engine()
+        counter = {"n": 0}
+
+        def _count(*_args, **_kwargs):
+            counter["n"] += 1
+
+        def _count_request():
+            counter["n"] = 0
+            event.listen(engine, "after_cursor_execute", _count)
+            try:
+                r = app_app.app.test_client().get(f"/api/applications/{aid}/composition")
+                body = r.get_json()
+            finally:
+                event.remove(engine, "after_cursor_execute", _count)
+            return body, counter["n"]
+
+        _seed_full_experience(cid, n=0)
+        _seed_full_experience(cid, n=1)
+        body_small, q_small = _count_request()
+        for n in range(2, 6):
+            _seed_full_experience(cid, n=n)
+        body_big, q_big = _count_request()
+
+        assert len(body_small["experiences"]) == 2
+        assert len(body_big["experiences"]) == 6
+        # Correctness preserved at scale: each experience still surfaces its
+        # bullet, title, and role-summary variant (the three collections the
+        # selectinload chain now preloads).
+        assert all(
+            len(e["bullets"]) == 1 and len(e["titles"]) == 1 and len(e["summary"]["variants"]) == 1
+            for e in body_big["experiences"]
+        )
+        # The fix: query count does NOT grow with the experience count.
+        assert q_small == q_big, (q_small, q_big)
 
 
 class TestCompositionAddedField:

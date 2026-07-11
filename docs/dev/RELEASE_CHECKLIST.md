@@ -515,7 +515,8 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **7** (`grep -c '^- \[ \]'` over this subsection is the
+_Rendered open count: **6** (was 7; ledger #1 wiki-freshness resolved 2026-07-11,
+v1.1.0 train Wave 1). (`grep -c '^- \[ \]'` over this subsection is the
 source of truth, re-verified at each close-out). Ceiling reminder: schedule a
 reduction sprint at ~8–10 open items, and clear before adding. The full
 per-item addition/resolution chronology since 2026-06-15 lives in git history
@@ -939,7 +940,38 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       "Wiki ingest refresh" row). **Cumulative: 7 of the row's 20 PX rows now land**; row stays
       open (13 remain).
       **→ Update (2026-07-11, `docs/efficiency-px`):** PX-45/PX-49/PX-56 land; model-pin split
-      documented (dec 14). 10 of the row's 20 PX rows now land.
+      documented (dec 14).
+
+      **→ Update (2026-07-11, `perf/db-baseline`):** PX-38/PX-39/PX-44 land (PX-44 scoping
+      probe: DEFERRED-with-note). **PX-38** — `get_application_composition`
+      selectinloads bullets+tag_links/titles+tag_links/summary_items (mirrors
+      `list_applications`); `ix_application_candidate_status_updated` gained
+      `is_active`; migration `0015` (plain `create_index`/`drop_index`, no
+      `batch_alter_table`) verified zero row loss both directions. N+1 guard:
+      17→37 SQL queries pre-fix (2→6 experiences) vs 12→12 post-fix. **PX-44** —
+      `CONTRIBUTING.md`'s `pytest` + `pytest -m ux` double-run bullet fixed; new
+      `docs/dev/perf/TEST_SUITE_PERFORMANCE.md` documents the idle fast-lane
+      numbers (308.9s/163.1s/248.0s) and a fixture-scoping static probe (46/118
+      non-UX files, 658/1,868 tests build a fresh Flask app + full alembic chain
+      at function scope) — the scoping REFACTOR itself is DEFERRED (cross-cutting
+      test-isolation change, too risky mid-train with 6 concurrent lanes);
+      follow-on branch `test/fixture-scoping` noted. **PX-39 lands partially:**
+      `docs/dev/perf/PERFORMANCE_HISTORY.md` now labels the three population eras
+      (pre-split / split+Sonnet-4.6 / split+Sonnet-5) so the defunct 69.7s p50 /
+      84.6s p95 Sonnet-4.6 split-era numbers can't seed future false alarms, and
+      cites the already-committed Sonnet-5 synthetic anchor pipeline p50s
+      (68.7s/80.7s/80.5s, `evals/results/baseline_v1.json`) — but the actual
+      real-corpus Sonnet-5 p50/p95 measurement could **not** be captured from
+      this branch: the isolated worktree has no `.api_key`/`ANTHROPIC_API_KEY`
+      ($0 spent, none fabricated); the open item + exact reproduction method are
+      documented in the same file for the next run with credentials.
+
+      **→ Reconciled (2026-07-11, Wave 1 assembly):** counting PX-42 (py311 floor,
+      landed via `chore/packaging-floor` B2), **13 of the row's 20 PX rows now land** —
+      Wave 1 new: PX-38/PX-42/PX-44/PX-45/PX-49/PX-56 full; PX-39 (labeling only) +
+      PX-47 (model-pin doc half) partial. **7 remain:** PX-37/PX-43/PX-55 (Wave 3
+      HARD), PX-51 (Wave 2 UX), the PX-47 config-drift remainder, the PX-39
+      real-corpus measurement, and PX-52 (post-public).
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in

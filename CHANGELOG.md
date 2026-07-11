@@ -92,6 +92,66 @@ Closes the two residual follow-ups left open by `fix/packaging-install`
   without an unplanned whole-tree autofix; each is tracked for a dedicated
   follow-up cleanup pass.
 
+### Fixed: Compose-route N+1 + `is_active` index gap (PX-38, `perf/db-baseline`)
+
+- **`get_application_composition`** (`blueprints/applications.py`) selectinloads
+  `Experience.bullets`+`Bullet.tag_links`, `Experience.titles`+
+  `ExperienceTitle.tag_links`, and `Experience.summary_items` on its top-level
+  `Experience` query — was three separate per-experience query families
+  (`O(experiences)` each: bullets, titles, and the `ExperienceSummaryItem`
+  filter/sort), now three fixed selectin batches regardless of experience
+  count. Mirrors the proven `list_applications` `selectinload(Application.runs)`
+  fix. **Measured (this repo, `tests/test_application_routes.py`
+  `test_avoids_n_plus_1_query_growth`): 2 experiences → 6 experiences was
+  17 → 37 SQL queries before the fix (+5/experience); 12 → 12 after (flat).**
+- **`db/models.py`** — `ix_application_candidate_status_updated` gained
+  `is_active` (new column order: `candidate_id, is_active, status,
+  updated_at`) — the index omitted the column `list_applications`' default
+  (no `?status=`) path filters on every call. Migration
+  `db/migrations/versions/0015_application_index_add_is_active.py` uses plain
+  `op.create_index`/`op.drop_index` (no `batch_alter_table` — `application` is
+  a CASCADE parent of `application_run`; index rebuilds are metadata-only DDL,
+  carrying none of that rebuild's row-loss risk). Verified zero row loss
+  upgrading 0014→head and downgrading back, both directions, on a scratch DB
+  seeded with an application + run + run child
+  (`tests/test_migrations_data_safety.py::TestApplicationIndexAddIsActive`).
+
+### Documented: real-corpus latency baseline population-era labeling (PX-39)
+
+- `docs/dev/perf/PERFORMANCE_HISTORY.md` gained a "Population eras" section
+  distinguishing three eras — pre-split (ended 2026-06-01, DEFUNCT),
+  split+Sonnet-4.6 (2026-06-01→2026-07-05, DEFUNCT — includes the 69.7s p50/
+  84.6s p95 real split-pair figure previously at risk of being cited as
+  "current") and split+Sonnet-5 (2026-07-05→present, CURRENT) — so future
+  readers don't seed false-alarm comparisons against a retired population.
+  Cites the already-committed Sonnet-5 synthetic anchor pipeline p50s from
+  `evals/results/baseline_v1.json` (68.7s/80.7s/80.5s across the three
+  fixtures) as the only Sonnet-5 measurement available so far, and leaves an
+  explicit **open item**: a real-corpus Sonnet-5 p50/p95 baseline could not be
+  captured from this branch's isolated worktree (no `.api_key`/
+  `ANTHROPIC_API_KEY` present) — method + reproduction command documented for
+  the next run with credentials, no numbers fabricated.
+
+### Fixed: CONTRIBUTING.md pytest double-run; documented the honest fast-lane numbers (PX-44)
+
+- `CONTRIBUTING.md`'s PR checklist told contributors to run `pytest` (green)
+  *and* `pytest -m ux` (green) as two separate steps — since a plain `pytest`
+  already carries no marker filter and executes the UX tier once (when
+  Chromium is installed), the second invocation silently re-ran the same
+  tests. Collapsed to one `pytest` bullet with the corrected guidance.
+- New `docs/dev/perf/TEST_SUITE_PERFORMANCE.md` — the durable home for the
+  idle-measured fast-lane numbers (full 308.9s / fast-lane 163.1s / slow-UX
+  248.0s, `docs/dev/reviews/2026-07-efficiency/verification-log.md`
+  addendum) plus a fixture-scoping PROBE: a static count found 46 of 118
+  non-UX test files (658 of 1,868 test functions, ~35%) build a fresh Flask
+  app + run the full 15-revision alembic chain at function scope, with only
+  1 non-function-scoped fixture in the entire non-UX suite. **The
+  fixture-scoping refactor itself is DEFERRED** (written note in the new
+  doc) — it's a cross-cutting change to test-isolation guarantees across
+  ~40% of the suite, landing mid-train alongside six concurrent lanes;
+  follow-on branch `test/fixture-scoping` recommended, piloted on one
+  low-risk file first.
+
 ## [1.0.9] — 2026-07-10
 
 ### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)
