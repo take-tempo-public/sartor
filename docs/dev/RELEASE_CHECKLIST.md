@@ -572,6 +572,19 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       run, `Config.base_dir`'s default and `dashboard/routes.py`'s `PROJECT_ROOT` resolve into
       `site-packages/` (user data + telemetry would land there) — pre-existing characteristic,
       revisit before public docs advertise the bare-wheel path as a user journey.
+      **→ Update (2026-07-11, `chore/packaging-floor`):** both residuals closed. (i)
+      `target-version`/`python_version` now `py311`; the surfaced `UP017`/`UP042`/`I001`
+      findings in files this branch doesn't otherwise touch got scoped, temporary
+      `per-file-ignores` (not a whole-tree autofix) — tracked for a dedicated cleanup pass.
+      (ii) `config._default_base_dir()` (SARTOR_HOME > dev checkout > `platformdirs` platform
+      dir) is now `Config.base_dir`'s default, and `dashboard/routes.py`'s `PROJECT_ROOT`
+      shares the same resolution instead of its own `Path(__file__)`-relative computation;
+      `Config.bundled_personas_dir` was also fixed to keep resolving the shipped persona
+      templates via the packaged-data resolver once the default no longer coincides with
+      `site-packages/`. New follow-up surfaced: `analyzer.py`'s own `LOG_DIR` (the actual
+      `llm_calls.jsonl` writer) is a separate, still-`Path(__file__)`-relative global, out of
+      this fix's anchored scope — small, not yet ledgered as its own row. The PyPI `[HUMAN]`
+      Trusted Publisher / GHCR blocker above stays open (unrelated, gated on the repo rename).
 
 - [ ] **In-app rendered citation viewer (deferred)** — the avatar's numbered citations
       (Sprint 7.8d, `feat/avatar-citation-format`) link to their source **on GitHub** (wiki

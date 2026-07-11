@@ -54,6 +54,44 @@ Docs/tooling-only; no code path outside `scripts/wiki_freshness.py` touched, no 
   package-data. Comment reconciled: the image still installs editable from `/app` (unchanged behavior), but
   the wheel-can't-ship claim is no longer accurate and has been corrected.
 
+### Changed: packaging floor — installed-app data dir + Python 3.11 (`chore/packaging-floor`)
+
+Closes the two residual follow-ups left open by `fix/packaging-install`
+(Carry-forward ledger #2, residuals (i) and (ii)):
+
+- **Installed-app user-data dir.** On a bare `pip install sartor && sartor`
+  (a real non-editable wheel), `Config.base_dir`'s default and
+  `dashboard/routes.py`'s telemetry/eval-results root used to resolve into
+  `site-packages/`, so user data (`configs/`/`resumes/`/`output/`) and
+  telemetry (`logs/llm_calls.jsonl`, `evals/results/`) would land there
+  instead of a proper per-user directory. `config._default_base_dir()` now
+  resolves, in order: the `SARTOR_HOME` env var if set; the repo root,
+  unchanged, for a dev/editable checkout; otherwise the platform user-data
+  directory via the new `platformdirs` dependency
+  (`%LOCALAPPDATA%\sartor` on Windows, `~/.local/share/sartor` on Linux,
+  `~/Library/Application Support/sartor` on macOS). `dashboard/routes.py`'s
+  `PROJECT_ROOT` now shares this same resolution instead of an independent
+  `Path(__file__)`-relative computation. `Config.bundled_personas_dir` falls
+  back to the packaged-data resolver (`config._package_dir`) when `base_dir`
+  is at its default, so the shipped persona templates still resolve
+  correctly once the default no longer coincides with `site-packages/`; an
+  explicitly-overridden `base_dir` (test isolation) is unaffected.
+  `Config.ensure_dirs()` now creates its three directories with
+  `parents=True`, since a fresh platform data directory may not exist yet.
+  New dependency: `platformdirs>=4.0,<5.0`. **Still open:** `analyzer.py`'s
+  own `LOG_DIR` (what actually writes `llm_calls.jsonl`) is a separate,
+  still-`Path(__file__)`-relative global, out of this fix's anchored scope —
+  flagged as a new small follow-up.
+- **Python floor `py310` → `py311`.** `[tool.ruff] target-version` and
+  `[tool.mypy] python_version` now match the real floor
+  (`requires-python = ">=3.11"`, already correct; CI already tests only
+  3.11-3.13). The `target-version` bump surfaces new `UP017`/`UP042`
+  pyupgrade findings plus `I001` import-sort drift (from `tomllib`'s
+  stdlib reclassification) in files this branch does not otherwise touch —
+  scoped, temporary `per-file-ignores` entries keep `ruff check .` green
+  without an unplanned whole-tree autofix; each is tracked for a dedicated
+  follow-up cleanup pass.
+
 ## [1.0.9] — 2026-07-10
 
 ### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)

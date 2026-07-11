@@ -65,6 +65,12 @@ dependencies = [
     # `py.typed` marker (verified — no `ignore_missing_imports` override needed).
     # Fumadocs RENDERING the emitted docs-site/openapi.json is a separate, later branch.
     "spectree[flask]>=2.0,<3.0",
+    # Packaging-floor fix (`chore/packaging-floor`, Carry-forward ledger #2 residual
+    # (ii)): resolves the platform user-data directory (`config._default_base_dir()`)
+    # so a real installed (non-editable) wheel writes user data outside
+    # `site-packages/` by default, overridable via `SARTOR_HOME`. Tiny, stdlib-adjacent,
+    # zero transitive deps of its own.
+    "platformdirs>=4.0,<5.0",
 ]
 
 [project.optional-dependencies]
@@ -179,7 +185,13 @@ static = ["*.js", "*.css", "vendor/*.js"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+# PX-42 / Carry-forward ledger #2 residual (i), closed on `chore/packaging-floor`:
+# bumped from py310 to match the real floor (`requires-python = ">=3.11"` above;
+# CI (ci.yml) only tests 3.11-3.13; tests/test_docstring_coverage_gate.py already
+# uses `tomllib`, stdlib-only since 3.11). Deliberately did NOT run `ruff check
+# --fix` tree-wide for the new `UP` (pyupgrade) surface this unlocks — see
+# CHANGELOG / RELEASE_CHECKLIST for the contained-diff rationale.
+target-version = "py311"
 # docs-site/ is the Fumadocs (Next.js/TypeScript) app (feat/fumadocs-site) — a
 # separate JS toolchain (docs-site/package.json), not Python; ruff has nothing
 # to check there. node_modules is already in ruff's own default excludes, but
@@ -244,6 +256,30 @@ ignore = [
 "evals/*" = ["S101", "ANN", "D"]
 "scripts/**" = ["ANN", "D"]
 
+# PX-42 py311 floor bump (`chore/packaging-floor`): bumping `target-version` (py310 ->
+# py311, see [tool.ruff] above) surfaces new findings in files this branch does NOT
+# otherwise touch — UP017 (`datetime.UTC` alias, added 3.11) + UP042 (StrEnum-style
+# class, added 3.11) pyupgrade suggestions, and I001 (import-sort) in files importing
+# `tomllib` (stdlib only since 3.11, changing isort's expected grouping). Scoped,
+# TEMPORARY per-file ignores — NOT a blanket ignore — so `ruff check .` stays green
+# without an unplanned whole-tree autofix diff that would collide with the other v1.1.0
+# debt-burn train lanes editing these same files concurrently. Fix for real file-by-file
+# in a dedicated follow-up pass (Carry-forward ledger, `docs/dev/RELEASE_CHECKLIST.md`);
+# delete each line here as its file is cleaned up.
+"analyzer.py" = ["UP017"]
+"blueprints/applications.py" = ["UP017"]
+"blueprints/corpus/proposals.py" = ["UP017"]
+"db/ats_roundtrip.py" = ["UP017"]
+"db/models.py" = ["UP017"]
+"evals/bootstrap.py" = ["UP017"]
+"evals/runner.py" = ["UP017"]
+"recall/models.py" = ["UP042"]
+"scripts/build_vector_index.py" = ["UP017"]
+"scripts/vector_before_after_eval.py" = ["UP017"]
+"tests/test_doc_status_gate.py" = ["I001"]
+"tests/test_docstring_coverage_gate.py" = ["I001"]
+"tests/test_mypy_strict_roster_gate.py" = ["I001"]
+
 # Kit-adoption Phase 2 #3 — D missing-docstring ratchet (KIT-6/§6): COMPLETE.
 # Each production module was documented branch-by-branch and dropped from this block;
 # the last unit (`ui_pages/**`, the 12-file Playwright POM, 89 symbols) drained on
@@ -299,7 +335,9 @@ ignore-init-method = true
 ignore-property-decorators = false
 
 [tool.mypy]
-python_version = "3.10"
+# PX-42 / Carry-forward ledger #2 residual (i), closed on `chore/packaging-floor`:
+# bumped from 3.10 to match `requires-python = ">=3.11"` (see `[tool.ruff]` above).
+python_version = "3.11"
 # docs-site/ is the Fumadocs (Next.js/TypeScript) app (feat/fumadocs-site) — no
 # .py files live there, but its node_modules/ is large and mypy's default file
 # discovery would otherwise walk it looking for stray .py/.pyi files. Excluded
