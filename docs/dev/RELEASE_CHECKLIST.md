@@ -501,11 +501,26 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **6** (`grep -c '^- \[ \]'` over this subsection is the
+_Rendered open count: **7** (`grep -c '^- \[ \]'` over this subsection is the
 source of truth, re-verified at each close-out). Ceiling reminder: schedule a
 reduction sprint at ~8–10 open items, and clear before adding. The full
 per-item addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
+
+- [ ] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
+      `scripts/wiki_freshness.py:drift_count` excludes only `docs/wiki/`, not `docs-site/`.
+      But the Fumadocs static-export tree under `docs-site/` is an **L3 projection** of L1 (like
+      the wiki itself), not a wiki *source* — its churn doesn't make the wiki stale. During the
+      v1.0.9 pull-in train this inflated the drift count to **86** (> the 75 block threshold)
+      when real-source drift was only **56**, nearly forcing a spurious re-ingest. **Fix:**
+      exclude `docs-site/` alongside `docs/wiki/` in `drift_count`, plus a test asserting
+      `docs-site/` churn isn't counted as wiki drift. **Deliberately NOT bundled into the v1.0.9
+      pull-in train** (owner 2026-07-10): editing an enforcement gate inside the very train it
+      blocks is bad optics, so the train cleared the gate the designed way instead (a real
+      `/wiki-self-update` refresh advancing the checkpoint `e785e539→c8899fd`).
+      _(discovered: v1.0.9 stream, 2026-07-10, spectree/mypy pull-in train; open count 6 → 7.)_
+      **→ Own small branch, low priority** — a correctness fix to gate scope; no urgency (the
+      real-refresh path works). Fold in next time `wiki_freshness.py` is touched.
 
 - [ ] **PyPI wheel not installable — data files not packaged** — **RESOLVED-PENDING-PUBLISH
       2026-07-07 (`fix/packaging-install`); left open only for the still-blocked
