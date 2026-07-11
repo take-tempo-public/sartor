@@ -13,6 +13,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: unified quality-gate wrapper + CI hygiene batch (PX-55/PX-43, `ci/portable-enforcement`)
+
+v1.1.0 debt-burn Lane HARD (relaunch, reduced scope). Lands the two SAFE
+items from this lane's scope; the L2 hook-re-home + PX-37 dispatcher are
+DEFERRED to an owner-present session (see Carry-forward ledger).
+
+- **PX-55** — new `scripts/gate.py`: one wrapper running `ruff check .` +
+  `ruff format --check .` + `mypy .` + `pytest` (the same four steps, same
+  order, as `.github/workflows/ci.yml`'s `quality` job), each print-labelled
+  and stopping at the first failure. `AGENTS.md`, `CONTRIBUTING.md`, and
+  `ci.yml` now invoke `python -m scripts.gate` instead of independently
+  restating the step list — a single definition of "gate green" instead of
+  three that can silently drift (the exact drift this closes: `AGENTS.md`'s
+  close-out checklist and Testing section both omitted the `ruff format
+  --check` step CI already ran). Invokes each tool via `sys.executable -m
+  <tool>` rather than the bare console-script name, matching
+  `ruff_changed.py`'s existing portability rationale (console scripts are
+  not guaranteed to be on `PATH` for every install).
+- **PX-43** — CI hygiene batch on `.github/workflows/`: (1) a top-level
+  `concurrency:` group (`cancel-in-progress: true`) on `ci.yml` so a
+  force-push/rapid follow-up cancels the previous push's in-flight run
+  instead of letting it finish (F-tci-04); (2) `eval-smoke`'s duplicated
+  `actions/setup-python` + `pip install -e ".[dev]"` block factored into a
+  new composite action, `.github/actions/setup-python-env/`, now called by
+  both `quality` and `eval-smoke` (F-tci-06); (3) `release.yml`'s `dist`
+  artifact upload gains `retention-days: 30`, matching the existing
+  `docs-deploy.yml` precedent (F-tci-10); (4)/(5) one-line owner-decision
+  comments recording **fail-fast OFF** (`ci.yml`, `quality` job) and **keep
+  the arm64 build** (`docker.yml`) — both per `RELEASE_ARC.md` dec 13. Does
+  NOT change which checks are `required` (a `[HUMAN]` GitHub branch-protection
+  step, unrelated to this branch).
+
+No prompt/dep/migration change; `PROMPT_VERSION` untouched. These workflow
+files only run on GitHub (the remote is private, CI not yet triggering) —
+zero local runtime risk.
+
 ### Fixed/Added: diagnostics-DX round-2 batch — #3/#7/#9/#10/#17, CW-117, RH-1/RH-2, #1-scope (`feat/diagnostics-dx`)
 
 v1.1.0 debt-burn Lane DX: closes out the still-open items from

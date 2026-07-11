@@ -92,7 +92,7 @@ is the failure mode this section exists to prevent.
    - **the handoff renders the FULL still-open ledger** — the `Carried-forward observations` section reproduces the *cumulative* still-open subset (every open item, not just this session's), so nothing falls out of attention across handoffs; at **~8–10 open items**, flag a reduction sprint. (Canonical: charter **W-1** "carry-forward discipline".)
    - **branches to prune** identified.
    "Done" is the *output* of this sweep, not a declaration — do not announce completion until it is empty. Declaring progress over verifying completeness manufactures tech debt, repeat close-outs, and eroded trust. In particular, NEVER merge and then open a follow-up branch for a doc / memory / note edit — that re-triggers the marker-wipe ceremony; fold it in before the merge.
-1. Quality gate green (`python -m ruff check .` + `python -m mypy .` + `python -m pytest`).
+1. Quality gate green — `python -m scripts.gate` (PX-55; runs `ruff check .` + `ruff format --check .` + `mypy .` + `pytest`, the same steps CI runs — see "Testing and validation" below).
 2. Commit — message records what was done and why (or "no code change — verified" if the branch closed clean).
 3. Ask user to confirm merge to `main`; execute merge after confirmation.
 4. Prune the merged branch(es) with the user's OK, then generate the next-agent handoff prompt — **READ [`docs/dev/AGENT_HANDOFF_TEMPLATE.md`](docs/dev/AGENT_HANDOFF_TEMPLATE.md) FIRST and reproduce every fixed section (Documents to read, Hard constraints, Close-out checklist) verbatim, dropping none; a handoff written from memory is non-compliant** — **as copyable chat text (never a file written into `output/`)** and give it to the user as the **last act** before closing the window.
@@ -134,12 +134,14 @@ names (charter D5, cite-don't-restate).
 
 ## Testing and validation
 
-Every change should pass the local validator loop before commit:
+Every change should pass the local validator loop before commit. **`scripts/gate.py`
+(PX-55) is the single definition of "gate green"** — the same four steps in the
+same order run locally, in CI (`.github/workflows/ci.yml`'s `quality` job), and in
+`CONTRIBUTING.md`'s PR checklist, so there is exactly one place that list can drift:
 
 ```bash
-ruff check .
-mypy .
-pytest
+python -m scripts.gate
+# equivalent to, in order: ruff check . / ruff format --check . / mypy . / pytest
 ```
 
 The Playwright **UX** tier (`pytest -m ux`) drives the wizard in a headless Chromium against a threaded live server (LLM-free — analyzer functions are stubbed, the real routes run). It skips when the Chromium binary is absent (`python -m playwright install chromium`), so the default `pytest` stays green everywhere. The shared navigation/selector driver lives in [`ui_pages/`](ui_pages/) — one registry, consumed by the suite **and** `scripts/capture_screenshots.py`.

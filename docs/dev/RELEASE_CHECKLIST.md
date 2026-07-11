@@ -883,6 +883,10 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       [skills/hooks-packaging coherence at 8.7 `feat/portable-enforcement-core`]. Rung history + gate
       detail: [`kit-adoption-design.md`](kit-adoption-design.md) §4/§6 + `CHANGELOG.md`. No ledger row
       added or cleared; rendered open count holds at 7.
+      **→ Update (2026-07-11, ci/portable-enforcement):** L3 confirmed already-done; PX-55 + PX-43
+      landed; commitment (3) hook-re-home + PX-37 dispatcher DEFERRED to an owner-present session
+      (touches live hooks + tests/test_governance_hooks_gate.py; enforcement core already works via
+      f1b3193) — stays open.
 
 - [ ] **2026-07 efficiency review — PX-37..PX-56 aggregate** — witness-only
       four-area efficiency review (agent-process DX / runtime / docs-wiki /
@@ -986,6 +990,16 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       PX-47 (model-pin doc half) partial. **7 remain:** PX-37/PX-43/PX-55 (Wave 3
       HARD), PX-51 (Wave 2 UX), the PX-47 config-drift remainder, the PX-39
       real-corpus measurement, and PX-52 (post-public).
+      **→ Update (2026-07-11, Wave 3 `ci/portable-enforcement`, PX-43/PX-55 land):**
+      **15 of the row's 20 PX rows now land.** PX-55 (unified `scripts/gate.py`
+      quality-gate wrapper, invoked by `AGENTS.md`/`CONTRIBUTING.md`/`ci.yml`) and
+      PX-43 (CI hygiene batch — concurrency group, eval-smoke setup dedup, artifact
+      retention-days, fail-fast + arm64 owner-decision comments) both land in full;
+      see CHANGELOG for detail. **5 remain:** PX-37 (the enforcement-core dispatcher —
+      DEFERRED to an owner-present session alongside the ledger #5 hook-re-home
+      commitment, not attempted this lane), PX-51 (Wave 2 UX, confirmed DEFERRED —
+      not landed — in the UX Cohesion Epic), the PX-47 config-drift remainder, the
+      PX-39 real-corpus measurement, and PX-52 (post-public).
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in

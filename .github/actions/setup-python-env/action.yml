@@ -1,0 +1,26 @@
+name: Set up Python + install package (dev extras)
+description: >-
+  Shared setup step (actions/setup-python + `pip install -e ".[dev]"`) factored
+  out of ci.yml's `quality` and `eval-smoke` jobs — PX-43 (2026-07 efficiency
+  review, F-tci-06): the two jobs ran an identical install block, a DRY
+  violation with no behavior difference. One definition, both jobs call it.
+
+inputs:
+  python-version:
+    description: Python version to install (passed through to actions/setup-python)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: pip
+
+    - name: Install package with dev extras
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
