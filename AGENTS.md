@@ -111,7 +111,7 @@ is the failure mode this section exists to prevent.
 - Grounding check in generation prompt enforces no invented facts; the worked-examples block (OK / NOT OK pairs) is the load-bearing teaching signal — when adding new failure modes to the SYSTEM_PROMPT, also add a worked example.
 - When clarifications OR first-person preview edits are present, the grounding check widens to accept them as legitimate source material. The no-invention rule still applies beyond the union of (resume + clarifications + typed edits) — keep this carve-out surgical, not blanket.
 - **D5 cross-JD reuse** (`feat/clarifications-to-corpus`): the THREE Compose content-drafting calls (`draft_positioning_summary`, `draft_gap_fill_bullets`, `suggest_skills`) additionally accept `context_set["prior_clarifications"]` — confirmed clarification facts from the candidate's OTHER applications, staged once by `db.build_context.build_context_set_from_db` (corpus-mode only) — as legitimate grounding source material via a `<prior_clarifications>` prompt block, and `hardening.assemble_source_union` widens to match so the deterministic grounding metric doesn't flag legitimately-reused facts. The **legacy `generate()` prompt is untouched** — this carve-out is scoped to the three drafting calls, not blanket.
-- `_call_llm` and `_parse_or_retry` accept an optional `system_prompt` arg; calls that override it (like `clarify` / `clarify_iteration`) pay one extra cache-miss on the system block but the heavy user-prefix cache is unaffected.
+- `_call_llm` and `_parse_or_retry` accept an optional `system_prompt` arg; every call that overrides it via `_resolve_system_prompt(...)` or a literal persona constant (not just `clarify` / `clarify_iteration` — grep `system_prompt=_resolve_system_prompt\|system_prompt=AVATAR_SYSTEM_PROMPT` in `analyzer.py` for the current call sites; 16 as of this writing, growing as new drafting/recommend calls are added) pays one extra cache-miss on the system block, but the heavy user-prefix cache is unaffected.
 
 ### Eval observability
 
@@ -164,6 +164,6 @@ Dashboard for trends + heatmap + failure-mode clustering: visit `http://localhos
 - Do not skip `_safe_username()` / `_within()` on any new route touching the filesystem.
 - Do not commit real personal data: `evals/fixtures/real/`, `configs/*.config` (except `example.config`), `resumes/`, `output/`.
 - Do not add features or refactor beyond what was asked — minimal targeted edits only.
-- Do not call an LLM from `hardening.py`, `parser.py`, `scraper.py`, `generator.py`, `pdf_render.py`, `json_resume.py`, `corpus_to_json_resume.py`, or `docx_to_persona_html.py` — those are deterministic by design.
+- Do not call an LLM from any file in the deterministic-boundary list under "Architecture at a glance" (`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py`, `docx_to_persona_html.py`) — those are deterministic by design.
 - Do not introduce a new dependency without adding it to `pyproject.toml` AND updating `CHANGELOG.md`.
 - Do not bypass the `route-security-lint`, `require-feature-branch`, or `ruff-changed` PreToolUse hooks without explicit authorization documented in the commit message.

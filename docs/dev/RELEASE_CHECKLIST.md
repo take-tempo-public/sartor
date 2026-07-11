@@ -920,6 +920,8 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       advanced `.last_ingest_sha` `3561657` → `e785e53`, and passed `/wiki-lint` (see the Resolved
       "Wiki ingest refresh" row). **Cumulative: 7 of the row's 20 PX rows now land**; row stays
       open (13 remain).
+      **→ Update (2026-07-11, `docs/efficiency-px`):** PX-45/PX-49/PX-56 land; model-pin split
+      documented (dec 14). 10 of the row's 20 PX rows now land.
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in

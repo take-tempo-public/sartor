@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs: agent-contract trim + corpus/pipeline dedup + affirm-and-protect notes (`docs/efficiency-px`)
+
+2026-07 efficiency review doc-only lane (PX-45, PX-49, PX-56 + decision-14 doc-only
+half of PX-47): compressed the ~90-line CLAUDE.md skill/subagent catalogs to a
+directory pointer at `commands/`/`agents/`, folding the compliance-witness-only facts
+into its own frontmatter; pointer-ized AGENTS.md's duplicated deterministic-boundary
+list and corrected the cache-miss claim to cover all `system_prompt`-override call
+sites in `analyzer.py` (16, not 11); reduced the corpus/pipeline mechanics restated in
+`vision.md` and `docs/PRODUCT_SHAPE.md` to a pointer + one line each, with
+`docs/architecture.md` as the single canonical home (charter D-5); added
+`docs/dev/reviews/2026-07-efficiency/keep-notes.md` (do-not-regress notes: Haiku
+call-kinds' zero-error record, deliberate eval prompt-version anchoring, Linux-only CI
+as a decision-with-a-revisit-trigger, D-5 re-affirmation now due post-8.6-ingest); and
+documented (not re-pinned) the dated-Haiku-vs-undated-Sonnet subagent model-pin split
+in `docs/dev/decisions.md`. AGENTS.md remains a complete standalone contract — no
+guardrail moved to a Claude-only file.
+
 ## [1.0.9] — 2026-07-10
 
 ### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)

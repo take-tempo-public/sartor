@@ -351,17 +351,13 @@ different templates would be ideal."
 
 ## 6. Wizard flow — current vs sketched + clarified
 
-### 6.1 Current (today)
+### 6.1 Current pipeline
 
-```
-1. Job description (paste)
-2. Analyze (LLM)        — Sonnet 5 (two-pass: Haiku 4.5 extraction → Sonnet synthesis)
-3. Clarify (optional)   — Haiku 4.5
-4. Compose              — Haiku 4.5 recommend_bullets + user curation
-5. Template             — pick persona
-6. Generate             — Sonnet 5, produces BOTH résumé + cover
-7. Output / Download    — .docx or .md, preview = .docx download
-```
+The shipped step-by-step mechanics (which route fires which model,
+in what order) are canonical in
+[`docs/architecture.md` §System overview](architecture.md) — restated
+here only as the historical baseline that the user's sketch (§6.2)
+and the reconciled flow (§6.3) below diff against.
 
 ### 6.2 User's sketched flow
 
