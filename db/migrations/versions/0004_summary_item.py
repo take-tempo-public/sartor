@@ -1,4 +1,4 @@
-"""β.6a — add summary_item + summary_item_tag tables; backfill from Candidate.profile_text
+"""β.6a — add summary_item + summary_item_tag tables; backfill from Candidate.profile_text.
 
 Revision ID: 0004
 Revises: 0003
@@ -19,6 +19,7 @@ current model state, so on a fresh DB these tables are already
 present. Skip in that case. On an upgraded DB, the create + backfill
 land normally.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -32,12 +33,13 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
-def _table_exists(bind, name: str) -> bool:
+def _table_exists(bind: sa.engine.Connection, name: str) -> bool:
     inspector = sa.inspect(bind)
     return name in inspector.get_table_names()
 
 
 def upgrade() -> None:
+    """Create summary_item + summary_item_tag tables and backfill from Candidate.profile_text (idempotent)."""
     bind = op.get_bind()
 
     # summary_item
@@ -57,7 +59,9 @@ def upgrade() -> None:
             sa.Column("updated_at", sa.String(), nullable=False),
             sa.PrimaryKeyConstraint("id"),
             sa.ForeignKeyConstraint(
-                ["candidate_id"], ["candidate.id"], ondelete="CASCADE",
+                ["candidate_id"],
+                ["candidate.id"],
+                ondelete="CASCADE",
             ),
             sa.CheckConstraint(
                 "source IN ('manual', 'imported', 'llm_proposed')",
@@ -79,10 +83,14 @@ def upgrade() -> None:
             sa.Column("confidence", sa.Float(), nullable=False, server_default="1.0"),
             sa.PrimaryKeyConstraint("summary_item_id", "tag_id"),
             sa.ForeignKeyConstraint(
-                ["summary_item_id"], ["summary_item.id"], ondelete="CASCADE",
+                ["summary_item_id"],
+                ["summary_item.id"],
+                ondelete="CASCADE",
             ),
             sa.ForeignKeyConstraint(
-                ["tag_id"], ["tag.id"], ondelete="CASCADE",
+                ["tag_id"],
+                ["tag.id"],
+                ondelete="CASCADE",
             ),
         )
         op.create_index("ix_summary_item_tag_tag", "summary_item_tag", ["tag_id"])
@@ -91,8 +99,11 @@ def upgrade() -> None:
     # Idempotent: skip when the candidate already has at least one
     # SummaryItem row (so re-running the migration after a manual
     # SummaryItem add doesn't duplicate the seed).
-    now_sql = "strftime('%Y-%m-%dT%H:%M:%SZ', 'now')"
-    bind.execute(sa.text(f"""
+    # Plain (non-f) string — the only "interpolation" is the constant
+    # strftime() timestamp, inlined here so there's no string-built SQL for
+    # the ruff-changed hook's S608 to flag (no user input is ever formatted in).
+    bind.execute(
+        sa.text("""
         INSERT INTO summary_item (
             candidate_id, text, label, display_order, is_active,
             is_pending_review, source, has_outcome,
@@ -106,18 +117,20 @@ def upgrade() -> None:
                0,
                'imported',
                0,
-               {now_sql},
-               {now_sql}
+               strftime('%Y-%m-%dT%H:%M:%SZ', 'now'),
+               strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
         FROM candidate c
         WHERE c.profile_text IS NOT NULL
           AND TRIM(c.profile_text) <> ''
           AND NOT EXISTS (
               SELECT 1 FROM summary_item s WHERE s.candidate_id = c.id
           )
-    """))
+    """)
+    )
 
 
 def downgrade() -> None:
+    """Drop summary_item_tag then summary_item (idempotent)."""
     bind = op.get_bind()
     if _table_exists(bind, "summary_item_tag"):
         op.drop_index("ix_summary_item_tag_tag", table_name="summary_item_tag")

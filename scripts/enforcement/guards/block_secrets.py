@@ -10,6 +10,7 @@ see `tests/test_enforcement_core.py`).
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from scripts.enforcement import gitutil
 from scripts.enforcement.guards.result import GuardResult
@@ -40,7 +41,7 @@ def _secret_file_message(norm_path: str) -> tuple[str, ...]:
     )
 
 
-def haystack(tool_input: dict) -> str:
+def haystack(tool_input: dict[str, Any]) -> str:
     """The same haystack the original hook scans: command / file_path / new_string / content."""
     parts = [
         tool_input.get("command", ""),
@@ -51,7 +52,7 @@ def haystack(tool_input: dict) -> str:
     return "\n".join(p for p in parts if isinstance(p, str) and p)
 
 
-def decide(tool_name: str, tool_input: dict) -> GuardResult:
+def decide(tool_name: str, tool_input: dict[str, Any]) -> GuardResult:
     """Pure decision, in the original hook's exact check order."""
     text = haystack(tool_input)
 
@@ -70,7 +71,7 @@ def decide(tool_name: str, tool_input: dict) -> GuardResult:
     return GuardResult.allow()
 
 
-def claude_check(payload: dict) -> GuardResult:
+def claude_check(payload: dict[str, Any]) -> GuardResult:
     """Claude PreToolUse adapter: extract `tool_name` + `tool_input`."""
     tool_name = payload.get("tool_name", "") or ""
     tool_input = payload.get("tool_input") or {}

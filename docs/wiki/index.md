@@ -68,6 +68,13 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
 - [`pages/diagnostics-console.md`](pages/diagnostics-console.md) — the localhost
   `/_dashboard` console + the SSE eval/tune/annotation loop.
 
+The v1.0.9 pre-merge refresh (`chore/wiki-refresh-v109`) added the spectree
+OpenAPI Layer B page (same `audience: dev` code-cold-ingest family):
+
+- [`pages/openapi-api-reference.md`](pages/openapi-api-reference.md) — the
+  `web_infra/openapi.py` spec instance, the five decorated GET routes, and the
+  `scripts/generate_openapi_spec.py` generator.
+
 ### User-facing education (hand-authored, Sprint 6.5 `feat/education-tailor-corpus-wizard`)
 
 `audience: user` — plain-language guides that mirror the in-app help; a content

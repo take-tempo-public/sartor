@@ -30,7 +30,7 @@ import subprocess
 from collections.abc import Iterable, Sequence
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -117,7 +117,7 @@ def _embedder_from(model: Any) -> Embedder:
             matrix = matrix.reshape(1, -1)
         norms = np.linalg.norm(matrix, axis=1, keepdims=True)
         norms[norms == 0] = 1.0  # never divide an all-zero embedding by zero
-        return matrix / norms
+        return cast("np.ndarray", matrix / norms)
 
     return _embed
 

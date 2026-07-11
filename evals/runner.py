@@ -143,8 +143,8 @@ class EvalRunResult:
     out_path: Path | None
     n_pass: int
     n_fail: int
-    regressions: list[dict]
-    improvements: list[dict]
+    regressions: list[dict[str, Any]]
+    improvements: list[dict[str, Any]]
     candidate_version: str | None = None
 
 
@@ -159,7 +159,7 @@ def _get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=api_key)
 
 
-def _load_fixture(fixture_dir: Path, *, seed_mode: bool = False) -> dict:
+def _load_fixture(fixture_dir: Path, *, seed_mode: bool = False) -> dict[str, Any]:
     """Load a fixture: jd.txt + resume.{md|docx|pdf} + expected.json.
 
     In ``seed_mode`` the corpus comes from a ``--seed`` seed.json instead of a
@@ -195,7 +195,7 @@ def _load_fixture(fixture_dir: Path, *, seed_mode: bool = False) -> dict:
     }
 
 
-def _build_context(fixture: dict) -> ContextSet:
+def _build_context(fixture: dict[str, Any]) -> ContextSet:
     """Run the same hardening pipeline app.py uses, then return a context_set."""
     parsed = parse_resume(str(fixture["resume_path"]))
     config = {
@@ -254,7 +254,7 @@ def _build_context_from_seed(
     return context, application
 
 
-def _groundedness_composite(fabricated_specifics: dict) -> dict:
+def _groundedness_composite(fabricated_specifics: dict[str, Any]) -> dict[str, Any]:
     """The single reportable groundedness signal, L0-only by default.
 
     Folds the deterministic L0 fabricated-specifics rate into one block that
@@ -274,7 +274,7 @@ def _groundedness_composite(fabricated_specifics: dict) -> dict:
     }
 
 
-def _enrich_groundedness(block: dict, grounding_signals_data: dict) -> None:
+def _enrich_groundedness(block: dict[str, Any], grounding_signals_data: dict[str, Any]) -> None:
     """Layer the eval-only L1/L2 signals into the groundedness composite in
     place. Pure dict mutation — called only when `--grounding-signals` produced
     real scores, so default runs (no torch) keep the L0-only composite.
@@ -294,9 +294,9 @@ def _post_generation_metrics(
     generated_resume: str,
     generated_cover_letter: str,
     sources: list[str],
-    jd_keywords: dict | None = None,
+    jd_keywords: dict[str, Any] | None = None,
     source_union: list[str] | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Compute post-generation deterministic metrics.
 
     `sources` is the list of source texts the LLM was allowed to draw from
@@ -330,7 +330,7 @@ def _score_distinctiveness(
     client: anthropic.Anthropic,
     generated_resume: str,
     job_description: str,
-) -> dict:
+) -> dict[str, Any]:
     """Lightweight Haiku call scoring how distinctive/memorable the résumé is.
 
     Eval-time only — not called from the production pipeline. Returns
@@ -367,7 +367,7 @@ def _score_distinctiveness(
             if raw.endswith("```"):
                 raw = raw.rsplit("```", 1)[0]
             raw = raw.strip()
-        result = json.loads(raw)
+        result = cast("dict[str, Any]", json.loads(raw))
         if result.get("score") is not None:
             result["score"] = float(result["score"])
         return result
@@ -408,7 +408,7 @@ def _eval_cost_since(t0_iso: str, fixture_name: str) -> float:
 BASELINE_JSON = RESULTS_DIR / "baseline_v1.json"
 
 
-def _load_baseline_scores(out_path: Path) -> dict[tuple[str, str], dict]:
+def _load_baseline_scores(out_path: Path) -> dict[tuple[str, str], dict[str, Any]]:
     """Return the most-recent (fixture, rubric) → record map for regression detection.
 
     Seeds from baseline_v1.json (schema_version 3) when present, so the alerter
@@ -418,7 +418,7 @@ def _load_baseline_scores(out_path: Path) -> dict[tuple[str, str], dict]:
     if not RESULTS_DIR.exists():
         return {}
 
-    baseline: dict[tuple[str, str], dict] = {}
+    baseline: dict[tuple[str, str], dict[str, Any]] = {}
 
     # Seed from the static aggregate baseline when schema_version 3 is present.
     if BASELINE_JSON.exists():
@@ -474,8 +474,8 @@ def _compute_baseline_comparison(
     fixture_name: str,
     rubric_name: str,
     score: float | None,
-    bdata: dict,
-) -> dict | None:
+    bdata: dict[str, Any],
+) -> dict[str, Any] | None:
     """Return baseline mean + delta for a (fixture, rubric, score) triple.
 
     Returns None when baseline data is absent or the pair isn't in the baseline.
@@ -497,8 +497,8 @@ def _detect_regression(
     fixture: str,
     rubric: str,
     new_score: float,
-    baseline: dict[tuple[str, str], dict],
-) -> dict | None:
+    baseline: dict[tuple[str, str], dict[str, Any]],
+) -> dict[str, Any] | None:
     """Compare a fresh score against the most-recent prior score for the same
     (fixture, rubric) pair. Returns a regression record if the drop exceeds
     REGRESSION_DELTA, otherwise None.
@@ -529,7 +529,9 @@ def _detect_regression(
     }
 
 
-def _grade(client: anthropic.Anthropic, rubric_path: Path, payload: dict) -> dict:
+def _grade(
+    client: anthropic.Anthropic, rubric_path: Path, payload: dict[str, Any]
+) -> dict[str, Any]:
     """Send one (rubric × payload) to Haiku and parse the JSON verdict."""
     rubric = rubric_path.read_text(encoding="utf-8")
     user_msg = (
@@ -551,7 +553,7 @@ def _grade(client: anthropic.Anthropic, rubric_path: Path, payload: dict) -> dic
             raw = raw.rsplit("```", 1)[0]
         raw = raw.strip()
     try:
-        grade = json.loads(raw)
+        grade = cast("dict[str, Any]", json.loads(raw))
     except json.JSONDecodeError:
         # Mark explicitly as judge_error so _detect_regression and the
         # summary roll-up can skip this record. Without the status the
@@ -624,7 +626,7 @@ def _select_rubrics(subset: str) -> list[Path]:
     return all_rubrics
 
 
-def _apply_simulated_edit(generated_resume: str, scenario: dict) -> tuple[str, bool]:
+def _apply_simulated_edit(generated_resume: str, scenario: dict[str, Any]) -> tuple[str, bool]:
     """Apply a fixture-supplied edit to the freshly generated resume.
 
     Returns (edited_resume_text, edit_landed). edit_landed=False means the
@@ -642,17 +644,17 @@ def _apply_simulated_edit(generated_resume: str, scenario: dict) -> tuple[str, b
 
 
 def _iteration_payload(
-    fixture: dict,
+    fixture: dict[str, Any],
     context: ContextSet,
-    analysis: dict,
-    iteration_questions: list[dict],
+    analysis: dict[str, Any],
+    iteration_questions: list[dict[str, Any]],
     iteration_reasoning: str,
     current_resume_text: str,
     current_cover_letter_text: str,
     recent_edits_summary: str,
-    deterministic_signals: dict,
-    prior_clarifications: list[dict],
-) -> dict:
+    deterministic_signals: dict[str, Any],
+    prior_clarifications: list[dict[str, Any]],
+) -> dict[str, Any]:
     """Build the judge payload for the iteration_quality rubric."""
     return {
         "fixture": fixture["name"],
@@ -672,18 +674,18 @@ def _iteration_payload(
 def _run_iteration_phase(
     *,
     client: anthropic.Anthropic,
-    fixture: dict,
+    fixture: dict[str, Any],
     context: ContextSet,
-    analysis: dict,
-    generate_result: dict,
-    clarify_questions: list[dict],
-    clarify_answers: dict,
+    analysis: dict[str, Any],
+    generate_result: dict[str, Any],
+    clarify_questions: list[dict[str, Any]],
+    clarify_answers: dict[str, Any],
     rubric_path: Path,
     run_id: str,
-    det_metrics: dict,
+    det_metrics: dict[str, Any],
     elapsed_ms: int,
     t0_iso: str,
-) -> dict | None:
+) -> dict[str, Any] | None:
     """Run one simulated iteration cycle for fixtures with iteration_scenarios.
 
     Steps (per the plan):
@@ -769,7 +771,7 @@ def _run_iteration_phase(
     edits_summary = summarize_recent_edits(iter_context)
     signals = compute_iteration_signals(iter_context, edited_resume)
 
-    prior_clarifications: list[dict] = []
+    prior_clarifications: list[dict[str, Any]] = []
     for q in clarify_questions or []:
         ans = (clarify_answers.get(q.get("id", ""), "") or "").strip()
         if ans:
@@ -782,7 +784,7 @@ def _run_iteration_phase(
             )
 
     iter_status = "ok"
-    iter_questions: list[dict] = []
+    iter_questions: list[dict[str, Any]] = []
     iter_reasoning = ""
     iter_error: str | None = None
     try:
@@ -946,7 +948,7 @@ def _run_assemble_pipeline(
     # keys; see recommend_summaries's own docstring). Calls typed to accept
     # ContextSet specifically (recommend_bullets/_summaries, _frozen_composition,
     # _assemble_from_frozen_composition) pass `context` itself.
-    cs = cast(dict, context)
+    cs = cast(dict[str, Any], context)
     candidate_id = int(application.candidate_id)
     application_id = int(application.id)
 
@@ -999,7 +1001,7 @@ def run_suite(
     suite: str = "synthetic",
     subset: str = "full",
     fixture_name: str | None = None,
-    seed_data: dict | None = None,
+    seed_data: dict[str, Any] | None = None,
     mode: str = "generate",
     prompt_overrides_map: dict[str, str] | None = None,
     grounding_signals: bool = False,
@@ -1077,7 +1079,7 @@ def run_suite(
         )
 
     # Load static baseline data once for baseline_comparison fields on JSONL records.
-    baseline_v1_data: dict = {}
+    baseline_v1_data: dict[str, Any] = {}
     if BASELINE_JSON.exists():
         try:
             _bdata = json.loads(BASELINE_JSON.read_text(encoding="utf-8"))
@@ -1114,8 +1116,8 @@ def run_suite(
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%SZ")
     out_path_for_baseline = out_dir / f"{timestamp}.jsonl"
     baseline = _load_baseline_scores(out_path_for_baseline)
-    regressions: list[dict] = []
-    improvements: list[dict] = []
+    regressions: list[dict[str, Any]] = []
+    improvements: list[dict[str, Any]] = []
     if baseline:
         logger.info(
             "Regression-alert baseline: %d (fixture, rubric) pairs from prior runs (delta=%.1f)",
@@ -1173,7 +1175,7 @@ def run_suite(
             # step is opt-in in production and we want the eval to keep
             # producing scores for the existing rubrics even if clarify
             # fails for some reason.
-            clarify_questions: list[dict] = []
+            clarify_questions: list[dict[str, Any]] = []
             clarify_reasoning = ""
             clarify_error: str | None = None
             _t_analyze: float | None = None
@@ -1343,7 +1345,7 @@ def run_suite(
             payload_det = dict(context["deterministic_analysis"])
             payload_det["post_generation"] = det_metrics
 
-            grounding_signals_data: dict | None = None
+            grounding_signals_data: dict[str, Any] | None = None
             if grounding_signals:
                 from evals.grounding_signals import run_grounding_signals
 
@@ -1844,7 +1846,7 @@ def main(argv: list[str] | None = None) -> int:
     # --seed: eager-load + validate the corpus seed (bad path / JSON / schema → 1)
     # before any paid LLM call. Absent → seed_data=None and the file-based path is
     # byte-identical.
-    seed_data: dict | None = None
+    seed_data: dict[str, Any] | None = None
     if args.seed:
         try:
             seed_data = load_seed(args.seed)

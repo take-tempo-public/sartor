@@ -1,4 +1,4 @@
-"""B.4 (Sprint 6.6) — add experience_summary_item + _tag tables; backfill from Experience.summary
+"""B.4 (Sprint 6.6) — add experience_summary_item + _tag tables; backfill from Experience.summary.
 
 Revision ID: 0008
 Revises: 0007
@@ -20,6 +20,7 @@ that case. On an upgraded DB, the create + backfill land normally. The
 backfill skips experiences that already have at least one row, so a
 re-run after a manual add never duplicates the seed.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -33,12 +34,13 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
-def _table_exists(bind, name: str) -> bool:
+def _table_exists(bind: sa.engine.Connection, name: str) -> bool:
     inspector = sa.inspect(bind)
     return name in inspector.get_table_names()
 
 
 def upgrade() -> None:
+    """Create experience_summary_item + _tag tables and backfill from Experience.summary (idempotent)."""
     bind = op.get_bind()
 
     # experience_summary_item
@@ -58,7 +60,9 @@ def upgrade() -> None:
             sa.Column("updated_at", sa.String(), nullable=False),
             sa.PrimaryKeyConstraint("id"),
             sa.ForeignKeyConstraint(
-                ["experience_id"], ["experience.id"], ondelete="CASCADE",
+                ["experience_id"],
+                ["experience.id"],
+                ondelete="CASCADE",
             ),
             sa.CheckConstraint(
                 "source IN ('manual', 'imported', 'llm_proposed')",
@@ -80,10 +84,14 @@ def upgrade() -> None:
             sa.Column("confidence", sa.Float(), nullable=False, server_default="1.0"),
             sa.PrimaryKeyConstraint("experience_summary_item_id", "tag_id"),
             sa.ForeignKeyConstraint(
-                ["experience_summary_item_id"], ["experience_summary_item.id"], ondelete="CASCADE",
+                ["experience_summary_item_id"],
+                ["experience_summary_item.id"],
+                ondelete="CASCADE",
             ),
             sa.ForeignKeyConstraint(
-                ["tag_id"], ["tag.id"], ondelete="CASCADE",
+                ["tag_id"],
+                ["tag.id"],
+                ondelete="CASCADE",
             ),
         )
         op.create_index(
@@ -98,7 +106,8 @@ def upgrade() -> None:
     # Plain (non-f) string — the only "interpolation" is the constant
     # strftime() timestamp, inlined here so there's no string-built SQL for
     # the ruff-changed hook's S608 to flag (no user input is ever formatted in).
-    bind.execute(sa.text("""
+    bind.execute(
+        sa.text("""
         INSERT INTO experience_summary_item (
             experience_id, text, label, display_order, is_active,
             is_pending_review, source, has_outcome,
@@ -120,10 +129,12 @@ def upgrade() -> None:
           AND NOT EXISTS (
               SELECT 1 FROM experience_summary_item s WHERE s.experience_id = e.id
           )
-    """))
+    """)
+    )
 
 
 def downgrade() -> None:
+    """Drop experience_summary_item_tag then experience_summary_item (idempotent)."""
     bind = op.get_bind()
     if _table_exists(bind, "experience_summary_item_tag"):
         op.drop_index(

@@ -1063,7 +1063,7 @@ Then: `chore/version-bump-v1.0.8`.
 | Phase 3b | gen-exp completion → **TRAIN 3** | (a) `fix/surgical-refinement-and-loopback` + (d) `feat/regenerate-gap-fill` in parallel, then (b) `feat/wysiwyg-source-of-truth` + (c) `feat/clarifications-to-corpus`. Spec home: [`generation-experience-rearchitecture.md`](generation-experience-rearchitecture.md) §4/§6. Corpus-mode validation on a saved context + one real generate (NOT `--suite synthetic`). |
 | Phase 4 | 8.7 public-prep → **TRAIN 4** → **CODE FREEZE** | `feat/portable-enforcement-core` (ledger #6) · `ci/ux-a11y-required-check` (PX-25) · `chore/doc-link-sweep` (ledger #7). Then **[HUMAN]**: GitHub repo `take-tempo-public/sartor` (private) + PyPI Trusted Publisher + required checks. **[Reconciled 2026-07-09: repo created + `main` pushed private; PyPI/GHCR/required-checks activation DEFERRED to pre-v1.1.0 per owner — see the RELEASE_CHECKLIST [HUMAN] row.]** Then assets: `docs/screenshots-refresh` ($0.27, app running) · `docs/badges-readme-prep` (PX-26 + PX-54) → **TRAIN 4b**. |
 | Phase 5 | v1.0.8 tag ceremony | `/compliance-witness` at pinned sha + `/wiki-lint` (staleness carried as accepted note; PX-41 scheduled Phase 6) + `RELEASE_CHECKLIST` sweep + `CHANGELOG` cut → owner confirms → tag **v1.0.8** → verify published wheel. |
-| Phase 6 | v1.0.9 docs epic → **TRAIN 5** → v1.0.9 tag | ~~`docs/readme-icp-ladder`~~ **DONE** (`323bf6c`/`996d1c9`, on `main`; DOC-STATUS governance-boundary reconcile RESOLVED — PX-19/PX-20 closed) · `docs/dev-home-depth-wsb` (+ PX-40/48 + avatar-voice casing) · `docs/wiki-content-pass` (PX-41 catch-up ingest 150+ commits via `/wiki-self-update` + PX-50/53 + user-tier pages + `llms.txt`) · `docs/diagrams-a11y` (new `accTitle`/`accDescr` diagrams; retire the 4 drifted `.mmd`) · `feat/fumadocs-site` (projection adapter + spectree/OpenAPI Layer-B) · `ci/doc-merge-gate` (last) · `chore/mypy-strict` (burn the normalized error count) · `spike/pagedjs-design` (timeboxed doc). Voice/tone reference: Google developer style guide tone (record in `documentation-architecture.md`). <br>**[TRAIN 5 assembled 2026-07-10 — pending owner train-confirm]** landed as one chain: `docs/dev-home-depth-wsb` · `docs/wiki-content-pass` (the F-17 recruiter-Pipeline `audience: user` page; the PX-41 catch-up already landed separately as `docs/wiki-v109-refresh`) · `docs/diagrams-a11y` · `feat/fumadocs-site` (L1→MDX projection core + SFTP self-host deploy to `sartor-docs.taketempo.com`; **spectree/OpenAPI Layer-B deferred** — spectree was never wired, the "pulled into v1.0.8" note above was drift) · `ci/doc-merge-gate` · `spike/pagedjs-design`. **`chore/mypy-strict` burn** = satisfied by the mypy `--strict` §6 exit (all production modules strict + roster-gated, landed 2026-07-10); the exempt-tree (`tests/`/`evals/`/`scripts/`, ~2821 errors) burn is **deferred post-public** unless the owner directs otherwise. |
+| Phase 6 | v1.0.9 docs epic → **TRAIN 5** → v1.0.9 tag | ~~`docs/readme-icp-ladder`~~ **DONE** (`323bf6c`/`996d1c9`, on `main`; DOC-STATUS governance-boundary reconcile RESOLVED — PX-19/PX-20 closed) · `docs/dev-home-depth-wsb` (+ PX-40/48 + avatar-voice casing) · `docs/wiki-content-pass` (PX-41 catch-up ingest 150+ commits via `/wiki-self-update` + PX-50/53 + user-tier pages + `llms.txt`) · `docs/diagrams-a11y` (new `accTitle`/`accDescr` diagrams; retire the 4 drifted `.mmd`) · `feat/fumadocs-site` (projection adapter + spectree/OpenAPI Layer-B) · `ci/doc-merge-gate` (last) · `chore/mypy-strict` (burn the normalized error count) · `spike/pagedjs-design` (timeboxed doc). Voice/tone reference: Google developer style guide tone (record in `documentation-architecture.md`). <br>**[TRAIN 5 assembled 2026-07-10 — pending owner train-confirm]** landed as one chain: `docs/dev-home-depth-wsb` · `docs/wiki-content-pass` (the F-17 recruiter-Pipeline `audience: user` page; the PX-41 catch-up already landed separately as `docs/wiki-v109-refresh`) · `docs/diagrams-a11y` · `feat/fumadocs-site` (L1→MDX projection core + SFTP self-host deploy to `sartor-docs.taketempo.com`; **spectree/OpenAPI Layer-B deferred** — spectree was never wired, the "pulled into v1.0.8" note above was drift) · `ci/doc-merge-gate` · `spike/pagedjs-design`. **spectree/OpenAPI Layer-B Phase 1 — LANDED separately (2026-07-10, `feat/spectree-openapi-emit`):** spec-emission only (decorator + `resp=`, 5 read-only GET routes, `web_infra/openapi.py` + `scripts/generate_openapi_spec.py` → `docs-site/openapi.json`, gitignored); Fumadocs rendering that spec into a hosted reference page remains not built. **`chore/mypy-strict` burn** = satisfied by the mypy `--strict` §6 exit (all production modules strict + roster-gated, landed 2026-07-10); the exempt-tree (`tests/`/`evals/`/`scripts/`, ~2821 errors) burn is **deferred post-public** unless the owner directs otherwise. |
 | Phase 7 | v1.1.0 gate → **TRAIN 6** | `chore/px-v110-gate-batch` (Phase-0 survivors incl. PX-37/38/43/44/45/47/49/51/55/56 as re-scoped) · PX-39 Sonnet-5 latency baseline (idle only) · `release/visual-assets` · PX-46 memory consolidation (owner-gated) → final fresh-clone-from-GitHub verify → owner acts: tag **v1.1.0** + public flip. |
 
 #### Train schedule
@@ -1223,7 +1223,12 @@ fix, not an ATS fix). See the findings doc's O1b deep-dive.
 > - **Fumadocs renders the HTTP-API spec (Layer B) — IN v1.0.9 scope** (owner-confirmed).
 >   So **spectree** (the OpenAPI-emitting request boundary; kit Decisions 1/2a) is its
 >   **dependency**, **pulled pre-public into v1.0.8** (code, route-boundary, post-blueprint-
->   split) — it must land before branch #4 below.
+>   split) — it must land before branch #4 below. **Correction (2026-07-10):** this did
+>   NOT actually happen in v1.0.8 — `feat/fumadocs-site` verified `spectree` absent from
+>   the codebase and flagged it (see CHANGELOG.md `[Unreleased]` fumadocs-site entry).
+>   It landed instead in **v1.0.9** via `feat/spectree-openapi-emit` — **Phase 1 only**
+>   (spec-emission, 5 read-only GET routes decorated); Fumadocs actually rendering the
+>   spec is still a separate, later branch.
 > - **paged.js engine replacement (B.13) → pulled pre-public** from §Post-public. A render-
 >   engine project (**design-spike first**); preview-fidelity only (PDF is Playwright-native,
 >   unaffected). Off both the v1.0.8 blueprint theme and the v1.0.9 docs theme → **owner to
@@ -1247,6 +1252,11 @@ Sequence (each its own branch, in dependency order):
    frontmatter → MDX tree), `meta.json` from the ICP ladder + audience tags,
    deploy-on-merge-to-`main`; **+ renders the HTTP-API reference (Layer B) from the OpenAPI
    spec spectree emits** (dependency: spectree, pulled into v1.0.8 — see the reconcile note above).
+   **DONE (the projection adapter half only, `feat/fumadocs-site`); the spectree dependency
+   was NOT actually wired in v1.0.8 as this line claims — it landed in v1.0.9 instead, as
+   Phase 1 spec-emission only, via `feat/spectree-openapi-emit` (see CHANGELOG.md
+   `[Unreleased]`). Fumadocs rendering that spec (the "+ renders..." half of this bullet)
+   remains not built — a separate, later branch.**
 5. **`ci/doc-merge-gate`** — the doc gates (link-integrity / frontmatter+audience /
    D5 single-home / cite-resolution / wiki-freshness) + the `DOC-STATUS`-trigger check,
    extending `block-merge-to-main` + `wiki-lint`. **Last**, because merge=publish only
@@ -1270,6 +1280,15 @@ Sequence (each its own branch, in dependency order):
 is enforced **by construction** via `tests/test_mypy_strict_roster_gate.py` (closes
 compliance-witness CW-118), not a one-time proof. Rung history:
 [`kit-adoption-design.md`](kit-adoption-design.md) §4/§6 + `CHANGELOG.md` `[Unreleased]`.
+**Tooling-slice pull-in — ✅ LANDED (2026-07-10, `chore/mypy-strict-tooling`,
+owner-directed).** Decision 7 AMENDED: the exempt set narrows to **`tests/` only** —
+`scripts/` (22 errs) + `evals/` (44 errs) + `db/migrations/versions/` (6 errs) = 72
+measured `mypy --strict --warn-unreachable` errors fixed and rostered (annotation-only,
+zero behavior change). `tests/test_mypy_strict_roster_gate.py` updated to match
+(`_EXEMPT_PREFIXES` narrowed, the migrations/versions guard inverted to assert
+coverage). The remaining `tests/` strict burn (~3,252 errors measured) **stays
+deferred** per owner direction 2026-07-10 — out of scope for this pull-in; see
+[`kit-adoption-design.md`](kit-adoption-design.md) §6 for the full amendment record.
 The original plan is retained below for the record. — Complete the
 `mypy --strict` ratchet to the §6 end-state so strict typing can be claimed for all
 non-test code. Empirically measured 2026-06-29: **146 errors across 18 of 69 production
@@ -1377,7 +1396,11 @@ spine (WS-2-full's other half) stays **post-public** — not needed to claim str
   emission is pulled pre-public into v1.0.8** (2026-06-29 owner — it's the v1.0.9 Fumadocs
   Layer-B dependency; see §Phase 4.9), and **Fumadocs renders the spec in v1.0.9**. Real
   cost = the mypy `--strict` ratchet (post-public) + the ~30-endpoint spectree boundary
-  (now v1.0.8); the rest is reconcile-don't-build.
+  (now v1.0.8); the rest is reconcile-don't-build. **Correction (2026-07-10):** the
+  "pulled into v1.0.8" plan did not happen — spectree landed in **v1.0.9** instead
+  (`feat/spectree-openapi-emit`), and only as **Phase 1** (decorator-only spec-emission
+  on 5 read-only GET routes, not the full ~30-endpoint boundary this paragraph
+  envisioned). Fumadocs rendering the spec is still not built.
 
 *(WS-1 (the monolith split) and the doc-grounded assistant are **not** here — they
 moved **pre-public** into v1.0.8 and v1.0.7 respectively, so v1.1.0 ships with both.)*

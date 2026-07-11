@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, cast
 
 from flask import current_app, jsonify, request
 from flask.typing import ResponseReturnValue
+from spectree import Response as OpenApiResponse
 
 from blueprints.corpus._bp import corpus_bp
 from blueprints.corpus._shared import (
@@ -28,7 +29,9 @@ from web_infra import (
     _error_detail_payload,
     _get_or_provision_candidate,
     _safe_username,
+    spec,
 )
+from web_infra.openapi import ExperiencesListResponse
 
 if TYPE_CHECKING:
     from db.models import Candidate
@@ -42,6 +45,11 @@ logger = logging.getLogger(__name__)
 
 
 @corpus_bp.route("/api/users/<username>/experiences", methods=["GET"])
+@spec.validate(
+    resp=OpenApiResponse(HTTP_200=ExperiencesListResponse),
+    skip_validation=True,
+    tags=["corpus"],
+)
 def list_experiences(username: str) -> ResponseReturnValue:
     """Return the candidate's experiences in newest-first display order.
 

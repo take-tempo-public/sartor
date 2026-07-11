@@ -33,6 +33,25 @@ jobs:
         with:
           python-version: "3.13"
 
+      # scripts/generate_openapi_spec.py imports app.create_app / config.Config
+      # / web_infra.openapi.spec — unlike scripts/project_docs_to_mdx.py (which
+      # is stdlib-only), it needs the project's own runtime dependencies
+      # (flask, spectree, pydantic, ...) installed. Same `pip install -e .`
+      # invocation as .github/workflows/ci.yml; no `[dev]` extras needed here
+      # (no tests/linters run in this job).
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      # scripts/generate_openapi_spec.py — deterministic, no Anthropic key, no
+      # network call; builds its own throwaway create_app() and writes
+      # docs-site/openapi.json from the 5 spectree-decorated routes at THIS
+      # commit (spectree/OpenAPI Layer B Phase 1, web_infra/openapi.py). Must
+      # run before docs-site's api-doc-gen step below, which reads this file.
+      - name: Generate OpenAPI spec
+        run: python scripts/generate_openapi_spec.py
+
       # scripts/project_docs_to_mdx.py — deterministic, stdlib-only. No
       # Anthropic key, no network call; regenerates docs-site/content/docs/
       # from the L1 doc set at THIS commit (the projection is a pure
@@ -50,6 +69,18 @@ jobs:
       - name: npm ci
         working-directory: docs-site
         run: npm ci
+
+      # docs-site/scripts/generate-api-docs.mjs (spectree/OpenAPI Layer B
+      # Phase 2) — reads docs-site/openapi.json (the step above) and projects
+      # it into MDX reference pages under content/docs/api-reference/ via
+      # fumadocs-openapi's generateFiles(); also appends the ONE nav entry
+      # ("api-reference") to content/docs/meta.json (written by the L1
+      # projection step above). Must run after both "Generate OpenAPI spec"
+      # (needs the JSON) and "npm ci" (needs fumadocs-openapi installed), and
+      # before the Next.js build below.
+      - name: Generate API reference docs
+        working-directory: docs-site
+        run: npm run gen:api-docs
 
       - name: npm run build (static export)
         working-directory: docs-site

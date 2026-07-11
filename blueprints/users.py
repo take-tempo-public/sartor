@@ -52,6 +52,7 @@ from flask import (
     request,
 )
 from flask.typing import ResponseReturnValue
+from spectree import Response as OpenApiResponse
 from werkzeug.utils import secure_filename
 
 from hardening import validate_config
@@ -61,7 +62,9 @@ from web_infra import (
     _safe_username,
     _save_config,
     _within,
+    spec,
 )
+from web_infra.openapi import UserConfigResponse, UsersListResponse
 
 if TYPE_CHECKING:
     from db.models import Candidate
@@ -87,6 +90,11 @@ def index() -> ResponseReturnValue:
 
 
 @users_bp.route("/api/users", methods=["GET"])
+@spec.validate(
+    resp=OpenApiResponse(HTTP_200=UsersListResponse),
+    skip_validation=True,
+    tags=["users"],
+)
 def list_users() -> ResponseReturnValue:
     """List the usernames of all saved candidate configs."""
     configs_dir = current_app.config["CONFIGS_DIR"]
@@ -124,6 +132,11 @@ def create_user() -> ResponseReturnValue:
 
 
 @users_bp.route("/api/users/<username>/config", methods=["GET"])
+@spec.validate(
+    resp=OpenApiResponse(HTTP_200=UserConfigResponse),
+    skip_validation=True,
+    tags=["users"],
+)
 def get_config(username: str) -> ResponseReturnValue:
     """Return one user's saved profile config (404 if the user is unknown).
 

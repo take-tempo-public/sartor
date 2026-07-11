@@ -2,15 +2,14 @@
 
 WHY: the kit-adoption mypy ``--strict`` ratchet reached its §6 exit (2026-07-10) — the
 categorical claim "every non-exempt production module is at full ``--strict``; only the
-Decision-7 exempt set (``tests/`` · ``evals/`` · ``scripts/`` · ``db/migrations/versions``)
-stays permissive" (docs/dev/kit-adoption-design.md §6; the pyproject strict-roster block
-comment). Charter **C-0** (docs/governance/charter.md) requires a categorical claim be
-enforced BY CONSTRUCTION, not by a one-time manual proof: without a gate, a new ``.py``
-added outside the exempt set and left off the strict roster would type-check under the
-permissive GLOBAL mypy config — ``mypy .`` would still print "Success", and the §6 claim
-would go silently stale (compliance-witness CW-118). This test reifies the §6-exit proof
-as a do-not-regress gate — the mypy-roster analogue of the two sibling KEEP gates
-(tests/test_route_containment_gate.py, tests/test_docstring_coverage_gate.py).
+Decision-7 exempt set stays permissive" (docs/dev/kit-adoption-design.md §6; the pyproject
+strict-roster block comment). Charter **C-0** (docs/governance/charter.md) requires a
+categorical claim be enforced BY CONSTRUCTION, not by a one-time manual proof: without a
+gate, a new ``.py`` added outside the exempt set and left off the strict roster would
+type-check under the permissive GLOBAL mypy config — ``mypy .`` would still print "Success",
+and the §6 claim would go silently stale (compliance-witness CW-118). This test reifies the
+§6-exit proof as a do-not-regress gate — the mypy-roster analogue of the two sibling KEEP
+gates (tests/test_route_containment_gate.py, tests/test_docstring_coverage_gate.py).
 
 HOW: parse the strict roster — the ``[[tool.mypy.overrides]]`` block carrying
 ``disallow_untyped_defs`` (NOT the ignore-missing-imports block) — from pyproject.toml via
@@ -21,12 +20,23 @@ covered by a roster entry under mypy's own per-module glob semantics (``pkg.*`` 
 mypy docs: ``mycode.foo.*`` matches ``mycode.foo``, ``mycode.foo.bar``, …). A module that
 escapes strict fails here even though ``mypy .`` stays green.
 
-SCOPE / EXEMPT SET: ``tests/`` · ``evals/`` · ``scripts/`` · ``db/migrations/versions/``
-(Decision-7). Note ``db/migrations/{env,_sqlite_check_constraint}.py`` are NOT under
-``versions/`` → in scope (rostered explicitly). The gate additionally asserts the exempt
-``migrations/versions`` tree is NOT matched by any roster entry — a guard against a future
-``db.*`` wildcard wrongly stricting the alembic version scripts (the exact db-glob trap the
-rung-5 lane avoided by listing db modules concretely).
+SCOPE / EXEMPT SET: ``tests/`` ONLY (Decision-7, AMENDED 2026-07-10,
+`chore/mypy-strict-tooling`, owner-directed v1.0.9 tooling-slice pull-in). The set
+originally also carved out ``evals/`` · ``scripts/`` · ``db/migrations/versions/``; all
+three were brought to full strict on this branch (72 measured errors: 22 scripts + 44 evals
++ 6 migrations/versions — entirely bare-generic dict/list parametrization, missing
+annotations, and `cast(...)`-wrapped `no-any-return`s) and are now covered by roster globs
+(``scripts.*``, ``evals.*``, ``db.migrations.versions.*``). ``tests/`` stays permissive —
+out of scope for this pull-in; a much larger, separately-scoped burn is deferred per owner
+direction. Note ``db/migrations/{env,_sqlite_check_constraint}.py`` were already in scope
+(rostered explicitly, not via a ``db.*``/``db.migrations.*`` wildcard) — that db-glob-trap
+avoidance (rung 5, kit-adoption-design.md §4) is still live wisdom even though
+``db.migrations.versions.*`` is now ALSO rostered: it is its OWN explicit glob entry, not
+swept in by a broader db wildcard, so a hypothetical future ``db.*`` entry would still be
+the wrong move (it would duplicate, not introduce, versions-tree coverage — the guard below
+now asserts the tree IS covered, and stays a canary against a `db.*` wildcard replacing the
+concrete `db.*` sibling entries, which is a different kind of drift than what it originally
+caught).
 
 SKIP: enumeration needs ``git ls-files``; when git is unavailable / this is not a git
 checkout the enumeration-based tests SKIP (the matcher + roster-parse teeth still run).
@@ -48,12 +58,17 @@ import tomllib
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 
-# Decision-7 exempt set (kit-adoption-design.md §6): path prefixes that stay permissive.
-_EXEMPT_PREFIXES = ("tests/", "evals/", "scripts/", "db/migrations/versions/")
+# Decision-7 exempt set (kit-adoption-design.md §6, amended 2026-07-10): path prefixes that
+# stay permissive. Now `tests/` only — `evals/`/`scripts/`/`db/migrations/versions/` were
+# brought to full strict on `chore/mypy-strict-tooling` (the tooling-slice pull-in).
+_EXEMPT_PREFIXES = ("tests/",)
 
 # Teeth thresholds: the enumeration must find the real surface, not a vacuous empty set.
+# Measured 2026-07-10 (post tooling-slice pull-in): 33 roster entries, 131 non-exempt
+# production modules (up from ~80 before scripts/evals/migrations-versions counted as
+# production) — both floors below, with headroom, not exact.
 _MIN_ROSTER_ENTRIES = 20
-_MIN_PRODUCTION_MODULES = 60
+_MIN_PRODUCTION_MODULES = 110
 
 
 def _strict_roster() -> list[str]:
@@ -126,8 +141,10 @@ def _production_modules() -> list[tuple[str, str]]:
 # --------------------------------------------------------------------------- #
 def test_enumeration_has_teeth() -> None:
     """No vacuous pass: the roster must be non-trivial and the module scan must find the
-    bulk of the ~80 non-exempt production module surface. An empty roster or a broken
-    enumeration would make the coverage assertion below pass for the wrong reason."""
+    bulk of the ~130 non-exempt production module surface (tests/ is the only exempt
+    prefix now — see the module docstring for the 2026-07-10 Decision-7 amendment). An
+    empty roster or a broken enumeration would make the coverage assertion below pass for
+    the wrong reason."""
     roster = _strict_roster()
     assert len(roster) >= _MIN_ROSTER_ENTRIES, (
         f"strict roster has only {len(roster)} entries (< {_MIN_ROSTER_ENTRIES}) — the "
@@ -180,17 +197,29 @@ def test_every_nonexempt_production_module_is_strict_rostered() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# 3. The exempt migrations/versions tree stays permissive (the db-glob trap).
+# 3. The migrations/versions tree IS strict-rostered (inverted 2026-07-10 —
+#    it left the Decision-7 exempt set on `chore/mypy-strict-tooling`).
 # --------------------------------------------------------------------------- #
-def test_exempt_migrations_versions_stay_permissive() -> None:
-    """``db/migrations/versions`` is in the Decision-7 exempt set and must NOT be
-    strict-rostered. Guards the rung-5 db-glob trap: a ``db.*`` / ``db.migrations.*``
-    wildcard would wrongly strict the alembic version scripts, so the db entries must
-    stay concrete."""
+def test_migrations_versions_is_strict_rostered() -> None:
+    """``db/migrations/versions`` was in the Decision-7 exempt set through 2026-07-10;
+    the tooling-slice pull-in (`chore/mypy-strict-tooling`) brought it to full strict via
+    its own explicit ``db.migrations.versions.*`` glob entry. This is the premise-reversal
+    of the original guard (which asserted the tree stayed OUT of the roster) — now it
+    asserts the opposite: the tree IS covered, so a future accidental removal of the
+    glob entry (silently returning the alembic version scripts to permissive typing while
+    ``mypy .`` still says Success) fails here first.
+
+    The db-glob-trap wisdom this test originally encoded stays live in a different shape:
+    ``db.migrations.versions.*`` must be its OWN explicit entry, not a side effect of a
+    broader ``db.*`` / ``db.migrations.*`` wildcard replacing the concrete sibling ``db.*``
+    entries (rung 5, kit-adoption-design.md §4) — collapsing those into a wildcard would
+    still be the wrong move even though the versions tree is now deliberately rostered."""
     roster = _strict_roster()
     sample = "db.migrations.versions.0001_initial_schema"
     matching = [e for e in roster if _covers(e, sample)]
-    assert not matching, (
-        f"Roster entr(y/ies) {matching} wrongly cover the exempt db/migrations/versions tree; "
-        "list db modules explicitly (never db.* / db.migrations.*)."
+    assert matching, (
+        "No roster entry covers db/migrations/versions — a regression of the 2026-07-10 "
+        "tooling-slice pull-in (kit-adoption-design.md §6 amendment). Add "
+        "'db.migrations.versions.*' back to the strict [[tool.mypy.overrides]] module list "
+        "in pyproject.toml."
     )

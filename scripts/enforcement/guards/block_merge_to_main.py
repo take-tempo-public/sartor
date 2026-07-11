@@ -54,6 +54,7 @@ import os
 import re
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from scripts.enforcement.gitutil import git_branch
 from scripts.enforcement.guards.result import GuardResult
@@ -124,7 +125,7 @@ def decide(command: str, invocation_cwd: str) -> GuardResult:
     return _wiki_freshness_result(invocation_cwd) or GuardResult.allow()
 
 
-def claude_check(payload: dict) -> GuardResult:
+def claude_check(payload: dict[str, Any]) -> GuardResult:
     """Claude PreToolUse adapter: extract `tool_input.command` + top-level `cwd`."""
     tool_input = payload.get("tool_input") or {}
     command = tool_input.get("command", "") or ""

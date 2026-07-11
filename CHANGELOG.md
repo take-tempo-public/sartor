@@ -13,6 +13,133 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)
+
+Wires [`spectree`](https://spectree.readthedocs.io/) into the Flask app to
+**emit** an OpenAPI spec — decorator-only, additive, zero request-validation,
+zero route-body edits. This reconciles the stale drift flagged in the
+`feat/fumadocs-site` docs-site lane below and in `docs/dev/RELEASE_ARC.md`
+Phase 4.9 (both claimed spectree "landed in v1.0.8" / "pulled into v1.0.8" —
+verified FALSE at the time; it had never been wired). It actually lands here,
+in **v1.0.9**, as **Phase 1 only** (spec emission — Fumadocs *rendering* that
+spec into a hosted HTTP-API reference page, the rest of kit Decision 2a's
+Layer B, remains a separate, later branch).
+
+- **New `web_infra/openapi.py`** — the shared `spec = SpecTree("flask", ...)`
+  instance (`mode="strict"` so only spectree-decorated routes appear in the
+  emitted spec, not all ~90 undecorated ones too; `annotations=False` since
+  every call site passes `resp=`/`skip_validation=` explicitly rather than
+  typed view-function params) plus the Pydantic response models for the 5
+  decorated routes, styled after `analyzer.py`'s permissive-base convention
+  (`model_config = ConfigDict(extra="allow")`).
+- **Decorated exactly 5 read-only GET routes** with
+  `@spec.validate(resp=Response(HTTP_200=<Model>), skip_validation=True,
+  tags=[...])`: `users.list_users`, `users.get_config`,
+  `corpus.experiences.list_experiences`, `applications.list_applications`,
+  `applications.get_application`. **Zero edits to any route function body** —
+  the load-bearing safety property; `list_experiences`/`list_applications`
+  model their bare-array-or-needs-onboarding-object success/empty union via a
+  `RootModel[list[X] | Y]`, safe to leave imperfect because
+  `skip_validation=True`.
+- **Decorator ORDER correction vs. the lane's original brief:** `@spec.validate`
+  must be the decorator closest to the function (applied first), with
+  `@<bp>.route(...)` as the outer decorator — the reverse order silently drops
+  the route from the spec (Flask's `url_map` captures whichever function object
+  existed at `@<bp>.route(...)` decoration time; the wrong order registers the
+  *undecorated* function, so spectree's `mode="strict"` never sees its
+  `_decorator` marker and excludes it). Verified empirically; documented in
+  `web_infra/openapi.py`'s module docstring.
+- **New `scripts/generate_openapi_spec.py`** — mirrors
+  `scripts/project_docs_to_mdx.py`'s standalone-generator style: builds its own
+  throwaway `create_app()` instance (temp-dir `Config`, no real
+  `configs/`/`resumes/`/`output/` writes), calls `spec.register(app)` on it,
+  and writes the cached `spec.spec` dict as pretty JSON to
+  `docs-site/openapi.json` — gitignored (a build artifact CI regenerates; that
+  CI wiring is a separate, later branch's job, per the docs-site lane's own
+  division of labor).
+- **New dependency**: `spectree[flask]>=2.0,<3.0` (`pyproject.toml`). Ships its
+  own `py.typed` marker — no `[[tool.mypy.overrides]] ignore_missing_imports`
+  entry needed.
+- **Tests**: `tests/test_openapi_spec.py` — a parity assertion per decorated
+  route (status + JSON body unchanged) plus a generator test asserting the
+  built spec contains all 5 expected paths. `tests/test_route_containment_gate.py`
+  and the `route-security-lint` hook both stay green with **zero edits** to
+  either registry — the falsifiable proof the security gate stayed untouched.
+- `docs/dev/RELEASE_ARC.md`: reconciled the Phase 4.9 / WS-3 "pulled into
+  v1.0.8" claims to point at this branch's actual v1.0.9 Phase-1 landing.
+
+### Added: spectree/OpenAPI Layer B, Phase 2 — render the spec in Fumadocs (`feat/spectree-fumadocs-render`)
+
+Renders the `docs-site/openapi.json` spec (Phase 1, above) as an **API
+reference** section of the hosted Fumadocs static-export site, and wires CI to
+regenerate + render it on every deploy. Completes kit Decision 2a's Layer B.
+
+- **New deps** (`docs-site/package.json`): `fumadocs-openapi@^11.1.1` +
+  `shiki@^4.3.1` — the version compatible with this site's pinned
+  `fumadocs-core@16.11.2` / `fumadocs-ui@npm:@fumadocs/base-ui@16.11.2`
+  (fumadocs-openapi 11.1.1's own peer range is `fumadocs-core@^16.10.0` /
+  `fumadocs-ui@^16.10.0`); confirmed via the npm registry before installing,
+  per this branch's STOP-point instruction not to force a fumadocs major bump.
+- **New `docs-site/scripts/generate-api-docs.mjs`** — a standalone generator
+  (mirrors `scripts/generate_openapi_spec.py` / `scripts/project_docs_to_mdx.py`'s
+  "builds its own instance" style): reads `docs-site/openapi.json`, calls
+  `createOpenAPI()` + `generateFiles({ per: 'operation', groupBy: 'tag', meta:
+  true })`, and emits MDX under `content/docs/api-reference/` grouped by the 3
+  spectree route tags (`users`/`applications`/`corpus`), each with its own
+  generated `meta.json`. Also appends exactly ONE nav entry (`"api-reference"`)
+  to the already-projected `content/docs/meta.json`'s `pages` array (the
+  low-risk nested approach — this script never edits
+  `scripts/project_docs_to_mdx.py`'s own L1 ordering logic).
+- **Reference-only rendering, by design**: `docs-site/src/components/api-page.tsx`
+  sets `playground: { enabled: false }` on `createOpenAPIPage()` — replaces the
+  interactive "try it" request builder with a static method+path badge.
+  Parameters, request/response schemas, TypeScript definitions, and
+  multi-language code-usage samples still render (all static, no live fetch).
+  A live playground would fire cross-origin requests at each visitor's own
+  `localhost:5000`, which is wrong for a static site documenting a local
+  desktop app — no proxy route was added, keeping the site's `output: 'export'`
+  static-export commitment intact.
+- **Render wiring**: `docs-site/src/lib/openapi.ts` (the runtime
+  `createOpenAPI()` instance, consumed via `openapi.preloadOpenAPIPage(page)`
+  at Next static-build time — resolved during `next build`'s
+  `generateStaticParams()` prerender, not at request time, so it stays
+  compatible with static export); `docs-site/src/app/docs/[[...slug]]/page.tsx`
+  adds an `OpenAPIPage` entry to its MDX `components` map; `docs-site/src/lib/source.ts`
+  adds `openapiPlugin()` (method-badge page-tree decoration only); `global.css`
+  imports `fumadocs-openapi/css/preset.css`.
+- **`.github/workflows/docs-deploy.yml`**: added a `python
+  scripts/generate_openapi_spec.py` step and a `npm run gen:api-docs` step,
+  both before `npm run build` — both are pure functions of `main` HEAD
+  (deterministic, no LLM, no network), so "merge = publish" still holds.
+- **`.gitignore`**: `docs-site/content/docs/api-reference/` — a build
+  artifact like the L1-projected MDX, same rationale.
+
+### chore: mypy `--strict` tooling slice — `scripts/` + `evals/` + `db/migrations/versions/` (`chore/mypy-strict-tooling`)
+
+- **Decision-7 amended** (kit-adoption-design.md §3/§6, owner-directed v1.0.9
+  pull-in, 2026-07-10): the mypy `--strict` ratchet's exempt set narrows from
+  `tests/`/`evals/`/`scripts/`/`db/migrations/versions` to **`tests/` only**.
+  Fixed the 72 measured `mypy --strict --warn-unreachable` errors this
+  surfaced (22 `scripts/` + 44 `evals/` + 6 `db/migrations/versions/`) —
+  entirely annotation-only: parametrized bare generics (`dict` →
+  `dict[str, Any]`, etc.), added missing param/return annotations, and a
+  handful of `cast(...)`-wrapped `no-any-return`s on `json.loads(...)`
+  boundaries. Zero behavior change, no prompt touched.
+- `pyproject.toml`: added `scripts.*`, `evals.*`, `db.migrations.versions.*`
+  to the strict `[[tool.mypy.overrides]]` roster (now 33 entries).
+  `db.migrations.versions.*` is its own explicit glob entry (not folded into
+  a `db.*` wildcard) — the alembic mako template already emits strict-clean
+  scaffolding, so the friction on future autogenerated revisions is
+  negligible.
+- `tests/test_mypy_strict_roster_gate.py`: `_EXEMPT_PREFIXES` narrowed to
+  `("tests/",)`; the migrations/versions-stays-permissive guard rewritten
+  into its premise-reversal (`test_migrations_versions_is_strict_rostered`
+  now asserts the tree **is** rostered); floor thresholds re-verified against
+  the new measured counts (33 roster entries, 131 non-exempt production
+  modules).
+- `tests/` stays deliberately permissive — a separately-scoped, much larger
+  burn (~3,252 errors measured) is deferred per owner direction.
+
 ### Docs: dev-tier depth verify (WS-B) + close the `docs/readme-icp-ladder` row (`docs/dev-home-depth-wsb`)
 
 - **WS-B verify-first pass** against settled v1.0.8 code (v1.0.9 Phase 6, item 2)
@@ -560,13 +687,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the self-host runbook (DNS, SFTP/SSH setup, manual-upload fallback).
 - `pyproject.toml` — `docs-site/` excluded from `ruff`/`mypy`/`interrogate`
   (a separate JS toolchain; see `docs-site/README.md` for its own dev loop).
-- **Deferred, not built this lane:** RELEASE_ARC.md's Phase 4.9 plan has
-  Fumadocs render an HTTP-API reference (Layer B) from an OpenAPI spec
-  `spectree` emits. `spectree` is **not present** in this codebase (zero
-  `.py` imports, absent from `pyproject.toml`) — the ARC's "pulled into
-  v1.0.8" claim is stale. Wiring `spectree` into the Flask route surface is
-  product code + a security-gated change, out of this docs lane's scope;
-  flagged for an owner decision.
+- **Deferred, not built this lane (STOP-AND-REPORT at the time):**
+  RELEASE_ARC.md's Phase 4.9 plan has Fumadocs render an HTTP-API reference
+  (Layer B) from an OpenAPI spec `spectree` emits. `spectree` was **not
+  present** in this codebase at this lane's HEAD (zero `.py` imports, absent
+  from `pyproject.toml`) — the ARC's "pulled into v1.0.8" claim was stale.
+  Wiring `spectree` into the Flask route surface was product code + a
+  security-gated change, out of this docs lane's scope; flagged for an owner
+  decision. **Resolved** — spec-emission (spectree Phase 1: 5 read-only GET
+  routes decorated, `web_infra/openapi.py` + `scripts/generate_openapi_spec.py`)
+  landed in v1.0.9 via `feat/spectree-openapi-emit` (see the `[Unreleased]`
+  entry above). Fumadocs actually *rendering* that spec remains a separate,
+  still-deferred branch.
 
 ## [1.0.8] — 2026-07-09
 

@@ -29,7 +29,7 @@ import json
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy.orm import Session
 
@@ -76,7 +76,7 @@ def validate_seed(seed: Any) -> None:
 
 def load_seed(path: str | Path) -> dict[str, Any]:
     """Read + validate a seed.json from disk. Raises on bad JSON or shape drift."""
-    seed = json.loads(Path(path).read_text(encoding="utf-8"))
+    seed = cast("dict[str, Any]", json.loads(Path(path).read_text(encoding="utf-8")))
     validate_seed(seed)
     return seed
 

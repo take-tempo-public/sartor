@@ -1,4 +1,4 @@
-"""seed bundled persona templates
+"""Seed bundled persona templates.
 
 Revision ID: 0002
 Revises: 0001
@@ -15,9 +15,11 @@ The build script (`scripts/build_bundled_templates.py:PRESETS`) is the
 canonical source for the template metadata; this migration mirrors it. If
 you add a new preset, update both places.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Any
 
 revision: str = "0002"
 down_revision: str | Sequence[str] | None = "0001"
@@ -27,7 +29,7 @@ depends_on: str | Sequence[str] | None = None
 
 # Mirrors scripts/build_bundled_templates.py:PRESETS. The two lists must stay
 # aligned manually; a test in tests/test_bundled_templates.py asserts this.
-BUNDLED_SEED_ROWS: list[dict] = [
+BUNDLED_SEED_ROWS: list[dict[str, Any]] = [
     {
         "name": "Classic Single-Column",
         "path": "personas/bundled/classic.docx",
@@ -73,6 +75,7 @@ BUNDLED_SEED_ROWS: list[dict] = [
 
 
 def upgrade() -> None:
+    """Insert the bundled persona_template rows (idempotent; skips existing paths)."""
     from datetime import datetime, timezone
 
     import sqlalchemy as sa
@@ -103,19 +106,22 @@ def upgrade() -> None:
             continue
         op.bulk_insert(
             persona_template,
-            [{
-                "candidate_id": None,  # bundled = available to every candidate
-                "name": seed["name"],
-                "path": seed["path"],
-                "description": seed["description"],
-                "source": "bundled",
-                "is_default": 0,  # candidate's own default override picks per role_tag
-                "created_at": now,
-            }],
+            [
+                {
+                    "candidate_id": None,  # bundled = available to every candidate
+                    "name": seed["name"],
+                    "path": seed["path"],
+                    "description": seed["description"],
+                    "source": "bundled",
+                    "is_default": 0,  # candidate's own default override picks per role_tag
+                    "created_at": now,
+                }
+            ],
         )
 
 
 def downgrade() -> None:
+    """Delete the bundled persona_template rows this migration seeded."""
     import sqlalchemy as sa
     from alembic import op
 

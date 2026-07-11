@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 from scripts.enforcement import gitutil
 from scripts.enforcement.guards.result import GuardResult
@@ -57,7 +58,7 @@ def decide(file_path: str, content: str, repo_root: Path) -> GuardResult:
     return GuardResult.allow()
 
 
-def claude_check(payload: dict, repo_root: Path) -> GuardResult:
+def claude_check(payload: dict[str, Any], repo_root: Path) -> GuardResult:
     """Claude PreToolUse adapter: extract `file_path` + the proposed `new_string`/`content`."""
     tool_input = payload.get("tool_input") or {}
     file_path = tool_input.get("file_path", "") or ""

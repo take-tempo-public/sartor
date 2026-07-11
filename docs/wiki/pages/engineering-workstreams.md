@@ -45,14 +45,22 @@
   half is also now shipped**: the `mypy --strict` ratchet reached its **§6 exit**
   (2026-07-10, the `chore/kit-mypy-strict-*` branch stack, ratchet rungs 4–8) — every
   non-exempt production module (all 81) carries the strict override; only the
-  Decision-7 exempt set (`tests/`/`evals/`/`scripts/`/`db/migrations/versions`) stays
-  permissive, and the exit is enforced **by construction** via
+  Decision-7 exempt set stayed permissive, and the exit is enforced **by
+  construction** via
   [`tests/test_mypy_strict_roster_gate.py`](../../../tests/test_mypy_strict_roster_gate.py)
-  rather than a one-time proof (closes compliance-witness CW-118). The typed
-  `context_set` spine (a typed model, not just strict-checked `dict`s) is the
-  remaining, still-open half — that stays the post-public **WS-2-full** (1.1.x
-  recurring; see [`docs/dev/kit-adoption-design.md`](../../dev/kit-adoption-design.md)
-  §6) `[synthesis]`.
+  rather than a one-time proof (closes compliance-witness CW-118). **The exempt set
+  then narrowed further** (2026-07-10, `chore/mypy-strict-tooling`, owner-directed
+  v1.0.9 tooling-slice pull-in): `scripts/`, `evals/`, and `db/migrations/versions/`
+  were brought to full `--strict` too (72 measured errors fixed — bare-generic
+  `dict`/`list` parametrization, missing param annotations, `cast(...)`-wrapped
+  `no-any-return`s; zero behavior change), leaving **`tests/` as the only remaining
+  exempt prefix** — the roster gate's `_EXEMPT_PREFIXES` narrowed to match, and a
+  new `test_migrations_versions_is_strict_rostered` asserts the versions tree
+  stays covered `[synthesis]`. The typed `context_set` spine (a typed model, not
+  just strict-checked `dict`s) is the remaining, still-open half — that stays the
+  post-public **WS-2-full** (1.1.x recurring; see
+  [`docs/dev/kit-adoption-design.md`](../../dev/kit-adoption-design.md) §6)
+  `[synthesis]`.
 
 ## WS-3 — test-suite engineering-design pass
 - **What:** a periodic design review of the ~955-test suite for efficiencies,

@@ -33,11 +33,13 @@ import tempfile
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from blueprints.assistant import _VECTOR_INDEX_DIR, _build_sources, _make_embedder
 from evals.runner import _get_client, _grade
 from recall import Scope, Tier, VectorSource, assemble
 from recall.models import Unit
+from recall.source import Source
 from scripts.vector_index_probe import QUESTIONS as DEFAULT_QUESTIONS
 
 logger = logging.getLogger(__name__)
@@ -73,7 +75,7 @@ better. Output strictly this JSON and nothing else:
 """
 
 
-def _unit_payload(u: Unit, snippet_chars: int) -> dict:
+def _unit_payload(u: Unit, snippet_chars: int) -> dict[str, Any]:
     """A judge-facing, PII-free view of one retrieved unit."""
     return {
         "citation": u.citation,
@@ -82,14 +84,23 @@ def _unit_payload(u: Unit, snippet_chars: int) -> dict:
     }
 
 
-def _retrieve(query: str, tiers: frozenset[Tier], sources: list, top_k: int) -> list[Unit]:
+def _retrieve(query: str, tiers: frozenset[Tier], sources: list[Source], top_k: int) -> list[Unit]:
     scope = Scope(allow_dev=True, enabled_tiers=tiers, token_budget=4000)
     return list(assemble(query, scope, sources).units)[:top_k]
 
 
 def _grade_set(
-    client, rubric_path: Path, question: str, units: list[Unit], snippet_chars: int
-) -> dict:
+    # `Any`, not `anthropic.Anthropic`: this module deliberately never imports
+    # `anthropic` directly (see the module docstring's "LLM-call boundary" —
+    # egress is reused via evals.runner._get_client/_grade, the allowlisted
+    # judge call-site); an `anthropic` import here would trip
+    # tests/test_egress_allowlist.py's static allowlist.
+    client: Any,
+    rubric_path: Path,
+    question: str,
+    units: list[Unit],
+    snippet_chars: int,
+) -> dict[str, Any]:
     payload = {
         "question": question,
         "retrieved": [_unit_payload(u, snippet_chars) for u in units],
@@ -140,7 +151,7 @@ def main() -> int:
         fh.write(_RELEVANCE_RUBRIC)
         rubric_path = Path(fh.name)
 
-    records: list[dict] = []
+    records: list[dict[str, Any]] = []
     logger.info("%-52s | base | +S3 |  Δ  | new S3 cites", "question")
     logger.info("-" * 88)
     try:

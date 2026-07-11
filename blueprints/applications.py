@@ -48,9 +48,11 @@ from typing import TYPE_CHECKING, Any, cast
 import anthropic
 from flask import Blueprint, current_app, jsonify, request
 from flask.typing import ResponseReturnValue
+from spectree import Response as OpenApiResponse
 
 from blueprints.corpus import _skill_to_dict, _tag_list
-from web_infra import _error_detail_payload, _get_client, _safe_username, _within
+from web_infra import _error_detail_payload, _get_client, _safe_username, _within, spec
+from web_infra.openapi import ApplicationDetail, ApplicationsListResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -98,6 +100,11 @@ def _application_summary_dict(
 
 
 @applications_bp.route("/api/users/<username>/applications", methods=["GET"])
+@spec.validate(
+    resp=OpenApiResponse(HTTP_200=ApplicationsListResponse),
+    skip_validation=True,
+    tags=["applications"],
+)
 def list_applications(username: str) -> ResponseReturnValue:
     """Return all applications for this candidate, newest-first by updated_at.
 
@@ -195,6 +202,11 @@ def list_applications(username: str) -> ResponseReturnValue:
 
 
 @applications_bp.route("/api/applications/<int:application_id>", methods=["GET"])
+@spec.validate(
+    resp=OpenApiResponse(HTTP_200=ApplicationDetail),
+    skip_validation=True,
+    tags=["applications"],
+)
 def get_application(application_id: int) -> ResponseReturnValue:
     """Full detail for one application: metadata + runs + pending-proposal counts.
 

@@ -83,3 +83,6 @@ produce mechanical consistency `[synthesis]`.
 - [[governance-extraction]] — extends "consistency tracks enforcement" to the vision itself.
 - [[route-surface]] — the hook-guarded security gate (the headline "enforced" example), at HEAD.
 - [[deterministic-llm-boundary]] — the LLM-instrumentation consistency win, in code.
+- [[openapi-api-reference]] — a later instance of the same pattern: `mode="strict"` +
+  a 5-path self-check keep the OpenAPI spec from silently over- or under-claiming
+  route coverage.

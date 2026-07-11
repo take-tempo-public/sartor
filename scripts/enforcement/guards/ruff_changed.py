@@ -13,6 +13,7 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+from typing import Any
 
 from scripts.enforcement import gitutil
 from scripts.enforcement.guards.result import GuardResult
@@ -21,10 +22,21 @@ _GIT_COMMIT_RE = re.compile(r"\bgit\s+commit\b")
 
 
 def _run_ruff(mode: str, files: list[str]) -> tuple[bool, str]:
-    """Run `python -m ruff <mode> [--check] <files>`; returns (ok, combined_output)."""
+    """Run `python -m ruff <mode> [--check] --force-exclude <files>`; returns (ok, output).
+
+    `--force-exclude` matters here specifically: ruff's default (`force-exclude = false`)
+    ignores `[tool.ruff] exclude`/`extend-exclude` for explicitly-named file arguments — it
+    only applies excludes during its OWN directory-recursion discovery. Passing individual
+    staged paths (as this guard does) is exactly that explicit-argument case, so without
+    this flag a staged edit to an excluded path (e.g. `db/migrations/versions/*.py`) would
+    lint/format-check *inside* a tree the committed config deliberately excludes tree-wide —
+    diverging from the plain `ruff check .` / `ruff format --check .` gate this guard's
+    docstring says it mirrors. `--force-exclude` makes both paths agree.
+    """
     args = [sys.executable, "-m", "ruff", mode]
     if mode == "format":
         args.append("--check")
+    args.append("--force-exclude")
     args.extend(files)
     result = subprocess.run(  # noqa: S603 - fixed argv (interpreter + ruff + trusted staged paths)
         args,
@@ -63,7 +75,7 @@ def check_files(files: list[str]) -> GuardResult:
     return GuardResult.allow()
 
 
-def claude_check(payload: dict) -> GuardResult:
+def claude_check(payload: dict[str, Any]) -> GuardResult:
     """Claude PreToolUse adapter: only act on `git commit` Bash invocations."""
     tool_input = payload.get("tool_input") or {}
     command = tool_input.get("command", "") or ""
