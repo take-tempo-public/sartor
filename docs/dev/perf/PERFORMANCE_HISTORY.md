@@ -15,7 +15,7 @@
 > 2026-05-06 → 2026-06-02.** Numbers below are p50 unless noted; reproduce with
 > the snippet in [Provenance](#provenance). **This window predates both the
 > Sonnet-5 model upgrade (2026-07-05) and the frozen-composition
-> re-architecture (2026-07-06) — see [Population eras](#population-eras-px-39)
+> re-architecture (2026-07-06) — see [Population eras](#population-eras-px-39--read-every-number-above-against-its-era)
 > before citing any number below as "current."**
 
 ---
@@ -143,7 +143,7 @@ itself, satisfy the real-corpus ask below.
 
 **Cache cutover, not a regression.** Don't read a cache-miss spike right at
 the 2026-07-05/06 boundary as new coherence trouble: this project's own
-precedent (the `.2`→`.3` split-#2 cache break + reclaim, [above](#6-r1-cache-reclaim-2026-06-013---fix-the-regression-for-free))
+precedent (the `.2`→`.3` split-#2 cache break + reclaim, [above](#6-r1-cache-reclaim-2026-06-013--fix-the-regression-for-free))
 already establishes that a system-prompt/model change resets the
 prefix-cache once. The re-verification for this row
 (`docs/dev/reviews/2026-07-efficiency/px-staleness-reverify-2026-07-07.md`,
