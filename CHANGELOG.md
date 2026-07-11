@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.9] — 2026-07-10
+
 ### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)
 
 Wires [`spectree`](https://spectree.readthedocs.io/) into the Flask app to
@@ -699,6 +701,12 @@ regenerate + render it on every deploy. Completes kit Decision 2a's Layer B.
   landed in v1.0.9 via `feat/spectree-openapi-emit` (see the `[Unreleased]`
   entry above). Fumadocs actually *rendering* that spec remains a separate,
   still-deferred branch.
+  **Correction (2026-07-10):** this is now stale — the Fumadocs render
+  (Layer B, Phase 2) **LANDED** via `c8899fd` in this same v1.0.9 pull-in
+  train; see the "spectree/OpenAPI Layer B, Phase 2 — render the spec in
+  Fumadocs" Added entry under `[1.0.9]` above. The prose above is retained
+  as the historical record of what was deferred at `feat/fumadocs-site`'s
+  authoring time.
 
 ## [1.0.8] — 2026-07-09
 

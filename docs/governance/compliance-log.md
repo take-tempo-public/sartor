@@ -168,3 +168,45 @@
 - **Note:** the FLAG was a by-construction-enforcement gap, not a false claim — closed by building the
   missing gate on-branch before the manifest, not deferred past the merge. Full stack gated per tip
   (ruff/format ✓ · mypy 298→299 · pytest **1951**, no flaky fired across all 6 suite runs).
+
+## 2026-07-10 — v1.0.9 pre-tag witness (`release/v1.0.9-prep` @ `0ea88f0`)
+
+- **Window:** `main` (`0ea88f0` — the "Merge v1.0.9 pull-in train" commit: mypy-strict tooling +
+  spectree OpenAPI Layer B + wiki refresh). The pre-tag drift read over the assembled v1.0.9 tree,
+  cross-read against [`charter.md`](charter.md) (C-0, C-6), `RELEASE_ARC.md`, `CHANGELOG.md`,
+  `decisions.md`, `kit-adoption-design.md`, git history, and `docs/wiki/` provenance at the pinned sha.
+- **Counts:** FLAG 2 · WATCH 1 · AFFIRM 6 · 0 withheld (cap 12).
+- **Gate verdict:** **needs attention** (2 FLAGs) — both status/index drift, **resolved on
+  `release/v1.0.9-prep` before the tag**; does not block the (owner-gated) tag.
+- **FLAG — CW-126 (CLOSED this branch):** self-contradiction in the release notes — `CHANGELOG.md`'s
+  `feat/fumadocs-site` note (~:698-701) and `RELEASE_ARC.md` (:1230-1231, :1258-1259) all still said
+  Fumadocs *rendering* the OpenAPI spec (Layer B, Phase 2) "remains a separate, still-deferred / later
+  branch." FALSE — the render **landed** via `c8899fd` in this same v1.0.9 train (the CHANGELOG
+  "spectree/OpenAPI Layer B, Phase 2 — render the spec in Fumadocs" Added entry). Reconciled all three
+  spots with dated `Correction (2026-07-10)` annotations pointing at `c8899fd`; historical prose retained.
+- **FLAG — CW-127 (CLOSED this branch):** Decision-7 (KIT-7) was amended 2026-07-10
+  (`chore/mypy-strict-tooling`, `kit-adoption-design.md` §6) — the mypy `--strict` exempt set narrowed
+  from `tests/`/`evals/`/`scripts/`/`db/migrations/versions` to `tests/` only — but the amendment never
+  reached the decision index (`decisions.md:46` still stated the original four-tree set) nor the
+  `RELEASE_ARC.md` WS-2-full recurring-workstreams note (:1374-1383). `decisions.md`'s own contract is
+  "superseded, not edited." Reconciled: added a dated **KIT-7a** superseding row to `decisions.md` and a
+  `Correction (2026-07-10)` pointer to the WS-2-full note. (The primary "Type hardening" §Phase 4.9 note
+  was already correct — left untouched.)
+- **WATCH — CW-128 (tracked):** the `RELEASE_CHECKLIST.md` Carry-forward ledger open count sits at **7**,
+  nearing the **~8-10** W-1.4 reduction-sprint trigger. Not drift — a capacity signal; flagged so the
+  next close-out considers a reduction pass before it crosses the threshold.
+- **AFFIRM:** mypy strict `[[tool.mypy.overrides]]` roster is exactly **33** entries, matching the
+  CHANGELOG claim (`scripts.*`/`evals.*`/`db.migrations.versions.*` added), `tests/test_mypy_strict_roster_gate.py`
+  green · spectree wiring is **additive** — decorator-only, `skip_validation=True`, zero route-body
+  edits; `tests/test_route_containment_gate.py` + `route-security-lint` green with zero registry edits ·
+  **C-6 deterministic-leaf** holds for `web_infra/openapi.py` — no LLM call / no `analyzer` import;
+  `tests/test_web_infra_is_leaf.py` green · **PROMPT_VERSION** correct/unbumped — no prompt text / no
+  `analyzer.py` persona-constant change in the v1.0.9 train; each CHANGELOG entry's "PROMPT_VERSION
+  untouched" claim accurate · **wiki provenance coherent** — `.last_ingest_sha` advanced
+  `e785e539`→`c8899fd` on this train (`docs/wiki/log.md`); `scripts/wiki_freshness.py` prints OK ·
+  **version/tag discipline** — `pyproject.toml` bumped 1.0.8→1.0.9, `CHANGELOG.md` `[Unreleased]` cut to
+  `[1.0.9] — 2026-07-10` (em-dash convention) with a fresh empty `[Unreleased]` re-seeded; not yet
+  tagged (owner does that).
+- **Note:** both FLAGs were status/index drift (stale "still deferred" prose + an un-propagated decision
+  amendment), not false current-state claims — resolved on `release/v1.0.9-prep` before the tag, not
+  deferred past it.
