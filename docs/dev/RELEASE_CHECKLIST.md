@@ -458,7 +458,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       profile/website scrape), dropping the phantom "pasted-JD-URL fetch" class — `jd_url` is
       provenance-only, never fetched (verified against `scraper.py`; corroborated by the PX-08 gate);
       `vision.md` / `README.md` were already two-class-correct, left as-is. **PX-05** (`F-sec-11`, P1/S-1):
-      the stale `Cooksey/resume` disclosure channel repointed to `amodal1/sartor` in `CODE_OF_CONDUCT.md`
+      the stale `Cooksey/resume` disclosure channel repointed to `take-tempo-public/sartor` in `CODE_OF_CONDUCT.md`
       + `.github/ISSUE_TEMPLATE/config.yml`. **PX-07** (`F-qe-rel-08` / `F-sec-07`; D-4 + P-3): the two
       hard human SLAs in `SECURITY.md` + `CODE_OF_CONDUCT.md` softened to best-effort. **Fold-in**
       (owner-authorized): the same stale `Cooksey/resume` target in `CONTRIBUTING.md` (`cd resume`),
@@ -521,7 +521,7 @@ reduction sprint at ~8–10 open items, and clear before adding. The full
 per-item addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
 
-- [ ] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
+- [x] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
       `scripts/wiki_freshness.py:drift_count` excludes only `docs/wiki/`, not `docs-site/`.
       But the Fumadocs static-export tree under `docs-site/` is an **L3 projection** of L1 (like
       the wiki itself), not a wiki *source* — its churn doesn't make the wiki stale. During the
@@ -535,6 +535,11 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       _(discovered: v1.0.9 stream, 2026-07-10, spectree/mypy pull-in train; open count 6 → 7.)_
       **→ Own small branch, low priority** — a correctness fix to gate scope; no urgency (the
       real-refresh path works). Fold in next time `wiki_freshness.py` is touched.
+      **→ RESOLVED (2026-07-11, chore/freshness-scrub):** `drift_count` now also excludes
+      `docs-site/`, alongside the pre-existing `docs/wiki/` exclusion;
+      `tests/test_wiki_freshness_gate.py::TestWikiFreshnessUnit::test_docs_site_changes_excluded_from_drift`
+      pins the new exclusion. Verified against this repo's actual HEAD via
+      `python scripts/wiki_freshness.py` (see lane report for before/after counts).
 
 - [ ] **PyPI wheel not installable — data files not packaged** — **RESOLVED-PENDING-PUBLISH
       2026-07-07 (`fix/packaging-install`); left open only for the still-blocked
@@ -1817,8 +1822,8 @@ first follow-up release.
       ready to push the v1.1.0 public-release tag**; the repo stays
       local-only until then (no `origin` remote configured). Action at the
       v1.1.0 cut: create the GitHub repo (public, name `sartor`, under
-      `amodal1`), `git remote add origin
-      git@github.com:amodal1/sartor.git`, push `main` and the
+      `take-tempo-public`), `git remote add origin
+      git@github.com:take-tempo-public/sartor.git`, push `main` and the
       release tag, then verify that `pyproject.toml` Homepage /
       Repository / Issues / Changelog URLs and `README.md`/
       `docs/install.md` clone instructions all resolve.

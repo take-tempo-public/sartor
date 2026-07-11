@@ -30,6 +30,30 @@ documented (not re-pinned) the dated-Haiku-vs-undated-Sonnet subagent model-pin 
 in `docs/dev/decisions.md`. AGENTS.md remains a complete standalone contract — no
 guardrail moved to a Claude-only file.
 
+### Fixed — freshness-scrub: wiki-freshness `docs-site/` over-count + doc drift (`chore/freshness-scrub`)
+
+Docs/tooling-only; no code path outside `scripts/wiki_freshness.py` touched, no dep/migration/prompt change.
+
+- **Wiki-freshness gate `docs-site/` exclusion** (Carry-forward ledger #1). `scripts/wiki_freshness.py:drift_count`
+  excluded only `docs/wiki/` from the merge-blocking drift count; the Fumadocs static-export tree under
+  `docs-site/` is an L3 *projection* of the wiki (like `docs/wiki/` itself), not a wiki source, so its churn
+  must not count as drift. Now excludes `docs-site/` alongside `docs/wiki/`; new
+  `tests/test_wiki_freshness_gate.py::TestWikiFreshnessUnit::test_docs_site_changes_excluded_from_drift`
+  pins the exclusion.
+- **Baked-in absolute-path scrub.** Genericized out-of-project absolute paths left in tracked docs:
+  `docs/dev/RELEASE_ARC.md` (`C:\Users\iam\...` reference-doc rows → `%USERPROFILE%\...`),
+  `docs/dev/ORCHESTRATION_PLAYBOOK.md` (`C:\Dev\sartor-e2e` → `../sartor-e2e`), and a comment in
+  `tests/test_enforcement_core.py`. Path genericization only — no reword of sign-off-gated prose.
+- **Owner-handle/repo scrub, files-only** (no git-history rewrite). `amodal1/sartor` → `take-tempo-public/sartor`
+  in `CHANGELOG.md` (this file's own historical entries) and `docs/dev/RELEASE_CHECKLIST.md`; `amodal-open` →
+  `take-tempo-public` in `docs/dev/decisions.md` and `docs/dev/kit-adoption-design.md`. Left untouched:
+  `pyproject.toml`'s `authors = [{ name = "amodal1" }]` (author attribution, owner decision separately) and
+  everything under `docs/dev/reviews/**` (pinned historical review artifacts).
+- **Stale `Dockerfile` comment.** The "wheel does not yet ship those data dirs" follow-up landed
+  (`fix/packaging-install`, Carry-forward ledger #2) — the wheel now ships templates/static/personas/wiki via
+  package-data. Comment reconciled: the image still installs editable from `/app` (unchanged behavior), but
+  the wheel-can't-ship claim is no longer accurate and has been corrected.
+
 ## [1.0.9] — 2026-07-10
 
 ### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)
@@ -4183,7 +4207,7 @@ the public-facing security / governance docs with what the tool actually does.
   unchanged. Corroborated by the PX-08 egress allowlist gate.
 - **PX-05 — disclosure channel repointed** (`F-sec-11`, P1 / S-1). Conduct / vulnerability
   reports routed to a stale `Cooksey/resume` GitHub advisories inbox; corrected to the canonical
-  `amodal1/sartor` in `CODE_OF_CONDUCT.md` and `.github/ISSUE_TEMPLATE/config.yml`.
+  `take-tempo-public/sartor` in `CODE_OF_CONDUCT.md` and `.github/ISSUE_TEMPLATE/config.yml`.
 - **PX-07 — human SLAs softened** (`F-qe-rel-08` / `F-sec-07`; charter D-4 + P-3). The hard
   "5 business days / 30 days" promises in `SECURITY.md` and `CODE_OF_CONDUCT.md` are reworded to
   best-effort intent (no guaranteed timeline) for a solo project. Machine gates unchanged.

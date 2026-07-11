@@ -132,6 +132,22 @@ class TestWikiFreshnessUnit:
         assert ok
         assert drift == 0
 
+    def test_docs_site_changes_excluded_from_drift(self, tmp_path: Path) -> None:
+        """`docs-site/` is the Fumadocs static export — an L3 projection of the wiki, not a
+        wiki source (Carry-forward ledger #1). Its churn must not count as wiki drift, same
+        as `docs/wiki/` itself."""
+        repo, _sha = _make_repo_with_wiki(tmp_path, drift_file_count=0)
+        docs_site = repo / "docs-site" / "content"
+        docs_site.mkdir(parents=True)
+        for i in range(10):
+            (docs_site / f"page_{i}.mdx").write_text(f"projected page {i}\n", encoding="utf-8")
+        _git(["add", "."], cwd=repo)
+        _git(["commit", "-q", "-m", "docs-site regeneration"], cwd=repo)
+
+        ok, drift = _wiki_freshness.check(repo)
+        assert ok
+        assert drift == 0
+
 
 class TestWikiFreshnessMain:
     """The CLI's exit code follows `check()`."""

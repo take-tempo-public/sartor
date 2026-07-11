@@ -81,7 +81,12 @@ def last_ingest_sha(repo_root: Path = REPO_ROOT) -> str | None:
 
 
 def drift_count(repo_root: Path = REPO_ROOT, sha: str | None = None) -> int | None:
-    """Tracked files changed since the checkpoint, excluding `docs/wiki/` itself.
+    """Tracked files changed since the checkpoint, excluding `docs/wiki/` and `docs-site/`.
+
+    `docs-site/` is the Fumadocs static export — an L3 *projection* of the wiki (like
+    `docs/wiki/` itself), not a wiki source. Its churn (generated/build-adjacent files)
+    must not count as wiki drift, so it is excluded alongside `docs/wiki/` (Carry-forward
+    ledger #1, `docs-site/` over-count).
 
     None when there is no real baseline (see `last_ingest_sha`) or the git diff itself fails
     (not a git checkout, checkpoint SHA not reachable) — callers treat None as "can't judge,
@@ -97,7 +102,7 @@ def drift_count(repo_root: Path = REPO_ROOT, sha: str | None = None) -> int | No
     return sum(
         1
         for line in result.stdout.splitlines()
-        if line.strip() and not line.startswith("docs/wiki/")
+        if line.strip() and not line.startswith("docs/wiki/") and not line.startswith("docs-site/")
     )
 
 

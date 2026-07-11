@@ -68,7 +68,7 @@ Full record + rationale: [`kit-adoption-design.md`](kit-adoption-design.md) §3.
 | KIT-7 | mypy `--strict` end-state | **Strict everywhere except a named exempt set** (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`) |
 | KIT-8 | `uv` migration | **Out of scope** (stay pip/setuptools; translate commands) |
 
-Framing: **implement Sartor's deltas + flag what's promotable to `amodal-open`**
+Framing: **implement Sartor's deltas + flag what's promotable to `take-tempo-public`**
 (Sartor is the donor, not a blank canary) — [`kit-adoption-design.md`](kit-adoption-design.md) §1, §7.
 
 ### 2026-06-15 — Enforcement portability (security/quality hooks)

@@ -38,7 +38,7 @@ Public release = the **v1.1.0 tag, applied by the user** when the product is jud
 
 ## Key decisions (load-bearing for all phases)
 
-1. **Eval before R1.** All 25 items from `C:\Users\iam\.claude\research\resume-eval-2026-05\followup.md` checklist must be checked before any prompt engineering work starts.
+1. **Eval before R1.** All 25 items from `%USERPROFILE%\.claude\research\resume-eval-2026-05\followup.md` checklist must be checked before any prompt engineering work starts.
 2. **Pydantic migration.** 6 `*_REQUIRED_KEYS` frozensets in `analyzer.py` → Pydantic models. `ContextSet` TypedDicts in `hardening.py` stay as TypedDicts — internal contracts, not LLM boundary.
 3. **Promptfoo.** Wrap 3 anchor fixtures in Promptfoo YAML for CI diff table on prompt-change PRs.
 4. **MiniCheck + DeBERTa.** Belt+suspenders offline grounding scorers; eval-only, never in hot path. MiniCheck license documented in `CONTRIBUTING.md`.
@@ -1572,6 +1572,6 @@ moved **pre-public** into v1.0.8 and v1.0.7 respectively, so v1.1.0 ships with b
 | `evals/TUNING_LOG.md` | Baseline floors; prompt change history |
 | `docs/dev/AGENT_FAILURE_PATTERNS.md` | Failure patterns to avoid |
 | `docs/architecture.md` | Module map, LLM routing |
-| `C:\Users\iam\.claude\research\resume-eval-2026-05\followup.md` | 25-item Phase 1 checklist |
+| `%USERPROFILE%\.claude\research\resume-eval-2026-05\followup.md` | 25-item Phase 1 checklist |
 | `docs/dev/perf/R1_BENCHMARK_2026-05-26.md` | R1 diagnosis (Phase 2 start point) |
-| `C:\Users\iam\.claude\research\resume-eval-2026-05\report.md` | Tool recs (Promptfoo, MiniCheck, DeBERTa) |
+| `%USERPROFILE%\.claude\research\resume-eval-2026-05\report.md` | Tool recs (Promptfoo, MiniCheck, DeBERTa) |
