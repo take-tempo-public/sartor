@@ -38,6 +38,20 @@ product (assistant + self-documenting wiki + clean blueprints). The v1.0.5 items
 below are reconciled in place (shipped → `[x]`); still-open items are carried into
 v1.0.6 / v1.0.7 / v1.0.8 / v1.1.0 as noted.
 
+### v1.1.0 debt-burn train (conductor, 2026-07-11) — plan of record
+
+The pre-public `[AGENT]`-debt burn runs as a 7-lane / 3-wave Opus-conductor
+merge train (Sonnet worktree lanes → serialized rebase chain → one owner
+confirm per train), detailed in
+[`RELEASE_ARC.md`](RELEASE_ARC.md) §"v1.1.0 debt-burn train" (17 locked owner
+decisions + the lane/wave map). **Base:** `main` @ `904fe8d` (v1.0.9 tagged
+locally, tag HELD/unpushed — do not push it: it would fire PyPI/GHCR publish
+early). **Targets:** Carry-forward ledger items **#1, #5, #6, #7** + the ledger
+**#2** `[AGENT]` residuals (SARTOR_HOME data dir, py311 floor); the PyPI publish
+(#2), citation viewer (#3), and grounding calibration (#4) stay
+`[HUMAN]`/deferred. Lanes mark their own ledger items resolved on-branch
+pre-merge; this row closes when the train merges and the owner tags v1.1.0.
+
 ### v1.0.7 → v1.0.8 — ordered sprint sequence (planned 2026-06-15)
 
 > The two-epic plan from the 2026-06-15 release-planning session — **the ordered "what's
