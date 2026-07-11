@@ -1050,6 +1050,21 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       is logged under the "Grounding / hallucination metric" ledger item above, not
       restated here.
 
+      **→ Update (2026-07-11, `feat/ux-cohesion`, v1.1.0 Wave 2 Lane UX):** the design-
+      system remainder landed — dec 1 sentence-case app-wide, dec 2 the one ~150ms
+      modal fade, dec 3 Phosphor vendored skill-icon chips (glyph→concept mapping
+      owner-review-before-merge), dec 4 the state-comm two-tier (`_setBusy` audit +
+      the new `.btn-pending` pulse), dec 5 the Compose autosave "Saved" toast, dec 6
+      the skills denial data-model (reversible soft-tombstone, replacing the old
+      hard-delete-on-deny; un-deny via `PUT is_active=true`) + the denied-skills
+      collapsible lane, dec 7 the compact prior-application card (JD snippet + per-run
+      status + actions moved into the detail modal). **PX-51** (style.css
+      duplicate-cascade collapse) is **DEFERRED** — flagged HIGH RISK in the branch
+      brief, and several decisions above already had to edit rules living inside the
+      duplicate "restyle" block this item would collapse; left for a follow-up branch,
+      no functional effect from deferring. See `CHANGELOG.md` `[Unreleased]` "UX
+      Cohesion Epic" for the full per-decision detail.
+
 #### Resolved
 
 - [x] **`docs/readme-icp-ladder` (v1.0.9 Phase 6, item 1)** — RESOLVED, already on

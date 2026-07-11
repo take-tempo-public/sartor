@@ -257,7 +257,7 @@ class Personas:
     OWNED_GRID = "#personaOwnedGrid"
     # Wave 2 recruiter tier (UX review F-16) — the per-owned-card copy action
     # + its openFormModal candidate picker (shared #formModal, see Compose).
-    COPY_BUTTON_NAME = "COPY TO CANDIDATE"
+    COPY_BUTTON_NAME = "Copy to candidate"
     COPY_TARGET_SELECT = "#formModal_username"
 
     @staticmethod

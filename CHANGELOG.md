@@ -69,6 +69,95 @@ and [`docs/dev/reviews/2026-07-e2e-run-health-review.md`](docs/dev/reviews/2026-
   This is a small down payment, not the full field-level authoring pass the
   finding calls for.
 
+### UX Cohesion Epic — design-system pass (`feat/ux-cohesion`, v1.1.0 Wave 2 Lane UX)
+
+The design-system remainder of the `docs/dev/reviews/2026-07-ux-round2-findings.md`
+epic (Wave A's decision-free quick wins already landed on `main`). Owner decisions 1–7;
+see `docs/dev/RELEASE_ARC.md` "UX Cohesion Epic" for the registration.
+
+- **Sentence case app-wide (dec 1, G5)** — retired ALL-CAPS chrome. `static/style.css`:
+  all `text-transform: uppercase` rules flipped to `none` app-wide (39 of 40 — the one
+  exception, `.preview-rendered h2`, governs the RENDERED RÉSUMÉ DOCUMENT's own section
+  headers inside the live preview, a document-typography choice, not app chrome; kept
+  uppercase deliberately). `static/app.js` + `templates/index.html`: every hardcoded
+  ALL-CAPS button/badge/label string converted to sentence case (`PENDING`→`Pending`,
+  `+ ADD TITLE`→`+ Add title`, `← BACK`→`← Back`, etc.) — many were literal caps typed
+  in source (not CSS-driven), left over from the pre-sartor. "LCARS era" alongside
+  already-sentence-case newer code; three `.toUpperCase()` call sites (application
+  status chips, the Compose "find more bullets" toggle) switched to the existing
+  `_toSentence()` helper so they stop force-casing dynamic values (including, in one
+  case, the user's own company name).
+- **One ~150ms modal fade (dec 2, G1)** — `.cb-modal`/`.cb-modal-content` in
+  `static/style.css`: replaced the open-only 120ms `cb-modal-in` keyframe (no close
+  fade at all) with a symmetric `transition`-based fade driven by the same `.hidden`
+  class toggle every modal already uses — `visibility` (not `display`) carries the
+  hidden state so it's transitionable; a `display:flex!important` on `.cb-modal.hidden`
+  defeats the global `.hidden{display:none!important}` utility rule that would
+  otherwise snap it invisible before the fade could play. New `--t-modal: 150ms` token.
+  Covers every `.cb-modal` surface app-wide (helpModal, appDetailModal, formModal,
+  errorModal, assistantModal, changesModal, editModal, cbConfirmModal,
+  refinementScopeModal, diagnosticsModal) with one change; the Settings drawer's
+  distinct slide-in animation was left alone (different metaphor).
+- **Phosphor icons, vendored inline SVG (dec 3, G3/Co1)** — skills-icon priority: a new
+  `.skill-chip` component (glyph-on-colored-background badge + name, in a
+  category-tinted pill) now renders on every skill row (Career Corpus editor, Compose
+  skill list, pending-review and denied lanes in both). SVGs are vendored inline
+  (Phosphor Icons, MIT license, phosphoricons.com — fetched from
+  `raw.githubusercontent.com/phosphor-icons/core`, "duotone" weight), not a new
+  npm/pip dependency. **Glyph→concept mapping is owner-review-before-merge** (see the
+  branch report): language→code, framework→stack, platform→cloud,
+  methodology→flow-arrow, domain→globe, uncategorized/unrecognized→gear (category is
+  free-text; unrecognized values fall back safely). New color tokens `--violet-soft`,
+  `--neutral-soft`.
+- **State-communication two-tier (dec 4, G2/G4/G8)** — (a) the "scrape/fetch" profile-
+  content action (`fetchProfileContent`, PX-02) now drives `_setBusy` like
+  analyze/generate/clarify/cover-letter do (it previously had only a local status
+  line); the Compose LLM actions (tailor/suggest skills, draft summary, draft
+  gap-fill) were audited and deliberately left OFF `_setBusy` — they already have
+  Compose's own equivalent always-visible "Updating suggestions…" chip
+  (`_markComposeBgReload`/`#composeBgChip`), and adding the app-wide "don't navigate
+  away" banner to every quick sequential Compose click would be louder than the
+  "subtle" mandate intends. (b) every small in-flight button (the four Compose actions
+  above, "Suggest skills from my corpus", "Get follow-up questions",
+  "+ Generate cover letter", the profile-fetch button) now gets a shared subtle pulse
+  (new `.btn-pending` class + `_setBtnPending()`/`_clearBtnPending()` helpers in
+  `static/app.js`) on top of its existing disable + "…"-style relabel — two of these
+  (iterate-clarify, cover-letter generate) previously disabled with NO relabel at all.
+- **Save toast (dec 5, Co5)** — Compose's debounced composition autosave
+  (`_scheduleCompositionSave`) toasted only on FAILURE before; it now also toasts
+  "Saved" on success, using the same `_toast()` idiom every other save confirmation in
+  the app already uses.
+- **Skills redesign (dec 6, C1)** — **data-model change:** `DELETE /api/skills/<id>`
+  (`blueprints/corpus/skills.py`) previously hard-deleted a denied (pending,
+  `llm_proposed`) suggestion, freeing its name for a future suggest-pass to silently
+  re-propose it — the opposite of "denied". It now ALWAYS soft-tombstones
+  (`is_active=0`, `is_pending_review=0`, row kept), unifying deny and retire into one
+  outcome: the name stays excluded from every future dedup scan (suggest-from-corpus
+  already scans all rows regardless of `is_active`), and it is reversible — `PUT
+  /api/skills/<id> {"is_active": true}` un-denies it (new field on `update_skill`,
+  mirroring the existing title/bullet Restore idiom). The Career Corpus tab's Skills
+  editor gained a collapsible "Denied / retired skills" lane (new
+  `_renderDeniedSkillRow` + `#skillsEditorDeniedDetails`) with a Restore button, plus a
+  reusable `.corpus-collapsible` wrapper (a generalized `.analysis-details`) applied to
+  both the Corpus and Compose bounded skills lists (C2 landed the scroll-bounds only;
+  this adds the deferred collapsible toggle on top).
+- **Compact prior-application cards (dec 7, G7)** — `_renderApplicationCard` now
+  renders ONLY a summary line (title/company) + a meta line (status · pending-review
+  count · date); the status-transition row (Mark submitted / Got interview / …) and
+  the retire/restore admin row moved into the existing click-to-open detail modal
+  (`_showApplicationDetail`), which also gains a collapsed-by-default JD snippet and a
+  per-run status list (`ats_roundtrip_status` — the closest existing concept to
+  "scores"; no new scoring concept was added). `GET /api/applications/<id>` now
+  returns `is_active` (needed by the modal to pick Retire vs Restore) — a new field on
+  the existing `ApplicationDetail` OpenAPI model, not a new route.
+- **PX-51 (style.css duplicate-cascade collapse) — DEFERRED, not landed.** Flagged
+  HIGH RISK in the branch brief; several of the decisions above (1, 2) already had to
+  edit rules living inside the ~780-line "restyle" duplicate block this item would
+  collapse, and attempting a full selector-by-selector merge on top of those
+  in-flight edits risked destabilizing everything else in this branch. No functional
+  effect from deferring it — the duplicate-cascade "later rule wins" footgun still
+  works correctly, just remains unre-architected. Left for a follow-up branch.
+
 ### Docs: agent-contract trim + corpus/pipeline dedup + affirm-and-protect notes (`docs/efficiency-px`)
 
 2026-07 efficiency review doc-only lane (PX-45, PX-49, PX-56 + decision-14 doc-only

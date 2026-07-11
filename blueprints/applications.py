@@ -266,6 +266,13 @@ def get_application(application_id: int) -> ResponseReturnValue:
                 "title": app_row.title,
                 "company": app_row.company,
                 "status": app_row.status,
+                # dec 7 (UX Cohesion Epic, compact-card redesign) — the
+                # retire/restore action moved from the roster card into this
+                # detail modal, which needs is_active to know which of the
+                # two to render (blueprints/corpus retire routes already
+                # expose the equivalent field the same way, e.g. Skill's
+                # _skill_to_dict).
+                "is_active": bool(app_row.is_active),
                 "jd_text": app_row.jd_text,
                 "jd_url": app_row.jd_url,
                 "jd_fingerprint": app_row.jd_fingerprint,

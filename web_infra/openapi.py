@@ -226,6 +226,9 @@ class ApplicationDetail(_PermissiveModel):
     title: str
     company: str | None = None
     status: str
+    # dec 7 (UX Cohesion Epic) — retire/restore moved from the roster card
+    # into this detail modal, which needs is_active to pick the right button.
+    is_active: bool = True
     jd_text: str | None = None
     jd_url: str | None = None
     jd_fingerprint: str | None = None

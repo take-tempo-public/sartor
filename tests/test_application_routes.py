@@ -1252,6 +1252,17 @@ class TestGetApplicationDetail:
         assert body["notes"] == "Check LinkedIn"
         assert body["sent_at"] is not None
         assert body["outcome_at"] is not None
+        # dec 7 (UX Cohesion Epic) — is_active rides the detail payload so the
+        # compact-card redesign's detail modal can pick Retire vs Restore.
+        assert body["is_active"] is True
+
+    def test_get_reflects_retired_is_active_false(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        client = app_app.app.test_client()
+        assert client.delete(f"/api/applications/{aid}").status_code == 200
+        body = client.get(f"/api/applications/{aid}").get_json()
+        assert body["is_active"] is False
 
 
 # ---------------------------------------------------------------------------
