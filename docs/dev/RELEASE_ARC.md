@@ -1229,6 +1229,9 @@ fix, not an ATS fix). See the findings doc's O1b deep-dive.
 >   It landed instead in **v1.0.9** via `feat/spectree-openapi-emit` — **Phase 1 only**
 >   (spec-emission, 5 read-only GET routes decorated); Fumadocs actually rendering the
 >   spec is still a separate, later branch.
+>   **Correction (2026-07-10):** the Fumadocs render (Layer B, Phase 2) **LANDED** via
+>   `c8899fd` in the v1.0.9 pull-in train — no longer a later branch; see CHANGELOG.md
+>   `[1.0.9]` "spectree/OpenAPI Layer B, Phase 2 — render the spec in Fumadocs".
 > - **paged.js engine replacement (B.13) → pulled pre-public** from §Post-public. A render-
 >   engine project (**design-spike first**); preview-fidelity only (PDF is Playwright-native,
 >   unaffected). Off both the v1.0.8 blueprint theme and the v1.0.9 docs theme → **owner to
@@ -1257,6 +1260,9 @@ Sequence (each its own branch, in dependency order):
    Phase 1 spec-emission only, via `feat/spectree-openapi-emit` (see CHANGELOG.md
    `[Unreleased]`). Fumadocs rendering that spec (the "+ renders..." half of this bullet)
    remains not built — a separate, later branch.**
+   **Correction (2026-07-10):** the "+ renders..." half now **LANDED** via `c8899fd` in the
+   v1.0.9 pull-in train (`feat/spectree-fumadocs-render`) — Layer B is complete; see
+   CHANGELOG.md `[1.0.9]` "spectree/OpenAPI Layer B, Phase 2".
 5. **`ci/doc-merge-gate`** — the doc gates (link-integrity / frontmatter+audience /
    D5 single-home / cite-resolution / wiki-freshness) + the `DOC-STATUS`-trigger check,
    extending `block-merge-to-main` + `wiki-lint`. **Last**, because merge=publish only
@@ -1376,8 +1382,12 @@ spine (WS-2-full's other half) stays **post-public** — not needed to claim str
   toward `strict = true` (per-module ratchet) + model the `context_set` contract as a
   typed spine. Builds on the v1.0.8 blueprint split. **Now Phase 2 of the kit-adoption
   arc** — the ratchet end-state + finite exit criterion are settled (strict everywhere
-  except `tests/`/`evals/`/`scripts/`/`db/migrations/versions`; see
-  [`kit-adoption-design.md`](kit-adoption-design.md) §6). **Split 2026-06-29 (owner):**
+  except `tests/` only — **Correction (2026-07-10):** KIT-7 was AMENDED this v1.0.9
+  train (`chore/mypy-strict-tooling`); the exempt set narrowed from
+  `tests/`/`evals/`/`scripts/`/`db/migrations/versions` to `tests/` only, so `scripts/`,
+  `evals/`, and `db/migrations/versions/` are now strict-rostered — see
+  [`kit-adoption-design.md`](kit-adoption-design.md) §6 + [`decisions.md`](decisions.md)
+  KIT-7a). **Split 2026-06-29 (owner):**
   the **`--strict` ratchet completion is pulled pre-public into v1.0.9** (to claim strict
   typing at launch — see §Phase 4.9); only the **typed `context_set` spine** remains
   post-public here.

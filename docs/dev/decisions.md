@@ -30,6 +30,16 @@ or the Carry-forward ledger until resolved.)_
 
 ## Settled decisions
 
+### 2026-07-10 — mypy `--strict` exempt set narrowed (supersedes KIT-7)
+
+Full record + rationale: [`kit-adoption-design.md`](kit-adoption-design.md) §6 (the
+2026-07-10 amendment record — `chore/mypy-strict-tooling`, owner-directed v1.0.9
+tooling-slice pull-in).
+
+| # | Decision | Resolution |
+|---|---|---|
+| KIT-7a | mypy `--strict` exempt set — **supersedes KIT-7** (2026-06-23, below) | Exempt set narrows from `tests/`/`evals/`/`scripts/`/`db/migrations/versions` to **`tests/` only**; the `scripts/`/`evals/`/`db/migrations/versions/` trees are now strict-rostered |
+
 ### 2026-06-23 — Agent-coding-practices kit adoption (8 decisions)
 
 Full record + rationale: [`kit-adoption-design.md`](kit-adoption-design.md) §3.
