@@ -1178,6 +1178,17 @@ plus the ledger-#2 `[AGENT]` residuals (B1 SARTOR_HOME data dir, B2 py311 floor)
 Ledger #2's PyPI publish, #3 (citation viewer, deferred), and #4's calibration
 half stay `[HUMAN]`/deferred.
 
+**Execution mode (owner, 2026-07-11): stacked waves, one final merge.** The
+three waves stack on UN-merged tips — Wave 2 branches from the Wave-1 assembled
+tip, Wave 3 from the Wave-2 tip — with NO per-wave merge to `main` (owner
+directive: keep moving, don't idle at per-wave checkpoints). The conductor
+full-gates each wave tip, then presents ONE final manifest for the owner's
+single `CLAUDE_CONFIRM_MERGE=1` confirmation of the whole chain. Trade-off
+accepted: later waves build on not-yet-reviewed earlier waves. Mid-lane owner
+approvals that do NOT gate a merge (glyph-mapping dec 3, content-cluster copy
+dec 15) are drafted-and-proceeded and surfaced async for review before the
+final merge; PX-46 (dec 16) stays off the chain (memory is outside the repo).
+
 **7 lanes, 3 waves** (partitioned by file-set so a wave's lanes don't collide;
 shared files — CHANGELOG, the ledger, pyproject — reconcile at the rebase step):
 
