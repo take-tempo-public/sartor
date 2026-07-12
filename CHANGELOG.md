@@ -54,9 +54,21 @@ user-facing Compose race the CI load exposed, and a docs-hosting bug.
   `expect().to_have_count`.
 - **OpenSSF Scorecard.** `ossf/scorecard-action@v2` doesn't resolve (no floating
   `v2` tag) → pinned `@v2.4.3`.
+- **numpy 2.5 broke `mypy .` on py3.12/3.13.** numpy 2.5's stubs use the PEP 695
+  `type X = …` statement, which mypy rejects under `python_version = "3.11"`
+  ("Type statement is only supported in Python 3.12 and greater"). Capped
+  `numpy<2.5` — a type-checking pin, not a runtime need (numpy 2.5 also dropped
+  Python 3.11, so the py3.11 job already resolved 2.4.6 and passed). Lift when the
+  supported-Python floor moves to 3.12 and `[tool.mypy] python_version` can follow.
+- **Enforcement-equivalence test failed on CI's shallow clone.**
+  `tests/test_enforcement_core.py` does `git show <OLD_SHA>:…` archaeology that
+  needs full history, but `actions/checkout` defaults to depth 1. Set
+  `fetch-depth: 0` on the quality job + a fixture skip-guard so the test degrades
+  gracefully on any shallow clone instead of hard-failing.
 
-No dependency or migration change; `PROMPT_VERSION` untouched (no prompt text
-changed — the Compose fix is client-side reload sequencing).
+`PROMPT_VERSION` untouched (no prompt text changed — the Compose fix is
+client-side reload sequencing). One dependency bound tightened (`numpy<2.5`, a
+type-checking pin); no migration change.
 
 ### Added: unified quality-gate wrapper + CI hygiene batch (PX-55/PX-43, `ci/portable-enforcement`)
 
