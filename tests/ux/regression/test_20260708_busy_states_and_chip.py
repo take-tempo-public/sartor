@@ -251,20 +251,23 @@ def test_corpus_reload_preserves_scroll_position(
     page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
     # The tab click fires loadCorpusIfReady() fire-and-forget, so the experiences
     # fetch + _renderCorpusList() land asynchronously — under end-of-suite CPU
-    # load that settle lags past a bare visibility poll (the 20 cards render but
-    # paint late), the load-dependent flake class this suite guards against.
-    # Await the corpus load deterministically — the same idiom as the
-    # refreshCorpus() reload below — so the cards are present before we assert
-    # visibility. loadCorpusIfReady() no-ops if the click's load already finished.
-    page.evaluate("() => loadCorpusIfReady()")
-    page.wait_for_selector("#corpusExperienceList .corpus-card", timeout=15_000)
+    # load that settle lags, the load-dependent flake class this suite guards
+    # against. Assert on the settled card COUNT (auto-retrying) rather than a bare
+    # first-card visibility poll: expect() re-queries the DOM until all 20 cards
+    # are attached, regardless of which load path filled them — the same
+    # load-path-agnostic idiom that fixed the pipeline-board row race. (An explicit
+    # loadCorpusIfReady() re-fire is NOT reliable here: it no-ops once
+    # _corpusLoadedForUser is set, which the click's load sets optimistically
+    # before its render completes.)
+    corpus_cards = page.locator("#corpusExperienceList .corpus-card")
+    expect(corpus_cards).to_have_count(20, timeout=15_000)
 
     page.evaluate("() => window.scrollTo(0, 300)")
     before = page.evaluate("() => window.scrollY")
     assert before > 0, "test setup didn't actually scroll the page"
 
     page.evaluate("() => refreshCorpus()")
-    page.wait_for_selector("#corpusExperienceList .corpus-card", timeout=15_000)
+    expect(corpus_cards).to_have_count(20, timeout=15_000)
     page.wait_for_timeout(100)
     after = page.evaluate("() => window.scrollY")
     assert after == before, f"scroll position not preserved: {before} -> {after}"
