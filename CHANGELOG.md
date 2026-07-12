@@ -13,6 +13,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: first public-CI-run remediation — Compose auto-draft race, docs directory index, cross-platform mypy, UX flakes (`fix/ci-first-linux-run`)
+
+Pushing the v1.1.0 debt-burn train to the public GitHub repo ran CI on **Linux**
+for the first time (the workflows were committed but latent while the repo was
+private). This branch fixes what that first real run surfaced — plus a
+user-facing Compose race the CI load exposed, and a docs-hosting bug.
+
+- **Compose positioning-summary auto-draft could get stuck empty (user-facing).**
+  The Compose background cascade (`static/app.js`) fired its five context-writing
+  reloads (summary-draft, gap-fill, skills-recommend, summary-recommend,
+  role-intro-recommend) with a fire-and-forget `loadComposition()`. The
+  `_markComposeBgReload(±1)` counter the settle gate reads
+  (`data-compose-bg-pending`) therefore decremented the instant a reload hit its
+  first `await` — **before** the drafted value repainted the textarea. Under load
+  the gate could read "terminal" over the empty "Drafting…" state, and the
+  once-only latch meant the draft never re-fired, leaving the summary blank until
+  a manual reload. All five auto-cascade fires now `await loadComposition()`, so
+  the counter stays raised until the repaint lands. Verified by reproducing the
+  flake under 8-core CPU saturation (empty textarea) and confirming 3/3 green
+  under the same load with the fix, plus the full 14-test Compose family.
+- **docs-site `/docs/` served a raw directory listing instead of the homepage.**
+  `docs-site/next.config.mjs` used `output: 'export'` without `trailingSlash`, so
+  Next emitted the docs root as `out/docs.html` and left `out/docs/` with no
+  `index.html`; a traditional host (DreamHost/Apache) fell through to
+  `mod_autoindex`. Added `trailingSlash: true` so every route gets its own
+  `index.html` (verified: the build now emits `out/docs/index.html`, and
+  `out/docs.html` is gone).
+- **Cross-platform mypy (full-strict roster).** `onboarding/review_cli.py` guarded
+  a win32-only `ctypes.windll` block behind `sys.platform`, which mypy narrows per
+  `--platform` → unreachable → hard error on Linux; guard with `os.name` +
+  `cast(Any, ctypes)`. `evals/grounding_signals.py` carried
+  `# type: ignore[method-assign]` comments used on Windows but **unused** on Linux
+  (`warn_unused_ignores`) — annotate the monkeypatched class `Any` so no ignore is
+  needed on either platform.
+- **UX/a11y flakes on the shared CI runner.** axe scanned the help modal mid
+  opacity-fade (false color-contrast fail) → emulate `prefers-reduced-motion` in
+  the axe suite; the pipeline-board and corpus-scroll tests asserted on snapshot
+  reads that raced async row/card loads → assert auto-retrying
+  `expect().to_have_count`.
+- **OpenSSF Scorecard.** `ossf/scorecard-action@v2` doesn't resolve (no floating
+  `v2` tag) → pinned `@v2.4.3`.
+
+No dependency or migration change; `PROMPT_VERSION` untouched (no prompt text
+changed — the Compose fix is client-side reload sequencing).
+
 ### Added: unified quality-gate wrapper + CI hygiene batch (PX-55/PX-43, `ci/portable-enforcement`)
 
 v1.1.0 debt-burn Lane HARD (relaunch, reduced scope). Lands the two SAFE
