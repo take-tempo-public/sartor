@@ -7292,8 +7292,10 @@ async function _fireRecommendSummary() {
     if (res.ok) {
       // Refresh the composition view so the new recommendation chip
       // shows on the Positioning card. Cheap — no LLM call on this
-      // refresh, just a re-read of the persisted JSON.
-      loadComposition();
+      // refresh, just a re-read of the persisted JSON. Awaited so the
+      // _markComposeBgReload counter stays raised until the repaint lands
+      // (settle-gate bracket — see _fireDraftSummary for the full rationale).
+      await loadComposition();
     }
   } catch {
     // Non-blocking — Compose still works without the recommendation.
@@ -7325,7 +7327,15 @@ async function _fireDraftSummary(force, btn) {
       { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ context_path: lastContextPath }) },
     );
-    if (res.ok) loadComposition();
+    // AWAIT the reload: this fire brackets itself with _markComposeBgReload(±1),
+    // and the settle gate (data-compose-bg-pending == 0) is the signal readers
+    // wait on for the terminal render. A fire-and-forget loadComposition() lets
+    // the finally decrement the counter the instant the reload hits its first
+    // await — BEFORE the drafted summary repaints the textarea — so the gate can
+    // read "settled" over the empty "Drafting…" state, and the once-only latch
+    // (_draftSummaryFiredForApp) means it never re-fires. Awaiting keeps the
+    // counter raised until the repaint lands. (Confirmed load-flake, PR #8 CI.)
+    if (res.ok) await loadComposition();
   } catch {
     // Non-blocking — the user can Regenerate or type their own summary.
   } finally {
@@ -7363,7 +7373,8 @@ async function _fireDraftGapFill(btn) {
           ? `${n} suggestion${n === 1 ? '' : 's'} to review.`
           : 'No new grounded suggestions found.');
       }
-      loadComposition();
+      // Awaited — settle-gate bracket (see _fireDraftSummary for the rationale).
+      await loadComposition();
     } else if (btn) {
       _toast('Could not regenerate suggestions.', true);
     }
@@ -7746,7 +7757,8 @@ async function _fireRecommendSkills(explicit, btn) {
       { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ context_path: lastContextPath }) },
     );
-    if (res.ok) loadComposition();
+    // Awaited — settle-gate bracket (see _fireDraftSummary for the rationale).
+    if (res.ok) await loadComposition();
     else if (explicit) _toast('Could not tailor skills.', true);
   } catch {
     if (explicit) _toast('Network error tailoring skills.', true);
@@ -8070,7 +8082,8 @@ async function _fireRecommendExperienceSummaries() {
       { method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ context_path: lastContextPath }) },
     );
-    if (res.ok) loadComposition();
+    // Awaited — settle-gate bracket (see _fireDraftSummary for the rationale).
+    if (res.ok) await loadComposition();
   } catch {
     // Non-blocking — Compose still works without the recommendation.
   } finally {
