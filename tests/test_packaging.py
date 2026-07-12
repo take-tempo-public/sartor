@@ -24,10 +24,13 @@ fails fast in the normal test lane instead of silently re-breaking the wheel.
 
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 
-import tomllib
+import platformdirs
+import pytest
 
+import config as config_module
 from app import create_app
 from config import STATIC_DIR, TEMPLATES_DIR, Config, _package_dir
 
@@ -85,16 +88,16 @@ class TestPackageDirHelper:
             assert (bundled / f"{name}.docx").is_file()
 
     def test_default_config_bundled_personas_dir_matches_packaged_location(self) -> None:
-        # `Config.bundled_personas_dir` deliberately stays `base_dir`-relative (NOT
-        # routed through `_package_dir`) — many existing tests fabricate an
-        # isolated fake-bundled fixture under `Config(base_dir=tmp_path)` for test
-        # isolation, and redirecting that through the packaged-data resolver would
-        # send their writes onto the REAL, tracked `personas/bundled/` files
-        # instead (found the hard way while building this fix). The wheel-install
-        # case needs no code change here: the DEFAULT `base_dir` (`_PROJECT_ROOT`,
-        # `config.py`'s own directory) is `site-packages/` in an installed wheel,
-        # and `personas.bundled`'s package-data ships to `site-packages/personas/
-        # bundled/` — the same place `base_dir`-relative arithmetic already looks.
+        # `Config.bundled_personas_dir` routes the DEFAULT (unoverridden) `base_dir`
+        # through `_package_dir`, not `base_dir`-relative arithmetic — an explicitly
+        # overridden `base_dir` (e.g. `Config(base_dir=tmp_path)`, used by many
+        # existing tests to fabricate an isolated fake-bundled fixture) still stays
+        # `base_dir`-relative; only the default falls back to the packaged
+        # location. Needed since `chore/packaging-floor`: the default `base_dir` no
+        # longer always coincides with `_PROJECT_ROOT` (a real installed wheel's
+        # default now redirects to the platform user-data dir via
+        # `_default_base_dir()`), so the old "base_dir-relative already lands on
+        # site-packages/personas/bundled/" coincidence no longer holds.
         assert Config().bundled_personas_dir == _package_dir("personas.bundled")
 
     def test_resolves_docs_wiki(self) -> None:
@@ -130,6 +133,53 @@ class TestPyModulesRosterMatchesRepo:
             f"root-level .py files. Missing from py-modules: {actual_root_modules - declared}. "
             f"Stale entries (file no longer exists): {declared - actual_root_modules}."
         )
+
+
+class TestSartorHomeDataDirRedirect:
+    """B1 (`chore/packaging-floor`, Carry-forward ledger #2 residual (ii)):
+    `Config.base_dir`'s default must not resolve into `site-packages/` on a
+    real installed wheel — it redirects to a platform user-data dir
+    (`platformdirs`), overridable by `SARTOR_HOME`. A real fresh-venv wheel
+    install is the actual end-to-end proof (a scripted verify, not a pytest —
+    see this file's own module docstring); these pin the code-level contract."""
+
+    def test_sartor_home_env_always_wins(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        target = tmp_path / "sartor-data"
+        monkeypatch.setenv("SARTOR_HOME", str(target))
+        assert Config().base_dir == target.resolve()
+        # Not the repo root / this module's own directory.
+        assert Config().base_dir != config_module._PROJECT_ROOT
+
+    def test_dev_checkout_default_is_unchanged(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # This test suite itself runs from a dev checkout (pyproject.toml sits
+        # right alongside config.py) — the packaging-floor fix must not move
+        # the default for that case.
+        monkeypatch.delenv("SARTOR_HOME", raising=False)
+        assert config_module._is_dev_checkout() is True
+        assert Config().base_dir == config_module._PROJECT_ROOT
+
+    def test_installed_non_dev_checkout_redirects_to_platform_dir(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Simulate a real non-editable wheel install (no pyproject.toml next to
+        # config.py) without needing an actual fresh-venv install.
+        monkeypatch.delenv("SARTOR_HOME", raising=False)
+        monkeypatch.setattr(config_module, "_is_dev_checkout", lambda: False)
+        expected = Path(platformdirs.user_data_dir("sartor", appauthor=False))
+        assert config_module._default_base_dir() == expected
+        assert Config().base_dir == expected
+        # Never lands in this module's own (would-be site-packages) directory.
+        assert Config().base_dir != config_module._PROJECT_ROOT
+
+    def test_dashboard_project_root_shares_the_same_resolution(self) -> None:
+        # `dashboard/routes.py`'s telemetry/eval-results root must resolve off
+        # the same base as `Config.base_dir`, not an independent
+        # `Path(__file__)`-relative computation (the other half of residual (ii)).
+        from dashboard import routes as dashboard_routes
+
+        assert config_module._default_base_dir() == dashboard_routes.PROJECT_ROOT
 
 
 class TestPythonFloorClaim:

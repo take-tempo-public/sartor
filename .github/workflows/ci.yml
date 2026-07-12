@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [main]
 
+# PX-43 (2026-07 efficiency review, F-tci-04): without this, a force-push or
+# rapid follow-up commit lets the previous push's/PR's full run (quality
+# matrix + pip-audit + eval-smoke + ux) keep running to completion instead of
+# being superseded — wasted runner time on jobs whose result nobody will read.
+# One run per ref at a time; a new push cancels the in-flight one.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -14,6 +23,9 @@ jobs:
     name: Lint, type-check, test (py${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
+      # PX-43 (F-tci-07) owner decision (RELEASE_ARC.md dec 13, 2026-07): fail-fast
+      # OFF, deliberately — seeing all three Python versions' failures in one push
+      # beats stopping at the first and re-discovering the rest one push at a time.
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
@@ -21,31 +33,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      # PX-43 (F-tci-06): shared with the `eval-smoke` job below — see
+      # .github/actions/setup-python-env/action.yml.
+      - uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
 
-      - name: Install package with dev extras
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-
-      - name: Ruff (lint)
-        run: ruff check .
-
-      # Whole-tree format gate — catches committed format drift that `ruff check` (lint) does
-      # NOT (the commit hook only checks STAGED files). Deterministic because ruff is exact-pinned
-      # in pyproject.toml's dev extra; the two are one inseparable fix (chore/ruff-format-pin).
-      - name: Ruff (format check)
-        run: ruff format --check .
-
-      - name: Mypy (type-check)
-        run: mypy .
-
-      - name: Pytest (unit tests)
-        run: pytest
+      # PX-55 (2026-07 efficiency review): the four steps below (ruff check,
+      # ruff format --check, mypy, pytest) are the single definition of "gate
+      # green" — `scripts/gate.py` — also invoked by contributors locally
+      # (CONTRIBUTING.md) and named in AGENTS.md. Whole-tree format check
+      # catches committed format drift that `ruff check` (lint) does NOT
+      # (the commit hook only checks STAGED files); deterministic because
+      # ruff is exact-pinned in pyproject.toml's dev extra (chore/ruff-format-pin).
+      - name: Quality gate (ruff check + ruff format --check + mypy + pytest)
+        run: python -m scripts.gate
 
       # Portable-enforcement-core CI backstop (feat/portable-enforcement-core, 2026-07-08):
       # a repo-wide secrets scan, independent of whether a contributor's local hooks
@@ -93,16 +95,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+      # PX-43 (F-tci-06): shared with the `quality` job above — see
+      # .github/actions/setup-python-env/action.yml.
+      - uses: ./.github/actions/setup-python-env
         with:
           python-version: "3.13"
-          cache: pip
-
-      - name: Install package with dev extras
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
 
       - name: Run synthetic smoke evals
         env:

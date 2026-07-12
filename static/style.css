@@ -48,6 +48,10 @@
      proposal flags. Distinct from the brand-amber so user-attention
      surfaces don't compete with primary-action affordances. */
   --violet:       #b08fc7;
+  --violet-soft:  rgba(176, 143, 199, 0.14);
+  /* dec 3 (G3/Co1, UX Cohesion Epic) — the neutral fallback tint for a skill
+     with no (or an unrecognized) category, matching the --fg-1 hue. */
+  --neutral-soft: rgba(168, 168, 180, 0.10);
 
   /* Radii */
   --radius-xs:    4px;
@@ -83,6 +87,12 @@
   --t-fast:    140ms;
   --t-med:     240ms;
   --t-slow:    420ms;
+  /* dec 2 (G1, UX Cohesion Epic) — the ONE fade every .cb-modal surface uses
+     for both open and close (see the .cb-modal / .cb-modal-content rules).
+     Deliberately its own token, not --t-fast (140ms, tuned for hover/focus
+     micro-interactions) — the owner's decision was a specific ~150ms modal
+     beat, not "whatever's already close enough". */
+  --t-modal:   150ms;
 
   /* System font stack. Set on the body and inherited everywhere; the
      --font alias survives because we still reference it explicitly in
@@ -185,7 +195,7 @@ body::before {
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 3px;
-  text-transform: uppercase;
+  text-transform: none;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -226,7 +236,7 @@ body::before {
   flex-shrink: 0;
   color: var(--fg-1);
   font-size: 13px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 1px;
 }
 
@@ -292,7 +302,7 @@ textarea {
   color: var(--fg-2);
   font-size: 11px;
   letter-spacing: 1px;
-  text-transform: uppercase;
+  text-transform: none;
   margin: 6px 0 0;
 }
 
@@ -305,7 +315,7 @@ textarea {
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 2px;
-  text-transform: uppercase;
+  text-transform: none;
   cursor: pointer;
   transition: filter 0.15s, transform 0.1s;
   white-space: nowrap;
@@ -375,7 +385,7 @@ textarea {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 2px;
-  text-transform: uppercase;
+  text-transform: none;
   padding: 6px 18px;
   border-radius: var(--radius-xl);
   cursor: pointer;
@@ -398,7 +408,7 @@ textarea {
   color: var(--brand);
   font-size: 14px;
   letter-spacing: 2px;
-  text-transform: uppercase;
+  text-transform: none;
   margin-bottom: 6px;
   padding-bottom: 4px;
   border-bottom: 1px solid #1a1a2e;
@@ -453,7 +463,7 @@ textarea {
 .suggestion-card .section-name {
   color: var(--brand);
   font-size: 12px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 1px;
 }
 .suggestion-card .action {
@@ -471,7 +481,7 @@ textarea {
   font-size: 11px;
   letter-spacing: 1px;
   color: var(--fg-2);
-  text-transform: uppercase;
+  text-transform: none;
   margin-bottom: 4px;
   /* No opacity dim: fg-1 @ 0.7 composited to ~#7c7d88 (sub-AA, 4.36:1). Solid
      fg-2 keeps the hint subordinate while clearing WCAG-AA (axe a11y gate). */
@@ -518,6 +528,12 @@ textarea {
   margin: 0 0 4px; color: var(--brand-hi);
 }
 .preview-rendered h2 {
+  /* This governs the RENDERED RÉSUMÉ DOCUMENT's own section headers (e.g.
+     "EXPERIENCE", "EDUCATION") inside the live preview — not app chrome.
+     Dec 1 (sentence case) is scoped to app UI labels/buttons/badges; a
+     résumé's own section-header typography is a document-style choice the
+     tool shouldn't override (same principle as O1b: respect the template),
+     so this one is deliberately excluded from the app-wide uppercase retire. */
   font-size: 14px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 1px; color: var(--brand);
   border-bottom: 1px solid #2a2a3e;
@@ -610,7 +626,7 @@ textarea {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 3px;
-  text-transform: uppercase;
+  text-transform: none;
   white-space: nowrap;
 }
 .refinement-history {
@@ -703,7 +719,7 @@ textarea {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 3px;
-  text-transform: uppercase;
+  text-transform: none;
   white-space: nowrap;
 }
 .clarify-question {
@@ -737,7 +753,7 @@ textarea {
   border-radius: 3px;
   padding: 2px 6px;
   white-space: nowrap;
-  text-transform: uppercase;
+  text-transform: none;
 }
 .clarify-kind-badge.scope { border-color: var(--brand); color: var(--brand); }
 .clarify-target-gap {
@@ -798,8 +814,42 @@ textarea {
   align-items: center;
   justify-content: center;
   padding: 24px;
+  /* dec 2 (G1, UX Cohesion Epic) — ONE ~150ms fade for open + close, shared
+     by every .cb-modal surface app-wide (helpModal, appDetailModal,
+     formModal, errorModal, assistantModal, changesModal, editModal,
+     cbConfirmModal, refinementScopeModal, diagnosticsModal). Previously
+     `.hidden` snapped straight to `display:none` on close with no fade at
+     all (only open had a content-only pop-in, below) — read as abrupt and
+     inconsistent. `visibility` (transitionable, unlike `display`) now
+     carries the "actually hidden" behavior: it flips to hidden only AFTER
+     the opacity fade finishes closing (the transition-delay below), and
+     flips to visible with zero delay when opening, so the same fade plays
+     symmetrically both ways. `pointer-events` turns off immediately on
+     close (not just after the fade) so a stray click mid-fade-out can't
+     reach dismissed content. */
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity var(--t-modal) var(--ease), visibility 0s linear 0s;
 }
-.cb-modal.hidden { display: none; }
+.cb-modal.hidden {
+  /* The global utility rule (`.hidden { display: none !important; }`,
+     above) would otherwise win over ANY non-important `display` here and
+     snap this straight to display:none — defeating the whole fade. Fight
+     !important with !important; `.cb-modal.hidden`'s two-class specificity
+     then wins the tie against the one-class `.hidden` rule, keeping this
+     laid out (so opacity/transform can actually transition) while
+     `visibility`/`pointer-events` still take it out of hit-testing and the
+     accessibility tree, same as display:none did. */
+  display: flex !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--t-modal) var(--ease), visibility 0s linear var(--t-modal);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cb-modal, .cb-modal.hidden { transition: none; }
+}
 .cb-modal-backdrop {
   position: absolute;
   inset: 0;
@@ -825,14 +875,23 @@ textarea {
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  animation: cb-modal-in 120ms ease-out;
+  /* Paired with the parent .cb-modal opacity/visibility transition above:
+     the same ~150ms beat, done as a `transition` (not the old one-shot
+     `animation`) so it replays correctly on every open/close — a CSS
+     `animation` only plays once per mount and does NOT restart just
+     because a still-mounted ancestor toggles opacity/visibility, which
+     would have made the pop-in silently stop working after the first
+     open under the new close-fade mechanism. */
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--t-modal) var(--ease), transform var(--t-modal) var(--ease);
 }
-@keyframes cb-modal-in {
-  from { transform: translateY(-6px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+.cb-modal.hidden .cb-modal-content {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 @media (prefers-reduced-motion: reduce) {
-  .cb-modal-content { animation: none; }
+  .cb-modal-content { transition: none; }
 }
 .cb-modal-title {
   margin: 0 0 12px;
@@ -975,7 +1034,7 @@ textarea {
   border-radius: 6px;
   font-weight: 700;
   letter-spacing: 1px;
-  text-transform: uppercase;
+  text-transform: none;
   text-decoration: none;
 }
 .skip-link:focus {
@@ -1333,7 +1392,7 @@ textarea:focus-visible {
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 2px;
-  text-transform: uppercase;
+  text-transform: none;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   cursor: pointer;
   transition: background 120ms, color 120ms;
@@ -1406,7 +1465,7 @@ textarea:focus-visible {
   font-size: 12px;
   color: var(--fg-1);
   letter-spacing: 1px;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .corpus-card-body {
@@ -1451,7 +1510,7 @@ textarea:focus-visible {
 
 .corpus-fieldgroup label {
   color: var(--fg-1);
-  text-transform: uppercase;
+  text-transform: none;
   font-size: 11px;
   letter-spacing: 1px;
 }
@@ -1484,15 +1543,71 @@ textarea:focus-visible {
 
 /* C2 (round-2 quick win) — bound the Skills editor section so a candidate
    with many skills scrolls within it instead of it growing to take over
-   the window. Collapsible-toggle refinement is deferred to the UX
-   Cohesion Epic; this is scroll-bounds only. */
+   the window. dec 6 (UX Cohesion Epic) adds the collapsible-toggle
+   refinement on top via .corpus-collapsible, below. */
 .skills-editor-section {
   max-height: 480px;
   overflow-y: auto;
 }
 
+/* dec 6 (UX Cohesion Epic) — a reusable collapsible wrapper for a bounded
+   list (the Skills editor's approved list + its denied/retired lane; the
+   same class is reused by the Compose skills card, static/app.js
+   _renderSkillsCard). Generalizes the existing .analysis-details pattern
+   (below) into a shareable name instead of a one-off per surface. */
+.corpus-collapsible {
+  margin-top: 6px;
+}
+.corpus-collapsible > summary {
+  cursor: pointer;
+  color: var(--brand);
+  font-size: 12px;
+  letter-spacing: 0.4px;
+  padding: 6px 0;
+  list-style: none;
+}
+.corpus-collapsible > summary::-webkit-details-marker { display: none; }
+.corpus-collapsible > summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform var(--t-fast) var(--ease);
+}
+.corpus-collapsible[open] > summary::before { transform: rotate(90deg); }
+.corpus-collapsible > summary:hover { color: var(--brand-hi); }
+.corpus-collapsible[open] > summary { margin-bottom: 4px; }
+
+/* dec 3 (G3/Co1, UX Cohesion Epic) — the skill chip: a glyph-on-colored-
+   background icon badge + name, shared by every skill row (Career Corpus
+   editor, Compose skill list, pending-review and denied lanes in both — see
+   static/app.js _renderSkillChip). `--skill-accent`/`--skill-accent-soft`
+   are set inline per-row (category-driven); the fallback values here only
+   matter if a caller somehow skips that (defensive, shouldn't happen). */
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 3px;
+  border-radius: var(--radius-pill);
+  background: var(--skill-accent-soft, var(--neutral-soft));
+  border: 1px solid var(--skill-accent-soft, var(--border));
+}
+.skill-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--skill-accent, var(--fg-2));
+  color: var(--bg-0);
+  flex-shrink: 0;
+}
+.skill-icon-badge svg { width: 13px; height: 13px; display: block; }
+.skill-chip .skill-name { font-weight: 500; }
+
 .corpus-section-title {
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 2px;
   font-size: 12px;
   color: var(--success);
@@ -1536,7 +1651,7 @@ textarea:focus-visible {
 .corpus-row-flag {
   font-size: 10px;
   letter-spacing: 1px;
-  text-transform: uppercase;
+  text-transform: none;
   padding: 2px 6px;
   border-radius: 3px;
   background: #1a1a30;
@@ -1563,7 +1678,7 @@ textarea:focus-visible {
   border-radius: 4px;
   padding: 4px 8px;
   font-size: 11px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 1px;
   cursor: pointer;
   font-family: var(--font);
@@ -1684,7 +1799,7 @@ textarea:focus-visible {
   font-size: 11px;
   color: var(--fg-1);
   margin: 8px 0;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.5px;
 }
 .merge-suggestion-actions { display: flex; gap: 8px; }
@@ -1904,6 +2019,32 @@ textarea:focus-visible {
 }
 .app-admin-btn:hover { border-color: var(--border-2); color: var(--fg-1); }
 .app-admin-btn.retire:hover { border-color: var(--danger); color: var(--danger); }
+
+/* dec 7 (UX Cohesion Epic) — the application-detail modal's JD snippet +
+   per-run status, new surfaces the compact-card redesign moved detail into
+   (the roster card itself never showed either before). */
+.app-detail-jd {
+  white-space: pre-wrap;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--fg-1);
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--bg-2);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-top: 4px;
+}
+.app-detail-scores {
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.app-detail-score-row {
+  font-size: 12px;
+  color: var(--fg-2);
+}
 /* Native checkbox override — same fix as .corpus-show-retired input (I1 family). */
 .applications-show-retired {
   display: inline-flex;
@@ -1979,7 +2120,7 @@ textarea:focus-visible {
 }
 
 .persona-section-header {
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 2px;
   font-size: 12px;
   color: var(--violet);
@@ -2040,7 +2181,7 @@ textarea:focus-visible {
   padding: 2px 8px;
   border-radius: 3px;
   letter-spacing: 1px;
-  text-transform: uppercase;
+  text-transform: none;
   font-weight: 700;
   font-size: 10px;
 }
@@ -2200,7 +2341,7 @@ textarea:focus-visible {
   color: var(--brand);
   font-weight: 600;
   letter-spacing: 0.2px;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .pipeline-row-title {
@@ -2292,7 +2433,7 @@ textarea:focus-visible {
   border-radius: 3px;
   font-weight: 700;
   letter-spacing: 1px;
-  text-transform: uppercase;
+  text-transform: none;
   font-size: 10px;
 }
 
@@ -2304,7 +2445,7 @@ textarea:focus-visible {
   font-weight: 700;
   letter-spacing: 1px;
   font-size: 10px;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .memory-card-origin {
@@ -2590,7 +2731,7 @@ textarea:focus-visible {
 .compose-exp-section-title {
   font-size: 11px;
   letter-spacing: 2px;
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--fg-1);
   margin: 10px 0 6px;
 }
@@ -2598,7 +2739,8 @@ textarea:focus-visible {
 /* C2 (round-2 quick win) — bound the Compose skills row list so a candidate
    with many skills scrolls within the card instead of the card (and the
    "Tailor"/"Suggest" action buttons above it) growing to fill the window.
-   Collapsible-toggle refinement is deferred to the UX Cohesion Epic. */
+   dec 6 (UX Cohesion Epic) adds the collapsible-toggle refinement via the
+   shared .corpus-collapsible wrapper (static/app.js _renderSkillsCard). */
 .compose-skill-list {
   max-height: 360px;
   overflow-y: auto;
@@ -2740,7 +2882,7 @@ textarea:focus-visible {
   font-family: var(--font);
   font-size: 12px;
   letter-spacing: 1px;
-  text-transform: uppercase;
+  text-transform: none;
   cursor: pointer;
   margin-top: 8px;
   width: 100%;
@@ -2823,7 +2965,7 @@ textarea:focus-visible {
 }
 .form-modal-body label {
   color: var(--fg-1);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 1px;
   font-size: 11px;
 }
@@ -2925,7 +3067,7 @@ textarea:focus-visible {
   margin-bottom: 28px;
 }
 .settings-section-title {
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 2px;
   font-size: 12px;
   color: var(--violet);
@@ -3292,6 +3434,23 @@ textarea:focus-visible {
   filter: brightness(1.1);
 }
 
+/* dec 4(b) (UX Cohesion Epic) — every small in-flight action button gets a
+   subtle pulse (opacity only — "subtle, not exaggerated" per the owner
+   decision) ON TOP OF its existing disabled state + "…"-style pending
+   label, applied via the shared _setBtnPending()/_clearBtnPending() helpers
+   (static/app.js). A gentler cadence than the topbar status dot's pulse
+   above (cb-status-pulse*) — appropriate for body-sized button text, not a
+   small status dot. The global reduced-motion override elsewhere in this
+   file (`*,*::before,*::after{animation:none!important}`) already silences
+   this for prefers-reduced-motion; no separate override needed here. */
+.btn-pending {
+  animation: cb-btn-pulse 1.6s var(--ease) infinite;
+}
+@keyframes cb-btn-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.65; }
+}
+
 /* ---- Tab nav (.top-tabs) — restyle on top of existing rules ---- */
 .top-tabs {
   display: flex;
@@ -3353,7 +3512,7 @@ textarea:focus-visible {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.4px;
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--fg-1);
   background: transparent !important; /* override .cb-bg-* on header */
   border-bottom: 1px solid transparent;
@@ -3513,7 +3672,7 @@ input:focus, select:focus, textarea:focus {
 .cb-step-eyebrow {
   font-size: 11px;
   color: var(--brand);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 1.5px;
   font-weight: 600;
   flex-shrink: 0;
@@ -3633,7 +3792,7 @@ input:focus, select:focus, textarea:focus {
   padding: 2px 6px;
   margin-left: 8px;
   white-space: nowrap;
-  text-transform: uppercase;
+  text-transform: none;
   vertical-align: middle;
 }
 /* Phase 4 — the refinement loop-back banner at the top of Compose. A soft brand
@@ -3671,7 +3830,7 @@ input:focus, select:focus, textarea:focus {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--fg-2);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.5px;
   margin-bottom: 6px;
 }
@@ -3843,7 +4002,7 @@ input:focus, select:focus, textarea:focus {
 .analysis-label {
   font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 1.5px;
   margin: 14px 0 6px;
 }
@@ -3945,7 +4104,7 @@ input:focus, select:focus, textarea:focus {
 .template-chooser-title {
   color: var(--fg-1);
   font-size: 12px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.08em;
   font-weight: 600;
 }
@@ -3979,7 +4138,7 @@ input:focus, select:focus, textarea:focus {
   color: var(--fg-2);
   padding: 4px 6px;
   font-size: 10px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.06em;
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -4050,7 +4209,7 @@ input:focus, select:focus, textarea:focus {
 .template-mini-source {
   color: var(--fg-3);
   font-size: 9.5px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.08em;
   flex: 0 0 auto;
   white-space: nowrap;
@@ -4062,7 +4221,7 @@ input:focus, select:focus, textarea:focus {
    marked unverified because we don't introspect user .docx files. */
 .template-mini-ats {
   font-size: 9.5px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.06em;
   padding: 1px 6px;
   border-radius: var(--radius-pill);
@@ -4129,7 +4288,7 @@ input:focus, select:focus, textarea:focus {
 .preview-toolbar-title {
   color: var(--fg-1);
   font-size: 12px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.08em;
   font-weight: 600;
 }
@@ -4216,7 +4375,7 @@ input:focus, select:focus, textarea:focus {
   color: var(--brand);
   font-size: 12px;
   letter-spacing: 1px;
-  text-transform: uppercase;
+  text-transform: none;
   padding: 6px 0;
 }
 .analysis-details > summary:hover {

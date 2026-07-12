@@ -7,9 +7,11 @@
 # Anthropic API key: Chromium (PDF output) + the model2vec vector index (the
 # assistant's semantic-recall tier). The app is installed EDITABLE from the copied
 # source tree (`pip install -e .`) so Flask resolves templates/ · static/ ·
-# personas/ relative to /app — the wheel does not yet ship those data dirs
-# (tracked follow-up: make the wheel installable), but running from /app is
-# correct and complete.
+# personas/ relative to /app. The wheel now ships those same data dirs too
+# (templates/ · static/ · personas/bundled/ · docs/wiki/ via package-data,
+# `fix/packaging-install`) — this image simply still installs editable from
+# source rather than building/installing the wheel; running from /app is
+# correct and complete either way.
 #
 # Security: the app binds 0.0.0.0 INSIDE the container only; run it as
 #   docker run -p 127.0.0.1:5000:5000 ...

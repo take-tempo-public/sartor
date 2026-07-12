@@ -49,7 +49,7 @@ from scripts.wiki_freshness import BLOCK_THRESHOLD as WIKI_BLOCK_THRESHOLD
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS_DIR = REPO_ROOT / ".claude-plugin" / "hooks"
 # The merge-train-4 base this branch forked from (env block: "isolated git
-# worktree of C:\Dev\sartor at main b2c83d2") — the last commit before this
+# worktree of this repo at main b2c83d2") — the last commit before this
 # migration, so `git show OLD_SHA:<path>` is the pre-migration standalone hook.
 OLD_SHA = "b2c83d2"
 

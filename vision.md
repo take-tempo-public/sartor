@@ -193,11 +193,11 @@ Three layers of best-effort defense against LLM hallucination:
 
 ### Auditable iterations
 
-Every `/api/generate` writes a NEW timestamped child context
-file rather than mutating the parent. The `parent_context_path`
-chain forms the iteration audit trail. A user (or a developer
-debugging an issue) can always trace what the LLM saw at each
-step.
+Every `/api/generate` writes a NEW timestamped child context file
+rather than mutating the parent, so a user (or a developer debugging
+an issue) can always trace what the LLM saw at each step. Full
+mechanics (the `parent_context_path` chain, the on-disk lifecycle):
+[`docs/architecture.md` §context_set lifecycle](docs/architecture.md).
 
 ---
 

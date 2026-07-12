@@ -6,8 +6,13 @@ lifecycle: active / pending-review / source / display_order / tags. Tests:
   - CREATE happy path (source='manual', display_order auto); empty name 400;
     duplicate name 409
   - UPDATE name / category / years / display_order; approve via
-    is_pending_review=false; empty name 400; duplicate name 409; unknown 404
-  - DELETE: pending llm_proposed → hard-delete; approved → soft-retire
+    is_pending_review=false; restore (un-deny) via is_active=true; empty name
+    400; duplicate name 409; unknown 404
+  - DELETE: always a reversible soft-tombstone (is_active=0,
+    is_pending_review=0) — pending llm_proposed (deny) and approved (retire)
+    alike (dec 6, UX Cohesion Epic: never hard-delete, so a denied
+    suggestion's name stays excluded from future re-suggestion and the
+    denial is reversible via PUT is_active=true)
   - TAGS: link + unlink a tag to a skill
   - Backfill: alembic 0009 turns a legacy skill row into an imported, active,
     approved row with display_order preserving the name order
@@ -173,6 +178,19 @@ class TestUpdate:
         assert r.status_code == 200
         assert r.get_json()["is_pending_review"] is False
 
+    def test_restore_undenies_a_tombstoned_skill(self, skill_app):
+        """dec 6 (UX Cohesion Epic) — the un-deny/restore path: PUT
+        is_active=true reverses a soft-tombstone (from DELETE) and lands the
+        skill back in the default (active, approved) list."""
+        cid = _seed_candidate()
+        sid = _add_skill(cid, "Go", is_active=0, is_pending_review=0, source="llm_proposed")
+        client = skill_app.test_client()
+        r = client.put(f"/api/skills/{sid}", json={"is_active": True})
+        assert r.status_code == 200
+        assert r.get_json()["is_active"] is True
+        listed = client.get("/api/users/casey/skills").get_json()["skills"]
+        assert any(s["id"] == sid for s in listed)
+
     def test_empty_name_rejected(self, skill_app):
         cid = _seed_candidate()
         sid = _add_skill(cid, "Python")
@@ -196,7 +214,11 @@ class TestUpdate:
 
 
 class TestDelete:
-    def test_pending_llm_proposed_hard_deleted(self, skill_app):
+    def test_pending_llm_proposed_denied_is_soft_tombstoned(self, skill_app):
+        """dec 6 (UX Cohesion Epic) — denying a pending suggestion is a
+        reversible soft-tombstone, NOT a hard-delete: the row survives (so its
+        name keeps suppressing future re-suggestion) with is_active=0,
+        is_pending_review=0."""
         from db.models import Skill
         from db.session import get_session
 
@@ -205,12 +227,41 @@ class TestDelete:
         client = skill_app.test_client()
         r = client.delete(f"/api/skills/{sid}")
         assert r.status_code == 200
-        assert r.get_json()["deleted"] is True
+        assert r.get_json()["is_active"] is False
         session = get_session()
         try:
-            assert session.query(Skill).filter_by(id=sid).first() is None
+            row = session.query(Skill).filter_by(id=sid).first()
+            assert row is not None  # tombstoned, not hard-deleted
+            assert row.is_active == 0
+            assert row.is_pending_review == 0
         finally:
             session.close()
+
+    def test_denied_name_excluded_from_default_and_pending_lists(self, skill_app):
+        """The tombstoned row is invisible to both the default (active) list
+        and the pending-review list, but still occupies the name — proving
+        the suppress-future-suggestion half of dec 6 without needing to spin
+        up the LLM-calling suggest-from-corpus route."""
+        cid = _seed_candidate()
+        sid = _add_skill(cid, "Go", is_pending_review=1, source="llm_proposed")
+        client = skill_app.test_client()
+        client.delete(f"/api/skills/{sid}")
+        default_names = {
+            s["name"] for s in client.get("/api/users/casey/skills").get_json()["skills"]
+        }
+        pending_names = {
+            s["name"]
+            for s in client.get("/api/users/casey/skills?include_pending=1").get_json()["skills"]
+        }
+        assert "Go" not in default_names
+        assert "Go" not in pending_names
+        all_names = {
+            s["name"]
+            for s in client.get(
+                "/api/users/casey/skills?include_pending=1&include_inactive=1"
+            ).get_json()["skills"]
+        }
+        assert "Go" in all_names  # still on record, tombstoned
 
     def test_approved_soft_retired(self, skill_app):
         from db.models import Skill

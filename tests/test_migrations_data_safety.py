@@ -360,3 +360,165 @@ class TestMigrationChainStaysValid:
                 assert conn.execute(text("PRAGMA integrity_check")).scalar() == "ok"
         finally:
             engine.dispose()
+
+
+def _application_index_columns(conn: object, index_name: str) -> list[str]:
+    """Column names of a sqlite index, in index-key order (PRAGMA index_info)."""
+    rows = conn.execute(text(f"PRAGMA index_info('{index_name}')")).fetchall()  # type: ignore[attr-defined]
+    return [row[2] for row in sorted(rows, key=lambda r: r[0])]
+
+
+def _seed_current_shape_application_with_run(db_path: Path) -> dict[str, int]:
+    """Seed one candidate + one CURRENT-shape application (valid 0014+ status,
+    default is_active) + one application_run + one run child. Unlike
+    `_seed_application_with_run` above (which deliberately inserts the
+    pre-0006 'closed' status via raw SQL to match that historical DDL), this
+    helper targets a DB already at/after 0014 — the CHECK constraint no
+    longer accepts 'closed', so this uses the ORM with a valid status.
+    """
+    from db.models import Application, ApplicationRun, Candidate, IterationLog
+
+    engine = make_engine(db_path)
+    try:
+        Session = make_session_factory(engine)
+        session = Session()
+        try:
+            candidate = Candidate(username="idx0015user")
+            session.add(candidate)
+            session.flush()
+
+            application = Application(
+                candidate_id=candidate.id,
+                title="t",
+                jd_text="jd",
+                jd_fingerprint="fp",
+                status="draft",
+            )
+            session.add(application)
+            session.flush()
+
+            run = ApplicationRun(
+                application_id=application.id,
+                iteration=0,
+                run_id="idx0015run01",
+                prompt_version="test",
+                corpus_snapshot_json="{}",
+            )
+            session.add(run)
+            session.flush()
+
+            child = IterationLog(
+                application_run_id=run.id,
+                action="generate",
+                summary="initial generation",
+            )
+            session.add(child)
+            session.commit()
+            return {
+                "candidate_id": candidate.id,
+                "application_id": application.id,
+                "run_id": run.id,
+                "iteration_log_id": child.id,
+            }
+        finally:
+            session.close()
+    finally:
+        engine.dispose()
+
+
+class TestApplicationIndexAddIsActive:
+    """PX-38 migration 0015: is_active added to ix_application_candidate_status_updated.
+
+    Index rebuilds (op.create_index/op.drop_index) are metadata-only DDL in
+    SQLite — no table copy, no row touch — unlike batch_alter_table, which
+    would risk cascade-deleting application_run + its children (the same
+    hazard test_migrations_data_safety.py's 0006/0007 tests guard). These
+    tests confirm zero row loss upgrading 0014->0015 AND downgrading back,
+    on a DB seeded with exactly that parent/child shape.
+    """
+
+    def test_upgrade_0014_to_head_adds_is_active_no_row_loss(self, tmp_path: Path) -> None:
+        db_path = tmp_path / "up0015.sqlite"
+        cfg = _alembic_config(db_path)
+        command.upgrade(cfg, "0014")
+        ids = _seed_current_shape_application_with_run(db_path)
+
+        command.upgrade(cfg, "head")
+
+        engine = make_engine(db_path)
+        try:
+            with engine.connect() as conn:
+                assert (
+                    conn.execute(
+                        text("SELECT count(*) FROM application_run WHERE id=:id"),
+                        {"id": ids["run_id"]},
+                    ).scalar()
+                    == 1
+                )
+                assert (
+                    conn.execute(
+                        text("SELECT count(*) FROM iteration_log WHERE id=:id"),
+                        {"id": ids["iteration_log_id"]},
+                    ).scalar()
+                    == 1
+                )
+                assert (
+                    conn.execute(
+                        text("SELECT count(*) FROM application WHERE id=:id"),
+                        {"id": ids["application_id"]},
+                    ).scalar()
+                    == 1
+                )
+                cols = _application_index_columns(conn, "ix_application_candidate_status_updated")
+                assert cols == ["candidate_id", "is_active", "status", "updated_at"]
+                assert conn.execute(text("PRAGMA integrity_check")).scalar() == "ok"
+                assert list(conn.execute(text("PRAGMA foreign_key_check"))) == []
+        finally:
+            engine.dispose()
+
+    def test_downgrade_head_to_0014_restores_original_index_no_row_loss(
+        self, tmp_path: Path
+    ) -> None:
+        db_path = tmp_path / "down0015.sqlite"
+        cfg = _alembic_config(db_path)
+        command.upgrade(cfg, "head")
+        ids = _seed_current_shape_application_with_run(db_path)
+
+        command.downgrade(cfg, "0014")
+
+        engine = make_engine(db_path)
+        try:
+            with engine.connect() as conn:
+                assert (
+                    conn.execute(
+                        text("SELECT count(*) FROM application_run WHERE id=:id"),
+                        {"id": ids["run_id"]},
+                    ).scalar()
+                    == 1
+                )
+                assert (
+                    conn.execute(
+                        text("SELECT count(*) FROM iteration_log WHERE id=:id"),
+                        {"id": ids["iteration_log_id"]},
+                    ).scalar()
+                    == 1
+                )
+                assert (
+                    conn.execute(
+                        text("SELECT count(*) FROM application WHERE id=:id"),
+                        {"id": ids["application_id"]},
+                    ).scalar()
+                    == 1
+                )
+                cols = _application_index_columns(conn, "ix_application_candidate_status_updated")
+                assert cols == ["candidate_id", "status", "updated_at"]
+                assert conn.execute(text("PRAGMA integrity_check")).scalar() == "ok"
+                assert list(conn.execute(text("PRAGMA foreign_key_check"))) == []
+            # And back upgrade to head again re-adds is_active cleanly (chain
+            # stays valid both directions, repeatedly).
+            command.upgrade(cfg, "head")
+            with engine.connect() as conn:
+                cols = _application_index_columns(conn, "ix_application_candidate_status_updated")
+                assert cols == ["candidate_id", "is_active", "status", "updated_at"]
+        finally:
+            engine.dispose()

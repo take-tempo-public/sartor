@@ -1,9 +1,75 @@
 // Doc-grounded assistant (Sprint 7.5, feat/doc-assistant).
 //
 // The client for POST /api/assistant/ask: streams a cited answer off the SSE
-// response using the shared _consumeSSE helper in app.js, and reuses the global
+// response using the shared _consumeSSE helper, and reuses the global
 // currentUser. Deliberately tiny — retrieval, grounding, and citation all happen
 // server-side; this only renders the stream.
+//
+// #17 (diagnostics round-2, ported to /_dashboard): the wizard (templates/
+// index.html) loads static/app.js BEFORE this file, which already defines
+// `_consumeSSE`/`esc`/`let currentUser` — this file historically relied on
+// those globals. The diagnostics console never loads app.js, so `_consumeSSE`
+// + `esc` are PROMOTED here (guarded, help-modal.js precedent: additive, never
+// overriding an already-loaded definition) so this file is self-sufficient on
+// either page. `currentUser` can't be promoted the same way — a bare `let`
+// redeclared across two classic <script> tags on the SAME page throws a
+// SyntaxError — so dashboard.html supplies its own local `var currentUser`
+// shim instead (see dashboard.html's assistant wiring comment).
+if (typeof window._consumeSSE !== 'function') {
+  // ---- Server-Sent Events helper (for streaming routes) ----
+  //
+  // EventSource doesn't support POST, and the assistant's payload (question +
+  // session context) doesn't fit a query string. So we POST via fetch() and
+  // parse the SSE protocol manually off the response body. SSE frames are
+  // separated by blank lines; within each frame the lines are `event: <name>\n`
+  // and `data: <json>\n`. Calls onEvent(eventName, parsedData) for every
+  // complete frame. Byte-identical copy of static/app.js's _consumeSSE.
+  window._consumeSSE = async function _consumeSSE(url, body, onEvent) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      onEvent('http_error', { status: res.status, body: errBody });
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let sep;
+      while ((sep = buffer.indexOf('\n\n')) !== -1) {
+        const frame = buffer.slice(0, sep);
+        buffer = buffer.slice(sep + 2);
+        if (!frame.trim()) continue;
+        let eventName = 'message';
+        const dataLines = [];
+        for (const line of frame.split('\n')) {
+          if (line.startsWith('event: ')) eventName = line.slice(7).trim();
+          else if (line.startsWith('data: ')) dataLines.push(line.slice(6));
+        }
+        const raw = dataLines.join('\n');
+        let parsed;
+        try { parsed = JSON.parse(raw); }
+        catch { parsed = raw; }
+        onEvent(eventName, parsed);
+      }
+    }
+  };
+}
+if (typeof window.esc !== 'function') {
+  // Byte-identical copy of static/app.js's esc().
+  window.esc = function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  };
+}
 
 // Transport-failure copy: calm, blame-free, actionable, and deliberately DISTINCT
 // from the grounded refusal ("I don't have that in my docs.") — a network error

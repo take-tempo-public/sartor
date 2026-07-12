@@ -43,7 +43,7 @@ blocking gates). The handoff framed Sartor as a greenfield "canary" whose AGENTS
 *seeding*. It isn't: Sartor is a mature v1.0.7 repo that already practices ~60% of the kit,
 often better than the kit describes (governance charter, hooks-as-mechanism, the AGENTS.md
 `@import` design, the self-documenting wiki). So adoption is **reconcile + close specific
-deltas + flag what's promotable to `amodal-open`** — not author-from-zero. Sartor is the
+deltas + flag what's promotable to `take-tempo-public`** — not author-from-zero. Sartor is the
 **donor**, not the blank canary.
 
 ---
@@ -51,7 +51,7 @@ deltas + flag what's promotable to `amodal-open`** — not author-from-zero. Sar
 ## 1. The frame (canary → donor)
 
 The kit's stated end-goal (its §5) is an adoption arc: settle the conventions on Sartor (the
-"canary"), then promote them to a shared `amodal-open` location later repos inherit. The
+"canary"), then promote them to a shared `take-tempo-public` location later repos inherit. The
 correction this evaluation makes: for the governance philosophy, the hook model, the
 `@import` instruction-file design, and the wiki doc-drift loop, **Sartor already holds the
 best-in-class version** — so the shared layer is *extracted from* Sartor, and only the
@@ -843,7 +843,7 @@ docstring-coverage KEEP gates.
 
 ---
 
-## 7. Promotable to `amodal-open` (the "flag" half of the framing)
+## 7. Promotable to `take-tempo-public` (the "flag" half of the framing)
 
 Extraction candidates — practices Sartor already does best, to seed the shared layer later
 (do **not** build the shared layer in this arc):

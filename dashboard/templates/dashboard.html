@@ -16,6 +16,14 @@
        the wizard and this console. Classic script (no defer) so window.cbOpenHelpModal
        et al. exist before the inline help IIFE below runs. -->
   <script src="{{ url_for('static', filename='help-modal.js') }}"></script>
+  <!-- #17 (diagnostics round-2): the doc-grounded assistant, ported from the
+       wizard (templates/index.html). No backend change — blueprints/
+       assistant.py:ask() already treats `username` as optional. assistant.js
+       is self-sufficient here (promotes its own _consumeSSE/esc when app.js
+       — which this console never loads — isn't present); the console
+       supplies its own tiny `currentUser` shim below (a bare `let` can't be
+       redeclared, so it can't be promoted the same way — see assistant.js). -->
+  <script src="{{ url_for('static', filename='assistant.js') }}"></script>
   <style>
     /* Dashboard-specific layout, built on the cb-* tokens from style.css.
        Everything is scoped under .cb-dash so it never fights wizard rules. */
@@ -173,6 +181,17 @@
     .annotate-progress { margin-top: 0.7rem; font-size: 0.82rem; color: var(--fg-1); white-space: pre-wrap; }
     .bs-grounding { display: block; color: var(--fg-1); font-size: 0.82rem; margin: 0.7rem 0 0.2rem; }
     .bs-grounding input { margin-right: 0.45rem; vertical-align: middle; }
+
+    /* #10 (diagnostics round-2): a real <progress> bar for the run controls whose
+       SSE already carries index/total (eval/tune/bootstrap) — replaces relying on
+       the plain-text line alone. Indeterminate (no [value]) covers annScore's
+       single blocking call, which has no per-item granularity (#13, deferred). */
+    .run-progress { display: block; width: 100%; height: 0.45rem; margin: 0 0 0.45rem; accent-color: var(--brand); }
+    .run-progress[hidden] { display: none; }
+
+    /* #9 (diagnostics round-2): brief highlight for the jump-to-flagged-item
+       scroll target after a failed Save. */
+    .ann-item.ann-item-flagged { outline: 2px solid var(--danger); outline-offset: 2px; }
     .ann-jd-row { display: grid; grid-template-columns: 11rem 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem; align-items: start; }
     .ann-jd-row input, .ann-jd-row textarea { background: var(--bg-2); color: var(--fg-0); border: 1px solid var(--border-2); border-radius: var(--radius-sm); font: inherit; font-size: 0.82rem; padding: 0.4rem; }
     .ann-jd-row textarea { min-height: 3rem; resize: vertical; }
@@ -192,7 +211,18 @@
   <span>A diagnostics run is in progress — other paid runs are locked until it finishes. Please don't close this tab.</span>
 </div>
 
-<h1>sartor. <span class="sub">— diagnostics console</span></h1>
+<h1>sartor. <span class="sub">— diagnostics console</span>
+  <button class="cb-pill cb-pill-ghost cb-pill-icon" id="assistantPill"
+          onclick="openAssistantModal()" type="button"
+          aria-label="Ask the assistant" title="Ask the assistant"
+          aria-haspopup="dialog" aria-controls="assistantModal" aria-expanded="false"
+          style="margin-left:0.6rem; vertical-align:middle;">
+    <svg aria-hidden="true" width="15" height="15" viewBox="0 0 16 16" fill="none"
+         stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+      <circle cx="7" cy="7" r="4.5"></circle><line x1="10.6" y1="10.6" x2="14" y2="14"></line>
+    </svg>
+  </button>
+</h1>
 <p class="meta">Read-only observability for the LLM pipeline. Telemetry from
   <code class="short">logs/llm_calls.jsonl</code> + <code class="short">evals/results/*.jsonl</code>.
   Click any tile to expand its detail.</p>
@@ -294,6 +324,7 @@
       <button class="ann-btn primary" id="evalRunBtn" type="button">Run eval</button>
     </div>
     <p class="eval-cost" id="evalCost"></p>
+    <progress id="evalProgressBar" class="run-progress" max="1" value="0" hidden></progress>
     <div id="evalProgress" class="annotate-progress" role="status" aria-live="polite"></div>
   </div>
   {% if not eval_results %}
@@ -390,7 +421,7 @@
       the same primitive <code class="short">--prompt-overrides</code> drives.</span>
     <div class="filters">
       <label>Constant
-        <select id="tuneConstant"></select>
+        <select id="tuneConstant" title="Which analyzer.py persona/system-prompt constant to A/B — the candidate text below REPLACES this constant for the run, via analyzer.prompt_overrides() (analyzer.py is never edited)."></select>
       </label>
       <label>Suite
         <select id="tuneSuite" title="synthetic = committed sample fixtures · anchor = the small always-on smoke set">
@@ -426,15 +457,21 @@
             <option value="">— Select candidate —</option>
           </select>
         </label>
-        <label>Fixture slug<input type="text" id="tuneSlug" placeholder="&lt;name&gt;"></label>
+        <label>Fixture slug<input type="text" id="tuneSlug" placeholder="&lt;name&gt;"
+          title="The evals/fixtures/real/<slug>/ directory to seed from (must already have a seed.json — export or bootstrap one on the Annotate tab first)."></label>
       </div>
       <p class="sub">Sets <code class="short">--suite real --seed</code>: the corpus comes from
-        <code class="short">evals/fixtures/real/&lt;slug&gt;/seed.json</code> (capture it with
-        <code class="short">python -m scripts.export_corpus_seed --user &lt;name&gt;</code>); that fixture's
-        <code class="short">jd.txt</code> + <code class="short">expected.json</code> drive grading.</p>
+        <code class="short">evals/fixtures/real/&lt;slug&gt;/seed.json</code> — capture one with the
+        Annotate tab's
+        <button class="ann-btn" id="tuneGotoAnnotateExport" type="button" style="padding:0.1rem 0.5rem;font-size:0.78rem;"
+                title="Jump to the Annotate tab's step ① Export seed (no LLM) button">Export seed (no LLM)</button>
+        button (step ① — no paid LLM calls), or
+        <code class="short">python -m scripts.export_corpus_seed --user &lt;name&gt;</code> from the CLI;
+        that fixture's <code class="short">jd.txt</code> + <code class="short">expected.json</code> drive grading.</p>
     </details>
     <p class="eval-cost" id="tuneCost"></p>
     <button class="ann-btn primary" id="tuneRunBtn" type="button">Run A/B</button>
+    <progress id="tuneProgressBar" class="run-progress" max="1" value="0" hidden></progress>
     <div id="tuneProgress" class="annotate-progress" role="status" aria-live="polite"></div>
     <pre id="tuneDelta" class="tune-delta" hidden></pre>
     <p id="tunePromote" hidden></p>
@@ -489,7 +526,8 @@
             <option value="">— Select candidate —</option>
           </select>
         </label>
-        <label>Fixture slug (optional)<input type="text" id="bsSlug" placeholder="&lt;candidate&gt;-bootstrap"></label>
+        <label>Fixture slug (optional)<input type="text" id="bsSlug" placeholder="&lt;candidate&gt;-bootstrap"
+          title="Directory name under evals/fixtures/real/ — defaults to <candidate>-bootstrap. Reuse an existing slug to add more JDs to that same fixture."></label>
       </div>
       <div id="bsJds"></div>
       <label class="bs-grounding"><input type="checkbox" id="bsGrounding"
@@ -503,6 +541,7 @@
                 title="Snapshot this candidate's corpus to seed.json — deterministic, no paid LLM calls. Needs only the candidate username (JDs are ignored).">Export seed (no LLM)</button>
         <button class="ann-btn primary" id="bsRun" type="button">Run bootstrap</button>
       </div>
+      <progress id="bsProgressBar" class="run-progress" max="1" value="0" hidden></progress>
       <div id="bsProgress" class="annotate-progress" role="status" aria-live="polite"></div>
     </div>
   </details>
@@ -542,6 +581,7 @@
               title="Run the offline grounding scorers over this fixture's bullets (CPU, no paid LLM calls). Requires a seed.json + the [eval-grounding] extras.">Score grounding</button>
       <span id="annStatus" class="sub" role="status" aria-live="polite"></span>
     </div>
+    <progress id="annScoreProgressBar" class="run-progress" hidden></progress>
     <div id="annScoreProgress" class="annotate-progress" role="status" aria-live="polite"></div>
     <div id="annCollateResult" hidden></div>
   </div>
@@ -580,6 +620,80 @@
     </div>
   </div>
 </div>
+
+<!-- Doc-grounded assistant modal (#17, diagnostics round-2 — ported from
+     templates/index.html's #assistantModal). Opened by the header's
+     #assistantPill via openAssistantModal() in static/assistant.js; SAME
+     control ids as the wizard's copy, so askAssistant() runs unchanged. Owner
+     decision (2026-07-09): the dev-mode checkbox defaults CHECKED here (the
+     wizard's copy defaults unchecked) — this console is a dev surface.
+     Closes on the data-assistant-dismiss backdrop, Esc, or "Close". -->
+<div id="assistantModal" class="cb-modal hidden" role="dialog" aria-modal="true"
+     aria-labelledby="assistantModalTitle" aria-describedby="assistantModalIntro">
+  <div class="cb-modal-backdrop" data-assistant-dismiss></div>
+  <div class="cb-modal-content" role="document">
+    <h2 id="assistantModalTitle" class="cb-modal-title">Ask the assistant</h2>
+    <div class="cb-modal-body">
+      <p id="assistantModalIntro" class="edit-hint" style="margin-top:0">
+        Ask how sartor. works or how to use it, and I'll answer from the
+        project's own docs and code — with citations, so I show my sources.
+        Dev mode is on by default here; untick it for user-facing answers only.
+      </p>
+      <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+        <label class="memory-checkbox" for="assistantDevMode">
+          <input type="checkbox" id="assistantDevMode" checked> Dev mode
+        </label>
+      </div>
+      <textarea id="assistantQuestion" rows="3" style="width:100%; box-sizing:border-box;"
+                placeholder="e.g. Where do the LLM calls live?"
+                aria-label="Ask the assistant a question"></textarea>
+      <div style="display:flex; align-items:center; gap:0.75rem; margin-top:0.5rem;">
+        <button class="cb-btn cb-bg-blue" id="assistantAsk" onclick="askAssistant()">Ask</button>
+        <span class="edit-hint" id="assistantStatus" aria-live="polite" style="margin:0"></span>
+      </div>
+      <!-- Persistent empty state: scope/boundary + verified example prompts.
+           Hidden by askAssistant() once the first answer streams in. -->
+      <div id="assistantEmptyState" style="margin-top:0.75rem;">
+        <p class="edit-hint" style="margin:0 0 0.5rem">
+          I explain how sartor. works and how to use it. I answer only from the
+          project's committed docs and code, with citations — I'm not the résumé
+          writer, and I won't touch your private resumes or configs.
+        </p>
+        <p class="edit-hint" style="margin:0 0 0.25rem">Try:</p>
+        <ul class="edit-hint" style="margin:0; padding-left:1.25rem">
+          <li>Where do the LLM calls live?</li>
+          <li>How does the run-lock work?</li>
+          <li>What is the grounding metric?</li>
+          <li>How do I run the eval harness?</li>
+        </ul>
+      </div>
+      <!-- Not a live region: tokens stream token-by-token; #assistantStatus
+           carries the single terminal announcement instead. -->
+      <div id="assistantAnswer" aria-busy="false" aria-atomic="false"
+           style="white-space:pre-wrap; margin-top:0.75rem;"></div>
+      <div id="assistantSources" class="edit-hint" style="margin-top:0.5rem;"></div>
+      <p class="edit-hint" id="assistantReportHint" style="margin-top:0.75rem">
+        Something missing from the docs?
+        <a href="https://github.com/take-tempo-public/sartor/issues" target="_blank" rel="noopener">Report it on the project's GitHub</a>.
+      </p>
+    </div>
+    <div class="modal-actions">
+      <button class="cb-btn cb-bg-blue" id="btnCloseAssistant" data-assistant-dismiss>Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- #17: currentUser shim for static/assistant.js. The console never loads
+     static/app.js (whose `let currentUser` assistant.js normally reads), so
+     this is the minimal stand-in — the assistant's answer is project-global
+     and works fine anonymous (blueprints/assistant.py:ask() treats `username`
+     as optional; an empty value just stamps anonymous telemetry), so an empty
+     `var` (never reassigned to a real candidate) is sufficient. `var`, not
+     `let`, per assistant.js's own comment on why it can't promote this one
+     itself: a `let` redeclared across two classic <script> tags on the SAME
+     page throws — irrelevant here since this page never also loads app.js,
+     but kept `var` for the same defensive reason assistant.js uses it. -->
+<script>var currentUser = '';</script>
 
 <!-- ===== Detail store: server-rendered detail blocks, moved into the inline
          detail panel by JS on tile click. Without JS this container is visible and
@@ -884,9 +998,19 @@
         + 'seed of the corpus (free, no LLM); ② pick a bootstrap to annotate; ③ '
         + 'give every bullet and skill a verdict, then Save or Collate. It is '
         + 'empty until you produce or import a bootstrap, so step ① auto-expands '
-        + 'when there is nothing to annotate yet.',
+        + 'when there is nothing to annotate yet. Your in-progress edits are '
+        + 'auto-saved to this browser as you type, so a reload or a failed Save '
+        + 'never loses labor — Save clears that local draft once it succeeds.',
     },
   };
+  // DRAFT — owner-review-before-merge (content cluster #2/#4/#5/#6/#16, v1.1.0
+  // debt-burn Lane DX): the sentence above documenting the new #9 draft
+  // behavior, plus the handful of new field-level `.title` tooltips elsewhere
+  // in this file (tuneConstant/tuneSlug/bsSlug/JD name+text), are a SMALL,
+  // provisional down payment on the content-cluster ask — not the full
+  // field-level authoring pass the finding calls for (only 5 per-tab
+  // info-circles vs the main app's 18). Land provisionally; flag for the
+  // owner before treating the cluster as closed.
   // tab name -> help block id (the block id is also the cb_help_seen: key).
   var _DASH_HELP_ID = {
     pipeline: 'dashPipeline', quality: 'dashQuality', groundedness: 'dashGroundedness',
@@ -1105,7 +1229,13 @@
      run, shows a prominent banner, and arms a beforeunload guard while a run is live. ===== -->
 <script>
 (function () {
-  var LOCK_BTN_IDS = ['evalRunBtn', 'tuneRunBtn', 'bsRun', 'annScore'];
+  // annCollateRunBtn: the dynamically-created "Run this fixture (real --seed)"
+  // button in renderCollateResult() — doesn't exist until after a Collate, so
+  // the per-id forEach below (each already guarded with `if (b)`) simply finds
+  // nothing until then. Included so the single-flight lock also disables it
+  // while ANOTHER paid run is in flight (#1's own click already goes through
+  // window.sartorEval.run(), which independently acquires/releases the lock).
+  var LOCK_BTN_IDS = ['evalRunBtn', 'tuneRunBtn', 'bsRun', 'annScore', 'annCollateRunBtn'];
   var locked = false;
   function warnBeforeUnload(e) {
     e.preventDefault();
@@ -1182,21 +1312,37 @@
       return pump();
     }).catch(function () { onEvent('error', { error: 'request failed' }); });
   }
-  // Stream POST /api/eval/run; update progEl, toggle btnEl, call onDone(payload) on 'done'.
-  function run(params, progEl, btnEl, onDone) {
+  // #10 (diagnostics round-2): update a real <progress> bar from any SSE
+  // payload that carries index/total (fixture_start/analyzing/clarifying/
+  // generating already do — evals/runner.py's _emit calls). Shared by every
+  // caller below so the bar behavior is identical everywhere it appears.
+  function _updateBar(barEl, p) {
+    if (!barEl || typeof p.total !== 'number' || typeof p.index !== 'number') return;
+    barEl.hidden = false;
+    barEl.max = p.total;
+    barEl.value = Math.min(p.index + 1, p.total);
+  }
+
+  // Stream POST /api/eval/run; update progEl, toggle btnEl, call onDone(payload) on
+  // 'done'. barEl (optional) is a <progress> element updated from index/total events.
+  function run(params, progEl, btnEl, onDone, barEl) {
     if (btnEl) btnEl.disabled = true;
     if (window.sartorRunLock) window.sartorRunLock.acquire();
     if (progEl) progEl.textContent = 'Starting… (paid Sonnet/Haiku calls)';
+    if (barEl) { barEl.hidden = false; barEl.value = 0; }
     stream('/api/eval/run', params, function (ev, p) {
-      if (ev === '_closed') { if (btnEl) btnEl.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); return; }
+      _updateBar(barEl, p);
+      if (ev === '_closed') { if (btnEl) btnEl.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; return; }
       if (ev === 'done') {
         if (progEl) progEl.textContent = 'Done — ' + p.n_pass + ' pass / ' + p.n_fail + ' fail'
           + (p.regressions ? ', ' + p.regressions + ' regression(s)' : '') + ' → ' + (p.out_file || 'results') + '.';
+        if (barEl) barEl.hidden = true;
         if (onDone) onDone(p);
       } else if (ev === 'error') {
         if (progEl) progEl.textContent = 'Error: ' + (p.error || 'eval failed') + (p.detail ? ' — ' + p.detail : '');
         if (btnEl) btnEl.disabled = false;
         if (window.sartorRunLock) window.sartorRunLock.release();
+        if (barEl) barEl.hidden = true;
       } else {
         var msg = describe(ev, p); if (msg && progEl) progEl.textContent = msg;
       }
@@ -1225,7 +1371,7 @@
     run({ suite: suite, subset: subset, grounding_signals: grounding.checked }, prog, btn, function () {
       prog.textContent += ' Reloading…';
       setTimeout(function () { location.reload(); }, 1400);
-    });
+    }, document.getElementById('evalProgressBar'));
   });
 })();
 </script>
@@ -1250,12 +1396,31 @@
   var userEl = document.getElementById('tuneUser');
   var cost = document.getElementById('tuneCost');
   var prog = document.getElementById('tuneProgress');
+  var bar = document.getElementById('tuneProgressBar');
   var deltaEl = document.getElementById('tuneDelta');
   var promote = document.getElementById('tunePromote');
 
   document.getElementById('tuneLoadBtn').addEventListener('click', function () {
     ta.value = byName[sel.value] || '';
   });
+
+  // #3 (diagnostics round-2): cross-link to the Annotate tab's "Export seed"
+  // button instead of leaving only the CLI-only pointer above — switch tabs,
+  // open step ① (where Export seed lives), and focus it.
+  var gotoAnnotateBtn = document.getElementById('tuneGotoAnnotateExport');
+  if (gotoAnnotateBtn) {
+    gotoAnnotateBtn.addEventListener('click', function () {
+      var annotateTab = document.querySelector('.dash-tab[data-tab="annotate"]');
+      if (annotateTab) annotateTab.click();
+      var bsSection = document.getElementById('bootstrapSection');
+      if (bsSection) bsSection.open = true;
+      var exportBtn = document.getElementById('bsExportSeed');
+      if (exportBtn) {
+        exportBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        exportBtn.focus();
+      }
+    });
+  }
   function updateCost() {
     cost.textContent = subsetSel.value === 'smoke'
       ? '≈ $0.20 — two runs (baseline + candidate) × 3 fixtures × grounding (paid, ~2–4 min).'
@@ -1289,8 +1454,12 @@
     if (window.sartorRunLock) window.sartorRunLock.acquire();
     deltaEl.hidden = true; promote.hidden = true;
     prog.textContent = 'Starting A/B — baseline then candidate… (paid Sonnet/Haiku)';
+    if (bar) { bar.hidden = false; bar.value = 0; }
     window.sartorEval.stream('/api/tune/run', params, function (ev, p) {
-      if (ev === '_closed') { btn.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); return; }
+      if (bar && typeof p.total === 'number' && typeof p.index === 'number') {
+        bar.hidden = false; bar.max = p.total; bar.value = Math.min(p.index + 1, p.total);
+      }
+      if (ev === '_closed') { btn.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; return; }
       if (ev === 'delta') {
         deltaEl.hidden = false; deltaEl.textContent = p.table || '(no delta)';
         promote.hidden = false;
@@ -1300,10 +1469,12 @@
           + (p.regressed ? p.regressed + ' regression(s).' : 'no regressions.')
           + ' Promote a winner by hand: copy the text into the analyzer.py constant, bump PROMPT_VERSION, log TUNING_LOG.md.';
         prog.textContent = 'A/B complete (' + (p.baseline_file || '') + ' vs ' + (p.candidate_file || '') + ').';
+        if (bar) bar.hidden = true;
       } else if (ev === 'error') {
         prog.textContent = 'Error: ' + (p.error || 'A/B failed') + (p.detail ? ' — ' + p.detail : '');
         btn.disabled = false;
         if (window.sartorRunLock) window.sartorRunLock.release();
+        if (bar) bar.hidden = true;
       } else {
         var msg = describeTune(ev, p); if (msg) prog.textContent = msg;
       }
@@ -1324,6 +1495,59 @@
   function setStatus(msg, isErr) { var s = $('annStatus'); if (!s) return; s.textContent = msg || ''; s.style.color = isErr ? 'var(--danger)' : 'var(--fg-2)'; }
   function showError(detail) { var box = $('annError'); if (!box) return; if (detail) { box.textContent = detail; box.hidden = false; } else { box.textContent = ''; box.hidden = true; } }
   function jsonRes(r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }, function () { return { ok: r.ok, d: {} }; }); }
+
+  // ---- #9 (diagnostics round-2): localStorage draft snapshot/restore ----
+  // state.doc was in-memory only, so a validation-fail reload (or an
+  // accidental tab close) at e.g. 49/50 lost labor a paid bootstrap produced.
+  // Debounced-save every edit to a per-(candidate, slug) localStorage key;
+  // restore it on load (structural-shape guard: same bullet/skill counts, so a
+  // stale draft from a DIFFERENT bootstrap of the same slug can't clobber the
+  // freshly-loaded template); clear it once a Save actually succeeds.
+  var DRAFT_PREFIX = 'sartor_ann_draft:';
+  function _draftKey() {
+    return (state.candidate && state.slug) ? DRAFT_PREFIX + state.candidate + ':' + state.slug : null;
+  }
+  function _saveDraftNow() {
+    var key = _draftKey();
+    if (!key || !state.doc) return;
+    try { window.localStorage.setItem(key, JSON.stringify(state.doc)); } catch (e) { /* storage unavailable/full — non-fatal, best-effort */ }
+  }
+  var _draftTimer = null;
+  function _saveDraftDebounced() {
+    if (_draftTimer) window.clearTimeout(_draftTimer);
+    _draftTimer = window.setTimeout(_saveDraftNow, 400);
+  }
+  function _clearDraft() {
+    var key = _draftKey();
+    if (!key) return;
+    try { window.localStorage.removeItem(key); } catch (e) { /* non-fatal */ }
+  }
+  function _loadDraft() {
+    var key = _draftKey();
+    if (!key) return null;
+    try {
+      var raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  // ---- #9: jump-to-flagged-item — parse "bullets[N]"/"skills[N]"/
+  // "clarification_ratings[N]" out of the 400 validation error's `detail`
+  // (evals.annotation.validate_annotations's message shape) and scroll the
+  // matching rendered card into view with a brief highlight.
+  function _jumpToFlaggedItem(detail) {
+    if (!detail) return;
+    var m = /^(bullets|skills|clarification_ratings)\[(\d+)\]/.exec(detail);
+    if (!m) return;
+    var containerId = m[1] === 'bullets' ? 'annBullets' : m[1] === 'skills' ? 'annSkills' : 'annClar';
+    var container = $(containerId);
+    if (!container) return;
+    var card = container.children[parseInt(m[2], 10)];
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('ann-item-flagged');
+    window.setTimeout(function () { card.classList.remove('ann-item-flagged'); }, 3000);
+  }
 
   // ---- fixtures ----
   function loadFixtures() {
@@ -1351,8 +1575,22 @@
     fetch(API + '/fixture/' + encodeURIComponent(candidate) + '/' + encodeURIComponent(slug)).then(jsonRes).then(function (res) {
       if (!res.ok) { setStatus((res.d && res.d.error) || 'Load failed', true); $('annEditor').hidden = true; return; }
       state.slug = slug; state.candidate = candidate; state.doc = res.d.annotations; state.vocab = res.d.vocab || state.vocab;
-      renderEditor();
-      setStatus(res.d.has_annotations ? 'Loaded existing annotations.' : 'New template — fill every verdict, then Save.');
+      // #9: restore an unsaved draft if one exists for this (candidate, slug) —
+      // shape-guarded (same bullet/skill counts) so a stale draft from a
+      // different bootstrap of the same slug can't silently clobber a fresh
+      // template/annotations.json.
+      var draft = _loadDraft();
+      var draftUsable = draft && Array.isArray(draft.bullets) && Array.isArray(draft.skills)
+        && draft.bullets.length === state.doc.bullets.length
+        && draft.skills.length === state.doc.skills.length;
+      if (draftUsable) {
+        state.doc = draft;
+        renderEditor();
+        setStatus('Restored an unsaved draft from this browser — Save to persist it, or Reload to discard it.');
+      } else {
+        renderEditor();
+        setStatus(res.d.has_annotations ? 'Loaded existing annotations.' : 'New template — fill every verdict, then Save.');
+      }
     }).catch(function () { setStatus('Load failed', true); });
   }
 
@@ -1389,8 +1627,17 @@
     var fr = textControl('failed_rules (comma-sep)', (item.failed_rules || []).join(', '), true);
     fr.inp.setAttribute('list', 'annFailedRulesList'); controls.appendChild(fr.lab);
     var nt = textControl('note', item.note, true); controls.appendChild(nt.lab);
-    var olab = el('label'); olab.appendChild(el('span', null, 'should_omit'));
-    var ocheck = el('input'); ocheck.type = 'checkbox'; ocheck.checked = !!item.should_omit; olab.appendChild(ocheck); controls.appendChild(olab);
+    // #7 (diagnostics round-2, owner dec 11): distinct from `verdict` — verdict
+    // feeds collation, should_omit feeds ONLY the improvement-brief Omissions
+    // section (evals/annotation.py build_improvement_brief). Mirrors the
+    // verdict <select>'s .title tooltip pattern above, which this checkbox
+    // previously lacked.
+    var olab = el('label'); olab.appendChild(el('span', null, 'Also list under Omissions (independent of verdict).'));
+    var ocheck = el('input'); ocheck.type = 'checkbox'; ocheck.checked = !!item.should_omit;
+    ocheck.title = 'Independent of verdict — adds this item to the improvement brief\'s Omissions '
+      + 'section in addition to whatever verdict you picked. Collation (expected.json) reads verdict '
+      + 'only, so this has no effect there.';
+    olab.appendChild(ocheck); controls.appendChild(olab);
     var rw = textControl('honest_rewrite (fix)', item.honest_rewrite, true); controls.appendChild(rw.lab);
     var fp = textControl('forbidden_pattern (fabricated)', item.forbidden_pattern, true); controls.appendChild(fp.lab);
 
@@ -1440,8 +1687,15 @@
     if (!state.doc) return; showError(null); setStatus('Saving…');
     fetch(API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug),
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state.doc) }).then(jsonRes).then(function (res) {
-        if (!res.ok) { setStatus((res.d && res.d.error) || 'Save failed', true); showError(res.d && res.d.detail); return; }
-        setStatus('Saved annotations.json (' + res.d.bullets + 'b / ' + res.d.skills + 's).'); loadFixtures(); if (cb) cb();
+        if (!res.ok) {
+          setStatus((res.d && res.d.error) || 'Save failed', true);
+          showError(res.d && res.d.detail);
+          _jumpToFlaggedItem(res.d && res.d.detail);  // #9: scroll to the item the 400 named
+          return;
+        }
+        setStatus('Saved annotations.json (' + res.d.bullets + 'b / ' + res.d.skills + 's).');
+        _clearDraft();  // #9: a successful Save retires the in-progress draft
+        loadFixtures(); if (cb) cb();
       }).catch(function () { setStatus('Save failed', true); });
   }
 
@@ -1468,8 +1722,9 @@
       var cmd = el('code', 'short'); cmd.textContent = d.run_command; box.appendChild(cmd);
     }
     var actions = el('div', 'annotate-actions');
-    var runBtn = el('button', 'ann-btn primary'); runBtn.type = 'button';
+    var runBtn = el('button', 'ann-btn primary'); runBtn.type = 'button'; runBtn.id = 'annCollateRunBtn';
     runBtn.textContent = 'Run this fixture (real --seed)';
+    var bar = el('progress', 'run-progress'); bar.max = 1; bar.value = 0; bar.hidden = true;
     var prog = el('div', 'annotate-progress'); prog.setAttribute('role', 'status'); prog.setAttribute('aria-live', 'polite');
     runBtn.addEventListener('click', function () {
       if (!window.sartorEval) { prog.textContent = 'Eval runner unavailable.'; return; }
@@ -1478,16 +1733,21 @@
         { suite: 'real', subset: 'full', fixture: state.slug, slug: state.slug, username: state.candidate, grounding_signals: false },
         prog, runBtn,
         function () { prog.textContent += ' Reload the Quality tab to see the scored run.'; },
+        bar,
       );
     });
-    actions.appendChild(runBtn); box.appendChild(actions); box.appendChild(prog);
+    actions.appendChild(runBtn); box.appendChild(actions); box.appendChild(bar); box.appendChild(prog);
   }
 
   // ---- bootstrap wrapper (POST + SSE via fetch streaming) ----
   function addJdRow(name, text) {
     var row = el('div', 'ann-jd-row');
     var n = el('input', 'bs-jd-name'); n.placeholder = 'JD name'; n.value = name || '';
+    n.title = 'A short label for this posting (e.g. the company + role) — becomes its jds/<name>.txt filename.';
+    n.setAttribute('aria-label', 'JD name');
     var t = el('textarea', 'bs-jd-text'); t.placeholder = 'Paste JD text…'; t.value = text || '';
+    t.title = 'The full job description text — the pipeline analyzes/clarifies/generates against it, same as the wizard.';
+    t.setAttribute('aria-label', 'JD text');
     var rm = el('button', 'ann-btn'); rm.type = 'button'; rm.textContent = '✕'; rm.setAttribute('aria-label', 'Remove JD');
     rm.addEventListener('click', function () { row.remove(); });
     row.appendChild(n); row.appendChild(t); row.appendChild(rm); $('bsJds').appendChild(row);
@@ -1515,19 +1775,26 @@
   }
   function runBootstrap() {
     var user = $('bsUser').value.trim(); var slug = $('bsSlug').value.trim(); var jds = collectJds(); var prog = $('bsProgress');
+    var bar = $('bsProgressBar');
     if (!user) { prog.textContent = 'Enter a candidate username.'; return; }
     if (!jds.length) { prog.textContent = 'Add at least one JD (name + text).'; return; }
     $('bsRun').disabled = true;
     if (window.sartorRunLock) window.sartorRunLock.acquire();
     prog.textContent = 'Starting… (paid Sonnet/Haiku calls, ~70s per JD)';
+    if (bar) { bar.hidden = false; bar.value = 0; }
     fetch(API + '/bootstrap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, slug: slug || undefined, jds: jds, grounding_signals: $('bsGrounding').checked }) }).then(function (resp) {
-      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status); $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); }); }
+      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status); $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; }); }
       var reader = resp.body.getReader(); var dec = new TextDecoder(); var buf = '';
       function pump() {
         return reader.read().then(function (chunk) {
-          if (chunk.done) { $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); return; }
+          if (chunk.done) { $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; return; }
           buf += dec.decode(chunk.value, { stream: true });
           buf = parseSse(buf, function (ev, p) {
+            // #10: per-JD index/total (jd_start/analyzing/clarifying/generating/
+            // jd_done all carry them — evals/bootstrap.py's _emit calls).
+            if (bar && typeof p.total === 'number' && typeof p.index === 'number') {
+              bar.hidden = false; bar.max = p.total; bar.value = Math.min(p.index + 1, p.total);
+            }
             if (ev === 'start') prog.textContent = 'Running ' + p.total + ' JD(s)…';
             else if (ev === 'jd_start') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ' (' + p.jd_file + '): starting…';
             else if (ev === 'analyzing') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': analyzing…';
@@ -1536,14 +1803,14 @@
             else if (ev === 'jd_done') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ' done (' + p.bullets + 'b/' + p.skills + 's).';
             else if (ev === 'scoring') prog.textContent = p.message || 'Scoring grounding…';
             else if (ev === 'warning') prog.textContent = '⚠ ' + (p.message || 'warning');
-            else if (ev === 'done') { prog.textContent = 'Bootstrap written: ' + p.slug + ' (' + p.bullet_clusters + ' bullet clusters, ' + p.skill_clusters + ' skill clusters' + (p.grounded ? ', grounded' : '') + ').'; loadFixtures().then(function () { $('fixtureSelect').value = p.slug; loadFixture(p.slug, user); }); }
-            else if (ev === 'error') prog.textContent = 'Error: ' + (p.error || 'bootstrap failed') + (p.detail ? ' — ' + p.detail : '');
+            else if (ev === 'done') { prog.textContent = 'Bootstrap written: ' + p.slug + ' (' + p.bullet_clusters + ' bullet clusters, ' + p.skill_clusters + ' skill clusters' + (p.grounded ? ', grounded' : '') + ').'; if (bar) bar.hidden = true; loadFixtures().then(function () { $('fixtureSelect').value = p.slug; loadFixture(p.slug, user); }); }
+            else if (ev === 'error') { prog.textContent = 'Error: ' + (p.error || 'bootstrap failed') + (p.detail ? ' — ' + p.detail : ''); if (bar) bar.hidden = true; }
           });
           return pump();
         });
       }
       return pump();
-    }).catch(function () { prog.textContent = 'Bootstrap request failed.'; $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); });
+    }).catch(function () { prog.textContent = 'Bootstrap request failed.'; $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; });
   }
 
   // ---- standalone seed export (deterministic, no paid LLM calls) ----
@@ -1566,15 +1833,21 @@
   function scoreGrounding() {
     if (!state.slug || !state.candidate) { return; }
     var prog = $('annScoreProgress');
+    // #13 (coarse busy is acceptable, minimal): this route is ONE blocking
+    // scorer call with no per-item index/total (unlike #10's eval/tune/
+    // bootstrap runs), so the bar stays INDETERMINATE (no [value]) — just a
+    // more-visible "busy" signal than the text line alone, nothing granular.
+    var bar = $('annScoreProgressBar');
     $('annScore').disabled = true;
     if (window.sartorRunLock) window.sartorRunLock.acquire();
     prog.textContent = 'Starting grounding scorers… (CPU-bound; no paid LLM calls)';
+    if (bar) { bar.hidden = false; bar.removeAttribute('value'); }
     fetch(API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug) + '/score', { method: 'POST' }).then(function (resp) {
-      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status) + ((res.d && res.d.detail) ? ' — ' + res.d.detail : ''); $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); }); }
+      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status) + ((res.d && res.d.detail) ? ' — ' + res.d.detail : ''); $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; }); }
       var reader = resp.body.getReader(); var dec = new TextDecoder(); var buf = '';
       function pump() {
         return reader.read().then(function (chunk) {
-          if (chunk.done) { $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); return; }
+          if (chunk.done) { $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; return; }
           buf += dec.decode(chunk.value, { stream: true });
           buf = parseSse(buf, function (ev, p) {
             if (ev === 'start') prog.textContent = 'Scoring ' + p.bullet_clusters + ' bullet clusters…';
@@ -1584,15 +1857,16 @@
               var mc = (p.mean_minicheck != null) ? p.mean_minicheck.toFixed(2) : '–';
               prog.textContent = 'Scored ' + p.bullet_count + ' bullets (mean NLI ' + nli + ', mean MiniCheck ' + mc + ')'
                 + (p.annotations_patched ? ', patched ' + p.annotations_patched + ' annotation(s)' : '') + '. Reloading…';
+              if (bar) bar.hidden = true;
               loadFixture(state.slug, state.candidate);
             }
-            else if (ev === 'error') prog.textContent = 'Error: ' + (p.error || 'scoring failed') + (p.detail ? ' — ' + p.detail : '');
+            else if (ev === 'error') { prog.textContent = 'Error: ' + (p.error || 'scoring failed') + (p.detail ? ' — ' + p.detail : ''); if (bar) bar.hidden = true; }
           });
           return pump();
         });
       }
       return pump();
-    }).catch(function () { prog.textContent = 'Score request failed.'; $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); });
+    }).catch(function () { prog.textContent = 'Score request failed.'; $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; });
   }
 
   // ---- wire up ----
@@ -1608,6 +1882,12 @@
   $('bsAddJd').addEventListener('click', function () { addJdRow('', ''); });
   $('bsExportSeed').addEventListener('click', exportSeed);
   $('bsRun').addEventListener('click', runBootstrap);
+  // #9: delegate on the editor container (input + change bubble) rather than
+  // wiring every renderItem/renderRating field individually — catches every
+  // verdict/note/failed_rules/should_omit/honest_rewrite/forbidden_pattern/
+  // rating edit in one place.
+  $('annEditor').addEventListener('input', _saveDraftDebounced);
+  $('annEditor').addEventListener('change', _saveDraftDebounced);
   addJdRow('', '');
   loadFixtures();
 })();

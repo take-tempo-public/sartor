@@ -266,6 +266,13 @@ def get_application(application_id: int) -> ResponseReturnValue:
                 "title": app_row.title,
                 "company": app_row.company,
                 "status": app_row.status,
+                # dec 7 (UX Cohesion Epic, compact-card redesign) — the
+                # retire/restore action moved from the roster card into this
+                # detail modal, which needs is_active to know which of the
+                # two to render (blueprints/corpus retire routes already
+                # expose the equivalent field the same way, e.g. Skill's
+                # _skill_to_dict).
+                "is_active": bool(app_row.is_active),
                 "jd_text": app_row.jd_text,
                 "jd_url": app_row.jd_url,
                 "jd_fingerprint": app_row.jd_fingerprint,
@@ -952,8 +959,10 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
     the context file's `composition_overrides` (query param
     `context_path`, validated within OUTPUT_DIR).
     """
+    from sqlalchemy.orm import selectinload
+
     from db.build_context import _bullet_tag_values, score_corpus_bullet
-    from db.models import Experience, ExperienceSummaryItem, Skill, SummaryItem
+    from db.models import Bullet, Experience, ExperienceTitle, Skill, SummaryItem
     from db.session import get_session, init_db
     from hardening import extract_keywords
 
@@ -1020,8 +1029,19 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             skill_rec_ids,
         ) = _read_skill_composition(ctx_path)
 
+        # PX-38: selectinload the three per-experience collections this loop
+        # walks (bullets+tag_links, titles+tag_links, summary_items) so the
+        # per-experience lazy loads below (exp.bullets / exp.titles / the
+        # esi_rows filter over exp.summary_items) don't each re-query — was
+        # an O(experiences) N+1 across three query families. Mirrors the
+        # selectinload(Application.runs) fix on list_applications above.
         experiences = (
             session.query(Experience)
+            .options(
+                selectinload(Experience.bullets).selectinload(Bullet.tag_links),
+                selectinload(Experience.titles).selectinload(ExperienceTitle.tag_links),
+                selectinload(Experience.summary_items),
+            )
             .filter_by(
                 candidate_id=candidate.id,
             )
@@ -1145,17 +1165,13 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                 _ar = (_a.get("rationale") or "").strip()
                 if _ar:
                     exp_alt_rationale[_aid] = _ar
-            esi_rows = (
-                session.query(ExperienceSummaryItem)
-                .filter_by(
-                    experience_id=exp.id,
-                    is_active=1,
-                )
-                .order_by(
-                    ExperienceSummaryItem.display_order,
-                    ExperienceSummaryItem.id,
-                )
-                .all()
+            # PX-38: exp.summary_items is preloaded by the selectinload chain
+            # above — filter/sort in Python instead of a per-experience query
+            # (was the third N+1 query family in this loop, alongside bullets
+            # and titles).
+            esi_rows = sorted(
+                (esi for esi in exp.summary_items if esi.is_active),
+                key=lambda esi: (esi.display_order, esi.id),
             )
             role_summary_variants: list[dict[str, Any]] = []
             for esi in esi_rows:

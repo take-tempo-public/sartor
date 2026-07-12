@@ -1,6 +1,6 @@
 ---
 name: compliance-witness
-description: Use to produce a governance drift report. Reads governance docs, RELEASE_ARC, CHANGELOG, git history, and wiki provenance at a pinned sha; identifies where two sources disagree or a C-0 categorical lacks by-construction backing; outputs ranked drift flags. Does NOT edit anything.
+description: Use to produce a governance drift report. Reads governance docs, RELEASE_ARC, CHANGELOG, git history, and wiki provenance at a pinned sha; identifies where two sources disagree or a C-0 categorical lacks by-construction backing; outputs a ranked FLAG/WATCH/AFFIRM flag list (caller applies the default-12 cap). Does NOT edit anything — the Read/Grep/Glob/Bash-only tool grant (no Edit/Write/Task) IS the enforcement.
 model: claude-sonnet-5
 tools:
   - Read

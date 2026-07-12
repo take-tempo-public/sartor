@@ -1,5 +1,5 @@
 ---
-description: Read-only governance drift witness. Reads charter/RELEASE_ARC/CHANGELOG/git-history/wiki provenance at a pinned sha and emits a ranked, capped drift report in findings-register format. Reports, never edits, never blocks. Pre-tag companion + on-demand.
+description: Read-only governance drift witness. Reads charter/RELEASE_ARC/CHANGELOG/git-history/wiki provenance at a pinned sha and emits a ranked, capped (default 12, --cap N) drift report in FLAG/WATCH/AFFIRM findings-register format, appended to docs/governance/compliance-log.md. Reports, never edits, never blocks. Pre-tag companion + on-demand.
 argument-hint: [--since <sha>] [--cap <N>]
 allowed-tools:
   - Bash

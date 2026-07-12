@@ -597,6 +597,16 @@ async function saveConfig() {
 async function fetchProfileContent() {
   const statusEl = document.getElementById('profileFetchStatus');
   const setMsg = (m) => { if (statusEl) statusEl.textContent = m; };
+  // dec 4(a) (UX Cohesion Epic) — this is the "scrape/fetch" blocking action
+  // the round-2 audit flagged as not clearly signaling "working" the way
+  // analyze/generate do: it previously had ONLY the small local
+  // #profileFetchStatus text, no app-wide _setBusy banner and no button
+  // pending state. It can take a few seconds per URL (network fetch +
+  // parse), so it gets the same two-tier treatment as every other
+  // long-running action now.
+  const btn = document.getElementById('btnFetchProfile');
+  _setBtnPending(btn, 'Fetching…');
+  _setBusy(true, 'Fetching your profile content');
   setMsg('Saving config…');
   await saveConfig();
   setMsg('Fetching profile content…');
@@ -616,6 +626,9 @@ async function fetchProfileContent() {
     }
   } catch {
     setMsg('Fetch failed (network error).');
+  } finally {
+    _setBusy(false);
+    _clearBtnPending(btn, 'Fetch profile content');
   }
 }
 
@@ -1336,7 +1349,7 @@ function _renderClarifyQuestions(questions, reasoning) {
     qtext.textContent = q.text || '';
     const badge = document.createElement('span');
     badge.className = isScope ? 'clarify-kind-badge scope' : 'clarify-kind-badge';
-    badge.textContent = isScope ? 'SCOPE' : 'EXPERIENCE';
+    badge.textContent = isScope ? 'Scope' : 'Experience';
     head.appendChild(qtext);
     head.appendChild(badge);
     wrap.appendChild(head);
@@ -1712,7 +1725,7 @@ async function runGenerateCoverLetter() {
   setStatus('GENERATING COVER LETTER');
   _setBusy(true, 'Generating your cover letter');
   const gen = document.getElementById('btnGenerateCover');
-  if (gen) gen.disabled = true;
+  _setBtnPending(gen, 'Generating…');
   try {
     const res = await fetch('/api/generate-cover-letter', {
       method: 'POST',
@@ -1754,7 +1767,7 @@ async function runGenerateCoverLetter() {
     reportError('Cover letter', 'Cover letter request failed', e.message);
   } finally {
     _setBusy(false);
-    if (gen) gen.disabled = false;
+    _clearBtnPending(gen, '+ Generate cover letter');
   }
 }
 
@@ -2399,14 +2412,14 @@ function openErrorModal() {
     const text = _formatLastError();
     try {
       await navigator.clipboard.writeText(text);
-      copyBtn.textContent = 'COPIED ✓';
+      copyBtn.textContent = 'Copied ✓';
     } catch {
       // Clipboard API blocked (non-secure context etc.) — fall back to
       // selecting the textarea so the user can Ctrl+C manually.
       if (ta) { ta.focus(); ta.select(); }
-      copyBtn.textContent = 'SELECTED — PRESS CTRL+C';
+      copyBtn.textContent = 'Selected — press Ctrl+C';
     }
-    setTimeout(() => { copyBtn.textContent = 'COPY'; }, 2000);
+    setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
   };
 
   const dismissers = Array.from(modal.querySelectorAll('[data-err-dismiss]'));
@@ -2858,7 +2871,10 @@ function _resetIterateClarifyUI() {
   if (questions) questions.textContent = '';
   if (actions) actions.classList.add('hidden');
   const btn = document.getElementById('btnIterateClarify');
-  if (btn) btn.disabled = false;
+  // dec 4(b) — undo _setBtnPending's relabel + pulse from the last round
+  // too, not just the disabled flag, so a fresh round doesn't show a
+  // clickable button still reading "Generating…".
+  if (btn) _clearBtnPending(btn, 'Get follow-up questions');
 }
 
 async function runIterateClarify() {
@@ -2873,7 +2889,7 @@ async function runIterateClarify() {
   setStatus('GENERATING QUESTIONS');
   _setBusy(true, 'Generating clarifying questions…');
   const btn = document.getElementById('btnIterateClarify');
-  if (btn) btn.disabled = true;
+  _setBtnPending(btn, 'Generating…');
 
   try {
     const res = await fetch('/api/iterate-clarify', {
@@ -2886,7 +2902,7 @@ async function runIterateClarify() {
     });
     const data = await res.json();
     if (!res.ok) {
-      if (btn) btn.disabled = false;
+      _clearBtnPending(btn, 'Get follow-up questions');
       return reportError('Iteration interview',
         data.error || 'Iteration interview failed', data.detail);
     }
@@ -2901,7 +2917,7 @@ async function runIterateClarify() {
     setStatus('QUESTIONS READY');
     _announce(`${lastIterateClarifyQuestions.length} iteration question${lastIterateClarifyQuestions.length === 1 ? '' : 's'} ready for review.`);
   } catch (e) {
-    if (btn) btn.disabled = false;
+    _clearBtnPending(btn, 'Get follow-up questions');
     reportError('Iteration interview', 'Iteration interview request failed', e.message);
   } finally {
     _setBusy(false);
@@ -2952,9 +2968,9 @@ function _renderIterateClarifyQuestions(questions, reasoning) {
     badge.className = 'clarify-kind-badge';
     if (kind === 'scope_probe') badge.classList.add('scope');
     else if (kind === 'iteration_probe') badge.classList.add('iteration');
-    badge.textContent = kind === 'scope_probe' ? 'SCOPE'
-                       : kind === 'iteration_probe' ? 'ITERATION'
-                       : 'EXPERIENCE';
+    badge.textContent = kind === 'scope_probe' ? 'Scope'
+                       : kind === 'iteration_probe' ? 'Iteration'
+                       : 'Experience';
     head.appendChild(qtext);
     head.appendChild(badge);
     wrap.appendChild(head);
@@ -3052,7 +3068,7 @@ function _renderRefinementHistory() {
   container.innerHTML = refinementHistory.map((entry, i) => {
     const isRejected = entry.status === 'rejected';
     const badge = isRejected
-      ? `<span class="refinement-badge-rejected">NOT EXECUTED</span>`
+      ? `<span class="refinement-badge-rejected">Not executed</span>`
       : '';
     const reason = isRejected && entry.reason
       ? `<div class="refinement-rejection-reason">${esc(entry.reason)}</div>`
@@ -3872,17 +3888,24 @@ async function refreshSkillsEditor() {
   const listEl = document.getElementById('skillsEditorList');
   const pendingEl = document.getElementById('skillsEditorPending');
   const hint = document.getElementById('skillsEditorEmptyHint');
+  const deniedDetails = document.getElementById('skillsEditorDeniedDetails');
+  const deniedSummary = document.getElementById('skillsEditorDeniedSummary');
+  const deniedEl = document.getElementById('skillsEditorDenied');
   if (!section || !listEl) return;
   let res;
   try {
+    // dec 6 (UX Cohesion Epic) — include_inactive=1 pulls in tombstoned
+    // (denied/retired) skills too, so the Denied/retired lane below can
+    // offer a Restore (un-deny) action instead of them vanishing forever.
     res = await fetch(
-      `/api/users/${encodeURIComponent(currentUser)}/skills?include_pending=1`);
+      `/api/users/${encodeURIComponent(currentUser)}/skills?include_pending=1&include_inactive=1`);
   } catch { section.style.display = 'none'; return; }
   if (!res.ok) { section.style.display = 'none'; return; }
   const body = await res.json();
   const all = body.skills || [];
   const pending = all.filter(s => s.is_pending_review);
-  const approved = all.filter(s => !s.is_pending_review);
+  const denied = all.filter(s => !s.is_pending_review && !s.is_active);
+  const approved = all.filter(s => !s.is_pending_review && s.is_active);
   section.style.display = '';
   _clearChildren(listEl);
   if (pendingEl) _clearChildren(pendingEl);
@@ -3893,6 +3916,16 @@ async function refreshSkillsEditor() {
     }));
     pending.forEach(s => pendingEl.appendChild(_renderSkillEditorRow(s, true)));
   }
+  if (deniedDetails && deniedEl) {
+    _clearChildren(deniedEl);
+    if (denied.length) {
+      deniedDetails.style.display = '';
+      if (deniedSummary) deniedSummary.textContent = `Denied / retired skills (${denied.length})`;
+      denied.forEach(s => deniedEl.appendChild(_renderDeniedSkillRow(s)));
+    } else {
+      deniedDetails.style.display = 'none';
+    }
+  }
   if (approved.length === 0 && pending.length === 0) {
     hint.textContent = 'No skills yet. Click + Add skill, or import a résumé. '
       + 'The Compose step can also suggest skills your experience shows.';
@@ -3901,6 +3934,40 @@ async function refreshSkillsEditor() {
   hint.textContent = 'The skills the résumé can surface. The Compose step '
     + 'orders and curates them per job; tailor + AI suggestions live there too.';
   approved.forEach(s => listEl.appendChild(_renderSkillEditorRow(s, false)));
+}
+
+// dec 6 (UX Cohesion Epic) — a denied (pending suggestion) or retired
+// (formerly-approved) skill, tombstoned via DELETE /api/skills/<id>
+// (is_active=0, is_pending_review=0). Restore is the un-deny path: PUT
+// is_active=true, mirroring the title/bullet "Restore" idiom.
+function _renderDeniedSkillRow(s) {
+  const row = _el('div', { className: 'summary-variant-row skill-editor-row skill-denied-row' });
+  const head = _el('div', { className: 'skill-editor-head' });
+  head.appendChild(_renderSkillChip(s.name, s.category));
+  if (s.category) {
+    head.appendChild(_el('span', {
+      className: 'skill-category', textContent: ' · ' + s.category,
+      style: 'color:var(--fg-2);font-size:0.85em;',
+    }));
+  }
+  head.appendChild(_el('span', { className: 'corpus-row-flag retired', textContent: 'Denied' }));
+  row.appendChild(head);
+
+  const actions = _el('div', { className: 'summary-variant-actions' });
+  const restore = _el('button', { className: 'corpus-action-btn', textContent: 'Restore' });
+  restore.onclick = async () => {
+    try {
+      const r = await fetch(`/api/skills/${s.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: true }),
+      });
+      if (r.ok) { _toast('Skill restored'); refreshSkillsEditor(); }
+      else _toast('Could not restore skill.', true);
+    } catch { _toast('Network error restoring skill.', true); }
+  };
+  actions.appendChild(restore);
+  row.appendChild(actions);
+  return row;
 }
 
 // Co4 (round-2 quick win) — corpus-wide "Suggest skills from my corpus",
@@ -3913,7 +3980,7 @@ async function refreshSkillsEditor() {
 async function suggestSkillsFromCorpus() {
   if (!currentUser) return;
   const btn = document.getElementById('btnSuggestSkillsFromCorpus');
-  if (btn) { btn.disabled = true; btn.textContent = 'Suggesting…'; }
+  _setBtnPending(btn, 'Suggesting…');
   try {
     const res = await fetch(
       `/api/users/${encodeURIComponent(currentUser)}/skills/suggest-from-corpus`,
@@ -3930,15 +3997,105 @@ async function suggestSkillsFromCorpus() {
   } catch {
     _toast('Network error suggesting skills.', true);
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Suggest skills from my corpus'; }
+    _clearBtnPending(btn, 'Suggest skills from my corpus');
   }
+}
+
+// ============================================================
+// dec 3 (G3/Co1, UX Cohesion Epic) — skill iconography.
+// ============================================================
+// Vendored inline SVG, Phosphor Icons (MIT license, phosphoricons.com),
+// "duotone" weight (a 20%-opacity base shape + a full-opacity accent shape,
+// both `fill="currentColor"` so a single CSS `color` recolors both layers).
+// Source: raw.githubusercontent.com/phosphor-icons/core assets/duotone/.
+// See CHANGELOG.md [Unreleased] for the vendoring note.
+//
+// `category` on a Skill is free-text (no DB CHECK — a human can type
+// anything, and the LLM-suggested category isn't constrained either), so
+// this is a best-effort keyword match against the five categories the "Add
+// skill" modal itself suggests (language | framework | platform |
+// methodology | domain), falling back to a neutral generic glyph for
+// anything else. The glyph→concept mapping below is the owner-review item
+// from the branch report — flag before merge, not a load-bearing contract.
+// `Map`, not a plain object — `category` is free-text (see above) and a
+// plain-object lookup keyed by an attacker-or-just-weird-influenced string
+// like "__proto__"/"constructor" would resolve to Object.prototype instead
+// of falling through to the default. `Map` has no such prototype-chain
+// lookup surface.
+const _SKILL_CATEGORY_ICONS = new Map(Object.entries({
+  // language — a code/programming-language glyph.
+  code: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">'
+    + '<path d="M240,128l-48,40H64L16,128,64,88H192Z" opacity="0.2"/>'
+    + '<path d="M69.12,94.15,28.5,128l40.62,33.85a8,8,0,1,1-10.24,12.29l-48-40a8,8,0,0,1,0-12.29l48-40a8,8,0,0,1,10.24,12.3Zm176,27.7-48-40a8,8,0,1,0-10.24,12.3L227.5,128l-40.62,33.85a8,8,0,1,0,10.24,12.29l48-40a8,8,0,0,0,0-12.29ZM162.73,32.48a8,8,0,0,0-10.25,4.79l-64,176a8,8,0,0,0,4.79,10.26A8.14,8.14,0,0,0,96,224a8,8,0,0,0,7.52-5.27l64-176A8,8,0,0,0,162.73,32.48Z"/></svg>',
+  // framework — layered stack (a framework sits in layers atop a language).
+  stack: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">'
+    + '<path d="M224,80l-96,56L32,80l96-56Z" opacity="0.2"/>'
+    + '<path d="M230.91,172A8,8,0,0,1,228,182.91l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,36,169.09l92,53.65,92-53.65A8,8,0,0,1,230.91,172ZM220,121.09l-92,53.65L36,121.09A8,8,0,0,0,28,134.91l96,56a8,8,0,0,0,8.06,0l96-56A8,8,0,1,0,220,121.09ZM24,80a8,8,0,0,1,4-6.91l96-56a8,8,0,0,1,8.06,0l96,56a8,8,0,0,1,0,13.82l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,24,80Zm23.88,0L128,126.74,208.12,80,128,33.26Z"/></svg>',
+  // platform — cloud (runtime/infra/OS platforms).
+  cloud: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">'
+    + '<path d="M240,128a80,80,0,0,1-80,80H72A56,56,0,1,1,85.92,97.74l0,.1A80,80,0,0,1,240,128Z" opacity="0.2"/>'
+    + '<path d="M160,40A88.09,88.09,0,0,0,81.29,88.67,64,64,0,1,0,72,216h88a88,88,0,0,0,0-176Zm0,160H72a48,48,0,0,1,0-96c1.1,0,2.2,0,3.29.11A88,88,0,0,0,72,128a8,8,0,0,0,16,0,72,72,0,1,1,72,72Z"/></svg>',
+  // methodology — flow/process arrow.
+  'flow-arrow': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">'
+    + '<path d="M80,176a32,32,0,1,1-32-32A32,32,0,0,1,80,176Z" opacity="0.2"/>'
+    + '<path d="M245.66,74.34l-32-32a8,8,0,0,0-11.32,11.32L220.69,72H208c-49.33,0-61.05,28.12-71.38,52.92-9.38,22.51-16.92,40.59-49.48,42.84a40,40,0,1,0,.1,16c43.26-2.65,54.34-29.15,64.14-52.69C161.41,107,169.33,88,208,88h12.69l-18.35,18.34a8,8,0,0,0,11.32,11.32l32-32A8,8,0,0,0,245.66,74.34ZM48,200a24,24,0,1,1,24-24A24,24,0,0,1,48,200Z"/></svg>',
+  // domain — globe (industry/subject-matter domain knowledge).
+  globe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">'
+    + '<path d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z" opacity="0.2"/>'
+    + '<path d="M128,24h0A104,104,0,1,0,232,128,104.12,104.12,0,0,0,128,24Zm88,104a87.61,87.61,0,0,1-3.33,24H174.16a157.44,157.44,0,0,0,0-48h38.51A87.61,87.61,0,0,1,216,128ZM102,168H154a115.11,115.11,0,0,1-26,45A115.27,115.27,0,0,1,102,168Zm-3.9-16a140.84,140.84,0,0,1,0-48h59.88a140.84,140.84,0,0,1,0,48ZM40,128a87.61,87.61,0,0,1,3.33-24H81.84a157.44,157.44,0,0,0,0,48H43.33A87.61,87.61,0,0,1,40,128ZM154,88H102a115.11,115.11,0,0,1,26-45A115.27,115.27,0,0,1,154,88Zm52.33,0H170.71a135.28,135.28,0,0,0-22.3-45.6A88.29,88.29,0,0,1,206.37,88ZM107.59,42.4A135.28,135.28,0,0,0,85.29,88H49.63A88.29,88.29,0,0,1,107.59,42.4ZM49.63,168H85.29a135.28,135.28,0,0,0,22.3,45.6A88.29,88.29,0,0,1,49.63,168Zm98.78,45.6a135.28,135.28,0,0,0,22.3-45.6h35.66A88.29,88.29,0,0,1,148.41,213.6Z"/></svg>',
+  // uncategorized / unrecognized — generic capability glyph (gear).
+  gear: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">'
+    + '<path d="M207.86,123.18l16.78-21a99.14,99.14,0,0,0-10.07-24.29l-26.7-3a81,81,0,0,0-6.81-6.81l-3-26.71a99.43,99.43,0,0,0-24.3-10l-21,16.77a81.59,81.59,0,0,0-9.64,0l-21-16.78A99.14,99.14,0,0,0,77.91,41.43l-3,26.7a81,81,0,0,0-6.81,6.81l-26.71,3a99.43,99.43,0,0,0-10,24.3l16.77,21a81.59,81.59,0,0,0,0,9.64l-16.78,21a99.14,99.14,0,0,0,10.07,24.29l26.7,3a81,81,0,0,0,6.81,6.81l3,26.71a99.43,99.43,0,0,0,24.3,10l21-16.77a81.59,81.59,0,0,0,9.64,0l21,16.78a99.14,99.14,0,0,0,24.29-10.07l3-26.7a81,81,0,0,0,6.81-6.81l26.71-3a99.43,99.43,0,0,0,10-24.3l-16.77-21A81.59,81.59,0,0,0,207.86,123.18ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z" opacity="0.2"/>'
+    + '<path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.6,107.6,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.29,107.29,0,0,0-26.25-10.86,8,8,0,0,0-7.06,1.48L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.6,107.6,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06Zm-16.1-6.5a73.93,73.93,0,0,1,0,8.68,8,8,0,0,0,1.74,5.48l14.19,17.73a91.57,91.57,0,0,1-6.23,15L187,173.11a8,8,0,0,0-5.1,2.64,74.11,74.11,0,0,1-6.14,6.14,8,8,0,0,0-2.64,5.1l-2.51,22.58a91.32,91.32,0,0,1-15,6.23l-17.74-14.19a8,8,0,0,0-5-1.75h-.48a73.93,73.93,0,0,1-8.68,0,8.06,8.06,0,0,0-5.48,1.74L100.45,215.8a91.57,91.57,0,0,1-15-6.23L82.89,187a8,8,0,0,0-2.64-5.1,74.11,74.11,0,0,1-6.14-6.14,8,8,0,0,0-5.1-2.64L46.43,170.6a91.32,91.32,0,0,1-6.23-15l14.19-17.74a8,8,0,0,0,1.74-5.48,73.93,73.93,0,0,1,0-8.68,8,8,0,0,0-1.74-5.48L40.2,100.45a91.57,91.57,0,0,1,6.23-15L69,82.89a8,8,0,0,0,5.1-2.64,74.11,74.11,0,0,1,6.14-6.14A8,8,0,0,0,82.89,69L85.4,46.43a91.32,91.32,0,0,1,15-6.23l17.74,14.19a8,8,0,0,0,5.48,1.74,73.93,73.93,0,0,1,8.68,0,8.06,8.06,0,0,0,5.48-1.74L155.55,40.2a91.57,91.57,0,0,1,15,6.23L173.11,69a8,8,0,0,0,2.64,5.1,74.11,74.11,0,0,1,6.14,6.14,8,8,0,0,0,5.1,2.64l22.58,2.51a91.32,91.32,0,0,1,6.23,15l-14.19,17.74A8,8,0,0,0,199.87,123.66Z"/></svg>',
+}));
+
+// Owner-review glyph→concept mapping (see the module comment above): the
+// five categories the "Add skill" modal suggests, each to one Phosphor
+// duotone glyph + one existing brand/functional color token. `Map` for the
+// same __proto__-key-collision reason as _SKILL_CATEGORY_ICONS above.
+const _SKILL_CATEGORY_META = new Map(Object.entries({
+  language:    { icon: 'code',       color: 'var(--info)',   soft: 'var(--info-soft)' },
+  framework:   { icon: 'stack',      color: 'var(--brand)',  soft: 'var(--brand-soft)' },
+  platform:    { icon: 'cloud',      color: 'var(--violet)', soft: 'var(--violet-soft)' },
+  methodology: { icon: 'flow-arrow', color: 'var(--success)', soft: 'var(--success-soft)' },
+  domain:      { icon: 'globe',      color: 'var(--warning)', soft: 'var(--warning-soft)' },
+}));
+const _SKILL_CATEGORY_DEFAULT = { icon: 'gear', color: 'var(--fg-2)', soft: 'var(--neutral-soft)' };
+
+function _skillCategoryMeta(category) {
+  const key = (category || '').trim().toLowerCase();
+  return _SKILL_CATEGORY_META.get(key) || _SKILL_CATEGORY_DEFAULT;
+}
+
+// Renders the [glyph-on-colored-background] + [name] chip shared by every
+// skill row (Career Corpus editor, Compose skill list, pending-review and
+// denied lanes in both). Category-tinted background/border on the chip
+// itself (the "colored chips" half of dec 3); the icon badge inside carries
+// the "glyph on a colored background" half.
+function _renderSkillChip(name, category) {
+  const meta = _skillCategoryMeta(category);
+  const chip = _el('span', {
+    className: 'skill-chip',
+    style: `--skill-accent:${meta.color};--skill-accent-soft:${meta.soft};`,
+  });
+  const badge = _el('span', { className: 'skill-icon-badge' });
+  // meta.icon always comes from the fixed _SKILL_CATEGORY_META /
+  // _SKILL_CATEGORY_DEFAULT registry above (never from raw user text), and
+  // _SKILL_CATEGORY_ICONS is itself a closed, hardcoded set of vendored SVG
+  // strings authored in this file — never fetched or attacker-influenced,
+  // so this innerHTML assignment has no untrusted-content path.
+  badge.innerHTML = _SKILL_CATEGORY_ICONS.get(meta.icon) || '';
+  badge.setAttribute('aria-hidden', 'true');
+  chip.appendChild(badge);
+  chip.appendChild(_el('span', { className: 'skill-name', textContent: name }));
+  return chip;
 }
 
 function _renderSkillEditorRow(s, isPending) {
   const row = _el('div', { className: 'summary-variant-row skill-editor-row' });
   if (isPending) row.classList.add('skill-pending');
   const head = _el('div', { className: 'skill-editor-head' });
-  head.appendChild(_el('span', { className: 'skill-name', textContent: s.name }));
+  head.appendChild(_renderSkillChip(s.name, s.category));
   if (s.category) {
     head.appendChild(_el('span', {
       className: 'skill-category', textContent: ' · ' + s.category,
@@ -4709,7 +4866,7 @@ function _renderCorpusDetail(body, exp) {
   if (hasPending) {
     const acceptAll = _el('button', {
       className: 'cb-btn cb-bg-teal',
-      textContent: 'ACCEPT ALL PENDING',
+      textContent: 'Accept all pending',
     });
     acceptAll.onclick = async () => {
       try {
@@ -4721,7 +4878,7 @@ function _renderCorpusDetail(body, exp) {
     };
     btnRow.appendChild(acceptAll);
   }
-  const retire = _el('button', { className: 'cb-btn cb-bg-orange', textContent: 'SOFT-RETIRE EXPERIENCE' });
+  const retire = _el('button', { className: 'cb-btn cb-bg-orange', textContent: 'Soft-retire experience' });
   retire.onclick = () => deleteExperience(expId, retire);
   btnRow.appendChild(retire);
   body.appendChild(btnRow);
@@ -4763,7 +4920,7 @@ function _renderTitleSection(expId, titles) {
   const sec = _el('div', { className: 'corpus-section' });
   const header = _el('div', { className: 'corpus-section-header' });
   header.appendChild(_el('div', { className: 'corpus-section-title', textContent: 'Titles' }));
-  const addBtn = _el('button', { className: 'corpus-action-btn', textContent: '+ ADD TITLE' });
+  const addBtn = _el('button', { className: 'corpus-action-btn', textContent: '+ Add title' });
   addBtn.onclick = () => _addTitlePrompt(expId);
   header.appendChild(addBtn);
   sec.appendChild(header);
@@ -4788,13 +4945,13 @@ function _renderTitleRow(expId, title) {
   row.appendChild(input);
   row.appendChild(_el('span', {
     className: 'corpus-row-flag' + (title.is_official ? ' official' : ''),
-    textContent: title.is_official ? 'OFFICIAL' : 'ALT',
+    textContent: title.is_official ? 'Official' : 'Alt',
   }));
   if (title.is_pending_review) {
-    row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
+    row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'Pending' }));
   }
   if (retired) {
-    row.appendChild(_el('span', { className: 'corpus-row-flag retired', textContent: 'RETIRED' }));
+    row.appendChild(_el('span', { className: 'corpus-row-flag retired', textContent: 'Retired' }));
   }
   // Tag chips — Career Corpus parity with the Compose step. Tags
   // already exist on the detail payload via _experience_detail_dict;
@@ -4805,7 +4962,7 @@ function _renderTitleRow(expId, title) {
   row.appendChild(tagWrap);
   const actions = _el('div', { className: 'corpus-row-actions' });
   if (retired) {
-    const restore = _el('button', { className: 'corpus-action-btn', textContent: 'RESTORE' });
+    const restore = _el('button', { className: 'corpus-action-btn', textContent: 'Restore' });
     restore.onclick = async () => {
       try {
         await _putJson(`/api/experience-titles/${title.id}`, { is_active: true });
@@ -4818,7 +4975,7 @@ function _renderTitleRow(expId, title) {
     return row;
   }
   if (title.is_pending_review) {
-    const accept = _el('button', { className: 'corpus-action-btn', textContent: 'ACCEPT' });
+    const accept = _el('button', { className: 'corpus-action-btn', textContent: 'Accept' });
     accept.onclick = async () => {
       try {
         await _postJson(`/api/experience-titles/${title.id}/accept`, {});
@@ -4830,7 +4987,7 @@ function _renderTitleRow(expId, title) {
     actions.appendChild(accept);
   }
   if (!title.is_official) {
-    const setOfficial = _el('button', { className: 'corpus-action-btn', textContent: 'SET OFFICIAL' });
+    const setOfficial = _el('button', { className: 'corpus-action-btn', textContent: 'Set official' });
     setOfficial.onclick = async () => {
       try {
         await _putJson(`/api/experience-titles/${title.id}`, { is_official: true });
@@ -4840,7 +4997,7 @@ function _renderTitleRow(expId, title) {
     };
     actions.appendChild(setOfficial);
   }
-  const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'RETIRE' });
+  const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'Retire' });
   del.onclick = async () => {
     const ok = await cbConfirm(
       'It is hidden unless you tick "Show retired", and won’t be used in new résumés.',
@@ -4863,7 +5020,7 @@ function _renderBulletSection(expId, bullets) {
   const sec = _el('div', { className: 'corpus-section' });
   const header = _el('div', { className: 'corpus-section-header' });
   header.appendChild(_el('div', { className: 'corpus-section-title', textContent: 'Bullets' }));
-  const addBtn = _el('button', { className: 'corpus-action-btn', textContent: '+ ADD BULLET' });
+  const addBtn = _el('button', { className: 'corpus-action-btn', textContent: '+ Add bullet' });
   addBtn.onclick = () => _addBulletPrompt(expId);
   header.appendChild(addBtn);
   sec.appendChild(header);
@@ -4893,17 +5050,17 @@ function _renderBulletRow(expId, bullet) {
   row.appendChild(input);
   const flag = _el('span', {
     className: 'corpus-row-flag ' + (bullet.has_outcome ? 'outcome' : 'no-outcome'),
-    textContent: bullet.has_outcome ? 'OUTCOME' : 'NO OUTCOME',
+    textContent: bullet.has_outcome ? 'Outcome' : 'No outcome',
   });
   flag.title = bullet.has_outcome
     ? 'A numeric outcome was detected (count, %, currency, duration).'
     : 'No measurable outcome — consider adding one.';
   row.appendChild(flag);
   if (bullet.is_pending_review) {
-    row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'PENDING' }));
+    row.appendChild(_el('span', { className: 'corpus-row-flag pending', textContent: 'Pending' }));
   }
   if (retired) {
-    row.appendChild(_el('span', { className: 'corpus-row-flag retired', textContent: 'RETIRED' }));
+    row.appendChild(_el('span', { className: 'corpus-row-flag retired', textContent: 'Retired' }));
   }
   // Tag chips — Career Corpus parity with the Compose step. Tags
   // already ride on the detail payload (_experience_detail_dict),
@@ -4914,7 +5071,7 @@ function _renderBulletRow(expId, bullet) {
   row.appendChild(tagWrap);
   const actions = _el('div', { className: 'corpus-row-actions' });
   if (retired) {
-    const restore = _el('button', { className: 'corpus-action-btn', textContent: 'RESTORE' });
+    const restore = _el('button', { className: 'corpus-action-btn', textContent: 'Restore' });
     restore.onclick = async () => {
       try {
         await _putJson(`/api/bullets/${bullet.id}`, { is_active: true });
@@ -4927,7 +5084,7 @@ function _renderBulletRow(expId, bullet) {
     return row;
   }
   if (bullet.is_pending_review) {
-    const accept = _el('button', { className: 'corpus-action-btn', textContent: 'ACCEPT' });
+    const accept = _el('button', { className: 'corpus-action-btn', textContent: 'Accept' });
     accept.onclick = async () => {
       try {
         await _postJson(`/api/bullets/${bullet.id}/accept`, {});
@@ -4938,7 +5095,7 @@ function _renderBulletRow(expId, bullet) {
     };
     actions.appendChild(accept);
   }
-  const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'RETIRE' });
+  const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'Retire' });
   del.onclick = async () => {
     const ok = await cbConfirm(
       'It is hidden unless you tick "Show retired", and won’t appear in new résumés.',
@@ -4978,9 +5135,9 @@ async function _saveExperienceField(expId, field, value) {
 
 async function _addTitlePrompt(expId) {
   const result = await openFormModal({
-    title: 'ADD TITLE',
+    title: 'Add title',
     subtitle: 'Add an alternate experience title.',
-    submitLabel: 'ADD TITLE',
+    submitLabel: 'Add title',
     fields: [
       { name: 'title', label: 'Title', type: 'text', required: true,
         placeholder: 'e.g. Director, AI Research' },
@@ -5004,9 +5161,9 @@ async function _addTitlePrompt(expId) {
 
 async function _addBulletPrompt(expId) {
   const result = await openFormModal({
-    title: 'ADD BULLET',
+    title: 'Add bullet',
     subtitle: 'Add a canonical bullet to this experience.',
-    submitLabel: 'ADD BULLET',
+    submitLabel: 'Add bullet',
     fields: [
       { name: 'text', label: 'Bullet text', type: 'textarea', required: true,
         placeholder: 'e.g. Reduced API latency by 40% by introducing connection pooling.' },
@@ -5163,6 +5320,28 @@ function _setBusy(on, label) {
   }
 }
 
+// dec 4(b) (UX Cohesion Epic) — the shared "small button, in flight" idiom:
+// disable it, relabel it with a "…"-style pending label, and give it the
+// subtle .btn-pending pulse (static/style.css). Several call sites already
+// disabled + relabeled by hand (Co2's _fireRecommendSkills fix, the sibling
+// _fireSuggestSkills it mirrored) — this centralizes that pattern so the
+// pulse ships everywhere consistently instead of being one more manual copy
+// per call site. Complements (not replaces) _setBusy: _setBusy is the
+// app-wide "don't navigate away" banner for genuinely blocking actions;
+// this is the LOCAL affordance on the one button the user actually clicked.
+function _setBtnPending(btn, label) {
+  if (!btn) return;
+  btn.disabled = true;
+  btn.classList.add('btn-pending');
+  if (label) btn.textContent = label;
+}
+function _clearBtnPending(btn, label) {
+  if (!btn) return;
+  btn.disabled = false;
+  btn.classList.remove('btn-pending');
+  if (label) btn.textContent = label;
+}
+
 async function refreshCorpusSummaryFor(expId) {
   const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
   if (!res.ok) return;
@@ -5205,9 +5384,9 @@ async function deleteExperience(expId, triggerEl) {
 
 async function openCorpusAddExperience() {
   const result = await openFormModal({
-    title: 'ADD EXPERIENCE',
+    title: 'Add experience',
     subtitle: 'New experience for the corpus.',
-    submitLabel: 'ADD EXPERIENCE',
+    submitLabel: 'Add experience',
     fields: [
       { name: 'company',    label: 'Company',    type: 'text', required: true },
       { name: 'start_date', label: 'Start',      type: 'text', required: true,
@@ -5431,12 +5610,12 @@ function _renderMemoryRow(r) {
   header.appendChild(_el('span', { className: 'memory-card-kind', textContent: r.kind }));
   if (r.outcome_rich) {
     header.appendChild(_el('span', {
-      className: 'corpus-row-flag outcome', textContent: 'OUTCOME',
+      className: 'corpus-row-flag outcome', textContent: 'Outcome',
     }));
   }
   if (r.is_promoted_to_bullet) {
     header.appendChild(_el('span', {
-      className: 'memory-card-promoted', textContent: 'PROMOTED',
+      className: 'memory-card-promoted', textContent: 'Promoted',
     }));
   }
   if (r.origin_application_title) {
@@ -5457,7 +5636,7 @@ function _renderMemoryRow(r) {
   if (!r.is_promoted_to_bullet) {
     const actions = _el('div', { className: 'memory-card-actions' });
     const promote = _el('button', {
-      className: 'corpus-action-btn', textContent: 'PROMOTE TO BULLET',
+      className: 'corpus-action-btn', textContent: 'Promote to bullet',
     });
     promote.onclick = () => _promoteMemoryRow(r);
     actions.appendChild(promote);
@@ -5486,9 +5665,9 @@ async function _promoteMemoryRow(r) {
     label: `${e.company} (${e.start_date} — ${e.end_date || 'present'})`,
   }));
   const result = await openFormModal({
-    title: 'PROMOTE TO BULLET',
+    title: 'Promote to bullet',
     subtitle: 'Pick which experience this Q&A should become a bullet under.',
-    submitLabel: 'PROMOTE',
+    submitLabel: 'Promote',
     fields: [
       { name: 'experience_id', label: 'Experience', type: 'select',
         required: true, options: expOptions,
@@ -5684,12 +5863,12 @@ function _renderDuplicateExp(exp) {
       const meta = _el('span', { className: 'duplicate-meta' });
       if (b.has_outcome) {
         meta.appendChild(_el('span', {
-          className: 'corpus-row-flag outcome', textContent: 'OUTCOME',
+          className: 'corpus-row-flag outcome', textContent: 'Outcome',
         }));
       }
       if (b.id === cluster.recommended_keep) {
         meta.appendChild(_el('span', {
-          className: 'corpus-row-flag', textContent: 'RECOMMENDED',
+          className: 'corpus-row-flag', textContent: 'Recommended',
         }));
       }
       row.appendChild(meta);
@@ -5802,6 +5981,15 @@ function _renderApplicationsList(apps) {
   apps.forEach(a => list.appendChild(_renderApplicationCard(a)));
 }
 
+// dec 7 (G7, UX Cohesion Epic) — the compact roster card: ONE summary line
+// (title/company) + ONE meta line (status · pending-review count · date).
+// Everything this card used to render directly — iteration count, the
+// status-transition row (Mark submitted / Got interview / …), and the
+// retire/restore admin row — moved into the expanded detail modal
+// (_showApplicationDetail, already opened on card click below), alongside
+// the JD snippet + per-run status that modal now ALSO surfaces for the
+// first time. A roster of 10+ applications used to be 10+ small multi-row
+// cards each carrying its own button rows; it's now a dense two-line list.
 function _renderApplicationCard(app) {
   const retired = app.is_active === false;
   const card = _el('div', {
@@ -5819,13 +6007,11 @@ function _renderApplicationCard(app) {
   const chipStatus = app.status || 'draft';
   meta.appendChild(_el('span', {
     className: `app-status-chip status-${chipStatus}`,
-    textContent: (chipStatus === 'submitted' ? 'NO RESPONSE' : chipStatus).replace('_', ' ').toUpperCase(),
+    textContent: _toSentence((chipStatus === 'submitted' ? 'no response' : chipStatus).replace('_', ' ')),
   }));
   if (retired) {
-    meta.appendChild(_el('span', { className: 'app-status-chip status-retired', textContent: 'RETIRED' }));
+    meta.appendChild(_el('span', { className: 'app-status-chip status-retired', textContent: 'Retired' }));
   }
-  const iterText = `${app.iteration_count} iter${app.iteration_count === 1 ? '' : 's'}`;
-  meta.appendChild(_el('span', { className: 'application-card-iter', textContent: iterText }));
   if (app.pending_proposals > 0) {
     const badge = _el('span', {
       className: 'application-card-pending',
@@ -5850,50 +6036,72 @@ function _renderApplicationCard(app) {
   }));
   card.appendChild(meta);
 
-  // B.8 Part 1 — the status funnel: draft cards offer "Mark submitted"
-  // (previously the funnel entry was unreachable — outcome buttons render
-  // only on submitted cards, and nothing in the UI ever set submitted).
-  // `interview` is terminal: the callback signal this product optimizes for
-  // (data-model decision 2026-06-10), so interview/rejected/withdrawn cards
-  // get no further actions.
-  if (app.status === 'draft') {
-    card.appendChild(_statusActionRow(app.id, [
-      { label: 'Mark submitted', status: 'submitted' },
-    ]));
-  } else if (app.status === 'submitted') {
-    card.appendChild(_statusActionRow(app.id, [
-      { label: 'Got Interview', status: 'interview' },
-      { label: 'Got Rejection', status: 'rejected' },
-      { label: 'Withdrew', status: 'withdrawn' },
-    ]));
-  }
+  card.onclick = () => _showApplicationDetail(app.id);
+  return card;
+}
 
-  // Walkthrough J1 — retire (hide) a poor/deserted application, or restore one.
-  const adminRow = _el('div', { className: 'application-admin-row' });
+// dec 7 — the status-transition row, now rendered INTO the expanded detail
+// modal (#appDetailStatusActions) rather than directly on the compact card.
+// Same funnel logic as before (B.8 Part 1): draft → "Mark submitted";
+// submitted → the three outcome buttons; interview/rejected/withdrawn is
+// terminal (data-model decision 2026-06-10), so no further actions render.
+// Re-renders the modal's own detail (not the whole list) on success so the
+// modal reflects the new status without a jarring close; refreshApplications()
+// still runs so the roster behind it stays in sync.
+// `container` is the modal's own #appDetailStatusActions div (already
+// carries the .outcome-action-row class in templates/index.html) — this
+// populates it in place rather than nesting another wrapper.
+function _renderAppDetailStatusActions(container, app) {
+  const actions = app.status === 'draft'
+    ? [{ label: 'Mark submitted', status: 'submitted' }]
+    : app.status === 'submitted'
+      ? [
+          { label: 'Got Interview', status: 'interview' },
+          { label: 'Got Rejection', status: 'rejected' },
+          { label: 'Withdrew', status: 'withdrawn' },
+        ]
+      : [];
+  actions.forEach(({ label, status }) => {
+    const btn = _el('button', { className: 'outcome-btn', textContent: label });
+    btn.addEventListener('click', async () => {
+      if (await _putApplicationStatus(app.id, status)) {
+        refreshApplications();
+        _showApplicationDetail(app.id);
+      }
+    });
+    container.appendChild(btn);
+  });
+}
+
+// dec 7 — retire/restore, now rendered INTO the expanded detail modal
+// (#appDetailAdminRow, already carries .application-admin-row) rather than
+// directly on the compact card. Same in-place-populate shape as above.
+function _renderAppDetailAdminRow(container, app) {
+  const retired = app.is_active === false;
   if (retired) {
     const restore = _el('button', { className: 'app-admin-btn', textContent: 'Restore' });
-    restore.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (await _setApplicationRetired(app.id, false)) refreshApplications();
+    restore.addEventListener('click', async () => {
+      if (await _setApplicationRetired(app.id, false)) {
+        refreshApplications();
+        _showApplicationDetail(app.id);
+      }
     });
-    adminRow.appendChild(restore);
+    container.appendChild(restore);
   } else {
     const retire = _el('button', { className: 'app-admin-btn retire', textContent: 'Retire' });
-    retire.addEventListener('click', async (e) => {
-      e.stopPropagation();
+    retire.addEventListener('click', async () => {
       const ok = await cbConfirm(
         'It is hidden unless you tick "Show retired". Its iteration history is kept.',
         { title: 'Retire this application?', confirmLabel: 'Retire', triggerEl: retire },
       );
       if (!ok) return;
-      if (await _setApplicationRetired(app.id, true)) refreshApplications();
+      if (await _setApplicationRetired(app.id, true)) {
+        refreshApplications();
+        _showApplicationDetail(app.id);
+      }
     });
-    adminRow.appendChild(retire);
+    container.appendChild(retire);
   }
-  card.appendChild(adminRow);
-
-  card.onclick = () => _showApplicationDetail(app.id);
-  return card;
 }
 
 // Walkthrough J1 — soft-retire (DELETE) / restore (POST) a prior application.
@@ -5934,19 +6142,6 @@ async function _putApplicationStatus(appId, status) {
     _toast('Failed to update status: ' + e.message, true);
     return false;
   }
-}
-
-function _statusActionRow(appId, actions) {
-  const row = _el('div', { className: 'outcome-action-row' });
-  actions.forEach(({ label, status }) => {
-    const btn = _el('button', { className: 'outcome-btn', textContent: label });
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (await _putApplicationStatus(appId, status)) refreshApplications();
-    });
-    row.appendChild(btn);
-  });
-  return row;
 }
 
 function _formatRelativeDate(iso) {
@@ -5995,7 +6190,7 @@ async function _showApplicationDetail(applicationId) {
   while (metaEl.firstChild) metaEl.removeChild(metaEl.firstChild);
   const chip = _el('span', {
     className: `app-status-chip status-${detail.status}`,
-    textContent: (detail.status || 'draft').toUpperCase(),
+    textContent: _toSentence(detail.status || 'draft'),
   });
   const iters = _el('span', {
     style: 'font-size:12px;color:var(--fg-2);margin-left:10px',
@@ -6011,6 +6206,53 @@ async function _showApplicationDetail(applicationId) {
   if (detail.sent_at) tsLines.push(`Submitted: ${_formatRelativeDate(detail.sent_at)}`);
   if (detail.outcome_at) tsLines.push(`Outcome: ${_formatRelativeDate(detail.outcome_at)}`);
   if (tsLines.length) tsEl.textContent = tsLines.join('  ·  ');
+
+  // dec 7 (UX Cohesion Epic) — JD snippet, collapsed by default. New: the
+  // roster never surfaced the JD text anywhere before the compact-card
+  // redesign moved detail here.
+  const jdDetails = document.getElementById('appDetailJDDetails');
+  const jdEl = document.getElementById('appDetailJD');
+  if (jdDetails && jdEl) {
+    _clearChildren(jdEl);
+    if (detail.jd_text && detail.jd_text.trim()) {
+      jdDetails.style.display = '';
+      jdEl.textContent = detail.jd_text;
+    } else {
+      jdDetails.style.display = 'none';
+    }
+  }
+
+  // dec 7 — per-run status. ats_roundtrip_status is the closest thing to a
+  // "score" this route returns (no separate scoring concept exists on
+  // ApplicationRun); shown per iteration alongside what each run produced.
+  const scoresEl = document.getElementById('appDetailScores');
+  if (scoresEl) {
+    _clearChildren(scoresEl);
+    (detail.runs || []).forEach(r => {
+      const parts = [`Iteration ${r.iteration}`];
+      if (r.has_resume) parts.push('résumé');
+      if (r.has_cover_letter) parts.push('cover letter');
+      if (r.ats_roundtrip_status) parts.push(`ATS: ${r.ats_roundtrip_status}`);
+      scoresEl.appendChild(_el('div', {
+        className: 'app-detail-score-row',
+        textContent: parts.join(' · '),
+      }));
+    });
+  }
+
+  // dec 7 — status-transition + retire/restore actions, moved off the
+  // compact card. Rebuilt fresh each open/refresh so they always reflect
+  // the CURRENT status/is_active rather than the state at click-time.
+  const statusActionsEl = document.getElementById('appDetailStatusActions');
+  if (statusActionsEl) {
+    _clearChildren(statusActionsEl);
+    _renderAppDetailStatusActions(statusActionsEl, detail);
+  }
+  const adminRowEl = document.getElementById('appDetailAdminRow');
+  if (adminRowEl) {
+    _clearChildren(adminRowEl);
+    _renderAppDetailAdminRow(adminRowEl, detail);
+  }
 
   // Notes textarea
   const notesEl = document.getElementById('appDetailNotes');
@@ -6369,38 +6611,38 @@ function _renderPersonaCard(p, owned) {
   const meta = _el('div', { className: 'persona-card-meta' });
   meta.appendChild(_el('span', {
     className: 'persona-card-source ' + (owned ? 'owned' : 'bundled'),
-    textContent: owned ? 'YOURS' : 'BUNDLED',
+    textContent: owned ? 'Yours' : 'Bundled',
   }));
   if (p.is_default) {
-    meta.appendChild(_el('span', { className: 'persona-card-default', textContent: 'DEFAULT' }));
+    meta.appendChild(_el('span', { className: 'persona-card-default', textContent: 'Default' }));
   }
   meta.appendChild(_el('span', { className: 'persona-card-path', textContent: p.path }));
   card.appendChild(meta);
 
   const actions = _el('div', { className: 'persona-card-actions' });
-  const dl = _el('button', { className: 'corpus-action-btn', textContent: 'DOWNLOAD' });
+  const dl = _el('button', { className: 'corpus-action-btn', textContent: 'Download' });
   dl.onclick = () => window.open(`/api/personas/${p.id}/download`, '_blank');
   actions.appendChild(dl);
 
   const prev = _el('button', {
-    className: 'corpus-action-btn', textContent: 'OPEN PREVIEW',
+    className: 'corpus-action-btn', textContent: 'Open preview',
   });
   prev.onclick = () => _previewPersonaWithResume(p.id, p.name);
   actions.appendChild(prev);
 
   if (owned) {
-    const rename = _el('button', { className: 'corpus-action-btn', textContent: 'RENAME' });
+    const rename = _el('button', { className: 'corpus-action-btn', textContent: 'Rename' });
     rename.onclick = () => _renamePersona(p.id, p.name);
     actions.appendChild(rename);
 
     // Wave 2 recruiter tier (UX review F-16) — the smallest honest fix for
     // "house templates are per-candidate": a one-click copy into another
     // candidate's own templates instead of re-uploading the .docx by hand.
-    const copyBtn = _el('button', { className: 'corpus-action-btn', textContent: 'COPY TO CANDIDATE' });
+    const copyBtn = _el('button', { className: 'corpus-action-btn', textContent: 'Copy to candidate' });
     copyBtn.onclick = () => _copyPersonaToCandidate(p.id, p.name);
     actions.appendChild(copyBtn);
 
-    const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'DELETE' });
+    const del = _el('button', { className: 'corpus-action-btn delete', textContent: 'Delete' });
     del.onclick = () => _deletePersona(p.id, p.name, del);
     actions.appendChild(del);
   }
@@ -7075,7 +7317,7 @@ async function _fireDraftSummary(force, btn) {
   // button itself — same idiom as submitClarifications' btnSubmit.disabled.
   // The silent auto-fire on Compose arrival (force=false, no btn) is
   // unaffected: it already has no button to disable.
-  if (btn) { btn.disabled = true; btn.textContent = 'Regenerating…'; }
+  _setBtnPending(btn, 'Regenerating…');
   _markComposeBgReload(1);
   try {
     const res = await fetch(
@@ -7088,7 +7330,7 @@ async function _fireDraftSummary(force, btn) {
     // Non-blocking — the user can Regenerate or type their own summary.
   } finally {
     _markComposeBgReload(-1);
-    if (btn) { btn.disabled = false; btn.textContent = 'Regenerate'; }
+    _clearBtnPending(btn, 'Regenerate');
   }
 }
 
@@ -7105,7 +7347,7 @@ async function _fireDraftSummary(force, btn) {
 // toast so the silent auto-fire keeps its original non-blocking behavior.
 async function _fireDraftGapFill(btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
-  if (btn) { btn.disabled = true; btn.textContent = 'Regenerating…'; }
+  _setBtnPending(btn, 'Regenerating…');
   _markComposeBgReload(1);
   try {
     const res = await fetch(
@@ -7131,7 +7373,7 @@ async function _fireDraftGapFill(btn) {
     if (btn) _toast('Network error regenerating suggestions.', true);
   } finally {
     _markComposeBgReload(-1);
-    if (btn) { btn.disabled = false; btn.textContent = 'Regenerate suggestions'; }
+    _clearBtnPending(btn, 'Regenerate suggestions');
   }
 }
 
@@ -7362,7 +7604,14 @@ function _renderSkillsCard(skills) {
   const skillList = _el('div', { className: 'compose-skill-list' });
   skillList.dataset.customOrder = 'false';
   orderedIds.forEach(id => skillList.appendChild(_renderSkillRow(byId[id])));
-  card.appendChild(skillList);
+  // dec 6 (UX Cohesion Epic) — collapsible toggle for the bounded skills
+  // list (C2 already bounded it with internal scroll; this adds an actual
+  // expand/collapse affordance, shared with the Career Corpus tab's
+  // equivalent list via the same .corpus-collapsible wrapper).
+  const skillListDetails = _el('details', { className: 'corpus-collapsible', open: true });
+  skillListDetails.appendChild(_el('summary', { textContent: `Skills (${orderedIds.length})` }));
+  skillListDetails.appendChild(skillList);
+  card.appendChild(skillListDetails);
 
   // Pending review lane (llm_proposed suggestions awaiting approve/deny).
   const pending = skills.pending || [];
@@ -7384,7 +7633,7 @@ function _renderSkillRow(it) {
   if (it.excluded) row.classList.add('skill-excluded');
 
   const text = _el('div', { className: 'row-text' });
-  text.appendChild(_el('span', { className: 'skill-name', textContent: it.name }));
+  text.appendChild(_renderSkillChip(it.name, it.category));
   if (it.category) {
     text.appendChild(_el('span', {
       className: 'skill-category', textContent: ' · ' + it.category,
@@ -7489,7 +7738,7 @@ function _collectSkillState() {
 // user click (always run) from the auto-fire on first load.
 async function _fireRecommendSkills(explicit, btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
-  if (btn) { btn.disabled = true; btn.textContent = 'Tailoring…'; }
+  _setBtnPending(btn, 'Tailoring…');
   _markComposeBgReload(1);
   try {
     const res = await fetch(
@@ -7503,7 +7752,7 @@ async function _fireRecommendSkills(explicit, btn) {
     if (explicit) _toast('Network error tailoring skills.', true);
   } finally {
     _markComposeBgReload(-1);
-    if (btn) { btn.disabled = false; btn.textContent = 'Tailor skills to this JD'; }
+    _clearBtnPending(btn, 'Tailor skills to this JD');
   }
 }
 
@@ -7511,7 +7760,7 @@ async function _fireRecommendSkills(explicit, btn) {
 // reload composition to surface the review lane.
 async function _fireSuggestSkills(btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
-  if (btn) { btn.disabled = true; btn.textContent = 'Suggesting…'; }
+  _setBtnPending(btn, 'Suggesting…');
   _markComposeBgReload(1);
   try {
     const res = await fetch(
@@ -7531,14 +7780,14 @@ async function _fireSuggestSkills(btn) {
     _toast('Network error suggesting skills.', true);
   } finally {
     _markComposeBgReload(-1);
-    if (btn) { btn.disabled = false; btn.textContent = 'Suggest skills from this JD'; }
+    _clearBtnPending(btn, 'Suggest skills from this JD');
   }
 }
 
 function _renderPendingSkillRow(p) {
   const row = _el('div', { className: 'compose-row pending-skill-row' });
   const text = _el('div', { className: 'row-text' });
-  text.appendChild(_el('span', { className: 'skill-name', textContent: p.name }));
+  text.appendChild(_renderSkillChip(p.name, p.category));
   if (p.category) {
     text.appendChild(_el('span', {
       className: 'skill-category', textContent: ' · ' + p.category,
@@ -7558,7 +7807,10 @@ function _renderPendingSkillRow(p) {
 }
 
 // Approve (PUT is_pending_review=false → joins the canonical set) or deny
-// (DELETE → hard-removes the never-approved suggestion). Reloads composition.
+// (DELETE → reversible soft-tombstone, dec 6: is_active=0, never
+// hard-deleted, so the name keeps suppressing future re-suggestion and
+// Restore can un-deny it from the Career Corpus tab's denied lane).
+// Reloads composition.
 async function _reviewPendingSkill(skillId, approve) {
   _markComposeBgReload(1);
   try {
@@ -8035,7 +8287,7 @@ function _renderComposeCard(exp) {
     if (drawerBullets.length) {
       const toggle = _el('button', {
         className: 'compose-drawer-toggle',
-        textContent: `+ FIND MORE BULLETS IN ${exp.company.toUpperCase()} (${drawerBullets.length})`,
+        textContent: `+ Find more bullets in ${exp.company} (${drawerBullets.length})`,
       });
       const drawer = _el('div', { className: 'compose-drawer hidden' });
       const toolbar = _el('div', { className: 'compose-drawer-toolbar' });
@@ -8120,7 +8372,7 @@ function _renderTitleRow_compose(t, expId, chosenTitleId) {
   }));
   if (t.is_official) {
     meta.appendChild(_el('span', {
-      className: 'corpus-row-flag official', textContent: 'OFFICIAL',
+      className: 'corpus-row-flag official', textContent: 'Official',
     }));
   }
   const tagWrap = _el('span', { className: 'tag-chip-wrap' });
@@ -8136,10 +8388,10 @@ function _renderTitleRow_compose(t, expId, chosenTitleId) {
 // reloads composition so it appears as a selectable option for this résumé.
 async function _addComposeTitlePrompt(expId) {
   const result = await openFormModal({
-    title: 'ADD TITLE',
+    title: 'Add title',
     subtitle: 'Add an alternative title for this experience. It joins your '
       + 'career corpus and becomes selectable for this résumé.',
-    submitLabel: 'ADD TITLE',
+    submitLabel: 'Add title',
     fields: [
       { name: 'title', label: 'Title', type: 'text', required: true,
         placeholder: 'e.g. Director, AI Research' },
@@ -8194,17 +8446,17 @@ function _renderBulletRow_compose(b, opts = {}) {
   const actions = _el('div', { className: 'row-actions' });
   const pin = _el('button', {
     className: 'corpus-action-btn' + (b.pinned ? ' on' : ''),
-    textContent: b.pinned ? 'PINNED' : 'PIN',
+    textContent: b.pinned ? 'Pinned' : 'Pin',
   });
   const exc = _el('button', {
     className: 'corpus-action-btn delete' + (b.excluded ? ' on' : ''),
-    textContent: b.excluded ? 'EXCLUDED' : 'EXCLUDE',
+    textContent: b.excluded ? 'Excluded' : 'Exclude',
   });
   // Toggle "add" only for non-recommended bullets reached via drawer;
   // recommended/already-added bullets always count as added.
   const addBtn = _el('button', {
     className: 'corpus-action-btn' + (b.added ? ' on' : ''),
-    textContent: b.added ? 'ADDED' : '+ ADD',
+    textContent: b.added ? 'Added' : '+ Add',
   });
   if (b.recommended) addBtn.style.display = 'none';
   // Pin/exclude/add now also fire the debounced autosave (the autosave sends
@@ -8265,7 +8517,7 @@ function _renderBulletRow_compose(b, opts = {}) {
   }
   if (b.recommended) {
     meta.appendChild(_el('span', {
-      className: 'corpus-row-flag', textContent: 'RECOMMENDED',
+      className: 'corpus-row-flag', textContent: 'Recommended',
       style: 'background:var(--success);color:var(--bg-0);',
     }));
   }
@@ -8277,22 +8529,22 @@ function _renderBulletRow_compose(b, opts = {}) {
   }
   if (b.has_outcome) {
     meta.appendChild(_el('span', {
-      className: 'corpus-row-flag outcome', textContent: 'OUTCOME',
+      className: 'corpus-row-flag outcome', textContent: 'Outcome',
     }));
   }
   if (b.is_pending_review) {
     meta.appendChild(_el('span', {
-      className: 'corpus-row-flag pending', textContent: 'PENDING',
+      className: 'corpus-row-flag pending', textContent: 'Pending',
     }));
     // Walkthrough D3: edit + approve a proposed bullet INLINE in the tailor flow
     // (both persist straight to the corpus via the same routes the Corpus tab
     // uses), so the user never has to leave Compose to keep a proposed change.
     const editBtn = _el('button', {
-      className: 'corpus-action-btn', textContent: 'EDIT',
+      className: 'corpus-action-btn', textContent: 'Edit',
     });
     editBtn.onclick = () => _editComposeBullet(b, row);
     const approveBtn = _el('button', {
-      className: 'corpus-action-btn', textContent: 'APPROVE',
+      className: 'corpus-action-btn', textContent: 'Approve',
     });
     approveBtn.onclick = async () => {
       try {
@@ -8320,9 +8572,9 @@ function _renderBulletRow_compose(b, opts = {}) {
 // Career Corpus tab uses); the row updates in place. Approval is a separate click.
 async function _editComposeBullet(b, row) {
   const result = await openFormModal({
-    title: 'EDIT BULLET',
+    title: 'Edit bullet',
     subtitle: 'Edit this proposed bullet. Your change saves to your career corpus.',
-    submitLabel: 'SAVE',
+    submitLabel: 'Save',
     fields: [
       { name: 'text', label: 'Bullet', type: 'textarea', required: true,
         defaultValue: b.text },
@@ -8347,15 +8599,15 @@ function _refreshComposeRow(row) {
   if (!actions) return;
   const btns = actions.querySelectorAll('button');
   if (btns[0]) {
-    btns[0].textContent = b.pinned ? 'PINNED' : 'PIN';
+    btns[0].textContent = b.pinned ? 'Pinned' : 'Pin';
     btns[0].classList.toggle('on', !!b.pinned);
   }
   if (btns[1]) {
-    btns[1].textContent = b.excluded ? 'EXCLUDED' : 'EXCLUDE';
+    btns[1].textContent = b.excluded ? 'Excluded' : 'Exclude';
     btns[1].classList.toggle('on', !!b.excluded);
   }
   if (btns[2]) {
-    btns[2].textContent = b.added ? 'ADDED' : '+ ADD';
+    btns[2].textContent = b.added ? 'Added' : '+ Add';
     btns[2].classList.toggle('on', !!b.added);
   }
 }
@@ -8479,6 +8731,14 @@ async function _postComposition(state) {
 // Debounced (~300ms) optimistic autosave. The DOM is already updated by the
 // caller; on failure we toast and leave the optimistic state in place (the
 // next autosave or the Next save retries).
+//
+// dec 5 (Co5, UX Cohesion Epic) — this used to be silent on success (only
+// the failure path toasted), which the owner flagged as "too quiet": a
+// background reload-on-save with no perceptible confirmation reads as
+// "did that actually save?". The success path now toasts too, using the
+// SAME quiet `_toast()` idiom every other save confirmation in the app
+// already uses (Title saved / Bullet restored / etc.) — not a new,
+// louder mechanism, just no longer silent.
 function _scheduleCompositionSave() {
   if (_composeApplicationId == null || !lastContextPath) return;
   if (_composeSaveTimer) clearTimeout(_composeSaveTimer);
@@ -8486,6 +8746,7 @@ function _scheduleCompositionSave() {
     _composeSaveTimer = null;
     try {
       await _postComposition(_collectCompositionState());
+      _toast('Saved');
     } catch (e) {
       _toast('Autosave failed: ' + e.message, true);
     }
@@ -8623,7 +8884,7 @@ function _renderTagChips(container, subjectKind, subjectId, tags) {
     chip.appendChild(x);
     container.appendChild(chip);
   });
-  const add = _el('button', { className: 'tag-chip-add', textContent: '+ tag' });
+  const add = _el('button', { className: 'tag-chip-add', textContent: '+ Tag' });
   add.onclick = () => _openInlineTagComposer(add, subjectKind, subjectId);
   container.appendChild(add);
 }
@@ -8783,7 +9044,7 @@ function _renderTemplatePickList() {
     }));
     nameRow.appendChild(_el('span', {
       className: 'template-mini-source ' + (source === 'owned' ? 'owned' : 'bundled'),
-      textContent: source === 'owned' ? 'MINE' : 'BUNDLED',
+      textContent: source === 'owned' ? 'Mine' : 'Bundled',
     }));
     row.appendChild(nameRow);
 
@@ -9046,9 +9307,9 @@ function openFormModal(opts) {
     const trigger = document.activeElement;
     if (!modal || !body) { resolve(null); return; }
 
-    titleEl.textContent = opts.title || 'FORM';
+    titleEl.textContent = opts.title || 'Form';
     subEl.textContent = opts.subtitle || '';
-    submit.textContent = opts.submitLabel || 'SAVE';
+    submit.textContent = opts.submitLabel || 'Save';
     _clearChildren(body);
 
     const inputs = {};
@@ -9189,7 +9450,7 @@ function _openInlineTagComposer(addBtn, subjectKind, subjectId) {
     o.value = k; o.textContent = k;
     kind.appendChild(o);
   });
-  const go = _el('button', { className: 'tag-composer-go', textContent: 'ADD' });
+  const go = _el('button', { className: 'tag-composer-go', textContent: 'Add' });
   const cancel = _el('button', { className: 'tag-composer-cancel', textContent: '×' });
   composer.appendChild(input); composer.appendChild(kind);
   composer.appendChild(go); composer.appendChild(cancel);

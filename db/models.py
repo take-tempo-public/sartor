@@ -776,7 +776,18 @@ class Application(Base):
             "status IN ('draft', 'submitted', 'interview', 'rejected', 'withdrawn')",
             name="ck_application_status",
         ),
-        Index("ix_application_candidate_status_updated", "candidate_id", "status", "updated_at"),
+        # PX-38: is_active added (candidate_id, is_active) leads because
+        # list_applications' default (no ?status=) path filters candidate_id +
+        # is_active on every call; status is an opt-in query param filtered
+        # only sometimes. Both call shapes still get a fully-contiguous
+        # equality prefix; updated_at stays trailing for the ORDER BY.
+        Index(
+            "ix_application_candidate_status_updated",
+            "candidate_id",
+            "is_active",
+            "status",
+            "updated_at",
+        ),
     )
 
 

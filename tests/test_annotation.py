@@ -587,3 +587,108 @@ class TestWritePathGuard:
         assert secure_filename("..") == ""  # precondition
         with pytest.raises(ValueError, match="sanitizes to empty"):
             annotation._resolve_fixture_slug("..", "..")
+
+
+class TestPatchGroundingScoresByText:
+    """RH-1 (2026-07 e2e-run-health-review): the text-matched persistence seam
+    ``patch_grounding_scores_by_text`` uses — unit-level, LLM-free, no scorer
+    models involved. The end-to-end wiring into ``evals.runner.run_suite`` is
+    covered by ``tests/test_eval_runner.py::TestGroundingSignalsAnnotationPersistence``.
+    """
+
+    def _doc(self, **overrides: object) -> dict:
+        base = {
+            "annotation_schema_version": 1,
+            "bootstrap_source": "",
+            "candidate_username": "alex",
+            "prompt_version": "v1",
+            "bullets": [
+                {
+                    "cluster_index": 0,
+                    "representative": "Led a $5M migration",
+                    "jd_files": [],
+                    "size": 1,
+                    "nli_entailment_score": None,
+                    "nli_contradiction_flag": None,
+                    "minicheck_grounding_score": None,
+                    "verdict": "keep",
+                    "failed_rules": [],
+                    "note": "keep me",
+                    "should_omit": False,
+                    "honest_rewrite": None,
+                    "forbidden_pattern": None,
+                }
+            ],
+            "skills": [],
+            "clarification_ratings": [],
+            "min_scores": {},
+            "notes": "",
+        }
+        base.update(overrides)
+        return base
+
+    def test_patches_by_normalized_text_match(self, tmp_path: Path) -> None:
+        ann_path = tmp_path / "annotations.json"
+        ann_path.write_text(json.dumps(self._doc()), encoding="utf-8")
+        gs = {
+            "nli": [
+                {
+                    "bullet": "  Led   a $5M migration ",  # extra whitespace, still matches
+                    "nli_entailment_score": 0.95,
+                    "nli_contradiction_flag": False,
+                }
+            ],
+            "minicheck": [{"bullet": "led a $5m migration", "minicheck_grounding_score": 0.8}],
+        }
+        patched = annotation.patch_grounding_scores_by_text(ann_path, gs)
+        assert patched == 1
+        doc = json.loads(ann_path.read_text(encoding="utf-8"))
+        item = doc["bullets"][0]
+        assert item["nli_entailment_score"] == 0.95
+        assert item["minicheck_grounding_score"] == 0.8
+        # Human fields untouched.
+        assert item["verdict"] == "keep"
+        assert item["note"] == "keep me"
+
+    def test_unmatched_bullet_is_left_untouched(self, tmp_path: Path) -> None:
+        ann_path = tmp_path / "annotations.json"
+        ann_path.write_text(json.dumps(self._doc()), encoding="utf-8")
+        gs = {
+            "nli": [
+                {
+                    "bullet": "A completely different bullet",
+                    "nli_entailment_score": 0.1,
+                    "nli_contradiction_flag": True,
+                }
+            ],
+            "minicheck": [],
+        }
+        patched = annotation.patch_grounding_scores_by_text(ann_path, gs)
+        assert patched == 0
+        doc = json.loads(ann_path.read_text(encoding="utf-8"))
+        assert doc["bullets"][0]["nli_entailment_score"] is None
+
+    def test_empty_grounding_data_is_a_noop(self, tmp_path: Path) -> None:
+        ann_path = tmp_path / "annotations.json"
+        ann_path.write_text(json.dumps(self._doc()), encoding="utf-8")
+        assert annotation.patch_grounding_scores_by_text(ann_path, None) == 0
+        assert annotation.patch_grounding_scores_by_text(ann_path, {}) == 0
+
+    def test_missing_file_is_a_noop(self, tmp_path: Path) -> None:
+        assert (
+            annotation.patch_grounding_scores_by_text(
+                tmp_path / "does-not-exist.json",
+                {"nli": [{"bullet": "x", "nli_entailment_score": 1}]},
+            )
+            == 0
+        )
+
+    def test_malformed_json_is_a_noop(self, tmp_path: Path) -> None:
+        ann_path = tmp_path / "annotations.json"
+        ann_path.write_text("not json", encoding="utf-8")
+        assert (
+            annotation.patch_grounding_scores_by_text(
+                ann_path, {"nli": [{"bullet": "x", "nli_entailment_score": 1}]}
+            )
+            == 0
+        )

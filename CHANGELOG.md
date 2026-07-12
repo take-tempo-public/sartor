@@ -13,6 +13,326 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: unified quality-gate wrapper + CI hygiene batch (PX-55/PX-43, `ci/portable-enforcement`)
+
+v1.1.0 debt-burn Lane HARD (relaunch, reduced scope). Lands the two SAFE
+items from this lane's scope; the L2 hook-re-home + PX-37 dispatcher are
+DEFERRED to an owner-present session (see Carry-forward ledger).
+
+- **PX-55** — new `scripts/gate.py`: one wrapper running `ruff check .` +
+  `ruff format --check .` + `mypy .` + `pytest` (the same four steps, same
+  order, as `.github/workflows/ci.yml`'s `quality` job), each print-labelled
+  and stopping at the first failure. `AGENTS.md`, `CONTRIBUTING.md`, and
+  `ci.yml` now invoke `python -m scripts.gate` instead of independently
+  restating the step list — a single definition of "gate green" instead of
+  three that can silently drift (the exact drift this closes: `AGENTS.md`'s
+  close-out checklist and Testing section both omitted the `ruff format
+  --check` step CI already ran). Invokes each tool via `sys.executable -m
+  <tool>` rather than the bare console-script name, matching
+  `ruff_changed.py`'s existing portability rationale (console scripts are
+  not guaranteed to be on `PATH` for every install).
+- **PX-43** — CI hygiene batch on `.github/workflows/`: (1) a top-level
+  `concurrency:` group (`cancel-in-progress: true`) on `ci.yml` so a
+  force-push/rapid follow-up cancels the previous push's in-flight run
+  instead of letting it finish (F-tci-04); (2) `eval-smoke`'s duplicated
+  `actions/setup-python` + `pip install -e ".[dev]"` block factored into a
+  new composite action, `.github/actions/setup-python-env/`, now called by
+  both `quality` and `eval-smoke` (F-tci-06); (3) `release.yml`'s `dist`
+  artifact upload gains `retention-days: 30`, matching the existing
+  `docs-deploy.yml` precedent (F-tci-10); (4)/(5) one-line owner-decision
+  comments recording **fail-fast OFF** (`ci.yml`, `quality` job) and **keep
+  the arm64 build** (`docker.yml`) — both per `RELEASE_ARC.md` dec 13. Does
+  NOT change which checks are `required` (a `[HUMAN]` GitHub branch-protection
+  step, unrelated to this branch).
+
+No prompt/dep/migration change; `PROMPT_VERSION` untouched. These workflow
+files only run on GitHub (the remote is private, CI not yet triggering) —
+zero local runtime risk.
+
+### Fixed/Added: diagnostics-DX round-2 batch — #3/#7/#9/#10/#17, CW-117, RH-1/RH-2, #1-scope (`feat/diagnostics-dx`)
+
+v1.1.0 debt-burn Lane DX: closes out the still-open items from
+[`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`](docs/dev/reviews/2026-07-diagnostics-round2-findings.md)
+and [`docs/dev/reviews/2026-07-e2e-run-health-review.md`](docs/dev/reviews/2026-07-e2e-run-health-review.md).
+
+- **RH-1 (grounding-signal persistence, highest value)** — `evals/annotation.py`
+  gains `patch_grounding_scores_by_text`, wired into `evals/runner.py:run_suite`:
+  a `--suite real` eval run's grounding signals now persist into the fixture's
+  `annotations.json` (matched by normalized bullet text — a `--suite real` run
+  grades a freshly-generated résumé, not the bootstrap's deduped cluster
+  representatives, so index-alignment doesn't apply here the way the existing
+  "Score grounding" button's `_patch_annotation_scores` uses). Before this fix,
+  scores landed in every JSONL result record but never made it back to the
+  ground-truth file the Annotate tab edits.
+- **RH-2 (0-byte-run guard)** — `run_suite` now raises (and deletes the empty
+  file) instead of silently returning a "0 pass / 0 fail" result when a run's
+  fixture loop wrote ZERO result records (every matched fixture failed to load
+  or grade); `main()` maps it to exit 1 like the other run_suite failure modes.
+- **#3** — the Tuning tab's real-corpus-seed section cross-links the Annotate
+  tab's "Export seed" button (switches tabs, opens step ①, focuses it) instead
+  of only pointing at the CLI.
+- **#7** — the `should_omit` checkbox gets the `.title` tooltip the verdict
+  `<select>` already had, and relabels to "Also list under Omissions
+  (independent of verdict)."
+- **#9** — the Annotate editor's `state.doc` now debounce-snapshots to
+  localStorage on every edit (restored on reload, cleared on a successful
+  Save), and a failed Save's `bullets[N]`/`skills[N]` validation error scrolls
+  to + briefly highlights the named item.
+- **#10** — the eval/tune/bootstrap run controls get a real `<progress>` bar
+  driven by the SSE's existing `index`/`total` payloads, replacing reliance on
+  the plain-text progress line alone.
+- **#13** — the grounding-score button (a single blocking scorer call with no
+  per-item granularity) gets an indeterminate `<progress>` bar — a coarse busy
+  signal, deliberately not granular (owner: acceptable, minimal).
+- **#17** — the doc-grounded assistant is ported onto `/_dashboard`: `static/
+  assistant.js` now self-promotes its own `_consumeSSE`/`esc` (guarded — never
+  overrides an already-loaded `app.js` copy) so it works without the wizard's
+  `app.js`; `dashboard.html` supplies a tiny `currentUser` shim, ports the
+  `#assistantModal` block, and defaults its "Dev mode" checkbox CHECKED (the
+  wizard's copy defaults unchecked). No backend change —
+  `blueprints/assistant.py:ask()` already treats `username` as optional.
+- **CW-117** — added Playwright coverage for the two hand-rolled SSE pumps
+  (bootstrap, grounding-score) that independently acquire/release the shared
+  paid-run lock; previously only the eval `_closed` path was regression-tested.
+- **#1-scope** — verified already correct at this branch's base (seed-export
+  never took the lock); additionally gave the dynamically-created "Run this
+  fixture" button a stable id so the lock disables it too while another paid
+  run is in flight.
+- **Content cluster #2/#4/#5/#6/#16 (DRAFT — owner-review-before-merge)** — a
+  handful of new field-level `.title` tooltips (Tuning's constant/slug
+  pickers, the bootstrap JD name/text inputs) and one clarifying sentence
+  added to the Annotate tab's help copy describing the new #9 draft behavior.
+  This is a small down payment, not the full field-level authoring pass the
+  finding calls for.
+
+### UX Cohesion Epic — design-system pass (`feat/ux-cohesion`, v1.1.0 Wave 2 Lane UX)
+
+The design-system remainder of the `docs/dev/reviews/2026-07-ux-round2-findings.md`
+epic (Wave A's decision-free quick wins already landed on `main`). Owner decisions 1–7;
+see `docs/dev/RELEASE_ARC.md` "UX Cohesion Epic" for the registration.
+
+- **Sentence case app-wide (dec 1, G5)** — retired ALL-CAPS chrome. `static/style.css`:
+  all `text-transform: uppercase` rules flipped to `none` app-wide (39 of 40 — the one
+  exception, `.preview-rendered h2`, governs the RENDERED RÉSUMÉ DOCUMENT's own section
+  headers inside the live preview, a document-typography choice, not app chrome; kept
+  uppercase deliberately). `static/app.js` + `templates/index.html`: every hardcoded
+  ALL-CAPS button/badge/label string converted to sentence case (`PENDING`→`Pending`,
+  `+ ADD TITLE`→`+ Add title`, `← BACK`→`← Back`, etc.) — many were literal caps typed
+  in source (not CSS-driven), left over from the pre-sartor. "LCARS era" alongside
+  already-sentence-case newer code; three `.toUpperCase()` call sites (application
+  status chips, the Compose "find more bullets" toggle) switched to the existing
+  `_toSentence()` helper so they stop force-casing dynamic values (including, in one
+  case, the user's own company name).
+- **One ~150ms modal fade (dec 2, G1)** — `.cb-modal`/`.cb-modal-content` in
+  `static/style.css`: replaced the open-only 120ms `cb-modal-in` keyframe (no close
+  fade at all) with a symmetric `transition`-based fade driven by the same `.hidden`
+  class toggle every modal already uses — `visibility` (not `display`) carries the
+  hidden state so it's transitionable; a `display:flex!important` on `.cb-modal.hidden`
+  defeats the global `.hidden{display:none!important}` utility rule that would
+  otherwise snap it invisible before the fade could play. New `--t-modal: 150ms` token.
+  Covers every `.cb-modal` surface app-wide (helpModal, appDetailModal, formModal,
+  errorModal, assistantModal, changesModal, editModal, cbConfirmModal,
+  refinementScopeModal, diagnosticsModal) with one change; the Settings drawer's
+  distinct slide-in animation was left alone (different metaphor).
+- **Phosphor icons, vendored inline SVG (dec 3, G3/Co1)** — skills-icon priority: a new
+  `.skill-chip` component (glyph-on-colored-background badge + name, in a
+  category-tinted pill) now renders on every skill row (Career Corpus editor, Compose
+  skill list, pending-review and denied lanes in both). SVGs are vendored inline
+  (Phosphor Icons, MIT license, phosphoricons.com — fetched from
+  `raw.githubusercontent.com/phosphor-icons/core`, "duotone" weight), not a new
+  npm/pip dependency. **Glyph→concept mapping is owner-review-before-merge** (see the
+  branch report): language→code, framework→stack, platform→cloud,
+  methodology→flow-arrow, domain→globe, uncategorized/unrecognized→gear (category is
+  free-text; unrecognized values fall back safely). New color tokens `--violet-soft`,
+  `--neutral-soft`.
+- **State-communication two-tier (dec 4, G2/G4/G8)** — (a) the "scrape/fetch" profile-
+  content action (`fetchProfileContent`, PX-02) now drives `_setBusy` like
+  analyze/generate/clarify/cover-letter do (it previously had only a local status
+  line); the Compose LLM actions (tailor/suggest skills, draft summary, draft
+  gap-fill) were audited and deliberately left OFF `_setBusy` — they already have
+  Compose's own equivalent always-visible "Updating suggestions…" chip
+  (`_markComposeBgReload`/`#composeBgChip`), and adding the app-wide "don't navigate
+  away" banner to every quick sequential Compose click would be louder than the
+  "subtle" mandate intends. (b) every small in-flight button (the four Compose actions
+  above, "Suggest skills from my corpus", "Get follow-up questions",
+  "+ Generate cover letter", the profile-fetch button) now gets a shared subtle pulse
+  (new `.btn-pending` class + `_setBtnPending()`/`_clearBtnPending()` helpers in
+  `static/app.js`) on top of its existing disable + "…"-style relabel — two of these
+  (iterate-clarify, cover-letter generate) previously disabled with NO relabel at all.
+- **Save toast (dec 5, Co5)** — Compose's debounced composition autosave
+  (`_scheduleCompositionSave`) toasted only on FAILURE before; it now also toasts
+  "Saved" on success, using the same `_toast()` idiom every other save confirmation in
+  the app already uses.
+- **Skills redesign (dec 6, C1)** — **data-model change:** `DELETE /api/skills/<id>`
+  (`blueprints/corpus/skills.py`) previously hard-deleted a denied (pending,
+  `llm_proposed`) suggestion, freeing its name for a future suggest-pass to silently
+  re-propose it — the opposite of "denied". It now ALWAYS soft-tombstones
+  (`is_active=0`, `is_pending_review=0`, row kept), unifying deny and retire into one
+  outcome: the name stays excluded from every future dedup scan (suggest-from-corpus
+  already scans all rows regardless of `is_active`), and it is reversible — `PUT
+  /api/skills/<id> {"is_active": true}` un-denies it (new field on `update_skill`,
+  mirroring the existing title/bullet Restore idiom). The Career Corpus tab's Skills
+  editor gained a collapsible "Denied / retired skills" lane (new
+  `_renderDeniedSkillRow` + `#skillsEditorDeniedDetails`) with a Restore button, plus a
+  reusable `.corpus-collapsible` wrapper (a generalized `.analysis-details`) applied to
+  both the Corpus and Compose bounded skills lists (C2 landed the scroll-bounds only;
+  this adds the deferred collapsible toggle on top).
+- **Compact prior-application cards (dec 7, G7)** — `_renderApplicationCard` now
+  renders ONLY a summary line (title/company) + a meta line (status · pending-review
+  count · date); the status-transition row (Mark submitted / Got interview / …) and
+  the retire/restore admin row moved into the existing click-to-open detail modal
+  (`_showApplicationDetail`), which also gains a collapsed-by-default JD snippet and a
+  per-run status list (`ats_roundtrip_status` — the closest existing concept to
+  "scores"; no new scoring concept was added). `GET /api/applications/<id>` now
+  returns `is_active` (needed by the modal to pick Retire vs Restore) — a new field on
+  the existing `ApplicationDetail` OpenAPI model, not a new route.
+- **PX-51 (style.css duplicate-cascade collapse) — DEFERRED, not landed.** Flagged
+  HIGH RISK in the branch brief; several of the decisions above (1, 2) already had to
+  edit rules living inside the ~780-line "restyle" duplicate block this item would
+  collapse, and attempting a full selector-by-selector merge on top of those
+  in-flight edits risked destabilizing everything else in this branch. No functional
+  effect from deferring it — the duplicate-cascade "later rule wins" footgun still
+  works correctly, just remains unre-architected. Left for a follow-up branch.
+
+### Docs: agent-contract trim + corpus/pipeline dedup + affirm-and-protect notes (`docs/efficiency-px`)
+
+2026-07 efficiency review doc-only lane (PX-45, PX-49, PX-56 + decision-14 doc-only
+half of PX-47): compressed the ~90-line CLAUDE.md skill/subagent catalogs to a
+directory pointer at `commands/`/`agents/`, folding the compliance-witness-only facts
+into its own frontmatter; pointer-ized AGENTS.md's duplicated deterministic-boundary
+list and corrected the cache-miss claim to cover all `system_prompt`-override call
+sites in `analyzer.py` (16, not 11); reduced the corpus/pipeline mechanics restated in
+`vision.md` and `docs/PRODUCT_SHAPE.md` to a pointer + one line each, with
+`docs/architecture.md` as the single canonical home (charter D-5); added
+`docs/dev/reviews/2026-07-efficiency/keep-notes.md` (do-not-regress notes: Haiku
+call-kinds' zero-error record, deliberate eval prompt-version anchoring, Linux-only CI
+as a decision-with-a-revisit-trigger, D-5 re-affirmation now due post-8.6-ingest); and
+documented (not re-pinned) the dated-Haiku-vs-undated-Sonnet subagent model-pin split
+in `docs/dev/decisions.md`. AGENTS.md remains a complete standalone contract — no
+guardrail moved to a Claude-only file.
+
+### Fixed — freshness-scrub: wiki-freshness `docs-site/` over-count + doc drift (`chore/freshness-scrub`)
+
+Docs/tooling-only; no code path outside `scripts/wiki_freshness.py` touched, no dep/migration/prompt change.
+
+- **Wiki-freshness gate `docs-site/` exclusion** (Carry-forward ledger #1). `scripts/wiki_freshness.py:drift_count`
+  excluded only `docs/wiki/` from the merge-blocking drift count; the Fumadocs static-export tree under
+  `docs-site/` is an L3 *projection* of the wiki (like `docs/wiki/` itself), not a wiki source, so its churn
+  must not count as drift. Now excludes `docs-site/` alongside `docs/wiki/`; new
+  `tests/test_wiki_freshness_gate.py::TestWikiFreshnessUnit::test_docs_site_changes_excluded_from_drift`
+  pins the exclusion.
+- **Baked-in absolute-path scrub.** Genericized out-of-project absolute paths left in tracked docs:
+  `docs/dev/RELEASE_ARC.md` (`C:\Users\iam\...` reference-doc rows → `%USERPROFILE%\...`),
+  `docs/dev/ORCHESTRATION_PLAYBOOK.md` (`C:\Dev\sartor-e2e` → `../sartor-e2e`), and a comment in
+  `tests/test_enforcement_core.py`. Path genericization only — no reword of sign-off-gated prose.
+- **Owner-handle/repo scrub, files-only** (no git-history rewrite). `amodal1/sartor` → `take-tempo-public/sartor`
+  in `CHANGELOG.md` (this file's own historical entries) and `docs/dev/RELEASE_CHECKLIST.md`; `amodal-open` →
+  `take-tempo-public` in `docs/dev/decisions.md` and `docs/dev/kit-adoption-design.md`. Left untouched:
+  `pyproject.toml`'s `authors = [{ name = "amodal1" }]` (author attribution, owner decision separately) and
+  everything under `docs/dev/reviews/**` (pinned historical review artifacts).
+- **Stale `Dockerfile` comment.** The "wheel does not yet ship those data dirs" follow-up landed
+  (`fix/packaging-install`, Carry-forward ledger #2) — the wheel now ships templates/static/personas/wiki via
+  package-data. Comment reconciled: the image still installs editable from `/app` (unchanged behavior), but
+  the wheel-can't-ship claim is no longer accurate and has been corrected.
+
+### Changed: packaging floor — installed-app data dir + Python 3.11 (`chore/packaging-floor`)
+
+Closes the two residual follow-ups left open by `fix/packaging-install`
+(Carry-forward ledger #2, residuals (i) and (ii)):
+
+- **Installed-app user-data dir.** On a bare `pip install sartor && sartor`
+  (a real non-editable wheel), `Config.base_dir`'s default and
+  `dashboard/routes.py`'s telemetry/eval-results root used to resolve into
+  `site-packages/`, so user data (`configs/`/`resumes/`/`output/`) and
+  telemetry (`logs/llm_calls.jsonl`, `evals/results/`) would land there
+  instead of a proper per-user directory. `config._default_base_dir()` now
+  resolves, in order: the `SARTOR_HOME` env var if set; the repo root,
+  unchanged, for a dev/editable checkout; otherwise the platform user-data
+  directory via the new `platformdirs` dependency
+  (`%LOCALAPPDATA%\sartor` on Windows, `~/.local/share/sartor` on Linux,
+  `~/Library/Application Support/sartor` on macOS). `dashboard/routes.py`'s
+  `PROJECT_ROOT` now shares this same resolution instead of an independent
+  `Path(__file__)`-relative computation. `Config.bundled_personas_dir` falls
+  back to the packaged-data resolver (`config._package_dir`) when `base_dir`
+  is at its default, so the shipped persona templates still resolve
+  correctly once the default no longer coincides with `site-packages/`; an
+  explicitly-overridden `base_dir` (test isolation) is unaffected.
+  `Config.ensure_dirs()` now creates its three directories with
+  `parents=True`, since a fresh platform data directory may not exist yet.
+  New dependency: `platformdirs>=4.0,<5.0`. **Still open:** `analyzer.py`'s
+  own `LOG_DIR` (what actually writes `llm_calls.jsonl`) is a separate,
+  still-`Path(__file__)`-relative global, out of this fix's anchored scope —
+  flagged as a new small follow-up.
+- **Python floor `py310` → `py311`.** `[tool.ruff] target-version` and
+  `[tool.mypy] python_version` now match the real floor
+  (`requires-python = ">=3.11"`, already correct; CI already tests only
+  3.11-3.13). The `target-version` bump surfaces new `UP017`/`UP042`
+  pyupgrade findings plus `I001` import-sort drift (from `tomllib`'s
+  stdlib reclassification) in files this branch does not otherwise touch —
+  scoped, temporary `per-file-ignores` entries keep `ruff check .` green
+  without an unplanned whole-tree autofix; each is tracked for a dedicated
+  follow-up cleanup pass.
+
+### Fixed: Compose-route N+1 + `is_active` index gap (PX-38, `perf/db-baseline`)
+
+- **`get_application_composition`** (`blueprints/applications.py`) selectinloads
+  `Experience.bullets`+`Bullet.tag_links`, `Experience.titles`+
+  `ExperienceTitle.tag_links`, and `Experience.summary_items` on its top-level
+  `Experience` query — was three separate per-experience query families
+  (`O(experiences)` each: bullets, titles, and the `ExperienceSummaryItem`
+  filter/sort), now three fixed selectin batches regardless of experience
+  count. Mirrors the proven `list_applications` `selectinload(Application.runs)`
+  fix. **Measured (this repo, `tests/test_application_routes.py`
+  `test_avoids_n_plus_1_query_growth`): 2 experiences → 6 experiences was
+  17 → 37 SQL queries before the fix (+5/experience); 12 → 12 after (flat).**
+- **`db/models.py`** — `ix_application_candidate_status_updated` gained
+  `is_active` (new column order: `candidate_id, is_active, status,
+  updated_at`) — the index omitted the column `list_applications`' default
+  (no `?status=`) path filters on every call. Migration
+  `db/migrations/versions/0015_application_index_add_is_active.py` uses plain
+  `op.create_index`/`op.drop_index` (no `batch_alter_table` — `application` is
+  a CASCADE parent of `application_run`; index rebuilds are metadata-only DDL,
+  carrying none of that rebuild's row-loss risk). Verified zero row loss
+  upgrading 0014→head and downgrading back, both directions, on a scratch DB
+  seeded with an application + run + run child
+  (`tests/test_migrations_data_safety.py::TestApplicationIndexAddIsActive`).
+
+### Documented: real-corpus latency baseline population-era labeling (PX-39)
+
+- `docs/dev/perf/PERFORMANCE_HISTORY.md` gained a "Population eras" section
+  distinguishing three eras — pre-split (ended 2026-06-01, DEFUNCT),
+  split+Sonnet-4.6 (2026-06-01→2026-07-05, DEFUNCT — includes the 69.7s p50/
+  84.6s p95 real split-pair figure previously at risk of being cited as
+  "current") and split+Sonnet-5 (2026-07-05→present, CURRENT) — so future
+  readers don't seed false-alarm comparisons against a retired population.
+  Cites the already-committed Sonnet-5 synthetic anchor pipeline p50s from
+  `evals/results/baseline_v1.json` (68.7s/80.7s/80.5s across the three
+  fixtures) as the only Sonnet-5 measurement available so far, and leaves an
+  explicit **open item**: a real-corpus Sonnet-5 p50/p95 baseline could not be
+  captured from this branch's isolated worktree (no `.api_key`/
+  `ANTHROPIC_API_KEY` present) — method + reproduction command documented for
+  the next run with credentials, no numbers fabricated.
+
+### Fixed: CONTRIBUTING.md pytest double-run; documented the honest fast-lane numbers (PX-44)
+
+- `CONTRIBUTING.md`'s PR checklist told contributors to run `pytest` (green)
+  *and* `pytest -m ux` (green) as two separate steps — since a plain `pytest`
+  already carries no marker filter and executes the UX tier once (when
+  Chromium is installed), the second invocation silently re-ran the same
+  tests. Collapsed to one `pytest` bullet with the corrected guidance.
+- New `docs/dev/perf/TEST_SUITE_PERFORMANCE.md` — the durable home for the
+  idle-measured fast-lane numbers (full 308.9s / fast-lane 163.1s / slow-UX
+  248.0s, `docs/dev/reviews/2026-07-efficiency/verification-log.md`
+  addendum) plus a fixture-scoping PROBE: a static count found 46 of 118
+  non-UX test files (658 of 1,868 test functions, ~35%) build a fresh Flask
+  app + run the full 15-revision alembic chain at function scope, with only
+  1 non-function-scoped fixture in the entire non-UX suite. **The
+  fixture-scoping refactor itself is DEFERRED** (written note in the new
+  doc) — it's a cross-cutting change to test-isolation guarantees across
+  ~40% of the suite, landing mid-train alongside six concurrent lanes;
+  follow-on branch `test/fixture-scoping` recommended, piloted on one
+  low-risk file first.
+
 ## [1.0.9] — 2026-07-10
 
 ### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)
@@ -4166,7 +4486,7 @@ the public-facing security / governance docs with what the tool actually does.
   unchanged. Corroborated by the PX-08 egress allowlist gate.
 - **PX-05 — disclosure channel repointed** (`F-sec-11`, P1 / S-1). Conduct / vulnerability
   reports routed to a stale `Cooksey/resume` GitHub advisories inbox; corrected to the canonical
-  `amodal1/sartor` in `CODE_OF_CONDUCT.md` and `.github/ISSUE_TEMPLATE/config.yml`.
+  `take-tempo-public/sartor` in `CODE_OF_CONDUCT.md` and `.github/ISSUE_TEMPLATE/config.yml`.
 - **PX-07 — human SLAs softened** (`F-qe-rel-08` / `F-sec-07`; charter D-4 + P-3). The hard
   "5 business days / 30 days" promises in `SECURITY.md` and `CODE_OF_CONDUCT.md` are reworded to
   best-effort intent (no guaranteed timeline) for a solo project. Machine gates unchanged.

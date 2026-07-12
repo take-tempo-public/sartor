@@ -30,10 +30,10 @@ pip install -e ".[dev]"
 # rendering. ~150 MB, lives in your OS user cache (NOT in the repo).
 python -m playwright install chromium
 
-# Sanity-check the toolchain
-ruff check .
-mypy .
-pytest
+# Sanity-check the toolchain — scripts/gate.py (PX-55) is the single definition
+# of "gate green", also run by CI and named in AGENTS.md; equivalent to, in
+# order: ruff check . / ruff format --check . / mypy . / pytest
+python -m scripts.gate
 
 # Run the app
 python app.py            # → http://localhost:5000
@@ -83,16 +83,13 @@ This signals collaboration without conflating attribution. The human author rema
 
 Before opening a PR:
 
-- [ ] `ruff check .` — clean
-- [ ] `mypy .` — clean
-- [ ] `pytest` — green
-- [ ] `pytest -m ux` — green (Playwright UI suite; needs `python -m playwright install chromium`, see [Quick start](#quick-start))
+- [ ] `python -m scripts.gate` — clean (PX-55's unified wrapper: `ruff check .` + `ruff format --check .` + `mypy .` + `pytest` in one run; the Playwright UX tier runs automatically as part of `pytest` once Chromium is installed — `python -m playwright install chromium`, see [Quick start](#quick-start) — and self-skips otherwise, so the wrapper stays green either way. Don't also run `pytest -m ux` separately — that re-executes the same UX tests the full run already covered; use `pytest -m ux` on its own only to isolate/debug that tier. For the honest fast-lane (`-m "not slow and not ux"`) timing and why it's not module-scoped further yet, see [`docs/dev/perf/TEST_SUITE_PERFORMANCE.md`](docs/dev/perf/TEST_SUITE_PERFORMANCE.md))
 - [ ] `CHANGELOG.md` — entry under `[Unreleased]` describing the user-visible change
 - [ ] No real personal data committed (`evals/fixtures/real/` is gitignored — keep it that way)
 - [ ] If you touched a Flask route that reads or writes the filesystem, the route uses `_safe_username()` and `_within()` — see [`app.py`](app.py)
 - [ ] If you changed `analyzer.py:SYSTEM_PROMPT` (or any per-call prompt template), bump `PROMPT_VERSION` in the same commit — a charter discipline rule ([`docs/governance/charter.md`](docs/governance/charter.md), C-0 / D-4)
 
-CI runs `ruff` + `mypy` + `pytest` on every PR. Add the `eval` label to also run synthetic smoke evals (uses Anthropic API; ~$0.10 per run).
+CI runs the same `scripts/gate.py` steps on every PR (`.github/workflows/ci.yml`'s `quality` job). Add the `eval` label to also run synthetic smoke evals (uses Anthropic API; ~$0.10 per run).
 
 ---
 

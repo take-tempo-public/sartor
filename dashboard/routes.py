@@ -27,6 +27,7 @@ from typing import Any, cast
 from flask import Blueprint, abort, render_template, request
 from flask.typing import ResponseReturnValue
 
+from config import _default_base_dir
 from web_infra import _is_localhost_request
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,17 @@ dashboard_bp = Blueprint(
     template_folder="templates",
 )
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# Packaging-floor fix (`chore/packaging-floor`, Carry-forward ledger #2 residual
+# (ii)): this used to be an independent `Path(__file__).resolve().parent.parent`
+# computation, which — like `Config.base_dir`'s old default — resolved into
+# `site-packages/` on a real installed (non-editable) wheel. Sharing
+# `config._default_base_dir()` keeps this in lockstep with `Config.base_dir`
+# (repo root in a dev/editable checkout; `SARTOR_HOME` or the platform
+# user-data dir in an installed wheel) instead of drifting independently.
+# NOTE: `analyzer.py`'s own `LOG_DIR` (what actually WRITES `llm_calls.jsonl`)
+# is a separate, still-`Path(__file__)`-relative global, out of this fix's
+# anchored scope — see the ledger update appended for this branch.
+PROJECT_ROOT = _default_base_dir()
 LLM_LOG = PROJECT_ROOT / "logs" / "llm_calls.jsonl"
 EVAL_RESULTS_DIR = PROJECT_ROOT / "evals" / "results"
 

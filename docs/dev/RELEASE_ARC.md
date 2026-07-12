@@ -38,7 +38,7 @@ Public release = the **v1.1.0 tag, applied by the user** when the product is jud
 
 ## Key decisions (load-bearing for all phases)
 
-1. **Eval before R1.** All 25 items from `C:\Users\iam\.claude\research\resume-eval-2026-05\followup.md` checklist must be checked before any prompt engineering work starts.
+1. **Eval before R1.** All 25 items from `%USERPROFILE%\.claude\research\resume-eval-2026-05\followup.md` checklist must be checked before any prompt engineering work starts.
 2. **Pydantic migration.** 6 `*_REQUIRED_KEYS` frozensets in `analyzer.py` → Pydantic models. `ContextSet` TypedDicts in `hardening.py` stay as TypedDicts — internal contracts, not LLM boundary.
 3. **Promptfoo.** Wrap 3 anchor fixtures in Promptfoo YAML for CI diff table on prompt-change PRs.
 4. **MiniCheck + DeBERTa.** Belt+suspenders offline grounding scorers; eval-only, never in hot path. MiniCheck license documented in `CONTRIBUTING.md`.
@@ -1118,6 +1118,139 @@ re-confirmation doubles as resume.
 
 ---
 
+## v1.1.0 debt-burn train (2026-07-11 — conductor train, owner-approved)
+
+> **RELEASE_ARC edit sign-off: mandated by the owner-approved v1.1.0 debt-burn
+> conductor train (2026-07-11).** This subsection is the durable in-repo anchor
+> for that train — it details (and supersedes the sketch of) the Phase 7
+> `chore/px-v110-gate-batch` row in the scope brief above, decomposing the
+> remaining in-scope `[AGENT]` debt into a 7-lane / 3-wave merge train so the
+> owner can flip public with ~zero agent-side debt. Run under the
+> [`ORCHESTRATION_PLAYBOOK.md`](ORCHESTRATION_PLAYBOOK.md) merge-train pattern
+> (Opus conductor · Sonnet worktree lanes · serialized rebase chain · one owner
+> confirm per train). **Base:** `main` @ `904fe8d` (v1.0.9 tagged locally, tag
+> HELD/unpushed — pushing it fires PyPI/GHCR publish early; leave it).
+> **Target:** v1.1.0. Owner checkpoints unchanged: train-merge confirms, tag
+> confirms, `[HUMAN]` public-flip/PyPI/GHCR, PX-46 review.
+>
+> **Reconstruction note.** The 17 locked decisions below were transcribed from
+> the owner's 2026-07-11 kickoff handoff (which arrived partially garbled) and
+> cross-checked against the lane assignments; the owner should sanity-check the
+> reconstruction at the first train checkpoint.
+
+**Locked decisions (owner, 2026-07-11):**
+1. Sentence-case labels app-wide (retire ALL-CAPS chrome).
+2. Modal open/close = one subtle ~150ms fade, not exaggerated.
+3. Iconography = Phosphor icons (weights + duotone), vendored as inline SVG;
+   priority is the skills icons (glyphs on colored background + colored chips);
+   the glyph→concept mapping goes to the owner for approval.
+4. State-communication is two-tier: (a) every blocking action drives the
+   `_setBusy` analyze-parity banner + guidance; (b) every small button gets a
+   local subtle pulse + a "…"-style pending label.
+5. Save actions confirm with a subtle toast.
+6. Skills "Deny" = tombstone + suppress-future-suggestion, reversible (un-deny
+   later), plus a collapsible toggle for the bounded skills lists.
+7. Prior-application compact cards: summary line = company/date/status; the
+   expanded detail = JD-snippet / scores / actions.
+8. Installed-app data lands in a platform user-data dir, overridable via
+   `SARTOR_HOME`.
+9. C2 owner-handle/venture scrub is files-only in this train; the git-history
+   rewrite is deferred to the pre-public-flip `[HUMAN]` step.
+10. Diagnostics run-lock scope = paid-runs-only (cheap seed export may run
+    concurrently).
+11. `should_omit`: keep both controls, add a tooltip, and relabel to "Also list
+    under Omissions (independent of verdict)."
+12. Diagnostics finding #13 — a coarse-grained busy state is acceptable.
+13. CI: fail-fast OFF; keep the arm64 build.
+14. Model-pin: document the dated-vs-undated snapshot split (do NOT re-pin).
+15. Content-cluster copy (diagnostics #2/#4/#5/#6/#16): the agent DRAFTS → the
+    owner APPROVES before it lands.
+16. PX-46 memory consolidation: present the keep/consolidate/delete list, get
+    owner sign-off FIRST, then act (memory lives outside the repo).
+17. Deferred out of this train: the diagnostics run-cancel endpoint +
+    `app.run(threaded=True)` governance change, PX-52 (analyzer.py split), and
+    T2 (template-preview-fidelity spike).
+
+**In-scope ledger targets:** closes carry-forward items #1 (wiki-freshness
+`docs-site/` over-count), #5 (kit commitment 3 / 8.7 portable-enforcement), #6
+(efficiency PX-37..56, the in-scope subset), #7 (UX round-2 / UX Cohesion Epic),
+plus the ledger-#2 `[AGENT]` residuals (B1 SARTOR_HOME data dir, B2 py311 floor).
+Ledger #2's PyPI publish, #3 (citation viewer, deferred), and #4's calibration
+half stay `[HUMAN]`/deferred.
+
+**Execution mode (owner, 2026-07-11): stacked waves, one final merge.** The
+three waves stack on UN-merged tips — Wave 2 branches from the Wave-1 assembled
+tip, Wave 3 from the Wave-2 tip — with NO per-wave merge to `main` (owner
+directive: keep moving, don't idle at per-wave checkpoints). The conductor
+full-gates each wave tip, then presents ONE final manifest for the owner's
+single `CLAUDE_CONFIRM_MERGE=1` confirmation of the whole chain. Trade-off
+accepted: later waves build on not-yet-reviewed earlier waves. Mid-lane owner
+approvals that do NOT gate a merge (glyph-mapping dec 3, content-cluster copy
+dec 15) are drafted-and-proceeded and surfaced async for review before the
+final merge; PX-46 (dec 16) stays off the chain (memory is outside the repo).
+
+**7 lanes, 3 waves** (partitioned by file-set so a wave's lanes don't collide;
+shared files — CHANGELOG, the ledger, pyproject — reconcile at the rebase step):
+
+*Wave 1 — parallel, low-collision, pre-public regression-safety:*
+- **Lane MISC** `chore/freshness-scrub` (S) — L1 wiki-freshness `docs-site/`
+  exclusion + test (ledger #1); C1 out-of-project absolute-path scrub; C2
+  `amodal1/sartor`→`take-tempo-public/sartor` files-only (dec 9; the
+  `amodal-open` replacement is owner-gated — flag, do not guess); B3 stale
+  `Dockerfile` wheel-comment reconcile.
+- **Lane PKG** `chore/packaging-floor` (M) — B1 `Config.base_dir`→platform
+  user-data dir + `SARTOR_HOME` (dec 8; likely a `platformdirs` dep); B2
+  `pyproject`/ruff/mypy py310→3.11 floor (PX-42 residual).
+- **Lane DOCS** `docs/efficiency-px` (M) — PX-45 (CLAUDE.md catalog→pointers;
+  AGENTS.md stays a full standalone contract), PX-49 (architecture.md canonical;
+  vision + PRODUCT_SHAPE→pointers), PX-56 (do-not-regress notes), model-pin-split
+  doc (dec 14). PX-46 memory consolidation is owner-gated (dec 16) — the
+  conductor handles it with the owner, NOT autonomously in-lane.
+- **Lane PERF** `perf/db-baseline` (M–L) — PX-38 (`get_application_composition`
+  selectinload + is_active index + N+1 guard; watch the alembic
+  batch_alter_table parent-FK-cascade gotcha — use plain add/drop_column), PX-39
+  (fresh Sonnet-5 latency baseline; retire the defunct 69.7/84.6s rows), PX-44
+  (fast-lane doc + CONTRIBUTING double-run + fixture-scoping probe).
+
+*Wave 2 — parallel, after Wave 1 merges (different subsystems):*
+- **Lane DX** `feat/diagnostics-dx` (L, needs Chromium) — the diagnostics
+  round-2 batch + run-health follow-ups + the content cluster: #3 export-seed
+  cross-link, #7 should_omit tooltip/relabel (dec 11), #10 real `<progress>`,
+  #17 assistant-in-dashboard (dev-checks; new route → keep `_safe_username`/
+  `_within`; `AVATAR_PROMPT_VERSION` bump only if the avatar prompt changes),
+  CW-117 run-lock test-hardening, RH-1 grounding write-back into
+  `annotations.json` (closes ledger #4's persistence seam; spends API), RH-2
+  0-byte-run guard (spends API), #1 lock-scope→paid-only (dec 10), #13 coarse
+  busy (dec 12), content cluster #2/#4/#5/#6/#16 (agent drafts → owner approves,
+  dec 15). Internally SERIAL (single worktree; dashboard.html + dashboard JS +
+  evals).
+- **Lane UX** `feat/ux-cohesion` (L, design-risk) — the design-system pass:
+  sentence-case (dec 1), one ~150ms fade (dec 2), Phosphor vendored +
+  skills-icon priority (dec 3) + PX-51 style.css duplicate-cascade collapse;
+  state-comm two-tier `_setBusy` (dec 4) + Co5 save toast (dec 5); skills
+  redesign (dec 6 — record the reversible tombstone/suppress-future denial
+  data-model + the un-deny path); compact cards (dec 7). Internally SERIAL
+  (app.js + style.css + templates). Gate adds `pytest -m ux` + a11y + screenshot
+  diff.
+
+*Wave 3 — last, isolated (enforcement infra):*
+- **Lane HARD** `ci/portable-enforcement` (L) — L2
+  `feat/portable-enforcement-core` (ledger #5 commitment 3: re-home hooks out of
+  `.claude-plugin/`, land root `skills/`, reach the parallel `commands/ agents/
+  skills/ hooks/` end-state; + PX-37 hook-dispatcher designed as its entry
+  point), L10 PX-55 (one `scripts/` quality-gate wrapper), L12 PX-43 (CI
+  concurrency+cancel, fail-fast off, keep arm64 — dec 13), L3 help-opener de-dup
+  (VERIFY-FIRST — likely already done in v1.0.8 via `static/help-modal.js`).
+  Serial within; the enforcement activation flip = `[HUMAN]`.
+
+**Definition of done:** all landed lanes merged; full gate green
+(ruff · format · mypy · pytest · `-m ux`); freshness OK; ledger #1/#5/#6/#7
+marked resolved (or slipped items re-filed Open); CHANGELOG cut to `[1.1.0]`;
+`PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` bumped only if a prompt actually
+changed. Then hand to the owner for the `[HUMAN]` public flip + v1.1.0 tag.
+
+---
+
 ## UX Cohesion Epic (registered 2026-07-09 — slotted into v1.0.9, owner 2026-07-09)
 
 > **Registration only — not a spec.** Surfaced by the owner's e2e round-2
@@ -1439,6 +1572,6 @@ moved **pre-public** into v1.0.8 and v1.0.7 respectively, so v1.1.0 ships with b
 | `evals/TUNING_LOG.md` | Baseline floors; prompt change history |
 | `docs/dev/AGENT_FAILURE_PATTERNS.md` | Failure patterns to avoid |
 | `docs/architecture.md` | Module map, LLM routing |
-| `C:\Users\iam\.claude\research\resume-eval-2026-05\followup.md` | 25-item Phase 1 checklist |
+| `%USERPROFILE%\.claude\research\resume-eval-2026-05\followup.md` | 25-item Phase 1 checklist |
 | `docs/dev/perf/R1_BENCHMARK_2026-05-26.md` | R1 diagnosis (Phase 2 start point) |
-| `C:\Users\iam\.claude\research\resume-eval-2026-05\report.md` | Tool recs (Promptfoo, MiniCheck, DeBERTa) |
+| `%USERPROFILE%\.claude\research\resume-eval-2026-05\report.md` | Tool recs (Promptfoo, MiniCheck, DeBERTa) |

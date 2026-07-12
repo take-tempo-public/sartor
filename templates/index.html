@@ -342,7 +342,7 @@
         <div id="composeList" class="corpus-experience-list"></div>
 
         <div class="form-row" style="margin-top:10px">
-          <button class="cb-btn cb-bg-blue" onclick="wizardGoTo(2)">← BACK</button>
+          <button class="cb-btn cb-bg-blue" onclick="wizardGoTo(2)">← Back</button>
           <button class="cb-btn cb-bg-teal" onclick="saveCompositionThenNext()">Save and continue to Template →</button>
         </div>
       </div>
@@ -449,7 +449,7 @@
         </div>
 
         <div class="form-row" style="margin-top:14px">
-          <button class="cb-btn cb-bg-blue" onclick="wizardGoTo(3)">← BACK</button>
+          <button class="cb-btn cb-bg-blue" onclick="wizardGoTo(3)">← Back</button>
           <button class="cb-btn cb-bg-teal" onclick="wizardGoTo(5)">Continue to Generate →</button>
         </div>
       </div>
@@ -488,7 +488,7 @@
           <button class="cb-btn format-btn" id="fmtMd" onclick="setOutputFormat('.md', this)">Markdown</button>
         </div>
         <div class="form-row">
-          <button class="cb-btn cb-bg-blue" onclick="wizardGoTo(4)">← BACK</button>
+          <button class="cb-btn cb-bg-blue" onclick="wizardGoTo(4)">← Back</button>
           <button class="cb-btn cb-bg-amber" onclick="runGeneration()" id="btnGenerate">Generate documents</button>
         </div>
         <!-- Pending placeholder filled by runGeneration() during the
@@ -722,7 +722,7 @@
             application, not any in-flight one.
           </div>
           <div class="form-row" id="corpusToolbar" style="display:none">
-            <button class="cb-btn cb-bg-teal" onclick="openCorpusAddExperience()">+ ADD EXPERIENCE</button>
+            <button class="cb-btn cb-bg-teal" onclick="openCorpusAddExperience()">+ Add experience</button>
             <button class="cb-btn cb-bg-violet" onclick="document.getElementById('corpusIngestFile').click()">+ Import résumé</button>
             <label for="corpusIngestFile" class="sr-only">Import résumé file (.docx, .pdf, or .md)</label>
             <input type="file" id="corpusIngestFile" accept=".docx,.pdf,.md" class="hidden" onchange="uploadFile(this.files[0])">
@@ -791,7 +791,20 @@
               curates them per job; tailor + AI suggestions live there too.
             </div>
             <div id="skillsEditorPending"></div>
-            <div id="skillsEditorList"></div>
+            <!-- dec 6 (UX Cohesion Epic) — collapsible toggle for the bounded
+                 skills list (C2 already bounded it with internal scroll;
+                 this adds an actual expand/collapse affordance on top). -->
+            <details class="corpus-collapsible" open>
+              <summary>Skills</summary>
+              <div id="skillsEditorList"></div>
+            </details>
+            <!-- dec 6 — denied/retired skills: a reversible tombstone, not a
+                 hard-delete (see blueprints/corpus/skills.py delete_skill).
+                 Collapsed by default + hidden entirely when empty. -->
+            <details class="corpus-collapsible" id="skillsEditorDeniedDetails" style="display:none">
+              <summary id="skillsEditorDeniedSummary">Denied / retired skills</summary>
+              <div id="skillsEditorDenied"></div>
+            </details>
           </section>
 
           <!-- F-04 (UX-W1, 2026-07-07) — Education editor. Candidate-level
@@ -852,7 +865,7 @@
           </div>
 
           <div class="persona-section">
-            <div class="persona-section-header">MY TEMPLATES</div>
+            <div class="persona-section-header">My templates</div>
             <div class="persona-grid" id="personaOwnedGrid">
               <div class="corpus-empty-experience">Select a user to view uploads.</div>
             </div>
@@ -1225,10 +1238,13 @@
   </div>
 
   <!-- Application detail modal — opened when the user clicks a card in the
-       Applications tab. Shows title, status, timestamps, and a notes field
-       that saves on blur. "Resume in wizard" (D.3.1) rehydrates the wizard at
-       Step 6 from this application's last generated state; it's enabled only
-       when a run has produced a résumé. -->
+       Applications tab. Shows title, status, timestamps, a notes field that
+       saves on blur, and (dec 7, UX Cohesion Epic — the compact-card
+       redesign) the detail a compact roster row no longer has room for: the
+       JD snippet, per-run status, and the status-transition + retire/restore
+       actions that used to sit directly on the card. "Resume in wizard"
+       (D.3.1) rehydrates the wizard at Step 6 from this application's last
+       generated state; it's enabled only when a run has produced a résumé. -->
   <div id="appDetailModal" class="cb-modal hidden" role="dialog" aria-modal="true"
        aria-labelledby="appDetailModalTitle">
     <div class="cb-modal-backdrop" id="appDetailModalBackdrop"></div>
@@ -1238,6 +1254,18 @@
         <div id="appDetailMeta" style="margin-bottom:8px"></div>
         <div id="appDetailTimestamps"
              style="font-size:12px;color:var(--fg-2);margin-bottom:12px"></div>
+        <!-- dec 7 — JD snippet, collapsed by default (can be long). -->
+        <details class="corpus-collapsible" id="appDetailJDDetails" style="display:none">
+          <summary>Job description</summary>
+          <div id="appDetailJD" class="app-detail-jd"></div>
+        </details>
+        <!-- dec 7 — per-run status (the closest thing to "scores" this route
+             returns: ats_roundtrip_status + resume/cover-letter presence). -->
+        <div id="appDetailScores" class="app-detail-scores"></div>
+        <!-- dec 7 — status-transition actions, moved off the compact card. -->
+        <div id="appDetailStatusActions" class="outcome-action-row"></div>
+        <!-- dec 7 — retire/restore, moved off the compact card. -->
+        <div id="appDetailAdminRow" class="application-admin-row"></div>
         <!-- #24: user-editable job title + company (saved on blur via
              PUT /api/applications/<id>/meta), mirroring the notes pattern. -->
         <label for="appDetailTitle"

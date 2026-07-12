@@ -42,7 +42,7 @@
    `git log`/`git status` in its worktree — commits survive; resume via
    SendMessage from the exact stopping point.
 3. Lanes NEVER merge, never touch `main`, never touch the owner's e2e clone
-   (`C:\Dev\sartor-e2e` — read-only for everyone, writes only on explicit
+   (`../sartor-e2e` — read-only for everyone, writes only on explicit
    owner instruction).
 
 ## Lane discipline (cite this section in every lane prompt)

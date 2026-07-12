@@ -984,3 +984,267 @@ class TestEvalGateGuard:
         assert result.n_fail == 0
         assert len(result.regressions) == 3
         assert result.exit_code == 2
+
+
+class TestGroundingSignalsAnnotationPersistence:
+    """RH-1 (2026-07 e2e-run-health-review): grounding signals computed during a
+    ``--suite real`` eval run land in every JSONL result record but, before this
+    fix, never made it back to the fixture's ``annotations.json`` — the
+    ground-truth file the Annotate tab edits (the SAME
+    ``evals/fixtures/real/<slug>/`` directory ``--suite real --fixture <slug>``
+    reads ``jd.txt``/``expected.json`` from — ``evals/fixtures/real`` ==
+    ``blueprints.diagnostics``'s ``ANNOTATION_ROOT``).
+
+    Drives the REAL ``run_suite`` (every LLM hop + the grounding scorer
+    STUBBED — the DeBERTa/MiniCheck ``[eval-grounding]`` extras are heavy
+    CPU-bound models not assumed installed in a dev worktree) against a SCRATCH
+    fixture this test creates under a monkeypatched ``FIXTURES_DIR`` — never the
+    owner's e2e clone or ``evals/fixtures/real/robert-bootstrap/``.
+    """
+
+    _BULLET_TEXT = "Cut p99 latency 40% by redesigning the caching tier."
+
+    def _write_scratch_fixture(self, tmp_path: Path, slug: str) -> Path:
+        fdir = tmp_path / "real" / slug
+        fdir.mkdir(parents=True)
+        (fdir / "jd.txt").write_text("Senior SRE role.", encoding="utf-8")
+        (fdir / "expected.json").write_text(
+            json.dumps(
+                {
+                    "candidate_name": "Casey Rivera",
+                    "must_keywords": [],
+                    "forbidden_inventions": [],
+                    "min_grounding_score": 4.0,
+                    "min_keyword_coverage_score": 4.0,
+                    "min_ats_format_score": 4.0,
+                    "min_tone_score": 3.0,
+                    "min_clarification_quality_score": 4.0,
+                    "notes": "scratch fixture (RH-1 test)",
+                }
+            ),
+            encoding="utf-8",
+        )
+        return fdir
+
+    def _annotations_doc(self) -> dict:
+        return {
+            "annotation_schema_version": 1,
+            "bootstrap_source": "scratch",
+            "candidate_username": "casey_rh1",
+            "prompt_version": "2026-07-06.3",
+            "bullets": [
+                {
+                    "cluster_index": 0,
+                    "representative": self._BULLET_TEXT,
+                    "jd_files": ["jd.txt"],
+                    "size": 1,
+                    "nli_entailment_score": None,
+                    "nli_contradiction_flag": None,
+                    "minicheck_grounding_score": None,
+                    "verdict": "keep",
+                    "failed_rules": [],
+                    "note": "human note — must survive the patch",
+                    "should_omit": False,
+                    "honest_rewrite": None,
+                    "forbidden_pattern": None,
+                }
+            ],
+            "skills": [],
+            "clarification_ratings": [],
+            "min_scores": {},
+            "notes": "",
+        }
+
+    def _stub_pipeline(self, runner, monkeypatch, resume_content):
+        monkeypatch.setattr(runner, "analyze", lambda *a, **k: {"overall_strategy": "ok"})
+        monkeypatch.setattr(runner, "clarify", lambda *a, **k: {"questions": [], "reasoning": ""})
+        monkeypatch.setattr(
+            runner,
+            "generate",
+            lambda *a, **k: {
+                "resume_content": resume_content,
+                "cover_letter_content": "Dear team,",
+            },
+        )
+        monkeypatch.setattr(
+            runner,
+            "_grade",
+            lambda *a, **k: {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"},
+        )
+        monkeypatch.setattr(
+            runner, "_score_distinctiveness", lambda *a, **k: {"score": 4.0, "summary": "ok"}
+        )
+
+    def test_persists_grounding_scores_by_bullet_text(self, db_session, tmp_path, monkeypatch):
+        import evals.grounding_signals as grounding_signals_module
+        import evals.runner as runner
+        from db.models import Candidate
+        from evals.runner import run_suite
+        from scripts.export_corpus_seed import export_seed
+
+        db_session.add(Candidate(username="casey_rh1", name="Casey Rivera"))
+        db_session.commit()
+        seed_data = export_seed(db_session, candidate_username="casey_rh1")
+
+        slug = "scratch-rh1"
+        self._write_scratch_fixture(tmp_path, slug)
+        ann_path = tmp_path / "real" / slug / "annotations.json"
+        ann_path.write_text(json.dumps(self._annotations_doc()), encoding="utf-8")
+
+        monkeypatch.setattr(runner, "FIXTURES_DIR", tmp_path)
+        monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path)
+        monkeypatch.setattr(runner, "BASELINE_JSON", tmp_path / "baseline_v1.json")
+        self._stub_pipeline(
+            runner,
+            monkeypatch,
+            f"- {self._BULLET_TEXT}\n- An unrelated, unmatched bullet.\n",
+        )
+
+        def _fake_scorer(resume_md, source_texts):
+            """STUBBED scorer — proves the persistence SEAM, not the DeBERTa/
+            MiniCheck models themselves (covered separately, gated on the
+            [eval-grounding] extras, by tests/test_grounding_signals.py)."""
+            bullets = [
+                ln[2:].strip() for ln in resume_md.splitlines() if ln.strip().startswith("- ")
+            ]
+            return {
+                "bullet_count": len(bullets),
+                "nli": [
+                    {"bullet": b, "nli_entailment_score": 0.93, "nli_contradiction_flag": False}
+                    for b in bullets
+                ],
+                "nli_summary": {"mean_entailment": 0.93, "contradiction_count": 0},
+                "minicheck": [{"bullet": b, "minicheck_grounding_score": 0.81} for b in bullets],
+                "minicheck_summary": {"mean_score": 0.81, "low_score_count": 0},
+            }
+
+        monkeypatch.setattr(grounding_signals_module, "run_grounding_signals", _fake_scorer)
+
+        result = run_suite(
+            suite="real",
+            subset="smoke",
+            fixture_name=slug,
+            seed_data=seed_data,
+            grounding_signals=True,
+            out_dir=tmp_path,
+            client=MagicMock(),
+        )
+        assert result.n_fail == 0
+        assert result.out_path is not None and result.out_path.exists()
+
+        # The eval RESULT record carries the grounding signals (already worked
+        # before this fix)...
+        lines = [
+            json.loads(ln)
+            for ln in result.out_path.read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ]
+        assert lines[0]["grounding_signals"]["bullet_count"] == 2
+
+        # ...and now so does the fixture's annotations.json (the RH-1 fix): the
+        # matching bullet is patched by TEXT, the human verdict/note untouched,
+        # and no spurious new item was invented for the unmatched 2nd bullet.
+        patched = json.loads(ann_path.read_text(encoding="utf-8"))
+        assert len(patched["bullets"]) == 1
+        item = patched["bullets"][0]
+        assert item["nli_entailment_score"] == 0.93
+        assert item["minicheck_grounding_score"] == 0.81
+        assert item["verdict"] == "keep"
+        assert item["note"] == "human note — must survive the patch"
+
+    def test_no_annotations_json_is_a_silent_noop(self, db_session, tmp_path, monkeypatch):
+        """When the fixture has no annotations.json (most --suite real fixtures,
+        e.g. a freshly-collated one before any grounding run), the RH-1 hook must
+        not create one or raise — it only patches an EXISTING file."""
+        import evals.grounding_signals as grounding_signals_module
+        import evals.runner as runner
+        from db.models import Candidate
+        from evals.runner import run_suite
+        from scripts.export_corpus_seed import export_seed
+
+        db_session.add(Candidate(username="casey_rh1b", name="Casey Rivera"))
+        db_session.commit()
+        seed_data = export_seed(db_session, candidate_username="casey_rh1b")
+
+        slug = "scratch-rh1b"
+        self._write_scratch_fixture(tmp_path, slug)
+        # Deliberately NO annotations.json written.
+
+        monkeypatch.setattr(runner, "FIXTURES_DIR", tmp_path)
+        monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path)
+        monkeypatch.setattr(runner, "BASELINE_JSON", tmp_path / "baseline_v1.json")
+        self._stub_pipeline(runner, monkeypatch, f"- {self._BULLET_TEXT}\n")
+        monkeypatch.setattr(
+            grounding_signals_module,
+            "run_grounding_signals",
+            lambda resume_md, source_texts: {
+                "bullet_count": 1,
+                "nli": [
+                    {
+                        "bullet": self._BULLET_TEXT,
+                        "nli_entailment_score": 0.9,
+                        "nli_contradiction_flag": False,
+                    }
+                ],
+                "nli_summary": {"mean_entailment": 0.9, "contradiction_count": 0},
+                "minicheck": [{"bullet": self._BULLET_TEXT, "minicheck_grounding_score": 0.8}],
+                "minicheck_summary": {"mean_score": 0.8, "low_score_count": 0},
+            },
+        )
+
+        result = run_suite(
+            suite="real",
+            subset="smoke",
+            fixture_name=slug,
+            seed_data=seed_data,
+            grounding_signals=True,
+            out_dir=tmp_path,
+            client=MagicMock(),
+        )
+        assert result.n_fail == 0
+        assert not (tmp_path / "real" / slug / "annotations.json").exists()
+
+
+class TestZeroResultGuard:
+    """RH-2 (2026-07 e2e-run-health-review): a run whose fixture loop writes ZERO
+    result records must fail loudly + clean up any empty file, not report success
+    against a silent 0-byte results file — the ``20260709_014042Z.jsonl`` finding."""
+
+    def test_all_fixtures_failing_to_load_raises_and_cleans_up(self, tmp_path, monkeypatch):
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path)
+        monkeypatch.setattr(runner, "BASELINE_JSON", tmp_path / "baseline_v1.json")
+        monkeypatch.setattr(runner, "FIXTURES_DIR", tmp_path)
+
+        # A "real" fixture directory that exists but has no jd.txt/expected.json —
+        # _load_fixture raises for it, caught by the per-fixture try/except
+        # (continue), so the loop completes having written NOTHING — exactly the
+        # silent-empty-results-file scenario.
+        (tmp_path / "real" / "broken-fixture").mkdir(parents=True)
+
+        with pytest.raises(RuntimeError, match="zero result records"):
+            run_suite(
+                suite="real",
+                subset="smoke",
+                fixture_name="broken-fixture",
+                out_dir=tmp_path,
+                client=MagicMock(),
+            )
+
+        # No 0-byte (or any) results file left behind under out_dir.
+        assert list(tmp_path.glob("*.jsonl")) == []
+
+    def test_main_maps_zero_result_runtimeerror_to_exit_1(self, monkeypatch):
+        """main() surfaces the RH-2 guard's RuntimeError as a clean exit 1
+        (logged), not an unhandled traceback — mirrors the FileNotFoundError /
+        ValueError mapping already in place for run_suite's other failure modes."""
+        import evals.runner as runner
+
+        def _raise(**kwargs):
+            raise RuntimeError("Eval run wrote zero result records (suite='real')")
+
+        monkeypatch.setattr(runner, "run_suite", _raise)
+        rc = runner.main(["--suite", "real", "--fixture", "broken-fixture"])
+        assert rc == 1

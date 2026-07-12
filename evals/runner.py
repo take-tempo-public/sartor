@@ -1392,6 +1392,29 @@ def run_suite(
                     # all downstream records for this fixture at once.
                     _enrich_groundedness(det_metrics["groundedness"], grounding_signals_data)
 
+                    # RH-1 (2026-07 e2e-run-health-review): persist the grounding
+                    # signals just computed back into the fixture's
+                    # annotations.json — before this, they landed in every JSONL
+                    # result record above but never made it back to the
+                    # ground-truth file the Annotate tab edits. `fdir` IS
+                    # ANNOTATION_ROOT/<slug> for a `--suite real --fixture <slug>`
+                    # run (evals/fixtures/real/ == blueprints.diagnostics's
+                    # ANNOTATION_ROOT), so this only ever fires for a real
+                    # fixture that already has an annotations.json; best-effort
+                    # + non-raising (see patch_grounding_scores_by_text).
+                    ann_path = fdir / "annotations.json"
+                    if ann_path.exists():
+                        from evals.annotation import patch_grounding_scores_by_text
+
+                        patched = patch_grounding_scores_by_text(ann_path, grounding_signals_data)
+                        if patched:
+                            logger.info(
+                                "  persisted grounding signals into %s "
+                                "(%d annotation item(s) matched by bullet text)",
+                                ann_path.as_posix(),
+                                patched,
+                            )
+
             fixture_scores: dict[str, float] = {}
 
             for rubric_path in rubrics:
@@ -1699,6 +1722,25 @@ def run_suite(
         out_path,
     )
 
+    # RH-2 (2026-07 e2e-run-health-review): a run whose fixture loop wrote ZERO
+    # result records (every matched fixture failed `_load_fixture` or the grade
+    # loop — e.g. via the #15 anchor-JD bug, or every rubric was
+    # iteration_quality against fixtures with no scenarios) used to leave a
+    # silent 0-byte `out_path` with no error trace on disk — the
+    # `20260709_014042Z.jsonl` finding. Fail loudly instead of reporting success
+    # against nothing: delete the empty file and raise, so the CLI `main()` /
+    # console SSE routes (`/api/eval/run`, `/api/tune/run` — both already wrap
+    # run_suite in try/except) surface a real error instead of a phantom
+    # "0 pass / 0 fail" done event.
+    if n_pass == 0 and n_fail == 0 and out_path.exists() and out_path.stat().st_size == 0:
+        out_path.unlink(missing_ok=True)
+        raise RuntimeError(
+            f"Eval run wrote zero result records (suite={suite!r} subset={subset!r}"
+            f"{f' fixture={fixture_name!r}' if fixture_name else ''}) — every matched "
+            "fixture failed to load or grade; see the log above for the per-fixture "
+            "error. No empty results file was left on disk."
+        )
+
     # Regression summary — concise, only printed when there's something to say.
     if regressions or improvements:
         logger.info("--- Regression check vs previous runs (delta=%.1f) ---", REGRESSION_DELTA)
@@ -1876,6 +1918,9 @@ def main(argv: list[str] | None = None) -> int:
         logger.error("%s", exc)
         return 1
     except ValueError as exc:  # unknown prompt-override constant name, or bad --mode/--seed combo
+        logger.error("%s", exc)
+        return 1
+    except RuntimeError as exc:  # RH-2: zero-result-record run (empty-file guard)
         logger.error("%s", exc)
         return 1
     return result.exit_code

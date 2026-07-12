@@ -160,9 +160,12 @@ def create_skill(username: str) -> ResponseReturnValue:
 def update_skill(skill_id: int) -> ResponseReturnValue:
     """Update a Skill.
 
-    Body accepts: name, category, proficiency, years, display_order, is_pending_review
-    (set false to approve an llm_proposed skill). Ownership check via _safe_username on
-    the owning candidate.
+    Body accepts: name, category, proficiency, years, display_order,
+    is_pending_review (set false to approve an llm_proposed skill), is_active
+    (set true to un-deny/restore a soft-tombstoned skill — dec 6, UX Cohesion
+    Epic: the reverse of DELETE's soft-tombstone, mirroring the existing
+    title/bullet "Restore" idiom). Ownership check via _safe_username on the
+    owning candidate.
     """
     from db.models import Candidate, Skill
     from db.session import get_session, init_db
@@ -218,6 +221,8 @@ def update_skill(skill_id: int) -> ResponseReturnValue:
                 return jsonify({"error": "display_order must be int"}), 400
         if "is_pending_review" in data:
             sk.is_pending_review = 1 if data["is_pending_review"] else 0
+        if "is_active" in data:
+            sk.is_active = 1 if data["is_active"] else 0
 
         session.commit()
         session.refresh(sk)
@@ -361,11 +366,28 @@ def suggest_skills_from_corpus_route(username: str) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/skills/<int:skill_id>", methods=["DELETE"])
 def delete_skill(skill_id: int) -> ResponseReturnValue:
-    """Remove a skill.
+    """Deny (a pending suggestion) or retire (an approved skill) — always reversible.
 
-    A never-approved suggestion (pending + source 'llm_proposed') is hard-deleted so its
-    name frees the unique slot for future re-evaluation. An approved skill is soft-retired
-    (is_active=0) — composition_overrides from past applications may reference its id.
+    dec 6 (UX Cohesion Epic, skills redesign — C1's denial-semantics finding):
+    Deny and Retire share ONE data-model outcome: is_active=0,
+    is_pending_review=0. The row is always KEPT, never hard-deleted, so:
+      (a) the denial is tombstoned rather than erased;
+      (b) the name stays in the unique-constraint slot AND in every
+          existing-skill dedup scan (suggest_skills_from_corpus_route's
+          `existing_lower` — and the onboarding import path's dedup — both
+          scan ALL Skill rows for the candidate regardless of is_active), so
+          a denied suggestion does not silently reappear on the next
+          suggest pass;
+      (c) it is REVERSIBLE — PUT /api/skills/<id> {"is_active": true}
+          un-denies it (the same "Restore" idiom titles/bullets already use),
+          landing it back in the approved list.
+    Previously a never-approved (pending + source='llm_proposed') suggestion
+    was hard-deleted on deny, freeing its name slot so an identical
+    suggestion could resurface unchanged — the opposite of "denied". Approved
+    skills were already soft-retired this way (composition_overrides from
+    past applications may reference their id); this just extends the same
+    treatment to denied pending suggestions instead of carving out a
+    hard-delete special case.
     """
     from db.models import Candidate, Skill
     from db.session import get_session, init_db
@@ -382,11 +404,6 @@ def delete_skill(skill_id: int) -> ResponseReturnValue:
             configs_dir=current_app.config["CONFIGS_DIR"],
         ):
             return jsonify({"error": "Candidate validation failed"}), 403
-
-        if sk.is_pending_review and sk.source == "llm_proposed":
-            session.delete(sk)
-            session.commit()
-            return jsonify({"id": skill_id, "deleted": True})
 
         sk.is_active = 0
         sk.is_pending_review = 0

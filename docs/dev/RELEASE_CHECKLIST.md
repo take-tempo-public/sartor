@@ -38,6 +38,20 @@ product (assistant + self-documenting wiki + clean blueprints). The v1.0.5 items
 below are reconciled in place (shipped → `[x]`); still-open items are carried into
 v1.0.6 / v1.0.7 / v1.0.8 / v1.1.0 as noted.
 
+### v1.1.0 debt-burn train (conductor, 2026-07-11) — plan of record
+
+The pre-public `[AGENT]`-debt burn runs as a 7-lane / 3-wave Opus-conductor
+merge train (Sonnet worktree lanes → serialized rebase chain → one owner
+confirm per train), detailed in
+[`RELEASE_ARC.md`](RELEASE_ARC.md) §"v1.1.0 debt-burn train" (17 locked owner
+decisions + the lane/wave map). **Base:** `main` @ `904fe8d` (v1.0.9 tagged
+locally, tag HELD/unpushed — do not push it: it would fire PyPI/GHCR publish
+early). **Targets:** Carry-forward ledger items **#1, #5, #6, #7** + the ledger
+**#2** `[AGENT]` residuals (SARTOR_HOME data dir, py311 floor); the PyPI publish
+(#2), citation viewer (#3), and grounding calibration (#4) stay
+`[HUMAN]`/deferred. Lanes mark their own ledger items resolved on-branch
+pre-merge; this row closes when the train merges and the owner tags v1.1.0.
+
 ### v1.0.7 → v1.0.8 — ordered sprint sequence (planned 2026-06-15)
 
 > The two-epic plan from the 2026-06-15 release-planning session — **the ordered "what's
@@ -444,7 +458,7 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
       profile/website scrape), dropping the phantom "pasted-JD-URL fetch" class — `jd_url` is
       provenance-only, never fetched (verified against `scraper.py`; corroborated by the PX-08 gate);
       `vision.md` / `README.md` were already two-class-correct, left as-is. **PX-05** (`F-sec-11`, P1/S-1):
-      the stale `Cooksey/resume` disclosure channel repointed to `amodal1/sartor` in `CODE_OF_CONDUCT.md`
+      the stale `Cooksey/resume` disclosure channel repointed to `take-tempo-public/sartor` in `CODE_OF_CONDUCT.md`
       + `.github/ISSUE_TEMPLATE/config.yml`. **PX-07** (`F-qe-rel-08` / `F-sec-07`; D-4 + P-3): the two
       hard human SLAs in `SECURITY.md` + `CODE_OF_CONDUCT.md` softened to best-effort. **Fold-in**
       (owner-authorized): the same stale `Cooksey/resume` target in `CONTRIBUTING.md` (`cd resume`),
@@ -501,13 +515,14 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **7** (`grep -c '^- \[ \]'` over this subsection is the
+_Rendered open count: **6** (was 7; ledger #1 wiki-freshness resolved 2026-07-11,
+v1.1.0 train Wave 1). (`grep -c '^- \[ \]'` over this subsection is the
 source of truth, re-verified at each close-out). Ceiling reminder: schedule a
 reduction sprint at ~8–10 open items, and clear before adding. The full
 per-item addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
 
-- [ ] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
+- [x] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
       `scripts/wiki_freshness.py:drift_count` excludes only `docs/wiki/`, not `docs-site/`.
       But the Fumadocs static-export tree under `docs-site/` is an **L3 projection** of L1 (like
       the wiki itself), not a wiki *source* — its churn doesn't make the wiki stale. During the
@@ -521,6 +536,11 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       _(discovered: v1.0.9 stream, 2026-07-10, spectree/mypy pull-in train; open count 6 → 7.)_
       **→ Own small branch, low priority** — a correctness fix to gate scope; no urgency (the
       real-refresh path works). Fold in next time `wiki_freshness.py` is touched.
+      **→ RESOLVED (2026-07-11, chore/freshness-scrub):** `drift_count` now also excludes
+      `docs-site/`, alongside the pre-existing `docs/wiki/` exclusion;
+      `tests/test_wiki_freshness_gate.py::TestWikiFreshnessUnit::test_docs_site_changes_excluded_from_drift`
+      pins the new exclusion. Verified against this repo's actual HEAD via
+      `python scripts/wiki_freshness.py` (see lane report for before/after counts).
 
 - [ ] **PyPI wheel not installable — data files not packaged** — **RESOLVED-PENDING-PUBLISH
       2026-07-07 (`fix/packaging-install`); left open only for the still-blocked
@@ -553,6 +573,19 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       run, `Config.base_dir`'s default and `dashboard/routes.py`'s `PROJECT_ROOT` resolve into
       `site-packages/` (user data + telemetry would land there) — pre-existing characteristic,
       revisit before public docs advertise the bare-wheel path as a user journey.
+      **→ Update (2026-07-11, `chore/packaging-floor`):** both residuals closed. (i)
+      `target-version`/`python_version` now `py311`; the surfaced `UP017`/`UP042`/`I001`
+      findings in files this branch doesn't otherwise touch got scoped, temporary
+      `per-file-ignores` (not a whole-tree autofix) — tracked for a dedicated cleanup pass.
+      (ii) `config._default_base_dir()` (SARTOR_HOME > dev checkout > `platformdirs` platform
+      dir) is now `Config.base_dir`'s default, and `dashboard/routes.py`'s `PROJECT_ROOT`
+      shares the same resolution instead of its own `Path(__file__)`-relative computation;
+      `Config.bundled_personas_dir` was also fixed to keep resolving the shipped persona
+      templates via the packaged-data resolver once the default no longer coincides with
+      `site-packages/`. New follow-up surfaced: `analyzer.py`'s own `LOG_DIR` (the actual
+      `llm_calls.jsonl` writer) is a separate, still-`Path(__file__)`-relative global, out of
+      this fix's anchored scope — small, not yet ledgered as its own row. The PyPI `[HUMAN]`
+      Trusted Publisher / GHCR blocker above stays open (unrelated, gated on the repo rename).
 
 - [ ] **In-app rendered citation viewer (deferred)** — the avatar's numbered citations
       (Sprint 7.8d, `feat/avatar-citation-format`) link to their source **on GitHub** (wiki
@@ -608,6 +641,20 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       calibration is now blocked on **fixing that persistence seam + re-running grounding**, folded into
       the **v1.0.9** Diagnostics-DX thread. Detail:
       [`reviews/2026-07-e2e-run-health-review.md`](reviews/2026-07-e2e-run-health-review.md).
+      **→ Update (2026-07-11, `feat/diagnostics-dx`, RH-1 fixed):** the persistence seam is fixed —
+      `evals.annotation.patch_grounding_scores_by_text` (matched by normalized bullet text; a
+      `--suite real` run's own generated bullets aren't index-aligned to the bootstrap's deduped
+      clusters the way the existing "Score grounding" button's index-based patch is) is now wired
+      into `evals.runner.run_suite`, so a grounding re-score over a `--suite real` fixture persists
+      NLI + MiniCheck into that fixture's `annotations.json`. Tested against a SCRATCH fixture
+      (never `evals/fixtures/real/robert-bootstrap/` or the owner's e2e clone), scorer STUBBED (the
+      DeBERTa/MiniCheck `[eval-grounding]` extras are heavy CPU models, not assumed installed in a
+      dev worktree). **PV-2 calibration itself is still owner-gated** (the manual browser annotation
+      pass + threshold-setting) — this fix only unblocks re-running grounding over the existing
+      53-annotation `robert-bootstrap` fixture so its scores stop being null; it does not itself
+      close this ledger item. Same branch also closed RH-2 (0-byte-run guard — `run_suite` now
+      raises + cleans up instead of silently returning a "0 pass / 0 fail" result over a run that
+      wrote zero records).
 
 - [ ] **Agent-coding-practices kit-adoption — staged commitments (2026-06-23)** — the
       [`kit-adoption-design.md`](kit-adoption-design.md) arc's cross-cutting deferrals, kept in
@@ -836,6 +883,10 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       [skills/hooks-packaging coherence at 8.7 `feat/portable-enforcement-core`]. Rung history + gate
       detail: [`kit-adoption-design.md`](kit-adoption-design.md) §4/§6 + `CHANGELOG.md`. No ledger row
       added or cleared; rendered open count holds at 7.
+      **→ Update (2026-07-11, ci/portable-enforcement):** L3 confirmed already-done; PX-55 + PX-43
+      landed; commitment (3) hook-re-home + PX-37 dispatcher DEFERRED to an owner-present session
+      (touches live hooks + tests/test_governance_hooks_gate.py; enforcement core already works via
+      f1b3193) — stays open.
 
 - [ ] **2026-07 efficiency review — PX-37..PX-56 aggregate** — witness-only
       four-area efficiency review (agent-process DX / runtime / docs-wiki /
@@ -906,6 +957,49 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       advanced `.last_ingest_sha` `3561657` → `e785e53`, and passed `/wiki-lint` (see the Resolved
       "Wiki ingest refresh" row). **Cumulative: 7 of the row's 20 PX rows now land**; row stays
       open (13 remain).
+      **→ Update (2026-07-11, `docs/efficiency-px`):** PX-45/PX-49/PX-56 land; model-pin split
+      documented (dec 14).
+
+      **→ Update (2026-07-11, `perf/db-baseline`):** PX-38/PX-39/PX-44 land (PX-44 scoping
+      probe: DEFERRED-with-note). **PX-38** — `get_application_composition`
+      selectinloads bullets+tag_links/titles+tag_links/summary_items (mirrors
+      `list_applications`); `ix_application_candidate_status_updated` gained
+      `is_active`; migration `0015` (plain `create_index`/`drop_index`, no
+      `batch_alter_table`) verified zero row loss both directions. N+1 guard:
+      17→37 SQL queries pre-fix (2→6 experiences) vs 12→12 post-fix. **PX-44** —
+      `CONTRIBUTING.md`'s `pytest` + `pytest -m ux` double-run bullet fixed; new
+      `docs/dev/perf/TEST_SUITE_PERFORMANCE.md` documents the idle fast-lane
+      numbers (308.9s/163.1s/248.0s) and a fixture-scoping static probe (46/118
+      non-UX files, 658/1,868 tests build a fresh Flask app + full alembic chain
+      at function scope) — the scoping REFACTOR itself is DEFERRED (cross-cutting
+      test-isolation change, too risky mid-train with 6 concurrent lanes);
+      follow-on branch `test/fixture-scoping` noted. **PX-39 lands partially:**
+      `docs/dev/perf/PERFORMANCE_HISTORY.md` now labels the three population eras
+      (pre-split / split+Sonnet-4.6 / split+Sonnet-5) so the defunct 69.7s p50 /
+      84.6s p95 Sonnet-4.6 split-era numbers can't seed future false alarms, and
+      cites the already-committed Sonnet-5 synthetic anchor pipeline p50s
+      (68.7s/80.7s/80.5s, `evals/results/baseline_v1.json`) — but the actual
+      real-corpus Sonnet-5 p50/p95 measurement could **not** be captured from
+      this branch: the isolated worktree has no `.api_key`/`ANTHROPIC_API_KEY`
+      ($0 spent, none fabricated); the open item + exact reproduction method are
+      documented in the same file for the next run with credentials.
+
+      **→ Reconciled (2026-07-11, Wave 1 assembly):** counting PX-42 (py311 floor,
+      landed via `chore/packaging-floor` B2), **13 of the row's 20 PX rows now land** —
+      Wave 1 new: PX-38/PX-42/PX-44/PX-45/PX-49/PX-56 full; PX-39 (labeling only) +
+      PX-47 (model-pin doc half) partial. **7 remain:** PX-37/PX-43/PX-55 (Wave 3
+      HARD), PX-51 (Wave 2 UX), the PX-47 config-drift remainder, the PX-39
+      real-corpus measurement, and PX-52 (post-public).
+      **→ Update (2026-07-11, Wave 3 `ci/portable-enforcement`, PX-43/PX-55 land):**
+      **15 of the row's 20 PX rows now land.** PX-55 (unified `scripts/gate.py`
+      quality-gate wrapper, invoked by `AGENTS.md`/`CONTRIBUTING.md`/`ci.yml`) and
+      PX-43 (CI hygiene batch — concurrency group, eval-smoke setup dedup, artifact
+      retention-days, fail-fast + arm64 owner-decision comments) both land in full;
+      see CHANGELOG for detail. **5 remain:** PX-37 (the enforcement-core dispatcher —
+      DEFERRED to an owner-present session alongside the ledger #5 hook-re-home
+      commitment, not attempted this lane), PX-51 (Wave 2 UX, confirmed DEFERRED —
+      not landed — in the UX Cohesion Epic), the PX-47 config-drift remainder, the
+      PX-39 real-corpus measurement, and PX-52 (post-public).
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in
@@ -944,6 +1038,46 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       _(discovered: 2026-07-09, `fix/round2-quick-wins`; open count 5 → 6.)_
       **→ Integrate:** Wave A is done on this branch; the epic itself needs owner slotting
       before it becomes a branch sequence.
+      **→ Update (2026-07-11, `feat/diagnostics-dx`, v1.1.0 debt-burn Lane DX):** a further
+      batch landed off `wave1-assembly` (gate green — ruff/mypy/pytest incl. `-m ux` + a11y,
+      2030 tests): **#3** (Tuning-tab cross-link to Annotate's Export-seed button), **#7**
+      (`should_omit` tooltip + relabel), **#9** (localStorage draft snapshot/restore +
+      jump-to-flagged-item), **#10** (real `<progress>` bars for eval/tune/bootstrap, driven
+      by the SSE's existing `index`/`total`), **#13** (indeterminate busy bar for the
+      grounding-score button — deliberately coarse, per its own disposition), and **#17**
+      (the doc-grounded assistant ported onto `/_dashboard`, dev-mode checkbox defaulting
+      checked there — no backend change). **(a) #1 lock-scope** verified ALREADY correct at
+      this branch's base (seed export never took the lock; only eval/tune/bootstrap/
+      grounding-score do) — no design-Q remained, just a small hygiene close (the
+      dynamically-created "Run this fixture" button now also participates in the shared
+      disable-list). **(b) CW-117 run-lock test-hardening** resolved by adding Playwright
+      coverage for the bootstrap and grounding-score hand-rolled SSE pumps (previously only
+      the eval `_closed` path was regression-tested); left them as their own hand-rolled
+      pumps rather than routing through `window.sartorEval.stream` (lower risk, same
+      guarantee now proven). **Content cluster #2/#4/#5/#6/#16** got a SMALL, DRAFT,
+      owner-review-before-merge down payment only (a handful of new field-level tooltips +
+      one clarifying help sentence) — not the full field-level authoring pass. **Still open**
+      (unchanged by this branch): #12, #14 (already routed elsewhere), #16's remaining
+      breadth, the **run-cancel** endpoint, and the `app.run(threaded=True)` governance flag.
+      The **grounding-signal persistence gap** this same branch also fixed (RH-1/RH-2, off
+      the paired [`2026-07-e2e-run-health-review.md`](reviews/2026-07-e2e-run-health-review.md))
+      is logged under the "Grounding / hallucination metric" ledger item above, not
+      restated here.
+
+      **→ Update (2026-07-11, `feat/ux-cohesion`, v1.1.0 Wave 2 Lane UX):** the design-
+      system remainder landed — dec 1 sentence-case app-wide, dec 2 the one ~150ms
+      modal fade, dec 3 Phosphor vendored skill-icon chips (glyph→concept mapping
+      owner-review-before-merge), dec 4 the state-comm two-tier (`_setBusy` audit +
+      the new `.btn-pending` pulse), dec 5 the Compose autosave "Saved" toast, dec 6
+      the skills denial data-model (reversible soft-tombstone, replacing the old
+      hard-delete-on-deny; un-deny via `PUT is_active=true`) + the denied-skills
+      collapsible lane, dec 7 the compact prior-application card (JD snippet + per-run
+      status + actions moved into the detail modal). **PX-51** (style.css
+      duplicate-cascade collapse) is **DEFERRED** — flagged HIGH RISK in the branch
+      brief, and several decisions above already had to edit rules living inside the
+      duplicate "restyle" block this item would collapse; left for a follow-up branch,
+      no functional effect from deferring. See `CHANGELOG.md` `[Unreleased]` "UX
+      Cohesion Epic" for the full per-decision detail.
 
 #### Resolved
 
@@ -1801,8 +1935,8 @@ first follow-up release.
       ready to push the v1.1.0 public-release tag**; the repo stays
       local-only until then (no `origin` remote configured). Action at the
       v1.1.0 cut: create the GitHub repo (public, name `sartor`, under
-      `amodal1`), `git remote add origin
-      git@github.com:amodal1/sartor.git`, push `main` and the
+      `take-tempo-public`), `git remote add origin
+      git@github.com:take-tempo-public/sartor.git`, push `main` and the
       release tag, then verify that `pyproject.toml` Homepage /
       Repository / Issues / Changelog URLs and `README.md`/
       `docs/install.md` clone instructions all resolve.

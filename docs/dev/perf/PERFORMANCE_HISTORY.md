@@ -13,7 +13,10 @@
 > [`../evals/TUNING_LOG.md`](../../../evals/TUNING_LOG.md) (per-branch institutional record).
 > **Telemetry source:** `logs/llm_calls.jsonl` — **1,824 LLM calls tracked
 > 2026-05-06 → 2026-06-02.** Numbers below are p50 unless noted; reproduce with
-> the snippet in [Provenance](#provenance).
+> the snippet in [Provenance](#provenance). **This window predates both the
+> Sonnet-5 model upgrade (2026-07-05) and the frozen-composition
+> re-architecture (2026-07-06) — see [Population eras](#population-eras-px-39--read-every-number-above-against-its-era)
+> before citing any number below as "current."**
 
 ---
 
@@ -98,6 +101,103 @@ absolute tokens on robert's 12.7k-token `generate` than on the synthetic 6.4k.
 The one honest gap — see [Caveats](#caveats--validation-gaps) — is that the
 two-pass split itself has only been measured on synthetic fixtures so far; the
 real-corpus projection is inference, not yet measurement.
+
+---
+
+## Population eras (PX-39) — read every number above against its era
+
+Everything above this section was measured in one specific era and is
+**historical, not current** — three model/architecture cutovers have
+happened since, each of which resets what "normal" latency looks like. The
+2026-07 efficiency review's PX-39 prescription flagged that citing the
+middle era's numbers as "current" (as an earlier draft of this file's
+sibling review artifacts did) would seed false alarms once a *third* era
+started. Read every latency number in this file against the era it belongs
+to:
+
+| Era | Window | Status | Representative numbers |
+|---|---|---|---|
+| **1. Pre-split** (single Sonnet-4.6 `analyze` call) | ended 2026-06-01 | **DEFUNCT** | 86 s synthetic / 104 s real (`analyze` p50, table above) |
+| **2. Split + Sonnet 4.6** | 2026-06-01 → 2026-07-05 | **DEFUNCT** | 67–69 s synthetic `analyze` p50 (table above); **69.7 s p50 / 84.6 s p95** real split-pair latency, n=78 runs (`docs/dev/reviews/2026-07-efficiency/verification-log.md` F-run-03 — summed per `run_id` across the whole `analyze`+`generate` split pair, Sonnet 4.6, evidence pin `4196d0c` 2026-07-03) |
+| **3. Split + Sonnet 5** | 2026-07-05 → present | **CURRENT** | synthetic anchor pipeline p50 only (below) — **real-corpus p50/p95 not yet measured**, see [Open item](#open-item-real-corpus-sonnet-5-baseline) |
+
+**Era 3's only measurement so far (synthetic anchor, already committed —
+no new spend required to cite it):** `evals/results/baseline_v1.json`
+(`chore/eval-baseline-sonnet-5`, merged 2026-07-09; `model_snapshots.sonnet
+= "claude-sonnet-5"`, `prompt_version = "2026-07-08.4"`) carries a
+`performance_baseline.<fixture>.pipeline_latency_ms_p50` per synthetic
+fixture:
+
+| Fixture | Pipeline p50 (Sonnet 5, synthetic) |
+|---|---|
+| `data-scientist-junior` | 68.7 s |
+| `pm-senior` | 80.7 s |
+| `sre-mid-level` | 80.5 s |
+
+This is in the same ballpark as the era-2 synthetic `analyze`-only numbers
+(67–69 s) — consistent with no gross Sonnet-5 regression — but it is a
+**full-pipeline** figure (analyze + clarify + generate combined, not
+`analyze` alone) on **synthetic** fixtures, so it is not directly comparable
+to the era-2 `analyze`-only or real-corpus rows above. It does not, by
+itself, satisfy the real-corpus ask below.
+
+**Cache cutover, not a regression.** Don't read a cache-miss spike right at
+the 2026-07-05/06 boundary as new coherence trouble: this project's own
+precedent (the `.2`→`.3` split-#2 cache break + reclaim, [above](#6-r1-cache-reclaim-2026-06-013--fix-the-regression-for-free))
+already establishes that a system-prompt/model change resets the
+prefix-cache once. The re-verification for this row
+(`docs/dev/reviews/2026-07-efficiency/px-staleness-reverify-2026-07-07.md`,
+PX-39 evidence) found exactly that shape: a `generate` call at the
+2026-07-06T21:47:33Z Sonnet-5 cutover logged `cache_creation_input_tokens=
+5633` / `cache_read_input_tokens=0` (a fresh miss), which is the expected
+one-time reset, not a re-opened coherence bug — treat a "0 misses in 30 days"
+framing as **not yet re-established** post-cutover (it will re-flatten once
+30 days clear the cutover date) rather than falsified.
+
+**The frozen-composition path changes what `generate` even measures.**
+Since `fix/compose-frozen-composition` (merged 2026-07-06), corpus-mode
+applications that hit "Save-and-continue" in Compose (`static/app.js`,
+`freeze:true`) route through a **deterministic, zero-resume-body-LLM-call**
+assemble path (`blueprints/generation.py`) — `generate()` itself is not
+called for the résumé body on that path (cover-letter generation, when
+requested, still is). Legacy contexts and pre-freeze corpus applications
+still call `generate()` exactly as measured throughout this file. Any future
+real-corpus baseline should segment `generate` calls into "frozen path"
+(should show ~0 resume-body LLM calls) vs "fallback/legacy path" (should
+track the historical curve here) rather than assuming the call retired
+uniformly.
+
+**New call kinds since this file's telemetry window** (frozen-composition
+Phases 3/4 + the doc-grounded avatar): `draft_positioning_summary`,
+`draft_gap_fill_bullets`, `suggest_skills`, `avatar_answer`/
+`avatar_answer_streaming`. None have a latency baseline in this file yet.
+`scripts/perf_baseline.py` groups by whatever `call` string appears in the
+log, so these need no script change to surface once real telemetry exists —
+fold them into the same table refresh that closes the open item below.
+
+### Open item: real-corpus Sonnet-5 baseline
+
+**Not yet measured — do not fabricate or infer this number.** This branch
+(`perf/db-baseline`) ran in an isolated git worktree with **no `.api_key`
+file and no `ANTHROPIC_API_KEY`** in the environment (both checked, neither
+present) — the billed Anthropic API this measurement requires could not be
+spent from here. Method for whoever runs this next, on a clone/environment
+with credentials configured:
+
+```bash
+# A FEW real (non-eval:*) analyze -> clarify -> generate runs against a real
+# corpus (the app's normal flow, or evals/runner.py --suite real if a real
+# fixture is seeded) populate logs/llm_calls.jsonl, then:
+python -m scripts.perf_baseline --log logs/llm_calls.jsonl
+# Segment by model (analyzer.py logs "model" per record — analyzer.py:1225)
+# and, once frozen-composition traffic exists, by frozen-vs-fallback path.
+```
+
+Target: the smallest n that yields a usable p50/p95 (a handful of runs, not
+a full corpus sweep) — should stay well under $1 per the project's own
+eval-smoke cost precedent (~$0.35–0.40 for a full synthetic smoke run).
+Report the exact cost + wall-clock alongside the numbers, same as every
+other measurement in this file.
 
 ---
 

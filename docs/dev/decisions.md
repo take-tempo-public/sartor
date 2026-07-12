@@ -30,6 +30,18 @@ or the Carry-forward ledger until resolved.)_
 
 ## Settled decisions
 
+### 2026-07-11 — Subagent model-pin split: dated Haiku snapshot vs undated Sonnet alias (doc-only half of PX-47)
+
+Full record + rationale:
+[`reviews/2026-07-efficiency/px-staleness-reverify-2026-07-07.md`](reviews/2026-07-efficiency/px-staleness-reverify-2026-07-07.md)
+PX-47 §(2), cross-linked from
+[`reviews/2026-07-efficiency/prescriptions.md`](reviews/2026-07-efficiency/prescriptions.md)
+PX-47 row. **Document-only — no re-pin executed.**
+
+| # | Decision | Resolution |
+|---|---|---|
+| PX-47b | Model-pin convention: dated-vs-undated split across the 9 subagents | **Intentional and provider-imposed, not drift.** The 3 Haiku subagents (`agents/eval-judge.md`, `agents/wiki-grounding-auditor.md`, `agents/wiki-scribe.md`) pin the **dated** snapshot `claude-haiku-4-5-20251001` (matches `analyzer.py:HAIKU_MODEL`); the 6 Sonnet subagents (`agents/compliance-witness.md`, `agents/git-flow.md`, `agents/headhunter.md`, `agents/prompt-archaeologist.md`, `agents/tune-drafter.md`, `agents/ux-onboarding-designer.md`) pin the **undated alias** `claude-sonnet-5` (matches `analyzer.py:SONNET_MODEL`) because Sonnet 5 has **no dated snapshot ID** on the Anthropic API as of this writing — "apply one convention" (a dated pin everywhere) is not currently achievable. **Revisit trigger:** if/when Anthropic ships a dated Sonnet-5 snapshot, reconsider either dated-pinning the 6 Sonnet agents to it, or flipping the 3 Haiku agents to the undated `claude-haiku-4-5` alias for uniformity — an owner call each time, not a mechanical re-pin. |
+
 ### 2026-07-10 — mypy `--strict` exempt set narrowed (supersedes KIT-7)
 
 Full record + rationale: [`kit-adoption-design.md`](kit-adoption-design.md) §6 (the
@@ -56,7 +68,7 @@ Full record + rationale: [`kit-adoption-design.md`](kit-adoption-design.md) §3.
 | KIT-7 | mypy `--strict` end-state | **Strict everywhere except a named exempt set** (`tests/`, `evals/`, `scripts/`, `db/migrations/versions`) |
 | KIT-8 | `uv` migration | **Out of scope** (stay pip/setuptools; translate commands) |
 
-Framing: **implement Sartor's deltas + flag what's promotable to `amodal-open`**
+Framing: **implement Sartor's deltas + flag what's promotable to `take-tempo-public`**
 (Sartor is the donor, not a blank canary) — [`kit-adoption-design.md`](kit-adoption-design.md) §1, §7.
 
 ### 2026-06-15 — Enforcement portability (security/quality hooks)

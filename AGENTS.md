@@ -92,7 +92,7 @@ is the failure mode this section exists to prevent.
    - **the handoff renders the FULL still-open ledger** — the `Carried-forward observations` section reproduces the *cumulative* still-open subset (every open item, not just this session's), so nothing falls out of attention across handoffs; at **~8–10 open items**, flag a reduction sprint. (Canonical: charter **W-1** "carry-forward discipline".)
    - **branches to prune** identified.
    "Done" is the *output* of this sweep, not a declaration — do not announce completion until it is empty. Declaring progress over verifying completeness manufactures tech debt, repeat close-outs, and eroded trust. In particular, NEVER merge and then open a follow-up branch for a doc / memory / note edit — that re-triggers the marker-wipe ceremony; fold it in before the merge.
-1. Quality gate green (`python -m ruff check .` + `python -m mypy .` + `python -m pytest`).
+1. Quality gate green — `python -m scripts.gate` (PX-55; runs `ruff check .` + `ruff format --check .` + `mypy .` + `pytest`, the same steps CI runs — see "Testing and validation" below).
 2. Commit — message records what was done and why (or "no code change — verified" if the branch closed clean).
 3. Ask user to confirm merge to `main`; execute merge after confirmation.
 4. Prune the merged branch(es) with the user's OK, then generate the next-agent handoff prompt — **READ [`docs/dev/AGENT_HANDOFF_TEMPLATE.md`](docs/dev/AGENT_HANDOFF_TEMPLATE.md) FIRST and reproduce every fixed section (Documents to read, Hard constraints, Close-out checklist) verbatim, dropping none; a handoff written from memory is non-compliant** — **as copyable chat text (never a file written into `output/`)** and give it to the user as the **last act** before closing the window.
@@ -111,7 +111,7 @@ is the failure mode this section exists to prevent.
 - Grounding check in generation prompt enforces no invented facts; the worked-examples block (OK / NOT OK pairs) is the load-bearing teaching signal — when adding new failure modes to the SYSTEM_PROMPT, also add a worked example.
 - When clarifications OR first-person preview edits are present, the grounding check widens to accept them as legitimate source material. The no-invention rule still applies beyond the union of (resume + clarifications + typed edits) — keep this carve-out surgical, not blanket.
 - **D5 cross-JD reuse** (`feat/clarifications-to-corpus`): the THREE Compose content-drafting calls (`draft_positioning_summary`, `draft_gap_fill_bullets`, `suggest_skills`) additionally accept `context_set["prior_clarifications"]` — confirmed clarification facts from the candidate's OTHER applications, staged once by `db.build_context.build_context_set_from_db` (corpus-mode only) — as legitimate grounding source material via a `<prior_clarifications>` prompt block, and `hardening.assemble_source_union` widens to match so the deterministic grounding metric doesn't flag legitimately-reused facts. The **legacy `generate()` prompt is untouched** — this carve-out is scoped to the three drafting calls, not blanket.
-- `_call_llm` and `_parse_or_retry` accept an optional `system_prompt` arg; calls that override it (like `clarify` / `clarify_iteration`) pay one extra cache-miss on the system block but the heavy user-prefix cache is unaffected.
+- `_call_llm` and `_parse_or_retry` accept an optional `system_prompt` arg; every call that overrides it via `_resolve_system_prompt(...)` or a literal persona constant (not just `clarify` / `clarify_iteration` — grep `system_prompt=_resolve_system_prompt\|system_prompt=AVATAR_SYSTEM_PROMPT` in `analyzer.py` for the current call sites; 16 as of this writing, growing as new drafting/recommend calls are added) pays one extra cache-miss on the system block, but the heavy user-prefix cache is unaffected.
 
 ### Eval observability
 
@@ -134,12 +134,14 @@ names (charter D5, cite-don't-restate).
 
 ## Testing and validation
 
-Every change should pass the local validator loop before commit:
+Every change should pass the local validator loop before commit. **`scripts/gate.py`
+(PX-55) is the single definition of "gate green"** — the same four steps in the
+same order run locally, in CI (`.github/workflows/ci.yml`'s `quality` job), and in
+`CONTRIBUTING.md`'s PR checklist, so there is exactly one place that list can drift:
 
 ```bash
-ruff check .
-mypy .
-pytest
+python -m scripts.gate
+# equivalent to, in order: ruff check . / ruff format --check . / mypy . / pytest
 ```
 
 The Playwright **UX** tier (`pytest -m ux`) drives the wizard in a headless Chromium against a threaded live server (LLM-free — analyzer functions are stubbed, the real routes run). It skips when the Chromium binary is absent (`python -m playwright install chromium`), so the default `pytest` stays green everywhere. The shared navigation/selector driver lives in [`ui_pages/`](ui_pages/) — one registry, consumed by the suite **and** `scripts/capture_screenshots.py`.
@@ -164,6 +166,6 @@ Dashboard for trends + heatmap + failure-mode clustering: visit `http://localhos
 - Do not skip `_safe_username()` / `_within()` on any new route touching the filesystem.
 - Do not commit real personal data: `evals/fixtures/real/`, `configs/*.config` (except `example.config`), `resumes/`, `output/`.
 - Do not add features or refactor beyond what was asked — minimal targeted edits only.
-- Do not call an LLM from `hardening.py`, `parser.py`, `scraper.py`, `generator.py`, `pdf_render.py`, `json_resume.py`, `corpus_to_json_resume.py`, or `docx_to_persona_html.py` — those are deterministic by design.
+- Do not call an LLM from any file in the deterministic-boundary list under "Architecture at a glance" (`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py`, `docx_to_persona_html.py`) — those are deterministic by design.
 - Do not introduce a new dependency without adding it to `pyproject.toml` AND updating `CHANGELOG.md`.
 - Do not bypass the `route-security-lint`, `require-feature-branch`, or `ruff-changed` PreToolUse hooks without explicit authorization documented in the commit message.
