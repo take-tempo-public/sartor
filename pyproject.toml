@@ -56,7 +56,15 @@ dependencies = [
     # extractable + embedder-agnostic. Added ahead of the formal v1.0.8 eval gate at
     # owner direction (Stage-1 lexical retrieval tested too literal) — see CHANGELOG
     # + RELEASE_ARC §4.7.
-    "numpy>=1.24,<3.0",
+    # Upper bound <2.5 is a TYPE-CHECKING pin, not a runtime need: numpy 2.5 ships
+    # its stubs using the PEP 695 `type X = ...` statement, which mypy rejects under
+    # `python_version = "3.11"` ("Type statement is only supported in Python 3.12
+    # and greater") — a hard parse error that fails `gate: mypy .` on the py3.12/3.13
+    # CI jobs (py3.11 is unaffected: numpy 2.5 dropped 3.11, so it resolves 2.4.6
+    # there anyway). numpy 2.4.x stubs parse clean under mypy 1.20.2 @ 3.11 (verified
+    # locally). Lift this cap when the supported-Python floor moves to 3.12 and
+    # `[tool.mypy] python_version` can follow — tracked in the carry-forward ledger.
+    "numpy>=1.24,<2.5",
     "model2vec>=0.3,<1.0",
     # spectree/OpenAPI kit-adoption Phase 1 (KIT-1/KIT-2a, `feat/spectree-openapi-emit`):
     # decorator-only OpenAPI spec EMISSION over 5 read-only GET routes
