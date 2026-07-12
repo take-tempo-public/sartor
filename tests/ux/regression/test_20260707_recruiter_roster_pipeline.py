@@ -16,7 +16,7 @@ from __future__ import annotations
 from types import ModuleType
 
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 
 from tests.ux.seeding import seed_application, seed_user
 from ui_pages import BasePage, PipelinePage, UserPickerPage
@@ -119,6 +119,11 @@ def test_pipeline_board_groups_by_status_and_switches_candidate(
     BasePage(page, live_server).load()
     pipeline = PipelinePage(page, live_server).open()
 
+    # PipelinePage.open() waits for #pipelineBoard visibility but NOT for its
+    # async-loaded rows; row_count() is a snapshot with no wait, so on a slower /
+    # loaded CI runner the count races the fetch (the 0-vs-2 flake seen on Linux
+    # CI). expect() polls until the rows populate before we assert.
+    expect(page.locator(Pipeline.ROW)).to_have_count(2, timeout=DEFAULT_TIMEOUT_MS)
     assert pipeline.row_count() == 2
     board = page.locator(Pipeline.BOARD)
     assert board.locator("text=Staff Eng @ Acme").is_visible()
