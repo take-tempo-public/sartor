@@ -23,8 +23,10 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 from collections.abc import Iterator
+from typing import Any, cast
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -63,14 +65,22 @@ def _enable_ansi_on_windows() -> None:
     any reason we silently fall through — the worst case is escape sequences
     render as garbage glyphs, not a crash.
     """
-    if sys.platform != "win32":
+    # os.name (not sys.platform) is the Windows guard on purpose: mypy statically
+    # narrows `sys.platform` to the --platform value, so `sys.platform != "win32"`
+    # marks this whole block unreachable under the Linux CI platform and trips
+    # `warn_unreachable`. `os.name` is typed `str` (never narrowed), so the block
+    # stays reachable on every platform — the same reason app.py guards with
+    # `sys.platform.startswith(...)` rather than an `==` literal.
+    if os.name != "nt":
         return
     try:
         import ctypes
 
-        kernel32 = (
-            ctypes.windll.kernel32
-        )  # win32-only attribute; guarded by sys.platform check above
+        # ctypes.windll exists only on win32; widen ctypes to Any via cast so mypy
+        # (which now type-checks this reachable block against Linux too) doesn't
+        # flag a missing attribute — and, unlike a constant getattr, ruff is happy.
+        # Runtime-guarded by the os.name check above.
+        kernel32 = cast(Any, ctypes).windll.kernel32
         ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
         STD_OUTPUT_HANDLE = -11
         handle = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
