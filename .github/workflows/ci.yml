@@ -31,7 +31,16 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
 
     steps:
+      # fetch-depth: 0 (full history) — tests/test_enforcement_core.py does git
+      # archaeology (`git show b2c83d2:.claude-plugin/hooks/...`) to prove the
+      # modularized hooks stay behaviorally equivalent to the pre-migration
+      # standalone scripts. The default shallow (depth-1) checkout doesn't fetch
+      # that historical object, so `git show` fails ("invalid object name"). The
+      # test also self-guards (skips if OLD_SHA is unreachable), but here we want
+      # it to actually run, so fetch the full history.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # PX-43 (F-tci-06): shared with the `eval-smoke` job below — see
       # .github/actions/setup-python-env/action.yml.
