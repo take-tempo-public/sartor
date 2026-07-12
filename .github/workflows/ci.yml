@@ -134,27 +134,29 @@ jobs:
     # different points of the support range instead of both re-pinning the newest.
     #
     # --- Flake policy (HONEST, not masking) -----------------------------------------
-    # A real flake class hit this suite under heavy LOCAL multi-suite concurrency
-    # (multiple pytest processes / dev-loop runs racing the same live Flask server).
-    # It was root-caused and FIXED 2026-07-06 (`fix/compose-settle-bg-reload` — a
-    # `data-compose-bg-pending` in-flight-reload counter replaced a stability-poll
-    # heuristic with a deterministic wait; see CHANGELOG "2026-07-06"). Since that
-    # fix, every recurrence has reproduced ONLY under that concurrent-load condition —
-    # isolated re-runs (single member, single process) are always green, including
-    # the members that flaked before the fix.
+    # A real timing-flake class hits the compose/skills Playwright tests: they drive
+    # an async background-reload cascade against a live Flask server, and under CPU
+    # contention a settle/repaint can lose a race with an assertion timeout. First
+    # seen under heavy LOCAL multi-suite concurrency and hardened repeatedly (the
+    # `data-compose-bg-pending` settle counter 2026-07-06; then 2026-07-12 awaiting
+    # the cascade reloads + auto-retry `expect().to_have_count/value` + 15s load
+    # headroom). Each fix made its target test pass but did NOT eliminate the CLASS.
     #
-    # This CI job structurally cannot reproduce that condition: it is the only
-    # process on its runner, running one `pytest -m ux` invocation against one live
-    # server with no sibling suite contending for it. Given that, the deliberate
-    # choice here is NO automatic retry. A retry step (even a "re-run only failures"
-    # one) would not be absorbing a *known* flake — that flake's precondition is
-    # absent by construction in this job's shape — it would silently re-run under a
-    # NEW, uncharacterized failure mode and report green. That is exactly the masking
-    # this policy exists to avoid. If this job fails in CI, treat it as a real
-    # signal and investigate first. If a genuinely new CI-only flake class is ever
-    # characterized, add a scoped, documented retry for THAT class (with its own
-    # rationale recorded here) — don't pre-emptively blanket-retry against a class
-    # that shouldn't occur under this job's execution model.
+    # This policy previously assumed the class "structurally cannot reproduce" in CI
+    # (one process, one server, no sibling suite). The first real runs on the public
+    # repo DISPROVED that: the shared GitHub runner has its own load variance (limited
+    # cores, noisy neighbours) that reproduces the SAME class — across four runs a
+    # DIFFERENT compose/skills subset failed each time, and a test that passed one run
+    # re-flaked the next despite a correct structural fix. That is precisely the
+    # "genuinely new CI-only flake class, characterized" that this policy always said
+    # WOULD warrant a scoped, documented retry (owner-authorized 2026-07-12).
+    #
+    # So: a SCOPED retry on the `ux` tier only — `--reruns 2` reruns ONLY the tests
+    # that failed, up to twice. A genuine flake passes on a rerun (green); a real
+    # regression fails all three attempts (red) — the retry cannot mask a real bug,
+    # only absorb the characterized timing variance. Deliberately NOT applied to the
+    # `quality` matrix pytest (`scripts/gate.py` — deterministic, stays strict) nor to
+    # the PDF slice below (deterministic renders, not in the browser-E2E cascade class).
     # ----------------------------------------------------------------------------------
     #
     # PDF slice: RELEASE_ARC/RELEASE_CHECKLIST call this the "UX/a11y/PDF tier", but
@@ -219,7 +221,11 @@ jobs:
         run: python -m playwright install-deps chromium
 
       - name: Pytest (UX / a11y tier)
-        run: pytest -m ux
+        # Scoped retry for the characterized compose/skills timing-flake class — see
+        # the "Flake policy" comment above. Reruns ONLY failed tests, up to twice;
+        # a real regression fails all three attempts. NOT applied to the strict
+        # quality-matrix pytest or the deterministic PDF slice below.
+        run: pytest -m ux --reruns 2 --reruns-delay 1
 
       - name: Pytest (PDF end-to-end render — shares the Chromium install above)
         run: pytest -m "slow and not ux"

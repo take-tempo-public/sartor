@@ -65,10 +65,20 @@ user-facing Compose race the CI load exposed, and a docs-hosting bug.
   needs full history, but `actions/checkout` defaults to depth 1. Set
   `fetch-depth: 0` on the quality job + a fixture skip-guard so the test degrades
   gracefully on any shallow clone instead of hard-failing.
+- **Scoped retry for the CI-only compose/skills Playwright flake class.** The first
+  real runs on the shared GitHub runner disproved the prior policy's assumption that
+  the compose/skills settle-race "structurally cannot reproduce" in CI: across four
+  runs a *different* compose/skills subset flaked each time (and a test re-flaked
+  despite a correct structural fix) — the runner's own load variance reproduces the
+  class. Per that policy's own documented exception for a *characterized* CI-only
+  flake, the `ux` tier now runs `pytest -m ux --reruns 2` (reruns only failed tests;
+  a real regression still fails all three attempts). The strict `quality`-matrix
+  pytest and the deterministic PDF slice are untouched. Owner-authorized 2026-07-12.
 
 `PROMPT_VERSION` untouched (no prompt text changed — the Compose fix is
-client-side reload sequencing). One dependency bound tightened (`numpy<2.5`, a
-type-checking pin); no migration change.
+client-side reload sequencing). One runtime dependency bound tightened
+(`numpy<2.5`, a type-checking pin) and one dev dependency added
+(`pytest-rerunfailures`, CI-`ux`-tier retry only); no migration change.
 
 ### Added: unified quality-gate wrapper + CI hygiene batch (PX-55/PX-43, `ci/portable-enforcement`)
 
