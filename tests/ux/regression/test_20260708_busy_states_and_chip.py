@@ -249,6 +249,14 @@ def test_corpus_reload_preserves_scroll_position(
     UserPickerPage(page, live_server).select("alice")
     page.click("#topTabCorpus")
     page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    # The tab click fires loadCorpusIfReady() fire-and-forget, so the experiences
+    # fetch + _renderCorpusList() land asynchronously — under end-of-suite CPU
+    # load that settle lags past a bare visibility poll (the 20 cards render but
+    # paint late), the load-dependent flake class this suite guards against.
+    # Await the corpus load deterministically — the same idiom as the
+    # refreshCorpus() reload below — so the cards are present before we assert
+    # visibility. loadCorpusIfReady() no-ops if the click's load already finished.
+    page.evaluate("() => loadCorpusIfReady()")
     page.wait_for_selector("#corpusExperienceList .corpus-card", timeout=15_000)
 
     page.evaluate("() => window.scrollTo(0, 300)")
