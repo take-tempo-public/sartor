@@ -660,3 +660,43 @@ hub-adjacent). Single-author pass, no separate grounding-auditor subagent run th
 — every cite was verified directly against the source files at this branch's HEAD during
 authoring; a follow-on grounding audit is expected to run separately per the owner's stated
 plan.
+
+---
+
+## 2026-07-13 — `chore/release-governance` — diff pass (`/wiki-self-update`, `--cap 35`)
+
+**Window:** `c8899fd` → `9f3c800` (82 changed sources, excluding `docs/wiki/` and the
+review archive). **Mode:** diff.
+
+**Why it was this big.** The freshness gate hit its 75-file block threshold (77) and
+failed the `quality` job on PR #20 — a real gate doing its job. The drift was **not**
+from the branch that tripped it: the v1.1.0 debt-burn train (7 lanes) merged without a
+wiki refresh, so ~10 branches' worth of change accumulated into one pass (`static/app.js`
++419/−145, `static/style.css` +207/−48, `config.py` +98/−29, plus `blueprints/`,
+`db/models.py`, `evals/`). The loop is designed to run at **branch close-out**, in small
+batches; the lesson recorded here is that skipping the checkpoint, not the cadence, is
+what produced a 33-page pass. Owner authorized the spend at `--cap 35`.
+
+**Pages assessed:** 33 (every page citing a changed source, after excluding the
+contract/governance docs the wiki references but never duplicates, per D5).
+**Pages changed:** 18. **Verified already-current, no edit:** 15 — the scribes were
+explicitly permitted to return "no change needed", and did.
+
+**Audit (author ≠ auditor — every changed page audited by a different context):**
+18 pages audited, **3 defects caught and fixed by the orchestrator**:
+- `frontend-wizard` — **UNSUPPORTED**: claimed the Pipeline tab is opened by its card
+  handlers. The cards do the opposite — they switch to **Tailor** on the selected
+  candidate's applications (`static/app.js:_renderPipelineRow`). Rewritten.
+- `diagnostics-console` — **DRIFTED**: said the run-lock covers "four paid-run buttons";
+  `LOCK_BTN_IDS` holds **five** (the collate-fixture button is in the lock too). Corrected.
+- `career-corpus` — **DRIFTED**: a bare line-range cite (`static/app.js:3960–3966`) pointed
+  at the fetch handler, not the render. Re-anchored to the symbol
+  (`_renderDeniedSkillRow`), which is what SCHEMA asks for anyway.
+
+**Auditor catch-rate:** 3 / 18 changed pages (17%). One of the three was a genuine
+false claim about behavior, not a stale pointer — the case where author≠auditor pays.
+
+**Deterministic gate:** 0 broken source links, 0 unresolved `[[backlinks]]`, all changed
+pages present in `index.md`.
+
+**Checkpoint:** `.last_ingest_sha` advanced `c8899fd` → `9f3c800`.

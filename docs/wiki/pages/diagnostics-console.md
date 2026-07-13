@@ -176,6 +176,16 @@ after the view returns and the app context is gone) `[synthesis]`:
   **no paid calls**) backfills NLI/MiniCheck pre-scores over a throwaway
   in-memory SQLite.
 
+**Paid-run single-flight lock:** A global client-side `window.sartorRunLock`
+([`dashboard.html`](../../../dashboard/templates/dashboard.html)) prevents
+concurrent execution of the five paid-run buttons in `LOCK_BTN_IDS` (eval / tune /
+bootstrap / grounding-score / collate-fixture) — while any one is in flight, the others
+are disabled and a prominent `#runLockBanner` warns the user not to close the tab
+`[synthesis]`. The
+lock is not enforced server-side; `seed_export` (the deterministic corpus snapshot
+feature in the Annotate tab) deliberately does not acquire it and may run in
+parallel with paid runs `[synthesis]`.
+
 Every annotation write is contained:
 [`blueprints/diagnostics.py`](../../../blueprints/diagnostics.py) routes apply
 `_safe_username()` (from `web_infra`) + `secure_filename(slug)` +

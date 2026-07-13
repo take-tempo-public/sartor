@@ -7,10 +7,10 @@
 > [[excellence-walk]]).
 > **Sources:** [`docs/architecture.md`](../../architecture.md) §"System overview" +
 > §"Module map"; the root modules ([`analyzer.py`](../../../analyzer.py),
-> [`hardening.py`](../../../hardening.py), [`app.py`](../../../app.py),
-> [`generator.py`](../../../generator.py), the `db/` + `evals/` + `dashboard/` +
-> `blueprints/` + `web_infra/` + `ui_pages/` packages,
-> [`static/app.js`](../../../static/app.js) +
+> [`hardening.py`](../../../hardening.py), [`config.py`](../../../config.py),
+> [`app.py`](../../../app.py), [`generator.py`](../../../generator.py), the `db/` +
+> `evals/` + `dashboard/` + `blueprints/` + `web_infra/` + `ui_pages/` + `scripts/`
+> packages, [`static/app.js`](../../../static/app.js) +
 > [`templates/index.html`](../../../templates/index.html)).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
@@ -98,6 +98,7 @@ leaf package. At HEAD `app.py` is a ~296-line composition root carrying
 | Module | Job | Anchor |
 |---|---|---|
 | [`app.py`](../../../app.py) | Composition root: the `create_app(Config)` application factory, `register_blueprints()`, the module-level WSGI/console handle (`app = create_app()`), and `main()`. No route handlers, path globals, or per-request helpers remain — they moved to `blueprints/` + `web_infra/` (Sprint 8.3a–h). | [`app.py:create_app`](../../../app.py), [`app.py:register_blueprints`](../../../app.py), [`app.py:main`](../../../app.py) |
+| [`config.py`](../../../config.py) | Typed configuration: the `Config` dataclass, `TEMPLATES_DIR` + `STATIC_DIR` path constants. Deterministic (P1 hardening, no LLM calls); injected into `create_app()` so `blueprints/` + `tests/` reach the same root `base_dir` without monkeypatching globals. Lives top-level (not in `web_infra/`) so `app.py` and test fixtures import it freely; `web_infra/` itself does not import this module (charter C-6). | [`config.py:Config`](../../../config.py), [`config.py:TEMPLATES_DIR`](../../../config.py), [`config.py:STATIC_DIR`](../../../config.py) |
 | [`blueprints/`](../../../blueprints/) | Every Flask route, split into eight domain seams: `analysis.py` (5 routes, 8.3b), `generation.py` (7, 8.3c), `corpus/` (a 7-submodule sub-package on one `corpus_bp`, 8.3d), `templates.py` (13, 8.3e), `applications.py` (20, 8.3f), `users.py` (7, 8.3g), `diagnostics.py` (9, 8.3h — the last seam), `assistant.py` (1, the doc-grounded assistant, predates the split). 116 route decorators total; each of the seven monolith-origin seams registers with **no** `url_prefix` so every URL stays byte-identical. Full route inventory is [[route-surface]]. | [`blueprints/__init__.py`](../../../blueprints/__init__.py) |
 | [`web_infra/`](../../../web_infra/) | The **leaf** helper package `app.py` and every blueprint share instead of re-inlining: `security.py` (`_safe_username`/`_within`), `http.py` (`_sse`, `_error_detail_payload`), `request_gates.py` (`_is_localhost_request`), `clients.py` (`_get_client`), `config_io.py` (`_load_config`/`_save_config`), `provisioning.py` (`_get_or_provision_candidate`), `openapi.py` (`spec` — the spectree OpenAPI-emission instance five routes decorate; see [[openapi-api-reference]]). Never imports `app.py`, any blueprint, or `config.py` — enforced by `tests/test_web_infra_is_leaf.py`. | [`web_infra/security.py:_safe_username`](../../../web_infra/security.py), [`web_infra/security.py:_within`](../../../web_infra/security.py) |
 | [`static/app.js`](../../../static/app.js) + [`templates/index.html`](../../../templates/index.html) | The single-page wizard front-end. | — |
@@ -138,6 +139,16 @@ resume-generation pipeline** (`analyze`→`generate`→`iterate` in `analyzer.py
 `hardening.py`) never depends on `evals`, `dashboard`, or `ui_pages`: the arrow
 is `app → eval/dashboard`, `tests/ux → ui_pages`, never
 `pipeline → eval/dashboard/ui_pages` `[synthesis]`.
+
+## Build and tooling infrastructure
+
+| Module | Job | Anchor |
+|---|---|---|
+| [`scripts/gate.py`](../../../scripts/gate.py) | Unified quality gate (PX-55): the single definition of "gate green" that runs locally and in CI. Runs, in order: `ruff check .` + `ruff format --check .` + `mypy .` + `pytest`, returning the first failing step's exit code. Consolidates what was scattered across `.github/workflows/ci.yml`'s `quality` job, `AGENTS.md`, and `CONTRIBUTING.md` before this module existed. | [`scripts/gate.py:_STEPS`](../../../scripts/gate.py), [`scripts/gate.py:_run_step`](../../../scripts/gate.py) |
+| [`scripts/release_version.py`](../../../scripts/release_version.py) | Version discipline enforcement (charter D-7): ensures git tag (semver 2.0.0) and `pyproject.toml` version (PEP 440) agree after normalization. Codifies the sanctioned ladder (`alpha.N < beta.N < rc.N < final`) — a deliberate SUBSET of semver that stays compatible with pip's ordering. | [`scripts/release_version.py:SEMVER_RE`](../../../scripts/release_version.py), [`scripts/release_version.py:_PEP440_RUNG`](../../../scripts/release_version.py) |
+| [`scripts/project_docs_to_mdx.py`](../../../scripts/project_docs_to_mdx.py) | Deterministic L1→Fumadocs MDX projection adapter (stdlib-only, no LLM). Reads the L1 doc set (README + `docs/**` EXCLUDING `docs/wiki/`) at the git working tree, parses the `**Purpose:** / **Audience:** / **Authoritative for:**` headers, converts them to MDX frontmatter, and writes the projection to `docs-site/content/docs/`. The single source of truth for which docs ship to the hosted site. | [`scripts/project_docs_to_mdx.py:_MdxEscaper`](../../../scripts/project_docs_to_mdx.py) |
+
+The gate and release scripts are invoked by CI; `project_docs_to_mdx.py` is a manual build step for the documentation site. None of these scripts depend on the production pipeline — the arrow is `CI → scripts`, never `pipeline → scripts` `[synthesis]`.
 
 ## Related
 

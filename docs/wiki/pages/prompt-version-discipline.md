@@ -16,6 +16,9 @@ attribute behavior to a revision. Per design fork D5 that contract lives there,
 not here — this page documents the *machinery* that makes the rule enforceable
 and tunable, and links back to the rule.
 
+**Note:** `PROMPT_VERSION` tracks LLM prompt changes for eval telemetry; **do not
+confuse it with RELEASE versioning** ([`docs/governance/charter.md:D-7`](../../../docs/governance/charter.md)), which governs semantic version tags and PyPI package versions—a separate discipline.
+
 ## What `PROMPT_VERSION` is
 
 A single module-level string, [`analyzer.py:PROMPT_VERSION`](../../../analyzer.py)

@@ -72,6 +72,13 @@ perturbed `[synthesis]`. Per-eval `cost_usd` is rolled up from `logs/llm_calls.j
 tailing records tagged `eval:<fixture>` since the run started ([`evals/runner.py:_eval_cost_since`](../../../evals/runner.py))
 and summing via [`hardening.py:compute_call_cost`](../../../hardening.py).
 
+For `--suite real` fixtures with `--grounding-signals` enabled, the computed NLI and
+MiniCheck scores are additionally persisted back into the fixture's `annotations.json`
+(RH-1, 2026-07 e2e-run-health-review) via [`evals/annotation.py:patch_grounding_scores_by_text`](../../../evals/annotation.py),
+matched by normalized bullet text rather than index — so ground-truth annotation files stay
+in sync with the latest grounding evaluations without requiring a manual re-score pass
+`[synthesis]`.
+
 ## Baseline + the frozen anchor
 
 Two distinct artifacts, easy to conflate:
@@ -126,6 +133,12 @@ localhost `POST /api/eval/run` console route, which passes a `progress` sartor t
 per-fixture/per-rubric milestones to the browser dashboard; the default `progress=None` path
 makes every `_emit` a no-op so the written bytes are unchanged `[synthesis]`
 ([`evals/runner.py:run_suite`](../../../evals/runner.py)).
+
+A zero-result-record guard (RH-2, 2026-07 e2e-run-health-review) detects runs where every
+matched fixture failed to load or grade, leaving a silent 0-byte JSONL on disk with no error
+trace. The run now deletes the empty file and raises `RuntimeError` so the caller (CLI `main()`
+or console SSE routes) surfaces a real error instead of a phantom "0 pass / 0 fail" done event
+([`evals/runner.py:run_suite`](../../../evals/runner.py)) `[synthesis]`.
 
 ## Related
 

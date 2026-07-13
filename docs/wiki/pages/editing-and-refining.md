@@ -8,11 +8,12 @@
 > `templates/index.html` (`#resumePreview`, `#editDrawer`, `#refinementInput`,
 > `#refinementScopeModal`) driven by `static/app.js` (`openEditDrawer`,
 > `submitRefinement`, `_submitSurgicalRefinement`, `_showRefinementScopeModal`,
-> `_wireLiveEditPreview`, `runIterateClarify`); the `save_edits` /
-> `validate-refinement` routes and the `preview-edited` live-preview route in
-> `blueprints/generation.py` and `blueprints/templates.py`; the scoped-proposal
-> routes (`draft-refinement`, `accept-refinement`, `draft-gap-fill`) in
-> `blueprints/applications.py`.
+> `_wireLiveEditPreview`, `runIterateClarify`); the routes
+> `blueprints/generation.py:save_edits`, `blueprints/generation.py:validate_refinement`,
+> and `blueprints/templates.py:preview_edited_html`; the surgical-refinement routes
+> `blueprints/applications.py:draft_application_refinement`,
+> `blueprints/applications.py:accept_application_refinement`, and
+> `blueprints/applications.py:draft_application_gap_fill`.
 
 ---
 

@@ -160,6 +160,12 @@ all three now live alongside the composition routes in
   recommend set, the preview, or the generate prompt until a human approves — the
   approve/deny gate is the grounding backstop `[synthesis]` (see [[corpus-to-output-reach]]).
 
+A corpus-wide variant, [`blueprints/corpus/skills.py:suggest_skills_from_corpus_route`](../../../blueprints/corpus/skills.py)
+(`POST /api/users/<u>/skills/suggest-from-corpus`, owner feature ask F-02), runs
+the same machinery independent of a JD so candidates can populate skills before
+starting applications — evidence-only gate (no JD ∩ corpus AND), persisting as pending
+Skills identical to the per-application route `[synthesis]`.
+
 Corpus CRUD (the curation surface these read) moved to its own sub-package,
 [`blueprints/corpus/`](../../../blueprints/corpus/) — a single
 `corpus_bp = Blueprint("corpus", __name__)`
