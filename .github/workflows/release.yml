@@ -43,15 +43,17 @@ jobs:
           python -m pip install --upgrade pip build
           python -m build
 
-      - name: Tag matches pyproject version
+      # Charter D-7: the tag is semver (v1.1.0-rc.1), the package version is its PEP
+      # 440 normalization (1.1.0rc1) — the SAME release in two dialects. A raw string
+      # compare (what this step used to do) is correct only for final releases and
+      # fails EVERY pre-release, at publish time, on a tag that is already public.
+      # scripts/release_version.py owns the mapping; it also rejects versions outside
+      # the sanctioned alpha/beta/rc ladder, which pip could not order.
+      - name: Tag matches pyproject version (charter D-7)
         if: github.event_name == 'push'
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          VER=$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
-          echo "tag=$TAG  pyproject=$VER"
-          if [ "$TAG" != "$VER" ]; then
-            echo "::error::git tag v$TAG does not match pyproject version $VER"; exit 1
-          fi
+          python -m pip install --quiet packaging
+          python -m scripts.release_version --tag "${GITHUB_REF_NAME}"
 
       - name: Console-script smoke (import + entry point resolve)
         run: |

@@ -173,139 +173,32 @@ Sprint 8.3a. Owner-approved factual reconcile, 2026-07-09, witness CW-102.]*
   conflation (the live preview is browser-side paged.js, Chromium-free). Cited as
   corrected; do not re-flag. Owner-approved factual reconcile, 2026-07-09, witness
   CW-104.]*
-
----
-
-## Working-model governance (W-1)
-
-The real working model is **multi-altitude agent parallelism** — multiple agent
-sessions at different altitudes, concurrently — each isolated in its own git worktree.
-The serial-session framing still echoed in some docs ("one branch per session", "one at
-a time") is retired here: branch ownership and worktree isolation are the rule, not
-global serialization. *[src: charter W-1; `../system-model.md` "Operation". The stale
-framing **F-gov-03** (`RELEASE_ARC.md` "one branch per session" + the hard-constraint
-line) is reframed on this branch to cite this section; two live worktrees contradict the
-serial framing daily.]*
-
-The isolation rules below are grounded in the **two live collisions F-gov-02 documents
-in production hook code** — not hypotheticals:
-
-1. **Worktree-per-session.** Each concurrent agent session runs in its own git
-   worktree; sessions never share a working tree. This is the structural precondition
-   that makes the ownership rules below enforceable rather than advisory. *(See
-   [[feedback-concurrent-agents-worktree]] for the lived failure: a shared tree lets one
-   session's `git add` sweep another's edits and its merge wipe the global marker.)*
-
-2. **Global-state ownership — session-scoped, not global.** `~/.claude/plans/` and its
-   `.approved` marker are a **single global path**: a second session writing a newer
-   `*.md` invalidates the first session's approval, and `cleanup-plan-on-merge` deletes
-   **all** `*.md` plus the marker (**F-gov-02** collision #1 + #2). The rule: plan state
-   and approval markers MUST be **session-scoped** (per-session or per-worktree
-   namespace), so one session's plan lifecycle cannot trip or wipe another's. No session
-   hand-creates the marker a hook checks for — only the sanctioned path (`ExitPlanMode`)
-   creates `.approved` (**F-gov-07**); the `check-plan-approved.sh` hint to hand-create
-   the marker is **removed on this branch (PX-28)**, retiring the contradiction with the
-   never-hand-create rule.
-
-3. **Branch ownership.** One branch per session; a session owns its branch end-to-end
-   (concurrency comes from *separate* sessions in separate worktrees, not from one
-   session juggling branches). The `block-merge-to-main` hook missed the dominant
-   direction — the routine `--no-ff` feature-merge passed unblocked; only the reverse
-   blocked (**F-gov-01**). The witness-class fix (detect `HEAD == main` via
-   `git rev-parse --abbrev-ref HEAD`, which F-gov-02 confirms is worktree-local) **lands
-   on this branch (PX-24)**, closing the common path so branch ownership is gate-backed,
-   not vigilance-backed.
-
-4. **Carry-forward discipline (cumulative open ledger).** Tracked-deferred observations
-   live in **one physical authoritative ledger** — the "Carry-forward ledger" in
-   [`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md) — not scattered across
-   per-stream sections joined by unchecked pointers. **Every handoff renders the full
-   *still-open* subset** (cumulative, not a this-session delta), so items cannot fall out
-   of attention; at **~8–10 open items**, a reduction sprint is scheduled. This is the
-   same one-canonical-home discipline this charter applies to rules, applied to the
-   loose-ends ledger — small pieces stop getting lost in a mess of references. *[src:
-   owner direction 2026-06-15; mirrored in `../../AGENTS.md` "Branch close-out
-   checklist" step 0 + [`AGENT_HANDOFF_TEMPLATE.md`](../dev/AGENT_HANDOFF_TEMPLATE.md);
-   see [[feedback-cumulative-open-ledger]].]*
-
-**Soft-commitments posture (P-3 / D-4).** Each isolation rule above prefers a
-**machine-enforced gate** over a human-promise SLA: session-scoped paths and a
-worktree-local branch check are construction, not recurring labor. No rule here obliges
-recurring human attention as a hard commitment. The seven enforced blocker hooks are
-real and honestly separated from witness/tribal rules (**F-gov-04**); the witness-class
-freshness reminder + honest sentinel are a working precedent for a gate that nudges
-without taxing the owner (**F-gov-06**).
-
-**W-2 — Governance is constitution-building.** This document *is* the extraction
-vehicle: one canonical home the descriptive layer is audited against (does what we built
-still match what we said?). The operator-stack triad — memory supplies context,
-governance directs posture, the operator LLM occupies that space — is the extraction
-architecture; the v1.0.7 doc-grounded assistant receives its governance interface at
-build time. A governance→assistant design home does not yet exist (**F-gov-10**, WATCH).
-*[src: charter W-2; `../wiki/pages/governance-extraction.md`; `../system-model.md`
-"Governance".]*
-
----
-
-## Amendment ceremony
-
-Amending a **constitutional clause (C-0..C-6)** requires, in order:
-
-1. a dated amendment entry **in this document**, with rationale;
-2. a `CHANGELOG.md` entry;
-3. explicit **owner sign-off** at merge; and
-4. once the compliance agent exists, a flag in its next drift report — **witness, not
-   approver** (it records the change, it does not gate it).
-
-**Defaults (D-1..D-6)** change in normal branch flow with a single written rationale
-line — no full ceremony. *[src: charter "Amendment ceremony" (reviewer proposal,
-confirmed at sign-off). The witness-class precedent is real today —
-`wiki-freshness-reminder` + the honestly-left `.last_ingest_sha` sentinel, **F-gov-06**
-/ **F-docs-08**; per C-0 / D-4 the drift report is a witness gate, never a recurring
-manual-audit promise.]*
-
----
-
-## The 10 Principles backbone (frozen)
-
-sartor. follows the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/);
-the codebase is annotated with principle references (P1, P2, P5, P6, P8, P9). Five are
-**load-bearing** and are frozen here as part of the constitution — a change that
-conflicts with one of these usually loses. The descriptive write-up (with code anchors)
-stays in [`../../vision.md`](../../vision.md) "Principles backbone".
-
-- **P1 Hardening** — deterministic Python for mechanical work; the LLM only for fuzzy
-  reasoning. This is the construction behind **C-6** and the deterministic-file list.
-- **P2 Context Hygiene** — `context_set` is the structured JSON contract between
-  pipeline stages; iteration state round-trips safely (`total=False`).
-- **P5 Institutional Memory** — ALWAYS / NEVER rules in `analyzer.py:SYSTEM_PROMPT`;
-  tuning history in `evals/TUNING_LOG.md`; release reasoning in the durable docs. This
-  charter is itself a P5 artifact.
-- **P8 Human Gates** — two required review checkpoints plus optional clarification
-  interviews; skipping a clarification step never degrades output below prior behavior.
-  This is the construction behind **C-4**.
-- **P9 Observability** — JSONL telemetry per LLM call (model, tokens, latency, cost);
-  the read-only `/_dashboard` aggregates trends; eval records carry `prompt_version`.
-
----
-
-## Citation map — where each rule was extracted from
-
-| Clause | Canonical source(s) the rule is lifted from |
-|---|---|
-| C-0 | charter C-0 |
-| C-1 | charter C-1 · `vision.md` · `SECURITY.md` |
-| C-2 | charter C-2 · `vision.md` · `SECURITY.md` |
-| C-3 | charter C-3 · `vision.md` · `AGENTS.md` · `system-model.md` |
-| C-4 | charter C-4 · `vision.md` · `system-model.md` |
-| C-5 | charter C-5 · `vision.md` |
-| C-6 | charter C-6 · `vision.md` · `AGENTS.md` · `system-model.md` |
-| D-1..D-6 | charter D-1..D-6 · `vision.md` · `CONTRIBUTING.md` · `SECURITY.md` · `PRODUCT_SHAPE.md` |
-| W-1 (isolation) | charter W-1 · `system-model.md` · grounded in **F-gov-02** |
-| W-1 (carry-forward) | owner direction 2026-06-15 · `AGENTS.md` · `AGENT_HANDOFF_TEMPLATE.md` |
-| W-2 | charter W-2 · `governance-extraction.md` |
-| Amendment | charter "Amendment ceremony" |
-
-Each source doc retains its descriptive content and gains a **pointer** to the clause
-here; per F-gov-05 the rule is stated **once**, in this home, preserving the `@AGENTS.md`
-import chain so agent rule-access survives the move.
+- **D-7 — Release versioning + release notes (adopted 2026-07-13, owner-directed, from
+  the v1.1.0 public cut onward).** *Rationale: the project publishes to PyPI and GHCR from
+  a pushed tag; a version string is a claim about compatibility and readiness, and it is
+  read by machines (pip's resolver) before it is read by anyone. It gets the same
+  claims-discipline treatment as any other categorical statement (C-0).*
+  1. **Semantic Versioning 2.0.0** ([semver.org](https://semver.org/)) governs the version
+     number: MAJOR (incompatible), MINOR (backward-compatible capability), PATCH
+     (backward-compatible fix).
+  2. **Pre-releases ship under the `alpha → beta → rc` ladder** with a numeric counter —
+     `1.1.0-alpha.1` < `1.1.0-beta.1` < `1.1.0-beta.11` < `1.1.0-rc.1` < `1.1.0`. This is a
+     deliberate **subset** of what semver permits: it is the intersection where semver and
+     Python's PEP 440 order versions *identically*, so the git tag and the published Python
+     package can never disagree about which release is newer. Semver's free-form
+     alphanumeric identifiers (`1.0.0-alpha.beta`) are **not** used — PEP 440 cannot express
+     them, so pip could not order them.
+  3. **The git tag is semver; the `pyproject.toml` version is its PEP 440 normalization**
+     (tag `v1.1.0-rc.1` ↔ version `1.1.0rc1`). The two are one fact in two dialects, and the
+     release workflow verifies they agree *after* normalization — never as raw strings.
+  4. **Release notes must disclose fixed vulnerabilities.** Every released `CHANGELOG.md`
+     section names every publicly known **runtime vulnerability in Sartor's own code** that
+     the release fixes and that already had a CVE (or equivalent public ID) assigned when
+     the release was cut. Scope is **the project's own results, not its dependencies**. When
+     there are none, the section says so explicitly — silence is not a disclosure. *(From
+     the [OpenSSF Best Practices](https://www.bestpractices.dev/) criteria; the N/A
+     escape — "users cannot practically update the software themselves" — does not apply
+     here, since users install Sartor themselves from PyPI or GHCR.)*
+  Enforced by `tests/test_release_versioning_gate.py` + the tag-match step in
+  `.github/workflows/release.yml`; mechanics in
+  [`enforcement.md`](enforcement.md#b2-d-7--release-versioning--release-notes).

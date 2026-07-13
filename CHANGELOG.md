@@ -13,6 +13,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed vulnerabilities
+
+No publicly known vulnerabilities in Sartor's own code were fixed in this release —
+none were reported. (Charter D-7.4 requires this statement in every release, so that
+silence is never mistaken for a disclosure. Scope is Sartor's own code; dependency
+advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
+in the Security section, not here.)
+
+### Added: OpenSSF Best Practices badge — passing (100%)
+
+The owner completed the [OpenSSF Best Practices](https://www.bestpractices.dev/projects/13598)
+self-certification (project 13598): **passing, 100%**. Added to the README — and only now
+that it is real. The badge was deliberately withheld until the certification existed, per
+the rule the `unregistered` REUSE badge taught us: a badge that renders a placeholder is a
+failing badge, because it asserts a status nobody checked. Verified by fetching the badge
+SVG and reading the text it actually renders ("passing"), not by trusting the URL shape.
+
+This also takes OpenSSF Scorecard's `CII-Best-Practices` check off 0.
+
+### Added: release-versioning + release-notes discipline (charter D-7) (`chore/release-governance`)
+
+The project publishes to PyPI and GHCR from a pushed tag, which means a version string
+is parsed by pip's resolver before any human reads it. It now gets the same
+claims-discipline treatment as any other categorical statement.
+
+- **Semantic Versioning 2.0.0**, with pre-releases on a sanctioned `alpha` → `beta` →
+  `rc` ladder: `1.1.0-alpha.1` < `1.1.0-beta.1` < `1.1.0-beta.11` < `1.1.0-rc.1` <
+  `1.1.0`. This is deliberately a **subset** of semver — the intersection where semver
+  and PEP 440 order versions *identically*. Semver's free-form identifiers
+  (`1.0.0-alpha.beta`) are excluded because PEP 440 cannot express them, so pip could
+  not order them.
+- **A latent publish-time bug, found while writing the rule.** `release.yml` compared
+  the pushed tag to the `pyproject` version as **raw strings**. That works only for
+  final releases: PEP 440 normalizes `1.1.0-rc.1` to `1.1.0rc1`, so the very first
+  pre-release tag would have failed the release job — after the tag was already public.
+  The comparison now runs through `scripts/release_version.py`, which normalizes both
+  sides and rejects versions outside the ladder.
+- **Release notes must disclose fixed vulnerabilities** (from the
+  [OpenSSF Best Practices](https://www.bestpractices.dev/) criteria): every released
+  CHANGELOG section names each publicly known vulnerability in **Sartor's own code**
+  that it fixes and that had a CVE/GHSA assigned at release time — or says there were
+  none. Dependencies are out of scope for that statement.
+- Gated by `tests/test_release_versioning_gate.py` (21 tests) and the tag-match step in
+  `release.yml`. The disclosure gate checks that the statement **exists**, not that it
+  is true — no test can verify "we disclosed every CVE we knew about"; the gate makes
+  the claim unavoidable in front of a human at release-cut time, which is where the
+  judgment belongs.
+- New dev dependency: `packaging` (declared, not leaned on as a transitive — a gate
+  that depends on an undeclared package is not a gate).
+
+Charter **D-7** is a *default*, which amends in normal branch flow with a written
+rationale (the full ceremony is reserved for the C-clauses). Enforcement mechanics:
+`docs/governance/enforcement.md` §B2. Two stale rows in that file are also reconciled
+to what actually shipped: the **UX/a11y/PDF required check** and the **E-2 machine
+badge set** were both still marked "owed — v1.1.0" after landing.
+
 ### Fixed: the published docs site rendered no diagrams, no screenshots, and no working cross-links (`fix/docs-site-rendering`)
 
 Three defects on <https://sartor-docs.taketempo.com>, all invisible from the repo

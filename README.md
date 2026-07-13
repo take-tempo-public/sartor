@@ -19,16 +19,19 @@ The core discipline: **the LLM discovers and phrases — it does not invent.** N
 [![Python 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](pyproject.toml)
 [![Network egress: allowlisted](https://img.shields.io/badge/network%20egress-allowlisted-informational.svg)](tests/test_egress_allowlist.py)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/take-tempo-public/sartor/badge)](https://scorecard.dev/viewer/?uri=github.com/take-tempo-public/sartor)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13598/badge)](https://www.bestpractices.dev/projects/13598)
 [![REUSE status](https://api.reuse.software/badge/github.com/take-tempo-public/sartor)](https://api.reuse.software/info/github.com/take-tempo-public/sartor)
 
 <!-- Badge sources. CI = the live status of ci.yml on `main`. OpenSSF Scorecard =
      the live supply-chain score, re-run on every push to `main` by
      .github/workflows/scorecard.yml (host: api.scorecard.dev — the older
-     api.securityscorecards.dev host now only 302-redirects here). REUSE = the
-     live licensing-compliance status from reuse.software's API (the repo is
-     registered; a badge reading "unregistered" would mean the registration
-     lapsed, not that the repo is non-compliant). License / Python-version /
-     egress are static, hand-maintained badges — keep them true by hand.
+     api.securityscorecards.dev host now only 302-redirects here). OpenSSF Best
+     Practices = the live self-certification status (project 13598, currently
+     "passing" at 100%). REUSE = the live licensing-compliance status from
+     reuse.software's API (the repo is registered; a badge reading "unregistered"
+     would mean the registration lapsed, not that the repo is non-compliant).
+     License / Python-version / egress are static, hand-maintained badges — keep
+     them true by hand.
      A badge that renders a placeholder is a FAILING badge, not a cosmetic
      issue: see docs/dev/doc-style-guide.md "Claims discipline". -->
 
