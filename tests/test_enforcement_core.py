@@ -107,7 +107,27 @@ def _add_wiki_checkpoint(repo: Path, drift_file_count: int = 0) -> None:
 
 @pytest.fixture(scope="module")
 def old_hooks(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
-    """Extract the pre-migration standalone hook scripts at OLD_SHA."""
+    """Extract the pre-migration standalone hook scripts at OLD_SHA.
+
+    OLD_SHA is a historical commit (pre hook-modularization). A shallow clone
+    (GitHub Actions' default ``fetch-depth: 1``, or a contributor's ``git clone
+    --depth``) doesn't fetch that object, so ``git show`` would hard-fail with
+    "invalid object name". CI sets ``fetch-depth: 0`` so these equivalence tests
+    run there; anywhere the object is genuinely unreachable, skip gracefully
+    rather than fail.
+    """
+    probe = subprocess.run(  # noqa: S603 - fixed argv, no shell, local git only
+        ["git", "cat-file", "-e", f"{OLD_SHA}^{{commit}}"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if probe.returncode != 0:
+        pytest.skip(
+            f"OLD_SHA {OLD_SHA} not reachable (shallow clone) — "
+            "these pre-migration hook-equivalence checks need full git history"
+        )
     out_dir = tmp_path_factory.mktemp("old_hooks")
     paths: dict[str, Path] = {}
     for name, filename in GUARD_FILES.items():

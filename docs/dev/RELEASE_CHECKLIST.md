@@ -515,12 +515,28 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **6** (was 7; ledger #1 wiki-freshness resolved 2026-07-11,
-v1.1.0 train Wave 1). (`grep -c '^- \[ \]'` over this subsection is the
+_Rendered open count: **7** (was 6; +1 Compose user-action reloads 2026-07-12,
+`fix/ci-first-linux-run`). (`grep -c '^- \[ \]'` over this subsection is the
 source of truth, re-verified at each close-out). Ceiling reminder: schedule a
 reduction sprint at ~8–10 open items, and clear before adding. The full
 per-item addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
+
+- [ ] **Compose user-action reloads still fire `loadComposition()` un-awaited** —
+      `fix/ci-first-linux-run` awaited the **five auto-arrival cascade** fires
+      (`_fireDraftSummary` / `_fireRecommendSummary` / `_fireDraftGapFill` /
+      `_fireRecommendSkills` / `_fireRecommendExperienceSummaries`) so the settle
+      gate (`data-compose-bg-pending`) can't read terminal mid-repaint (the
+      confirmed compose-summary load-flake, PR #8). The **user-action** reloads
+      that share the identical `_markComposeBgReload(±1)` bracket —
+      `_fireSuggestSkills`, `_togglePositioningPin`, `_addComposeRoleIntro`, the
+      add-title / apply-change handlers — were left un-awaited (out of the approved
+      scope). Lower-risk (each drives a test that waits on a specific DOM outcome,
+      not the bare settle gate), but for full settle-gate consistency they should
+      `await loadComposition()` too. **Fix:** add `await` to each; fold in next
+      time `static/app.js`'s Compose section is touched.
+      _(discovered: v1.1.0 stream, 2026-07-12, `fix/ci-first-linux-run`.)_
+      **→ Low priority, own small pass.**
 
 - [x] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
       `scripts/wiki_freshness.py:drift_count` excludes only `docs/wiki/`, not `docs-site/`.

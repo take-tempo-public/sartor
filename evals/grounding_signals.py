@@ -96,7 +96,12 @@ def _hardened_device_placement() -> Iterator[None]:
     """
     from transformers import AutoModelForSeq2SeqLM
 
-    cls = AutoModelForSeq2SeqLM
+    # `cls` is annotated Any so the from_pretrained monkeypatch below needs no
+    # `# type: ignore[method-assign]`. That ignore was platform-divergent — USED
+    # on Windows (mypy types the transformers class, so assigning its classmethod
+    # trips method-assign) but UNUSED on Linux CI (transformers reads as untyped
+    # there, so no error) — which failed the Linux gate under warn_unused_ignores.
+    cls: Any = AutoModelForSeq2SeqLM
     offload_folder = _minicheck_offload_folder()
     original = cls.from_pretrained
     had_own_attr = "from_pretrained" in cls.__dict__
@@ -108,15 +113,15 @@ def _hardened_device_placement() -> Iterator[None]:
         return original(*args, **kwargs)
 
     # Deliberate monkeypatch of a classmethod for the duration of the load —
-    # mypy's method-assign check is right that this is unusual, but there's
-    # no other way to inject kwargs into a call the pinned dependency makes
-    # internally (see docstring above).
-    cls.from_pretrained = _wrapped  # type: ignore[method-assign]
+    # unusual, but there's no other way to inject kwargs into a call the pinned
+    # dependency makes internally (see docstring above). `cls` is Any (above), so
+    # this assignment needs no platform-divergent `# type: ignore[method-assign]`.
+    cls.from_pretrained = _wrapped
     try:
         yield
     finally:
         if had_own_attr:
-            cls.from_pretrained = original  # type: ignore[method-assign]
+            cls.from_pretrained = original
         else:
             del cls.from_pretrained
 

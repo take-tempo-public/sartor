@@ -13,6 +13,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: first public-CI-run remediation — Compose auto-draft race, docs directory index, cross-platform mypy, UX flakes (`fix/ci-first-linux-run`)
+
+Pushing the v1.1.0 debt-burn train to the public GitHub repo ran CI on **Linux**
+for the first time (the workflows were committed but latent while the repo was
+private). This branch fixes what that first real run surfaced — plus a
+user-facing Compose race the CI load exposed, and a docs-hosting bug.
+
+- **Compose positioning-summary auto-draft could get stuck empty (user-facing).**
+  The Compose background cascade (`static/app.js`) fired its five context-writing
+  reloads (summary-draft, gap-fill, skills-recommend, summary-recommend,
+  role-intro-recommend) with a fire-and-forget `loadComposition()`. The
+  `_markComposeBgReload(±1)` counter the settle gate reads
+  (`data-compose-bg-pending`) therefore decremented the instant a reload hit its
+  first `await` — **before** the drafted value repainted the textarea. Under load
+  the gate could read "terminal" over the empty "Drafting…" state, and the
+  once-only latch meant the draft never re-fired, leaving the summary blank until
+  a manual reload. All five auto-cascade fires now `await loadComposition()`, so
+  the counter stays raised until the repaint lands. Verified by reproducing the
+  flake under 8-core CPU saturation (empty textarea) and confirming 3/3 green
+  under the same load with the fix, plus the full 14-test Compose family.
+- **docs-site `/docs/` served a raw directory listing instead of the homepage.**
+  `docs-site/next.config.mjs` used `output: 'export'` without `trailingSlash`, so
+  Next emitted the docs root as `out/docs.html` and left `out/docs/` with no
+  `index.html`; a traditional host (DreamHost/Apache) fell through to
+  `mod_autoindex`. Added `trailingSlash: true` so every route gets its own
+  `index.html` (verified: the build now emits `out/docs/index.html`, and
+  `out/docs.html` is gone).
+- **Cross-platform mypy (full-strict roster).** `onboarding/review_cli.py` guarded
+  a win32-only `ctypes.windll` block behind `sys.platform`, which mypy narrows per
+  `--platform` → unreachable → hard error on Linux; guard with `os.name` +
+  `cast(Any, ctypes)`. `evals/grounding_signals.py` carried
+  `# type: ignore[method-assign]` comments used on Windows but **unused** on Linux
+  (`warn_unused_ignores`) — annotate the monkeypatched class `Any` so no ignore is
+  needed on either platform.
+- **UX/a11y flakes on the shared CI runner.** axe scanned the help modal mid
+  opacity-fade (false color-contrast fail) → emulate `prefers-reduced-motion` in
+  the axe suite; the pipeline-board and corpus-scroll tests asserted on snapshot
+  reads that raced async row/card loads → assert auto-retrying
+  `expect().to_have_count`.
+- **OpenSSF Scorecard.** `ossf/scorecard-action@v2` doesn't resolve (no floating
+  `v2` tag) → pinned `@v2.4.3`.
+- **numpy 2.5 broke `mypy .` on py3.12/3.13.** numpy 2.5's stubs use the PEP 695
+  `type X = …` statement, which mypy rejects under `python_version = "3.11"`
+  ("Type statement is only supported in Python 3.12 and greater"). Capped
+  `numpy<2.5` — a type-checking pin, not a runtime need (numpy 2.5 also dropped
+  Python 3.11, so the py3.11 job already resolved 2.4.6 and passed). Lift when the
+  supported-Python floor moves to 3.12 and `[tool.mypy] python_version` can follow.
+- **Enforcement-equivalence test failed on CI's shallow clone.**
+  `tests/test_enforcement_core.py` does `git show <OLD_SHA>:…` archaeology that
+  needs full history, but `actions/checkout` defaults to depth 1. Set
+  `fetch-depth: 0` on the quality job + a fixture skip-guard so the test degrades
+  gracefully on any shallow clone instead of hard-failing.
+- **Scoped retry for the CI-only compose/skills Playwright flake class.** The first
+  real runs on the shared GitHub runner disproved the prior policy's assumption that
+  the compose/skills settle-race "structurally cannot reproduce" in CI: across four
+  runs a *different* compose/skills subset flaked each time (and a test re-flaked
+  despite a correct structural fix) — the runner's own load variance reproduces the
+  class. Per that policy's own documented exception for a *characterized* CI-only
+  flake, the `ux` tier now runs `pytest -m ux --reruns 2` (reruns only failed tests;
+  a real regression still fails all three attempts). The strict `quality`-matrix
+  pytest and the deterministic PDF slice are untouched. Owner-authorized 2026-07-12.
+
+`PROMPT_VERSION` untouched (no prompt text changed — the Compose fix is
+client-side reload sequencing). One runtime dependency bound tightened
+(`numpy<2.5`, a type-checking pin) and one dev dependency added
+(`pytest-rerunfailures`, CI-`ux`-tier retry only); no migration change.
+
 ### Added: unified quality-gate wrapper + CI hygiene batch (PX-55/PX-43, `ci/portable-enforcement`)
 
 v1.1.0 debt-burn Lane HARD (relaunch, reduced scope). Lands the two SAFE

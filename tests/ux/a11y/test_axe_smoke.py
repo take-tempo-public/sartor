@@ -111,6 +111,26 @@ def _assert_clean(found: dict[str, list[dict[str, Any]]]) -> None:
     raise AssertionError("\n".join(lines))
 
 
+@pytest.fixture(autouse=True)
+def _axe_reduced_motion(page: Page) -> None:
+    """Emulate prefers-reduced-motion so the app's CSS transitions (the UX-Cohesion
+    Epic modal/panel/drawer fades) collapse to their settled end-state instantly.
+
+    axe color-contrast must evaluate the SETTLED render. Without this, a modal
+    opened via ``wait_for_selector(state="visible")`` — which Playwright satisfies
+    the instant visibility flips, IGNORING opacity — can be axe-scanned mid-fade
+    (opacity < 1). axe then computes a blended, failing contrast for text that is
+    fully compliant once opaque (#helpModalTitle ``--brand`` #e8a754 and
+    #helpModalBody ``--fg-0`` #f6f6fa on the #0a0a10 modal surface measure
+    9.5:1 / 18:1). That surfaced as a platform-flaky FALSE positive: green on
+    Windows (the fade finished before axe ran), red on Linux CI (scanned
+    mid-fade). The app already ships this media query (``.cb-modal { transition:
+    none }`` etc.), so this asserts the real reduced-motion end state — not a
+    synthetic one — and removes the timing race for every modal/drawer scanned
+    below, not just the one that happened to flake."""
+    page.emulate_media(reduced_motion="reduce")
+
+
 @pytest.mark.ux
 @pytest.mark.a11y
 @pytest.mark.slow

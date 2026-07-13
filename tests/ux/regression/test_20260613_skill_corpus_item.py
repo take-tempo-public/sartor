@@ -119,6 +119,11 @@ def test_compose_skills_card_drop_persists(
     # Away + back: the dropped skill returns marked excluded (real GET re-read).
     WizardTemplatePage(page, live_server).open()
     compose.reload()
+    # The excluded class lands after the reload's GET re-read repaints the skills
+    # card; give it the suite's standard 15s load headroom rather than expect()'s
+    # default 5s, which raced the repaint under end-of-suite CI load (the
+    # load-flake class this suite guards — intermittent, reproduces under CPU
+    # saturation). The class DOES arrive (passes under local load) — just late.
     expect(page.locator(Compose.SKILL_ROW, has_text="Postgres")).to_have_class(
-        re.compile(r"skill-excluded")
+        re.compile(r"skill-excluded"), timeout=15_000
     )

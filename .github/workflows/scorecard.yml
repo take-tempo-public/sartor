@@ -33,7 +33,12 @@ jobs:
           persist-credentials: false
 
       - name: Run analysis
-        uses: ossf/scorecard-action@v2
+        # ossf/scorecard-action publishes only specific vX.Y.Z tags — there is NO
+        # floating `v2` major tag, so `@v2` fails to resolve at "Set up job"
+        # ("Unable to resolve action ossf/scorecard-action@v2, unable to find
+        # version v2"), which is why this workflow never ran once the repo went
+        # public. Pin the current release; Dependabot bumps it by tag.
+        uses: ossf/scorecard-action@v2.4.3
         with:
           results_file: results.sarif
           results_format: sarif
