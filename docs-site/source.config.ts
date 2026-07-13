@@ -1,4 +1,5 @@
 import { defineConfig, defineDocs } from 'fumadocs-mdx/config';
+import { remarkMdxMermaid } from 'fumadocs-core/mdx-plugins';
 import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
 import { z } from 'zod';
 
@@ -29,6 +30,13 @@ export const docs = defineDocs({
 
 export default defineConfig({
   mdxOptions: {
-    // MDX options
+    // The four architecture diagrams are authored as ```mermaid fences in
+    // docs/architecture.md (the single source — the standalone docs/diagrams/*.mmd
+    // copies were retired). Fumadocs ships no Mermaid renderer by default, so
+    // those fences were shipping to the public site as raw code blocks. This
+    // plugin rewrites a ```mermaid fence into <Mermaid chart="…" />, which
+    // src/components/mermaid.tsx renders client-side (registered in
+    // src/components/mdx.tsx).
+    remarkPlugins: [remarkMdxMermaid],
   },
 });

@@ -13,6 +13,17 @@ const config = {
   // listing instead of the docs homepage. Trailing-slash routing gives every
   // directory URL its own index.html, which Apache serves natively.
   trailingSlash: true,
+  // Serve the projected screenshots as plain static files. `next/image` (which
+  // fumadocs-ui uses to render markdown images) defaults to emitting
+  // `src="/_next/image?url=…"` — a request to Next's *server-side* image
+  // optimizer. There is no server here: `output: 'export'` produces static HTML
+  // for a traditional host, so every one of those requests 404s and each
+  // screenshot renders as a broken-image glyph (most visibly at the head of each
+  // walkthrough step, where the screenshots sit). `unoptimized` makes next/image
+  // emit the real `/_next/static/media/*` path, which the host already serves
+  // (verified 200). Same family as the `trailingSlash` fix above: a
+  // server-rendering default that a static export can't honor.
+  images: { unoptimized: true },
   reactStrictMode: true,
 };
 

@@ -83,6 +83,14 @@ new convention:
 - **Portability:** all load-bearing content stays plain markdown that degrades on GitHub;
   frontmatter + `meta.json` are additive only. No Fumadocs-only component holds a fact. This
   is what guarantees the corpus is self-contained locally, with or without the site.
+- **Cross-doc links are rewritten at projection time, not in the source** (added 2026-07-13).
+  Portability means the source keeps linking `[vision.md](vision.md)` — correct on GitHub,
+  but `/docs/vision.md` is not a site route, so those links 404'd on the published site (~490
+  of them). `scripts/project_docs_to_mdx.py` now rewrites each link as it projects: a link to
+  a projected doc → its site route; a link to anything the site doesn't carry (source files,
+  `docs/wiki/**`) → the GitHub URL. The rewrite is a pure function of the projection's own slug
+  map, so the projection still cannot assert anything the source doesn't — portability holds,
+  and the L3 view stops lying about where things are.
 
 ## Gates — merge = publish
 
