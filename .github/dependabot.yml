@@ -18,8 +18,23 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
 
+  # `github-actions` covers the workflows' action pins. Those pins are full commit
+  # SHAs (OpenSSF Scorecard Pinned-Dependencies) with a `# vX.Y` trailing comment —
+  # Dependabot reads that comment to know the current version and rewrites both the
+  # SHA and the comment when it opens a bump PR, so pinning by SHA does not freeze
+  # the actions at a stale version.
   - package-ecosystem: "github-actions"
     directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # docs-site/ (Fumadocs + Next) is a committed npm project with a lockfile, and
+  # was previously watched only by Dependabot's *security* alerts (which need no
+  # config) — never by version updates. That gap is how the tree sat on a
+  # vulnerable nested postcss (GHSA-qx2v-qp2m-jg93) until an alert fired.
+  - package-ecosystem: "npm"
+    directory: "/docs-site"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5

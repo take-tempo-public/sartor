@@ -1,0 +1,59 @@
+name: CodeQL
+
+# Static analysis (SAST) over both languages in the tree: the Python product +
+# the TypeScript/JS docs-site. Findings land in the repo's Security > Code
+# scanning tab.
+#
+# This closes the OpenSSF Scorecard SAST check, which scored 0/10 ("0 commits
+# out of 15 are checked with a SAST tool") — the repo already uploaded SARIF for
+# the Scorecard run itself (scorecard.yml), but nothing actually analyzed the
+# source. CodeQL is the analyzer; scorecard.yml only reports.
+#
+# The schedule keeps the analysis fresh against newly published queries even in a
+# quiet week — a query added after a commit lands would otherwise never see it.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Mondays 07:00 UTC — offset from scorecard.yml so the two don't contend.
+    - cron: "0 7 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write # upload the SARIF findings to code scanning
+    strategy:
+      fail-fast: false
+      matrix:
+        # `python` covers the app, evals, recall, blueprints, scripts;
+        # `javascript-typescript` covers docs-site/ + static/*.js.
+        language: ["python", "javascript-typescript"]
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+        with:
+          language: ${{ matrix.language }}
+          # security-and-quality is a superset of the default security queries.
+          # Advisory only — this workflow is NOT a required check (see ci.yml's
+          # activation note); a new query surfacing a finding must not block a PR
+          # until the finding is triaged.
+          queries: security-and-quality
+
+      # No build step: both languages are interpreted, so CodeQL's autobuild is a
+      # no-op here. Analyzing straight from the checked-out source avoids
+      # installing the dependency tree twice.
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+        with:
+          category: "/language:${{ matrix.language }}"

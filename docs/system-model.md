@@ -27,7 +27,7 @@
 
 ## What it is
 
-sartor. is a local-first app that tailors your résumé — and, optionally, a cover
+Sartor is a local-first app that tailors your résumé — and, optionally, a cover
 letter — to a specific job, **grounded in what's actually true about you, not
 invented**. You paste in a job description; it reads the posting, asks a few sharp
 questions, helps you choose which of your real accomplishments fit, then writes a
@@ -110,7 +110,7 @@ the `ruff` + `mypy` + `pytest` quality gate, the branch/release discipline in
 [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) / [`dev/RELEASE_CHECKLIST.md`](dev/RELEASE_CHECKLIST.md).)*
 
 ### Governance — the north-star answered to
-The written vision and the set of principles stating what sartor. is *for* and what
+The written vision and the set of principles stating what Sartor is *for* and what
 it must never do. Everything else is measured against this. **Honest seam:** this is
 the one layer that is deliberately **prescribed** rather than emergent — it is the
 human intent the rest is held to, not something the system discovers on its own.

@@ -13,7 +13,7 @@
 > [`docs/architecture.md`](docs/architecture.md) (system + modules),
 > [`SECURITY.md`](SECURITY.md) (threat model).
 
-Thanks for your interest. sartor. tailors a résumé and (optionally) a cover letter to one specific job at a time, using a deterministic Python core and the Claude API for fuzzy reasoning. It is intentionally small — most contributions should *make it more deterministic*, not less.
+Thanks for your interest. Sartor tailors a résumé and (optionally) a cover letter to one specific job at a time, using a deterministic Python core and the Claude API for fuzzy reasoning. It is intentionally small — most contributions should *make it more deterministic*, not less.
 
 The guiding philosophy is the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/). Read [`vision.md`](vision.md) before proposing significant changes; skim [`docs/architecture.md`](docs/architecture.md) for the pipeline diagram + module map.
 
@@ -88,6 +88,7 @@ Before opening a PR:
 - [ ] No real personal data committed (`evals/fixtures/real/` is gitignored — keep it that way)
 - [ ] If you touched a Flask route that reads or writes the filesystem, the route uses `_safe_username()` and `_within()` — see [`app.py`](app.py)
 - [ ] If you changed `analyzer.py:SYSTEM_PROMPT` (or any per-call prompt template), bump `PROMPT_VERSION` in the same commit — a charter discipline rule ([`docs/governance/charter.md`](docs/governance/charter.md), C-0 / D-4)
+- [ ] If you wrote docs or UI copy, it follows [`docs/dev/doc-style-guide.md`](docs/dev/doc-style-guide.md) — `Sartor` in sentences (`sartor.` is the wordmark, used only standing alone), no characterization of other products, no aspirational present tense
 
 CI runs the same `scripts/gate.py` steps on every PR (`.github/workflows/ci.yml`'s `quality` job). Add the `eval` label to also run synthetic smoke evals (uses Anthropic API; ~$0.10 per run).
 
@@ -247,7 +248,7 @@ Sensitive issues should go through GitHub Security Advisories — see [`SECURITY
 The plugin's subagents currently act under your local `gh auth` identity, with `Co-Authored-By:` trailers attributing assistant work. If this project ever grows to need scheduled or multi-agent autonomy, the pathway is:
 
 1. **GitHub Actions with built-in `GITHUB_TOKEN`** for scheduled jobs (no secrets to manage)
-2. **A scoped GitHub App** ("sartor. Bot") for distinct-identity automation
+2. **A scoped GitHub App** ("Sartor Bot") for distinct-identity automation
 
 Per-agent personal access tokens or separate user accounts are explicitly *not* the recommended path. See the agent definitions in `agents/` for the current personas and their permissions.
 

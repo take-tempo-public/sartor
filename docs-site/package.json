@@ -23,6 +23,16 @@
     "react-dom": "^19.2.7",
     "shiki": "^4.3.1"
   },
+  "comment:overrides": [
+    "next@16.2.10 pins postcss 8.4.31 in its own nested tree, which is affected by",
+    "GHSA-qx2v-qp2m-jg93 (moderate: postcss < 8.5.10 fails to escape </style> when",
+    "stringifying a CSS AST). Our own top-level postcss is already 8.5.x; this",
+    "override lifts the nested copy to the patched line too, so no vulnerable",
+    "postcss is installed anywhere in the tree. Remove once Next ships a patched pin."
+  ],
+  "overrides": {
+    "postcss": "^8.5.16"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.2",
     "@types/mdx": "^2.0.14",

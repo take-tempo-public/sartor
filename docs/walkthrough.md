@@ -16,7 +16,7 @@ By the end of this doc you'll know what each of the six wizard steps does, what 
 > [`README.md`](../README.md) (overview + Doc Map),
 > [`docs/install.md`](install.md) (install + first-run),
 > [`docs/architecture.md`](architecture.md) (code-level system view),
-> [`vision.md`](../vision.md) (why sartor. exists).
+> [`vision.md`](../vision.md) (why Sartor exists).
 
 ---
 
@@ -71,7 +71,7 @@ flowchart LR
 **Legend:** blue = LLM call fires here · green = deterministic
 (no LLM) · amber = human review gate · purple-dashed = optional path.
 
-sartor.'s design rule is *LLM only for fuzzy work*; everything
+Sartor's design rule is *LLM only for fuzzy work*; everything
 else (parsing, rendering, file I/O) is plain Python you can trace
 line-by-line. The diagram's green nodes are the parts you can
 debug without paying for an API call.
@@ -164,7 +164,7 @@ your existing `.docx`, `.pdf`, or `.md` résumé.
 deterministically (no LLM) to extract text, then one Haiku 4.5
 call to `extract_experiences()` parses the text into structured
 experiences, titles, and bullets. Haiku 4.5 is Anthropic's small +
-fast model — sartor. uses it for selection and parsing; the
+fast model — Sartor uses it for selection and parsing; the
 larger Sonnet 5 model handles writing. Cost: ~$0.02. The result
 writes to `db/resume.sqlite` as the canonical corpus.
 
@@ -369,7 +369,7 @@ templates use single-column layouts with standard fonts and no
 inline `<code>` chips or sidebar layouts. The two retired templates
 (Compact, Hybrid Tech) failed ATS testing — they're documented in
 [`CHANGELOG.md`](../CHANGELOG.md) for v1.0.0. Uploaded templates
-show an "ATS · unverified" badge because sartor. can't
+show an "ATS · unverified" badge because Sartor can't
 introspect arbitrary user `.docx` files.
 
 **Verify before continuing:**
@@ -487,7 +487,7 @@ never use.
 
 ## If something goes wrong mid-wizard
 
-sartor. writes a new `context_*.json` file at every state
+Sartor writes a new `context_*.json` file at every state
 change, so almost nothing you do is destructive.
 
 - **You closed the browser tab partway through.** Reopen
@@ -540,7 +540,7 @@ generated document came to exist. Re-run any iteration with the
 - [`SECURITY.md`](../SECURITY.md) — what stays on your machine
   vs. what goes over the wire.
 - [`vision.md`](../vision.md) — the "why this exists" page.
-- [`evals/README.md`](../evals/README.md) — **for maintainers:** sartor. ships a
+- [`evals/README.md`](../evals/README.md) — **for maintainers:** Sartor ships a
   local **diagnostics & tuning console** at `/_dashboard` (localhost-only) where you
   can **tune the system's own LLM prompts** — run evals, A/B a candidate prompt
   against the baseline, and annotate generated bullets, all in the browser. The

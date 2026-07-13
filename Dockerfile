@@ -17,7 +17,10 @@
 #   docker run -p 127.0.0.1:5000:5000 ...
 # to keep Sartor's loopback-only posture on the host (SECURITY.md / PX-19).
 
-FROM python:3.13-slim AS runtime
+# Pinned by digest, not by tag (OpenSSF Scorecard Pinned-Dependencies): a mutable
+# tag like `python:3.13-slim` can resolve to a different image on any rebuild. The
+# trailing tag comment keeps it readable and lets Dependabot bump the digest.
+FROM python:3.13-slim@sha256:eb43ff125d8d58d7449dcba7d336c23bcac412f526d861db493b9994d8010280 AS runtime
 
 ENV PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to sartor. are documented here.
+All notable changes to Sartor are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -12,6 +12,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased]
+
+### Security: supply-chain hardening — OpenSSF Scorecard 4.9 → (pinned actions, least-privilege tokens, CodeQL, signed releases) (`chore/scorecard-and-docs-voice`)
+
+The repo's first public OpenSSF Scorecard run scored **4.9/10**. Every check that
+was fixable in-repo is now fixed; the two that are not (`Code-Review`, `Fuzzing`)
+are recorded as reasoned, accepted gaps in
+[`docs/dev/keep-ledger.md`](docs/dev/keep-ledger.md) (SC-01 / SC-02) rather than
+gamed — a bot approver would raise the number while making the claim false.
+
+- **Token-Permissions (0/10).** `docker.yml` granted `packages: write` at the
+  **workflow** level, handing push scope to every job in the file. Moved to the one
+  job that pushes the image; the workflow token is read-only again.
+- **Pinned-Dependencies (0/10).** Every `uses:` across the five workflows (plus the
+  shared composite action) is pinned to a full commit SHA with a `# vX.Y` comment,
+  and the `Dockerfile` base image is pinned by digest instead of the mutable
+  `python:3.13-slim` tag. Dependabot's `github-actions` ecosystem reads the trailing
+  comment, so the pins still get bumped — they're pinned, not frozen.
+- **SAST (0/10).** New `.github/workflows/codeql.yml` — CodeQL over both languages
+  in the tree (`python` + `javascript-typescript`), on PR, on push to `main`, and
+  weekly. Nothing had actually analyzed the source before; `scorecard.yml` only
+  *reported*.
+- **Vulnerabilities.** `next@16.2.10` pins `postcss@8.4.31` in its nested tree,
+  affected by GHSA-qx2v-qp2m-jg93 (moderate: `</style>` isn't escaped when
+  stringifying a CSS AST). An npm `overrides` entry lifts the nested copy to the
+  patched line — `npm audit` now reports 0 vulnerabilities. `docs-site/` is also
+  added to `.github/dependabot.yml` (it was watched only by security alerts, never
+  by version updates — which is how it drifted onto a vulnerable transitive).
+- **Signed-Releases.** `release.yml` now attests build provenance for the sdist +
+  wheel via `actions/attest-build-provenance` (keyless, OIDC — no signing key
+  stored), so v1.1.0's artifacts can be verified with
+  `gh attestation verify <file> --repo take-tempo-public/sartor`.
+
+### Fixed: the README's REUSE badge rendered a placeholder, not a status
+
+`api.reuse.software/badge/…` rendered **`unregistered`** on the public README — the
+repo was never registered with the REUSE API, so the badge asserted a compliance
+status nobody had checked. Registered; the repo lints **REUSE 3.3 compliant**
+(633/633 files carry copyright + license info, 0 bad licenses). The OpenSSF badge
+also moved off the deprecated `api.securityscorecards.dev` host (it now only
+302-redirects) to `api.scorecard.dev`, and the stale "these badges don't resolve
+until the repo is pushed" comment — false since the repo went public — is replaced
+with a note on what each badge sources.
+
+### Changed: documentation voice — a style guide, the wordmark rule, and no disparagement (`docs/dev/doc-style-guide.md`)
+
+- **New [`docs/dev/doc-style-guide.md`](docs/dev/doc-style-guide.md)** — the writing
+  contract, sibling to `documentation-architecture.md` (which governs how docs are
+  *published*, not how they *read*). Covers the wordmark rule, the no-disparagement
+  rule, house voice (anchored to Google's developer-documentation style guide and
+  Apple's HIG on writing), and prose-level claims discipline. `AGENTS.md` and
+  `CONTRIBUTING.md` point to it, so agents and humans hit it before writing docs.
+- **The wordmark rule.** `sartor.` (lowercase, trailing period) is the wordmark and
+  is used only standing alone — a logo, UI chrome, a title where the name stands by
+  itself. **In sentences it is `Sartor`**, which is what a reader can actually parse.
+  Swept across the user-facing doc surface (39 prose occurrences); `docs/wiki/` and
+  the review archive still carry the old form and are tracked for a follow-up pass.
+- **No characterization of other products.** The README opened by describing what
+  "generic AI résumé tools" do wrong — an ungrounded claim about someone else's
+  software, in a project whose central discipline is not making ungrounded claims.
+  Rewritten to state the three problems from the *candidate's* side (a padded
+  history that collapses in an interview; a résumé an ATS can't read; tailored
+  copies sprawling into document management) and what Sartor does about them — the
+  corpus, sourced from real résumés and grown by clarifying interviews. Says
+  strictly more about the product and nothing we can't back.
 
 ### Fixed: first public-CI-run remediation — Compose auto-draft race, docs directory index, cross-platform mypy, UX flakes (`fix/ci-first-linux-run`)
 

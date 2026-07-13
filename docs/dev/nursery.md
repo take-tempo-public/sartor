@@ -119,6 +119,18 @@ candidate's own corpus/clarifications, same no-invention discipline as every
 other drafting call) and assemble the finished bullet. *Owner post-1.1.0
 walkthrough idea.*
 
+### 11. Property-based fuzzing of the deterministic parsers
+*Value L-M · Effort M · Risk L · Status: idea · Added 2026-07-13*
+
+A `hypothesis`-based property suite over the deterministic parsing surface
+(`parser.py` · `json_resume.py` · `corpus_to_json_resume.py` ·
+`docx_to_persona_html.py`), which today is covered by unit tests over hand-written
+fixtures only. Would close OpenSSF Scorecard's `Fuzzing` check (currently 0). Not
+scheduled: these parsers consume the user's *own* files in a local-first,
+single-user tool, so the untrusted-input threat model that motivates fuzzing barely
+applies — the payoff is crash-hardening against malformed résumés, not security.
+Reasoned in [`keep-ledger.md`](keep-ledger.md) **SC-02**.
+
 ---
 
 ## Retired (cut — kept as a one-line record)
