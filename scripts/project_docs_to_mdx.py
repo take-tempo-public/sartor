@@ -79,14 +79,17 @@ needed) into a shared `docs-site/content/docs/screenshots/` directory that
 sits alongside them; a same-basename collision from two different source
 paths is a build-stopping error, not a silent overwrite.
 
+**Cross-doc links are rewritten (2026-07-13).** This was originally a documented
+non-goal — the SOURCE docs stay plain markdown that degrades correctly on GitHub
+(`documentation-architecture.md` "Portability"), so links were projected
+byte-identical. The consequence only became visible once the site was public:
+`/docs/vision.md` is not a route, so ~490 cross-references across 33 of 35 pages
+404'd. The rewrite pass (see `rewrite_cross_doc_links`) resolves that WITHOUT
+touching the source: a link to a projected doc becomes its site route, and a link
+to anything the site doesn't carry becomes a GitHub URL. It is a pure function of
+this script's own slug map, so it cannot invent a route.
+
 **Non-goals (deliberate, documented — not oversights).**
-- No internal link rewriting: an in-repo relative link like
-  `docs/install.md` is projected byte-identical. Portability
-  (`documentation-architecture.md` "Portability") deliberately keeps every
-  L1 doc plain markdown that degrades correctly on GitHub; teaching this
-  script to rewrite links to site slugs would make the MDX a second,
-  diverging representation of the same fact. A follow-up cross-doc link
-  rewrite pass is a separate, explicitly out-of-scope enhancement.
 - No L2 (`docs/wiki/**`) content — that is Search/"Ask" territory, not
   this static projection (this lane ships a static export only).
 
@@ -408,6 +411,100 @@ def resolve_local_images(rel_posix: str, lines: list[str]) -> list[Path]:
 
 
 # ---------------------------------------------------------------------------
+# Cross-document link rewriting
+#
+# The L1 docs link each other the way a repo does — `[vision.md](vision.md)`,
+# `[architecture](../architecture.md)`, `[app.py](../../app.py)`. Those resolve on
+# GitHub and on disk, which is exactly the portability the source chain wants. On
+# the projected SITE they resolved to nothing: `/docs/vision.md` is not a route,
+# so ~490 cross-references across 33 of 35 pages 404'd. (This was a documented
+# non-goal of the first projection — "a follow-up cross-doc link rewrite pass" —
+# and this is that pass.)
+#
+# The rewrite is a pure function of the projection's OWN slug map, so it cannot
+# invent a route: a link to a projected doc becomes its site route; a link to
+# anything else the site doesn't carry (docs/wiki/**, source files, CHANGELOG,
+# LICENSE) becomes a GitHub URL, which is where that content actually lives. The
+# SOURCE markdown is never touched — it keeps working on GitHub, unchanged.
+# ---------------------------------------------------------------------------
+
+GITHUB_BASE = "https://github.com/take-tempo-public/sartor"
+
+# Inline markdown links, minus images (the `(?<!!)` lookbehind) — images are the
+# static-import path handled above and must not be rewritten to a URL.
+_LINK_RE = re.compile(r"(?<!!)\[([^\]]*)\]\(([^)\s]+)(\s+\"[^\"]*\")?\)")
+
+
+def _site_route(slug: str) -> str:
+    return "/docs" if slug == "index" else f"/docs/{slug}"
+
+
+def rewrite_link_target(rel_posix: str, target: str, slug_map: dict[str, str]) -> str | None:
+    """The rewritten href for one link target, or None to leave it untouched.
+
+    `rel_posix` is the SOURCE doc's repo-relative path — markdown resolves a
+    relative link against the linking file's own directory, so that is the base.
+    """
+    if target.startswith(("http://", "https://", "mailto:", "#", "/")):
+        return None  # absolute, external, or a same-page anchor — already correct
+
+    path_part, _, fragment = target.partition("#")
+    if not path_part:
+        return None
+
+    doc_dir = Path(rel_posix).parent
+    try:
+        resolved = (doc_dir / path_part).resolve().relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return None  # escapes the repo — not ours to rewrite
+
+    suffix = f"#{fragment}" if fragment else ""
+
+    if resolved in slug_map:
+        return _site_route(slug_map[resolved]) + suffix
+
+    # Not a projected page: point at the real home on GitHub. A trailing slash (or
+    # an extension-less path that is a real directory) is a tree, not a blob.
+    abs_path = REPO_ROOT / resolved
+    kind = "tree" if (path_part.endswith("/") or abs_path.is_dir()) else "blob"
+    return f"{GITHUB_BASE}/{kind}/main/{resolved}{suffix}"
+
+
+def rewrite_cross_doc_links(
+    rel_posix: str, lines: list[str], slug_map: dict[str, str]
+) -> list[str]:
+    """Rewrite every in-repo markdown link on a page to a site route or a GitHub
+    URL. Fenced code blocks are left alone — a link inside a code sample is
+    sample text, not navigation."""
+    out: list[str] = []
+    in_fence = False
+    fence_marker = ""
+
+    for line in lines:
+        m = _FENCE_RE.match(line)
+        if m:
+            marker = m.group(2)
+            if not in_fence:
+                in_fence, fence_marker = True, marker[:3]
+            elif marker.startswith(fence_marker):
+                in_fence, fence_marker = False, ""
+            out.append(line)
+            continue
+        if in_fence:
+            out.append(line)
+            continue
+
+        def _sub(match: re.Match[str]) -> str:
+            text, target, title = match.group(1), match.group(2), match.group(3) or ""
+            new_target = rewrite_link_target(rel_posix, target, slug_map)
+            return match.group(0) if new_target is None else f"[{text}]({new_target}{title})"
+
+        out.append(_LINK_RE.sub(_sub, line))
+
+    return out
+
+
+# ---------------------------------------------------------------------------
 # ICP-ladder ordering — parsed from README's own "Documentation map" block
 # ---------------------------------------------------------------------------
 
@@ -508,7 +605,10 @@ class Page:
 
 
 def collect_pages() -> list[Page]:
-    pages: list[Page] = []
+    # Two phases: the link rewriter needs to know the FULL set of projected pages
+    # (a page can link to any other) before any body is rendered, so eligibility is
+    # decided for every doc first, and the slug map handed to phase two.
+    eligible: list[tuple[str, list[str], dict[str, str]]] = []
     for rel_posix in list_repo_md_files():
         abs_path = REPO_ROOT / rel_posix
         try:
@@ -519,10 +619,17 @@ def collect_pages() -> list[Page]:
         fields = parse_header_fields(lines)
         if not has_full_header(fields):
             continue
+        eligible.append((rel_posix, lines, fields))
+
+    slug_map = {rel_posix: make_slug(rel_posix) for rel_posix, _, _ in eligible}
+
+    pages: list[Page] = []
+    for rel_posix, lines, fields in eligible:
         title = first_h1(lines) or rel_posix
         audience = classify_audience(rel_posix, fields["Audience"])
         local_images = resolve_local_images(rel_posix, lines)
         body_lines = strip_first_h1(lines)
+        body_lines = rewrite_cross_doc_links(rel_posix, body_lines, slug_map)
         body_lines = escape_mdx_unsafe(body_lines)
         body = "\n".join(body_lines).rstrip() + "\n"
         frontmatter = build_frontmatter(

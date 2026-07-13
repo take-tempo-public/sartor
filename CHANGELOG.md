@@ -13,6 +13,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: the published docs site rendered no diagrams, no screenshots, and no working cross-links (`fix/docs-site-rendering`)
+
+Three defects on <https://sartor-docs.taketempo.com>, all invisible from the repo
+(every one of these links and images is correct *on GitHub* — they only broke in the
+L3 projection):
+
+- **Every screenshot was a broken-image glyph.** `next/image` — which fumadocs-ui
+  uses to render markdown images — emits `src="/_next/image?url=…"`, a request to
+  Next's **server-side** image optimizer. There is no server: `output: 'export'`
+  produces static HTML for a traditional host, so all 8 requests 404'd while the
+  real files underneath served 200. `images: { unoptimized: true }` makes next/image
+  emit the actual `/_next/static/media/*` path. (Same family as the `trailingSlash`
+  fix: a server-rendering default a static export can't honor.) This is also what
+  made each walkthrough step *look* like it opened with a broken icon — the step's
+  screenshot is the first thing in the section.
+- **The four architecture diagrams shipped as raw code blocks.** Fumadocs ships no
+  Mermaid renderer, so ` ```mermaid ` fences rendered as source. Enabled
+  `remarkMdxMermaid` (already present in `fumadocs-core`) and added a client
+  `Mermaid` component (`docs-site/src/components/mermaid.tsx`, `securityLevel:
+  'strict'`, falls back to the diagram source if a chart fails to parse). Verified
+  in a real browser: 4 SVGs render, 0 fallbacks, no page errors.
+- **~490 cross-document links were dead, across 33 of the 35 pages.** The L1 docs
+  link each other as repo-relative markdown (`[vision.md](vision.md)`), which is
+  correct on GitHub and was a *documented non-goal* of the first projection ("a
+  follow-up cross-doc link rewrite pass" — `scripts/project_docs_to_mdx.py`). On the
+  site, `/docs/vision.md` is not a route. That pass now exists: a link to a projected
+  doc becomes its site route (`/docs/vision`), and a link to anything the site
+  doesn't carry — source files, `docs/wiki/**`, `CHANGELOG.md` — becomes the GitHub
+  URL where that content actually lives. The rewrite is a pure function of the
+  projection's own slug map, so it cannot invent a route; the source markdown is
+  untouched and still resolves on GitHub. Verified end-to-end on the built export:
+  **0 dead `.md` links** (was 490) and **1,406/1,406 internal links resolve**.
+  Guarded by 8 new tests in `tests/test_docs_projection.py`.
+
+New `docs-site` dependencies: `mermaid`, `next-themes` (both client-side, docs-site
+only — the Python package is unaffected).
+
 ### Security: supply-chain hardening — OpenSSF Scorecard 4.9 → (pinned actions, least-privilege tokens, CodeQL, signed releases) (`chore/scorecard-and-docs-voice`)
 
 The repo's first public OpenSSF Scorecard run scored **4.9/10**. Every check that

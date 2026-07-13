@@ -246,3 +246,89 @@ def test_meta_pages_order_follows_readme_doc_map_within_user_tier() -> None:
 
     assert slug_order.index("vision") < slug_order.index("install")
     assert slug_order.index("install") < slug_order.index("walkthrough")
+
+
+# ---------------------------------------------------------------------------
+# Cross-document link rewriting
+#
+# The projected site is served from /docs/<slug> routes; the SOURCE docs link
+# each other as repo-relative markdown paths (`vision.md`, `../architecture.md`).
+# Before the rewrite pass those shipped verbatim and 404'd — ~490 dead links
+# across 33 of 35 pages. These pin the two halves of the fix: a link to a
+# projected doc becomes its site route, and a link to anything the site does not
+# carry becomes the GitHub URL where that content really lives.
+# ---------------------------------------------------------------------------
+
+SLUG_MAP = {
+    "README.md": "index",
+    "vision.md": "vision",
+    "docs/architecture.md": "architecture",
+    "docs/dev/RELEASE_ARC.md": "dev-release-arc",
+}
+
+
+def test_rewrite_link_to_projected_doc_becomes_site_route() -> None:
+    assert pdm.rewrite_link_target("README.md", "vision.md", SLUG_MAP) == "/docs/vision"
+    # resolved relative to the LINKING doc's own directory, per markdown rules
+    assert (
+        pdm.rewrite_link_target("docs/dev/RELEASE_ARC.md", "../architecture.md", SLUG_MAP)
+        == "/docs/architecture"
+    )
+
+
+def test_rewrite_link_preserves_anchor_fragment() -> None:
+    assert (
+        pdm.rewrite_link_target("README.md", "docs/architecture.md#llm-routing", SLUG_MAP)
+        == "/docs/architecture#llm-routing"
+    )
+
+
+def test_rewrite_link_to_readme_targets_docs_root_not_docs_index() -> None:
+    assert pdm.rewrite_link_target("vision.md", "README.md", SLUG_MAP) == "/docs"
+
+
+def test_rewrite_link_to_unprojected_file_becomes_github_blob_url() -> None:
+    # Source files and L2 wiki pages are not on the site — GitHub is their real home.
+    assert pdm.rewrite_link_target("README.md", "analyzer.py", SLUG_MAP) == (
+        f"{pdm.GITHUB_BASE}/blob/main/analyzer.py"
+    )
+    assert pdm.rewrite_link_target("docs/architecture.md", "wiki/SCHEMA.md", SLUG_MAP) == (
+        f"{pdm.GITHUB_BASE}/blob/main/docs/wiki/SCHEMA.md"
+    )
+
+
+def test_rewrite_link_to_directory_becomes_github_tree_url() -> None:
+    assert pdm.rewrite_link_target("README.md", "docs/governance/", SLUG_MAP) == (
+        f"{pdm.GITHUB_BASE}/tree/main/docs/governance"
+    )
+
+
+def test_rewrite_link_leaves_external_and_anchor_targets_untouched() -> None:
+    for target in ("https://example.com", "mailto:a@b.c", "#same-page", "/already/absolute"):
+        assert pdm.rewrite_link_target("README.md", target, SLUG_MAP) is None
+
+
+def test_rewrite_cross_doc_links_skips_fenced_code_and_images() -> None:
+    lines = [
+        "See [vision](vision.md).",
+        "```markdown",
+        "[vision](vision.md)",  # sample text, not navigation — must not be rewritten
+        "```",
+        "![shot](screenshots/x.png)",  # image: the static-import path, not a URL
+    ]
+    out = pdm.rewrite_cross_doc_links("README.md", lines, SLUG_MAP)
+    assert out[0] == "See [vision](/docs/vision)."
+    assert out[2] == "[vision](vision.md)"
+    assert out[4] == "![shot](screenshots/x.png)"
+
+
+def test_no_projected_page_body_ships_a_raw_repo_relative_md_link() -> None:
+    # The end-to-end invariant: after projection, no page BODY may carry a bare
+    # `.md` link — that is precisely what 404'd on the live site.
+    for page in pdm.collect_pages():
+        body = page.body.split("---", 2)[-1]  # drop the YAML frontmatter block
+        for match in pdm._LINK_RE.finditer(body):
+            target = match.group(2)
+            if target.startswith(("http", "#", "/")):
+                continue
+            assert not target.endswith(".md"), f"{page.rel_posix}: unrewritten link {target}"
