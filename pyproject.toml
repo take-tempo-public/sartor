@@ -102,7 +102,7 @@ dev = [
     # gate (ci.yml `quality` job + the ruff-changed commit hook) deterministic — pin + gate are
     # one inseparable fix. Bumping ruff is a deliberate one-commit action: upgrade + `ruff format .`
     # + re-pin here.
-    "ruff==0.15.12",
+    "ruff==0.15.21",
     "mypy>=1.10,<2.0",
     "pyyaml>=6.0,<7.0",
     "types-requests>=2.31",
