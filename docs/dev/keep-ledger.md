@@ -215,6 +215,50 @@ ledger):
 
 ---
 
+## Supply-chain surfaces (OpenSSF Scorecard)
+
+> Added 2026-07-13 (`chore/scorecard-and-docs-voice`). The first public Scorecard
+> run scored **4.9/10**. The fixable checks were fixed on that branch
+> (Token-Permissions, Pinned-Dependencies, SAST, Vulnerabilities, Signed-Releases).
+> The two below are **accepted, reasoned gaps** — recorded here so a later reader
+> doesn't mistake a 0 for an oversight, and so nobody "fixes" them by gaming the
+> metric.
+
+### SC-01 — ACCEPT: `Code-Review` scores 0 for a solo maintainer
+
+- **The check.** Scorecard counts merged changesets that carried an approving
+  review ("Found 0/16 approved changesets").
+- **Why it's 0.** GitHub does not let an author approve their own pull request. A
+  single-maintainer repo therefore cannot score above 0 on this check, no matter
+  how it configures branch protection.
+- **What we will NOT do.** Require an approval on `main` and then satisfy it with a
+  second account, a bot approver, or an admin bypass. That would raise the number
+  while making the claim ("changes here were reviewed by someone else") false — a
+  C-0 violation, and precisely the kind of metric-gaming this ledger exists to
+  prevent.
+- **What we DO have instead.** Branch protection with PR-required + 4 required
+  status checks (the 3 quality jobs + UX/a11y/PDF); the committed gate
+  (`scripts/gate.py`); the enforcement hooks; and the read-only compliance-witness
+  auditor. Revisit if a second maintainer ever joins — at that point the check
+  becomes both meaningful and free.
+
+### SC-02 — ACCEPT: `Fuzzing` scores 0 (no fuzz harness)
+
+- **The check.** Scorecard looks for an integrated fuzzing setup (OSS-Fuzz,
+  CIFuzz, a language-native fuzz target).
+- **Why it's 0.** None exists. The deterministic parsing surface
+  (`parser.py` · `json_resume.py` · `corpus_to_json_resume.py` · `docx_to_persona_html.py`)
+  is the only part of the tree where fuzzing would pay, and it is exercised today by
+  unit tests over hand-written fixtures, not generated input.
+- **Position.** Reasonable future work, not a v1.1.0 blocker: this is a local-first,
+  single-user tool whose parsers consume the user's *own* files, so the untrusted-input
+  threat model that motivates fuzzing barely applies (see [`SECURITY.md`](../../SECURITY.md)).
+  A `hypothesis`-based property suite over the deterministic parsers is the natural
+  shape if it's ever wanted — logged as a candidate in [`nursery.md`](nursery.md),
+  not scheduled.
+
+---
+
 ## Cross-reference
 
 The **security / PII** KEEP ledger — route containment (`F-sec-05`), zero-PII clone

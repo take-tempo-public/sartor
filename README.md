@@ -18,15 +18,19 @@ The core discipline: **the LLM discovers and phrases — it does not invent.** N
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](pyproject.toml)
 [![Network egress: allowlisted](https://img.shields.io/badge/network%20egress-allowlisted-informational.svg)](tests/test_egress_allowlist.py)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/take-tempo-public/sartor/badge)](https://scorecard.dev/viewer/?uri=github.com/take-tempo-public/sartor)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/take-tempo-public/sartor/badge)](https://scorecard.dev/viewer/?uri=github.com/take-tempo-public/sartor)
 [![REUSE status](https://api.reuse.software/badge/github.com/take-tempo-public/sartor)](https://api.reuse.software/info/github.com/take-tempo-public/sartor)
 
-<!-- The CI, OpenSSF Scorecard, and REUSE badges above resolve live data from
-     the GitHub repo + reuse.software's API — they render as "unknown"/404
-     until the repo is pushed to github.com/take-tempo-public/sartor and
-     promoted public (see RELEASE_ARC.md "Big-push scope brief" Phase 4,
-     [HUMAN] step). The license, Python-version, and egress badges are static
-     and correct today. -->
+<!-- Badge sources. CI = the live status of ci.yml on `main`. OpenSSF Scorecard =
+     the live supply-chain score, re-run on every push to `main` by
+     .github/workflows/scorecard.yml (host: api.scorecard.dev — the older
+     api.securityscorecards.dev host now only 302-redirects here). REUSE = the
+     live licensing-compliance status from reuse.software's API (the repo is
+     registered; a badge reading "unregistered" would mean the registration
+     lapsed, not that the repo is non-compliant). License / Python-version /
+     egress are static, hand-maintained badges — keep them true by hand.
+     A badge that renders a placeholder is a FAILING badge, not a cosmetic
+     issue: see docs/dev/doc-style-guide.md "Claims discipline". -->
 
 > **Documentation map.** This README orients; the depth lives in single-home docs:
 > [`vision.md`](vision.md) (intent + scope) ·
@@ -66,7 +70,9 @@ However you found this repo, pick your lane — each points into the doc set abo
 
 ## What Sartor does
 
-Generic AI résumé tools pad a history with claims that fall apart in an interview, and emit formats that automated résumé screeners (ATS) choke on. Sartor is the opposite bet:
+Three things work against a candidate. A padded history makes claims that fall apart in an interview. A résumé an automated screener (ATS) can't read never reaches a human. And keeping a tailored copy per application turns into document management — hunting through old files for the one experience point that fits this posting.
+
+Sartor addresses all three. It treats a career history as a **corpus**, not a pile of files: sourced from the résumés you already have, kept as structured, searchable experience, and grown by clarifying interview questions that surface real work no résumé recorded. Every tailored résumé is drawn from that corpus:
 
 - **It only asserts what's true.** It discovers real, undocumented experience — in the candidate's own words — then rewrites and synthesizes toward the job, without inventing.
 - **It's ATS-safe by default.** ATS = the applicant-tracking software employers use to auto-screen incoming résumés. Bundled templates are single-column, plain-bullet, standard-font; non-ATS-safe templates were retired.

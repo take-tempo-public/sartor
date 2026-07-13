@@ -28,7 +28,7 @@ jobs:
       id-token: write # to publish results and get a badge
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
 
@@ -37,14 +37,15 @@ jobs:
         # floating `v2` major tag, so `@v2` fails to resolve at "Set up job"
         # ("Unable to resolve action ossf/scorecard-action@v2, unable to find
         # version v2"), which is why this workflow never ran once the repo went
-        # public. Pin the current release; Dependabot bumps it by tag.
-        uses: ossf/scorecard-action@v2.4.3
+        # public. Pinned to the release's commit SHA (Scorecard's own
+        # Pinned-Dependencies check); Dependabot bumps the pin.
+        uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a # v2.4.3
         with:
           results_file: results.sarif
           results_format: sarif
           publish_results: true
 
       - name: Upload SARIF results to code scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
         with:
           sarif_file: results.sarif

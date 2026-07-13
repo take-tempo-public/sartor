@@ -38,7 +38,7 @@ jobs:
       # that historical object, so `git show` fails ("invalid object name"). The
       # test also self-guards (skips if OLD_SHA is unreachable), but here we want
       # it to actually run, so fetch the full history.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
@@ -79,10 +79,10 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.13"
           cache: pip
@@ -102,7 +102,7 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'eval')
     needs: quality
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       # PX-43 (F-tci-06): shared with the `quality` job above — see
       # .github/actions/setup-python-env/action.yml.
@@ -179,10 +179,10 @@ jobs:
     name: UX / a11y / PDF (Playwright, py3.12)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
           cache: pip
@@ -203,7 +203,7 @@ jobs:
       # step in this job on a cache hit.
       - name: Cache Playwright Chromium
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}

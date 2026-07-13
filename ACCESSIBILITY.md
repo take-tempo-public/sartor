@@ -1,9 +1,9 @@
 # Accessibility status
 
-> **Purpose:** an honest status page for sartor.'s accessibility — what is
+> **Purpose:** an honest status page for Sartor's accessibility — what is
 > machine-checked today, what was hand-walked, and what is not yet covered.
 > It describes mechanisms and effort, not a conformance grade.
-> **Audience:** anyone evaluating sartor. who relies on assistive technology,
+> **Audience:** anyone evaluating Sartor who relies on assistive technology,
 > keyboard-only operation, zoom/reflow, or sufficient contrast; contributors
 > landing UI changes.
 > **Authoritative for:** the current accessibility posture and its honest
@@ -13,7 +13,7 @@
 
 ## What this page is (and is not)
 
-sartor. is a local-first, single-user tool with one screen — a single-page
+Sartor is a local-first, single-user tool with one screen — a single-page
 web app you run on your own machine. Accessibility has been built in as design,
 not bolted on afterward. This page states plainly what that work covers so far.
 

@@ -291,7 +291,7 @@ specific shape.
 **Extension namespace.** Our corpus-only fields (tags, scores,
 is_active, variants, has_outcome) live under
 `meta.sartor.{ext_fields}` so the JSON still validates against the
-standard schema. Themes that don't know about sartor. extensions
+standard schema. Themes that don't know about Sartor extensions
 ignore them; our own renderer reads them.
 
 **Markdown becomes a render target, not the source of truth:**

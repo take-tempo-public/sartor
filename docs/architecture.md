@@ -20,7 +20,7 @@
 
 ## System overview
 
-sartor. is a local-first Flask app that tailors résumés and
+Sartor is a local-first Flask app that tailors résumés and
 optional cover letters to specific job descriptions. The
 pipeline is **two-or-more LLM calls in sequence**, each gated by
 a human review or curation step:
@@ -42,7 +42,7 @@ a human review or curation step:
 Full sequence diagram — rendered inline below (the single source; see [The four canonical diagrams](#the-four-canonical-diagrams)).
 
 ```mermaid
-%% Pipeline of one full sartor. apply-run.
+%% Pipeline of one full Sartor apply-run.
 %% 
 %% Shows the LLM calls that can fire across a single application,
 %% the Flask route that triggers each, and which model is used.
@@ -58,7 +58,7 @@ Full sequence diagram — rendered inline below (the single source; see [The fou
 %% two-pass analyze + clarify→Haiku updated 2026-06-02, R1 Phase 2 / v1.0.3).
 
 sequenceDiagram
-    accTitle: sartor. apply-run pipeline sequence
+    accTitle: Sartor apply-run pipeline sequence
     accDescr: Sequence diagram of one full apply-run across Analyze, optional Clarify, Compose, Template preview, Generate, optional repeatable Iterate, and optional Cover letter generation. Shows the user, the static/app.js frontend, Flask app.py, analyzer.py, the heavy-reasoning and structured-selection LLM tiers, the SQLite database, and the on-disk output directory, with the Flask route and analyzer call each step triggers.
     autonumber
     participant U as User
@@ -256,7 +256,7 @@ The DB schema is rendered inline below.
 %% audit timestamps (created_at, updated_at) omitted for readability.
 
 erDiagram
-    accTitle: sartor. database entity-relationship diagram
+    accTitle: Sartor database entity-relationship diagram
     accDescr: Entity-relationship diagram of the SQLite schema rooted at candidate, showing experience, experience_title, bullet, summary_item, tag and its three junction tables, skill, persona_template, application, application_run, application_bullet, and clarification, with foreign-key cardinality and cascade-versus-set-null behavior labeled on each relationship.
     candidate {
         int id PK
@@ -479,7 +479,7 @@ Full picture — rendered inline below.
 %% system block.
 
 graph LR
-    accTitle: sartor. LLM call routing and cost tiers
+    accTitle: Sartor LLM call routing and cost tiers
     accDescr: Graph of every LLM call site in analyzer.py grouped into a heavy-reasoning model subgraph (analyze_synthesis, iterate_clarify, generate, generate_cover_letter) and a structured-selection model subgraph (analyze_extraction, clarify, recommend bullets, recommend_summary, critique_proposal, promote_clarification_to_bullet, extract_experiences), each labeled with p50 latency and median output tokens, connected from the Flask route that triggers it, with a legend distinguishing calls that reuse a cached prompt prefix from calls that do not.
     subgraph SO[Sonnet 4.6 — heavy reasoning]
         direction TB
@@ -609,7 +609,7 @@ Full data-flow diagram, rendered inline below.
 %% app.py route handlers, CLAUDE.md "context_set lifecycle" diagram.
 
 flowchart TD
-    accTitle: sartor. context_set lifecycle data flow
+    accTitle: Sartor context_set lifecycle data flow
     accDescr: Flowchart of the context_set JSON artifact's lifecycle from analyze through clarify, recommend, composition, generate, iterate, and cover-letter generation, showing on-disk context and output files as rectangles, Flask routes as rounded nodes, LLM-touching steps highlighted, and deterministic Python merge/save steps, including the parent_context_path chain linking each generated iteration to its parent.
     %% On-disk artifacts (rectangles)
     %% Routes (rounded)

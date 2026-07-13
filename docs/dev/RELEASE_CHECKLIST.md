@@ -515,12 +515,29 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **7** (was 6; +1 Compose user-action reloads 2026-07-12,
-`fix/ci-first-linux-run`). (`grep -c '^- \[ \]'` over this subsection is the
-source of truth, re-verified at each close-out). Ceiling reminder: schedule a
-reduction sprint at ~8–10 open items, and clear before adding. The full
+_Rendered open count: **8** (was 7; +1 wordmark sweep of the wiki + review archive
+2026-07-13, `chore/scorecard-and-docs-voice`). (`grep -c '^- \[ \]'` over this
+subsection is the source of truth, re-verified at each close-out). **Ceiling
+reached — schedule a reduction sprint** (the rule is ~8–10, and clear before
+adding); several items below are small and clearable in one pass. The full
 per-item addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
+
+- [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
+      rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
+      durable rule in [`doc-style-guide.md`](doc-style-guide.md), and the
+      **user-facing surface was swept** on `chore/scorecard-and-docs-voice` (39
+      prose occurrences across README · vision · install · walkthrough ·
+      architecture · system-model · PRODUCT_SHAPE · CONTRIBUTING · SECURITY ·
+      ACCESSIBILITY · AGENTS · CLAUDE). Deliberately **not** swept: the ~107-file
+      remainder in `docs/wiki/` (cited, agent-regenerated pages — a bulk rewrite
+      would churn the wiki's own provenance) and `docs/dev/reviews/` (a signed,
+      pinned archive — rewriting archived text is worse than leaving it). **Fix:**
+      fold the correction in opportunistically whenever one of those files is next
+      edited — a `/wiki-self-update` pass will naturally re-emit wiki pages in the
+      new form. No standalone branch warranted.
+      _(discovered: v1.1.0 stream, 2026-07-13, `chore/scorecard-and-docs-voice`.)_
+      **→ Opportunistic; do not schedule.**
 
 - [ ] **Compose user-action reloads still fire `loadComposition()` un-awaited** —
       `fix/ci-first-linux-run` awaited the **five auto-arrival cascade** fires

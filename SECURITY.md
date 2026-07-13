@@ -4,7 +4,7 @@
 > for a local-first single-tenant tool. What is in scope to protect
 > against, what is explicitly out of scope, how API keys flow, what
 > never leaves the machine.
-> **Audience:** humans considering deploying sartor. in a non-default
+> **Audience:** humans considering deploying Sartor in a non-default
 > tenancy model; contributors landing changes that touch routes, file
 > I/O, or LLM call paths.
 > **Authoritative for:** the `_safe_username` + `_within` route gates;
@@ -21,7 +21,7 @@
 > This document keeps the threat model, the accepted-risk register, and the
 > operational detail; on any conflict the governance home governs.
 
-sartor. is a **single-tenant, local-first tool**. It runs on your
+Sartor is a **single-tenant, local-first tool**. It runs on your
 machine, against your data, with one user (you). The threat model
 assumes the server is running on localhost, accessible only to the
 person who started it.
@@ -60,7 +60,7 @@ single-unauthenticated-user boundary is **C-1**.*
 - Sandbox isolation between user data on the same machine. The
   filesystem permissions of the OS are the boundary.
 - Recovery from a compromised local machine. If your machine is
-  compromised, sartor. is the least of your problems.
+  compromised, Sartor is the least of your problems.
 
 **What this tool does NOT do** (and never will, by design):
 - No telemetry / analytics / error reporting to any external
@@ -77,7 +77,7 @@ single-unauthenticated-user boundary is **C-1**.*
 
 ## Bundled third-party assets
 
-sartor. vendors a small set of third-party files into the repo
+Sartor vendors a small set of third-party files into the repo
 so that the runtime stays offline-capable. None of these phone
 home, none of these send data to third-party servers; each runs
 locally — in your browser, the preview iframe, or (for the

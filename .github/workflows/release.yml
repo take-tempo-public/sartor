@@ -28,9 +28,13 @@ jobs:
   build:
     name: Build + verify sdist/wheel
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC — sign the build provenance (see the attest step)
+      attestations: write # write the provenance attestation to the repo
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.13"
 
@@ -55,11 +59,22 @@ jobs:
           /tmp/smoke/bin/pip install dist/*.whl
           /tmp/smoke/bin/sartor --help
 
+      # Signed-Releases (OpenSSF Scorecard): sign the built sdist + wheel with a
+      # Sigstore-backed provenance attestation, so a consumer can verify these
+      # artifacts were produced by THIS workflow from THIS repo at this commit
+      # (`gh attestation verify <file> --repo take-tempo-public/sartor`). Keyless
+      # — the OIDC token above is the identity; no signing key is stored. Runs
+      # before the upload so the attestation covers exactly the files published.
+      - name: Attest build provenance (sdist + wheel)
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
+        with:
+          subject-path: "dist/*"
+
       # PX-43 (F-tci-10): explicit retention instead of the GitHub default
       # (90 days), matching the existing docs-deploy.yml precedent — these are
       # published to PyPI immediately after, so 30 days is plenty for
       # post-release debugging.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: dist
           path: dist/
@@ -73,9 +88,9 @@ jobs:
     permissions:
       id-token: write # OIDC — no PyPI token stored in the repo
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dist
           path: dist/
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1

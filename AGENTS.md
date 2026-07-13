@@ -37,6 +37,7 @@
 - [SECURITY.md](SECURITY.md) — threat model, API key rules, accepted risks.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — branch + commit conventions, dev loop.
 - [README.md](README.md) — user-facing overview.
+- [docs/dev/doc-style-guide.md](docs/dev/doc-style-guide.md) — **read before writing any doc or UI copy.** The `sartor.` wordmark rule (wordmark in isolation; `Sartor` in sentences), the no-disparagement rule (never characterize other products — an ungrounded claim is a C-0 violation even when it's about someone else's software), the house voice, and prose-level claims discipline.
 
 The project follows the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/). The codebase is annotated with principle references (P1, P2, P5, P6, P8, P9) — they are load-bearing, not decoration. The five load-bearing principles are frozen in [`docs/governance/charter.md`](docs/governance/charter.md) ("The 10 Principles backbone").
 
