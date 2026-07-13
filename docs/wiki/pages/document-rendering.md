@@ -22,8 +22,10 @@ the original file is opened as a **style template**, never `docx.Document()` on 
 [`generator.py:generate_resume`](../../../generator.py) is the single résumé entry
 for the **LLM-markdown** path. It always runs
 [`generator.py:_normalize_markdown`](../../../generator.py) first, then parses to
-JSON Resume via [`json_resume.py:md_to_json_resume`](../../../json_resume.py), then
-branches on `output_format`:
+JSON Resume via [`json_resume.py:md_to_json_resume`](../../../json_resume.py), applies
+[`json_resume.py:apply_identity_override`](../../../json_resume.py) and
+[`json_resume.py:scrub_ats_unsafe`](../../../json_resume.py) to eliminate stale identity
+and ATS-unsafe characters, then branches on `output_format`:
 
 - `.md` → serialize the SAME `json_doc` the other formats render, via
   [`json_resume.py:json_resume_to_markdown`](../../../json_resume.py) — not the

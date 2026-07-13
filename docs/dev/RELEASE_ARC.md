@@ -24,7 +24,33 @@
 | v1.0.9 | Docs, docs-site & type hardening | No (internal until v1.1.0) | The final pre-public polish epic. **Docs:** README ICP-ladder + design doc + this schedule landed in the 2026-06-29 session; dev-home depth + wiki content pass + Fumadocs adapter/deploy (+ Layer-B API spec) + doc-merge-gate CI remain. **Type hardening:** complete the `mypy --strict` ratchet so strict typing holds for all non-test code (WS-2-full's strict half, pulled pre-public — ~146 mechanical errors / 18 modules + roster 51 already-clean). Strategy: [`documentation-architecture.md`](documentation-architecture.md). See **Phase 4.9**. |
 | v1.1.0 | Public release | **Yes** | **Tag owned by the user** — the public cut of the complete product (assistant + self-documenting wiki + clean blueprints + documentation & docs-site). GitHub push is part of this event |
 
-**Versioning model (2026-06-08).** The **patch digit is an epic** — a bounded set of
+**Versioning discipline (2026-07-13 — charter [D-7](../governance/charter.md), owner-directed,
+from the v1.1.0 public cut onward).** The project now publishes to PyPI and GHCR from a pushed
+tag, so a version string is read by a machine (pip's resolver) before it is read by a person.
+
+- **[Semantic Versioning 2.0.0](https://semver.org/)** governs the number: MAJOR = incompatible,
+  MINOR = backward-compatible capability, PATCH = backward-compatible fix.
+- **Pre-releases use the `alpha` → `beta` → `rc` ladder** with a numeric counter:
+  `1.1.0-alpha.1` < `1.1.0-beta.1` < `1.1.0-beta.11` < `1.1.0-rc.1` < `1.1.0`.
+  This is a deliberate **subset** of semver — the intersection where semver and Python's
+  PEP 440 sort versions *identically*. Semver's free-form identifiers (`1.0.0-alpha.beta`)
+  are **not used**: PEP 440 can't express them, so pip couldn't order them, and the tag and
+  the published package would disagree about which release is newer.
+- **The tag is semver; `pyproject.toml` is its PEP 440 normalization** — tag `v1.1.0-rc.1`
+  ↔ version `1.1.0rc1`. One fact, two dialects. `scripts/release_version.py` owns the
+  mapping; `release.yml` compares them *after* normalization (a raw string compare fails
+  every pre-release — and only at publish time, on a tag that is already public).
+- **Release notes disclose fixed vulnerabilities** (D-7.4): every released CHANGELOG section
+  names each publicly known vulnerability **in Sartor's own code** that it fixes and that had
+  a CVE/GHSA when the release was cut — or states there were none. Dependency advisories are
+  out of scope for that statement. Silence is not a disclosure.
+- **Practical effect:** a pre-release tag publishes to PyPI as a pre-release, so
+  `pip install sartor` still resolves to the newest *final* version — a tester opts in with
+  `pip install --pre sartor`. That is the property the ladder buys.
+
+Gated by `tests/test_release_versioning_gate.py` + the tag-match step in `release.yml`.
+
+**Epic model (2026-06-08).** The **patch digit is an epic** — a bounded set of
 one-branch-per-session sprints (1.0.6, 1.0.7, 1.0.8 …; ≤10 before a bump). The
 **minor digit is a tag marker** for a *significant / public* version — **1.1.0 is the
 public release.** Pre-public work is the **1.0.x** epic series; post-public work is

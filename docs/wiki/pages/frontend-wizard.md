@@ -22,13 +22,18 @@ private helpers `_`-prefixed (the naming rules are stated in the
 
 ## Two structures: top tabs over a wizard rail
 
-The page is split into four **top tabs** — `Career corpus`, `Tailor`,
-`Résumé templates`, `Candidate memory` — rendered as `role="tab"` buttons in
+The page is split into five **top tabs** — `Career corpus`, `Tailor`,
+`Résumé templates`, `Candidate memory`, `Pipeline` — rendered as `role="tab"` buttons in
 [`templates/index.html`](../../../templates/index.html) (`topTabCorpus` / `topTabTailor`
-/ `topTabPersonas` / `topTabMemory`). The displayed labels diverge from the internal tab
-keys: `Résumé templates` is `personas`, `Candidate memory` is `memory` `[synthesis]`.
-[`app.js:_activateTab`](../../../static/app.js) maps `{tailor,corpus,personas,memory}` to
-those button ids and routes through `switchTopTab`.
+/ `topTabPersonas` / `topTabMemory` / `topTabPipeline`). The displayed labels diverge from the internal tab
+keys: `Résumé templates` is `personas`, `Candidate memory` is `memory`, `Pipeline` is
+`pipeline` `[synthesis]`. [`app.js:_activateTab`](../../../static/app.js) (the smart-landing
+router) maps only the first four — `{tailor,corpus,personas,memory}` — to their button ids;
+`Pipeline` ([`topTabPipeline`](../../../templates/index.html)) is reached only by clicking its
+own tab button, which calls [`switchTopTab`](../../../static/app.js) directly — the smart-landing
+router never lands on it. Its cards navigate the other way: a card click in
+[`_renderPipelineRow`](../../../static/app.js) switches the candidate and opens **Tailor** on
+their applications list `[synthesis]`.
 
 The **Tailor** tab (`#tab-tailor`) hosts the wizard. A rail of `.wizard-step` buttons
 (`data-wstep="1".."6"`) sits above six `.cb-panel` sections, each tagged

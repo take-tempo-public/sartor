@@ -88,6 +88,7 @@ Before opening a PR:
 - [ ] No real personal data committed (`evals/fixtures/real/` is gitignored — keep it that way)
 - [ ] If you touched a Flask route that reads or writes the filesystem, the route uses `_safe_username()` and `_within()` — see [`app.py`](app.py)
 - [ ] If you changed `analyzer.py:SYSTEM_PROMPT` (or any per-call prompt template), bump `PROMPT_VERSION` in the same commit — a charter discipline rule ([`docs/governance/charter.md`](docs/governance/charter.md), C-0 / D-4)
+- [ ] If you are cutting a release: the version follows [charter D-7](docs/governance/charter.md) — semver, with pre-releases on the `alpha`/`beta`/`rc` ladder (`1.1.0-rc.1`), the `pyproject.toml` version as its PEP 440 spelling (`1.1.0rc1`) — and the CHANGELOG section states which publicly known vulnerabilities in Sartor's own code it fixes, or that there were none
 - [ ] If you wrote docs or UI copy, it follows [`docs/dev/doc-style-guide.md`](docs/dev/doc-style-guide.md) — `Sartor` in sentences (`sartor.` is the wordmark, used only standing alone), no characterization of other products, no aspirational present tense
 
 CI runs the same `scripts/gate.py` steps on every PR (`.github/workflows/ci.yml`'s `quality` job). Add the `eval` label to also run synthetic smoke evals (uses Anthropic API; ~$0.10 per run).

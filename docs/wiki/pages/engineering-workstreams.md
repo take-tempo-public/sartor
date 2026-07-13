@@ -19,20 +19,7 @@
 - **Why:** navigability + parallel future development; the single biggest *structural*
   gap to polished production (see [[project-self-assessment]],
   [[consistency-tracks-enforcement]]).
-- **Status / where: ✅ SHIPPED.** Landed as Sprint 8.3a–h (`refactor/app-factory-and-infra`
-  foundation + one domain seam per branch), tagged **v1.0.8**. `app.py` is now a
-  ~296-line composition root (`create_app()` factory + `register_blueprints()` +
-  `main()`) with **zero** `@app.route` decorators; every route lives on one of eight
-  domain blueprints under [`blueprints/`](../../../blueprints/) (`analysis.py`,
-  `generation.py`, `corpus/` — a 7-submodule sub-package, `templates.py`,
-  `applications.py`, `users.py`, `diagnostics.py`, `assistant.py`) — 117 route
-  decorators total, each monolith-origin seam registering with no `url_prefix` so
-  every URL stayed byte-identical. The `_safe_username`/`_within` gate moved to the
-  new leaf package [`web_infra/security.py`](../../../web_infra/security.py); the
-  `route-security-lint` hook and the PX-29 `tests/test_route_containment_gate.py`
-  gate both widened to cover `blueprints/**.py`. Full inventory: [[route-surface]] +
-  [[code-module-map]]. The structural gap this workstream targeted is closed
-  `[synthesis]`.
+- **Status / where:** ✅ **WORK COMPLETE (not yet tagged).** Landed as Sprint 8.3a–h (`refactor/app-factory-and-infra` foundation + one domain seam per branch); the refactored code is in the repository at HEAD. Tagged v1.0.8 (RELEASE_ARC §Phase 4.8) when published after wiki-loop verification (v1.0.7) and pre-public hardening. `app.py` is now a ~296-line composition root (`create_app()` factory + `register_blueprints()` + `main()`) with **zero** `@app.route` decorators; every route lives on one of eight domain blueprints under [`blueprints/`](../../../blueprints/) (`analysis.py`, `generation.py`, `corpus/` — a 7-submodule sub-package, `templates.py`, `applications.py`, `users.py`, `diagnostics.py`, `assistant.py`) — 117 route decorators total, each monolith-origin seam registering with no `url_prefix` so every URL stayed byte-identical. The `_safe_username`/`_within` gate moved to the new leaf package [`web_infra/security.py`](../../../web_infra/security.py); the `route-security-lint` hook and the PX-29 `tests/test_route_containment_gate.py` gate both widened to cover `blueprints/**.py`. Full inventory: [[route-surface]] + [[code-module-map]]. The structural gap this workstream targeted is closed `[synthesis]`.
 
 ## WS-2 — tighten typing toward strict + model the data contracts
 - **What:** move mypy toward `strict=true` (per-module ratchet); model `context_set` and
@@ -78,9 +65,7 @@
   the substrate for the now-shipped doc-grounded assistant (v1.0.7; `blueprints/assistant.py:POST /api/assistant/ask` `[synthesis]`); the Sprint 6.5 education
   sweep authors *into* it. Its design rationale is **[[llm-wiki-design]]**; its follow-on,
   lifting the prescriptive rules into one canonical home, is **[[governance-extraction]]**.
-- **Status / where:** **active — landing across v1.0.6** (RELEASE_ARC §Phase 4.5). WS-4a
-  (the substrate) is front-loaded; this very wiki page is part of WS-4a step 4. WS-4b
-  (the code cold-ingest) follows after Sprint 6.4 when route-churn settles.
+- **Status / where:** ✅ **SHIPPED with v1.0.6** (tagged 2026-06-15, per RELEASE_ARC §Phase 4.5). WS-4a (system-model + wiki skeleton + wiki skills + excellence-walk ingest) front-loaded early; WS-4b (code cold-ingest: 16 `path:line`-grounded pages, audience tags, architecture-diagram drift fixes) landed before Sprint 6.5 (commit `a0a1cb2`, 2026-06-13 per RELEASE_ARC). The wiki substrate is now operational as the knowledge foundation for v1.0.7's self-documenting loop and doc-grounded assistant `[synthesis]`.
 
 ## Related
 

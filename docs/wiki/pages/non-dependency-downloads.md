@@ -101,14 +101,13 @@ walk's 2026-06-07 verification); every other row is unchanged since that date
 `[synthesis]`.
 
 **The core "no runtime deps for downloads" claim still holds.** `pyproject.toml`'s
-`[project.dependencies]` (the app's runtime deps) are unchanged by the packaging/wheel
-fix — that fix only widens `[tool.setuptools]` `py-modules` / `packages.find` /
-`package-data` so an installed wheel actually ships modules + static assets it was
-previously missing (a packaging-completeness fix, not a new dependency). The two new
-`[project.optional-dependencies]` additions — `interrogate` (kit-adoption `dev` extra)
-and `accelerate` + `nltk` (`[eval-grounding]` extra) — are ordinary pip packages, none a
-non-pip download in their own right, and neither adds a new heavy weight/binary fetch
-beyond items 3 and 7–10 above `[synthesis]`.
+`[project.dependencies]` gained `platformdirs` (platform user-data resolution; `pyproject.toml:81`);
+the packaging/wheel setuptools fix widens `[tool.setuptools]` `py-modules` / `packages.find` /
+`package-data` so an installed wheel ships modules + static assets previously missing.
+New `[project.optional-dependencies]` additions — `packaging` (release versioning; `pyproject.toml:92`),
+`interrogate` (kit-adoption `dev` extra), and `accelerate` + `nltk` (`[eval-grounding]`
+extra) — are ordinary pip packages, none a non-pip download in their own right, and add
+no new heavy weight/binary fetch beyond items 3 and 7–10 above `[synthesis]`.
 
 ## Related
 

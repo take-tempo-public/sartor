@@ -61,16 +61,33 @@ exists, the honest register is mechanism-and-effort, not "never."
 
 | Gate | What it runs | Why it must be CI, not local | Finding | Ship state |
 |---|---|---|---|---|
-| **UX / a11y / PDF job** | dedicated job that `playwright install chromium` + `pytest -m ux` as a **required** check | E-2 promises "machine-checked in CI, free forever"; the tier *silently skips* without a browser, so the promise is local-only | F-qe-rel-01 **(P0)**, F-expa11y-01, F-expa11y-05 | **owed — v1.1.0** |
+| **UX / a11y / PDF job** | dedicated job that `playwright install chromium` + `pytest -m ux` as a **required** check | E-2 promises "machine-checked in CI, free forever"; the tier *silently skips* without a browser, so the promise is local-only | F-qe-rel-01 **(P0)**, F-expa11y-01, F-expa11y-05 | **SHIPPED v1.1.0** — the job runs in `ci.yml` and is one of the 4 required checks in `main`'s branch protection |
 | **Egress falsifiability** | socket/allowlist test (row A) | makes C-2 falsifiable; would have caught the CDN fetch | F-qe-rel-02 **(P0)** | **SHIPPED** (PX-08) |
 | **Import-boundary** | AST test (row A) | makes C-6 fail-closed | F-arch-01, F-qe-rel-04 | **SHIPPED v1.0.8 Sprint 8.3a** (PX-20) |
-| **E-2 machine badges** | Dependabot + lockfile, OpenSSF Scorecard, REUSE/SPDX lint, one-time PVR | E-1 prefers machine-run measures *because they keep themselves honest*; none exist yet | F-qe-rel-03, F-sec-08, F-sec-09 | **owed — v1.1.0** |
+| **E-2 machine badges** | Dependabot (pip · github-actions · npm), OpenSSF Scorecard (`scorecard.yml`, re-scored on every push to `main`), REUSE/SPDX lint, CodeQL SAST | E-1 prefers machine-run measures *because they keep themselves honest*; none existed | F-qe-rel-03, F-sec-08, F-sec-09 | **SHIPPED v1.1.0** (`chore/scorecard-and-docs-voice`) — REUSE reports **compliant** (633/633 files); Scorecard's `Code-Review` + `Fuzzing` checks stay at 0 as *reasoned accepted gaps* ([`../dev/keep-ledger.md`](../dev/keep-ledger.md) SC-01/SC-02), deliberately not gamed. No pip lockfile yet — that remains an open owner decision |
 
 The eval-quality regression gate already in CI (`REGRESSION_DELTA` → exit 2 → fails
 eval-smoke) is a **KEEP** — affirm and protect it; the exit-2 path is itself guarded
 (PX-13). It covers the grounding rubric across 3 synthetic fixtures only, not the full
 matrix, and runs only on the `eval` label (F-qe-rel-05). Real-corpus coverage is
 sequenced (PV-1/PV-2), not silently assumed (F-qe-rel-07, WEAKENED).
+
+### B2. D-7 — release versioning + release notes
+
+*Added 2026-07-13 with charter **D-7** (owner-directed). These fire at the release
+boundary, which is the one moment the project makes a machine-read claim (a version
+string pip's resolver obeys) to people who are not in the repo.*
+
+| Gate | What it runs | Why it must be a gate | Ship state |
+|---|---|---|---|
+| **Version-policy test** | [`../../tests/test_release_versioning_gate.py`](../../tests/test_release_versioning_gate.py) — `pyproject.toml`'s version is valid PEP 440, is inside the sanctioned `alpha`/`beta`/`rc` + numeric ladder, and round-trips to its semver tag | A version outside the ladder (semver's free-form `1.0.0-alpha.beta`) is unorderable by pip — the failure is silent and lands in *users'* resolvers, not ours | **SHIPPED v1.1.0** |
+| **Tag ↔ package agreement** | `.github/workflows/release.yml` "Tag matches pyproject version" — compares the pushed tag and the packaged version **after PEP 440 normalization**, via `scripts/release_version.py` | The two dialects spell the same release differently (`v1.1.0-rc.1` ↔ `1.1.0rc1`); a raw string compare fails every pre-release, and the failure surfaces only at publish time | **SHIPPED v1.1.0** |
+| **Vulnerability disclosure in release notes** | [`../../tests/test_release_versioning_gate.py`](../../tests/test_release_versioning_gate.py) — every released `CHANGELOG.md` section carries an explicit fixed-vulnerability statement (the CVEs fixed, or "none") | D-7.4 / OpenSSF Best Practices. Silence reads as "nothing to disclose," which is a claim — and an unverified one. The gate forces the statement to be *made*, not assumed | **SHIPPED v1.1.0** |
+
+The disclosure gate checks that the **statement exists**, not that its content is true —
+no machine can verify "we fixed every CVE we knew about." That is the honest boundary: the
+gate makes the claim *unavoidable* and puts it in front of a human at release-cut time,
+which is where the judgment belongs (the same witness-vs-blocker split as §D).
 
 ### C. Blocker-hook corrections (existing gates that are wrong)
 

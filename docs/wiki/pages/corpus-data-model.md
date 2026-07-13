@@ -6,7 +6,7 @@
 > join) that `Bullet`, `Skill`, `SummaryItem`, and `ExperienceSummaryItem` all
 > wear — the "unified Corpus Item" shape — plus the narrower `is_active`
 > soft-retire pattern it later lent to `ExperienceTitle` and `Application`,
-> and the alembic chain (head `0014`) that grew it.
+> and the alembic chain (head `0015`) that grew it.
 > **Sources:** [`db/models.py`](../../../db/models.py),
 > [`db/build_context.py`](../../../db/build_context.py),
 > [`db/migrations/versions/0009_skill_corpus_item.py`](../../../db/migrations/versions/0009_skill_corpus_item.py),
@@ -15,6 +15,7 @@
 > [`db/migrations/versions/0012_merge_dismissal.py`](../../../db/migrations/versions/0012_merge_dismissal.py),
 > [`db/migrations/versions/0013_application_is_active.py`](../../../db/migrations/versions/0013_application_is_active.py),
 > [`db/migrations/versions/0014_backfill_orphaned_proposal_reviews.py`](../../../db/migrations/versions/0014_backfill_orphaned_proposal_reviews.py),
+> [`db/migrations/versions/0015_application_index_add_is_active.py`](../../../db/migrations/versions/0015_application_index_add_is_active.py),
 > [`docs/architecture.md`](../../architecture.md) §Persistence model.
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
@@ -140,11 +141,11 @@ application's iterations `[synthesis]`. (The hardening / no-LLM boundary itself 
 canonical in [`AGENTS.md`](../../../AGENTS.md) — cited, not restated, per
 [`SCHEMA.md`](../SCHEMA.md) D5.)
 
-## Migration chain — head `0014`
+## Migration chain — head `0015`
 
-Schema evolution is alembic-driven; the current head is **`0014`**
-([`0014_backfill_orphaned_proposal_reviews.py`](../../../db/migrations/versions/0014_backfill_orphaned_proposal_reviews.py),
-`revision="0014"`, `down_revision="0013"` — no migration revises it, verified). Four
+Schema evolution is alembic-driven; the current head is **`0015`**
+([`0015_application_index_add_is_active.py`](../../../db/migrations/versions/0015_application_index_add_is_active.py),
+`revision="0015"`, `down_revision="0014"`, verified). Five
 migrations landed after `0010`:
 
 - **`0011`** adds `ExperienceTitle.is_active` (see the `is_active` pattern section
@@ -165,6 +166,14 @@ migrations landed after `0010`:
   statements (mirroring what `/api/proposals/<id>/decide` would have recorded);
   `downgrade()` is a documented no-op since reverting would misrepresent
   already-resolved review history `[synthesis]`.
+- **`0015`** (PX-38) is **index-only** with no schema or data change: the
+  `ix_application_candidate_status_updated` index originally had only
+  `(candidate_id, status, updated_at)`, omitting `is_active` even though
+  `list_applications` filters both `candidate_id` and `is_active` on every
+  call. The new column order `(candidate_id, is_active, status, updated_at)`
+  adds a fully-covering equality prefix for the default query. Uses native
+  `op.create_index` / `op.drop_index` only (metadata-only DDL in SQLite,
+  zero row touch) — no `batch_alter_table` risk `[synthesis]`.
 
 `0010` (PX-02) adds the nullable `Candidate.online_profile_text` column — the cached
 opt-in profile/website scrape, a **distinct channel** from `profile_text` (the β.6

@@ -14,7 +14,7 @@ A **template** controls how your résumé *looks* — typography, spacing, and l
 through any template.
 
 ## The bundled set
-A few ATS-friendly templates ship with the app. **ATS-safe templates are strongly
+Four bundled ATS-safe templates ship with the app. **ATS-safe templates are strongly
 recommended** so applicant-tracking systems (the software many employers use to
 read résumés) can parse yours cleanly. Bundled templates are read-only.
 

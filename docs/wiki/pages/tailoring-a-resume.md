@@ -4,7 +4,7 @@
 > pasting a job to downloading a tailored résumé and cover letter.
 > **Audience:** `user` — no technical background assumed.
 > **Grounding:** the six wizard steps in `templates/index.html` (`#panelJD` …
-> `#panelOutput`) driven by `static/app.js` (`_WIZARD_PANELS`, `_wizardRender`,
+> `#panelOutput`) driven by `static/app.js` (`_WIZARD_PANELS`, `_WIZARD_STEP_LABELS`, `_wizardRender`,
 > `_renderAnalysis`, `loadComposition`, `_renderGenerateStepCopy`,
 > `_refreshLiveEditPreview`, `_submitSurgicalRefinement`); mirrors the in-app step
 > help. The Compose/Generate mechanics are the user-facing view of
@@ -16,7 +16,7 @@
 Open **Tailor**, pick yourself as the user, and work top to bottom. The numbered
 steps along the top let you move back and forward at any time.
 
-## Step 1 — Job description & analysis
+## Step 1 — Job + Analyze
 Paste the full text of the job, then click **Analyze**. sartor reads the posting
 and weighs it against your [[career-corpus]] to find the experience that fits this
 role best. The result leads with a coverage score and a short "Where to Focus"
@@ -59,7 +59,7 @@ through Compose first, sartor still writes the résumé for you at this step, th
 way earlier versions worked — the wizard tells you plainly which of the two is
 about to happen.) `[synthesis]`
 
-## Step 6 — Preview, edit & download
+## Step 6 — Download
 Your finished résumé appears in an editable preview that updates **as you type** —
 what you see is what Download produces. Fix wording in place (see
 [[editing-and-refining]]) — those edits become the starting point for your next

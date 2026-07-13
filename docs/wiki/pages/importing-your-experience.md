@@ -29,6 +29,14 @@ longer leaves your Skills section empty `[synthesis]` (grounded in
 `_insert_pending_skills`, wired through the same
 [`blueprints/corpus/curation.py`](../../../blueprints/corpus/curation.py) ingest route).
 
+After import, sartor scans for roles that look like duplicates — the same job listed
+twice with different dates or titles — and shows you a **Possible duplicate roles**
+section where you can merge them into one (the extra title becomes an alternate) or
+keep them separate. The **Find duplicates** button lets you also manually scan for
+near-duplicate bullet points across all your roles `[synthesis]` (grounded in
+`static/app.js`'s `refreshMergeSuggestions` called post-import and `loadCorpusDuplicates`
+for manual scan, backed by `blueprints/corpus/curation.py`'s `/api/users/<username>/corpus/merge-suggestions` and `/api/users/<username>/duplicates` routes).
+
 ## Pull from your online profiles
 In **Settings** you can add links to your LinkedIn, website, or portfolio and let
 sartor fetch their public text, giving it more of your background to draw on. It reads

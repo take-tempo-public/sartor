@@ -8,9 +8,9 @@
 
 ---
 
-**Candidate memory** keeps the questions sartor asked you during **Clarify** and
-the answers you gave, across **every** application. It's a running record of the
-real details you've surfaced about your work.
+**Candidate memory** keeps clarification Q&A pairs — the questions sartor asked
+you and your answers — accumulated across **every** application. It's a running
+record of the real details you've surfaced about your work.
 
 ## Why it's useful
 Answers with **concrete numbers and outcomes** make the strongest new résumé

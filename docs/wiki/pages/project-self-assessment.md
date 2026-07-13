@@ -14,7 +14,7 @@
 
 ## ✅ Strengths (true and defensible)
 
-- **★ Disciplined dependency hygiene** — 9 runtime deps, each version-bounded and
+- **★ Disciplined dependency hygiene** — 15 runtime deps, each version-bounded and
   justified inline in `pyproject.toml`; no bloat.
 - **★ Runtime type-safety at the fuzziest boundary** — Pydantic v2 models +
   `*_REQUIRED_KEYS` frozensets validate every LLM response in `analyzer.py`. The most

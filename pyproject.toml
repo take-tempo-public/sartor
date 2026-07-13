@@ -85,6 +85,11 @@ dependencies = [
 dev = [
     "pytest>=8.0,<9.0",
     "pytest-socket>=0.7,<1.0",  # PX-08 / G-2 network-egress falsifiability gate
+    # Charter D-7 (release versioning): scripts/release_version.py + its gate test parse
+    # and ORDER versions under PEP 440, which is the only way to prove the semver git tag
+    # and the packaged version name the same release. Declared rather than leaned on as a
+    # transitive of pip/build — a gate that depends on an undeclared package is not a gate.
+    "packaging>=23.0",
     # Scoped retry for the characterized compose/skills Playwright timing-flake class
     # (CI `ux` tier only, `--reruns 2` — see .github/workflows/ci.yml "Flake policy").
     # Inert unless `--reruns` is passed, so the strict `quality`/`gate` pytest is
