@@ -98,7 +98,7 @@ dev = [
     # one inseparable fix. Bumping ruff is a deliberate one-commit action: upgrade + `ruff format .`
     # + re-pin here.
     "ruff==0.15.12",
-    "mypy>=1.10,<2.0",
+    "mypy>=1.10,<3.0",
     "pyyaml>=6.0,<7.0",
     "types-requests>=2.31",
     "interrogate>=1.7,<2.0",  # KIT-6 docstring-coverage floor-lock gate (Phase 2 final sub-item)
