@@ -98,7 +98,7 @@ def test_compose_summary_draft_autofills_edits_and_persists(
     traffic: list[Response] = []
     page.on(
         "response",
-        lambda r: (traffic.append(r) if "/api/applications/" in r.url else None),
+        lambda r: traffic.append(r) if "/api/applications/" in r.url else None,
     )
 
     # D2 fires the draft POST during Compose arrival. Assert the ROUTE, not just its
