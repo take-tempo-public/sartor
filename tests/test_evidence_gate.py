@@ -215,6 +215,25 @@ class TestEnforcementIsWired:
         assert script in wired, f"{script} is not wired under {event} in .claude/settings.json"
         assert (_REPO_ROOT / ".claude-plugin" / "hooks" / script).is_file()
 
+    def test_every_hook_script_is_executable_in_the_index(self) -> None:
+        """Mode `100644` means the hook silently does not run on Linux — i.e. in CI.
+
+        All three new hooks were committed non-executable, and `is_file()` above happily
+        passed anyway. Assert the *git index* mode rather than `os.access(X_OK)`: the index
+        is what CI checks out, and Windows would report the local bit meaninglessly.
+        """
+        out = subprocess.run(
+            ["git", "ls-files", "-s", ".claude-plugin/hooks/"],
+            cwd=_REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        non_exec = [
+            line.split("\t")[-1] for line in out.splitlines() if not line.startswith("100755")
+        ]
+        assert not non_exec, f"hook scripts not marked executable in git: {non_exec}"
+
     def test_session_start_matches_compact_not_just_startup(self) -> None:
         """The `compact` matcher is the whole point — it is what survives a compaction."""
         settings = json.loads((_REPO_ROOT / ".claude" / "settings.json").read_text("utf-8"))
