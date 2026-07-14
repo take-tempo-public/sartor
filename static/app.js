@@ -7115,7 +7115,18 @@ async function loadComposition() {
   const skills = data.skills || {};
   if ((skills.items || []).length > 0 || (skills.pending || []).length > 0) {
     list.appendChild(_renderSkillsCard(skills));
-    if (!skills.has_recommendation && (skills.items || []).length > 1) {
+    // DEFERRED behind bgDraftFiring, for exactly the reason gap-fill is below:
+    // recommend-skills read-modify-writes the SAME context file as the summary
+    // draft. Firing both in one pass is a LOST UPDATE — the second POST read the
+    // context BEFORE the first one's write landed, so writing its own result back
+    // erases the other's field. That silently dropped summary_text: the drafted
+    // summary never arrived, the page still reported itself settled, and because
+    // the draft POST had returned 200 the once-per-app claim stayed taken — so the
+    // textarea stayed empty for good. Atomic writes do NOT fix this (they stop torn
+    // reads, not lost updates); serializing the writers does. The convergence
+    // cascade fires this a pass later, and has_recommendation then flips true, so
+    // it still fires at most once.
+    if (!bgDraftFiring && !skills.has_recommendation && (skills.items || []).length > 1) {
       bgDraftFiring = true;
       _fireRecommendSkills();
     }

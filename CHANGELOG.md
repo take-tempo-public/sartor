@@ -27,29 +27,47 @@ A user arriving at Compose whose summary-draft POST failed saw **"Drafting your 
 forever** — no error, no retry, no recovery. The same defect was, separately, the single
 cause of every recent red CI run on `main`.
 
-Three faults, stacked:
+**Two independent causes**, and the first fix alone was not enough — with only the atomic
+writes in place the test still failed two of every three attempts, which is how the second
+cause surfaced. Both are fixed here.
 
-- **The context file was written non-atomically.** `Path.write_text` truncates its target
-  *before* it writes, so a concurrent reader saw an empty or half-written
-  `context_*.json` and its `json.loads` raised. Compose fires several context-writing
-  routes against that one file, so the window was reachable under load. `POST
-  /draft-summary` then 400'd with "Context file unreadable." Measured against a ~1 MB
-  context with concurrent readers: **449 torn reads**. All 14 write sites (12 in
-  `blueprints/applications.py`, 2 in `hardening.py`) now go through the new
-  `hardening.write_context_atomic` — a unique temp file plus `os.replace`, which is
-  atomic on POSIX and Windows alike. This is a data-integrity fix in its own right: that
-  file is the pipeline's audit trail.
+- **Cause 1 — a torn read.** `Path.write_text` truncates its target *before* it writes, so a
+  concurrent reader saw an empty or half-written `context_*.json` and its `json.loads`
+  raised. Compose fires several context-writing routes against that one file, so the window
+  was reachable under load. `POST /draft-summary` then 400'd with "Context file unreadable."
+  Measured against a ~1 MB context with concurrent readers: **449 torn reads**. All 14 write
+  sites (12 in `blueprints/applications.py`, 2 in `hardening.py`) now go through the new
+  `hardening.write_context_atomic` — a unique temp file plus `os.replace`, atomic on POSIX
+  and Windows alike. A data-integrity fix in its own right: that file is the pipeline's
+  audit trail.
+- **Cause 2 — a lost update.** `_fireDraftSummary` and `_fireRecommendSkills` fired in the
+  **same** `loadComposition` pass, and both read-modify-write the **same** context file.
+  Whichever POST read it *before* the other's write landed erased the other's field, so
+  `summary_text` was silently dropped — **and the draft POST still returned 200**, so
+  nothing anywhere registered a failure. Atomic writes do **not** fix this: they stop torn
+  *reads*, not lost *updates*. Serializing the writers does. `bgDraftFiring` now means what
+  its own comment always claimed — **at most one context-writing background route per
+  pass** — so recommend-skills defers by one pass, exactly as gap-fill already did. Safe for
+  the settle gate: each fire awaits its reload *inside* the `try`, before the `finally`
+  decrement, so the pending counter never reaches zero between cascade passes.
 - **The client burned its retry latch before it knew the draft had landed.**
   `_draftSummaryFiredForApp` was set *before* the fire, `if (res.ok)` silently skipped the
   reload on a non-OK response, `catch {}` swallowed throws — and the `finally` drained the
   settle counter regardless. The page therefore reported itself **settled** with the draft
   gone and nothing left to re-fire it. The once-*ever* latch is now an **in-flight claim**,
   released on any non-success path, and the failure is surfaced instead of swallowed.
-- **The test sentinel was blind to it.** `tests/ux/conftest.py` asserted on HTTP ≥ 500 and
-  deliberately ignored 4xx as benign resource-load noise. The route failed with **400**, so
-  the sentinel looked straight past it and the test could only report "the textarea never
-  filled in." Non-2xx `/api/` responses are now collected and printed on failure —
-  diagnostic, never an assertion, since some 4xx here genuinely are benign.
+- **The reporting was blind, twice over — which is why neither cause was ever seen.**
+  `tests/ux/conftest.py` asserted on HTTP ≥ 500 and deliberately ignored 4xx as benign
+  resource-load noise; the route failed with **400**, so the sentinel looked straight past
+  it and the test could only report "the textarea never filled in." Worse,
+  `pytest-rerunfailures` reports a test that fails twice and passes on the third attempt as
+  a plain `PASSED`, with **no traceback anywhere in the log** — discarding the failures
+  outright, and with them the fixture's own captured diagnostic. Both are closed: non-2xx
+  `/api/` responses are collected and printed on failure (diagnostic, never an assertion —
+  some 4xx here genuinely are benign), and **every rerun attempt now prints its traceback
+  and captured output**. `ci.yml`'s flake policy heads itself "HONEST, not masking" and says
+  a real regression fails all three attempts — a criterion nobody can apply to evidence they
+  never see.
 
 **On the CI red:** `test_compose_summary_draft_autofills_edits_and_persists` was failing
 **64% of attempts** and had been for at least 11 runs. `--reruns 2` turned that into a
