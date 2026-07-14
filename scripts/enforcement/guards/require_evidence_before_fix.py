@@ -31,6 +31,7 @@ Exemptions, each load-bearing:
 
 from __future__ import annotations
 
+import contextlib
 import os
 import posixpath
 from collections.abc import Mapping
@@ -65,11 +66,9 @@ def _is_exempt(norm_path: str, repo_root: Path) -> bool:
     if norm_path.endswith(".md"):
         return True
     rel = norm_path
-    try:
+    # Outside the repo, or unresolvable — fall back to the substring match below.
+    with contextlib.suppress(ValueError, OSError):
         rel = Path(norm_path).resolve().relative_to(repo_root.resolve()).as_posix()
-    except (ValueError, OSError):
-        # Outside the repo, or unresolvable — fall back to substring matching below.
-        pass
     return any(rel.startswith(p) or p in norm_path for p in _EXEMPT_PREFIXES)
 
 

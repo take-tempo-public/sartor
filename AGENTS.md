@@ -68,6 +68,39 @@ if not _within(path, PARENT_DIR): abort(403)  # resolved-path containment check
 
 A `route-security-lint` hook enforces this on `app.py` + `blueprints/**.py` route edits (PX-21 widen), and a committed gate (`tests/test_route_containment_gate.py`, PX-29) asserts it across the whole blueprint tree — see [`.claude-plugin/hooks/`](.claude-plugin/hooks/). Canonical rule: charter **C-1** (Local and yours) + [`docs/governance/enforcement.md`](docs/governance/enforcement.md).
 
+### Evidence before mechanism (charter C-7) — read this before you fix anything
+
+**If you did not SEE it, you did not find it.** Reading code and finding a plausible mechanism
+is a **hypothesis**, not an observation — and a causal claim is a claim under C-0.
+
+- For a defect you cannot reproduce on demand, **the first commit on the branch is the
+  instrument or the reproduction — never the fix.**
+- A fix commit must cite the **observation** that identified the mechanism: a log line, a
+  response body, a CI run id, or a test that fails without the change.
+- **Green CI is not evidence if the test needed a retry.** `pytest-rerunfailures` reports a
+  fail-fail-pass as a bare `PASSED` with **no traceback anywhere in the log**.
+- **Scope the instrument wider than the hypothesis.** One narrowed to the theory you are
+  testing will confirm that theory by hiding its rivals.
+- **A fix for a real defect that isn't THE defect still leaves the bug** — and its
+  plausibility is exactly what makes you skip the check.
+
+A `require-evidence-before-fix` PreToolUse hook enforces this: on a `fix/*` branch it blocks
+edits to production code until `docs/dev/diagnosis/<branch-slug>.md` has a filled-in
+`## Observed` section. **There is no escape hatch, and none is needed** — `docs/**`,
+`tests/**` and `*.md` stay writable, so the way through is always to write down what you saw.
+Start from [`docs/dev/diagnosis/TEMPLATE.md`](docs/dev/diagnosis/TEMPLATE.md). If you cannot
+fill in `## Observed`, you have not looked yet — and *that is the finding*.
+
+**Durable before deep (charter C-8):** the context window is not a durable store. Write a
+hard-won fact — a measurement, a falsified hypothesis, an observed artifact — to its durable
+home **in the turn you learn it**, not at close-out. Compaction is an unannounced data-loss
+event: after one, reconcile against the repo and git rather than continuing from a summary as
+though it were the evidence. A thin context is a **handoff trigger**, not a push-harder trigger.
+
+Worked example (and the day it cost):
+[`docs/dev/diagnosis/compose-summary-draft-settle-hole.md`](docs/dev/diagnosis/compose-summary-draft-settle-hole.md);
+failure pattern **5f** in [`docs/dev/AGENT_FAILURE_PATTERNS.md`](docs/dev/AGENT_FAILURE_PATTERNS.md).
+
 ### Branch before code changes
 
 A `require-feature-branch` PreToolUse hook blocks `Edit`/`Write` while on `main`/`master`. Create a feature branch when moving from plan to execute (`git checkout -b <type>/<short-desc>`). Intentional main edits: `export CLAUDE_ALLOW_MAIN_EDITS=1`.

@@ -515,13 +515,13 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **9** (was 8; +1 `--reruns` masking policy, 2026-07-13,
+_Rendered open count: **10** (was 9; +1 Compose lost-update root cause, 2026-07-14,
 `fix/compose-summary-draft-settle-hole`). (`grep -c '^- \[ \]'` over this
-subsection is the source of truth, re-verified at each close-out). **Ceiling
-reached — schedule a reduction sprint** (the rule is ~8–10, and clear before
-adding); several items below are small and clearable in one pass. The full
-per-item addition/resolution chronology since 2026-06-15 lives in git history
-(`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
+subsection is the source of truth, re-verified at each close-out). **Over the
+ceiling — the reduction sprint is now DUE, not merely scheduled** (the rule is
+~8–10, and clear before adding); several items below are small and clearable in
+one pass. The full per-item addition/resolution chronology since 2026-06-15 lives
+in git history (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
 
 - [ ] **`--reruns 2` on the `ux` tier is a masking policy, and it masked a real bug for 11
       runs** — `fix/ci-first-linux-run` scoped `--reruns 2` to the `ux` tier for a
@@ -531,15 +531,39 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       attempts**, which `--reruns 2` rendered as a `0.636³ ≈ 25.8%` predicted red-per-run
       lottery (**27.3% observed** across 11 runs) — so `main`'s CI was a coin flip, not a
       signal, and a governance commit that touched zero UX code appeared to "break" it.
-      The underlying bug is **fixed** on this branch; the **policy question is not**, and is
-      deliberately left open rather than changed in the same breath as the bug it was
-      masking. **Decide:** (a) keep `--reruns 2` and add a *rerun-rate alarm* (a test that
-      needs a retry more than X% of runs is reported, not silently passed); (b) drop reruns
-      on the `ux` tier and let genuine load-flakes go red; (c) keep as-is. Needs the
+      The underlying bug is **NOT yet fixed** (see the next item); the **policy question is
+      separate**, and is deliberately left open rather than changed in the same breath as the
+      bug it was masking. **Decide:** (a) keep `--reruns 2` and add a *rerun-rate alarm* (a
+      test that needs a retry more than X% of runs is reported, not silently passed); (b) drop
+      reruns on the `ux` tier and let genuine load-flakes go red; (c) keep as-is. Needs the
       post-fix true pass rate first — measure it over the next several `main` runs.
+      **Partly mitigated already:** `tests/ux/conftest.py::pytest_runtest_logreport` now
+      prints every rerun attempt's traceback, so a masked failure is at least *visible* even
+      while the policy stands.
       _(discovered: v1.1.0 stream, 2026-07-13, `fix/compose-summary-draft-settle-hole`;
-      open count 8 → 9.)_
+      open count 8 → 9. Corrected 2026-07-14: the original text claimed the underlying bug
+      was fixed on that branch. It was not — see the next item.)_
       **→ Owner call; gather the post-fix rate first. Do not change the retry policy blind.**
+
+- [ ] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
+      fixed** — twelve routes in `blueprints/applications.py` each read the whole
+      `context_*.json`, spend seconds in an LLM call, then write the whole (now stale) dict
+      back, so any route that writes inside that window has its delta silently erased.
+      Observed: `POST /draft-summary` persists `summary_text` (200), and the very next read of
+      the same file does not have it — durably (CI run `29303444590`). This is what makes
+      `test_compose_summary_draft_autofills_edits_and_persists` fail ~64% of its attempts, and
+      it is **live on `main`**: a real user can lose their drafted positioning summary.
+      **The full evidence record — what was observed, what was falsified (including two
+      shipped fixes that were real defects but not *this* defect), and the deterministic
+      experiment that settles the one remaining inference — is the dossier at
+      [`diagnosis/compose-summary-draft-settle-hole.md`](diagnosis/compose-summary-draft-settle-hole.md).
+      Read it before touching this. Do not re-derive it; it cost a day.**
+      **Next agent's first act:** the falsification test (must FAIL on HEAD). Only then the
+      fix — `hardening.context_transaction(path)`, a per-path lock that re-reads fresh inside
+      the lock, across all 12 sites (fixing only the two in the observed window leaves the
+      defect class). **Acceptance: a bare `PASSED` with no `RERUN`, over more than one CI run.**
+      _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole`;
+      open count 9 → 10 — **over the ~8–10 ceiling; the reduction sprint is now due**.)_
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a

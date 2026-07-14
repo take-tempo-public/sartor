@@ -105,9 +105,7 @@ def has_observed_evidence(text: str, template: str = "") -> bool:
     observed = _substantive(section(text, "Observed"))
     if len(observed) < _MIN_EVIDENCE_CHARS:
         return False
-    if template and observed == _substantive(section(template, "Observed")):
-        return False
-    return True
+    return not (template and observed == _substantive(section(template, "Observed")))
 
 
 def replay_text(text: str) -> str:

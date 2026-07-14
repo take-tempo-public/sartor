@@ -21,35 +21,35 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
-### Fixed: the positioning draft could vanish permanently — and it was 64% of CI's red (`fix/compose-summary-draft-settle-hole`)
+### Fixed: the positioning draft could hang forever — and the blindness that hid a 64%-broken test (`fix/compose-summary-draft-settle-hole`)
 
 A user arriving at Compose whose summary-draft POST failed saw **"Drafting your summary…"
-forever** — no error, no retry, no recovery. The same defect was, separately, the single
-cause of every recent red CI run on `main`.
+forever** — no error, no retry, no recovery. That is fixed. So is the write path under it,
+and so is the reporting that made the whole class of failure invisible.
 
-**Two independent causes**, and the first fix alone was not enough — with only the atomic
-writes in place the test still failed two of every three attempts, which is how the second
-cause surfaced. Both are fixed here.
+> **What is NOT fixed here: the root cause.** The intermittent CI failure is a **lost
+> update** — `POST /draft-summary` persists the summary, and a concurrent context-writing
+> route then overwrites the file with a copy it read *before* that write landed, erasing it.
+> This branch **identifies** that, with evidence, and does not repair it. Two earlier fixes
+> on this branch were shipped for mechanisms that had never been observed; both addressed
+> real defects, and **neither was the defect**. The full evidence record — what was observed,
+> what was falsified, and the deterministic experiment that settles what remains inferred —
+> is at
+> [`docs/dev/diagnosis/compose-summary-draft-settle-hole.md`](docs/dev/diagnosis/compose-summary-draft-settle-hole.md).
+> The repair (a `context_transaction` that re-reads inside a per-path lock, across all 12
+> read-modify-write routes) is the next branch's work. This is charter **C-7** in force: the
+> claim "X causes Y" is a claim, and it is not made here without an observation behind it.
 
-- **Cause 1 — a torn read.** `Path.write_text` truncates its target *before* it writes, so a
-  concurrent reader saw an empty or half-written `context_*.json` and its `json.loads`
-  raised. Compose fires several context-writing routes against that one file, so the window
-  was reachable under load. `POST /draft-summary` then 400'd with "Context file unreadable."
-  Measured against a ~1 MB context with concurrent readers: **449 torn reads**. All 14 write
-  sites (12 in `blueprints/applications.py`, 2 in `hardening.py`) now go through the new
-  `hardening.write_context_atomic` — a unique temp file plus `os.replace`, atomic on POSIX
-  and Windows alike. A data-integrity fix in its own right: that file is the pipeline's
-  audit trail.
-- **Cause 2 — a lost update.** `_fireDraftSummary` and `_fireRecommendSkills` fired in the
-  **same** `loadComposition` pass, and both read-modify-write the **same** context file.
-  Whichever POST read it *before* the other's write landed erased the other's field, so
-  `summary_text` was silently dropped — **and the draft POST still returned 200**, so
-  nothing anywhere registered a failure. Atomic writes do **not** fix this: they stop torn
-  *reads*, not lost *updates*. Serializing the writers does. `bgDraftFiring` now means what
-  its own comment always claimed — **at most one context-writing background route per
-  pass** — so recommend-skills defers by one pass, exactly as gap-fill already did. Safe for
-  the settle gate: each fire awaits its reload *inside* the `try`, before the `finally`
-  decrement, so the pending counter never reaches zero between cascade passes.
+- **A torn read — real, and fixed, but not the cause.** `Path.write_text` truncates its
+  target *before* it writes, so a concurrent reader could see an empty or half-written
+  `context_*.json` and its `json.loads` would raise; `POST /draft-summary` then 400'd with
+  "Context file unreadable." Measured against a ~1 MB context with concurrent readers:
+  **449 torn reads**. All 14 write sites (12 in `blueprints/applications.py`, 2 in
+  `hardening.py`) now go through the new `hardening.write_context_atomic` — a unique temp
+  file plus `os.replace`, atomic on POSIX and Windows alike. Worth having on its own terms:
+  that file is the pipeline's audit trail. It is *not* what broke CI — the instrumented run
+  shows the draft POST returning **200**, with **zero** non-2xx `/api/` responses anywhere in
+  the tier. Atomic writes close torn **reads**; they do nothing for lost **updates**.
 - **The client burned its retry latch before it knew the draft had landed.**
   `_draftSummaryFiredForApp` was set *before* the fire, `if (res.ok)` silently skipped the
   reload on a non-OK response, `catch {}` swallowed throws — and the `finally` drained the
@@ -77,6 +77,41 @@ flip, and the "green" commit before it had also failed 2 of its 3 attempts. Wind
 `os.replace` raises `PermissionError` while another handle holds the destination open (and
 granting `FILE_SHARE_DELETE` does not lift it — measured), so the writer carries a bounded
 retry; POSIX has no such constraint, so it never fires on Linux.
+
+### Added: evidence-before-mechanism, enforced (charter C-7 + C-8)
+
+An agent spent a day and ~30% of a weekly token budget on the flake above and shipped **no
+solution** — it read the code, found a plausible mechanism, and fixed *that*, twice, without
+ever instrumenting to see what actually happened. Both fixes were for real defects. Neither
+was **the** defect. When it finally added visibility, the cause printed itself in a single
+run. `AGENT_FAILURE_PATTERNS.md` §5a/5b/5e already said "instrument first"; the agent read
+them and judged they did not apply. **The failure mode is an agent overruling the rule, so
+the rule stopped being advice.**
+
+- **Charter C-7 — evidence before mechanism.** A causal claim is a claim under C-0. For a
+  defect you cannot reproduce on demand, the **first commit on the branch is the instrument
+  or the reproduction — never the fix**; a fix commit must cite the observation that
+  identified the mechanism; **green CI is not evidence if the test needed a retry**; and an
+  instrument must be scoped **wider** than the hypothesis it tests, because one narrowed to
+  your theory will confirm it by hiding its rivals. No escape hatch.
+- **Charter C-8 — durable before deep.** The context window is not a durable store. Facts
+  that cost work to learn are written to their durable home **in the turn they are learned**;
+  compaction is an unannounced data-loss event; a thin context is a handoff trigger, not a
+  push-harder trigger.
+- **Three enforcement points over one artifact** (`docs/dev/diagnosis/<branch-slug>.md`),
+  built into the existing portable enforcement core so they are not Claude-only:
+  `require-evidence-before-fix` (PreToolUse) blocks production edits on a `fix/*` branch until
+  its `## Observed` section is filled in — `docs/**`, `tests/**` and `*.md` stay writable, so
+  the way through is always to write down what you saw; `restore-evidence` (SessionStart,
+  including the **`compact`** matcher) replays `## Observed` + `## Falsified` into every fresh
+  context, so the evidence survives a compaction — `## Inferred` is deliberately withheld,
+  since an unproven mechanism re-injected as context reads as fact within a few turns; and
+  `capture-before-compact` (PreCompact) warns the user when a window is about to be discarded
+  with nothing captured.
+- `tests/test_evidence_gate.py` (21 tests) asserts the **wiring**, not just the logic — a
+  guard nobody calls is a comment. Hand-testing caught two defects before they shipped: an
+  untouched copy of the diagnosis template **satisfied** the gate (a gate a `cp` can satisfy
+  is theater), and the block message mangled on Windows' cp1252 stderr.
 
 ### Added: OpenSSF Best Practices badge — passing (100%)
 

@@ -52,7 +52,9 @@ _REAL_EVIDENCE = "- CI run 29303444590: POST /draft-summary returned 200 and per
 
 
 def _git(repo: Path, *args: str) -> None:
-    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)  # noqa: S607
+    subprocess.run(  # noqa: S603 - fixed argv, no shell, local git only
+        ["git", "-C", str(repo), *args], check=True, capture_output=True
+    )
 
 
 @pytest.fixture
@@ -64,7 +66,9 @@ def fix_repo(tmp_path: Path) -> Path:
     goes inert. (Learned the hard way while hand-testing this guard — the first run "passed"
     only because nothing was being checked.)
     """
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)  # noqa: S607
+    subprocess.run(  # noqa: S603 - fixed argv, no shell, local git only
+        ["git", "init", "-q", str(tmp_path)], check=True
+    )
     _git(tmp_path, "config", "user.email", "t@example.com")
     _git(tmp_path, "config", "user.name", "t")
     (tmp_path / "seed.txt").write_text("seed", encoding="utf-8")
@@ -103,8 +107,10 @@ class TestEvidencePrimitive:
         assert branch_slug("fix/compose-summary-draft-settle-hole") == (
             "compose-summary-draft-settle-hole"
         )
-        assert diagnosis_path(Path("/repo"), "fix/a-b").as_posix().endswith(
-            "docs/dev/diagnosis/a-b.md"
+        assert (
+            diagnosis_path(Path("/repo"), "fix/a-b")
+            .as_posix()
+            .endswith("docs/dev/diagnosis/a-b.md")
         )
 
     def test_section_extraction_is_bounded_by_the_next_heading(self) -> None:
