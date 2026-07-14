@@ -5,8 +5,11 @@
 > Everything below was *paid for* — in CI runs, in probes, and in one wasted day.
 > Read it before touching this bug so nobody buys it twice.
 > **Audience:** the agent (or human) picking up `fix/compose-summary-draft-settle-hole`.
-> **Status:** **root cause NOT yet proven.** A strong, evidence-backed hypothesis is on the
-> table and the experiment that settles it is specified in [Falsification](#falsification).
+> **Status:** **root cause PROVEN** (2026-07-14). The experiment specified in
+> [Falsification](#falsification) was run and **fails on HEAD** — see
+> [O-7](#o-7-the-lost-update-is-reproduced-deterministically--recommend-is-the-writer-that-erases-it).
+> The lost update is real and reproducible in milliseconds. **The fix is authorized; it is not
+> yet built.**
 > **Authoritative for:** what has been *observed*, what has been *falsified*, and what remains
 > *inferred*. The separation between those three is the whole point of this document —
 > conflating them is what cost the day (charter **C-7**).
@@ -128,6 +131,40 @@ container run. Hence: `_REPLACE_ATTEMPTS = 12`, `_REPLACE_BACKOFF_S = 0.004` (li
 
 **`FILE_SHARE_DELETE` does not work. Do not try it again.**
 
+### O-7. The lost update is **reproduced deterministically** — `/recommend` is the writer that erases it
+
+The experiment specified under [Falsification](#falsification) was run. **It fails on HEAD**, which
+promotes the [Inferred](#inferred) hypothesis to an observation.
+
+`tests/test_draft_summary.py::TestConcurrentContextWriters::test_recommend_does_not_erase_a_concurrent_draft_summary`
+forces the one interleaving the hypothesis requires — `/recommend` reads (`:1774`) → `/draft-summary`
+reads, drafts, persists (`:2086`) → `/recommend` returns from its LLM call and writes its now-stale
+whole dict (`:1838`) — by stubbing each route's LLM call and gating the two on `threading.Event`s.
+
+Result on HEAD (`2df55d7`), in ~1s of actual test body:
+
+| Assertion | Result |
+|---|---|
+| `POST /draft-summary` → 200 | **pass** |
+| `POST /recommend` → 200 | **pass** |
+| `llm_recommendations` survives | **pass** — `/recommend` wrote last, so its own delta lands |
+| `composition_overrides.summary_text` survives | **FAIL — `composition_overrides` is `{}`** |
+
+The whole `composition_overrides` **key is absent** from the final file, not merely emptied:
+`/recommend`'s stale in-memory copy predates the draft, so writing it back deleted the key
+outright. This is exactly [O-2](#o-2-the-summary-is-persisted-and-then-it-disappears--ci-run-29303444590)
+— persisted, then durably gone — with the response codes still 200 throughout, matching
+[O-3](#o-3-there-were-zero-non-2xx-api-responses-anywhere-in-the-entire-ux-tier).
+
+**What this proves:** the lost update is real, reachable, and reproducible in milliseconds;
+`/recommend` **can and does** erase `/draft-summary`'s persisted delta.
+
+**What this does NOT prove, and must not be laundered into:** that this exact interleaving is what
+occurred in CI run `29303444590`. The mechanism is now observed; the specific production ordering
+remains an inference. It does not change the fix, and the fix does not depend on it — the
+read-modify-write-whole-dict shape ([O-4](#o-4-twelve-routes-all-share-a-read-modify-write-the-whole-file-shape))
+is the defect class regardless of which pair of routes races on any given run.
+
 ---
 
 ## Falsified
@@ -164,7 +201,12 @@ which is noise. **Reverted.**
 
 ## Inferred
 
-**This is a hypothesis. It has not been proven. Do not treat it as fact, and do not build on it
+> **RESOLVED — promoted to an observation.** The experiment below was run; it **fails on HEAD**.
+> See [O-7](#o-7-the-lost-update-is-reproduced-deterministically--recommend-is-the-writer-that-erases-it).
+> The text is kept as written, unedited, so the record shows what was hypothesis and what
+> made it fact.
+
+**This was a hypothesis. It had not been proven. Do not treat it as fact, and do not build on it
 until the experiment below has been run.**
 
 > `/recommend` read the context file *before* `/draft-summary`'s write landed, spent seconds in
@@ -178,9 +220,23 @@ order**. A route's response lands when it finishes; that says nothing about when
 dump is consistent with the hypothesis but does not establish it. `/draft-gap-fill` also writes,
 and also cannot be excluded on this evidence.
 
+**What settled it (2026-07-14):** not the traffic dump — a *forced* interleaving. The dump could
+never have settled it, because response order is not write order. What was still missing was an
+experiment that made the ordering deterministic instead of lucky, and that is the one thing the
+falsification test does. `/draft-gap-fill` is still not excluded as *an additional* writer that can
+do the same thing — which is precisely why the fix converts **all twelve** sites, not the two that
+happened to be observed racing.
+
 ---
 
 ## Falsification
+
+> **RUN 2026-07-14 — it FAILED on HEAD (`2df55d7`), as the hypothesis predicted.** Built as
+> `tests/test_draft_summary.py::TestConcurrentContextWriters::test_recommend_does_not_erase_a_concurrent_draft_summary`
+> and committed **before** any fix, per C-7. Result in
+> [O-7](#o-7-the-lost-update-is-reproduced-deterministically--recommend-is-the-writer-that-erases-it).
+> The test stays in the suite as the permanent regression guard: it is red on the broken code and
+> green on the fix, so it can never silently stop testing the thing it was built to test.
 
 **Run this first. It is the next agent's first and only act.** Do not write the fix before this
 test exists and **fails on HEAD**.

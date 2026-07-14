@@ -14,6 +14,7 @@ at Generate. Two surfaces:
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 from unittest.mock import patch
 
@@ -292,3 +293,112 @@ class TestDraftSummaryRoute:
         client = _app.app.test_client()
         r = client.post(f"/api/applications/{aid}/draft-summary", json={})
         assert r.status_code == 400
+
+
+# -------------------------------------------------------------------
+# The falsification experiment (charter C-7)
+# -------------------------------------------------------------------
+
+
+class TestConcurrentContextWriters:
+    """Does a concurrent `/recommend` erase `/draft-summary`'s persisted delta?
+
+    This is the experiment specified in the evidence dossier
+    (`docs/dev/diagnosis/compose-summary-draft-settle-hole.md`, §Falsification).
+    It exists to KILL a hypothesis, not to confirm one.
+
+    What the dossier **observed** (O-2, CI run `29303444590`): `/draft-summary`
+    returned 200 having persisted `summary_text`, and the very next read of the
+    same context file did not have it — durably. Something overwrote the file.
+
+    What the dossier only **inferred**: that the something was `/recommend`. The
+    traffic dump records *response* order, not *write* order, so it cannot
+    establish who erased it. `/recommend` is the leading candidate on shape
+    alone — it has the read-modify-write-whole-dict form (O-4) and it is the
+    only other context writer in the observed window.
+
+    This test settles that by making the interleaving deterministic instead of
+    lucky. It drives the one ordering the hypothesis requires:
+
+        1. `/recommend` reads the whole context   (applications.py:1774)
+        2. `/draft-summary` reads, drafts, persists `summary_text`  (:2086)
+        3. `/recommend` returns from its LLM call and writes its now-stale
+           whole dict back                                          (:1838)
+
+    `/recommend` has necessarily completed its read by the time it reaches its
+    LLM call, so stubbing that call is a precise, non-invasive probe of step 1.
+
+    **What a failure proves:** the lost update is real, reachable, and
+    reproducible in milliseconds. **What it does NOT prove:** that this exact
+    interleaving is what happened in CI. That distinction is the point of C-7
+    and is stated here so nobody launders it into a stronger claim later.
+
+    **If this test PASSES on HEAD the hypothesis is dead — stop, do not fix,
+    widen the instrument** (`/draft-gap-fill` is the next candidate, as is a
+    writer outside this file).
+    """
+
+    def test_recommend_does_not_erase_a_concurrent_draft_summary(self, draft_app):
+        _app, output_dir = draft_app
+        _cid, aid, ctx_path = _seed(output_dir)
+
+        drafted = "A billing-platform PM who ships. Cut churn with a rewrite."
+        recommend_has_read = threading.Event()
+        draft_has_persisted = threading.Event()
+
+        def _recommend_stub(client, context_set, *, username="", run_id=""):
+            # Reaching here means /recommend already holds its in-memory copy of
+            # the context (read at applications.py:1774, before this call at
+            # :1787). Hold the call open — as a real multi-second Haiku call
+            # would — while /draft-summary reads, drafts, and persists.
+            recommend_has_read.set()
+            assert draft_has_persisted.wait(timeout=20), "/draft-summary never returned"
+            return {
+                "recommendations": [
+                    {"experience_id": 1, "bullet_ids": [10], "rationale": "billing"}
+                ]
+            }
+
+        def _draft_stub(client, context_set, *, username="", run_id=""):
+            # Draft only once /recommend is provably holding a pre-draft copy.
+            assert recommend_has_read.wait(timeout=20), "/recommend never reached its LLM call"
+            return {"summary": drafted}
+
+        status: dict[str, int] = {}
+
+        def _fire(name: str, endpoint: str) -> None:
+            client = _app.app.test_client()
+            r = client.post(f"/api/applications/{aid}/{endpoint}", json={"context_path": ctx_path})
+            status[name] = r.status_code
+
+        with (
+            patch("analyzer.recommend_bullets", _recommend_stub),
+            patch("analyzer.draft_positioning_summary", _draft_stub),
+        ):
+            t_recommend = threading.Thread(target=_fire, args=("recommend", "recommend"))
+            t_draft = threading.Thread(target=_fire, args=("draft", "draft-summary"))
+            t_recommend.start()
+            t_draft.start()
+
+            t_draft.join(timeout=30)
+            assert not t_draft.is_alive(), "/draft-summary thread hung"
+            # Its write has landed on disk; release /recommend into its write-back.
+            draft_has_persisted.set()
+            t_recommend.join(timeout=30)
+            assert not t_recommend.is_alive(), "/recommend thread hung"
+
+        # Asserted BEFORE the lost-update check so a threading/DB/500 failure is
+        # never mistaken for the defect under test. Different failure, different line.
+        assert status.get("draft") == 200, f"/draft-summary did not succeed: {status}"
+        assert status.get("recommend") == 200, f"/recommend did not succeed: {status}"
+
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
+
+        # /recommend's own delta must land — it wrote last, so this holds on HEAD.
+        assert ctx.get("llm_recommendations"), "/recommend's delta is missing"
+
+        # ...and it must NOT have cost us /draft-summary's. On HEAD it does.
+        assert ctx.get("composition_overrides", {}).get("summary_text") == drafted, (
+            "LOST UPDATE: /recommend's whole-dict write-back erased the summary "
+            "that /draft-summary had already persisted."
+        )
