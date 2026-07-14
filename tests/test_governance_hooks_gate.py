@@ -1,20 +1,35 @@
 """Governance hook witness/blocker gate — PX-29 (F-gov-04 KEEP) / v1.0.8 item 8.4.
 
 The 2026-06 product-excellence review affirmed (``F-gov-04``, KEEP) that the repo's
-enforcement hooks are real and honestly separated: **seven enforced blockers** (a
-reachable ``exit 2`` that stops the tool call) cleanly distinct from **three
-witnesses** (always ``exit 0`` — they only nudge). That split is what keeps the
-"witness, not approver" governance posture honest; it was hand-verified at the
-review pin with no test behind it.
+enforcement hooks are real and honestly separated: enforced **blockers** (a reachable
+``exit 2`` that stops the tool call) cleanly distinct from **witnesses** (always
+``exit 0`` — they only nudge). That split is what keeps the "witness, not approver"
+governance posture honest; it was hand-verified at the review pin with no test behind it.
 
-This commits the count + the split as a do-not-regress gate, the egress-allowlist
-way: two named frozensets, so adding, removing, or reclassifying a hook forces a
+This commits the counts + the split as a do-not-regress gate, the egress-allowlist
+way: named frozensets, so adding, removing, or reclassifying a hook forces a
 deliberate, reviewed edit here. It also cross-checks the live wiring in
 ``.claude/settings.json`` — blockers wired as PreToolUse pre-gates, witnesses as
-PostToolUse observers — so a hook can't be silently unwired or a witness promoted
-to a gate.
+PostToolUse observers, context hooks on the session-lifecycle events — so a hook can't
+be silently unwired or a witness promoted to a gate.
 
-Since `feat/portable-enforcement-core` (2026-07-08), six of the seven blockers are
+**Amended 2026-07-14** (`fix/compose-summary-draft-settle-hole`), and the amendment is
+the gate doing its job: the C-7/C-8 work added three hooks and this file was not
+updated, so the suite went red — and stayed red, unnoticed, because the full gate takes
+longer than an agent's shell cap and therefore never ran (carry-forward ledger, "the
+quality gate is unrunnable by an agent"). Two changes, both deliberate:
+
+- ``require-evidence-before-fix`` is an **eighth blocker** (charter C-7). F-gov-04's
+  "exactly seven" was true at the review pin; a new *enforced* rule legitimately moves
+  the count, which is precisely the reviewed edit this gate is designed to force.
+- ``restore-evidence`` (SessionStart) and ``capture-before-compact`` (PreCompact) are a
+  **third category**. They fit neither box: they gate nothing and they are not
+  PostToolUse nudges — they carry evidence *across* context boundaries (charter C-8).
+  They delegate to a different adapter (``claude_context_hook.py``), and its only
+  ``return 2`` is a CLI-misuse guard on a bad ``argv``, never a policy decision — so on
+  any real payload they return 0. Asserted below rather than assumed.
+
+Since `feat/portable-enforcement-core` (2026-07-08), seven of the eight blockers are
 thin wrappers that exec the shared Claude adapter
 (``scripts/enforcement/adapters/claude_hook.py``), so their reachable-``exit 2``
 proof moved from "the script text contains ``exit 2``" to a two-part invariant:
@@ -33,18 +48,19 @@ from pathlib import Path
 
 import pytest
 
-from scripts.enforcement.adapters import claude_hook
+from scripts.enforcement.adapters import claude_context_hook, claude_hook
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS_DIR = REPO_ROOT / ".claude-plugin" / "hooks"
 SETTINGS = REPO_ROOT / ".claude" / "settings.json"
 
-# The seven enforced blockers — each reaches `exit 2` to stop a tool call.
+# The eight enforced blockers — each reaches `exit 2` to stop a tool call.
 BLOCKER_HOOKS = frozenset(
     {
         "block-merge-to-main",
         "block-secrets",
         "check-plan-approved",
+        "require-evidence-before-fix",
         "require-feature-branch",
         "route-security-lint",
         "ruff-changed",
@@ -61,6 +77,18 @@ WITNESS_HOOKS = frozenset(
     }
 )
 
+# The two context hooks (charter C-8) — they gate nothing. They carry evidence ACROSS
+# a context boundary: `restore-evidence` replays the dossier into a fresh (or
+# post-compaction) window; `capture-before-compact` warns the USER before a window is
+# discarded with nothing written down. Neither is a PreToolUse gate nor a PostToolUse
+# nudge, so neither belongs in the two sets above.
+CONTEXT_HOOKS = frozenset(
+    {
+        "capture-before-compact",
+        "restore-evidence",
+    }
+)
+
 # Blockers whose decision logic lives in the shared portable-enforcement core
 # (`scripts/enforcement/`): their .sh files are thin wrappers that exec the
 # Claude adapter, which owns the exit-2 path. The complement of this set within
@@ -70,12 +98,18 @@ CORE_DELEGATED_BLOCKERS = frozenset(
     {
         "block-merge-to-main",
         "block-secrets",
+        "require-evidence-before-fix",
         "require-feature-branch",
         "route-security-lint",
         "ruff-changed",
         "validate-context",
     }
 )
+
+# Which settings.json event each category must be wired on.
+BLOCKER_EVENT = "PreToolUse"
+WITNESS_EVENT = "PostToolUse"
+CONTEXT_EVENTS = {"restore-evidence": "SessionStart", "capture-before-compact": "PreCompact"}
 
 
 def _hook_stems() -> set[str]:
@@ -107,24 +141,32 @@ def _wired_by_event() -> dict[str, set[str]]:
 # 1. Every hook script is classified (no unclassified hook can sneak in).
 # --------------------------------------------------------------------------- #
 def test_every_hook_is_classified() -> None:
-    """The set of hook scripts equals BLOCKER ∪ WITNESS — a new hook (or a
+    """The set of hook scripts equals BLOCKER ∪ WITNESS ∪ CONTEXT — a new hook (or a
     deletion) fails until it is deliberately classified here."""
     on_disk = _hook_stems()
-    classified = BLOCKER_HOOKS | WITNESS_HOOKS
+    classified = BLOCKER_HOOKS | WITNESS_HOOKS | CONTEXT_HOOKS
     unclassified = sorted(on_disk - classified)
     missing = sorted(classified - on_disk)
     assert not unclassified, (
         f"Unclassified hook script(s): {unclassified}. Add each to BLOCKER_HOOKS "
-        "(reaches exit 2) or WITNESS_HOOKS (always exit 0)."
+        "(reaches exit 2), WITNESS_HOOKS (always exit 0, PostToolUse nudge), or "
+        "CONTEXT_HOOKS (session-lifecycle; carries evidence across a context boundary)."
     )
     assert not missing, f"Classified hook(s) missing from disk: {missing}."
 
 
+def test_the_three_categories_are_disjoint() -> None:
+    """A hook cannot be two things at once — that is how a gate quietly becomes a nudge."""
+    assert not (BLOCKER_HOOKS & WITNESS_HOOKS)
+    assert not (BLOCKER_HOOKS & CONTEXT_HOOKS)
+    assert not (WITNESS_HOOKS & CONTEXT_HOOKS)
+
+
 # --------------------------------------------------------------------------- #
-# 2. The seven blockers each reach exit 2.
+# 2. The eight blockers each reach exit 2.
 # --------------------------------------------------------------------------- #
-def test_seven_blockers_reach_exit_2(monkeypatch: pytest.MonkeyPatch) -> None:
-    """F-gov-04: exactly seven enforced blockers, each with a reachable `exit 2`.
+def test_blockers_reach_exit_2(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every enforced blocker has a reachable `exit 2`.
 
     Standalone scripts prove it textually (a literal ``exit 2``); core-delegated
     wrappers prove it structurally (they exec the shared Claude adapter with their
@@ -132,7 +174,10 @@ def test_seven_blockers_reach_exit_2(monkeypatch: pytest.MonkeyPatch) -> None:
     payload — the exact exit code the wrapper's ``exec`` propagates). Per-guard
     block/allow coverage through the real wrappers: ``tests/test_enforcement_core.py``.
     """
-    assert len(BLOCKER_HOOKS) == 7, "F-gov-04 affirms exactly seven enforced blockers."
+    assert len(BLOCKER_HOOKS) == 8, (
+        "Eight enforced blockers: F-gov-04's seven, plus require-evidence-before-fix "
+        "(charter C-7). Changing this count is a governance change — make it deliberately."
+    )
 
     # Standalone blockers: the script text itself must reach exit 2.
     standalone = BLOCKER_HOOKS - CORE_DELEGATED_BLOCKERS
@@ -184,11 +229,51 @@ def test_wiring_matches_witness_blocker_split() -> None:
     as a PostToolUse observer — and nothing else. Pins the wiring so a hook can't be
     silently unwired, nor a witness promoted into the gate path."""
     wired = _wired_by_event()
-    assert wired.get("PreToolUse", set()) == BLOCKER_HOOKS, (
-        f"PreToolUse hooks {sorted(wired.get('PreToolUse', set()))} != the seven "
+    assert wired.get(BLOCKER_EVENT, set()) == BLOCKER_HOOKS, (
+        f"{BLOCKER_EVENT} hooks {sorted(wired.get(BLOCKER_EVENT, set()))} != the "
         f"blockers {sorted(BLOCKER_HOOKS)}. Blockers gate before the tool runs."
     )
-    assert wired.get("PostToolUse", set()) == WITNESS_HOOKS, (
-        f"PostToolUse hooks {sorted(wired.get('PostToolUse', set()))} != the three "
+    assert wired.get(WITNESS_EVENT, set()) == WITNESS_HOOKS, (
+        f"{WITNESS_EVENT} hooks {sorted(wired.get(WITNESS_EVENT, set()))} != the three "
         f"witnesses {sorted(WITNESS_HOOKS)}. Witnesses observe after the tool runs."
     )
+
+
+def test_context_hooks_are_wired_on_their_lifecycle_events() -> None:
+    """A context hook wired on the wrong event is silently useless.
+
+    `restore-evidence` only replays evidence if it fires on SessionStart (which
+    includes `compact` — the window rebuild that C-8 exists for), and
+    `capture-before-compact` only warns in time if it fires on PreCompact.
+    """
+    wired = _wired_by_event()
+    for stem, event in CONTEXT_EVENTS.items():
+        assert wired.get(event, set()) == {stem}, (
+            f"{event} must wire exactly {{{stem!r}}}, found {sorted(wired.get(event, set()))}."
+        )
+    assert set(CONTEXT_EVENTS) == set(CONTEXT_HOOKS), (
+        "Every context hook needs a declared lifecycle event (and vice versa)."
+    )
+
+
+def test_context_hooks_never_gate(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The C-8 hooks carry evidence; they do not block. Asserted, not assumed.
+
+    `claude_context_hook.main` does contain a `return 2` — but it is a CLI-misuse
+    guard on a bad ``argv``, not a policy decision. On a real payload, both hooks
+    return 0 whatever they find, so neither can ever stop a tool call or wedge a
+    compaction. (`capture-before-compact` deliberately does not block: a blocked
+    auto-compact can wedge a session, and that cure is worse than the disease.)
+    """
+    for stem in sorted(CONTEXT_HOOKS):
+        text = _hook_text(stem)
+        assert "claude_context_hook.py" in text and stem in text, (
+            f"{stem}.sh must delegate to the context adapter naming its own hook."
+        )
+        assert "exit 2" not in text, f"{stem}.sh is a context hook — it must never gate."
+
+    for stem in sorted(CONTEXT_HOOKS):
+        monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({"cwd": str(REPO_ROOT)})))
+        assert claude_context_hook.main(["claude_context_hook.py", stem]) == 0, (
+            f"{stem} returned non-zero on a real payload — a context hook must never gate."
+        )

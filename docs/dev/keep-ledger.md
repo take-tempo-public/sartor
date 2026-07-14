@@ -263,9 +263,17 @@ ledger):
 
 The **security / PII** KEEP ledger — route containment (`F-sec-05`), zero-PII clone
 (`F-sec-06`), the keyboard bullet-reorder a11y floor (`F-expa11y-07`), the
-`_announce()` live region (`F-expa11y-08`), and the seven-blocker-hooks honest
-witness/blocker split (`F-gov-04`/`F-gov-05`) — is **PX-29's** scope
+`_announce()` live region (`F-expa11y-08`), and the honest blocker/witness hook split
+(`F-gov-04`/`F-gov-05`) — is **PX-29's** scope
 (`test/keep-ledger-guards`, v1.0.8 item 8.4), where those affirmations become guard
 tests. They are evidenced in the
 [findings register](reviews/2026-06-product-excellence/02-assessment/findings-register.md)
 and not re-authored here.
+
+> **Count update (2026-07-14).** F-gov-04 affirmed **seven** blockers, and that was true at
+> the review pin. The C-7/C-8 work has since added an eighth (`require-evidence-before-fix`)
+> and a **third category** — the context hooks `restore-evidence` (SessionStart) and
+> `capture-before-compact` (PreCompact), which gate nothing and carry evidence *across* a
+> context boundary. The KEEP affirmation is the **honest split**, not the integer; the split
+> holds, and `tests/test_governance_hooks_gate.py` is its live source of truth. The archived
+> finding is left as written — it was correct when signed.
