@@ -24,6 +24,7 @@ from hardening import (
     compute_specificity_density,
     compute_top_third_density,
     compute_verb_diversity,
+    context_transaction,
     extract_company_terms,
     extract_keywords,
     save_context_set,
@@ -926,6 +927,120 @@ class TestWriteContextAtomic:
         path = tmp_path / "nested" / "deeper" / "context_1.json"
         write_context_atomic(path, {"a": 1})
         assert json.loads(path.read_text(encoding="utf-8")) == {"a": 1}
+
+
+class TestContextTransaction:
+    """No writer's delta may be erased by another writer's stale write-back.
+
+    Atomic writes stop torn *reads* and do nothing about lost *updates*: twelve
+    routes each read the whole `context_*.json`, spend seconds in an LLM call, then
+    write the whole (now stale) dict back. Whoever wrote inside that window has
+    their delta silently deleted. That was live and user-visible — a drafted
+    positioning summary persisted, then vanished for good
+    (`docs/dev/diagnosis/compose-summary-draft-settle-hole.md`, O-2 / O-4 / O-7).
+    """
+
+    @staticmethod
+    def _race(path: Path, apply_delta, writers: int = 8) -> dict:
+        """Have `writers` threads each add their own key, with a slow window mid-cycle.
+
+        `apply_delta(path, i)` performs one writer's whole read-modify-write. The
+        sleep inside each writer's window is what an LLM call is in production: the
+        thing that makes two cycles overlap.
+        """
+        write_context_atomic(path, {"base": True})
+        threads = [threading.Thread(target=apply_delta, args=(path, i)) for i in range(writers)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=30)
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def test_concurrent_writers_do_not_erase_each_other(self, tmp_path):
+        """Subject and control in one test.
+
+        The control is load-bearing, exactly as in `TestWriteContextAtomic`: without
+        it, a green subject could just mean the race never fired. The naive
+        read-modify-write MUST lose updates under this harness — that loss IS the
+        bug, and it is the one the two shipped-but-wrong fixes never touched.
+        """
+
+        def _naive(path: Path, i: int) -> None:
+            ctx = json.loads(path.read_text(encoding="utf-8"))
+            time.sleep(0.02)  # the LLM call: the window in which the copy goes stale
+            ctx[f"k{i}"] = i
+            write_context_atomic(path, ctx)  # atomic, and STILL a lost update
+
+        def _transactional(path: Path, i: int) -> None:
+            json.loads(path.read_text(encoding="utf-8"))  # the optimistic pre-call read
+            time.sleep(0.02)  # the LLM call — deliberately OUTSIDE the lock
+            with context_transaction(path) as fresh:
+                fresh[f"k{i}"] = i
+
+        naive = self._race(tmp_path / "naive.json", _naive)
+        txn = self._race(tmp_path / "txn.json", _transactional)
+
+        naive_keys = {k for k in naive if k.startswith("k")}
+        txn_keys = {k for k in txn if k.startswith("k")}
+
+        assert len(naive_keys) < 8, (
+            "harness never reproduced a lost update — the assertion below proves nothing"
+        )
+        assert txn_keys == {f"k{i}" for i in range(8)}, (
+            f"context_transaction lost a delta: only {sorted(txn_keys)} survived"
+        )
+
+    def test_the_yielded_dict_is_a_fresh_read_not_the_callers_copy(self, tmp_path):
+        """The whole fix in one assertion: the optimistic pre-call copy is discarded."""
+        path = tmp_path / "context_1.json"
+        write_context_atomic(path, {"a": 1})
+
+        stale = json.loads(path.read_text(encoding="utf-8"))  # caller's pre-call read
+        write_context_atomic(path, {"a": 1, "landed_meanwhile": "x"})  # someone else writes
+
+        with context_transaction(path) as fresh:
+            assert fresh["landed_meanwhile"] == "x", "the in-lock read was not fresh"
+            fresh["mine"] = True
+
+        final = json.loads(path.read_text(encoding="utf-8"))
+        assert final["landed_meanwhile"] == "x", "the concurrent delta was erased"
+        assert final["mine"] is True
+        assert "landed_meanwhile" not in stale  # the copy that would have erased it
+
+    def test_a_raising_block_writes_nothing(self, tmp_path):
+        path = tmp_path / "context_1.json"
+        write_context_atomic(path, {"a": 1})
+
+        with pytest.raises(RuntimeError, match="boom"), context_transaction(path) as fresh:
+            fresh["half"] = "landed"
+            raise RuntimeError("boom")
+
+        assert json.loads(path.read_text(encoding="utf-8")) == {"a": 1}, (
+            "a failed delta half-landed — the write must be skipped entirely"
+        )
+
+    def test_the_lock_is_released_after_a_raising_block(self, tmp_path):
+        """A leaked lock would deadlock every later write to the same file."""
+        path = tmp_path / "context_1.json"
+        write_context_atomic(path, {"a": 1})
+
+        with contextlib.suppress(RuntimeError), context_transaction(path) as fresh:
+            raise RuntimeError("boom")
+
+        with context_transaction(path) as fresh:
+            fresh["after"] = True
+        assert json.loads(path.read_text(encoding="utf-8"))["after"] is True
+
+    def test_two_spellings_of_one_path_share_a_lock(self, tmp_path):
+        """Keyed on the RESOLVED path — else the serialization is a fiction."""
+        path = tmp_path / "context_1.json"
+        write_context_atomic(path, {"a": 1})
+        indirect = tmp_path / "sub" / ".." / "context_1.json"
+        (tmp_path / "sub").mkdir()
+
+        from hardening import _context_lock
+
+        assert _context_lock(path) is _context_lock(indirect)
 
     def test_success_leaves_no_temp_debris(self, tmp_path):
         write_context_atomic(tmp_path / "context_1.json", {"a": 1})

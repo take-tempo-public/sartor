@@ -12,10 +12,12 @@ import json
 import logging
 import os
 import re
+import threading
 import time
 import uuid
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any, TypedDict
@@ -1452,10 +1454,13 @@ def write_context_atomic(path: Path, context: Mapping[str, Any]) -> None:
     place is atomic on POSIX and Windows alike, so a concurrent reader always
     sees either the whole old file or the whole new one.
 
-    This closes torn *reads*. It deliberately does NOT serialize read-modify-write
-    cycles — two routes that both read, then both write, still last-writer-wins.
-    Compose avoids that separately, by never firing two context-writing routes in
-    the same pass (`bgDraftFiring` in `static/app.js`).
+    This closes torn *reads*, and ONLY torn reads. On its own it does not serialize
+    read-modify-write cycles — two routes that both read, then both write, are still
+    last-writer-wins, and the loser's delta is erased. That is a *different* defect
+    (a lost update), it was live and user-visible, and it is closed by
+    `context_transaction` below. Every read-modify-write of a context file must go
+    through that; calling this directly with a dict you read before a slow call is
+    exactly the bug.
 
     Args:
         path: Destination file. Its parent directory is created if absent.
@@ -1484,6 +1489,97 @@ def write_context_atomic(path: Path, context: Mapping[str, Any]) -> None:
         # No-op after a successful replace (the temp name no longer exists);
         # on a failed write it keeps the output dir free of debris.
         tmp.unlink(missing_ok=True)
+
+
+# One lock per context file, created on demand. A Lock is a few dozen bytes and the
+# key set is bounded by the number of context files a single process ever touches, so
+# this is left unbounded deliberately — an eviction policy would have to prove no lock
+# is held at eviction time, which costs more than it saves.
+_context_locks: dict[Path, threading.Lock] = {}
+_context_locks_guard = threading.Lock()
+
+
+def _context_lock(path: Path) -> threading.Lock:
+    """Return the process-wide lock for `path`, creating it on first use.
+
+    Keyed on the RESOLVED path: two spellings of the same file (a relative and an
+    absolute form, say) must contend on the same lock or the serialization is a
+    fiction.
+    """
+    key = path.resolve()
+    with _context_locks_guard:
+        lock = _context_locks.get(key)
+        if lock is None:
+            lock = threading.Lock()
+            _context_locks[key] = lock
+        return lock
+
+
+@contextmanager
+def context_transaction(path: Path) -> Iterator[dict[str, Any]]:
+    """Read-modify-write a context file atomically AND without lost updates.
+
+    Twelve routes in `blueprints/applications.py` share one shape: read the whole
+    `context_*.json`, spend seconds in an LLM call, then write the whole dict back.
+    Any route that writes inside that window has its delta silently erased by the
+    other's stale write-back. That is a **lost update**, and it was live: a user's
+    drafted positioning summary could vanish permanently after being persisted.
+
+    Observed, reproduced, and pinned by
+    `tests/test_draft_summary.py::TestConcurrentContextWriters`; the full evidence
+    record is `docs/dev/diagnosis/compose-summary-draft-settle-hole.md` (O-2, O-4,
+    O-7). `write_context_atomic` does NOT close this — atomic writes stop torn
+    *reads* and do nothing whatsoever about lost *updates*.
+
+    This closes it by re-reading the file **fresh inside the lock** and discarding
+    the caller's optimistic pre-call copy. Usage:
+
+        result = slow_llm_call(ctx)          # LLM stays OUTSIDE the lock
+        with context_transaction(cp) as ctx: # fresh read, serialized
+            ctx["llm_recommendations"] = by_exp   # apply ONLY your own delta
+
+    **The contract is that you apply only your own delta to the yielded dict.**
+    Carrying a sub-dict you derived from the stale pre-call read back into this
+    block (`ctx["composition_overrides"] = overrides_i_built_earlier`) re-creates
+    the very bug inside the fix — re-derive it from the yielded dict instead.
+
+    Two properties fall out for free:
+
+    - The **LLM call stays outside the lock** (callers make it before entering), so
+      no request ever waits on another's LLM latency. Only the delta application is
+      serialized, and that is microseconds.
+    - The transient staging keys (`jd_text`, `career_facts`, `summary_items`, …) are
+      not present on a fresh read, so the defensive `ctx.pop(transient)` at each
+      write site — and the whole "don't leak staging keys into the iteration chain"
+      hazard — disappears structurally rather than by vigilance.
+
+    An in-process lock is the right scope: the Dockerfile runs a single-process
+    **threaded** server (`CMD ["sartor", "--host", "0.0.0.0"]`). If that ever becomes
+    multi-process this must become a file lock — and *that* is the moment to revisit,
+    not before.
+
+    Args:
+        path: The context file. Must already exist — this is a read-modify-write, not
+            a create. Callers validate existence (and `_within` containment) on their
+            optimistic read, before the slow call.
+
+    Yields:
+        The freshly-read context dict. Mutate it in place; it is written on clean exit.
+
+    Raises:
+        json.JSONDecodeError, OSError: if the fresh in-lock re-read fails. Not caught:
+            writes are atomic, so a torn read is no longer reachable, and a file that
+            became unreadable between the caller's optimistic read and this one is a
+            genuine anomaly. A loud 500 beats silently dropping the user's delta.
+        Exception: anything the caller's block raises propagates, and **the write is
+            skipped entirely** — a failed delta must not half-land.
+    """
+    with _context_lock(path):
+        fresh: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+        yield fresh
+        # Reached only on a clean exit from the caller's block — an exception
+        # propagates past this line and the file is left exactly as it was.
+        write_context_atomic(path, fresh)
 
 
 def save_context_set(context_set: ContextSet, username: str, base_dir: str = "output") -> str:

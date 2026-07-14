@@ -51,7 +51,7 @@ from flask.typing import ResponseReturnValue
 from spectree import Response as OpenApiResponse
 
 from blueprints.corpus import _skill_to_dict, _tag_list
-from hardening import write_context_atomic
+from hardening import context_transaction
 from web_infra import _error_detail_payload, _get_client, _safe_username, _within, spec
 from web_infra.openapi import ApplicationDetail, ApplicationsListResponse
 
@@ -1675,37 +1675,44 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
             overrides["accepted_generated_bullet_ids"] = accepted_generated_in
         if retired_gap_fill_in:
             overrides["retired_gap_fill_keys"] = retired_gap_fill_in
-        ctx["composition_overrides"] = overrides
+        # Everything below lands on a FRESH in-lock read, not on the copy taken
+        # before the DB work above. `overrides` is rebuilt wholesale from the request
+        # body (the canonical full-state save), so assigning it is this route's real
+        # delta — but the surrounding whole-dict write-back used to erase any OTHER
+        # route's key that landed in the meantime (e.g. llm_recommendations). That is
+        # the lost update; the transaction closes it.
+        with context_transaction(cp) as fresh:
+            fresh["composition_overrides"] = overrides
 
-        # feat/compose-add-title — generate reads the FROZEN career_corpus
-        # snapshot (built at analyze), so a title added in Compose after analyze
-        # isn't in it. Re-sync eligible_titles from the DB for exactly the pinned
-        # experiences so the pin reaches generate. The preview is unaffected (it
-        # reads the DB live). Guarded: corpus-mode contexts only.
-        corpus = ctx.get("career_corpus")
-        if pinned_title_ids and isinstance(corpus, list):
-            for exp_entry in corpus:
-                eid = exp_entry.get("id")
-                key = str(eid) if eid is not None else None
-                if key is not None and key in resynced_titles:
-                    exp_entry["eligible_titles"] = resynced_titles[key]
+            # feat/compose-add-title — generate reads the FROZEN career_corpus
+            # snapshot (built at analyze), so a title added in Compose after analyze
+            # isn't in it. Re-sync eligible_titles from the DB for exactly the pinned
+            # experiences so the pin reaches generate. The preview is unaffected (it
+            # reads the DB live). Guarded: corpus-mode contexts only.
+            corpus = fresh.get("career_corpus")
+            if pinned_title_ids and isinstance(corpus, list):
+                for exp_entry in corpus:
+                    eid = exp_entry.get("id")
+                    key = str(eid) if eid is not None else None
+                    if key is not None and key in resynced_titles:
+                        exp_entry["eligible_titles"] = resynced_titles[key]
 
-        # Generation-experience re-architecture — on the explicit "Save and
-        # continue" (freeze), capture the resolved approved-composition snapshot
-        # (the single content contract every downstream surface renders). Passes
-        # the in-memory ctx (with the just-rebuilt overrides) so the snapshot
-        # reflects THIS save; only on freeze so the debounced autosave stays cheap.
-        if freeze:
-            from corpus_to_json_resume import freeze_approved_composition
+            # Generation-experience re-architecture — on the explicit "Save and
+            # continue" (freeze), capture the resolved approved-composition snapshot
+            # (the single content contract every downstream surface renders). Fed the
+            # FRESH dict (with the just-rebuilt overrides) so the snapshot reflects
+            # THIS save AND any concurrent route's delta; only on freeze so the
+            # debounced autosave stays cheap. Deterministic (DB reads only, no LLM),
+            # so holding the per-path lock across it costs microseconds, not seconds.
+            if freeze:
+                from corpus_to_json_resume import freeze_approved_composition
 
-            ctx["approved_composition"] = freeze_approved_composition(
-                session,
-                candidate.id,
-                application_id=application_id,
-                context_data=ctx,
-            )
-
-        write_context_atomic(cp, ctx)
+                fresh["approved_composition"] = freeze_approved_composition(
+                    session,
+                    candidate.id,
+                    application_id=application_id,
+                    context_data=fresh,
+                )
         return jsonify(
             {
                 "application_id": application_id,
@@ -1833,9 +1840,13 @@ def recommend_application_bullets(application_id: int) -> ResponseReturnValue:
                     "bullet_ids": bullet_ids_int,
                     "rationale": (rec.get("rationale") or "").strip(),
                 }
-            ctx["llm_recommendations"] = by_exp
-            ctx.pop("jd_text", None)  # transient; don't leak into iteration chain
-            write_context_atomic(cp, ctx)
+            # The fresh in-lock read DISCARDS the optimistic pre-LLM copy above.
+            # Writing that copy back is precisely what erased a concurrently-drafted
+            # positioning summary (dossier O-7) — this route was the culprit.
+            # `jd_text` needs no defensive pop: it was staged on the in-memory copy
+            # only, so it is structurally absent from the fresh read.
+            with context_transaction(cp) as fresh:
+                fresh["llm_recommendations"] = by_exp
             return jsonify(
                 {
                     "application_id": application_id,
@@ -1939,11 +1950,10 @@ def recommend_application_summary(application_id: int) -> ResponseReturnValue:
                 }
             ), 502
 
-        # Persist + strip the transient keys
-        ctx["llm_summary_recommendation"] = result
-        ctx.pop("summary_items", None)
-        ctx.pop("jd_text", None)
-        write_context_atomic(cp, ctx)
+        # Fresh in-lock read; apply only this route's delta. The transient staging
+        # keys (summary_items / jd_text) are structurally absent from it.
+        with context_transaction(cp) as fresh:
+            fresh["llm_summary_recommendation"] = result
         return jsonify(
             {
                 "application_id": application_id,
@@ -2071,19 +2081,21 @@ def draft_application_summary(application_id: int) -> ResponseReturnValue:
 
         drafted = str(result.get("summary") or "").strip()
         # Persist into composition_overrides.summary_text (fresh draft → not edited).
-        overrides = ctx.get("composition_overrides")
-        if not isinstance(overrides, dict):
-            overrides = {}
-        overrides.pop("summary_text_edited", None)
-        if drafted:
-            overrides["summary_text"] = drafted
-        else:
-            overrides.pop("summary_text", None)
-        ctx["composition_overrides"] = overrides
-
-        for transient in ("summary_source_text", "career_facts", "jd_text"):
-            ctx.pop(transient, None)
-        write_context_atomic(cp, ctx)
+        # `overrides` is re-derived from the FRESH dict, never carried in from the
+        # pre-LLM read: this is the route whose delta was being erased, and reusing a
+        # stale sub-dict here would re-create the same lost update inside the fix.
+        # The transient staging keys (summary_source_text / career_facts / jd_text)
+        # need no defensive strip — they were only ever on the in-memory copy.
+        with context_transaction(cp) as fresh:
+            overrides = fresh.get("composition_overrides")
+            if not isinstance(overrides, dict):
+                overrides = {}
+            overrides.pop("summary_text_edited", None)
+            if drafted:
+                overrides["summary_text"] = drafted
+            else:
+                overrides.pop("summary_text", None)
+            fresh["composition_overrides"] = overrides
         return jsonify(
             {
                 "application_id": application_id,
@@ -2239,9 +2251,10 @@ def draft_application_gap_fill(application_id: int) -> ResponseReturnValue:
                 }
             )
 
-        ctx.pop("jd_text", None)
-        ctx["llm_gap_fill_proposals"] = normalized
-        write_context_atomic(cp, ctx)
+        # Fresh in-lock read; apply only this route's delta. `jd_text` is
+        # structurally absent from it (staged on the in-memory copy only).
+        with context_transaction(cp) as fresh:
+            fresh["llm_gap_fill_proposals"] = normalized
         return jsonify(
             {
                 "application_id": application_id,
@@ -2251,6 +2264,39 @@ def draft_application_gap_fill(application_id: int) -> ResponseReturnValue:
         )
     finally:
         session.close()
+
+
+def _proposals_without(raw: object, key: str) -> list[Any]:
+    """Return the gap-fill proposal list with `key` removed.
+
+    Takes the list off a FRESHLY-read context, not off the caller's earlier read:
+    the delta this route owns is "drop the one proposal I just decided", and
+    recomputing it against what is on disk now is what keeps a concurrent
+    /draft-gap-fill regeneration from being clobbered.
+    """
+    items = raw if isinstance(raw, list) else []
+    return [p for p in items if not (isinstance(p, dict) and p.get("key") == key)]
+
+
+def _apply_gap_fill_accept(fresh: dict[str, Any], bullet_id: int, key: str) -> list[int]:
+    """Apply the accept delta to a freshly-read context, in place; return the new id list.
+
+    Re-derives `composition_overrides` from `fresh`. Carrying in the sub-dict read
+    before the DB work would re-create the very lost update the surrounding
+    `context_transaction` exists to close — see
+    `docs/dev/diagnosis/compose-summary-draft-settle-hole.md` (O-7).
+    Idempotent: re-accepting an already-accepted bullet is a no-op union.
+    """
+    overrides = fresh.get("composition_overrides")
+    if not isinstance(overrides, dict):
+        overrides = {}
+    accepted_ids = [int(x) for x in (overrides.get("accepted_generated_bullet_ids") or [])]
+    if bullet_id not in accepted_ids:
+        accepted_ids.append(bullet_id)
+    overrides["accepted_generated_bullet_ids"] = accepted_ids
+    fresh["composition_overrides"] = overrides
+    fresh["llm_gap_fill_proposals"] = _proposals_without(fresh.get("llm_gap_fill_proposals"), key)
+    return accepted_ids
 
 
 @applications_bp.route("/api/applications/<int:application_id>/gap-fill-decide", methods=["POST"])
@@ -2309,7 +2355,6 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
 
         raw_proposals = ctx.get("llm_gap_fill_proposals")
         proposals: list[Any] = raw_proposals if isinstance(raw_proposals, list) else []
-        remaining = [p for p in proposals if not (isinstance(p, dict) and p.get("key") == key)]
 
         if decision == "retire":
             # Drop the transient proposal; no Bullet row exists pre-accept.
@@ -2322,16 +2367,19 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
             # silently dropped.
             # Idempotent: a missing key is already-gone -> 200; dict.fromkeys dedups
             # a duplicate retire without reordering the existing set.
-            overrides = ctx.get("composition_overrides")
-            if not isinstance(overrides, dict):
-                overrides = {}
-            retired_keys = list(
-                dict.fromkeys([*(overrides.get("retired_gap_fill_keys") or []), key])
-            )
-            overrides["retired_gap_fill_keys"] = retired_keys
-            ctx["composition_overrides"] = overrides
-            ctx["llm_gap_fill_proposals"] = remaining
-            write_context_atomic(cp, ctx)
+            # Re-derived from the FRESH in-lock read — the pre-read copy is stale.
+            with context_transaction(cp) as fresh:
+                overrides = fresh.get("composition_overrides")
+                if not isinstance(overrides, dict):
+                    overrides = {}
+                retired_keys = list(
+                    dict.fromkeys([*(overrides.get("retired_gap_fill_keys") or []), key])
+                )
+                overrides["retired_gap_fill_keys"] = retired_keys
+                fresh["composition_overrides"] = overrides
+                fresh["llm_gap_fill_proposals"] = _proposals_without(
+                    fresh.get("llm_gap_fill_proposals"), key
+                )
             return jsonify(
                 {
                     "application_id": application_id,
@@ -2342,11 +2390,9 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
             )
 
         # decision == "accept"
-        overrides = ctx.get("composition_overrides")
-        if not isinstance(overrides, dict):
-            overrides = {}
-        accepted_ids = [int(x) for x in (overrides.get("accepted_generated_bullet_ids") or [])]
-
+        # `composition_overrides` / `accepted_generated_bullet_ids` are deliberately
+        # NOT read here: both accept paths below re-derive them inside their
+        # transaction, against the file as it stands after the DB work.
         source = f"llm_proposed:{key}"
         # Idempotency keyed on the row's source, NOT list membership: a re-accept
         # (or a crash between commit and ctx write) reuses the existing Bullet.
@@ -2357,12 +2403,8 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
             .first()
         )
         if existing is not None:
-            if existing.id not in accepted_ids:
-                accepted_ids.append(existing.id)
-            overrides["accepted_generated_bullet_ids"] = accepted_ids
-            ctx["composition_overrides"] = overrides
-            ctx["llm_gap_fill_proposals"] = remaining
-            write_context_atomic(cp, ctx)
+            with context_transaction(cp) as fresh:
+                accepted_ids = _apply_gap_fill_accept(fresh, existing.id, key)
             return jsonify(
                 {
                     "application_id": application_id,
@@ -2402,11 +2444,6 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
         session.add(bullet)
         session.flush()
 
-        accepted_ids.append(bullet.id)
-        overrides["accepted_generated_bullet_ids"] = accepted_ids
-        ctx["composition_overrides"] = overrides
-        ctx["llm_gap_fill_proposals"] = remaining
-
         run_pk = ctx.get("application_run_id")
         if isinstance(run_pk, int):
             session.add(
@@ -2428,8 +2465,11 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
         # Commit the DB row FIRST; if the ctx write then fails, the bullet is inert
         # (the resolver pending-leak guard renders it nowhere until its id is in
         # accepted_generated_bullet_ids), so no compensating delete is needed.
+        # The ctx delta is applied AFTER the commit, on a fresh in-lock read — which
+        # preserves that DB-before-ctx ordering exactly as before.
         session.commit()
-        write_context_atomic(cp, ctx)
+        with context_transaction(cp) as fresh:
+            accepted_ids = _apply_gap_fill_accept(fresh, bullet.id, key)
         return jsonify(
             {
                 "application_id": application_id,
@@ -2635,15 +2675,16 @@ def accept_application_refinement(application_id: int) -> ResponseReturnValue:
         if ctx.get("application_id") not in (None, application_id):
             return jsonify({"error": "context_path does not match application"}), 400
 
-        overrides = ctx.get("composition_overrides")
-        if not isinstance(overrides, dict):
-            overrides = {}
-
         if kind == "summary":
-            overrides.pop("summary_text_edited", None)
-            overrides["summary_text"] = text
-            ctx["composition_overrides"] = overrides
-            write_context_atomic(cp, ctx)
+            # Re-derived from the FRESH in-lock read — this is the first-person edit
+            # landing on the same summary_text a concurrent /draft-summary writes.
+            with context_transaction(cp) as fresh:
+                overrides = fresh.get("composition_overrides")
+                if not isinstance(overrides, dict):
+                    overrides = {}
+                overrides.pop("summary_text_edited", None)
+                overrides["summary_text"] = text
+                fresh["composition_overrides"] = overrides
             return jsonify(
                 {"application_id": application_id, "target_kind": "summary", "summary_text": text}
             )
@@ -2660,16 +2701,16 @@ def accept_application_refinement(application_id: int) -> ResponseReturnValue:
 
         key = hashlib.sha256(f"refine:{exp.id}|{text}".encode()).hexdigest()[:12]
         source = f"llm_proposed:refine:{key}"
-        accepted_ids = [int(x) for x in (overrides.get("accepted_generated_bullet_ids") or [])]
-        excluded_ids = {int(x) for x in (overrides.get("excluded") or [])}
-
+        # `accepted_generated_bullet_ids` and `excluded` are deliberately NOT read
+        # here. The write below re-derives both inside its transaction: this route's
+        # delta is "append the accepted bullet" + "exclude the superseded one" — not
+        # "replace both whole sets with what I read before doing the DB work".
         supersedes = _coerce_experience_id(proposal.get("supersedes_bullet_id"))
         superseded_id: int | None = None
         if supersedes is not None:
             owned = session.query(Bullet).filter_by(id=supersedes, experience_id=exp.id).first()
             if owned is not None:
                 superseded_id = owned.id
-                excluded_ids.add(owned.id)
 
         # Idempotency, mirrors gap_fill_decide: a re-accept (or a crash between
         # commit and ctx write) reuses the existing Bullet by its source key.
@@ -2722,12 +2763,21 @@ def accept_application_refinement(application_id: int) -> ResponseReturnValue:
                 )
             session.commit()
 
-        if bullet_id not in accepted_ids:
-            accepted_ids.append(bullet_id)
-        overrides["accepted_generated_bullet_ids"] = accepted_ids
-        overrides["excluded"] = sorted(excluded_ids)
-        ctx["composition_overrides"] = overrides
-        write_context_atomic(cp, ctx)
+        # DB row committed above (when newly created); the ctx delta lands after it,
+        # on a fresh in-lock read — same DB-before-ctx ordering as gap_fill_decide.
+        with context_transaction(cp) as fresh:
+            overrides = fresh.get("composition_overrides")
+            if not isinstance(overrides, dict):
+                overrides = {}
+            accepted_ids = [int(x) for x in (overrides.get("accepted_generated_bullet_ids") or [])]
+            if bullet_id not in accepted_ids:
+                accepted_ids.append(bullet_id)
+            overrides["accepted_generated_bullet_ids"] = accepted_ids
+            excluded_ids = {int(x) for x in (overrides.get("excluded") or [])}
+            if superseded_id is not None:
+                excluded_ids.add(superseded_id)
+            overrides["excluded"] = sorted(excluded_ids)
+            fresh["composition_overrides"] = overrides
 
         return jsonify(
             {
@@ -2857,10 +2907,10 @@ def recommend_application_experience_summaries(application_id: int) -> ResponseR
                 }
             ), 502
 
-        ctx["llm_experience_summary_recommendations"] = result
-        ctx.pop("experience_summary_items", None)
-        ctx.pop("jd_text", None)
-        write_context_atomic(cp, ctx)
+        # Fresh in-lock read; apply only this route's delta. The transient staging
+        # keys (experience_summary_items / jd_text) are structurally absent from it.
+        with context_transaction(cp) as fresh:
+            fresh["llm_experience_summary_recommendations"] = result
         return jsonify(
             {
                 "application_id": application_id,
@@ -2956,10 +3006,10 @@ def recommend_application_skills(application_id: int) -> ResponseReturnValue:
                 }
             ), 502
 
-        ctx["llm_skill_recommendations"] = result
-        ctx.pop("skill_items", None)
-        ctx.pop("jd_text", None)
-        write_context_atomic(cp, ctx)
+        # Fresh in-lock read; apply only this route's delta. The transient staging
+        # keys (skill_items / jd_text) are structurally absent from it.
+        with context_transaction(cp) as fresh:
+            fresh["llm_skill_recommendations"] = result
         return jsonify(
             {
                 "application_id": application_id,

@@ -159,6 +159,26 @@ outright. This is exactly [O-2](#o-2-the-summary-is-persisted-and-then-it-disapp
 **What this proves:** the lost update is real, reachable, and reproducible in milliseconds;
 `/recommend` **can and does** erase `/draft-summary`'s persisted delta.
 
+### O-8. The fix closes it — the same test goes green, and the UX regression stops flaking
+
+`hardening.context_transaction` landed and all **twelve** write sites were converted. Measured on
+this branch, immediately after:
+
+| Check | Before the fix | After |
+|---|---|---|
+| The O-7 falsification test | **FAILS** (`composition_overrides` == `{}`) | **passes** |
+| `tests/test_draft_summary.py` (whole file) | 10 passed | **11 passed** |
+| Every test file touching the 12 converted sites (298 tests) | — | **298 passed** |
+| `hardening` lost-update unit tests (subject **and** control) | — | **9 passed** |
+| `test_compose_summary_draft_autofills_edits_and_persists`, run 7× | ~36% pass/attempt (O-1) | **7 / 7, zero RERUNs** |
+
+Seven consecutive passes against a 63.6% per-attempt failure rate is a ~1-in-12,000 event
+(`0.364⁷`). The mechanism is closed.
+
+**Not yet met — stated plainly rather than finessed:** the acceptance bar in this dossier is a bare
+`PASSED` with no `RERUN` **across more than one CI run**. The seven runs above are **local**, and
+local is not CI. The bar is not cleared until CI says so on more than one run.
+
 **What this does NOT prove, and must not be laundered into:** that this exact interleaving is what
 occurred in CI run `29303444590`. The mechanism is now observed; the specific production ordering
 remains an inference. It does not change the fix, and the fix does not depend on it — the
@@ -296,6 +316,15 @@ own traceback — so "green" is finally checkable.
 
 ## What shipped on this branch (and what did not)
 
+> **UPDATE 2026-07-14 — the fix has now shipped.** The section below was written when it had
+> not, and is kept intact because it is the honest record of a day spent fixing two real defects
+> that were not *the* defect. What changed since: the falsification test was written first, it
+> failed on HEAD ([O-7](#o-7-the-lost-update-is-reproduced-deterministically--recommend-is-the-writer-that-erases-it)),
+> and only then was `hardening.context_transaction` built and all twelve sites converted
+> ([O-8](#o-8-the-fix-closes-it--the-same-test-goes-green-and-the-ux-regression-stops-flaking)).
+> **The order is the point.** The two fixes below were built the other way round, and that is
+> exactly why neither worked.
+
 **Shipped — all real, none of it the root cause:**
 - `hardening.write_context_atomic` + the Windows retry ([O-6](#o-6-windows-osreplace-semantics--measured-do-not-re-derive)); 12 call sites converted.
 - `_fireDraftSummary`'s once-ever latch turned into an **in-flight claim** released on failure — a
@@ -306,3 +335,28 @@ own traceback — so "green" is finally checkable.
   and the traffic dump in the regression test.
 
 **NOT shipped: the fix.** The lost update is still live on `main`.
+
+**Now shipped (2026-07-14), in this order:**
+
+1. **The instrument, first and alone** — the falsification test, committed while it was still
+   **red**, with the dossier updated to say so. No production line was touched until it failed.
+2. **`hardening.context_transaction`** — a per-path `threading.Lock`; re-reads the file fresh
+   inside the lock; yields it for the caller's own delta; writes via `write_context_atomic` on a
+   clean exit; **skips the write entirely if the block raises**. The LLM call stays outside the
+   lock, so no request waits on another's latency.
+3. **All twelve sites converted** — not just the two in the observed window. Six were the LLM
+   routes; the other six (in `save_application_composition`, `gap_fill_decide`,
+   `accept_application_refinement`) each derived a `composition_overrides` sub-dict from the
+   **stale** read and assigned it wholesale. **Wrapping those naively would have rebuilt the bug
+   inside the fix** — each now re-derives its delta against the fresh dict ("append this id",
+   "drop this proposal"), never carrying a stale sub-dict in.
+4. **The defensive `ctx.pop(transient)` calls are gone** — the transient staging keys
+   (`jd_text`, `career_facts`, `summary_items`, …) are structurally absent from a fresh read.
+   The "don't leak staging keys into the iteration chain" hazard is now closed by construction
+   rather than by vigilance, exactly as predicted above.
+
+**Still open:** `write_context_atomic`'s docstring used to claim read-modify-write races were
+handled "by `bgDraftFiring` in `static/app.js`" — a guard that was falsified ([F-4](#f-4--the-bgdraftfiring-client-guard-my-second-fix))
+and reverted. That claim was **false at the moment it was written** and is now corrected. It is
+recorded here because a stale comment asserting a safety property is the same class of error as
+a fix for a mechanism nobody observed.

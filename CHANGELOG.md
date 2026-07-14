@@ -21,24 +21,51 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
-### Fixed: the positioning draft could hang forever — and the blindness that hid a 64%-broken test (`fix/compose-summary-draft-settle-hole`)
+### Fixed: your drafted positioning summary could vanish for good — a lost update across twelve context writers (`fix/compose-summary-draft-settle-hole`)
 
-A user arriving at Compose whose summary-draft POST failed saw **"Drafting your summary…"
-forever** — no error, no retry, no recovery. That is fixed. So is the write path under it,
-and so is the reporting that made the whole class of failure invisible.
+A user arriving at Compose could watch the app write their drafted positioning summary and
+then silently throw it away — permanently. Another could sit under **"Drafting your
+summary…" forever**, with no error, no retry, no recovery. Both are fixed, along with the
+write path beneath them and the reporting that made the whole class of failure invisible.
 
-> **What is NOT fixed here: the root cause.** The intermittent CI failure is a **lost
-> update** — `POST /draft-summary` persists the summary, and a concurrent context-writing
-> route then overwrites the file with a copy it read *before* that write landed, erasing it.
-> This branch **identifies** that, with evidence, and does not repair it. Two earlier fixes
-> on this branch were shipped for mechanisms that had never been observed; both addressed
-> real defects, and **neither was the defect**. The full evidence record — what was observed,
-> what was falsified, and the deterministic experiment that settles what remains inferred —
-> is at
+**The root cause was a lost update.** Twelve routes in `blueprints/applications.py` each read
+the *whole* `context_*.json`, spend seconds inside an LLM call, then write the *whole* — by
+now stale — dict back. Any route that wrote inside that window had its delta silently
+deleted. `POST /draft-summary` persisted the summary and returned 200; a concurrent
+`POST /recommend`, holding a copy read *before* that write, then wrote it back and erased it.
+Nothing errored. Every response was a 200. The data was simply gone from disk.
+
+- **`hardening.context_transaction`** — a `@contextmanager` taking a **per-path
+  `threading.Lock`** that **re-reads the file fresh inside the lock**, discarding the caller's
+  optimistic pre-call copy; yields it for the caller's own delta; writes via the existing
+  `write_context_atomic` on a clean exit; and **skips the write entirely if the block raises**,
+  so a failed delta can never half-land. The **LLM call stays outside the lock**, so no request
+  ever waits on another's latency — only the delta application is serialized, and that is
+  microseconds. In-process is the right scope: the container runs a single-process *threaded*
+  server. **All twelve sites converted** — repairing only the two in the observed window would
+  have fixed the symptom and left the defect class.
+- **A trap worth naming, because the fix nearly stepped in it.** Six of the twelve sites are
+  not LLM routes; they build a `composition_overrides` sub-dict *from the stale read* and then
+  assign it back wholesale. Wrapping those in a transaction while still carrying that stale
+  sub-dict in would have **re-created the very bug inside the fix**. Each now re-derives its
+  delta against the fresh dict — "append this bullet id", "drop this proposal", "add this
+  retired key" — rather than replacing a whole set it read minutes ago.
+- **A hazard closed by construction rather than by vigilance.** The transient staging keys
+  (`jd_text`, `career_facts`, `summary_items`, …) are absent from a fresh read, so the
+  defensive `ctx.pop(transient)` at each write site — and the standing "don't leak staging keys
+  into the iteration chain" hazard — is now structurally impossible instead of remembered.
+
+> **How this was arrived at matters as much as the fix**, and is the reason it is trustworthy.
+> Two earlier fixes on this branch were shipped for mechanisms that had **never been
+> observed**; both addressed real defects, and **neither was the defect**. The repair above was
+> built only *after* a falsification test was written, committed **while still red**, and shown
+> to fail on HEAD — `tests/test_draft_summary.py::TestConcurrentContextWriters`, which forces
+> the interleaving with `threading.Event`s instead of waiting for luck. The full evidence
+> record — what was observed, what was falsified, and what remained merely inferred until it
+> was proven — is at
 > [`docs/dev/diagnosis/compose-summary-draft-settle-hole.md`](docs/dev/diagnosis/compose-summary-draft-settle-hole.md).
-> The repair (a `context_transaction` that re-reads inside a per-path lock, across all 12
-> read-modify-write routes) is the next branch's work. This is charter **C-7** in force: the
-> claim "X causes Y" is a claim, and it is not made here without an observation behind it.
+> Charter **C-7** in force: "X causes Y" is a claim, and no claim is made here without an
+> observation behind it.
 
 - **A torn read — real, and fixed, but not the cause.** `Path.write_text` truncates its
   target *before* it writes, so a concurrent reader could see an empty or half-written
@@ -77,6 +104,15 @@ flip, and the "green" commit before it had also failed 2 of its 3 attempts. Wind
 `os.replace` raises `PermissionError` while another handle holds the destination open (and
 granting `FILE_SHARE_DELETE` does not lift it — measured), so the writer carries a bounded
 retry; POSIX has no such constraint, so it never fires on Linux.
+
+**Verified.** The falsification test flips red→green on the fix. 298 tests across every file
+touching the twelve converted routes pass. Nine new `hardening` unit tests pin the transaction —
+including a **control** that proves the naive read-modify-write really does lose updates under
+the same harness, so the subject's green is not vacuous. And
+`test_compose_summary_draft_autofills_edits_and_persists` ran **7/7 with zero reruns**, against
+a ~36% pass-per-attempt baseline — a roughly 1-in-12,000 outcome had the bug survived. **What
+is not yet met:** those seven runs are *local*. The acceptance bar is a bare `PASSED` with no
+`RERUN` across **more than one CI run**, and CI clears that bar, not a local shell.
 
 ### Added: evidence-before-mechanism, enforced (charter C-7 + C-8)
 

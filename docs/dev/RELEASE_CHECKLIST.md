@@ -515,10 +515,11 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **11** (was 9; +1 Compose lost-update root cause, +1 unrunnable
-quality gate — both 2026-07-14, `fix/compose-summary-draft-settle-hole`).
+_Rendered open count: **10** (was 11; −1 Compose lost-update root cause, **RESOLVED**
+2026-07-14 on `fix/compose-summary-draft-settle-hole` — the falsification test first, then
+`hardening.context_transaction` across all 12 sites).
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
-each close-out). **OVER THE CEILING — the reduction sprint is DUE, and should be
+each close-out). **STILL AT THE CEILING — the reduction sprint remains DUE, and should be
 scheduled before the v1.1.0 tag, not after** (the rule is ~8–10, and clear before
 adding); several items below are small and clearable in one pass. The full per-item
 addition/resolution chronology since 2026-06-15 lives in git history
@@ -545,6 +546,13 @@ addition/resolution chronology since 2026-06-15 lives in git history
       open count 8 → 9. Corrected 2026-07-14: the original text claimed the underlying bug
       was fixed on that branch. It was not — see the next item.)_
       **→ Owner call; gather the post-fix rate first. Do not change the retry policy blind.**
+      **→ Update (2026-07-14): the underlying bug IS now fixed** (the lost-update item below is
+      resolved), so the post-fix rate can finally be gathered. First data point: **7/7 local runs,
+      zero RERUNs** — but that is *local*, and this decision needs the rate on **CI**, over several
+      `main` runs, which does not exist yet. **Still open, deliberately:** the policy question was
+      always separate from the bug, and the whole lesson of this branch is that `--reruns 2` is
+      what let a 64%-broken test read as green for eleven runs. Decide (a)/(b)/(c) once CI has
+      produced a real post-fix sample — not before.
 
 - [ ] **The quality gate is unrunnable by an agent — which makes it unenforceable** — the full
       `python -m scripts.gate` takes **~13 minutes**; an agent's shell commands are hard-capped
@@ -572,7 +580,7 @@ addition/resolution chronology since 2026-06-15 lives in git history
       _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole`;
       open count 10 → 11 — **well over the ~8–10 ceiling; the reduction sprint is overdue**.)_
 
-- [ ] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
+- [x] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
       fixed** — twelve routes in `blueprints/applications.py` each read the whole
       `context_*.json`, spend seconds in an LLM call, then write the whole (now stale) dict
       back, so any route that writes inside that window has its delta silently erased.
@@ -591,6 +599,25 @@ addition/resolution chronology since 2026-06-15 lives in git history
       defect class). **Acceptance: a bare `PASSED` with no `RERUN`, over more than one CI run.**
       _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole`;
       open count 9 → 10 — **over the ~8–10 ceiling; the reduction sprint is now due**.)_
+      **→ RESOLVED (2026-07-14, `fix/compose-summary-draft-settle-hole`).** Done in the
+      prescribed order, and the order was the point. **(1)** The falsification test was written
+      and committed **first, while red** (`69bd9e5`) —
+      `tests/test_draft_summary.py::TestConcurrentContextWriters`, which forces the interleaving
+      with `threading.Event`s and proved `/recommend`'s stale write-back deletes
+      `composition_overrides` outright (dossier **O-7**). **(2)** Only then the fix:
+      `hardening.context_transaction` (per-path `threading.Lock`; fresh in-lock re-read; write
+      via `write_context_atomic` on clean exit; **no write at all if the block raises**; the LLM
+      call stays outside the lock). **(3)** **All twelve** sites converted — the six non-LLM ones
+      (`save_application_composition`, `gap_fill_decide` ×3, `accept_application_refinement` ×2)
+      each derived a `composition_overrides` sub-dict from the **stale** read and assigned it
+      wholesale, so wrapping them naively would have **rebuilt the bug inside the fix**; each now
+      re-derives its delta against the fresh dict. Verified: the O-7 test flips red→green; 298
+      tests across every file touching the 12 sites pass; 9 new `hardening` unit tests (with a
+      **control** proving the naive path really does lose updates, so the green isn't vacuous);
+      and `test_compose_summary_draft_autofills_edits_and_persists` ran **7/7 with zero RERUNs**
+      (vs. ~36% pass-per-attempt before — a ~1-in-12,000 event if unfixed).
+      **NOT yet met:** the acceptance bar is no-RERUN across **more than one CI run**; those
+      7 runs are **local**. The bar is cleared by CI, not by me.
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
