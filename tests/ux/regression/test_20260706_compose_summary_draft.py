@@ -41,6 +41,31 @@ def _is_draft_summary_post(resp: Response) -> bool:
     return "/draft-summary" in resp.url and resp.request.method == "POST"
 
 
+def _dump_traffic(traffic: list[Response]) -> str:
+    """Render every composition/draft response, so a failure names WHERE the draft went.
+
+    The whole reason this test cost 11 red CI runs to diagnose is that its only evidence
+    was "the textarea is empty" — which is compatible with a 400, a lost update, and a
+    stale render alike. Each `has_draft` below is the SERVER's own view at that render.
+    """
+    lines = ["--- composition / draft-summary traffic (server's view at each render) ---"]
+    for resp in traffic:
+        try:
+            body = resp.json()
+        except Exception as exc:
+            lines.append(f"  {resp.request.method} {resp.status} {resp.url}  <unreadable: {exc}>")
+            continue
+        summary = body.get("summary") or {}
+        detail = (
+            f"has_draft={summary.get('has_draft')!r} "
+            f"drafted_text={str(summary.get('drafted_text') or '')[:48]!r}"
+            if "summary" in body
+            else f"summary_text={str(body.get('summary_text') or '')[:48]!r}"
+        )
+        lines.append(f"  {resp.request.method} {resp.status} {resp.url.split('?')[0]}  {detail}")
+    return "\n".join(lines)
+
+
 def _reach_compose(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> WizardComposePage:
@@ -61,21 +86,44 @@ def test_compose_summary_draft_autofills_edits_and_persists(
     ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Keep every composition/draft response so a failure can say WHERE the summary was
+    # lost instead of only "the textarea is empty". Bodies are read lazily in the
+    # handler below (reading them inside a sync event handler can deadlock).
+    traffic: list[Response] = []
+    page.on(
+        "response",
+        lambda r: (
+            traffic.append(r) if ("/composition" in r.url or "/draft-summary" in r.url) else None
+        ),
+    )
+
     # D2 fires the draft POST during Compose arrival. Assert the ROUTE, not just its
     # effect: a non-OK response here used to be swallowed by the client and surfaced
     # only as a still-empty textarea five seconds later — an unfalsifiable "it didn't
-    # fill in" that took 11 red CI runs to trace back to a 400. Now the status is the
-    # failure message.
+    # fill in" that took 11 red CI runs to trace back to a 400.
     with page.expect_response(_is_draft_summary_post) as draft_post:
         compose = _reach_compose(page, live_server, ux_app, monkeypatch)
     assert draft_post.value.ok, (
         f"POST /draft-summary returned {draft_post.value.status}: {draft_post.value.text()}"
     )
+    # A 200 is not enough: the route pops summary_text when the draft comes back empty,
+    # so "persisted nothing" also looks like success. Assert it actually persisted.
+    assert draft_post.value.json().get("summary_text"), (
+        f"POST /draft-summary was 200 but persisted an EMPTY summary_text: "
+        f"{draft_post.value.json()}"
+    )
 
     # D2 — the summary auto-drafts once on arrival; the textarea fills with the
     # stubbed 2-sentence draft (expect() retries until the async draft lands).
     draft = page.locator(Compose.POSITIONING_DRAFT)
-    expect(draft).to_have_value(re.compile(r"Stubbed positioning summary"))
+    try:
+        expect(draft).to_have_value(re.compile(r"Stubbed positioning summary"))
+    except AssertionError as exc:  # pragma: no cover - only on the flake under diagnosis
+        # The POST persisted the summary (asserted above) but the rendered composition
+        # does not have it. Print the server's own view at every render so the next
+        # reader can see exactly which response dropped it — a lost update on the
+        # context file, or a stale render winning the race.
+        raise AssertionError(f"{exc}\n\n{_dump_traffic(traffic)}") from exc
 
     # Hand-edit → the oninput debounced autosave POSTs the new summary_text.
     with page.expect_response(_is_composition_post):
