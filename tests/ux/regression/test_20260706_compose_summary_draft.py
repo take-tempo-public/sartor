@@ -42,27 +42,31 @@ def _is_draft_summary_post(resp: Response) -> bool:
 
 
 def _dump_traffic(traffic: list[Response]) -> str:
-    """Render every composition/draft response, so a failure names WHERE the draft went.
+    """Render EVERY application route the page hit, in order, with the server's own view.
 
     The whole reason this test cost 11 red CI runs to diagnose is that its only evidence
-    was "the textarea is empty" — which is compatible with a 400, a lost update, and a
-    stale render alike. Each `has_draft` below is the SERVER's own view at that render.
+    was "the textarea is empty" — compatible with a 400, a lost update, and a stale render
+    alike. Scope matters: several Compose routes read-modify-write the SAME context file,
+    so a dump narrowed to `/composition` + `/draft-summary` hides the very writer that
+    could be clobbering the draft. Capture them all; `has_draft` below is what the server
+    itself reported at that moment.
     """
-    lines = ["--- composition / draft-summary traffic (server's view at each render) ---"]
+    lines = ["--- every /api/applications/ response, in order (server's own view) ---"]
     for resp in traffic:
+        path = resp.url.split("/api/applications/", 1)[-1].split("?")[0]
         try:
             body = resp.json()
         except Exception as exc:
-            lines.append(f"  {resp.request.method} {resp.status} {resp.url}  <unreadable: {exc}>")
+            lines.append(f"  {resp.request.method:4} {resp.status} {path}  <unreadable: {exc}>")
             continue
-        summary = body.get("summary") or {}
-        detail = (
-            f"has_draft={summary.get('has_draft')!r} "
-            f"drafted_text={str(summary.get('drafted_text') or '')[:48]!r}"
-            if "summary" in body
-            else f"summary_text={str(body.get('summary_text') or '')[:48]!r}"
-        )
-        lines.append(f"  {resp.request.method} {resp.status} {resp.url.split('?')[0]}  {detail}")
+        bits = []
+        if isinstance(body.get("summary"), dict):
+            s = body["summary"]
+            bits.append(f"has_draft={s.get('has_draft')!r}")
+            bits.append(f"drafted={str(s.get('drafted_text') or '')[:36]!r}")
+        if "summary_text" in body:
+            bits.append(f"summary_text={str(body.get('summary_text') or '')[:36]!r}")
+        lines.append(f"  {resp.request.method:4} {resp.status} {path}  {' '.join(bits)}")
     return "\n".join(lines)
 
 
@@ -86,15 +90,15 @@ def test_compose_summary_draft_autofills_edits_and_persists(
     ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Keep every composition/draft response so a failure can say WHERE the summary was
-    # lost instead of only "the textarea is empty". Bodies are read lazily in the
-    # handler below (reading them inside a sync event handler can deadlock).
+    # Keep EVERY application response so a failure can say WHERE the summary was lost,
+    # not merely that it is gone. Deliberately not narrowed to /composition +
+    # /draft-summary: several Compose routes read-modify-write the same context file, so
+    # narrowing the capture would hide the writer that clobbers the draft. Bodies are read
+    # lazily below — reading them inside a sync event handler can deadlock.
     traffic: list[Response] = []
     page.on(
         "response",
-        lambda r: (
-            traffic.append(r) if ("/composition" in r.url or "/draft-summary" in r.url) else None
-        ),
+        lambda r: (traffic.append(r) if "/api/applications/" in r.url else None),
     )
 
     # D2 fires the draft POST during Compose arrival. Assert the ROUTE, not just its
