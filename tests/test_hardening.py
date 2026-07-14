@@ -3,9 +3,14 @@
 These functions must remain LLM-free and produce stable output for given input.
 """
 
+import contextlib
 import json
+import threading
+import time
 from pathlib import Path
 from typing import ClassVar
+
+import pytest
 
 from hardening import (
     assemble_source_union,
@@ -24,6 +29,7 @@ from hardening import (
     save_context_set,
     strip_cover_letter_block,
     validate_config,
+    write_context_atomic,
 )
 
 
@@ -843,3 +849,95 @@ class TestComputeDateGrounding:
         out = compute_date_grounding(resume, corpus)
         assert out["status"] == "pass"
         assert out["checked"] == 2
+
+
+class TestWriteContextAtomic:
+    """The context file must never be observable half-written.
+
+    `Path.write_text` truncates the destination *before* it writes, so a concurrent
+    reader saw an empty or partial file and its `json.loads` raised. In the app that
+    surfaced as a 400 from `POST /draft-summary`, which the Compose client then
+    swallowed — leaving a positioning summary that never arrived and a "Drafting your
+    summary…" placeholder that never cleared, on 64% of CI attempts
+    (`fix/compose-summary-draft-settle-hole`).
+    """
+
+    @staticmethod
+    def _torn_reads(path: Path, writer, iters: int = 40, readers: int = 3) -> list[str]:
+        """Hammer `path` with readers while `writer` rewrites it; collect torn reads.
+
+        Writer-side `PermissionError` is swallowed on purpose. On Windows `os.replace`
+        is blocked while any reader holds the destination open (production handles that
+        with a bounded retry — see `hardening._REPLACE_ATTEMPTS`). It is NOT the
+        invariant under test: "a reader never observes a partial file" is, and that has
+        to hold on every platform regardless of who wins the write.
+        """
+        payload = {"blob": ["x" * 64] * 4000}  # ~1 MB — a wide truncate-to-rewrite window
+        writer(path, payload)
+        torn: list[str] = []
+        stop = threading.Event()
+
+        def _write() -> None:
+            try:
+                for i in range(iters):
+                    # PermissionError is platform noise, not the invariant — see docstring.
+                    with contextlib.suppress(PermissionError):
+                        writer(path, {"i": i, **payload})
+                    time.sleep(0.002)
+            finally:
+                stop.set()
+
+        def _read() -> None:
+            while not stop.is_set():
+                try:
+                    json.loads(path.read_text(encoding="utf-8"))
+                except json.JSONDecodeError as exc:
+                    torn.append(str(exc))
+                except OSError:
+                    pass
+                time.sleep(0.004)
+
+        write_thread = threading.Thread(target=_write)
+        read_threads = [threading.Thread(target=_read) for _ in range(readers)]
+        for t in (*read_threads, write_thread):
+            t.start()
+        for t in (write_thread, *read_threads):
+            t.join(timeout=60)
+        return torn
+
+    def test_reader_never_observes_a_partial_file(self, tmp_path):
+        """Subject and control in one test.
+
+        The control is load-bearing: without it, a green `atomic == 0` could simply
+        mean the race never fired, and the guard would be vacuous. `write_text` MUST
+        tear under this harness — that tear IS the bug.
+        """
+
+        def _write_naive(path: Path, ctx) -> None:
+            path.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+
+        naive = self._torn_reads(tmp_path / "naive.json", _write_naive)
+        atomic = self._torn_reads(tmp_path / "atomic.json", write_context_atomic)
+
+        assert naive, "harness never reproduced a torn read — the assertion below proves nothing"
+        assert not atomic, f"write_context_atomic exposed a partial file: {atomic[:3]}"
+
+    def test_creates_parent_dir(self, tmp_path):
+        path = tmp_path / "nested" / "deeper" / "context_1.json"
+        write_context_atomic(path, {"a": 1})
+        assert json.loads(path.read_text(encoding="utf-8")) == {"a": 1}
+
+    def test_success_leaves_no_temp_debris(self, tmp_path):
+        write_context_atomic(tmp_path / "context_1.json", {"a": 1})
+        assert [p.name for p in tmp_path.iterdir()] == ["context_1.json"]
+
+    def test_failed_write_preserves_target_and_leaves_no_debris(self, tmp_path):
+        """A write that can't serialize must not destroy the file it was replacing."""
+        path = tmp_path / "context_1.json"
+        write_context_atomic(path, {"ok": 1})
+
+        with pytest.raises(TypeError):
+            write_context_atomic(path, {"bad": object()})
+
+        assert json.loads(path.read_text(encoding="utf-8")) == {"ok": 1}
+        assert [p.name for p in tmp_path.iterdir()] == ["context_1.json"]

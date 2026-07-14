@@ -37,6 +37,10 @@ def _is_composition_post(resp: Response) -> bool:
     return "/composition" in resp.url and resp.request.method == "POST"
 
 
+def _is_draft_summary_post(resp: Response) -> bool:
+    return "/draft-summary" in resp.url and resp.request.method == "POST"
+
+
 def _reach_compose(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> WizardComposePage:
@@ -57,7 +61,16 @@ def test_compose_summary_draft_autofills_edits_and_persists(
     ux_app: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    compose = _reach_compose(page, live_server, ux_app, monkeypatch)
+    # D2 fires the draft POST during Compose arrival. Assert the ROUTE, not just its
+    # effect: a non-OK response here used to be swallowed by the client and surfaced
+    # only as a still-empty textarea five seconds later — an unfalsifiable "it didn't
+    # fill in" that took 11 red CI runs to trace back to a 400. Now the status is the
+    # failure message.
+    with page.expect_response(_is_draft_summary_post) as draft_post:
+        compose = _reach_compose(page, live_server, ux_app, monkeypatch)
+    assert draft_post.value.ok, (
+        f"POST /draft-summary returned {draft_post.value.status}: {draft_post.value.text()}"
+    )
 
     # D2 — the summary auto-drafts once on arrival; the textarea fills with the
     # stubbed 2-sentence draft (expect() retries until the async draft lands).

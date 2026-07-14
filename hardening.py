@@ -10,8 +10,12 @@ overlap, per-call cost).
 import difflib
 import json
 import logging
+import os
 import re
+import time
+import uuid
 from collections import Counter
+from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any, TypedDict
@@ -1423,13 +1427,72 @@ def build_context_set(
     }
 
 
+# `os.replace` is atomic everywhere, but on **Windows** it raises PermissionError
+# while any other handle holds the destination open — Python's `open()` does not
+# grant FILE_SHARE_DELETE, and (measured) granting it does not lift the block
+# either. POSIX has no such constraint, so this retry never fires on Linux, which
+# is where CI and the container run. Readers here are request-driven — one read per
+# route, around a multi-second LLM call — so a collision is rare and brief, and a
+# short bounded backoff clears it. Exhausting it raises, rather than falling back to
+# a torn write: a loud 500 beats silent corruption of the pipeline's audit trail.
+_REPLACE_ATTEMPTS = 12
+_REPLACE_BACKOFF_S = 0.004
+
+
+def write_context_atomic(path: Path, context: Mapping[str, Any]) -> None:
+    """Serialize `context` to `path` as JSON, atomically.
+
+    `Path.write_text` truncates the destination *before* it writes, so a reader
+    that opens the file inside that window sees empty or half-written JSON and
+    its `json.loads` raises. Compose fires several context-writing routes against
+    the same `context_*.json`, so the window is reachable under load: it was the
+    root cause of a settled-but-empty positioning draft (a 400 "Context file
+    unreadable" that the client then swallowed — see `_fireDraftSummary` in
+    `static/app.js`). Writing to a unique temp file and `os.replace`-ing it into
+    place is atomic on POSIX and Windows alike, so a concurrent reader always
+    sees either the whole old file or the whole new one.
+
+    This closes torn *reads*. It deliberately does NOT serialize read-modify-write
+    cycles — two routes that both read, then both write, still last-writer-wins.
+    Compose avoids that separately, by never firing two context-writing routes in
+    the same pass (`bgDraftFiring` in `static/app.js`).
+
+    Args:
+        path: Destination file. Its parent directory is created if absent.
+        context: Any JSON-serializable object (a `ContextSet` or a plain dict).
+
+    Raises:
+        PermissionError: Windows only, and only under sustained concurrent reads
+            of `path` — see `_REPLACE_ATTEMPTS`. Raised rather than silently
+            falling back to a torn write.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # Unique per writer: two concurrent writers must not share a temp path, or
+    # one could `os.replace` the other's half-written file into place.
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.tmp")
+    try:
+        tmp.write_text(json.dumps(context, indent=2), encoding="utf-8")
+        for attempt in range(_REPLACE_ATTEMPTS):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                if attempt == _REPLACE_ATTEMPTS - 1:
+                    raise
+                time.sleep(_REPLACE_BACKOFF_S * (attempt + 1))
+    finally:
+        # No-op after a successful replace (the temp name no longer exists);
+        # on a failed write it keeps the output dir free of debris.
+        tmp.unlink(missing_ok=True)
+
+
 def save_context_set(context_set: ContextSet, username: str, base_dir: str = "output") -> str:
     """Save context set to disk as timestamped JSON. P4 Disposable Blueprint."""
     out_dir = Path(base_dir) / username
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = out_dir / f"context_{ts}.json"
-    path.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+    write_context_atomic(path, context_set)
     return str(path)
 
 
@@ -1625,5 +1688,5 @@ def save_iteration_context(
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = out_dir / f"context_{ts}_iter{child['iteration']}.json"
-    path.write_text(json.dumps(child, indent=2), encoding="utf-8")
+    write_context_atomic(path, child)
     return str(path)

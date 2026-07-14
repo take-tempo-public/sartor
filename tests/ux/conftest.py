@@ -122,6 +122,7 @@ def page(_browser: Browser, live_server: str) -> Iterator[Page]:
     pg = context.new_page()
     js_errors: list[str] = []
     server_errors: list[str] = []
+    api_errors: list[str] = []
 
     def _on_console(msg: ConsoleMessage) -> None:
         if msg.type == "error" and not msg.text.startswith("Failed to load resource"):
@@ -130,17 +131,33 @@ def page(_browser: Browser, live_server: str) -> Iterator[Page]:
     def _on_response(resp: Response) -> None:
         if resp.status >= 500:
             server_errors.append(f"{resp.status} {resp.request.method} {resp.url}")
+        elif resp.status >= 400 and "/api/" in resp.url:
+            api_errors.append(f"{resp.status} {resp.request.method} {resp.url}")
 
     pg.on("console", _on_console)
     pg.on("pageerror", lambda exc: js_errors.append(f"pageerror: {exc}"))
     pg.on("response", _on_response)
     pg._ux_console_errors = js_errors  # type: ignore[attr-defined]
     pg._ux_server_errors = server_errors  # type: ignore[attr-defined]
+    pg._ux_api_errors = api_errors  # type: ignore[attr-defined]
 
     try:
         yield pg
     finally:
         context.close()
+        # 4xx-on-/api/ is DIAGNOSTIC, never an assertion: some are genuinely
+        # benign (config not-yet-saved, preview-before-generate — the same noise
+        # the sentinel above filters out of the console), so failing on them would
+        # red-line honest tests. But a *swallowed* 4xx is exactly what hid the
+        # settled-but-empty positioning draft for 11 CI runs: the route 400'd, the
+        # client dropped it on the floor, and a 5xx-only sentinel looked straight
+        # past it — leaving a bare "textarea is empty" with no cause attached.
+        # Printing them here costs nothing on a green run (pytest discards captured
+        # output) and hands the next failure in this class its own root cause.
+        if api_errors:
+            print("\n[ux] non-2xx /api/ responses observed during this test:")
+            for line in api_errors:
+                print(f"  {line}")
 
     assert not js_errors, f"JS console errors during test: {js_errors}"
     assert not server_errors, f"HTTP 5xx during test: {server_errors}"
@@ -213,3 +230,14 @@ def server_errors(page: Page) -> list[str]:
     """Live HTTP-5xx list for tests that assert on it explicitly (the 5b
     cascade test reads this to prove no /personas 500)."""
     return page._ux_server_errors  # type: ignore[attr-defined]
+
+
+@pytest.fixture
+def api_errors(page: Page) -> list[str]:
+    """Live non-2xx `/api/` list for tests that assert on it explicitly.
+
+    Not asserted by the `page` sentinel (some 4xx here are benign — see the note
+    there); a test that knows a given flow must produce NO failed API call opts in
+    by reading this and asserting it empty.
+    """
+    return page._ux_api_errors  # type: ignore[attr-defined]

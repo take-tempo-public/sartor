@@ -515,13 +515,31 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **8** (was 7; +1 wordmark sweep of the wiki + review archive
-2026-07-13, `chore/scorecard-and-docs-voice`). (`grep -c '^- \[ \]'` over this
+_Rendered open count: **9** (was 8; +1 `--reruns` masking policy, 2026-07-13,
+`fix/compose-summary-draft-settle-hole`). (`grep -c '^- \[ \]'` over this
 subsection is the source of truth, re-verified at each close-out). **Ceiling
 reached — schedule a reduction sprint** (the rule is ~8–10, and clear before
 adding); several items below are small and clearable in one pass. The full
 per-item addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
+
+- [ ] **`--reruns 2` on the `ux` tier is a masking policy, and it masked a real bug for 11
+      runs** — `fix/ci-first-linux-run` scoped `--reruns 2` to the `ux` tier for a
+      characterized load-flake class (`ci.yml`, "Flake policy": *a real regression fails all
+      three attempts*). It then hid a **chronically broken** test:
+      `test_compose_summary_draft_autofills_edits_and_persists` was failing **64% of
+      attempts**, which `--reruns 2` rendered as a `0.636³ ≈ 25.8%` predicted red-per-run
+      lottery (**27.3% observed** across 11 runs) — so `main`'s CI was a coin flip, not a
+      signal, and a governance commit that touched zero UX code appeared to "break" it.
+      The underlying bug is **fixed** on this branch; the **policy question is not**, and is
+      deliberately left open rather than changed in the same breath as the bug it was
+      masking. **Decide:** (a) keep `--reruns 2` and add a *rerun-rate alarm* (a test that
+      needs a retry more than X% of runs is reported, not silently passed); (b) drop reruns
+      on the `ux` tier and let genuine load-flakes go red; (c) keep as-is. Needs the
+      post-fix true pass rate first — measure it over the next several `main` runs.
+      _(discovered: v1.1.0 stream, 2026-07-13, `fix/compose-summary-draft-settle-hole`;
+      open count 8 → 9.)_
+      **→ Owner call; gather the post-fix rate first. Do not change the retry policy blind.**
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
@@ -554,6 +572,15 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       time `static/app.js`'s Compose section is touched.
       _(discovered: v1.1.0 stream, 2026-07-12, `fix/ci-first-linux-run`.)_
       **→ Low priority, own small pass.**
+      **→ Investigated and EXONERATED as a suspect (2026-07-13,
+      `fix/compose-summary-draft-settle-hole`)** — it was the leading hypothesis for the
+      chronically-red `test_compose_summary_draft_autofills_edits_and_persists`, and it is
+      **not** the cause: that test's failing path runs through `_fireDraftSummary`, whose
+      `loadComposition()` **is** awaited (`static/app.js:7338`), and every un-awaited site
+      above sits off it. The real cause was a torn read of a non-atomically-written context
+      file plus a once-ever latch burned before the fire. **This row stays open on its own
+      merits** (the sites are still a genuine latent settle-gate inconsistency) — but do not
+      re-chase it as the explanation for a Compose flake; that ground is covered.
 
 - [x] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
       `scripts/wiki_freshness.py:drift_count` excludes only `docs/wiki/`, not `docs-site/`.

@@ -7098,7 +7098,10 @@ async function loadComposition() {
   // drop summary_text / recommendations).
   let bgDraftFiring = false;
   if (!summary.has_draft && _draftSummaryFiredForApp !== _composeApplicationId) {
-    _draftSummaryFiredForApp = _composeApplicationId;
+    // The once-per-application claim is taken INSIDE _fireDraftSummary, and
+    // released again when the draft doesn't persist (see the note there).
+    // Setting it here — before the fire, never releasing it — is what turned a
+    // transient POST failure into a permanently empty summary.
     bgDraftFiring = true;
     _fireDraftSummary(false);
   } else if (!summary.has_recommendation && (summary.variants || []).length > 1) {
@@ -7320,6 +7323,19 @@ async function _fireDraftSummary(force, btn) {
   // The silent auto-fire on Compose arrival (force=false, no btn) is
   // unaffected: it already has no button to disable.
   _setBtnPending(btn, 'Regenerating…');
+  // Claim the auto-fire for this application BEFORE the await, so a concurrent
+  // loadComposition() pass can't double-fire the draft — but hold the claim only
+  // while the POST is in flight. It is RELEASED below unless the draft actually
+  // persisted, because a once-EVER latch makes any transient failure permanent:
+  // the finally-decrement still drains the bg-pending counter, so the page reports
+  // "settled" (data-compose-ready + 0 pending) with an empty textarea and nothing
+  // left to re-fire it. That was the settled-but-empty draft — 64% of CI attempts,
+  // and for a real user a "Drafting your summary…" placeholder that never resolved.
+  // (Its trigger, a 400 from a torn read of a non-atomically-written context file,
+  // is fixed separately in hardening.write_context_atomic.)
+  const claimed = _composeApplicationId;
+  _draftSummaryFiredForApp = claimed;
+  let persisted = false;
   _markComposeBgReload(1);
   try {
     const res = await fetch(
@@ -7332,16 +7348,34 @@ async function _fireDraftSummary(force, btn) {
     // wait on for the terminal render. A fire-and-forget loadComposition() lets
     // the finally decrement the counter the instant the reload hits its first
     // await — BEFORE the drafted summary repaints the textarea — so the gate can
-    // read "settled" over the empty "Drafting…" state, and the once-only latch
-    // (_draftSummaryFiredForApp) means it never re-fires. Awaiting keeps the
-    // counter raised until the repaint lands. (Confirmed load-flake, PR #8 CI.)
-    if (res.ok) await loadComposition();
+    // read "settled" over the empty "Drafting…" state. Awaiting keeps the counter
+    // raised until the repaint lands. (Confirmed load-flake, PR #8 CI.)
+    if (res.ok) {
+      persisted = true;
+      await loadComposition();
+    } else {
+      _failDraftSummary('Could not draft your summary. Use Regenerate to retry.');
+    }
   } catch {
-    // Non-blocking — the user can Regenerate or type their own summary.
+    _failDraftSummary('Could not reach the server to draft your summary.');
   } finally {
+    // Release the claim on every non-success path, so the draft can be retried —
+    // by the next loadComposition() pass, or by the user hitting Regenerate.
+    if (!persisted && _draftSummaryFiredForApp === claimed) _draftSummaryFiredForApp = null;
     _markComposeBgReload(-1);
     _clearBtnPending(btn, 'Regenerate');
   }
+}
+
+// A draft that never persisted must not leave the textarea sitting under a
+// "Drafting your summary…" placeholder forever — that placeholder is a promise the
+// app can no longer keep, and before this fix it was the ONLY thing a user saw when
+// the POST failed: no error, no retry, no recovery. Clear it and say so; the
+// Regenerate button beside the textarea is the retry.
+function _failDraftSummary(msg) {
+  const el = document.getElementById('composeSummaryDraft');
+  if (el && !el.value) el.placeholder = 'No summary drafted — use Regenerate to try again.';
+  _toast(msg, true);
 }
 
 // Phase 3 — auto-author gap-fill bullets (Sonnet). Fires once on Compose arrival

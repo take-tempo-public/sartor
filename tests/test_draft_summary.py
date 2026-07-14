@@ -232,6 +232,30 @@ class TestDraftSummaryRoute:
         assert ctx["composition_overrides"]["summary_text"] == "Freshly regenerated summary."
         assert "summary_text_edited" not in ctx["composition_overrides"]
 
+    def test_torn_context_file_is_a_loud_400(self, draft_app):
+        """A half-written context file must fail loudly — the server half of the bug.
+
+        `fix/compose-summary-draft-settle-hole`: a concurrent NON-atomic write left
+        `context_*.json` truncated, this route 400'd on the `JSONDecodeError`, and
+        the Compose client swallowed the 400 — so the user sat under "Drafting your
+        summary…" forever and CI saw only an empty textarea. Writes are atomic now
+        (`hardening.write_context_atomic`), so the tear can no longer happen; this
+        pins the contract the client is now required to surface instead of drop.
+        """
+        _app, output_dir = draft_app
+        _cid, aid, ctx_path = _seed(output_dir)
+        # Byte-for-byte what a reader saw mid-`Path.write_text`: the file, truncated.
+        Path(ctx_path).write_text('{"application_id": 1, "care', encoding="utf-8")
+
+        client = _app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/draft-summary",
+            json={"context_path": ctx_path},
+        )
+
+        assert r.status_code == 400, r.get_data(as_text=True)
+        assert "unreadable" in r.get_json()["error"].lower()
+
     def test_get_composition_surfaces_the_draft(self, draft_app):
         _app, output_dir = draft_app
         _cid, aid, ctx_path = _seed(output_dir)

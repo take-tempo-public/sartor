@@ -51,6 +51,7 @@ from flask.typing import ResponseReturnValue
 from spectree import Response as OpenApiResponse
 
 from blueprints.corpus import _skill_to_dict, _tag_list
+from hardening import write_context_atomic
 from web_infra import _error_detail_payload, _get_client, _safe_username, _within, spec
 from web_infra.openapi import ApplicationDetail, ApplicationsListResponse
 
@@ -1704,7 +1705,7 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 context_data=ctx,
             )
 
-        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        write_context_atomic(cp, ctx)
         return jsonify(
             {
                 "application_id": application_id,
@@ -1834,7 +1835,7 @@ def recommend_application_bullets(application_id: int) -> ResponseReturnValue:
                 }
             ctx["llm_recommendations"] = by_exp
             ctx.pop("jd_text", None)  # transient; don't leak into iteration chain
-            cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+            write_context_atomic(cp, ctx)
             return jsonify(
                 {
                     "application_id": application_id,
@@ -1942,7 +1943,7 @@ def recommend_application_summary(application_id: int) -> ResponseReturnValue:
         ctx["llm_summary_recommendation"] = result
         ctx.pop("summary_items", None)
         ctx.pop("jd_text", None)
-        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        write_context_atomic(cp, ctx)
         return jsonify(
             {
                 "application_id": application_id,
@@ -2082,7 +2083,7 @@ def draft_application_summary(application_id: int) -> ResponseReturnValue:
 
         for transient in ("summary_source_text", "career_facts", "jd_text"):
             ctx.pop(transient, None)
-        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        write_context_atomic(cp, ctx)
         return jsonify(
             {
                 "application_id": application_id,
@@ -2240,7 +2241,7 @@ def draft_application_gap_fill(application_id: int) -> ResponseReturnValue:
 
         ctx.pop("jd_text", None)
         ctx["llm_gap_fill_proposals"] = normalized
-        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        write_context_atomic(cp, ctx)
         return jsonify(
             {
                 "application_id": application_id,
@@ -2330,7 +2331,7 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
             overrides["retired_gap_fill_keys"] = retired_keys
             ctx["composition_overrides"] = overrides
             ctx["llm_gap_fill_proposals"] = remaining
-            cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+            write_context_atomic(cp, ctx)
             return jsonify(
                 {
                     "application_id": application_id,
@@ -2361,7 +2362,7 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
             overrides["accepted_generated_bullet_ids"] = accepted_ids
             ctx["composition_overrides"] = overrides
             ctx["llm_gap_fill_proposals"] = remaining
-            cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+            write_context_atomic(cp, ctx)
             return jsonify(
                 {
                     "application_id": application_id,
@@ -2428,7 +2429,7 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
         # (the resolver pending-leak guard renders it nowhere until its id is in
         # accepted_generated_bullet_ids), so no compensating delete is needed.
         session.commit()
-        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        write_context_atomic(cp, ctx)
         return jsonify(
             {
                 "application_id": application_id,
@@ -2642,7 +2643,7 @@ def accept_application_refinement(application_id: int) -> ResponseReturnValue:
             overrides.pop("summary_text_edited", None)
             overrides["summary_text"] = text
             ctx["composition_overrides"] = overrides
-            cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+            write_context_atomic(cp, ctx)
             return jsonify(
                 {"application_id": application_id, "target_kind": "summary", "summary_text": text}
             )
@@ -2726,7 +2727,7 @@ def accept_application_refinement(application_id: int) -> ResponseReturnValue:
         overrides["accepted_generated_bullet_ids"] = accepted_ids
         overrides["excluded"] = sorted(excluded_ids)
         ctx["composition_overrides"] = overrides
-        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        write_context_atomic(cp, ctx)
 
         return jsonify(
             {
@@ -2859,7 +2860,7 @@ def recommend_application_experience_summaries(application_id: int) -> ResponseR
         ctx["llm_experience_summary_recommendations"] = result
         ctx.pop("experience_summary_items", None)
         ctx.pop("jd_text", None)
-        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        write_context_atomic(cp, ctx)
         return jsonify(
             {
                 "application_id": application_id,
@@ -2958,7 +2959,7 @@ def recommend_application_skills(application_id: int) -> ResponseReturnValue:
         ctx["llm_skill_recommendations"] = result
         ctx.pop("skill_items", None)
         ctx.pop("jd_text", None)
-        cp.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+        write_context_atomic(cp, ctx)
         return jsonify(
             {
                 "application_id": application_id,

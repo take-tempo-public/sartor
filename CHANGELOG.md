@@ -21,6 +21,45 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Fixed: the positioning draft could vanish permanently — and it was 64% of CI's red (`fix/compose-summary-draft-settle-hole`)
+
+A user arriving at Compose whose summary-draft POST failed saw **"Drafting your summary…"
+forever** — no error, no retry, no recovery. The same defect was, separately, the single
+cause of every recent red CI run on `main`.
+
+Three faults, stacked:
+
+- **The context file was written non-atomically.** `Path.write_text` truncates its target
+  *before* it writes, so a concurrent reader saw an empty or half-written
+  `context_*.json` and its `json.loads` raised. Compose fires several context-writing
+  routes against that one file, so the window was reachable under load. `POST
+  /draft-summary` then 400'd with "Context file unreadable." Measured against a ~1 MB
+  context with concurrent readers: **449 torn reads**. All 14 write sites (12 in
+  `blueprints/applications.py`, 2 in `hardening.py`) now go through the new
+  `hardening.write_context_atomic` — a unique temp file plus `os.replace`, which is
+  atomic on POSIX and Windows alike. This is a data-integrity fix in its own right: that
+  file is the pipeline's audit trail.
+- **The client burned its retry latch before it knew the draft had landed.**
+  `_draftSummaryFiredForApp` was set *before* the fire, `if (res.ok)` silently skipped the
+  reload on a non-OK response, `catch {}` swallowed throws — and the `finally` drained the
+  settle counter regardless. The page therefore reported itself **settled** with the draft
+  gone and nothing left to re-fire it. The once-*ever* latch is now an **in-flight claim**,
+  released on any non-success path, and the failure is surfaced instead of swallowed.
+- **The test sentinel was blind to it.** `tests/ux/conftest.py` asserted on HTTP ≥ 500 and
+  deliberately ignored 4xx as benign resource-load noise. The route failed with **400**, so
+  the sentinel looked straight past it and the test could only report "the textarea never
+  filled in." Non-2xx `/api/` responses are now collected and printed on failure —
+  diagnostic, never an assertion, since some 4xx here genuinely are benign.
+
+**On the CI red:** `test_compose_summary_draft_autofills_edits_and_persists` was failing
+**64% of attempts** and had been for at least 11 runs. `--reruns 2` turned that into a
+`0.636³ ≈ 25.8%` predicted red-per-run lottery against **27.3% observed** — so `main` had
+not regressed at all; the governance commit that appeared to break it simply lost a coin
+flip, and the "green" commit before it had also failed 2 of its 3 attempts. Windows note:
+`os.replace` raises `PermissionError` while another handle holds the destination open (and
+granting `FILE_SHARE_DELETE` does not lift it — measured), so the writer carries a bounded
+retry; POSIX has no such constraint, so it never fires on Linux.
+
 ### Added: OpenSSF Best Practices badge — passing (100%)
 
 The owner completed the [OpenSSF Best Practices](https://www.bestpractices.dev/projects/13598)
