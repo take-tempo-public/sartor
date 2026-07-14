@@ -515,9 +515,10 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **10** (was 11; −1 Compose lost-update root cause, **RESOLVED**
+_Rendered open count: **11** (was 11; −1 Compose lost-update root cause, **RESOLVED**
 2026-07-14 on `fix/compose-summary-draft-settle-hole` — the falsification test first, then
-`hardening.context_transaction` across all 12 sites).
+`hardening.context_transaction` across all 12 sites; **+1** the `scroll_position` UX flake,
+surfaced by the first full `pytest -m ux` run this branch ever completed).
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
 each close-out). **STILL AT THE CEILING — the reduction sprint remains DUE, and should be
 scheduled before the v1.1.0 tag, not after** (the rule is ~8–10, and clear before
@@ -618,6 +619,35 @@ addition/resolution chronology since 2026-06-15 lives in git history
       (vs. ~36% pass-per-attempt before — a ~1-in-12,000 event if unfixed).
       **NOT yet met:** the acceptance bar is no-RERUN across **more than one CI run**; those
       7 runs are **local**. The bar is cleared by CI, not by me.
+
+- [ ] **`test_corpus_reload_preserves_scroll_position` is a real ~10–20% flake — measured, NOT
+      fixed** — `tests/ux/regression/test_20260708_busy_states_and_chip.py`. Fails as
+      `scroll position not preserved: 369 -> 25423`, with **identical values every time** (a
+      deterministic code path being hit, not random jitter). Note the tell: the test scrolls to
+      **300**, yet reads `before` back as **369** — so *something asynchronous is already
+      scrolling the page* before the assertion window even opens, and the post-`refreshCorpus()`
+      jump to ~25 400 is the page landing at the list bottom. The suspect is a late
+      `scrollIntoView` / focus during corpus render ([[reference-ux-generate-drive-and-scroll-spy]]),
+      but **that is a hypothesis, not an observation — do not fix it on that basis** (C-7).
+      **Measured 2026-07-14, 38 runs across three trees:**
+      | tree | fails |
+      |---|---|
+      | `2df55d7` (pre-fix) | 0 / 14 |
+      | HEAD **with the lost-update fix's production code reverted** | **1 / 10** |
+      | HEAD (fix in) | 3 / 14 |
+      **Not caused by the lost-update fix** — proved by experiment, not by argument: reverting
+      *only* `hardening.py` + `blueprints/applications.py` at HEAD still flakes. (The tempting
+      wrong conclusion was "0/14 on the old commit ⇒ I broke it"; a 10% flake shows zero failures
+      in 14 runs ~23% of the time. Under-sampling, not a regression.)
+      **Why it matters anyway:** `--reruns 2` renders a 10% flake as a ~0.1% red, so CI will
+      almost never show it — which is *exactly* how the 64%-broken Compose test hid for 11 runs.
+      A rerun nobody looks at is a bug nobody fixes. The rerun reporter now prints every
+      attempt's traceback, so this one is at least visible.
+      **Next step is an instrument, not a fix:** log what scrolls the page (a `scrollTop` setter
+      / `scrollIntoView` spy) during corpus render, and capture it failing.
+      _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole` — surfaced
+      by the first full `pytest -m ux` run this branch ever completed; open count 10 → 11.)_
+      **→ Own small branch. Do NOT bundle with the retry-policy decision above.**
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
