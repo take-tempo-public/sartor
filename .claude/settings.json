@@ -40,6 +40,11 @@
           },
           {
             "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/require-evidence-before-fix.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/block-secrets.sh",
             "timeout": 5
           },
@@ -98,6 +103,30 @@
           {
             "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/wiki-freshness-reminder.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/restore-evidence.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "auto|manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/capture-before-compact.sh",
             "timeout": 5
           }
         ]
