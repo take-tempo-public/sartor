@@ -176,6 +176,12 @@ subagents on an un-captured context — their findings return *into* a window th
 away. And **a degraded context is a handoff trigger, not a push-harder trigger**: an
 investigation that has not converged by the time the window is thin should be captured and
 handed off, because a model on a thinning record keeps answering with undiminished confidence.
+**And the load-bearing corollary: a model's assessment of its own context is not evidence.**
+"I still have enough context to finish this" is the one judgment it is structurally unable to
+make — degradation is invisible from the inside, and the confidence survives the competence.
+So the trigger for a handoff must be **external and mechanical** (elapsed session, a compaction
+having occurred, repeated failure to close), never the model's own sense that it is still fine.
+When the operator says stop, that is a **fact about the context**, not an opinion to weigh.
 *[src: adopted 2026-07-14, owner-directed, from friction — the harness compacted the working
 context *while the agent was on its way to write the capture*. Enforced by the `restore-evidence`
 SessionStart hook (which replays the branch's `## Observed` + `## Falsified` into every fresh

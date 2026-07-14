@@ -515,13 +515,14 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **10** (was 9; +1 Compose lost-update root cause, 2026-07-14,
-`fix/compose-summary-draft-settle-hole`). (`grep -c '^- \[ \]'` over this
-subsection is the source of truth, re-verified at each close-out). **Over the
-ceiling — the reduction sprint is now DUE, not merely scheduled** (the rule is
-~8–10, and clear before adding); several items below are small and clearable in
-one pass. The full per-item addition/resolution chronology since 2026-06-15 lives
-in git history (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
+_Rendered open count: **11** (was 9; +1 Compose lost-update root cause, +1 unrunnable
+quality gate — both 2026-07-14, `fix/compose-summary-draft-settle-hole`).
+(`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
+each close-out). **OVER THE CEILING — the reduction sprint is DUE, and should be
+scheduled before the v1.1.0 tag, not after** (the rule is ~8–10, and clear before
+adding); several items below are small and clearable in one pass. The full per-item
+addition/resolution chronology since 2026-06-15 lives in git history
+(`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
 
 - [ ] **`--reruns 2` on the `ux` tier is a masking policy, and it masked a real bug for 11
       runs** — `fix/ci-first-linux-run` scoped `--reruns 2` to the `ux` tier for a
@@ -544,6 +545,32 @@ in git history (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated her
       open count 8 → 9. Corrected 2026-07-14: the original text claimed the underlying bug
       was fixed on that branch. It was not — see the next item.)_
       **→ Owner call; gather the post-fix rate first. Do not change the retry policy blind.**
+
+- [ ] **The quality gate is unrunnable by an agent — which makes it unenforceable** — the full
+      `python -m scripts.gate` takes **~13 minutes**; an agent's shell commands are hard-capped
+      at **10**. So the project's single definition of "green" — the thing AGENTS.md,
+      CONTRIBUTING.md and CI all point at — **cannot be executed by its primary developer**.
+      This is not an inconvenience, it is a governance hole: every agent will hit this wall and
+      rationalise around it ("ruff and mypy passed, the targeted tests passed, it's *probably*
+      fine"), which is exactly the quiet downgrade of a binding step to advisory that C-7 exists
+      to stop. An unrunnable gate WILL be skipped.
+      **Measured so far (2026-07-14):** full suite = **705 s / 2 066 passed** (one clean run
+      earlier the same day); **collection alone ≈ 70 s** on every invocation, before a single
+      test executes; non-ux tier = **1 974** tests, ux tier = **115**. The Playwright tier is
+      **not** the bottleneck — the ordinary route/unit tests are.
+      **UNEXPLAINED, and deliberately not explained away:** `-m "not ux"` alone and `-m ux`
+      alone *each* exceeded 590 s, which cannot be reconciled with a 705 s full run. Checked and
+      **falsified**: orphaned pytest processes from killed runs (zero alive). Do not build on
+      either number until this contradiction is resolved — **that** is the first thing to
+      measure.
+      **Instrument (not the fix):** per-test-file timings in sub-10-minute chunks
+      (`--durations`), which doubles as a *resumable* gate. Candidate remedies, all **untested
+      hypotheses**: parallelisation (`pytest-xdist -n auto`, a new dep → D-1 requires
+      `pyproject.toml` + `CHANGELOG`); the ~70 s collection overhead (something heavy at module
+      scope?); the per-test `importlib.reload(app_module)` in the app fixtures. **Measure before
+      choosing.**
+      _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole`;
+      open count 10 → 11 — **well over the ~8–10 ceiling; the reduction sprint is overdue**.)_
 
 - [ ] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
       fixed** — twelve routes in `blueprints/applications.py` each read the whole
