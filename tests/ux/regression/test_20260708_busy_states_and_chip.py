@@ -28,6 +28,7 @@ state is reliably observable before it clears. LLM-free throughout.
 
 from __future__ import annotations
 
+import os
 import re
 import time
 from collections.abc import Callable
@@ -58,6 +59,56 @@ def _delayed(fn: Callable[..., Any], seconds: float) -> Callable[..., Any]:
         return fn(*args, **kwargs)
 
     return _wrapped
+
+
+# ---------------------------------------------------------------------------
+# INSTRUMENT (charter C-7, fix/ux-scroll-position-flake). A WIDE scroll-source
+# spy for test_corpus_reload_preserves_scroll_position: records EVERY scroll
+# mutation and its source (scroll event / window.scrollTo / scrollIntoView /
+# focus / element scrollTop setter), each tagged with the calling stack, a
+# timestamp, and the settle state. Dumped on failure so the cause prints itself
+# under the RERUN reporter. Scoped WIDER than the scrollIntoView hypothesis on
+# purpose: an instrument narrowed to one theory confirms it by hiding rivals.
+# ---------------------------------------------------------------------------
+_SCROLL_SPY_JS = r"""
+(() => {
+  window.__scrollSpy = [];
+  const t0 = performance.now();
+  const caller = () => ((new Error().stack || '').split('\n').slice(2, 5).map(l => l.trim()).join(' | '));
+  const rec = (source, extra) => window.__scrollSpy.push(Object.assign({
+    t: +(performance.now() - t0).toFixed(1),
+    y: window.scrollY,
+    h: document.documentElement.scrollHeight,
+    active: document.activeElement ? (document.activeElement.id ? '#' + document.activeElement.id : document.activeElement.tagName) : null,
+    source: source,
+  }, extra));
+  const tag = (el) => { try { return (el.id ? '#' + el.id : el.tagName) +
+    (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : ''); }
+    catch (e) { return '?'; } };
+  window.addEventListener('scroll', () => rec('scroll-event', {}), {passive: true, capture: true});
+  ['scrollTo', 'scroll'].forEach((fn) => { const o = window[fn].bind(window);
+    window[fn] = function (...a) { rec('window.' + fn, {args: JSON.stringify(a).slice(0, 120), by: caller()}); return o(...a); }; });
+  const siv = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function (...a) { rec('scrollIntoView', {el: tag(this), args: JSON.stringify(a).slice(0, 80), by: caller()}); return siv.apply(this, a); };
+  if (Element.prototype.scrollIntoViewIfNeeded) { const sivn = Element.prototype.scrollIntoViewIfNeeded;
+    Element.prototype.scrollIntoViewIfNeeded = function (...a) { rec('scrollIntoViewIfNeeded', {el: tag(this), by: caller()}); return sivn.apply(this, a); }; }
+  const fo = HTMLElement.prototype.focus;
+  HTMLElement.prototype.focus = function (...a) { rec('focus', {el: tag(this), by: caller()}); return fo.apply(this, a); };
+  const d = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
+  if (d && d.set) Object.defineProperty(Element.prototype, 'scrollTop', {configurable: true, get: d.get,
+    set: function (v) { rec('el.scrollTop=', {el: tag(this), v: v, by: caller()}); return d.set.call(this, v); }});
+})();
+"""
+
+
+def _dump_scroll_spy(page: Page, phase: str, value: object, before: object = None) -> None:
+    """Print the full scroll-mutation timeline captured by ``_SCROLL_SPY_JS`` (diagnostic)."""
+    spy = page.evaluate("() => window.__scrollSpy || []")
+    print(
+        f"\n[scroll-spy] FAILURE phase={phase} value={value} before={before} -- {len(spy)} events:"
+    )
+    for event in spy:
+        print(f"  {event}")
 
 
 @pytest.mark.ux
@@ -245,6 +296,8 @@ def test_corpus_reload_preserves_scroll_position(
         seed_exp_with_bullets(cid, company=f"Company {i}")
     install_llm_stubs(ux_app, monkeypatch)
 
+    page.add_init_script(_SCROLL_SPY_JS)  # INSTRUMENT (C-7): wide scroll-source spy
+
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
     page.click("#topTabCorpus")
@@ -264,10 +317,14 @@ def test_corpus_reload_preserves_scroll_position(
 
     page.evaluate("() => window.scrollTo(0, 300)")
     before = page.evaluate("() => window.scrollY")
+    if before <= 0 or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "setup-before", before)
     assert before > 0, "test setup didn't actually scroll the page"
 
     page.evaluate("() => refreshCorpus()")
     expect(corpus_cards).to_have_count(20, timeout=15_000)
     page.wait_for_timeout(100)
     after = page.evaluate("() => window.scrollY")
+    if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "after-refresh", after, before)
     assert after == before, f"scroll position not preserved: {before} -> {after}"
