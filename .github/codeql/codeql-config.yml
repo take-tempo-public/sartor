@@ -13,4 +13,4 @@ queries:
 
 packs:
   python:
-    - sartor/sartor-python-models
+    - take-tempo-public/sartor-python-models

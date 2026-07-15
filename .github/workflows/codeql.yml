@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       security-events: write # upload the SARIF findings to code scanning
+      packages: read # pull the sartor-python-models data-extension pack from GHCR
     strategy:
       fail-fast: false
       matrix:
