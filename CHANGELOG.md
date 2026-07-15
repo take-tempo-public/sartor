@@ -825,7 +825,7 @@ Docs/tooling-only; no code path outside `scripts/wiki_freshness.py` touched, no 
   pins the exclusion.
 - **Baked-in absolute-path scrub.** Genericized out-of-project absolute paths left in tracked docs:
   `docs/dev/RELEASE_ARC.md` (`C:\Users\iam\...` reference-doc rows → `%USERPROFILE%\...`),
-  `docs/dev/ORCHESTRATION_PLAYBOOK.md` (`C:\Dev\sartor-e2e` → `../sartor-e2e`), and a comment in
+  `docs/dev/ORCHESTRATION_PLAYBOOK.md` (a local out-of-project clone path genericized), and a comment in
   `tests/test_enforcement_core.py`. Path genericization only — no reword of sign-off-gated prose.
 - **Owner-handle/repo scrub, files-only** (no git-history rewrite). `amodal1/sartor` → `take-tempo-public/sartor`
   in `CHANGELOG.md` (this file's own historical entries) and `docs/dev/RELEASE_CHECKLIST.md`; `amodal-open` →
