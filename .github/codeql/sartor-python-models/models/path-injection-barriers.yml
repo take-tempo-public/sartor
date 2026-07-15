@@ -1,0 +1,18 @@
+# CodeQL data extension: path-injection barriers for sartor's own code.
+#
+# web_infra.security.resolve_within resolves a candidate path, verifies it is
+# contained within a permitted root (raising PathTraversalError otherwise), and
+# returns the validated path. CodeQL's py/path-injection query models no
+# pathlib containment check as a barrier, so without this model it reports the
+# returned path as still tainted at every call site. barrierModel stops
+# path-injection taint flow at this function's return value — the value callers
+# hand to the filesystem.
+#
+# Rationale + the falsified alternatives (the chokepoint alone did not suffice):
+# docs/dev/diagnosis/codeql-path-injection-context.md (F-1, F-2).
+extensions:
+  - addsTo:
+      pack: codeql/python-all
+      extensible: barrierModel
+    data:
+      - ["web_infra.security", "Member[resolve_within].ReturnValue", "path-injection"]

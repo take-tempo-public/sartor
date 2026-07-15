@@ -16,6 +16,7 @@ leaf — it never imports `app.py`, any blueprint, or `config.py`.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from werkzeug.utils import secure_filename
@@ -80,8 +81,19 @@ def resolve_within(candidate: str | Path, root: Path) -> Path:
 
     Raises:
         PathTraversalError: if the resolved candidate is not within `root`.
+
+    Note (static analysis): normalization uses ``os.path.realpath`` rather than
+    ``Path.resolve()`` deliberately. CodeQL's ``py/path-injection`` models
+    ``realpath``/``normpath``/``abspath`` as *path normalization* but treats
+    ``pathlib.Path(candidate).resolve()`` on tainted input as a *sink*; and it
+    models no pathlib/``relative_to`` containment check as a barrier at all. The
+    containment this function enforces is therefore re-declared to CodeQL as a
+    ``barrierModel`` on this function's return value
+    (``.github/codeql/sartor-python-models/``), so the returned path is a
+    recognized barrier. Full rationale + the falsified alternatives:
+    ``docs/dev/diagnosis/codeql-path-injection-context.md`` (F-1, F-2).
     """
-    resolved = Path(candidate).resolve()
-    if not _within(resolved, root):
+    resolved = Path(os.path.realpath(candidate))
+    if not resolved.is_relative_to(Path(os.path.realpath(root))):
         raise PathTraversalError(str(candidate))
     return resolved

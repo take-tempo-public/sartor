@@ -87,6 +87,25 @@ factor is **use-in-place (dominated by the guard) vs return-through-a-summary** 
 barrier guard sanitizes uses dominated by the guard in the same function, but its function
 *summary* re-derives arg→return taint without that barrier.
 
+**F-2 — a pure-code sanitizer rewrite will NOT work; CodeQL's Python query recognizes almost no
+containment checks.** Read from the query library at HEAD
+(`python/ql/lib/semmle/python/frameworks/Stdlib.qll`,
+`.../security/dataflow/PathInjectionCustomizations.qll`, `.../Concepts.qll`):
+- `Path::PathNormalization` is modeled ONLY for `os.path.normpath` / `os.path.abspath` /
+  `os.path.realpath`. **`pathlib.Path.resolve` is NOT modeled** — our `.resolve()` isn't even
+  seen as normalization.
+- `Path::SafeAccessCheck` has **no stdlib implementations** — `pathlib.Path.is_relative_to`,
+  `str.startswith` are unmodeled, and `os.path.commonpath` / `commonprefix` are *deliberately
+  excluded* (they need user control of all args to be safe).
+- The only sanitizer hooks the query exposes are `ConstCompareAsSanitizerGuard` (comparison
+  against a constant — not our case) and **`SanitizerFromModel`**
+  (`ModelOutput::barrierNode(node, "path-injection")` — a models-as-data barrier).
+
+**Therefore the required mechanism is a models-as-data `path-injection` barrier** naming
+`resolve_within` under `.github/codeql/`, wired into `codeql.yml`. This is not a contingency —
+it is the fix. The chokepoint's value is that it gives the model **one** function to point at
+instead of 12 scattered guards. (This also explains why the owner's design pairs the two.)
+
 ---
 
 ## Inferred
