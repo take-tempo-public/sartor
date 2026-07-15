@@ -25,9 +25,15 @@ from web_infra.http import _error_detail_payload, _sse
 from web_infra.openapi import spec
 from web_infra.provisioning import _get_or_provision_candidate
 from web_infra.request_gates import _is_localhost_request
-from web_infra.security import _safe_username, _within
+from web_infra.security import (
+    PathTraversalError,
+    _safe_username,
+    _within,
+    resolve_within,
+)
 
 __all__ = [
+    "PathTraversalError",
     "_error_detail_payload",
     "_get_client",
     "_get_or_provision_candidate",
@@ -37,5 +43,6 @@ __all__ = [
     "_save_config",
     "_sse",
     "_within",
+    "resolve_within",
     "spec",
 ]

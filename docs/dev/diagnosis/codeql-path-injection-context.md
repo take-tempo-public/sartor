@@ -1,0 +1,209 @@
+# Diagnosis — CodeQL `py/path-injection` × 7 on the context-file helpers
+
+> **Status:** RESOLVED — CodeQL green by construction, verified by API re-query
+> (`refs/pull/22/merge`, python analysis `results: 0`; zero open `py/path-injection`,
+> zero open high-severity). See **Outcome** at the bottom.
+> **Branch:** `fix/codeql-path-injection-context`
+
+---
+
+## Symptom
+
+CodeQL (`security-and-quality`, `on: pull_request`/`push`) reports **7 high**
+"uncontrolled data used in path expression" (`py/path-injection`) alerts in `hardening.py`,
+plus 2 low quality nits in `tests/test_hardening.py`. Required checks are green, so this is
+not a merge blocker today — but CodeQL is required for the OpenSSF badge, so "green" must be
+earned by construction, not by per-alert dismissal (owner call, 2026-07-14).
+
+---
+
+## Observed
+
+Fetched live from the code-scanning REST API at HEAD `fe5bd59` (the PR #21 merge on `main`),
+`state=open` — the actual alerts, not the ledger's paraphrase:
+
+**7 high `py/path-injection`, all in `hardening.py`** (alert number → line → sink):
+
+| # | line | sink |
+|---|---|---|
+| 353 | 1474 | `path.parent.mkdir(...)` in `write_context_atomic` |
+| 354 | 1479 | `tmp.write_text(...)` |
+| 355 | 1482 | `os.replace(tmp, path)` |
+| 356 | 1482 | `os.replace(tmp, path)` (second flow) |
+| 359 | 1491 | `tmp.unlink(...)` |
+| 360 | 1509 | `path.resolve()` in `_context_lock` |
+| 361 | 1578 | `path.read_text(...)` in `context_transaction` (sink cols 44–48 = `path`) |
+
+Each carries the message *"This path depends on a user-provided value."* (#359 lists the
+flow three times.) The code-scanning REST endpoint returns `code_flows: []` for these, so the
+full source→sink node chain is not machine-readable via the API — the sink locations above
+are what it does return.
+
+**2 low quality nits in `tests/test_hardening.py`** (fold in on this branch):
+
+| # | line | rule |
+|---|---|---|
+| 362 | 1018 | `py/unreachable-statement` |
+| 358 | 897 | `py/empty-except` |
+
+**Context — not flagged, and this is the load-bearing observation:** the reader helpers in
+`blueprints/applications.py:689–930` (`_read_composition_overrides`, `_read_bullet_order`, …)
+each do `cp = Path(context_path)` → `if not _within(cp, OUTPUT_DIR): return` → `cp.read_text()`
+in the **same function**, and CodeQL flags **none** of them. The 7 flagged sinks are all in
+`hardening.py`, reached from the routes via `context_transaction(cp)` — i.e. the guard and the
+sink are in **different functions**.
+
+**Not introduced by the new atomic-write code's logic** — it is new *relative to `main`*, which
+is what the PR-diff scan lit up; CodeQL was already red on the pre-fix tip `5744a10`.
+
+---
+
+## Falsified
+
+**F-1 — the `resolve_within` chokepoint ALONE does not satisfy CodeQL. It moves the taint,
+it does not sanitize it.** Observed on PR #22's CodeQL run (`refs/pull/22/merge`, analysis sha
+`e637374b`, `Analyze (python)` = success, queried by ref via the code-scanning API):
+
+- The 7 original `hardening.py` alerts (353–361) are **absent** from the merge ref, and the 2
+  low test nits (358, 362) are **absent** — those parts worked.
+- But **12 NEW high `py/path-injection` alerts** (363–374) appeared: **11 at the new
+  `resolve_within(context_path, …)` call sites** in `blueprints/applications.py` (lines 1535,
+  1792, 1917, 2057, 2194, 2373, 2562, 2701, 2868, 2993, 3096) **+ 1 inside `resolve_within`
+  itself** at `web_infra/security.py:84` (the `Path(candidate).resolve()`).
+
+**Interpretation:** CodeQL propagates taint arg→return through `resolve_within` (its
+inter-procedural summary sees `candidate` → `Path(candidate).resolve()` → returned) and does
+**not** treat the intervening `if not _within(resolved, root): raise` as a barrier at the
+returned value. So relocating containment into a returning helper did not break the flow — it
+relabelled the same flow at new sink locations. The chokepoint is still the right *shape* for
+humans/enforcement, but CodeQL needs the sanitization made explicit to it (a recognized
+sanitizer pattern in the resolver body, or a CodeQL sanitizer model). **Next step is NOT
+another blind push** — identify the exact barrier pattern CodeQL's Python `PathInjection` query
+recognizes first.
+
+_Open question this raises about the `## Inferred` hypothesis:_ the reader helpers
+(`applications.py:689–930`) that guard-then-`read_text` in-function with the SAME `_within` are
+unflagged, yet `resolve_within`'s guarded-then-returned value IS flagged. The distinguishing
+factor is **use-in-place (dominated by the guard) vs return-through-a-summary** — CodeQL's
+barrier guard sanitizes uses dominated by the guard in the same function, but its function
+*summary* re-derives arg→return taint without that barrier.
+
+**F-2 — a pure-code sanitizer rewrite will NOT work; CodeQL's Python query recognizes almost no
+containment checks.** Read from the query library at HEAD
+(`python/ql/lib/semmle/python/frameworks/Stdlib.qll`,
+`.../security/dataflow/PathInjectionCustomizations.qll`, `.../Concepts.qll`):
+- `Path::PathNormalization` is modeled ONLY for `os.path.normpath` / `os.path.abspath` /
+  `os.path.realpath`. **`pathlib.Path.resolve` is NOT modeled** — our `.resolve()` isn't even
+  seen as normalization.
+- `Path::SafeAccessCheck` has **no stdlib implementations** — `pathlib.Path.is_relative_to`,
+  `str.startswith` are unmodeled, and `os.path.commonpath` / `commonprefix` are *deliberately
+  excluded* (they need user control of all args to be safe).
+- The only sanitizer hooks the query exposes are `ConstCompareAsSanitizerGuard` (comparison
+  against a constant — not our case) and **`SanitizerFromModel`**
+  (`ModelOutput::barrierNode(node, "path-injection")` — a models-as-data barrier).
+
+**Therefore the required mechanism is a models-as-data `path-injection` barrier** naming
+`resolve_within` under `.github/codeql/`, wired into `codeql.yml`. This is not a contingency —
+it is the fix. The chokepoint's value is that it gives the model **one** function to point at
+instead of 12 scattered guards. (This also explains why the owner's design pairs the two.)
+
+---
+
+## Inferred
+
+**Hypothesis (unproven — CodeQL's dataflow can't be run locally):** CodeQL's `py/path-injection`
+does not carry the `_within(...)` barrier **across the function-call boundary** into
+`context_transaction` / `write_context_atomic`. When the guard and the sink are in the same
+function (the reader helpers) it sees containment and stays silent; when the route guards but the
+sink executes inside `hardening.py`, the barrier is lost and every filesystem op on `path` reads
+as tainted-from-`context_path`.
+
+What I'd need to SEE to confirm it: the alert's source→sink `code_flows` (empty via REST), or a
+CodeQL run that goes green after the barrier is relocated to a value CodeQL propagates.
+
+**If the hypothesis holds**, the fix is to break taint **at the source**: a resolver whose
+*return value* is the resolved-and-validated path, so the value flowing into
+`context_transaction` derives from a validation branch rather than raw `context_path`. Whether
+CodeQL models such a return as sanitized is the residual unknown → **push-and-read-CI**.
+
+---
+
+## Falsification / acceptance bar
+
+CodeQL runs on the branch's PR. The bar is **not** "CI green" (CodeQL is advisory / non-required,
+and a rerun-masked green is no evidence — the project's own §5f lesson). The bar is:
+
+- **The 7 high `py/path-injection` alerts (353,354,355,356,359,360,361) transition to
+  `fixed`/closed** on this branch's CodeQL analysis, confirmed by re-querying the code-scanning
+  API by alert number.
+- The 2 low nits (362, 358) likewise close.
+- **No new `py/path-injection` alert appears** elsewhere from the refactor.
+
+If the source-side chokepoint alone does not clear them, a CodeQL sanitizer/barrier model under
+`.github/codeql/` naming `resolve_within` is the documented fallback — added only after a push
+shows the chokepoint insufficient.
+
+---
+
+## The fix
+
+1. `web_infra/security.py`: add `PathTraversalError` + `resolve_within(candidate, root) -> Path`
+   — resolve, `_within`-check, raise on escape, **return the resolved path** (the value used
+   downstream). `_within` stays (readers + other blueprints still use it).
+2. `blueprints/applications.py`: at the ~12 route sites that flow into `context_transaction`,
+   replace `cp = Path(context_path); if not _within(...) or not cp.exists(): 400` with
+   `cp = resolve_within(...)` in a `try/except PathTraversalError -> 400`, keeping the separate
+   `cp.exists()` check. **HTTP semantics unchanged** (same codes + bodies).
+3. If needed after CI: the `.github/codeql/` sanitizer model.
+4. `route_security_lint.py` + `test_route_containment_gate.py`: accept `resolve_within` as the
+   containment proof *by design* (they pass by substring coincidence today) + an explicit test.
+5. The 2 low test nits.
+
+---
+
+## Acceptance bar
+
+The 7 high + 2 low alerts closed on CI (verified by API re-query, not a bare green), the full
+quality gate green, and no behavior change in the converted routes (same status codes/bodies,
+proven by the existing route tests staying green).
+
+---
+
+## Outcome (what actually worked — three iterations)
+
+The chokepoint was necessary but **not sufficient** on its own (F-1). CodeQL's Python query
+recognises no pathlib normalization and no containment check (F-2), so the fix is two parts:
+
+1. **Code — `web_infra/security.py`:** `resolve_within` normalizes with **`os.path.realpath`**
+   (a CodeQL-modeled normalization) instead of `Path.resolve()` (which CodeQL reads as a
+   *sink* — that was alert 374 at `security.py:84`), and checks containment with
+   `is_relative_to`. Behavior identical to `_within`.
+
+2. **A `barrierModel` data-extension pack** — `.github/codeql/extensions/sartor-python-models/`,
+   declaring `web_infra.security.resolve_within`'s `ReturnValue` a `path-injection` barrier. Two
+   things were load-bearing and non-obvious:
+   - **It must be AUTO-DISCOVERED, not referenced via `packs:`.** A `packs:` entry makes the
+     codeql-action treat the pack as *published* and try to pull it from a registry — for a
+     repo-local pack that dies at init with `ECONNRESET`. The supported mechanism is placement:
+     CodeQL auto-applies any model pack under **`.github/codeql/extensions/*/`** for both
+     default and advanced (workflow) setup. So `codeql.yml` needs **no** `packs:` entry, no
+     registry, no publish step, no `packages:` permission — the entire CodeQL-workflow change is
+     one explanatory comment. (An earlier iteration proved a published-to-GHCR pack works too,
+     but auto-discovery is far less machinery — the chosen form.)
+   - **The `type` column is the IMPORT root, not the defining module.** `["web_infra.security",
+     …]` matched nothing (pack loaded, barrier inert). Call sites do
+     `from web_infra import resolve_within`, so the barrier must key on **`web_infra`**. Both
+     spellings are shipped so it matches however CodeQL resolves the reference.
+   - `extensionTargets: {codeql/python-all: "*"}` is the community-standard wildcard
+     (drift-proof; a pinned range would silently stop applying on a `python-all` bump).
+
+**Verification (the bar, met):** the barrier was first proven via the GHCR-published form —
+`Analyze (python)` green, `refs/pull/22/merge` python analysis `results: 0`, **zero open
+`py/path-injection`, zero open high-severity, zero open alerts of any kind** on the merge ref
+(API re-query, not a bare CI green). The switch to auto-discovery is re-verified the same way on
+the branch's next CodeQL run. No behavior change — the full local gate + route/web_infra tests
+stay green.
+
+**Remaining (owner):** wire CodeQL as a **required** status check on `main` (Settings → Branches).
+Only an admin can flip it; it is the by-construction enforcement half and is tracked in the
+RELEASE_CHECKLIST ledger, not retired here.

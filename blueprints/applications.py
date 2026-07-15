@@ -52,7 +52,15 @@ from spectree import Response as OpenApiResponse
 
 from blueprints.corpus import _skill_to_dict, _tag_list
 from hardening import context_transaction
-from web_infra import _error_detail_payload, _get_client, _safe_username, _within, spec
+from web_infra import (
+    PathTraversalError,
+    _error_detail_payload,
+    _get_client,
+    _safe_username,
+    _within,
+    resolve_within,
+    spec,
+)
 from web_infra.openapi import ApplicationDetail, ApplicationsListResponse
 
 if TYPE_CHECKING:
@@ -1520,8 +1528,11 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Application not found"}), 404
 
-        cp = Path(context_path)
-        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
             return jsonify({"error": "Invalid context_path"}), 400
         try:
             ctx = json.loads(cp.read_text(encoding="utf-8"))
@@ -1774,8 +1785,11 @@ def recommend_application_bullets(application_id: int) -> ResponseReturnValue:
             ):
                 return jsonify({"error": "Application not found"}), 404
 
-            cp = Path(context_path)
-            if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+            try:
+                cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+            except PathTraversalError:
+                return jsonify({"error": "Invalid context_path"}), 400
+            if not cp.exists():
                 return jsonify({"error": "Invalid context_path"}), 400
             try:
                 ctx = json.loads(cp.read_text(encoding="utf-8"))
@@ -1896,8 +1910,11 @@ def recommend_application_summary(application_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Application not found"}), 404
 
-        cp = Path(context_path)
-        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
             return jsonify({"error": "Invalid context_path"}), 400
         try:
             ctx = json.loads(cp.read_text(encoding="utf-8"))
@@ -2033,8 +2050,11 @@ def draft_application_summary(application_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Application not found"}), 404
 
-        cp = Path(context_path)
-        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
             return jsonify({"error": "Invalid context_path"}), 400
         try:
             ctx = json.loads(cp.read_text(encoding="utf-8"))
@@ -2167,8 +2187,11 @@ def draft_application_gap_fill(application_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Application not found"}), 404
 
-        cp = Path(context_path)
-        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
             return jsonify({"error": "Invalid context_path"}), 400
         try:
             ctx = json.loads(cp.read_text(encoding="utf-8"))
@@ -2343,8 +2366,11 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Application not found"}), 404
 
-        cp = Path(context_path)
-        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
             return jsonify({"error": "Invalid context_path"}), 400
         try:
             ctx = json.loads(cp.read_text(encoding="utf-8"))
@@ -2529,8 +2555,11 @@ def draft_application_refinement(application_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Application not found"}), 404
 
-        cp = Path(context_path)
-        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
             return jsonify({"error": "Invalid context_path"}), 400
         try:
             ctx = json.loads(cp.read_text(encoding="utf-8"))
@@ -2665,8 +2694,11 @@ def accept_application_refinement(application_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Application not found"}), 404
 
-        cp = Path(context_path)
-        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
             return jsonify({"error": "Invalid context_path"}), 400
         try:
             ctx = json.loads(cp.read_text(encoding="utf-8"))
@@ -2829,8 +2861,11 @@ def recommend_application_experience_summaries(application_id: int) -> ResponseR
         ):
             return jsonify({"error": "Application not found"}), 404
 
-        cp = Path(context_path)
-        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
             return jsonify({"error": "Invalid context_path"}), 400
         try:
             ctx = json.loads(cp.read_text(encoding="utf-8"))
@@ -2951,8 +2986,11 @@ def recommend_application_skills(application_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Application not found"}), 404
 
-        cp = Path(context_path)
-        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
             return jsonify({"error": "Invalid context_path"}), 400
         try:
             ctx = json.loads(cp.read_text(encoding="utf-8"))
@@ -3051,8 +3089,11 @@ def suggest_application_skills(application_id: int) -> ResponseReturnValue:
         ):
             return jsonify({"error": "Application not found"}), 404
 
-        cp = Path(context_path)
-        if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
             return jsonify({"error": "Invalid context_path"}), 400
         try:
             ctx = json.loads(cp.read_text(encoding="utf-8"))

@@ -48,6 +48,12 @@ jobs:
           # Advisory only — this workflow is NOT a required check (see ci.yml's
           # activation note); a new query surfacing a finding must not block a PR
           # until the finding is triaged.
+          #
+          # The model pack under .github/codeql/extensions/sartor-python-models/
+          # (which declares web_infra.security.resolve_within a py/path-injection
+          # barrier) is applied automatically — CodeQL auto-discovers model packs
+          # in .github/codeql/extensions/, so no `packs:` entry is needed. See
+          # docs/dev/diagnosis/codeql-path-injection-context.md.
           queries: security-and-quality
 
       # No build step: both languages are interpreted, so CodeQL's autobuild is a

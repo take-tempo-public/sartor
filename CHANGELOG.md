@@ -21,6 +21,33 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Security: one validated-resolver chokepoint for context-file paths (`fix/codeql-path-injection-context`)
+
+CodeQL's `py/path-injection` query flagged seven "high" alerts on the context-file helpers in
+`hardening.py`. They were **verified false positives** — every one of the twelve
+`context_transaction` call sites is `_within`-guarded — but the guard lived in the route while
+the filesystem operation ran in `hardening.py`, a different function, so the analyzer could not
+carry the containment barrier across the call boundary. Rather than dismiss the alerts per-item
+(which re-fires the moment any route is added), the containment is now expressed as a single
+**validated-resolver chokepoint**:
+
+- **`web_infra.resolve_within(candidate, root) -> Path`** normalizes the candidate with
+  `os.path.realpath`, verifies containment, raises `PathTraversalError` on escape, and
+  **returns the resolved-and-validated path** — the value callers use downstream. The eleven
+  route sites in `blueprints/applications.py` that flow into `context_transaction` now derive
+  their path from this call. `_within` is unchanged and still used directly by the in-function
+  reader helpers.
+- Because CodeQL's Python query recognizes no pathlib/containment sanitizer natively, a small
+  repo-local **CodeQL model pack** (`.github/codeql/extensions/sartor-python-models/`, applied
+  automatically — no publishing) declares that resolver a `path-injection` barrier. Net result,
+  confirmed on CI: zero open `py/path-injection`, zero open high-severity alerts.
+- HTTP behavior is **unchanged** (same `400 Invalid context_path`; existence stays a separate
+  check). The `route-security-lint` guard and the `test_route_containment_gate` do-not-regress
+  gate now accept `resolve_within` as containment proof **by design**, with an explicit test.
+
+No behavior change for users; this hardens the static-analysis posture so "CodeQL green" is
+earned by construction (it is required for the OpenSSF badge).
+
 ### Fixed: your drafted positioning summary could vanish for good — a lost update across twelve context writers (`fix/compose-summary-draft-settle-hole`)
 
 A user arriving at Compose could watch the app write their drafted positioning summary and

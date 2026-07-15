@@ -895,6 +895,10 @@ class TestWriteContextAtomic:
                 except json.JSONDecodeError as exc:
                     torn.append(str(exc))
                 except OSError:
+                    # Windows-only platform noise: a concurrent os.replace can
+                    # briefly deny a reader (PermissionError, an OSError
+                    # subclass). That is not a torn read — the invariant under
+                    # test is that JSONDecodeError never fires — so ignore it.
                     pass
                 time.sleep(0.004)
 
@@ -1011,9 +1015,17 @@ class TestContextTransaction:
         path = tmp_path / "context_1.json"
         write_context_atomic(path, {"a": 1})
 
-        with pytest.raises(RuntimeError, match="boom"), context_transaction(path) as fresh:
-            fresh["half"] = "landed"
-            raise RuntimeError("boom")
+        # The raising body lives in a helper so the `raise` is not the terminal
+        # statement of the `with pytest.raises(...)` block: CodeQL does not model
+        # pytest.raises suppressing it and would otherwise flag the assert below
+        # as unreachable (py/unreachable-statement). Behavior is identical.
+        def _raise_inside_transaction() -> None:
+            with context_transaction(path) as fresh:
+                fresh["half"] = "landed"
+                raise RuntimeError("boom")
+
+        with pytest.raises(RuntimeError, match="boom"):
+            _raise_inside_transaction()
 
         assert json.loads(path.read_text(encoding="utf-8")) == {"a": 1}, (
             "a failed delta half-landed — the write must be skipped entirely"
