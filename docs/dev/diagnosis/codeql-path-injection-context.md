@@ -1,7 +1,8 @@
 # Diagnosis — CodeQL `py/path-injection` × 7 on the context-file helpers
 
-> **Status:** mechanism PROVEN-by-observation for *where/what*; the *why CodeQL fires*
-> is an inference (the query can't be run locally). The fix is verified by CI, not by me.
+> **Status:** RESOLVED — CodeQL green by construction, verified by API re-query
+> (`refs/pull/22/merge`, python analysis `results: 0`; zero open `py/path-injection`,
+> zero open high-severity). See **Outcome** at the bottom.
 > **Branch:** `fix/codeql-path-injection-context`
 
 ---
@@ -165,3 +166,44 @@ shows the chokepoint insufficient.
 The 7 high + 2 low alerts closed on CI (verified by API re-query, not a bare green), the full
 quality gate green, and no behavior change in the converted routes (same status codes/bodies,
 proven by the existing route tests staying green).
+
+---
+
+## Outcome (what actually worked — three iterations)
+
+The chokepoint was necessary but **not sufficient** on its own (F-1). CodeQL's Python query
+recognises no pathlib normalization and no containment check (F-2), so the fix is two parts:
+
+1. **Code — `web_infra/security.py`:** `resolve_within` normalizes with **`os.path.realpath`**
+   (a CodeQL-modeled normalization) instead of `Path.resolve()` (which CodeQL reads as a
+   *sink* — that was alert 374 at `security.py:84`), and checks containment with
+   `is_relative_to`. Behavior identical to `_within`.
+
+2. **A `barrierModel` data-extension pack** — `.github/codeql/extensions/sartor-python-models/`,
+   declaring `web_infra.security.resolve_within`'s `ReturnValue` a `path-injection` barrier. Two
+   things were load-bearing and non-obvious:
+   - **It must be AUTO-DISCOVERED, not referenced via `packs:`.** A `packs:` entry makes the
+     codeql-action treat the pack as *published* and try to pull it from a registry — for a
+     repo-local pack that dies at init with `ECONNRESET`. The supported mechanism is placement:
+     CodeQL auto-applies any model pack under **`.github/codeql/extensions/*/`** for both
+     default and advanced (workflow) setup. So `codeql.yml` needs **no** `packs:` entry, no
+     registry, no publish step, no `packages:` permission — the entire CodeQL-workflow change is
+     one explanatory comment. (An earlier iteration proved a published-to-GHCR pack works too,
+     but auto-discovery is far less machinery — the chosen form.)
+   - **The `type` column is the IMPORT root, not the defining module.** `["web_infra.security",
+     …]` matched nothing (pack loaded, barrier inert). Call sites do
+     `from web_infra import resolve_within`, so the barrier must key on **`web_infra`**. Both
+     spellings are shipped so it matches however CodeQL resolves the reference.
+   - `extensionTargets: {codeql/python-all: "*"}` is the community-standard wildcard
+     (drift-proof; a pinned range would silently stop applying on a `python-all` bump).
+
+**Verification (the bar, met):** the barrier was first proven via the GHCR-published form —
+`Analyze (python)` green, `refs/pull/22/merge` python analysis `results: 0`, **zero open
+`py/path-injection`, zero open high-severity, zero open alerts of any kind** on the merge ref
+(API re-query, not a bare CI green). The switch to auto-discovery is re-verified the same way on
+the branch's next CodeQL run. No behavior change — the full local gate + route/web_infra tests
+stay green.
+
+**Remaining (owner):** wire CodeQL as a **required** status check on `main` (Settings → Branches).
+Only an admin can flip it; it is the by-construction enforcement half and is tracked in the
+RELEASE_CHECKLIST ledger, not retired here.

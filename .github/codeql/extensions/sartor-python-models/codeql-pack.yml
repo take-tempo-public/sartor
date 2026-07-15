@@ -7,10 +7,15 @@
 # invisible to the analyzer without this model — see
 # docs/dev/diagnosis/codeql-path-injection-context.md (F-2).
 #
-# Resolved locally from the checkout (referenced by .github/codeql/codeql-config.yml
-# `packs:`); it is deliberately NOT published to a registry.
+# Applied automatically: CodeQL auto-discovers model packs placed under
+# .github/codeql/extensions/*/ for BOTH default and advanced (workflow) setup,
+# so codeql.yml needs no `packs:` entry, no registry, and no publish step. The
+# `codeql/python-all: "*"` extension target is the community-standard wildcard
+# (drift-proof across CLI updates; a pinned range would silently stop applying
+# when python-all bumps). The benign "will become an error in future" warning on
+# `*` is expected and shared by every model pack that uses it.
 name: take-tempo-public/sartor-python-models
-version: 0.0.2
+version: 0.0.1
 library: true
 extensionTargets:
   codeql/python-all: "*"

@@ -30,7 +30,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       security-events: write # upload the SARIF findings to code scanning
-      packages: read # pull the sartor-python-models data-extension pack from GHCR
     strategy:
       fail-fast: false
       matrix:
@@ -45,13 +44,17 @@ jobs:
         uses: github/codeql-action/init@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
         with:
           language: ${{ matrix.language }}
-          # The query suite (security-and-quality — a superset of the default
-          # security queries) plus the repo-local model pack now live in the
-          # config file, so both matrix languages share one source. The pack
-          # declares web_infra.security.resolve_within a py/path-injection
-          # barrier (python target only); see
+          # security-and-quality is a superset of the default security queries.
+          # Advisory only — this workflow is NOT a required check (see ci.yml's
+          # activation note); a new query surfacing a finding must not block a PR
+          # until the finding is triaged.
+          #
+          # The model pack under .github/codeql/extensions/sartor-python-models/
+          # (which declares web_infra.security.resolve_within a py/path-injection
+          # barrier) is applied automatically — CodeQL auto-discovers model packs
+          # in .github/codeql/extensions/, so no `packs:` entry is needed. See
           # docs/dev/diagnosis/codeql-path-injection-context.md.
-          config-file: ./.github/codeql/codeql-config.yml
+          queries: security-and-quality
 
       # No build step: both languages are interpreted, so CodeQL's autobuild is a
       # no-op here. Analyzing straight from the checked-out source avoids
