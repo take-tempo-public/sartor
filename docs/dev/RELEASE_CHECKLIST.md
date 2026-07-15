@@ -688,6 +688,19 @@ addition/resolution chronology since 2026-06-15 lives in git history
       _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole` — surfaced
       by the first full `pytest -m ux` run this branch ever completed; open count 10 → 11.)_
       **→ Own small branch. Do NOT bundle with the retry-policy decision above.**
+      **→ SECOND MEMBER of this ux settle-flake class (2026-07-15, confirmed in CI via the new
+      rerun reporter):** `test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts`
+      rer-ran once on CI run `29381...`/`1456fd7` (both it and scroll-position: fail-once-then-pass,
+      job still green — `115 passed … 2 rerun`). It did NOT fire on the pre-fix run `29303444590`
+      (`5744a10`) nor on two other post-fix runs — so it appeared **once in 4 CI runs**, which is
+      far too noisy to attribute (the same under-sampling trap the scroll flake taught). It touches
+      the composition-save path this branch wrapped in `context_transaction`, so **not assumed
+      benign** — but a backend regression is implausible: `save_application_composition` is
+      behaviorally identical for the single-request path a UX test drives (the lock only changes
+      behavior under *concurrent* writers), and 298 route tests + the bare-PASSED compose test back
+      that. **Next agent: confirm attribution with the partial-revert method** (revert only
+      `hardening.py` + `blueprints/applications.py` at HEAD, re-sample) before instrumenting —
+      same ux-load-flake class, likely the same fix shape.
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
