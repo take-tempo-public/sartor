@@ -635,16 +635,30 @@ addition/resolution chronology since 2026-06-15 lives in git history
       barrier, so it reports the flow tainted regardless. **Not introduced by the fix** — CodeQL
       was already red on `5744a10` (pre-fix tip); the whole atomic-write subsystem is new
       *relative to main*, which is what the PR-diff scan lights up on.
-      **Proper disposition (own follow-up, NOT this branch — scope):** either (a) dismiss the 7
-      in the Security tab as "false positive — sanitized by `_within` at all call sites" (needs
-      `security_events` scope the current gh token lacks), or (b) add a CodeQL sanitizer model
-      for `_within` under `.github/codeql/` so the query recognizes the barrier — the durable fix,
-      and it clears this class for every future path the guard protects. Do **not** contort the
-      generic helpers to appease the query (the containment correctly lives at the route layer,
-      which knows `OUTPUT_DIR`; the helper does not). The 2 low test alerts are cosmetic and left.
+      **Disposition — DURABLE FIX, not dismissal (owner call 2026-07-14).** Dismissing the 7 as
+      false-positives was explicitly **rejected**: it is per-alert, re-fires the moment any route
+      is added, and makes the code no safer. CodeQL is **required for the OpenSSF badge**, so
+      "green" must be earned by construction, not overridden. The fix is architectural — replace
+      the scattered `cp = Path(context_path)` + `if not _within(cp, ROOT): abort` (12 copies, and
+      the raw `cp` is what flows on) with **one validated resolver chokepoint** in
+      `web_infra/security.py`:
+      `resolve_within(candidate, root) -> Path` that resolves, checks containment, raises
+      `PathTraversalError` on escape, and **returns the resolved+validated path** — the value used
+      downstream. Routes become `cp = resolve_within(context_path, OUTPUT_DIR)`. The taint breaks
+      at the source (the path handed to `context_transaction` derives from the resolve-and-check,
+      not the raw input), and CodeQL is satisfied either by pattern-recognition or by a **one-line
+      sanitizer model** pointing at that single function under `.github/codeql/` (not 7 rotting
+      dismissals). Ships with updating `route-security-lint` + `tests/test_route_containment_gate.py`
+      to accept `resolve_within` as the containment proof, and — separately — **wiring CodeQL as a
+      required status check** on `main` (it is NOT currently required; that is a second gap in the
+      "we enforce CodeQL" attestation). Caveat: CodeQL can't be run locally, so green is
+      push-and-read-CI, possibly 1–2 iterations — which is why it is its own branch and does not
+      hold up the verified compose fix. The 2 low test alerts fold in on the same branch.
       _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole` — first
       CI run of the atomic-write subsystem; open count 11 → 12.)_
-      **→ Own small branch (option b preferred). Pairs with the OpenSSF/CodeQL SAST posture work.**
+      **→ Immediate next branch `fix/codeql-path-injection-context` (off `main` after #21 merges).
+      Owner accepts #21 merging red as the ONE exception; this branch then earns CodeQL green and
+      is a hard pre-`v1.1.0-rc.1` gate. Retires this item — does not park it.**
 
 - [ ] **`test_corpus_reload_preserves_scroll_position` is a real ~10–20% flake — measured, NOT
       fixed** — `tests/ux/regression/test_20260708_busy_states_and_chip.py`. Fails as
