@@ -21,6 +21,134 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Fixed: your drafted positioning summary could vanish for good — a lost update across twelve context writers (`fix/compose-summary-draft-settle-hole`)
+
+A user arriving at Compose could watch the app write their drafted positioning summary and
+then silently throw it away — permanently. Another could sit under **"Drafting your
+summary…" forever**, with no error, no retry, no recovery. Both are fixed, along with the
+write path beneath them and the reporting that made the whole class of failure invisible.
+
+**The root cause was a lost update.** Twelve routes in `blueprints/applications.py` each read
+the *whole* `context_*.json`, spend seconds inside an LLM call, then write the *whole* — by
+now stale — dict back. Any route that wrote inside that window had its delta silently
+deleted. `POST /draft-summary` persisted the summary and returned 200; a concurrent
+`POST /recommend`, holding a copy read *before* that write, then wrote it back and erased it.
+Nothing errored. Every response was a 200. The data was simply gone from disk.
+
+- **`hardening.context_transaction`** — a `@contextmanager` taking a **per-path
+  `threading.Lock`** that **re-reads the file fresh inside the lock**, discarding the caller's
+  optimistic pre-call copy; yields it for the caller's own delta; writes via the existing
+  `write_context_atomic` on a clean exit; and **skips the write entirely if the block raises**,
+  so a failed delta can never half-land. The **LLM call stays outside the lock**, so no request
+  ever waits on another's latency — only the delta application is serialized, and that is
+  microseconds. In-process is the right scope: the container runs a single-process *threaded*
+  server. **All twelve sites converted** — repairing only the two in the observed window would
+  have fixed the symptom and left the defect class.
+- **A trap worth naming, because the fix nearly stepped in it.** Six of the twelve sites are
+  not LLM routes; they build a `composition_overrides` sub-dict *from the stale read* and then
+  assign it back wholesale. Wrapping those in a transaction while still carrying that stale
+  sub-dict in would have **re-created the very bug inside the fix**. Each now re-derives its
+  delta against the fresh dict — "append this bullet id", "drop this proposal", "add this
+  retired key" — rather than replacing a whole set it read minutes ago.
+- **A hazard closed by construction rather than by vigilance.** The transient staging keys
+  (`jd_text`, `career_facts`, `summary_items`, …) are absent from a fresh read, so the
+  defensive `ctx.pop(transient)` at each write site — and the standing "don't leak staging keys
+  into the iteration chain" hazard — is now structurally impossible instead of remembered.
+
+> **How this was arrived at matters as much as the fix**, and is the reason it is trustworthy.
+> Two earlier fixes on this branch were shipped for mechanisms that had **never been
+> observed**; both addressed real defects, and **neither was the defect**. The repair above was
+> built only *after* a falsification test was written, committed **while still red**, and shown
+> to fail on HEAD — `tests/test_draft_summary.py::TestConcurrentContextWriters`, which forces
+> the interleaving with `threading.Event`s instead of waiting for luck. The full evidence
+> record — what was observed, what was falsified, and what remained merely inferred until it
+> was proven — is at
+> [`docs/dev/diagnosis/compose-summary-draft-settle-hole.md`](docs/dev/diagnosis/compose-summary-draft-settle-hole.md).
+> Charter **C-7** in force: "X causes Y" is a claim, and no claim is made here without an
+> observation behind it.
+
+- **A torn read — real, and fixed, but not the cause.** `Path.write_text` truncates its
+  target *before* it writes, so a concurrent reader could see an empty or half-written
+  `context_*.json` and its `json.loads` would raise; `POST /draft-summary` then 400'd with
+  "Context file unreadable." Measured against a ~1 MB context with concurrent readers:
+  **449 torn reads**. All 14 write sites (12 in `blueprints/applications.py`, 2 in
+  `hardening.py`) now go through the new `hardening.write_context_atomic` — a unique temp
+  file plus `os.replace`, atomic on POSIX and Windows alike. Worth having on its own terms:
+  that file is the pipeline's audit trail. It is *not* what broke CI — the instrumented run
+  shows the draft POST returning **200**, with **zero** non-2xx `/api/` responses anywhere in
+  the tier. Atomic writes close torn **reads**; they do nothing for lost **updates**.
+- **The client burned its retry latch before it knew the draft had landed.**
+  `_draftSummaryFiredForApp` was set *before* the fire, `if (res.ok)` silently skipped the
+  reload on a non-OK response, `catch {}` swallowed throws — and the `finally` drained the
+  settle counter regardless. The page therefore reported itself **settled** with the draft
+  gone and nothing left to re-fire it. The once-*ever* latch is now an **in-flight claim**,
+  released on any non-success path, and the failure is surfaced instead of swallowed.
+- **The reporting was blind, twice over — which is why neither cause was ever seen.**
+  `tests/ux/conftest.py` asserted on HTTP ≥ 500 and deliberately ignored 4xx as benign
+  resource-load noise; the route failed with **400**, so the sentinel looked straight past
+  it and the test could only report "the textarea never filled in." Worse,
+  `pytest-rerunfailures` reports a test that fails twice and passes on the third attempt as
+  a plain `PASSED`, with **no traceback anywhere in the log** — discarding the failures
+  outright, and with them the fixture's own captured diagnostic. Both are closed: non-2xx
+  `/api/` responses are collected and printed on failure (diagnostic, never an assertion —
+  some 4xx here genuinely are benign), and **every rerun attempt now prints its traceback
+  and captured output**. `ci.yml`'s flake policy heads itself "HONEST, not masking" and says
+  a real regression fails all three attempts — a criterion nobody can apply to evidence they
+  never see.
+
+**On the CI red:** `test_compose_summary_draft_autofills_edits_and_persists` was failing
+**64% of attempts** and had been for at least 11 runs. `--reruns 2` turned that into a
+`0.636³ ≈ 25.8%` predicted red-per-run lottery against **27.3% observed** — so `main` had
+not regressed at all; the governance commit that appeared to break it simply lost a coin
+flip, and the "green" commit before it had also failed 2 of its 3 attempts. Windows note:
+`os.replace` raises `PermissionError` while another handle holds the destination open (and
+granting `FILE_SHARE_DELETE` does not lift it — measured), so the writer carries a bounded
+retry; POSIX has no such constraint, so it never fires on Linux.
+
+**Verified.** The falsification test flips red→green on the fix. 298 tests across every file
+touching the twelve converted routes pass. Nine new `hardening` unit tests pin the transaction —
+including a **control** that proves the naive read-modify-write really does lose updates under
+the same harness, so the subject's green is not vacuous. And
+`test_compose_summary_draft_autofills_edits_and_persists` ran **7/7 with zero reruns**, against
+a ~36% pass-per-attempt baseline — a roughly 1-in-12,000 outcome had the bug survived. **What
+is not yet met:** those seven runs are *local*. The acceptance bar is a bare `PASSED` with no
+`RERUN` across **more than one CI run**, and CI clears that bar, not a local shell.
+
+### Added: evidence-before-mechanism, enforced (charter C-7 + C-8)
+
+An agent spent a day and ~30% of a weekly token budget on the flake above and shipped **no
+solution** — it read the code, found a plausible mechanism, and fixed *that*, twice, without
+ever instrumenting to see what actually happened. Both fixes were for real defects. Neither
+was **the** defect. When it finally added visibility, the cause printed itself in a single
+run. `AGENT_FAILURE_PATTERNS.md` §5a/5b/5e already said "instrument first"; the agent read
+them and judged they did not apply. **The failure mode is an agent overruling the rule, so
+the rule stopped being advice.**
+
+- **Charter C-7 — evidence before mechanism.** A causal claim is a claim under C-0. For a
+  defect you cannot reproduce on demand, the **first commit on the branch is the instrument
+  or the reproduction — never the fix**; a fix commit must cite the observation that
+  identified the mechanism; **green CI is not evidence if the test needed a retry**; and an
+  instrument must be scoped **wider** than the hypothesis it tests, because one narrowed to
+  your theory will confirm it by hiding its rivals. No escape hatch.
+- **Charter C-8 — durable before deep.** The context window is not a durable store. Facts
+  that cost work to learn are written to their durable home **in the turn they are learned**;
+  compaction is an unannounced data-loss event; a thin context is a handoff trigger, not a
+  push-harder trigger.
+- **Three enforcement points over one artifact** (`docs/dev/diagnosis/<branch-slug>.md`),
+  built into the existing portable enforcement core so they are not Claude-only:
+  `require-evidence-before-fix` (PreToolUse) blocks production edits on a `fix/*` branch until
+  its `## Observed` section is filled in — `docs/**`, `tests/**` and `*.md` stay writable, so
+  the way through is always to write down what you saw; `restore-evidence` (SessionStart,
+  including the **`compact`** matcher) replays `## Observed` + `## Falsified` into every fresh
+  context, so the evidence survives a compaction — `## Inferred` is deliberately withheld,
+  since an unproven mechanism re-injected as context reads as fact within a few turns; and
+  `capture-before-compact` (PreCompact) warns the user when a window is about to be discarded
+  with nothing captured.
+- `tests/test_evidence_gate.py` (21 tests) asserts the **wiring**, not just the logic — a
+  guard nobody calls is a comment. Hand-testing caught two defects before they shipped: an
+  untouched copy of the diagnosis template **satisfied** the gate (a gate a `cp` can satisfy
+  is theater), and the block message mangled on Windows' cp1252 stderr.
+
 ### Added: OpenSSF Best Practices badge — passing (100%)
 
 The owner completed the [OpenSSF Best Practices](https://www.bestpractices.dev/projects/13598)

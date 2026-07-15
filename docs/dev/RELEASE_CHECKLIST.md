@@ -515,13 +515,192 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **8** (was 7; +1 wordmark sweep of the wiki + review archive
-2026-07-13, `chore/scorecard-and-docs-voice`). (`grep -c '^- \[ \]'` over this
-subsection is the source of truth, re-verified at each close-out). **Ceiling
-reached — schedule a reduction sprint** (the rule is ~8–10, and clear before
-adding); several items below are small and clearable in one pass. The full
-per-item addition/resolution chronology since 2026-06-15 lives in git history
+_Rendered open count: **12** (was 11; −1 Compose lost-update root cause, **RESOLVED**
+2026-07-14 on `fix/compose-summary-draft-settle-hole` — the falsification test first, then
+`hardening.context_transaction` across all 12 sites; **+1** the `scroll_position` UX flake and
+**+1** the CodeQL `py/path-injection` false-positive disposition, both surfaced by this branch's
+first full CI run).
+(`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
+each close-out). **STILL AT THE CEILING — the reduction sprint remains DUE, and should be
+scheduled before the v1.1.0 tag, not after** (the rule is ~8–10, and clear before
+adding); several items below are small and clearable in one pass. The full per-item
+addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
+
+- [ ] **`--reruns 2` on the `ux` tier is a masking policy, and it masked a real bug for 11
+      runs** — `fix/ci-first-linux-run` scoped `--reruns 2` to the `ux` tier for a
+      characterized load-flake class (`ci.yml`, "Flake policy": *a real regression fails all
+      three attempts*). It then hid a **chronically broken** test:
+      `test_compose_summary_draft_autofills_edits_and_persists` was failing **64% of
+      attempts**, which `--reruns 2` rendered as a `0.636³ ≈ 25.8%` predicted red-per-run
+      lottery (**27.3% observed** across 11 runs) — so `main`'s CI was a coin flip, not a
+      signal, and a governance commit that touched zero UX code appeared to "break" it.
+      The underlying bug is **NOT yet fixed** (see the next item); the **policy question is
+      separate**, and is deliberately left open rather than changed in the same breath as the
+      bug it was masking. **Decide:** (a) keep `--reruns 2` and add a *rerun-rate alarm* (a
+      test that needs a retry more than X% of runs is reported, not silently passed); (b) drop
+      reruns on the `ux` tier and let genuine load-flakes go red; (c) keep as-is. Needs the
+      post-fix true pass rate first — measure it over the next several `main` runs.
+      **Partly mitigated already:** `tests/ux/conftest.py::pytest_runtest_logreport` now
+      prints every rerun attempt's traceback, so a masked failure is at least *visible* even
+      while the policy stands.
+      _(discovered: v1.1.0 stream, 2026-07-13, `fix/compose-summary-draft-settle-hole`;
+      open count 8 → 9. Corrected 2026-07-14: the original text claimed the underlying bug
+      was fixed on that branch. It was not — see the next item.)_
+      **→ Owner call; gather the post-fix rate first. Do not change the retry policy blind.**
+      **→ Update (2026-07-14): the underlying bug IS now fixed** (the lost-update item below is
+      resolved), so the post-fix rate can finally be gathered. First data point: **7/7 local runs,
+      zero RERUNs** — but that is *local*, and this decision needs the rate on **CI**, over several
+      `main` runs, which does not exist yet. **Still open, deliberately:** the policy question was
+      always separate from the bug, and the whole lesson of this branch is that `--reruns 2` is
+      what let a 64%-broken test read as green for eleven runs. Decide (a)/(b)/(c) once CI has
+      produced a real post-fix sample — not before.
+
+- [ ] **The quality gate is unrunnable by an agent — which makes it unenforceable** — the full
+      `python -m scripts.gate` takes **~13 minutes**; an agent's shell commands are hard-capped
+      at **10**. So the project's single definition of "green" — the thing AGENTS.md,
+      CONTRIBUTING.md and CI all point at — **cannot be executed by its primary developer**.
+      This is not an inconvenience, it is a governance hole: every agent will hit this wall and
+      rationalise around it ("ruff and mypy passed, the targeted tests passed, it's *probably*
+      fine"), which is exactly the quiet downgrade of a binding step to advisory that C-7 exists
+      to stop. An unrunnable gate WILL be skipped.
+      **Measured so far (2026-07-14):** full suite = **705 s / 2 066 passed** (one clean run
+      earlier the same day); **collection alone ≈ 70 s** on every invocation, before a single
+      test executes; non-ux tier = **1 974** tests, ux tier = **115**. The Playwright tier is
+      **not** the bottleneck — the ordinary route/unit tests are.
+      **UNEXPLAINED, and deliberately not explained away:** `-m "not ux"` alone and `-m ux`
+      alone *each* exceeded 590 s, which cannot be reconciled with a 705 s full run. Checked and
+      **falsified**: orphaned pytest processes from killed runs (zero alive). Do not build on
+      either number until this contradiction is resolved — **that** is the first thing to
+      measure.
+      **Instrument (not the fix):** per-test-file timings in sub-10-minute chunks
+      (`--durations`), which doubles as a *resumable* gate. Candidate remedies, all **untested
+      hypotheses**: parallelisation (`pytest-xdist -n auto`, a new dep → D-1 requires
+      `pyproject.toml` + `CHANGELOG`); the ~70 s collection overhead (something heavy at module
+      scope?); the per-test `importlib.reload(app_module)` in the app fixtures. **Measure before
+      choosing.**
+      _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole`;
+      open count 10 → 11 — **well over the ~8–10 ceiling; the reduction sprint is overdue**.)_
+
+- [x] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
+      fixed** — twelve routes in `blueprints/applications.py` each read the whole
+      `context_*.json`, spend seconds in an LLM call, then write the whole (now stale) dict
+      back, so any route that writes inside that window has its delta silently erased.
+      Observed: `POST /draft-summary` persists `summary_text` (200), and the very next read of
+      the same file does not have it — durably (CI run `29303444590`). This is what makes
+      `test_compose_summary_draft_autofills_edits_and_persists` fail ~64% of its attempts, and
+      it is **live on `main`**: a real user can lose their drafted positioning summary.
+      **The full evidence record — what was observed, what was falsified (including two
+      shipped fixes that were real defects but not *this* defect), and the deterministic
+      experiment that settles the one remaining inference — is the dossier at
+      [`diagnosis/compose-summary-draft-settle-hole.md`](diagnosis/compose-summary-draft-settle-hole.md).
+      Read it before touching this. Do not re-derive it; it cost a day.**
+      **Next agent's first act:** the falsification test (must FAIL on HEAD). Only then the
+      fix — `hardening.context_transaction(path)`, a per-path lock that re-reads fresh inside
+      the lock, across all 12 sites (fixing only the two in the observed window leaves the
+      defect class). **Acceptance: a bare `PASSED` with no `RERUN`, over more than one CI run.**
+      _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole`;
+      open count 9 → 10 — **over the ~8–10 ceiling; the reduction sprint is now due**.)_
+      **→ RESOLVED (2026-07-14, `fix/compose-summary-draft-settle-hole`).** Done in the
+      prescribed order, and the order was the point. **(1)** The falsification test was written
+      and committed **first, while red** (`69bd9e5`) —
+      `tests/test_draft_summary.py::TestConcurrentContextWriters`, which forces the interleaving
+      with `threading.Event`s and proved `/recommend`'s stale write-back deletes
+      `composition_overrides` outright (dossier **O-7**). **(2)** Only then the fix:
+      `hardening.context_transaction` (per-path `threading.Lock`; fresh in-lock re-read; write
+      via `write_context_atomic` on clean exit; **no write at all if the block raises**; the LLM
+      call stays outside the lock). **(3)** **All twelve** sites converted — the six non-LLM ones
+      (`save_application_composition`, `gap_fill_decide` ×3, `accept_application_refinement` ×2)
+      each derived a `composition_overrides` sub-dict from the **stale** read and assigned it
+      wholesale, so wrapping them naively would have **rebuilt the bug inside the fix**; each now
+      re-derives its delta against the fresh dict. Verified: the O-7 test flips red→green; 298
+      tests across every file touching the 12 sites pass; 9 new `hardening` unit tests (with a
+      **control** proving the naive path really does lose updates, so the green isn't vacuous);
+      and `test_compose_summary_draft_autofills_edits_and_persists` ran **7/7 with zero RERUNs**
+      (vs. ~36% pass-per-attempt before — a ~1-in-12,000 event if unfixed).
+      **NOT yet met:** the acceptance bar is no-RERUN across **more than one CI run**; those
+      7 runs are **local**. The bar is cleared by CI, not by me.
+
+- [ ] **CodeQL flags 7 high `py/path-injection` on the context-file helpers — VERIFIED false
+      positives (`_within` is the unrecognized sanitizer), NOT dismissed** — on PR #21, CodeQL
+      (`on: pull_request`) reports 7 high "uncontrolled data used in path expression" in
+      `hardening.py` (`write_context_atomic` 1474/1479/1482/1491, `_context_lock` 1509,
+      `context_transaction` 1578) + 2 low test-file nits. **Not a merge blocker:** the PR is
+      `mergeable_state: unstable` (a non-required check failing) — required checks are quality ×3
+      + UX/a11y/PDF, all green; CodeQL is not required. **Verified false positive, not asserted:**
+      every one of the 12 `context_transaction(cp)` call sites runs `_within(cp, OUTPUT_DIR)`
+      immediately after `Path(context_path)` (0 unguarded, checked programmatically), and
+      `_within` is real containment (`path.resolve().relative_to(parent.resolve())`,
+      `web_infra/security.py:38`). CodeQL's `py/path-injection` doesn't model `_within` as a
+      barrier, so it reports the flow tainted regardless. **Not introduced by the fix** — CodeQL
+      was already red on `5744a10` (pre-fix tip); the whole atomic-write subsystem is new
+      *relative to main*, which is what the PR-diff scan lights up on.
+      **Disposition — DURABLE FIX, not dismissal (owner call 2026-07-14).** Dismissing the 7 as
+      false-positives was explicitly **rejected**: it is per-alert, re-fires the moment any route
+      is added, and makes the code no safer. CodeQL is **required for the OpenSSF badge**, so
+      "green" must be earned by construction, not overridden. The fix is architectural — replace
+      the scattered `cp = Path(context_path)` + `if not _within(cp, ROOT): abort` (12 copies, and
+      the raw `cp` is what flows on) with **one validated resolver chokepoint** in
+      `web_infra/security.py`:
+      `resolve_within(candidate, root) -> Path` that resolves, checks containment, raises
+      `PathTraversalError` on escape, and **returns the resolved+validated path** — the value used
+      downstream. Routes become `cp = resolve_within(context_path, OUTPUT_DIR)`. The taint breaks
+      at the source (the path handed to `context_transaction` derives from the resolve-and-check,
+      not the raw input), and CodeQL is satisfied either by pattern-recognition or by a **one-line
+      sanitizer model** pointing at that single function under `.github/codeql/` (not 7 rotting
+      dismissals). Ships with updating `route-security-lint` + `tests/test_route_containment_gate.py`
+      to accept `resolve_within` as the containment proof, and — separately — **wiring CodeQL as a
+      required status check** on `main` (it is NOT currently required; that is a second gap in the
+      "we enforce CodeQL" attestation). Caveat: CodeQL can't be run locally, so green is
+      push-and-read-CI, possibly 1–2 iterations — which is why it is its own branch and does not
+      hold up the verified compose fix. The 2 low test alerts fold in on the same branch.
+      _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole` — first
+      CI run of the atomic-write subsystem; open count 11 → 12.)_
+      **→ Immediate next branch `fix/codeql-path-injection-context` (off `main` after #21 merges).
+      Owner accepts #21 merging red as the ONE exception; this branch then earns CodeQL green and
+      is a hard pre-`v1.1.0-rc.1` gate. Retires this item — does not park it.**
+
+- [ ] **`test_corpus_reload_preserves_scroll_position` is a real ~10–20% flake — measured, NOT
+      fixed** — `tests/ux/regression/test_20260708_busy_states_and_chip.py`. Fails as
+      `scroll position not preserved: 369 -> 25423`, with **identical values every time** (a
+      deterministic code path being hit, not random jitter). Note the tell: the test scrolls to
+      **300**, yet reads `before` back as **369** — so *something asynchronous is already
+      scrolling the page* before the assertion window even opens, and the post-`refreshCorpus()`
+      jump to ~25 400 is the page landing at the list bottom. The suspect is a late
+      `scrollIntoView` / focus during corpus render ([[reference-ux-generate-drive-and-scroll-spy]]),
+      but **that is a hypothesis, not an observation — do not fix it on that basis** (C-7).
+      **Measured 2026-07-14, 38 runs across three trees:**
+      | tree | fails |
+      |---|---|
+      | `2df55d7` (pre-fix) | 0 / 14 |
+      | HEAD **with the lost-update fix's production code reverted** | **1 / 10** |
+      | HEAD (fix in) | 3 / 14 |
+      **Not caused by the lost-update fix** — proved by experiment, not by argument: reverting
+      *only* `hardening.py` + `blueprints/applications.py` at HEAD still flakes. (The tempting
+      wrong conclusion was "0/14 on the old commit ⇒ I broke it"; a 10% flake shows zero failures
+      in 14 runs ~23% of the time. Under-sampling, not a regression.)
+      **Why it matters anyway:** `--reruns 2` renders a 10% flake as a ~0.1% red, so CI will
+      almost never show it — which is *exactly* how the 64%-broken Compose test hid for 11 runs.
+      A rerun nobody looks at is a bug nobody fixes. The rerun reporter now prints every
+      attempt's traceback, so this one is at least visible.
+      **Next step is an instrument, not a fix:** log what scrolls the page (a `scrollTop` setter
+      / `scrollIntoView` spy) during corpus render, and capture it failing.
+      _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole` — surfaced
+      by the first full `pytest -m ux` run this branch ever completed; open count 10 → 11.)_
+      **→ Own small branch. Do NOT bundle with the retry-policy decision above.**
+      **→ SECOND MEMBER of this ux settle-flake class (2026-07-15, confirmed in CI via the new
+      rerun reporter):** `test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts`
+      rer-ran once on CI run `29381...`/`1456fd7` (both it and scroll-position: fail-once-then-pass,
+      job still green — `115 passed … 2 rerun`). It did NOT fire on the pre-fix run `29303444590`
+      (`5744a10`) nor on two other post-fix runs — so it appeared **once in 4 CI runs**, which is
+      far too noisy to attribute (the same under-sampling trap the scroll flake taught). It touches
+      the composition-save path this branch wrapped in `context_transaction`, so **not assumed
+      benign** — but a backend regression is implausible: `save_application_composition` is
+      behaviorally identical for the single-request path a UX test drives (the lock only changes
+      behavior under *concurrent* writers), and 298 route tests + the bare-PASSED compose test back
+      that. **Next agent: confirm attribution with the partial-revert method** (revert only
+      `hardening.py` + `blueprints/applications.py` at HEAD, re-sample) before instrumenting —
+      same ux-load-flake class, likely the same fix shape.
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
@@ -554,6 +733,15 @@ per-item addition/resolution chronology since 2026-06-15 lives in git history
       time `static/app.js`'s Compose section is touched.
       _(discovered: v1.1.0 stream, 2026-07-12, `fix/ci-first-linux-run`.)_
       **→ Low priority, own small pass.**
+      **→ Investigated and EXONERATED as a suspect (2026-07-13,
+      `fix/compose-summary-draft-settle-hole`)** — it was the leading hypothesis for the
+      chronically-red `test_compose_summary_draft_autofills_edits_and_persists`, and it is
+      **not** the cause: that test's failing path runs through `_fireDraftSummary`, whose
+      `loadComposition()` **is** awaited (`static/app.js:7338`), and every un-awaited site
+      above sits off it. The real cause was a torn read of a non-atomically-written context
+      file plus a once-ever latch burned before the fire. **This row stays open on its own
+      merits** (the sites are still a genuine latent settle-gate inconsistency) — but do not
+      re-chase it as the explanation for a Compose flake; that ground is covered.
 
 - [x] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
       `scripts/wiki_freshness.py:drift_count` excludes only `docs/wiki/`, not `docs-site/`.

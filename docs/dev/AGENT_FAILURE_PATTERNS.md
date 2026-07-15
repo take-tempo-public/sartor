@@ -5,9 +5,12 @@
 > recurred across sessions. Every agent should read this before writing
 > any code.
 >
-> **Source:** these five patterns were harvested from the 2026-05-27 v1.0.1
+> **Source:** patterns 5a–5e were harvested from the 2026-05-27 v1.0.1
 > session retrospective (since retired once captured here); this file is the
-> undated, canonical home for them.
+> undated, canonical home for them. **5f was added on 2026-07-14** after an
+> agent read 5a/5b/5e, judged them inapplicable, and burned a day proving them
+> right — which is why 5f is the only one backed by a charter clause (**C-7**)
+> and a hook that blocks the edit.
 >
 > **Companion:** `docs/dev/AGENT_HANDOFF_TEMPLATE.md` requires this file
 > be listed in every handoff prompt's "Documents to read" section.
@@ -84,3 +87,51 @@ new one. The agent's confidence calibration was wrong.
 working, what could still go wrong, and what to look for in
 re-smoke. If the evidence is just "I changed this line,"
 expect to be wrong about half the time.
+
+---
+
+## 5f. Guessing the mechanism
+
+**This is the pattern that made the other five binding.** On 2026-07-13 an agent
+spent an entire day and ~30% of a weekly token budget on an intermittent CI
+flake and shipped **no solution** — because it read the code, found a plausible
+mechanism, and fixed *that*. Twice. Without ever instrumenting to see what
+actually happened. When it finally added visibility, **the cause printed itself
+in a single run**.
+
+The failure is not that it was careless. It is that patterns **5a, 5b and 5e
+above already say this**, the agent had read them, and it judged that they did
+not apply this time. Its own diagnosis subagent's report literally opened with
+*"Step 0 — instrument first (do this before coding a fix)"* and it went straight
+to Step 1.
+
+**The trap that makes this so seductive: both wrong fixes were real defects.**
+Non-atomic writes really were tearing reads. The missing client guard really was
+missing. **Fixing a real defect that isn't THE defect still leaves the bug** —
+and the plausibility of the mechanism is exactly what makes you skip the check.
+Being right about *a* problem feels identical, from the inside, to being right
+about *the* problem.
+
+**Discipline — and this one is no longer advice.** Charter **C-7** makes it
+binding and the `require-evidence-before-fix` hook enforces it: on a `fix/*`
+branch you cannot edit production code until
+`docs/dev/diagnosis/<branch-slug>.md` has a filled-in `## Observed` section.
+
+- **The first commit on the branch is the instrument or the reproduction, never
+  the fix.**
+- **Never scope the instrument to the hypothesis you are testing.** The agent's
+  first traffic dump captured only the two routes it already suspected — and so
+  it *hid the actual culprit*. An instrument narrowed to your theory will confirm
+  your theory. Capture wider than you think you need.
+- **Keep "what I saw" and "what I think is happening" in separate sections, in
+  writing.** Not as a formality: the act of trying to fill in `## Observed` is
+  what surfaces the fact that you have not actually looked.
+- **Green CI is not evidence if the test needed a retry.**
+  `pytest-rerunfailures` reports a fail-fail-pass as a bare `PASSED` with no
+  traceback anywhere in the log. The test in question had been failing **64% of
+  its attempts for 11 runs** behind `--reruns 2`.
+- **Say "I have not verified this" out loud, and stop** — rather than narrating a
+  mechanism with confidence you have not earned.
+
+Worked example, with every falsified hypothesis and what each cost:
+[`diagnosis/compose-summary-draft-settle-hole.md`](diagnosis/compose-summary-draft-settle-hole.md).

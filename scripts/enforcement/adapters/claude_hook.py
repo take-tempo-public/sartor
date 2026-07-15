@@ -30,6 +30,7 @@ if str(_REPO_ROOT) not in sys.path:
 from scripts.enforcement.guards import (  # noqa: E402
     block_merge_to_main,
     block_secrets,
+    require_evidence_before_fix,
     require_feature_branch,
     route_security_lint,
     ruff_changed,
@@ -39,6 +40,7 @@ from scripts.enforcement.guards.result import GuardResult  # noqa: E402
 
 _GUARD_NAMES = (
     "require-feature-branch",
+    "require-evidence-before-fix",
     "block-merge-to-main",
     "block-secrets",
     "route-security-lint",
@@ -59,6 +61,8 @@ def dispatch(name: str, payload: dict[str, Any]) -> GuardResult:
     """Route `name` (one of `_GUARD_NAMES`) to its guard's `claude_check`."""
     if name == "require-feature-branch":
         return require_feature_branch.claude_check(payload)
+    if name == "require-evidence-before-fix":
+        return require_evidence_before_fix.claude_check(payload)
     if name == "block-merge-to-main":
         return block_merge_to_main.claude_check(payload)
     if name == "block-secrets":

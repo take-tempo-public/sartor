@@ -26,10 +26,21 @@
    and deferred per release. Before proposing anything, check here first.
 3. [docs/dev/AGENT_FAILURE_PATTERNS.md](AGENT_FAILURE_PATTERNS.md) —
    failure patterns to avoid. Read in full before writing any code.
-4. [docs/architecture.md](../architecture.md) — module map and LLM routing
+   **§5f ("Guessing the mechanism") is the expensive one — it is why the
+   Binding-rules block below exists.**
+4. [docs/governance/charter.md](../governance/charter.md) — the binding
+   constitution. **C-7 (evidence before mechanism) and C-8 (durable before
+   deep) are enforced by hooks, not by your judgment.**
+5. [docs/architecture.md](../architecture.md) — module map and LLM routing
    boundary. The deterministic / LLM split is load-bearing.
-5. [evals/TUNING_LOG.md](../../evals/TUNING_LOG.md) — baseline floors and
+6. [evals/TUNING_LOG.md](../../evals/TUNING_LOG.md) — baseline floors and
    prompt change history.
+7. **If this branch is a `fix/*`:** its diagnosis dossier at
+   `docs/dev/diagnosis/<branch-slug>.md`, if one exists. It is the durable
+   evidence record — what was **observed**, what was **falsified** (do not
+   re-chase those; each one cost real money to kill), and what is still only
+   **inferred**. The `restore-evidence` SessionStart hook replays it into your
+   context automatically, including after a compaction.
 
 ---
 
@@ -107,6 +118,52 @@
 Create branch `<!-- branch-name -->` off `<!-- base-branch -->`, write a plan
 at `~/.claude/plans/<slug>.md`, and show it to the user before touching any
 code. **Do not code first.**
+
+---
+
+## Binding rules — no discretion (copy verbatim — MANDATORY in every handoff)
+
+**These are not heuristics, and your judgment does not decide whether they apply
+today.** Each one exists because an agent decided it did not apply, and was
+expensively wrong. Read them as prohibitions, not as advice.
+
+**1. Evidence before mechanism (charter C-7). If you did not SEE it, you did not
+find it.**
+- For a defect you cannot reproduce on demand, **the first commit on this branch
+  is the instrument or the reproduction — never the fix.** The
+  `require-evidence-before-fix` hook blocks production edits on a `fix/*` branch
+  until `docs/dev/diagnosis/<branch-slug>.md` has a filled-in `## Observed`
+  section. There is no escape hatch. `docs/**`, `tests/**` and `*.md` stay
+  writable, so the way through is always open: **write down what you saw.**
+- **Reading code and finding a plausible mechanism is a HYPOTHESIS.** Put it under
+  `## Inferred` and label it as unproven. A fix for a real defect that isn't
+  **the** defect still leaves the bug — and plausibility is exactly what makes you
+  skip the check.
+- **Never scope an instrument to the theory you are testing.** It will confirm
+  your theory by hiding its rivals. Capture wider than you think you need.
+- **Green CI is not evidence if the test needed a retry.** `pytest-rerunfailures`
+  reports a fail-fail-pass as a bare `PASSED` with **no traceback anywhere in the
+  log**.
+- If you are not certain **from evidence**, say **"I have not verified this"** and
+  **stop**. That sentence is always cheaper than the alternative.
+
+**2. Durable before deep (charter C-8). The context window is not a store.**
+- Write a hard-won fact — a measurement, a falsified hypothesis, an observed
+  artifact — to its durable home **in the turn you learn it.** Not at close-out.
+  The pre-close sweep *reconciles*; it must not *discover*.
+- **Compaction is an unannounced data-loss event.** After one, reconcile against
+  the repo and git — never continue from a summary as though it were the evidence.
+- **A thin context is a handoff trigger, not a push-harder trigger.**
+
+**3. Hooks are not obstacles (see `feedback_hook_discipline`).**
+- **NEVER** bypass a hook on your own initiative. Never hand-create the file a hook
+  checks for. Never skip a step that has no escape hatch. Escape hatches
+  (`CLAUDE_ALLOW_MAIN_EDITS=1`, `CLAUDE_CONFIRM_MERGE=1`) are legitimate **only when
+  the user explicitly directs their use** — never on your own judgment.
+- If a hook blocks you: **surface the hook name and its message, and STOP.**
+
+**4. Do not declare done. Verify done.** "Done" is the *output* of the pre-close
+sweep, not an announcement. See the close-out checklist below.
 
 ---
 

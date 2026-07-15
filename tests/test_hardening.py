@@ -3,9 +3,14 @@
 These functions must remain LLM-free and produce stable output for given input.
 """
 
+import contextlib
 import json
+import threading
+import time
 from pathlib import Path
 from typing import ClassVar
+
+import pytest
 
 from hardening import (
     assemble_source_union,
@@ -19,11 +24,13 @@ from hardening import (
     compute_specificity_density,
     compute_top_third_density,
     compute_verb_diversity,
+    context_transaction,
     extract_company_terms,
     extract_keywords,
     save_context_set,
     strip_cover_letter_block,
     validate_config,
+    write_context_atomic,
 )
 
 
@@ -843,3 +850,209 @@ class TestComputeDateGrounding:
         out = compute_date_grounding(resume, corpus)
         assert out["status"] == "pass"
         assert out["checked"] == 2
+
+
+class TestWriteContextAtomic:
+    """The context file must never be observable half-written.
+
+    `Path.write_text` truncates the destination *before* it writes, so a concurrent
+    reader saw an empty or partial file and its `json.loads` raised. In the app that
+    surfaced as a 400 from `POST /draft-summary`, which the Compose client then
+    swallowed — leaving a positioning summary that never arrived and a "Drafting your
+    summary…" placeholder that never cleared, on 64% of CI attempts
+    (`fix/compose-summary-draft-settle-hole`).
+    """
+
+    @staticmethod
+    def _torn_reads(path: Path, writer, iters: int = 40, readers: int = 3) -> list[str]:
+        """Hammer `path` with readers while `writer` rewrites it; collect torn reads.
+
+        Writer-side `PermissionError` is swallowed on purpose. On Windows `os.replace`
+        is blocked while any reader holds the destination open (production handles that
+        with a bounded retry — see `hardening._REPLACE_ATTEMPTS`). It is NOT the
+        invariant under test: "a reader never observes a partial file" is, and that has
+        to hold on every platform regardless of who wins the write.
+        """
+        payload = {"blob": ["x" * 64] * 4000}  # ~1 MB — a wide truncate-to-rewrite window
+        writer(path, payload)
+        torn: list[str] = []
+        stop = threading.Event()
+
+        def _write() -> None:
+            try:
+                for i in range(iters):
+                    # PermissionError is platform noise, not the invariant — see docstring.
+                    with contextlib.suppress(PermissionError):
+                        writer(path, {"i": i, **payload})
+                    time.sleep(0.002)
+            finally:
+                stop.set()
+
+        def _read() -> None:
+            while not stop.is_set():
+                try:
+                    json.loads(path.read_text(encoding="utf-8"))
+                except json.JSONDecodeError as exc:
+                    torn.append(str(exc))
+                except OSError:
+                    pass
+                time.sleep(0.004)
+
+        write_thread = threading.Thread(target=_write)
+        read_threads = [threading.Thread(target=_read) for _ in range(readers)]
+        for t in (*read_threads, write_thread):
+            t.start()
+        for t in (write_thread, *read_threads):
+            t.join(timeout=60)
+        return torn
+
+    def test_reader_never_observes_a_partial_file(self, tmp_path):
+        """Subject and control in one test.
+
+        The control is load-bearing: without it, a green `atomic == 0` could simply
+        mean the race never fired, and the guard would be vacuous. `write_text` MUST
+        tear under this harness — that tear IS the bug.
+        """
+
+        def _write_naive(path: Path, ctx) -> None:
+            path.write_text(json.dumps(ctx, indent=2), encoding="utf-8")
+
+        naive = self._torn_reads(tmp_path / "naive.json", _write_naive)
+        atomic = self._torn_reads(tmp_path / "atomic.json", write_context_atomic)
+
+        assert naive, "harness never reproduced a torn read — the assertion below proves nothing"
+        assert not atomic, f"write_context_atomic exposed a partial file: {atomic[:3]}"
+
+    def test_creates_parent_dir(self, tmp_path):
+        path = tmp_path / "nested" / "deeper" / "context_1.json"
+        write_context_atomic(path, {"a": 1})
+        assert json.loads(path.read_text(encoding="utf-8")) == {"a": 1}
+
+
+class TestContextTransaction:
+    """No writer's delta may be erased by another writer's stale write-back.
+
+    Atomic writes stop torn *reads* and do nothing about lost *updates*: twelve
+    routes each read the whole `context_*.json`, spend seconds in an LLM call, then
+    write the whole (now stale) dict back. Whoever wrote inside that window has
+    their delta silently deleted. That was live and user-visible — a drafted
+    positioning summary persisted, then vanished for good
+    (`docs/dev/diagnosis/compose-summary-draft-settle-hole.md`, O-2 / O-4 / O-7).
+    """
+
+    @staticmethod
+    def _race(path: Path, apply_delta, writers: int = 8) -> dict:
+        """Have `writers` threads each add their own key, with a slow window mid-cycle.
+
+        `apply_delta(path, i)` performs one writer's whole read-modify-write. The
+        sleep inside each writer's window is what an LLM call is in production: the
+        thing that makes two cycles overlap.
+        """
+        write_context_atomic(path, {"base": True})
+        threads = [threading.Thread(target=apply_delta, args=(path, i)) for i in range(writers)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=30)
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def test_concurrent_writers_do_not_erase_each_other(self, tmp_path):
+        """Subject and control in one test.
+
+        The control is load-bearing, exactly as in `TestWriteContextAtomic`: without
+        it, a green subject could just mean the race never fired. The naive
+        read-modify-write MUST lose updates under this harness — that loss IS the
+        bug, and it is the one the two shipped-but-wrong fixes never touched.
+        """
+
+        def _naive(path: Path, i: int) -> None:
+            ctx = json.loads(path.read_text(encoding="utf-8"))
+            time.sleep(0.02)  # the LLM call: the window in which the copy goes stale
+            ctx[f"k{i}"] = i
+            write_context_atomic(path, ctx)  # atomic, and STILL a lost update
+
+        def _transactional(path: Path, i: int) -> None:
+            json.loads(path.read_text(encoding="utf-8"))  # the optimistic pre-call read
+            time.sleep(0.02)  # the LLM call — deliberately OUTSIDE the lock
+            with context_transaction(path) as fresh:
+                fresh[f"k{i}"] = i
+
+        naive = self._race(tmp_path / "naive.json", _naive)
+        txn = self._race(tmp_path / "txn.json", _transactional)
+
+        naive_keys = {k for k in naive if k.startswith("k")}
+        txn_keys = {k for k in txn if k.startswith("k")}
+
+        assert len(naive_keys) < 8, (
+            "harness never reproduced a lost update — the assertion below proves nothing"
+        )
+        assert txn_keys == {f"k{i}" for i in range(8)}, (
+            f"context_transaction lost a delta: only {sorted(txn_keys)} survived"
+        )
+
+    def test_the_yielded_dict_is_a_fresh_read_not_the_callers_copy(self, tmp_path):
+        """The whole fix in one assertion: the optimistic pre-call copy is discarded."""
+        path = tmp_path / "context_1.json"
+        write_context_atomic(path, {"a": 1})
+
+        stale = json.loads(path.read_text(encoding="utf-8"))  # caller's pre-call read
+        write_context_atomic(path, {"a": 1, "landed_meanwhile": "x"})  # someone else writes
+
+        with context_transaction(path) as fresh:
+            assert fresh["landed_meanwhile"] == "x", "the in-lock read was not fresh"
+            fresh["mine"] = True
+
+        final = json.loads(path.read_text(encoding="utf-8"))
+        assert final["landed_meanwhile"] == "x", "the concurrent delta was erased"
+        assert final["mine"] is True
+        assert "landed_meanwhile" not in stale  # the copy that would have erased it
+
+    def test_a_raising_block_writes_nothing(self, tmp_path):
+        path = tmp_path / "context_1.json"
+        write_context_atomic(path, {"a": 1})
+
+        with pytest.raises(RuntimeError, match="boom"), context_transaction(path) as fresh:
+            fresh["half"] = "landed"
+            raise RuntimeError("boom")
+
+        assert json.loads(path.read_text(encoding="utf-8")) == {"a": 1}, (
+            "a failed delta half-landed — the write must be skipped entirely"
+        )
+
+    def test_the_lock_is_released_after_a_raising_block(self, tmp_path):
+        """A leaked lock would deadlock every later write to the same file."""
+        path = tmp_path / "context_1.json"
+        write_context_atomic(path, {"a": 1})
+
+        with contextlib.suppress(RuntimeError), context_transaction(path) as fresh:
+            raise RuntimeError("boom")
+
+        with context_transaction(path) as fresh:
+            fresh["after"] = True
+        assert json.loads(path.read_text(encoding="utf-8"))["after"] is True
+
+    def test_two_spellings_of_one_path_share_a_lock(self, tmp_path):
+        """Keyed on the RESOLVED path — else the serialization is a fiction."""
+        path = tmp_path / "context_1.json"
+        write_context_atomic(path, {"a": 1})
+        indirect = tmp_path / "sub" / ".." / "context_1.json"
+        (tmp_path / "sub").mkdir()
+
+        from hardening import _context_lock
+
+        assert _context_lock(path) is _context_lock(indirect)
+
+    def test_success_leaves_no_temp_debris(self, tmp_path):
+        write_context_atomic(tmp_path / "context_1.json", {"a": 1})
+        assert [p.name for p in tmp_path.iterdir()] == ["context_1.json"]
+
+    def test_failed_write_preserves_target_and_leaves_no_debris(self, tmp_path):
+        """A write that can't serialize must not destroy the file it was replacing."""
+        path = tmp_path / "context_1.json"
+        write_context_atomic(path, {"ok": 1})
+
+        with pytest.raises(TypeError):
+            write_context_atomic(path, {"bad": object()})
+
+        assert json.loads(path.read_text(encoding="utf-8")) == {"ok": 1}
+        assert [p.name for p in tmp_path.iterdir()] == ["context_1.json"]

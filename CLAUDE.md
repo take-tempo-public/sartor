@@ -84,6 +84,22 @@ plugin manifest, pending the tool-agnostic-enforcement decision
 slated for the v1.0.7 governance pass (see README). Important
 hooks for any agent writing code here:
 
+- `require-evidence-before-fix` — on a `fix/*` branch, blocks
+  `Edit`/`Write` to production code until
+  `docs/dev/diagnosis/<branch-slug>.md` has a filled-in `## Observed`
+  section (charter **C-7**). **No escape hatch, and none is needed:**
+  `docs/**`, `tests/**` and `*.md` stay writable, so the way through is
+  always to write down what you saw. Start from
+  [`docs/dev/diagnosis/TEMPLATE.md`](docs/dev/diagnosis/TEMPLATE.md).
+- `restore-evidence` (SessionStart) — replays the current `fix/*`
+  branch's `## Observed` + `## Falsified` into every fresh context,
+  **including the one rebuilt after a compaction** (charter **C-8**).
+  `## Inferred` is deliberately withheld — an unproven mechanism
+  re-injected as context reads as established fact within a few turns.
+- `capture-before-compact` (PreCompact) — warns the **user** when a
+  context window is about to be discarded while a `fix/*` branch has no
+  captured evidence. It cannot reach Claude (PreCompact has no context
+  injection) and deliberately does not block compaction.
 - `block-secrets` — blocks API keys + writes to
   `.api_key` / `.env*` / `*.pem` / `*.key`.
 - `ruff-changed` — runs `ruff check` on staged Python before

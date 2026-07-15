@@ -1,7 +1,7 @@
 # Constitution — sartor.
 
 > **Purpose:** the single canonical home for sartor.'s *binding* governance —
-> the constitutional clauses (C-0…C-6), the defaults (D-1…D-6), the parallel-session
+> the constitutional clauses (C-0…C-8), the defaults (D-1…D-7), the parallel-session
 > working model (W-1/W-2), and the amendment ceremony. Each rule is stated **once**,
 > here; the descriptive docs that used to carry it now keep their prose and point back.
 > **Audience:** every contributor and every AI agent (Claude Code, Cursor, Codex,
@@ -142,6 +142,54 @@ no import-lint/boundary test fails on a regression. **Gate shipped — v1.0.8 Sp
 [`../../tests/test_construction_boundary.py`](../../tests/test_construction_boundary.py)
 (**F-arch-01** / **F-qe-rel-04**) — see [`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md)
 Sprint 8.3a. Owner-approved factual reconcile, 2026-07-09, witness CW-102.]*
+
+**C-7 — Evidence before mechanism.** A causal claim is a claim, and therefore falls under
+C-0. Reading code and finding a plausible mechanism is a **hypothesis**, not an observation.
+Four binding rules follow. (1) For a defect you cannot reproduce on demand, **the first commit
+on the branch is the instrument or the reproduction — never the fix.** (2) A commit that
+changes production code to fix a defect must cite the **observation** that identified the
+mechanism: a log line, a response body, a CI run id, or a test that fails without the change.
+(3) **Green CI is not evidence if the test needed a retry** — `pytest-rerunfailures` reports a
+fail-fail-pass as a bare `PASSED` with no traceback anywhere in the log. (4) **Scope the
+instrument wider than the hypothesis**: an instrument narrowed to the theory it is testing
+will confirm that theory by hiding its rivals. **No escape hatch** — and none is needed, since
+docs, tests and prose stay writable, so the way through is always to write down what you saw.
+*[src: adopted 2026-07-14, owner-directed, from friction. Enforced by the
+`require-evidence-before-fix` PreToolUse guard
+([`../../scripts/enforcement/guards/require_evidence_before_fix.py`](../../scripts/enforcement/guards/require_evidence_before_fix.py))
+over `docs/dev/diagnosis/<branch-slug>.md`; gated by
+[`../../tests/test_evidence_gate.py`](../../tests/test_evidence_gate.py). Worked example and
+the reason this clause exists:
+[`../dev/diagnosis/compose-summary-draft-settle-hole.md`](../dev/diagnosis/compose-summary-draft-settle-hole.md);
+failure pattern **5f** in [`../dev/AGENT_FAILURE_PATTERNS.md`](../dev/AGENT_FAILURE_PATTERNS.md).
+This clause exists because the *advisory* form of it (§5a/5b/5e) was read and overruled — the
+failure mode is an agent judging that the rule does not apply this time, which is precisely
+what a rule may not leave to judgment.]*
+
+**C-8 — Durable before deep.** The context window is **not a durable store**. A fact that cost
+work to learn — a measurement, a falsified hypothesis, an observed artifact — is written to its
+durable home **in the turn it is learned**, never deferred to close-out; the pre-close sweep
+*reconciles*, it must not *discover*. Compaction is an unannounced **data-loss event**: after
+one, or when resuming from a summary, the next action is to **reconcile against the repo and
+git**, never to continue from the summary as though it were the evidence. Do not fan out to
+subagents on an un-captured context — their findings return *into* a window that can compact
+away. And **a degraded context is a handoff trigger, not a push-harder trigger**: an
+investigation that has not converged by the time the window is thin should be captured and
+handed off, because a model on a thinning record keeps answering with undiminished confidence.
+**And the load-bearing corollary: a model's assessment of its own context is not evidence.**
+"I still have enough context to finish this" is the one judgment it is structurally unable to
+make — degradation is invisible from the inside, and the confidence survives the competence.
+So the trigger for a handoff must be **external and mechanical** (elapsed session, a compaction
+having occurred, repeated failure to close), never the model's own sense that it is still fine.
+When the operator says stop, that is a **fact about the context**, not an opinion to weigh.
+*[src: adopted 2026-07-14, owner-directed, from friction — the harness compacted the working
+context *while the agent was on its way to write the capture*. Enforced by the `restore-evidence`
+SessionStart hook (which replays the branch's `## Observed` + `## Falsified` into every fresh
+context, including the one rebuilt after a compaction) and the `capture-before-compact`
+PreCompact hook; both in
+[`../../scripts/enforcement/adapters/claude_context_hook.py`](../../scripts/enforcement/adapters/claude_context_hook.py),
+gated by [`../../tests/test_evidence_gate.py`](../../tests/test_evidence_gate.py). C-8 is the
+structural complement to C-7: C-7 makes the evidence exist, C-8 makes it survive.]*
 
 ### Defaults (binding until changed; changeable in normal flow with a written rationale)
 
