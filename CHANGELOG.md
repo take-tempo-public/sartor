@@ -31,12 +31,16 @@ carry the containment barrier across the call boundary. Rather than dismiss the 
 (which re-fires the moment any route is added), the containment is now expressed as a single
 **validated-resolver chokepoint**:
 
-- **`web_infra.resolve_within(candidate, root) -> Path`** resolves the candidate, checks
-  `_within`, raises `PathTraversalError` on escape, and **returns the resolved-and-validated
-  path** — the value callers use downstream. The eleven route sites in
-  `blueprints/applications.py` that flow into `context_transaction` now derive their path from
-  this call, so the value reaching the sink comes from the containment check, not raw request
-  input. `_within` is unchanged and still used directly by the in-function reader helpers.
+- **`web_infra.resolve_within(candidate, root) -> Path`** normalizes the candidate with
+  `os.path.realpath`, verifies containment, raises `PathTraversalError` on escape, and
+  **returns the resolved-and-validated path** — the value callers use downstream. The eleven
+  route sites in `blueprints/applications.py` that flow into `context_transaction` now derive
+  their path from this call. `_within` is unchanged and still used directly by the in-function
+  reader helpers.
+- Because CodeQL's Python query recognizes no pathlib/containment sanitizer natively, a small
+  repo-local **CodeQL model pack** (`.github/codeql/extensions/sartor-python-models/`, applied
+  automatically — no publishing) declares that resolver a `path-injection` barrier. Net result,
+  confirmed on CI: zero open `py/path-injection`, zero open high-severity alerts.
 - HTTP behavior is **unchanged** (same `400 Invalid context_path`; existence stays a separate
   check). The `route-security-lint` guard and the `test_route_containment_gate` do-not-regress
   gate now accept `resolve_within` as containment proof **by design**, with an explicit test.

@@ -515,11 +515,13 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **12** (was 11; −1 Compose lost-update root cause, **RESOLVED**
-2026-07-14 on `fix/compose-summary-draft-settle-hole` — the falsification test first, then
-`hardening.context_transaction` across all 12 sites; **+1** the `scroll_position` UX flake and
-**+1** the CodeQL `py/path-injection` false-positive disposition, both surfaced by this branch's
-first full CI run).
+_Rendered open count: **12** (unchanged this branch — a swap, not a reduction: **−1** the CodeQL
+`py/path-injection` disposition, **RESOLVED** 2026-07-14 on `fix/codeql-path-injection-context`
+— resolver chokepoint + auto-discovered `barrierModel` pack, verified 0 open alerts by API;
+**+1** its residual **[HUMAN/OWNER]** follow-up, wiring CodeQL as a required check. Prior
+context: the count reached 12 on `fix/compose-summary-draft-settle-hole` — −1 Compose
+lost-update root cause **RESOLVED** 2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL
+disposition just resolved here.)
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
 each close-out). **STILL AT THE CEILING — the reduction sprint remains DUE, and should be
 scheduled before the v1.1.0 tag, not after** (the rule is ~8–10, and clear before
@@ -621,7 +623,7 @@ addition/resolution chronology since 2026-06-15 lives in git history
       **NOT yet met:** the acceptance bar is no-RERUN across **more than one CI run**; those
       7 runs are **local**. The bar is cleared by CI, not by me.
 
-- [ ] **CodeQL flags 7 high `py/path-injection` on the context-file helpers — VERIFIED false
+- [x] **CodeQL flags 7 high `py/path-injection` on the context-file helpers — VERIFIED false
       positives (`_within` is the unrecognized sanitizer), NOT dismissed** — on PR #21, CodeQL
       (`on: pull_request`) reports 7 high "uncontrolled data used in path expression" in
       `hardening.py` (`write_context_atomic` 1474/1479/1482/1491, `_context_lock` 1509,
@@ -659,6 +661,38 @@ addition/resolution chronology since 2026-06-15 lives in git history
       **→ Immediate next branch `fix/codeql-path-injection-context` (off `main` after #21 merges).
       Owner accepts #21 merging red as the ONE exception; this branch then earns CodeQL green and
       is a hard pre-`v1.1.0-rc.1` gate. Retires this item — does not park it.**
+      **→ RESOLVED (2026-07-14, `fix/codeql-path-injection-context`).** Done evidence-first and by
+      construction, not by dismissal. **(1)** Instrument commit recorded the 7 live alerts from the
+      code-scanning API. **(2)** `web_infra.security.resolve_within` — one validated resolver
+      chokepoint (`os.path.realpath` normalize + containment check + `PathTraversalError`,
+      returning the validated path); the 11 route sites that flow into `context_transaction` use
+      it; HTTP semantics unchanged. **(3)** The chokepoint alone was *falsified* (F-1: it moved 7
+      alerts → 12) — CodeQL's Python query models no pathlib normalization and no containment
+      check (F-2), so containment is re-declared to CodeQL via a **`barrierModel` data-extension
+      pack** at `.github/codeql/extensions/sartor-python-models/`, **auto-discovered** (no
+      publish, no `packs:` entry, no registry — the entire CodeQL-workflow change is one comment).
+      Gotcha: the barrier `type` keys on the **import** root (`web_infra`), not the defining
+      module. `route-security-lint` + `test_route_containment_gate` accept `resolve_within` by
+      design (+ explicit test); the 2 low test nits folded in. **Verified by API re-query** (not a
+      bare CI green): `refs/pull/22/merge` python analysis `results: 0` — **0 open
+      `py/path-injection`, 0 open high-severity, 0 open alerts of any kind**; full local gate
+      green. Dossier: [`diagnosis/codeql-path-injection-context.md`](diagnosis/codeql-path-injection-context.md).
+      **→ REMAINING [HUMAN/OWNER] (small, tracked separately below):** wire CodeQL as a *required*
+      status check on `main` (Settings → Branches → branch protection). Only an admin can flip it;
+      it is the by-construction *enforcement* half. Optional cleanup: the GHCR package
+      `take-tempo-public/sartor-python-models` (0.0.1/0.0.2) published by an earlier iteration is
+      now unused (superseded by auto-discovery) and can be deleted from GHCR at leisure.
+
+- [ ] **[HUMAN/OWNER] Wire CodeQL as a *required* status check on `main`** — the
+      `fix/codeql-path-injection-context` branch earned CodeQL green *by construction* (0 open
+      `py/path-injection`, 0 open high-severity — verified by API), but CodeQL is still only
+      *advisory*: it is NOT in `main`'s required-check set (required = quality ×3 + UX/a11y/PDF).
+      The "we enforce CodeQL" attestation (OpenSSF badge) needs the enforcement half. **Action:**
+      Settings → Branches → branch protection for `main` → add **`Analyze (python)`** and
+      **`Analyze (javascript-typescript)`** to required status checks. Admin-only (30-second
+      toggle); cannot be done from a workflow or by an agent. _(split from the CodeQL item above,
+      2026-07-14, `fix/codeql-path-injection-context`; the resolver+barrier work is done, this is
+      the residual owner toggle.)_
 
 - [ ] **`test_corpus_reload_preserves_scroll_position` is a real ~10–20% flake — measured, NOT
       fixed** — `tests/ux/regression/test_20260708_busy_states_and_chip.py`. Fails as
