@@ -515,10 +515,11 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **11** (was 11; −1 Compose lost-update root cause, **RESOLVED**
+_Rendered open count: **12** (was 11; −1 Compose lost-update root cause, **RESOLVED**
 2026-07-14 on `fix/compose-summary-draft-settle-hole` — the falsification test first, then
-`hardening.context_transaction` across all 12 sites; **+1** the `scroll_position` UX flake,
-surfaced by the first full `pytest -m ux` run this branch ever completed).
+`hardening.context_transaction` across all 12 sites; **+1** the `scroll_position` UX flake and
+**+1** the CodeQL `py/path-injection` false-positive disposition, both surfaced by this branch's
+first full CI run).
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
 each close-out). **STILL AT THE CEILING — the reduction sprint remains DUE, and should be
 scheduled before the v1.1.0 tag, not after** (the rule is ~8–10, and clear before
@@ -619,6 +620,31 @@ addition/resolution chronology since 2026-06-15 lives in git history
       (vs. ~36% pass-per-attempt before — a ~1-in-12,000 event if unfixed).
       **NOT yet met:** the acceptance bar is no-RERUN across **more than one CI run**; those
       7 runs are **local**. The bar is cleared by CI, not by me.
+
+- [ ] **CodeQL flags 7 high `py/path-injection` on the context-file helpers — VERIFIED false
+      positives (`_within` is the unrecognized sanitizer), NOT dismissed** — on PR #21, CodeQL
+      (`on: pull_request`) reports 7 high "uncontrolled data used in path expression" in
+      `hardening.py` (`write_context_atomic` 1474/1479/1482/1491, `_context_lock` 1509,
+      `context_transaction` 1578) + 2 low test-file nits. **Not a merge blocker:** the PR is
+      `mergeable_state: unstable` (a non-required check failing) — required checks are quality ×3
+      + UX/a11y/PDF, all green; CodeQL is not required. **Verified false positive, not asserted:**
+      every one of the 12 `context_transaction(cp)` call sites runs `_within(cp, OUTPUT_DIR)`
+      immediately after `Path(context_path)` (0 unguarded, checked programmatically), and
+      `_within` is real containment (`path.resolve().relative_to(parent.resolve())`,
+      `web_infra/security.py:38`). CodeQL's `py/path-injection` doesn't model `_within` as a
+      barrier, so it reports the flow tainted regardless. **Not introduced by the fix** — CodeQL
+      was already red on `5744a10` (pre-fix tip); the whole atomic-write subsystem is new
+      *relative to main*, which is what the PR-diff scan lights up on.
+      **Proper disposition (own follow-up, NOT this branch — scope):** either (a) dismiss the 7
+      in the Security tab as "false positive — sanitized by `_within` at all call sites" (needs
+      `security_events` scope the current gh token lacks), or (b) add a CodeQL sanitizer model
+      for `_within` under `.github/codeql/` so the query recognizes the barrier — the durable fix,
+      and it clears this class for every future path the guard protects. Do **not** contort the
+      generic helpers to appease the query (the containment correctly lives at the route layer,
+      which knows `OUTPUT_DIR`; the helper does not). The 2 low test alerts are cosmetic and left.
+      _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole` — first
+      CI run of the atomic-write subsystem; open count 11 → 12.)_
+      **→ Own small branch (option b preferred). Pairs with the OpenSSF/CodeQL SAST posture work.**
 
 - [ ] **`test_corpus_reload_preserves_scroll_position` is a real ~10–20% flake — measured, NOT
       fixed** — `tests/ux/regression/test_20260708_busy_states_and_chip.py`. Fails as
