@@ -59,8 +59,33 @@ is what the PR-diff scan lit up; CodeQL was already red on the pre-fix tip `5744
 
 ## Falsified
 
-_(Nothing yet — no fix attempted before this instrument commit. Dead ends will be recorded here
-as they occur, including any resolver shape that fails to clear the alerts on CI.)_
+**F-1 — the `resolve_within` chokepoint ALONE does not satisfy CodeQL. It moves the taint,
+it does not sanitize it.** Observed on PR #22's CodeQL run (`refs/pull/22/merge`, analysis sha
+`e637374b`, `Analyze (python)` = success, queried by ref via the code-scanning API):
+
+- The 7 original `hardening.py` alerts (353–361) are **absent** from the merge ref, and the 2
+  low test nits (358, 362) are **absent** — those parts worked.
+- But **12 NEW high `py/path-injection` alerts** (363–374) appeared: **11 at the new
+  `resolve_within(context_path, …)` call sites** in `blueprints/applications.py` (lines 1535,
+  1792, 1917, 2057, 2194, 2373, 2562, 2701, 2868, 2993, 3096) **+ 1 inside `resolve_within`
+  itself** at `web_infra/security.py:84` (the `Path(candidate).resolve()`).
+
+**Interpretation:** CodeQL propagates taint arg→return through `resolve_within` (its
+inter-procedural summary sees `candidate` → `Path(candidate).resolve()` → returned) and does
+**not** treat the intervening `if not _within(resolved, root): raise` as a barrier at the
+returned value. So relocating containment into a returning helper did not break the flow — it
+relabelled the same flow at new sink locations. The chokepoint is still the right *shape* for
+humans/enforcement, but CodeQL needs the sanitization made explicit to it (a recognized
+sanitizer pattern in the resolver body, or a CodeQL sanitizer model). **Next step is NOT
+another blind push** — identify the exact barrier pattern CodeQL's Python `PathInjection` query
+recognizes first.
+
+_Open question this raises about the `## Inferred` hypothesis:_ the reader helpers
+(`applications.py:689–930`) that guard-then-`read_text` in-function with the SAME `_within` are
+unflagged, yet `resolve_within`'s guarded-then-returned value IS flagged. The distinguishing
+factor is **use-in-place (dominated by the guard) vs return-through-a-summary** — CodeQL's
+barrier guard sanitizes uses dominated by the guard in the same function, but its function
+*summary* re-derives arg→return taint without that barrier.
 
 ---
 
