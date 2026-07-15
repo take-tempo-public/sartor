@@ -135,7 +135,14 @@ class RouteInfo:
 
     @property
     def has_within(self) -> bool:
-        return "_within(" in self.body
+        # `resolve_within(` (the validated-resolver chokepoint in
+        # web_infra.security) contains the substring `_within(`, so the raw
+        # membership test already accepts it as containment proof. Both forms
+        # are named explicitly so the acceptance is by design, not a coincidence
+        # a future tightening of this check could silently drop
+        # (fix/codeql-path-injection-context — resolve_within breaks the CodeQL
+        # py/path-injection taint at the source and is the preferred form).
+        return "_within(" in self.body or "resolve_within(" in self.body
 
     @property
     def has_safe_username(self) -> bool:
@@ -242,6 +249,18 @@ def test_classifier_flags_a_synthetic_unguarded_route() -> None:
     # A guard named only in a comment/docstring does not count (call-form detection).
     commentish = RouteInfo("synthetic.cmt", "/api/x", "x = 1  # _within and _safe_username")
     assert not commentish.has_within and not commentish.has_safe_username
+
+    # The validated-resolver chokepoint (resolve_within) counts as containment:
+    # it resolves + _within-checks + returns the validated path, breaking the
+    # CodeQL py/path-injection taint at the source
+    # (fix/codeql-path-injection-context). A route contained SOLELY by it must
+    # classify as FS-touching + contained (no bare _within needed).
+    chokepoint = RouteInfo(
+        "synthetic.chokepoint",
+        "/api/x",
+        "cp = resolve_within(context_path, OUTPUT_DIR)\ncp.read_text()",
+    )
+    assert chokepoint.is_fs_touching and chokepoint.has_within
 
 
 # --------------------------------------------------------------------------- #

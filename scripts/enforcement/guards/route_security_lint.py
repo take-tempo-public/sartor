@@ -54,6 +54,10 @@ def decide(file_path: str, content: str) -> GuardResult:
     missing = ""
     if "_safe_username" not in content:
         missing += " _safe_username()"
+    # `resolve_within(` (the validated-resolver chokepoint) contains the
+    # substring `_within`, so this membership test accepts it by design as
+    # containment proof (fix/codeql-path-injection-context) — it is the
+    # preferred form, breaking the CodeQL py/path-injection taint at the source.
     if "_within" not in content:
         missing += " _within()"
     if not missing:

@@ -42,3 +42,46 @@ def _within(path: Path, parent: Path) -> bool:
         return True
     except ValueError:
         return False
+
+
+class PathTraversalError(ValueError):
+    """A candidate path resolved outside its permitted root.
+
+    Raised by `resolve_within` so a caller can map an escape attempt to an HTTP
+    response (a 400/403) at the route boundary, instead of the boolean-guard
+    pattern where the raw, unvalidated path is what flows on to the sink.
+    """
+
+
+def resolve_within(candidate: str | Path, root: Path) -> Path:
+    """Resolve `candidate` and return it ONLY if it lands within `root`.
+
+    A validated-resolver chokepoint that folds `Path(candidate)` +
+    `_within(cp, root)` into one call whose **return value is the
+    resolved-and-validated path**. Callers use that returned path downstream —
+    never the raw input — so the value flowing into a filesystem sink derives
+    from the containment check rather than from user input directly. That is the
+    difference the scattered ``cp = Path(x); if not _within(cp, root): abort``
+    shape could not express: there, the boolean guard and the raw `cp` are
+    separate, and it is the raw `cp` that reaches the sink (often in another
+    function, e.g. `hardening.context_transaction`, where a static analyzer
+    can't carry the guard across the call boundary — CodeQL `py/path-injection`,
+    `docs/dev/diagnosis/codeql-path-injection-context.md`).
+
+    Containment only — existence is a separate concern. A resolved-but-absent
+    path returns normally; callers still `.exists()`-check where they need to.
+
+    Args:
+        candidate: The untrusted path (a request field, a filename, …).
+        root: The permitted parent directory.
+
+    Returns:
+        `Path(candidate).resolve()`, guaranteed within `root.resolve()`.
+
+    Raises:
+        PathTraversalError: if the resolved candidate is not within `root`.
+    """
+    resolved = Path(candidate).resolve()
+    if not _within(resolved, root):
+        raise PathTraversalError(str(candidate))
+    return resolved

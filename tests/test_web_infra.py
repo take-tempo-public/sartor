@@ -15,6 +15,7 @@ import pytest
 from flask import Flask
 
 from web_infra import (
+    PathTraversalError,
     _error_detail_payload,
     _get_client,
     _get_or_provision_candidate,
@@ -24,6 +25,7 @@ from web_infra import (
     _save_config,
     _sse,
     _within,
+    resolve_within,
 )
 
 
@@ -50,6 +52,25 @@ class TestSecurity:
 
     def test_within_false_for_escaping_path(self, tmp_path: Path) -> None:
         assert _within(tmp_path / ".." / "outside", tmp_path) is False
+
+    def test_resolve_within_returns_resolved_contained_path(self, tmp_path: Path) -> None:
+        target = tmp_path / "output" / "u" / "context_1.json"
+        got = resolve_within(str(target), tmp_path)
+        # Returns the RESOLVED path (the value callers use downstream), not raw input.
+        assert got == target.resolve()
+        assert _within(got, tmp_path) is True
+
+    def test_resolve_within_contains_without_requiring_existence(self, tmp_path: Path) -> None:
+        # Containment only — a contained-but-absent path resolves normally
+        # (callers do their own .exists() check).
+        got = resolve_within(str(tmp_path / "does_not_exist.json"), tmp_path)
+        assert got == (tmp_path / "does_not_exist.json").resolve()
+
+    def test_resolve_within_raises_on_escape(self, tmp_path: Path) -> None:
+        root = tmp_path / "output"
+        root.mkdir()
+        with pytest.raises(PathTraversalError):
+            resolve_within(str(root / ".." / "outside.json"), root)
 
 
 class TestConfigIo:
