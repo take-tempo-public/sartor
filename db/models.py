@@ -1,6 +1,5 @@
 r"""ORM models for the career corpus + candidate memory.
 
-See `C:\\Users\\iam\\.claude\\plans\\rosy-chasing-pinwheel.md` for the design.
 Stable enums use CHECK constraints; free-text fields (tag values, bullet
 phrasing, source provenance suffixes) carry no DB-level validation and rely
 on the application layer.
