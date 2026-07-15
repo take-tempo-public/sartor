@@ -10,7 +10,7 @@
 # Resolved locally from the checkout (referenced by .github/codeql/codeql-config.yml
 # `packs:`); it is deliberately NOT published to a registry.
 name: take-tempo-public/sartor-python-models
-version: 0.0.1
+version: 0.0.2
 library: true
 extensionTargets:
   codeql/python-all: "*"
