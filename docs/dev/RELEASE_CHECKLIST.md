@@ -515,19 +515,22 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **13** (**+1** this branch: `chore/scrub-local-eval-paths` filed as a new
-parked-branch item — **crosses the ceiling further; the reduction sprint is now overdue, not
-merely due.** Unchanged on this branch's own scroll-flake work — that entry gained a Chip 0
-sub-note but stayed one item. Prior context: **−1** the CodeQL `py/path-injection` disposition,
-**RESOLVED** 2026-07-14 on `fix/codeql-path-injection-context` — resolver chokepoint +
-auto-discovered `barrierModel` pack, verified 0 open alerts by API; **+1** its residual
-**[HUMAN/OWNER]** follow-up, wiring CodeQL as a required check. Earlier still: the count reached
-12 on `fix/compose-summary-draft-settle-hole` — −1 Compose lost-update root cause **RESOLVED**
-2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL disposition resolved on the prior
-branch.)
+_Rendered open count: **14** (**+1** this branch, second addition: the
+`check-plan-approved` global-scope hook gap, filed 2026-07-16 during Chip 2 — unrelated to
+the scroll-flake work itself, hit alongside it. Prior context, same branch: **+1**
+`chore/scrub-local-eval-paths` filed as a new parked-branch item — **crosses the ceiling
+further; the reduction sprint is now overdue, not merely due.** The scroll-flake entry
+itself stayed ONE item across Chips 0/1a/1b/2 despite four rounds of sub-notes. Prior
+context: **−1** the CodeQL `py/path-injection` disposition, **RESOLVED** 2026-07-14 on
+`fix/codeql-path-injection-context` — resolver chokepoint + auto-discovered `barrierModel`
+pack, verified 0 open alerts by API; **+1** its residual **[HUMAN/OWNER]** follow-up, wiring
+CodeQL as a required check. Earlier still: the count reached 12 on
+`fix/compose-summary-draft-settle-hole` — −1 Compose lost-update root cause **RESOLVED**
+2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL disposition resolved on the
+prior branch.)
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
 each close-out). **OVER THE CEILING — the reduction sprint is overdue and should be scheduled
-before the v1.1.0 tag** (the rule is ~8–10; this is 13); several items below are small and
+before the v1.1.0 tag** (the rule is ~8–10; this is 14); several items below are small and
 clearable in one pass. The full per-item
 addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
@@ -821,6 +824,23 @@ addition/resolution chronology since 2026-06-15 lives in git history
       and C still have zero captured failing timelines; the campaign stopped on first capture per
       plan, not exhausted. **Next: Chip 2** — root cause, starting from O-9's evidence for mode D;
       A/C remain open capture targets if Chip 2 needs them.
+      **→ Chip 2 update (2026-07-16, `fix/ux-scroll-position-flake`):** root cause
+      **deterministically proven** for modes B and D — not via another CPU-saturated campaign
+      (Chip 1b's own campaign needed 13 runs for one D sample), but via two new tests that call
+      the real `_captureScrollY`/`_restoreScrollY` and force the exact orderings O-8/O-9 already
+      showed in the wild, reproducing each 3/3 on demand:
+      `test_restore_scroll_y_stale_invocation_overwrites_later_scroll` (a superseded invocation's
+      stale restore overwrites a legitimate later scroll — the mode A/B shape) and
+      `test_restore_scroll_y_loses_to_post_restore_growth` (page-growth landing the frame after
+      `_restoreScrollY` fires beats it — the mode D shape). The unifying defect is now precise:
+      capture/restore has no concept of "have I been superseded" or "is the page still settling."
+      Mode C is a separate, unrelated hazard (the wizard rail's own smooth-scroll racing the
+      test's baseline `scrollTo`) — well-supported already, not chased further. **Mode A still has
+      no real captured failing timeline** — the shared-mechanism claim for A rests on code
+      inspection + the forced analog, not a wild capture. Full write-up:
+      `docs/dev/diagnosis/ux-scroll-position-flake.md` O-10/O-11 + rewritten Inferred/
+      Falsification. **Next: Chip 3** — the fix, at the capture/restore layer; scope decision
+      needed on whether mode C is in-bounds for this bug.
 
 - [ ] **`chore/scrub-local-eval-paths` parked — 2 commits, unmerged, gate re-verification
       incomplete (not failed)** — removes 6 references to the owner's private local testing
@@ -1431,13 +1451,26 @@ addition/resolution chronology since 2026-06-15 lives in git history
       the new `.btn-pending` pulse), dec 5 the Compose autosave "Saved" toast, dec 6
       the skills denial data-model (reversible soft-tombstone, replacing the old
       hard-delete-on-deny; un-deny via `PUT is_active=true`) + the denied-skills
-      collapsible lane, dec 7 the compact prior-application card (JD snippet + per-run
-      status + actions moved into the detail modal). **PX-51** (style.css
-      duplicate-cascade collapse) is **DEFERRED** — flagged HIGH RISK in the branch
-      brief, and several decisions above already had to edit rules living inside the
-      duplicate "restyle" block this item would collapse; left for a follow-up branch,
-      no functional effect from deferring. See `CHANGELOG.md` `[Unreleased]` "UX
-      Cohesion Epic" for the full per-decision detail.
+
+
+- [ ] **`check-plan-approved` hook has no per-project/session scope — a concurrent
+      unrelated session can false-positive block this one** — the hook (source read
+      directly) compares the newest `*.md` in `~/.claude/plans/` GLOBALLY against one
+      `.approved` marker; plan files carry no project association, so any concurrent
+      Claude Code session on this machine, in ANY project, mid-plan, blocks Edit/Write
+      in every other session until that session calls `ExitPlanMode`. Hit live on this
+      branch (2026-07-16, Chip 2) by an unrelated session working on a different repo
+      entirely. Worked around per-instance (user confirmed the other session was
+      unrelated; the hook is registered for `Edit|Write` only, not `Bash`, so a narrow
+      scripted text-replacement proceeded without touching the shared marker or the
+      other session's plan) — not a fix. Full mechanism in
+      [[reference-plan-approval-hook-global-scope]] (durable memory). **Needs an actual
+      fix**: scope the marker/newest-plan comparison per project (e.g. a
+      project-path-derived subdirectory or marker filename) so concurrent multi-project
+      sessions don't collide.
+      _(discovered: v1.1.0 stream, 2026-07-16, `fix/ux-scroll-position-flake` Chip 2 —
+      unrelated to the scroll-flake work it was hit alongside; open count 13 → 14, over
+      the ~8-10 ceiling and rising — the reduction sprint is now more overdue, not less.)_
 
 #### Resolved
 
