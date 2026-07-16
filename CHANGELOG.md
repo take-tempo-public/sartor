@@ -21,6 +21,37 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Fixed: corpus/Compose reloads could snap your scroll position away (`fix/ux-scroll-position-flake`)
+
+Accepting, retiring, or editing a bullet could scroll you back to the top of a long corpus or
+Compose list — intermittently, worse under CPU load, and worse still with a large corpus, where
+Compose's background auto-cascade (drafting the positioning summary, recommending skills, filling
+gaps) can re-reload the list several times over a few seconds, each one a fresh chance to lose
+your place.
+
+**Root cause: capture/restore trusted a single, one-shot scroll read/write as final.**
+`_captureScrollY`/`_restoreScrollY` (`static/app.js`) had no way to know "have I been superseded"
+or "is the page still settling," so two independent races fell out of that one gap: a stale,
+already-superseded reload's restore could fire last and silently overwrite a position something
+else had since legitimately established; and a single `requestAnimationFrame`-deferred restore had
+no defense against browser scroll-anchoring landing a frame or more late, as the lists' own async
+growth (cards, fire-and-forget editors) continued after the "restore" had already fired.
+
+The fix adds a per-load ordinal (a newer reload instantly voids an older one's pending restore, no
+time limit, regardless of how long a background cascade takes) and a generation counter on the
+explicit scroll APIs this app uses (a deliberate reposition also voids a stale pending restore),
+plus a bounded settle loop that keeps re-asserting the restored position until the page's height
+has genuinely stopped changing, instead of trusting a single frame.
+
+> **How this was arrived at matters.** The failure showed four distinct value signatures across
+> repeated runs, not one — a race with a variable-timing scroller, not a single deterministic path.
+> Two of the four were confirmed **unrelated** to this defect (a wizard-rail smooth-scroll racing a
+> test's own baseline read, and a harness-level tab-wait timeout under load) and deliberately left
+> untouched. The other two were each deterministically reproduced on demand — not inferred from
+> passing runs — by forcing the exact orderings two real-world captures had shown, before any fix
+> was written (charter **C-7**). Full evidence record:
+> [`docs/dev/diagnosis/ux-scroll-position-flake.md`](docs/dev/diagnosis/ux-scroll-position-flake.md).
+
 ### Security: one validated-resolver chokepoint for context-file paths (`fix/codeql-path-injection-context`)
 
 CodeQL's `py/path-injection` query flagged seven "high" alerts on the context-file helpers in

@@ -1,24 +1,19 @@
 # Diagnosis — corpus-reload scroll position not preserved (ux flake)
 
-> **Status:** root cause **DETERMINISTICALLY PROVEN for modes B and D** (2026-07-16, Chip 2);
-> mode C **explained** as an independent, unrelated hazard; mode A **still has no real captured
-> failing timeline** but shares B's now-proven mechanism by direct code inspection. The Chip 1b
-> real-world captures (O-8 for B, O-9 for D) each gave **one sample** of a failing timeline —
-> not enough, on their own, to generalize per this document's own C-7 discipline. Chip 2 closes
-> that gap **without more CPU-saturated lottery**: two new tests
-> ([O-10](#o-10-deterministic-reproduction-a-superseded-invocations-stale-restore-overwrites-a-legitimate-later-scroll-the-mode-ab-shape),
-> [O-11](#o-11-deterministic-reproduction-_restorescrolly-has-no-protection-against-growth-landing-in-the-next-frame-the-mode-d-shape))
-> call the REAL `_captureScrollY`/`_restoreScrollY` (`app.js:5490-5493`) and force — by
-> `requestAnimationFrame` registration order and a held-open `fetch`, not by wall-clock luck —
-> the exact two shapes O-8 and O-9 observed in the wild. Both reproduce **100% of runs** (3/3
-> each). The unifying defect is now precise, not a list of perturbers: **capture/restore has no
-> concept of "have I been superseded" or "is the page still settling"** — see
-> [Inferred](#inferred). Mode C (`before=369`) is a **separate, unrelated** hazard — the wizard
-> rail's own smooth-scroll racing the test's baseline `scrollTo`, nothing to do with
-> `refreshCorpus`'s capture/restore — already well-supported by O-3/O-5/O-6 and not touched
-> further this chip. **Chip 3 (fix) has a proven mechanism to fix against for B and D; A is
-> inferred-not-observed; C is arguably out of this bug's scope** — see
-> [Falsification](#falsification) for what's now closed vs. still open.
+> **Status:** the fix has **landed (2026-07-16, Chip 3)** at the capture/restore primitive
+> (`_captureScrollY`/`_restoreScrollY`, `app.js:5480-5591`). Root cause was **deterministically
+> proven for modes B and D in Chip 2** (O-10, O-11); mode A is **fixed on the strength of the
+> shared-mechanism inference** with mode B (never separately real-world-captured); mode C is
+> **scoped out** as a separate, unrelated hazard (see the updated note in
+> [Inferred §3](#inferred) — its relationship to this fix changed slightly once the fix landed).
+> O-10 and O-11 have **flipped**: both now assert and demonstrate the fix holds, on the exact
+> same forced orderings that proved the defect (no test setup changed, only the pass criterion).
+> A third regression test,
+> `test_restore_scroll_y_ordinal_defers_to_newer_capture`, was added to close an outcome-level
+> coverage gap the fix's own design review surfaced (the existing Chip 1a self-check for
+> overlapping invocations only asserted the spy's attribution, never `window.scrollY`). See
+> [The fix](#the-fix) for the mechanism and [Acceptance bar](#acceptance-bar) for what's
+> confirmed vs. still open (CI, multi-run, `--reruns`-free evidence).
 > **Branch:** `fix/ux-scroll-position-flake`
 
 <!-- Keep ## Observed (facts with artifacts) strictly apart from ## Inferred (hypothesis).
@@ -468,6 +463,16 @@ one gap, plus one unrelated hazard that merely looks similar:
    easily-triggered race, not a load-only artifact — but it was not investigated further this chip
    (see [Falsification](#falsification) for why a CPU-saturated campaign to chase C specifically
    was not run).
+   > **⚠ Precision update, Chip 3.** Before the fix, mode C "had nothing to do with
+   > `refreshCorpus`'s capture/restore" in the strongest sense — it didn't touch either function at
+   > all. That's no longer quite true: [the fix](#the-fix)'s mechanism #2 wraps
+   > `Element.prototype.scrollIntoView` (among other explicit scroll APIs) as an invalidation
+   > signal, and `_wizardRender`'s call is one of them, so it can now cause an unrelated pending
+   > `refreshCorpus`/`loadComposition` restore to abandon. This is one-directional and
+   > conservative — it can only make a restore defer, never misfire — and it neither fixes nor
+   > worsens mode C's own defect (the test's baseline read still races the wizard's animation the
+   > same way). The precise statement post-fix: mode C **doesn't share the defect**; it **does now
+   > participate as a harmless, conservative invalidation signal** in the fixed mechanism.
 
 A fix that addresses only anchoring (mode D) leaves A/B live; a fix that only cancels stale
 restores (A/B) leaves D live. **The layer that covers both is the capture/restore primitive
@@ -498,22 +503,30 @@ shapes**, proven independently of each other and independently of the wizard-scr
 independent (Inferred §3) without needing a campaign — it doesn't involve `refreshCorpus`'s
 capture/restore at either end.
 
-**Step 2 — fix experiment.** Not started (Chip 3). Apply the candidate fix at the capture/restore
-layer (Inferred, closing paragraph) and:
-- Re-run O-10 and O-11 (now regression tests, not just falsification) — both must FLIP to
-  demonstrating the fix holds (e.g., a stale invocation's restore is provably a no-op;
-  post-restore growth no longer moves the "restored" position) on the same forced orderings that
-  broke HEAD.
-- Re-run the real flaky test under saturated load (`scratchpad/capture_scroll_phase1b.sh` or
-  successor) + the reruns-off CI proof.
-- **Confirmed** only if: the flake stops (bare `PASSED`, zero `RERUN`, across >1 CI run) AND
-  O-10/O-11 demonstrate the specific mechanisms are actually closed, not just that the flake rate
-  dropped (a rate drop alone repeats the stage-2.5 "green for the wrong reason" trap this document
-  was built to avoid).
-- **If O-10/O-11 still fail post-fix** → the layer is wrong; widen again.
-- Mode A and mode C are not covered by the above and need an explicit scoping decision in Chip 3:
-  fix A on the strength of its shared-mechanism inference (never directly captured), and decide
-  whether mode C (the wizard-scroll race) is this bug or a separate one.
+**Step 2 — fix experiment. DONE (Chip 3), locally; CI confirmation still open.** Applied the fix
+at the capture/restore layer (see [The fix](#the-fix)):
+- **Re-ran O-10 and O-11 — both FLIPPED**, on the exact same forced orderings, no test setup
+  changed (only the pass criterion, from `after != before` proving the defect to `after == before`
+  proving the fix): 3/3 clean runs of the full regression file
+  (`tests/ux/regression/test_20260708_busy_states_and_chip.py`, 11 tests), zero flakiness observed,
+  `--reruns` not in play locally (confirmed off by default; only CI's `ux` tier passes it).
+- **A third regression test was added**,
+  `test_restore_scroll_y_ordinal_defers_to_newer_capture`, closing a gap the fix's own design
+  review surfaced: the existing Chip 1a self-check for two overlapping invocations
+  (`test_scroll_spy_attributes_overlapping_refresh_corpus_calls`) only asserted the spy's
+  attribution bookkeeping, never `window.scrollY` — nothing before this test could have caught a
+  bug in the ordinal check itself. Passes.
+- **Re-ran the real flaky test under saturated load**
+  (`scratchpad/capture_scroll_phase1b.sh`, 7 workers / 8 logical cores — the same calibration as
+  O-1/O-9) — see [Acceptance bar](#acceptance-bar) for the tally.
+- **Mode A and mode C scoping decision, made explicitly this chip:** mode A is fixed on the
+  strength of its shared-mechanism inference with mode B (Inferred §1) — the same primitive-layer
+  fix covers it without a separate real-world capture, since the fix is not mode-specific; mode C
+  (the wizard-scroll race) is **out of scope**, confirmed structurally independent
+  (Inferred §3, updated with a Chip 3 precision note on how it now interacts with the fixed
+  mechanism) — not touched, and not folded into this bug.
+- **Not yet met:** the CI, `--reruns`-free, more-than-one-run leg of the acceptance bar — that
+  requires an actual CI run, not a local one. See [Acceptance bar](#acceptance-bar).
 
 ~~A deterministic complement worth building: a browserless/forced test that renders the corpus,
 grows the page height by a large delta while scroll is mid-page, and asserts scroll is
@@ -523,7 +536,79 @@ preserved.~~ **Built — O-10 and O-11.**
 
 ## The fix
 
-_Only after the experiment above fails on HEAD and passes with the change. Not yet written._
+Three independent mechanisms, all scoped entirely inside `_captureScrollY`/`_restoreScrollY`
+(`app.js:5480-5591`). All three call sites (`refreshCorpus` capture at `app.js:3607`,
+`_loadCorpusDetail` at `:4839`, `loadComposition` at `:7036`) already did pure pass-through —
+`const _scrollY = _captureScrollY(); ... _restoreScrollY(_scrollY);` — never inspecting the
+captured value, so **none of the three call sites needed to change.**
+
+1. **Invocation ordinal** (fixes modes A/B's "second invocation" shape — Inferred §1's "or a
+   second invocation"). A module-level counter `_scrollCaptureOrdinal` increments on every
+   `_captureScrollY()` call; the capture bundle carries `ordinal: <value at capture time>`.
+   `_restoreScrollY` checks, on every settle-tick, whether its own `ordinal` still equals the
+   *current* counter — if a newer capture has since happened (e.g. the next step of Compose's
+   background auto-cascade re-entered `loadComposition()`), it abandons instantly. **No time
+   budget at all** — this is what protects a long, multi-step reload cascade regardless of how
+   many seconds it spans, and it's the mechanism that actually matches the owner's real-world
+   report of being "bit with scroll and snap back multiple times in a single tailoring" on a large
+   corpus where loading "sometimes takes well over 3-5 seconds."
+2. **Explicit-scroll-API generation counter** (fixes O-10's exact shape — a deliberate reposition
+   racing a stale restore with no second invocation involved). O-10 never makes a second capture;
+   it holds one invocation open and sets `scrollTo(0,300)` directly, so mechanism #1 alone doesn't
+   catch it. Wraps the explicit scroll-mutating APIs this app uses — `window.scrollTo`,
+   `window.scroll` (a spec-level alias of `scrollTo`), `window.scrollBy`,
+   `Element.prototype.scrollIntoView` — once at module load, so *any* call to them (test-injected
+   JS, `_wizardRender`'s own smooth-scroll, anything) bumps a second counter,
+   `_scrollInterruptGen`. `_restoreScrollY`'s *own* internal scroll-setting call bypasses this wrap
+   (calls a saved reference to each function as it existed before this module's own wrap ran — in
+   test contexts where the Chip 1a/Chip 2 spy's `add_init_script` wrap runs first, that saved
+   reference is the spy's already-wrapped function, not the literal browser native — harmless, and
+   necessary for the spy to keep seeing these calls). The capture bundle carries
+   `scrollGen: <_scrollInterruptGen at capture time>`; a mismatch on any tick means something else
+   explicitly repositioned scroll since capture — abandon.
+   - *Why wrap explicit APIs rather than listen to the generic native `scroll` event:* per O-6/O-8,
+     both the anchoring jump (mode D) and the passive height-shrink clamp this whole mechanism
+     exists to counteract show up as a bare `scroll-event` with no API call behind them. A generic
+     listener can't tell those apart from a deliberate reposition — and the passive case fires on
+     essentially every normal reload, so a generic listener would make every restore look
+     permanently stale.
+   - *Known, deliberate cost:* zero prior production precedent in this codebase for wrapping global
+     browser APIs (only the test suite's own diagnostic spy did this before); it's invisible
+     action-at-a-distance — a future `scrollIntoView` call added anywhere won't visibly show it's
+     now part of this protocol. The code comment at the wrap site says explicitly this is scoped to
+     these calls for exactly this purpose, not a pattern to reach for elsewhere.
+3. **Height-stability settle loop** (fixes mode D — O-11). Replaces the single
+   `requestAnimationFrame(() => scrollTo(0,y))` with a bounded multi-frame loop: each tick (if not
+   superseded per #1/#2) applies the target position via the bypassed-wrapper `scrollTo`, then
+   compares `document.documentElement.scrollHeight` to the previous tick's (seeded from height
+   recorded *at capture time*, so tick 1 has a defined baseline). Unchanged height increments a
+   stability counter; changed height resets it. Stops after **4 consecutive stable ticks or a
+   3000ms wall-clock cap** (`performance.now()`-based, not a frame count, since frame cadence
+   degrades under the CPU load this bug needs to manifest).
+   - *On the constants:* the gathered evidence for mode D specifically (O-6/O-9) shows growth
+     completing in ~500-700ms on the 20-experience test fixture. 3000ms/4-ticks gives headroom for
+     a larger real corpus for *this specific mechanism*. It is deliberately **not** stretched to
+     5+ seconds to match the owner's reported end-to-end tailoring time — that multi-second,
+     multi-snap-back experience is mechanism #1's territory (unbounded, no cap needed), and
+     inflating mechanism #3's cap would only widen the window where a manual scroll gets fought,
+     for a scenario mechanism #1 already covers.
+   - *Named risk, accepted, not silently absorbed:* the settle loop widens the "fights a manual
+     scroll" window from ~1 frame (today, pre-fix) to up to 3s, and unlike a single bad jump, it
+     can re-clobber *every* scroll attempt made during that window, once per tick, until the loop's
+     exit condition. Judged unavoidable (mode D's passive-perturbation signal is indistinguishable
+     from a deliberate user scroll — see the "why wrap explicit APIs" note above) and bounded.
+
+**Design review.** Before implementation, a second independent pass traced both O-10 and O-11
+against this exact design line-by-line and confirmed: mechanism #2 alone flips O-10 (mechanism #1
+is provably irrelevant to that specific test, since it only ever makes one capture); mechanisms
+#2+#3 flip O-11, with the actual correction landing at tick 2 (well inside the test's 150ms wait);
+the bypass-the-wrapper requirement in mechanism #2 is load-bearing, not cosmetic (getting it wrong
+would collapse the settle loop to exactly one tick, everywhere — and O-11 would specifically catch
+that regression); and no simpler alternative flips both tests unmodified (a bare "invalidate on
+next capture" token doesn't touch O-10; a generic `scroll`-event listener can't distinguish a
+passive perturbation, which fires on every normal reload, from a deliberate one). This review is
+what surfaced the tick-1 height-baseline gap (resolved above) and the mode-C precision note
+(Inferred §3).
 
 ---
 
@@ -533,3 +618,53 @@ A bare `PASSED` with **no `RERUN`**, sampled across **more than one CI run**, wi
 AND the perturber demonstrably gone on a trajectory that **fails without the fix**. The fix must address
 the moving-target capture (all modes), not just make one value stop appearing. Green-with-a-retry does
 not count — and neither does green from a fix validated only against passing runs.
+
+**Status, Chip 3 (2026-07-16):**
+
+- **Deterministic evidence, confirmed:** O-10 and O-11 flipped from proving the defect to proving
+  the fix, on the identical forced orderings, 3/3 clean runs of the full regression file (11
+  tests) across 3 repeated invocations, zero flakiness, `--reruns` not in play locally. This
+  satisfies "the perturber demonstrably gone on a trajectory that fails without the fix" — these
+  are the same trajectories that failed on HEAD, now passing on the identical construction.
+- **Local saturated-load evidence:** `scratchpad/capture_scroll_phase1b.sh`, 7 workers / 8 logical
+  cores (O-1/O-9's own calibration), 24 iterations, log at
+  `scratchpad/capture_scroll_phase3_postfix.log`. **Tally: 19 passed / 5 failed.** Every one of the
+  5 failures was individually traced against its full spy dump (not pattern-matched by value alone
+  — F-1 already warned that a repeated value is not proof of a repeated mechanism):
+  - **1 failure** (run 5): `Page.wait_for_selector: Timeout 15000ms exceeded` waiting for
+    `#panelCorpus` — the pre-existing, already-diagnosed **harness-load timeout** (O-8's "second,
+    distinct flake source... unrelated to scroll"). Confirmed unrelated: this fix touches no
+    tab-switch or panel-visibility code.
+  - **4 failures** (runs 6, 15, 16, 22): `scroll position not preserved: 300 -> 369`. All four
+    traced end-to-end via the spy dump, not assumed identical from the value alone. In every one:
+    the test's own `before` read lands at 300; between that read and the test's own explicit
+    `refreshCorpus()` call — both **test-side statements, nothing from the fix runs in between** —
+    `_wizardRender`'s residual `scrollIntoView` animation (still settling from earlier in the same
+    run) creeps the page from 300 to 369; `refreshCorpus`'s own `_captureScrollY` then correctly
+    captures 369 (the only baseline it was ever given), and `_restoreScrollY`'s settle loop
+    correctly, faithfully re-asserts 369 across multiple ticks even through the anchoring jump to
+    ~25400 — capture/restore does exactly what it should with the baseline it's handed. **This is
+    mode C** (Inferred §3), confirmed by full trace, not by matching the "369" value alone — one
+    trace (run 22) additionally shows the fix's own mechanisms #1/#2 correctly protecting an
+    *unrelated* legitimate `refreshCorpus` restore earlier in the same run (a first invocation's
+    settle loop runs its full course and stops cleanly before the test's own `scrollTo(0,300)` —
+    no interaction, no interference).
+  - **Zero occurrences of modes A, B, or D** — the defect this fix targets — across all 24 runs.
+  - **Precise, non-overclaiming conclusion:** the fix's target defect (the moving-target
+    capture/restore primitive) is closed, 24/24. The *original* test
+    (`test_corpus_reload_preserves_scroll_position`) is **not** fully green under this saturated
+    load — it still fails at a broadly similar overall rate to before (~21% raw here vs. O-1's
+    ~12-17%) — but every one of those residual failures is fully attributed to the two hazards
+    explicitly scoped **out** of this fix (mode C; the harness timeout), not to a recurrence of
+    what this fix closes. A reader should not take "the flake is fixed" from this entry — the
+    correct claim is narrower and is the one made above.
+- **Not yet met:** the CI leg specifically — "sampled across more than one CI run" requires an
+  actual CI run, which doesn't exist until this branch is pushed/merged. That is out of this
+  session's control to produce directly; it is the one part of this bar a local session cannot
+  close on its own.
+- **A concrete follow-on this campaign surfaces:** mode C's measured rate here (4/24, ~17%) is not
+  negligible — a real user could still hit it in ordinary use (switch wizard steps, then quickly
+  trigger something that reads/sets scroll). It remains explicitly out of scope for this branch
+  (different mechanism, different fix — see the Inferred §3 precision note) but is real enough to
+  be worth a deliberate, separate pickup rather than fading from view now that this chip is closed;
+  see the Carry-forward ledger note.

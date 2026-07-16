@@ -5487,9 +5487,104 @@ function _setLoadingPlaceholder(el, msg) {
 // container (verified: .corpus-experience-list has no overflow rule), so
 // window scroll is the only position that needs preserving. Restoring the
 // same value when nothing moved is a harmless no-op.
-function _captureScrollY() { return window.scrollY; }
-function _restoreScrollY(y) {
-  requestAnimationFrame(() => window.scrollTo(0, y));
+//
+// fix/ux-scroll-position-flake (Chip 3) — the plain read/write above raced two
+// independent ways, both deterministically proven against these exact
+// functions (diagnosis dossier O-10/O-11, docs/dev/diagnosis/ux-scroll-
+// position-flake.md): (a) a stale, already-superseded invocation's restore
+// could fire last and silently overwrite a position something else had since
+// legitimately established, and (b) a single requestAnimationFrame(scrollTo)
+// had no defense against browser scroll-anchoring landing a frame or more
+// late, as the corpus/Compose lists' async growth (cards, fire-and-forget
+// editors) continued after the "restore" fired. Three mechanisms below, each
+// targeting one proven failure shape:
+//
+//  1. `_scrollCaptureOrdinal` bumps on every capture. A pending restore whose
+//     ordinal is no longer current — a NEWER capture has since happened, e.g.
+//     the next step of a background auto-cascade re-entered loadComposition()
+//     — abandons instantly. No time budget: this is what protects a long,
+//     multi-step reload cascade regardless of how many seconds it spans.
+//  2. `_scrollInterruptGen` bumps on the explicit scroll-mutating APIs this
+//     app uses (wrapped once, below) — EXCLUDING _restoreScrollY's own
+//     call, which bypasses the wrap. Catches a deliberate reposition racing a
+//     stale restore even with no second invocation involved. Deliberately NOT
+//     a generic native 'scroll'-event listener: the anchoring jump (mode D)
+//     and the passive height-shrink clamp this mechanism exists to counteract
+//     both fire as a bare scroll-event with no API call behind them, so a
+//     generic listener can't tell a deliberate reposition apart from an
+//     ordinary reload's own passive perturbation.
+//  3. A bounded multi-frame settle loop (replacing the single rAF) re-applies
+//     the target position until scrollHeight has been stable for a few
+//     consecutive ticks or a wall-clock cap elapses, surviving anchoring that
+//     lands after the first frame.
+//
+// This is a narrow, deliberate use of wrapping global browser APIs, scoped to
+// exactly these calls for exactly this invalidation signal — not a
+// pattern to reach for elsewhere. (The test suite's own diagnostic scroll spy,
+// tests/ux/regression/test_20260708_busy_states_and_chip.py's _SCROLL_SPY_JS,
+// already does the same kind of wrap for instrumentation; this is the first
+// production use, layered underneath that spy in test contexts.) `scroll` is
+// wrapped alongside `scrollTo` since it's a spec-level alias of it (same
+// signature, same effect) — nothing in this app calls it today, but leaving
+// it unwrapped would be a silent hole in the invalidation signal for anyone
+// who does.
+const _scrollRestoreNative = {
+  scrollTo: window.scrollTo.bind(window),
+  scroll: window.scroll.bind(window),
+  scrollBy: window.scrollBy.bind(window),
+  scrollIntoView: Element.prototype.scrollIntoView,
+};
+let _scrollCaptureOrdinal = 0;
+let _scrollInterruptGen = 0;
+window.scrollTo = function (...args) {
+  _scrollInterruptGen++;
+  return _scrollRestoreNative.scrollTo(...args);
+};
+window.scroll = function (...args) {
+  _scrollInterruptGen++;
+  return _scrollRestoreNative.scroll(...args);
+};
+window.scrollBy = function (...args) {
+  _scrollInterruptGen++;
+  return _scrollRestoreNative.scrollBy(...args);
+};
+Element.prototype.scrollIntoView = function (...args) {
+  _scrollInterruptGen++;
+  return _scrollRestoreNative.scrollIntoView.apply(this, args);
+};
+
+const SCROLL_RESTORE_STABLE_TICKS = 4;
+const SCROLL_RESTORE_MAX_MS = 3000;
+
+function _captureScrollY() {
+  return {
+    y: window.scrollY,
+    h: document.documentElement.scrollHeight,
+    ordinal: ++_scrollCaptureOrdinal,
+    scrollGen: _scrollInterruptGen,
+  };
+}
+
+function _restoreScrollY(capture) {
+  const { y, h, ordinal, scrollGen } = capture;
+  const deadline = performance.now() + SCROLL_RESTORE_MAX_MS;
+  let lastHeight = h;
+  let stableTicks = 0;
+
+  function tick() {
+    if (ordinal !== _scrollCaptureOrdinal || scrollGen !== _scrollInterruptGen) return;
+    _scrollRestoreNative.scrollTo(0, y);
+    const currentHeight = document.documentElement.scrollHeight;
+    if (currentHeight === lastHeight) {
+      stableTicks++;
+    } else {
+      stableTicks = 0;
+      lastHeight = currentHeight;
+    }
+    if (stableTicks >= SCROLL_RESTORE_STABLE_TICKS || performance.now() >= deadline) return;
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
 
 function _toast(msg, isError) {

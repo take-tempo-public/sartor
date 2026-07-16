@@ -515,12 +515,14 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **14** (**+1** this branch, second addition: the
-`check-plan-approved` global-scope hook gap, filed 2026-07-16 during Chip 2 — unrelated to
-the scroll-flake work itself, hit alongside it. Prior context, same branch: **+1**
+_Rendered open count: **14** (unchanged this chip — Chip 3 landed the scroll-flake fix and
+updated its existing entry in place, no item added or resolved; the CI leg of that entry's own
+acceptance bar is still open, so it stays unchecked pending a post-merge CI run. Prior context,
+same branch: **+1** the `check-plan-approved` global-scope hook gap, filed 2026-07-16 during
+Chip 2 — unrelated to the scroll-flake work itself, hit alongside it; **+1**
 `chore/scrub-local-eval-paths` filed as a new parked-branch item — **crosses the ceiling
 further; the reduction sprint is now overdue, not merely due.** The scroll-flake entry
-itself stayed ONE item across Chips 0/1a/1b/2 despite four rounds of sub-notes. Prior
+itself stayed ONE item across Chips 0/1a/1b/2/3 despite five rounds of sub-notes. Prior
 context: **−1** the CodeQL `py/path-injection` disposition, **RESOLVED** 2026-07-14 on
 `fix/codeql-path-injection-context` — resolver chokepoint + auto-discovered `barrierModel`
 pack, verified 0 open alerts by API; **+1** its residual **[HUMAN/OWNER]** follow-up, wiring
@@ -841,6 +843,44 @@ addition/resolution chronology since 2026-06-15 lives in git history
       `docs/dev/diagnosis/ux-scroll-position-flake.md` O-10/O-11 + rewritten Inferred/
       Falsification. **Next: Chip 3** — the fix, at the capture/restore layer; scope decision
       needed on whether mode C is in-bounds for this bug.
+      **→ Chip 3 update (2026-07-16, `fix/ux-scroll-position-flake`) — THE FIX LANDED.** Three
+      mechanisms at the capture/restore primitive (`app.js:5480-5591`; zero call-site changes
+      needed — all three callers already did pure pass-through): a per-load ordinal (instant,
+      time-unbounded invalidation of a superseded reload's pending restore — this is what actually
+      protects the owner's reported real-world pattern, "bit with scroll and snap back multiple
+      times in a single tailoring" on a large corpus where Compose's auto-cascade re-reloads
+      several times over 3-5+ seconds); a generation counter on the explicit scroll APIs this app
+      uses (catches a deliberate reposition racing a stale restore with no second invocation
+      involved — O-10's exact shape); and a bounded, height-stability settle loop (survives
+      scroll-anchoring landing a frame or more late — O-11's shape). O-10 and O-11 **FLIPPED** (same
+      forced orderings, only the pass criterion changed), 3/3 clean runs, zero flakiness. A third
+      regression test (`test_restore_scroll_y_ordinal_defers_to_newer_capture`) closes an
+      outcome-level coverage gap the fix's own design review surfaced. **Scope decisions, made
+      explicitly:** mode A fixed on the strength of its shared-mechanism inference (no separate
+      capture needed, the fix isn't mode-specific); mode C stays **out of scope** (separate hazard,
+      confirmed structurally independent — Inferred §3 now carries a Chip 3 precision note on how
+      it harmlessly participates in the fixed mechanism post-fix).
+      **Saturated-load validation (24 runs, 7 workers/8 cores, O-1/O-9's own calibration):
+      19 passed / 5 failed. Every failure individually traced by full spy dump, not by matching the
+      failure value alone** (per this document's own F-1 warning) — **zero occurrences of modes
+      A/B/D** (this fix's target); the 5 failures are 4× mode C (traced end-to-end each time: the
+      corruption happens entirely in test-side code, before `refreshCorpus` is ever called;
+      capture/restore faithfully preserves whatever baseline it's handed) + 1× the pre-existing
+      `#panelCorpus` harness-load timeout (O-8, unrelated to scroll). **Precise claim, not an
+      overclaim:** the fix's target defect is closed; the *original* flaky test is **not** fully
+      green under saturated load, for reasons entirely outside this fix's scope. **Mode C's
+      measured rate here (4/24, ~17%) is real enough that a real user could hit it** — tracked as a
+      follow-on below, not silently dropped. **Not yet met:** the CI leg of the acceptance bar
+      (`--reruns`-free, >1 CI run) — needs an actual CI run post-merge, out of a local session's
+      control. Full write-up: `docs/dev/diagnosis/ux-scroll-position-flake.md` "## The fix" +
+      "## Acceptance bar". CHANGELOG entry added. **Branch ready to close** pending the gate +
+      user merge confirmation.
+      **Follow-on filed here, not as a new ledger item** (matching this entry's own "one item,
+      evolving notes" pattern across Chips 0-3): **mode C — the wizard rail's `scrollIntoView`
+      smooth-scroll racing an immediate scroll read/write shortly after a step transition — is a
+      separate, real, measured-non-negligible (~17% under saturation) hazard that needs its own
+      diagnosis dossier and branch if/when picked up.** Not the same defect as this one (confirmed
+      structurally independent, Inferred §3); do not conflate with a future re-open of this item.
 
 - [ ] **`chore/scrub-local-eval-paths` parked — 2 commits, unmerged, gate re-verification
       incomplete (not failed)** — removes 6 references to the owner's private local testing

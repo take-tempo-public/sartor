@@ -476,22 +476,28 @@ def test_corpus_reload_preserves_scroll_position(
 def test_restore_scroll_y_loses_to_post_restore_growth(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Chip 2 deterministic falsification (charter C-7; diagnosis dossier O-9's
-    mechanism, distilled to its essential shape) -- NOT a fix, NOT a
-    reproduction of the flaky test itself. Calls the REAL _captureScrollY /
-    _restoreScrollY primitives (app.js:5490-5493) directly, then schedules a
-    synthetic page-growth (a tall filler prepended to <body>, matching O-6's
-    "content inserted above the anchor pushes scroll down" scroll-anchoring
-    shape) in the animation frame immediately AFTER _restoreScrollY's own
-    rAF -- the exact ordering O-9 observed in the wild (id=1's fire-and-
-    forget children still growing the page after id=1's own restore had
-    already fired and exited). Ordering is forced by rAF registration order
+    """Chip 2 deterministic falsification, FLIPPED to a Chip 3 regression test
+    once the fix landed (charter C-7; diagnosis dossier O-9's mechanism,
+    distilled to its essential shape, docs/dev/diagnosis/ux-scroll-position-
+    flake.md "## The fix"). Calls the REAL _captureScrollY / _restoreScrollY
+    primitives (app.js:5480-5591) directly, then schedules a synthetic
+    page-growth (a tall filler prepended to <body>, matching O-6's "content
+    inserted above the anchor pushes scroll down" scroll-anchoring shape) in
+    the animation frame immediately AFTER _restoreScrollY's own first rAF --
+    the exact ordering O-9 observed in the wild (id=1's fire-and-forget
+    children still growing the page after id=1's own restore had already
+    fired and exited). Ordering is forced by rAF registration order
     (same-frame callbacks fire in the order requestAnimationFrame was
     called), not by wall-clock timing, so this reproduces deterministically
     with no CPU saturation and no lottery -- isolating whether the
     capture/restore PRIMITIVE itself is defenseless against post-restore
     growth, independent of which real app feature (summary variants, skills
-    editor, etc.) causes that growth in production.
+    editor, etc.) causes that growth in production. Pre-fix this asserted
+    `after != before` (proving the defect, 3/3). Post-fix the settle loop
+    (mechanism #3 in "## The fix") must survive this exact growth within its
+    stability/timeout budget, so the assertion below is now `after == before`
+    -- a regression in either the ordinal/generation checks or the settle
+    loop itself will flip this back to red.
     """
     cid = seed_user(ux_app, "alice")
     for i in range(20):
@@ -538,10 +544,11 @@ def test_restore_scroll_y_loses_to_post_restore_growth(
     after = page.evaluate("() => window.scrollY")
     print(f"\n[chip2-experiment] before={before} after={after} filler_present={filler_present}")
     assert filler_present, "growth trigger didn't fire -- experiment invalid, not a defect finding"
-    assert after != before, (
-        f"did NOT reproduce the O-9 defect: restore survived post-restore growth "
-        f"({before} -> {after}). The primitive may be more robust than O-9's single "
-        f"real-world sample suggested -- or scroll-anchoring didn't engage here."
+    assert after == before, (
+        f"the settle loop did not survive post-restore growth: scroll position "
+        f"moved from {before} to {after}. Mechanism #3 (docs/dev/diagnosis/"
+        f"ux-scroll-position-flake.md '## The fix') should keep re-asserting the "
+        f"restored position until scrollHeight stabilizes -- this is a regression."
     )
 
 
@@ -549,20 +556,27 @@ def test_restore_scroll_y_loses_to_post_restore_growth(
 def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Chip 2 deterministic falsification -- the mode-A/B shape (diagnosis
-    dossier O-8: a `_restoreScrollY` scheduled by an EARLIER, already-stale
-    refreshCorpus invocation fires AFTER a legitimate later scroll and
-    stomps it), forced deterministically instead of relying on CPU-load
-    timing. Holds the tab-click's own fire-and-forget refreshCorpus (the
-    real O-9 "id=1") open at its /experiences fetch -- so it has captured
-    scrollY (near 0, the pre-scroll baseline) but not yet reached
-    _restoreScrollY -- then sets the scroll position a real user/test
-    actually wants, THEN releases the held fetch so id=1 completes and
-    fires its now-stale restore. Same root defect as the post-restore-
-    growth test above, from the opposite direction: capture/restore has no
-    concept of "have I been superseded," so an old invocation's restore
-    wins just by finishing last, regardless of what happened in the
-    meantime.
+    """Chip 2 deterministic falsification, FLIPPED to a Chip 3 regression test
+    once the fix landed -- the mode-A/B shape (diagnosis dossier O-8: a
+    `_restoreScrollY` scheduled by an EARLIER, already-stale refreshCorpus
+    invocation fires AFTER a legitimate later scroll and stomps it), forced
+    deterministically instead of relying on CPU-load timing. Holds the
+    tab-click's own fire-and-forget refreshCorpus (the real O-9 "id=1") open
+    at its /experiences fetch -- so it has captured scrollY (near 0, the
+    pre-scroll baseline) but not yet reached _restoreScrollY -- then sets the
+    scroll position a real user/test actually wants, THEN releases the held
+    fetch so id=1 completes and fires its now-stale restore. Same root defect
+    as the post-restore-growth test above, from the opposite direction:
+    capture/restore had no concept of "have I been superseded," so an old
+    invocation's restore won just by finishing last, regardless of what
+    happened in the meantime. Pre-fix this asserted `after != before`
+    (proving the defect, 3/3). Post-fix (docs/dev/diagnosis/ux-scroll-
+    position-flake.md "## The fix", mechanism #2 -- this test's own
+    scrollTo(0,300) below is one of the wrapped explicit scroll APIs, so it
+    bumps the generation counter, and id=1's later, now-stale restore sees
+    the mismatch on its first tick and abandons before ever calling scrollTo)
+    the assertion below is now `after == before` -- a regression in that
+    mechanism will flip this back to red.
     """
     cid = seed_user(ux_app, "alice")
     for i in range(20):
@@ -612,12 +626,74 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
         "() => document.querySelectorAll('#corpusExperienceList .corpus-card').length >= 20",
         timeout=15_000,
     )
-    page.wait_for_timeout(150)  # let the stale _restoreScrollY's rAF fire
+    page.wait_for_timeout(150)  # let the stale _restoreScrollY's first tick run (and abandon)
     after = page.evaluate("() => window.scrollY")
     print(f"\n[chip2-experiment-stale-restore] before={before} after={after}")
-    assert after != before, (
-        f"did NOT reproduce the mode-A/B defect: the stale restore did not overwrite "
-        f"the later scroll ({before} -> {after})."
+    assert after == before, (
+        f"the stale invocation's restore was not correctly abandoned: it overwrote "
+        f"the later scroll ({before} -> {after}). Mechanism #2 (docs/dev/diagnosis/"
+        f"ux-scroll-position-flake.md '## The fix') should have detected the "
+        f"generation mismatch and no-op'd -- this is a regression."
+    )
+
+
+@pytest.mark.ux
+def test_restore_scroll_y_ordinal_defers_to_newer_capture(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chip 3 regression -- outcome-level proof of the invocation-ordinal
+    mechanism (docs/dev/diagnosis/ux-scroll-position-flake.md, "## The fix").
+    The Chip 1a self-check test_scroll_spy_attributes_overlapping_refresh_corpus_calls
+    (below) forces the same two-overlapping-captures shape but only asserts the
+    spy's attribution bookkeeping (`scheduledDuring`) -- never window.scrollY --
+    so nothing before this test could catch a bug in the ordinal check itself
+    (wrong variable, inverted comparison, off-by-one). Two captures in a row,
+    a distinct position established via the `scrollTop` property setter
+    (deliberately NOT window.scrollTo/scroll/scrollBy/scrollIntoView, so this
+    isolates the ordinal check from the separate explicit-scroll-API
+    generation check O-10 already exercises), restores the OLDER
+    (now-superseded) capture LAST, and asserts it is a provable no-op.
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    BasePage(page, live_server).load()
+    UserPickerPage(page, live_server).select("alice")
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(20, timeout=15_000)
+    page.wait_for_timeout(200)  # let the tab-click's own fire-and-forget refreshCorpus settle
+
+    page.evaluate(
+        r"""
+        () => {
+          window.__older = _captureScrollY();
+          document.documentElement.scrollTop = 500;
+          window.__newer = _captureScrollY();
+        }
+        """
+    )
+    newer_y = page.evaluate("() => window.__newer.y")
+    assert newer_y > 0, "test setup didn't actually scroll the page"
+
+    page.evaluate("() => _restoreScrollY(window.__newer)")
+    page.wait_for_timeout(150)
+    after_newer = page.evaluate("() => window.scrollY")
+    print(f"\n[chip3-ordinal] newer_y={newer_y} after_newer={after_newer}")
+    assert after_newer == newer_y, "the newer capture's own restore should hold"
+
+    # Fire the OLDER, already-superseded capture's restore LAST. Its ordinal no
+    # longer matches the current _scrollCaptureOrdinal (the newer capture
+    # bumped it), so this must be a provable no-op.
+    page.evaluate("() => _restoreScrollY(window.__older)")
+    page.wait_for_timeout(150)
+    after_older = page.evaluate("() => window.scrollY")
+    print(f"\n[chip3-ordinal] after_older={after_older}")
+    assert after_older == after_newer, (
+        f"the OLDER, superseded capture's restore should have been a no-op "
+        f"(stale ordinal) but scroll moved: {after_newer} -> {after_older}"
     )
 
 
