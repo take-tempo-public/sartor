@@ -1,8 +1,16 @@
 # Diagnosis — corpus-reload scroll position not preserved (ux flake)
 
-> **Status:** mechanism **IDENTIFIED by instrument** (2026-07-15). The causal claim
-> (async page-growth + scroll-anchoring racing `_restoreScrollY`) is strongly supported by
-> a captured timeline; it is **not yet proven by a fix** (Phase 3 falsification pending).
+> **Status:** mechanism **NOT YET ESTABLISHED** (2026-07-15). The initial causal claim
+> (async page-growth + scroll-anchoring racing `_restoreScrollY`) was **adversarially verified in
+> stage 2.5 and did NOT survive** — 2 of 3 skeptics refute it; the 3rd's own objection guts it (see
+> [Adversarial verification](#adversarial-verification-stage-25)). The claim is **widened**: the
+> unifying defect is *`_captureScrollY` samples a moving target* driven by ≥3 async perturbers, of
+> which scroll-anchoring is only the rarest (mode D). **Two populated FAILING timelines were recovered
+> from the phase-1d capture (O-8) — but BOTH are mode B**, the test's own setup-scroll being stomped by
+> a `_restoreScrollY(0)` (`app.js:5492`) over flat height (anchoring absent). **Mode B is not the
+> user-reported symptom** (an `after != before` jump = modes A/C/D), and **A/C/D remain observed on ZERO
+> failing runs.** The next step is to capture an `after != before` (A/C/D) failing timeline and target
+> the moving-target capture — **not a blind anchoring fix** (charter C-7).
 > **Branch:** `fix/ux-scroll-position-flake`
 
 <!-- Keep ## Observed (facts with artifacts) strictly apart from ## Inferred (hypothesis).
@@ -108,7 +116,58 @@ In the O-6 run, `_restoreScrollY(369)` fired *after* the anchor-jump (t=5444 > t
 `after=369` → pass. In a mode-D failure (`capture_scroll_phase1b`, `369 -> 25423`), `_captureScrollY`
 grabbed the post-jump value and `_restoreScrollY` restored `scrollTo(0,25423)` as the last event →
 `after=25423` → fail. The outcome flips on the relative timing of the async anchor-jump and the
-single-rAF capture/restore. Modes A/B/C are the same race resolving at different heights/times.
+single-rAF capture/restore.
+
+> **⚠ Corrected by stage 2.5 (see [Adversarial verification](#adversarial-verification-stage-25)).**
+> Two claims in this O-7 are *inferred, not observed*, and were challenged: (1) "Modes A/B/C are the
+> same race" is **falsified** ([F-3](#f-3)) — mode B is structurally pre-refresh; A/C are the wizard
+> smooth-scroll residual + the FIRST `refreshCorpus`'s late `_restoreScrollY(0)`. (2) The mode-D
+> failing run cited here dumped **0 events** (inert spy); "`_captureScrollY` grabbed the post-jump
+> value" is *unobserved and code-inconsistent* — capture runs at `refreshCorpus` top (`app.js:3607`)
+> **before** any growth. The mode-D excursion shown in O-6 comes from a run that **PASSED**.
+
+### O-8. Two populated FAILING timelines exist — both are mode B (the test-SETUP scroll stomp), NOT the user-reported jump
+
+Recovered from the phase-1d capture (`capture_scroll_phase1d_pytest.log`, in the 2026-07-15 recovery
+bundle — the run the crashed session launched at 19:33Z and hung before reading). Exact counts (grepped,
+not eyeballed): **12 runs, 8 PASS, 4 FAIL.** The 4 failures are **2 at test line 322** (`assert before
+> 0` → `0 > 0`; mode B) **each with a populated spy dump**, and **2 at test line 304**
+(`page.wait_for_selector("#panelCorpus", timeout=15_000)`; an unrelated panel-wait timeout under load).
+
+**Scope this correctly — it is easy to overclaim:**
+- This falsifies the stage-2.5 "**zero** populated failing timelines" finding **only for mode B**.
+- **Mode B is `before=0`: the test's OWN setup scroll is stomped BEFORE its real assertion runs** (line
+  322 is before `refreshCorpus()` at line 324). It is *not* the user symptom ("accepting a bullet
+  scrolls me to the top" = an `after != before` jump = modes A/C/D). **phase-1d did NOT reproduce A/C/D
+  at all** — those still have zero populated timelines and remain the real capture target.
+
+Both mode-B dumps, height FLAT at h=1206 throughout (the run aborts at line 322, before the reload that
+would grow the page — consistent with F-3's "mode B is pre-refresh"):
+
+```
+# failure #1 (7 events; failure #2 identical in shape, 6 events, stomp at +0.3ms)
+t=2371  y=0    h=1206  scrollIntoView #panelJD (smooth)   <- _wizardRender app.js:6911
+t=2641  y=233  h=1206  scroll-event
+t=2777  y=305  h=1206  scroll-event
+t=2894  y=305  h=1206  window.scrollTo [0,300]            <- the TEST's setup scroll
+t=2906  y=301  h=1206  scroll-event
+t=2907  y=301  h=1206  window.scrollTo [0,0]              <- app.js:5492 (_restoreScrollY rAF)  STOMP, +0.6ms
+# test then reads `before` = 0  ->  assert 0 > 0  FAILS
+```
+
+**Directly observed** (in the event stacks): height never grows (h=1206) so **anchoring plays no role in
+mode B** (confirms F-3); and a `scrollTo(0,0)` fires from `app.js:5492` (the `_restoreScrollY` rAF)
+sub-millisecond *after* the test's own `scrollTo(0,300)`, stomping it to 0.
+
+**Inferred, NOT in the log** (the stack shows only `app.js:5492`; there is no `refreshCorpus` /
+`_captureScrollY` tag anywhere in the dump): *that this restore is a leftover from a prior `refreshCorpus`
+which captured `y=0` earlier and whose rAF hadn't fired yet.* Plausible and matches skeptic 2's mode-B
+prediction, but the scheduling call is not attributed by this instrument. Whether mode B shares a root
+cause with A/C/D (the superseded-restore hypothesis in `## Inferred`) is likewise **inferred, not proven**.
+
+**Second, distinct flake source:** the 2 line-304 failures are a `#panelCorpus` wait-timeout under CPU
+load — harness robustness, unrelated to scroll. It inflates the apparent failure rate and will confuse
+scroll-fix validation if not isolated.
 
 ---
 
@@ -128,46 +187,109 @@ it (O-6). The bottom-jump is scroll-anchoring on async page growth, not an app s
 `_wizardRender` scrollIntoView is real and does matter — but for the `before=369` residual, not
 the bottom-jump.)
 
+<a id="f-3"></a>
+### F-3 — "All four modes are one anchoring-vs-restore race" (this document's own O-7 inference)
+
+**Falsified by stage 2.5** (2 of 3 skeptics, independently). Mode B (`before=0`) is *structurally
+impossible* under the anchoring mechanism: the test latches `before` at line 319 and asserts it at
+line 322 — **before** `refreshCorpus()` is called (line 324) — so the second reload's growth/anchoring
+cannot cause it. Mode B is an explicit `scrollTo(0,0)` from `_restoreScrollY` (`app.js:5492`) firing
+~1ms after the test's `scrollTo(0,300)` over **flat height** (a stale, late restore from the tab-click's
+earlier `refreshCorpus`). Mode C is the `_wizardRender` smooth-scroll residual captured into scroll.
+**Only mode D involves anchoring.** Consequence: `overflow-anchor:none` addresses at most mode D and
+leaves A/B/C — and at ~12-17%/attempt under `--reruns 2` would likely go green anyway (the C-7 masking
+trap). The unifying defect is mechanism-agnostic: **`_captureScrollY` samples a moving target.**
+
+---
+
+## Adversarial verification (stage 2.5)
+
+A 3-skeptic panel (Workflow `verify-scroll-flake-diagnosis`, run `wf_af5e4bda-f16`; journal under the
+prior session's `subagents/workflows/`) was tasked to **refute** the O-6/O-7 causal claim. It ran to
+completion; the authoring session hung before reading it. Verdicts:
+
+| skeptic | survives? | core objection |
+|---|---|---|
+| `a239a987` | **no** | Four modes ≠ one mechanism; mode B is pre-refresh; the unifying fact is "capture samples a moving target" — anchoring is 1 of ≥3 perturbers. |
+| `a46d0437` | **no** | Mode-B/C timelines refute the anchoring frame directly (flat height, explicit `scrollTo(0,0)`); only mode D matches; `overflow-anchor:none` and restore-after-settle each leave real modes and can pass for the wrong reason. |
+| `a4b5a2fb` | yes\* | \*"survives" for the EXCURSION only — but concedes the failure ordering is observed on **zero failing runs**; every rich timeline is a PASS; the one mode-D failure logged 0 events. |
+
+**Unanimous, load-bearing finding:** *no failing run has ever been captured with a populated spy
+timeline.* The mode-D mechanism is extrapolated **entirely from passing runs**; the single instrumented
+mode-D failure recorded `0 events` (the inert-spy O-4 trap, still live for that run).
+
+**Fix-risk the panel flagged (all three):**
+- `overflow-anchor:none` targets only mode D (the balloon jump), and even that is *unproven* — mode D
+  was never captured with a working spy. Modes A/B/C persist. At ~12-17%/attempt under `--reruns 2`, a
+  fix that removes only the ~1-in-4 balloon mode drops the residual rate low enough that fail-fail-pass
+  reruns mask it as a bare `PASSED` — **green for the wrong reason** (C-7 "green-with-reruns ≠ evidence").
+- `restore-after-settle` can pass by outlasting the *wizard* smooth-scroll (an unrelated perturber),
+  not by fixing the race — and it makes the mode-B stale-late-restore stomp *more* likely, not less.
+
+**Panel's required next step (before any fix):** capture ≥1 FAILING after-refresh run **with a populated
+timeline**. First fix the spy's own inertness (assert `__scrollSpy` is defined at dump time; dump on
+failure unconditionally — drop the `SCROLL_SPY_ALWAYS` dependence for fails). Tag `_captureScrollY` /
+`_restoreScrollY` (`app.js:3607` / `5490-5493`) and the FIRST-vs-SECOND `refreshCorpus` restore
+separately. Hook `window.scrollBy` + `Element.prototype.scroll/scrollTo/scrollBy` so "bare scroll-event"
+is a true residual bucket. phase-1d (the authoring session's last run, `b08jqefpz`) reproduced **4/12**
+failures but did **not** close this gap — still no confirmed populated failing timeline.
+
+> **⚠ Updated by the 2026-07-15 recovery.** The phase-1d output the authoring session hung before
+> reading was recovered and read (see O-8). It partially narrows the gap: **the 2 mode-B failures it
+> reproduced carry populated timelines** and refute anchoring for mode B by direct observation. But the
+> "zero populated failing timelines" finding stands **for modes A/C/D** — the user-facing `after !=
+> before` jump — which phase-1d did NOT reproduce. Those remain the open capture target; mode B's link
+> to them is still inferred, not proven. (Also: 2 of phase-1d's 4 failures were an unrelated
+> `#panelCorpus` wait-timeout, not scroll — a second flake source to isolate.)
+
 ---
 
 ## Inferred
 
-> **HYPOTHESIS (strongly supported by O-6/O-7, not yet proven by a fix).**
+> **HYPOTHESIS — widened after stage 2.5; NOT yet proven, and the failure ordering is UNOBSERVED.**
 
-The flake is a race between (a) the asynchronous corpus-render page-growth and the browser
-scroll-anchoring it triggers, and (b) `refreshCorpus`'s single-`requestAnimationFrame`
-capture/restore (`_captureScrollY`/`_restoreScrollY`). Because the height keeps changing for
-hundreds of ms after `_renderCorpusList()` (the fire-and-forget editors resolve late), one rAF is
-too early: a later anchor-jump overrides the restore, or `_captureScrollY` samples a transient.
+The unifying defect is that **`refreshCorpus`'s single-`requestAnimationFrame` `_captureScrollY` /
+`_restoreScrollY` samples and re-asserts a scroll value that is still being moved by multiple async
+perturbers** — so the restored value is a transient. At least three perturbers are in play, only one of
+which is scroll-anchoring:
 
-Candidate fix layers (the fix must address the RACE, not a single value):
-- **Disable scroll-anchoring on the growing container** (`overflow-anchor: none` on the page/list
-  during the reload) — directly removes the bare-event jump that O-6 shows.
-- **Restore after settle, not after one rAF** — re-assert the target scroll once the page height
-  stops changing (e.g. a short height-stable check, or restore on each of the fire-and-forget
-  completions).
-- **A test-side wait for height to stabilize before asserting** — legitimate only if the
-  production behavior is judged acceptable (it is NOT — the owner reported the jank), so the
-  production fix is primary; a test-side settle may still be needed to make the guard honest.
+1. the `_wizardRender` `scrollIntoView({behavior:'smooth'})` residual (`app.js:6911`) settling y toward
+   369 — explains `before=369` (mode C);
+2. the FIRST `refreshCorpus`'s own late `_restoreScrollY(0)` (`app.js:5492`) firing `scrollTo(0,0)` after
+   the test's `scrollTo(0,300)` over flat height — explains modes A and B (the pre-refresh stomp);
+3. browser scroll-anchoring on the async ~27000px page-growth — explains mode D only.
 
-Which layer is proven correct is decided in Phase 3 by the falsification below, not here.
+A fix that addresses only anchoring cannot cover modes A/B/C. The layer most likely to cover *all*
+perturbers is the capture/restore itself — invalidate/cancel a superseded `refreshCorpus`'s pending
+restore (a per-invocation token or an aborted rAF) and re-assert the target after height stabilizes,
+rather than firing once. **This remains a hypothesis: the ordering that causes the failure has not been
+observed** (every populated timeline is a PASS). Which layer is correct is decided by capturing a failing
+timeline and then the falsification below — not here.
 
 ---
 
 ## Falsification
 
-**Run before shipping a fix.** The instrument already fails on HEAD (12-17%). The fix experiment:
-apply the candidate fix and re-run the saturated/light-load loop (`scratchpad/capture_scroll_*.sh`)
-+ the reruns-off CI proof.
+**Step 0 — close the evidence gap FIRST (charter C-7; the stage-2.5 requirement).** Before any fix
+experiment, capture ≥1 FAILING after-refresh run with a **populated** spy timeline (instrument fixes
+in [Adversarial verification](#adversarial-verification-stage-25)). Until a failing trajectory is
+observed, the mechanism is inferred from passing runs and **no fix is justified**.
 
-- **If the flake stops** (bare `PASSED`, zero `RERUN`, across >1 CI run) AND the Phase-1
-  instrument still shows the anchor-jump but the scroll no longer lands wrong → the indicted
-  layer is confirmed.
-- **If it persists** → the layer is wrong; the anchor-jump is not the (only) cause. Widen again.
+**Step 1 — discriminating experiment (no production fix yet).** Neutralize the wizard smooth-scroll
+(or gate the setup `scrollTo(0,300)` until it settles) and re-run the saturated loop. If modes A/B/C
+vanish and only D remains, anchoring is confirmed *for mode D* and refuted as the general cause; if
+they persist, the capture/restore layer is indicted for all modes.
 
-A deterministic complement worth building: a browserless/forced test that renders the corpus,
-grows the page height by a large delta while scroll is mid-page, and asserts scroll is preserved
-— must fail on HEAD, pass on the fix. (Feasibility TBD; the browser race is timing-dependent.)
+**Step 2 — fix experiment.** Apply the candidate fix at the layer Step 1 indicts and re-run the
+saturated/light-load loop (`scratchpad/capture_scroll_*.sh`) + the reruns-off CI proof.
+- **Confirmed** only if: the flake stops (bare `PASSED`, zero `RERUN`, across >1 CI run) AND the
+  instrument shows the perturber still fires but scroll no longer lands wrong — **on a trajectory that
+  FAILS without the fix.**
+- **If it persists** → the layer is wrong; widen again.
+
+A deterministic complement worth building: a browserless/forced test that renders the corpus, grows the
+page height by a large delta while scroll is mid-page, and asserts scroll is preserved — must fail on
+HEAD, pass on the fix. (Feasibility TBD; the browser race is timing-dependent.)
 
 ---
 
@@ -179,6 +301,7 @@ _Only after the experiment above fails on HEAD and passes with the change. Not y
 
 ## Acceptance bar
 
-A bare `PASSED` with **no `RERUN`**, sampled across **more than one CI run**, AND the Phase-1
-repro failing without the fix and passing with it. The fix must address the race (all modes),
-not just make one value stop appearing. Green-with-a-retry does not count.
+A bare `PASSED` with **no `RERUN`**, sampled across **more than one CI run**, with the spy **removed**,
+AND the perturber demonstrably gone on a trajectory that **fails without the fix**. The fix must address
+the moving-target capture (all modes), not just make one value stop appearing. Green-with-a-retry does
+not count — and neither does green from a fix validated only against passing runs.
