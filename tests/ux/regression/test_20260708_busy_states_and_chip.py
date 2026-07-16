@@ -86,7 +86,7 @@ _SCROLL_SPY_JS = r"""
     (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : ''); }
     catch (e) { return '?'; } };
   window.addEventListener('scroll', () => rec('scroll-event', {}), {passive: true, capture: true});
-  ['scrollTo', 'scroll'].forEach((fn) => { const o = window[fn].bind(window);
+  ['scrollTo', 'scroll', 'scrollBy'].forEach((fn) => { const o = window[fn].bind(window);
     window[fn] = function (...a) { rec('window.' + fn, {args: JSON.stringify(a).slice(0, 120), by: caller()}); return o(...a); }; });
   const siv = Element.prototype.scrollIntoView;
   Element.prototype.scrollIntoView = function (...a) { rec('scrollIntoView', {el: tag(this), args: JSON.stringify(a).slice(0, 80), by: caller()}); return siv.apply(this, a); };
@@ -97,16 +97,138 @@ _SCROLL_SPY_JS = r"""
   const d = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
   if (d && d.set) Object.defineProperty(Element.prototype, 'scrollTop', {configurable: true, get: d.get,
     set: function (v) { rec('el.scrollTop=', {el: tag(this), v: v, by: caller()}); return d.set.call(this, v); }});
+  // Exposed so _SCROLL_SPY_NAMED_HOOKS_JS (injected separately, post-load — see
+  // that constant's own comment for why) can log identically-shaped events.
+  window.__scrollSpyRec = rec;
+})();
+"""
+
+
+# ---------------------------------------------------------------------------
+# INSTRUMENT hardening (Chip 1a, charter C-7). Tags _captureScrollY /
+# _restoreScrollY / refreshCorpus with a structural FIRST-vs-SECOND
+# invocation id, instead of requiring a human to infer it from stack text
+# and height-flatness after the fact (which is the only way mode B was
+# originally identified). MUST be injected via an explicit page.evaluate(...)
+# call AFTER the page has loaded (never via add_init_script): app.js has no
+# wrapping IIFE, so refreshCorpus/_captureScrollY/_restoreScrollY are true
+# window-scoped globals, and add_init_script runs BEFORE any of the page's
+# own <script> tags — patching these names that early would just get
+# silently clobbered when app.js's own top-level declarations execute
+# moments later. (app.js already relies on this exact ordering itself:
+# onUserSelect is declared at app.js:394 and unconditionally reassigned at
+# app.js:5511-5512, and that reassignment is in effect before the `change`
+# listener bound at app.js:46 can ever fire.)
+#
+# _restoreScrollY (app.js:5491-5493) is a fire-and-forget
+# requestAnimationFrame — refreshCorpus never awaits it, so its promise
+# resolves (and this wrapper's `finally` marks the invocation closed) a
+# full microtask-drain before the rAF actually fires. Reading the
+# "currently open" set live at fire-time would therefore NEVER see the
+# invocation that scheduled it — exactly backwards from the point of this
+# instrument. So the open-set is snapshotted at SCHEDULE time (still
+# genuinely inside the invocation) and carried in the closure to the
+# eventual "-fired" event, rather than re-read when the rAF callback runs.
+# ---------------------------------------------------------------------------
+_SCROLL_SPY_NAMED_HOOKS_JS = r"""
+(() => {
+  if (typeof window.__scrollSpyRec !== 'function') {
+    window.__scrollSpyNamedHooksError = 'builtin spy missing — _SCROLL_SPY_JS must run first';
+    return;
+  }
+  const rec = window.__scrollSpyRec;
+  let _rcCounter = 0;
+  // The SET of invocations open right now — not a unique "who's calling"
+  // attribution. With exactly one entry that's unambiguous (the common case
+  // here: this test's action sequence only ever has 0 or 1 refreshCorpus
+  // invocation open, except during the deliberate 2-invocation overlap the
+  // Chip 1a self-checks force). A 2+-entry set narrows candidates without
+  // uniquely identifying which open invocation made THIS specific call —
+  // resolve it the same way the self-check test does: find the call whose
+  // set has shrunk to a singleton (unambiguous by construction) and get the
+  // other one by elimination.
+  const _rcOpen = new Set();
+
+  const origCapture = window._captureScrollY;
+  const origRestore = window._restoreScrollY;
+  const origRefresh = window.refreshCorpus;
+  if (!origCapture || !origRestore || !origRefresh) {
+    window.__scrollSpyNamedHooksError = 'refreshCorpus/_captureScrollY/_restoreScrollY missing at hook time';
+    return;
+  }
+
+  // NB: _captureScrollY/_restoreScrollY are also called by loadComposition()
+  // and the corpus-card-expand path — neither is reachable from this test's
+  // action sequence, so an empty openRC/scheduledDuring here unambiguously
+  // means "not refreshCorpus", not "tagging is broken".
+  window._captureScrollY = function (...a) {
+    const result = origCapture.apply(this, a);
+    rec('_captureScrollY', {y: result, openRC: Array.from(_rcOpen)});
+    return result;
+  };
+
+  window._restoreScrollY = function (y, ...rest) {
+    const scheduledDuring = Array.from(_rcOpen);   // snapshot at schedule time — see module comment above
+    rec('_restoreScrollY-scheduled', {y, scheduledDuring});
+    requestAnimationFrame(() => rec('_restoreScrollY-fired', {y, scheduledDuring}));
+    return origRestore.call(this, y, ...rest);
+  };
+
+  window.refreshCorpus = async function (...args) {
+    const id = ++_rcCounter;
+    _rcOpen.add(id);
+    rec('refreshCorpus-enter', {id, openRC: Array.from(_rcOpen)});
+    try {
+      return await origRefresh.apply(this, args);
+    } finally {
+      // finally, not catch: refreshCorpus is called fire-and-forget from the
+      // tab-click handler, and this wrapper must stay exception-transparent —
+      // altering resolve/reject semantics would change app behavior under test,
+      // which an instrumentation-only chip must never do.
+      _rcOpen.delete(id);
+      rec('refreshCorpus-exit', {id, openRC: Array.from(_rcOpen)});
+    }
+  };
+  window.refreshCorpus.__scrollSpyWrapped = true;  // dump-time install marker
 })();
 """
 
 
 def _dump_scroll_spy(page: Page, phase: str, value: object, before: object = None) -> None:
-    """Print the full scroll-mutation timeline captured by ``_SCROLL_SPY_JS`` (diagnostic)."""
-    spy = page.evaluate("() => window.__scrollSpy || []")
-    print(
-        f"\n[scroll-spy] FAILURE phase={phase} value={value} before={before} -- {len(spy)} events:"
+    """Print the full scroll-mutation timeline captured by ``_SCROLL_SPY_JS`` +
+    ``_SCROLL_SPY_NAMED_HOOKS_JS`` (diagnostic). Never raises: this is called
+    from exception handlers, so a problem here must never shadow the real
+    failure. Checks BOTH instrument layers are actually alive before trusting
+    "0 events" as a negative result — a silently-dead spy (the original O-4
+    bug, and the different class of it this chip's own hardening found) must
+    never again read the same as "nothing happened."
+    """
+    try:
+        defined = page.evaluate("() => typeof window.__scrollSpy !== 'undefined'")
+    except Exception as exc:  # page gone/crashed mid-failure
+        print(
+            f"\n[scroll-spy] phase={phase} value={value} before={before} "
+            f"-- COULD NOT EVALUATE PAGE: {exc!r}"
+        )
+        return
+    if not defined:
+        print(
+            f"\n[scroll-spy] phase={phase} -- WARNING: window.__scrollSpy is "
+            f"UNDEFINED — the spy never initialized. This dump (and any others "
+            f"from this run) is untrustworthy."
+        )
+        return
+    named_ok = page.evaluate(
+        "() => !!(window.refreshCorpus && window.refreshCorpus.__scrollSpyWrapped)"
     )
+    if not named_ok:
+        print(
+            f"\n[scroll-spy] phase={phase} -- WARNING: named-fn hooks did not "
+            f"install ({page.evaluate('() => window.__scrollSpyNamedHooksError || null')!r}); "
+            f"FIRST/SECOND-invocation tagging is ABSENT below."
+        )
+    spy = page.evaluate("() => window.__scrollSpy || []")
+    print(f"\n[scroll-spy] phase={phase} value={value} before={before} -- {len(spy)} events:")
     for event in spy:
         print(f"  {event}")
 
@@ -299,21 +421,35 @@ def test_corpus_reload_preserves_scroll_position(
     page.add_init_script(_SCROLL_SPY_JS)  # INSTRUMENT (C-7): wide scroll-source spy
 
     BasePage(page, live_server).load()
+    # Named-fn hooks (Chip 1a) MUST be injected here — after load() (app.js has
+    # run; see _SCROLL_SPY_NAMED_HOOKS_JS's own comment for why add_init_script
+    # would be unsafe) and before select() (the only pre-tab-click caller of
+    # refreshCorpus, onUserSelect -> _landingTab() -> loadCorpusIfReady(), can't
+    # fire until select() runs).
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
     UserPickerPage(page, live_server).select("alice")
-    page.click("#topTabCorpus")
-    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
-    # The tab click fires loadCorpusIfReady() fire-and-forget, so the experiences
-    # fetch + _renderCorpusList() land asynchronously — under end-of-suite CPU
-    # load that settle lags, the load-dependent flake class this suite guards
-    # against. Assert on the settled card COUNT (auto-retrying) rather than a bare
-    # first-card visibility poll: expect() re-queries the DOM until all 20 cards
-    # are attached, regardless of which load path filled them — the same
-    # load-path-agnostic idiom that fixed the pipeline-board row race. (An explicit
-    # loadCorpusIfReady() re-fire is NOT reliable here: it no-ops once
-    # _corpusLoadedForUser is set, which the click's load sets optimistically
-    # before its render completes.)
-    corpus_cards = page.locator("#corpusExperienceList .corpus-card")
-    expect(corpus_cards).to_have_count(20, timeout=15_000)
+
+    try:
+        page.click("#topTabCorpus")
+        page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+        # The tab click fires loadCorpusIfReady() fire-and-forget, so the experiences
+        # fetch + _renderCorpusList() land asynchronously — under end-of-suite CPU
+        # load that settle lags, the load-dependent flake class this suite guards
+        # against. Assert on the settled card COUNT (auto-retrying) rather than a bare
+        # first-card visibility poll: expect() re-queries the DOM until all 20 cards
+        # are attached, regardless of which load path filled them — the same
+        # load-path-agnostic idiom that fixed the pipeline-board row race. (An explicit
+        # loadCorpusIfReady() re-fire is NOT reliable here: it no-ops once
+        # _corpusLoadedForUser is set, which the click's load sets optimistically
+        # before its render completes.)
+        corpus_cards = page.locator("#corpusExperienceList .corpus-card")
+        expect(corpus_cards).to_have_count(20, timeout=15_000)
+    except Exception:
+        # Chip 1a (C-7): this phase previously had NO dump path at all — a
+        # #panelCorpus wait-timeout under load is a confirmed, distinct failure
+        # mode (diagnosis doc O-8) that used to vanish with zero diagnostics.
+        _dump_scroll_spy(page, "setup", None)
+        raise
 
     page.evaluate("() => window.scrollTo(0, 300)")
     before = page.evaluate("() => window.scrollY")
@@ -321,10 +457,205 @@ def test_corpus_reload_preserves_scroll_position(
         _dump_scroll_spy(page, "setup-before", before)
     assert before > 0, "test setup didn't actually scroll the page"
 
-    page.evaluate("() => refreshCorpus()")
-    expect(corpus_cards).to_have_count(20, timeout=15_000)
-    page.wait_for_timeout(100)
+    try:
+        page.evaluate("() => refreshCorpus()")
+        expect(corpus_cards).to_have_count(20, timeout=15_000)
+        page.wait_for_timeout(100)
+    except Exception:
+        # Chip 1a (C-7): same unconditional-dump treatment for the post-refresh
+        # settle wait, which likewise had no dump path before this chip.
+        _dump_scroll_spy(page, "after-refresh-wait", None, before=before)
+        raise
     after = page.evaluate("() => window.scrollY")
     if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
         _dump_scroll_spy(page, "after-refresh", after, before)
     assert after == before, f"scroll position not preserved: {before} -> {after}"
+
+
+def _spy_events(page: Page, source: str) -> list[dict[str, Any]]:
+    """Filter the live ``window.__scrollSpy`` timeline down to one source tag."""
+    spy = page.evaluate("() => window.__scrollSpy || []")
+    return [e for e in spy if e.get("source") == source]
+
+
+@pytest.mark.ux
+def test_scroll_spy_hooks_fire_for_known_perturbers(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chip 1a self-check (charter C-7) — the hardened spy must be PROVEN to
+    capture, not merely assumed to: the original spy silently recorded 0
+    events for an entire diagnosis session before that was caught (`## Observed`
+    O-4). Directly triggers each hook and asserts a correctly-shaped, correctly
+    -tagged event lands, including that a single `refreshCorpus()` call
+    produces an enter/capture/restore-scheduled/restore-fired chain that all
+    share one invocation id — the FIRST-vs-SECOND attribution this chip adds."""
+    cid = seed_user(ux_app, "alice")
+    seed_exp_with_bullets(cid, company="Company 0")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    assert page.evaluate("() => window.__scrollSpyNamedHooksError || null") is None, (
+        "named-fn hooks failed to install"
+    )
+    assert page.evaluate(
+        "() => !!(window.refreshCorpus && window.refreshCorpus.__scrollSpyWrapped)"
+    ), "refreshCorpus was not wrapped"
+
+    UserPickerPage(page, live_server).select("alice")
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(1, timeout=15_000)
+    # The tab click ITSELF fires loadCorpusIfReady() -> refreshCorpus() fire-
+    # and-forget (same mechanism the real flaky test documents) — this is the
+    # FIRST invocation, before this test ever calls refreshCorpus() itself.
+    # Let it settle, then clear the timeline so the assertions below examine
+    # ONLY the deliberate calls this test makes.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'refreshCorpus-exit')",
+        timeout=15_000,
+    )
+    page.evaluate("() => { window.__scrollSpy = []; }")
+
+    page.evaluate("() => window.scrollTo(0, 50)")
+    page.evaluate("() => window.scrollBy(0, 10)")
+    page.evaluate("() => document.getElementById('corpusExperienceList').scrollIntoView()")
+    page.evaluate("() => refreshCorpus()")
+    page.wait_for_timeout(150)  # let _restoreScrollY's requestAnimationFrame actually fire
+
+    assert _spy_events(page, "window.scrollTo"), "no window.scrollTo event captured"
+    assert _spy_events(page, "window.scrollBy"), "no window.scrollBy event captured"
+    assert _spy_events(page, "scrollIntoView"), "no scrollIntoView event captured"
+
+    enters = _spy_events(page, "refreshCorpus-enter")
+    exits = _spy_events(page, "refreshCorpus-exit")
+    assert len(enters) == 1 and len(exits) == 1, (
+        f"expected exactly 1 refreshCorpus enter/exit pair: enters={enters} exits={exits}"
+    )
+    rc_id = enters[0]["id"]
+    assert exits[0]["id"] == rc_id
+
+    captures = _spy_events(page, "_captureScrollY")
+    assert captures and rc_id in captures[-1]["openRC"], (
+        f"_captureScrollY did not tag refreshCorpus invocation {rc_id}: {captures}"
+    )
+    scheduled = _spy_events(page, "_restoreScrollY-scheduled")
+    fired = _spy_events(page, "_restoreScrollY-fired")
+    assert scheduled and rc_id in scheduled[-1]["scheduledDuring"], (
+        f"_restoreScrollY-scheduled did not tag invocation {rc_id}: {scheduled}"
+    )
+    assert fired and rc_id in fired[-1]["scheduledDuring"], (
+        f"_restoreScrollY-fired did not tag invocation {rc_id}: {fired}"
+    )
+
+
+@pytest.mark.ux
+def test_scroll_spy_attributes_overlapping_refresh_corpus_calls(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chip 1a self-check (charter C-7) — proves the FIRST-vs-SECOND
+    invocation tagging survives the exact reordering the diagnosis's
+    `## Inferred` hypothesis turns on: an EARLIER `refreshCorpus()` call's
+    restore firing AFTER a LATER call's. Forces that reordering
+    deterministically (a `fetch` delay on the first call's `/experiences`
+    request only) instead of relying on real CPU-load timing, so this test
+    is not itself flaky.
+
+    This is the test that would FAIL against a naive "read the open-
+    invocations Set live, at rAF-fire-time" design: that Set is always empty
+    by fire-time, because the wrapped promise resolves via microtask a full
+    frame before the rAF runs. It passes only because `_restoreScrollY`
+    snapshots the open set at SCHEDULE time (see `_SCROLL_SPY_NAMED_HOOKS_JS`).
+    """
+    cid = seed_user(ux_app, "alice")
+    seed_exp_with_bullets(cid, company="Company 0")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    UserPickerPage(page, live_server).select("alice")
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(1, timeout=15_000)
+    # The tab click's own fire-and-forget refreshCorpus (same mechanism the
+    # real flaky test documents) must settle BEFORE the deliberate overlap
+    # below, and the timeline cleared, so it isn't conflated with the two
+    # invocations this test is actually examining.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'refreshCorpus-exit')",
+        timeout=15_000,
+    )
+    page.evaluate("() => { window.__scrollSpy = []; }")
+
+    # Fire both invocations from ONE evaluate call, back-to-back and
+    # unawaited, so they genuinely overlap rather than just running fast in
+    # sequence. Invocation A's /experiences fetch is deliberately held open
+    # (its promise is never resolved until this test explicitly releases it
+    # below) rather than delayed by a fixed setTimeout — a fixed delay was
+    # tried first and was genuinely flaky: refreshCorpus fires 4 additional
+    # fire-and-forget fetches per invocation, and two overlapping invocations'
+    # worth of those (10 requests total) can contend for the browser's
+    # per-origin connection limit, making wall-clock delay an unreliable way
+    # to force ordering. Explicitly withholding resolution makes the ordering
+    # deterministic by construction instead.
+    page.evaluate(
+        r"""
+        () => {
+          const real = window.fetch;
+          let expCalls = 0;
+          window.__releaseFirstExperiencesFetch = null;
+          window.fetch = (...a) => {
+            const url = String(a[0] || '');
+            if (url.includes('/experiences')) {
+              expCalls++;
+              if (expCalls === 1) {
+                const p = real(...a);
+                return new Promise((resolve, reject) => {
+                  window.__releaseFirstExperiencesFetch = () => p.then(resolve, reject);
+                });
+              }
+            }
+            return real(...a);
+          };
+          window.refreshCorpus();  // invocation A — /experiences held open, released explicitly below
+          window.refreshCorpus();  // invocation B — fetch resolves normally, should restore FIRST
+        }
+        """
+    )
+    # Invocation A cannot exit until explicitly released below, so exactly 1
+    # refreshCorpus-exit event unambiguously means invocation B has finished.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).filter(e => e.source === 'refreshCorpus-exit').length === 1",
+        timeout=15_000,
+    )
+    page.evaluate("() => window.__releaseFirstExperiencesFetch()")
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).filter(e => e.source === 'refreshCorpus-exit').length >= 2",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(150)  # let both _restoreScrollY rAFs actually fire
+
+    enters = _spy_events(page, "refreshCorpus-enter")
+    assert len(enters) == 2, f"expected exactly 2 refreshCorpus invocations: {enters}"
+    id_a, id_b = enters[0]["id"], enters[1]["id"]  # A = first called (delayed fetch), B = second
+    assert id_a != id_b
+
+    fired = _spy_events(page, "_restoreScrollY-fired")
+    assert len(fired) == 2, f"expected 2 restore-fired events: {fired}"
+
+    # The invocation whose restore fires LAST while it is the ONLY one still
+    # open (a singleton `scheduledDuring` — unambiguous even though a 2+-entry
+    # set can't by itself identify which open invocation made the call; see
+    # _SCROLL_SPY_NAMED_HOOKS_JS's comment) must be invocation A: its fetch
+    # was the one artificially delayed, so by the time it finally restores,
+    # B has already scheduled ITS restore and exited. This directly proves
+    # the mechanism correctly attributes an EARLIER invocation's restore
+    # firing AFTER a LATER invocation's — the exact race the diagnosis's
+    # `## Inferred` hypothesis turns on.
+    last_fired = fired[-1]
+    assert last_fired["scheduledDuring"] == [id_a], (
+        f"expected invocation A ({id_a}, the first-called/delayed one) to "
+        f"restore LAST, unambiguously (singleton open-set): {fired}"
+    )
