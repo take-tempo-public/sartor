@@ -472,6 +472,155 @@ def test_corpus_reload_preserves_scroll_position(
     assert after == before, f"scroll position not preserved: {before} -> {after}"
 
 
+@pytest.mark.ux
+def test_restore_scroll_y_loses_to_post_restore_growth(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chip 2 deterministic falsification (charter C-7; diagnosis dossier O-9's
+    mechanism, distilled to its essential shape) -- NOT a fix, NOT a
+    reproduction of the flaky test itself. Calls the REAL _captureScrollY /
+    _restoreScrollY primitives (app.js:5490-5493) directly, then schedules a
+    synthetic page-growth (a tall filler prepended to <body>, matching O-6's
+    "content inserted above the anchor pushes scroll down" scroll-anchoring
+    shape) in the animation frame immediately AFTER _restoreScrollY's own
+    rAF -- the exact ordering O-9 observed in the wild (id=1's fire-and-
+    forget children still growing the page after id=1's own restore had
+    already fired and exited). Ordering is forced by rAF registration order
+    (same-frame callbacks fire in the order requestAnimationFrame was
+    called), not by wall-clock timing, so this reproduces deterministically
+    with no CPU saturation and no lottery -- isolating whether the
+    capture/restore PRIMITIVE itself is defenseless against post-restore
+    growth, independent of which real app feature (summary variants, skills
+    editor, etc.) causes that growth in production.
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    # Wait out the tab-click's OWN fire-and-forget refreshCorpus (the real O-9
+    # "id=1") before establishing this test's baseline -- otherwise this test's
+    # own scrollTo(0,300) can itself race id=1's stale _restoreScrollY (the O-10
+    # mechanism), which is a DIFFERENT experiment than the one this test runs.
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    UserPickerPage(page, live_server).select("alice")
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(20, timeout=15_000)
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'refreshCorpus-exit')",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(150)  # let id=1's _restoreScrollY rAF actually fire before proceeding
+
+    page.evaluate("() => window.scrollTo(0, 300)")
+    before = page.evaluate("() => window.scrollY")
+    assert before > 0, "test setup didn't actually scroll the page"
+
+    page.evaluate(
+        r"""
+        () => {
+          const y = _captureScrollY();
+          _restoreScrollY(y);  // registers rAF #1: scrollTo(0, y)
+          requestAnimationFrame(() => {  // same frame batch, fires AFTER rAF #1
+            const filler = document.createElement('div');
+            filler.style.height = '20000px';
+            filler.id = '__chip2FillerAboveScroll';
+            document.body.insertBefore(filler, document.body.firstChild);
+          });
+        }
+        """
+    )
+    page.wait_for_timeout(150)
+    filler_present = page.evaluate("() => !!document.getElementById('__chip2FillerAboveScroll')")
+    after = page.evaluate("() => window.scrollY")
+    print(f"\n[chip2-experiment] before={before} after={after} filler_present={filler_present}")
+    assert filler_present, "growth trigger didn't fire -- experiment invalid, not a defect finding"
+    assert after != before, (
+        f"did NOT reproduce the O-9 defect: restore survived post-restore growth "
+        f"({before} -> {after}). The primitive may be more robust than O-9's single "
+        f"real-world sample suggested -- or scroll-anchoring didn't engage here."
+    )
+
+
+@pytest.mark.ux
+def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chip 2 deterministic falsification -- the mode-A/B shape (diagnosis
+    dossier O-8: a `_restoreScrollY` scheduled by an EARLIER, already-stale
+    refreshCorpus invocation fires AFTER a legitimate later scroll and
+    stomps it), forced deterministically instead of relying on CPU-load
+    timing. Holds the tab-click's own fire-and-forget refreshCorpus (the
+    real O-9 "id=1") open at its /experiences fetch -- so it has captured
+    scrollY (near 0, the pre-scroll baseline) but not yet reached
+    _restoreScrollY -- then sets the scroll position a real user/test
+    actually wants, THEN releases the held fetch so id=1 completes and
+    fires its now-stale restore. Same root defect as the post-restore-
+    growth test above, from the opposite direction: capture/restore has no
+    concept of "have I been superseded," so an old invocation's restore
+    wins just by finishing last, regardless of what happened in the
+    meantime.
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    BasePage(page, live_server).load()
+    UserPickerPage(page, live_server).select("alice")
+
+    # Hold open the FIRST /experiences fetch -- the tab click below fires
+    # loadCorpusIfReady() -> refreshCorpus() fire-and-forget (real O-9
+    # "id=1"), which captures scrollY (near 0, pre-scroll) at its own top
+    # before awaiting this exact fetch.
+    page.evaluate(
+        r"""
+        () => {
+          const real = window.fetch;
+          window.__releaseExperiencesFetch = null;
+          window.fetch = (...a) => {
+            const url = String(a[0] || '');
+            if (url.includes('/experiences') && !window.__releaseExperiencesFetch) {
+              const p = real(...a);
+              return new Promise((resolve, reject) => {
+                window.__releaseExperiencesFetch = () => p.then(resolve, reject);
+              });
+            }
+            return real(...a);
+          };
+        }
+        """
+    )
+    page.click("#topTabCorpus")
+    page.wait_for_function(
+        "() => typeof window.__releaseExperiencesFetch === 'function'", timeout=15_000
+    )
+
+    # id=1 is now suspended mid-refreshCorpus, holding its stale (near-0)
+    # capture. Establish the position a real user/test actually wants.
+    page.evaluate("() => window.scrollTo(0, 300)")
+    before = page.evaluate("() => window.scrollY")
+    assert before > 0, "test setup didn't actually scroll the page (page too short?)"
+
+    # Release id=1: it completes, renders, and fires its OWN _restoreScrollY
+    # with the stale value it captured before `before` was ever set.
+    page.evaluate("() => window.__releaseExperiencesFetch()")
+    page.wait_for_function(
+        "() => document.querySelectorAll('#corpusExperienceList .corpus-card').length >= 20",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(150)  # let the stale _restoreScrollY's rAF fire
+    after = page.evaluate("() => window.scrollY")
+    print(f"\n[chip2-experiment-stale-restore] before={before} after={after}")
+    assert after != before, (
+        f"did NOT reproduce the mode-A/B defect: the stale restore did not overwrite "
+        f"the later scroll ({before} -> {after})."
+    )
+
+
 def _spy_events(page: Page, source: str) -> list[dict[str, Any]]:
     """Filter the live ``window.__scrollSpy`` timeline down to one source tag."""
     spy = page.evaluate("() => window.__scrollSpy || []")
