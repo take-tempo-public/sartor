@@ -586,6 +586,23 @@ addition/resolution chronology since 2026-06-15 lives in git history
       choosing.**
       _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole`;
       open count 10 → 11 — **well over the ~8–10 ceiling; the reduction sprint is overdue**.)_
+      **→ Update (2026-07-16, `fix/ux-scroll-position-flake` Chip 1a):** hit the same wall from a
+      different angle — `python -m scripts.gate` run as one call (background or foreground) was
+      **killed partway through** (not a failure — no traceback, no rerun, just cut off mid-test) on
+      **four consecutive attempts**, at varying completion points (94%, 63%, 76% of their
+      respective outputs) regardless of scope (full gate, `-m "not ux"` alone, `--ignore=tests/ux`
+      alone). A small 8-file batch completed normally (9.93 s), ruling out a cumulative
+      session-wide budget — this reads as a **per-command wall-clock ceiling**, roughly in the
+      5–10 minute range, independent of which command runs. **Worked around, not resolved:**
+      manually split the ~120 core test files into 6 batches (~20 files each, 48–122 s per batch)
+      + ran `tests/ux/regression/` (106 tests, 6.6 min — the one multi-minute run that DID complete
+      normally) + `tests/ux/a11y/` + `tests/ux/flows/` separately; all green, ~2100 tests total,
+      zero failures, zero reruns, matching this item's own 2 066-test measurement. This is exactly
+      the "per-test-file timings in sub-10-minute chunks" instrument this item already called for
+      (line above) — just done by hand under the specific pressure of needing a real answer for one
+      commit, not yet turned into the resumable-gate tooling this item still asks for.
+      Doesn't resolve the `-m "not ux"` / `-m ux` non-additive-timing contradiction above — still
+      unexplained, still the first thing to measure before choosing a remedy.
 
 - [x] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
       fixed** — twelve routes in `blueprints/applications.py` each read the whole
@@ -757,6 +774,38 @@ addition/resolution chronology since 2026-06-15 lives in git history
       Evidence archive from the two crashed/frozen sessions that worked this doc is preserved in
       a non-tracked local recovery bundle outside this repo (its own `README.md` documents
       provenance + contents — durable home still undecided, carried forward below).
+      **→ Chip 1a update (2026-07-16, `fix/ux-scroll-position-flake`, commit `4babc40`):** the
+      spy is hardened, entirely inside the test file — no production code touched. Four additions:
+      (1) `_dump_scroll_spy` now asserts `window.__scrollSpy` is actually defined and the named-fn
+      hooks installed, printing a loud warning instead of silently trusting "0 events"; (2) two new
+      `try/except` blocks dump on **any** exception in the setup and post-refresh phases, not just
+      the two hand-mirrored asserts — closing the exact gap that left the O-8 `#panelCorpus`
+      wait-timeout failures with zero diagnostics; (3) `window.scrollBy` is now hooked (confirmed
+      via grep: a real, previously-unhooked gap — app.js never calls it, but an unhooked API would
+      have made "bare scroll-event" an unreliable anchoring signature); (4) `refreshCorpus` /
+      `_captureScrollY` / `_restoreScrollY` are now wrapped (via a **separate** post-`load()`
+      `page.evaluate`, never `add_init_script` — app.js has no wrapping IIFE, so patching these
+      true globals before app.js's own top-level declarations run would be silently clobbered) to
+      tag every event with which invocation (tab-click vs the test's own call) it belongs to —
+      structural, not inferred from stack text + height-flatness the way mode B originally was.
+      **Two new self-check tests prove this, rather than assuming it**
+      (`test_scroll_spy_hooks_fire_for_known_perturbers`,
+      `test_scroll_spy_attributes_overlapping_refresh_corpus_calls`) — this is the chip's actual
+      done-criterion per the branch's own next-step, not "the code compiles." Writing the second
+      one surfaced a real gap in the first design: reading the "open invocations" set live at
+      restore-fire time is **always** empty (the wrapped promise resolves via microtask a full
+      frame before the rAF that fires), fixed by snapshotting the set at schedule time instead — an
+      untested version of this exact hardening would have silently failed to deliver the FIRST/
+      SECOND attribution it claims to. A first attempt at forcing two `refreshCorpus()` calls to
+      overlap deterministically (delaying the first's fetch by a fixed 150ms) was **itself flaky**
+      (2/5 runs) from browser per-origin connection contention across the 5 fetches each invocation
+      fires — replaced with an explicit held-open-then-released promise, removing the timing
+      dependency entirely (8/8 clean afterward). A `SCROLL_SPY_ALWAYS=1` eyeball of the real test
+      confirms the dump now reads cleanly with every event tagged to invocation id 1 or 2. Full
+      `tests/ux/regression/` (106 tests) + the modified file (8 tests) + the wider suite (~2100
+      tests, batched — see the quality-gate item above) all green, no reruns. **Still zero captured
+      A/C/D failing timelines** — the actual target is unchanged; **Next: Chip 1b**, the capture
+      campaign, on its own branch session per the sequencing rule.
 
 - [ ] **`chore/scrub-local-eval-paths` parked — 2 commits, unmerged, gate re-verification
       incomplete (not failed)** — removes 6 references to the owner's private local testing
