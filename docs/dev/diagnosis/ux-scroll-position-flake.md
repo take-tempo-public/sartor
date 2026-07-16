@@ -120,7 +120,9 @@ single-rAF capture/restore.
 
 > **⚠ Corrected by stage 2.5 (see [Adversarial verification](#adversarial-verification-stage-25)).**
 > Two claims in this O-7 are *inferred, not observed*, and were challenged: (1) "Modes A/B/C are the
-> same race" is **falsified** ([F-3](#f-3)) — mode B is structurally pre-refresh; A/C are the wizard
+> same race" is **falsified**
+> ([F-3](#f-3--all-four-modes-are-one-anchoring-vs-restore-race-this-documents-own-o-7-inference)) —
+> mode B is structurally pre-refresh; A/C are the wizard
 > smooth-scroll residual + the FIRST `refreshCorpus`'s late `_restoreScrollY(0)`. (2) The mode-D
 > failing run cited here dumped **0 events** (inert spy); "`_captureScrollY` grabbed the post-jump
 > value" is *unobserved and code-inconsistent* — capture runs at `refreshCorpus` top (`app.js:3607`)
