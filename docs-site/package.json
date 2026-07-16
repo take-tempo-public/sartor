@@ -14,7 +14,7 @@
     "@orama/orama": "^3.1.18",
     "cnfast": "^0.0.8",
     "fumadocs-core": "16.11.2",
-    "fumadocs-mdx": "15.1.0",
+    "fumadocs-mdx": "15.2.0",
     "fumadocs-openapi": "^11.1.1",
     "fumadocs-ui": "npm:@fumadocs/base-ui@16.11.2",
     "lucide-react": "^1.23.0",
