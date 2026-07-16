@@ -806,6 +806,21 @@ addition/resolution chronology since 2026-06-15 lives in git history
       tests, batched — see the quality-gate item above) all green, no reruns. **Still zero captured
       A/C/D failing timelines** — the actual target is unchanged; **Next: Chip 1b**, the capture
       campaign, on its own branch session per the sequencing rule.
+      **→ Chip 1b update (2026-07-16, `fix/ux-scroll-position-flake`):** the capture campaign ran —
+      `scratchpad/capture_scroll_phase1b.sh`, 7 busy-loop workers on this 8-core machine (O-1's
+      "7/8 cores" calibration), no `--reruns` (confirmed off locally by default; only CI's `ux`
+      tier passes it). 13 saturated runs in, run 13 **failed with the exact ledger-original
+      signature** (`369 -> 25423`) and a populated 19-event spy dump — the first populated A/C/D
+      (mode D) failing timeline this diagnosis has ever captured, closing the gap the stage-2.5
+      panel flagged. Directly observed (not inferred): the page-height balloon + scroll-anchor
+      jump lands strictly **before** the test's own `refreshCorpus()` call is even entered —
+      driven by residual unawaited rendering from the FIRST (tab-click) invocation, which had
+      already exited — so `_captureScrollY` on the SECOND call reads the already-corrupted value
+      directly rather than racing a restore against it. Full write-up:
+      `docs/dev/diagnosis/ux-scroll-position-flake.md` O-9. **Scope: mode D only, n=1** — modes A
+      and C still have zero captured failing timelines; the campaign stopped on first capture per
+      plan, not exhausted. **Next: Chip 2** — root cause, starting from O-9's evidence for mode D;
+      A/C remain open capture targets if Chip 2 needs them.
 
 - [ ] **`chore/scrub-local-eval-paths` parked — 2 commits, unmerged, gate re-verification
       incomplete (not failed)** — removes 6 references to the owner's private local testing
