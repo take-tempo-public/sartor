@@ -1,16 +1,22 @@
 # Diagnosis — corpus-reload scroll position not preserved (ux flake)
 
-> **Status:** mechanism **NOT YET ESTABLISHED** (2026-07-15). The initial causal claim
-> (async page-growth + scroll-anchoring racing `_restoreScrollY`) was **adversarially verified in
-> stage 2.5 and did NOT survive** — 2 of 3 skeptics refute it; the 3rd's own objection guts it (see
+> **Status:** mechanism **PARTIALLY ESTABLISHED for mode D only** (2026-07-16, Chip 1b). The
+> initial causal claim (async page-growth + scroll-anchoring racing `_restoreScrollY`) was
+> **adversarially verified in stage 2.5 and did NOT survive** as a claim covering all four modes —
+> 2 of 3 skeptics refute it; the 3rd's own objection guts it (see
 > [Adversarial verification](#adversarial-verification-stage-25)). The claim is **widened**: the
 > unifying defect is *`_captureScrollY` samples a moving target* driven by ≥3 async perturbers, of
 > which scroll-anchoring is only the rarest (mode D). **Two populated FAILING timelines were recovered
-> from the phase-1d capture (O-8) — but BOTH are mode B**, the test's own setup-scroll being stomped by
-> a `_restoreScrollY(0)` (`app.js:5492`) over flat height (anchoring absent). **Mode B is not the
-> user-reported symptom** (an `after != before` jump = modes A/C/D), and **A/C/D remain observed on ZERO
-> failing runs.** The next step is to capture an `after != before` (A/C/D) failing timeline and target
-> the moving-target capture — **not a blind anchoring fix** (charter C-7).
+> from the phase-1d capture (O-8) — both mode B**, the test's own setup-scroll being stomped by
+> a `_restoreScrollY(0)` (`app.js:5492`) over flat height (anchoring absent) — **not the
+> user-reported symptom** (an `after != before` jump = modes A/C/D). **A Chip 1b saturated capture
+> campaign (O-9) has now captured ONE populated mode-D failure** (`369 -> 25423`, the ledger's
+> original value): `_captureScrollY` directly reads the already-corrupted post-anchor-jump value, and
+> the jump itself lands in a gap not bracketed by either `refreshCorpus` invocation's own tracked
+> lifecycle. This is a **single sample, mode D only** — **modes A and C still have zero captured
+> failing timelines**, and one sample does not establish the mechanism generally. Falsification
+> §Step 1 can now be attempted for mode D with real evidence; A/C remain open — **not a blind
+> anchoring fix** (charter C-7).
 > **Branch:** `fix/ux-scroll-position-flake`
 
 <!-- Keep ## Observed (facts with artifacts) strictly apart from ## Inferred (hypothesis).
@@ -171,6 +177,79 @@ cause with A/C/D (the superseded-restore hypothesis in `## Inferred`) is likewis
 load — harness robustness, unrelated to scroll. It inflates the apparent failure rate and will confuse
 scroll-fix validation if not isolated.
 
+### O-9. Chip 1b campaign: ONE populated FAILING timeline captured for mode D — the anchor-jump lands BEFORE the test's own `refreshCorpus()` call, not during it
+
+**Campaign:** `scratchpad/capture_scroll_phase1b.sh` (7 busy-loop `python -c "while True: pass"`
+workers on this 8-logical-core machine, matching O-1's "7/8 cores saturated" calibration), the
+Chip-1a-hardened spy attached, no `--reruns` (confirmed off by default locally — only CI's `ux`
+tier passes it). Zero-load sanity run passed (21s). First 12 saturated runs (3 calibration + a
+batch of 5 + 4 more of a second batch of 5) all passed. **Run 13 (batch-2 run 5) failed** with the
+exact ledger-original signature:
+
+```
+AssertionError: scroll position not preserved: 369 -> 25423
+assert 25423 == 369
+```
+
+— i.e. `before=369` (mode C's landing value — the wizard `scrollIntoView` residual, per O-3/O-5)
+and `after=25423` (mode D's landing value). Verified byte-for-byte against
+`scratchpad/level_a.log`, `1 failed in 56.48s`. The dump (19 events, spy confirmed alive —
+`_dump_scroll_spy`'s aliveness checks passed):
+
+```
+[scroll-spy] phase=after-refresh value=25423 before=369 -- 19 events:
+  {'t': 1901.9, 'y': 0, 'h': 1206, 'active': 'BODY', 'source': 'scrollIntoView', 'el': '#panelJD.cb-panel', 'args': '[{"behavior":"smooth","block":"start"}]', 'by': 'at Element.scrollIntoView (<anonymous>:21:136) | at _wizardRender (http://127.0.0.1:54077/static/app.js:6911:22) | at wizardInit (http://127.0.0.1:54077/static/app.js:6809:3)'}
+  {'t': 2213, 'y': 0, 'h': 959, 'active': '#topTabCorpus', 'source': 'refreshCorpus-enter', 'id': 1, 'openRC': [1]}
+  {'t': 2217, 'y': 0, 'h': 959, 'active': '#topTabCorpus', 'source': '_captureScrollY', 'openRC': [1]}
+  {'t': 2242.8, 'y': 59, 'h': 959, 'active': '#topTabCorpus', 'source': 'scroll-event'}
+  {'t': 2848, 'y': 0, 'h': 2101, 'active': '#topTabCorpus', 'source': '_restoreScrollY-scheduled', 'scheduledDuring': [1]}
+  {'t': 2876.4, 'y': 59, 'h': 2101, 'active': '#topTabCorpus', 'source': 'refreshCorpus-exit', 'id': 1, 'openRC': []}
+  {'t': 2962.4, 'y': 0, 'h': 2101, 'active': '#topTabCorpus', 'source': '_restoreScrollY-fired', 'scheduledDuring': [1]}
+  {'t': 2962.7, 'y': 59, 'h': 2101, 'active': '#topTabCorpus', 'source': 'window.scrollTo', 'args': '[0,0]', 'by': 'at window.<computed> (<anonymous>:19:100) | at http://127.0.0.1:54077/static/app.js:5492:38'}
+  {'t': 3084.6, 'y': 0, 'h': 2101, 'active': '#topTabCorpus', 'source': 'scroll-event'}
+  {'t': 3106.7, 'y': 0, 'h': 2101, 'active': '#topTabCorpus', 'source': 'window.scrollTo', 'args': '[0,300]', 'by': 'at window.<computed> (<anonymous>:19:100) | at eval (eval at evaluate (:302:30), <anonymous>:1:14) | at UtilityScript.evaluate (<anonymous>:309:18)'}
+  {'t': 3238.1, 'y': 369, 'h': 2170, 'active': '#topTabCorpus', 'source': 'scroll-event'}
+  {'t': 3477, 'y': 25423, 'h': 27224, 'active': '#topTabCorpus', 'source': 'refreshCorpus-enter', 'id': 2, 'openRC': [2]}
+  {'t': 3548.5, 'y': 25423, 'h': 27224, 'active': '#topTabCorpus', 'source': '_captureScrollY', 'openRC': [2]}
+  {'t': 3567.5, 'y': 25080, 'h': 25980, 'active': '#topTabCorpus', 'source': 'scroll-event'}
+  {'t': 4094.9, 'y': 25423, 'h': 27224, 'active': '#topTabCorpus', 'source': '_restoreScrollY-scheduled', 'scheduledDuring': [2]}
+  {'t': 4100, 'y': 25423, 'h': 27224, 'active': '#topTabCorpus', 'source': 'refreshCorpus-exit', 'id': 2, 'openRC': []}
+  {'t': 4116.3, 'y': 25423, 'h': 27224, 'active': '#topTabCorpus', 'source': 'scroll-event'}
+  {'t': 4116.4, 'y': 25423, 'h': 27224, 'active': '#topTabCorpus', 'source': '_restoreScrollY-fired', 'scheduledDuring': [2]}
+  {'t': 4116.5, 'y': 25423, 'h': 27224, 'active': '#topTabCorpus', 'source': 'window.scrollTo', 'args': '[0,25423]', 'by': 'at window.<computed> (<anonymous>:19:100) | at http://127.0.0.1:54077/static/app.js:5492:38'}
+```
+
+**Directly observed, from the timestamps and values alone:**
+
+- `id=1` (the tab-click's fire-and-forget `refreshCorpus`) captures at `y=0` (t=2217) and its own
+  `_restoreScrollY` fires `scrollTo(0,0)` at t=2962.7 — this is the FIRST invocation's restore,
+  unrelated to the test's assertion. It exits (`refreshCorpus-exit id=1`) at **t=2876.4**.
+- The test's own setup `scrollTo(0,300)` fires at t=3106.7; the page settles at **y=369, h=2170**
+  by t=3238.1 (this is the `before` the test reads — matches mode C's O-3 landing value).
+- The page-height balloon and scroll-anchor jump (**h: 2170→27224, y: 369→25423**) happen
+  **between t=3238.1 and t=3477** — i.e. strictly **before** `id=2` (the test's own explicit
+  `refreshCorpus()` call, `app.js:461` in the test) is even entered, and **long after** `id=1`
+  already exited (t=2876.4). The jump is **not bracketed by either tracked `refreshCorpus`
+  invocation's lifecycle** — consistent with O-6's "bare `scroll-event`, no `scrollTo`/
+  `scrollIntoView`/`focus` behind it" (confirmed again here: the t=3567.5 event immediately after
+  is source `scroll-event` with no API call attributed) and consistent with O-6's attribution of
+  the growth to "the 20 experience cards + fire-and-forget editors... finish rendering after the
+  test's `to_have_count(20)` gate" — i.e. residual unawaited rendering, not either `refreshCorpus`
+  call's own body.
+- `id=2`'s `_captureScrollY` (t=3548.5) reads **`y=25423` directly** — the already-corrupted
+  post-jump value, not a pre-jump value later overwritten. `id=2`'s `_restoreScrollY` (t=4116.5)
+  then faithfully restores that same 25423 (matches O-5: "faithfully restores whatever
+  `_captureScrollY` grabbed; the grabbed value is often a transient").
+
+**Scope this correctly:** this directly resolves, **for this one captured instance**, what stage
+2.5 flagged as "unobserved and code-inconsistent" in O-7 — that `_captureScrollY` grabs a
+post-jump value. It does **not** retroactively validate the OLD phase-1b mode-D failure the
+ledger originally recorded (that one logged 0 events, per O-7's correction, and remains
+unverified) — this is a fresh, independently-captured instance, and it is **one sample**. Whether
+every mode-D failure shares this exact shape (jump lands in the id=1-exit-to-id=2-enter gap) is
+**not yet established** — that would need more captures or the Step-1 discriminating experiment,
+not a claim from n=1.
+
 ---
 
 ## Falsified
@@ -244,11 +323,19 @@ failures but did **not** close this gap — still no confirmed populated failing
 > to them is still inferred, not proven. (Also: 2 of phase-1d's 4 failures were an unrelated
 > `#panelCorpus` wait-timeout, not scroll — a second flake source to isolate.)
 
+> **⚠ Updated by the 2026-07-16 Chip 1b campaign.** A saturated capture campaign closed the gap
+> **for mode D specifically** — see [O-9](#o-9-chip-1b-campaign-one-populated-failing-timeline-captured-for-mode-d--the-anchor-jump-lands-before-the-tests-own-refreshcorpus-call-not-during-it):
+> one populated mode-D failing timeline (`369 -> 25423`) is now captured and shows the anchor-jump
+> landing before the test's own `refreshCorpus()` call, not during it. This is **one sample**, mode
+> D only — the "zero populated failing timelines" finding still stands **for modes A and C**, which
+> Chip 1b's campaign did not encounter before stopping (per plan, on first A/C/D capture).
+
 ---
 
 ## Inferred
 
-> **HYPOTHESIS — widened after stage 2.5; NOT yet proven, and the failure ordering is UNOBSERVED.**
+> **HYPOTHESIS — widened after stage 2.5; NOT yet proven for modes A/C. For mode D, O-9 (2026-07-16)**
+> **now provides one directly-observed failing ordering — see that section; it is not yet generalized.**
 
 The unifying defect is that **`refreshCorpus`'s single-`requestAnimationFrame` `_captureScrollY` /
 `_restoreScrollY` samples and re-asserts a scroll value that is still being moved by multiple async
