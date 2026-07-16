@@ -515,17 +515,25 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **12** (unchanged this branch — a swap, not a reduction: **−1** the CodeQL
-`py/path-injection` disposition, **RESOLVED** 2026-07-14 on `fix/codeql-path-injection-context`
-— resolver chokepoint + auto-discovered `barrierModel` pack, verified 0 open alerts by API;
-**+1** its residual **[HUMAN/OWNER]** follow-up, wiring CodeQL as a required check. Prior
-context: the count reached 12 on `fix/compose-summary-draft-settle-hole` — −1 Compose
-lost-update root cause **RESOLVED** 2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL
-disposition just resolved here.)
+_Rendered open count: **14** (unchanged this chip — Chip 3 landed the scroll-flake fix and
+updated its existing entry in place, no item added or resolved; the CI leg of that entry's own
+acceptance bar is still open, so it stays unchecked pending a post-merge CI run. Prior context,
+same branch: **+1** the `check-plan-approved` global-scope hook gap, filed 2026-07-16 during
+Chip 2 — unrelated to the scroll-flake work itself, hit alongside it; **+1**
+`chore/scrub-local-eval-paths` filed as a new parked-branch item — **crosses the ceiling
+further; the reduction sprint is now overdue, not merely due.** The scroll-flake entry
+itself stayed ONE item across Chips 0/1a/1b/2/3 despite five rounds of sub-notes. Prior
+context: **−1** the CodeQL `py/path-injection` disposition, **RESOLVED** 2026-07-14 on
+`fix/codeql-path-injection-context` — resolver chokepoint + auto-discovered `barrierModel`
+pack, verified 0 open alerts by API; **+1** its residual **[HUMAN/OWNER]** follow-up, wiring
+CodeQL as a required check. Earlier still: the count reached 12 on
+`fix/compose-summary-draft-settle-hole` — −1 Compose lost-update root cause **RESOLVED**
+2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL disposition resolved on the
+prior branch.)
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
-each close-out). **STILL AT THE CEILING — the reduction sprint remains DUE, and should be
-scheduled before the v1.1.0 tag, not after** (the rule is ~8–10, and clear before
-adding); several items below are small and clearable in one pass. The full per-item
+each close-out). **OVER THE CEILING — the reduction sprint is overdue and should be scheduled
+before the v1.1.0 tag** (the rule is ~8–10; this is 14); several items below are small and
+clearable in one pass. The full per-item
 addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
 
@@ -583,6 +591,23 @@ addition/resolution chronology since 2026-06-15 lives in git history
       choosing.**
       _(discovered: v1.1.0 stream, 2026-07-14, `fix/compose-summary-draft-settle-hole`;
       open count 10 → 11 — **well over the ~8–10 ceiling; the reduction sprint is overdue**.)_
+      **→ Update (2026-07-16, `fix/ux-scroll-position-flake` Chip 1a):** hit the same wall from a
+      different angle — `python -m scripts.gate` run as one call (background or foreground) was
+      **killed partway through** (not a failure — no traceback, no rerun, just cut off mid-test) on
+      **four consecutive attempts**, at varying completion points (94%, 63%, 76% of their
+      respective outputs) regardless of scope (full gate, `-m "not ux"` alone, `--ignore=tests/ux`
+      alone). A small 8-file batch completed normally (9.93 s), ruling out a cumulative
+      session-wide budget — this reads as a **per-command wall-clock ceiling**, roughly in the
+      5–10 minute range, independent of which command runs. **Worked around, not resolved:**
+      manually split the ~120 core test files into 6 batches (~20 files each, 48–122 s per batch)
+      + ran `tests/ux/regression/` (106 tests, 6.6 min — the one multi-minute run that DID complete
+      normally) + `tests/ux/a11y/` + `tests/ux/flows/` separately; all green, ~2100 tests total,
+      zero failures, zero reruns, matching this item's own 2 066-test measurement. This is exactly
+      the "per-test-file timings in sub-10-minute chunks" instrument this item already called for
+      (line above) — just done by hand under the specific pressure of needing a real answer for one
+      commit, not yet turned into the resumable-gate tooling this item still asks for.
+      Doesn't resolve the `-m "not ux"` / `-m ux` non-additive-timing contradiction above — still
+      unexplained, still the first thing to measure before choosing a remedy.
 
 - [x] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
       fixed** — twelve routes in `blueprints/applications.py` each read the whole
@@ -735,6 +760,146 @@ addition/resolution chronology since 2026-06-15 lives in git history
       that. **Next agent: confirm attribution with the partial-revert method** (revert only
       `hardening.py` + `blueprints/applications.py` at HEAD, re-sample) before instrumenting —
       same ux-load-flake class, likely the same fix shape.
+      **→ Chip 0 update (2026-07-15, `fix/ux-scroll-position-flake`):** instrument commit
+      `0f7e524` landed — reproduces 12–17%/attempt under CPU load via a wide scroll+height spy
+      tagging source stacks (`docs/dev/diagnosis/ux-scroll-position-flake.md`, committed
+      `aa3efd8`). **Four distinct failure modes confirmed (A/B/C/D)** — `after == before` at three
+      different landing values, or `before == 0` — not the single deterministic value this entry
+      originally recorded. **Mode B is now proven non-anchoring**: 2 populated failing timelines
+      (phase-1d capture) show the test's own setup-scroll stomped by a stale `_restoreScrollY(0)`
+      pre-refresh, height flat throughout — verified byte-for-byte against the raw pytest log this
+      session, not just the doc's transcription of it. **Mode B is NOT the user-reported symptom.**
+      The actual target — modes A/C/D, an `after != before` jump post-refresh — still has **zero**
+      captured failing timelines; a 3-skeptic adversarial-verification panel unanimously found
+      every populated timeline for the anchoring mechanism is a PASS. **Second, distinct flake
+      source found in the same captures:** a `#panelCorpus` wait-selector timeout under CPU load,
+      unrelated to scroll — isolate before attributing future capture-run failures to scroll. Full
+      evidence + falsification plan in the diagnosis doc; do not re-derive it. **Next: Chip 1a** —
+      harden the spy to reliably dump on an after-reload (A/C/D) failure, then capture one.
+      Evidence archive from the two crashed/frozen sessions that worked this doc is preserved in
+      a non-tracked local recovery bundle outside this repo (its own `README.md` documents
+      provenance + contents — durable home still undecided, carried forward below).
+      **→ Chip 1a update (2026-07-16, `fix/ux-scroll-position-flake`, commit `4babc40`):** the
+      spy is hardened, entirely inside the test file — no production code touched. Four additions:
+      (1) `_dump_scroll_spy` now asserts `window.__scrollSpy` is actually defined and the named-fn
+      hooks installed, printing a loud warning instead of silently trusting "0 events"; (2) two new
+      `try/except` blocks dump on **any** exception in the setup and post-refresh phases, not just
+      the two hand-mirrored asserts — closing the exact gap that left the O-8 `#panelCorpus`
+      wait-timeout failures with zero diagnostics; (3) `window.scrollBy` is now hooked (confirmed
+      via grep: a real, previously-unhooked gap — app.js never calls it, but an unhooked API would
+      have made "bare scroll-event" an unreliable anchoring signature); (4) `refreshCorpus` /
+      `_captureScrollY` / `_restoreScrollY` are now wrapped (via a **separate** post-`load()`
+      `page.evaluate`, never `add_init_script` — app.js has no wrapping IIFE, so patching these
+      true globals before app.js's own top-level declarations run would be silently clobbered) to
+      tag every event with which invocation (tab-click vs the test's own call) it belongs to —
+      structural, not inferred from stack text + height-flatness the way mode B originally was.
+      **Two new self-check tests prove this, rather than assuming it**
+      (`test_scroll_spy_hooks_fire_for_known_perturbers`,
+      `test_scroll_spy_attributes_overlapping_refresh_corpus_calls`) — this is the chip's actual
+      done-criterion per the branch's own next-step, not "the code compiles." Writing the second
+      one surfaced a real gap in the first design: reading the "open invocations" set live at
+      restore-fire time is **always** empty (the wrapped promise resolves via microtask a full
+      frame before the rAF that fires), fixed by snapshotting the set at schedule time instead — an
+      untested version of this exact hardening would have silently failed to deliver the FIRST/
+      SECOND attribution it claims to. A first attempt at forcing two `refreshCorpus()` calls to
+      overlap deterministically (delaying the first's fetch by a fixed 150ms) was **itself flaky**
+      (2/5 runs) from browser per-origin connection contention across the 5 fetches each invocation
+      fires — replaced with an explicit held-open-then-released promise, removing the timing
+      dependency entirely (8/8 clean afterward). A `SCROLL_SPY_ALWAYS=1` eyeball of the real test
+      confirms the dump now reads cleanly with every event tagged to invocation id 1 or 2. Full
+      `tests/ux/regression/` (106 tests) + the modified file (8 tests) + the wider suite (~2100
+      tests, batched — see the quality-gate item above) all green, no reruns. **Still zero captured
+      A/C/D failing timelines** — the actual target is unchanged; **Next: Chip 1b**, the capture
+      campaign, on its own branch session per the sequencing rule.
+      **→ Chip 1b update (2026-07-16, `fix/ux-scroll-position-flake`):** the capture campaign ran —
+      `scratchpad/capture_scroll_phase1b.sh`, 7 busy-loop workers on this 8-core machine (O-1's
+      "7/8 cores" calibration), no `--reruns` (confirmed off locally by default; only CI's `ux`
+      tier passes it). 13 saturated runs in, run 13 **failed with the exact ledger-original
+      signature** (`369 -> 25423`) and a populated 19-event spy dump — the first populated A/C/D
+      (mode D) failing timeline this diagnosis has ever captured, closing the gap the stage-2.5
+      panel flagged. Directly observed (not inferred): the page-height balloon + scroll-anchor
+      jump lands strictly **before** the test's own `refreshCorpus()` call is even entered —
+      driven by residual unawaited rendering from the FIRST (tab-click) invocation, which had
+      already exited — so `_captureScrollY` on the SECOND call reads the already-corrupted value
+      directly rather than racing a restore against it. Full write-up:
+      `docs/dev/diagnosis/ux-scroll-position-flake.md` O-9. **Scope: mode D only, n=1** — modes A
+      and C still have zero captured failing timelines; the campaign stopped on first capture per
+      plan, not exhausted. **Next: Chip 2** — root cause, starting from O-9's evidence for mode D;
+      A/C remain open capture targets if Chip 2 needs them.
+      **→ Chip 2 update (2026-07-16, `fix/ux-scroll-position-flake`):** root cause
+      **deterministically proven** for modes B and D — not via another CPU-saturated campaign
+      (Chip 1b's own campaign needed 13 runs for one D sample), but via two new tests that call
+      the real `_captureScrollY`/`_restoreScrollY` and force the exact orderings O-8/O-9 already
+      showed in the wild, reproducing each 3/3 on demand:
+      `test_restore_scroll_y_stale_invocation_overwrites_later_scroll` (a superseded invocation's
+      stale restore overwrites a legitimate later scroll — the mode A/B shape) and
+      `test_restore_scroll_y_loses_to_post_restore_growth` (page-growth landing the frame after
+      `_restoreScrollY` fires beats it — the mode D shape). The unifying defect is now precise:
+      capture/restore has no concept of "have I been superseded" or "is the page still settling."
+      Mode C is a separate, unrelated hazard (the wizard rail's own smooth-scroll racing the
+      test's baseline `scrollTo`) — well-supported already, not chased further. **Mode A still has
+      no real captured failing timeline** — the shared-mechanism claim for A rests on code
+      inspection + the forced analog, not a wild capture. Full write-up:
+      `docs/dev/diagnosis/ux-scroll-position-flake.md` O-10/O-11 + rewritten Inferred/
+      Falsification. **Next: Chip 3** — the fix, at the capture/restore layer; scope decision
+      needed on whether mode C is in-bounds for this bug.
+      **→ Chip 3 update (2026-07-16, `fix/ux-scroll-position-flake`) — THE FIX LANDED.** Three
+      mechanisms at the capture/restore primitive (`app.js:5480-5591`; zero call-site changes
+      needed — all three callers already did pure pass-through): a per-load ordinal (instant,
+      time-unbounded invalidation of a superseded reload's pending restore — this is what actually
+      protects the owner's reported real-world pattern, "bit with scroll and snap back multiple
+      times in a single tailoring" on a large corpus where Compose's auto-cascade re-reloads
+      several times over 3-5+ seconds); a generation counter on the explicit scroll APIs this app
+      uses (catches a deliberate reposition racing a stale restore with no second invocation
+      involved — O-10's exact shape); and a bounded, height-stability settle loop (survives
+      scroll-anchoring landing a frame or more late — O-11's shape). O-10 and O-11 **FLIPPED** (same
+      forced orderings, only the pass criterion changed), 3/3 clean runs, zero flakiness. A third
+      regression test (`test_restore_scroll_y_ordinal_defers_to_newer_capture`) closes an
+      outcome-level coverage gap the fix's own design review surfaced. **Scope decisions, made
+      explicitly:** mode A fixed on the strength of its shared-mechanism inference (no separate
+      capture needed, the fix isn't mode-specific); mode C stays **out of scope** (separate hazard,
+      confirmed structurally independent — Inferred §3 now carries a Chip 3 precision note on how
+      it harmlessly participates in the fixed mechanism post-fix).
+      **Saturated-load validation (24 runs, 7 workers/8 cores, O-1/O-9's own calibration):
+      19 passed / 5 failed. Every failure individually traced by full spy dump, not by matching the
+      failure value alone** (per this document's own F-1 warning) — **zero occurrences of modes
+      A/B/D** (this fix's target); the 5 failures are 4× mode C (traced end-to-end each time: the
+      corruption happens entirely in test-side code, before `refreshCorpus` is ever called;
+      capture/restore faithfully preserves whatever baseline it's handed) + 1× the pre-existing
+      `#panelCorpus` harness-load timeout (O-8, unrelated to scroll). **Precise claim, not an
+      overclaim:** the fix's target defect is closed; the *original* flaky test is **not** fully
+      green under saturated load, for reasons entirely outside this fix's scope. **Mode C's
+      measured rate here (4/24, ~17%) is real enough that a real user could hit it** — tracked as a
+      follow-on below, not silently dropped. **Not yet met:** the CI leg of the acceptance bar
+      (`--reruns`-free, >1 CI run) — needs an actual CI run post-merge, out of a local session's
+      control. Full write-up: `docs/dev/diagnosis/ux-scroll-position-flake.md` "## The fix" +
+      "## Acceptance bar". CHANGELOG entry added. **Branch ready to close** pending the gate +
+      user merge confirmation.
+      **Follow-on filed here, not as a new ledger item** (matching this entry's own "one item,
+      evolving notes" pattern across Chips 0-3): **mode C — the wizard rail's `scrollIntoView`
+      smooth-scroll racing an immediate scroll read/write shortly after a step transition — is a
+      separate, real, measured-non-negligible (~17% under saturation) hazard that needs its own
+      diagnosis dossier and branch if/when picked up.** Not the same defect as this one (confirmed
+      structurally independent, Inferred §3); do not conflate with a future re-open of this item.
+
+- [ ] **`chore/scrub-local-eval-paths` parked — 2 commits, unmerged, gate re-verification
+      incomplete (not failed)** — removes 6 references to the owner's private local testing
+      clone from tracked docs (`CHANGELOG.md`, `evals/TUNING_LOG.md`, two dev docs) per an
+      owner directive that nothing committed to git may reference that clone, plus a dead
+      personal-path docstring reference in `db/models.py`. Working-tree-only scrub; a
+      git-history rewrite is deliberately not done (destructive, sign-off-gated, separate).
+      Current with `main` (merge-base = `main` HEAD, no rebase needed) — touches only
+      docs/comments, no production logic. First commit (`71ef57f`) claims a full
+      `python -m scripts.gate` green run (2100 passed, 1 skipped); the second, docstring-only
+      commit (`5e84d3b`) claims only ruff/mypy green. A full-suite re-verification after both
+      commits was interrupted mid-run (95–96% through) when the session running it froze — an
+      **incomplete** run, not a failed one. **Owner decision (2026-07-15): leave parked.**
+      Unrelated to the scroll-flake work it was discovered alongside.
+      _(discovered: v1.1.0 stream, 2026-07-15, `fix/ux-scroll-position-flake` Chip 0 — filed as
+      a new item, not folded into the scroll-flake entry above, since it's an unrelated fact;
+      open count 12 → 13, over the ~8–10 ceiling.)_
+      **→ Next: re-run `python -m scripts.gate` to completion and merge separately (off this
+      branch) whenever the owner wants it off the parked list.**
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
@@ -1326,13 +1491,26 @@ addition/resolution chronology since 2026-06-15 lives in git history
       the new `.btn-pending` pulse), dec 5 the Compose autosave "Saved" toast, dec 6
       the skills denial data-model (reversible soft-tombstone, replacing the old
       hard-delete-on-deny; un-deny via `PUT is_active=true`) + the denied-skills
-      collapsible lane, dec 7 the compact prior-application card (JD snippet + per-run
-      status + actions moved into the detail modal). **PX-51** (style.css
-      duplicate-cascade collapse) is **DEFERRED** — flagged HIGH RISK in the branch
-      brief, and several decisions above already had to edit rules living inside the
-      duplicate "restyle" block this item would collapse; left for a follow-up branch,
-      no functional effect from deferring. See `CHANGELOG.md` `[Unreleased]` "UX
-      Cohesion Epic" for the full per-decision detail.
+
+
+- [ ] **`check-plan-approved` hook has no per-project/session scope — a concurrent
+      unrelated session can false-positive block this one** — the hook (source read
+      directly) compares the newest `*.md` in `~/.claude/plans/` GLOBALLY against one
+      `.approved` marker; plan files carry no project association, so any concurrent
+      Claude Code session on this machine, in ANY project, mid-plan, blocks Edit/Write
+      in every other session until that session calls `ExitPlanMode`. Hit live on this
+      branch (2026-07-16, Chip 2) by an unrelated session working on a different repo
+      entirely. Worked around per-instance (user confirmed the other session was
+      unrelated; the hook is registered for `Edit|Write` only, not `Bash`, so a narrow
+      scripted text-replacement proceeded without touching the shared marker or the
+      other session's plan) — not a fix. Full mechanism in
+      [[reference-plan-approval-hook-global-scope]] (durable memory). **Needs an actual
+      fix**: scope the marker/newest-plan comparison per project (e.g. a
+      project-path-derived subdirectory or marker filename) so concurrent multi-project
+      sessions don't collide.
+      _(discovered: v1.1.0 stream, 2026-07-16, `fix/ux-scroll-position-flake` Chip 2 —
+      unrelated to the scroll-flake work it was hit alongside; open count 13 → 14, over
+      the ~8-10 ceiling and rising — the reduction sprint is now more overdue, not less.)_
 
 #### Resolved
 

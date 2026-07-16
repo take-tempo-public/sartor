@@ -28,6 +28,7 @@ state is reliably observable before it clears. LLM-free throughout.
 
 from __future__ import annotations
 
+import os
 import re
 import time
 from collections.abc import Callable
@@ -58,6 +59,178 @@ def _delayed(fn: Callable[..., Any], seconds: float) -> Callable[..., Any]:
         return fn(*args, **kwargs)
 
     return _wrapped
+
+
+# ---------------------------------------------------------------------------
+# INSTRUMENT (charter C-7, fix/ux-scroll-position-flake). A WIDE scroll-source
+# spy for test_corpus_reload_preserves_scroll_position: records EVERY scroll
+# mutation and its source (scroll event / window.scrollTo / scrollIntoView /
+# focus / element scrollTop setter), each tagged with the calling stack, a
+# timestamp, and the settle state. Dumped on failure so the cause prints itself
+# under the RERUN reporter. Scoped WIDER than the scrollIntoView hypothesis on
+# purpose: an instrument narrowed to one theory confirms it by hiding rivals.
+# ---------------------------------------------------------------------------
+_SCROLL_SPY_JS = r"""
+(() => {
+  window.__scrollSpy = [];
+  const t0 = performance.now();
+  const caller = () => ((new Error().stack || '').split('\n').slice(2, 5).map(l => l.trim()).join(' | '));
+  const rec = (source, extra) => window.__scrollSpy.push(Object.assign({
+    t: +(performance.now() - t0).toFixed(1),
+    y: window.scrollY,
+    h: document.documentElement.scrollHeight,
+    active: document.activeElement ? (document.activeElement.id ? '#' + document.activeElement.id : document.activeElement.tagName) : null,
+    source: source,
+  }, extra));
+  const tag = (el) => { try { return (el.id ? '#' + el.id : el.tagName) +
+    (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : ''); }
+    catch (e) { return '?'; } };
+  window.addEventListener('scroll', () => rec('scroll-event', {}), {passive: true, capture: true});
+  ['scrollTo', 'scroll', 'scrollBy'].forEach((fn) => { const o = window[fn].bind(window);
+    window[fn] = function (...a) { rec('window.' + fn, {args: JSON.stringify(a).slice(0, 120), by: caller()}); return o(...a); }; });
+  const siv = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function (...a) { rec('scrollIntoView', {el: tag(this), args: JSON.stringify(a).slice(0, 80), by: caller()}); return siv.apply(this, a); };
+  if (Element.prototype.scrollIntoViewIfNeeded) { const sivn = Element.prototype.scrollIntoViewIfNeeded;
+    Element.prototype.scrollIntoViewIfNeeded = function (...a) { rec('scrollIntoViewIfNeeded', {el: tag(this), by: caller()}); return sivn.apply(this, a); }; }
+  const fo = HTMLElement.prototype.focus;
+  HTMLElement.prototype.focus = function (...a) { rec('focus', {el: tag(this), by: caller()}); return fo.apply(this, a); };
+  const d = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
+  if (d && d.set) Object.defineProperty(Element.prototype, 'scrollTop', {configurable: true, get: d.get,
+    set: function (v) { rec('el.scrollTop=', {el: tag(this), v: v, by: caller()}); return d.set.call(this, v); }});
+  // Exposed so _SCROLL_SPY_NAMED_HOOKS_JS (injected separately, post-load — see
+  // that constant's own comment for why) can log identically-shaped events.
+  window.__scrollSpyRec = rec;
+})();
+"""
+
+
+# ---------------------------------------------------------------------------
+# INSTRUMENT hardening (Chip 1a, charter C-7). Tags _captureScrollY /
+# _restoreScrollY / refreshCorpus with a structural FIRST-vs-SECOND
+# invocation id, instead of requiring a human to infer it from stack text
+# and height-flatness after the fact (which is the only way mode B was
+# originally identified). MUST be injected via an explicit page.evaluate(...)
+# call AFTER the page has loaded (never via add_init_script): app.js has no
+# wrapping IIFE, so refreshCorpus/_captureScrollY/_restoreScrollY are true
+# window-scoped globals, and add_init_script runs BEFORE any of the page's
+# own <script> tags — patching these names that early would just get
+# silently clobbered when app.js's own top-level declarations execute
+# moments later. (app.js already relies on this exact ordering itself:
+# onUserSelect is declared at app.js:394 and unconditionally reassigned at
+# app.js:5511-5512, and that reassignment is in effect before the `change`
+# listener bound at app.js:46 can ever fire.)
+#
+# _restoreScrollY (app.js:5491-5493) is a fire-and-forget
+# requestAnimationFrame — refreshCorpus never awaits it, so its promise
+# resolves (and this wrapper's `finally` marks the invocation closed) a
+# full microtask-drain before the rAF actually fires. Reading the
+# "currently open" set live at fire-time would therefore NEVER see the
+# invocation that scheduled it — exactly backwards from the point of this
+# instrument. So the open-set is snapshotted at SCHEDULE time (still
+# genuinely inside the invocation) and carried in the closure to the
+# eventual "-fired" event, rather than re-read when the rAF callback runs.
+# ---------------------------------------------------------------------------
+_SCROLL_SPY_NAMED_HOOKS_JS = r"""
+(() => {
+  if (typeof window.__scrollSpyRec !== 'function') {
+    window.__scrollSpyNamedHooksError = 'builtin spy missing — _SCROLL_SPY_JS must run first';
+    return;
+  }
+  const rec = window.__scrollSpyRec;
+  let _rcCounter = 0;
+  // The SET of invocations open right now — not a unique "who's calling"
+  // attribution. With exactly one entry that's unambiguous (the common case
+  // here: this test's action sequence only ever has 0 or 1 refreshCorpus
+  // invocation open, except during the deliberate 2-invocation overlap the
+  // Chip 1a self-checks force). A 2+-entry set narrows candidates without
+  // uniquely identifying which open invocation made THIS specific call —
+  // resolve it the same way the self-check test does: find the call whose
+  // set has shrunk to a singleton (unambiguous by construction) and get the
+  // other one by elimination.
+  const _rcOpen = new Set();
+
+  const origCapture = window._captureScrollY;
+  const origRestore = window._restoreScrollY;
+  const origRefresh = window.refreshCorpus;
+  if (!origCapture || !origRestore || !origRefresh) {
+    window.__scrollSpyNamedHooksError = 'refreshCorpus/_captureScrollY/_restoreScrollY missing at hook time';
+    return;
+  }
+
+  // NB: _captureScrollY/_restoreScrollY are also called by loadComposition()
+  // and the corpus-card-expand path — neither is reachable from this test's
+  // action sequence, so an empty openRC/scheduledDuring here unambiguously
+  // means "not refreshCorpus", not "tagging is broken".
+  window._captureScrollY = function (...a) {
+    const result = origCapture.apply(this, a);
+    rec('_captureScrollY', {y: result, openRC: Array.from(_rcOpen)});
+    return result;
+  };
+
+  window._restoreScrollY = function (y, ...rest) {
+    const scheduledDuring = Array.from(_rcOpen);   // snapshot at schedule time — see module comment above
+    rec('_restoreScrollY-scheduled', {y, scheduledDuring});
+    requestAnimationFrame(() => rec('_restoreScrollY-fired', {y, scheduledDuring}));
+    return origRestore.call(this, y, ...rest);
+  };
+
+  window.refreshCorpus = async function (...args) {
+    const id = ++_rcCounter;
+    _rcOpen.add(id);
+    rec('refreshCorpus-enter', {id, openRC: Array.from(_rcOpen)});
+    try {
+      return await origRefresh.apply(this, args);
+    } finally {
+      // finally, not catch: refreshCorpus is called fire-and-forget from the
+      // tab-click handler, and this wrapper must stay exception-transparent —
+      // altering resolve/reject semantics would change app behavior under test,
+      // which an instrumentation-only chip must never do.
+      _rcOpen.delete(id);
+      rec('refreshCorpus-exit', {id, openRC: Array.from(_rcOpen)});
+    }
+  };
+  window.refreshCorpus.__scrollSpyWrapped = true;  // dump-time install marker
+})();
+"""
+
+
+def _dump_scroll_spy(page: Page, phase: str, value: object, before: object = None) -> None:
+    """Print the full scroll-mutation timeline captured by ``_SCROLL_SPY_JS`` +
+    ``_SCROLL_SPY_NAMED_HOOKS_JS`` (diagnostic). Never raises: this is called
+    from exception handlers, so a problem here must never shadow the real
+    failure. Checks BOTH instrument layers are actually alive before trusting
+    "0 events" as a negative result — a silently-dead spy (the original O-4
+    bug, and the different class of it this chip's own hardening found) must
+    never again read the same as "nothing happened."
+    """
+    try:
+        defined = page.evaluate("() => typeof window.__scrollSpy !== 'undefined'")
+    except Exception as exc:  # page gone/crashed mid-failure
+        print(
+            f"\n[scroll-spy] phase={phase} value={value} before={before} "
+            f"-- COULD NOT EVALUATE PAGE: {exc!r}"
+        )
+        return
+    if not defined:
+        print(
+            f"\n[scroll-spy] phase={phase} -- WARNING: window.__scrollSpy is "
+            f"UNDEFINED — the spy never initialized. This dump (and any others "
+            f"from this run) is untrustworthy."
+        )
+        return
+    named_ok = page.evaluate(
+        "() => !!(window.refreshCorpus && window.refreshCorpus.__scrollSpyWrapped)"
+    )
+    if not named_ok:
+        print(
+            f"\n[scroll-spy] phase={phase} -- WARNING: named-fn hooks did not "
+            f"install ({page.evaluate('() => window.__scrollSpyNamedHooksError || null')!r}); "
+            f"FIRST/SECOND-invocation tagging is ABSENT below."
+        )
+    spy = page.evaluate("() => window.__scrollSpy || []")
+    print(f"\n[scroll-spy] phase={phase} value={value} before={before} -- {len(spy)} events:")
+    for event in spy:
+        print(f"  {event}")
 
 
 @pytest.mark.ux
@@ -245,29 +418,469 @@ def test_corpus_reload_preserves_scroll_position(
         seed_exp_with_bullets(cid, company=f"Company {i}")
     install_llm_stubs(ux_app, monkeypatch)
 
+    page.add_init_script(_SCROLL_SPY_JS)  # INSTRUMENT (C-7): wide scroll-source spy
+
     BasePage(page, live_server).load()
+    # Named-fn hooks (Chip 1a) MUST be injected here — after load() (app.js has
+    # run; see _SCROLL_SPY_NAMED_HOOKS_JS's own comment for why add_init_script
+    # would be unsafe) and before select() (the only pre-tab-click caller of
+    # refreshCorpus, onUserSelect -> _landingTab() -> loadCorpusIfReady(), can't
+    # fire until select() runs).
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    UserPickerPage(page, live_server).select("alice")
+
+    try:
+        page.click("#topTabCorpus")
+        page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+        # The tab click fires loadCorpusIfReady() fire-and-forget, so the experiences
+        # fetch + _renderCorpusList() land asynchronously — under end-of-suite CPU
+        # load that settle lags, the load-dependent flake class this suite guards
+        # against. Assert on the settled card COUNT (auto-retrying) rather than a bare
+        # first-card visibility poll: expect() re-queries the DOM until all 20 cards
+        # are attached, regardless of which load path filled them — the same
+        # load-path-agnostic idiom that fixed the pipeline-board row race. (An explicit
+        # loadCorpusIfReady() re-fire is NOT reliable here: it no-ops once
+        # _corpusLoadedForUser is set, which the click's load sets optimistically
+        # before its render completes.)
+        corpus_cards = page.locator("#corpusExperienceList .corpus-card")
+        expect(corpus_cards).to_have_count(20, timeout=15_000)
+    except Exception:
+        # Chip 1a (C-7): this phase previously had NO dump path at all — a
+        # #panelCorpus wait-timeout under load is a confirmed, distinct failure
+        # mode (diagnosis doc O-8) that used to vanish with zero diagnostics.
+        _dump_scroll_spy(page, "setup", None)
+        raise
+
+    page.evaluate("() => window.scrollTo(0, 300)")
+    before = page.evaluate("() => window.scrollY")
+    if before <= 0 or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "setup-before", before)
+    assert before > 0, "test setup didn't actually scroll the page"
+
+    try:
+        page.evaluate("() => refreshCorpus()")
+        expect(corpus_cards).to_have_count(20, timeout=15_000)
+        page.wait_for_timeout(100)
+    except Exception:
+        # Chip 1a (C-7): same unconditional-dump treatment for the post-refresh
+        # settle wait, which likewise had no dump path before this chip.
+        _dump_scroll_spy(page, "after-refresh-wait", None, before=before)
+        raise
+    after = page.evaluate("() => window.scrollY")
+    if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "after-refresh", after, before)
+    assert after == before, f"scroll position not preserved: {before} -> {after}"
+
+
+@pytest.mark.ux
+def test_restore_scroll_y_loses_to_post_restore_growth(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chip 2 deterministic falsification, FLIPPED to a Chip 3 regression test
+    once the fix landed (charter C-7; diagnosis dossier O-9's mechanism,
+    distilled to its essential shape, docs/dev/diagnosis/ux-scroll-position-
+    flake.md "## The fix"). Calls the REAL _captureScrollY / _restoreScrollY
+    primitives (app.js:5480-5591) directly, then schedules a synthetic
+    page-growth (a tall filler prepended to <body>, matching O-6's "content
+    inserted above the anchor pushes scroll down" scroll-anchoring shape) in
+    the animation frame immediately AFTER _restoreScrollY's own first rAF --
+    the exact ordering O-9 observed in the wild (id=1's fire-and-forget
+    children still growing the page after id=1's own restore had already
+    fired and exited). Ordering is forced by rAF registration order
+    (same-frame callbacks fire in the order requestAnimationFrame was
+    called), not by wall-clock timing, so this reproduces deterministically
+    with no CPU saturation and no lottery -- isolating whether the
+    capture/restore PRIMITIVE itself is defenseless against post-restore
+    growth, independent of which real app feature (summary variants, skills
+    editor, etc.) causes that growth in production. Pre-fix this asserted
+    `after != before` (proving the defect, 3/3). Post-fix the settle loop
+    (mechanism #3 in "## The fix") must survive this exact growth within its
+    stability/timeout budget, so the assertion below is now `after == before`
+    -- a regression in either the ordinal/generation checks or the settle
+    loop itself will flip this back to red.
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    # Wait out the tab-click's OWN fire-and-forget refreshCorpus (the real O-9
+    # "id=1") before establishing this test's baseline -- otherwise this test's
+    # own scrollTo(0,300) can itself race id=1's stale _restoreScrollY (the O-10
+    # mechanism), which is a DIFFERENT experiment than the one this test runs.
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
     UserPickerPage(page, live_server).select("alice")
     page.click("#topTabCorpus")
     page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
-    # The tab click fires loadCorpusIfReady() fire-and-forget, so the experiences
-    # fetch + _renderCorpusList() land asynchronously — under end-of-suite CPU
-    # load that settle lags, the load-dependent flake class this suite guards
-    # against. Assert on the settled card COUNT (auto-retrying) rather than a bare
-    # first-card visibility poll: expect() re-queries the DOM until all 20 cards
-    # are attached, regardless of which load path filled them — the same
-    # load-path-agnostic idiom that fixed the pipeline-board row race. (An explicit
-    # loadCorpusIfReady() re-fire is NOT reliable here: it no-ops once
-    # _corpusLoadedForUser is set, which the click's load sets optimistically
-    # before its render completes.)
-    corpus_cards = page.locator("#corpusExperienceList .corpus-card")
-    expect(corpus_cards).to_have_count(20, timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(20, timeout=15_000)
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'refreshCorpus-exit')",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(150)  # let id=1's _restoreScrollY rAF actually fire before proceeding
 
     page.evaluate("() => window.scrollTo(0, 300)")
     before = page.evaluate("() => window.scrollY")
     assert before > 0, "test setup didn't actually scroll the page"
 
-    page.evaluate("() => refreshCorpus()")
-    expect(corpus_cards).to_have_count(20, timeout=15_000)
-    page.wait_for_timeout(100)
+    page.evaluate(
+        r"""
+        () => {
+          const y = _captureScrollY();
+          _restoreScrollY(y);  // registers rAF #1: scrollTo(0, y)
+          requestAnimationFrame(() => {  // same frame batch, fires AFTER rAF #1
+            const filler = document.createElement('div');
+            filler.style.height = '20000px';
+            filler.id = '__chip2FillerAboveScroll';
+            document.body.insertBefore(filler, document.body.firstChild);
+          });
+        }
+        """
+    )
+    page.wait_for_timeout(150)
+    filler_present = page.evaluate("() => !!document.getElementById('__chip2FillerAboveScroll')")
     after = page.evaluate("() => window.scrollY")
-    assert after == before, f"scroll position not preserved: {before} -> {after}"
+    print(f"\n[chip2-experiment] before={before} after={after} filler_present={filler_present}")
+    assert filler_present, "growth trigger didn't fire -- experiment invalid, not a defect finding"
+    assert after == before, (
+        f"the settle loop did not survive post-restore growth: scroll position "
+        f"moved from {before} to {after}. Mechanism #3 (docs/dev/diagnosis/"
+        f"ux-scroll-position-flake.md '## The fix') should keep re-asserting the "
+        f"restored position until scrollHeight stabilizes -- this is a regression."
+    )
+
+
+@pytest.mark.ux
+def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chip 2 deterministic falsification, FLIPPED to a Chip 3 regression test
+    once the fix landed -- the mode-A/B shape (diagnosis dossier O-8: a
+    `_restoreScrollY` scheduled by an EARLIER, already-stale refreshCorpus
+    invocation fires AFTER a legitimate later scroll and stomps it), forced
+    deterministically instead of relying on CPU-load timing. Holds the
+    tab-click's own fire-and-forget refreshCorpus (the real O-9 "id=1") open
+    at its /experiences fetch -- so it has captured scrollY (near 0, the
+    pre-scroll baseline) but not yet reached _restoreScrollY -- then sets the
+    scroll position a real user/test actually wants, THEN releases the held
+    fetch so id=1 completes and fires its now-stale restore. Same root defect
+    as the post-restore-growth test above, from the opposite direction:
+    capture/restore had no concept of "have I been superseded," so an old
+    invocation's restore won just by finishing last, regardless of what
+    happened in the meantime. Pre-fix this asserted `after != before`
+    (proving the defect, 3/3). Post-fix (docs/dev/diagnosis/ux-scroll-
+    position-flake.md "## The fix", mechanism #2 -- this test's own
+    scrollTo(0,300) below is one of the wrapped explicit scroll APIs, so it
+    bumps the generation counter, and id=1's later, now-stale restore sees
+    the mismatch on its first tick and abandons before ever calling scrollTo)
+    the assertion below is now `after == before` -- a regression in that
+    mechanism will flip this back to red.
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    BasePage(page, live_server).load()
+    UserPickerPage(page, live_server).select("alice")
+
+    # Hold open the FIRST /experiences fetch -- the tab click below fires
+    # loadCorpusIfReady() -> refreshCorpus() fire-and-forget (real O-9
+    # "id=1"), which captures scrollY (near 0, pre-scroll) at its own top
+    # before awaiting this exact fetch.
+    page.evaluate(
+        r"""
+        () => {
+          const real = window.fetch;
+          window.__releaseExperiencesFetch = null;
+          window.fetch = (...a) => {
+            const url = String(a[0] || '');
+            if (url.includes('/experiences') && !window.__releaseExperiencesFetch) {
+              const p = real(...a);
+              return new Promise((resolve, reject) => {
+                window.__releaseExperiencesFetch = () => p.then(resolve, reject);
+              });
+            }
+            return real(...a);
+          };
+        }
+        """
+    )
+    page.click("#topTabCorpus")
+    page.wait_for_function(
+        "() => typeof window.__releaseExperiencesFetch === 'function'", timeout=15_000
+    )
+
+    # id=1 is now suspended mid-refreshCorpus, holding its stale (near-0)
+    # capture. Establish the position a real user/test actually wants.
+    page.evaluate("() => window.scrollTo(0, 300)")
+    before = page.evaluate("() => window.scrollY")
+    assert before > 0, "test setup didn't actually scroll the page (page too short?)"
+
+    # Release id=1: it completes, renders, and fires its OWN _restoreScrollY
+    # with the stale value it captured before `before` was ever set.
+    page.evaluate("() => window.__releaseExperiencesFetch()")
+    page.wait_for_function(
+        "() => document.querySelectorAll('#corpusExperienceList .corpus-card').length >= 20",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(150)  # let the stale _restoreScrollY's first tick run (and abandon)
+    after = page.evaluate("() => window.scrollY")
+    print(f"\n[chip2-experiment-stale-restore] before={before} after={after}")
+    assert after == before, (
+        f"the stale invocation's restore was not correctly abandoned: it overwrote "
+        f"the later scroll ({before} -> {after}). Mechanism #2 (docs/dev/diagnosis/"
+        f"ux-scroll-position-flake.md '## The fix') should have detected the "
+        f"generation mismatch and no-op'd -- this is a regression."
+    )
+
+
+@pytest.mark.ux
+def test_restore_scroll_y_ordinal_defers_to_newer_capture(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chip 3 regression -- outcome-level proof of the invocation-ordinal
+    mechanism (docs/dev/diagnosis/ux-scroll-position-flake.md, "## The fix").
+    The Chip 1a self-check test_scroll_spy_attributes_overlapping_refresh_corpus_calls
+    (below) forces the same two-overlapping-captures shape but only asserts the
+    spy's attribution bookkeeping (`scheduledDuring`) -- never window.scrollY --
+    so nothing before this test could catch a bug in the ordinal check itself
+    (wrong variable, inverted comparison, off-by-one). Two captures in a row,
+    a distinct position established via the `scrollTop` property setter
+    (deliberately NOT window.scrollTo/scroll/scrollBy/scrollIntoView, so this
+    isolates the ordinal check from the separate explicit-scroll-API
+    generation check O-10 already exercises), restores the OLDER
+    (now-superseded) capture LAST, and asserts it is a provable no-op.
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    BasePage(page, live_server).load()
+    UserPickerPage(page, live_server).select("alice")
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(20, timeout=15_000)
+    page.wait_for_timeout(200)  # let the tab-click's own fire-and-forget refreshCorpus settle
+
+    page.evaluate(
+        r"""
+        () => {
+          window.__older = _captureScrollY();
+          document.documentElement.scrollTop = 500;
+          window.__newer = _captureScrollY();
+        }
+        """
+    )
+    newer_y = page.evaluate("() => window.__newer.y")
+    assert newer_y > 0, "test setup didn't actually scroll the page"
+
+    page.evaluate("() => _restoreScrollY(window.__newer)")
+    page.wait_for_timeout(150)
+    after_newer = page.evaluate("() => window.scrollY")
+    print(f"\n[chip3-ordinal] newer_y={newer_y} after_newer={after_newer}")
+    assert after_newer == newer_y, "the newer capture's own restore should hold"
+
+    # Fire the OLDER, already-superseded capture's restore LAST. Its ordinal no
+    # longer matches the current _scrollCaptureOrdinal (the newer capture
+    # bumped it), so this must be a provable no-op.
+    page.evaluate("() => _restoreScrollY(window.__older)")
+    page.wait_for_timeout(150)
+    after_older = page.evaluate("() => window.scrollY")
+    print(f"\n[chip3-ordinal] after_older={after_older}")
+    assert after_older == after_newer, (
+        f"the OLDER, superseded capture's restore should have been a no-op "
+        f"(stale ordinal) but scroll moved: {after_newer} -> {after_older}"
+    )
+
+
+def _spy_events(page: Page, source: str) -> list[dict[str, Any]]:
+    """Filter the live ``window.__scrollSpy`` timeline down to one source tag."""
+    spy = page.evaluate("() => window.__scrollSpy || []")
+    return [e for e in spy if e.get("source") == source]
+
+
+@pytest.mark.ux
+def test_scroll_spy_hooks_fire_for_known_perturbers(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chip 1a self-check (charter C-7) — the hardened spy must be PROVEN to
+    capture, not merely assumed to: the original spy silently recorded 0
+    events for an entire diagnosis session before that was caught (`## Observed`
+    O-4). Directly triggers each hook and asserts a correctly-shaped, correctly
+    -tagged event lands, including that a single `refreshCorpus()` call
+    produces an enter/capture/restore-scheduled/restore-fired chain that all
+    share one invocation id — the FIRST-vs-SECOND attribution this chip adds."""
+    cid = seed_user(ux_app, "alice")
+    seed_exp_with_bullets(cid, company="Company 0")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    assert page.evaluate("() => window.__scrollSpyNamedHooksError || null") is None, (
+        "named-fn hooks failed to install"
+    )
+    assert page.evaluate(
+        "() => !!(window.refreshCorpus && window.refreshCorpus.__scrollSpyWrapped)"
+    ), "refreshCorpus was not wrapped"
+
+    UserPickerPage(page, live_server).select("alice")
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(1, timeout=15_000)
+    # The tab click ITSELF fires loadCorpusIfReady() -> refreshCorpus() fire-
+    # and-forget (same mechanism the real flaky test documents) — this is the
+    # FIRST invocation, before this test ever calls refreshCorpus() itself.
+    # Let it settle, then clear the timeline so the assertions below examine
+    # ONLY the deliberate calls this test makes.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'refreshCorpus-exit')",
+        timeout=15_000,
+    )
+    page.evaluate("() => { window.__scrollSpy = []; }")
+
+    page.evaluate("() => window.scrollTo(0, 50)")
+    page.evaluate("() => window.scrollBy(0, 10)")
+    page.evaluate("() => document.getElementById('corpusExperienceList').scrollIntoView()")
+    page.evaluate("() => refreshCorpus()")
+    page.wait_for_timeout(150)  # let _restoreScrollY's requestAnimationFrame actually fire
+
+    assert _spy_events(page, "window.scrollTo"), "no window.scrollTo event captured"
+    assert _spy_events(page, "window.scrollBy"), "no window.scrollBy event captured"
+    assert _spy_events(page, "scrollIntoView"), "no scrollIntoView event captured"
+
+    enters = _spy_events(page, "refreshCorpus-enter")
+    exits = _spy_events(page, "refreshCorpus-exit")
+    assert len(enters) == 1 and len(exits) == 1, (
+        f"expected exactly 1 refreshCorpus enter/exit pair: enters={enters} exits={exits}"
+    )
+    rc_id = enters[0]["id"]
+    assert exits[0]["id"] == rc_id
+
+    captures = _spy_events(page, "_captureScrollY")
+    assert captures and rc_id in captures[-1]["openRC"], (
+        f"_captureScrollY did not tag refreshCorpus invocation {rc_id}: {captures}"
+    )
+    scheduled = _spy_events(page, "_restoreScrollY-scheduled")
+    fired = _spy_events(page, "_restoreScrollY-fired")
+    assert scheduled and rc_id in scheduled[-1]["scheduledDuring"], (
+        f"_restoreScrollY-scheduled did not tag invocation {rc_id}: {scheduled}"
+    )
+    assert fired and rc_id in fired[-1]["scheduledDuring"], (
+        f"_restoreScrollY-fired did not tag invocation {rc_id}: {fired}"
+    )
+
+
+@pytest.mark.ux
+def test_scroll_spy_attributes_overlapping_refresh_corpus_calls(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chip 1a self-check (charter C-7) — proves the FIRST-vs-SECOND
+    invocation tagging survives the exact reordering the diagnosis's
+    `## Inferred` hypothesis turns on: an EARLIER `refreshCorpus()` call's
+    restore firing AFTER a LATER call's. Forces that reordering
+    deterministically (a `fetch` delay on the first call's `/experiences`
+    request only) instead of relying on real CPU-load timing, so this test
+    is not itself flaky.
+
+    This is the test that would FAIL against a naive "read the open-
+    invocations Set live, at rAF-fire-time" design: that Set is always empty
+    by fire-time, because the wrapped promise resolves via microtask a full
+    frame before the rAF runs. It passes only because `_restoreScrollY`
+    snapshots the open set at SCHEDULE time (see `_SCROLL_SPY_NAMED_HOOKS_JS`).
+    """
+    cid = seed_user(ux_app, "alice")
+    seed_exp_with_bullets(cid, company="Company 0")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    UserPickerPage(page, live_server).select("alice")
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(1, timeout=15_000)
+    # The tab click's own fire-and-forget refreshCorpus (same mechanism the
+    # real flaky test documents) must settle BEFORE the deliberate overlap
+    # below, and the timeline cleared, so it isn't conflated with the two
+    # invocations this test is actually examining.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'refreshCorpus-exit')",
+        timeout=15_000,
+    )
+    page.evaluate("() => { window.__scrollSpy = []; }")
+
+    # Fire both invocations from ONE evaluate call, back-to-back and
+    # unawaited, so they genuinely overlap rather than just running fast in
+    # sequence. Invocation A's /experiences fetch is deliberately held open
+    # (its promise is never resolved until this test explicitly releases it
+    # below) rather than delayed by a fixed setTimeout — a fixed delay was
+    # tried first and was genuinely flaky: refreshCorpus fires 4 additional
+    # fire-and-forget fetches per invocation, and two overlapping invocations'
+    # worth of those (10 requests total) can contend for the browser's
+    # per-origin connection limit, making wall-clock delay an unreliable way
+    # to force ordering. Explicitly withholding resolution makes the ordering
+    # deterministic by construction instead.
+    page.evaluate(
+        r"""
+        () => {
+          const real = window.fetch;
+          let expCalls = 0;
+          window.__releaseFirstExperiencesFetch = null;
+          window.fetch = (...a) => {
+            const url = String(a[0] || '');
+            if (url.includes('/experiences')) {
+              expCalls++;
+              if (expCalls === 1) {
+                const p = real(...a);
+                return new Promise((resolve, reject) => {
+                  window.__releaseFirstExperiencesFetch = () => p.then(resolve, reject);
+                });
+              }
+            }
+            return real(...a);
+          };
+          window.refreshCorpus();  // invocation A — /experiences held open, released explicitly below
+          window.refreshCorpus();  // invocation B — fetch resolves normally, should restore FIRST
+        }
+        """
+    )
+    # Invocation A cannot exit until explicitly released below, so exactly 1
+    # refreshCorpus-exit event unambiguously means invocation B has finished.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).filter(e => e.source === 'refreshCorpus-exit').length === 1",
+        timeout=15_000,
+    )
+    page.evaluate("() => window.__releaseFirstExperiencesFetch()")
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).filter(e => e.source === 'refreshCorpus-exit').length >= 2",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(150)  # let both _restoreScrollY rAFs actually fire
+
+    enters = _spy_events(page, "refreshCorpus-enter")
+    assert len(enters) == 2, f"expected exactly 2 refreshCorpus invocations: {enters}"
+    id_a, id_b = enters[0]["id"], enters[1]["id"]  # A = first called (delayed fetch), B = second
+    assert id_a != id_b
+
+    fired = _spy_events(page, "_restoreScrollY-fired")
+    assert len(fired) == 2, f"expected 2 restore-fired events: {fired}"
+
+    # The invocation whose restore fires LAST while it is the ONLY one still
+    # open (a singleton `scheduledDuring` — unambiguous even though a 2+-entry
+    # set can't by itself identify which open invocation made the call; see
+    # _SCROLL_SPY_NAMED_HOOKS_JS's comment) must be invocation A: its fetch
+    # was the one artificially delayed, so by the time it finally restores,
+    # B has already scheduled ITS restore and exited. This directly proves
+    # the mechanism correctly attributes an EARLIER invocation's restore
+    # firing AFTER a LATER invocation's — the exact race the diagnosis's
+    # `## Inferred` hypothesis turns on.
+    last_fired = fired[-1]
+    assert last_fired["scheduledDuring"] == [id_a], (
+        f"expected invocation A ({id_a}, the first-called/delayed one) to "
+        f"restore LAST, unambiguously (singleton open-set): {fired}"
+    )
