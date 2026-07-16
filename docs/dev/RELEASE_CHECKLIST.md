@@ -515,17 +515,20 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **12** (unchanged this branch — a swap, not a reduction: **−1** the CodeQL
-`py/path-injection` disposition, **RESOLVED** 2026-07-14 on `fix/codeql-path-injection-context`
-— resolver chokepoint + auto-discovered `barrierModel` pack, verified 0 open alerts by API;
-**+1** its residual **[HUMAN/OWNER]** follow-up, wiring CodeQL as a required check. Prior
-context: the count reached 12 on `fix/compose-summary-draft-settle-hole` — −1 Compose
-lost-update root cause **RESOLVED** 2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL
-disposition just resolved here.)
+_Rendered open count: **13** (**+1** this branch: `chore/scrub-local-eval-paths` filed as a new
+parked-branch item — **crosses the ceiling further; the reduction sprint is now overdue, not
+merely due.** Unchanged on this branch's own scroll-flake work — that entry gained a Chip 0
+sub-note but stayed one item. Prior context: **−1** the CodeQL `py/path-injection` disposition,
+**RESOLVED** 2026-07-14 on `fix/codeql-path-injection-context` — resolver chokepoint +
+auto-discovered `barrierModel` pack, verified 0 open alerts by API; **+1** its residual
+**[HUMAN/OWNER]** follow-up, wiring CodeQL as a required check. Earlier still: the count reached
+12 on `fix/compose-summary-draft-settle-hole` — −1 Compose lost-update root cause **RESOLVED**
+2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL disposition resolved on the prior
+branch.)
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
-each close-out). **STILL AT THE CEILING — the reduction sprint remains DUE, and should be
-scheduled before the v1.1.0 tag, not after** (the rule is ~8–10, and clear before
-adding); several items below are small and clearable in one pass. The full per-item
+each close-out). **OVER THE CEILING — the reduction sprint is overdue and should be scheduled
+before the v1.1.0 tag** (the rule is ~8–10; this is 13); several items below are small and
+clearable in one pass. The full per-item
 addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
 
@@ -735,6 +738,44 @@ addition/resolution chronology since 2026-06-15 lives in git history
       that. **Next agent: confirm attribution with the partial-revert method** (revert only
       `hardening.py` + `blueprints/applications.py` at HEAD, re-sample) before instrumenting —
       same ux-load-flake class, likely the same fix shape.
+      **→ Chip 0 update (2026-07-15, `fix/ux-scroll-position-flake`):** instrument commit
+      `0f7e524` landed — reproduces 12–17%/attempt under CPU load via a wide scroll+height spy
+      tagging source stacks (`docs/dev/diagnosis/ux-scroll-position-flake.md`, committed
+      `aa3efd8`). **Four distinct failure modes confirmed (A/B/C/D)** — `after == before` at three
+      different landing values, or `before == 0` — not the single deterministic value this entry
+      originally recorded. **Mode B is now proven non-anchoring**: 2 populated failing timelines
+      (phase-1d capture) show the test's own setup-scroll stomped by a stale `_restoreScrollY(0)`
+      pre-refresh, height flat throughout — verified byte-for-byte against the raw pytest log this
+      session, not just the doc's transcription of it. **Mode B is NOT the user-reported symptom.**
+      The actual target — modes A/C/D, an `after != before` jump post-refresh — still has **zero**
+      captured failing timelines; a 3-skeptic adversarial-verification panel unanimously found
+      every populated timeline for the anchoring mechanism is a PASS. **Second, distinct flake
+      source found in the same captures:** a `#panelCorpus` wait-selector timeout under CPU load,
+      unrelated to scroll — isolate before attributing future capture-run failures to scroll. Full
+      evidence + falsification plan in the diagnosis doc; do not re-derive it. **Next: Chip 1a** —
+      harden the spy to reliably dump on an after-reload (A/C/D) failure, then capture one.
+      Evidence archive from the two crashed/frozen sessions that worked this doc is preserved in
+      a non-tracked local recovery bundle outside this repo (its own `README.md` documents
+      provenance + contents — durable home still undecided, carried forward below).
+
+- [ ] **`chore/scrub-local-eval-paths` parked — 2 commits, unmerged, gate re-verification
+      incomplete (not failed)** — removes 6 references to the owner's private local testing
+      clone from tracked docs (`CHANGELOG.md`, `evals/TUNING_LOG.md`, two dev docs) per an
+      owner directive that nothing committed to git may reference that clone, plus a dead
+      personal-path docstring reference in `db/models.py`. Working-tree-only scrub; a
+      git-history rewrite is deliberately not done (destructive, sign-off-gated, separate).
+      Current with `main` (merge-base = `main` HEAD, no rebase needed) — touches only
+      docs/comments, no production logic. First commit (`71ef57f`) claims a full
+      `python -m scripts.gate` green run (2100 passed, 1 skipped); the second, docstring-only
+      commit (`5e84d3b`) claims only ruff/mypy green. A full-suite re-verification after both
+      commits was interrupted mid-run (95–96% through) when the session running it froze — an
+      **incomplete** run, not a failed one. **Owner decision (2026-07-15): leave parked.**
+      Unrelated to the scroll-flake work it was discovered alongside.
+      _(discovered: v1.1.0 stream, 2026-07-15, `fix/ux-scroll-position-flake` Chip 0 — filed as
+      a new item, not folded into the scroll-flake entry above, since it's an unrelated fact;
+      open count 12 → 13, over the ~8–10 ceiling.)_
+      **→ Next: re-run `python -m scripts.gate` to completion and merge separately (off this
+      branch) whenever the owner wants it off the parked list.**
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
