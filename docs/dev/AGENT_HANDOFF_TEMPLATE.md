@@ -201,7 +201,7 @@ find it.**
 **4. Do not declare done. Verify done.** "Done" is the *output* of the pre-close
 sweep, not an announcement. See the close-out checklist below.
 
-**5. Corrupted input is a blocked gate.** Damaged, truncated, or
+**5. Corrupted input is a blocked gate (charter C-9).** Damaged, truncated, or
 fingerprint-mismatched input is a blocked gate — surface it as your **first
 output** and **STOP**; never silently reconstruct, however confident the
 reconstruction feels. A `blocked` result from

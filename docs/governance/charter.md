@@ -191,6 +191,29 @@ PreCompact hook; both in
 gated by [`../../tests/test_evidence_gate.py`](../../tests/test_evidence_gate.py). C-8 is the
 structural complement to C-7: C-7 makes the evidence exist, C-8 makes it survive.]*
 
+**C-9 — Corrupted or fingerprint-mismatched input is a blocked gate.** A handoff (or other
+durable artifact transferred between sessions) that fails structural, verbatim, or fingerprint
+validation is not trusted on faith and not silently reconstructed — it is surfaced as the
+consuming session's **first output**, and the session **stops** until a human resolves it. This
+is the C-7/C-8 discipline applied to the transfer hop itself: C-7 makes the evidence exist, C-8
+makes it survive the context window, C-9 makes the carrier of that evidence — the handoff file
+itself — verifiable rather than trusted. *[src: adopted 2026-07-17, owner-directed, from
+confirmed data loss: at least four silent handoff-corruption events across sartor and spolia,
+three of four receiving agents silently reconstructing the damaged input instead of surfacing
+it — full evidence in
+[`../dev/handoff-integrity-design.md`](../dev/handoff-integrity-design.md). **Mechanism today is
+documented convention, not yet a blocking hook**: `docs/dev/AGENT_HANDOFF_TEMPLATE.md`'s binding
+rule 5 and `AGENTS.md`'s close-out step 4 instruct every consuming session to run
+`scripts/verify_doc_template.py --event consumed` and stop on a `blocked` result;
+`docs/dev/prov/SPEC.md` defines the stamp and ledger schema this rests on. Deliberately
+advisory at launch (design decision iv,
+[`../dev/handoff-integrity-design.md`](../dev/handoff-integrity-design.md) §5) — escalate to a
+`SessionStart`-style hook only if the advisory step is observed being skipped, matching
+`restore-evidence`'s own precedent. No test currently gates this convention the way
+[`../../tests/test_evidence_gate.py`](../../tests/test_evidence_gate.py) gates C-7/C-8 — named
+here as an honest gap under this clause's own claims discipline (C-0), not silently upgraded to
+"enforced."]*
+
 ### Defaults (binding until changed; changeable in normal flow with a written rationale)
 
 - **D-1 — Minimal dependencies.** New dep = `pyproject.toml` + `CHANGELOG.md` +

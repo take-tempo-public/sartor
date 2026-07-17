@@ -55,8 +55,10 @@ evidence + decision record: [`docs/dev/handoff-integrity-design.md`](docs/dev/ha
 - `tests/test_verify_doc_template.py` (24 tests) ports spolia's suite, including the CRLF
   regression test, adjusted for sartor's flat `tests/` layout.
 - Advisory, not a hook, at launch (matches spolia's own rollout arc — escalate only if the
-  advisory step is observed being skipped). Whether the new binding rule needs a formal charter
-  amendment (near C-7/C-8) is an open question for the owner, not decided on this branch.
+  advisory step is observed being skipped). The new binding rule is now charter **C-9**
+  (`docs/governance/charter.md`) — raised as an open question, decided by the owner at this
+  branch's own merge-confirmation, honestly cited as documented convention rather than a
+  blocking hook, per that clause's own claims discipline (C-0).
 
 ### Fixed: corpus/Compose reloads could snap your scroll position away (`fix/ux-scroll-position-flake`)
 

@@ -132,17 +132,18 @@ markdown link — use a plain backtick path instead**, or it will pass review bu
 fail `check_doc_links.py` (or worse, silently resolve to the wrong file) as soon
 as it's copied into a handoff.
 
-**Two things this branch deliberately did NOT do**, both by design-doc
-instruction, not oversight:
-1. **`docs/governance/charter.md` is untouched.** Whether the new "corrupted
-   input is a blocked gate" binding rule needs a formal charter amendment
-   (near C-7/C-8) is the owner's call, raised at this branch's own
-   merge-confirmation — a design doc (and this implementation branch) has no
-   standing to pre-empt the amendment ceremony.
-2. **`docs/dev/decisions.md` is untouched.** Design §6's file list doesn't
-   include it; its existing 2026-07-17 entry already correctly describes
-   this now-executed plan, and `decisions.md`'s own convention is
-   "superseded, not edited" — there is nothing to supersede yet.
+**The charter-amendment question was raised, not pre-decided, and the owner
+answered it on this same branch:** at merge-confirmation the owner directed
+running the amendment ceremony now. `docs/governance/charter.md` gained a new
+clause, **C-9** ("corrupted or fingerprint-mismatched input is a blocked
+gate"), honestly cited as **documented convention, not yet a blocking hook**
+per that clause's own claims-discipline (C-0) — matching design decision (iv)'s
+advisory-at-launch stance. `AGENTS.md`'s binding rule and
+`docs/dev/AGENT_HANDOFF_TEMPLATE.md`'s binding rule 5 (in the file you are
+reading right now) both now cite C-9 by name. **`docs/dev/decisions.md` stays
+untouched, deliberately** — its own header states its scope boundary
+explicitly: "Binding rules → `docs/governance/charter.md` (with the amendment
+ceremony). Not logged here." A charter clause is not itself a decisions.md row.
 
 Also resolved this branch (research only, no code): the design doc's own §2
 "reported but not independently re-verified" claim — that
@@ -283,7 +284,7 @@ find it.**
 **4. Do not declare done. Verify done.** "Done" is the *output* of the pre-close
 sweep, not an announcement. See the close-out checklist below.
 
-**5. Corrupted input is a blocked gate.** Damaged, truncated, or
+**5. Corrupted input is a blocked gate (charter C-9).** Damaged, truncated, or
 fingerprint-mismatched input is a blocked gate — surface it as your **first
 output** and **STOP**; never silently reconstruct, however confident the
 reconstruction feels. A `blocked` result from

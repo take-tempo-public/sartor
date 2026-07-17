@@ -1584,10 +1584,12 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       question specifically; vendored spolia's already-proven `docs/dev/prov/SPEC.md` +
       `scripts/verify_doc_template.py`; `AGENTS.md` + `docs/dev/AGENT_HANDOFF_TEMPLATE.md`
       updated with the new binding rule (corrupted/fingerprint-mismatched input is a
-      blocked gate). **[HUMAN/OWNER] residual, NOT resolved by this branch:** whether that
-      new binding rule needs a formal charter amendment (near C-7/C-8) — a design doc (and
-      this implementation branch) has no standing to pre-empt the amendment ceremony;
-      raised to the owner at this branch's own merge-confirmation.
+      blocked gate). **The charter-amendment residual is also resolved, same branch:**
+      raised to the owner at merge-confirmation, who directed running the ceremony now —
+      `docs/governance/charter.md` gained **C-9** (corrupted/fingerprint-mismatched input is
+      a blocked gate), honestly cited as documented-convention-not-yet-hook-enforced per
+      C-0's own claims discipline; `AGENTS.md` + `docs/dev/AGENT_HANDOFF_TEMPLATE.md`'s
+      binding rule 5 now cite C-9 by name.
 
 - [x] **`docs/readme-icp-ladder` (v1.0.9 Phase 6, item 1)** — RESOLVED, already on
       `main` (`323bf6c` + `996d1c9`): the ICP-laddered README front door +
