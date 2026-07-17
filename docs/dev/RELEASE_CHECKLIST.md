@@ -896,6 +896,14 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       separate, real, measured-non-negligible (~17% under saturation) hazard that needs its own
       diagnosis dossier and branch if/when picked up.** Not the same defect as this one (confirmed
       structurally independent, Inferred §3); do not conflate with a future re-open of this item.
+      **Data point only, not investigated (2026-07-17, `feat/handoff-integrity-kit`):**
+      `test_restore_scroll_y_loses_to_post_restore_growth` (same file, the settle-loop mechanism
+      itself) failed once on a full `python -m scripts.gate` run on this branch, then passed
+      immediately on an isolated re-run — `before=300 after=20300`. This branch touches zero
+      Python/JS production code (docs/governance only — verified via
+      `git diff --stat main -- '*.py' '*.js'`), so it cannot be this branch's regression; filed
+      here as a fresh data point for whoever next works this flake class, per C-7's "an instrument
+      narrowed to your theory hides its rivals" — not fixed, not silently ignored.
 
 - [ ] **`chore/scrub-local-eval-paths` parked — 2 commits, unmerged, gate re-verification
       incomplete (not failed)** — removes 6 references to the owner's private local testing
