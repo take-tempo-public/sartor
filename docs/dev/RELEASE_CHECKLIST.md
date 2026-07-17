@@ -535,7 +535,15 @@ each close-out). **OVER THE CEILING — the reduction sprint is overdue and shou
 before the v1.1.0 tag** (the rule is ~8–10; this is 14); several items below are small and
 clearable in one pass. The full per-item
 addition/resolution chronology since 2026-06-15 lives in git history
-(`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here._
+(`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here.
+**Reconciliation pass (2026-07-16, `docs/v110-plan-reconciliation`): still 14 — this pass
+corrected precision within existing rows, it did not add or resolve any.** A full audit
+against `docs/dev/reviews/` and actual code (not just this ledger's own summary prose) found
+two of these 14 rows understated how much was actually left (the efficiency-review row's own
+tally had PX-44 mis-classified as landed and PX-46 untracked entirely; the UX round-2 row's
+Lane UX progress note was truncated mid-sentence). Both are corrected in place above. This
+reduction sprint now has a concrete, ordered, individual-branch plan — not just a pile of open
+items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
 
 - [ ] **`--reruns 2` on the `ux` tier is a masking policy, and it masked a real bug for 11
       runs** — `fix/ci-first-linux-run` scoped `--reruns 2` to the `ux` tier for a
@@ -1307,6 +1315,11 @@ addition/resolution chronology since 2026-06-15 lives in git history
       landed; commitment (3) hook-re-home + PX-37 dispatcher DEFERRED to an owner-present session
       (touches live hooks + tests/test_governance_hooks_gate.py; enforcement core already works via
       f1b3193) — stays open.
+      **→ Reconciled (2026-07-16, `docs/v110-plan-reconciliation`):** re-confirmed directly —
+      no root `skills/` or `hooks/` directory exists; `.claude-plugin/hooks/` still holds 12
+      separate scripts. This row's own account above was already accurate; it just needed a
+      fresh confirmation post-debt-burn-train. Slotted as its own individual branch
+      (`chore/hook-dispatcher`) in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation".
 
 - [ ] **2026-07 efficiency review — PX-37..PX-56 aggregate** — witness-only
       four-area efficiency review (agent-process DX / runtime / docs-wiki /
@@ -1420,6 +1433,26 @@ addition/resolution chronology since 2026-06-15 lives in git history
       commitment, not attempted this lane), PX-51 (Wave 2 UX, confirmed DEFERRED —
       not landed — in the UX Cohesion Epic), the PX-47 config-drift remainder, the
       PX-39 real-corpus measurement, and PX-52 (post-public).
+      **→ Reconciled (2026-07-16, `docs/v110-plan-reconciliation`, full audit against
+      `docs/dev/reviews/2026-07-efficiency/prescriptions.md` + actual code — this
+      row's own running tallies had two errors, both corrected here):** (1)
+      **PX-44 was mis-tallied as "full" above** — its own detail paragraph
+      (`perf/db-baseline` update) already said the scoping *refactor* was deferred;
+      only the `CONTRIBUTING.md` fix + documentation half landed. Reclassified:
+      **partial, not full.** (2) **PX-46 (selective memory consolidation) was never
+      tracked in either the "land" or "remain" count** — 14 explicitly-landed +
+      5 explicitly-remaining PX ids = 19, not 20; PX-46 is the missing one. It was
+      never actioned (owner sign-off on the keep/consolidate/delete list was never
+      sought) and stays owner-gated per its own judges' note ("irreversible if
+      botched"). **Corrected final state of the 13 `v1.1.0-gate`-banded items: 7
+      fully landed** (PX-38/43/45/49/54/55/56), **6 did not fully land**: PX-37 (0%),
+      PX-39 (labeling only, no real measurement — needs a session with `.api_key`
+      present), PX-44 (doc fix only, refactor never attempted — confirmed zero
+      commits for `test/fixture-scoping`), PX-46 (0%, owner-gated), PX-47 (confirmed
+      0% — `.claude-plugin/plugin.json` still reads `"version": "1.0.6"` against the
+      project's actual `1.0.9`), PX-51 (deliberately deferred, low risk). Full
+      reconciliation + the individual-branch sequence to close these out:
+      `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation".
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in
@@ -1491,7 +1524,22 @@ addition/resolution chronology since 2026-06-15 lives in git history
       the new `.btn-pending` pulse), dec 5 the Compose autosave "Saved" toast, dec 6
       the skills denial data-model (reversible soft-tombstone, replacing the old
       hard-delete-on-deny; un-deny via `PUT is_active=true`) + the denied-skills
-
+      collapsible lane, and dec 7 the compact prior-application cards. Full per-decision
+      detail (files, functions, CSS tokens) in `CHANGELOG.md`'s "UX Cohesion Epic" entry
+      — this note only summarizes. **PX-51 (style.css duplicate-cascade collapse) was
+      explicitly NOT landed** — deferred because it would have collided with the
+      in-flight dec-1/dec-2 edits above; documented, low risk to leave (see
+      `CHANGELOG.md` for the full rationale).
+      **→ Reconciled (2026-07-16, `docs/v110-plan-reconciliation`, this note was found
+      truncated mid-sentence during a full audit against `docs/dev/reviews/` and actual
+      code — nothing was lost, only this one progress note was ever incomplete; see
+      `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation" for the full audit).** This
+      ledger item's true remaining scope, precisely: the diagnostics **run-cancel/abort
+      endpoint** (owner explicitly opted in; only the weaker client-side lock shipped)
+      and the **#2/4/5/6/16 instructional content-cluster full pass** (only a small
+      draft down-payment landed). #12 and #14 are already routed/low-stakes per the
+      notes above. The `app.run(threaded=True)` governance flag is a deliberate
+      owner-gated deferral, not a miss.
 
 - [ ] **`check-plan-approved` hook has no per-project/session scope — a concurrent
       unrelated session can false-positive block this one** — the hook (source read
