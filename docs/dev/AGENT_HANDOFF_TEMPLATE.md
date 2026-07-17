@@ -1,14 +1,48 @@
 # Agent handoff prompt template
 
-> **Purpose:** enforces a consistent structure for the next-agent prompt
-> every closing agent writes at end of session. Fill in every
-> `<!-- ... -->` placeholder. Do not delete any section. Fixed sections
-> (Documents to read, Hard constraints, Close-out checklist) are copied
-> verbatim — do not shorten or paraphrase them.
+> **Purpose:** enforces a consistent structure for the handoff FILE the
+> closing agent writes at end of session, committed at
+> `docs/dev/handoffs/<branch-slug>.md` (never chat-pasted text — see the
+> transfer-by-reference note below). Fill in every `<!-- ... -->`
+> placeholder. Do not delete any section. The fixed sections (Documents to
+> read, Binding rules, Hard constraints, Close-out checklist) — each
+> opening with a `<!-- verbatim -->` marker below — are copied verbatim —
+> do not shorten or paraphrase them. `scripts/verify_doc_template.py`
+> checks both things mechanically: every section below is present in
+> order, and every `<!-- verbatim -->` section matches this file
+> byte-for-byte.
+>
+> **Transfer by reference, not by value.** The instantiated file is a
+> durable, frozen artifact, committed to git. The corruption this
+> pipeline fixes was never "the user reads the handoff in chat" — it was
+> a human drag-selecting rendered terminal text and pasting it into a
+> *different* session as that session's literal instruction (a
+> clipboard/terminal-grid copy silently drops mid-line content in
+> transit; see
+> [`handoff-integrity-design.md`](handoff-integrity-design.md) for
+> the confirmed corruption evidence). So: the closing agent may show the
+> file's content in chat for the user to read and approve — that display
+> is not the lossy hop. What crosses INTO the next session as its
+> operative instruction is a separate, single pointer line (path + branch
+> + short commit hash) — never a drag-select of the printed content. See
+> [`prov/SPEC.md`](prov/SPEC.md) and
+> [`handoffs/README.md`](handoffs/README.md) for the stamp and the
+> validator.
 >
 > **Companion:** AGENTS.md §"Branch close-out checklist" requires this
-> template be used for every handoff prompt. RELEASE_ARC.md is the
-> authoritative source for the arc progress table.
+> template be used for every handoff. RELEASE_ARC.md is the authoritative
+> source for the arc progress table.
+
+---
+
+<!-- provenance: schema=1 session=<SESSION> branch=<BRANCH> commit=<COMMIT> actor=<ACTOR> agent=<AGENT> generated_at=<DATE> -->
+
+The line above, with its six bracketed tokens filled in (see
+[`prov/SPEC.md`](prov/SPEC.md) §1 for what each means), is **line 1 of the
+handoff file you write** — above that file's own `#` title, not above
+this template's. Everything from here up to this point (this template's
+own title and purpose note) is instructions; it is not part of the
+output.
 
 ---
 
@@ -18,22 +52,23 @@
 ---
 
 ## Documents to read before any tool call (in this order)
+<!-- verbatim -->
 
-1. [docs/RELEASE_ARC.md](RELEASE_ARC.md) — authoritative branch sequence,
+1. `docs/dev/RELEASE_ARC.md` — authoritative branch sequence,
    architectural decisions, and acceptance criteria for v1.0.2 → v1.1.0.
    The durable plan. Do not deviate without user sign-off.
-2. [docs/RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) — what is open, closed,
+2. `docs/dev/RELEASE_CHECKLIST.md` — what is open, closed,
    and deferred per release. Before proposing anything, check here first.
-3. [docs/dev/AGENT_FAILURE_PATTERNS.md](AGENT_FAILURE_PATTERNS.md) —
+3. `docs/dev/AGENT_FAILURE_PATTERNS.md` —
    failure patterns to avoid. Read in full before writing any code.
    **§5f ("Guessing the mechanism") is the expensive one — it is why the
    Binding-rules block below exists.**
-4. [docs/governance/charter.md](../governance/charter.md) — the binding
+4. `docs/governance/charter.md` — the binding
    constitution. **C-7 (evidence before mechanism) and C-8 (durable before
    deep) are enforced by hooks, not by your judgment.**
-5. [docs/architecture.md](../architecture.md) — module map and LLM routing
+5. `docs/architecture.md` — module map and LLM routing
    boundary. The deterministic / LLM split is load-bearing.
-6. [evals/TUNING_LOG.md](../../evals/TUNING_LOG.md) — baseline floors and
+6. `evals/TUNING_LOG.md` — baseline floors and
    prompt change history.
 7. **If this branch is a `fix/*`:** its diagnosis dossier at
    `docs/dev/diagnosis/<branch-slug>.md`, if one exists. It is the durable
@@ -122,6 +157,7 @@ code. **Do not code first.**
 ---
 
 ## Binding rules — no discretion (copy verbatim — MANDATORY in every handoff)
+<!-- verbatim -->
 
 **These are not heuristics, and your judgment does not decide whether they apply
 today.** Each one exists because an agent decided it did not apply, and was
@@ -165,9 +201,20 @@ find it.**
 **4. Do not declare done. Verify done.** "Done" is the *output* of the pre-close
 sweep, not an announcement. See the close-out checklist below.
 
+**5. Corrupted input is a blocked gate.** Damaged, truncated, or
+fingerprint-mismatched input is a blocked gate — surface it as your **first
+output** and **STOP**; never silently reconstruct, however confident the
+reconstruction feels. A `blocked` result from
+`scripts/verify_doc_template.py --event consumed` on a handoff you're
+consuming is exactly this case — three of the four confirmed silent
+handoff-corruption events this rule exists for were an agent reconstructing
+damaged text instead of saying so (see
+`docs/dev/handoff-integrity-design.md` §2).
+
 ---
 
 ## Hard constraints (copy verbatim — do not shorten)
+<!-- verbatim -->
 
 - Branch before any code edit (`require-feature-branch` hook enforces this)
 - Quality gate before every commit: `ruff check .` + `mypy .` + `pytest`
@@ -190,6 +237,7 @@ sweep, not an announcement. See the close-out checklist below.
 ---
 
 ## Branch close-out checklist (do in this order before closing the window)
+<!-- verbatim -->
 
 0. **Pre-close sweep — BEFORE the gate, ON THE BRANCH (never post-merge).**
    Enumerate ALL close-out obligations and resolve each (or explicitly defer
@@ -206,8 +254,15 @@ sweep, not an announcement. See the close-out checklist below.
 2. Commit — message records what was done and why (or "no code change —
    verified" if the branch closed clean)
 3. Ask user to confirm merge to `main`; execute merge after confirmation
-4. Prune merged branch(es) with the user's OK, then generate the next-agent
-   handoff prompt using this template
-   ([docs/dev/AGENT_HANDOFF_TEMPLATE.md](AGENT_HANDOFF_TEMPLATE.md)) **as
-   copyable chat text (never a file in `output/`)** and give it to the user as
-   the **last act** before closing the window
+4. Prune merged branch(es) with the user's OK, then write the next-agent
+   handoff at `docs/dev/handoffs/<branch-slug>.md` from this template
+   (`docs/dev/AGENT_HANDOFF_TEMPLATE.md`),
+   stamped per `docs/dev/prov/SPEC.md` §1, then validate it:
+   `python scripts/verify_doc_template.py docs/dev/handoffs/<branch-slug>.md
+   docs/dev/AGENT_HANDOFF_TEMPLATE.md --event generated --agent <agent>`. A
+   `failed` result is authoring corruption in the handoff itself — fix the
+   file, don't silence the check. Commit the handoff file.
+5. Give the user the one-line pointer to that file — path + branch + short
+   commit hash — **as copyable chat text**, as the **last act** before
+   closing the window. Never paste the handoff file's content into chat;
+   that reintroduces the corruption channel this pipeline exists to remove.

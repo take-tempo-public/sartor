@@ -515,8 +515,12 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **15** (**+1** this entry — the handoff-transfer-corruption finding
-filed on `design/handoff-integrity-kit`, 2026-07-17; see that item's own note for detail.
+_Rendered open count: **14** (**−1** this entry — the handoff-transfer-corruption item
+**RESOLVED** on `feat/handoff-integrity-kit`, 2026-07-17: the kit (provenance stamp +
+fingerprint validator + ledger, vendored from spolia) is implemented and this item moved to
+Resolved — see its note there for detail. Prior to that: **15** (**+1** the
+handoff-transfer-corruption finding filed on `design/handoff-integrity-kit`, 2026-07-17; see
+that item's own note for detail.
 Prior to that: unchanged across Chip 3 — Chip 3 landed the scroll-flake fix and
 updated its existing entry in place, no item added or resolved; the CI leg of that entry's own
 acceptance bar is still open, so it stays unchecked pending a post-merge CI run. Prior context,
@@ -1563,29 +1567,27 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       unrelated to the scroll-flake work it was hit alongside; open count 13 → 14, over
       the ~8-10 ceiling and rising — the reduction sprint is now more overdue, not less.)_
 
-- [ ] **Handoff transfer channel is the confirmed cause of at least four silent
-      data-loss events, across sartor and spolia (formerly ai-research) both — policy
-      change decided, implementation not yet started.** Full evidence + decision record:
-      [`handoff-integrity-design.md`](handoff-integrity-design.md). One-line version: a
-      handoff copy-pasted through VS Code's integrated terminal (xterm.js grid-copy) can
-      silently drop a mid-line character run with the flanks fused — confirmed on
-      sartor's `fix/plan-approval` branch (session `b4d99d72`) and three times in
-      ai-research/spolia. Three of the four agents that received corrupted input said
-      nothing and silently reconstructed it; nothing in either project's binding rules
-      named damaged input as a stop condition. **Owner-directed resolution (2026-07-17):
-      supersede `feedback-handoff-process.md`'s chat-text-only policy** — handoffs
-      transfer as a committed, fingerprint-validated file
-      (`docs/dev/handoffs/<branch-slug>.md`), vendoring spolia's already-proven
-      `docs/dev/prov/SPEC.md` + `scripts/verify_doc_template.py`. **[HUMAN/OWNER]**
-      residual: whether the new "damaged input is a blocked gate" rule needs a formal
-      charter amendment (near C-7/C-8) is left to the implementation branch, since a
-      design doc doesn't have standing to pre-empt the amendment ceremony.
-      _(discovered: this session, 2026-07-17, `design/handoff-integrity-kit` — open
-      count 14 → 15, further over the ~8-10 ceiling; the reduction sprint recommended
-      above should absorb this design's own implementation branch as one of its items,
-      not treat it as a reason to defer the reduction sprint further.)_
-
 #### Resolved
+
+- [x] **Handoff transfer channel — RESOLVED** on `feat/handoff-integrity-kit`,
+      2026-07-17 (kit implemented; design + evidence:
+      [`handoff-integrity-design.md`](handoff-integrity-design.md)). Was: confirmed cause
+      of at least four silent data-loss events across sartor and spolia (formerly
+      ai-research) — a handoff copy-pasted through VS Code's integrated terminal
+      (xterm.js grid-copy) can silently drop a mid-line character run with the flanks
+      fused, confirmed on sartor's `fix/plan-approval` branch (session `b4d99d72`) and
+      three times in ai-research/spolia; three of four receiving agents silently
+      reconstructed the damaged input instead of surfacing it. **Fix shipped:** handoffs
+      now transfer as a committed, fingerprint-validated file
+      (`docs/dev/handoffs/<branch-slug>.md`), superseding
+      `feedback-handoff-process.md`'s chat-text-only policy for the transfer-channel
+      question specifically; vendored spolia's already-proven `docs/dev/prov/SPEC.md` +
+      `scripts/verify_doc_template.py`; `AGENTS.md` + `docs/dev/AGENT_HANDOFF_TEMPLATE.md`
+      updated with the new binding rule (corrupted/fingerprint-mismatched input is a
+      blocked gate). **[HUMAN/OWNER] residual, NOT resolved by this branch:** whether that
+      new binding rule needs a formal charter amendment (near C-7/C-8) — a design doc (and
+      this implementation branch) has no standing to pre-empt the amendment ceremony;
+      raised to the owner at this branch's own merge-confirmation.
 
 - [x] **`docs/readme-icp-ladder` (v1.0.9 Phase 6, item 1)** — RESOLVED, already on
       `main` (`323bf6c` + `996d1c9`): the ICP-laddered README front door +

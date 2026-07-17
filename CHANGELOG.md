@@ -21,6 +21,43 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Added: handoff transfer integrity — committed, fingerprint-validated handoff files (`feat/handoff-integrity-kit`)
+
+Handoffs copy-pasted between Claude Code sessions have been silently arriving corrupted —
+confirmed on sartor's own `fix/plan-approval` branch and three more times in spolia (formerly
+ai-research), the sibling project where this fix was built and proved first. The signature: a
+fixed-length run of characters silently deleted mid-line, the flanking fragments fused into
+something that reads as plausible but isn't — consistent with a clipboard/terminal-grid copy
+(VS Code's integrated terminal, xterm.js) losing wrapped or redrawn rows in transit. **Three of
+the four agents that received corrupted input said nothing and silently reconstructed it.**
+Nothing in either project's binding rules named damaged input as a stop condition — full
+evidence + decision record: [`docs/dev/handoff-integrity-design.md`](docs/dev/handoff-integrity-design.md).
+
+- **Handoffs now transfer as a committed file**, not chat-pasted text — deletes the lossy
+  clipboard/terminal-grid hop entirely. Supersedes the 2026-06-08 "handoffs are ephemeral chat
+  text, never a committed file" policy **for the transfer-channel question specifically**; that
+  policy's still-valid half (never write session scratch into `output/`) is unaffected.
+- **`docs/dev/prov/SPEC.md`** — the provenance-stamp vocabulary, privacy tiers, and ledger event
+  schema, vendored from spolia's already-proven kit (two real branches there, including a real
+  CRLF fingerprint bug found and fixed before this vendoring).
+- **`scripts/verify_doc_template.py`** — a generic doc/template validator: every structural
+  heading present and in order, every `<!-- verbatim -->` section byte-identical to its
+  template, a content fingerprint (newline-normalized, so a Windows `core.autocrlf` checkout
+  can't spuriously "change" a doc that never changed) recorded at generation and re-checked at
+  consumption.
+- **`docs/dev/AGENT_HANDOFF_TEMPLATE.md`** extended (not replaced) with the provenance stamp,
+  `<!-- verbatim -->` markers on its four fixed sections, and a fifth binding rule: **corrupted
+  or fingerprint-mismatched input is a blocked gate** — surfaced as the consuming session's
+  first output and STOPPED on, never silently reconstructed. `AGENTS.md`'s close-out checklist
+  updated to match.
+- `docs/dev/handoffs/` (committed handoff files) and `docs/dev/ledger/` (append-only, per-session
+  JSONL event shards) are new, tracked directories.
+- `tests/test_verify_doc_template.py` (24 tests) ports spolia's suite, including the CRLF
+  regression test, adjusted for sartor's flat `tests/` layout.
+- Advisory, not a hook, at launch (matches spolia's own rollout arc — escalate only if the
+  advisory step is observed being skipped). Whether the new binding rule needs a formal charter
+  amendment (near C-7/C-8) is an open question for the owner, not decided on this branch.
+
 ### Fixed: corpus/Compose reloads could snap your scroll position away (`fix/ux-scroll-position-flake`)
 
 Accepting, retiring, or editing a bullet could scroll you back to the top of a long corpus or
