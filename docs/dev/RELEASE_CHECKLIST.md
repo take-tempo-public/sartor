@@ -515,7 +515,9 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **14** (unchanged this chip — Chip 3 landed the scroll-flake fix and
+_Rendered open count: **15** (**+1** this entry — the handoff-transfer-corruption finding
+filed on `design/handoff-integrity-kit`, 2026-07-17; see that item's own note for detail.
+Prior to that: unchanged across Chip 3 — Chip 3 landed the scroll-flake fix and
 updated its existing entry in place, no item added or resolved; the CI leg of that entry's own
 acceptance bar is still open, so it stays unchecked pending a post-merge CI run. Prior context,
 same branch: **+1** the `check-plan-approved` global-scope hook gap, filed 2026-07-16 during
@@ -531,8 +533,9 @@ CodeQL as a required check. Earlier still: the count reached 12 on
 2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL disposition resolved on the
 prior branch.)
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
-each close-out). **OVER THE CEILING — the reduction sprint is overdue and should be scheduled
-before the v1.1.0 tag** (the rule is ~8–10; this is 14); several items below are small and
+each close-out — confirmed 15 by direct count at time of this edit). **OVER THE
+CEILING — the reduction sprint is overdue and should be scheduled before the v1.1.0
+tag** (the rule is ~8–10; this is 15); several items below are small and
 clearable in one pass. The full per-item
 addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here.
@@ -1559,6 +1562,28 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-16, `fix/ux-scroll-position-flake` Chip 2 —
       unrelated to the scroll-flake work it was hit alongside; open count 13 → 14, over
       the ~8-10 ceiling and rising — the reduction sprint is now more overdue, not less.)_
+
+- [ ] **Handoff transfer channel is the confirmed cause of at least four silent
+      data-loss events, across sartor and spolia (formerly ai-research) both — policy
+      change decided, implementation not yet started.** Full evidence + decision record:
+      [`handoff-integrity-design.md`](handoff-integrity-design.md). One-line version: a
+      handoff copy-pasted through VS Code's integrated terminal (xterm.js grid-copy) can
+      silently drop a mid-line character run with the flanks fused — confirmed on
+      sartor's `fix/plan-approval` branch (session `b4d99d72`) and three times in
+      ai-research/spolia. Three of the four agents that received corrupted input said
+      nothing and silently reconstructed it; nothing in either project's binding rules
+      named damaged input as a stop condition. **Owner-directed resolution (2026-07-17):
+      supersede `feedback-handoff-process.md`'s chat-text-only policy** — handoffs
+      transfer as a committed, fingerprint-validated file
+      (`docs/dev/handoffs/<branch-slug>.md`), vendoring spolia's already-proven
+      `docs/dev/prov/SPEC.md` + `scripts/verify_doc_template.py`. **[HUMAN/OWNER]**
+      residual: whether the new "damaged input is a blocked gate" rule needs a formal
+      charter amendment (near C-7/C-8) is left to the implementation branch, since a
+      design doc doesn't have standing to pre-empt the amendment ceremony.
+      _(discovered: this session, 2026-07-17, `design/handoff-integrity-kit` — open
+      count 14 → 15, further over the ~8-10 ceiling; the reduction sprint recommended
+      above should absorb this design's own implementation branch as one of its items,
+      not treat it as a reason to defer the reduction sprint further.)_
 
 #### Resolved
 

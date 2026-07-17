@@ -30,6 +30,15 @@ or the Carry-forward ledger until resolved.)_
 
 ## Settled decisions
 
+### 2026-07-17 — Handoff transfer channel: committed + fingerprint-validated file, superseding chat-text-only
+
+Full record + evidence: [`handoff-integrity-design.md`](handoff-integrity-design.md).
+Owner-directed: `feedback-handoff-process.md`'s 2026-06-08 "never commit a handoff"
+policy is superseded for the transfer-channel question, in light of confirmed silent
+data-loss across sartor and spolia. Vendors spolia's already-proven
+`docs/dev/prov/SPEC.md` + `scripts/verify_doc_template.py`. Implementation:
+`feat/handoff-integrity-kit` (not yet branched).
+
 ### 2026-07-11 — Subagent model-pin split: dated Haiku snapshot vs undated Sonnet alias (doc-only half of PX-47)
 
 Full record + rationale:
