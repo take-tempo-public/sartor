@@ -153,13 +153,21 @@ the acceptance bar below (a future clean run once the platform incident itself c
 
 ## Acceptance bar
 
-- **CodeQL:** the next real CI run of `codeql.yml` against this fix reaches a genuine
-  `analyze` conclusion (either `success`, or a `failure` from an actual code finding) rather
-  than failing at `init` with the same "unexpected input" error. This cannot be confirmed from
-  this session — GitHub's API/Actions UI is degraded (item 9) and this session's authenticated
-  access never recovered (item 11). **Deferred**, to be checked once either recovers.
-- **Scorecard:** root cause already confirmed (item 12) — a `503` from `api.github.com` during
-  the concurrent platform incident, not a defect in this repo. **Met, by direct log evidence**;
-  the only remaining step is a future clean run (post-incident) as final confirmation, not proof
-  — if that run somehow fails again with a genuine new error, treat this diagnosis as
-  incomplete and reopen it.
+- **CodeQL: MET.** Authentication recovered later in this session. Confirmed directly via
+  `gh run list --json ...` against the fix commit `8326b5e` (pushed to `main`): both matrix
+  jobs — `Analyze (python)` and `Analyze (javascript-typescript)` — completed with
+  `conclusion: success`, a genuine `analyze` result, not another `init`-stage rejection.
+- **Scorecard: MET.** Root cause was already confirmed by direct log evidence (item 12); now
+  also confirmed by outcome — the same commit (`8326b5e`), which carries **zero change** to
+  `scorecard.yml`, shows `OpenSSF Scorecard: success` in real CI.
+
+**One loose thread, recorded rather than smoothed over.** On the *unfixed* commit `df95773`,
+`gh run list` shows `CodeQL (python)` failed but `CodeQL (javascript-typescript)` succeeded —
+even though both matrix legs pass the identical wrong `language:` input to the identical pinned
+action via the same workflow line (`codeql.yml`'s `matrix.language` strategy). If the
+input-name mismatch is deterministic schema-validation rejection (which `## Observed` item 3's
+error text reads as), both legs should have failed identically. Nothing gathered here explains
+the asymmetry, and it was not investigated further — the fix's correctness is independently
+confirmed by `8326b5e` (both legs now succeed identically, symmetrically), regardless of why
+`df95773`'s failure was asymmetric. Left as an open, unexplained detail rather than folded into
+the existing narrative or given an invented cause.
