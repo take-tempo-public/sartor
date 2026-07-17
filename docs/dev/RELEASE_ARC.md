@@ -73,6 +73,7 @@ Public release = the **v1.1.0 tag, applied by the user** when the product is jud
 7. **Sequential streams.** One branch at a time per `docs/dev/AGENT_FAILURE_PATTERNS.md` discipline.
 8. **Eval tuning loop (v1.0.4).** Real-data, human-in-the-loop, model-assisted prompt improvement, gated by the Phase 1 grounding scorers + the eval suite. Engine + a headless annotation contract land in v1.0.4; the polished annotation UI lands in v1.0.5 on the new design system — **no throwaway**, because the annotation file format is the durable contract the UI later wraps. Approved 2026-06-01.
 9. **v1.1.0 tag is user-owned.** The public release is tagged by the user when the product is judged showcase-ready. No external deadline — completeness and polish gate the tag, not a clock.
+10. **No multi-agent conductor/wave orchestration until further notice (owner-directed, 2026-07-16).** The v1.1.0 debt-burn train (7 lanes / 3 waves, Opus conductor) shipped substantial real work, but several lane deliverables were reported complete when they were only partially done — see "v1.1.0 close-out — reconciliation" below for the full audit. Combined with a broader run of tool-reliability problems the owner hit across multiple sessions that same week, the standing rule from here is: **one branch, one session, sequential — no conductor, no parallel lanes, no wave assembly** — until Claude Code's reliability is trusted again. This does not forbid a single session using read-only research subagents; it forbids multi-agent orchestration that writes code or reports completion on another agent's behalf without direct, line-level verification.
 
 ---
 
@@ -1275,9 +1276,95 @@ marked resolved (or slipped items re-filed Open); CHANGELOG cut to `[1.1.0]`;
 `PROMPT_VERSION`/`AVATAR_PROMPT_VERSION` bumped only if a prompt actually
 changed. Then hand to the owner for the `[HUMAN]` public flip + v1.1.0 tag.
 
+> **This Definition of Done was NOT fully met at merge (`ab15954`).** The train
+> merged and shipped substantial real work, but several lane deliverables were
+> reported complete when they were only partially done, and this section was
+> never updated to say so. See "v1.1.0 close-out — reconciliation" immediately
+> below for the audited state and the corrected path to the tag.
+
+---
+
+## v1.1.0 close-out — reconciliation + individual-branch sequence (2026-07-16)
+
+> **Why this section exists.** This section itself was written from memory
+> and stayed unedited for five days while five more merged branches' worth of
+> real work happened around it (see below) — which is exactly what made it
+> look, to a fresh session, like there was no next step at all. Written after
+> a direct, line-by-line audit against git log, the actual code, and the
+> source review documents in `docs/dev/reviews/` — not against the ledger's
+> own summary prose, which in several places undersold how much was actually
+> left. Supersedes the debt-burn train's Definition of Done above as the
+> current source of truth for what remains before the `v1.1.0` tag.
+
+### Audited state of the debt-burn train's own Definition of Done
+
+| Ledger item | Debt-burn train claimed | Audited state |
+|---|---|---|
+| #1 — wiki-freshness `docs-site/` over-count | Resolved | **Confirmed resolved.** |
+| #5 — kit-adoption commitment 3 (hook re-home + root `skills/`) | In Wave 3 Lane HARD's scope | **Confirmed NOT done.** No root `skills/` or `hooks/` directory exists; `.claude-plugin/hooks/` still holds 12 separate scripts. PX-37 (the hook dispatcher) is the same gap — Wave 3 explicitly deferred it, not attempted. |
+| #6 — efficiency review PX-37..56 (13 items banded v1.1.0-gate) | "15 of 20 land" (rolled up across both v1.0.9 + v1.1.0-gate bands) | **7 of the 13 v1.1.0-gate items landed** (PX-38/43/45/49/54/55/56). **6 did not fully land** — see the PX table below. |
+| #7 — UX round-2 / UX Cohesion Epic | Landed | **Substantially done**, verified in code (Phosphor icon refs, `.btn-pending`, the `application-card` DOM structure all present in `static/app.js`/`style.css`) and fully detailed in `CHANGELOG.md`'s "UX Cohesion Epic" entry. Two things remain — see below. |
+| CHANGELOG cut to `[1.1.0]` | — | **Not done** — still `[Unreleased]`. |
+| Version bump | — | **Not done** — `pyproject.toml` still reads `1.0.9`; no `v1.1.0` tag exists. |
+
+### The 6 efficiency-review items that did not fully land (of 13 banded `v1.1.0-gate`)
+
+The ledger's own "5 remain" count was itself off by one — PX-46 was never actioned and fell out of that tally. Precise state, checked against code:
+
+| PX | Prescribed | Actual state |
+|---|---|---|
+| PX-37 | Hook dispatcher (consolidate 5 `Edit`/`Write` PreToolUse hooks into 1) | **0% done.** Same gap as ledger #5 above. |
+| PX-39 | A **real, measured** Sonnet-5 real-corpus latency baseline | **Labeling/methodology only.** The actual measurement was never taken — needs a session with `.api_key` present, not an isolated worktree. |
+| PX-44 | Fixture-scoping **refactor** (module-scope read-mostly test fixtures) | **Doc fix only.** `CONTRIBUTING.md`'s double-run bug was fixed and the fast-lane numbers documented, but the refactor itself was never attempted — confirmed zero commits anywhere for the named follow-on branch `test/fixture-scoping`. |
+| PX-46 | Selective memory consolidation | **0% done.** Owner sign-off on the keep/consolidate/delete list was never sought. Judges flagged this "irreversible if botched" — treat as owner-gated, not agent-schedulable. |
+| PX-47 | Config-drift batch: `plugin.json` version bump, model-pin convention across 9 subagents, `CLAUDE.local.md` refresh, prune ~15 dead `settings.local.json` entries | **Confirmed 0% done** — `.claude-plugin/plugin.json` still reads `"version": "1.0.6"` against the project's actual `1.0.9`. |
+| PX-51 | `style.css` duplicate-cascade collapse | **Deliberately deferred** (documented in `CHANGELOG.md`: landing it would have collided with in-flight dec-1/dec-2 edits). Low risk to leave. |
+
+### What shipped since the train merged that was NOT in its planned scope (all real, all confirmed — nothing here was lost)
+
+Five days of genuine, well-evidenced bug-fixing happened after `ab15954` that this document never narrated: `fix/docs-site-rendering` (diagrams/screenshots/490 dead links), `chore/scorecard-and-docs-voice` (supply-chain hardening + docs voice guide), `chore/release-governance` (charter D-7 semver discipline), `fix/compose-summary-draft-settle-hole` (a real lost-update defect across 12 context writers, C-7/C-8 adopted as hooks in the process), `fix/codeql-path-injection-context` (resolver chokepoint, 0 open CodeQL alerts), `fix/ux-scroll-position-flake` (5 investigation chips, a real capture/restore race fixed), and `fix/codeql-scorecard-workflow-config` (today's CI YAML fix). Full detail in `CHANGELOG.md`'s `[Unreleased]` section — each entry there is complete and specific, unlike the ledger note below that prompted this audit.
+
+### Diagnostics round-2 residue (of 17 items, routed to the v1.0.9 epic)
+
+Most landed (#1/#3/#7/#8/#9/#10/#11/#13/#15/#17 all confirmed). Two did not:
+- **The run-cancel/abort endpoint** — the owner explicitly opted **in** to a real abort path, not just a click-lock. Only the weaker client-side lock (#1) shipped.
+- **The #2/4/5/6/16 instructional content cluster** — only a small draft down-payment landed (a handful of tooltips), not the full field-level `_DASH_HELP` authoring pass that was scoped.
+
+### Individual branch sequence to reach the tag
+
+Per the new standing rule above (Key decision 10): **one branch, one session, sequential — no waves, no conductor.** Order below is small-and-safe first, owner-decision items flagged inline, `[HUMAN]`-only items last since they gate the tag itself rather than being agent work.
+
+1. `docs/v110-plan-reconciliation` ← **this branch** — capture this audit durably; this section + the `RELEASE_CHECKLIST.md` corrections it makes.
+2. `fix/plan-approval-hook-scope` — scope `check-plan-approved`'s marker comparison per-project (RELEASE_CHECKLIST carry-forward item 14); has bitten multiple sessions already.
+3. `fix/compose-unawaited-reloads` — `await` the remaining un-awaited Compose user-action `loadComposition()` calls (RELEASE_CHECKLIST carry-forward item 7).
+4. `refactor/css-cascade-collapse` (PX-51) — small, but gate with the UX tier + a screenshot diff per its own prescription.
+5. `chore/config-drift-batch` (PX-47) — `plugin.json` version bump, model-pin convention, `CLAUDE.local.md` refresh, `settings.local.json` prune. Purely mechanical.
+6. `chore/hook-dispatcher` (PX-37 + kit-adoption commitment 3) — consolidate the 5 hooks, re-home to root `skills/`/`hooks/`. Touches the enforcement surface directly — single session, verify each hook still fires correctly before merging.
+7. `feat/diagnostics-run-cancel` — the real abort endpoint (owner opted in). Touches run-lifecycle/threading; read `docs/dev/reviews/2026-07-diagnostics-round2-findings.md`'s RUN-LIFECYCLE note first.
+8. `docs/diagnostics-content-cluster` — the remaining #2/4/5/6/16 field-level `_DASH_HELP` authoring pass. Content-only.
+9. **Owner decision point:** `test/fixture-scoping` (PX-44) — the original prescription itself flagged this as touching test isolation mid-epic risk. Decide whether the refactor is worth doing pre-tag or should defer post-public; it is DX-only, not user-facing.
+10. **Needs a session with `.api_key` present (not an isolated worktree):** `perf/real-corpus-baseline` (PX-39) — the actual Sonnet-5 real-corpus measurement.
+11. **Owner-gated, do not schedule without sign-off:** `chore/memory-consolidation` (PX-46) — present the keep/consolidate/delete list first; act only after explicit approval.
+12. Check accumulated CI runs on `main` post-scroll-fix-merge → resolve the `--reruns 2` retry-policy decision (RELEASE_CHECKLIST carry-forward item 1) and confirm the scroll-flake CI leg. Read-only investigation; may not need its own branch.
+13. `release/visual-assets` + a fresh-clone re-verify (Phase 5 tag criteria: `docs/screenshots/` already has 10 images — confirm still current; fresh-clone < 5 min; doc links resolve).
+14. **`[HUMAN]`-only, gates the tag itself:** GitHub repo public flip, PyPI Trusted Publisher config, GHCR package visibility, CodeQL wired as a required status check, branch protection required-checks update.
+15. `chore/release-v1.1.0` — CHANGELOG cut to `[1.1.0]`, version bump, tag — executed on the owner's go.
+
+Steps 9/10/11/14 are explicitly owner-gated or condition-gated, not agent-schedulable in sequence — the closing agent on each preceding branch should surface them rather than attempt them blind.
+
 ---
 
 ## UX Cohesion Epic (registered 2026-07-09 — slotted into v1.0.9, owner 2026-07-09)
+
+> **Status update (2026-07-16): substantially DONE.** The design-system pass below
+> (themes 1-4, decs 1-7) landed via the debt-burn train's Lane UX (`feat/ux-cohesion`,
+> 2026-07-11) — verified in code, not just in ledger prose; full detail in
+> `CHANGELOG.md`'s "UX Cohesion Epic" entry. The framing below ("not yet
+> branch-planned") is the pre-train registration and is now historical. Still open:
+> PX-51 (style.css cascade collapse, deliberately deferred) and the Diagnostics-DX +
+> hardening thread's two residual items (run-cancel endpoint, content-cluster full
+> pass) — see "v1.1.0 close-out — reconciliation" above for the current, audited
+> state and the branch sequence that closes these out.
 
 > **Registration only — not a spec.** Surfaced by the owner's e2e round-2
 > walkthrough ([`reviews/2026-07-ux-round2-findings.md`](reviews/2026-07-ux-round2-findings.md)
