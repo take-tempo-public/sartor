@@ -515,7 +515,11 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **14** (**−1** this entry — `docs/handoff-template-relative-link`,
+_Rendered open count: **15** (**+1** this entry — `fix/capture-screenshots-welcome-modal`,
+2026-07-18: three independent `scripts/capture_screenshots.py` staleness bugs found+fixed
+(welcome-modal auto-open, clarify-button double-click, cover-letter drawer visibility), but
+the lack of periodic exercise that let them accumulate is itself filed as a new open item —
+see below. Prior to that: **14** (**−1** this entry — `docs/handoff-template-relative-link`,
 2026-07-18: `AGENT_HANDOFF_TEMPLATE.md`'s "Branch close-out checklist" relative-link citation,
 **RESOLVED** — see its `#### Resolved` entry below. **Correction to the prior entry's count:**
 the actual count immediately before this one was **15**, not the 14 stated there —
@@ -1615,6 +1619,32 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-17, `fix/plan-approval-hook-scope`; open count
       14 → 14 — item 14 below resolved same branch, this one added, net unchanged, still
       over the ~8-10 ceiling.)_
+
+- [ ] **`scripts/capture_screenshots.py` has zero automated coverage, so it silently
+      accumulated THREE independent staleness bugs over ~7 weeks with nobody noticing.**
+      Discovered on `fix/capture-screenshots-welcome-modal` (2026-07-18) while capturing
+      PX-51's before-baseline: (1) a first-visit welcome/tour help-modal
+      (`static/app.js`'s `_HELP_REGISTRY`, 17 auto-firing blocks) blocked the script's
+      very first click — fixed by extracting `tests/ux/conftest.py`'s existing
+      `page.add_init_script` suppression pattern into `ui_pages/selectors.py::Help`
+      (shared by both consumers now); (2) `run_step2` manually clicked `#btnClarify`
+      after already reaching Step 2 via the "Continue to Clarify →" CTA, which
+      (`app.js` "Finding #6") already auto-fires the same fetch and disables that
+      button — fixed by calling the already-existing `WizardClarifyPage.wait_for_questions()`
+      instead of `request_questions()`; (3) `generate_cover_letter()` waited for
+      `#coverLetterPreview` to become visible, but that element's home location is
+      permanently hidden — it's only visible once moved into the "Edit before
+      downloading" drawer via `openEditDrawer('cover')` — fixed by clicking
+      `#btnOpenCoverEditDrawer` first. All three fixed + verified together in one
+      full, unmodified, genuinely-fresh-context run (`docs/dev/diagnosis/capture-screenshots-welcome-modal.md`).
+      **Still open:** the script has no periodic exercise (not in CI, no scheduled
+      smoke run), so the same class of silent drift can recur — needs an owner
+      decision on whether a cheap periodic check (e.g. a pre-tag or monthly smoke
+      run through just Step 1) is worth the LLM spend, or whether "run before each
+      release + manually" (its current de facto cadence) is accepted as sufficient.
+      _(discovered: v1.1.0 stream, 2026-07-18, `fix/capture-screenshots-welcome-modal`;
+      open count 14 → 15, still over the ~8-10 ceiling — reduction sprint now more
+      overdue, not less.)_
 
 #### Resolved
 

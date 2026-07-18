@@ -284,8 +284,10 @@ def run_step2(page: Page) -> None:
     wait_quiet(page)
 
     clarify = WizardClarifyPage(page, APP_URL)
-    print("  · requesting clarification questions (~30s Sonnet call)…")
-    clarify.request_questions()
+    print("  · waiting on clarification questions (~30s Sonnet call)…")
+    # "Continue to Clarify →" already auto-fetches (app.js finding #6) —
+    # #btnClarify is disabled for the duration, so wait rather than click.
+    clarify.wait_for_questions()
     wait_quiet(page, 1000)
 
     # Type a partial answer in the first question so the capture
@@ -360,6 +362,20 @@ def run_cover_letter(page: Page) -> None:
     cap(page, "walkthrough_coverletter_first-generation.png")
 
 
+def dismiss_welcome_modal_if_present(page: Page) -> None:
+    """Dismiss the once-ever first-view welcome help modal (static/app.js's
+    `_HELP_REGISTRY` auto-open), which opens unconditionally on any fresh,
+    empty-localStorage browser context — exactly what this script's
+    Playwright context always is. Same click-away dismissal the UX suite
+    already uses (tests/ux/regression/test_20260614_help_pattern.py).
+    No-op if the modal isn't present (e.g. a --keep-user re-run).
+    """
+    modal = page.locator(S.Help.MODAL)
+    if modal.is_visible():
+        page.click(S.Help.BACKDROP, position={"x": 5, "y": 5})
+        page.wait_for_selector(S.Help.MODAL, state="hidden", timeout=SHORT_TIMEOUT_MS)
+
+
 def capture_user_picker(page: Page) -> None:
     """S02 — capture the user-picker section with the New User form open.
 
@@ -369,6 +385,7 @@ def capture_user_picker(page: Page) -> None:
     """
     page.goto(APP_URL)
     page.wait_for_selector(S.UserPicker.PANEL, state="visible", timeout=SHORT_TIMEOUT_MS)
+    dismiss_welcome_modal_if_present(page)
     page.click(S.UserPicker.NEW_USER_LINK)
     page.wait_for_selector(S.UserPicker.NEW_USER_FORM, state="visible")
     page.fill(S.UserPicker.NEW_USERNAME, "your-username")
@@ -446,6 +463,13 @@ def main() -> int:
         )
         page = ctx.new_page()
         page.set_default_timeout(SHORT_TIMEOUT_MS)
+        # Suppress every auto-firing help block (welcome + KW3 tour stops +
+        # dashboard explainers) before any navigation — this script always
+        # gets a fresh, empty-localStorage context and always creates a
+        # brand-new demo user, so every auto-open condition would otherwise
+        # fire at some point during the walkthrough. See
+        # docs/dev/diagnosis/capture-screenshots-welcome-modal.md.
+        page.add_init_script(S.Help.suppress_tour_init_script())
 
         print("2) Capturing S02 — user picker section")
         capture_user_picker(page)
