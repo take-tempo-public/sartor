@@ -251,18 +251,25 @@ damaged text instead of saying so (see
    a doc / memory / note edit — that re-triggers the marker-wipe ceremony; fold it in
    before the merge.
 1. Quality gate green: `ruff check .` + `mypy .` + `pytest`
-2. Commit — message records what was done and why (or "no code change —
-   verified" if the branch closed clean)
-3. Ask user to confirm merge to `main`; execute merge after confirmation
-4. Prune merged branch(es) with the user's OK, then write the next-agent
-   handoff at `docs/dev/handoffs/<branch-slug>.md` from this template
-   (`docs/dev/AGENT_HANDOFF_TEMPLATE.md`),
-   stamped per `docs/dev/prov/SPEC.md` §1, then validate it:
+2. Write the next-agent handoff at `docs/dev/handoffs/<branch-slug>.md` from
+   this template (`docs/dev/AGENT_HANDOFF_TEMPLATE.md`), stamped per
+   `docs/dev/prov/SPEC.md` §1, then validate it:
    `python scripts/verify_doc_template.py docs/dev/handoffs/<branch-slug>.md
    docs/dev/AGENT_HANDOFF_TEMPLATE.md --event generated --agent <agent>`. A
    `failed` result is authoring corruption in the handoff itself — fix the
-   file, don't silence the check. Commit the handoff file.
-5. Give the user the one-line pointer to that file — path + branch + short
-   commit hash — **as copyable chat text**, as the **last act** before
-   closing the window. Never paste the handoff file's content into chat;
+   file, don't silence the check. **Do this ON THIS BRANCH, BEFORE the
+   merge** — this is exactly what the Capture-before-merge hard constraint
+   above already requires (the handoff is one of this branch's own docs),
+   and `require-feature-branch` blocks writing it on `main` once this
+   branch is gone, so there is no compliant way to do this step after
+   merging.
+3. Commit — message records what was done and why (or "no code change —
+   verified" if the branch closed clean); the handoff file from step 2
+   must be committed by this point too (its own commit or folded into this
+   one — either way, both must exist before step 4)
+4. Ask user to confirm merge to `main`; execute merge after confirmation
+5. Prune merged branch(es) with the user's OK. Give the user the one-line
+   pointer to the handoff file — path + branch + short commit hash — **as
+   copyable chat text**, as the **last act** before closing the window.
+   Never paste the handoff file's content into chat;
    that reintroduces the corruption channel this pipeline exists to remove.
