@@ -515,7 +515,11 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **14** (unchanged this entry — `fix/plan-approval-hook-scope`,
+_Rendered open count: **14** (unchanged this entry — `fix/handoff-pointer-verification`,
+2026-07-18: found-and-fixed within its own branch, never entered `#### Open`, so no net change
+to the open count; full evidence in its `#### Resolved` entry below and
+`docs/dev/diagnosis/handoff-pointer-verification.md`).
+Prior to that: **14** (unchanged this entry — `fix/plan-approval-hook-scope`,
 2026-07-17: **−1** the `check-plan-approved` global-scope hook gap, **RESOLVED** (marker +
 pointer state now keyed off `CLAUDE_PROJECT_DIR`; full detail in its Resolved-section note);
 **+1** a new item filed same branch — `enforcement.md`'s own remedy for that finding cited
@@ -1581,6 +1585,30 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       over the ~8-10 ceiling.)_
 
 #### Resolved
+
+- [x] **Handoff-pointer commit hash was hand-typed and unchecked — RESOLVED** on
+      `fix/handoff-pointer-verification`, 2026-07-18. Was: the closing agent's mandatory
+      close-out pointer line (`Handoff: <path> @ <branch> (<short-hash>)` — per
+      `docs/dev/handoff-integrity-design.md`, the ONE thing meant to reliably cross into
+      the next session) had its commit hash hand-typed from memory, with nothing forcing
+      or checking it — unlike the handoff FILE it points to, which is already fingerprint/
+      provenance-verified. **Proven fabricated, not merely theorized:** the next session
+      received pointer `Handoff: docs/dev/handoffs/fix-plan-approval-hook-scope.md @ main
+      (0d7fe1a)`; `0d7fe1a` does not exist anywhere in the repo. Grepping the prior
+      session's own transcript found the string exactly once — in the model's generated
+      closing text, present in no tool call or tool result — right after a
+      `git merge --no-ff` whose stdout is a diffstat with no commit hash in it. Full
+      evidence: [`diagnosis/handoff-pointer-verification.md`](diagnosis/handoff-pointer-verification.md).
+      **Fix shipped:** `scripts/print_handoff_pointer.py` reads branch + short HEAD hash
+      from git directly and refuses to print anything for a handoff doc not yet committed
+      and reachable at HEAD; `scripts/check_handoff_pointer.py` independently re-verifies
+      a pointer line's cited commit/path/branch against real git state, run on both ends
+      (by the closing agent right after generating the pointer, and by the next agent as
+      its first action on receiving one) — enforce the method, then check the result.
+      `AGENT_HANDOFF_TEMPLATE.md` / `AGENTS.md` / `docs/dev/handoffs/README.md` now mandate
+      both scripts. New regression suite `tests/test_handoff_pointer.py` (11 tests,
+      subprocess-level against both real scripts in a throwaway git repo). Found-and-fixed
+      within its own branch — never sat in `#### Open` — so no net change to the open count.
 
 - [x] **`check-plan-approved` hook global scope — RESOLVED** on
       `fix/plan-approval-hook-scope`, 2026-07-17. Was: the hook (source read directly)
