@@ -950,30 +950,77 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-13, `chore/scorecard-and-docs-voice`.)_
       **→ Opportunistic; do not schedule.**
 
-- [ ] **Compose user-action reloads still fire `loadComposition()` un-awaited** —
+- [x] **Compose user-action reloads still fire `loadComposition()` un-awaited** —
       `fix/ci-first-linux-run` awaited the **five auto-arrival cascade** fires
       (`_fireDraftSummary` / `_fireRecommendSummary` / `_fireDraftGapFill` /
       `_fireRecommendSkills` / `_fireRecommendExperienceSummaries`) so the settle
       gate (`data-compose-bg-pending`) can't read terminal mid-repaint (the
       confirmed compose-summary load-flake, PR #8). The **user-action** reloads
-      that share the identical `_markComposeBgReload(±1)` bracket —
-      `_fireSuggestSkills`, `_togglePositioningPin`, `_addComposeRoleIntro`, the
-      add-title / apply-change handlers — were left un-awaited (out of the approved
-      scope). Lower-risk (each drives a test that waits on a specific DOM outcome,
-      not the bare settle gate), but for full settle-gate consistency they should
-      `await loadComposition()` too. **Fix:** add `await` to each; fold in next
-      time `static/app.js`'s Compose section is touched.
+      that share the identical `_markComposeBgReload(±1)` bracket were left
+      un-awaited (out of the approved scope).
       _(discovered: v1.1.0 stream, 2026-07-12, `fix/ci-first-linux-run`.)_
-      **→ Low priority, own small pass.**
       **→ Investigated and EXONERATED as a suspect (2026-07-13,
       `fix/compose-summary-draft-settle-hole`)** — it was the leading hypothesis for the
       chronically-red `test_compose_summary_draft_autofills_edits_and_persists`, and it is
       **not** the cause: that test's failing path runs through `_fireDraftSummary`, whose
       `loadComposition()` **is** awaited (`static/app.js:7338`), and every un-awaited site
       above sits off it. The real cause was a torn read of a non-atomically-written context
-      file plus a once-ever latch burned before the fire. **This row stays open on its own
-      merits** (the sites are still a genuine latent settle-gate inconsistency) — but do not
-      re-chase it as the explanation for a Compose flake; that ground is covered.
+      file plus a once-ever latch burned before the fire.
+      **→ RESOLVED (2026-07-18, `fix/compose-unawaited-reloads`).** Re-derived the
+      live call-site list from `static/app.js` rather than trusting this entry's own
+      prose (it had gone stale: the "add-title" handler was already awaited since an
+      earlier, unrelated commit `c988db3`, and this entry omitted two sites —
+      `_reviewPendingSkill`, `_decideGapFill`). Added `await` to the 9 actually-open
+      sites across 6 already-`async` functions: `_acceptRefinementProposal` (4 call
+      sites), `_togglePositioningPin`, `_fireSuggestSkills`, `_reviewPendingSkill`,
+      `_decideGapFill`, `_addComposeRoleIntro`. Falsified before fixing per charter
+      C-7: `docs/dev/diagnosis/compose-unawaited-reloads.md` — a new regression test
+      (`tests/ux/regression/test_20260718_compose_unawaited_reloads.py`) failed
+      deterministically on unmodified HEAD (settle gate reported "not pending" while
+      `data-compose-ready` was still absent) and passed after the fix, no retry. Left
+      out of scope: 3 sites (`wizardGoTo`, `_resumeIntoStep6`,
+      `_resumeIntoPreGenerateStep`) whose call chains include non-`async`
+      intermediate frames and mixed triggers (browser Back/Forward, a chained-async
+      cascade tail) — see the new carry-forward row immediately below.
+
+- [ ] **3 `loadComposition()` sites excluded from the `compose-unawaited-reloads` fix
+      have a materially different shape and need their own pass** —
+      `static/app.js:6549` (`_resumeIntoStep6`), `:6606`
+      (`_resumeIntoPreGenerateStep`), and `:6932` (`wizardGoTo`, single call site,
+      step===3). Reaching the first two requires making `resumeApplicationIntoWizard`
+      and its `onResume` click-handler caller async-aware (currently plain
+      functions); `wizardGoTo`'s call site is reachable from a direct click AND a
+      chained-async cascade tail (`_fireRecommendThenCompose`) AND browser
+      Back/Forward (`_onWizardPopState`) — awaiting it changes the shape of at least
+      3 different call paths, not a 1-line mechanical edit like the 9 sites just
+      fixed. **Fix:** design a scoped approach (may not be "just add await" for the
+      popstate-triggered path) before touching it.
+      _(discovered: v1.1.0 stream, 2026-07-18, `fix/compose-unawaited-reloads`, while
+      re-deriving the full call-site map for the row above.)_
+      **→ Low priority, own small pass — needs design, not just mechanical `await`.**
+
+- [ ] **`AGENT_HANDOFF_TEMPLATE.md`'s own "Branch close-out checklist" verbatim block
+      contains a relative link that breaks every time it's copied into an actual
+      handoff** — `docs/dev/AGENT_HANDOFF_TEMPLATE.md:286`'s citation
+      `[...](diagnosis/handoff-pointer-verification.md)` resolves correctly from the
+      template's own location (`docs/dev/`) but is WRONG once copied verbatim into
+      `docs/dev/handoffs/<slug>.md` (one directory deeper — needs `../diagnosis/...`
+      from there). `test_no_broken_cross_document_links_or_cites` caught exactly this
+      in the already-merged `docs/dev/handoffs/fix-handoff-pointer-verification.md:303`
+      — fixed on this branch (one-line, docs-only) so this branch's own gate run
+      could go green, since the failure was blocking a mandatory no-hatch close-out
+      step and unrelated to this branch's actual scope. **The template itself is
+      untouched** — the fix needed there isn't purely mechanical (an absolute-style
+      path, or dropping the markdown-link syntax for a plain-text path citation,
+      are both viable but it's a citation-format decision on a governance-adjacent
+      doc, not this branch's call to make solo) — so every FUTURE handoff that
+      copies this verbatim section unchanged will reproduce the same broken link
+      unless the template is fixed at the source. **Fix:** pick a citation form for
+      the template's verbatim block that survives being copied to any directory
+      depth, then sweep any other already-merged handoffs with the same pattern.
+      _(discovered: v1.1.0 stream, 2026-07-18, `fix/compose-unawaited-reloads`,
+      while chasing an unrelated pre-existing gate failure.)_
+      **→ Low priority, own small pass — needs a citation-format decision first.**
 
 - [x] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
       `scripts/wiki_freshness.py:drift_count` excludes only `docs/wiki/`, not `docs-site/`.

@@ -1,6 +1,6 @@
-<!-- provenance: schema=1 session=7b8ec7a5-b109-400b-ae10-bedc4041e5f9 branch=fix/handoff-pointer-verification commit=3758d8e actor=amodal1 agent=claude-sonnet-5 generated_at=2026-07-18 -->
+<!-- provenance: schema=1 session=e8c355d9-e540-4705-b860-77c838442287 branch=fix/compose-unawaited-reloads commit=8681aa3 actor=amodal1 agent=anthropic/claude-sonnet-5 generated_at=2026-07-18 -->
 
-# fix/handoff-pointer-verification handoff — 2026-07-18
+# fix/compose-unawaited-reloads handoff — 2026-07-18
 
 **Branch to create:** `<!-- pick per whatever the owner wants next -->` (branch off `main`)
 **Base branch:** `main`
@@ -37,137 +37,151 @@
 
 ## Where we are in the arc
 
-**Stream:** this branch is **outside** `RELEASE_ARC.md`'s "v1.1.0 close-out —
-reconciliation" numbered sequence — an ad-hoc fix triggered mid-session by the
-user noticing a fabricated commit hash in the handoff pointer they'd just been
-handed, not a pre-planned step. Same precedent as `feat/handoff-integrity-kit`
-(also unlisted there).
+**Stream:** `RELEASE_ARC.md`'s "v1.1.0 close-out — reconciliation" numbered
+sequence, step 3.
 **Sequencing rule:** strictly sequential — one branch at a time (Key decision 10: no
-conductor/waves until further notice) — unaffected by this branch's own
-out-of-sequence status.
+conductor/waves until further notice).
 **Blocked until this stream tags:** nothing downstream is gated on this step.
 
-- ~~`docs/v110-plan-reconciliation`~~ ✓ — step 1 of the numbered sequence
-- ~~`fix/plan-approval-hook-scope`~~ ✓ — step 2 of the numbered sequence
-- **`fix/handoff-pointer-verification`** ← this branch, NOT numbered-sequence step 3
-- `fix/compose-unawaited-reloads` ← still the actual next numbered-sequence
-  step (ledger item 7) — do not start it on this branch
-- The overdue reduction sprint (ledger stayed at 14 open, over the ~8–10
-  ceiling, through this branch too — see below) is still a live candidate for
-  "what's next," per the prior handoff's own recommendation
+- ~~`docs/v110-plan-reconciliation`~~ ✓ — step 1
+- ~~`fix/plan-approval-hook-scope`~~ ✓ — step 2 — scoped `check-plan-approved`'s marker per-project
+- **`fix/compose-unawaited-reloads`** ← this branch — step 3, DONE
+- `refactor/css-cascade-collapse` (PX-51) ← still the actual next numbered-sequence
+  step — do not start it on this branch
+- The overdue reduction sprint (ledger now at **15 open**, further over the
+  ~8–10 ceiling than the last handoff — see below) is still a live candidate
+  for "what's next," per two prior handoffs' own recommendation, now stronger
 
-Do not treat this handoff as authorizing `fix/compose-unawaited-reloads` or
+Do not treat this handoff as authorizing `refactor/css-cascade-collapse` or
 the reduction sprint by default — the owner picks the next branch.
 
 ---
 
 ## What just landed on `main`
 
-**Not yet merged as of this handoff** — `fix/handoff-pointer-verification` is
-still open, branched off `main` at `3758d8e` (the tip of
-`fix/plan-approval-hook-scope`'s own close-out chain, including its stranded
-handoff-commit branch). Full detail: [[project-handoff-pointer-verification]]
-memory, [`diagnosis/handoff-pointer-verification.md`](../diagnosis/handoff-pointer-verification.md).
+**Not yet merged as of this handoff** — `fix/compose-unawaited-reloads` is
+still open, branched off `main` at `8681aa3` (the tip of
+`fix/handoff-pointer-verification`'s own merge).
 
-**The defect:** the branch close-out checklist's step 5 pointer line
-(`Handoff: <path> @ <branch> (<short-hash>)`) — the ONE thing that reliably
-crosses from a closing session into the next one — had its commit hash
-hand-typed from memory, with nothing forcing or checking it, unlike the
-handoff FILE it points to (already fingerprint/provenance-verified). Proven
-fabricated, not theorized: this session received pointer `Handoff:
-docs/dev/handoffs/fix-plan-approval-hook-scope.md @ main (0d7fe1a)`;
-`0d7fe1a` does not exist anywhere in the repo (confirmed via `git cat-file`,
-`git rev-list --all`, `git reflog`, and a fetch-and-diff against
-`origin/main`). Reading the prior session's own transcript
-(`~/.claude/projects/C--Dev-sartor/ccd0dad5-....jsonl`) found the string
-exactly once — in the model's own generated closing text, present in no tool
-call or tool result — immediately after a `git merge --no-ff` whose stdout is
-a diffstat with no hash in it. `git show --stat 3758d8e` confirmed the real
-hash that should have been cited.
+**The defect:** `fix/ci-first-linux-run` (`be48fec`, 2026-07-12) awaited
+`loadComposition()` at the 5 auto-arrival-cascade call sites so the settle
+gate (`data-compose-bg-pending`/`data-compose-ready`) can't read terminal
+mid-repaint. The **user-action-triggered** call sites were deliberately left
+un-awaited (out of that branch's scope) and tracked as a Carry-forward ledger
+row — separately investigated and exonerated as the cause of the one known
+chronic flake (`compose-summary-draft-settle-hole`), so this was a latent
+consistency defect, not an active symptom.
 
-**The fix:** new `scripts/print_handoff_pointer.py` generates the pointer
-line from `git` directly (branch + short HEAD hash), refusing to print
-anything for a handoff doc not yet committed and reachable at HEAD. New
-`scripts/check_handoff_pointer.py` independently re-verifies a pointer line
-against git state (cited commit exists, doc present in its tree, commit is an
-ancestor of the named branch) — run on both ends per the user's own framing
-mid-session: *"it's not guaranteed unless we enforce method and then check."*
-`docs/dev/AGENT_HANDOFF_TEMPLATE.md`, `AGENTS.md`, and
-`docs/dev/handoffs/README.md` now mandate both scripts in place of a
-hand-typed line. New regression suite `tests/test_handoff_pointer.py` (11
-tests, subprocess-level against both real scripts in a throwaway git repo).
-Manually verified against the real bug: `print_handoff_pointer.py` on the
-prior handoff now prints the correct `3758d8e`; `check_handoff_pointer.py`
-accepts that and rejects the original `0d7fe1a` with `commit not found`.
+**The fix:** re-derived the live call-site map directly from `static/app.js`
+rather than trusting the ledger's own prose (it had gone stale — named an
+already-fixed "add-title" site, omitted two real sites). Added `await` at the
+9 actually-open call sites across 6 already-`async` functions
+(`_acceptRefinementProposal` ×4, `_togglePositioningPin`, `_fireSuggestSkills`,
+`_reviewPendingSkill`, `_decideGapFill`, `_addComposeRoleIntro`) — mechanical,
+no signature changes. 3 sites excluded as a materially larger, differently-shaped
+change (non-`async` intermediate call frames, mixed direct-click/chained-async/
+browser-Back-Forward triggers) — filed as its own carry-forward row.
 
-`python -m scripts.gate` equivalent run in batches (the still-open
-"gate unrunnable in one shot" ledger item, unchanged by this branch): ruff
-check ✓, ruff format --check ✓ (1 file auto-reformatted), mypy ✓ (327 files,
-0 issues), pytest — 2028 passed across 6 non-`ux` batches, plus the `ux`
-tier split regression/a11y/flows: 108 + 5 + 6 passed, 1 failure
-(`test_restore_scroll_y_loses_to_post_restore_growth`, the
-already-characterized pre-existing scroll-flake — see
-[[project-ux-scroll-flake-chip0]] — confirmed clean on isolated re-run,
-unrelated to this branch's changes).
+**Evidence, per charter C-7:** `docs/dev/diagnosis/compose-unawaited-reloads.md`.
+Worth reading in full for the methodology, not just the result — the first
+falsification attempt (checking DOM row-absence) turned out to be a **broken
+instrument**: `loadComposition()` synchronously wipes `#composeList` to a
+loading placeholder before its first internal `await`, so row-absence is true
+in both the buggy and fixed code and can't distinguish them. Corrected by
+checking the actual settle-gate contract (`Compose.SETTLED` selector —
+`data-compose-ready` presence at the exact instant `data-compose-bg-pending`
+clears, captured inside one `MutationObserver` tick to remove all
+Python/Playwright round-trip timing risk). That test
+(`tests/ux/regression/test_20260718_compose_unawaited_reloads.py`) failed
+deterministically on unmodified HEAD and passed after the fix, no retry.
+
+**Also fixed (unplanned, found while gating):** a pre-existing broken
+cross-document link on `main`, unrelated to this branch's diff —
+`docs/dev/handoffs/fix-handoff-pointer-verification.md:303` cited
+`diagnosis/handoff-pointer-verification.md` with a relative path that only
+resolves correctly from `docs/dev/AGENT_HANDOFF_TEMPLATE.md`'s own location,
+not from `docs/dev/handoffs/`. It was blocking `test_no_broken_cross_document_links_or_cites`
+(a mandatory, no-hatch gate step), so a one-line docs-only correction landed
+here rather than being deferred. **The template itself was deliberately NOT
+touched** — the real fix (a citation form that survives being copied to any
+directory depth) is a design decision on a governance-adjacent doc, filed as
+its own new carry-forward row rather than made solo mid-branch.
+
+`python -m scripts.gate` equivalent run in batches (the still-open "gate
+unrunnable in one shot" ledger item, unchanged by this branch — the full
+non-ux `pytest -m "not ux"` run alone took 605s and still had to move to a
+background task): ruff check ✓, ruff format --check ✓ (no reformats needed),
+mypy ✓ (328 files incl. the new test, 0 issues), pytest — 2027 passed + 1
+skipped (non-`ux`, after the doc-link fix above), `ux` tier split
+regression/a11y/flows: 110 + 4 + 7 passed, all green including the
+already-characterized `test_restore_scroll_y_loses_to_post_restore_growth`
+scroll-flake (clean this run — see [[project-ux-scroll-flake-chip0]]).
 
 ---
 
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
 Full detail for every item lives in `docs/dev/RELEASE_CHECKLIST.md`'s Carry-forward ledger
-(`#### Open`); this is the required one-line-each mirror. **14 open, still over the ~8–10
-ceiling** — this branch found and fixed its own item within itself (never entered `#### Open`),
-so the count is unchanged from the prior handoff.
+(`#### Open`); this is the required one-line-each mirror. **15 open, further over the ~8–10
+ceiling than the prior handoff (14)** — this branch resolved 1 item and added 2 new ones (both
+found while doing this branch's own work, not scope creep: the 3 excluded call sites, and the
+handoff-template link defect found while gating).
 
 1. `--reruns 2` on the `ux` CI tier is a masking policy — fix landed; the reruns-policy
    question itself is deliberately left open until a real post-fix CI sample exists.
 2. The quality gate is unrunnable by an agent in one shot (~13 min vs. a 10-command shell cap)
-   — a governance hole. (Hit again this session — 6 batches + a separate 3-way `ux` split —
-   direct, repeated confirmation this item is still real.)
+   — a governance hole. (Hit again this session — the non-`ux` batch alone took 605s and had
+   to move to a background task — direct, repeated confirmation this item is still real.)
 3. **[HUMAN/OWNER]** wire CodeQL as a *required* status check on `main` — admin-only 30-second
    Settings toggle, not automatable.
 4. `test_corpus_reload_preserves_scroll_position` (and sibling scroll-restore tests) — a real
-   ~10–20% flake, measured not fixed. (Hit again this session under a different test name,
-   `test_restore_scroll_y_loses_to_post_restore_growth` — isolated re-run confirmed clean,
-   consistent with the existing characterization.)
+   ~10–20% flake, measured not fixed. Ran clean this session (part of the `ux` tier's full
+   green run).
 5. `chore/scrub-local-eval-paths` parked branch — 2 commits, unmerged, gate re-verification
    incomplete (not failed).
 6. Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/` (~107 files, agent-regenerated) —
    user-facing surface already swept; this remainder deliberately deferred.
-7. Compose user-action reloads still fire `loadComposition()` un-awaited — only the five
-   auto-arrival cascade fires were awaited by `fix/ci-first-linux-run`.
-8. PyPI wheel packaging — RESOLVED-PENDING-PUBLISH; left open only for the still-blocked
+7. **NEW.** 3 `loadComposition()` sites excluded from this branch's fix
+   (`static/app.js:6549,6606,6932` — `_resumeIntoStep6`, `_resumeIntoPreGenerateStep`,
+   `wizardGoTo`) need their own pass — non-`async` intermediate call frames plus a
+   browser-Back/Forward trigger make this a design decision, not a mechanical `await` add.
+8. **NEW.** `AGENT_HANDOFF_TEMPLATE.md`'s own "Branch close-out checklist" verbatim block has a
+   relative link that breaks every time it's copied into an actual `docs/dev/handoffs/<slug>.md`
+   file (one directory deeper than the template's own location). Fixed the one instance this
+   branch's gate run tripped over; the template itself needs a citation-format decision before
+   every future handoff stops reproducing the same broken link.
+9. PyPI wheel packaging — RESOLVED-PENDING-PUBLISH; left open only for the still-blocked
    `[HUMAN]` Trusted Publisher prerequisite.
-9. In-app rendered citation viewer — deliberately deferred; build only if real friction shows
-   up (GitHub links suffice for now).
-10. Grounding/hallucination metric calibrated layers (L1/L2) — no labeled real data yet;
+10. In-app rendered citation viewer — deliberately deferred; build only if real friction shows
+    up (GitHub links suffice for now).
+11. Grounding/hallucination metric calibrated layers (L1/L2) — no labeled real data yet;
     scheduled as v1.0.7 Sprint PV-2.
-11. Agent-coding-practices kit-adoption staged commitments — cross-cutting deferrals
+12. Agent-coding-practices kit-adoption staged commitments — cross-cutting deferrals
     (mypy-strict ratchet exit, gate-hardness ratchet-then-block, etc.) kept in one tracked home.
-12. 2026-07 efficiency review PX-37..PX-56 aggregate — drains via per-PX-coordinated individual
+13. 2026-07 efficiency review PX-37..PX-56 aggregate — drains via per-PX-coordinated individual
     branches per `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation."
-13. UX round-2 remediation — Wave A (six decision-free findings) landed on
+14. UX round-2 remediation — Wave A (six decision-free findings) landed on
     `fix/round2-quick-wins`; the design-heavy remainder (state-communication unification, etc.)
     is still open.
-14. `docs/governance/enforcement.md` (and several memory files) cite "charter W-1" (the
+15. `docs/governance/enforcement.md` (and several memory files) cite "charter W-1" (the
     parallel-session working model) as an existing clause — it does not exist in
     `docs/governance/charter.md` (only C-0…C-9, D-1…D-7). Needs an owner-directed amendment
     ceremony to write the actual clause and reconcile the dangling citations.
 
-**Reduction sprint is overdue, not merely due** — the ~8–10 ceiling has been exceeded since
-before the prior handoff, and this branch (correctly, per its own scope) neither resolved nor
-added a tracked item — it fixed a defect found and closed entirely within its own lifetime.
-Strongly consider the reduction sprint as the very next branch.
+**Reduction sprint is now more overdue than at the last handoff, not less** — two consecutive
+branches have each (correctly, per their own scope) left the ledger net-flat-or-growing rather
+than draining it, because each found and filed its own genuinely-new items rather than closing
+old ones. Strongly consider the reduction sprint as the very next branch, ahead of
+`refactor/css-cascade-collapse`.
 
 ---
 
 ## What this branch should build
 
-This handoff exists solely to record `fix/handoff-pointer-verification` and hand off cleanly —
+This handoff exists solely to record `fix/compose-unawaited-reloads` and hand off cleanly —
 it does not mandate a deliverable itself. Per `RELEASE_ARC.md`'s ordered sequence, the next
-candidate is **step 3, `fix/compose-unawaited-reloads`** (ledger item 7 above), unless the
-owner prefers to run the overdue reduction sprint first (see the note above) or names something
-else entirely.
+candidate is **step 4, `refactor/css-cascade-collapse`** (PX-51), unless the owner prefers to
+run the overdue reduction sprint first (see the note above) or names something else entirely.
 
 Scope is bounded to whatever the owner confirms next — do not treat this handoff as
 authorizing any specific branch by default.
@@ -263,6 +277,20 @@ damaged text instead of saying so (see
 
 ## Branch close-out checklist (do in this order before closing the window)
 <!-- verbatim -->
+
+> **Deliberate, user-approved deviation from byte-for-byte (2026-07-18):** step 5's
+> citation link below reads `../diagnosis/handoff-pointer-verification.md`, not
+> `diagnosis/handoff-pointer-verification.md` as `AGENT_HANDOFF_TEMPLATE.md` itself
+> has it. The template's own copy is only correct relative to the template's OWN
+> location (`docs/dev/`); reproduced byte-for-byte into `docs/dev/handoffs/<slug>.md`
+> (one directory deeper) it 404s — confirmed by `test_no_broken_cross_document_links_or_cites`
+> against the previous handoff that copied it unfixed. Asked the user how to handle this
+> specific instance; they chose "fix the link here, accept the verbatim mismatch" over
+> "keep it broken" or "fix the template now." Consequence, expected and accepted:
+> `scripts/verify_doc_template.py --event generated` reports `FAILED — verbatim section
+> does not match template` for this section (sha256 `a798b64e7b24` vs. template's
+> `a25f30362820`) — that mismatch is this one intentional character, not corruption. The
+> template itself is unchanged; see the new Carry-forward ledger row for the real fix.
 
 0. **Pre-close sweep — BEFORE the gate, ON THE BRANCH (never post-merge).**
    Enumerate ALL close-out obligations and resolve each (or explicitly defer
