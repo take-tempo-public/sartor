@@ -21,6 +21,33 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Fixed: the handoff pointer line's commit hash was hand-typed, with nothing forcing or checking it (`fix/handoff-pointer-verification`)
+
+The one line of copyable chat text a closing agent hands the user at end-of-session — `Handoff:
+<path> @ <branch> (<short-hash>)` — had its commit hash typed from memory, with nothing forcing
+or checking it, even though the committed handoff FILE it points to is already fingerprint/
+provenance-verified (`scripts/verify_doc_template.py`, charter C-9). Proven fabricated at least
+once: a closing agent ran `git merge --no-ff` (stdout is a diffstat, no hash), then typed a
+plausible-looking but nonexistent short hash into its closing summary — found by grepping that
+session's own transcript, where the string appears exactly once, in the model's generated text,
+nowhere in any tool call or result (full evidence:
+[`docs/dev/diagnosis/handoff-pointer-verification.md`](docs/dev/diagnosis/handoff-pointer-verification.md)).
+
+- New `scripts/print_handoff_pointer.py` generates the pointer line from git directly (branch +
+  short HEAD hash), and refuses to print anything for a handoff doc that isn't yet committed and
+  reachable at HEAD — this also guards against citing a pointer before its own merge has landed.
+- New `scripts/check_handoff_pointer.py` independently re-verifies a pointer line against git
+  state (the cited commit exists, the doc is present in its tree, the commit is an ancestor of
+  the named branch) — run on both ends: by the closing agent immediately after generating the
+  pointer, before pasting it, and by the next agent as its first action on receiving one, before
+  trusting anything else about it. Enforce the method, then check the result.
+- `docs/dev/AGENT_HANDOFF_TEMPLATE.md`'s Close-out checklist step 5, `AGENTS.md`'s own step 5,
+  and `docs/dev/handoffs/README.md`'s "The pointer"/"Consumption" bullets now mandate both
+  scripts instead of a hand-typed, unchecked line.
+- New regression suite `tests/test_handoff_pointer.py` (11 tests), subprocess-level against both
+  real scripts in a throwaway git repo.
+- Governance/process fix — no route, prompt, or dependency change; `PROMPT_VERSION` untouched.
+
 ### Added: handoff transfer integrity — committed, fingerprint-validated handoff files (`feat/handoff-integrity-kit`)
 
 Handoffs copy-pasted between Claude Code sessions have been silently arriving corrupted —
