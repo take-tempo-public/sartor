@@ -60,6 +60,41 @@ evidence + decision record: [`docs/dev/handoff-integrity-design.md`](docs/dev/ha
   branch's own merge-confirmation, honestly cited as documented convention rather than a
   blocking hook, per that clause's own claims discipline (C-0).
 
+### Fixed: the plan-approval hooks shared one global marker across every Claude Code project on the machine (`fix/plan-approval-hook-scope`)
+
+`check-plan-approved.sh`, `mark-plan-approved.sh`, and `cleanup-plan-on-merge.sh` kept their
+approval state in one global `$HOME/.claude/plans/.approved` marker and treated
+`$HOME/.claude/plans/*.md` as one flat, shared pool — with no project association in the
+filename or location. A concurrent Claude Code session in a completely unrelated repo could
+false-block this project's already-approved edits (its plan file merely being newer than the
+marker was enough), and that unrelated session's merge close-out could delete this project's
+live approval outright. Both live-reproduced against the unmodified scripts before the fix
+(full evidence: [`docs/dev/diagnosis/plan-approval-hook-scope.md`](docs/dev/diagnosis/plan-approval-hook-scope.md)).
+
+- All three scripts now key their approval marker and a new "current plan file" pointer off
+  `CLAUDE_PROJECT_DIR` (confirmed a real environment variable inside hook script bodies,
+  matching 9 of the other 12 hooks in `.claude-plugin/hooks/`) instead of one shared global
+  file — a concurrent session in a different project or worktree can no longer trip or
+  satisfy this project's gate.
+- **A second, related defect was found live during this fix's own investigation**, not
+  hypothesized: `cleanup-plan-on-merge.sh`'s merge-detection was a bare text `grep` over the
+  whole raw stdin JSON, with no check that a merge had actually happened. A diagnostic Bash
+  command whose text merely *mentioned* the trigger phrases (as echoed test data) tripped it
+  for real and deleted a just-approved plan. Fixed by gating the actual deletion on a
+  structural check — HEAD in this project's own repo must currently be a merge commit
+  (`git -C "$CLAUDE_PROJECT_DIR" log -1 --pretty=%P` has ≥2 parents) — keeping the text
+  `grep` only as a cheap pre-filter.
+- New regression suite `tests/test_plan_approval_scoping.py` (7 tests, subprocess-level
+  against the real scripts, temp `HOME` + distinct `CLAUDE_PROJECT_DIR` values per test).
+  `tests/test_governance_hooks_gate.py` needed no changes (its assertions are text/wiring-
+  based, not marker-path-based).
+- Governance/process fix — no route, prompt, or dependency change; `PROMPT_VERSION` untouched.
+- **Not done here (owner-directed):** `docs/governance/enforcement.md` and several memory
+  files cite "charter W-1" (the parallel-session working model) as an existing clause; it is
+  not — `charter.md` has no `W-1` section. `enforcement.md:107` now says so honestly rather
+  than implying it exists; authoring the actual clause is filed as its own
+  `RELEASE_CHECKLIST.md` Carry-forward item for a future, owner-directed amendment ceremony.
+
 ### Fixed: corpus/Compose reloads could snap your scroll position away (`fix/ux-scroll-position-flake`)
 
 Accepting, retiring, or editing a bullet could scroll you back to the top of a long corpus or
