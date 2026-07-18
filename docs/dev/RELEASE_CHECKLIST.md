@@ -515,7 +515,13 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **14** (**−1** this entry — the handoff-transfer-corruption item
+_Rendered open count: **14** (unchanged this entry — `fix/plan-approval-hook-scope`,
+2026-07-17: **−1** the `check-plan-approved` global-scope hook gap, **RESOLVED** (marker +
+pointer state now keyed off `CLAUDE_PROJECT_DIR`; full detail in its Resolved-section note);
+**+1** a new item filed same branch — `enforcement.md`'s own remedy for that finding cited
+"charter W-1" as an existing clause, and reading `charter.md` directly during the fix
+confirmed no such clause exists. Net unchanged, still over the ~8-10 ceiling.
+Prior to that: **14** (**−1** this entry — the handoff-transfer-corruption item
 **RESOLVED** on `feat/handoff-integrity-kit`, 2026-07-17: the kit (provenance stamp +
 fingerprint validator + ledger, vendored from spolia) is implemented and this item moved to
 Resolved — see its note there for detail. Prior to that: **15** (**+1** the
@@ -1556,26 +1562,53 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       notes above. The `app.run(threaded=True)` governance flag is a deliberate
       owner-gated deferral, not a miss.
 
-- [ ] **`check-plan-approved` hook has no per-project/session scope — a concurrent
-      unrelated session can false-positive block this one** — the hook (source read
-      directly) compares the newest `*.md` in `~/.claude/plans/` GLOBALLY against one
-      `.approved` marker; plan files carry no project association, so any concurrent
-      Claude Code session on this machine, in ANY project, mid-plan, blocks Edit/Write
-      in every other session until that session calls `ExitPlanMode`. Hit live on this
-      branch (2026-07-16, Chip 2) by an unrelated session working on a different repo
-      entirely. Worked around per-instance (user confirmed the other session was
-      unrelated; the hook is registered for `Edit|Write` only, not `Bash`, so a narrow
-      scripted text-replacement proceeded without touching the shared marker or the
-      other session's plan) — not a fix. Full mechanism in
-      [[reference-plan-approval-hook-global-scope]] (durable memory). **Needs an actual
-      fix**: scope the marker/newest-plan comparison per project (e.g. a
-      project-path-derived subdirectory or marker filename) so concurrent multi-project
-      sessions don't collide.
-      _(discovered: v1.1.0 stream, 2026-07-16, `fix/ux-scroll-position-flake` Chip 2 —
-      unrelated to the scroll-flake work it was hit alongside; open count 13 → 14, over
-      the ~8-10 ceiling and rising — the reduction sprint is now more overdue, not less.)_
+- [ ] **`docs/governance/enforcement.md` (and several memory files) cite "charter W-1"
+      (the parallel-session working model) as an established governance clause — it does
+      not exist.** `docs/governance/charter.md` has no `W-1` clause anywhere (only
+      `C-0`…`C-9` and `D-1`…`D-7`). Discovered while fixing the hook side of the same
+      finding on `fix/plan-approval-hook-scope` (item 14 below, now Resolved) —
+      `enforcement.md:107`'s own "Why it stays soft" cell named "codify ... as prose
+      governance (charter W-1)" as the other half of that fix's remedy, and reading
+      `charter.md` directly confirmed the clause was never actually written. Corrected
+      in place at `enforcement.md:107` (now says so honestly) rather than silently
+      implying W-1 exists. **Needs an actual fix**: an owner-directed amendment ceremony
+      that writes the real `W-1` clause text into `charter.md` (the same shape as how
+      **C-9** was added on `feat/handoff-integrity-kit`), then reconciles the other
+      dangling citations (`enforcement.md:108,155` at minimum — not audited exhaustively
+      here, since authoring the clause is the owner's call, not this branch's).
+      _(discovered: v1.1.0 stream, 2026-07-17, `fix/plan-approval-hook-scope`; open count
+      14 → 14 — item 14 below resolved same branch, this one added, net unchanged, still
+      over the ~8-10 ceiling.)_
 
 #### Resolved
+
+- [x] **`check-plan-approved` hook global scope — RESOLVED** on
+      `fix/plan-approval-hook-scope`, 2026-07-17. Was: the hook (source read directly)
+      compared the newest `*.md` in `~/.claude/plans/` GLOBALLY against one `.approved`
+      marker; plan files carried no project association, so any concurrent Claude Code
+      session on this machine, in ANY project, mid-plan, blocked Edit/Write in every
+      other session until that session called `ExitPlanMode` — hit live on
+      `fix/ux-scroll-position-flake` (2026-07-16, Chip 2) by an unrelated session working
+      on a different repo entirely. **Fix shipped:** `check-plan-approved.sh` /
+      `mark-plan-approved.sh` / `cleanup-plan-on-merge.sh` now key their approval marker
+      and a new "current plan file" pointer off `CLAUDE_PROJECT_DIR` (confirmed a real
+      env var inside hook bodies, matching 9 of the other 12 hooks), so a concurrent
+      session in a different project/worktree can no longer trip or satisfy this
+      project's gate, and its merge close-out can no longer wipe this project's state.
+      **A second, related defect was found live during this branch's own
+      investigation** (not hypothesized): `cleanup-plan-on-merge.sh`'s merge-detection
+      was a bare text `grep` over the whole raw stdin JSON with no check that a merge
+      actually happened — a diagnostic Bash command whose text merely *mentioned* the
+      trigger phrases (as echoed test data) tripped it for real and deleted a just-
+      approved plan. Fixed by gating the actual deletion on a structural check (`git -C
+      "$CLAUDE_PROJECT_DIR" log -1 --pretty=%P` has ≥2 parents — HEAD is genuinely a
+      merge commit right now), keeping the text `grep` only as a cheap pre-filter. Full
+      evidence: [`diagnosis/plan-approval-hook-scope.md`](diagnosis/plan-approval-hook-scope.md).
+      New regression suite `tests/test_plan_approval_scoping.py` (7 tests, subprocess-
+      level against the real scripts); `tests/test_governance_hooks_gate.py` unchanged
+      and still green. The "charter W-1" citation this finding's own remedy depended on
+      turned out not to exist — filed as its own new item above rather than silently
+      authored mid-branch.
 
 - [x] **Handoff transfer channel — RESOLVED** on `feat/handoff-integrity-kit`,
       2026-07-17 (kit implemented; design + evidence:
