@@ -12,6 +12,8 @@ Verified against `templates/index.html` and the proven navigation in
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 
 class UserPicker:
     """Selectors for the landing user-picker panel."""
@@ -72,10 +74,58 @@ class Help:
     ICON = ".help-info"
     INLINE = ".help-inline"
 
+    # localStorage key prefix `static/help-modal.js`'s cbHelpSeen/cbMarkHelpSeen
+    # seam reads/writes (`cb_help_seen:<block>`).
+    SEEN_PREFIX = "cb_help_seen:"
+
+    # Every help block that AUTO-fires on first view (the welcome + each KW3
+    # tour stop + each /_dashboard per-tab explainer) — see `static/app.js`'s
+    # `_maybeAutoOpenHelp`/`_maybeFireTourStop`. Seeding their `cb_help_seen:`
+    # flags models a returning user so auto-modals never overlay a fresh
+    # browser context's first interaction. Panels that only carry an on-demand
+    # (i) (panelAnalysis/panelApplications/panelPersonas/panelMemory) never
+    # auto-open, so they're intentionally absent. Single source of truth for
+    # both `tests/ux/conftest.py`'s autouse suppression fixture and
+    # `scripts/capture_screenshots.py` — keep in sync with `static/app.js` if
+    # a new auto-firing block is ever registered.
+    TOUR_STOP_BLOCKS = (
+        "panelUser",  # welcome
+        "tourAddUser",  # add-user tip
+        "tourCorpusLanding",  # F-06 post-create corpus-landing transition
+        "panelCorpus",  # post-ingest
+        "panelJD",  # wizard step 1
+        "panelClarify",  # wizard step 2
+        "panelCompose",  # wizard step 3
+        "panelTemplate",  # wizard step 4
+        "panelGenerate",  # wizard step 5
+        "panelOutput",  # wizard step 6
+        "tourGenerating",  # first Generate click
+        "tourCoverLetter",  # first cover-letter
+        "dashPipeline",  # /_dashboard Pipeline tab explainer (auto on first load)
+        "dashQuality",  # /_dashboard Quality tab explainer
+        "dashGroundedness",  # /_dashboard Groundedness tab explainer
+        "dashTuning",  # /_dashboard Tuning tab explainer
+        "dashAnnotate",  # /_dashboard Annotate tab explainer
+    )
+
     @staticmethod
     def icon(block_id: str) -> str:
         """The injected (i)-circle for a given block (e.g. ``panelUser``)."""
         return f"#help-icon-{block_id}"
+
+    @staticmethod
+    def suppress_tour_init_script(blocks: Iterable[str] | None = None) -> str:
+        """JS for ``page.add_init_script`` that seeds ``cb_help_seen:<block>``.
+
+        Seeds every given block (default: all of `TOUR_STOP_BLOCKS`) before any
+        navigation, so no auto-firing help modal ever opens. Storage-safe
+        (try/catch), matching `static/help-modal.js`'s own seam.
+        """
+        chosen = Help.TOUR_STOP_BLOCKS if blocks is None else tuple(blocks)
+        sets = "".join(
+            f"window.localStorage.setItem('{Help.SEEN_PREFIX}{b}', '1');" for b in chosen
+        )
+        return f"try {{ {sets} }} catch (e) {{ /* storage unavailable — help may show */ }}"
 
 
 class Header:
@@ -351,7 +401,11 @@ class Output:
     GENERATE_COVER = "#btnGenerateCover"
     COVER_TAB = "#tabBtnCoverLetter"
     COVER_TAB_ACTIVE = "#tabCoverLetter.active"
+    # #coverLetterPreview's home location is hidden by default — it's only
+    # visible once relocated into the edit drawer via openEditDrawer('cover')
+    # (templates/index.html:586). OPEN_EDIT_DRAWER is that trigger button.
     COVER_PREVIEW = "#coverLetterPreview, #tabCoverLetter [contenteditable]"
+    OPEN_COVER_EDIT_DRAWER = "#btnOpenCoverEditDrawer"
 
 
 class Dashboard:

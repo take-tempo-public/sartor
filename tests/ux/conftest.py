@@ -18,6 +18,8 @@ from types import ModuleType
 import pytest
 from playwright.sync_api import Browser, ConsoleMessage, Page, Response
 
+from ui_pages.selectors import Help
+
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     """Print the failure of every RERUN attempt. Reruns must not be silent.
@@ -187,60 +189,29 @@ def page(_browser: Browser, live_server: str) -> Iterator[Page]:
     assert not server_errors, f"HTTP 5xx during test: {server_errors}"
 
 
-# Every help block that AUTO-fires on first view (the welcome + each KW3 tour
-# stop + each /_dashboard per-tab explainer). Seeding their ``cb_help_seen:<block>``
-# flags models a returning user so the auto-modals never overlay the landing/wizard
-# or the diagnostics console and block other tests. Panels that only carry an
-# on-demand (i) (panelAnalysis/panelApplications/panelPersonas/panelMemory) never
-# auto-open, so they are intentionally absent here. The dashboard explainers
-# (``feat/education-diagnostics-annotate``) reuse the same ``cb_help_seen:`` prefix
-# (their controller is a port of the wizard's), so the same init-script seeding
-# suppresses them on the ``/_dashboard/`` navigation — but only because the ported
-# ``_maybeFireDashHelp`` reads these exact ids before opening.
-_TOUR_STOP_BLOCKS = (
-    "panelUser",  # welcome
-    "tourAddUser",  # add-user tip
-    "tourCorpusLanding",  # F-06 post-create corpus-landing transition
-    "panelCorpus",  # post-ingest
-    "panelJD",  # wizard step 1
-    "panelClarify",  # wizard step 2
-    "panelCompose",  # wizard step 3
-    "panelTemplate",  # wizard step 4
-    "panelGenerate",  # wizard step 5
-    "panelOutput",  # wizard step 6
-    "tourGenerating",  # first Generate click
-    "tourCoverLetter",  # first cover-letter
-    "dashPipeline",  # /_dashboard Pipeline tab explainer (auto on first load)
-    "dashQuality",  # /_dashboard Quality tab explainer
-    "dashGroundedness",  # /_dashboard Groundedness tab explainer
-    "dashTuning",  # /_dashboard Tuning tab explainer
-    "dashAnnotate",  # /_dashboard Annotate tab explainer
-)
-
-
 @pytest.fixture(autouse=True)
 def _help_welcome_default_seen(request: pytest.FixtureRequest, page: Page) -> None:
     """Default every UX test to 'first-run help already seen'.
 
     The Sprint-6.5 help primitive auto-opens a welcome modal on first view and
     the education branch layers the KW3 new-user tour (one once-ever modal per
-    milestone), each gated by a ``cb_help_seen:<block>`` localStorage flag. Each
-    test gets a fresh browser context (empty localStorage), so without this an
-    auto-modal's full-screen backdrop would block the interactions every other
-    test performs right after ``load()``. Seeding every auto-firing block via an
-    init-script (runs before each navigation) models the common case — a
-    returning user. Tests opt back in: ``@pytest.mark.show_welcome`` for just the
-    welcome, ``@pytest.mark.show_tour`` for the whole new-user sequence.
+    milestone), each gated by a ``cb_help_seen:<block>`` localStorage flag (full
+    block list + the seeding JS: ``ui_pages.selectors.Help`` — also consumed by
+    ``scripts/capture_screenshots.py``, which hits the exact same auto-open
+    problem outside the test harness). Each test gets a fresh browser context
+    (empty localStorage), so without this an auto-modal's full-screen backdrop
+    would block the interactions every other test performs right after
+    ``load()``. Seeding every auto-firing block via an init-script (runs before
+    each navigation) models the common case — a returning user. Tests opt back
+    in: ``@pytest.mark.show_welcome`` for just the welcome, ``@pytest.mark.show_tour``
+    for the whole new-user sequence.
     """
     if request.node.get_closest_marker("show_tour"):
         return  # tour tests drive the genuine new-user sequence
-    blocks = list(_TOUR_STOP_BLOCKS)
+    blocks = list(Help.TOUR_STOP_BLOCKS)
     if request.node.get_closest_marker("show_welcome"):
         blocks.remove("panelUser")  # welcome fires; the rest stay suppressed
-    sets = "".join(f"window.localStorage.setItem('cb_help_seen:{b}', '1');" for b in blocks)
-    page.add_init_script(
-        f"try {{ {sets} }} catch (e) {{ /* storage unavailable — help may show */ }}"
-    )
+    page.add_init_script(Help.suppress_tour_init_script(blocks))
 
 
 @pytest.fixture
