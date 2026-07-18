@@ -283,7 +283,7 @@ damaged text instead of saying so (see
    `python scripts/check_handoff_pointer.py "<output>"` before pasting
    anything (enforce the method, then check the result: a hand-typed hash
    was proven fabricated once — see
-   [`diagnosis/handoff-pointer-verification.md`](diagnosis/handoff-pointer-verification.md)).
+   `docs/dev/diagnosis/handoff-pointer-verification.md`).
    Give the user the checked line **as copyable chat text**, as the
    **last act** before closing the window. Never paste the handoff file's
    content into chat; that reintroduces the corruption channel this

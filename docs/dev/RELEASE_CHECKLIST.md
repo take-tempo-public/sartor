@@ -515,7 +515,15 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **14** (unchanged this entry — `fix/handoff-pointer-verification`,
+_Rendered open count: **14** (**−1** this entry — `docs/handoff-template-relative-link`,
+2026-07-18: `AGENT_HANDOFF_TEMPLATE.md`'s "Branch close-out checklist" relative-link citation,
+**RESOLVED** — see its `#### Resolved` entry below. **Correction to the prior entry's count:**
+the actual count immediately before this one was **15**, not the 14 stated there —
+`fix/compose-unawaited-reloads` filed this item into `#### Open` on 2026-07-18 but never
+updated this header for the +1 (verified by counting `- [ ]` bullets directly). This entry's
+−1 brings the true count back to 14, which happens to match what the stale header already said.
+Prior to that (as stated there, undercounted by the one-item gap just described): **14**
+(unchanged this entry — `fix/handoff-pointer-verification`,
 2026-07-18: found-and-fixed within its own branch, never entered `#### Open`, so no net change
 to the open count; full evidence in its `#### Resolved` entry below and
 `docs/dev/diagnosis/handoff-pointer-verification.md`).
@@ -998,29 +1006,6 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-18, `fix/compose-unawaited-reloads`, while
       re-deriving the full call-site map for the row above.)_
       **→ Low priority, own small pass — needs design, not just mechanical `await`.**
-
-- [ ] **`AGENT_HANDOFF_TEMPLATE.md`'s own "Branch close-out checklist" verbatim block
-      contains a relative link that breaks every time it's copied into an actual
-      handoff** — `docs/dev/AGENT_HANDOFF_TEMPLATE.md:286`'s citation
-      `[...](diagnosis/handoff-pointer-verification.md)` resolves correctly from the
-      template's own location (`docs/dev/`) but is WRONG once copied verbatim into
-      `docs/dev/handoffs/<slug>.md` (one directory deeper — needs `../diagnosis/...`
-      from there). `test_no_broken_cross_document_links_or_cites` caught exactly this
-      in the already-merged `docs/dev/handoffs/fix-handoff-pointer-verification.md:303`
-      — fixed on this branch (one-line, docs-only) so this branch's own gate run
-      could go green, since the failure was blocking a mandatory no-hatch close-out
-      step and unrelated to this branch's actual scope. **The template itself is
-      untouched** — the fix needed there isn't purely mechanical (an absolute-style
-      path, or dropping the markdown-link syntax for a plain-text path citation,
-      are both viable but it's a citation-format decision on a governance-adjacent
-      doc, not this branch's call to make solo) — so every FUTURE handoff that
-      copies this verbatim section unchanged will reproduce the same broken link
-      unless the template is fixed at the source. **Fix:** pick a citation form for
-      the template's verbatim block that survives being copied to any directory
-      depth, then sweep any other already-merged handoffs with the same pattern.
-      _(discovered: v1.1.0 stream, 2026-07-18, `fix/compose-unawaited-reloads`,
-      while chasing an unrelated pre-existing gate failure.)_
-      **→ Low priority, own small pass — needs a citation-format decision first.**
 
 - [x] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
       `scripts/wiki_freshness.py:drift_count` excludes only `docs/wiki/`, not `docs-site/`.
@@ -1632,6 +1617,34 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       over the ~8-10 ceiling.)_
 
 #### Resolved
+
+- [x] **`AGENT_HANDOFF_TEMPLATE.md`'s "Branch close-out checklist" verbatim block had a
+      relative link that broke every time it was copied into an actual handoff — RESOLVED**
+      on `docs/handoff-template-relative-link`, 2026-07-18. Was:
+      `docs/dev/AGENT_HANDOFF_TEMPLATE.md:286`'s citation
+      `[...](diagnosis/handoff-pointer-verification.md)` resolved correctly from the
+      template's own location (`docs/dev/`) but 404'd once copied verbatim into
+      `docs/dev/handoffs/<slug>.md` (one directory deeper). Every closing agent since had
+      been hand-patching their own copy to `../diagnosis/...` (confirmed in both
+      `fix-handoff-pointer-verification.md:303` and `fix-compose-unawaited-reloads.md:331`),
+      which made every handoff's "verbatim" section deliberately diverge from the template —
+      the exact `verify_doc_template.py --event consumed` `BLOCKED` result hit while consuming
+      the `fix-compose-unawaited-reloads` handoff pointer this session (traced and confirmed
+      as this known, already-documented deviation — not new drift — before deciding to close
+      it here rather than accept-and-move-on). **Fix shipped:** dropped the markdown-link
+      syntax for a plain-text, full-repo-relative-path citation
+      (`` `docs/dev/diagnosis/handoff-pointer-verification.md` `` — no `[text](path)` at all),
+      matching the form already used one directory over in
+      `docs/dev/handoffs/README.md:23` to cite the same file. A plain path citation has no
+      relative-resolution step, so it survives being copied to any directory depth, and
+      `scripts/check_doc_links.py`'s link check doesn't even parse it (backtick-only, not
+      `[text](path)`) — nothing left to break. No sweep of already-merged handoffs was needed:
+      `scripts/check_doc_links.py` already reported 0 violations repo-wide before this fix (the
+      hand-patched `../` forms all resolve correctly in place); the ledger item's "sweep"
+      clause was conditional on finding breakage, and none existed. Found-and-fixed within its
+      own branch — sat in `#### Open` since `fix/compose-unawaited-reloads`, 2026-07-18, so
+      this is a **−1** to the open count (see the `#### Open` header's top entry for the
+      count correction this also carried).
 
 - [x] **Handoff-pointer commit hash was hand-typed and unchecked — RESOLVED** on
       `fix/handoff-pointer-verification`, 2026-07-18. Was: the closing agent's mandatory
