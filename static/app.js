@@ -2842,7 +2842,7 @@ function _renderComposeLoopbackBanner(data) {
 // Compose so the change shows immediately. Mirrors _decideGapFill's bg-reload
 // bookkeeping (increment before the fetch, decrement in finally).
 async function _acceptRefinementProposal(proposal) {
-  if (_composeApplicationId == null || !lastContextPath) { loadComposition(); return; }
+  if (_composeApplicationId == null || !lastContextPath) { await loadComposition(); return; }
   _markComposeBgReload(1);
   try {
     const res = await fetch(
@@ -2850,11 +2850,11 @@ async function _acceptRefinementProposal(proposal) {
       { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ context_path: lastContextPath, proposal }) },
     );
-    if (res.ok) { _toast('Change applied.'); loadComposition(); }
-    else { _toast('Could not apply the change — please make it manually below.', true); loadComposition(); }
+    if (res.ok) { _toast('Change applied.'); await loadComposition(); }
+    else { _toast('Could not apply the change — please make it manually below.', true); await loadComposition(); }
   } catch {
     _toast('Network error applying the change — please make it manually below.', true);
-    loadComposition();
+    await loadComposition();
   } finally {
     _markComposeBgReload(-1);
   }
@@ -7686,7 +7686,7 @@ async function _togglePositioningPin(summaryId, alreadyPinned) {
       { method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ context_path: lastContextPath, ...state }) },
     );
-    if (res.ok) loadComposition();
+    if (res.ok) await loadComposition();
   } catch {
     // Non-blocking
   } finally {
@@ -7913,7 +7913,7 @@ async function _fireSuggestSkills(btn) {
       const body = await res.json().catch(() => ({}));
       const n = (body.proposals || []).length;
       _toast(n ? `${n} skill suggestion${n === 1 ? '' : 's'} to review.` : 'No new grounded skills found.');
-      loadComposition();
+      await loadComposition();
     } else {
       _toast('Could not suggest skills.', true);
     }
@@ -7960,7 +7960,7 @@ async function _reviewPendingSkill(skillId, approve) {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ is_pending_review: false }) })
       : await fetch(`/api/skills/${skillId}`, { method: 'DELETE' });
-    if (res.ok) loadComposition();
+    if (res.ok) await loadComposition();
     else _toast('Could not update the suggested skill.', true);
   } catch {
     _toast('Network error updating the suggested skill.', true);
@@ -8021,7 +8021,7 @@ async function _decideGapFill(key, decision) {
       { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ context_path: lastContextPath, key, decision }) },
     );
-    if (res.ok) loadComposition();
+    if (res.ok) await loadComposition();
     else _toast('Could not update the suggested bullet.', true);
   } catch {
     _toast('Network error updating the suggested bullet.', true);
@@ -8243,7 +8243,7 @@ async function _addComposeRoleIntro(expId) {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ text: trimmed, label: (values.label || '').trim() || null }),
     });
-    if (res.ok) loadComposition();
+    if (res.ok) await loadComposition();
     else {
       const data = await res.json().catch(() => ({}));
       _toast(data.error || 'Could not add intro.', true);
