@@ -21,6 +21,24 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Fixed: config drift across plugin version, machine-local notes, and model-pin split (PX-47, `chore/config-drift-batch`)
+
+`.claude-plugin/plugin.json` had been reporting `1.0.6` while `pyproject.toml` moved on to
+`1.0.9` — four merged branches with no version bump anywhere. `CLAUDE.local.md` still named
+the pre-rename `/c/Dev/callback` path and described the plan-approval hook's location in
+future tense ("once Step 4 lands") long after that migration had shipped. Separately, the
+Sonnet subagents (undated `claude-sonnet-5` alias) and Haiku subagents (dated
+`claude-haiku-4-5-20251001` snapshot) had never had their pin-style split explained anywhere —
+readable as unresolved drift rather than a provider constraint.
+
+- `.claude-plugin/plugin.json` bumped to `1.0.9`, matching `pyproject.toml`.
+- `CLAUDE.local.md` refreshed: current repo path, and the hook-location note now states the
+  `.claude-plugin/hooks/` location as fact instead of a pending move.
+- `CLAUDE.md` documents the Sonnet/Haiku model-pin split as intentional and provider-imposed
+  (no dated Sonnet-5 snapshot exists on the API) — owner-directed: document the split rather
+  than force uniformity by re-pinning Haiku to an undated alias. No `agents/*.md` file changed.
+- `settings.local.json`'s pruning sub-item needed no action — confirmed already clean.
+
 ### Fixed: the documented merge flow was one the repo is configured to refuse (`chore/merge-channel-alignment`)
 
 Two merge channels were running at once, and the documented one did not work. `main` carries

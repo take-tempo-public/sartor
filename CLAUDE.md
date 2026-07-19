@@ -140,3 +140,13 @@ They load namespaced once the `sartor-tools` marketplace +
 are active (fresh clone: one-time marketplace-trust + reload). Until
 then, read the definition file directly — the workflow still
 applies, just un-namespaced.
+
+**Model-pin convention.** Each subagent's frontmatter `model:` field is
+either a dated snapshot or an undated alias, and the split is
+intentional and provider-imposed, not drift: `eval-judge`,
+`wiki-grounding-auditor`, and `wiki-scribe` pin the dated Haiku
+snapshot `claude-haiku-4-5-20251001` because Anthropic publishes one;
+the other six subagents use the undated alias `claude-sonnet-5`
+because no dated Sonnet-5 snapshot exists on the API. Revisit this
+note if/when Anthropic ships a dated Sonnet-5 snapshot — until then,
+do not "fix" the split by re-pinning either family.
