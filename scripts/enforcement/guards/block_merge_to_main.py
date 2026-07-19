@@ -46,6 +46,28 @@ not doc freshness; the only way through is running `/wiki-self-update` (or
 `DOC-STATUS` gate's no-escape-hatch design. Silent (allows) when there is no
 real ingest baseline yet — same "sentinel = not an error" rule
 `wiki-freshness-reminder.sh` already uses.
+
+**Wiki-freshness re-scope to push-only (`chore/merge-channel-alignment`,
+2026-07-19).** The arm above was wired to *both* merge and push. That made a
+branch which had just refreshed the wiki unmergeable: standing on `main` to
+merge it, `_wiki_freshness_result()` read **main's** still-stale checkpoint
+against **main's** HEAD and blocked — the block was triggered by the state the
+merge would fix. Observed on `refactor/css-cascade-collapse` (RELEASE_CHECKLIST
+carry-forward item 18, filed then dissolved here rather than patched).
+
+The fix is not a better drift computation; it is putting the check at the right
+event. **A local merge publishes nothing** — so it carries no freshness arm now.
+The publish moments are:
+  * `git push origin main` — still gated here (see `git_push_check` / the push
+    branch of `decide`), because that genuinely republishes.
+  * the **PR merge** — gated in CI, not locally: `tests/test_wiki_freshness_gate.py`
+    runs inside `python -m scripts.gate`, which is the required
+    "Lint, type-check, test" status check on every PR to `main`. CI evaluates the
+    PR's *merge ref*, i.e. the post-merge state — precisely the thing the local
+    hook could not see and got wrong.
+Since `main` is PR-only under branch protection, that PR-side CI check is the
+enforcement point that actually matters; the local arms are the backstop for the
+two paths CI cannot observe (a local merge, and a direct push).
 """
 
 from __future__ import annotations
@@ -71,7 +93,11 @@ _PUSH_MAIN_RE = re.compile(r"\bgit\s+push\b.*\borigin\s+(?:main|master)\b")
 
 _MESSAGE_LINES = (
     "BLOCKED (block-merge-to-main): git merge/push targeting main or master.",
-    "If you really intend this, prefix the command with: CLAUDE_CONFIRM_MERGE=1",
+    "`main` is PR-only: branch protection requires a pull request + passing checks, so a "
+    "local merge/push is rejected for a non-admin and silently bypasses those checks for an "
+    "admin. Land work with: git push -u origin <branch> -> open the PR -> wait for required "
+    "checks -> gh pr merge <n> --merge (never --squash/--rebase) -> git pull --ff-only.",
+    "If you really intend this anyway, prefix the command with: CLAUDE_CONFIRM_MERGE=1",
     "Example: CLAUDE_CONFIRM_MERGE=1 git merge feature-branch --no-ff -m '...'",
 )
 
@@ -117,12 +143,19 @@ def targets_main(command: str, invocation_cwd: str) -> bool:
 
 
 def decide(command: str, invocation_cwd: str) -> GuardResult:
-    """Pure decision for the Claude Bash-command-string path."""
+    """Pure decision for the Claude Bash-command-string path.
+
+    The wiki-freshness arm is scoped to **push** only (see module docstring
+    "Wiki-freshness re-scope"): a local merge publishes nothing, so gating it on
+    doc freshness blocked the one branch that had just refreshed the wiki.
+    """
     if not targets_main(command, invocation_cwd):
         return GuardResult.allow()
     if _CONFIRM_TOKEN not in command:
         return GuardResult.block(*_MESSAGE_LINES)
-    return _wiki_freshness_result(invocation_cwd) or GuardResult.allow()
+    if _PUSH_MAIN_RE.search(command):
+        return _wiki_freshness_result(invocation_cwd) or GuardResult.allow()
+    return GuardResult.allow()
 
 
 def claude_check(payload: dict[str, Any]) -> GuardResult:
@@ -140,9 +173,13 @@ def git_operation_check(
 
     Git already knows this IS a real merge (plumbing commands like
     `merge-base`/`merge-tree` never invoke this hook) and already resolves
-    HEAD correctly in the invoking worktree — no regex, no cwd handoff. `repo_root`
-    defaults to "." because git runs hooks with cwd at the repo root; pass it
-    explicitly only in tests.
+    HEAD correctly in the invoking worktree — no regex, no cwd handoff.
+
+    `repo_root` is **currently unread** and retained deliberately: it is part of
+    this adapter's published signature (the git `pre-merge-commit` wiring and the
+    enforcement-core tests both pass it), and it was the wiki-freshness arm's
+    argument before that arm was scoped to push-only. Keeping it costs nothing and
+    avoids a signature break; re-adding a repo-scoped check here would use it.
     """
     if env is None:
         env = os.environ
@@ -150,7 +187,10 @@ def git_operation_check(
         return GuardResult.allow()
     if env.get("CLAUDE_CONFIRM_MERGE") != "1":
         return GuardResult.block(*_MESSAGE_LINES)
-    return _wiki_freshness_result(repo_root) or GuardResult.allow()
+    # No wiki-freshness arm here: a local merge publishes nothing. The publish
+    # moment is the push (below) or the PR merge (gated in CI by the required
+    # `tests/test_wiki_freshness_gate.py` check). See module docstring.
+    return GuardResult.allow()
 
 
 def git_push_check(

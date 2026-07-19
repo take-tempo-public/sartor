@@ -21,6 +21,60 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Fixed: the documented merge flow was one the repo is configured to refuse (`chore/merge-channel-alignment`)
+
+Two merge channels were running at once, and the documented one did not work. `main` carries
+branch protection requiring a pull request plus six passing status checks (`strict: true`), so
+the local `git merge --no-ff` + `git push origin main` close-out that `AGENTS.md` step 4 and the
+handoff template both prescribed is **rejected by the platform** for a non-admin — and, for an
+admin, silently bypasses those six checks. Every close-out had been improvising around this.
+
+The bill had already come due in three places: `origin/main` sat **14 commits behind** local
+`main` across five branches; the wiki checkpoint `9f3c800` was left **orphaned** (reachable from
+no branch, with a content-identical twin `0e5b9c8` on `main` under a different author name — the
+fingerprint of a GitHub-side re-author of a commit that also existed locally); and
+`refactor/css-cascade-collapse` could not close through the documented flow at all, ending up
+merged through a channel chosen to route around a hook rather than because it was right.
+
+- **`AGENTS.md` close-out steps 4-5 and the handoff template's verbatim copy** now describe the
+  real flow: push → PR → required checks green → **merge commit** → `git pull --ff-only` →
+  regenerate + verify the pointer → prune. Two ordering bugs are fixed in the process: the
+  pointer must be regenerated *before* pruning (it has to cite `main`, and pruning a branch a
+  pointer still names hands the next session an unresolvable reference), and `--ff-only` is now
+  mandated so an unexpected divergence fails loudly instead of silently manufacturing a merge
+  commit. The push step now also requires stating what becomes public first — including commits
+  already on local `main` that the remote lacks, since they ride along.
+- **`block_merge_to_main`'s wiki-freshness arm re-scoped to push-only.** It was wired to both
+  merge and push, which made a branch that had just refreshed the wiki unmergeable: standing on
+  `main`, it read *main's* still-stale checkpoint against *main's* HEAD and blocked — the block
+  triggered by the state the merge would fix. The fix is not a better drift computation but the
+  right event: a local merge publishes nothing, so it carries no freshness arm; a direct push
+  does, so it keeps one; and the PR merge is already gated in CI, where
+  `tests/test_wiki_freshness_gate.py` runs inside the required `Lint, type-check, test` check and
+  evaluates the PR's *merge ref* — the post-merge state the local hook could not see. Two
+  regression tests pin both halves.
+- **This dissolves carry-forward ledger item 18 rather than patching it.** A union-drift fix had
+  been designed and measured the day before (ALLOW 6 / BLOCK 80 on real refs); it is deliberately
+  **not** implemented, because its premise — that a local merge to `main` is a legitimate channel
+  — turned out to be false. It is retained in the ledger only as the record of a mechanism made
+  unnecessary by fixing the layer beneath it.
+- **Scheduling, not just fixing.** `RELEASE_ARC.md`'s "v1.1.0 close-out" sequence gains two real
+  slots so this work stops living in session memory: step 5 (this branch) and step 6
+  (`chore/scrub-local-eval-paths`, moved from *parked* to *scheduled*, deliberately ahead of
+  PX-47 because it is public-facing privacy versus cosmetic version drift). Old steps 5-15 renumber
+  to 7-17.
+- **Repo settings (owner-applied, recorded here for provenance):** squash merging disabled
+  (`squashMergeAllowed: false`; rebase was already `false`), leaving merge commit the only method
+  — which makes the commit-orphaning class that produced `9f3c800` structurally impossible rather
+  than a convention to remember. `enforce_admins` remains `false` and is filed as an explicit
+  open owner decision, not silently changed: enabling it closes the bypass but removes the
+  ability to push a hotfix when CI itself is broken.
+
+Note for anyone validating an older handoff: the template's close-out block is a `<!-- verbatim -->`
+section, so the seven handoffs written before this change no longer byte-match it. That is
+expected, not corruption — they are historical records of past sessions, not live instructions,
+and the pointer chain only ever validates the most recent one.
+
 ### Fixed: `static/style.css`'s duplicate-selector cascade collapsed (PX-51, `refactor/css-cascade-collapse`)
 
 An early "primary" CSS section and a later "sartor. component layer" (restyle) section
