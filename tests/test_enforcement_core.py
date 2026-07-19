@@ -294,21 +294,41 @@ class TestBlockMergeToMainUnit:
         assert not block_merge_to_main.decide(command, str(feature_repo)).blocked
         assert block_merge_to_main.decide(command, str(main_repo)).blocked
 
-    # --- wiki-freshness extension (ci/doc-merge-gate, merge=publish gate 5) --
-    def test_wiki_freshness_blocks_even_with_confirm_hatch(self, tmp_path: Path) -> None:
+    # --- wiki-freshness extension (ci/doc-merge-gate, merge=publish gate 5),
+    # --- re-scoped to PUSH-only (chore/merge-channel-alignment, 2026-07-19).
+    def test_stale_wiki_does_not_block_a_local_merge(self, tmp_path: Path) -> None:
+        """Regression for carry-forward item 18 — the defect this re-scope dissolves.
+
+        A local merge publishes nothing, so it must NOT be gated on doc freshness.
+        Gating it made a branch that had just refreshed the wiki unmergeable: standing
+        on `main`, the guard read main's still-stale checkpoint against main's HEAD and
+        blocked — the block triggered by the very state the merge would fix. The publish
+        moments are the push (below) and the PR merge (gated in CI).
+        """
         repo = _make_repo(tmp_path, "merge_confirm_stale_wiki", "main")
         _add_wiki_checkpoint(repo, drift_file_count=WIKI_BLOCK_THRESHOLD)
         result = block_merge_to_main.decide(
             "CLAUDE_CONFIRM_MERGE=1 git merge feature-x --no-ff", str(repo)
         )
-        assert result.blocked, "stale wiki must block even with the merge-target confirm hatch"
+        assert not result.blocked, (
+            "a local merge must not be gated on wiki freshness — it publishes nothing"
+        )
+
+    def test_stale_wiki_still_blocks_a_push_to_main(self, tmp_path: Path) -> None:
+        """The other half of the re-scope: push IS the publish, so the arm stays here."""
+        repo = _make_repo(tmp_path, "push_confirm_stale_wiki", "main")
+        _add_wiki_checkpoint(repo, drift_file_count=WIKI_BLOCK_THRESHOLD)
+        result = block_merge_to_main.decide(
+            "CLAUDE_CONFIRM_MERGE=1 git push origin main", str(repo)
+        )
+        assert result.blocked, "a direct push to main republishes — stale wiki must block"
         assert "wiki" in " ".join(result.messages).lower()
 
     def test_wiki_freshness_allows_confirm_hatch_when_fresh(self, tmp_path: Path) -> None:
         repo = _make_repo(tmp_path, "merge_confirm_fresh_wiki", "main")
         _add_wiki_checkpoint(repo, drift_file_count=1)
         result = block_merge_to_main.decide(
-            "CLAUDE_CONFIRM_MERGE=1 git merge feature-x --no-ff", str(repo)
+            "CLAUDE_CONFIRM_MERGE=1 git push origin main", str(repo)
         )
         assert not result.blocked
 
@@ -316,7 +336,7 @@ class TestBlockMergeToMainUnit:
         # No docs/wiki/ dir at all — same repo shape every other test in this class uses.
         repo = _make_repo(tmp_path, "merge_confirm_no_wiki", "main")
         result = block_merge_to_main.decide(
-            "CLAUDE_CONFIRM_MERGE=1 git merge feature-x --no-ff", str(repo)
+            "CLAUDE_CONFIRM_MERGE=1 git push origin main", str(repo)
         )
         assert not result.blocked
 
@@ -330,13 +350,14 @@ class TestBlockMergeToMainUnit:
         assert result.blocked
         assert result.messages == block_merge_to_main._MESSAGE_LINES
 
-    def test_git_operation_check_blocks_on_stale_wiki(self, tmp_path: Path) -> None:
+    def test_git_operation_check_does_not_block_on_stale_wiki(self, tmp_path: Path) -> None:
+        """Native `pre-merge-commit` adapter mirrors `decide`: merge is not a publish."""
         repo = _make_repo(tmp_path, "op_stale_wiki", "main")
         _add_wiki_checkpoint(repo, drift_file_count=WIKI_BLOCK_THRESHOLD)
         result = block_merge_to_main.git_operation_check(
             "main", env={"CLAUDE_CONFIRM_MERGE": "1"}, repo_root=str(repo)
         )
-        assert result.blocked
+        assert not result.blocked
 
     def test_git_push_check_blocks_on_stale_wiki(self, tmp_path: Path) -> None:
         repo = _make_repo(tmp_path, "push_stale_wiki", "main")

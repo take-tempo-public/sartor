@@ -515,7 +515,12 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **18** (**+3** this entry — `refactor/css-cascade-collapse`,
+_Rendered open count: **19** (**+1** this entry — `chore/merge-channel-alignment`,
+2026-07-19: root-causing the dual merge channel surfaced the `enforce_admins: false` bypass as
+its own owner decision. Note the two items this branch does NOT add: item 18 is being
+**dissolved** rather than patched (its premise — that a local merge to `main` is a legitimate
+channel — turned out to be false), and item 5 moves from **parked to scheduled** (step 6) rather
+than resolved. Prior to that: **18** (**+3** — `refactor/css-cascade-collapse`,
 2026-07-18: PX-51 (`style.css` duplicate-cascade collapse) lands (see the efficiency-review
 row above), which does not itself change this ledger's open count — but the census that
 made it possible surfaced two new, pre-existing, unrelated-to-the-merge bugs (a likely-dead
@@ -568,9 +573,9 @@ CodeQL as a required check. Earlier still: the count reached 12 on
 2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL disposition resolved on the
 prior branch.)
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
-each close-out — confirmed 18 by direct count at time of this edit). **OVER THE
+each close-out — confirmed 19 by direct count at time of this edit). **OVER THE
 CEILING — the reduction sprint is overdue and should be scheduled before the v1.1.0
-tag** (the rule is ~8–10; this is 18); several items below are small and
+tag** (the rule is ~8–10; this is 19); several items below are small and
 clearable in one pass. The full per-item
 addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here.
@@ -675,6 +680,29 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       rather than a per-invocation resource limit** — worth prioritizing the instrumentation this
       item already calls for, since manual chunking is being reinvented by hand each time it's
       hit.
+      **→ Candidate CAUSE found (2026-07-19, same session, incidental — supersedes the
+      "unknown environment-wide event" framing above).** The owner reported system resources
+      exhausted and **16 Claude sessions in Task Manager with only 2 windows open**; a
+      `claude doctor` run came back clean (v2.1.215, no install issues), so this is orphaned
+      processes, not a broken install. Measured on this machine immediately after: **12
+      `claude`/`node` processes, 1,920 MB RAM, 6,023 s of accumulated CPU**, including three
+      clear zombies — one from **2026-07-15 (four days old)**, one from 2026-07-18 12:26 with
+      **5,267 s (~87 min) of CPU**, and one from 2026-07-18 22:09. **Resource exhaustion from
+      accumulated orphaned sessions is a materially better explanation than the per-command
+      wall-clock ceiling this item previously inferred**, and it fits evidence the ceiling
+      theory could not: why *unrelated* long-lived processes (the dev server) died at the same
+      instant as a fresh command, why survival time was wildly inconsistent (58% / instantly /
+      9%) rather than fixed, and why foreground calls survived where identical backgrounded
+      ones did not.
+      **NOT yet proven — do not record this as settled.** No cleanup was performed (some PIDs
+      were live sessions, one was the session doing the measuring), so the decisive test is
+      unrun: **kill the orphans, then re-run a full `python -m scripts.gate` un-chunked and see
+      whether it completes.** That single experiment would either close this item or definitively
+      rule the cause out — and it is much cheaper than the resumable-gate tooling this item has
+      been asking for since 2026-07-14. **Do that before building the tooling**; if orphan
+      accumulation is the cause, the tooling is solving a symptom. If it is confirmed, the real
+      fix is process-lifecycle hygiene (why do CLI sessions never exit?), which is a Claude Code
+      issue the owner has already filed feedback on, not a repo change.
 
 - [x] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
       fixed** — twelve routes in `blueprints/applications.py` each read the whole
@@ -997,6 +1025,26 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       open count 12 → 13, over the ~8–10 ceiling.)_
       **→ Next: re-run `python -m scripts.gate` to completion and merge separately (off this
       branch) whenever the owner wants it off the parked list.**
+      **→ SCHEDULED (2026-07-19, owner-directed, `chore/merge-channel-alignment`): no longer
+      parked — this is now step 6 of `RELEASE_ARC.md`'s "v1.1.0 close-out" sequence**, placed
+      deliberately **ahead of** PX-47 because it is public-facing (private paths live in tracked
+      files on a public repo) whereas PX-47 is cosmetic version drift. Re-verified against
+      `main` @ `6b03591` this session — the exposure is **still live**, so this is not stale
+      bookkeeping: `db/models.py:3` (`C:\Users\iam\.claude\plans\rosy-chasing-pinwheel.md`),
+      `docs/dev/ORCHESTRATION_PLAYBOOK.md:45`, `docs/dev/generation-experience-rearchitecture.md`
+      :103/:498/:569, and `evals/TUNING_LOG.md:2734` (all `../sartor-e2e/output/robert/...`).
+      **Two corrections to the entry above, both verified:** (i) it is **no longer "current with
+      `main`, no rebase needed"** — `main` has moved a long way since 2026-07-14 and the branch
+      touches `CHANGELOG.md`, which later branches also edited, so **expect a conflict on
+      rebase**; (ii) **grep trap** — the `db/models.py` path is double-escaped inside a raw
+      docstring (`C:\\Users\\iam\\...`), so a natural pattern like `grep "Users.iam"` returns
+      NOTHING and reads as "already fixed" (it cost exactly that false all-clear this session).
+      Search a distinctive literal (`grep -n "rosy-chasing-pinwheel"`) and check against `main`,
+      never against the branch. Prior analysis: `[[project-scrub-local-eval-paths-parked]]`.
+      **Files ≠ history:** merging cleans the working tree only; the strings stay in public git
+      history, including inside `71ef57f` (the scrub commit itself, which by nature contains what
+      it removes). A history rewrite on an already-public repo remains a separate, sign-off-gated
+      owner decision — do not attempt it as part of landing this.
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
@@ -1776,6 +1824,37 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       every future wiki-refreshing branch hits this same wall.
       _(discovered: v1.1.0 stream, 2026-07-18, `refactor/css-cascade-collapse`; open
       count 17 → 18.)_
+      **→ RESOLUTION IS (c), NOT A PATCH — being dissolved on `chore/merge-channel-alignment`
+      (step 5, scheduled 2026-07-19).** Investigating the root cause the next day showed the
+      premise underneath (a) and (b) was wrong: they both assume a local `--no-ff` merge to
+      `main` is a legitimate channel. It is not. **`main` carries branch protection requiring a
+      PR** (6 required status checks, `strict: true`), so the local merge this guard was
+      arbitrating is rejected by the platform for non-admins and silently bypasses those six
+      checks for an admin. Once local merge-to-main is blocked outright and the freshness check
+      moves to the push/PR path, the pre-merge-worktree evaluation bug has no path to fire.
+      **The validated union-drift patch recorded above is therefore deliberately NOT being
+      implemented** — it is kept only as the record of a mechanism that was measured (ALLOW 6 /
+      BLOCK 80 on real refs) and then made unnecessary by fixing the layer beneath it. Worth
+      keeping for the lesson: the first design attempt measured drift along the source branch's
+      history alone and **wrongly ALLOWED a stale merge**, because a branch forked before drift
+      accumulated on `main` cannot see that drift — the union across both lineages is what a
+      post-merge HEAD actually contains. Full context: `[[project-v110-css-cascade-collapse]]`.
+
+- [ ] **[OWNER DECISION] `enforce_admins` is `false` on `main`'s branch protection, so the six
+      required status checks remain bypassable** — surfaced 2026-07-19 while root-causing the
+      dual merge channel (`chore/merge-channel-alignment`, step 5). Branch protection on `main`
+      requires a PR and six passing checks, but `enforce_admins: false` means the repo admin can
+      push or merge straight past them. That is almost certainly how `origin/main` came to sit
+      **14 commits behind** local `main` across five branches without anything complaining.
+      **Deliberately NOT changed** — it is a real tradeoff, not an oversight to silently fix:
+      enabling it closes the bypass, but also removes the ability to push a direct hotfix when CI
+      itself is broken, which on a solo-maintained repo is a genuine escape valve. **Related and
+      already done by the owner the same day (no action needed):** squash merging disabled
+      (`squashMergeAllowed: false`; rebase already `false`), leaving merge-commit as the only
+      method — which makes the commit-orphaning class that produced the zombie `9f3c800`
+      structurally impossible rather than a convention to remember.
+      _(discovered: v1.1.0 stream, 2026-07-19, `chore/merge-channel-alignment`; open count
+      18 → 19 — the ceiling is ~8-10 and the reduction sprint is now badly overdue.)_
 
 #### Resolved
 
