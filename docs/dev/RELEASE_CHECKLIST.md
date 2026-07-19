@@ -515,7 +515,13 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **15** (**+1** this entry — `fix/capture-screenshots-welcome-modal`,
+_Rendered open count: **17** (**+2** this entry — `refactor/css-cascade-collapse`,
+2026-07-18: PX-51 (`style.css` duplicate-cascade collapse) lands (see the efficiency-review
+row above), which does not itself change this ledger's open count — but the census that
+made it possible surfaced two new, pre-existing, unrelated-to-the-merge bugs (a likely-dead
+`.cb-panel` collapse-animation easing, and an already-shadowed mobile `.panel-body` padding
+override), both deliberately left unfixed and filed as new open items below. Prior to that:
+**15** (**+1** this entry — `fix/capture-screenshots-welcome-modal`,
 2026-07-18: three independent `scripts/capture_screenshots.py` staleness bugs found+fixed
 (welcome-modal auto-open, clarify-button double-click, cover-letter drawer visibility), but
 the lack of periodic exercise that let them accumulate is itself filed as a new open item —
@@ -559,9 +565,9 @@ CodeQL as a required check. Earlier still: the count reached 12 on
 2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL disposition resolved on the
 prior branch.)
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
-each close-out — confirmed 15 by direct count at time of this edit). **OVER THE
+each close-out — confirmed 17 by direct count at time of this edit). **OVER THE
 CEILING — the reduction sprint is overdue and should be scheduled before the v1.1.0
-tag** (the rule is ~8–10; this is 15); several items below are small and
+tag** (the rule is ~8–10; this is 17); several items below are small and
 clearable in one pass. The full per-item
 addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here.
@@ -645,6 +651,27 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       commit, not yet turned into the resumable-gate tooling this item still asks for.
       Doesn't resolve the `-m "not ux"` / `-m ux` non-additive-timing contradiction above — still
       unexplained, still the first thing to measure before choosing a remedy.
+      **→ Update (2026-07-18, `refactor/css-cascade-collapse`):** same wall, new evidence that
+      weakens the "per-command wall-clock ceiling" model above. Same `python -m scripts.gate`
+      command, run three times in a row: killed at **58%** through pytest one time (well past
+      5-10 min — ruff+format+mypy ran first, but 58% of a ~49-min suite is still a lot of
+      survived pytest time), killed almost **instantly** (before pytest finished collecting) on
+      an immediate identical retry, killed at **9%** on a third, narrower `pytest -m "not ux"`
+      retry right after that. Same command, three tries, no consistent completion point — hard
+      to explain as a fixed per-command timer. **New, more direct evidence for an
+      environment-wide event, not a per-command one:** in the same window, a Flask dev server
+      background process that had already been running successfully for a long time (used
+      repeatedly for live browser verification) was killed **simultaneously** with a
+      freshly-started gate re-run — a long-lived, previously-stable process dying at the same
+      moment as a brand-new command suggests something is killing multiple unrelated background
+      processes at once (a shell/session recycle?), not each command independently hitting its
+      own ceiling. **Worked around the same way as before** (file-list splitting via `split -n
+      l/8` into ~15-file chunks, run sequentially) — still a manual workaround, not the
+      resumable-gate tooling this item has asked for since 2026-07-14. **This item now has two
+      independent sessions' worth of evidence pointing at ambient environment/session behavior
+      rather than a per-invocation resource limit** — worth prioritizing the instrumentation this
+      item already calls for, since manual chunking is being reinvented by hand each time it's
+      hit.
 
 - [x] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
       fixed** — twelve routes in `blueprints/applications.py` each read the whole
@@ -926,6 +953,28 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `git diff --stat main -- '*.py' '*.js'`), so it cannot be this branch's regression; filed
       here as a fresh data point for whoever next works this flake class, per C-7's "an instrument
       narrowed to your theory hides its rivals" — not fixed, not silently ignored.
+      **Data point, WITH a controlled baseline A/B (2026-07-18, `refactor/css-cascade-collapse`):**
+      `test_restore_scroll_y_stale_invocation_overwrites_later_scroll` (same file, same
+      settle/restore mechanism family) failed twice on that branch — and, importantly, with **two
+      different failure modes across two consecutive runs**: first `before == 0` ("test setup
+      didn't actually scroll the page (page too short?)"), then the generation-mismatch assert
+      (`306 == 59`, "the stale invocation's restore was not correctly abandoned"). Because that
+      branch edits `static/style.css`'s layout properties (`.cb-main`'s `min-height`/`display:flex`,
+      `.cb-panel`'s `display:grid`/`grid-template-rows`, `.panel-body`'s `overflow`/`min-height`),
+      a "page too short to scroll" failure was a **genuinely plausible CSS regression** and was NOT
+      assumed benign. **Settled by experiment, not by argument** (the method this entry's own
+      2026-07-14 measurement established): backed up the working tree's `style.css`, restored the
+      unmodified baseline via `git checkout HEAD -- static/style.css`, and re-ran the same single
+      test 3× on the **baseline** → **1 failed / 2 passed**. The flake reproduces with the CSS
+      change absent, so it is **not** attributable to the cascade collapse; working tree restored
+      byte-identically (md5-verified) afterward. Sample is small (n=3 baseline, n=2 branch) and is
+      offered as attribution evidence only — **not** as a rate measurement, and it does not
+      supersede the 4/24 (~17%) mode-C figure above. **New wrinkle worth noting for whoever picks
+      this up:** the `before == 0` variant is a failure signature not listed in the A/B/C/D
+      taxonomy for *this* test (the taxonomy's `before == 0` mode was catalogued against
+      `test_corpus_reload_preserves_scroll_position`), and it appeared here **without** deliberate
+      CPU saturation — so the settle/restore family may flake on an ordinary loaded dev machine,
+      not only under the 7-worker busy-loop calibration.
 
 - [ ] **`chore/scrub-local-eval-paths` parked — 2 commits, unmerged, gate re-verification
       incomplete (not failed)** — removes 6 references to the owner's private local testing
@@ -1514,6 +1563,16 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       project's actual `1.0.9`), PX-51 (deliberately deferred, low risk). Full
       reconciliation + the individual-branch sequence to close these out:
       `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation".
+      **→ Landed (2026-07-18, `refactor/css-cascade-collapse`):** PX-51 lands.
+      Re-derived the duplicate-selector census fresh against HEAD `248703b`
+      (both the original prescription and the 2026-07-07 staleness re-verify's
+      line numbers had gone stale) — 16 duplicate selector-group pairs across
+      three source regions, ~128 lines of real duplication (well below the
+      original "~780 lines/20%" estimate). Verified behavior-preserving via a
+      live `getComputedStyle` before/after snapshot, byte-identical across all
+      16 selectors. Full detail in `CHANGELOG.md`. **Corrected count: 8 of 13
+      fully landed, 5 remain:** PX-37, PX-39, PX-44 (refactor half), PX-46,
+      PX-47 (remainder).
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in
@@ -1601,6 +1660,10 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       draft down-payment landed). #12 and #14 are already routed/low-stakes per the
       notes above. The `app.run(threaded=True)` governance flag is a deliberate
       owner-gated deferral, not a miss.
+      **→ Landed (2026-07-18, `refactor/css-cascade-collapse`):** PX-51 lands as its
+      own branch — see the carry-forward ledger's PX-51 row above and `CHANGELOG.md`
+      for full detail. This ledger item's remaining scope is now just the two items
+      named directly above (run-cancel endpoint, content-cluster full pass).
 
 - [ ] **`docs/governance/enforcement.md` (and several memory files) cite "charter W-1"
       (the parallel-session working model) as an established governance clause — it does
@@ -1645,6 +1708,35 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-18, `fix/capture-screenshots-welcome-modal`;
       open count 14 → 15, still over the ~8-10 ceiling — reduction sprint now more
       overdue, not less.)_
+
+- [ ] **`.cb-panel`'s collapse animation likely already snaps instead of easing** —
+      discovered during the `refactor/css-cascade-collapse` (PX-51) selector census:
+      `.cb-panel`'s `transition` property is fully contested between the primary and
+      restyle copies (not additive), and the restyle copy's value (`border-color …,
+      box-shadow …`) already wins today, completely replacing the primary copy's
+      `grid-template-rows 0.35s ease` easing. So the panel open/collapse toggle is
+      likely already snapping instantly rather than easing, independent of and
+      unaffected by the PX-51 collapse itself (same behavior before and after that
+      merge either way — deliberately left unfixed there, see `CHANGELOG.md`).
+      **Needs an owner decision:** restore the easing (add `grid-template-rows` back
+      into the restyle `transition` list) or accept the current snap behavior as-is.
+      _(discovered: v1.1.0 stream, 2026-07-18, `refactor/css-cascade-collapse`; open
+      count 15 → 16, still over the ~8-10 ceiling.)_
+
+- [ ] **A mobile `.panel-body` padding override is already shadowed/dead** — discovered
+      during the same PX-51 census: the `@media (max-width:768px) { .panel-body {
+      padding: 12px 16px; } }` override (`static/style.css` ~line 220 at HEAD `248703b`)
+      is same-specificity as, but sits earlier in source than, an unconditional
+      `.panel-body` rule in the restyle section — so on mobile viewports today, the
+      unconditional rule already wins regardless of the media query (media conditions
+      don't affect source-order tie-breaking once both rules are "in effect"). Likely
+      already broken independent of PX-51 (unaffected by that merge either way — left
+      unfixed there, see `CHANGELOG.md`). **Needs verification on a real narrow
+      viewport, then an owner decision** on whether to fix (raise specificity or move
+      the override later in source) or accept current behavior.
+      _(discovered: v1.1.0 stream, 2026-07-18, `refactor/css-cascade-collapse`; open
+      count 16 → 17, further over the ~8-10 ceiling — reduction sprint now more overdue
+      still.)_
 
 #### Resolved
 

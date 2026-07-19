@@ -700,3 +700,62 @@ false claim about behavior, not a stale pointer — the case where author≠audi
 pages present in `index.md`.
 
 **Checkpoint:** `.last_ingest_sha` advanced `c8899fd` → `9f3c800`.
+
+---
+
+## 2026-07-18 — `refactor/css-cascade-collapse` — diff pass (`/wiki-self-update`, default `--cap 8`)
+
+**Window:** `9f3c800` → `248703b` (76 changed sources, excluding `docs/wiki/` and the
+review archive). **Mode:** diff.
+
+**Why it ran, and why the pass was tiny anyway.** The freshness gate hit its 75-file
+block threshold (76) and would have blocked this branch's merge. As in the `9f3c800`
+pass before it, the drift was **not** from the branch that tripped it — the count went
+70 → 76 during the *previous* branch's merge (`542ef02` → `248703b`), before this branch
+existed; this branch's own diff is one CSS file. But unlike that pass, the scope
+resolved to **one page**, because the file *count* and the wiki *work* turned out to be
+almost unrelated here.
+
+**Scope was measured deterministically before spending, not estimated.** A pure
+git+regex pass extracted every `path:symbol` / `path:line` cite in the wiki and checked
+it against the diff: **316 cites across 38 pages, 86 of them resolving into a changed
+file, and all 86 still valid at HEAD** — i.e. **zero cite drift**. The single unit of
+real work was a *coverage gap*, not a stale pointer: `hardening.py:write_context_atomic`
+and `hardening.py:context_transaction` both existed in code and appeared in **zero**
+pages, on a page (`context-set-contract`) whose own subject is that contract.
+
+**Calibration observation (worth carrying).** Of the 76 counted files, the bulk are
+handoffs, diagnosis dossiers, and `docs/dev/ledger/*.jsonl` — artifacts D5 says the wiki
+must never duplicate, so they are structurally incapable of producing wiki work. The
+gate therefore fired on volume while actual staleness was nil. This is a concrete data
+point for the already-tracked "wiki gate is mis-tuned (cheap-vague detect, expensive-blind
+correct)" concern: a threshold counting files that can never cause drift will keep
+firing on process-doc churn. Excluding `docs/dev/handoffs/`, `docs/dev/diagnosis/`, and
+`docs/dev/ledger/` from the count would be the obvious first tuning — **not done here**
+(changing an enforcement threshold is its own decision, not a side effect of a wiki pass).
+
+**Pages assessed:** 38 scanned by cite-check; 1 affected. **Pages changed:** 1 —
+`context-set-contract` (new paragraph in "Persistence and the iteration chain": atomic
+writes closing torn reads, and the `context_transaction` read-modify-write closing lost
+updates, with the LLM call held outside the lock). `consistency-tracks-enforcement` was
+**deliberately not** updated for the new C-7/C-8/C-9 enforcement hooks — it is a thesis
+page, and the hook inventory is canonical in `AGENTS.md`/`CLAUDE.md`/`docs/governance/`
+(D5, referenced not duplicated); flagged to the owner rather than silently decided.
+
+**Audit (author ≠ auditor):** 1 page audited, 10 claims verified against `hardening.py`
+at HEAD. **0 DRIFTED, 0 UNSUPPORTED** — every cite and behavioral claim quote-matched to
+source. **1 metadata defect caught and fixed by the orchestrator:** the lone `[synthesis]`
+tag sat on a claim that is stated almost verbatim in the `context_transaction` docstring
+(`hardening.py:1524-1525`), so the tag was removed — the auditor's finding was itself
+re-verified against source before acting, since removing a tag is the riskier direction
+of error (it would present an inference as grounded).
+
+**Auditor catch-rate:** **0 / 1** by the logged definition (DRIFTED + UNSUPPORTED per page
+audited) — the one catch was a tagging error, which that metric does not count. Recorded
+honestly rather than inflated to 1/1: a scribe that grounds every claim correctly and
+only over-tags is the *good* failure mode.
+
+**Deterministic gate:** 0 ERRORs — 38/38 pages present in `index.md`, all `[[backlinks]]`
+resolve, all relative links resolve, 0 orphans.
+
+**Checkpoint:** `.last_ingest_sha` advanced `9f3c800` → `248703b`.

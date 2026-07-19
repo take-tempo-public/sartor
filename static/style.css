@@ -163,52 +163,13 @@ body::before {
 .cb-bg-orange { background: var(--brand); color: var(--bg-0); }
 .cb-bg-violet { background: var(--violet); color: var(--bg-0); }
 
-/* ---- Main Layout (Workstream G: single-column; sidebar tiles removed) ---- */
-.cb-main {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 0 24px 24px;
-  max-width: 1180px;
-  margin: 0 auto;
-  min-height: calc(100vh - 120px);
-}
-
 /* Legacy block-tile rules retained but inert (no .cb-block tiles in the
    DOM after Workstream G); kept defensively for any third-party content. */
 /* ---- Panels ---- */
-.cb-panel {
-  background: var(--bg-1);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  border: 1px solid #1a1a2e;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  transition: grid-template-rows 0.35s ease;
-}
 .cb-panel.collapsed {
   grid-template-rows: auto 0fr;
 }
 
-.panel-header {
-  padding: 8px 24px;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-transform: none;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.panel-header::after {
-  content: '▾';
-  font-size: 12px;
-  opacity: 0.7;
-  transition: transform 0.25s;
-  flex-shrink: 0;
-  margin-left: 12px;
-}
 .cb-panel.collapsed .panel-header::after {
   transform: rotate(-90deg);
 }
@@ -216,12 +177,6 @@ body::before {
    collapse affordance — no chevron, no pointer cursor. */
 .cb-panel.not-collapsible > .panel-header { cursor: default; }
 .cb-panel.not-collapsible > .panel-header::after { display: none; }
-
-.panel-body {
-  padding: 16px 24px;
-  overflow: hidden;
-  min-height: 0;
-}
 
 /* ---- Forms ---- */
 .form-row {
@@ -240,22 +195,6 @@ body::before {
   letter-spacing: 1px;
 }
 
-input, select, textarea {
-  background: var(--bg-0);
-  border: 1px solid #2a2a3e;
-  color: var(--fg-0);
-  font-family: var(--font);
-  font-size: 14px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  flex: 1;
-  min-width: 0;
-  outline: none;
-  transition: border-color 0.2s;
-}
-input:focus, select:focus, textarea:focus {
-  border-color: var(--brand);
-}
 /* Format-check feedback for the URL boxes (see _wireUrlField in app.js). */
 input.field-invalid {
   border-color: var(--danger);
@@ -307,33 +246,6 @@ textarea {
 }
 
 /* ---- Buttons ---- */
-.cb-btn {
-  padding: 8px 24px;
-  border: none;
-  border-radius: var(--radius-xl);
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: none;
-  cursor: pointer;
-  transition: filter 0.15s, transform 0.1s;
-  white-space: nowrap;
-  color: var(--bg-0);
-}
-.cb-btn:hover {
-  filter: brightness(1.2);
-  transform: scale(1.02);
-}
-.cb-btn:active {
-  transform: scale(0.98);
-}
-.cb-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  transform: none;
-  filter: none;
-}
 .format-btn,
 .cover-format-btn {
   background: #1a1a2e;
@@ -1278,28 +1190,6 @@ textarea:focus-visible {
   text-align: center;
 }
 
-/* Pinned row — brand-soft fill with brand left-edge accent stripe.
-   Cleaner than the old solid amber background; the row stays readable. */
-.compose-row.pinned {
-  border-color: var(--brand-edge);
-  background: linear-gradient(180deg,
-    rgba(232, 167, 84, 0.10) 0%,
-    rgba(232, 167, 84, 0.05) 100%);
-  box-shadow: var(--edge-top);
-  position: relative;
-}
-.compose-row.pinned::before {
-  content: "";
-  position: absolute;
-  left: 0; top: 12px; bottom: 12px;
-  width: 3px;
-  background: var(--brand);
-  border-radius: 0 2px 2px 0;
-}
-.compose-row.excluded {
-  opacity: 0.45;
-  text-decoration: line-through;
-}
 .corpus-action-btn.on {
   border-color: var(--brand);
   color: var(--brand);
@@ -1370,42 +1260,6 @@ textarea:focus-visible {
   padding: 6px 8px;
   font-family: var(--font);
   font-size: 13px;
-}
-
-/* =============================================================== */
-/* Phase D.2 — Top-level tabs + Career Corpus tab                  */
-/* =============================================================== */
-
-.top-tabs {
-  display: flex;
-  gap: 4px;
-  padding: 0 12px;
-  margin-bottom: 8px;
-}
-
-.top-tab-btn {
-  background: var(--bg-0);
-  color: var(--fg-1);
-  border: none;
-  padding: 12px 24px;
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: none;
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  cursor: pointer;
-  transition: background 120ms, color 120ms;
-}
-
-.top-tab-btn:hover {
-  background: #14141f;
-  color: var(--brand);
-}
-
-.top-tab-btn.active {
-  background: var(--brand);
-  color: var(--bg-0);
 }
 
 .top-tab-panel {
@@ -2642,6 +2496,7 @@ textarea:focus-visible {
   background: linear-gradient(180deg,
     rgba(232,167,84,0.10) 0%,
     rgba(232,167,84,0.05) 100%);
+  box-shadow: var(--edge-top);
 }
 .compose-row.pinned::before {
   content: "";
@@ -3471,12 +3326,13 @@ textarea:focus-visible {
   font-weight: 500;
   letter-spacing: 0.1px;
   text-transform: none;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   transition: color var(--t-fast) var(--ease);
 }
-.top-tab-btn:hover { color: var(--fg-0); }
+.top-tab-btn:hover { background: #14141f; color: var(--fg-0); }
 .top-tab-btn.active,
 .top-tab-btn[aria-selected="true"] {
   color: var(--fg-0);
@@ -3486,17 +3342,23 @@ textarea:focus-visible {
 
 /* ---- Main container (.cb-main) — neutralize LCARS chrome ---- */
 .cb-main {
+  display: flex;
+  flex-direction: column;
   padding: 28px 28px 60px;
   max-width: 1180px;
   margin: 0 auto;
   gap: 16px;
+  min-height: calc(100vh - 120px);
 }
 
 /* ---- Panels (.cb-panel) — refined card surface ---- */
 .cb-panel {
   background: var(--grad-card);
   border-radius: var(--radius-xl);
+  overflow: hidden;
   border: 1px solid var(--border);
+  display: grid;
+  grid-template-rows: auto 1fr;
   box-shadow: var(--edge-top), var(--shadow-1);
   transition:
     border-color var(--t-fast) var(--ease),
@@ -3516,6 +3378,7 @@ textarea:focus-visible {
   color: var(--fg-1);
   background: transparent !important; /* override .cb-bg-* on header */
   border-bottom: 1px solid transparent;
+  cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -3530,10 +3393,16 @@ textarea:focus-visible {
    (same specificity, later in the cascade). Size the collapse chevron HERE.
    #5 — enlarged 10px → 18px; the old chevron was near-imperceptible. */
 .panel-header::after {
+  content: '▾';
   font-size: 18px;
   opacity: 0.6;
+  transition: transform 0.25s;
+  flex-shrink: 0;
+  margin-left: 12px;
 }
 .panel-body {
+  overflow: hidden;
+  min-height: 0;
   padding: 18px 22px 20px;
 }
 
@@ -3550,6 +3419,7 @@ textarea:focus-visible {
   letter-spacing: 0.1px;
   text-transform: none;
   cursor: pointer;
+  white-space: nowrap;
   position: relative;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.30),
@@ -3635,6 +3505,8 @@ input, select, textarea {
   font-size: 13.5px;
   padding: 8px 12px;
   border-radius: var(--radius-md);
+  flex: 1;
+  min-width: 0;
   outline: none;
   box-shadow:
     inset 0 1px 2px rgba(0,0,0,0.25),

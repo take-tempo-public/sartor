@@ -21,6 +21,43 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Fixed: `static/style.css`'s duplicate-selector cascade collapsed (PX-51, `refactor/css-cascade-collapse`)
+
+An early "primary" CSS section and a later "sartor. component layer" (restyle) section
+both defined some of the same selectors — a later-rule-wins footgun where, for any
+property only the earlier copy declared, that copy's value (not the later one's) was
+actually rendering. A 2026-07 efficiency review flagged this (PX-51) and originally
+estimated "merge ~780 lines, ~20% shrink"; a later re-verify found that overstated and
+re-scoped it to a precise selector-level collapse. This branch re-derived a fresh,
+full-file census against current HEAD (line numbers in both prior estimates had gone
+stale) and found 16 duplicate selector-group pairs across three source regions
+(`.compose-row.pinned`/`::before`/`.excluded`; the Phase D.2 top-level tabs; and the
+primary layout/panel/form/button rules) — realistically ~128 lines of duplication, not
+~780.
+
+For every pair, the later ("restyle") copy's location was kept — its values are what's
+actually rendering for every contested property — and any property only the earlier
+copy declared was carried into the kept rule before the earlier copy was deleted, so
+the change is 100% behavior-preserving (verified via a live `getComputedStyle`
+before/after snapshot across all 16 selectors, byte-identical, plus a manual
+screenshot/click-through comparison). The highest-risk carryover was
+`.panel-header::after`'s `content: '▾'` — a pseudo-element generates no box at all
+without `content`, so a naive deletion would have silently removed the panel-collapse
+chevron. A second, less obvious case: `.compose-row.pinned`'s `box-shadow: var(--edge-top)`
+survives specificity-over-source-order (a 2-class selector beats the later 1-class base
+rule regardless of which comes first in the file) — confirmed live via computed-style
+inspection (the rendered alpha channel matched `--edge-top`'s value, not the base rule's
+`--edge-soft`).
+
+Two pre-existing, unrelated bugs were discovered during the census and deliberately
+left unfixed (both are independent of this collapse — same behavior before and after
+either way, and fixing them would turn a provably behavior-preserving refactor into an
+actual behavior change): `.cb-panel`'s collapse-animation easing is already fully
+overridden by the later rule's `transition`, so the panel collapse likely already snaps
+instantly rather than easing; and a `@media (max-width:768px) { .panel-body {...} }`
+override is already shadowed by an unconditional later rule (media conditions don't
+affect source-order tie-breaking). Both filed as carry-forward ledger items.
+
 ### Fixed: the handoff pointer line's commit hash was hand-typed, with nothing forcing or checking it (`fix/handoff-pointer-verification`)
 
 The one line of copyable chat text a closing agent hands the user at end-of-session — `Handoff:
