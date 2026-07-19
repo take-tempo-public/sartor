@@ -680,6 +680,29 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       rather than a per-invocation resource limit** — worth prioritizing the instrumentation this
       item already calls for, since manual chunking is being reinvented by hand each time it's
       hit.
+      **→ Candidate CAUSE found (2026-07-19, same session, incidental — supersedes the
+      "unknown environment-wide event" framing above).** The owner reported system resources
+      exhausted and **16 Claude sessions in Task Manager with only 2 windows open**; a
+      `claude doctor` run came back clean (v2.1.215, no install issues), so this is orphaned
+      processes, not a broken install. Measured on this machine immediately after: **12
+      `claude`/`node` processes, 1,920 MB RAM, 6,023 s of accumulated CPU**, including three
+      clear zombies — one from **2026-07-15 (four days old)**, one from 2026-07-18 12:26 with
+      **5,267 s (~87 min) of CPU**, and one from 2026-07-18 22:09. **Resource exhaustion from
+      accumulated orphaned sessions is a materially better explanation than the per-command
+      wall-clock ceiling this item previously inferred**, and it fits evidence the ceiling
+      theory could not: why *unrelated* long-lived processes (the dev server) died at the same
+      instant as a fresh command, why survival time was wildly inconsistent (58% / instantly /
+      9%) rather than fixed, and why foreground calls survived where identical backgrounded
+      ones did not.
+      **NOT yet proven — do not record this as settled.** No cleanup was performed (some PIDs
+      were live sessions, one was the session doing the measuring), so the decisive test is
+      unrun: **kill the orphans, then re-run a full `python -m scripts.gate` un-chunked and see
+      whether it completes.** That single experiment would either close this item or definitively
+      rule the cause out — and it is much cheaper than the resumable-gate tooling this item has
+      been asking for since 2026-07-14. **Do that before building the tooling**; if orphan
+      accumulation is the cause, the tooling is solving a symptom. If it is confirmed, the real
+      fix is process-lifecycle hygiene (why do CLI sessions never exit?), which is a Claude Code
+      issue the owner has already filed feedback on, not a repo change.
 
 - [x] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
       fixed** — twelve routes in `blueprints/applications.py` each read the whole
